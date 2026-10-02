@@ -40,6 +40,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/GLINCKER/levelrail/internal/firewall"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
@@ -52,6 +53,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	firewallreconcile "github.com/GLINCKER/levelrail/internal/reconcile/firewall"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
@@ -256,6 +258,14 @@ const (
 	// reasoning as defaultPreviewSweepInterval just above: a days-scale
 	// retention window needs no minute-granularity checks.
 	defaultAuditLogSweepInterval = 1 * time.Hour
+
+	// defaultWebhookDeliverySweepInterval is how often
+	// api.Router.RunWebhookDeliverySweeper checks for webhook_deliveries
+	// rows past the retention window (api.defaultWebhookDeliveryRetention,
+	// 30 days), env-overridable via APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL
+	// (webhookDeliverySweepInterval below). Same reasoning as
+	// defaultAuditLogSweepInterval just above.
+	defaultWebhookDeliverySweepInterval = 1 * time.Hour
 
 	// defaultDeployApprovalSweepInterval is how often
 	// api.Router.RunDeployApprovalExpirySweep checks pending deploy
@@ -980,6 +990,17 @@ func run(logger *slog.Logger) error {
 	go func() {
 		if err := apiRouter.RunAuditLogSweeper(ctx, auditLogSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("audit log sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	// Webhook delivery retention sweep (api.Router.RunWebhookDeliverySweeper,
+	// internal/api/webhook_delivery_retention.go): deletes
+	// webhook_deliveries rows past the retention window on its own tick,
+	// the same reasoning as the audit log sweeper just above applied to
+	// the one inbound-webhook history table that otherwise only ever grows.
+	go func() {
+		if err := apiRouter.RunWebhookDeliverySweeper(ctx, webhookDeliverySweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("webhook delivery sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
 
@@ -2021,6 +2042,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithNotificationChannels(alertingDB),
 		api.WithNotificationChannelTester(deployDispatcher),
 		api.WithNotificationDeliveries(alertingDB),
+		api.WithFirewallRequiredPorts(platformRequiredPorts()),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
 		api.WithHSTS(hstsEnabled(logger)),
@@ -2073,6 +2095,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithPreviewStuckAfter(previewStuckAfter(logger)),
 		api.WithInviteTTL(inviteTTL(logger)),
 		api.WithAuditLogRetention(auditLogRetention(logger)),
+		api.WithWebhookDeliveryRetention(webhookDeliveryRetention(logger)),
 		api.WithDeployApprovalTTL(deployApprovalTTL(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithDeployLogQuerier(telemetryDB),
@@ -2110,6 +2133,11 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// DNS-01 provider from Cloudflare DNS-01 above) goes through the
 		// same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithRoute53DNSSecrets(secretsManager))
+		// DNS records management reads back the same two credentials
+		// above (it needs the plaintext value, not just presence), still
+		// through secretsManager.
+		opts = append(opts, api.WithCloudflareDNSTokenResolver(secretsManager))
+		opts = append(opts, api.WithRoute53DNSCredentialResolver(secretsManager))
 		// A cloud node provider's API token (Hetzner, DigitalOcean) goes
 		// through the same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithNodeProviderSecrets(secretsManager))
@@ -2197,6 +2225,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// registryCredential field): same secretsManager, same
 			// nil-interface hazard as everything else in this block.
 			api.WithRegistryCredentialSecrets(secretsManager),
+			// Network shares (CIFS password only; NFS shares write no
+			// secret): same secretsManager, same nil-interface hazard.
+			api.WithNetworkShareSecrets(secretsManager),
 			api.WithBackupRunner(backupRunner),
 			// App service volume backups (internal/backup's own volume
 			// archiver/restorer, wired above): the same backupRunner/
@@ -2469,6 +2500,23 @@ func ingressPortFromAddr(addr string) int {
 		return 0
 	}
 	return port
+}
+
+// platformRequiredPorts is this instance's actually configured
+// management API, agent gRPC, and ingress ports, passed to both
+// api.WithFirewallRequiredPorts and firewallreconcile.WithRequiredPorts
+// so a firewall rule can never close one of them, whatever these were
+// moved to via APP_HTTP_ADDR/APP_AGENT_ADDR/APP_INGRESS_HTTP_ADDR/
+// APP_INGRESS_HTTPS_ADDR. ingressPortFromAddr's own "0 on unparseable"
+// degrade is harmless here: Validate's port-match loop simply never
+// matches 0.
+func platformRequiredPorts() []int {
+	return []int{
+		ingressPortFromAddr(httpAddr()),
+		ingressPortFromAddr(agentAddr()),
+		ingressPortFromAddr(ingressHTTPAddr()),
+		ingressPortFromAddr(ingressHTTPSAddr()),
+	}
 }
 
 // dashboardDialAddr normalizes httpAddr's listen address (e.g. ":8080",
@@ -2820,6 +2868,43 @@ func auditLogRetention(logger *slog.Logger) time.Duration {
 		return 0
 	}
 	return time.Duration(days) * 24 * time.Hour
+}
+
+// webhookDeliveryRetention reads APP_WEBHOOK_DELIVERY_RETENTION_DAYS, the
+// same env-var-with-default shape auditLogRetention above uses for
+// api.WithAuditLogRetention, applied here to
+// api.WithWebhookDeliveryRetention. Returns 0 (api's own signal to fall
+// back to its internal default, api.defaultWebhookDeliveryRetention, 30
+// days) when unset or unparseable.
+func webhookDeliveryRetention(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_WEBHOOK_DELIVERY_RETENTION_DAYS")
+	if raw == "" {
+		return 0
+	}
+	days, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		logger.Warn("invalid APP_WEBHOOK_DELIVERY_RETENTION_DAYS, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return time.Duration(days) * 24 * time.Hour
+}
+
+// webhookDeliverySweepInterval reads APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL
+// as a Go duration string, the same env-var-with-default shape
+// auditLogSweepInterval above uses: api.Router.RunWebhookDeliverySweeper
+// takes its interval directly with no built-in fallback of its own, so
+// this resolves the real value once, here.
+func webhookDeliverySweepInterval(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL")
+	if raw == "" {
+		return defaultWebhookDeliverySweepInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return defaultWebhookDeliverySweepInterval
+	}
+	return d
 }
 
 // secretRotationWarnAge reads APP_SECRET_ROTATION_WARN_DAYS, the same
@@ -3272,6 +3357,13 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			registryCreds = deps.secretsManager
 		}
 		controllers = append(controllers, registryreconcile.New(deps.db, registryCreds, deps.runtime, registryreconcile.WithContainerPrefix(deps.networkPrefix)))
+
+		// Firewall rules: same platform-wide-singleton,
+		// local-runtime-unconditional shape as the registry controller
+		// above. requiredPorts mirrors api.WithFirewallRequiredPorts so
+		// the write-time refusal and this reconcile-time, defense-in-depth
+		// skip never disagree about what counts as "required."
+		controllers = append(controllers, firewallreconcile.New(deps.db, firewall.New(), firewallreconcile.WithRequiredPorts(platformRequiredPorts()), firewallreconcile.WithLogger(deps.logger)))
 
 		if deps.meshCfg != nil {
 			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger)))

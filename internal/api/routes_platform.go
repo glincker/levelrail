@@ -31,6 +31,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitSource))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source/deploy-settings", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitDeploySettings))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteGitSource))
+	// Rotate webhook secret (git_sources.go): mints a fresh secret without
+	// touching repo_url/branch/build config, the narrow alternative to a
+	// full DELETE-then-PUT reconnect. Same AbilityWriteSensitive tier as
+	// PUT .../git-source, since it's the identical class of credential
+	// write.
+	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/rotate-webhook-secret", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateGitSourceWebhookSecret))
 
 	// Scheduled deploys (app_schedule.go): a per-app cron schedule that
 	// redeploys the latest commit on a branch, checked by
@@ -346,6 +352,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// above.
 	mux.HandleFunc("GET /api/v1/mesh", rt.requireAbility(AbilityRoot, rt.handleGetMeshStatus))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/mesh/rotate-key", rt.requireAbility(AbilityRoot, rt.handleRotateNodeMeshKey))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/mesh/rejoin", rt.requireAbility(AbilityRoot, rt.handleRejoinNodeMesh))
 	// Network topology: a read-only, whole-mesh summary (nodes, apps,
 	// databases, load balancers, app-to-database connections). Unlike
 	// every other node/mesh route above, AbilityRead rather than
@@ -480,6 +487,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetDomainTLSCert))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleClearDomainTLSCert))
 
+	// Force re-issuance of domain's automatic certificate (domain_tls_cert.go's
+	// handleRenewDomainCertificate): deletes the stored certmagic entry
+	// and nudges the reconciler. AbilityRoot, same tier as PUT/DELETE
+	// .../tls-cert above: real infra, real blast radius.
+	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/cert/renew", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleRenewDomainCertificate))
+
 	// Opt-in WAF and rate limiting (domain_waf.go): OWASP Coraza and
 	// Caddy's rate_limit handler on one app-owned domain, enforced on
 	// the next ingress reconcile pass. GET is AbilityRead, matching the
@@ -491,6 +504,19 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainWAF))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainWAF))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearDomainWAF))
+
+	// DNS records (dns_records.go): list/add/edit/delete the actual
+	// A/AAAA/CNAME/TXT/MX/SRV/CAA records in one app-owned domain's
+	// best-effort zone, via whichever ACME DNS-01 provider (Cloudflare or
+	// Route53) is configured. GET is AbilityRead: a live provider API
+	// read plus a DNS lookup, no write. POST/PUT/DELETE are AbilityRoot,
+	// the same "real infrastructure, high blast radius" tier PUT/DELETE
+	// .../tls-cert and .../auth already reserve: this writes directly to
+	// a live, externally visible DNS zone.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListDNSRecords))
+	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleCreateDNSRecord))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleUpdateDNSRecord))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleDeleteDNSRecord))
 
 	// Domain redirect (domain_redirect.go): points one app-owned domain
 	// at an arbitrary target URL, enforced by Caddy's static_response
@@ -605,6 +631,26 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateRegistryCredential))
 	mux.HandleFunc("DELETE /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteRegistryCredential))
 	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryCredential))
+
+	// Network shares (network_shares.go): an NFS/CIFS export mountable
+	// as a Docker local-driver volume. Same ability tiers as registry
+	// credentials just above: POST/PUT/DELETE handle a live CIFS
+	// password, test is a read-only reachability dial.
+	mux.HandleFunc("GET /api/v1/network-shares", rt.requireAbility(AbilityRead, rt.handleListNetworkShares))
+	mux.HandleFunc("POST /api/v1/network-shares", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateNetworkShare))
+	mux.HandleFunc("GET /api/v1/network-shares/{id}", rt.requireAbility(AbilityRead, rt.handleGetNetworkShare))
+	mux.HandleFunc("PUT /api/v1/network-shares/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateNetworkShare))
+	mux.HandleFunc("DELETE /api/v1/network-shares/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteNetworkShare))
+	mux.HandleFunc("POST /api/v1/network-shares/{id}/test", rt.requireAbility(AbilityRead, rt.handleTestNetworkShare))
+
+	// Firewall rules (firewall_rules.go): declarative host firewall
+	// rules internal/reconcile/firewall converges onto ufw.
+	// AbilityWriteSensitive for create/delete, same tier as a backup
+	// target: a rule here changes what inbound traffic this host
+	// accepts. List is ordinary AbilityRead.
+	mux.HandleFunc("GET /api/v1/firewall-rules", rt.requireAbility(AbilityRead, rt.handleListFirewallRules))
+	mux.HandleFunc("POST /api/v1/firewall-rules", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateFirewallRule))
+	mux.HandleFunc("DELETE /api/v1/firewall-rules/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteFirewallRule))
 
 	// Registry credential browsing (registry_catalog.go): repository/tag
 	// lookup for a stored external credential, the same generic catalog
@@ -913,6 +959,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppHealth))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppHealth))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleClearAppHealth))
+	// Attach/detach a named Docker volume outside a redeploy
+	// (apps_volumes_attach.go): AbilityWrite, the same tier health above
+	// uses, since this is an ordinary declarative resource, not a secret
+	// or network-exfiltration surface like egress-policy/storage.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppVolumes))
 	// Read-only, not scoped to any one app: the static list of env var
 	// names attaching storage can inject, backed by
 	// application.StorageEnvKeys rather than a hardcoded list, see

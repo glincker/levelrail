@@ -86,6 +86,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/dockerhub"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/firewall"
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
@@ -308,6 +309,11 @@ type Router struct {
 	// PurgeOldAuditEntries removes it. 0 means "use the default", set via
 	// WithAuditLogRetention.
 	auditLogRetention time.Duration
+	// webhookDeliveryRetention overrides defaultWebhookDeliveryRetention
+	// (webhook_delivery_retention.go): how long a webhook_deliveries row
+	// survives before PurgeOldWebhookDeliveries removes it. 0 means "use
+	// the default", set via WithWebhookDeliveryRetention.
+	webhookDeliveryRetention time.Duration
 	// secretRotationWarnAge overrides defaultSecretRotationWarnAge
 	// (secret_rotation.go): how old a secret's last-set value can get
 	// before GET /apps/{name}/secrets, GET .../env/all, and the doctor's
@@ -336,6 +342,10 @@ type Router struct {
 	backupSecrets                  BackupSecretsSetter              // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
 	registryCredentials            RegistryCredentialStore          // always set, same "core Store interface" shape as backupTargets above
 	registryCredentialSecrets      RegistryCredentialSecretsSetter  // nil is valid: POST /api/v1/registry-credentials returns 501, same shape as backupSecrets above
+	networkShares                  NetworkShareStore                // always set, same "core Store interface" shape as registryCredentials above
+	networkShareSecrets            NetworkShareSecretsSetter        // nil is valid: POST /api/v1/network-shares (for a cifs share) returns 501, same shape as registryCredentialSecrets above
+	firewallRules                  FirewallRuleStore                // always set, same "core Store interface" shape as backupTargets above
+	firewallRequiredPorts          []int                            // defaults to firewall.DefaultRequiredPorts in NewRouter; WithFirewallRequiredPorts overrides with this instance's actually configured ports
 	backupHistory                  BackupHistoryStore               // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
 	backupRunner                   BackupRunner                     // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
 	backupDownloader               BackupDownloader                 // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
@@ -400,6 +410,10 @@ type Router struct {
 	cloudflareDNSSecrets           CloudflareDNSSecrets             // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-dns return 501, same shape as cloudflareTunnelSecrets above
 	route53DNS                     Route53DNSStore                  // always set, same shape as cloudflareDNS above: a second, independent ACME DNS-01 provider, not a replacement
 	route53DNSSecrets              Route53DNSSecrets                // nil is valid: PUT/DELETE /api/v1/settings/route53-dns return 501, same shape as cloudflareDNSSecrets above
+	cloudflareDNSTokenResolver     CloudflareDNSTokenResolver       // nil is valid: dns-records routes return 501, same shape as cloudflareDNSSecrets above but resolves the plaintext token instead of just checking presence
+	route53DNSCredentialResolver   Route53DNSCredentialResolver     // nil is valid: dns-records routes return 501, same shape as cloudflareDNSTokenResolver above
+	dnsRecordManager               dnsRecordManagerFunc             // always set, defaulted to rt.resolveDNSRecordManager below, overridable in this package's own tests, the same "seam, not an interface" shape lookupHost already uses
+	dnsRecordStatus                dnsRecordStatusFunc              // always set, defaulted to defaultDNSRecordStatus below, overridable in this package's own tests so none of them perform a real DNS query
 	registry                       RegistryStore                    // always set, same shape as cloudflareTunnel above
 	registrySecrets                RegistrySecrets                  // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
 	vault                          VaultSettingsStore               // always set, same shape as cloudflareTunnel above
@@ -549,6 +563,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainChecks:                newDomainCheckCache(),
 		backupTargets:               s,
 		registryCredentials:         s,
+		networkShares:               s,
+		firewallRules:               s,
+		firewallRequiredPorts:       firewall.DefaultRequiredPorts,
 		backupHistory:               s,
 		backupVerifications:         s,
 		restoreHistory:              s,
@@ -629,6 +646,13 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		aiChat:                      s,
 		autoPlacementEnabled:        true,
 	}
+	// Bound method values, so they must be assigned after rt exists
+	// rather than in the struct literal above; same reasoning as
+	// rt.sessions below. Both are overridable directly by this
+	// package's own tests, no Option needed.
+	rt.dnsRecordManager = rt.resolveDNSRecordManager
+	rt.dnsRecordStatus = defaultDNSRecordStatus
+
 	for _, opt := range opts {
 		opt(rt)
 	}

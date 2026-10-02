@@ -13,10 +13,12 @@ import (
 // volumes (spec.Service.Volumes, store.ServiceVolume): Name is the
 // logical name an operator wrote in app.yaml, not the resolved,
 // platform-prefixed Docker volume name (store.ServiceVolumeDockerName's
-// own doc comment explains why those differ). Response-only, the same
-// "shown but not settable through this endpoint" boundary appResource's
-// own NodeID/ProjectID fields already establish: volumes are declared
-// through app.yaml, not this API.
+// own doc comment explains why those differ). Response-only on the
+// general app resource, the same "shown but not settable through this
+// endpoint" boundary appResource's own NodeID/ProjectID fields already
+// establish; apps_volumes_attach.go's dedicated PUT
+// /api/v1/apps/{name}/volumes is the one place this same shape is also
+// a request body, the same split egress-policy and health already have.
 type appVolumeResource struct {
 	Name          string `json:"name"`
 	ContainerPath string `json:"container_path"`

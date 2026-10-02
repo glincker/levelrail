@@ -412,6 +412,15 @@ func (c *Client) ClearAppEgressPolicy(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/egress-policy", nil, nil)
 }
 
+// SetAppVolumes calls PUT /api/v1/apps/{name}/volumes: attaches (or
+// removes) a named Docker volume outside a redeploy, replacing name's
+// whole desired volume list with req.Volumes.
+func (c *Client) SetAppVolumes(ctx context.Context, name string, req SetAppVolumesRequest) (SetAppVolumesResponse, error) {
+	var out SetAppVolumesResponse
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/volumes", req, &out)
+	return out, err
+}
+
 // CreateTag calls POST /api/v1/tags.
 func (c *Client) CreateTag(ctx context.Context, name string) (TagResource, error) {
 	var out TagResource
@@ -1042,6 +1051,17 @@ func (c *Client) ClearDomainTLSCert(ctx context.Context, name, domain string) (D
 	return out, err
 }
 
+// RenewDomainCertificate calls POST
+// /api/v1/apps/{name}/domains/{domain}/cert/renew: forces re-issuance of
+// domain's automatically-managed certificate (ACME or internal; not valid
+// for a domain with a BYO certificate uploaded, see
+// handleRenewDomainCertificate's own doc comment).
+func (c *Client) RenewDomainCertificate(ctx context.Context, name, domain string) (RenewCertificateResource, error) {
+	var out RenewCertificateResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/domains/"+PathEscape(domain)+"/cert/renew", nil, &out)
+	return out, err
+}
+
 // domainWAFPath builds /api/v1/apps/{name}/domains/{domain}/waf, shared
 // by all three domain WAF/rate-limit methods below, mirroring
 // domainAuthPath's identical shape for a different per-domain toggle.
@@ -1071,6 +1091,47 @@ func (c *Client) SetDomainWAF(ctx context.Context, name, domain string, req SetD
 func (c *Client) ClearDomainWAF(ctx context.Context, name, domain string) (DomainWAFResource, error) {
 	var out DomainWAFResource
 	err := c.do(ctx, http.MethodDelete, domainWAFPath(name, domain), nil, &out)
+	return out, err
+}
+
+// dnsRecordsPath builds /api/v1/apps/{name}/domains/{domain}/dns-records,
+// shared by all four DNS record methods below, mirroring domainWAFPath's
+// identical shape for a different per-domain resource.
+func dnsRecordsPath(name, domain string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/domains/" + PathEscape(domain) + "/dns-records"
+}
+
+// ListDNSRecords calls GET /api/v1/apps/{name}/domains/{domain}/dns-records:
+// every record in domain's best-effort zone, from whichever ACME DNS-01
+// provider is configured, each with a live resolution status.
+func (c *Client) ListDNSRecords(ctx context.Context, name, domain string) (DNSRecordsResponse, error) {
+	var out DNSRecordsResponse
+	err := c.do(ctx, http.MethodGet, dnsRecordsPath(name, domain), nil, &out)
+	return out, err
+}
+
+// CreateDNSRecord calls POST .../dns-records: appends a new record to
+// domain's zone, leaving any existing record with the same name and
+// type untouched.
+func (c *Client) CreateDNSRecord(ctx context.Context, name, domain string, record DNSRecordResource) (DNSRecordsResponse, error) {
+	var out DNSRecordsResponse
+	err := c.do(ctx, http.MethodPost, dnsRecordsPath(name, domain), record, &out)
+	return out, err
+}
+
+// UpdateDNSRecord calls PUT .../dns-records: replaces one exact record
+// (req.Original) with a new value (req.Record).
+func (c *Client) UpdateDNSRecord(ctx context.Context, name, domain string, req UpdateDNSRecordRequest) (DNSRecordsResponse, error) {
+	var out DNSRecordsResponse
+	err := c.do(ctx, http.MethodPut, dnsRecordsPath(name, domain), req, &out)
+	return out, err
+}
+
+// DeleteDNSRecord calls DELETE .../dns-records: removes one exact
+// record (name, type, and value must all match). Idempotent.
+func (c *Client) DeleteDNSRecord(ctx context.Context, name, domain string, record DNSRecordResource) (DNSRecordsResponse, error) {
+	var out DNSRecordsResponse
+	err := c.do(ctx, http.MethodDelete, dnsRecordsPath(name, domain), record, &out)
 	return out, err
 }
 
@@ -1569,6 +1630,17 @@ func (c *Client) DeleteGitSource(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/git-source", nil, nil)
 }
 
+// RotateGitSourceWebhookSecret calls POST
+// /api/v1/apps/{name}/git-source/rotate-webhook-secret: mints a fresh
+// webhook secret without touching repo_url/branch/build config. The
+// returned resource's WebhookSecret is populated this one time, the
+// caller's only chance to see it.
+func (c *Client) RotateGitSourceWebhookSecret(ctx context.Context, name string) (GitSourceResource, error) {
+	var out GitSourceResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/git-source/rotate-webhook-secret", nil, &out)
+	return out, err
+}
+
 // ListWebhookDeliveries calls GET /api/v1/apps/{name}/webhook-deliveries:
 // recent inbound git-provider webhook requests for name, newest first.
 func (c *Client) ListWebhookDeliveries(ctx context.Context, name string, opts ListWebhookDeliveriesOptions) ([]WebhookDeliveryResource, error) {
@@ -1711,6 +1783,35 @@ func (c *Client) DeleteBackupTarget(ctx context.Context, id string) error {
 // uploading or deleting anything.
 func (c *Client) TestBackupTarget(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodPost, backupTargetPath(id)+"/test", nil, nil)
+}
+
+// firewallRulesCollectionPath builds /api/v1/firewall-rules, and
+// firewallRulePath builds that same path plus /{id}.
+func firewallRulesCollectionPath() string {
+	return "/api/v1/firewall-rules"
+}
+
+func firewallRulePath(id string) string {
+	return firewallRulesCollectionPath() + "/" + PathEscape(id)
+}
+
+// CreateFirewallRule calls POST /api/v1/firewall-rules.
+func (c *Client) CreateFirewallRule(ctx context.Context, req CreateFirewallRuleRequest) (FirewallRuleResource, error) {
+	var out FirewallRuleResource
+	err := c.do(ctx, http.MethodPost, firewallRulesCollectionPath(), req, &out)
+	return out, err
+}
+
+// ListFirewallRules calls GET /api/v1/firewall-rules.
+func (c *Client) ListFirewallRules(ctx context.Context) ([]FirewallRuleResource, error) {
+	var out []FirewallRuleResource
+	err := c.do(ctx, http.MethodGet, firewallRulesCollectionPath(), nil, &out)
+	return out, err
+}
+
+// DeleteFirewallRule calls DELETE /api/v1/firewall-rules/{id}.
+func (c *Client) DeleteFirewallRule(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, firewallRulePath(id), nil, nil)
 }
 
 // registryCredentialsCollectionPath builds /api/v1/registry-credentials,
@@ -2603,12 +2704,23 @@ func (c *Client) GetMeshStatus(ctx context.Context) (MeshStatusResource, error) 
 
 // RotateNodeMeshKey calls POST /api/v1/nodes/{id}/mesh/rotate-key:
 // generates a fresh WireGuard keypair for id and makes it live
-// immediately. Only actually succeeds for the node running the target
-// control plane itself today; see internal/api/mesh.go's own doc
-// comment for why remote-node rotation isn't possible yet.
+// immediately. Works for any node currently connected to the target
+// control plane, local or remote (internal/api/mesh.go's own doc
+// comment).
 func (c *Client) RotateNodeMeshKey(ctx context.Context, id string) (RotateKeyResponse, error) {
 	var out RotateKeyResponse
 	err := c.do(ctx, http.MethodPost, nodePath(id)+"/mesh/rotate-key", nil, &out)
+	return out, err
+}
+
+// RejoinNodeMesh calls POST /api/v1/nodes/{id}/mesh/rejoin: forces an
+// immediate fleet-wide mesh reconcile pass instead of waiting for the
+// next scheduled resync. See internal/api/mesh.go's own doc comment: id
+// is only used to validate the node exists, the resync itself always
+// covers the whole fleet.
+func (c *Client) RejoinNodeMesh(ctx context.Context, id string) (RejoinMeshResponse, error) {
+	var out RejoinMeshResponse
+	err := c.do(ctx, http.MethodPost, nodePath(id)+"/mesh/rejoin", nil, &out)
 	return out, err
 }
 

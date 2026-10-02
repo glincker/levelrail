@@ -179,6 +179,61 @@ func TestCertificatesRoute_RequireAuth(t *testing.T) {
 	}
 }
 
+// TestHandleListCertificates_AppsAndSource exercises the certificate
+// center's two join fields: Apps (from domainOwners) and Source
+// ("custom" once a BYO certificate is on file for that domain, "acme"
+// otherwise).
+func TestHandleListCertificates_AppsAndSource(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	now := time.Now()
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 8080, Domains: []string{"app.example.com", "custom.example.com"},
+	}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	seedCert(t, db, "app.example.com", now.Add(-24*time.Hour), now.Add(60*24*time.Hour))
+	seedCert(t, db, "custom.example.com", now.Add(-24*time.Hour), now.Add(60*24*time.Hour))
+	if err := db.SetDomainTLSCert(context.Background(), "custom.example.com", now, now.AddDate(1, 0, 0)); err != nil {
+		t.Fatalf("SetDomainTLSCert() error = %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/certificates", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got []certificateStatus
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	byDomain := make(map[string]certificateStatus, len(got))
+	for _, c := range got {
+		byDomain[c.Domain] = c
+	}
+
+	acme, ok := byDomain["app.example.com"]
+	if !ok {
+		t.Fatalf("missing entry for app.example.com in %+v", got)
+	}
+	if acme.Source != "acme" {
+		t.Errorf("app.example.com: source = %q, want %q", acme.Source, "acme")
+	}
+	if len(acme.Apps) != 1 || acme.Apps[0] != "web" {
+		t.Errorf("app.example.com: apps = %v, want [web]", acme.Apps)
+	}
+
+	custom, ok := byDomain["custom.example.com"]
+	if !ok {
+		t.Fatalf("missing entry for custom.example.com in %+v", got)
+	}
+	if custom.Source != "custom" {
+		t.Errorf("custom.example.com: source = %q, want %q", custom.Source, "custom")
+	}
+}
+
 // TestStatusForExpiry exercises the same bucketing this handler now
 // delegates to (alerting.CertExpiryStatus, cert_expiry.go), so a
 // regression there fails a test in this package too, not just

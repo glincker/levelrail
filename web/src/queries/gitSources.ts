@@ -73,11 +73,14 @@ export async function setGitSource(
   name: string,
   req: SetGitSourceRequest,
 ): Promise<GitSourceResource> {
-  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/git-source`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(req),
-  })
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(name)}/git-source`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    },
+  )
   if (res.status === 501) {
     throw new ApiError(
       501,
@@ -105,9 +108,12 @@ export function useSetGitSource(name: string) {
 
 // DELETE /api/v1/apps/{name}/git-source. 204 on success, no body.
 export async function deleteGitSource(name: string): Promise<void> {
-  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/git-source`, {
-    method: 'DELETE',
-  })
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(name)}/git-source`,
+    {
+      method: 'DELETE',
+    },
+  )
   if (res.status === 204) {
     return
   }
@@ -117,12 +123,58 @@ export async function deleteGitSource(name: string): Promise<void> {
   )
 }
 
+// POST /api/v1/apps/{name}/git-source/rotate-webhook-secret: mints a
+// fresh webhook secret without touching repo_url/branch/build config, the
+// narrow alternative to DELETE-then-PUT for an operator who only wants a
+// new secret. The response's webhook_secret is populated this one time.
+export async function rotateGitSourceWebhookSecret(
+  name: string,
+): Promise<GitSourceResource> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(name)}/git-source/rotate-webhook-secret`,
+    { method: 'POST' },
+  )
+  if (res.status === 501) {
+    throw new ApiError(
+      501,
+      'Git sources require a master key to be configured on this control plane.',
+    )
+  }
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `rotate webhook secret failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as GitSourceResource
+}
+
+export function useRotateGitSourceWebhookSecret(name: string) {
+  const queryClient = useQueryClient()
+  return useMutation<GitSourceResource, ApiError, void>({
+    mutationFn: () => rotateGitSourceWebhookSecret(name),
+    // Caches the full response, webhook_secret included, the same as
+    // useSetGitSource's own onSuccess does for a fresh connect: it never
+    // comes back on a later GET either way (gitSourceResource's own doc
+    // comment), so this is only ever read back by the caller that just
+    // minted it, for the one render where it shows the secret.
+    onSuccess: (resource) => {
+      queryClient.setQueryData(gitSourceKeys.detail(name), resource)
+    },
+  })
+}
+
 export function useDeleteGitSource(name: string) {
   const queryClient = useQueryClient()
   return useMutation<void, ApiError, void>({
     mutationFn: () => deleteGitSource(name),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: gitSourceKeys.detail(name) })
+      void queryClient.invalidateQueries({
+        queryKey: gitSourceKeys.detail(name),
+      })
     },
   })
 }

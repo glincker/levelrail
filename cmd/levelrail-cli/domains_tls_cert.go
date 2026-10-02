@@ -32,6 +32,8 @@ func runDomainsTLSCert(prog string, args []string, stdout, stderr io.Writer, loo
 		return runDomainsTLSCertSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "clear":
 		return runDomainsTLSCertClear(prog, args[1:], stdout, stderr, lookupEnv)
+	case "renew":
+		return runDomainsTLSCertRenew(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown domains tls-cert subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, domainsTLSCertUsage(prog))
@@ -44,6 +46,7 @@ func domainsTLSCertUsage(prog string) string {
   %[1]s domains tls-cert get <app> <domain> [flags]                                     show a domain's BYO certificate state
   %[1]s domains tls-cert set <app> <domain> --cert-file FILE --key-file FILE [flags]     upload a certificate
   %[1]s domains tls-cert clear <app> <domain> [flags]                                    revert to automatic ACME/internal issuance
+  %[1]s domains tls-cert renew <app> <domain> [flags]                                    force re-issuance of an automatic certificate
 
 Uploads an operator-supplied certificate and private key for one of
 <app>'s domains, used by the embedded Caddy ingress in place of
@@ -55,6 +58,36 @@ apps get <app>" or "%[1]s domains list").
 
 Run "%[1]s domains tls-cert <subcommand> -h" for a subcommand's own flags.
 `, prog)
+}
+
+func runDomainsTLSCertRenew(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains tls-cert renew", domainsTLSCertJSONUsage, stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains tls-cert renew <app> <domain> [flags]\n\nForces re-issuance of <domain>'s automatically-managed certificate (ACME\nor internal) by clearing its stored state and nudging the reconcile loop.\nFails with a conflict if <domain> currently has an operator-uploaded\ncertificate (\"%[1]s domains tls-cert clear\" it first).\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	rest, ok := requireArgs(fs, stderr, prog, "domains tls-cert renew", "an app name and a domain", 2)
+	if !ok {
+		return exitUsage
+	}
+	appName, domain := rest[0], rest[1]
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	result, err := client.RenewDomainCertificate(context.Background(), appName, domain)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("renew certificate for domain %q: %w", domain, err))
+	}
+
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
+		_, _ = fmt.Fprintf(stdout, "certificate renewal requested for domain %q (had a stored certificate: %t)\n", result.Domain, result.HadStoredCertificate)
+	})
 }
 
 func runDomainsTLSCertGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

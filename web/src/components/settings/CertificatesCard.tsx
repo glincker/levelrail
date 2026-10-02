@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import {
   CheckCircleIcon,
   ShieldCheckIcon,
@@ -10,8 +11,10 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardAction,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { useCertificates } from '@/queries/certificates'
 import type { CertificateStatus } from '@/queries/certificates'
 
@@ -63,13 +66,12 @@ function CertificateRow({ cert }: { cert: CertificateStatus }) {
   )
 }
 
-// CertificatesCard closes the gap this file's own prior comment left
-// open: this route used to mention TLS only in the marketing paragraph
-// above, with zero live status anywhere. This project treats "a
-// cert renewal fails silently at 3am" as its central risk;
-// this card is the read-only surface that makes an at-risk certificate
-// visible before that happens, not a management UI: renewal is
-// automatic (see internal/ingress), so there is nothing to click here.
+// CertificatesCard is a passive summary only: for renewing a certificate
+// now or uploading a custom one, this links to settings/certificates.tsx
+// (the certificate center), which owns those actions. This project
+// treats "a cert renewal fails silently at 3am" as its central risk;
+// this card is the glanceable surface that makes an at-risk certificate
+// visible before that happens.
 export function CertificatesCard() {
   const { data: certificates } = useCertificates()
 
@@ -87,6 +89,16 @@ export function CertificatesCard() {
             </CardDescription>
           </div>
         </div>
+        <CardAction>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            render={<Link to="/settings/certificates" />}
+          >
+            Manage
+          </Button>
+        </CardAction>
       </CardHeader>
       <CardContent
         className={certificates.length > 0 ? 'divide-y divide-border' : ''}

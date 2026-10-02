@@ -52,6 +52,19 @@ func (f *fakeCertSource) GetCertStorageValue(_ context.Context, key string) (*st
 	return &store.CertStorageValue{Value: v}, nil
 }
 
+// DeleteCertStorageValue mirrors store.DB's own "exact key or prefix"
+// delete semantics (cert_storage.go), the minimum DeleteCertificateForDomain
+// needs from a CertDeleter.
+func (f *fakeCertSource) DeleteCertStorageValue(_ context.Context, key string) error {
+	delete(f.certs, key)
+	for k := range f.certs {
+		if strings.HasPrefix(k, key+"/") {
+			delete(f.certs, k)
+		}
+	}
+	return nil
+}
+
 // genCertPEM generates a real, self-signed leaf certificate PEM for
 // domain with the given notBefore/notAfter, matching
 // internal/api/certificates_test.go's own seedCert helper.
@@ -324,5 +337,59 @@ func TestEngine_Tick_CertExpiryFires_NotifiesOnceThenDoesNotDoubleFire(t *testin
 	}
 	if got := rules.get("r1"); !got.Firing {
 		t.Error("rule state Firing = false, want true to persist across ticks")
+	}
+}
+
+func TestDeleteCertificateForDomain_RemovesMatchingSiteDirectory(t *testing.T) {
+	certs := newFakeCertSource()
+	now := time.Now()
+	certs.seed(t, "example.com", now.Add(-24*time.Hour), now.Add(60*24*time.Hour))
+	certs.certs["certificates/internal/example.com/example.com.key"] = []byte("not a cert")
+	certs.certs["certificates/internal/example.com/example.com.json"] = []byte("{}")
+	certs.seed(t, "other.example.com", now.Add(-24*time.Hour), now.Add(60*24*time.Hour))
+
+	found, err := DeleteCertificateForDomain(context.Background(), certs, certs, "example.com")
+	if err != nil {
+		t.Fatalf("DeleteCertificateForDomain() error = %v", err)
+	}
+	if !found {
+		t.Error("found = false, want true: example.com had a stored certificate")
+	}
+	for key := range certs.certs {
+		if strings.Contains(key, "/example.com/") {
+			t.Errorf("stray key %q still present after deleting example.com's certificate", key)
+		}
+	}
+	if _, ok := certs.certs["certificates/internal/other.example.com/other.example.com.crt"]; !ok {
+		t.Error("other.example.com's certificate was removed too; only the matching domain should be deleted")
+	}
+}
+
+func TestDeleteCertificateForDomain_NoMatchReturnsFoundFalse(t *testing.T) {
+	certs := newFakeCertSource()
+	found, err := DeleteCertificateForDomain(context.Background(), certs, certs, "never-issued.example.com")
+	if err != nil {
+		t.Fatalf("DeleteCertificateForDomain() error = %v", err)
+	}
+	if found {
+		t.Error("found = true, want false: no certificate was ever stored for this domain")
+	}
+}
+
+func TestDeleteCertificateForDomain_MatchesSAN(t *testing.T) {
+	certs := newFakeCertSource()
+	now := time.Now()
+	// seed stores a CommonName-and-single-SAN cert named for domain; a
+	// request for that exact SAN (not just the CommonName) must still
+	// match, the same certVisible (internal/api) convention this
+	// function mirrors for the delete side.
+	certs.seed(t, "multi.example.com", now.Add(-24*time.Hour), now.Add(60*24*time.Hour))
+
+	found, err := DeleteCertificateForDomain(context.Background(), certs, certs, "MULTI.EXAMPLE.COM")
+	if err != nil {
+		t.Fatalf("DeleteCertificateForDomain() error = %v", err)
+	}
+	if !found {
+		t.Error("found = false, want true: domain match must be case-insensitive")
 	}
 }

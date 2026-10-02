@@ -95,6 +95,8 @@ type (
 	pitrRestoreHistoryResource       = apiclient.PITRRestoreHistoryResource
 	triggerPITRRestoreRequest        = apiclient.TriggerPITRRestoreRequest
 	appVolumeResource                = apiclient.AppVolumeResource
+	setAppVolumesRequest             = apiclient.SetAppVolumesRequest
+	setAppVolumesResponse            = apiclient.SetAppVolumesResponse
 	appVolumeMoveResource            = apiclient.AppVolumeMoveResource
 	appVolumeMoveStepResource        = apiclient.AppVolumeMoveStepResource
 	appBindMountResource             = apiclient.AppBindMountResource
@@ -131,6 +133,8 @@ type (
 	registryCredentialResource      = apiclient.RegistryCredentialResource
 	createRegistryCredentialRequest = apiclient.CreateRegistryCredentialRequest
 	updateRegistryCredentialRequest = apiclient.UpdateRegistryCredentialRequest
+	firewallRuleResource            = apiclient.FirewallRuleResource
+	createFirewallRuleRequest       = apiclient.CreateFirewallRuleRequest
 
 	notificationChannelResource      = apiclient.NotificationChannelResource
 	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest
@@ -172,6 +176,7 @@ type (
 	meshPeerResource            = apiclient.MeshPeerResource
 	meshRotationResource        = apiclient.MeshRotationResource
 	rotateKeyResponse           = apiclient.RotateKeyResponse
+	rejoinMeshResponse          = apiclient.RejoinMeshResponse
 
 	nodeProviderResource             = apiclient.NodeProviderResource
 	nodeProviderRegionResource       = apiclient.NodeProviderRegionResource
@@ -272,6 +277,7 @@ type (
 	updateAIAssistantSettingsRequest   = apiclient.UpdateAIAssistantSettingsRequest
 	appStorageResource                 = apiclient.AppStorageResource
 	certificateResource                = apiclient.CertificateResource
+	renewCertificateResource           = apiclient.RenewCertificateResource
 	gitProviderResource                = apiclient.GitProviderResource
 	gitHubAppStatusResource            = apiclient.GitHubAppStatusResource
 	gitLabAppStatusResource            = apiclient.GitLabAppStatusResource

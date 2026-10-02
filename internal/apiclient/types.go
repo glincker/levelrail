@@ -222,6 +222,19 @@ type AppVolumeResource struct {
 	ContainerPath string `json:"container_path"`
 }
 
+// SetAppVolumesRequest mirrors internal/api's setAppVolumesRequest
+// (apps_volumes_attach.go): the service's whole desired volume list,
+// full-replace like SetAppEgressPolicyRequest.
+type SetAppVolumesRequest struct {
+	Volumes []AppVolumeResource `json:"volumes"`
+}
+
+// SetAppVolumesResponse mirrors internal/api's setAppVolumesResponse.
+type SetAppVolumesResponse struct {
+	Name    string              `json:"name"`
+	Volumes []AppVolumeResource `json:"volumes,omitempty"`
+}
+
 // AppBindMountResource mirrors internal/api's appBindMountResource
 // (app_volumes.go): one of an app's bind-mounted host directories.
 type AppBindMountResource struct {
@@ -676,6 +689,37 @@ type SetDomainWAFRequest struct {
 	WAFMode        string `json:"waf_mode,omitempty"`
 	RateLimitRPS   int    `json:"rate_limit_rps"`
 	RateLimitBurst int    `json:"rate_limit_burst"`
+}
+
+// DNSRecordResource mirrors internal/api's dnsRecordResource
+// (internal/api/dns_records.go): one A/AAAA/CNAME/TXT/MX/SRV/CAA record,
+// used both in GET .../dns-records's own Records list and as the
+// request body shape for create/update/delete.
+type DNSRecordResource struct {
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+	Value      string `json:"value"`
+	TTLSeconds int    `json:"ttl_seconds"`
+	Status     string `json:"status,omitempty"`
+}
+
+// DNSRecordsResponse mirrors internal/api's dnsRecordsResponse: GET/
+// POST/PUT/DELETE .../dns-records all return this same shape, so the
+// caller always sees the zone's full, current record list.
+type DNSRecordsResponse struct {
+	Domain   string              `json:"domain"`
+	Provider string              `json:"provider"`
+	Zone     string              `json:"zone"`
+	Records  []DNSRecordResource `json:"records"`
+}
+
+// UpdateDNSRecordRequest mirrors internal/api's updateDNSRecordRequest:
+// PUT .../dns-records's body. Original must exactly match an existing
+// record (name, type, and value all identical); Record is what it
+// becomes.
+type UpdateDNSRecordRequest struct {
+	Original DNSRecordResource `json:"original"`
+	Record   DNSRecordResource `json:"record"`
 }
 
 // DomainRedirectResource mirrors internal/api's domainRedirectResource
@@ -1644,6 +1688,28 @@ type RegistryCredentialResource struct {
 	ExpiryStatus string     `json:"expiry_status,omitempty"`
 }
 
+// FirewallRuleResource mirrors internal/api's firewallRuleResource.
+type FirewallRuleResource struct {
+	ID         string `json:"id"`
+	NodeID     string `json:"node_id"`
+	Port       int    `json:"port"`
+	Protocol   string `json:"protocol"`
+	SourceCIDR string `json:"source_cidr,omitempty"`
+	Action     string `json:"action"`
+	Label      string `json:"label,omitempty"`
+	CreatedAt  string `json:"created_at"`
+}
+
+// CreateFirewallRuleRequest mirrors internal/api's
+// createFirewallRuleRequest.
+type CreateFirewallRuleRequest struct {
+	Port       int    `json:"port"`
+	Protocol   string `json:"protocol,omitempty"`
+	SourceCIDR string `json:"source_cidr,omitempty"`
+	Action     string `json:"action,omitempty"`
+	Label      string `json:"label,omitempty"`
+}
+
 // CreateRegistryCredentialRequest mirrors internal/api's
 // createRegistryCredentialRequest: Password is required here, unlike
 // UpdateRegistryCredentialRequest where it's optional.
@@ -2145,6 +2211,13 @@ type RotateKeyResponse struct {
 	NodeID       string `json:"node_id"`
 	OldPublicKey string `json:"old_public_key"`
 	NewPublicKey string `json:"new_public_key"`
+}
+
+// RejoinMeshResponse mirrors internal/api's rejoinMeshResponse
+// (POST /api/v1/nodes/{id}/mesh/rejoin).
+type RejoinMeshResponse struct {
+	NodeID    string `json:"node_id"`
+	Requested bool   `json:"requested"`
 }
 
 // SystemStatusResource mirrors internal/api's systemStatusResponse
@@ -2754,6 +2827,20 @@ type CertificateResource struct {
 	Status    string    `json:"status"`
 	// Renewal is "ok" or "stalled".
 	Renewal string `json:"renewal"`
+	// Apps is every app or static site owning Domain; see
+	// certificateStatus.Apps's own doc comment.
+	Apps []string `json:"apps,omitempty"`
+	// Source is "acme" or "custom"; see certificateStatus.Source.
+	Source string `json:"source"`
+}
+
+// RenewCertificateResource mirrors internal/api's
+// renewCertificateResponse (internal/api/domain_tls_cert.go): POST
+// .../cert/renew's response body.
+type RenewCertificateResource struct {
+	Domain               string `json:"domain"`
+	HadStoredCertificate bool   `json:"had_stored_certificate"`
+	Status               string `json:"status"`
 }
 
 // OAuthProviderSettingsResource mirrors internal/api's

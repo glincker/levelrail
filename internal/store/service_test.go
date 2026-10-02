@@ -703,6 +703,85 @@ func TestUpdateServiceEgressPolicy_NotFound(t *testing.T) {
 	}
 }
 
+func TestUpdateServiceVolumes(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	volumes := []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}}
+	if err := db.UpdateServiceVolumes(ctx, "web", volumes); err != nil {
+		t.Fatalf("UpdateServiceVolumes() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.Volumes) != 1 || got.Volumes[0] != volumes[0] {
+		t.Errorf("Volumes = %+v, want %+v", got.Volumes, volumes)
+	}
+}
+
+// TestUpdateServiceVolumes_DoesNotTouchOtherFields mirrors
+// TestUpdateServiceEgressPolicy_DoesNotTouchOtherFields: this is a
+// narrow single-column write, not a SaveDesiredService-shaped full
+// replace.
+func TestUpdateServiceVolumes_DoesNotTouchOtherFields(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, Env: map[string]string{"FOO": "bar"}}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.UpdateServiceVolumes(ctx, "web", []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}}); err != nil {
+		t.Fatalf("UpdateServiceVolumes() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Image != "img:v1" || got.Env["FOO"] != "bar" {
+		t.Errorf("UpdateServiceVolumes() clobbered unrelated fields: Image = %q, Env = %+v", got.Image, got.Env)
+	}
+}
+
+func TestUpdateServiceVolumes_EmptyClearsAll(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{
+		Name: "web", Image: "img:v1", Port: 8080,
+		Volumes: []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}},
+	}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.UpdateServiceVolumes(ctx, "web", nil); err != nil {
+		t.Fatalf("UpdateServiceVolumes(nil) error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.Volumes) != 0 {
+		t.Errorf("Volumes = %+v, want none after clearing", got.Volumes)
+	}
+}
+
+func TestUpdateServiceVolumes_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceVolumes(context.Background(), "nonexistent", []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}})
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceVolumes() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
 func TestUpdateServiceStorageTarget_NotFound(t *testing.T) {
 	db := openTestDB(t)
 	err := db.UpdateServiceStorageTarget(context.Background(), "nonexistent", "bkt_1")

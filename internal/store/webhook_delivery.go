@@ -175,6 +175,24 @@ func (db *DB) ListWebhookDeliveries(ctx context.Context, serviceName string, lim
 	return out, nil
 }
 
+// DeleteWebhookDeliveriesOlderThan removes every webhook_deliveries row
+// received strictly before cutoff, returning the number of rows removed.
+// Mirrors DeleteAuditEntriesOlderThan (audit.go): without this, a table
+// that only ever grows (every inbound request, verified or not) would be
+// the one history table in this codebase with no retention mechanism at
+// all.
+func (db *DB) DeleteWebhookDeliveriesOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
+	res, err := db.ExecContext(ctx, `DELETE FROM webhook_deliveries WHERE received_at < ?`, cutoff.UTC().Format(time.RFC3339Nano))
+	if err != nil {
+		return 0, fmt.Errorf("store: delete webhook deliveries older than %s: %w", cutoff, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("store: count deleted webhook deliveries: %w", err)
+	}
+	return n, nil
+}
+
 func scanWebhookDelivery(scan func(dest ...any) error) (*WebhookDelivery, error) {
 	var (
 		d                       WebhookDelivery

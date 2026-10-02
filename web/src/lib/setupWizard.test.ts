@@ -233,6 +233,7 @@ describe('domainProgress and domainGate', () => {
     not_before: '2026-09-01T00:00:00Z',
     not_after: '2026-12-01T00:00:00Z',
     status: 'healthy',
+    source: 'acme',
   }
 
   it('blocks before the domain is saved', () => {

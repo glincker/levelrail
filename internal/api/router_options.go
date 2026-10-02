@@ -45,6 +45,24 @@ func WithRegistryCredentialSecrets(s RegistryCredentialSecretsSetter) Option {
 	return func(rt *Router) { rt.registryCredentialSecrets = s }
 }
 
+// WithNetworkShareSecrets enables POST/PUT /api/v1/network-shares for a
+// cifs share. Without one configured (the default), those return 501;
+// GET, DELETE, and an nfs share's create/update work regardless, the
+// same shape WithRegistryCredentialSecrets establishes.
+func WithNetworkShareSecrets(s NetworkShareSecretsSetter) Option {
+	return func(rt *Router) { rt.networkShareSecrets = s }
+}
+
+// WithFirewallRequiredPorts overrides the ports POST
+// /api/v1/firewall-rules refuses to deny or CIDR-restrict, defaulting to
+// firewall.DefaultRequiredPorts. Pass this instance's actually
+// configured management API, agent gRPC, and ingress ports whenever any
+// of them were moved off their default address: a lockout check against
+// the wrong port number is no check at all.
+func WithFirewallRequiredPorts(ports []int) Option {
+	return func(rt *Router) { rt.firewallRequiredPorts = ports }
+}
+
 // WithEmailSecrets enables PUT /api/v1/settings/email. Without one
 // configured (the default), that route returns 501; GET works regardless.
 func WithEmailSecrets(s EmailSecretsStore) Option {
@@ -89,6 +107,22 @@ func WithCloudflareDNSSecrets(s CloudflareDNSSecrets) Option {
 // its own, independent ACME DNS-01 provider.
 func WithRoute53DNSSecrets(s Route53DNSSecrets) Option {
 	return func(rt *Router) { rt.route53DNSSecrets = s }
+}
+
+// WithCloudflareDNSTokenResolver enables
+// GET/POST/PUT/DELETE .../dns-records whenever Cloudflare DNS is the
+// configured provider: without one set (the default), those routes
+// return 501 unless Route53 DNS is configured instead. Distinct from
+// WithCloudflareDNSSecrets, which can only check whether a token is
+// stored, not read it back.
+func WithCloudflareDNSTokenResolver(r CloudflareDNSTokenResolver) Option {
+	return func(rt *Router) { rt.cloudflareDNSTokenResolver = r }
+}
+
+// WithRoute53DNSCredentialResolver is the same shape as
+// WithCloudflareDNSTokenResolver for the Route53 access key pair.
+func WithRoute53DNSCredentialResolver(r Route53DNSCredentialResolver) Option {
+	return func(rt *Router) { rt.route53DNSCredentialResolver = r }
 }
 
 // WithRegistrySecrets enables PUT/DELETE /api/v1/settings/registry.
@@ -825,6 +859,17 @@ func WithInviteTTL(d time.Duration) Option {
 // reads APP_AUDIT_LOG_RETENTION_DAYS and passes the parsed duration here.
 func WithAuditLogRetention(d time.Duration) Option {
 	return func(rt *Router) { rt.auditLogRetention = d }
+}
+
+// WithWebhookDeliveryRetention overrides how long a webhook_deliveries
+// row survives before PurgeOldWebhookDeliveries removes it. Without one
+// configured (or passed as 0), defaultWebhookDeliveryRetention (30 days)
+// applies. Same "no hardcoded thresholds, use env vars" shape as
+// WithAuditLogRetention: this package never reads the environment
+// directly, cmd/levelrail/main.go reads APP_WEBHOOK_DELIVERY_RETENTION_DAYS
+// and passes the parsed duration here.
+func WithWebhookDeliveryRetention(d time.Duration) Option {
+	return func(rt *Router) { rt.webhookDeliveryRetention = d }
 }
 
 // WithSecretRotationWarnAge overrides how old a secret's last-set value

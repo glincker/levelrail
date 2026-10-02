@@ -23,6 +23,7 @@ const EXPECTED_GLOBAL = [
   '/loadbalancers',
   '/settings/registry',
   '/settings/registry-credentials',
+  '/settings/network-shares',
   '/settings/node-providers',
   '/settings/iam-policies',
   '/models',

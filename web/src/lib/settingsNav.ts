@@ -281,6 +281,13 @@ export const settingsNavSections: SettingsNavSection[] = [
           'Preflight checks: Docker, disk, ports, database, and firewall.',
       },
       {
+        to: '/settings/firewall',
+        icon: ShieldIcon,
+        title: 'Firewall',
+        description:
+          'Allow or deny rules by port, protocol, and source, reconciled onto this node.',
+      },
+      {
         to: '/settings/containers',
         icon: StackIcon,
         title: 'Containers',
@@ -293,6 +300,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'Domains',
         description:
           'Platform ingress: dashboard domain and ACME certificates.',
+      },
+      {
+        to: '/settings/certificates',
+        icon: ShieldCheckIcon,
+        title: 'TLS certificates',
+        description:
+          'Every domain’s certificate in one place: expiry, issuer, renew now, and custom certificate upload.',
       },
       {
         to: '/settings/infrastructure',
