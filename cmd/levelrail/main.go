@@ -33,6 +33,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/changelog"
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/deploy"
@@ -84,6 +85,12 @@ const (
 	// defaultBrandFile is the same "relative default, env override"
 	// pattern as defaultDataDir.
 	defaultBrandFile = "./brand.yaml"
+	// defaultChangelogFile is the same "relative default, env override"
+	// pattern as defaultBrandFile, for the optional CHANGELOG.md the
+	// dashboard's "What's new" panel reads (GET /api/v1/changelog).
+	// Unlike brand.yaml, absence is not an error: loadChangelog logs a
+	// warning and the route just answers an empty entries list.
+	defaultChangelogFile = "./CHANGELOG.md"
 	// defaultGitHubAppManifestFile is the same "relative default, env
 	// override" pattern as defaultBrandFile, for the optional GitHub App
 	// manifest permissions/events file (internal/githubapp.ManifestConfig).
@@ -1584,6 +1591,24 @@ func loadBrand() (*brand.Brand, error) {
 	return b, err
 }
 
+// loadChangelog resolves CHANGELOG.md the same default-plus-env-override
+// shape as loadBrand, but a missing file is never fatal here: a bare,
+// non-Docker install that hasn't shipped CHANGELOG.md next to the binary
+// yet just gets an empty "what's new" panel (api.WithChangelog's own doc
+// comment).
+func loadChangelog(logger *slog.Logger) []changelog.Entry {
+	path := os.Getenv("APP_CHANGELOG_FILE")
+	content, found, err := changelog.ReadFile(path, defaultChangelogFile)
+	if err != nil {
+		logger.Warn("read changelog file failed", slog.String("error", err.Error()))
+		return nil
+	}
+	if !found {
+		return nil
+	}
+	return changelog.Parse(content)
+}
+
 func loadGitHubAppManifestConfig() (githubapp.ManifestConfig, error) {
 	path := os.Getenv("APP_GITHUB_APP_MANIFEST_FILE")
 	if path == "" {
@@ -2358,6 +2383,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	} else {
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
+	opts = append(opts, api.WithChangelog(loadChangelog(logger)))
 
 	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
 	wireModelPreflight(modelSvc, client, b.ShortName, logger)

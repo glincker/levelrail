@@ -2815,6 +2815,19 @@ func (c *Client) GetUpdates(ctx context.Context) (UpdatesResource, error) {
 	return out, err
 }
 
+// GetChangelog calls GET /api/v1/changelog: the most recent release
+// notes parsed from the control plane's own CHANGELOG.md. limit <= 0
+// uses the API's own default page size.
+func (c *Client) GetChangelog(ctx context.Context, limit int) (ChangelogResource, error) {
+	path := "/api/v1/changelog"
+	if limit > 0 {
+		path += "?limit=" + strconv.Itoa(limit)
+	}
+	var out ChangelogResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
 // RotateMasterKey calls POST /api/v1/system/master-key/rotate: re-wraps
 // every stored DEK from the control plane's currently active master key
 // to newMasterKey, live, in one atomic step.

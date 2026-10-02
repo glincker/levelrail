@@ -2373,6 +2373,22 @@ type UpdatesResource struct {
 	PublishedAt     *string `json:"published_at"`
 }
 
+// ChangelogEntryResource mirrors internal/api's changelogEntryResource:
+// one released version's notes.
+type ChangelogEntryResource struct {
+	Version string   `json:"version"`
+	Date    string   `json:"date"`
+	Bullets []string `json:"bullets"`
+}
+
+// ChangelogResource mirrors internal/api's changelogResource
+// (GET /api/v1/changelog): the running version plus the most recent
+// entries parsed from the repo's own CHANGELOG.md.
+type ChangelogResource struct {
+	CurrentVersion string                   `json:"current_version"`
+	Entries        []ChangelogEntryResource `json:"entries"`
+}
+
 // RotateMasterKeyRequest mirrors internal/api's rotateMasterKeyRequest:
 // the new master key, read from a file or stdin by the CLI so it never
 // appears as a bare command-line argument.

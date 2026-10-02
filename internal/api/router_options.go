@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/changelog"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
@@ -18,6 +19,16 @@ type Option func(*Router)
 // deploys over the cap wait as queued. Zero or less means unlimited.
 func WithDeployMaxConcurrent(n int) Option {
 	return func(rt *Router) { rt.deployMaxConcurrent = n }
+}
+
+// WithChangelog supplies the entries GET /api/v1/changelog serves,
+// parsed once at startup from the repo's own CHANGELOG.md (see
+// cmd/levelrail's loadChangelog). Without one configured (the default,
+// nil), that route answers an empty entries list rather than failing: a
+// bare, non-Docker install that hasn't shipped CHANGELOG.md next to the
+// binary yet just sees an empty "what's new" panel, not a broken one.
+func WithChangelog(entries []changelog.Entry) Option {
+	return func(rt *Router) { rt.changelogEntries = entries }
 }
 
 // WithSecretSetter enables PUT /api/v1/apps/{name}/secrets/{key}.

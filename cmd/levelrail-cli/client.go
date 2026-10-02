@@ -165,6 +165,8 @@ type (
 	containerPortResource       = apiclient.ContainerPortResource
 	updatesResource             = apiclient.UpdatesResource
 	updatePreflight             = apiclient.UpdatePreflight
+	changelogResource           = apiclient.ChangelogResource
+	changelogEntryResource      = apiclient.ChangelogEntryResource
 	nodeResource                = apiclient.NodeResource
 	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest
 	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse

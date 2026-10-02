@@ -122,6 +122,10 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/updates/settings", rt.requireAbility(AbilityRoot, rt.handleGetUpdateSettings))
 	mux.HandleFunc("PUT /api/v1/updates/settings", rt.requireAbility(AbilityRoot, rt.handleUpdateSettings))
 
+	// "What's new" dashboard panel: recent entries parsed from the
+	// repo's own CHANGELOG.md, AbilityRead like updates above.
+	mux.HandleFunc("GET /api/v1/changelog", rt.requireAbility(AbilityRead, rt.handleGetChangelog))
+
 	// Auth. Login and first-run registration are necessarily public;
 	// everything else requires an existing session.
 	mux.HandleFunc("POST /api/v1/auth/login", rt.handleLogin)

@@ -81,6 +81,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/changelog"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -100,6 +101,7 @@ import (
 type Router struct {
 	logger                 *slog.Logger
 	brand                  *brand.Brand
+	changelogEntries       []changelog.Entry // nil is valid: GET /api/v1/changelog answers an empty list, see WithChangelog
 	apps                   AppStore
 	appGroups              AppGroupLister
 	appCompose             AppComposeStore
