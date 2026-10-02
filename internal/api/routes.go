@@ -464,6 +464,13 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// automatically.
 	mux.HandleFunc("GET /api/v1/apps/{name}/resource-recommendation", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppResourceRecommendation))
 
+	// Read-only "what this would cost elsewhere" estimate
+	// (cost_estimate.go): compares the app's declared or observed
+	// CPU/memory against illustrative reference pricing. AbilityRead,
+	// same sensitivity as resource-recommendation above; never writes
+	// anything.
+	mux.HandleFunc("GET /api/v1/apps/{name}/cost-estimate", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppCostEstimate))
+
 	// Manual build trigger (see Builder/WithBuilder above and
 	// handleTriggerBuild's own doc comment): builds an image from a git
 	// source through the same internal/deploy.Pipeline the webhook

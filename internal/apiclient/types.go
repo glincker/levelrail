@@ -2523,6 +2523,34 @@ type ResourceRecommendationResource struct {
 	OOMExcerpt     string                          `json:"oom_excerpt,omitempty"`
 }
 
+// CostEstimateProviderResource mirrors internal/api's
+// costEstimateProviderResource: one reference provider's resulting
+// monthly estimate.
+type CostEstimateProviderResource struct {
+	Key            string  `json:"key"`
+	Label          string  `json:"label"`
+	CPUCostUSD     float64 `json:"cpu_cost_usd"`
+	MemoryCostUSD  float64 `json:"memory_cost_usd"`
+	TotalUSD       float64 `json:"total_usd"`
+	MinimumApplied bool    `json:"minimum_applied"`
+}
+
+// CostEstimateResource mirrors internal/api's costEstimateResource: the
+// response shape for GET /api/v1/apps/{name}/cost-estimate
+// (internal/api/cost_estimate.go), a deterministic "what this would
+// cost elsewhere" estimate (internal/costestimate) derived from the
+// app's declared or observed CPU/memory. Note always restates that
+// this is an estimate, not a real bill.
+type CostEstimateResource struct {
+	ServiceName string                         `json:"service_name"`
+	VCPUCores   float64                        `json:"vcpu_cores"`
+	MemoryGiB   float64                        `json:"memory_gib"`
+	CPUBasis    string                         `json:"cpu_basis"`
+	MemoryBasis string                         `json:"memory_basis"`
+	Providers   []CostEstimateProviderResource `json:"providers"`
+	Note        string                         `json:"note"`
+}
+
 // AlertRuleResource mirrors internal/api's ruleResource
 // (internal/api/alerts.go). Threshold-kind fields (Metric, Comparator,
 // Threshold, ForDuration) and crashloop-kind fields

@@ -619,6 +619,16 @@ func (c *Client) GetDatabaseResourceRecommendation(ctx context.Context, name str
 	return out, err
 }
 
+// GetAppCostEstimate calls GET /api/v1/apps/{name}/cost-estimate
+// (internal/api/cost_estimate.go's handleAppCostEstimate): a read-only,
+// deterministic "what this would cost elsewhere" estimate derived from
+// the app's declared or observed CPU/memory. Not a real bill.
+func (c *Client) GetAppCostEstimate(ctx context.Context, name string) (CostEstimateResource, error) {
+	var out CostEstimateResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/cost-estimate", nil, &out)
+	return out, err
+}
+
 // GetAppNetwork calls GET /api/v1/apps/{name}/network
 // (internal/api/network.go's handleGetAppNetwork).
 func (c *Client) GetAppNetwork(ctx context.Context, name string) (NetworkResource, error) {
