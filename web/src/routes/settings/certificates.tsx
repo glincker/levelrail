@@ -33,7 +33,7 @@ function CertificatesPage() {
     <div className="space-y-6">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <ShieldCheckIcon className="size-4" />
+          <ShieldCheckIcon className="size-4" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
           <PageHeader

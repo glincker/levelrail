@@ -32,15 +32,16 @@ function PeerRow({ peer }: { peer: MeshPeerResource }) {
   const label = peer.name || peer.node_id
   return (
     <div
+      role="row"
       className={`${PEER_LIST_GRID} border-b border-border px-3 py-2 text-sm last:border-b-0`}
     >
-      <div className="min-w-0">
+      <div role="cell" className="min-w-0">
         <div className="truncate font-medium text-foreground">{label}</div>
         <div className="truncate font-mono text-xs text-muted-foreground">
           {peer.mesh_address || 'No mesh address yet'}
         </div>
       </div>
-      <div>
+      <div role="cell">
         {!peer.live ? (
           <Badge variant="muted">
             <ClockCounterClockwiseIcon className="size-3" aria-hidden="true" />
@@ -58,12 +59,15 @@ function PeerRow({ peer }: { peer: MeshPeerResource }) {
           </Badge>
         )}
       </div>
-      <div className="truncate text-xs text-muted-foreground">
+      <div role="cell" className="truncate text-xs text-muted-foreground">
         {peer.live
           ? formatHandshake(peer.last_handshake_at)
           : 'No live peer entry'}
       </div>
-      <div className="text-right font-mono text-xs text-muted-foreground">
+      <div
+        role="cell"
+        className="text-right font-mono text-xs text-muted-foreground"
+      >
         {peer.endpoint || ''}
       </div>
     </div>
@@ -201,14 +205,21 @@ export function NodeMeshCard({
             No peers configured yet.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-border">
+          <div
+            role="table"
+            aria-label="Mesh peers"
+            className="overflow-hidden rounded-lg border border-border"
+          >
             <div
+              role="row"
               className={`${PEER_LIST_GRID} border-b border-border bg-muted/40 px-3 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
             >
-              <span>Peer</span>
-              <span>Health</span>
-              <span>Last handshake</span>
-              <span className="text-right">Endpoint</span>
+              <span role="columnheader">Peer</span>
+              <span role="columnheader">Health</span>
+              <span role="columnheader">Last handshake</span>
+              <span role="columnheader" className="text-right">
+                Endpoint
+              </span>
             </div>
             {data.peers.map((peer) => (
               <PeerRow key={peer.node_id || peer.public_key} peer={peer} />

@@ -6,6 +6,7 @@ import {
   PencilSimpleIcon,
   PlusIcon,
   TrashIcon,
+  WarningIcon,
   WarningCircleIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -13,6 +14,15 @@ import type { VariantProps } from 'class-variance-authority'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -158,6 +168,7 @@ function RecordRow({
   deleting: boolean
 }) {
   const [draft, setDraft] = useState<DraftRecord>(() => draftFromRecord(record))
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   if (editing) {
     return (
@@ -175,7 +186,7 @@ function RecordRow({
               disabled={saving}
               onClick={() => onSave(draft)}
             >
-              <CheckIcon />
+              <CheckIcon aria-hidden="true" />
               <span className="sr-only">Save</span>
             </Button>
             <Button
@@ -185,7 +196,7 @@ function RecordRow({
               disabled={saving}
               onClick={onCancelEdit}
             >
-              <XIcon />
+              <XIcon aria-hidden="true" />
               <span className="sr-only">Cancel</span>
             </Button>
           </div>
@@ -219,19 +230,56 @@ function RecordRow({
             variant="ghost"
             onClick={onStartEdit}
           >
-            <PencilSimpleIcon />
+            <PencilSimpleIcon aria-hidden="true" />
             <span className="sr-only">Edit record</span>
           </Button>
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            disabled={deleting}
-            onClick={onDelete}
-          >
-            <TrashIcon />
-            <span className="sr-only">Delete record</span>
-          </Button>
+          <Dialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
+            <DialogTrigger
+              render={
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  disabled={deleting}
+                />
+              }
+            >
+              <TrashIcon aria-hidden="true" />
+              <span className="sr-only">Delete record</span>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-sm">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-1.5 text-destructive">
+                  <WarningIcon className="size-4" aria-hidden="true" />
+                  Delete this record?
+                </DialogTitle>
+                <DialogDescription>
+                  {record.type} {record.name || '@'} pointing to {record.value}{' '}
+                  will be removed from the zone. This cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setConfirmingDelete(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={deleting}
+                  onClick={() => {
+                    setConfirmingDelete(false)
+                    onDelete()
+                  }}
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </TableCell>
     </TableRow>
@@ -282,10 +330,11 @@ export function DomainDnsRecordsControl({
         <button
           type="button"
           onClick={() => setOpen(true)}
+          aria-expanded={false}
           className="flex items-center gap-1.5 text-left"
         >
           <Badge variant="muted" className="shrink-0">
-            <GlobeIcon className="size-3" />
+            <GlobeIcon className="size-3" aria-hidden="true" />
             {isLoading
               ? 'DNS records'
               : notConfigured
@@ -297,9 +346,10 @@ export function DomainDnsRecordsControl({
           type="button"
           variant="ghost"
           size="sm"
+          aria-expanded={false}
           onClick={() => setOpen(true)}
         >
-          <GlobeIcon className="size-3.5" />
+          <GlobeIcon className="size-3.5" aria-hidden="true" />
           Manage DNS records
         </Button>
       </div>
@@ -310,13 +360,14 @@ export function DomainDnsRecordsControl({
     <div className="space-y-3 rounded-md border border-border bg-muted/30 p-3 text-sm">
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 font-medium text-foreground">
-          <GlobeIcon className="size-4" />
+          <GlobeIcon className="size-4" aria-hidden="true" />
           DNS records{data?.zone ? ` for ${data.zone.replace(/\.$/, '')}` : ''}
         </span>
         <Button
           type="button"
           variant="ghost"
           size="sm"
+          aria-expanded={true}
           onClick={() => setOpen(false)}
         >
           Hide
@@ -327,7 +378,7 @@ export function DomainDnsRecordsControl({
         <Skeleton className="h-24 w-full" />
       ) : notConfigured ? (
         <Alert>
-          <WarningCircleIcon className="size-4" />
+          <WarningCircleIcon className="size-4" aria-hidden="true" />
           <AlertDescription>
             No DNS provider is configured for records management. Enable
             Cloudflare DNS or Route53 DNS above to list and edit this zone's
@@ -360,6 +411,7 @@ export function DomainDnsRecordsControl({
                   </TableRow>
                 </TableHeader>
                 <TableBody
+                  role="rowgroup"
                   style={{
                     display: 'grid',
                     height: virtualizer.getTotalSize(),
@@ -374,6 +426,7 @@ export function DomainDnsRecordsControl({
                     return (
                       <div
                         key={key}
+                        role="presentation"
                         style={{
                           display: 'grid',
                           position: 'absolute',
@@ -434,7 +487,7 @@ export function DomainDnsRecordsControl({
                   })
                 }}
               >
-                <PlusIcon />
+                <PlusIcon aria-hidden="true" />
                 <span className="sr-only">Add record</span>
               </Button>
             </Field>
