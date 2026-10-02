@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   CheckIcon,
   CopyIcon,
@@ -34,6 +34,8 @@ import {
   useDeleteGitSource,
   useGitSource,
 } from '../queries/gitSources'
+import { useSpecValidation } from '../queries/specValidation'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { connectGitHubRepoAsSource } from '../queries/githubApp'
 import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
 import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
@@ -264,6 +266,48 @@ function servicesPayload(
   return entries.length > 0 ? Object.fromEntries(entries) : undefined
 }
 
+// duplicateServiceNames returns every trimmed service name used by more
+// than one row: caught here, client-side, before a live-validation call
+// goes out, since two rows sharing a name would otherwise collapse into
+// one YAML mapping key and silently validate whichever row won, instead
+// of surfacing the collision itself.
+function duplicateServiceNames(rows: ServiceSpecRow[]): Set<string> {
+  const counts = new Map<string, number>()
+  for (const row of rows) {
+    const name = row.serviceName.trim()
+    if (!name) continue
+    counts.set(name, (counts.get(name) ?? 0) + 1)
+  }
+  return new Set([...counts].filter(([, n]) => n > 1).map(([name]) => name))
+}
+
+// servicesSpecYaml renders FormState.services as a minimal app.yaml
+// document (just the fields this compact form actually collects) for
+// useSpecValidation (queries/specValidation.ts) to check live: the same
+// POST .../validate-spec body a full app.yaml editor would send, built
+// here instead of asking the operator to write YAML by hand. Returns ''
+// when there's nothing named yet, or when two rows collide on name
+// (duplicateServiceNames already reports that locally, no need to also
+// spend a request on a document the server would just as usefully
+// reject for the same reason).
+function servicesSpecYaml(rows: ServiceSpecRow[]): string {
+  const named = rows.filter((row) => row.serviceName.trim())
+  if (named.length === 0 || duplicateServiceNames(rows).size > 0) return ''
+  const lines = ['version: 1', 'services:']
+  for (const row of named) {
+    lines.push(`  ${JSON.stringify(row.serviceName.trim())}:`)
+    lines.push('    build:')
+    lines.push(`      type: ${JSON.stringify(row.buildType)}`)
+    if (row.buildPath.trim()) {
+      lines.push(`      path: ${JSON.stringify(row.buildPath.trim())}`)
+    }
+    if (row.port.trim()) {
+      lines.push(`    port: ${Number(row.port.trim()) || 0}`)
+    }
+  }
+  return lines.join('\n')
+}
+
 interface ConnectGitSourceResult {
   resource: GitSourceResource
   autoRegistered: boolean
@@ -397,6 +441,41 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
   const [additionalServicesError, setAdditionalServicesError] = useState<
     string | null
   >(null)
+
+  // Live validation for the "Services (app.yaml-style)" rows below: the
+  // same checks POST .../deploy-spec and a real app.yaml would hit at
+  // deploy time, surfaced here while the operator is still editing.
+  // Debounced so it fires once typing settles, not on every keystroke
+  // (LogSearchPanel.tsx's own debounce-then-query shape).
+  const servicesYaml = useMemo(
+    () =>
+      form.fanoutMode === 'services' ? servicesSpecYaml(form.services) : '',
+    [form.fanoutMode, form.services],
+  )
+  const debouncedServicesYaml = useDebouncedValue(servicesYaml, 500)
+  const specValidation = useSpecValidation(app.name, debouncedServicesYaml)
+  const specIssues = specValidation.data?.issues ?? []
+  const duplicateNames = duplicateServiceNames(form.services)
+  const namedServiceRows = new Set(
+    form.services.map((row) => row.serviceName.trim()).filter(Boolean),
+  )
+  const issuesForService = (name: string) =>
+    specIssues.filter(
+      (issue) =>
+        issue.path === `services.${name}` ||
+        issue.path.startsWith(`services.${name}.`),
+    )
+  // Anything the schema flagged above the per-service level (a bad
+  // top-level version, for instance) has no row of its own to render
+  // under, so it's shown once, separately.
+  const unmatchedSpecIssues = specIssues.filter(
+    (issue) =>
+      ![...namedServiceRows].some(
+        (name) =>
+          issue.path === `services.${name}` ||
+          issue.path.startsWith(`services.${name}.`),
+      ),
+  )
 
   const notConnected =
     query.error instanceof ApiError && query.error.status === 404
@@ -988,88 +1067,111 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                   <span className="font-mono">{app.name}-&lt;key&gt;</span>.
                 </FieldDescription>
                 <div className="space-y-2">
-                  {form.services.map((row, index) => (
-                    <div key={index} className="flex items-start gap-2">
-                      <Input
-                        className="font-mono"
-                        placeholder="web"
-                        autoComplete="off"
-                        spellCheck={false}
-                        value={row.serviceName}
-                        onChange={(e) => {
-                          updateServiceRow(index, {
-                            serviceName: e.target.value,
-                          })
-                        }}
-                        disabled={connectMutation.isPending}
-                        aria-label="Service name"
-                      />
-                      <Select
-                        value={row.buildType}
-                        onValueChange={(v) => {
-                          if (
-                            v === 'railpack' ||
-                            v === 'dockerfile' ||
-                            v === 'static'
-                          ) {
-                            updateServiceRow(index, { buildType: v })
-                          }
-                        }}
-                      >
-                        <SelectTrigger
-                          className="w-40 shrink-0"
-                          aria-label="Build type"
-                        >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {BUILD_PACKS.map((pack) => (
-                            <SelectItem key={pack.value} value={pack.value}>
-                              {pack.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        className="font-mono"
-                        placeholder="./web/Dockerfile"
-                        autoComplete="off"
-                        spellCheck={false}
-                        value={row.buildPath}
-                        onChange={(e) => {
-                          updateServiceRow(index, { buildPath: e.target.value })
-                        }}
-                        disabled={
-                          connectMutation.isPending ||
-                          row.buildType === 'railpack'
-                        }
-                        aria-label="Build path"
-                      />
-                      <Input
-                        className="w-24 shrink-0 font-mono"
-                        type="number"
-                        placeholder="3000"
-                        value={row.port}
-                        onChange={(e) => {
-                          updateServiceRow(index, { port: e.target.value })
-                        }}
-                        disabled={connectMutation.isPending}
-                        aria-label="Port"
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={connectMutation.isPending}
-                        onClick={() => {
-                          removeServiceRow(index)
-                        }}
-                        aria-label="Remove service"
-                      >
-                        <TrashIcon />
-                      </Button>
-                    </div>
-                  ))}
+                  {form.services.map((row, index) => {
+                    const rowName = row.serviceName.trim()
+                    const rowIssues = rowName ? issuesForService(rowName) : []
+                    const isDuplicate =
+                      rowName !== '' && duplicateNames.has(rowName)
+                    return (
+                      <div key={index} className="space-y-1">
+                        <div className="flex items-start gap-2">
+                          <Input
+                            className="font-mono"
+                            placeholder="web"
+                            autoComplete="off"
+                            spellCheck={false}
+                            value={row.serviceName}
+                            onChange={(e) => {
+                              updateServiceRow(index, {
+                                serviceName: e.target.value,
+                              })
+                            }}
+                            disabled={connectMutation.isPending}
+                            aria-label="Service name"
+                          />
+                          <Select
+                            value={row.buildType}
+                            onValueChange={(v) => {
+                              if (
+                                v === 'railpack' ||
+                                v === 'dockerfile' ||
+                                v === 'static'
+                              ) {
+                                updateServiceRow(index, { buildType: v })
+                              }
+                            }}
+                          >
+                            <SelectTrigger
+                              className="w-40 shrink-0"
+                              aria-label="Build type"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {BUILD_PACKS.map((pack) => (
+                                <SelectItem key={pack.value} value={pack.value}>
+                                  {pack.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            className="font-mono"
+                            placeholder="./web/Dockerfile"
+                            autoComplete="off"
+                            spellCheck={false}
+                            value={row.buildPath}
+                            onChange={(e) => {
+                              updateServiceRow(index, {
+                                buildPath: e.target.value,
+                              })
+                            }}
+                            disabled={
+                              connectMutation.isPending ||
+                              row.buildType === 'railpack'
+                            }
+                            aria-label="Build path"
+                          />
+                          <Input
+                            className="w-24 shrink-0 font-mono"
+                            type="number"
+                            placeholder="3000"
+                            value={row.port}
+                            onChange={(e) => {
+                              updateServiceRow(index, { port: e.target.value })
+                            }}
+                            disabled={connectMutation.isPending}
+                            aria-label="Port"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={connectMutation.isPending}
+                            onClick={() => {
+                              removeServiceRow(index)
+                            }}
+                            aria-label="Remove service"
+                          >
+                            <TrashIcon />
+                          </Button>
+                        </div>
+                        {isDuplicate ? (
+                          <p className="text-xs text-destructive">
+                            Another row already uses this service name.
+                          </p>
+                        ) : rowIssues.length > 0 ? (
+                          <ul className="space-y-0.5">
+                            {rowIssues.map((issue, i) => (
+                              <li key={i} className="text-xs text-destructive">
+                                {issue.message}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </div>
+                    )
+                  })}
                   <Button
                     type="button"
                     size="sm"
@@ -1080,6 +1182,21 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                     <PlusIcon />
                     Add service
                   </Button>
+                  {specValidation.isFetching ? (
+                    <p className="text-xs text-muted-foreground">
+                      Checking against the app spec schema...
+                    </p>
+                  ) : null}
+                  {unmatchedSpecIssues.length > 0 ? (
+                    <ul className="space-y-0.5">
+                      {unmatchedSpecIssues.map((issue, i) => (
+                        <li key={i} className="text-xs text-destructive">
+                          {issue.path ? `${issue.path}: ` : ''}
+                          {issue.message}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </div>
                 <FieldError
                   errors={
