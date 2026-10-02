@@ -52,4 +52,5 @@ An app or database with no mesh address shows the legend's "No mesh address (unr
 
 - [Connecting apps to databases](connecting-apps-to-databases.md) - the connections this view draws lines for, and what the reachability badges mean
 - [Multi-node](multi-node.md) - enrolling nodes and setting up the WireGuard mesh
+- [Project topology graph](service-topology-graph.md) - the project-scoped, kind-grouped counterpart to this page, with depends_on, volume, and egress edges too
 - [API reference](api-reference.md) - `GET /api/v1/network/topology`'s full response shape

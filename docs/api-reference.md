@@ -430,6 +430,7 @@ Endpoints for:
 | GET | /api/v1/projects/{id}/env/secrets | AbilityRead | handleListProjectEnvSecretKeys |
 | PUT | /api/v1/projects/{id}/env/secrets/{key} | AbilityWrite | handleSetProjectEnvSecret |
 | DELETE | /api/v1/projects/{id}/env/secrets/{key} | AbilityWrite | handleDeleteProjectEnvSecret |
+| GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
 
 ## Nodes
 

@@ -230,6 +230,14 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/projects/{id}/stop", rt.requireAbility(AbilityDeploy, rt.handleStopProject))
 	mux.HandleFunc("POST /api/v1/projects/{id}/start", rt.requireAbility(AbilityDeploy, rt.handleStartProject))
 
+	// Topology (topology.go): a read-only diagram-ready graph derived
+	// from this project's existing desired state, AbilityRead like the
+	// project read itself above, not a new server-side list filter (see
+	// this file's own package doc comment on why apps/databases stay
+	// client-filtered elsewhere): a graph's nodes and edges aren't a
+	// list page.
+	mux.HandleFunc("GET /api/v1/projects/{id}/topology", rt.requireAbility(AbilityRead, rt.handleGetProjectTopology))
+
 	// Organizations (organizations.go): groups projects, same ordinary
 	// AbilityRead/AbilityWrite boundary as projects above.
 	mux.HandleFunc("GET /api/v1/organizations", rt.requireAbility(AbilityRead, rt.handleListOrganizations))

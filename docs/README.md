@@ -92,6 +92,7 @@ Four main types, plus two Levelrail-specific categories:
 | Doc | Covers |
 | --- | --- |
 | [projects-and-organizations.md](projects-and-organizations.md) | The optional organization/project/environment grouping hierarchy for apps and databases |
+| [service-topology-graph.md](service-topology-graph.md) | A project's apps, databases, and shared volumes drawn as a diagram, with real derived edges |
 | [identity-and-access.md](identity-and-access.md) | Users, roles, abilities, IAM policies, invites, tokens, 2FA, OAuth, and audit logging |
 | [tags.md](tags.md) | Label and organize apps with arbitrary tags for filtering and grouping |
 

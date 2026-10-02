@@ -447,6 +447,7 @@ levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--confirm
 ## See also
 
 - [Deploying apps](deploying-apps.md) and [Managing databases](managing-databases.md) - the core resources being grouped
+- [Project topology graph](service-topology-graph.md) - a project's apps, databases, and volumes drawn as a diagram
 - [Getting started](getting-started.md) - walkthrough for new deployments
 - [API reference](api-reference.md) - complete endpoint documentation
 - [Protected environments](projects-and-organizations.md#protected-environments) - deployment gates and protection rules
