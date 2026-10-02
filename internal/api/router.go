@@ -400,6 +400,10 @@ type Router struct {
 	cloudflareDNSSecrets           CloudflareDNSSecrets             // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-dns return 501, same shape as cloudflareTunnelSecrets above
 	route53DNS                     Route53DNSStore                  // always set, same shape as cloudflareDNS above: a second, independent ACME DNS-01 provider, not a replacement
 	route53DNSSecrets              Route53DNSSecrets                // nil is valid: PUT/DELETE /api/v1/settings/route53-dns return 501, same shape as cloudflareDNSSecrets above
+	cloudflareDNSTokenResolver     CloudflareDNSTokenResolver       // nil is valid: dns-records routes return 501, same shape as cloudflareDNSSecrets above but resolves the plaintext token instead of just checking presence
+	route53DNSCredentialResolver   Route53DNSCredentialResolver     // nil is valid: dns-records routes return 501, same shape as cloudflareDNSTokenResolver above
+	dnsRecordManager               dnsRecordManagerFunc             // always set, defaulted to rt.resolveDNSRecordManager below, overridable in this package's own tests, the same "seam, not an interface" shape lookupHost already uses
+	dnsRecordStatus                dnsRecordStatusFunc              // always set, defaulted to defaultDNSRecordStatus below, overridable in this package's own tests so none of them perform a real DNS query
 	registry                       RegistryStore                    // always set, same shape as cloudflareTunnel above
 	registrySecrets                RegistrySecrets                  // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
 	vault                          VaultSettingsStore               // always set, same shape as cloudflareTunnel above
@@ -629,6 +633,13 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		aiChat:                      s,
 		autoPlacementEnabled:        true,
 	}
+	// Bound method values, so they must be assigned after rt exists
+	// rather than in the struct literal above; same reasoning as
+	// rt.sessions below. Both are overridable directly by this
+	// package's own tests, no Option needed.
+	rt.dnsRecordManager = rt.resolveDNSRecordManager
+	rt.dnsRecordStatus = defaultDNSRecordStatus
+
 	for _, opt := range opts {
 		opt(rt)
 	}

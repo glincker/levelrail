@@ -678,6 +678,37 @@ type SetDomainWAFRequest struct {
 	RateLimitBurst int    `json:"rate_limit_burst"`
 }
 
+// DNSRecordResource mirrors internal/api's dnsRecordResource
+// (internal/api/dns_records.go): one A/AAAA/CNAME/TXT/MX/SRV/CAA record,
+// used both in GET .../dns-records's own Records list and as the
+// request body shape for create/update/delete.
+type DNSRecordResource struct {
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+	Value      string `json:"value"`
+	TTLSeconds int    `json:"ttl_seconds"`
+	Status     string `json:"status,omitempty"`
+}
+
+// DNSRecordsResponse mirrors internal/api's dnsRecordsResponse: GET/
+// POST/PUT/DELETE .../dns-records all return this same shape, so the
+// caller always sees the zone's full, current record list.
+type DNSRecordsResponse struct {
+	Domain   string              `json:"domain"`
+	Provider string              `json:"provider"`
+	Zone     string              `json:"zone"`
+	Records  []DNSRecordResource `json:"records"`
+}
+
+// UpdateDNSRecordRequest mirrors internal/api's updateDNSRecordRequest:
+// PUT .../dns-records's body. Original must exactly match an existing
+// record (name, type, and value all identical); Record is what it
+// becomes.
+type UpdateDNSRecordRequest struct {
+	Original DNSRecordResource `json:"original"`
+	Record   DNSRecordResource `json:"record"`
+}
+
 // DomainRedirectResource mirrors internal/api's domainRedirectResource
 // (internal/api/domain_redirect.go): GET/PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/redirect's wire shape.

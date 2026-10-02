@@ -33,6 +33,9 @@ require (
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/hashicorp/vault/api/auth/approle v0.12.0
 	github.com/jmespath/go-jmespath v0.4.1-0.20220621161143-b0104c826a24
+	github.com/libdns/cloudflare v0.2.2
+	github.com/libdns/libdns v1.1.1
+	github.com/libdns/route53 v1.6.2
 	github.com/mholt/caddy-ratelimit v0.1.0
 	github.com/miekg/dns v1.1.73
 	github.com/moby/buildkit v0.33.0
@@ -192,9 +195,6 @@ require (
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
-	github.com/libdns/cloudflare v0.2.2 // indirect
-	github.com/libdns/libdns v1.1.1 // indirect
-	github.com/libdns/route53 v1.6.2 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/magefile/mage v1.17.2 // indirect
 	github.com/manifoldco/promptui v0.9.0 // indirect

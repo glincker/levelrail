@@ -91,6 +91,22 @@ func WithRoute53DNSSecrets(s Route53DNSSecrets) Option {
 	return func(rt *Router) { rt.route53DNSSecrets = s }
 }
 
+// WithCloudflareDNSTokenResolver enables
+// GET/POST/PUT/DELETE .../dns-records whenever Cloudflare DNS is the
+// configured provider: without one set (the default), those routes
+// return 501 unless Route53 DNS is configured instead. Distinct from
+// WithCloudflareDNSSecrets, which can only check whether a token is
+// stored, not read it back.
+func WithCloudflareDNSTokenResolver(r CloudflareDNSTokenResolver) Option {
+	return func(rt *Router) { rt.cloudflareDNSTokenResolver = r }
+}
+
+// WithRoute53DNSCredentialResolver is the same shape as
+// WithCloudflareDNSTokenResolver for the Route53 access key pair.
+func WithRoute53DNSCredentialResolver(r Route53DNSCredentialResolver) Option {
+	return func(rt *Router) { rt.route53DNSCredentialResolver = r }
+}
+
 // WithRegistrySecrets enables PUT/DELETE /api/v1/settings/registry.
 // Without one configured (the default), both return 501; GET works
 // regardless, the same shape WithCloudflareTunnelSecrets establishes.

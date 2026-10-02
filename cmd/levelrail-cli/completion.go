@@ -128,6 +128,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"certificates":   nil,
 		"waf":            {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"error-pages":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
+		"dns":            {subs: map[string]*cmdNode{"list": nil, "add": nil, "remove": nil}},
 	}},
 	"backups": {subs: map[string]*cmdNode{
 		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "clone-restores": nil, "verify": nil, "verifications": nil,

@@ -2110,6 +2110,11 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// DNS-01 provider from Cloudflare DNS-01 above) goes through the
 		// same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithRoute53DNSSecrets(secretsManager))
+		// DNS records management reads back the same two credentials
+		// above (it needs the plaintext value, not just presence), still
+		// through secretsManager.
+		opts = append(opts, api.WithCloudflareDNSTokenResolver(secretsManager))
+		opts = append(opts, api.WithRoute53DNSCredentialResolver(secretsManager))
 		// A cloud node provider's API token (Hetzner, DigitalOcean) goes
 		// through the same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithNodeProviderSecrets(secretsManager))
