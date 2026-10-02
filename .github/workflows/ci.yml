@@ -660,11 +660,17 @@ jobs:
       - name: Build control plane binary
         run: CGO_ENABLED=0 go build -o levelrail-linux-amd64 ./cmd/levelrail
 
+      - name: Build CLI binary
+        run: CGO_ENABLED=0 go build -o levelrail-cli-linux-amd64 ./cmd/levelrail-cli
+
       - name: shellcheck
-        run: shellcheck -s sh install.sh scripts/test-install-sh.sh
+        run: shellcheck -s sh install.sh install-cli.sh scripts/test-install-sh.sh scripts/test-install-cli.sh
 
       - name: Run install.sh in a systemd container
         run: scripts/test-install-sh.sh '${{ matrix.image }}' ./levelrail-linux-amd64
+
+      - name: Run install-cli.sh in a container
+        run: scripts/test-install-cli.sh '${{ matrix.image }}' ./levelrail-cli-linux-amd64
 
   # The single check to require in branch protection (docs/ci.md): always
   # runs, and fails if change detection did not succeed or any job it needs

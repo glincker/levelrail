@@ -8,7 +8,10 @@ Levelrail ships as two static Go binaries (`levelrail`, the control
 plane, and `levelrail-agent`, the node agent) plus a CLI
 (`levelrail-cli`). This page covers every supported way to get the
 control plane running on a real Linux host, how to verify it worked,
-and how to upgrade or remove it afterward.
+and how to upgrade or remove it afterward. If you only want the CLI, to
+control an already-running instance from your own laptop, skip to
+[Installing just the CLI](#installing-just-the-cli) instead, `install.sh`
+below sets up the server, not a remote client.
 
 <CardGroup :cols="3">
 <Card title="install.sh" href="#option-1-install-sh-recommended">
@@ -204,6 +207,45 @@ docker buildx imagetools inspect ghcr.io/glincker/levelrail:beta --format '{{ js
 See [Getting started: building from source](getting-started.md#build-the-binaries)
 for the `go build` commands. This is the path for contributors and anyone
 who wants to run an unreleased commit rather than a tagged version.
+
+## Installing just the CLI
+
+`install.sh` and the Docker/source paths above are for the **server**
+(the control plane). `levelrail-cli` is a separate, small client binary
+for your own laptop or a CI runner, the same shape as `aws` or `gh`:
+install it locally, point it at a running instance, authenticate over
+the network, no SSH key and no inbound port on the server.
+
+```bash
+curl -fsSL https://levelrail.com/install-cli.sh | sh
+```
+
+Detects your OS and architecture, verifies the release checksum (and its
+cosign signature, if `cosign` is installed) the same way `install.sh`
+does, and installs to `~/.local/bin`, no root needed. Set
+`LEVELRAIL_CLI_INSTALL_DIR=/usr/local/bin` and run with `sudo` instead
+for a system-wide install. macOS and Linux only today (no Windows build
+yet, run the command above from WSL).
+
+Then point it at your instance and log in:
+
+```bash
+export APP_API_URL=https://your-dashboard-domain
+levelrail-cli auth login --device
+```
+
+`--device` prints a short code and opens a browser approval page on the
+control plane itself, the same model `gh auth login` and `aws sso login`
+use. Approving a code requires an already-authenticated dashboard
+session, so it inherits whatever two-factor or passkey requirement that
+account already has, there is nothing extra to configure for this. See
+[CLI reference](cli-reference.md) for every command, or
+[Settings → CLI access](https://your-instance/settings/cli-access) in
+the dashboard itself for a copy-pasteable version of the steps above.
+
+Running from CI or a script instead of a person approving in a browser?
+Mint an [API token](getting-started.md#deploy-your-first-app) instead,
+`--api-token` or `APP_API_TOKEN` skips the device flow entirely.
 
 ## Verifying the install
 
