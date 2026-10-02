@@ -1074,6 +1074,47 @@ func (c *Client) ClearDomainWAF(ctx context.Context, name, domain string) (Domai
 	return out, err
 }
 
+// dnsRecordsPath builds /api/v1/apps/{name}/domains/{domain}/dns-records,
+// shared by all four DNS record methods below, mirroring domainWAFPath's
+// identical shape for a different per-domain resource.
+func dnsRecordsPath(name, domain string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/domains/" + PathEscape(domain) + "/dns-records"
+}
+
+// ListDNSRecords calls GET /api/v1/apps/{name}/domains/{domain}/dns-records:
+// every record in domain's best-effort zone, from whichever ACME DNS-01
+// provider is configured, each with a live resolution status.
+func (c *Client) ListDNSRecords(ctx context.Context, name, domain string) (DNSRecordsResponse, error) {
+	var out DNSRecordsResponse
+	err := c.do(ctx, http.MethodGet, dnsRecordsPath(name, domain), nil, &out)
+	return out, err
+}
+
+// CreateDNSRecord calls POST .../dns-records: appends a new record to
+// domain's zone, leaving any existing record with the same name and
+// type untouched.
+func (c *Client) CreateDNSRecord(ctx context.Context, name, domain string, record DNSRecordResource) (DNSRecordsResponse, error) {
+	var out DNSRecordsResponse
+	err := c.do(ctx, http.MethodPost, dnsRecordsPath(name, domain), record, &out)
+	return out, err
+}
+
+// UpdateDNSRecord calls PUT .../dns-records: replaces one exact record
+// (req.Original) with a new value (req.Record).
+func (c *Client) UpdateDNSRecord(ctx context.Context, name, domain string, req UpdateDNSRecordRequest) (DNSRecordsResponse, error) {
+	var out DNSRecordsResponse
+	err := c.do(ctx, http.MethodPut, dnsRecordsPath(name, domain), req, &out)
+	return out, err
+}
+
+// DeleteDNSRecord calls DELETE .../dns-records: removes one exact
+// record (name, type, and value must all match). Idempotent.
+func (c *Client) DeleteDNSRecord(ctx context.Context, name, domain string, record DNSRecordResource) (DNSRecordsResponse, error) {
+	var out DNSRecordsResponse
+	err := c.do(ctx, http.MethodDelete, dnsRecordsPath(name, domain), record, &out)
+	return out, err
+}
+
 // domainRedirectPath builds /api/v1/apps/{name}/domains/{domain}/redirect,
 // shared by all three domain redirect methods below, mirroring
 // domainWAFPath's identical shape for a different per-domain toggle.

@@ -77,6 +77,22 @@ dig +short app.example.com
 
 Run this from a machine outside your own network. Once it resolves and the app is deployed, Caddy automatically starts routing and issuing certificates (depending on your TLS configuration below). No manual reload needed.
 
+### Managing DNS records from the dashboard
+
+If you've connected Cloudflare DNS or Route53 DNS (see [Wildcard domains](#wildcard-domains-dns-01-providers) below for how to enable either one), a domain's own Domains tab also gets a **DNS records** panel: the actual A/AAAA/CNAME/TXT/MX/SRV/CAA records in that domain's zone, listed, added, edited, and deleted without leaving the dashboard, each with a live resolved/pending/mismatch check against its configured value. This reuses the same provider credentials entered for wildcard ACME, no separate API token needed. NS and SOA records are read-only (provider-managed) and never appear in this view.
+
+The zone shown is a best-effort guess, a domain's last two labels (`app.example.com` -> `example.com`), which is wrong for multi-label public suffixes like `.co.uk`; the panel always echoes the exact zone it queried so you can tell at a glance.
+
+The CLI covers the same three operations:
+
+```
+levelrail-cli domains dns list <app> <domain>
+levelrail-cli domains dns add <app> <domain> --type A --name www --value 203.0.113.10
+levelrail-cli domains dns remove <app> <domain> --type A --name www --value 203.0.113.10
+```
+
+Editing a record in place is dashboard-only: it's a delete-then-add under the hood, and the CLI exposes those two primitives directly rather than a third verb that just composes them.
+
 ### Changing domains after deploy
 
 Add or change a domain either by:

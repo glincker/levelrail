@@ -492,6 +492,19 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainWAF))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearDomainWAF))
 
+	// DNS records (dns_records.go): list/add/edit/delete the actual
+	// A/AAAA/CNAME/TXT/MX/SRV/CAA records in one app-owned domain's
+	// best-effort zone, via whichever ACME DNS-01 provider (Cloudflare or
+	// Route53) is configured. GET is AbilityRead: a live provider API
+	// read plus a DNS lookup, no write. POST/PUT/DELETE are AbilityRoot,
+	// the same "real infrastructure, high blast radius" tier PUT/DELETE
+	// .../tls-cert and .../auth already reserve: this writes directly to
+	// a live, externally visible DNS zone.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListDNSRecords))
+	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleCreateDNSRecord))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleUpdateDNSRecord))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleDeleteDNSRecord))
+
 	// Domain redirect (domain_redirect.go): points one app-owned domain
 	// at an arbitrary target URL, enforced by Caddy's static_response
 	// handler on the next ingress reconcile pass. GET is AbilityRead,

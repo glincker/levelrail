@@ -9,6 +9,7 @@ import { useUpdateApp } from '../queries/apps'
 import { useCertificates } from '../queries/certificates'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { DomainDnsCheck } from './DomainDnsCheck'
+import { DomainDnsRecordsControl } from './DomainDnsRecordsControl'
 import { DomainBasicAuthControl } from './DomainBasicAuthControl'
 import { DomainErrorPagesControl } from './DomainErrorPagesControl'
 import { DomainMaintenanceControl } from './DomainMaintenanceControl'
@@ -201,6 +202,10 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                                 <Badge variant="muted">Provisioning</Badge>
                               )}
                             </div>
+                            <DomainDnsRecordsControl
+                              appName={app.name}
+                              domain={domain}
+                            />
                             <DomainBasicAuthControl
                               appName={app.name}
                               domain={domain}
