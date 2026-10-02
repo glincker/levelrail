@@ -11,6 +11,7 @@ import {
   DatabaseIcon,
   FlagIcon,
   FolderIcon,
+  FolderOpenIcon,
   GaugeIcon,
   GavelIcon,
   GearIcon,
@@ -60,6 +61,7 @@ export type GlobalTo =
   | '/settings/iam-policies'
   | '/settings/registry'
   | '/settings/registry-credentials'
+  | '/settings/network-shares'
   | '/settings/node-providers'
   | '/help'
 
@@ -169,6 +171,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Registry credentials',
         to: '/settings/registry-credentials',
         icon: <KeyIcon />,
+      },
+      {
+        id: 'network-shares',
+        label: 'Network shares',
+        to: '/settings/network-shares',
+        icon: <FolderOpenIcon />,
       },
       {
         id: 'node-providers',

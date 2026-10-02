@@ -2222,6 +2222,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// registryCredential field): same secretsManager, same
 			// nil-interface hazard as everything else in this block.
 			api.WithRegistryCredentialSecrets(secretsManager),
+			// Network shares (CIFS password only; NFS shares write no
+			// secret): same secretsManager, same nil-interface hazard.
+			api.WithNetworkShareSecrets(secretsManager),
 			api.WithBackupRunner(backupRunner),
 			// App service volume backups (internal/backup's own volume
 			// archiver/restorer, wired above): the same backupRunner/

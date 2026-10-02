@@ -512,6 +512,7 @@ type Store interface {
 	StaticSiteStore
 	BackupTargetStore
 	RegistryCredentialStore
+	NetworkShareStore
 	BackupHistoryStore
 	BackupVerificationStore
 	RestoreHistoryStore
