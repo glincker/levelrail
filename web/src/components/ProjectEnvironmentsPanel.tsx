@@ -1,7 +1,12 @@
 import { Link } from '@tanstack/react-router'
-import { ShieldWarningIcon, StackSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ArrowsLeftRightIcon,
+  ShieldWarningIcon,
+  StackSimpleIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { useEnvironments } from '../queries/environments'
 import { CreateEnvironmentDialog } from './CreateEnvironmentDialog'
 import { DeleteEnvironmentDialog } from './DeleteEnvironmentDialog'
@@ -12,11 +17,7 @@ import { DeleteEnvironmentDialog } from './DeleteEnvironmentDialog'
 // Tagging an app with one happens on the app's own Overview page
 // (MoveToEnvironmentDialog), not here, mirroring how project assignment
 // itself is set from an app/database's Overview, not from this page.
-export function ProjectEnvironmentsPanel({
-  projectId,
-}: {
-  projectId: string
-}) {
+export function ProjectEnvironmentsPanel({ projectId }: { projectId: string }) {
   const { data: environments } = useEnvironments(projectId)
 
   return (
@@ -26,13 +27,34 @@ export function ProjectEnvironmentsPanel({
           <StackSimpleIcon className="size-4" />
           Environments
         </CardTitle>
-        <CreateEnvironmentDialog projectId={projectId} />
+        <div className="flex items-center gap-2">
+          {environments.length >= 2 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={
+                <Link
+                  to="/projects/$id/environments/compare"
+                  params={{ id: projectId }}
+                />
+              }
+            >
+              <ArrowsLeftRightIcon
+                className="size-3.5"
+                data-icon="inline-start"
+              />
+              Compare
+            </Button>
+          ) : null}
+          <CreateEnvironmentDialog projectId={projectId} />
+        </div>
       </CardHeader>
       <CardContent>
         {environments.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No environments yet. Create staging or production to tag apps
-            with, from any app&apos;s Overview page.
+            No environments yet. Create staging or production to tag apps with,
+            from any app&apos;s Overview page.
           </p>
         ) : (
           <div className="flex flex-wrap gap-2">

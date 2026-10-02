@@ -1944,6 +1944,52 @@ type SetAppEnvironmentRequest struct {
 	EnvironmentID string `json:"environment_id"`
 }
 
+// EnvironmentEnvEntryResource mirrors internal/api's
+// environmentEnvEntryResource: one resolved key inside
+// EnvironmentCompareSide.Env. Value is only ever populated when Secret
+// is false.
+type EnvironmentEnvEntryResource struct {
+	Key    string `json:"key"`
+	Value  string `json:"value,omitempty"`
+	Secret bool   `json:"secret"`
+}
+
+// EnvironmentEnvDiffEntry mirrors internal/api's environmentEnvDiffEntry:
+// one key that differs between A and B. Status is one of "only_in_a",
+// "only_in_b", "changed", or "masked". A/B are only ever populated for a
+// non-secret, present-on-both-sides "changed" entry or a non-secret
+// present-on-one-side "only_in_a"/"only_in_b" entry: a secret-marked key
+// never carries a value here, on either side.
+type EnvironmentEnvDiffEntry struct {
+	Key    string `json:"key"`
+	Secret bool   `json:"secret"`
+	Status string `json:"status"`
+	A      string `json:"a,omitempty"`
+	B      string `json:"b,omitempty"`
+}
+
+// EnvironmentCompareSide mirrors internal/api's environmentCompareSide:
+// one side (A or B) of GET .../environments/compare's response.
+type EnvironmentCompareSide struct {
+	Environment EnvironmentResource           `json:"environment"`
+	Env         []EnvironmentEnvEntryResource `json:"env"`
+}
+
+// EnvironmentCompareResource mirrors internal/api's
+// environmentCompareResource, GET
+// /api/v1/projects/{id}/environments/compare's response: each of two
+// named environments' resolved effective env vars (organization,
+// project, and environment shared-env tiers merged in
+// internal/reconcile/application's resolveEnv precedence), secret values
+// always redacted, plus the keys that differ between them.
+type EnvironmentCompareResource struct {
+	ProjectID string                    `json:"project_id"`
+	A         EnvironmentCompareSide    `json:"a"`
+	B         EnvironmentCompareSide    `json:"b"`
+	Diff      []EnvironmentEnvDiffEntry `json:"diff"`
+	Note      string                    `json:"note"`
+}
+
 // PreviewEnvironmentResource mirrors internal/api's
 // previewEnvironmentResource (internal/api/preview_environments_handlers.go).
 type PreviewEnvironmentResource struct {

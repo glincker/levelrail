@@ -258,6 +258,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// scoped to a project, tagged onto a service via its own app route.
 	mux.HandleFunc("GET /api/v1/projects/{id}/environments", rt.requireAbility(AbilityRead, rt.handleListEnvironments))
 	mux.HandleFunc("POST /api/v1/projects/{id}/environments", rt.requireAbility(AbilityWrite, rt.handleCreateEnvironment))
+	// Cross-environment env var drift check (environment_compare.go):
+	// resolved effective env vars for two of this project's environments,
+	// secret values always redacted.
+	mux.HandleFunc("GET /api/v1/projects/{id}/environments/compare", rt.requireAbility(AbilityRead, rt.handleCompareEnvironmentEnv))
 	mux.HandleFunc("PATCH /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleUpdateEnvironment))
 	mux.HandleFunc("DELETE /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteEnvironment))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/environment", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppEnvironment))
