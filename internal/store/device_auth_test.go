@@ -222,3 +222,20 @@ func TestNewDeviceCode_And_NewUserCode_Unique(t *testing.T) {
 		t.Errorf("NewUserCode() = %q, want an 8-char code split XXXX-XXXX", uc1)
 	}
 }
+
+func TestNewDeviceAuthRequestID_Unique(t *testing.T) {
+	a, err := NewDeviceAuthRequestID()
+	if err != nil {
+		t.Fatalf("NewDeviceAuthRequestID() error = %v", err)
+	}
+	b, err := NewDeviceAuthRequestID()
+	if err != nil {
+		t.Fatalf("NewDeviceAuthRequestID() error = %v", err)
+	}
+	if a == b {
+		t.Errorf("NewDeviceAuthRequestID() returned duplicate values: %v", a)
+	}
+	if len(a) <= len("dar_") {
+		t.Errorf("NewDeviceAuthRequestID() = %q, want it to carry the dar_ prefix plus a real suffix", a)
+	}
+}

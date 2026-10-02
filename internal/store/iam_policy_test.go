@@ -273,3 +273,20 @@ func TestNewPolicyID_Unique(t *testing.T) {
 		t.Errorf("NewPolicyID() = %q, want it to carry the pol_ prefix plus a real suffix", a)
 	}
 }
+
+func TestNewPolicyAttachmentID_Unique(t *testing.T) {
+	a, err := NewPolicyAttachmentID()
+	if err != nil {
+		t.Fatalf("NewPolicyAttachmentID() error = %v", err)
+	}
+	b, err := NewPolicyAttachmentID()
+	if err != nil {
+		t.Fatalf("NewPolicyAttachmentID() error = %v", err)
+	}
+	if a == b {
+		t.Errorf("NewPolicyAttachmentID() returned duplicate values: %v", a)
+	}
+	if len(a) <= len("pola_") {
+		t.Errorf("NewPolicyAttachmentID() = %q, want it to carry the pola_ prefix plus a real suffix", a)
+	}
+}
