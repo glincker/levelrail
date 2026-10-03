@@ -37,9 +37,17 @@ export function StatusHeader({
             live
             icon={
               pill.tone === 'success' ? (
-                <CheckCircleIcon weight="fill" className="size-4" />
+                <CheckCircleIcon
+                  weight="fill"
+                  className="size-4"
+                  aria-hidden="true"
+                />
               ) : (
-                <WarningCircleIcon weight="fill" className="size-4" />
+                <WarningCircleIcon
+                  weight="fill"
+                  className="size-4"
+                  aria-hidden="true"
+                />
               )
             }
           />
