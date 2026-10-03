@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
 import { stripAnsiCodes } from '../lib/ansi'
 import { detectLogLevel, prettyJsonLine, type LogLevel } from '../lib/logLevel'
@@ -28,12 +29,43 @@ export function LogRow({
   onToggle: () => void
   measure: (el: HTMLDivElement | null) => void
 }) {
+  const { t } = useTranslation('common')
   const [copied, setCopied] = useState(false)
   const text = stripAnsiCodes(logLine.line)
   const level = detectLogLevel(logLine.line)
   const tag = level ? LEVEL_TAG[level] : null
   const isStderr = logLine.stream === 'stderr'
+  const isSystem = logLine.stream === 'system'
   const pretty = expanded ? prettyJsonLine(logLine.line) : null
+
+  // A system line (internal/api/live_logs.go's container-cutover marker)
+  // is control-plane annotation, not real container output: no level tag,
+  // no JSON expand, its own translated label rather than the raw wire
+  // text, so a dashboard-rendered deploy cutover reads distinctly from
+  // anything the app itself logged.
+  if (isSystem) {
+    return (
+      <div
+        data-index={index}
+        ref={measure}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          transform: `translateY(${start}px)`,
+        }}
+      >
+        <div
+          style={{ height: LOG_ROW_HEIGHT_PX }}
+          className="flex w-full items-center gap-2 border-l-2 border-amber-600/60 bg-amber-950/20 px-3 text-left text-[11px] text-amber-400/90 italic"
+        >
+          <span aria-hidden="true">---</span>
+          {t('logs.previousContainerEnded')}
+        </div>
+      </div>
+    )
+  }
 
   const handleCopy = () => {
     void navigator.clipboard.writeText(text).then(() => {
