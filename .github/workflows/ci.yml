@@ -69,6 +69,10 @@ jobs:
           echo "base=$base" >> "$GITHUB_OUTPUT"
           if [ "$EVENT" = pull_request ] || [ "$EVENT" = merge_group ]; then
             scripts/ci-changes.sh "$base" HEAD 2>summary.txt >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT" = push ] && [ -n "$base" ] \
+            && [ "$base" != "0000000000000000000000000000000000000000" ] \
+            && git cat-file -e "$base" 2>/dev/null; then
+            scripts/ci-changes.sh "$base" HEAD 2>summary.txt >> "$GITHUB_OUTPUT"
           else
             scripts/ci-changes.sh --full 2>summary.txt >> "$GITHUB_OUTPUT"
           fi
@@ -431,7 +435,7 @@ jobs:
       # Scopes the same 70% bar to only the statements this change added or
       # modified, so well-covered neighbours can't dilute new, untested code.
       - name: Changed-line coverage gate (70% for /internal)
-        if: github.event_name != 'push'
+        if: env.COVERAGE != 'full'
         run: scripts/check-changed-file-coverage.sh coverage.out "$BASE" internal/ 70
 
   # Go lint and, when a workflow file changed, actionlint: one check line

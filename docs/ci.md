@@ -23,10 +23,13 @@ A PR runs only the work its diff can affect:
 - **Workflow files only**: actionlint on the changed workflow files, inside
   the Lint job.
 
-`main` pushes and the nightly run are not scoped: every push to `main` runs
-the whole suite and the aggregate coverage gate, and `nightly.yml` runs the
-full `-race`, no `-short` sweep. Those are the safety net for anything the
-PR-time scoping under-selects.
+A `main` push is scoped the same way, against `github.event.before`: most
+merges only re-verify what their own diff touched, not the whole tree.
+`nightly.yml` runs the full `-race`, no `-short` sweep once a day: that is
+the actual safety net for anything the PR-time scoping under-selects, not
+a second full run on every single merge. A push falls back to `--full`
+when its `before` SHA is missing or unresolvable (a force-pushed or newly
+created `main`, which branch protection should make rare).
 
 ## How a change is scoped
 
@@ -128,6 +131,15 @@ a merge queue are never cancelled.
 `ci.yml` already listens for `merge_group`, so turning on a merge queue for
 `main` needs only the branch protection setting. A queue run scopes itself
 against the queue's base commit with the same rules as a PR.
+
+A merge queue means every merged commit triggers two CI runs on the same
+tree: `merge_group` (pre-merge gate) then `push` (post-merge). Both are
+scoped identically now, so the second run costs roughly what the first
+did, not a forced full sweep: real but small duplication, not the
+dominant cost. Collapsing it to one run would mean either skipping
+`merge_group` (losing the pre-merge gate) or skipping `push` (losing the
+cache save and `codeql.yml`/`secret-scan.yml`'s own push triggers, plus
+any direct push that bypassed the queue), so it stays as is.
 
 ## Measured cost before this change
 
