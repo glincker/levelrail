@@ -14,11 +14,15 @@ import (
 // (CPU/memory/disk IO/network IO), same shape of simplification
 // ContainerState already applies to Docker's raw container summary.
 type ContainerStats struct {
-	// CPUPercent is 0-100 per core, i.e. a container fully using 2 cores
-	// on an otherwise idle host reports 200.0, matching `docker stats`'
-	// own convention, computed the same way (delta of cpu_usage over
-	// delta of system_cpu_usage, times online CPU count).
+	// CPUPercent is 0-100 per core, computed from this one-shot
+	// response's own PreCPUStats, which some Docker installs (Docker
+	// Desktop's VM-backed daemon) leave empty. A periodic poller should
+	// use CPURaw plus its own previous sample instead (see CPUPercent
+	// the function below).
 	CPUPercent float64
+	// CPURaw is this sample's raw counters, for a caller that polls on
+	// an interval and keeps its own previous sample.
+	CPURaw CPUStatsRaw
 	// MemoryUsageBytes excludes page cache when the cgroup reports it
 	// separately (Stats above), matching `docker stats`' "used" figure
 	// rather than the raw cgroup usage counter, which double-counts
@@ -55,7 +59,12 @@ func (c *Client) Stats(ctx context.Context, containerID string) (ContainerStats,
 	}
 
 	return ContainerStats{
-		CPUPercent:       cpuPercent(raw.CPUStats, raw.PreCPUStats),
+		CPUPercent: cpuPercent(raw.CPUStats, raw.PreCPUStats),
+		CPURaw: CPUStatsRaw{
+			TotalUsageNanos:  raw.CPUStats.CPUUsage.TotalUsage,
+			SystemUsageNanos: raw.CPUStats.SystemUsage,
+			OnlineCPUs:       raw.CPUStats.OnlineCPUs,
+		},
 		MemoryUsageBytes: memoryUsage(raw.MemoryStats),
 		MemoryLimitBytes: raw.MemoryStats.Limit,
 		NetworkRxBytes:   sumNetwork(raw.Networks, func(n networkStats) uint64 { return n.RxBytes }),
@@ -87,6 +96,31 @@ func cpuPercent(current, previous container.CPUStats) float64 {
 		onlineCPUs = 1
 	}
 	return (cpuDelta / systemDelta) * float64(onlineCPUs) * 100.0
+}
+
+// CPUStatsRaw is the raw counters CPUPercent needs to compute a
+// delta-based percentage across two of a caller's own samples.
+type CPUStatsRaw struct {
+	TotalUsageNanos  uint64
+	SystemUsageNanos uint64
+	OnlineCPUs       uint32
+}
+
+// CPUPercent is cpuPercent for a caller keeping its own previous sample
+// (internal/telemetry.Collector) instead of a one-shot response's own,
+// sometimes-empty PreCPUStats.
+func CPUPercent(current, previous CPUStatsRaw) float64 {
+	return cpuPercent(
+		container.CPUStats{
+			CPUUsage:    container.CPUUsage{TotalUsage: current.TotalUsageNanos},
+			SystemUsage: current.SystemUsageNanos,
+			OnlineCPUs:  current.OnlineCPUs,
+		},
+		container.CPUStats{
+			CPUUsage:    container.CPUUsage{TotalUsage: previous.TotalUsageNanos},
+			SystemUsage: previous.SystemUsageNanos,
+		},
+	)
 }
 
 // memoryUsage subtracts page cache from the raw usage counter when the
