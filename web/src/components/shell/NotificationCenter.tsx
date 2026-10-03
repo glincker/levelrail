@@ -74,7 +74,7 @@ export function NotificationCenter() {
           </span>
         ) : null}
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-96">
+      <PopoverContent align="end" className="w-96" glass>
         <PopoverHeader className="flex-row items-center justify-between">
           <PopoverTitle>Notifications</PopoverTitle>
           <Button

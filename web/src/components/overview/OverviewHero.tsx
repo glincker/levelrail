@@ -41,7 +41,7 @@ export function OverviewHero({
   return (
     <section
       aria-label="App summary"
-      className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 sm:p-6 lg:flex-row lg:items-start lg:justify-between"
+      className="flex flex-col gap-4 rounded-[var(--glinui-radius-lg)] border border-border bg-card p-4 sm:p-6 lg:flex-row lg:items-start lg:justify-between"
     >
       <div className="min-w-0 space-y-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
