@@ -76,6 +76,34 @@ docs_url: https://glinr.com/levelrail/docs
 			},
 		},
 		{
+			name: "primary_color_dark falls back to primary_color when empty",
+			yaml: valid + "\nprimary_color: \"#107292\"\n",
+			check: func(t *testing.T, b *Brand) {
+				if b.PrimaryColorDark != "#107292" {
+					t.Errorf("PrimaryColorDark = %q, want #107292", b.PrimaryColorDark)
+				}
+			},
+		},
+		{
+			name: "primary_color_dark loads from file when set",
+			yaml: valid + "\nprimary_color: \"#107292\"\nprimary_color_dark: \"#2fb3dc\"\n",
+			check: func(t *testing.T, b *Brand) {
+				if b.PrimaryColorDark != "#2fb3dc" {
+					t.Errorf("PrimaryColorDark = %q, want #2fb3dc", b.PrimaryColorDark)
+				}
+			},
+		},
+		{
+			name: "primary_color_dark env override wins over file",
+			yaml: valid + "\nprimary_color: \"#107292\"\nprimary_color_dark: \"#2fb3dc\"\n",
+			env:  map[string]string{"APP_BRAND_PRIMARY_COLOR_DARK": "#ff0000"},
+			check: func(t *testing.T, b *Brand) {
+				if b.PrimaryColorDark != "#ff0000" {
+					t.Errorf("PrimaryColorDark = %q, want #ff0000", b.PrimaryColorDark)
+				}
+			},
+		},
+		{
 			name:    "missing name fails validation",
 			yaml:    `binary_name: levelrail`,
 			wantErr: true,

@@ -1,0 +1,114 @@
+/**
+ * Glinui v1 design tokens: portable, framework-agnostic CSS custom
+ * properties (no Tailwind-specific syntax). This is one of two synced
+ * copies; the other lives at docs/.vitepress/theme/tokens.css. Unlike the
+ * docs copy, --glinui-accent/-strong/-soft-text here are NOT redefined in
+ * .dark: they're driven live from BrandProvider.tsx's --brand-accent/
+ * --brand-accent-dark (set from brand.yaml at boot), so this file only
+ * supplies the pre-hydration fallback plus the non-color mechanics
+ * (radius, blur, button/glass recipes).
+ */
+
+:root {
+  --glinui-accent: var(--brand-accent, #107292);
+  --glinui-accent-strong: color-mix(in srgb, var(--glinui-accent) 80%, black);
+  --glinui-accent-soft-text: color-mix(in srgb, var(--glinui-accent) 55%, white);
+  --glinui-accent-active-bg: color-mix(in srgb, var(--glinui-accent) 8%, transparent);
+  --glinui-accent-active-ring: color-mix(in srgb, var(--glinui-accent) 15%, transparent);
+
+  --glinui-glass-border: rgba(16, 24, 28, 0.1);
+  --glinui-glass-border-strong: rgba(16, 24, 28, 0.12);
+  --glinui-modal-bg: rgba(255, 255, 255, 0.72);
+  --glinui-modal-shadow: 0 32px 80px rgba(16, 24, 28, 0.16), 0 0 0 1px rgba(16, 24, 28, 0.08);
+  --glinui-blur-modal: blur(40px) saturate(160%);
+
+  --glinui-radius-xs: 6px;
+  --glinui-radius-sm: 10px;
+  --glinui-radius-md: 14px;
+  --glinui-radius-lg: 18px;
+  --glinui-radius-full: 999px;
+}
+
+.dark {
+  --glinui-accent: var(--brand-accent-dark, #2fb3dc);
+  --glinui-accent-strong: color-mix(in srgb, var(--glinui-accent) 75%, black);
+  --glinui-accent-soft-text: color-mix(in srgb, var(--glinui-accent) 60%, white);
+  --glinui-accent-active-bg: rgba(255, 255, 255, 0.05);
+  --glinui-accent-active-ring: color-mix(in srgb, var(--glinui-accent) 25%, transparent);
+
+  --glinui-glass-border: rgba(255, 255, 255, 0.1);
+  --glinui-glass-border-strong: rgba(255, 255, 255, 0.12);
+  --glinui-modal-bg: rgba(20, 20, 22, 0.65);
+  --glinui-modal-shadow: 0 32px 96px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glinui-blur-modal: blur(40px) saturate(180%);
+}
+
+/* Gradient-stroke button mechanism (mastra.ai technique, same recipe as
+   docs/tokens.css's .glinui-btn): two stacked background-images clipped
+   separately so the border is a gradient fading to transparent, not a
+   flat color. Additive classes only -- components/ui/button.tsx's
+   existing CVA variants are untouched, this is a new variant alongside
+   them (see button.tsx's own comment for why a wholesale swap is a
+   separate, larger migration). */
+.glinui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  border-radius: var(--glinui-radius-full);
+  border: 1.5px solid transparent;
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.glinui-btn:active {
+  transform: scale(0.98);
+}
+
+/* Tailwind's bg-clip and bg-origin utilities are enumerated keywords, not
+   arbitrary-value utilities -- bg-clip-[padding-box,border-box] compiles
+   to nothing (silently dropped by the v4 JIT, confirmed against the
+   built CSS). Real properties via a plain class instead, for anything
+   composing the gradient-stroke recipe out of Tailwind utilities (e.g.
+   components/ui/button.tsx's glinui variant) rather than using
+   .glinui-btn directly. */
+.glinui-bg-clip-split {
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+}
+
+.glinui-btn--primary {
+  color: #fff;
+  font-weight: 600;
+  background-image: linear-gradient(160deg, var(--glinui-accent-soft-text) 0%, var(--glinui-accent-strong) 100%),
+    linear-gradient(180deg, var(--glinui-accent-soft-text) 0%, transparent 100%);
+}
+.glinui-btn--primary:hover {
+  filter: brightness(1.1);
+}
+
+.glinui-btn--ghost {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid var(--glinui-glass-border);
+  color: var(--glinui-accent-soft-text);
+  box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--glinui-accent) 8%, transparent);
+}
+.glinui-btn--ghost:hover {
+  border-color: var(--glinui-accent-active-ring);
+  box-shadow: 0 0 0 0.5px var(--glinui-accent-active-ring), 0 4px 20px color-mix(in srgb, var(--glinui-accent) 12%, transparent);
+}
+
+/* Glass surface mechanism (same recipe as docs's nav/modal), for dialogs
+   and command palettes specifically -- not applied to every existing
+   Card/Popover by default. */
+.glinui-glass-surface {
+  border-radius: var(--glinui-radius-lg);
+  background: var(--glinui-modal-bg);
+  backdrop-filter: var(--glinui-blur-modal);
+  -webkit-backdrop-filter: var(--glinui-blur-modal);
+  box-shadow: var(--glinui-modal-shadow);
+  border: 1px solid var(--glinui-glass-border);
+}

@@ -18,6 +18,9 @@ export interface Brand {
   // sweep of every test fixture for a field most of them never read.
   SupportEmail?: string
   PrimaryColor: string
+  // Optional for the same reason as SupportEmail: existing mock Brand
+  // objects predate this field.
+  PrimaryColorDark?: string
   LogoSVG: string
   DocsURL: string
   DiscussionsURL: string
