@@ -4,13 +4,10 @@ import {
   CopyIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import {
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { CreateFlowHeader, CreateFlowSteps } from './CreateFlowKit'
+import { TOKEN_STEPS } from './tokenCreateSteps'
 import type { CreateTokenResponse } from '../types/token'
 
 // Shows a freshly minted token exactly once. The plaintext is never cached
@@ -33,12 +30,11 @@ export function TokenCreatedView({
 
   return (
     <>
-      <DialogHeader>
-        <DialogTitle>Token created</DialogTitle>
-        <DialogDescription>
-          &ldquo;{created.name}&rdquo; is ready to use.
-        </DialogDescription>
-      </DialogHeader>
+      <CreateFlowHeader
+        title="Token created"
+        description={<>&ldquo;{created.name}&rdquo; is ready to use.</>}
+      />
+      <CreateFlowSteps steps={TOKEN_STEPS} currentIndex={1} />
       <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
         <WarningIcon className="mt-0.5 size-4 shrink-0" />
         <p className="text-sm">
