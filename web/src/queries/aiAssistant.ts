@@ -18,6 +18,12 @@
 // append-only stream: hooks/useAiChatSession.ts owns the message list
 // directly instead.
 
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type { AiChatSession, AiToolCall } from '../types/aiAssistant'
 
@@ -45,6 +51,64 @@ export async function fetchAiSession(id: string): Promise<AiChatSession> {
     )
   }
   return (await res.json()) as AiChatSession
+}
+
+// The session list itself (unlike the live transcript above) is a plain
+// cacheable GET, so it goes through TanStack Query like every other list
+// in this app, matching queries/aiAssistantSettings.ts's own shape.
+export interface AiSessionListItem {
+  id: string
+  created_at: string
+  updated_at: string
+}
+
+export const aiSessionsKeys = {
+  all: ['ai-sessions'] as const,
+}
+
+export async function listAiSessions(): Promise<AiSessionListItem[]> {
+  const res = await fetch('/api/v1/ai/sessions')
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `list AI sessions failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AiSessionListItem[]
+}
+
+export function aiSessionsQueryOptions() {
+  return queryOptions({
+    queryKey: aiSessionsKeys.all,
+    queryFn: listAiSessions,
+    staleTime: 10_000,
+  })
+}
+
+export function useAiSessions() {
+  return useSuspenseQuery(aiSessionsQueryOptions())
+}
+
+export async function deleteAiSession(id: string): Promise<void> {
+  const res = await fetch(`/api/v1/ai/sessions/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `delete AI session failed: ${res.status}`),
+    )
+  }
+}
+
+export function useDeleteAiSession() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteAiSession,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: aiSessionsKeys.all })
+    },
+  })
 }
 
 export type AiSseEvent =
@@ -120,9 +184,12 @@ function parseAiSseEvent(eventName: string, data: unknown): AiSseEvent | null {
 }
 
 // Splits an SSE byte stream on blank-line frame boundaries and parses
-// each frame's `event:`/`data:` fields, JSON-decoding `data`. A frame
-// with no `event:` line is ignored (every event this feature cares about
-// is always named, unlike the bare-line log stream in useLogStream.ts).
+// each frame's `data:` field, JSON-decoding it. internal/api/ai_chat.go's
+// own aiSSESink never writes a named `event:` line (unlike
+// hooks/useLogStream.ts's log stream): every frame is a bare
+// `data: <json>\n\n`, with the JSON payload's own `type` field
+// discriminating which of the four event shapes it is. A frame with a
+// named `event:` line is still honored first, for forward compatibility.
 export async function streamAiSseResponse(
   res: Response,
   onEvent: (event: AiSseEvent) => void,
@@ -143,7 +210,7 @@ export async function streamAiSseResponse(
         dataLines.push(line.slice('data:'.length).trimStart())
       }
     }
-    if (!eventName) return
+    if (dataLines.length === 0) return
     const raw = dataLines.join('\n')
     let data: unknown = undefined
     if (raw) {
@@ -153,7 +220,9 @@ export async function streamAiSseResponse(
         data = raw
       }
     }
-    const parsed = parseAiSseEvent(eventName, data)
+    const name = eventName || readString(readRecord(data).type)
+    if (!name) return
+    const parsed = parseAiSseEvent(name, data)
     if (parsed) onEvent(parsed)
   }
 

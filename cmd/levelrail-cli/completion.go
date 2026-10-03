@@ -148,6 +148,10 @@ var cliCommandTree = map[string]*cmdNode{
 	"control-plane-backups": {subs: map[string]*cmdNode{"list": nil, "create": nil, "download": nil, "verify": nil, "delete": nil, "schedule": {subs: map[string]*cmdNode{"show": nil, "set": nil}}, "run-now": nil, "drill": {subs: map[string]*cmdNode{"run": nil, "status": nil}}, "escrow": nil, "keys": {subs: map[string]*cmdNode{"generate": nil}}, "help-dr": nil}},
 	"cloudflare-tunnel":     {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},
 	"vault":                 {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},
+	"ai": {subs: map[string]*cmdNode{
+		"chat":     nil,
+		"sessions": {subs: map[string]*cmdNode{"list": nil, "get": nil, "delete": nil, "resolve": nil}},
+	}},
 	"alerts": {subs: map[string]*cmdNode{
 		"silences":    {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil}},
 		"silence":     nil,

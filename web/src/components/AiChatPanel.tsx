@@ -1,9 +1,11 @@
+import { Suspense } from 'react'
 import {
   ArrowClockwiseIcon,
   ChatCircleTextIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { useAiChatSession } from '../hooks/useAiChatSession'
 import { AiChatComposer } from './AiChatComposer'
+import { AiChatHistoryMenu } from './AiChatHistoryMenu'
 import { AiChatMessageList } from './AiChatMessageList'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -23,11 +25,18 @@ export function AiChatPanel() {
     sendMessage,
     resolveConfirmation,
     startNewSession,
+    resumeSession,
   } = useAiChatSession()
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-2">
+        <Suspense fallback={null}>
+          <AiChatHistoryMenu
+            activeSessionId={sessionId}
+            onResume={resumeSession}
+          />
+        </Suspense>
         <Button
           type="button"
           variant="outline"

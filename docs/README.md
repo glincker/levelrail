@@ -107,6 +107,7 @@ Four main types, plus two Levelrail-specific categories:
 | [platform-as-code.md](platform-as-code.md) | Describe projects, environments, apps, domains and databases as YAML, then export, diff, plan and apply them from the CLI, the dashboard, MCP or CI |
 | [templates-and-registry.md](templates-and-registry.md) | Deploy curated service templates from the catalog as Compose-backed apps |
 | [ai-assistant.md](ai-assistant.md) | Run `levelrail-mcp` over stdio or the network for an MCP-compatible AI assistant, and scope a token for it |
+| [ai-assistant-chat.md](ai-assistant-chat.md) | The in-app dashboard/CLI chat behind the `ai-chat` experimental flag: enabling it, what it can and can't do, and the confirmation gate |
 | [agent-tooling-audit.md](agent-tooling-audit.md) | Tool counts and estimated token cost per MCP mode, the heaviest and overlapping tools, and the budget test |
 
 #### Maintenance and Documentation

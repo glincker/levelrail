@@ -261,7 +261,7 @@ func (c *Client) StreamPipelineRunLogs(ctx context.Context, app, id, job string,
 	if job != "" {
 		path += "?job=" + url.QueryEscape(job)
 	}
-	return streamSSE(ctx, c, path, func(l PipelineLogLine) error {
+	return streamSSE(ctx, c, http.MethodGet, path, nil, func(l PipelineLogLine) error {
 		if l.ID == 0 {
 			return nil
 		}

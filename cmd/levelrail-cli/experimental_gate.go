@@ -9,6 +9,7 @@ import (
 )
 
 var experimentalCommands = map[string]experimental.Feature{
+	"ai":                experimental.AIChat,
 	"models":            experimental.AIModels,
 	"lb":                experimental.LoadBalancer,
 	"apply":             experimental.IaC,
