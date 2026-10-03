@@ -40,6 +40,7 @@ const sidebarGroups = [
           { text: 'Deploy failures', link: '/deploy-failures' },
           { text: 'Scheduled deploys', link: '/scheduled-deploys' },
           { text: 'Deployments page', link: '/deployments-page' },
+          { text: 'Deploy status badge', link: '/deploy-status-badge' },
           { text: 'Screenshots', link: '/screenshots' },
           { text: 'Docker', link: '/docker' },
         ],

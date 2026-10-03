@@ -3131,6 +3131,83 @@ type UpdateAIAssistantSettingsRequest struct {
 	APIKey   string `json:"api_key"`
 }
 
+// AIChatSessionCreatedResource mirrors internal/api's
+// aiChatSessionCreatedResource: POST /api/v1/ai/sessions's response.
+type AIChatSessionCreatedResource struct {
+	ID string `json:"id"`
+}
+
+// AIChatSessionSummaryResource mirrors internal/api's
+// aiChatSessionSummaryResource: one row of GET /api/v1/ai/sessions's
+// list response, no message content.
+type AIChatSessionSummaryResource struct {
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// AIChatToolCallResource mirrors store.AIChatToolCall's JSON shape, as
+// carried on an AIChatMessageResource.
+type AIChatToolCallResource struct {
+	ID             string          `json:"id"`
+	ConfirmationID string          `json:"confirmation_id,omitempty"`
+	Name           string          `json:"name"`
+	Arguments      json.RawMessage `json:"arguments"`
+	ReadOnly       bool            `json:"read_only"`
+	Status         string          `json:"status"`
+	Result         json.RawMessage `json:"result,omitempty"`
+	IsError        bool            `json:"is_error,omitempty"`
+}
+
+// AIChatMessageResource mirrors internal/api's aiChatMessageResource.
+type AIChatMessageResource struct {
+	ID        string                   `json:"id"`
+	Role      string                   `json:"role"`
+	Content   string                   `json:"content"`
+	ToolCalls []AIChatToolCallResource `json:"tool_calls"`
+	CreatedAt time.Time                `json:"created_at"`
+}
+
+// AIChatSessionResource mirrors internal/api's aiChatSessionResource:
+// GET /api/v1/ai/sessions/{id}'s response, the full transcript.
+type AIChatSessionResource struct {
+	ID       string                  `json:"id"`
+	Messages []AIChatMessageResource `json:"messages"`
+}
+
+// AIChatSSEEvent mirrors every shape internal/api/ai_chat.go's
+// aiSSESink can write on the bare "data: <json>\n\n" line
+// POST /api/v1/ai/sessions/{id}/messages and
+// POST .../confirmations/{id} stream: Type discriminates which of the
+// other fields are populated (text_delta -> Text, tool_call_proposed ->
+// ConfirmationID/ToolUseID/Name/Arguments, tool_result ->
+// ToolUseID/Name/Result/IsError, done -> no other field).
+type AIChatSSEEvent struct {
+	Type           string          `json:"type"`
+	Text           string          `json:"text,omitempty"`
+	ConfirmationID string          `json:"confirmation_id,omitempty"`
+	ToolUseID      string          `json:"tool_use_id,omitempty"`
+	Name           string          `json:"name,omitempty"`
+	Arguments      json.RawMessage `json:"arguments,omitempty"`
+	ReadOnly       bool            `json:"read_only,omitempty"`
+	Result         json.RawMessage `json:"result,omitempty"`
+	IsError        bool            `json:"is_error,omitempty"`
+}
+
+// CreateAIChatMessageRequest mirrors internal/api's
+// createAIChatMessageRequest: POST
+// /api/v1/ai/sessions/{id}/messages's request body.
+type CreateAIChatMessageRequest struct {
+	Content string `json:"content"`
+}
+
+// ResolveAIChatConfirmationRequest mirrors internal/api's
+// resolveAIChatConfirmationRequest: POST
+// /api/v1/ai/sessions/{id}/confirmations/{confirmation_id}'s request body.
+type ResolveAIChatConfirmationRequest struct {
+	Approve bool `json:"approve"`
+}
+
 // AppStorageResource mirrors internal/api's appStorageResource
 // (internal/api/apps_storage.go): PUT/DELETE
 // /api/v1/apps/{name}/storage's response.

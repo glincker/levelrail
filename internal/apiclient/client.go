@@ -3105,16 +3105,32 @@ func (c *Client) StreamDeployLog(ctx context.Context, name, deployID string, onE
 // meant to run indefinitely until the caller's own context is canceled
 // (e.g. Ctrl+C).
 func (c *Client) streamLogEvents(ctx context.Context, path string, onEntry func(LogStreamEntry) error) error {
-	return streamSSE(ctx, c, path, onEntry)
+	return streamSSE(ctx, c, http.MethodGet, path, nil, onEntry)
 }
 
 // streamSSE is the shared SSE scanner: it decodes each "data: " line as a T
 // and calls onEvent in arrival order. Lines that do not decode are skipped.
-func streamSSE[T any](ctx context.Context, c *Client, path string, onEvent func(T) error) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
+// body is JSON-encoded and sent with the request when non-nil (the AI
+// chat message/confirmation routes are POST with a body; the log tail
+// above is a bodyless GET), matching do()'s own body-encoding rule.
+func streamSSE[T any](ctx context.Context, c *Client, method, path string, body any, onEvent func(T) error) error {
+	var reqBody io.Reader
+	if body != nil {
+		b, err := json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("encode request body: %w", err)
+		}
+		reqBody = bytes.NewReader(b)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reqBody) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	req.Header.Set("Accept", "text/event-stream")
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
@@ -3125,7 +3141,7 @@ func streamSSE[T any](ctx context.Context, c *Client, path string, onEvent func(
 	streamClient := &http.Client{Transport: c.hc.Transport}
 	resp, err := streamClient.Do(req) //nolint:gosec // same target as above
 	if err != nil {
-		return fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+		return fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -3468,6 +3484,52 @@ func (c *Client) DeleteAIAssistantSettings(ctx context.Context) (AIAssistantSett
 	var out AIAssistantSettingsResource
 	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/ai-assistant", nil, &out)
 	return out, err
+}
+
+// CreateAIChatSession calls POST /api/v1/ai/sessions.
+func (c *Client) CreateAIChatSession(ctx context.Context) (AIChatSessionCreatedResource, error) {
+	var out AIChatSessionCreatedResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/ai/sessions", nil, &out)
+	return out, err
+}
+
+// ListAIChatSessions calls GET /api/v1/ai/sessions.
+func (c *Client) ListAIChatSessions(ctx context.Context) ([]AIChatSessionSummaryResource, error) {
+	var out []AIChatSessionSummaryResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/ai/sessions", nil, &out)
+	return out, err
+}
+
+// GetAIChatSession calls GET /api/v1/ai/sessions/{id}: the full transcript.
+func (c *Client) GetAIChatSession(ctx context.Context, id string) (AIChatSessionResource, error) {
+	var out AIChatSessionResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/ai/sessions/"+PathEscape(id), nil, &out)
+	return out, err
+}
+
+// DeleteAIChatSession calls DELETE /api/v1/ai/sessions/{id}.
+func (c *Client) DeleteAIChatSession(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/ai/sessions/"+PathEscape(id), nil, nil)
+}
+
+// SendAIChatMessage calls POST /api/v1/ai/sessions/{id}/messages: sends
+// content as a new user message and streams the assistant's turn,
+// calling onEvent for every SSE event in arrival order (see
+// AIChatSSEEvent's own doc comment for the four shapes). Returns once
+// the server sends "done" or the connection ends, matching
+// streamLogEvents' own contract.
+func (c *Client) SendAIChatMessage(ctx context.Context, sessionID, content string, onEvent func(AIChatSSEEvent) error) error {
+	path := "/api/v1/ai/sessions/" + PathEscape(sessionID) + "/messages"
+	return streamSSE(ctx, c, http.MethodPost, path, CreateAIChatMessageRequest{Content: content}, onEvent)
+}
+
+// ResolveAIChatConfirmation calls POST
+// /api/v1/ai/sessions/{id}/confirmations/{confirmationID}: approves or
+// rejects a pending mutating tool call, streaming the turn's
+// continuation the same way SendAIChatMessage does.
+func (c *Client) ResolveAIChatConfirmation(ctx context.Context, sessionID, confirmationID string, approve bool, onEvent func(AIChatSSEEvent) error) error {
+	path := "/api/v1/ai/sessions/" + PathEscape(sessionID) + "/confirmations/" + PathEscape(confirmationID)
+	return streamSSE(ctx, c, http.MethodPost, path, ResolveAIChatConfirmationRequest{Approve: approve}, onEvent)
 }
 
 // SetAppStorage calls PUT /api/v1/apps/{name}/storage: attaches an

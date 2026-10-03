@@ -133,7 +133,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 125 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 133 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 133 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -270,6 +271,14 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/health-score | AbilityRead | handleGetAppHealthScore |
 | POST | /api/v1/apps/{name}/save-as-template | AbilityWrite | handleSaveAppAsTemplate |
 | GET | /api/v1/apps/{name}/cost-estimate | AbilityRead | handleAppCostEstimate |
+| GET | /api/v1/apps/{name}/badge | AbilityRead | handleGetBadgeSettings |
+| PUT | /api/v1/apps/{name}/badge | AbilityRoot | handleSetBadgeSettings |
+| GET | /api/v1/apps/{name}/badge.svg | Public | handlePublicAppBadge |
+| POST | /api/v1/apps/{name}/save-as-template | AbilityWrite | handleSaveAppAsTemplate |
+| GET | /api/v1/apps/{name}/cost-estimate | AbilityRead | handleAppCostEstimate |
+| GET | /api/v1/apps/{name}/badge | AbilityRead | handleGetBadgeSettings |
+| PUT | /api/v1/apps/{name}/badge | AbilityRoot | handleSetBadgeSettings |
+| GET | /api/v1/apps/{name}/badge.svg | Public | handlePublicAppBadge |
 
 :::
 
@@ -767,7 +776,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/gitea-app/repos/{owner}/{repo}/branches | AbilityReadSensitive | handleListGiteaAppBranches |
 | POST | /api/v1/gitea-app/repos/{owner}/{repo}/use-as-source | AbilityWriteSensitive | handleUseGiteaRepoAsSource |
 | POST | /api/v1/ai/sessions | AbilityRoot | handleCreateAIChatSession |
+| GET | /api/v1/ai/sessions | AbilityRoot | handleListAIChatSessions |
 | GET | /api/v1/ai/sessions/{id} | AbilityRoot | handleGetAIChatSession |
+| DELETE | /api/v1/ai/sessions/{id} | AbilityRoot | handleDeleteAIChatSession |
 | POST | /api/v1/ai/sessions/{id}/messages | AbilityRoot | handleCreateAIChatMessage |
 | POST | /api/v1/ai/sessions/{id}/confirmations/{confirmation_id} | AbilityRoot | handleResolveAIChatConfirmation |
 | GET | /api/v1/storage/providers | AbilityRead | handleListStorageProviders |

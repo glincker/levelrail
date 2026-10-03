@@ -252,6 +252,9 @@ func (f *fakeProjectLifecycleAppStore) SetServiceAutoRollbackOnSLOBurn(context.C
 func (f *fakeProjectLifecycleAppStore) SetServiceExecEnabled(context.Context, string, bool) error {
 	return nil
 }
+func (f *fakeProjectLifecycleAppStore) SetServiceBadgeEnabled(context.Context, string, bool) error {
+	return nil
+}
 
 type fakeProjectLifecycleDatabaseStore struct {
 	databases   []store.DesiredDatabase

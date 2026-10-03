@@ -414,6 +414,17 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/exec-access", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetExecAccess))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/exec-access", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetExecAccess))
 
+	// Deploy status badge opt-in (app_badge.go): same GET-is-AbilityRead,
+	// PUT-is-AbilityRoot split as exec-access just above, since enabling
+	// it hands out an unauthenticated public view of this app's deploy
+	// status. GET .../badge.svg itself is registered unauthenticated on
+	// purpose (see publicRoutes in authz_matrix_test.go); it 404s on its
+	// own when the per-app flag is off, so it never needs this file's own
+	// IAM wrapper.
+	mux.HandleFunc("GET /api/v1/apps/{name}/badge", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetBadgeSettings))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/badge", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetBadgeSettings))
+	mux.HandleFunc("GET /api/v1/apps/{name}/badge.svg", rt.handlePublicAppBadge)
+
 	// Real deploy-attempt history (deploy_attempts.go): a row per
 	// trigger call across all three real trigger paths, additional to
 	// (not a replacement for) the reconcile-conditions route above. See

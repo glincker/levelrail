@@ -130,6 +130,7 @@ levelrail-cli audit-log --agent deploy-bot
 
 ## See also
 
+- [ai-assistant-chat.md](ai-assistant-chat.md): the in-app dashboard/CLI chat, a separate feature built on this same engine and confirmation gate, behind the `ai-chat` experimental flag.
 - [identity-and-access.md](identity-and-access.md): API tokens, abilities, and the audit log.
 - [api-reference.md](api-reference.md): every REST route the MCP tools wrap.
 - [cli-reference.md](cli-reference.md): `tokens create`/`list`/`revoke` and `auth login`.
