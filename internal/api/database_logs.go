@@ -45,5 +45,5 @@ func (rt *Router) handleQueryDatabaseLogs(w http.ResponseWriter, r *http.Request
 // resourceLookup and the operation/noun strings used in log lines and
 // the 404 message.
 func (rt *Router) handleLiveDatabaseLogStream(w http.ResponseWriter, r *http.Request) {
-	rt.streamResourceLogs(w, r, rt.lookupDatabaseResource, "live database log stream", "database")
+	rt.streamResourceLogs(w, r, rt.lookupDatabaseResource, rt.currentDatabaseContainerIDs, "live database log stream", "database")
 }
