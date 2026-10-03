@@ -50,7 +50,7 @@ func probeTarget(state *docker.ContainerState, p store.ServiceProbe) (probe.Targ
 	if !p.NeedsPort() {
 		return probe.Target{ContainerID: state.ID}, nil
 	}
-	addr, err := primaryAddr(state)
+	addr, err := PrimaryAddr(state)
 	if err != nil {
 		return probe.Target{}, err
 	}

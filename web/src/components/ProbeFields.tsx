@@ -17,6 +17,7 @@ import {
   probeTimingDefaults,
 } from '../lib/healthCheckDefaults'
 import { formatDurationNs } from '../lib/format'
+import { HealthCheckAutoDetect } from './HealthCheckAutoDetect'
 import {
   Collapsible,
   CollapsiblePanel,
@@ -51,6 +52,10 @@ interface ProbeFieldsProps {
   formState: FormState<HealthFormValues>
   currentProbe?: ServiceProbe | null
   headerAction?: ReactNode
+  // Name of the app this probe belongs to, needed only to call the
+  // auto-detect endpoint; omit to hide that button entirely (e.g. a
+  // creation form with no running container to probe yet).
+  appName?: string
 }
 
 function ToggleField({
@@ -106,6 +111,7 @@ export function ProbeFields({
   formState,
   currentProbe,
   headerAction,
+  appName,
 }: ProbeFieldsProps) {
   const errors = formState.errors[fieldPrefix]
   const value = useWatch({ control, name: fieldPrefix })
@@ -247,6 +253,12 @@ export function ProbeFields({
                   threshold.
                 </FieldDescription>
               </Field>
+              {appName ? (
+                <HealthCheckAutoDetect
+                  appName={appName}
+                  onUsePath={(path) => applyPreset(path)}
+                />
+              ) : null}
               {customPath ? (
                 <Field>
                   <FieldLabel htmlFor={`${fieldPrefix}-path`}>Path</FieldLabel>

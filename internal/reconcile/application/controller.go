@@ -2037,9 +2037,11 @@ func (c *Controller) removeContainers(ctx context.Context, cs []docker.Container
 	return firstErr
 }
 
-// primaryAddr picks the address a readiness probe should hit: the sole
+// PrimaryAddr picks the address a readiness probe should hit: the sole
 // port binding a service with exactly one declared port produces.
-func primaryAddr(state *docker.ContainerState) (string, error) {
+// Exported so internal/api's health-discovery endpoint (apps_health_discover.go)
+// can resolve the same address without reimplementing this lookup.
+func PrimaryAddr(state *docker.ContainerState) (string, error) {
 	if len(state.Ports) == 0 {
 		return "", fmt.Errorf("container %s has no published ports to probe", state.Name)
 	}

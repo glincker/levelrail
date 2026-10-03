@@ -7,6 +7,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/probe"
@@ -29,6 +30,8 @@ func runAppsHealth(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return runAppsHealthSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "clear":
 		return runAppsHealthClear(prog, args[1:], stdout, stderr, lookupEnv)
+	case "discover":
+		return runAppsHealthDiscover(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps health subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsHealthUsage(prog))
@@ -41,6 +44,7 @@ func appsHealthUsage(prog string) string {
   %[1]s apps health get <name> [flags]                                    show an app's readiness and liveness probes
   %[1]s apps health set <name> --probe readiness|liveness [probe flags]   set one probe, keeping the other as-is
   %[1]s apps health clear <name> [--probe readiness|liveness]             remove one probe, or both
+  %[1]s apps health discover <name>                                      actively probe well-known paths, report what each one really did
 
 A probe is either an HTTP(S) check (--path, with --scheme, --host,
 --tls-skip-verify, --follow-redirects, --expected-status) or a command run
@@ -270,6 +274,48 @@ func runAppsHealthClear(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear %s for app %q: %w", which, name, err))
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printHealthHuman(stdout, result.Health) })
+}
+
+// runAppsHealthDiscover implements "apps health discover <name>", the
+// CLI side of POST /api/v1/apps/{name}/health/discover: actively probes
+// a fixed set of well-known paths against the app's own running
+// container and prints each one's real outcome. Never guesses: nothing
+// here is reported as working without having actually been tried.
+func runAppsHealthDiscover(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps health discover", "print the probe attempts as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps health discover <name> [flags]\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps health discover", "app name"}, lookupEnv)
+	if !ok {
+		return exitCode
+	}
+	result, err := client.DiscoverAppHealth(context.Background(), name)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("discover health for app %q: %w", name, err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printHealthDiscoveryTable(stdout, result) })
+}
+
+// printHealthDiscoveryTable renders every attempted path and its real
+// outcome, not just whichever one (if any) looked like a match.
+func printHealthDiscoveryTable(out io.Writer, result healthDiscoveryResponse) {
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "PATH\tRESULT\tLATENCY\tDETAIL")
+	for _, a := range result.Attempts {
+		status := "failed"
+		if a.Success {
+			status = "ok"
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%dms\t%s\n", a.Path, status, a.LatencyMs, dashIfEmpty(a.Error))
+	}
+	_ = tw.Flush()
+	if result.Found != "" {
+		_, _ = fmt.Fprintf(out, "\nfound a working health check at %s\n", result.Found)
+		return
+	}
+	_, _ = fmt.Fprintln(out, "\nno single clear match; review the attempts above")
 }
 
 func printHealthHuman(out io.Writer, h *serviceHealth) {
