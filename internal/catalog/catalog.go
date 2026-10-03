@@ -57,6 +57,7 @@ var Templates = concat(
 	selfhosted3Templates,
 	selfhosted4Templates,
 	aiTemplates,
+	devtoolsBatchTemplates,
 )
 
 // TemplateByID returns the Templates entry with this ID, or false if
