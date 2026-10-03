@@ -118,6 +118,7 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Templates and registry', link: '/templates-and-registry' },
+          { text: 'Template catalog', link: '/template-catalog' },
           { text: 'Starter kit templates', link: '/templates' },
         ],
       },
