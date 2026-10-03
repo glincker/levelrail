@@ -163,6 +163,13 @@ type ServiceStore interface {
 	ListAllDomainErrorPages(ctx context.Context) ([]store.DomainErrorPage, error)
 	// Batched application-controller readiness lookup, used by dialForService.
 	GetConditionsForControllers(ctx context.Context, controllerNames []string) (map[string][]reconcile.Condition, error)
+	// ListAllAppStreams returns every raw TCP stream
+	// (migrations/0279_app_streams.sql) across every service, read
+	// fresh every Reconcile like everything else on this interface: an
+	// operator adding or removing a stream through POST/DELETE
+	// /api/v1/apps/{name}/streams (internal/api) must take effect on
+	// this controller's very next pass.
+	ListAllAppStreams(ctx context.Context) ([]store.AppStream, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -783,6 +790,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 	routes = append(routes, modelRoutes...)
 
+	streamRoutes, err := c.streamRoutes(ctx, services)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list app streams: %w", err)
+	}
+
 	cfg, err := ingress.BuildRoutesConfig(ingress.RoutesOptions{
 		ServerName:        c.serverName,
 		ListenAddr:        c.listenAddr,
@@ -801,6 +813,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		DNSProvider:       c.resolveDNSProvider(ctx),
 		TLSCertificates:   tlsCertOverrides,
 		RequestStats:      c.requestStats,
+		Streams:           streamRoutes,
 	})
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
@@ -967,6 +980,68 @@ func (c *Controller) dialForService(ctx context.Context, svc store.DesiredServic
 
 	c.logger.DebugContext(ctx, "ingress: no ready backend for service, skipping",
 		slog.String("service", svc.Name), slog.String("container", target))
+	return "", false
+}
+
+// streamRoutes builds one ingress.StreamRoute per app stream
+// (store.AppStream) whose owning service currently has a running
+// container publishing the stream's container port. A stream with no
+// such backend yet (mid-deploy, never deployed, or the owning service
+// was deleted without its streams being cleaned up) is left out of this
+// pass, not a reconcile failure, mirroring dialForService's own "skip,
+// pick it up on a later pass" shape for HTTP routes.
+func (c *Controller) streamRoutes(ctx context.Context, services []store.DesiredService) ([]ingress.StreamRoute, error) {
+	streams, err := c.store.ListAllAppStreams(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(streams) == 0 {
+		return nil, nil
+	}
+	byName := make(map[string]*store.DesiredService, len(services))
+	for i := range services {
+		byName[services[i].Name] = &services[i]
+	}
+	var routes []ingress.StreamRoute
+	for _, s := range streams {
+		svc, ok := byName[s.ServiceName]
+		if !ok {
+			c.logger.WarnContext(ctx, "ingress: app stream targets a service that no longer exists, skipping",
+				slog.String("stream_id", s.ID), slog.String("service", s.ServiceName))
+			continue
+		}
+		dial, ok := c.dialForStreamPort(ctx, svc, s.ContainerPort)
+		if !ok {
+			continue
+		}
+		routes = append(routes, ingress.StreamRoute{
+			ListenAddr:  ":" + strconv.Itoa(s.HostPort),
+			BackendDial: dial,
+		})
+	}
+	return routes, nil
+}
+
+// dialForStreamPort resolves svc's currently running container's
+// published host port for containerPort specifically, unlike
+// dialForService, which only ever reads the service's main (first)
+// published port.
+func (c *Controller) dialForStreamPort(ctx context.Context, svc *store.DesiredService, containerPort int) (string, bool) {
+	target := application.ContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce)
+	state, err := c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: inspecting service container for a stream failed, skipping for this pass",
+			slog.String("service", svc.Name), slog.String("container", target), slog.String("error", err.Error()))
+		return "", false
+	}
+	if state == nil || !state.Running {
+		return "", false
+	}
+	for _, p := range state.Ports {
+		if p.ContainerPort == containerPort {
+			return "127.0.0.1:" + strconv.Itoa(p.HostPort), true
+		}
+	}
 	return "", false
 }
 

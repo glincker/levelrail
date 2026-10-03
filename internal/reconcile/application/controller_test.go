@@ -22,8 +22,10 @@ import (
 // fakeStore is a hand-written fake, not a mocking framework, the same
 // pattern nginxdemo's tests already established for docker.Runtime.
 type fakeStore struct {
-	svc *store.DesiredService
-	err error
+	svc        *store.DesiredService
+	err        error
+	streams    []store.AppStream
+	streamsErr error
 }
 
 func (f *fakeStore) GetDesiredService(_ context.Context, _ string) (*store.DesiredService, error) {
@@ -31,6 +33,13 @@ func (f *fakeStore) GetDesiredService(_ context.Context, _ string) (*store.Desir
 		return nil, f.err
 	}
 	return f.svc, nil
+}
+
+func (f *fakeStore) ListAppStreamsForService(_ context.Context, _ string) ([]store.AppStream, error) {
+	if f.streamsErr != nil {
+		return nil, f.streamsErr
+	}
+	return f.streams, nil
 }
 
 // fakeRuntime is a stateful fake, not just a call counter: it tracks an
@@ -572,6 +581,72 @@ func TestController_Reconcile_Resources_ReachesContainerSpec(t *testing.T) {
 	}
 	if got := rt.lastCreateSpec.Resources; !reflect.DeepEqual(got, want) {
 		t.Errorf("created ContainerSpec.Resources = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_AppStreams_ReachesContainerSpec confirms a
+// raw TCP stream (store.AppStream) adds one extra docker.PortBinding to
+// the created container's spec, alongside the service's own main port,
+// publishing the stream's ContainerPort to an ephemeral loopback host
+// port (never HostPort itself, which is what Caddy's own layer4
+// listener binds; see streamPortBindings's doc comment).
+func TestController_Reconcile_AppStreams_ReachesContainerSpec(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "pg", Image: "postgres:16", Port: 5432}
+	c := New("pg", &fakeStore{svc: desired, streams: []store.AppStream{
+		{ID: "stream_a", ServiceName: "pg", ContainerPort: 5433, HostPort: 15432, Protocol: store.AppStreamProtocolTCP},
+	}}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	got := rt.lastCreateSpec.Ports
+	want := []docker.PortBinding{
+		{ContainerPort: 5432, HostIP: "127.0.0.1"},
+		{ContainerPort: 5433, HostIP: "127.0.0.1", Protocol: store.AppStreamProtocolTCP},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_NoAppStreams_PortsUnchanged confirms a
+// service with no streams at all gets byte-identical Ports to before
+// this feature existed: just its own main port, no empty stream
+// binding appended.
+func TestController_Reconcile_NoAppStreams_PortsUnchanged(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt) // fakeStore.streams left nil
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	got := rt.lastCreateSpec.Ports
+	want := []docker.PortBinding{{ContainerPort: 80, HostIP: "127.0.0.1"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_AppStreams_StoreError_FailsReconcile is this
+// feature's half-success case (CLAUDE.md section 7): ListAppStreamsForService
+// failing must fail the whole createAndStart attempt, not silently
+// create a container missing its stream's port, which would leave an
+// app stream row that the ingress controller can never actually route
+// to.
+func TestController_Reconcile_AppStreams_StoreError_FailsReconcile(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "pg", Image: "postgres:16", Port: 5432}
+	c := New("pg", &fakeStore{svc: desired, streamsErr: errors.New("app_streams table locked")}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err == nil {
+		t.Fatal("Reconcile() error = nil, want an error when ListAppStreamsForService fails")
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0: the container must never be created with an incomplete port set", rt.createCalls)
 	}
 }
 
