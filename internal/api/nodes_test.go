@@ -93,6 +93,81 @@ func TestHandleListNodes_IsLocal(t *testing.T) {
 	}
 }
 
+func TestHandleListNodes_TotalCountHeader(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+	seedNode(t, db, "node_b", "beta")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if got := rec.Header().Get("X-Total-Count"); got != "2" {
+		t.Errorf("X-Total-Count = %q, want %q", got, "2")
+	}
+}
+
+func TestHandleListNodes_Limit(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+	seedNode(t, db, "node_b", "beta")
+	seedNode(t, db, "node_c", "gamma")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes?limit=1", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if got := rec.Header().Get("X-Total-Count"); got != "3" {
+		t.Errorf("X-Total-Count = %q, want %q (total before paging)", got, "3")
+	}
+	var got []nodeResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 1 || got[0].Name != "alpha" {
+		t.Fatalf("got = %+v, want one node (alpha)", got)
+	}
+}
+
+func TestHandleListNodes_LimitOffset(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+	seedNode(t, db, "node_b", "beta")
+	seedNode(t, db, "node_c", "gamma")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes?limit=1&offset=1", ""))
+	var got []nodeResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 1 || got[0].Name != "beta" {
+		t.Fatalf("got = %+v, want one node (beta)", got)
+	}
+}
+
+func TestHandleListNodes_Query(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+	seedNode(t, db, "node_b", "beta")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes?q=alp", ""))
+	var got []nodeResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 1 || got[0].Name != "alpha" {
+		t.Fatalf("got = %+v, want one node (alpha)", got)
+	}
+}
+
 func TestHandleGetNode(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

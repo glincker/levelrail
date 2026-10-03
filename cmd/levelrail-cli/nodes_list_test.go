@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -20,6 +22,36 @@ func TestRun_NodesList(t *testing.T) {
 	}
 	if !strings.Contains(stdout, "nd_1") || !strings.Contains(stdout, "web-1") {
 		t.Errorf("stdout = %q, want the node listed", stdout)
+	}
+}
+
+func TestRun_NodesList_LimitOffsetAndQueryFlags(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]nodeResource{})
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"nodes", "list", "--api-url", srv.URL, "--limit", "10", "--offset", "5", "--q", "web"})
+	if gotQuery != "limit=10&offset=5&q=web" {
+		t.Errorf("query = %q, want limit, offset and q forwarded", gotQuery)
+	}
+}
+
+func TestRun_NodesList_NoFlagsOmitsQueryString(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]nodeResource{})
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"nodes", "list", "--api-url", srv.URL})
+	if gotQuery != "" {
+		t.Errorf("query = %q, want empty when no flags are set", gotQuery)
 	}
 }
 

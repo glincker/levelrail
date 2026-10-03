@@ -575,6 +575,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
 	mux.HandleFunc("PUT /api/v1/settings/email", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailSettings))
+	// AbilityWrite, not AbilityRoot: same tier notification-channel
+	// testing uses, since sending a test doesn't change stored config.
+	mux.HandleFunc("POST /api/v1/settings/email/test", rt.requireAbility(AbilityWrite, rt.handleTestEmail))
 
 	// Cloudflare Tunnel (instance-level, one connection per control
 	// plane): GET is AbilityRead; PUT/DELETE are AbilityRoot, matching
