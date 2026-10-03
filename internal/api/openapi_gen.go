@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 637 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 638 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -395,6 +395,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/dashboard-url", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateDashboardURL", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/email", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetEmailSettings", Description: "Email settings: same precedent as ingress settings just above. GET is AbilityRead; PUT is AbilityRoot, real infrastructure config."},
 	{Method: "PUT", Path: "/api/v1/settings/email", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateEmailSettings", Description: ""},
+	{Method: "POST", Path: "/api/v1/settings/email/test", Ability: "AbilityWrite", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleTestEmail", Description: "AbilityWrite, not AbilityRoot: same tier notification-channel testing uses, since sending a test doesn't change stored config."},
 	{Method: "GET", Path: "/api/v1/settings/ingress", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetIngressSettings", Description: "Ingress settings (ACME toggle, platform primary domain, ADR 005's own \"Verified\" section names this exact gap: real ACME issuance was explicitly unproven, spot-checked against a real domain, not assumed to follow automatically). GET is AbilityRead, the same passive-visibility tier as GET /api/v1/certificates above: reading today's toggle state is ordinary operator visibility. PUT is AbilityRoot, matching handleSetAppNode/handleDrainNode/POST /system/prune's own precedent for \"real infrastructure, high blast radius, not an ordinary per-app write\": flipping acme_enabled changes what every currently-routed host's certificate automation does, fleet-wide, on the very next ingress reconcile pass, the same class of change node placement and draining already reserve AbilityRoot for."},
 	{Method: "PUT", Path: "/api/v1/settings/ingress", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateIngressSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ingress/check", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleCheckIngressDomain", Description: "Platform-level DNS check (ingress_settings.go): runDomainCheck against the platform's own PrimaryDomain instead of a per-app one. AbilityRoot, matching PUT /api/v1/settings/ingress just above: the result speaks directly to whether that endpoint's ACMEEnabled toggle can actually succeed."},

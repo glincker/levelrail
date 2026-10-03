@@ -481,7 +481,7 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 52 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+::: details 53 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -546,6 +546,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleCreateDNSRecord |
 | PUT | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleUpdateDNSRecord |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleDeleteDNSRecord |
+| POST | /api/v1/settings/email/test | AbilityWrite | handleTestEmail |
 
 :::
 
