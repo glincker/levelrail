@@ -35,6 +35,7 @@ func (rt *Router) Handler() http.Handler {
 		h = hstsDBOverrideMiddleware(rt)(h)
 	}
 	h = panicRecoveryMiddleware(rt.logger)(h)
+	h = requestLoggingMiddleware(rt.logger, rt.requestLogThresholds)(h)
 	h = requestIDMiddleware(h)
 	return h
 }
