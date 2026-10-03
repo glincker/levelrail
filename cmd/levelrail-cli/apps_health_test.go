@@ -173,3 +173,72 @@ func TestRun_AppsHealth_GetAndClear(t *testing.T) {
 		t.Errorf("last call = %s", last)
 	}
 }
+
+func TestRun_AppsHealth_Discover_FoundOnePath(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := newEchoServer(t, &gotMethod, &gotPath, healthDiscoveryResponse{
+		Name: "web",
+		Attempts: []healthDiscoveryAttempt{
+			{Path: "/healthz", Success: true, LatencyMs: 12},
+			{Path: "/health", Success: false, Error: "GET http://127.0.0.1:1/health returned 404, expected 200-299", LatencyMs: 4},
+		},
+		Found: "/healthz",
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "health", "discover", "web", "--api-url", srv.URL})
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/apps/web/health/discover" {
+		t.Errorf("request = %s %s, want POST /api/v1/apps/web/health/discover", gotMethod, gotPath)
+	}
+	if !strings.Contains(stdout, "/healthz") || !strings.Contains(stdout, "ok") {
+		t.Errorf("stdout = %q, want the successful attempt listed", stdout)
+	}
+	if !strings.Contains(stdout, "found a working health check at /healthz") {
+		t.Errorf("stdout = %q, want the found-path summary", stdout)
+	}
+}
+
+func TestRun_AppsHealth_Discover_NoMatch(t *testing.T) {
+	srv := newListEchoServer(t, nil, healthDiscoveryResponse{
+		Name: "web",
+		Attempts: []healthDiscoveryAttempt{
+			{Path: "/healthz", Success: false, Error: "connection refused", LatencyMs: 2},
+			{Path: "/health", Success: false, Error: "returned 404, expected 200-299", LatencyMs: 3},
+		},
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "health", "discover", "web", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "connection refused") || !strings.Contains(stdout, "failed") {
+		t.Errorf("stdout = %q, want both failed attempts shown", stdout)
+	}
+	if !strings.Contains(stdout, "no single clear match") {
+		t.Errorf("stdout = %q, want the no-match summary, never a silent guess", stdout)
+	}
+}
+
+func TestRun_AppsHealth_Discover_JSON(t *testing.T) {
+	srv := newListEchoServer(t, nil, healthDiscoveryResponse{
+		Name:     "web",
+		Attempts: []healthDiscoveryAttempt{{Path: "/healthz", Success: true, LatencyMs: 9}},
+		Found:    "/healthz",
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "health", "discover", "web", "--api-url", srv.URL, "--output", "json"})
+	var resp healthDiscoveryResponse
+	if err := json.Unmarshal([]byte(stdout), &resp); err != nil {
+		t.Fatalf("decode JSON output: %v, stdout = %q", err, stdout)
+	}
+	if resp.Found != "/healthz" || len(resp.Attempts) != 1 {
+		t.Errorf("decoded = %+v", resp)
+	}
+}
+
+func TestRun_AppsHealth_Discover_NotFound(t *testing.T) {
+	srv := newJSONErrorServer(t, http.StatusConflict, `{"error":"app has no running container"}`)
+	stderr := runCLIExpectAPIError(t, []string{"apps", "health", "discover", "web", "--api-url", srv.URL})
+	if !strings.Contains(stderr, "app has no running container") {
+		t.Errorf("stderr = %q, want the server's error message", stderr)
+	}
+}

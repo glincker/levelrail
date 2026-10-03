@@ -129,6 +129,7 @@ export function HealthCheckEditor({ app }: { app: AppDetail }) {
               setValue={setValue}
               formState={formState}
               currentProbe={app.health?.readiness}
+              appName={app.name}
             />
             <ProbeFields
               key={`${app.name}-liveness`}
@@ -139,6 +140,7 @@ export function HealthCheckEditor({ app }: { app: AppDetail }) {
               setValue={setValue}
               formState={formState}
               currentProbe={app.health?.liveness}
+              appName={app.name}
               headerAction={
                 <Button
                   type="button"
