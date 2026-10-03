@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   MutationCache,
@@ -103,10 +103,22 @@ if (!rootElement) {
   throw new Error('root element not found')
 }
 
-createRoot(rootElement).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  </StrictMode>,
-)
+// Dynamic, not a static top-level import: i18next + react-i18next +
+// the language detector would otherwise land in the main entry chunk,
+// the same bundle-size budget check-bundle-size.js guards for route
+// code. Awaited before the first render so the default namespace is
+// already initialized when components mount.
+void import('./i18n').then(() => {
+  createRoot(rootElement).render(
+    <StrictMode>
+      {/* The common namespace (defaultNS) loads via lazyBackend on this
+          first render; every other namespace suspends the same way the
+          first time a route under it calls useTranslation. */}
+      <Suspense fallback={<PageSpinner />}>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </Suspense>
+    </StrictMode>,
+  )
+})
