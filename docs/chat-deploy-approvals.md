@@ -1,3 +1,7 @@
+---
+description: Approve or deny a protected-environment deploy directly from the Slack or Discord notification, without opening the dashboard.
+---
+
 # Chat-interactive deploy approvals
 
 When a deploy or promotion targets a protected environment, Levelrail
@@ -35,7 +39,7 @@ belong to a Slack app with **Interactivity** turned on:
    from your Slack app; paste it into the channel's "Interactive
    approval secret" field.
 4. Make sure the same app owns the Incoming Webhook URL the channel is
-   already configured with (api.slack.com/apps/<app>/incoming-webhooks).
+   already configured with (`api.slack.com/apps/<app>/incoming-webhooks`).
 
 ### Discord
 
