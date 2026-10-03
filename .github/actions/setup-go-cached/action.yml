@@ -1,0 +1,55 @@
+name: Set up Go with build cache
+description: setup-go plus the day-keyed ~/.cache/go-build and ~/go/pkg/mod restore/save this repo's CI jobs all share.
+
+inputs:
+  cache-prefix:
+    description: Cache key prefix, e.g. go-build or go-test-api.
+    required: true
+  save:
+    description: Save a fresh cache on a miss (callers gate this to push events; a job that only restores, like install-sh, leaves it false).
+    required: false
+    default: 'false'
+
+outputs:
+  go-version:
+    description: Resolved Go version, from setup-go.
+    value: ${{ steps.go.outputs.go-version }}
+  cache-hit:
+    description: Exact match on the day-keyed cache.
+    value: ${{ steps.cache.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Go
+      id: go
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version-file: go.mod
+        cache: false
+
+    - name: Cache key
+      id: day
+      shell: bash
+      run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore Go cache
+      id: cache
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ inputs.cache-prefix }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ steps.day.outputs.day }}
+        restore-keys: |
+          ${{ inputs.cache-prefix }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
+          ${{ inputs.cache-prefix }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
+
+    - name: Save Go cache
+      if: inputs.save == 'true' && steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ steps.cache.outputs.cache-primary-key }}

@@ -156,6 +156,7 @@ const sidebarGroups = [
       { text: 'Threat model', link: '/threat-model' },
       { text: 'Security alert verdicts', link: '/security-alert-verdicts' },
       { text: 'Comparison', link: '/comparison' },
+      { text: 'Who Levelrail is for', link: '/use-cases' },
     ],
   },
   {
