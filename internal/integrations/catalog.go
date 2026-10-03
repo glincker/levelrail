@@ -55,7 +55,7 @@ var Catalog = []Integration{
 	{
 		Key:         "sentry",
 		Name:        "Sentry",
-		Description: "Error tracking and performance monitoring.",
+		Description: "Error tracking and performance monitoring. Self-hosted/OSS Sentry instances work too, point the DSN at your own instance.",
 		DocsURL:     "https://docs.sentry.io/platforms/node/configuration/options/",
 		EnvVars: []EnvVar{
 			{Name: "SENTRY_DSN", Type: FieldTypeDSN, Required: true, Placeholder: "https://<key>@o0.ingest.sentry.io/0"},
@@ -64,11 +64,42 @@ var Catalog = []Integration{
 	{
 		Key:         "posthog",
 		Name:        "PostHog",
-		Description: "Product analytics, feature flags, and session replay.",
+		Description: "Product analytics, feature flags, and session replay. Self-hosted/OSS PostHog works too, set the host below.",
 		DocsURL:     "https://posthog.com/docs/libraries/next-js",
 		EnvVars: []EnvVar{
 			{Name: "NEXT_PUBLIC_POSTHOG_KEY", Type: FieldTypeAPIKey, Required: true, Placeholder: "phc_..."},
 			{Name: "NEXT_PUBLIC_POSTHOG_HOST", Type: FieldTypeHost, Required: false, Default: "https://us.i.posthog.com", Placeholder: "https://us.i.posthog.com"},
+		},
+		Frameworks: []string{"nextjs"},
+	},
+	{
+		Key:         "glitchtip",
+		Name:        "GlitchTip",
+		Description: "Free, self-hosted, open-source error tracking. Sentry-SDK-compatible: reads the same SENTRY_DSN, existing Sentry SDKs work unchanged.",
+		DocsURL:     "https://glitchtip.com/sdkdocs/node",
+		EnvVars: []EnvVar{
+			{Name: "SENTRY_DSN", Type: FieldTypeDSN, Required: true, Placeholder: "https://<key>@glitchtip.example.com/0"},
+		},
+	},
+	{
+		Key:         "oneuptime",
+		Name:        "OneUptime",
+		Description: "Open-source, self-hostable error tracking, uptime monitoring, incidents, logs, and APM over OpenTelemetry.",
+		DocsURL:     "https://oneuptime.com/docs/en/telemetry/open-telemetry",
+		EnvVars: []EnvVar{
+			{Name: "OTEL_EXPORTER_OTLP_ENDPOINT", Type: FieldTypeHost, Required: false, Default: "https://oneuptime.com/otlp", Placeholder: "https://oneuptime.example.com/otlp"},
+			{Name: "OTEL_EXPORTER_OTLP_HEADERS", Type: FieldTypeToken, Required: true, Placeholder: "x-oneuptime-token=<service-token>"},
+			{Name: "OTEL_SERVICE_NAME", Type: FieldTypeProjectID, Required: false, Placeholder: "my-service"},
+		},
+	},
+	{
+		Key:         "plausible",
+		Name:        "Plausible",
+		Description: "Privacy-first, self-hostable web analytics. Lighter-weight alternative to PostHog for pageview and visitor stats only.",
+		DocsURL:     "https://plausible.io/docs/nextjs-integration",
+		EnvVars: []EnvVar{
+			{Name: "NEXT_PUBLIC_PLAUSIBLE_DOMAIN", Type: FieldTypeSite, Required: true, Placeholder: "app.example.com"},
+			{Name: "NEXT_PUBLIC_PLAUSIBLE_API_HOST", Type: FieldTypeHost, Required: false, Default: "https://plausible.io", Placeholder: "https://plausible.example.com"},
 		},
 		Frameworks: []string{"nextjs"},
 	},
