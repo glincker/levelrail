@@ -245,8 +245,10 @@ var cliCommandTree = map[string]*cmdNode{
 }
 
 // globalFlags lists the flags apiFlagSet registers on nearly every
-// subcommand (flagutil.go), offered as completions at every command depth.
-var globalFlags = []string{"--json", "--output", "--query", "--token", "--api-url", "-h", "--help"}
+// subcommand (flagutil.go), plus the handful main.go's run() itself
+// strips out before dispatch (--debug, see extractDebugFlag), offered as
+// completions at every command depth.
+var globalFlags = []string{"--json", "--output", "--query", "--token", "--api-url", "--debug", "-h", "--help"}
 
 // treeEntry is cliCommandTree flattened to one entry per node that has
 // children: path is the space-joined verb sequence leading to that node
