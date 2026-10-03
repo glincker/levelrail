@@ -6,12 +6,14 @@ import {
   PackageIcon,
   RocketLaunchIcon,
   SquaresFourIcon,
+  UserIcon,
   WarningIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import { CATEGORY_ICONS } from './ServiceTemplateGrid'
 import { TemplateLogo } from './TemplateLogo'
+import { DeleteCustomTemplateDialog } from './DeleteCustomTemplateDialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,10 +26,15 @@ import {
   useServiceTemplates,
   type ServiceTemplateListItem,
 } from '../queries/serviceTemplates'
+import { useCustomTemplates } from '../queries/customTemplates'
 
 // Sentinel for "no category filter applied", distinct from any real
 // catalog.go Category value so it can never collide with one.
 const ALL_CATEGORIES = 'All'
+
+// Synthetic category for operator-defined templates; never a real
+// catalog.Template.Category string, so the two can't collide.
+const YOUR_TEMPLATES_CATEGORY = 'Your templates'
 
 function matchesSearch(
   template: ServiceTemplateListItem,
@@ -226,41 +233,50 @@ function MarketplaceCard({
   onSelect,
   onDeployNow,
   deploying,
+  isCustom,
 }: {
   template: ServiceTemplateListItem
   onSelect: (id: string) => void
   onDeployNow: (template: ServiceTemplateListItem) => void
   deploying: boolean
+  isCustom: boolean
 }) {
-  const CategoryIcon = CATEGORY_ICONS[template.category] ?? PackageIcon
+  const CategoryIcon = isCustom
+    ? UserIcon
+    : (CATEGORY_ICONS[template.category] ?? PackageIcon)
   return (
     <div className="flex h-full flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:shadow-sm">
-      <Link
-        to="/templates/$id"
-        params={{ id: template.id }}
-        className="flex items-start gap-3 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
-        <TemplateLogo
-          id={template.id}
-          className="size-10 shrink-0 rounded-md"
-          fallback={
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
-              <CategoryIcon
-                className="size-5 text-muted-foreground"
-                aria-hidden="true"
-              />
-            </span>
-          }
-        />
-        <div className="min-w-0 flex-1 pt-0.5">
-          <p className="line-clamp-1 text-sm font-semibold text-foreground hover:underline">
-            {template.name}
-          </p>
-          <Badge variant="outline" className="mt-1 text-[11px]">
-            {template.category}
-          </Badge>
-        </div>
-      </Link>
+      <div className="flex items-start gap-3">
+        <Link
+          to="/templates/$id"
+          params={{ id: template.id }}
+          className="flex min-w-0 flex-1 items-start gap-3 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <TemplateLogo
+            id={template.id}
+            className="size-10 shrink-0 rounded-md"
+            fallback={
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
+                <CategoryIcon
+                  className="size-5 text-muted-foreground"
+                  aria-hidden="true"
+                />
+              </span>
+            }
+          />
+          <div className="min-w-0 flex-1 pt-0.5">
+            <p className="line-clamp-1 text-sm font-semibold text-foreground hover:underline">
+              {template.name}
+            </p>
+            <Badge variant="outline" className="mt-1 text-[11px]">
+              {template.category}
+            </Badge>
+          </div>
+        </Link>
+        {isCustom ? (
+          <DeleteCustomTemplateDialog id={template.id} name={template.name} />
+        ) : null}
+      </div>
       <button
         type="button"
         onClick={() => {
@@ -320,11 +336,13 @@ function VirtualTemplateGrid({
   onSelect,
   onDeployNow,
   deployingId,
+  customTemplateIds,
 }: {
   templates: ServiceTemplateListItem[]
   onSelect: (id: string) => void
   onDeployNow: (template: ServiceTemplateListItem) => void
   deployingId?: string
+  customTemplateIds: Set<string>
 }) {
   const parentRef = useRef<HTMLDivElement>(null)
   const cols = useGridColumns(parentRef)
@@ -377,6 +395,7 @@ function VirtualTemplateGrid({
                     template={template}
                     onSelect={onSelect}
                     onDeployNow={onDeployNow}
+                    isCustom={customTemplateIds.has(template.id)}
                     deploying={deployingId === template.id}
                   />
                 ))}
@@ -416,9 +435,30 @@ export function TemplateMarketplace({
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<string>(ALL_CATEGORIES)
   const templatesQuery = useServiceTemplates()
+  const customTemplatesQuery = useCustomTemplates()
+
+  // Reshaped into ServiceTemplateListItem's own wire shape so the rest
+  // of this component treats them like any built-in catalog entry.
+  const customAsListItems = useMemo<ServiceTemplateListItem[]>(
+    () =>
+      (customTemplatesQuery.data ?? []).map((t) => ({
+        id: t.id,
+        name: t.name,
+        slogan: t.description || 'Saved from ' + (t.source_app || 'an app'),
+        category: YOUR_TEMPLATES_CATEGORY,
+        documentation_url: '',
+        requires_configuration: t.requires_configuration,
+      })),
+    [customTemplatesQuery.data],
+  )
+  const customTemplateIds = useMemo(
+    () => new Set(customAsListItems.map((t) => t.id)),
+    [customAsListItems],
+  )
+
   const templates = useMemo(
-    () => templatesQuery.data ?? [],
-    [templatesQuery.data],
+    () => [...customAsListItems, ...(templatesQuery.data ?? [])],
+    [customAsListItems, templatesQuery.data],
   )
 
   const categoryCounts = useMemo(() => {
@@ -520,6 +560,7 @@ export function TemplateMarketplace({
                 onSelect={onSelect}
                 onDeployNow={onDeployNow}
                 deployingId={deployingId}
+                customTemplateIds={customTemplateIds}
               />
             )}
           </div>

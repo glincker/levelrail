@@ -51,6 +51,8 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/auth/reset-password":           "authenticated by the single-use reset token",
 	"GET /.well-known/jwks.json":                 "OIDC discovery document, public by spec; 404 when no pipeline OIDC issuer is configured",
 	"POST /api/v1/webhooks/github/{name}":        "authenticated by the HMAC signature of the app's webhook secret",
+	"POST /api/v1/webhooks/slack/interactions":   "authenticated by the X-Slack-Signature HMAC of the channel's own interactive secret",
+	"POST /api/v1/webhooks/discord/interactions": "authenticated by the Ed25519 signature of the channel's own Discord application public key",
 	"GET /public/status":                         "opt-in public status page, serves only operator-chosen names and statuses, rate limited and cacheable",
 	"GET /public/status.json":                    "JSON form of the opt-in public status page, same whitelisted view",
 	"GET /public/status.rss":                     "RSS feed of operator-authored incidents on the opt-in public status page",

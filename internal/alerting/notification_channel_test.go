@@ -169,7 +169,7 @@ func TestSendTestNotification_Slack_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if err := sendTestNotification(context.Background(), nil, nil, NotifySlack, srv.URL); err != nil {
+	if err := sendTestNotification(context.Background(), nil, nil, nil, NotifySlack, srv.URL); err != nil {
 		t.Fatalf("sendTestNotification() error = %v", err)
 	}
 	text, _ := got["text"].(string)
@@ -186,7 +186,7 @@ func TestSendTestNotification_Mattermost_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if err := sendTestNotification(context.Background(), nil, nil, NotifyMattermost, srv.URL); err != nil {
+	if err := sendTestNotification(context.Background(), nil, nil, nil, NotifyMattermost, srv.URL); err != nil {
 		t.Fatalf("sendTestNotification() error = %v", err)
 	}
 	text, _ := got["text"].(string)
@@ -203,7 +203,7 @@ func TestSendTestNotification_Lark_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if err := sendTestNotification(context.Background(), nil, nil, NotifyLark, srv.URL); err != nil {
+	if err := sendTestNotification(context.Background(), nil, nil, nil, NotifyLark, srv.URL); err != nil {
 		t.Fatalf("sendTestNotification() error = %v", err)
 	}
 	if got.MsgType != "text" || !strings.Contains(got.Content.Text, "test notification") {
@@ -219,7 +219,7 @@ func TestSendTestNotification_Gotify_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if err := sendTestNotification(context.Background(), nil, nil, NotifyGotify, srv.URL+"/message?token=t"); err != nil {
+	if err := sendTestNotification(context.Background(), nil, nil, nil, NotifyGotify, srv.URL+"/message?token=t"); err != nil {
 		t.Fatalf("sendTestNotification() error = %v", err)
 	}
 	if !strings.Contains(got.Message, "test notification") {
@@ -237,7 +237,7 @@ func TestSendTestNotification_Ntfy_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if err := sendTestNotification(context.Background(), nil, nil, NotifyNtfy, srv.URL+"/topic?auth=tk"); err != nil {
+	if err := sendTestNotification(context.Background(), nil, nil, nil, NotifyNtfy, srv.URL+"/topic?auth=tk"); err != nil {
 		t.Fatalf("sendTestNotification() error = %v", err)
 	}
 	if gotAuth != "Bearer tk" {
@@ -262,7 +262,7 @@ func TestSendTestNotification_Resend_Success(t *testing.T) {
 	t.Cleanup(func() { resendAPIURL = original })
 
 	notifyURL := "https://api.resend.com/emails?key=re_secret&to=ops%40example.com"
-	if err := sendTestNotification(context.Background(), nil, nil, NotifyResend, notifyURL); err != nil {
+	if err := sendTestNotification(context.Background(), nil, nil, nil, NotifyResend, notifyURL); err != nil {
 		t.Fatalf("sendTestNotification() error = %v", err)
 	}
 	if gotAuth != "Bearer re_secret" {
@@ -281,7 +281,7 @@ func TestSendTestNotification_RocketChat_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if err := sendTestNotification(context.Background(), nil, nil, NotifyRocketChat, srv.URL); err != nil {
+	if err := sendTestNotification(context.Background(), nil, nil, nil, NotifyRocketChat, srv.URL); err != nil {
 		t.Fatalf("sendTestNotification() error = %v", err)
 	}
 	if !strings.Contains(got.Text, "test notification") {
@@ -300,7 +300,7 @@ func TestSendTestNotification_Webex_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if err := sendTestNotification(context.Background(), nil, nil, NotifyWebex, srv.URL); err != nil {
+	if err := sendTestNotification(context.Background(), nil, nil, nil, NotifyWebex, srv.URL); err != nil {
 		t.Fatalf("sendTestNotification() error = %v", err)
 	}
 	if !strings.Contains(got.Markdown, "test notification") {
@@ -316,7 +316,7 @@ func TestSendTestNotification_GoogleChat_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if err := sendTestNotification(context.Background(), nil, nil, NotifyGoogleChat, srv.URL); err != nil {
+	if err := sendTestNotification(context.Background(), nil, nil, nil, NotifyGoogleChat, srv.URL); err != nil {
 		t.Fatalf("sendTestNotification() error = %v", err)
 	}
 	text, _ := got["text"].(string)
@@ -339,7 +339,7 @@ func TestSendTestNotification_Opsgenie_Success(t *testing.T) {
 	t.Cleanup(func() { opsgenieAPIURL = original })
 
 	notifyURL := "https://api.opsgenie.com/v2/alerts?key=og_secret"
-	if err := sendTestNotification(context.Background(), nil, nil, NotifyOpsgenie, notifyURL); err != nil {
+	if err := sendTestNotification(context.Background(), nil, nil, nil, NotifyOpsgenie, notifyURL); err != nil {
 		t.Fatalf("sendTestNotification() error = %v", err)
 	}
 	if gotAuth != "GenieKey og_secret" {
@@ -353,7 +353,7 @@ func TestSendTestNotification_Opsgenie_Success(t *testing.T) {
 // 127.0.0.1:1 is this codebase's existing "deliberately unreachable"
 // convention (internal/alerting/notify_test.go).
 func TestSendTestNotification_UnreachableURL_Errors(t *testing.T) {
-	err := sendTestNotification(context.Background(), nil, nil, NotifyGeneric, "http://127.0.0.1:1/hook")
+	err := sendTestNotification(context.Background(), nil, nil, nil, NotifyGeneric, "http://127.0.0.1:1/hook")
 	if err == nil {
 		t.Error("sendTestNotification() error = nil, want an error for an unreachable URL")
 	}
@@ -363,7 +363,7 @@ func TestSendTestNotification_Email_TransientSMTPError_RetriesThenSucceeds(t *te
 	transient := &textproto.Error{Code: 421, Msg: "service not available"}
 	sender := &fakeEmailSender{errs: []error{transient, transient}}
 
-	err := sendTestNotification(context.Background(), nil, sender, NotifyEmail, "ops@example.com")
+	err := sendTestNotification(context.Background(), nil, sender, nil, NotifyEmail, "ops@example.com")
 	if err != nil {
 		t.Fatalf("sendTestNotification() error = %v, want the third attempt (which succeeds) to win", err)
 	}
@@ -373,9 +373,29 @@ func TestSendTestNotification_Email_TransientSMTPError_RetriesThenSucceeds(t *te
 }
 
 func TestSendTestNotification_Email_NoSender_Errors(t *testing.T) {
-	err := sendTestNotification(context.Background(), nil, nil, NotifyEmail, "ops@example.com")
+	err := sendTestNotification(context.Background(), nil, nil, nil, NotifyEmail, "ops@example.com")
 	if err == nil || !strings.Contains(err.Error(), "not configured") {
 		t.Errorf("sendTestNotification() error = %v, want a clear 'not configured' error", err)
+	}
+}
+
+func TestSendTestNotification_Webpush_Success(t *testing.T) {
+	sender := &fakePushSender{}
+	if err := sendTestNotification(context.Background(), nil, nil, sender, NotifyWebpush, ""); err != nil {
+		t.Fatalf("sendTestNotification() error = %v", err)
+	}
+	if sender.called != 1 {
+		t.Fatalf("PushSender.Send called %d times, want 1", sender.called)
+	}
+}
+
+func TestSendTestNotification_Webpush_NotConfigured_Errors(t *testing.T) {
+	err := sendTestNotification(context.Background(), nil, nil, nil, NotifyWebpush, "")
+	if err == nil {
+		t.Fatal("sendTestNotification() error = nil, want a clear 'not configured' error")
+	}
+	if !strings.Contains(err.Error(), "not configured") {
+		t.Errorf("error = %q, want it to say browser push is not configured", err.Error())
 	}
 }
 
@@ -387,7 +407,7 @@ func TestDeployDispatcher_SendTest_UsesDispatcherClient(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	dispatcher := NewDeployDispatcher(nil, nil, nil, nil)
+	dispatcher := NewDeployDispatcher(nil, nil, nil, nil, nil)
 	if err := dispatcher.SendTest(context.Background(), NotifyGeneric, srv.URL); err != nil {
 		t.Fatalf("SendTest() error = %v", err)
 	}

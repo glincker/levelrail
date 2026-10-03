@@ -21,6 +21,7 @@ import {
 } from '@tanstack/react-query'
 import type {
   DrainNodeResponse,
+  NodeCapacityForecastResource,
   NodeJoinTokenResponse,
   NodePatchStatusResource,
   NodeStatus,
@@ -39,6 +40,8 @@ export const nodeKeys = {
   patchStatus: (id: string) =>
     [...nodeKeys.detail(id), 'patch-status'] as const,
   events: (id: string) => [...nodeKeys.detail(id), 'events'] as const,
+  capacityForecast: (id: string) =>
+    [...nodeKeys.detail(id), 'capacity-forecast'] as const,
 }
 
 // Fetches every node from the control plane API. GET /api/v1/nodes
@@ -174,6 +177,40 @@ export function nodePatchStatusQueryOptions(id: string) {
 
 export function useNodePatchStatus(id: string) {
   return useQuery({ ...nodePatchStatusQueryOptions(id), retry: false })
+}
+
+// GET /api/v1/nodes/{id}/capacity-forecast
+// (internal/api/node_capacity_forecast.go): a rough "days until full"
+// projection for this node's disk and memory. Same 501-is-expected
+// treatment as fetchNodePatchStatus above: telemetry being unconfigured
+// just means this card has nothing to show, not a page-breaking error.
+export async function fetchNodeCapacityForecast(
+  id: string,
+): Promise<NodeCapacityForecastResource> {
+  const res = await fetch(
+    `/api/v1/nodes/${encodeURIComponent(id)}/capacity-forecast`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `fetch node capacity forecast failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as NodeCapacityForecastResource
+}
+
+export function nodeCapacityForecastQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: nodeKeys.capacityForecast(id),
+    queryFn: () => fetchNodeCapacityForecast(id),
+  })
+}
+
+export function useNodeCapacityForecast(id: string) {
+  return useQuery({ ...nodeCapacityForecastQueryOptions(id), retry: false })
 }
 
 export interface NodeStatusEvent {

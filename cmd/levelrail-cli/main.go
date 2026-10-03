@@ -100,6 +100,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runRegistry(prog, args[1:], stdout, stderr, lookupEnv)
 	case "channels":
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
+	case "push-subscriptions":
+		return runPushSubscriptions(prog, args[1:], stdout, stderr, lookupEnv)
 	case "alerts":
 		return runAlerts(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status-page":
@@ -142,6 +144,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runUpgrade(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
+	case "changelog":
+		return runChangelog(prog, args[1:], stdout, stderr, lookupEnv)
 	case "audit-log":
 		return runAuditLog(prog, args[1:], stdout, stderr, lookupEnv)
 	case "audit-purge":
@@ -152,6 +156,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runInit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "api-docs":
+		return runAPIDocs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "containers":
 		return runContainers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "system-prune":
@@ -232,6 +238,7 @@ Usage:
   %[1]s cloudflare-tunnel get|set|disconnect [flags]   expose the control plane through a Cloudflare Tunnel
   %[1]s vault get|set|disconnect [flags]               configure resolving app secrets from an external HashiCorp Vault
   %[1]s channels list|create|delete|test [flags]           manage notification channels (Slack, Discord, Telegram, email, Pushover, webhook)
+  %[1]s push-subscriptions list|revoke [flags]             list or revoke registered browser push subscriptions
   %[1]s alerts silences|silence|maintenance|history        mute alerts, schedule maintenance windows, review alert history
   %[1]s status-page get|set|preview|components|incidents    manage the opt-in public status page
   %[1]s shared-env list|set|delete --scope SCOPE --id ID [flags]   manage project/organization/environment-scoped shared env vars, plain or secret
@@ -257,11 +264,13 @@ Usage:
   %[1]s status [flags]                                        control plane status, including local Docker daemon reachability
   %[1]s upgrade [--no-backup] [flags]                          preflight checks, backup, and the command that upgrades (never upgrades itself)
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
+  %[1]s changelog [--limit N] [flags]                         recent release notes from the control plane's own CHANGELOG.md
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
   %[1]s audit-purge [flags]                                   delete audit log entries past the retention window now
   %[1]s attention [flags]                                     everything failing right now: apps, nodes, certificates, doctor checks
   %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
+  %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database
   %[1]s system-prune [flags]                                remove stopped containers, dangling images, and unused volumes/build cache, fleet-wide

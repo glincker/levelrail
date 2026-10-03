@@ -147,7 +147,7 @@ type Engine struct {
 // DefaultBackupMissingGracePeriod when passed as 0.
 func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, certs CertSource, scheduledTasks ScheduledTaskSource, certExpiryWarningWindow, certRenewalStalledThreshold time.Duration, nodes NodeSource, patchStatusThreshold, nodeDiskSpaceThreshold float64, nodeServices NodeServiceSource, nodeCPUThreshold, nodeMemoryThreshold float64, domainApps AppDomainSource, domainChecker DomainCheckSource, domainHealthCheckInterval time.Duration, backups BackupSource, backupMissingGracePeriod time.Duration, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
 	if newNotifier == nil {
-		newNotifier = func(r Rule) Notifier { return NewNotifier(nil, nil, r) }
+		newNotifier = func(r Rule) Notifier { return NewNotifier(nil, nil, nil, r) }
 	}
 	if logger == nil {
 		logger = slog.Default()

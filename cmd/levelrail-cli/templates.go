@@ -37,6 +37,8 @@ func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runTemplatesGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy":
 		return runTemplatesDeploy(prog, args[1:], stdout, stderr, lookupEnv)
+	case "delete":
+		return runTemplatesDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown templates subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, templatesUsage(prog))
@@ -46,28 +48,50 @@ func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEn
 
 func templatesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s templates list [flags]                          browse the curated service catalog
-  %[1]s templates get <id> [flags]                       show one entry, including its full compose.yaml
-  %[1]s templates deploy <id> [--name NAME] [flags]     deploy a catalog entry's compose.yaml as an app
+  %[1]s templates list [--custom] [flags]               browse the curated service catalog, or --custom for your own saved templates
+  %[1]s templates get <id> [flags]                       show one entry (built-in or custom), including its full compose.yaml
+  %[1]s templates deploy <id> [--name NAME] [flags]     deploy a template's compose.yaml as an app, built-in or custom
+  %[1]s templates delete <id> [flags]                    delete a custom template (see "apps save-as-template")
 
 "deploy" defaults the app name to <id>; pass --name to deploy under a
-different name (e.g. deploying the same template twice).
+different name (e.g. deploying the same template twice). A custom
+template id works with every one of these the same as a built-in one,
+except "delete": only a custom template can be deleted, the built-in
+catalog is read-only.
 
 Run "%[1]s templates <subcommand> -h" for a subcommand's own flags.
 `, prog)
 }
 
 func runTemplatesList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[[]serviceTemplateListItem]{
-		cmdLabel:  "templates list",
-		jsonUsage: "print the catalog as a JSON array to stdout and nothing else",
-		usageText: fmt.Sprintf("Usage:\n  %s templates list [flags]\n\nLists every entry in the curated service catalog, without each entry's\ncompose body (see \"templates get\").\n\nFlags:\n", prog),
-		fetch: func(c *Client, ctx context.Context) ([]serviceTemplateListItem, error) {
-			return c.ListServiceTemplates(ctx)
-		},
-		errVerb: "list service templates",
-		print:   printTemplatesTable,
-	})
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "templates list", "print the result as a JSON array to stdout and nothing else", stderr)
+	var custom bool
+	fs.BoolVar(&custom, "custom", false, "list your own saved templates (apps save-as-template) instead of the built-in catalog")
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s templates list [--custom] [flags]\n\nLists every entry in the curated service catalog, without each entry's\ncompose body (see \"templates get\"). --custom lists your own saved\ntemplates instead.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	if custom {
+		result, err := client.ListCustomTemplates(context.Background())
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list custom templates: %w", err))
+		}
+		return writeScheduledTaskResult(stdout, stderr, of, result, func() { printCustomTemplatesTable(stdout, result) })
+	}
+
+	result, err := client.ListServiceTemplates(context.Background())
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list service templates: %w", err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printTemplatesTable(stdout, result) })
 }
 
 func printTemplatesTable(out io.Writer, templates []serviceTemplateListItem) {
@@ -172,4 +196,55 @@ func runTemplatesDeploy(prog string, args []string, stdout, stderr io.Writer, lo
 	}
 
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printComposeDeployResultHuman(stdout, result) })
+}
+
+func printCustomTemplatesTable(out io.Writer, templates []customTemplateListItem) {
+	if len(templates) == 0 {
+		_, _ = fmt.Fprintln(out, "no custom templates (see \"apps save-as-template\")")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tSOURCE_APP\tNEEDS_CONFIG\tDESCRIPTION")
+	for _, t := range templates {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%t\t%s\n", t.ID, t.Name, t.SourceApp, t.RequiresConfiguration, t.Description)
+	}
+	_ = tw.Flush()
+}
+
+// runTemplatesDelete implements "templates delete <id>": DELETE
+// /api/v1/templates/custom/{id}. Only ever removes an operator-defined
+// template (service_templates_custom.go); the built-in catalog
+// (internal/catalog) is static and has no delete route at all, so an id
+// that resolves there instead fails with a 404 the same as an unknown
+// id.
+func runTemplatesDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "templates delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s templates delete <id> [flags]\n\nDeletes a custom template saved via \"apps save-as-template\". The app it\nwas saved from, and any apps already deployed from it, are unaffected.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	id, ok := requireOneArg(fs, stderr, prog, "templates delete", "template id")
+	if !ok {
+		return exitUsage
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	if err := client.DeleteCustomTemplate(context.Background(), id); err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete custom template %q: %w", id, err))
+	}
+
+	if err := renderResult(stdout, of.Format, of.Query, map[string]bool{"deleted": true}, func() {
+		_, _ = fmt.Fprintf(stdout, "template %q deleted\n", id)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
 }

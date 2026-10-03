@@ -403,7 +403,7 @@ flowchart LR
   - Domain health (periodic DNS check against every domain, catches silently repointed CNAMEs)
   - Backup missing (when scheduled backup trails its cron schedule, catches silently stopped backups)
   
-  Each evaluator is independent. Seventeen notification channel kinds supported: webhook, Slack, Discord, email, Telegram, Pushover, PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark, Rocket.Chat, Opsgenie, Webex, and Google Chat, plus separate deploy-outcome notifications.
+  Each evaluator is independent. Eighteen notification channel kinds supported: webhook, Slack, Discord, email, Telegram, Pushover, PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark, Rocket.Chat, Opsgenie, Webex, Google Chat, and browser push, plus separate deploy-outcome notifications.
   
   Every channel, including email, retries transient failures up to 3 times with short backoff rather than dropping alerts on one-off hiccups: HTTP-based channels on transport errors or 5xx/429 responses, email on transport errors or an SMTP 4xx reply.
   
@@ -430,6 +430,14 @@ flowchart LR
   critical below 5%, with the reclaimable size and the one-click cleanup
   dialog. Thresholds are build-time overrides
   (`VITE_DISK_WARN_FREE_PERCENT`, `VITE_DISK_CRITICAL_FREE_PERCENT`).
+- Capacity forecast: `GET /api/v1/nodes/{id}/capacity-forecast` projects
+  a node's disk and memory usage forward from a simple linear trend fit
+  over recent history and reports roughly how many days remain until
+  each is full, surfaced on the node detail page and via
+  `levelrail-cli nodes capacity-forecast <id>`. A flat or improving
+  trend is omitted entirely rather than shown as "fine forever."
+  Lookback window defaults to 14 days, overridable with
+  `APP_CAPACITY_FORECAST_LOOKBACK`.
 - Node connection history: every node status change is recorded (capped at
   200 per node), shown as a card on the node detail page, served by
   `GET /api/v1/nodes/{id}/events`, and available as `nodes events <id>`.

@@ -21,7 +21,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { BrandIcon } from './BrandIcon'
 import {
@@ -52,16 +52,48 @@ const KIND_ORDER = [
   'resend',
   'ntfy',
   'gotify',
+  'webpush',
 ] as const
 
-const editChannelSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required'),
-  kind: z.enum(KIND_ORDER),
-  notifyUrl: z.string().trim().min(1, 'Destination is required'),
-  enabled: z.boolean(),
-})
+const editChannelSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Name is required'),
+    kind: z.enum(KIND_ORDER),
+    notifyUrl: z.string().trim(),
+    enabled: z.boolean(),
+    interactiveApprovals: z.boolean(),
+    interactiveSecret: z.string().trim(),
+  })
+  .superRefine((data, ctx) => {
+    // webpush has no destination to edit: every registered browser
+    // subscription is the destination, managed from the Browser push
+    // field in the create dialog instead.
+    if (data.kind !== 'webpush' && !data.notifyUrl) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Destination is required',
+        path: ['notifyUrl'],
+      })
+    }
+    if (
+      data.interactiveApprovals &&
+      data.kind !== 'slack' &&
+      data.kind !== 'discord'
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Interactive approvals only work for Slack or Discord',
+        path: ['interactiveApprovals'],
+      })
+    }
+  })
 
 type EditChannelForm = z.infer<typeof editChannelSchema>
+
+// INTERACTIVE_KINDS mirrors notificationChannelsSupportingInteractiveApprovals
+// (internal/api/notification_channels.go): only these two kinds can turn
+// on interactive approval buttons.
+const INTERACTIVE_KINDS = ['slack', 'discord'] as const
 
 // Deliberately simpler than CreateNotificationChannelDialog: that dialog
 // decomposes a pushover/resend/opsgenie destination into separate
@@ -77,6 +109,13 @@ function defaultsFromChannel(channel: NotificationChannel): EditChannelForm {
     kind: channel.kind,
     notifyUrl: channel.notify_url,
     enabled: channel.enabled,
+    interactiveApprovals: channel.interactive_approvals,
+    // Always starts blank: the server never echoes a stored secret
+    // back (has_interactive_secret is all GET exposes), and leaving
+    // this blank on save keeps whatever secret is already stored
+    // rather than clearing it (toChannel's own doc comment,
+    // internal/api/notification_channels.go).
+    interactiveSecret: '',
   }
 }
 
@@ -102,6 +141,10 @@ export function EditNotificationChannelDialog({
     })
   const kind = watch('kind')
   const notifyUrl = watch('notifyUrl')
+  const interactiveApprovals = watch('interactiveApprovals')
+  const isInteractiveKind = (INTERACTIVE_KINDS as readonly string[]).includes(
+    kind,
+  )
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -142,6 +185,8 @@ export function EditNotificationChannelDialog({
           kind: values.kind,
           notify_url: values.notifyUrl.trim(),
           enabled: values.enabled,
+          interactive_approvals: values.interactiveApprovals,
+          interactive_secret: values.interactiveSecret.trim(),
         },
       },
       {
@@ -228,31 +273,45 @@ export function EditNotificationChannelDialog({
             <FieldError errors={[formState.errors.name]} />
           </Field>
 
-          <Field>
-            <FieldLabel htmlFor="edit-channel-notify-url">
-              {kind === 'email'
-                ? 'Notify email address'
-                : kind === 'pagerduty'
-                  ? 'Integration/Routing Key'
-                  : 'Destination (webhook URL or credential)'}
-            </FieldLabel>
-            <Input
-              id="edit-channel-notify-url"
-              {...register('notifyUrl', {
-                onChange: () => {
-                  setVerified(false)
-                },
-              })}
-            />
-            <FieldError errors={[formState.errors.notifyUrl]} />
-          </Field>
+          {kind === 'webpush' ? (
+            <Field>
+              <FieldLabel>Destination</FieldLabel>
+              <p className="text-xs text-muted-foreground">
+                Every browser registered under Settings -&gt; Notification
+                channels -&gt; Browser push receives this channel&apos;s
+                notifications. There is no per-channel URL to edit.
+              </p>
+            </Field>
+          ) : (
+            <Field>
+              <FieldLabel htmlFor="edit-channel-notify-url">
+                {kind === 'email'
+                  ? 'Notify email address'
+                  : kind === 'pagerduty'
+                    ? 'Integration/Routing Key'
+                    : 'Destination (webhook URL or credential)'}
+              </FieldLabel>
+              <Input
+                id="edit-channel-notify-url"
+                {...register('notifyUrl', {
+                  onChange: () => {
+                    setVerified(false)
+                  },
+                })}
+              />
+              <FieldError errors={[formState.errors.notifyUrl]} />
+            </Field>
+          )}
 
           <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              disabled={testChannel.isPending || !notifyUrl.trim()}
+              disabled={
+                testChannel.isPending ||
+                (kind !== 'webpush' && !notifyUrl.trim())
+              }
               onClick={handleTest}
             >
               <PaperPlaneTiltIcon className="size-3.5" aria-hidden="true" />
@@ -280,6 +339,59 @@ export function EditNotificationChannelDialog({
             />
             <FieldLabel htmlFor="edit-channel-enabled">Enabled</FieldLabel>
           </Field>
+
+          {isInteractiveKind ? (
+            <>
+              <Field orientation="horizontal">
+                <Controller
+                  control={control}
+                  name="interactiveApprovals"
+                  render={({ field }) => (
+                    <Switch
+                      id="edit-channel-interactive-approvals"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
+                <FieldLabel htmlFor="edit-channel-interactive-approvals">
+                  Interactive approval buttons
+                </FieldLabel>
+              </Field>
+              {interactiveApprovals ? (
+                <Field>
+                  <FieldLabel htmlFor="edit-channel-interactive-secret">
+                    {kind === 'slack'
+                      ? 'Slack signing secret'
+                      : 'Discord application public key'}
+                  </FieldLabel>
+                  <Input
+                    id="edit-channel-interactive-secret"
+                    type="password"
+                    placeholder={
+                      channel.has_interactive_secret
+                        ? 'Leave blank to keep the current secret'
+                        : kind === 'slack'
+                          ? 'From Basic Information -> Signing Secret'
+                          : 'From General Information -> Public Key'
+                    }
+                    {...register('interactiveSecret')}
+                  />
+                  <FieldError errors={[formState.errors.interactiveSecret]} />
+                  <FieldHint>
+                    Adds real Approve/Deny buttons to the approval message this
+                    channel receives. Needs a matching{' '}
+                    {kind === 'slack'
+                      ? 'Request URL'
+                      : 'Interactions Endpoint URL'}{' '}
+                    configured on the{' '}
+                    {kind === 'slack' ? 'Slack app' : 'Discord application'}{' '}
+                    side first; see docs/chat-deploy-approvals.md.
+                  </FieldHint>
+                </Field>
+              ) : null}
+            </>
+          ) : null}
 
           {updateChannel.isError ? (
             <Alert variant="destructive">
