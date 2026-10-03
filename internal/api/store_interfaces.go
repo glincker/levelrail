@@ -110,6 +110,12 @@ type AppStore interface {
 	// SetServiceAutoRollbackOnCrashloop, see
 	// store.DB.SetServiceExecEnabled's own doc comment.
 	SetServiceExecEnabled(ctx context.Context, name string, enabled bool) error
+	// SetServiceBadgeEnabled backs PUT /api/v1/apps/{name}/badge
+	// (app_badge.go): whether GET .../badge.svg serves anything for
+	// this app, or 404s. Same separation-from-ordinary-update reasoning
+	// as SetServiceAutoRollbackOnCrashloop, see
+	// store.DB.SetServiceBadgeEnabled's own doc comment.
+	SetServiceBadgeEnabled(ctx context.Context, name string, enabled bool) error
 	// SetServiceVaultEnvVar backs PUT/DELETE
 	// /api/v1/apps/{name}/vault-env/{key} (apps_vault_env.go): the
 	// UI/CLI-facing way to declare (or remove) one Vault-sourced env var

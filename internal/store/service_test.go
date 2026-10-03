@@ -2137,6 +2137,66 @@ func TestSetServiceExecEnabled_NotFound(t *testing.T) {
 	}
 }
 
+// TestSaveDesiredService_BadgeEnabled_DefaultsToFalse: unlike
+// ExecEnabled, a service that never touches badge_enabled must stay
+// unexposed, since the public badge.svg route reads this flag to decide
+// whether to serve anything at all for that app.
+func TestSaveDesiredService_BadgeEnabled_DefaultsToFalse(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.BadgeEnabled {
+		t.Error("BadgeEnabled = true for a row that never set it, want false")
+	}
+}
+
+func TestSetServiceBadgeEnabled(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SetServiceBadgeEnabled(ctx, "web", true); err != nil {
+		t.Fatalf("SetServiceBadgeEnabled(true) error = %v", err)
+	}
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.BadgeEnabled {
+		t.Error("BadgeEnabled = false, want true")
+	}
+
+	if err := db.SetServiceBadgeEnabled(ctx, "web", false); err != nil {
+		t.Fatalf("SetServiceBadgeEnabled(false) error = %v", err)
+	}
+	got, err = db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.BadgeEnabled {
+		t.Error("BadgeEnabled = true, want false")
+	}
+}
+
+func TestSetServiceBadgeEnabled_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetServiceBadgeEnabled(context.Background(), "nonexistent", false)
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("SetServiceBadgeEnabled() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
 // TestSaveDesiredService_AutoRollbackOnSLOBurn_DefaultsToOff mirrors
 // TestSaveDesiredService_ExecEnabled_DefaultsToTrue: a service that
 // never touches this column must read back as "off", not an empty

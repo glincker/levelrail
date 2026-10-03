@@ -23,7 +23,7 @@ func TestAppScopedReadRoutes_IAMDenyScopedToApp(t *testing.T) {
 	}
 
 	paths := []string{
-		"secrets", "terminal", "exec-access", "deploys", "deploys/d1/logs", "logs", "logs/download",
+		"secrets", "terminal", "exec-access", "badge", "deploys", "deploys/d1/logs", "logs", "logs/download",
 		"metrics", "alerts", "tags", "domains/x.example.com/waf", "volumes/data/backups",
 		"volumes/data/backup-schedule", "scheduled-tasks", "flags", "network", "git-source", "log-drain",
 	}

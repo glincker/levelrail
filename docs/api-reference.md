@@ -133,7 +133,11 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 124 endpoints for app management, deployment, lifecycle control, and diagnostics
+<<<<<<< HEAD
+::: details 127 endpoints for app management, deployment, lifecycle control, and diagnostics
+=======
+::: details 127 endpoints for app management, deployment, lifecycle control, and diagnostics
+>>>>>>> fb123e23 (feat: add opt-in per-app deploy status badge)
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -269,6 +273,17 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/validate-spec | AbilityRead | handleValidateSpec |
 | POST | /api/v1/apps/{name}/save-as-template | AbilityWrite | handleSaveAppAsTemplate |
 | GET | /api/v1/apps/{name}/cost-estimate | AbilityRead | handleAppCostEstimate |
+| GET | /api/v1/apps/{name}/badge | AbilityRead | handleGetBadgeSettings |
+| PUT | /api/v1/apps/{name}/badge | AbilityRoot | handleSetBadgeSettings |
+| GET | /api/v1/apps/{name}/badge.svg | Public | handlePublicAppBadge |
+<<<<<<< HEAD
+| POST | /api/v1/apps/{name}/save-as-template | AbilityWrite | handleSaveAppAsTemplate |
+| GET | /api/v1/apps/{name}/cost-estimate | AbilityRead | handleAppCostEstimate |
+=======
+| GET | /api/v1/apps/{name}/badge | AbilityRead | handleGetBadgeSettings |
+| PUT | /api/v1/apps/{name}/badge | AbilityRoot | handleSetBadgeSettings |
+| GET | /api/v1/apps/{name}/badge.svg | Public | handlePublicAppBadge |
+>>>>>>> fb123e23 (feat: add opt-in per-app deploy status badge)
 
 :::
 
@@ -438,6 +453,8 @@ Endpoints for:
 | GET | /api/v1/projects/{id}/env/secrets | AbilityRead | handleListProjectEnvSecretKeys |
 | PUT | /api/v1/projects/{id}/env/secrets/{key} | AbilityWrite | handleSetProjectEnvSecret |
 | DELETE | /api/v1/projects/{id}/env/secrets/{key} | AbilityWrite | handleDeleteProjectEnvSecret |
+| GET | /api/v1/projects/{id}/environments/compare | AbilityRead | handleCompareEnvironmentEnv |
+| GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
 | GET | /api/v1/projects/{id}/environments/compare | AbilityRead | handleCompareEnvironmentEnv |
 | GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
 | GET | /api/v1/projects/{id}/environments/compare | AbilityRead | handleCompareEnvironmentEnv |
