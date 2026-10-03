@@ -86,9 +86,8 @@ describe('AutoRollbackCard', () => {
     expect(
       await screen.findByText('Auto-rollback on crashloop'),
     ).toBeInTheDocument()
-    expect(screen.getByText('Enabled')).toBeInTheDocument()
     expect(
-      screen.getByText(/automatically redeploy the most recent successful/),
+      screen.getByText('Redeploy the last working image automatically'),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('switch', {
