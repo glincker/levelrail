@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Input } from '@/components/ui/input'
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import {
@@ -31,6 +32,7 @@ import { AuditLogTable } from '../../components/AuditLogTable'
 import { AgentFilterChips } from '../../components/AgentFilterChips'
 import { collectAgentNames } from '../../lib/agentNames'
 import { tokenListQueryOptions } from '../../queries/tokens'
+import { domainsQueryOptions } from '../../queries/domains'
 import { EmptyState } from '../../components/ui/empty-state'
 import { PageHeader } from '@/components/shell/PageHeader'
 
@@ -84,6 +86,7 @@ function ExportAuditLogLink({
 }
 
 function AuditLogSettingsPage() {
+  const { t } = useTranslation('auditLog')
   const { data: initial } = useSuspenseQuery(auditLogQueryOptions())
   const [entries, setEntries] = useState<AuditLogEntry[]>(initial)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -97,6 +100,15 @@ function AuditLogSettingsPage() {
     ...tokenListQueryOptions(),
     retry: false,
   })
+  // Resolves a certificate audit row's domain tag to its owning app for
+  // AuditLogTable's link; best-effort like tokens above, so a domains
+  // fetch failure degrades to plain unlinked domain text, not a broken
+  // page.
+  const { data: domains = [] } = useQuery({
+    ...domainsQueryOptions(),
+    retry: false,
+  })
+  const domainApp = new Map(domains.map((d) => [d.domain, d.service_name]))
   // A page shorter than the default limit means the store had no more
   // rows to return, the same "short page means done" signal offset-free
   // cursor pagination always relies on.
@@ -182,10 +194,7 @@ function AuditLogSettingsPage() {
           <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <ClockCounterClockwiseIcon className="size-4" />
           </div>
-          <PageHeader
-            title="Audit log"
-            description="Who changed what: every write, deploy, or root-tier request, newest first. Read-only requests aren't recorded here."
-          />
+          <PageHeader title="Audit log" description={t('page.description')} />
         </div>
         <div className="flex items-center gap-2">
           <Select
@@ -261,7 +270,7 @@ function AuditLogSettingsPage() {
           }
         />
       ) : (
-        <AuditLogTable entries={entries} />
+        <AuditLogTable entries={entries} domainApp={domainApp} />
       )}
 
       {loadMoreError ? (

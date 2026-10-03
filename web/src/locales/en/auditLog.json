@@ -1,0 +1,12 @@
+{
+  "page": {
+    "description": "Who changed what: every write, deploy, or root-tier request, plus automatic certificate renewals, newest first. Read-only requests aren't recorded here."
+  },
+  "labels": {
+    "certIssued": "Issued Certificate",
+    "certRenewed": "Renewed Certificate",
+    "certRenewalRequested": "Requested Certificate Renewal",
+    "certUploaded": "Uploaded Certificate",
+    "certRemoved": "Removed Certificate"
+  }
+}
