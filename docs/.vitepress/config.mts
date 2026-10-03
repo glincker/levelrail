@@ -74,6 +74,7 @@ const sidebarGroups = [
           },
           { text: 'Backups and storage', link: '/backups-and-storage' },
           { text: 'Object storage', link: '/object-storage' },
+          { text: 'Log archive', link: '/log-archive' },
           { text: 'Control plane backup', link: '/control-plane-backup' },
           { text: 'Disaster recovery', link: '/disaster-recovery' },
         ],

@@ -101,6 +101,11 @@ levelrail apps health clear <name> [--probe readiness|liveness] [flags]
 ```
 
 ```
+levelrail apps health-score <name> [flags]
+```
+synthesized pass/warn/fail readiness verdict across deploy health, security, resilience, and observability
+
+```
 levelrail apps builds trigger <name> --repo URL --ref REF [flags]
 ```
 build an image from a git source and deploy it to an existing app

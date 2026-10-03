@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 636 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 637 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -143,6 +143,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/health", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppHealth", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/health", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHealth", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/health", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppHealth", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/health-score", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHealthScore", Description: "Health & readiness score: a read-only synthesis of signals this router already exposes separately (deploys, crashloop, TLS, secrets, backups, health checks, alerting). See app_health_score.go's own doc comment."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/hook-runs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHookRuns", Description: "Latest pre/post-deploy hook outcome (apps_hooks.go, internal/reconcile/application's own HookRunRecorder). Read-only, same ability tier as the group route just above."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/images", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListImages", Description: "Previously-built image tags for this app's repo, so the deploy trigger form can offer a dropdown instead of a hand-typed tag (see ImageLister above). AbilityRead like every other passive view of an app's own state."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/integrations", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppIntegrations", Description: ""},

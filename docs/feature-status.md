@@ -36,7 +36,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Deploy freeze | beta | Unit, API and CLI tests, documented in `docs/deploy-safety.md`, no e2e. |
 | Feature flags | beta | Unit, API, CLI, MCP tests and a doc page, no e2e. |
 | Templates | beta | 206 catalog entries, the unit tests check shape and a floor of 180, none is deployed in any test. |
-| Log archive | beta | Unit tests only, no dedicated doc page. |
+| Log archive | beta | Unit and e2e tests (`test/e2e/log_archive_test.go`), dedicated doc page (`docs/log-archive.md`). |
 | Supply chain | beta | Off by default (`docs/supply-chain.md`), unit tests, no e2e. |
 | Status page | beta | Off by default, one internal package test file plus API tests, no e2e. |
 | Multi-node and WireGuard | beta | Join flow verified locally across two real Docker daemons (enrollment, cordon, drain with real container relocation); the WireGuard mesh itself and cross-host remote transport are still unverified. |
@@ -115,9 +115,9 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 ### Log archive
 
 - Unit: `internal/objectstore/archive_test.go`, `internal/alerting/log_archive_stale_test.go`, `internal/mcptools/tools_log_archive_test.go`, `internal/api/storage_destinations_test.go`, CLI `storage_test.go`.
-- E2E: none.
-- Docs: mentioned in `docs/object-storage.md` and `docs/observability.md`, plus route rows in `docs/api-reference.md`. No dedicated page.
-- Real infra: none found. `internal/backup/uploader_live_test.go` (real S3 round trip) is env-gated by `LEVELRAIL_LIVE_S3_*` and its own comment says none of those are set in CI, so it skips there.
+- E2E: `test/e2e/log_archive_test.go` (`TestLogArchive_Live_ContainerLogsToHTTPDownload`): a real container's real stdout through a real `telemetry.LogCollector`, a real `*api.Router` (real admin login, real storage destination created over HTTP), a real manual dump trigger (`POST /api/v1/log-archive/dump`), polled to completion, then listed and downloaded over real HTTP. The bucket itself is `objectstoretest`'s fake S3 server, the same substitution the unit test makes.
+- Docs: dedicated page `docs/log-archive.md`, linked from `docs/object-storage.md` and `docs/observability.md`, plus route rows in `docs/api-reference.md`.
+- Real infra: none found for the bucket leg. `internal/backup/uploader_live_test.go` (real S3 round trip) is env-gated by `LEVELRAIL_LIVE_S3_*` and its own comment says none of those are set in CI, so it skips there.
 - Label: **beta**.
 
 ### PITR and database backups

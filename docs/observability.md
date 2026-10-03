@@ -286,7 +286,7 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 | `domain_health` | one app's own domains | a DNS check gone bad (not resolving, or resolving somewhere else) on any of the app's configured domains | `for_duration` (optional debounce) |
 | `backup_missing` | one database (platform-wide) or one app's own volume | last successful backup trailing its own cron schedule's expected interval by more than a grace period | `backup_resource_kind` (`database` or `volume`), `backup_database_name` or `backup_service_name`/`backup_volume_name`, `for_duration` (reused as the overdue grace period, default 6h) |
 | `control_plane_backup_stale` | platform-wide | the newest control plane self-backup snapshot (see [control plane backup](/control-plane-backup)) being older than a maximum age; quiet when scheduled backups are disabled or no snapshot exists yet | `for_duration` (reused as the maximum age, default 3d) |
-| `log_archive_stale` | platform-wide | a log archive policy's last run failed, or it has not succeeded within a maximum age (see [object storage](/object-storage)) | `for_duration` (reused as the maximum age, default three intervals, at least 2h) |
+| `log_archive_stale` | platform-wide | a log archive policy's last run failed, or it has not succeeded within a maximum age (see [log archive](/log-archive)) | `for_duration` (reused as the maximum age, default three intervals, at least 2h) |
 
 :::
 
@@ -500,6 +500,21 @@ Cursor pagination via `?before` (RFC3339 timestamp). Default 50 rows, capped at 
 
 Deleting a channel still attached to a rule or deploy-notify target succeeds. The foreign key's `ON DELETE SET NULL` clears the reference instead of failing (unlike deleting a backup target).
 
+## Health & readiness score
+
+`GET /api/v1/apps/{name}/health-score` synthesizes signals this page otherwise shows one at a time on separate tabs into a single pass/warn/fail verdict per category, computed live on every call (no new reconciler loop, no cache). It is a read-only aggregation, not a new source of truth: every category reads data an existing endpoint already exposes.
+
+| Category | Pass | Warn | Fail |
+| --- | --- | --- | --- |
+| Deploy health | Last 5 finished deploy attempts all succeeded | Some recent attempts failed, or no finished attempts yet | Most recent attempt failed, or a `crashloop` alert rule is currently firing |
+| Security | TLS healthy for every domain and every `{ secret: true, required: true }` env var has a stored value | Certificate expiring soon, or no certificate issued yet for a domain | Certificate expired, or a required secret is missing |
+| Resilience | Readiness/liveness probe configured and every named volume's most recent backup succeeded | No health check configured, a volume has no backup schedule, or a scheduled backup has never run | Most recent backup attempt failed for a volume |
+| Observability | At least one enabled alert rule with a notification channel or `notify_url` attached | Alert rules exist but are disabled or have nowhere to notify | No alert rules configured for this app |
+
+The TLS check reuses `alerting.ListCertificates`, the identical computation `GET /api/v1/certificates` and a `cert_expiry` rule both already use, scoped to the app's own domains. The crashloop check reads a `crashloop` rule's persisted `firing` state, not the live in-memory restart tracker.
+
+Dashboard: the **Health & readiness** panel on an app's Overview tab (`AppHealthScorePanel`), polling every 30 seconds while open. CLI: `levelrail-cli apps health-score <name>`.
+
 ## Integration walkthrough
 
 1. **Query one app's CPU over the last hour, bucketed into 5-minute averages**:
@@ -556,6 +571,7 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 
 | Method | Path | Ability |
 | --- | --- | --- |
+| `GET` | `/api/v1/apps/{name}/health-score` | `read` |
 | `GET` | `/api/v1/apps/{name}/metrics?metric=...&from=...&to=...&step=...` | `read` |
 | `GET` | `/api/v1/databases/{name}/metrics` | `read` |
 | `GET` | `/api/v1/nodes/{id}/metrics` | `root` |
@@ -597,6 +613,8 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 ## CLI
 
 ```bash
+levelrail-cli apps health-score <name>
+
 levelrail-cli apps metrics <name> --metric NAME [--since 1h | --from RFC3339 --to RFC3339] [--step 60s]
 levelrail-cli databases metrics <name> --metric NAME [--since 1h | --from ... --to ...] [--step 60s]
 levelrail-cli nodes metrics <id> --metric NAME [--since 1h | --from ... --to ...] [--step 60s]
