@@ -10,6 +10,8 @@ import (
 	"net/http/cookiejar"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // authSessionClient is a minimal HTTP client for the session-cookie-only
@@ -82,11 +84,14 @@ func (c *authSessionClient) do(ctx context.Context, method, path string, body, o
 		req.Header.Set("Content-Type", "application/json")
 	}
 
+	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
+		apiclient.TraceRequest(method, c.baseURL+path, "", time.Since(start), err)
 		return fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	apiclient.TraceRequest(method, c.baseURL+path, resp.Status, time.Since(start), nil)
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
