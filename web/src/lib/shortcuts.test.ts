@@ -3,6 +3,7 @@ import {
   CHORD_TIMEOUT_MS,
   INITIAL_CHORD,
   isDialogOpen,
+  isShortcutInputSuppressed,
   stepChord,
   type ChordState,
   type KeyInput,
@@ -70,8 +71,8 @@ const cases: { name: string; steps: Step[] }[] = [
     ],
   },
   {
-    name: 'question mark opens help',
-    steps: [{ input: { key: '?' }, at: 0, action: { type: 'help' } }],
+    name: 'question mark does nothing (replaced by the long-press l overlay)',
+    steps: [{ input: { key: '?' }, at: 0, action: null }],
   },
   {
     name: 'slash focuses search',
@@ -99,7 +100,7 @@ const cases: { name: string; steps: Step[] }[] = [
   },
   {
     name: 'open dialog disables shortcuts',
-    steps: [{ input: { key: '?', dialogOpen: true }, at: 0, action: null }],
+    steps: [{ input: { key: '/', dialogOpen: true }, at: 0, action: null }],
   },
 ]
 
@@ -156,5 +157,21 @@ describe('stepChord experimental gate', () => {
     ['a', [], { type: 'go', to: '/apps' }],
   ])('g %s with %j', (key, enabled, want) => {
     expect(chord(key, enabled)).toEqual(want)
+  })
+})
+
+describe('isShortcutInputSuppressed', () => {
+  it('is false for a plain key with no modifier, not typing, no dialog', () => {
+    expect(isShortcutInputSuppressed(base)).toBe(false)
+  })
+
+  it.each([
+    ['typing', { typing: true }],
+    ['dialogOpen', { dialogOpen: true }],
+    ['ctrl', { ctrl: true }],
+    ['meta', { meta: true }],
+    ['alt', { alt: true }],
+  ])('is true when %s', (_name, override) => {
+    expect(isShortcutInputSuppressed({ ...base, ...override })).toBe(true)
   })
 })

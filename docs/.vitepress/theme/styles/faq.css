@@ -1,0 +1,73 @@
+/* FaqSection.vue: a single glass card holding stacked accordion rows,
+   mastra.ai's FAQ layout. Rows share one card border instead of each
+   row having its own, with a hairline divider between them. */
+
+.faq-list {
+  margin-top: 24px;
+  border: 1px solid var(--glinui-glass-border-strong);
+  border-radius: var(--glinui-radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 60%);
+  overflow: hidden;
+}
+
+.faq-item + .faq-item {
+  border-top: 1px solid var(--glinui-glass-border);
+}
+
+.faq-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 22px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-family: var(--glinui-font-sans);
+  color: inherit;
+  cursor: pointer;
+}
+
+.faq-item__question {
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--vp-c-text-1);
+}
+
+.faq-item--open .faq-item__question {
+  color: var(--glinui-accent);
+}
+
+.faq-item__caret {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--vp-c-text-3);
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), color 0.25s ease;
+}
+
+.faq-item--open .faq-item__caret {
+  color: var(--glinui-accent);
+  transform: rotate(180deg);
+}
+
+.faq-item__panel {
+  padding: 0 22px 20px;
+}
+
+.faq-item__answer {
+  margin: 0;
+  max-width: 68ch;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--vp-c-text-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faq-item__caret {
+    transition: none;
+  }
+}

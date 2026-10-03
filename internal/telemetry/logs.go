@@ -120,25 +120,52 @@ func (db *DB) WriteLogBatch(ctx context.Context, entries []LogEntry) error {
 		_ = tx.Rollback() // no-op if Commit already succeeded
 	}()
 
-	stmt, err := tx.PrepareContext(ctx, `
-		INSERT INTO log_entries (resource_id, stream, ts, message, structured, fields_json)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`)
-	if err != nil {
-		return fmt.Errorf("telemetry: prepare log write: %w", err)
+	type jsonEntry struct {
+		R  string  `json:"r"`
+		S  string  `json:"s"`
+		T  int64   `json:"t"`
+		M  string  `json:"m"`
+		St int     `json:"st"`
+		F  *string `json:"f"`
 	}
-	defer func() { _ = stmt.Close() }()
 
-	for _, e := range entries {
-		structured := 0
-		var fieldsJSON sql.NullString
+	je := make([]jsonEntry, len(entries))
+	for i, e := range entries {
+		str := 0
+		var fj *string
 		if e.Structured {
-			structured = 1
-			fieldsJSON = sql.NullString{String: e.FieldsJSON, Valid: true}
+			str = 1
+			tmp := e.FieldsJSON
+			fj = &tmp
 		}
-		if _, err := stmt.ExecContext(ctx, e.ResourceID, e.Stream, e.Timestamp.UnixNano(), e.Message, structured, fieldsJSON); err != nil {
-			return fmt.Errorf("telemetry: write log entry for %s: %w", e.ResourceID, err)
+		je[i] = jsonEntry{
+			R:  e.ResourceID,
+			S:  e.Stream,
+			T:  e.Timestamp.UnixNano(),
+			M:  e.Message,
+			St: str,
+			F:  fj,
 		}
+	}
+
+	data, err := json.Marshal(je)
+	if err != nil {
+		return fmt.Errorf("telemetry: marshal log batch: %w", err)
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO log_entries (resource_id, stream, ts, message, structured, fields_json)
+		SELECT
+			json_extract(value, '$.r'),
+			json_extract(value, '$.s'),
+			json_extract(value, '$.t'),
+			json_extract(value, '$.m'),
+			json_extract(value, '$.st'),
+			json_extract(value, '$.f')
+		FROM json_each(?)
+	`, string(data))
+	if err != nil {
+		return fmt.Errorf("telemetry: write log batch: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {

@@ -15,5 +15,10 @@ repo_url: https://github.com/GLINCKER/levelrail
 # catalog), distinct from Railway/Coolify/Fly.io/Zeabur's purple cluster,
 # Supabase/Linode's green, DigitalOcean/Dokku's blue, and specifically
 # Netlify's near-identical teal (#00C7B7, same 175 hue as an earlier draft).
-primary_color: "#107292" # identity color only, docs' amber accent is a deliberate second color: adr/022
+# Superseded 2026-10-02 (adr/024): now the one brand accent across /web and
+# /docs, replacing the two-color split adr/022 had accepted. primary_color
+# is used live (web/src/components/BrandProvider.tsx sets it as a CSS
+# variable), not just the Go struct field adr/022 found unused.
+primary_color: "#107292"
+primary_color_dark: "#2fb3dc"
 logo_svg: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\"><title>Levelrail</title><rect x=\"10\" y=\"174\" width=\"236\" height=\"68\" rx=\"22\" fill=\"#06232C\"/><rect x=\"10\" y=\"162\" width=\"236\" height=\"68\" rx=\"22\" fill=\"#084F67\"/><rect x=\"42\" y=\"103\" width=\"172\" height=\"68\" rx=\"22\" fill=\"#06232C\"/><rect x=\"42\" y=\"91\" width=\"172\" height=\"68\" rx=\"22\" fill=\"#107292\"/><rect x=\"75\" y=\"32\" width=\"106\" height=\"68\" rx=\"22\" fill=\"#06232C\"/><rect x=\"75\" y=\"20\" width=\"106\" height=\"68\" rx=\"22\" fill=\"#58B1CE\"/></svg>"

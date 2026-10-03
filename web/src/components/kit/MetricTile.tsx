@@ -91,7 +91,7 @@ export function MetricTile({
   )
 
   const card =
-    'relative flex h-full flex-col gap-2 rounded-xl border border-border bg-card p-4 text-left shadow-raised transition-shadow duration-150'
+    'relative flex h-full flex-col gap-2 rounded-[var(--glinui-radius-md)] border border-border bg-card p-4 text-left shadow-raised transition-shadow duration-150'
 
   return (
     <div className="relative h-full" data-testid="metric-tile">

@@ -7,16 +7,32 @@ interface Line {
   text: string
 }
 
-const script: Line[] = [
-  { kind: 'command', text: 'curl -fsSL https://levelrail.com/install.sh | sudo sh' },
-  { kind: 'output', text: 'checking host: docker, systemd, ports 80/443/8080 free' },
-  { kind: 'output', text: 'installing control plane as a systemd service' },
-  { kind: 'output', text: 'dashboard ready: https://198.51.100.42:8080 (setup token printed above)' },
-  { kind: 'command', text: 'levelrail deploy myapp --image registry.example.com/acme/myapp:latest' },
-  { kind: 'output', text: 'build pushed to the registry, readiness probe passed' },
-  { kind: 'output', text: 'issuing TLS certificate' },
-  { kind: 'success', text: 'myapp is live at https://myapp.example.com' },
-]
+// lines/title/ariaLabel are optional so the Quickstart section's existing
+// `<TerminalDemo />` (no props) keeps its original install->deploy script.
+const props = withDefaults(
+  defineProps<{
+    lines?: Line[]
+    title?: string
+    ariaLabel?: string
+  }>(),
+  {
+    lines: () => [
+      { kind: 'command', text: 'curl -fsSL https://levelrail.com/install.sh | sudo sh' },
+      { kind: 'output', text: 'checking host: docker, systemd, ports 80/443/8080 free' },
+      { kind: 'output', text: 'installing control plane as a systemd service' },
+      { kind: 'output', text: 'dashboard ready: https://198.51.100.42:8080 (setup token printed above)' },
+      { kind: 'command', text: 'levelrail deploy myapp --image registry.example.com/acme/myapp:latest' },
+      { kind: 'output', text: 'build pushed to the registry, readiness probe passed' },
+      { kind: 'output', text: 'issuing TLS certificate' },
+      { kind: 'success', text: 'myapp is live at https://myapp.example.com' },
+    ],
+    title: 'install → deploy',
+    ariaLabel:
+      'Terminal recording: installing Levelrail with the install script, then deploying an app that ends up live over HTTPS',
+  },
+)
+
+const script = props.lines
 
 const revealed = ref<{ kind: LineKind; text: string; done: boolean }[]>([])
 let timers: ReturnType<typeof setTimeout>[] = []
@@ -102,13 +118,9 @@ onUnmounted(() => {
 <template>
   <div class="terminal-demo">
     <div class="terminal-demo__bar" aria-hidden="true">
-      <span class="terminal-demo__title">install &rarr; deploy</span>
+      <span class="terminal-demo__title">{{ title }}</span>
     </div>
-    <div
-      class="terminal-demo__body"
-      role="img"
-      aria-label="Terminal recording: installing Levelrail with the install script, then deploying an app that ends up live over HTTPS"
-    >
+    <div class="terminal-demo__body" role="img" :aria-label="ariaLabel">
       <div
         v-for="(line, i) in revealed"
         :key="i"

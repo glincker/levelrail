@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/netguard"
 )
 
 // httpSinkTimeout bounds one Send call: a generic collector endpoint an
@@ -40,7 +42,8 @@ type HTTPSink struct {
 // *http.Client with httpSinkTimeout if nil.
 func NewHTTPSink(url string, client *http.Client) *HTTPSink {
 	if client == nil {
-		client = &http.Client{Timeout: httpSinkTimeout}
+		client = netguard.NewClient()
+		client.Timeout = httpSinkTimeout
 	}
 	return &HTTPSink{URL: url, Client: client}
 }

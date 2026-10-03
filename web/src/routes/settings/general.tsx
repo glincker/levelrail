@@ -121,7 +121,7 @@ function GeneralSettingsPage() {
         description="System status and configuration."
       />
 
-      <Card>
+      <Card className="rounded-[var(--glinui-radius-lg)]">
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">

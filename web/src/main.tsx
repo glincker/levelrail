@@ -103,11 +103,7 @@ if (!rootElement) {
   throw new Error('root element not found')
 }
 
-// Dynamic, not a static top-level import: i18next + react-i18next +
-// the language detector would otherwise land in the main entry chunk,
-// the same bundle-size budget check-bundle-size.js guards for route
-// code. Awaited before the first render so the default namespace is
-// already initialized when components mount.
+// Dynamic import keeps i18next out of the main entry chunk's bundle-size budget.
 void import('./i18n').then(() => {
   createRoot(rootElement).render(
     <StrictMode>

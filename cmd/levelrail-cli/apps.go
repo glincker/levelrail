@@ -171,6 +171,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsEgress(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "health":
 		return runAppsHealth(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "health-score":
+		return runAppsHealthScore(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "volumes":
 		return runAppsVolumes(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "integrations":
@@ -261,6 +263,7 @@ func appsUsage(prog string) string {
   %[1]s apps untag <name> <tag> [flags]   detach a tag (by name) from an app
   %[1]s apps egress <verb> [flags]        get/set/clear an app's outbound network allowlist
   %[1]s apps health <verb> [flags]        get/set/clear an app's readiness and liveness probes
+  %[1]s apps health-score <name> [flags]  pass/warn/fail readiness verdict: deploy, security, resilience, observability
   %[1]s apps volumes <verb> [flags]       get/attach/detach a named Docker volume outside a redeploy
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.

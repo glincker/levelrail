@@ -92,7 +92,7 @@ function DatabaseListPage() {
             <CreateResourceWizard
               scope="databases"
               trigger={
-                <Button size="sm">
+                <Button size="sm" variant="glinui">
                   <PlusIcon />
                   New database
                 </Button>
