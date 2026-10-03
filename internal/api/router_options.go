@@ -380,6 +380,18 @@ func WithSessionTTL(d time.Duration) Option {
 	return func(rt *Router) { rt.sessionTTL = d }
 }
 
+// WithRequestLogThresholds sets requestLoggingMiddleware's Warn/Error
+// duration bands. Either argument <= 0 keeps that band's own default.
+// cmd/levelrail/main.go resolves APP_SLOW_REQUEST_THRESHOLD/
+// APP_CRITICAL_REQUEST_THRESHOLD and calls this unconditionally, the
+// same "no hardcoded thresholds" convention WithSessionTTL's own doc
+// comment establishes.
+func WithRequestLogThresholds(slow, critical time.Duration) Option {
+	return func(rt *Router) {
+		rt.requestLogThresholds = requestLogThresholds{slow: slow, critical: critical}
+	}
+}
+
 // WithAutoPlacement overrides whether handleCreateApp/handleCreateDatabase
 // auto-place a create request that omits node_id onto the least-loaded
 // registered node (scheduling.go's autoPlaceNode), instead of leaving it
