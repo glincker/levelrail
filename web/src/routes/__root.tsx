@@ -11,7 +11,7 @@ import { brandQueryOptions } from '../queries/brand'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
 import { CommandPalette } from '../components/CommandPalette'
-import { ShortcutsDialog } from '../components/ShortcutsDialog'
+import { StageOverlay } from '../components/StageOverlay'
 import { useShortcuts } from '../hooks/useShortcuts'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { AppHeader } from '../components/shell/AppHeader'
@@ -86,9 +86,12 @@ function RootLayout() {
 function AppShell() {
   const username = useAuthUsername()
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false)
-  const [shortcutsOpen, setShortcutsOpen] = React.useState(false)
-  const openShortcuts = React.useCallback(() => setShortcutsOpen(true), [])
-  useShortcuts({ onHelp: openShortcuts })
+  const [stageOverlayOpen, setStageOverlayOpen] = React.useState(false)
+  const openStageOverlay = React.useCallback(
+    () => setStageOverlayOpen(true),
+    [],
+  )
+  useShortcuts({ onOpenStageOverlay: openStageOverlay })
 
   if (!username) {
     return <Outlet />
@@ -100,9 +103,12 @@ function AppShell() {
       <CommandPalette
         open={commandPaletteOpen}
         onOpenChange={setCommandPaletteOpen}
-        onShowShortcuts={openShortcuts}
+        onShowShortcuts={openStageOverlay}
       />
-      <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <StageOverlay
+        open={stageOverlayOpen}
+        onOpenChange={setStageOverlayOpen}
+      />
       <SidebarInset>
         <AppHeader onSearch={() => setCommandPaletteOpen(true)} />
         <ShellBanner />
@@ -111,9 +117,9 @@ function AppShell() {
             <Outlet />
           </div>
           <p className="mx-auto mt-8 w-full max-w-6xl text-xs text-muted-foreground">
-            Press{' '}
-            <kbd className="rounded border border-border bg-muted px-1">?</kbd>{' '}
-            for keyboard shortcuts
+            Hold{' '}
+            <kbd className="rounded border border-border bg-muted px-1">L</kbd>{' '}
+            for quick navigation
           </p>
         </main>
       </SidebarInset>
