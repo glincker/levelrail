@@ -23,6 +23,8 @@ func TestExperimentalGateMiddleware(t *testing.T) {
 		feature      experimental.Feature
 	}{
 		{http.MethodPost, "/api/v1/ai/sessions", experimental.AIChat},
+		{http.MethodGet, "/api/v1/ai/sessions", experimental.AIChat},
+		{http.MethodDelete, "/api/v1/ai/sessions/s1", experimental.AIChat},
 		{http.MethodGet, "/api/v1/settings/ai-assistant", experimental.AIChat},
 		{http.MethodGet, "/api/v1/models", experimental.AIModels},
 		{http.MethodGet, "/api/v1/models/m1/keys", experimental.AIModels},

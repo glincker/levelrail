@@ -755,7 +755,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/gitea-app/repos/{owner}/{repo}/branches | AbilityReadSensitive | handleListGiteaAppBranches |
 | POST | /api/v1/gitea-app/repos/{owner}/{repo}/use-as-source | AbilityWriteSensitive | handleUseGiteaRepoAsSource |
 | POST | /api/v1/ai/sessions | AbilityRoot | handleCreateAIChatSession |
+| GET | /api/v1/ai/sessions | AbilityRoot | handleListAIChatSessions |
 | GET | /api/v1/ai/sessions/{id} | AbilityRoot | handleGetAIChatSession |
+| DELETE | /api/v1/ai/sessions/{id} | AbilityRoot | handleDeleteAIChatSession |
 | POST | /api/v1/ai/sessions/{id}/messages | AbilityRoot | handleCreateAIChatMessage |
 | POST | /api/v1/ai/sessions/{id}/confirmations/{confirmation_id} | AbilityRoot | handleResolveAIChatConfirmation |
 | GET | /api/v1/storage/providers | AbilityRead | handleListStorageProviders |

@@ -41,7 +41,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Status page | beta | Off by default, one internal package test file plus API tests, no e2e. |
 | Multi-node and WireGuard | beta | Join flow verified locally across two real Docker daemons (enrollment, cordon, drain with real container relocation); the WireGuard mesh itself and cross-host remote transport are still unverified. |
 | AI assistant (MCP server) | beta | 153 tools in full mode (144 in the default standard mode), 31 test files in `internal/mcptools`, no e2e. |
-| AI assistant (in-app chat) | hide-behind-flag | Tested against fake Anthropic responses only, no e2e, no doc page for the in-app chat. |
+| AI assistant (in-app chat) | hide-behind-flag | Tested against fake Anthropic responses only (unit, plus a real-HTTP e2e session lifecycle test with a fake provider); `docs/ai-assistant-chat.md` now documents it. |
 | AI models (GPU) | hide-behind-flag | Needs NVIDIA hardware, every test uses fakes, docs state v1 scope is NVIDIA on Linux only. |
 | Load balancer | hide-behind-flag | No e2e, no live test, outside the 3 to 50 services story in the project plan. |
 | Platform as code (iac) | hide-behind-flag | Widest surface relative to tests: 17 source files, 4 test files, no e2e. |
@@ -53,9 +53,9 @@ Test counts are `*_test.go` files in the named directory. "CLI" and "web" list t
 
 ### AI assistant (MCP server and in-app chat)
 
-- Unit: `internal/ai/` (5 files: `anthropic_test.go`, `classify_test.go`, `engine_test.go`, `eval_injection_test.go`, `toolcaller_test.go`); `internal/mcptools/` (31 files, for example `modes_test.go`, `tools_apps_clone_images_test.go`); API `internal/api/ai_chat_test.go`, `internal/api/ai_settings_test.go`; CLI `cmd/levelrail-cli/settings_ai_assistant_test.go`; web `web/src/components/AiChatMessageList.test.tsx`, `AiToolCallCard.test.tsx`.
-- E2E: none (nothing in `test/e2e` mentions the assistant or MCP).
-- Docs: `docs/ai-assistant.md` covers `levelrail-mcp` only. No page describes the in-app chat.
+- Unit: `internal/ai/` (5 files: `anthropic_test.go`, `classify_test.go`, `engine_test.go`, `eval_injection_test.go`, `toolcaller_test.go`); `internal/mcptools/` (31 files, for example `modes_test.go`, `tools_apps_clone_images_test.go`); API `internal/api/ai_chat_test.go`, `internal/api/ai_settings_test.go`; CLI `cmd/levelrail-cli/settings_ai_assistant_test.go`; web `web/src/components/AiChatMessageList.test.tsx`, `AiToolCallCard.test.tsx`, `web/src/queries/aiAssistant.test.ts`, `web/src/components/AiChatHistoryMenu.test.tsx`.
+- E2E: `test/e2e/ai_chat_test.go` drives create/send-message/get/list/delete over real HTTP against a real `*api.Router` and `ai.Engine`, with a fake `ai.Provider` and `ai.ToolExecutor` (no live Anthropic call). MCP server itself: none.
+- Docs: `docs/ai-assistant.md` covers `levelrail-mcp`; `docs/ai-assistant-chat.md` covers the in-app chat.
 - Real infra: none found.
 - Label: MCP server **beta** (tool registry is well tested, but the surface is large and unexercised end to end). In-app chat **hide-behind-flag** (depends on an external model provider, no evidence beyond fakes).
 

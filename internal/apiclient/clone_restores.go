@@ -38,5 +38,5 @@ func (c *Client) GetDatabaseStatus(ctx context.Context, name string) ([]Conditio
 // server holds the connection open after the last step) or ctx is canceled.
 func (c *Client) StreamDeploySteps(ctx context.Context, name, deployID string, onStep func(DeployStepEvent) error) error {
 	path := "/api/v1/apps/" + PathEscape(name) + "/deploys/" + PathEscape(deployID) + "/steps"
-	return streamSSE(ctx, c, path, onStep)
+	return streamSSE(ctx, c, http.MethodGet, path, nil, onStep)
 }

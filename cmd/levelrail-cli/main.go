@@ -194,6 +194,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDeployApprovals(prog, args[1:], stdout, stderr, lookupEnv)
 	case "build":
 		return runBuild(prog, args[1:], stdout, stderr, lookupEnv)
+	case "ai":
+		return runAI(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, rootUsage(prog))
@@ -291,6 +293,8 @@ Usage:
   %[1]s deploy-approvals list|get|approve|reject [flags]   two-person approval gate on a deploy/promote into a protected environment
   %[1]s build detect|branches --repo-url URL [flags]       check what framework a public repo would build as, or list its branches
   %[1]s backups restores <database> [flags]                database restore attempt history
+  %[1]s ai chat "<message>" [--session ID] [flags]          talk to the in-app AI assistant, streamed
+  %[1]s ai sessions list|get|delete|resolve [flags]         manage chat sessions and pending tool-call confirmations
   %[1]s pitr restores <database> [flags]                   point-in-time restore attempt history
   %[1]s app-volume-backups restores <app> <volume> [flags]   volume restore attempt history
 

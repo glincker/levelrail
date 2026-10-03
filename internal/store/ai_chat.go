@@ -147,6 +147,48 @@ func (db *DB) GetAIChatSession(ctx context.Context, id string) (AIChatSession, e
 	return s, nil
 }
 
+// ListAIChatSessions returns every session, most recently updated first.
+func (db *DB) ListAIChatSessions(ctx context.Context) ([]AIChatSession, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT id, created_at, updated_at FROM ai_chat_sessions ORDER BY updated_at DESC, id DESC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list ai chat sessions: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	out := []AIChatSession{}
+	for rows.Next() {
+		var s AIChatSession
+		if err := rows.Scan(&s.ID, &s.CreatedAt, &s.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("store: list ai chat sessions: %w", err)
+		}
+		out = append(out, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: list ai chat sessions: %w", err)
+	}
+	return out, nil
+}
+
+// DeleteAIChatSession removes a session and, via ON DELETE CASCADE
+// (migrations/0108), every message and confirmation row under it.
+// Returns ErrAIChatSessionNotFound if id doesn't exist.
+func (db *DB) DeleteAIChatSession(ctx context.Context, id string) error {
+	res, err := db.ExecContext(ctx, `DELETE FROM ai_chat_sessions WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("store: delete ai chat session: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: delete ai chat session: rows affected: %w", err)
+	}
+	if n == 0 {
+		return ErrAIChatSessionNotFound
+	}
+	return nil
+}
+
 // touchAIChatSession bumps a session's updated_at, called by
 // SaveAIChatMessage so GET (a future session-list endpoint) can sort by
 // recency.
