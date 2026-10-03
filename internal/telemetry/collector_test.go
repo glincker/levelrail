@@ -27,20 +27,31 @@ func TestCollectOnce_WritesSamplesForEveryTarget(t *testing.T) {
 	db := newTestDB(t)
 	source := &fakeStatsSource{
 		stats: map[string]docker.ContainerStats{
-			"c1": {CPUPercent: 10, MemoryUsageBytes: 100, MemoryLimitBytes: 1000, NetworkRxBytes: 1, NetworkTxBytes: 2, DiskReadBytes: 3, DiskWriteBytes: 4},
-			"c2": {CPUPercent: 20, MemoryUsageBytes: 200, MemoryLimitBytes: 2000, NetworkRxBytes: 5, NetworkTxBytes: 6, DiskReadBytes: 7, DiskWriteBytes: 8},
+			"c1": {CPURaw: docker.CPUStatsRaw{TotalUsageNanos: 0, SystemUsageNanos: 0, OnlineCPUs: 1}, MemoryUsageBytes: 100, MemoryLimitBytes: 1000, NetworkRxBytes: 1, NetworkTxBytes: 2, DiskReadBytes: 3, DiskWriteBytes: 4},
+			"c2": {CPURaw: docker.CPUStatsRaw{TotalUsageNanos: 0, SystemUsageNanos: 0, OnlineCPUs: 1}, MemoryUsageBytes: 200, MemoryLimitBytes: 2000, NetworkRxBytes: 5, NetworkTxBytes: 6, DiskReadBytes: 7, DiskWriteBytes: 8},
 		},
 	}
 	c := NewCollector(source, db, time.Second, nil)
-
-	err := c.CollectOnce(context.Background(), []Target{
+	targets := []Target{
 		{ResourceID: "service:web", ContainerID: "c1"},
 		{ResourceID: "service:worker", ContainerID: "c2"},
-	})
-	if err != nil {
+	}
+
+	// First poll has no previous sample to diff against (cpu_percent 0,
+	// see cpuPercent's own doc comment); the second establishes a real
+	// delta, the collector's actual contract, not just a passthrough.
+	if err := c.CollectOnce(context.Background(), targets); err != nil {
+		t.Fatalf("CollectOnce() error = %v", err)
+	}
+	source.stats["c1"] = docker.ContainerStats{CPURaw: docker.CPUStatsRaw{TotalUsageNanos: 10, SystemUsageNanos: 100, OnlineCPUs: 1}, MemoryUsageBytes: 100, MemoryLimitBytes: 1000, NetworkRxBytes: 1, NetworkTxBytes: 2, DiskReadBytes: 3, DiskWriteBytes: 4}
+	source.stats["c2"] = docker.ContainerStats{CPURaw: docker.CPUStatsRaw{TotalUsageNanos: 20, SystemUsageNanos: 100, OnlineCPUs: 1}, MemoryUsageBytes: 200, MemoryLimitBytes: 2000, NetworkRxBytes: 5, NetworkTxBytes: 6, DiskReadBytes: 7, DiskWriteBytes: 8}
+	if err := c.CollectOnce(context.Background(), targets); err != nil {
 		t.Fatalf("CollectOnce() error = %v", err)
 	}
 
+	// Both polls land in the same second: metric_samples' (resource,
+	// metric, ts) upsert means only the second, delta-computed value
+	// survives, which is the real thing under test.
 	got, err := db.Query(context.Background(), "service:web", "cpu_percent", time.Now().Add(-time.Minute), time.Now().Add(time.Minute))
 	if err != nil {
 		t.Fatalf("Query() error = %v", err)
@@ -61,16 +72,20 @@ func TestCollectOnce_WritesSamplesForEveryTarget(t *testing.T) {
 func TestCollectOnce_OneTargetFails_OthersStillWritten(t *testing.T) {
 	db := newTestDB(t)
 	source := &fakeStatsSource{
-		stats:  map[string]docker.ContainerStats{"c-ok": {CPUPercent: 42}},
+		stats:  map[string]docker.ContainerStats{"c-ok": {CPURaw: docker.CPUStatsRaw{TotalUsageNanos: 0, SystemUsageNanos: 0, OnlineCPUs: 1}}},
 		errFor: map[string]error{"c-gone": errors.New("no such container")},
 	}
 	c := NewCollector(source, db, time.Second, nil)
-
-	err := c.CollectOnce(context.Background(), []Target{
+	targets := []Target{
 		{ResourceID: "service:gone", ContainerID: "c-gone"},
 		{ResourceID: "service:ok", ContainerID: "c-ok"},
-	})
-	if err == nil {
+	}
+
+	if err := c.CollectOnce(context.Background(), targets); err == nil {
+		t.Fatal("CollectOnce() error = nil, want the c-gone failure surfaced")
+	}
+	source.stats["c-ok"] = docker.ContainerStats{CPURaw: docker.CPUStatsRaw{TotalUsageNanos: 42, SystemUsageNanos: 100, OnlineCPUs: 1}}
+	if err := c.CollectOnce(context.Background(), targets); err == nil {
 		t.Fatal("CollectOnce() error = nil, want the c-gone failure surfaced")
 	}
 
@@ -88,6 +103,66 @@ func TestCollectOnce_OneTargetFails_OthersStillWritten(t *testing.T) {
 	}
 	if len(goneSamples) != 0 {
 		t.Errorf("service:gone samples = %+v, want none written for a target whose Stats call failed", goneSamples)
+	}
+}
+
+// A source's own CPUPercent is ignored; cpu_percent comes from CPURaw
+// diffed against the collector's own cached previous sample.
+func TestCollectOnce_CPUPercent_UsesOwnPreviousSample(t *testing.T) {
+	db := newTestDB(t)
+	source := &fakeStatsSource{
+		stats: map[string]docker.ContainerStats{
+			"c1": {CPUPercent: 999, CPURaw: docker.CPUStatsRaw{TotalUsageNanos: 1000, SystemUsageNanos: 1000, OnlineCPUs: 1}},
+		},
+	}
+	c := NewCollector(source, db, time.Second, nil)
+	targets := []Target{{ResourceID: "service:web", ContainerID: "c1"}}
+
+	// A stale or misleading CPUPercent from the stats source must be
+	// ignored: the collector recomputes it from CPURaw, which on this
+	// first-ever poll has no previous sample to diff against.
+	if err := c.CollectOnce(context.Background(), targets); err != nil {
+		t.Fatalf("CollectOnce() error = %v", err)
+	}
+	if _, ok := c.prevCPU["c1"]; !ok {
+		t.Fatal("prevCPU[c1] not cached after the first poll")
+	}
+
+	source.stats["c1"] = docker.ContainerStats{CPURaw: docker.CPUStatsRaw{TotalUsageNanos: 1500, SystemUsageNanos: 6000, OnlineCPUs: 1}}
+	if err := c.CollectOnce(context.Background(), targets); err != nil {
+		t.Fatalf("CollectOnce() error = %v", err)
+	}
+	got, err := db.Query(context.Background(), "service:web", "cpu_percent", time.Now().Add(-time.Minute), time.Now().Add(time.Minute))
+	if err != nil {
+		t.Fatalf("Query() error = %v", err)
+	}
+	want := (500.0 / 5000.0) * 1 * 100.0 // (1500-1000)/(6000-1000) * 1 core * 100
+	if len(got) != 1 || got[0].Value != want {
+		t.Errorf("service:web cpu_percent = %+v, want one sample with value %v", got, want)
+	}
+}
+
+func TestCollectOnce_PrunesCPUCacheForDroppedTargets(t *testing.T) {
+	db := newTestDB(t)
+	source := &fakeStatsSource{
+		stats: map[string]docker.ContainerStats{
+			"c1": {CPURaw: docker.CPUStatsRaw{TotalUsageNanos: 10, SystemUsageNanos: 10, OnlineCPUs: 1}},
+		},
+	}
+	c := NewCollector(source, db, time.Second, nil)
+
+	if err := c.CollectOnce(context.Background(), []Target{{ResourceID: "service:web", ContainerID: "c1"}}); err != nil {
+		t.Fatalf("CollectOnce() error = %v", err)
+	}
+	if len(c.prevCPU) != 1 {
+		t.Fatalf("prevCPU = %+v, want exactly c1 cached", c.prevCPU)
+	}
+
+	if err := c.CollectOnce(context.Background(), nil); err != nil {
+		t.Fatalf("CollectOnce(nil) error = %v", err)
+	}
+	if len(c.prevCPU) != 0 {
+		t.Errorf("prevCPU = %+v, want empty once c1 is no longer a polled target", c.prevCPU)
 	}
 }
 
