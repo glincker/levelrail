@@ -378,6 +378,7 @@ type Router struct {
 	appVolumeMoves               AppVolumeMoveStore               // always set, same "core Store interface" shape as backupHistory above
 	volumeCloneRestoreRunner     VolumeCloneRestoreRunner         // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new returns 501, same shape as cloneRestoreRunner above
 	deployAttempts               DeployAttemptStore               // always set, same "core Store interface" shape as certs/staticSites above
+	probeAttempts                ProbeAttemptStore                // always set, same "core Store interface" shape as deployAttempts above
 	buildStartMu                 sync.Mutex                       // serializes the running-attempt check and row insert in handleTriggerBuild
 	cancels                      *deploy.CancelRegistry           // always set by NewRouter: in-flight deploys an operator can cancel
 	startingDeploys              map[string]int                   // guarded by buildStartMu: apps whose webhook deploy is fetching before its attempt row exists
@@ -553,6 +554,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		customTemplates:             s,
 		deploys:                     s,
 		deployAttempts:              s,
+		probeAttempts:               s,
 		databases:                   s,
 		auth:                        s,
 		tokens:                      s,

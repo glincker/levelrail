@@ -251,6 +251,15 @@ type DeployAttemptStore interface {
 	ListFailedDeploysSince(ctx context.Context, since time.Time) ([]store.FailedDeploy, error)
 }
 
+// ProbeAttemptStore is the store surface GET
+// /api/v1/apps/{name}/deploys/{deployId}/probes needs: the individual
+// readiness-probe attempts (migrations/0280_probe_attempts.sql,
+// internal/probe.WithOnAttempt) one deploy attempt's cutover made.
+// *store.DB satisfies this structurally.
+type ProbeAttemptStore interface {
+	ListProbeAttempts(ctx context.Context, deployID string) ([]store.ProbeAttempt, error)
+}
+
 // WebhookDeliveryStore is the store surface real inbound webhook
 // delivery history needs: row-per-delivery CRUD backing
 // GET /api/v1/apps/{name}/webhook-deliveries and its replay endpoint.
@@ -531,6 +540,7 @@ type Store interface {
 	CustomTemplateStore
 	DeployStore
 	DeployAttemptStore
+	ProbeAttemptStore
 	DatabaseStore
 	AuthStore
 	TokenStore

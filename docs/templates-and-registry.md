@@ -258,7 +258,7 @@ The catalog is a hardcoded Go slice shipped with the binary. Adding, editing, or
 
 **No third-party catalog import**
 
-ADR 015 leaves open whether a full third-party dataset gets imported verbatim. Today's 206-entry catalog is Levelrail's own curated set, not an import.
+ADR 015 leaves open whether a full third-party dataset gets imported verbatim. Today's catalog (see the [full template catalog](/template-catalog) for the current count and every entry) is Levelrail's own curated set, not an import.
 
 **No static site creation or delete surface beyond git push**
 
@@ -272,6 +272,7 @@ A template's Compose body can change between control plane releases with nothing
 
 ## See also
 
+- [Template catalog](/template-catalog) - every entry in the catalog, browsable by category
 - [Deploying apps user guide](deploying-apps.md) - using templates from the dashboard or CLI
 - [App spec reference](app-spec-reference.md) - YAML format and build type options
 - [ADR 015: Service template catalog reversal](../adr/015-service-template-catalog-reversal.md) - design decision and rationale

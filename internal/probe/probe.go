@@ -135,18 +135,75 @@ func (f *Failure) Unwrap() error { return f.Err }
 
 // Prober runs probes with shared transport and limits.
 type Prober struct {
-	client *http.Client
-	exec   Executor
-	limits Limits
+	client    *http.Client
+	exec      Executor
+	limits    Limits
+	onAttempt func(Attempt)
+}
+
+// Option configures an optional Prober behavior.
+type Option func(*Prober)
+
+// Attempt is one individual probe attempt's outcome, reported via
+// WithOnAttempt strictly as a side channel: it is built and delivered
+// after attempt()'s own pass/fail decision is already made, and nothing
+// it does can feed back into WaitReady's retry loop or Check's return
+// value. Target is the same descriptive string a Failure's own Reason
+// would use (e.g. "GET http://addr/healthz", or an exec command), so a
+// caller rendering this needs no separate formatting.
+type Attempt struct {
+	Time       time.Time
+	Target     string
+	Latency    time.Duration
+	Success    bool
+	StatusCode int // HTTP status; 0 for an exec probe or a response-less HTTP failure
+	ExitCode   int // exec exit code; 0 for an HTTP probe
+	Error      string
+}
+
+// WithOnAttempt reports every individual probe attempt to fn, once per
+// call to attempt() (so once per WaitReady retry, once per Check), as a
+// side effect after that attempt's outcome is already decided. fn runs
+// synchronously on the calling goroutine and must not block; its
+// behavior can never change what WaitReady/Check return. Exists so an
+// operator-facing recorder can see per-attempt detail (status code,
+// latency) that a reconcile condition's own single Reason/Message
+// summary never captures.
+func WithOnAttempt(fn func(Attempt)) Option {
+	return func(p *Prober) { p.onAttempt = fn }
 }
 
 // New builds a Prober. A nil client means http.DefaultClient; a nil exec
 // makes every exec probe fail with FailureExecNotReady.
-func New(client *http.Client, exec Executor, limits Limits) *Prober {
+func New(client *http.Client, exec Executor, limits Limits, opts ...Option) *Prober {
 	if client == nil {
 		client = http.DefaultClient
 	}
-	return &Prober{client: client, exec: exec, limits: limits.withDefaults()}
+	p := &Prober{client: client, exec: exec, limits: limits.withDefaults()}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
+}
+
+// report delivers one Attempt to p.onAttempt, if configured. Centralized
+// here so httpAttempt/execAttempt each need only a single call site.
+func (p *Prober) report(start time.Time, target string, statusCode, exitCode int, err error) {
+	if p.onAttempt == nil {
+		return
+	}
+	a := Attempt{
+		Time:       start,
+		Target:     target,
+		Latency:    time.Since(start),
+		Success:    err == nil,
+		StatusCode: statusCode,
+		ExitCode:   exitCode,
+	}
+	if err != nil {
+		a.Error = err.Error()
+	}
+	p.onAttempt(a)
 }
 
 // Check runs exactly one probe attempt, bounded by cfg.Timeout.
