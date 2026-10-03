@@ -123,6 +123,10 @@ status=$?
 
 if [ -n "$covdir" ]; then
 	if go tool covdata textfmt -i="$covdir" -o "$COVERPROFILE"; then
+		# A lane whose packages all lack test files leaves covdir empty;
+		# covdata textfmt then exits 0 but writes a 0-byte file, no
+		# "mode: set" header for the notest append below to land after.
+		[ -s "$COVERPROFILE" ] || echo "mode: set" >"$COVERPROFILE"
 		# Packages without test files never run a binary, so they leave no
 		# raw data; plain -coverprofile still reports them at 0%.
 		notest="$(go list -f '{{if and (not .TestGoFiles) (not .XTestGoFiles)}}{{.ImportPath}}{{end}}' "${packages[@]}")"
