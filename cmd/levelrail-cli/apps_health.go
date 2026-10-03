@@ -48,8 +48,10 @@ func appsHealthUsage(prog string) string {
 
 A probe is either an HTTP(S) check (--path, with --scheme, --host,
 --tls-skip-verify, --follow-redirects, --expected-status) or a command run
-inside the container (--exec, exit 0 means healthy). The same settings can
-be declared in app.yaml's health: block.
+inside the container (--exec, exit 0 means healthy). --preset <name> fills
+path/interval/timeout/failures from a common shortcut (healthz, health,
+api-health, ping, status); any explicit flag passed alongside it wins. The
+same settings can be declared in app.yaml's health: block.
 
 Run "%[1]s apps health <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -74,10 +76,34 @@ func runAppsHealthGet(prog string, args []string, stdout, stderr io.Writer, look
 
 // probeFlags holds "apps health set"'s probe flags as typed.
 type probeFlags struct {
-	which, path, exec, scheme, host, followRedirects, expectedStatus string
-	interval, timeout, readyTimeout                                  string
-	tlsSkipVerify                                                    bool
-	failures                                                         int
+	which, path, exec, scheme, host, followRedirects, expectedStatus, preset string
+	interval, timeout, readyTimeout                                          string
+	tlsSkipVerify                                                            bool
+	failures                                                                 int
+}
+
+// healthPresetPaths are the same preset ids as the frontend's preset picker
+// (web/src/lib/healthCheckDefaults.ts), so both surfaces offer identical
+// one-click shortcuts.
+var healthPresetPaths = map[string]string{
+	"healthz":    "/healthz",
+	"health":     "/health",
+	"api-health": "/api/health",
+	"ping":       "/ping",
+	"status":     "/status",
+}
+
+const healthPresetNames = "healthz, health, api-health, ping, status"
+
+// healthPresetTiming mirrors healthCheckDefaults.ts's probeTimingDefaults:
+// readiness gates one deploy's cutover (short interval/timeout, no failure
+// count), liveness restarts a hung container (longer interval, a few
+// failures first). timeoutSeconds 0 means "leave it unset".
+func healthPresetTiming(which string) (intervalSeconds, timeoutSeconds, failures int) {
+	if which == "liveness" {
+		return 30, 0, 3
+	}
+	return 5, 2, 0
 }
 
 func (f *probeFlags) register(fs *flag.FlagSet) {
@@ -93,20 +119,41 @@ func (f *probeFlags) register(fs *flag.FlagSet) {
 	fs.StringVar(&f.timeout, "timeout", "", "per-attempt timeout, e.g. 2s")
 	fs.IntVar(&f.failures, "failures", 0, "consecutive liveness failures before a restart")
 	fs.StringVar(&f.readyTimeout, "ready-timeout", "", "how long a deploy waits for readiness, e.g. 90s")
+	fs.StringVar(&f.preset, "preset", "", "fill path/interval/timeout/failures from a named preset ("+healthPresetNames+"); explicit flags always win")
 }
 
 func (f probeFlags) toProbe() (serviceProbe, error) {
-	interval, err := parseDurationOrZero(f.interval)
+	path, intervalStr, timeoutStr, failures := f.path, f.interval, f.timeout, f.failures
+	if f.preset != "" {
+		presetPath, ok := healthPresetPaths[f.preset]
+		if !ok {
+			return serviceProbe{}, fmt.Errorf("--preset: unknown preset %q (want one of %s)", f.preset, healthPresetNames)
+		}
+		if path == "" && f.exec == "" {
+			path = presetPath
+		}
+		intervalSeconds, timeoutSeconds, presetFailures := healthPresetTiming(f.which)
+		if intervalStr == "" {
+			intervalStr = fmt.Sprintf("%ds", intervalSeconds)
+		}
+		if timeoutStr == "" && timeoutSeconds > 0 {
+			timeoutStr = fmt.Sprintf("%ds", timeoutSeconds)
+		}
+		if failures == 0 && presetFailures > 0 {
+			failures = presetFailures
+		}
+	}
+	interval, err := parseDurationOrZero(intervalStr)
 	if err != nil {
 		return serviceProbe{}, fmt.Errorf("--interval: %w", err)
 	}
-	timeout, err := parseDurationOrZero(f.timeout)
+	timeout, err := parseDurationOrZero(timeoutStr)
 	if err != nil {
 		return serviceProbe{}, fmt.Errorf("--timeout: %w", err)
 	}
 	p := serviceProbe{
-		Path: f.path, Scheme: f.scheme, Host: f.host, TLSSkipVerify: f.tlsSkipVerify,
-		ExpectedStatus: f.expectedStatus, Interval: interval.Nanoseconds(), Timeout: timeout.Nanoseconds(), Failures: f.failures,
+		Path: path, Scheme: f.scheme, Host: f.host, TLSSkipVerify: f.tlsSkipVerify,
+		ExpectedStatus: f.expectedStatus, Interval: interval.Nanoseconds(), Timeout: timeout.Nanoseconds(), Failures: failures,
 	}
 	if f.exec != "" {
 		p.Exec = probe.ShellCommand(f.exec)

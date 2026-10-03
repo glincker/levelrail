@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { HeartbeatIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail } from '../types/appDetail'
@@ -9,6 +9,7 @@ import {
   toProbe,
   toProbeFieldValues,
 } from '../lib/healthProbeForm'
+import { probeTimingDefaults } from '../lib/healthCheckDefaults'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -37,7 +38,7 @@ const healthSchema = z.object({
 export function HealthCheckEditor({ app }: { app: AppDetail }) {
   const updateApp = useUpdateApp(app.name)
   const notifyRestartRequired = useRestartRequiredToast()
-  const { control, register, handleSubmit, formState } =
+  const { control, register, handleSubmit, formState, setValue, getValues } =
     useForm<HealthFormValues>({
       resolver: zodResolver(healthSchema),
       values: {
@@ -46,6 +47,35 @@ export function HealthCheckEditor({ app }: { app: AppDetail }) {
       },
       resetOptions: { keepDirtyValues: true },
     })
+  const readinessEnabled = useWatch({ control, name: 'readiness.enabled' })
+
+  // The overwhelmingly common case is the same path for both probes, so
+  // one click copies readiness's HTTP/exec settings onto liveness,
+  // leaving liveness's own timing alone unless it is still blank.
+  function copyReadinessToLiveness() {
+    const readiness = getValues('readiness')
+    const liveness = getValues('liveness')
+    const defaults = probeTimingDefaults('liveness')
+    setValue(
+      'liveness',
+      {
+        ...liveness,
+        enabled: readiness.enabled,
+        useExec: readiness.useExec,
+        path: readiness.path,
+        https: readiness.https,
+        host: readiness.host,
+        tlsSkipVerify: readiness.tlsSkipVerify,
+        followRedirects: readiness.followRedirects,
+        expectedStatus: readiness.expectedStatus,
+        execCommand: readiness.execCommand,
+        intervalSeconds: liveness.intervalSeconds || defaults.intervalSeconds,
+        timeoutSeconds: liveness.timeoutSeconds || defaults.timeoutSeconds,
+        failures: liveness.failures || defaults.failures,
+      },
+      { shouldDirty: true, shouldValidate: true },
+    )
+  }
 
   const onSubmit = handleSubmit((values) => {
     updateApp.mutate(
@@ -91,20 +121,35 @@ export function HealthCheckEditor({ app }: { app: AppDetail }) {
         >
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <ProbeFields
+              key={`${app.name}-readiness`}
               title="Readiness probe"
               fieldPrefix="readiness"
               control={control}
               register={register}
+              setValue={setValue}
               formState={formState}
               currentProbe={app.health?.readiness}
             />
             <ProbeFields
+              key={`${app.name}-liveness`}
               title="Liveness probe"
               fieldPrefix="liveness"
               control={control}
               register={register}
+              setValue={setValue}
               formState={formState}
               currentProbe={app.health?.liveness}
+              headerAction={
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="outline"
+                  disabled={!readinessEnabled}
+                  onClick={copyReadinessToLiveness}
+                >
+                  Same as readiness
+                </Button>
+              }
             />
           </div>
           <div className="flex items-center gap-2">
