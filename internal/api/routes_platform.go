@@ -991,6 +991,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppHealth))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppHealth))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleClearAppHealth))
+	// Health check auto-detect (apps_health_discover.go): AbilityRead, the
+	// same tier GET .../diagnose already uses for an active probe against
+	// a running container (routes.go), since this changes nothing and
+	// only reads what the container's own HTTP port already exposes.
+	mux.HandleFunc("POST /api/v1/apps/{name}/health/discover", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDiscoverAppHealth))
 	// Attach/detach a named Docker volume outside a redeploy
 	// (apps_volumes_attach.go): AbilityWrite, the same tier health above
 	// uses, since this is an ordinary declarative resource, not a secret
