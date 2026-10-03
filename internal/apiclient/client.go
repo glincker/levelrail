@@ -67,18 +67,26 @@ func NewClient(baseURL, token string, opts ...Option) *Client {
 }
 
 func (c *Client) do(ctx context.Context, method, path string, body, out any) error {
+	_, err := c.doHeaders(ctx, method, path, body, out)
+	return err
+}
+
+// doHeaders is do plus the response header set, for a caller
+// (ListNodesFiltered) that needs a response header such as
+// X-Total-Count alongside the decoded body.
+func (c *Client) doHeaders(ctx context.Context, method, path string, body, out any) (http.Header, error) {
 	var reqBody io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("encode request body: %w", err)
+			return nil, fmt.Errorf("encode request body: %w", err)
 		}
 		reqBody = bytes.NewReader(b)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reqBody) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
 	if err != nil {
-		return fmt.Errorf("build request: %w", err)
+		return nil, fmt.Errorf("build request: %w", err)
 	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
@@ -100,11 +108,11 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 		// can tell "never reached the server" apart from "the server
 		// answered with an error" via errors.As, and pick a different
 		// exit code / tool-error shape for each.
-		return fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
+		return nil, fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	return decodeResponse(resp, out)
+	return resp.Header, decodeResponse(resp, out)
 }
 
 // decodeResponse reads resp's body, mapping a non-2xx status to
