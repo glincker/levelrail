@@ -1,0 +1,117 @@
+/**
+ * Glinui v1 design tokens: portable, framework-agnostic CSS custom
+ * properties (no VitePress/Tailwind-specific syntax). This is one of two
+ * synced copies; the other lives at web/src/styles/glinui-tokens.css.
+ * Source of truth for values is brand.yaml's primary_color (light) /
+ * primary_color_dark (dark) for the accent family, keep both copies and
+ * brand.yaml in sync until these are extracted into a real @glinui
+ * package shared by levelrail, glinr-frontend and thegdsks.
+ */
+
+:root {
+  --glinui-font-sans: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --glinui-font-display: 'Lora', 'Plus Jakarta Sans', serif;
+  --glinui-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --glinui-accent: #107292;
+  --glinui-accent-strong: #0d5f79;
+  --glinui-accent-soft-text: #58b1ce;
+  --glinui-accent-active-bg: rgba(16, 114, 146, 0.08);
+  --glinui-accent-active-ring: rgba(16, 114, 146, 0.15);
+
+  --glinui-glass-border: rgba(16, 24, 28, 0.1);
+  --glinui-glass-border-strong: rgba(16, 24, 28, 0.12);
+  --glinui-nav-bg: rgba(255, 255, 255, 0.65);
+  --glinui-modal-bg: rgba(255, 255, 255, 0.72);
+  --glinui-nav-shadow: 0 4px 20px rgba(16, 24, 28, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --glinui-modal-shadow: 0 32px 80px rgba(16, 24, 28, 0.16), 0 0 0 1px rgba(16, 24, 28, 0.08);
+  --glinui-blur-nav: blur(24px) saturate(150%);
+  --glinui-blur-modal: blur(60px) saturate(160%);
+
+  --glinui-radius-xs: 6px;
+  --glinui-radius-sm: 10px;
+  --glinui-radius-md: 14px;
+  --glinui-radius-lg: 18px;
+  --glinui-radius-full: 999px;
+}
+
+.dark {
+  --glinui-accent: #2fb3dc;
+  --glinui-accent-strong: #1a8fb4;
+  --glinui-accent-soft-text: #7fd1ea;
+  --glinui-accent-active-bg: rgba(255, 255, 255, 0.05);
+  --glinui-accent-active-ring: rgba(47, 179, 220, 0.25);
+
+  --glinui-glass-border: rgba(255, 255, 255, 0.1);
+  --glinui-glass-border-strong: rgba(255, 255, 255, 0.12);
+  --glinui-nav-bg: rgba(20, 20, 22, 0.4);
+  --glinui-nav-bg-scrolled: rgba(20, 20, 22, 0.5);
+  --glinui-modal-bg: rgba(20, 20, 22, 0.55);
+  --glinui-nav-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  --glinui-modal-shadow: 0 32px 96px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glinui-blur-nav: blur(40px) saturate(200%);
+  --glinui-blur-modal: blur(60px) saturate(200%);
+}
+
+/* Gradient-stroke button mechanism (mastra.ai technique): two stacked
+   background-images clipped separately so the border is a gradient that
+   fades to transparent, not a flat color. Three variants: neutral
+   (secondary actions), primary (brand gradient fill), ghost (ar border
+   only, hover-intensifying glow). */
+.glinui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  height: 38px;
+  padding: 0 20px;
+  border-radius: var(--glinui-radius-full);
+  border: 1.5px solid transparent;
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+  font-family: var(--glinui-font-sans);
+  font-size: 14.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-decoration: none !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.glinui-btn:active {
+  transform: scale(0.98);
+}
+
+.glinui-btn--neutral {
+  --glinui-btn-fill: rgba(20, 20, 22, 0.9);
+  --glinui-btn-border-start: rgba(255, 255, 255, 0.22);
+  --glinui-btn-border-end: rgba(255, 255, 255, 0);
+  color: #ddd;
+  background-image: linear-gradient(var(--glinui-btn-fill), var(--glinui-btn-fill)),
+    linear-gradient(180deg, var(--glinui-btn-border-start) 0%, var(--glinui-btn-border-end) 100%);
+}
+.glinui-btn--neutral:hover {
+  --glinui-btn-fill: rgba(30, 30, 32, 0.95);
+  --glinui-btn-border-start: rgba(255, 255, 255, 0.32);
+}
+
+.glinui-btn--primary {
+  color: #fff;
+  font-weight: 600;
+  background-image: linear-gradient(160deg, var(--glinui-accent-soft-text) 0%, var(--glinui-accent-strong) 100%),
+    linear-gradient(180deg, var(--glinui-accent-soft-text) 0%, rgba(16, 114, 146, 0) 100%);
+}
+.glinui-btn--primary:hover {
+  filter: brightness(1.1);
+}
+
+.glinui-btn--ghost {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid var(--glinui-glass-border);
+  color: var(--glinui-accent-soft-text);
+  box-shadow: 0 0 0 0.5px rgba(16, 114, 146, 0.08);
+}
+.glinui-btn--ghost:hover {
+  border-color: var(--glinui-accent-active-ring);
+  box-shadow: 0 0 0 0.5px var(--glinui-accent-active-ring), 0 4px 20px rgba(16, 114, 146, 0.12);
+}

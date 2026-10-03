@@ -1,0 +1,392 @@
+/* CustomTopNav.vue (floating glass pill) + the local search button/modal
+   it opens. A second early :root block here sets --vp-nav-logo-height to
+   match, for the default VPNav's mobile/fallback rendering. */
+
+:root {
+  --vp-nav-logo-height: 36px;
+}
+
+.VPNavBarTitle .title {
+  font-family: var(--vp-font-family-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* CustomTopNav.vue + CustomSidebar.vue: fully custom components (not
+   overrides of VitePress's own VPNav/VPSidebar, which are hidden above),
+   so every property here is this file's own to define -- no fighting
+   hidden default-theme specificity or box-model assumptions. */
+
+/* Floating pill, not a full-bleed bar (thegdsks's header.tsx recipe):
+   centered, capped width, fully rounded. .VPContent.has-sidebar's
+   padding-top and .custom-sidebar's top below are both derived from
+   top + height here -- change this block, update those two to match. */
+.custom-nav {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%) scale(1);
+  width: calc(100% - 32px);
+  max-width: 1040px;
+  z-index: 30;
+  height: 56px;
+  overflow: hidden;
+  border-radius: var(--glinui-radius-full);
+  border: 1px solid var(--glinui-glass-border);
+  background-color: var(--glinui-nav-bg);
+  backdrop-filter: var(--glinui-blur-nav);
+  -webkit-backdrop-filter: var(--glinui-blur-nav);
+  box-shadow: var(--glinui-nav-shadow);
+  /* Scroll-triggered state (CustomTopNav.vue toggles --on-hero/--scrolled
+     off a scroll listener) animates instead of snapping -- background/
+     border/shadow cross-fade via transition, size via the transform
+     below. Reverses the same way scrolling back up (class removed),
+     "vice versa" for free since it's just a CSS transition either
+     direction. */
+  transition: background-color 0.35s ease, border-color 0.35s ease,
+    box-shadow 0.35s ease, backdrop-filter 0.35s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    max-width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Slightly smaller once scrolled past the hero -- thegdsks's header.tsx
+   does the same (navScale 1 -> 0.96, navMaxWidth 780 -> 700) so the nav
+   recedes a little once you're reading content instead of staying at
+   full landing-page prominence. */
+.custom-nav--scrolled {
+  max-width: 980px;
+  transform: translateX(-50%) scale(0.97);
+}
+
+/* Forces the dark glass tint regardless of the light/dark toggle, for
+   exactly one case: unscrolled, on the home page, where the nav floats
+   over the hero's own always-dark palette (CustomTopNav.vue sets this
+   class; see its own comment for why). References the --hero-nav-* token
+   set (brand.css) rather than the toggle-following --glinui-* vars,
+   since this must stay dark even while the page itself is in light mode. */
+.custom-nav--on-hero {
+  border-color: var(--hero-nav-border);
+  background-color: var(--hero-nav-bg);
+  backdrop-filter: var(--hero-nav-blur);
+  -webkit-backdrop-filter: var(--hero-nav-blur);
+  box-shadow: var(--hero-nav-shadow);
+  /* VitePress's own default-theme component (VPNavBarSearchButton.vue)
+     colors the search button's CHILD elements directly -- placeholder
+     text, search icon, key-cap border/glyph -- using --vp-c-text-1/2 and
+     --vp-c-divider, all at higher specificity than anything we can set
+     on the button itself. Overriding the tokens here cascades correctly
+     into every one of those child rules in one place instead of chasing
+     each selector individually (also fixes the social icons below). */
+  --vp-c-divider: rgba(255, 255, 255, 0.12);
+  --vp-c-text-1: var(--hero-text);
+  --vp-c-text-2: var(--hero-text-muted);
+}
+
+.custom-nav--on-hero .custom-nav__brand,
+.custom-nav--on-hero .custom-nav__icon-btn {
+  color: var(--hero-text);
+}
+
+.custom-nav--on-hero .custom-nav__link {
+  color: var(--hero-nav-link);
+}
+
+.custom-nav--on-hero .custom-nav__link:hover {
+  color: var(--hero-text);
+  background-color: var(--hero-nav-link-hover-bg);
+}
+
+.custom-nav--on-hero .custom-nav__icon-btn {
+  border-color: var(--hero-nav-border);
+}
+
+/* Must come after the rule above: equal specificity (0,2,0), later rule
+   wins -- the theme toggle's glow treatment wants no border at all here,
+   not the shared hero-nav border every other icon button gets. */
+.custom-nav--on-hero .custom-nav__theme-btn {
+  border-color: transparent;
+}
+
+.custom-nav--on-hero .DocSearch.DocSearch-Button {
+  color: var(--hero-text-muted);
+  background-image: linear-gradient(var(--hero-nav-search-fill), var(--hero-nav-search-fill)),
+    linear-gradient(180deg, var(--hero-nav-search-border) 0%, rgba(255, 255, 255, 0) 100%);
+}
+.custom-nav--on-hero .DocSearch.DocSearch-Button:hover {
+  color: var(--hero-text);
+  background-image: linear-gradient(var(--hero-nav-search-fill-hover), var(--hero-nav-search-fill-hover)),
+    linear-gradient(180deg, var(--hero-nav-search-border-hover) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+/* Gradient accent line + frosted sheen (thegdsks's glass-nav recipe,
+   ported from the approved mockup): a thin brand-colored line fading at
+   both ends sits on the nav's top edge, with a soft top-down highlight
+   underneath it, so the glass reads as lit from above instead of flat. */
+.custom-nav::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 55%;
+  height: 1px;
+  transform: translateX(-50%);
+  opacity: 0.7;
+  background: linear-gradient(90deg, transparent, var(--glinui-accent), transparent);
+  pointer-events: none;
+}
+
+.custom-nav::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 50%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.08), transparent);
+  pointer-events: none;
+}
+
+.dark .custom-nav::after {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05), transparent);
+}
+
+.custom-nav__inner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 100%;
+  /* 16px right, not 10px: the theme toggle + GitHub icon were sitting
+     too close to the pill's own curved edge (border-radius: full),
+     reading as cropped/crowded into the corner instead of having real
+     breathing room inside the rounded shape. */
+  padding: 0 16px 0 20px;
+}
+
+.custom-nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  color: var(--vp-c-text-1);
+  text-decoration: none !important;
+}
+
+.custom-nav__brand-text {
+  font-family: var(--vp-font-family-display);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+.custom-nav__brand-mark {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.custom-nav__links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.custom-nav__link {
+  position: relative;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--vp-c-text-2);
+  text-decoration: none !important;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+/* Soft translucent highlight, not a flat solid fill: a flat --vp-c-bg-soft
+   box read as a plain opaque chip, out of place against the glass pill
+   it sits inside. */
+.custom-nav__link:hover {
+  color: var(--vp-c-text-1);
+  background-color: color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
+}
+
+.custom-nav__spacer {
+  flex: 1;
+}
+
+.custom-nav__search {
+  flex-shrink: 0;
+}
+
+.custom-nav__search .VPNavBarSearch {
+  width: auto;
+}
+
+/* Ghost glass treatment (ties to .glinui-btn--ghost's recipe in
+   tokens.css), not a flat solid-fill square: a bordered opaque
+   --vp-c-bg-soft box read as a disconnected chip against the glass pill
+   it sits inside, same issue as the nav link hover above. */
+.custom-nav__icon-btn {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--glinui-radius-full);
+  border: 1px solid var(--glinui-glass-border);
+  background: transparent;
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.custom-nav__icon-btn:hover {
+  color: var(--vp-c-brand-1);
+  border-color: var(--glinui-accent-active-ring);
+  box-shadow: 0 0 0 0.5px var(--glinui-accent-active-ring);
+}
+
+/* Theme toggle: amber glow for the sun state, violet glow for the moon
+   state (thegdsks's ui/theme-toggle.tsx recipe -- ported the gradient
+   SVG icons directly in CustomTopNav.vue's template; this is the glow
+   backdrop half of that component, since Framer Motion isn't available
+   in this Vue app). */
+.custom-nav__theme-btn {
+  background: linear-gradient(145deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.12));
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.25), inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  border-color: transparent;
+}
+
+.custom-nav__theme-btn--dark {
+  background: linear-gradient(145deg, rgba(99, 102, 241, 0.2), rgba(67, 56, 202, 0.12));
+  box-shadow: 0 0 16px rgba(129, 140, 248, 0.25), inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+}
+
+.custom-nav__theme-btn:hover {
+  transform: scale(1.1);
+}
+
+.custom-nav__theme-btn:active {
+  transform: scale(0.92);
+}
+
+/* Cross-fade + scale + rotate swap between the sun/moon SVGs, the CSS
+   equivalent of thegdsks's spring-animated AnimatePresence transition. */
+.theme-icon-enter-active,
+.theme-icon-leave-active {
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.theme-icon-enter-from {
+  opacity: 0;
+  transform: scale(0.4) rotate(-90deg);
+}
+.theme-icon-leave-to {
+  opacity: 0;
+  transform: scale(0.4) rotate(90deg);
+}
+
+.custom-nav__socials.VPSocialLinks {
+  flex-shrink: 0;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+@media (max-width: 959px) {
+  .custom-nav {
+    display: none;
+  }
+}
+
+/* Search trigger pill: same gradient-stroke mechanism as .glinui-btn, applied
+   directly to VitePress's own DocSearch-Button so it reads as one of our
+   buttons instead of the default theme's plain bordered rectangle. */
+.DocSearch.DocSearch-Button {
+  height: 32px;
+  width: auto;
+  padding: 0 10px 0 8px;
+  border-radius: var(--glinui-radius-full);
+  border: 1.5px solid transparent;
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+  /* VitePress's own VPNavBarSearchButton.vue sets background-color:
+     var(--vp-c-bg-alt) at >=768px. We never overrode it, so it was
+     filling the gradient-stroke's border-box ring (our gradient fades to
+     transparent at the bottom, so their flat color showed straight
+     through) -- this was the actual source of the "white border", not
+     background-image, which was already correct. */
+  background-color: transparent;
+  /* color-mix against --glinui-accent, not --vp-c-text-1: text-1 is a
+     neutral that resolves to near-white in dark mode, which is exactly
+     the plain-white-edge look the on-hero state (above) was already
+     fixed away from -- this is the same fix for the toggle-following
+     (non-hero) state, so both read as the same accent-tinted glass
+     stroke instead of one looking intentional and one looking like a
+     stray white outline. */
+  background-image: linear-gradient(var(--vp-c-bg-soft), var(--vp-c-bg-soft)),
+    linear-gradient(180deg, color-mix(in srgb, var(--glinui-accent) 40%, transparent) 0%, transparent 100%);
+  color: var(--vp-c-text-2);
+  transition: all 0.15s ease;
+}
+.DocSearch.DocSearch-Button:hover {
+  /* background-clip/background-origin repeated here (not just inherited
+     from the base rule above): VitePress's own hover rule sets a
+     `background` shorthand at the same specificity, which would reset
+     clip/origin back to their initial values if it ever loads after
+     ours in a production bundle (same specificity, so load order would
+     decide the winner -- harmless today since dev-mode order favors us,
+     but not something to depend on). */
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+  color: var(--vp-c-text-1);
+  background-image: linear-gradient(var(--vp-c-bg-soft), var(--vp-c-bg-soft)),
+    linear-gradient(180deg, var(--glinui-accent-active-ring) 0%, transparent 100%);
+}
+.DocSearch-Button-Key {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Local search modal: glass surface matching the nav (same blur/shadow
+   family, dark-tinted border in light mode so the edge stays visible --
+   thegdsks's white-on-white border was the bug this avoids). */
+.VPLocalSearchBox .shell {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--glinui-radius-lg) !important;
+  background: var(--glinui-modal-bg) !important;
+  backdrop-filter: var(--glinui-blur-modal);
+  -webkit-backdrop-filter: var(--glinui-blur-modal);
+  box-shadow: var(--glinui-modal-shadow) !important;
+  border: 1px solid var(--glinui-glass-border);
+}
+
+/* Same frosted top sheen as .custom-nav, so the modal reads as the same
+   glass material as the nav it opens from. */
+.VPLocalSearchBox .shell::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.08), transparent);
+  pointer-events: none;
+}
+.VPLocalSearchBox .backdrop {
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.VPLocalSearchBox .search-bar {
+  border-radius: var(--glinui-radius-md) !important;
+}
+/* Default theme puts a 2px solid border on every .result row
+   unconditionally (not just .selected), which reads as a stack of
+   disconnected boxes against our glass modal -- our rows should be
+   borderless until active, like the rest of the design system's list
+   patterns. */
+.VPLocalSearchBox .result {
+  border: none !important;
+  border-radius: var(--glinui-radius-sm) !important;
+  margin: 2px 6px !important;
+}
+.VPLocalSearchBox .result.selected {
+  background-color: var(--glinui-accent-active-bg) !important;
+  box-shadow: inset 0 0 0 1px var(--glinui-accent-active-ring) !important;
+}
+

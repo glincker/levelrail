@@ -1,0 +1,344 @@
+/* General Diataxis doc-content chrome (.vp-doc): tables, VPDoc top glow,
+   mermaid, code blocks, custom-block callouts, card grid. Not home-page
+   specific. */
+
+.vp-doc table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.vp-doc table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--vp-c-bg-soft);
+  z-index: 1;
+}
+
+.vp-doc table td:first-child,
+.vp-doc table th:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--vp-c-bg-soft);
+  z-index: 2;
+  font-weight: 600;
+}
+
+.vp-doc table thead th:first-child {
+  z-index: 3;
+}
+
+.vp-doc table tbody tr:hover td {
+  background: var(--vp-c-brand-soft);
+}
+
+.vp-doc table tbody tr:hover td:first-child {
+  background: var(--vp-c-brand-soft);
+}
+
+/* CustomFooter.vue: cinematic footer band for Layout.vue's layout-bottom
+   slot (every page, not just home). Scroll-reveal only, no scroll-jacking
+   pin: a shared footer that eats a viewport on every doc page would be
+   actively hostile, see the component's own comments for the reasoning. */
+
+.changelog-meta {
+  color: var(--vp-c-text-2);
+  font-size: 14px;
+}
+
+/* Doc-chrome pass (Diátaxis shell only, not the home page): Mintlify-
+   inspired sidebar/nav/TOC/code-block/callout polish on top of the
+   existing petrol-blue brand tokens above. */
+
+.VPDoc {
+  position: relative;
+}
+
+.VPDoc::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 420px;
+  pointer-events: none;
+  background: radial-gradient(ellipse 900px 420px at 50% -10%, rgba(47, 179, 220, 0.1), transparent 70%);
+}
+
+.dark .VPDoc::before {
+  background: radial-gradient(ellipse 900px 420px at 50% -10%, rgba(88, 177, 206, 0.14), transparent 70%);
+}
+
+.vp-doc h1 {
+  letter-spacing: -0.02em;
+  font-size: 34px;
+}
+
+/* VitePress's own nav/sidebar are hidden on doc pages (CustomTopNav.vue /
+   CustomSidebar.vue replace them, see Layout.vue) but stay mounted so
+   their internal logic -- active-page tracking, mobile drawer state,
+   local search index -- keeps working; CustomTopNav/CustomSidebar read
+   that same state via the public useData()/useSidebar() composables. The
+   :has() gate gets to the right pages without depending on DOM order. */
+/* Desktop only: mobile keeps VitePress's own nav/sidebar entirely
+   (hamburger drawer, touch-friendly collapse), since CustomTopNav.vue /
+   CustomSidebar.vue don't reimplement that and shouldn't need to.
+   Anchored on .VPContent.has-sidebar, not .VPNavBar.has-sidebar: the
+   latter is only added by a client-side watchPostEffect (scroll/sidebar
+   state) and is absent from the server-rendered HTML entirely, so a
+   selector depending on it would leave both navs visible until
+   hydration finishes (or permanently, with JS disabled).
+   .VPContent's has-sidebar comes from a plain computed and is present
+   in the static HTML from the start.
+   Also gated on .VPHome: the home layout has no sidebar at all, so
+   has-sidebar never matches there, and the default .VPNav (its own
+   default appearance-switch and nav-link styling, never themed) was
+   rendering unhidden on top of CustomTopNav -- the source of the
+   "nav links grey on blue, toggle looks wrong" report. CustomTopNav
+   covers the home page too (Layout.vue), so this was always a bug, just
+   not a visible one until the new brand color made the default switch's
+   active-state blue stand out. */
+@media (min-width: 960px) {
+  body:has(.VPContent.has-sidebar) .VPNav,
+  body:has(.VPContent.has-sidebar) .VPSidebar,
+  body:has(.VPHome) .VPNav {
+    display: none !important;
+  }
+}
+
+.VPDocAsideOutline .outline-title {
+  margin-bottom: 4px;
+}
+
+.VPDocAsideOutline .outline-link:hover {
+  color: var(--vp-c-brand-1);
+}
+
+.VPDocAsideOutline .outline-link.active {
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+}
+
+.vp-doc .mermaid {
+  overflow-x: auto;
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 14px;
+  background: var(--vp-c-bg-soft);
+  box-shadow: 0 2px 8px -4px rgba(15, 15, 15, 0.12);
+}
+
+.vp-doc .mermaid svg {
+  display: block;
+  max-width: none;
+  margin: 0 auto;
+}
+
+.vp-doc .mermaid .node rect,
+.vp-doc .mermaid .node polygon {
+  rx: 8px;
+  ry: 8px;
+}
+
+@media (max-width: 639px) {
+  .vp-doc .mermaid {
+    border-radius: 10px;
+    padding: 12px;
+  }
+}
+
+/* !important: default theme's own rule for this selector ties on specificity. */
+.vp-doc [class*='language-'] {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 14px !important;
+  box-shadow: 0 2px 8px -4px rgba(15, 15, 15, 0.12);
+}
+
+@media (max-width: 639px) {
+  .vp-doc [class*='language-'] {
+    border-radius: 10px !important;
+  }
+}
+
+/* background-color, not `background` shorthand: the default theme's
+   copy icon is a background-image on this same property. */
+.vp-doc [class*='language-'] > button.copy {
+  border-color: var(--vp-c-divider);
+  background-color: var(--vp-c-bg-alt);
+}
+
+.vp-doc [class*='language-'] > button.copy:hover {
+  border-color: var(--vp-c-brand-1);
+}
+
+/* Per-type tint (unmint's callout.tsx). ::: details also renders as
+   .custom-block (markdown-it container plugin), so it's covered here too. */
+.vp-doc .custom-block {
+  border-radius: 14px !important;
+  border: 1px solid var(--vp-c-divider);
+  border-left-width: 3px;
+  background: var(--vp-c-bg-soft);
+  box-shadow: 0 2px 8px -4px rgba(15, 15, 15, 0.1);
+}
+
+@media (max-width: 639px) {
+  .vp-doc .custom-block {
+    border-radius: 10px !important;
+  }
+}
+
+.vp-doc .custom-block-title {
+  font-weight: 700;
+}
+
+.vp-doc .custom-block.tip {
+  border-left-color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.vp-doc .custom-block.tip .custom-block-title {
+  color: #059669;
+}
+
+.vp-doc .custom-block.warning {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.vp-doc .custom-block.warning .custom-block-title {
+  color: #b45309;
+}
+
+.vp-doc .custom-block.danger {
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.vp-doc .custom-block.danger .custom-block-title {
+  color: #dc2626;
+}
+
+.vp-doc .custom-block.info {
+  border-left-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.vp-doc .custom-block.info .custom-block-title {
+  color: #2563eb;
+}
+
+.vp-doc .custom-block.details summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 2px 4px;
+  margin: 0 -4px 8px;
+  transition: background-color 0.15s ease;
+}
+
+.vp-doc .custom-block.details summary:hover {
+  background-color: var(--vp-c-bg-alt);
+}
+
+.vp-doc .custom-block.details summary::-webkit-details-marker {
+  display: none;
+}
+
+.vp-doc .custom-block.details summary::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 8px;
+  border-right: 2px solid var(--vp-c-text-3);
+  border-bottom: 2px solid var(--vp-c-text-3);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+
+.vp-doc details[open].custom-block.details summary::after {
+  transform: rotate(45deg);
+}
+
+.vp-doc table {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* Card.vue / CardGroup.vue (unmint's card.tsx). */
+.vp-doc .vp-card-group {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+@media (min-width: 640px) {
+  .vp-doc .vp-card-group {
+    grid-template-columns: repeat(var(--vp-card-group-cols, 2), 1fr);
+  }
+}
+
+.vp-doc .vp-card {
+  display: block;
+  height: 100%;
+  padding: 20px 22px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 14px;
+  background: var(--vp-c-bg-soft);
+  color: inherit;
+  text-decoration: none !important;
+  box-shadow: 0 2px 8px -4px rgba(15, 15, 15, 0.1);
+  transition: border-color 0.2s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.2s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (max-width: 639px) {
+  .vp-doc .vp-card {
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+}
+
+a.vp-card:hover {
+  border-color: var(--vp-c-brand-1);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -14px rgba(16, 114, 146, 0.35);
+}
+
+.vp-card__icon {
+  margin-bottom: 10px;
+  font-size: 20px;
+  color: var(--vp-c-brand-1);
+}
+
+.vp-card__title {
+  margin: 0 0 6px;
+  border: none !important;
+  padding: 0 !important;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
+.vp-card__body {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--vp-c-text-2);
+}
+
+.vp-card__body > :first-child {
+  margin-top: 0;
+}
+
+.vp-card__body > :last-child {
+  margin-bottom: 0;
+}
+
+/* VitePress's own default VPNav still renders on two surfaces CustomTopNav
+   doesn't cover: the homepage (no sidebar, so the hasSidebar guard in
+   Layout.vue never swaps it in) and mobile (<960px, see the has-sidebar
+   media query below). Match its logo/wordmark sizing to CustomTopNav's own
+   so the mark isn't noticeably smaller depending on which page you land
+   on. VitePress reads --vp-nav-logo-height on the logo img itself. */
