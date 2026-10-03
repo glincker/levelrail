@@ -133,11 +133,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-<<<<<<< HEAD
 ::: details 127 endpoints for app management, deployment, lifecycle control, and diagnostics
-=======
-::: details 127 endpoints for app management, deployment, lifecycle control, and diagnostics
->>>>>>> fb123e23 (feat: add opt-in per-app deploy status badge)
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -276,14 +272,6 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/badge | AbilityRead | handleGetBadgeSettings |
 | PUT | /api/v1/apps/{name}/badge | AbilityRoot | handleSetBadgeSettings |
 | GET | /api/v1/apps/{name}/badge.svg | Public | handlePublicAppBadge |
-<<<<<<< HEAD
-| POST | /api/v1/apps/{name}/save-as-template | AbilityWrite | handleSaveAppAsTemplate |
-| GET | /api/v1/apps/{name}/cost-estimate | AbilityRead | handleAppCostEstimate |
-=======
-| GET | /api/v1/apps/{name}/badge | AbilityRead | handleGetBadgeSettings |
-| PUT | /api/v1/apps/{name}/badge | AbilityRoot | handleSetBadgeSettings |
-| GET | /api/v1/apps/{name}/badge.svg | Public | handlePublicAppBadge |
->>>>>>> fb123e23 (feat: add opt-in per-app deploy status badge)
 
 :::
 
@@ -455,15 +443,6 @@ Endpoints for:
 | DELETE | /api/v1/projects/{id}/env/secrets/{key} | AbilityWrite | handleDeleteProjectEnvSecret |
 | GET | /api/v1/projects/{id}/environments/compare | AbilityRead | handleCompareEnvironmentEnv |
 | GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
-| GET | /api/v1/projects/{id}/environments/compare | AbilityRead | handleCompareEnvironmentEnv |
-| GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
-| GET | /api/v1/projects/{id}/environments/compare | AbilityRead | handleCompareEnvironmentEnv |
-| GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
-<<<<<<< HEAD
-| GET | /api/v1/projects/{id}/environments/compare | AbilityRead | handleCompareEnvironmentEnv |
-=======
-| GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
->>>>>>> feat/service-topology-graph
 
 ## Nodes
 
