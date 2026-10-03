@@ -10,10 +10,12 @@ var storageTemplates = []Template{
 		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Real MinIO images require a "server /data" style command to
 		// actually serve.
-		// Tag unverified: quay.io returns 401 anonymously. Docker Hub minio/minio is gone.
+		// quay.io/minio/minio and Docker Hub's minio/minio both retired
+		// free anonymous pulls in Sept 2026; aistor/minio is MinIO's
+		// replacement public path, verified pullable 2026-10-03.
 		Compose: `services:
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    image: quay.io/minio/aistor/minio:RELEASE.2026-09-19T17-05-25Z.hotfix.4ef74f03d6f2
     command: ["server", "/data", "--console-address", ":9001"]
     ports: ["9000:9000", "9001:9001"]
     environment:
@@ -22,7 +24,8 @@ var storageTemplates = []Template{
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:9000/minio/health/live || exit 1"]
+      # aistor/minio is RHEL UBI-based, no wget: curl -f is what's there.
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:9000/minio/health/live || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
