@@ -30,7 +30,7 @@ function SettingsHubPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {section.items.map((item) => (
               <Link key={item.to} to={item.to} className="block">
-                <Card className="h-full transition-colors hover:ring-foreground/20">
+                <Card className="h-full rounded-[var(--glinui-radius-lg)] transition-colors hover:ring-foreground/20">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <item.icon className="size-4" />

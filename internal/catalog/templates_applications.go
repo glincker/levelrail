@@ -66,9 +66,17 @@ var applicationsTemplates = []Template{
 		Category:               "Analytics",
 		DocumentationURL:       "https://umami.is/docs",
 		RecommendedMemoryBytes: 536870912, // 512Mi
+		// postgresql-v2.15.0 (verified live, test/e2e's template fleet
+		// test) ships a Prisma Client built only for
+		// linux-musl-arm64-openssl-1.1.x: on an arm64 host, check-db.js
+		// can never locate a matching Query Engine, so the container
+		// exits 1 before it ever starts listening.
+		// postgresql-v2.19.0 ships the matching
+		// linux-musl-arm64-openssl-3.0.x build and was confirmed live to
+		// boot and answer /api/heartbeat on arm64.
 		Compose: `services:
   umami:
-    image: ghcr.io/umami-software/umami:postgresql-v2.15.0
+    image: ghcr.io/umami-software/umami:postgresql-v2.19.0
     ports: ["3000:3000"]
     environment:
       DATABASE_TYPE: postgresql

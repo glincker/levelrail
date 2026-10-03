@@ -75,6 +75,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsPreflight(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "resource-recommendation":
 		return runAppsResourceRecommendation(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "cost":
+		return runAppsCostEstimate(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "network":
 		return runAppsNetwork(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "logs":
@@ -137,6 +139,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsBulk(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin) //nolint:gosec // same guard as below
 	case "clone":
 		return runAppsClone(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "save-as-template":
+		return runAppsSaveAsTemplate(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "images":
 		return runAppsImages(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "storage":
@@ -167,6 +171,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsEgress(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "health":
 		return runAppsHealth(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "health-score":
+		return runAppsHealthScore(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "volumes":
 		return runAppsVolumes(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "integrations":
@@ -210,6 +216,7 @@ func appsUsage(prog string) string {
   %[1]s apps diagnose <name> [--deploy ID] [--apply-fix N] [flags]   explain a failed deploy or crashloop, optionally apply a fix
   %[1]s apps preflight <name> [--require-env A,B] [flags]   run pre-deploy checks (DNS, ports, disk, image, env)
   %[1]s apps resource-recommendation <name> [flags]   suggest memory/CPU limits from historical usage
+  %[1]s apps cost <name> [flags]   estimate what this app's CPU/memory would cost under reference providers (not a real bill)
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps logs <name> [flags]     search an app's stored log entries, or --follow to stream live
   %[1]s apps metrics <name> --metric NAME [flags]   query an app's metric time series
@@ -240,6 +247,7 @@ func appsUsage(prog string) string {
   %[1]s apps git-source <verb> [flags]   connect a repo for auto-deploy-on-push
   %[1]s apps webhook-deliveries <verb> [flags]   inspect and replay recent inbound git webhook requests
   %[1]s apps clone <name> <new-name> [flags]   duplicate an app's desired state under a new name
+  %[1]s apps save-as-template <name> [flags]   save an app's current desired state as a reusable one-click template
   %[1]s apps images <name> [flags]   list locally-present image tags under an app's current image repo
   %[1]s apps storage <verb> [flags]   attach/detach a connected bucket as this app's object storage
   %[1]s apps database <verb> [flags]   attach/detach a managed database as this app's connection-env-var source
@@ -255,6 +263,7 @@ func appsUsage(prog string) string {
   %[1]s apps untag <name> <tag> [flags]   detach a tag (by name) from an app
   %[1]s apps egress <verb> [flags]        get/set/clear an app's outbound network allowlist
   %[1]s apps health <verb> [flags]        get/set/clear an app's readiness and liveness probes
+  %[1]s apps health-score <name> [flags]  pass/warn/fail readiness verdict: deploy, security, resilience, observability
   %[1]s apps volumes <verb> [flags]       get/attach/detach a named Docker volume outside a redeploy
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.

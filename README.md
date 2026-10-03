@@ -128,7 +128,7 @@ unverified. Cloud node provisioning now covers five providers (Hetzner,
 DigitalOcean, AWS, Azure, GCP), and apps can redeploy a branch's latest
 commit on a cron schedule. Beyond the core deploy path, an IAM-style
 policy engine, audit logging, feature flags, alerting across
-nine rule kinds and seventeen notification channels, a self-service
+nine rule kinds and eighteen notification channels, a self-service
 team invite flow, and eight managed database engines with
 backup/restore/verification are also shipped
 (see [docs/roadmap.md](docs/roadmap.md) for the full, current list).

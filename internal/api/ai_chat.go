@@ -21,6 +21,8 @@ import (
 type AIChatStore interface {
 	CreateAIChatSession(ctx context.Context, id string, now time.Time) (store.AIChatSession, error)
 	GetAIChatSession(ctx context.Context, id string) (store.AIChatSession, error)
+	ListAIChatSessions(ctx context.Context) ([]store.AIChatSession, error)
+	DeleteAIChatSession(ctx context.Context, id string) error
 	ListAIChatMessages(ctx context.Context, sessionID string) ([]store.AIChatMessage, error)
 	GetAIChatConfirmation(ctx context.Context, id string) (store.AIChatConfirmation, error)
 }
@@ -50,6 +52,16 @@ type aiChatMessageResource struct {
 type aiChatSessionResource struct {
 	ID       string                  `json:"id"`
 	Messages []aiChatMessageResource `json:"messages"`
+}
+
+type aiChatSessionSummaryResource struct {
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func toAIChatSessionSummaryResource(s store.AIChatSession) aiChatSessionSummaryResource {
+	return aiChatSessionSummaryResource{ID: s.ID, CreatedAt: s.CreatedAt, UpdatedAt: s.UpdatedAt}
 }
 
 func toAIChatMessageResource(m store.AIChatMessage) aiChatMessageResource {
@@ -100,6 +112,41 @@ func (rt *Router) handleGetAIChatSession(w http.ResponseWriter, r *http.Request)
 		messages = append(messages, toAIChatMessageResource(row))
 	}
 	writeJSON(w, http.StatusOK, aiChatSessionResource{ID: session.ID, Messages: messages})
+}
+
+// handleListAIChatSessions handles GET /api/v1/ai/sessions: every
+// session's identity and timestamps, most recently updated first. No
+// message content, matching handleGetAIChatSession's own full transcript
+// being a separate, per-session fetch.
+func (rt *Router) handleListAIChatSessions(w http.ResponseWriter, r *http.Request) {
+	sessions, err := rt.aiChat.ListAIChatSessions(r.Context())
+	if err != nil {
+		rt.logger.Error("api: list ai chat sessions failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	out := make([]aiChatSessionSummaryResource, 0, len(sessions))
+	for _, s := range sessions {
+		out = append(out, toAIChatSessionSummaryResource(s))
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// handleDeleteAIChatSession handles DELETE /api/v1/ai/sessions/{id}:
+// removes the session and its full message/confirmation history.
+func (rt *Router) handleDeleteAIChatSession(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	err := rt.aiChat.DeleteAIChatSession(r.Context(), id)
+	if errors.Is(err, store.ErrAIChatSessionNotFound) {
+		writeError(w, http.StatusNotFound, "session not found")
+		return
+	}
+	if err != nil {
+		rt.logger.Error("api: delete ai chat session failed", slog.String("error", err.Error()), slog.String("session_id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 type createAIChatMessageRequest struct {

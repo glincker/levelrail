@@ -54,7 +54,9 @@ jobs:
           steps.meta.outputs.update-type == 'version-update:semver-patch' ||
           (steps.meta.outputs.update-type == 'version-update:semver-minor' &&
            steps.classify.outputs.security-relevant == 'false')
-        run: gh pr merge --auto --squash --delete-branch "$PR_URL"
+        # --delete-branch is rejected once a merge queue is enabled for
+        # the base branch (the queue handles branch cleanup itself).
+        run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

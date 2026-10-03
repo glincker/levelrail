@@ -101,6 +101,11 @@ levelrail apps health clear <name> [--probe readiness|liveness] [flags]
 ```
 
 ```
+levelrail apps health-score <name> [flags]
+```
+synthesized pass/warn/fail readiness verdict across deploy health, security, resilience, and observability
+
+```
 levelrail apps builds trigger <name> --repo URL --ref REF [flags]
 ```
 build an image from a git source and deploy it to an existing app
@@ -116,6 +121,11 @@ levelrail apps clear-project <name> [flags]
 ```
 levelrail apps clone <name> <new-name> [flags]
 ```
+
+```
+levelrail apps save-as-template <name> [--template-name NAME] [--description TEXT] [flags]
+```
+derives a compose.yaml from `<name>`'s current desired state and saves it as a reusable template; no secret, database, or vault-backed env value is ever captured, only the key name
 
 ```
 levelrail apps connect <app> <database> [--field FIELD] [--env-var NAME] [flags]
@@ -1730,9 +1740,14 @@ list repos the connected account can access
 ## Templates
 
 ```
-levelrail templates list [flags]
+levelrail templates list [--custom] [flags]
 ```
-browse the curated service catalog
+browse the curated service catalog, or `--custom` for your own saved templates
+
+```
+levelrail templates delete <id> [flags]
+```
+deletes a custom template (see `apps save-as-template`); the built-in catalog is read-only
 
 ## Static Sites
 

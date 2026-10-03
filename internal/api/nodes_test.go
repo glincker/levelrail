@@ -923,6 +923,9 @@ func (f *fakeDrainAppStore) SetServiceAutoRollbackOnSLOBurn(context.Context, str
 func (f *fakeDrainAppStore) SetServiceExecEnabled(context.Context, string, bool) error {
 	return nil
 }
+func (f *fakeDrainAppStore) SetServiceBadgeEnabled(context.Context, string, bool) error {
+	return nil
+}
 func (f *fakeDrainAppStore) SetServiceVaultEnvVar(context.Context, string, string, *store.VaultEnvRef) error {
 	return nil
 }

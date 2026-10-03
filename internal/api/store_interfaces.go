@@ -110,6 +110,12 @@ type AppStore interface {
 	// SetServiceAutoRollbackOnCrashloop, see
 	// store.DB.SetServiceExecEnabled's own doc comment.
 	SetServiceExecEnabled(ctx context.Context, name string, enabled bool) error
+	// SetServiceBadgeEnabled backs PUT /api/v1/apps/{name}/badge
+	// (app_badge.go): whether GET .../badge.svg serves anything for
+	// this app, or 404s. Same separation-from-ordinary-update reasoning
+	// as SetServiceAutoRollbackOnCrashloop, see
+	// store.DB.SetServiceBadgeEnabled's own doc comment.
+	SetServiceBadgeEnabled(ctx context.Context, name string, enabled bool) error
 	// SetServiceVaultEnvVar backs PUT/DELETE
 	// /api/v1/apps/{name}/vault-env/{key} (apps_vault_env.go): the
 	// UI/CLI-facing way to declare (or remove) one Vault-sourced env var
@@ -192,6 +198,18 @@ type AppComposeStore interface {
 	SaveApp(ctx context.Context, a store.App) error
 	GetAppByName(ctx context.Context, name string) (store.App, error)
 	SaveDesiredService(ctx context.Context, svc store.DesiredService) error
+}
+
+// CustomTemplateStore is the store surface save-as-template needs
+// (service_templates_custom.go): CRUD on operator-defined templates,
+// the growth-loop counterpart to internal/catalog's static built-in
+// catalog. See store.CustomTemplate's own doc comment for why a
+// template row never holds a real secret value.
+type CustomTemplateStore interface {
+	SaveCustomTemplate(ctx context.Context, t store.CustomTemplate) error
+	GetCustomTemplate(ctx context.Context, id string) (store.CustomTemplate, error)
+	ListCustomTemplates(ctx context.Context) ([]store.CustomTemplate, error)
+	DeleteCustomTemplate(ctx context.Context, id string) error
 }
 
 // ComposeSecretStore is the surface POST /api/v1/apps/{name}/compose
@@ -502,6 +520,7 @@ type Store interface {
 	AppStore
 	AppGroupLister
 	AppComposeStore
+	CustomTemplateStore
 	DeployStore
 	DeployAttemptStore
 	DatabaseStore
@@ -558,6 +577,7 @@ type Store interface {
 	InviteStore
 	RecoveryCodeStore
 	PasskeyStore
+	PushSubscriptions
 	AuditStore
 	ScheduledTaskStore
 	FeatureFlagStore

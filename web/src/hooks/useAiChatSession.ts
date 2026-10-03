@@ -4,6 +4,7 @@ import {
   fetchAiSession,
   resolveAiToolConfirmation,
   sendAiChatMessage,
+  type AiSessionSummary,
   type AiSseEvent,
 } from '../queries/aiAssistant'
 import type { AiChatMessage } from '../types/aiAssistant'
@@ -77,13 +78,20 @@ export function useAiChatSession() {
   const [error, setError] = useState<string | null>(null)
   const startingRef = useRef(false)
 
-  const startSession = useCallback(() => {
+  // existingId resumes a past session (clicked from the history menu)
+  // instead of minting a new one; both paths share the same loading/
+  // error handling since resuming still needs a round trip to confirm
+  // the session is real before the composer re-enables.
+  const startSession = useCallback((existingId?: string) => {
     if (startingRef.current) return
     startingRef.current = true
     setConnectionState('connecting')
     setError(null)
     setMessages([])
-    createAiSession()
+    const creation = existingId
+      ? Promise.resolve<AiSessionSummary>({ id: existingId })
+      : createAiSession()
+    creation
       .then((session) => {
         setSessionId(session.id)
         setConnectionState('ready')
@@ -183,6 +191,12 @@ export function useAiChatSession() {
     [sessionId],
   )
 
+  const startNewSession = useCallback(() => startSession(), [startSession])
+  const resumeSession = useCallback(
+    (id: string) => startSession(id),
+    [startSession],
+  )
+
   return {
     sessionId,
     messages,
@@ -191,6 +205,7 @@ export function useAiChatSession() {
     error,
     sendMessage,
     resolveConfirmation,
-    startNewSession: startSession,
+    startNewSession,
+    resumeSession,
   }
 }

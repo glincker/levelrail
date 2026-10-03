@@ -128,7 +128,7 @@ export function StatusChip() {
           size="md"
         />
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-96">
+      <PopoverContent align="end" className="w-96" glass>
         <PopoverHeader>
           <PopoverTitle>Platform status</PopoverTitle>
         </PopoverHeader>

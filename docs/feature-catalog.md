@@ -56,7 +56,7 @@ This section lists what you can see and do for each app, database, and system ar
 
 - **Nodes** - List all managed servers, check their health status, drain workloads before maintenance, prevent scheduling new apps on a node, and view node metrics
 - **Cross-app domains** - Configure shared domain routing and TLS settings that apply to all apps using them
-- **Projects** - Group apps and databases by project for better organization
+- **Projects** - Group apps and databases by project for better organization; each project has a [Topology](service-topology-graph.md) page drawing its apps, databases, and shared volumes as a diagram
 - **Environments** - Create environment tiers (staging, production) and scope app settings and variables per environment
 - **Organizations** - Set up multi-tenant structure for teams or separate business units
 
@@ -134,7 +134,7 @@ All command groups available:
 
 **nodes**
 
-`list`, `get`, `delete`, `join-token`, `cordon`, `uncordon`, `drain`, `workloads`, `health`, `patch-status`, `metrics`, `events` (connection history).
+`list`, `get`, `delete`, `join-token`, `cordon`, `uncordon`, `drain`, `workloads`, `health`, `patch-status`, `metrics`, `events` (connection history), `resource-usage`, `capacity-forecast`.
 
 **iam**
 

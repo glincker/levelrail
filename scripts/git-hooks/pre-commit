@@ -76,6 +76,23 @@ if [ -n "$dash_hits" ]; then
 	fail=1
 fi
 
+# A bad batch merge has twice committed unresolved <<<<<<< / ======= /
+# >>>>>>> markers into docs/api-reference.md (generated, so nobody's own
+# diff review caught it). Catch it for every staged file, not just that
+# one, before it lands again.
+echo "pre-commit: merge conflict markers"
+marker_hits=""
+for f in $staged_files; do
+	[ -f "$f" ] || continue
+	if grep -lE '^(<{7}|={7}|>{7})([^=<>]|$)' "$f" >/dev/null 2>&1; then
+		marker_hits="$marker_hits $f"
+	fi
+done
+if [ -n "$marker_hits" ]; then
+	echo "unresolved merge conflict markers found in:$marker_hits"
+	fail=1
+fi
+
 echo "pre-commit: comment density (new Go lines only, >8 consecutive)"
 staged_go_files_density=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' | grep -v '^docs-local/')
 bloat_hits=""

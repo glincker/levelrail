@@ -1,19 +1,37 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // TestMain enables every experimental feature so the rest of the package
 // exercises the gated handlers; the gate tests below narrow it per case.
+// It also opens and closes one throwaway SQLite database before m.Run():
+// modernc.org/sqlite has a documented one-time global init race when many
+// goroutines call sql.Open on a "sqlite" DSN for the first time
+// concurrently, which this package's hundreds of t.Parallel openTestDB
+// calls do; doing one single-threaded open here first avoids it.
 func TestMain(m *testing.M) {
 	experimental.Set(experimental.All()...)
+	warmupDir, err := os.MkdirTemp("", "levelrail-sqlite-warmup")
+	if err != nil {
+		panic("sqlite warmup: " + err.Error())
+	}
+	warmupDB, err := store.Open(context.Background(), filepath.Join(warmupDir, "warmup.db"))
+	if err != nil {
+		panic("sqlite warmup: " + err.Error())
+	}
+	_ = warmupDB.Close()
+	_ = os.RemoveAll(warmupDir)
 	os.Exit(m.Run())
 }
 
@@ -23,6 +41,8 @@ func TestExperimentalGateMiddleware(t *testing.T) {
 		feature      experimental.Feature
 	}{
 		{http.MethodPost, "/api/v1/ai/sessions", experimental.AIChat},
+		{http.MethodGet, "/api/v1/ai/sessions", experimental.AIChat},
+		{http.MethodDelete, "/api/v1/ai/sessions/s1", experimental.AIChat},
 		{http.MethodGet, "/api/v1/settings/ai-assistant", experimental.AIChat},
 		{http.MethodGet, "/api/v1/models", experimental.AIModels},
 		{http.MethodGet, "/api/v1/models/m1/keys", experimental.AIModels},

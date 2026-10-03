@@ -80,6 +80,7 @@ Four main types, plus two Levelrail-specific categories:
 | --- | --- |
 | [observability.md](observability.md) | Node-local metrics and log storage, federated queries, and the alert engine |
 | [deployments-page.md](deployments-page.md) | The cross-app Deployments page: live feed, filters, details drawer, actions and keyboard shortcuts |
+| [cost-estimate.md](cost-estimate.md) | The per-app "what this would cost elsewhere" estimate: the formula, reference providers, and how to correct the rates for your own region |
 
 #### Multi-Node Setup
 
@@ -92,6 +93,7 @@ Four main types, plus two Levelrail-specific categories:
 | Doc | Covers |
 | --- | --- |
 | [projects-and-organizations.md](projects-and-organizations.md) | The optional organization/project/environment grouping hierarchy for apps and databases |
+| [service-topology-graph.md](service-topology-graph.md) | A project's apps, databases, and shared volumes drawn as a diagram, with real derived edges |
 | [identity-and-access.md](identity-and-access.md) | Users, roles, abilities, IAM policies, invites, tokens, 2FA, OAuth, and audit logging |
 | [tags.md](tags.md) | Label and organize apps with arbitrary tags for filtering and grouping |
 
@@ -105,6 +107,7 @@ Four main types, plus two Levelrail-specific categories:
 | [platform-as-code.md](platform-as-code.md) | Describe projects, environments, apps, domains and databases as YAML, then export, diff, plan and apply them from the CLI, the dashboard, MCP or CI |
 | [templates-and-registry.md](templates-and-registry.md) | Deploy curated service templates from the catalog as Compose-backed apps |
 | [ai-assistant.md](ai-assistant.md) | Run `levelrail-mcp` over stdio or the network for an MCP-compatible AI assistant, and scope a token for it |
+| [ai-assistant-chat.md](ai-assistant-chat.md) | The in-app dashboard/CLI chat behind the `ai-chat` experimental flag: enabling it, what it can and can't do, and the confirmation gate |
 | [agent-tooling-audit.md](agent-tooling-audit.md) | Tool counts and estimated token cost per MCP mode, the heaviest and overlapping tools, and the budget test |
 
 #### Maintenance and Documentation

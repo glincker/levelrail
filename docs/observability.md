@@ -229,6 +229,41 @@ The response is `{ "nodes": [...], "fleet": {...} }`:
 - Each node row's `cpu_percent`/`memory_usage_bytes` is the sum of every placed service's latest sample, the same "sum of containers, not a true host read" contract `apps/{id}/metrics` documents above. `memory_total_bytes`/`disk_used_bytes`/`disk_total_bytes` are real host reads, but (today) only ever populated for the node running the control plane itself, since no other node has a host-metrics collector yet (see "Missing node metrics" below). A field is absent, not zero, when nothing has reported it.
 - The `fleet` rollup sums every node's numbers. `total_cpu_percent` is a raw sum, not a percentage of fleet capacity (no node reports its core count anywhere in this codebase). `memory_used_percent`/`disk_used_percent` are only computed from nodes that actually reported a capacity figure; `nodes_with_memory_capacity`/`nodes_with_disk_capacity` say how many of `node_count` that covers, so a 3-node fleet where only 1 node has host metrics reads as "1/3 nodes reporting," never as if the percentage covered the whole fleet.
 
+## Capacity forecast
+
+`GET /api/v1/nodes/{id}/capacity-forecast` answers "at this rate, how long until disk or memory runs out," not just today's usage: a rough heads-up, built from the same `disk_used_bytes`/`disk_total_bytes`/`memory_total_bytes`/`memory_available_bytes` host samples the fleet utilization and disk-pressure views above already read, not a second collector.
+
+The method (`internal/forecast`) is deliberately the simplest honest one available: an ordinary-least-squares line fit over the lookback window's samples, projected forward to the resource's total capacity. It assumes the recent rate of change continues in a straight line, which real usage rarely does exactly (a cleanup, a new deploy's larger image, a burst of logs all bend the line). Every response carries a plain-English disclaimer in `note` saying exactly that; treat the result as a heads-up, not a guarantee.
+
+The response shape:
+```json
+{
+  "node_id": "node_a",
+  "lookback_window": "336h0m0s",
+  "disk": {
+    "current_used_bytes": 42000000000,
+    "total_bytes": 50000000000,
+    "slope_bytes_per_day": 400000000,
+    "days_until_full": 20,
+    "projected_full_at": "2026-10-22T00:00:00Z",
+    "sample_count": 120,
+    "coverage_window": "240h0m0s"
+  },
+  "memory": null,
+  "note": "Rough projection from the recent usage trend, assuming it continues in a straight line. This is a heads-up, not a guarantee: real usage rarely grows this predictably."
+}
+```
+
+`disk`/`memory` are absent (`null`), not a zero-value object, whenever:
+- There isn't enough history yet (fewer than 6 samples, or the samples span less than 6 hours).
+- The fitted trend is flat or improving (slope <= 0): an operator should never be warned about a resource that isn't actually trending toward exhaustion, even if the raw samples are noisy around a flat average.
+
+Absence must always be read as "nothing to warn about," never as "0 days left." The node detail page's capacity forecast card follows the same rule: it renders nothing at all when both fields are absent, rather than a reassuring "capacity looks fine" message that would age badly the day usage actually turns upward.
+
+The lookback window defaults to 14 days, overridable with `APP_CAPACITY_FORECAST_LOOKBACK` (a Go duration string, e.g. `"720h"`). Like `apps/{name}/resource-recommendation`'s lookback, this is a deterministic, read-and-suggest layer: never an external model, never applied automatically.
+
+From the CLI: `levelrail-cli nodes capacity-forecast <id>`.
+
 ## Alert rules
 
 There are ten rule kinds, all stored in one table (`alert_rules`). The evaluation loop (`internal/alerting.Engine`) runs every 30 seconds (`alertEvaluationInterval`, fixed, not env-configurable).
@@ -251,7 +286,7 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 | `domain_health` | one app's own domains | a DNS check gone bad (not resolving, or resolving somewhere else) on any of the app's configured domains | `for_duration` (optional debounce) |
 | `backup_missing` | one database (platform-wide) or one app's own volume | last successful backup trailing its own cron schedule's expected interval by more than a grace period | `backup_resource_kind` (`database` or `volume`), `backup_database_name` or `backup_service_name`/`backup_volume_name`, `for_duration` (reused as the overdue grace period, default 6h) |
 | `control_plane_backup_stale` | platform-wide | the newest control plane self-backup snapshot (see [control plane backup](/control-plane-backup)) being older than a maximum age; quiet when scheduled backups are disabled or no snapshot exists yet | `for_duration` (reused as the maximum age, default 3d) |
-| `log_archive_stale` | platform-wide | a log archive policy's last run failed, or it has not succeeded within a maximum age (see [object storage](/object-storage)) | `for_duration` (reused as the maximum age, default three intervals, at least 2h) |
+| `log_archive_stale` | platform-wide | a log archive policy's last run failed, or it has not succeeded within a maximum age (see [log archive](/log-archive)) | `for_duration` (reused as the maximum age, default three intervals, at least 2h) |
 
 :::
 
@@ -419,10 +454,19 @@ Override on the control plane with `APP_SLO_<TIER>_FACTOR`, `APP_SLO_<TIER>_LONG
 
 Channels are global, connect-once destinations (Settings -> Notification channels). Attach them to alert rules by `channel_id` instead of retyping webhook URLs per rule.
 
-**Supported kinds** (17 total, map to payload builders in `internal/alerting/notify.go`):
-`generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`
+**Supported kinds** (18 total, map to payload builders in `internal/alerting/notify.go`):
+`generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`, `webpush`
 
-For most kinds, `notify_url` is a webhook URL. A few pack multiple credentials into that one field (e.g., Pushover's user key and app token; PagerDuty's routing key). `email` is the exception: it sends through the control plane's SMTP sender (Settings -> Email, or env vars `APP_SMTP_HOST`/`APP_SMTP_PORT`/`APP_SMTP_USERNAME`/`APP_SMTP_PASSWORD`/`APP_SMTP_FROM`). Returns "email is not configured" if neither path is set up.
+For most kinds, `notify_url` is a webhook URL. A few pack multiple credentials into that one field (e.g., Pushover's user key and app token; PagerDuty's routing key). `email` and `webpush` are exceptions: `email` sends through the control plane's SMTP sender (Settings -> Email, or env vars `APP_SMTP_HOST`/`APP_SMTP_PORT`/`APP_SMTP_USERNAME`/`APP_SMTP_PASSWORD`/`APP_SMTP_FROM`), and `webpush` ignores `notify_url` entirely (it has none): the destination is every browser subscription registered under Settings -> Notification channels -> Browser push, not a single URL a channel row can name. Both return a clear "not configured" error if the control plane has no master key set.
+
+**Browser push (`webpush`)**
+
+Sends a real OS-level notification to every browser that has registered, using the Web Push protocol (RFC 8030/8291) with a VAPID keypair this control plane generates once and stores through `internal/secrets` (service `webpush`), the same envelope encryption every other channel secret would use if it needed one. Unlike every other kind, it works even when no dashboard tab is open or focused.
+
+- `GET /api/v1/settings/push-subscriptions/vapid-public-key` returns the public half, which the dashboard passes to the browser's `PushManager.subscribe`.
+- `POST /api/v1/settings/push-subscriptions` registers a subscription (endpoint plus the two subscribe-time keys) for the logged-in account; `GET`/`DELETE` list and revoke the caller's own registered browsers.
+- Returns 501 ("not configured") on every one of these routes, and on a `webpush`-kind send, when the control plane has no master key set: the VAPID private key can only ever be stored through `internal/secrets`.
+- `levelrail-cli push-subscriptions list` / `revoke <id>` manage registrations from the CLI; there is no `register` subcommand, since a subscription's endpoint and keys only ever come from a real browser's Push API.
 
 **Retries**
 
@@ -455,6 +499,21 @@ Both run synchronously with a 10-second timeout to prevent unresponsive targets 
 Cursor pagination via `?before` (RFC3339 timestamp). Default 50 rows, capped at 200.
 
 Deleting a channel still attached to a rule or deploy-notify target succeeds. The foreign key's `ON DELETE SET NULL` clears the reference instead of failing (unlike deleting a backup target).
+
+## Health & readiness score
+
+`GET /api/v1/apps/{name}/health-score` synthesizes signals this page otherwise shows one at a time on separate tabs into a single pass/warn/fail verdict per category, computed live on every call (no new reconciler loop, no cache). It is a read-only aggregation, not a new source of truth: every category reads data an existing endpoint already exposes.
+
+| Category | Pass | Warn | Fail |
+| --- | --- | --- | --- |
+| Deploy health | Last 5 finished deploy attempts all succeeded | Some recent attempts failed, or no finished attempts yet | Most recent attempt failed, or a `crashloop` alert rule is currently firing |
+| Security | TLS healthy for every domain and every `{ secret: true, required: true }` env var has a stored value | Certificate expiring soon, or no certificate issued yet for a domain | Certificate expired, or a required secret is missing |
+| Resilience | Readiness/liveness probe configured and every named volume's most recent backup succeeded | No health check configured, a volume has no backup schedule, or a scheduled backup has never run | Most recent backup attempt failed for a volume |
+| Observability | At least one enabled alert rule with a notification channel or `notify_url` attached | Alert rules exist but are disabled or have nowhere to notify | No alert rules configured for this app |
+
+The TLS check reuses `alerting.ListCertificates`, the identical computation `GET /api/v1/certificates` and a `cert_expiry` rule both already use, scoped to the app's own domains. The crashloop check reads a `crashloop` rule's persisted `firing` state, not the live in-memory restart tracker.
+
+Dashboard: the **Health & readiness** panel on an app's Overview tab (`AppHealthScorePanel`), polling every 30 seconds while open. CLI: `levelrail-cli apps health-score <name>`.
 
 ## Integration walkthrough
 
@@ -512,12 +571,14 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 
 | Method | Path | Ability |
 | --- | --- | --- |
+| `GET` | `/api/v1/apps/{name}/health-score` | `read` |
 | `GET` | `/api/v1/apps/{name}/metrics?metric=...&from=...&to=...&step=...` | `read` |
 | `GET` | `/api/v1/databases/{name}/metrics` | `read` |
 | `GET` | `/api/v1/nodes/{id}/metrics` | `root` |
 | `GET` | `/api/v1/apps/resource-usage` | `read` |
 | `GET` | `/api/v1/apps-metrics` | `read` |
 | `GET` | `/api/v1/nodes/resource-usage` | `root` |
+| `GET` | `/api/v1/nodes/{id}/capacity-forecast` | `root` |
 | `GET` | `/api/v1/apps/{name}/logs?from=...&to=...&q=...` | `read` |
 | `GET` | `/api/v1/apps/{name}/logs/stream` (SSE) | `read` |
 | `GET` | `/api/v1/apps/{name}/logs/download` | `read` |
@@ -552,11 +613,14 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 ## CLI
 
 ```bash
+levelrail-cli apps health-score <name>
+
 levelrail-cli apps metrics <name> --metric NAME [--since 1h | --from RFC3339 --to RFC3339] [--step 60s]
 levelrail-cli databases metrics <name> --metric NAME [--since 1h | --from ... --to ...] [--step 60s]
 levelrail-cli nodes metrics <id> --metric NAME [--since 1h | --from ... --to ...] [--step 60s]
 levelrail-cli apps resource-usage
 levelrail-cli nodes resource-usage
+levelrail-cli nodes capacity-forecast <id>
 
 levelrail-cli apps logs <name> [--since 1h | --from ... --to ...] [--q PHRASE] [--tail N]
 levelrail-cli apps logs <name> --follow
@@ -600,12 +664,15 @@ levelrail-cli channels update <id> --name NAME --kind KIND [flags]
 levelrail-cli channels delete <id>
 levelrail-cli channels test <id>
 levelrail-cli channels deliveries <id> [--limit N]
+
+levelrail-cli push-subscriptions list
+levelrail-cli push-subscriptions revoke <id>
 ```
 
 `--kind` for channels accepts: `generic`, `slack`, `discord`,
 `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`,
 `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`,
-`googlechat`.
+`googlechat`, `webpush`.
 
 ## Not built yet (deliberate gaps)
 

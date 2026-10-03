@@ -619,6 +619,16 @@ func (c *Client) GetDatabaseResourceRecommendation(ctx context.Context, name str
 	return out, err
 }
 
+// GetAppCostEstimate calls GET /api/v1/apps/{name}/cost-estimate
+// (internal/api/cost_estimate.go's handleAppCostEstimate): a read-only,
+// deterministic "what this would cost elsewhere" estimate derived from
+// the app's declared or observed CPU/memory. Not a real bill.
+func (c *Client) GetAppCostEstimate(ctx context.Context, name string) (CostEstimateResource, error) {
+	var out CostEstimateResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/cost-estimate", nil, &out)
+	return out, err
+}
+
 // GetAppNetwork calls GET /api/v1/apps/{name}/network
 // (internal/api/network.go's handleGetAppNetwork).
 func (c *Client) GetAppNetwork(ctx context.Context, name string) (NetworkResource, error) {
@@ -1723,11 +1733,42 @@ func (c *Client) ListServiceTemplates(ctx context.Context) ([]ServiceTemplateLis
 }
 
 // GetServiceTemplate calls GET /api/v1/service-templates/{id}: one
-// catalog entry, including its full compose.yaml body.
+// catalog entry, including its full compose.yaml body. Also resolves an
+// operator-defined custom template id (resolveTemplate,
+// internal/api/service_templates.go), so this is the same call whether
+// id came from ListServiceTemplates or ListCustomTemplates below.
 func (c *Client) GetServiceTemplate(ctx context.Context, id string) (ServiceTemplateDetail, error) {
 	var out ServiceTemplateDetail
 	err := c.do(ctx, http.MethodGet, "/api/v1/service-templates/"+PathEscape(id), nil, &out)
 	return out, err
+}
+
+// SaveAppAsTemplate calls POST /api/v1/apps/{name}/save-as-template
+// (internal/api/service_templates_custom.go): derives a compose.yaml
+// from name's current desired state and saves it as a reusable,
+// operator-defined template. No secret, database, or vault-backed env
+// value is ever captured, only the key name (see compose.
+// FromDesiredServices' own doc comment); result.RequiredEnvKeys lists
+// exactly which keys will need a real value before this template can
+// deploy.
+func (c *Client) SaveAppAsTemplate(ctx context.Context, name string, req SaveAppAsTemplateRequest) (CustomTemplateDetail, error) {
+	var out CustomTemplateDetail
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/save-as-template", req, &out)
+	return out, err
+}
+
+// ListCustomTemplates calls GET /api/v1/templates/custom: every
+// operator-defined template, without each one's compose body (see
+// GetServiceTemplate for the full body).
+func (c *Client) ListCustomTemplates(ctx context.Context) ([]CustomTemplateListItem, error) {
+	var out []CustomTemplateListItem
+	err := c.do(ctx, http.MethodGet, "/api/v1/templates/custom", nil, &out)
+	return out, err
+}
+
+// DeleteCustomTemplate calls DELETE /api/v1/templates/custom/{id}.
+func (c *Client) DeleteCustomTemplate(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/templates/custom/"+PathEscape(id), nil, nil)
 }
 
 // backupTargetsCollectionPath builds /api/v1/backup-targets, and
@@ -1945,6 +1986,22 @@ func (c *Client) ListNotificationDeliveries(ctx context.Context, id string, limi
 	var out []NotificationDeliveryResource
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
+}
+
+// ListPushSubscriptions calls GET /api/v1/settings/push-subscriptions:
+// every browser the caller's own account has registered for the
+// "webpush" notification-channel kind.
+func (c *Client) ListPushSubscriptions(ctx context.Context) ([]PushSubscriptionResource, error) {
+	var out []PushSubscriptionResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/push-subscriptions", nil, &out)
+	return out, err
+}
+
+// DeletePushSubscription calls DELETE
+// /api/v1/settings/push-subscriptions/{id}: revokes one registered
+// browser.
+func (c *Client) DeletePushSubscription(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/settings/push-subscriptions/"+PathEscape(id), nil, nil)
 }
 
 // GetLogDrain calls GET /api/v1/apps/{name}/log-drain: the app's
@@ -2245,6 +2302,22 @@ func (c *Client) CreateEnvironment(ctx context.Context, projectID string, req Cr
 func (c *Client) ListEnvironments(ctx context.Context, projectID string) ([]EnvironmentResource, error) {
 	var out []EnvironmentResource
 	err := c.do(ctx, http.MethodGet, environmentsCollectionPath(projectID), nil, &out)
+	return out, err
+}
+
+// CompareEnvironmentEnv calls GET
+// /api/v1/projects/{id}/environments/compare?a=...&b=...: each of
+// environment a and b's resolved effective env vars, secret values
+// always redacted, plus the keys that differ between them.
+func (c *Client) CompareEnvironmentEnv(ctx context.Context, projectID, a, b string) (EnvironmentCompareResource, error) {
+	path := environmentsCollectionPath(projectID) + "/compare"
+	q := url.Values{}
+	q.Set("a", a)
+	q.Set("b", b)
+	path += "?" + q.Encode()
+
+	var out EnvironmentCompareResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
 
@@ -2680,6 +2753,19 @@ func (c *Client) GetNodePatchStatus(ctx context.Context, id string) (NodePatchSt
 	return out, err
 }
 
+// GetNodeCapacityForecast calls GET /api/v1/nodes/{id}/capacity-forecast
+// (internal/api/node_capacity_forecast.go's
+// handleNodeCapacityForecast): a rough "days until full at the current
+// trend" projection for id's disk and memory, derived from a
+// deterministic linear-trend fit over recent usage history, never from
+// an external model. Disk/Memory come back nil when the fitted trend is
+// flat or improving, or there isn't enough history yet.
+func (c *Client) GetNodeCapacityForecast(ctx context.Context, id string) (NodeCapacityForecastResource, error) {
+	var out NodeCapacityForecastResource
+	err := c.do(ctx, http.MethodGet, nodePath(id)+"/capacity-forecast", nil, &out)
+	return out, err
+}
+
 // ListNodeEvents calls GET /api/v1/nodes/{id}/events: the node's recent
 // status transitions, newest first. limit <= 0 uses the server default.
 func (c *Client) ListNodeEvents(ctx context.Context, id string, limit int) ([]NodeStatusEventResource, error) {
@@ -2749,6 +2835,14 @@ func (c *Client) GetSystemDoctor(ctx context.Context) (SystemDoctorResource, err
 	return out, err
 }
 
+// GetOpenAPISpec calls GET /api/v1/openapi.json: the route metadata
+// behind "levelrail-cli api-docs" and the web dashboard's API explorer.
+func (c *Client) GetOpenAPISpec(ctx context.Context) (OpenAPISpecResource, error) {
+	var out OpenAPISpecResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/openapi.json", nil, &out)
+	return out, err
+}
+
 // GetPipelineOIDCInfo calls GET /api/v1/pipelines/oidc: whether pipeline
 // jobs can mint OIDC tokens on this control plane, and the URLs an
 // operator wires into a cloud provider's OIDC trust policy.
@@ -2812,6 +2906,19 @@ func (c *Client) CleanupOrphanedVolumes(ctx context.Context, names []string) (Cl
 func (c *Client) GetUpdates(ctx context.Context) (UpdatesResource, error) {
 	var out UpdatesResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/updates", nil, &out)
+	return out, err
+}
+
+// GetChangelog calls GET /api/v1/changelog: the most recent release
+// notes parsed from the control plane's own CHANGELOG.md. limit <= 0
+// uses the API's own default page size.
+func (c *Client) GetChangelog(ctx context.Context, limit int) (ChangelogResource, error) {
+	path := "/api/v1/changelog"
+	if limit > 0 {
+		path += "?limit=" + strconv.Itoa(limit)
+	}
+	var out ChangelogResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
 
@@ -2998,16 +3105,32 @@ func (c *Client) StreamDeployLog(ctx context.Context, name, deployID string, onE
 // meant to run indefinitely until the caller's own context is canceled
 // (e.g. Ctrl+C).
 func (c *Client) streamLogEvents(ctx context.Context, path string, onEntry func(LogStreamEntry) error) error {
-	return streamSSE(ctx, c, path, onEntry)
+	return streamSSE(ctx, c, http.MethodGet, path, nil, onEntry)
 }
 
 // streamSSE is the shared SSE scanner: it decodes each "data: " line as a T
 // and calls onEvent in arrival order. Lines that do not decode are skipped.
-func streamSSE[T any](ctx context.Context, c *Client, path string, onEvent func(T) error) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
+// body is JSON-encoded and sent with the request when non-nil (the AI
+// chat message/confirmation routes are POST with a body; the log tail
+// above is a bodyless GET), matching do()'s own body-encoding rule.
+func streamSSE[T any](ctx context.Context, c *Client, method, path string, body any, onEvent func(T) error) error {
+	var reqBody io.Reader
+	if body != nil {
+		b, err := json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("encode request body: %w", err)
+		}
+		reqBody = bytes.NewReader(b)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reqBody) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	req.Header.Set("Accept", "text/event-stream")
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
@@ -3018,7 +3141,7 @@ func streamSSE[T any](ctx context.Context, c *Client, path string, onEvent func(
 	streamClient := &http.Client{Transport: c.hc.Transport}
 	resp, err := streamClient.Do(req) //nolint:gosec // same target as above
 	if err != nil {
-		return fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+		return fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -3361,6 +3484,52 @@ func (c *Client) DeleteAIAssistantSettings(ctx context.Context) (AIAssistantSett
 	var out AIAssistantSettingsResource
 	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/ai-assistant", nil, &out)
 	return out, err
+}
+
+// CreateAIChatSession calls POST /api/v1/ai/sessions.
+func (c *Client) CreateAIChatSession(ctx context.Context) (AIChatSessionCreatedResource, error) {
+	var out AIChatSessionCreatedResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/ai/sessions", nil, &out)
+	return out, err
+}
+
+// ListAIChatSessions calls GET /api/v1/ai/sessions.
+func (c *Client) ListAIChatSessions(ctx context.Context) ([]AIChatSessionSummaryResource, error) {
+	var out []AIChatSessionSummaryResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/ai/sessions", nil, &out)
+	return out, err
+}
+
+// GetAIChatSession calls GET /api/v1/ai/sessions/{id}: the full transcript.
+func (c *Client) GetAIChatSession(ctx context.Context, id string) (AIChatSessionResource, error) {
+	var out AIChatSessionResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/ai/sessions/"+PathEscape(id), nil, &out)
+	return out, err
+}
+
+// DeleteAIChatSession calls DELETE /api/v1/ai/sessions/{id}.
+func (c *Client) DeleteAIChatSession(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/ai/sessions/"+PathEscape(id), nil, nil)
+}
+
+// SendAIChatMessage calls POST /api/v1/ai/sessions/{id}/messages: sends
+// content as a new user message and streams the assistant's turn,
+// calling onEvent for every SSE event in arrival order (see
+// AIChatSSEEvent's own doc comment for the four shapes). Returns once
+// the server sends "done" or the connection ends, matching
+// streamLogEvents' own contract.
+func (c *Client) SendAIChatMessage(ctx context.Context, sessionID, content string, onEvent func(AIChatSSEEvent) error) error {
+	path := "/api/v1/ai/sessions/" + PathEscape(sessionID) + "/messages"
+	return streamSSE(ctx, c, http.MethodPost, path, CreateAIChatMessageRequest{Content: content}, onEvent)
+}
+
+// ResolveAIChatConfirmation calls POST
+// /api/v1/ai/sessions/{id}/confirmations/{confirmationID}: approves or
+// rejects a pending mutating tool call, streaming the turn's
+// continuation the same way SendAIChatMessage does.
+func (c *Client) ResolveAIChatConfirmation(ctx context.Context, sessionID, confirmationID string, approve bool, onEvent func(AIChatSSEEvent) error) error {
+	path := "/api/v1/ai/sessions/" + PathEscape(sessionID) + "/confirmations/" + PathEscape(confirmationID)
+	return streamSSE(ctx, c, http.MethodPost, path, ResolveAIChatConfirmationRequest{Approve: approve}, onEvent)
 }
 
 // SetAppStorage calls PUT /api/v1/apps/{name}/storage: attaches an

@@ -172,6 +172,25 @@ When an app runs, secret-marked shared env vars are injected at container creati
 
 Environments hang off a project, not directly off an organization. An environment's shared vars need the project's vars beneath them (to override), and the project's vars need the organization's beneath those. This hierarchy is the only order that makes sense.
 
+### Comparing env vars across environments
+
+`GET /api/v1/projects/{id}/environments/compare?a={envId}&b={envId}` diffs two of a project's environments: which keys only one side has, and which plain keys both sides have with different values. Each side's `env` list is the same organization-then-project-then-environment resolved effective set described above, so the diff reflects what an app tagged with that environment would actually see, not just that environment's own raw rows.
+
+A secret-marked key never shows a value, on either side. One present on only one side is still reported (so you know a secret was added or removed), but one present on both sides is reported with status `masked` rather than `changed` or `same`: this control plane cannot tell whether the two differ without decrypting them, so it never guesses. A plain key present on both sides with the identical value isn't reported at all, since there's no drift to surface.
+
+```bash
+curl "https://control-plane/api/v1/projects/proj_abc123/environments/compare?a=env_staging&b=env_prod" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Via CLI:**
+
+```bash
+levelrail-cli apps environments env-diff proj_abc123 env_staging env_prod
+```
+
+**Dashboard:** the "Compare" action on a project's Environments panel, or on an environment's own detail page, opens a picker for two environments and shows the same diff table.
+
 ## Moving a resource between projects
 
 Moving is the same `PUT .../project` call as initial assignment, just against a resource that already has one. No separate "move" endpoint.
@@ -447,6 +466,7 @@ levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--confirm
 ## See also
 
 - [Deploying apps](deploying-apps.md) and [Managing databases](managing-databases.md) - the core resources being grouped
+- [Project topology graph](service-topology-graph.md) - a project's apps, databases, and volumes drawn as a diagram
 - [Getting started](getting-started.md) - walkthrough for new deployments
 - [API reference](api-reference.md) - complete endpoint documentation
 - [Protected environments](projects-and-organizations.md#protected-environments) - deployment gates and protection rules

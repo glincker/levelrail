@@ -4,6 +4,7 @@ import {
   DatabaseIcon,
   PackageIcon,
   FolderIcon,
+  ShareNetworkIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   projectDetailQueryOptions,
@@ -33,8 +34,10 @@ import { ProjectEnvEditor } from '../../../components/ProjectEnvEditor'
 import { SharedEnvSecretsCard } from '../../../components/SharedEnvSecretsCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '../../../components/ui/empty-state'
 import { PageHeader } from '@/components/shell/PageHeader'
+import { cn } from '@/lib/utils'
 
 // Project detail route: the project's own name plus every app and
 // database currently filed under it. Deliberately not a new,
@@ -93,6 +96,18 @@ function ProjectDetailPage() {
           title={project.name}
           actions={
             <>
+              {isEmpty ? null : (
+                <Link
+                  to="/projects/$id/topology"
+                  params={{ id: project.id }}
+                  className={cn(
+                    buttonVariants({ variant: 'outline', size: 'sm' }),
+                  )}
+                >
+                  <ShareNetworkIcon aria-hidden="true" />
+                  Topology
+                </Link>
+              )}
               {isEmpty ? null : (
                 <PauseResumeProjectButton id={project.id} name={project.name} />
               )}

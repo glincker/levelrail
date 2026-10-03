@@ -7,6 +7,7 @@ import { HelpMenu } from '../HelpMenu'
 import { ThemeToggle } from '../ThemeToggle'
 import { NotificationCenter } from './NotificationCenter'
 import { StatusChip } from './StatusChip'
+import { WhatsNewPanel } from './WhatsNewPanel'
 
 const isMac =
   typeof navigator !== 'undefined' && /mac/i.test(navigator.platform)
@@ -31,6 +32,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
       <div className="ml-auto flex items-center gap-2">
         <StatusChip />
         <NotificationCenter />
+        <WhatsNewPanel />
         <HelpMenu />
         <ThemeToggle />
       </div>

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -182,6 +183,68 @@ func TestHandleGetAIChatSession_ReturnsHistory(t *testing.T) {
 	}
 	if got.ID != sessionID || len(got.Messages) != 1 || got.Messages[0].Content != "hello" {
 		t.Errorf("got %+v, want one message with content hello", got)
+	}
+}
+
+func TestHandleListAIChatSessions_MostRecentFirst(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	older := mustCreateAIChatSession(ctx, t, db)
+	newer := mustCreateAIChatSession(ctx, t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/ai/sessions", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got []aiChatSessionSummaryResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 2 || got[0].ID != newer || got[1].ID != older {
+		t.Errorf("got %+v, want [%s, %s]", got, newer, older)
+	}
+}
+
+func TestHandleDeleteAIChatSession_NotFound(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/ai/sessions/does-not-exist", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleDeleteAIChatSession_RemovesSessionAndHistory(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx, sessionID := newAIChatSession(t, db)
+	msgID, _ := store.NewAIChatMessageID()
+	if err := db.SaveAIChatMessage(ctx, store.AIChatMessage{
+		ID: msgID, SessionID: sessionID, Role: store.AIChatRoleUser, Content: "hello", CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("SaveAIChatMessage() error = %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/ai/sessions/"+sessionID, ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNoContent, rec.Body.String())
+	}
+
+	if _, err := db.GetAIChatSession(ctx, sessionID); !errors.Is(err, store.ErrAIChatSessionNotFound) {
+		t.Errorf("GetAIChatSession() error = %v, want ErrAIChatSessionNotFound", err)
+	}
+	msgs, err := db.ListAIChatMessages(ctx, sessionID)
+	if err != nil {
+		t.Fatalf("ListAIChatMessages() error = %v", err)
+	}
+	if len(msgs) != 0 {
+		t.Errorf("ListAIChatMessages() = %v, want cascade-deleted (empty)", msgs)
 	}
 }
 
@@ -411,7 +474,9 @@ func TestAIChatSessionRoutes_RequireAuth(t *testing.T) {
 
 	routes := []routeCase{
 		{http.MethodPost, "/api/v1/ai/sessions"},
+		{http.MethodGet, "/api/v1/ai/sessions"},
 		{http.MethodGet, "/api/v1/ai/sessions/x"},
+		{http.MethodDelete, "/api/v1/ai/sessions/x"},
 		{http.MethodPost, "/api/v1/ai/sessions/x/messages"},
 		{http.MethodPost, "/api/v1/ai/sessions/x/confirmations/y"},
 	}

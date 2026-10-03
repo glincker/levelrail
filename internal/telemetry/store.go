@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -35,20 +36,41 @@ func (db *DB) WriteSamples(ctx context.Context, samples []Sample) error {
 		_ = tx.Rollback() // no-op if Commit already succeeded
 	}()
 
-	stmt, err := tx.PrepareContext(ctx, `
-		INSERT INTO metric_samples (resource_id, metric, ts, value)
-		VALUES (?, ?, ?, ?)
-		ON CONFLICT (resource_id, metric, ts) DO UPDATE SET value = excluded.value
-	`)
-	if err != nil {
-		return fmt.Errorf("telemetry: prepare write: %w", err)
+	type jsonSample struct {
+		R string  `json:"r"`
+		M string  `json:"m"`
+		T int64   `json:"t"`
+		V float64 `json:"v"`
 	}
-	defer func() { _ = stmt.Close() }()
 
-	for _, s := range samples {
-		if _, err := stmt.ExecContext(ctx, s.ResourceID, s.Metric, s.Timestamp.Unix(), s.Value); err != nil {
-			return fmt.Errorf("telemetry: write sample %s/%s@%s: %w", s.ResourceID, s.Metric, s.Timestamp, err)
+	js := make([]jsonSample, len(samples))
+	for i, s := range samples {
+		js[i] = jsonSample{
+			R: s.ResourceID,
+			M: s.Metric,
+			T: s.Timestamp.Unix(),
+			V: s.Value,
 		}
+	}
+
+	data, err := json.Marshal(js)
+	if err != nil {
+		return fmt.Errorf("telemetry: marshal samples: %w", err)
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO metric_samples (resource_id, metric, ts, value)
+		SELECT
+			json_extract(value, '$.r'),
+			json_extract(value, '$.m'),
+			json_extract(value, '$.t'),
+			json_extract(value, '$.v')
+		FROM json_each(?)
+		WHERE 1
+		ON CONFLICT (resource_id, metric, ts) DO UPDATE SET value = excluded.value
+	`, string(data))
+	if err != nil {
+		return fmt.Errorf("telemetry: write samples batch: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {

@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -110,10 +109,12 @@ func (db *DB) ListAppEvents(ctx context.Context, name string, before *AppEventCu
 		args = append(args, after.UTC().Format(appEventTimeFormat))
 	}
 	if len(kinds) > 0 {
-		query += ` AND kind IN (?` + strings.Repeat(", ?", len(kinds)-1) + `)`
-		for _, k := range kinds {
-			args = append(args, k)
+		query += ` AND kind IN (SELECT value FROM json_each(?))`
+		kindsJSON, err := json.Marshal(kinds)
+		if err != nil {
+			return nil, fmt.Errorf("store: marshal app event kinds: %w", err)
 		}
+		args = append(args, string(kindsJSON))
 	}
 	query += ` ORDER BY created_at DESC, id DESC LIMIT ?`
 	args = append(args, limit)

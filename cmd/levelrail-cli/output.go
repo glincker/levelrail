@@ -805,6 +805,22 @@ func printUpdatesHuman(out io.Writer, u updatesResource) {
 	}
 }
 
+// printChangelogHuman prints "changelog" output.
+func printChangelogHuman(out io.Writer, c changelogResource) {
+	_, _ = fmt.Fprintf(out, "running version: %s\n\n", c.CurrentVersion)
+	if len(c.Entries) == 0 {
+		_, _ = fmt.Fprintln(out, "no changelog entries available")
+		return
+	}
+	for _, e := range c.Entries {
+		_, _ = fmt.Fprintf(out, "%s (%s)\n", e.Version, e.Date)
+		for _, b := range e.Bullets {
+			_, _ = fmt.Fprintf(out, "  - %s\n", b)
+		}
+		_, _ = fmt.Fprintln(out)
+	}
+}
+
 // printNodeHuman prints one node resource in a human-readable, non-JSON
 // form ("nodes get" output).
 func printNodeHuman(out io.Writer, n nodeResource) {

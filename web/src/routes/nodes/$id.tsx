@@ -17,6 +17,7 @@ import { CordonNodeDialog } from '../../components/CordonNodeDialog'
 import { DrainNodeDialog } from '../../components/DrainNodeDialog'
 import { NodeAgentCard } from '../../components/NodeAgentCard'
 import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
+import { NodeCapacityForecastCard } from '../../components/NodeCapacityForecastCard'
 import { NodeGpuCard } from '../../components/NodeGpuCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
@@ -277,6 +278,7 @@ function NodeDetailPage() {
 
       <NodePatchStatusCard nodeId={id} />
       <NodeEventsCard nodeId={id} />
+      <NodeCapacityForecastCard nodeId={id} />
 
       <NodeMetricsDashboard nodeId={id} />
 
@@ -287,8 +289,10 @@ function NodeDetailPage() {
 
 // Mirrors NodeDetailPage's own card stack (Overview, Location, Agent,
 // Workload capabilities, Alert status, GPU, Mesh, Patch status, Events,
-// Metrics, Conditions) so the loader's pending phase renders the same
-// outline that fills in once node/health/node-list resolve.
+// Capacity forecast, Metrics, Conditions) so the loader's pending phase
+// renders the same outline that fills in once node/health/node-list
+// resolve. The skeleton's own card count below is a fixed round number
+// for the generic placeholder shape, not a literal match to this list.
 function NodeDetailSkeleton() {
   return (
     <div className="space-y-6" aria-hidden="true">

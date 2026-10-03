@@ -1275,7 +1275,11 @@ type ServiceTemplateListItem struct {
 
 // ServiceTemplateDetail mirrors internal/api's serviceTemplateDetail:
 // GET /api/v1/service-templates/{id}'s response, including the full
-// compose.yaml body.
+// compose.yaml body. Also what a custom template id (ListCustomTemplates
+// below) resolves to, through the same endpoint: Category reads
+// "Custom" and RecommendedMemoryBytes/RequiresGPU are always zero for
+// those, see resolveTemplate's own doc comment
+// (internal/api/service_templates.go).
 type ServiceTemplateDetail struct {
 	ID                     string `json:"id"`
 	Name                   string `json:"name"`
@@ -1285,6 +1289,43 @@ type ServiceTemplateDetail struct {
 	Compose                string `json:"compose"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
 	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
+	RequiresConfiguration  bool   `json:"requires_configuration,omitempty"`
+}
+
+// SaveAppAsTemplateRequest mirrors internal/api's
+// saveAppAsTemplateRequest: POST /api/v1/apps/{name}/save-as-template's
+// body.
+type SaveAppAsTemplateRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+}
+
+// CustomTemplateListItem mirrors internal/api's customTemplateListItem:
+// one entry in GET /api/v1/templates/custom, without the full compose
+// body (see CustomTemplateDetail).
+type CustomTemplateListItem struct {
+	ID                    string `json:"id"`
+	Name                  string `json:"name"`
+	Description           string `json:"description"`
+	SourceApp             string `json:"source_app,omitempty"`
+	RequiresConfiguration bool   `json:"requires_configuration"`
+	CreatedAt             string `json:"created_at"`
+}
+
+// CustomTemplateDetail mirrors internal/api's customTemplateDetail:
+// POST /api/v1/apps/{name}/save-as-template's own response, including
+// the derived compose.yaml body and which env var keys ended up
+// required (never which secret values: see compose.
+// FromDesiredServices' own doc comment for why there never are any).
+type CustomTemplateDetail struct {
+	ID                    string   `json:"id"`
+	Name                  string   `json:"name"`
+	Description           string   `json:"description"`
+	SourceApp             string   `json:"source_app,omitempty"`
+	Compose               string   `json:"compose"`
+	RequiresConfiguration bool     `json:"requires_configuration"`
+	RequiredEnvKeys       []string `json:"required_env_keys,omitempty"`
+	CreatedAt             string   `json:"created_at"`
 }
 
 // SetSecretRequest mirrors internal/api's setSecretRequest
@@ -1504,6 +1545,15 @@ type NotificationDeliveryResource struct {
 	Trigger   string `json:"trigger"`
 	Success   bool   `json:"success"`
 	Error     string `json:"error,omitempty"`
+	CreatedAt string `json:"created_at"`
+}
+
+// PushSubscriptionResource mirrors internal/api's
+// pushSubscriptionResource (internal/api/push_subscriptions.go): one
+// browser registered for the "webpush" notification-channel kind.
+type PushSubscriptionResource struct {
+	ID        string `json:"id"`
+	UserAgent string `json:"user_agent"`
 	CreatedAt string `json:"created_at"`
 }
 
@@ -1894,6 +1944,52 @@ type SetAppEnvironmentRequest struct {
 	EnvironmentID string `json:"environment_id"`
 }
 
+// EnvironmentEnvEntryResource mirrors internal/api's
+// environmentEnvEntryResource: one resolved key inside
+// EnvironmentCompareSide.Env. Value is only ever populated when Secret
+// is false.
+type EnvironmentEnvEntryResource struct {
+	Key    string `json:"key"`
+	Value  string `json:"value,omitempty"`
+	Secret bool   `json:"secret"`
+}
+
+// EnvironmentEnvDiffEntry mirrors internal/api's environmentEnvDiffEntry:
+// one key that differs between A and B. Status is one of "only_in_a",
+// "only_in_b", "changed", or "masked". A/B are only ever populated for a
+// non-secret, present-on-both-sides "changed" entry or a non-secret
+// present-on-one-side "only_in_a"/"only_in_b" entry: a secret-marked key
+// never carries a value here, on either side.
+type EnvironmentEnvDiffEntry struct {
+	Key    string `json:"key"`
+	Secret bool   `json:"secret"`
+	Status string `json:"status"`
+	A      string `json:"a,omitempty"`
+	B      string `json:"b,omitempty"`
+}
+
+// EnvironmentCompareSide mirrors internal/api's environmentCompareSide:
+// one side (A or B) of GET .../environments/compare's response.
+type EnvironmentCompareSide struct {
+	Environment EnvironmentResource           `json:"environment"`
+	Env         []EnvironmentEnvEntryResource `json:"env"`
+}
+
+// EnvironmentCompareResource mirrors internal/api's
+// environmentCompareResource, GET
+// /api/v1/projects/{id}/environments/compare's response: each of two
+// named environments' resolved effective env vars (organization,
+// project, and environment shared-env tiers merged in
+// internal/reconcile/application's resolveEnv precedence), secret values
+// always redacted, plus the keys that differ between them.
+type EnvironmentCompareResource struct {
+	ProjectID string                    `json:"project_id"`
+	A         EnvironmentCompareSide    `json:"a"`
+	B         EnvironmentCompareSide    `json:"b"`
+	Diff      []EnvironmentEnvDiffEntry `json:"diff"`
+	Note      string                    `json:"note"`
+}
+
 // PreviewEnvironmentResource mirrors internal/api's
 // previewEnvironmentResource (internal/api/preview_environments_handlers.go).
 type PreviewEnvironmentResource struct {
@@ -2257,6 +2353,30 @@ type SystemDoctorResource struct {
 	Checks []DoctorCheckResource `json:"checks"`
 }
 
+// OpenAPIRouteResource mirrors internal/api's openAPISpecRoute exactly:
+// one registered route plus, for a hand-annotated few, a worked
+// request/response example (see internal/api/openapi.go).
+type OpenAPIRouteResource struct {
+	Method       string          `json:"method"`
+	Path         string          `json:"path"`
+	Ability      string          `json:"ability"`
+	Group        string          `json:"group"`
+	Handler      string          `json:"handler"`
+	Description  string          `json:"description,omitempty"`
+	RequestBody  json.RawMessage `json:"requestBody,omitempty"`
+	ResponseBody json.RawMessage `json:"responseBody,omitempty"`
+}
+
+// OpenAPISpecResource mirrors internal/api's openAPISpec: the "levelrail-cli
+// api-docs" and web API explorer's shared data source, generated at build
+// time by scripts/gen-api-reference from the routes*.go registrations.
+type OpenAPISpecResource struct {
+	Version      int                    `json:"version"`
+	Count        int                    `json:"count"`
+	ExampleCount int                    `json:"exampleCount"`
+	Routes       []OpenAPIRouteResource `json:"routes"`
+}
+
 // PipelineOIDCResource mirrors internal/api's oidcInfoResource: whether
 // pipeline jobs can mint OIDC tokens on this control plane, and the URLs
 // an operator wires into a cloud provider's OIDC trust policy.
@@ -2371,6 +2491,22 @@ type UpdatesResource struct {
 	UpdateAvailable bool    `json:"update_available"`
 	ReleaseURL      *string `json:"release_url"`
 	PublishedAt     *string `json:"published_at"`
+}
+
+// ChangelogEntryResource mirrors internal/api's changelogEntryResource:
+// one released version's notes.
+type ChangelogEntryResource struct {
+	Version string   `json:"version"`
+	Date    string   `json:"date"`
+	Bullets []string `json:"bullets"`
+}
+
+// ChangelogResource mirrors internal/api's changelogResource
+// (GET /api/v1/changelog): the running version plus the most recent
+// entries parsed from the repo's own CHANGELOG.md.
+type ChangelogResource struct {
+	CurrentVersion string                   `json:"current_version"`
+	Entries        []ChangelogEntryResource `json:"entries"`
 }
 
 // RotateMasterKeyRequest mirrors internal/api's rotateMasterKeyRequest:
@@ -2521,6 +2657,63 @@ type ResourceRecommendationResource struct {
 	CPU            DimensionRecommendationResource `json:"cpu"`
 	OOMDetectedAt  string                          `json:"oom_detected_at,omitempty"`
 	OOMExcerpt     string                          `json:"oom_excerpt,omitempty"`
+}
+
+// CostEstimateProviderResource mirrors internal/api's
+// costEstimateProviderResource: one reference provider's resulting
+// monthly estimate.
+type CostEstimateProviderResource struct {
+	Key            string  `json:"key"`
+	Label          string  `json:"label"`
+	CPUCostUSD     float64 `json:"cpu_cost_usd"`
+	MemoryCostUSD  float64 `json:"memory_cost_usd"`
+	TotalUSD       float64 `json:"total_usd"`
+	MinimumApplied bool    `json:"minimum_applied"`
+}
+
+// CostEstimateResource mirrors internal/api's costEstimateResource: the
+// response shape for GET /api/v1/apps/{name}/cost-estimate
+// (internal/api/cost_estimate.go), a deterministic "what this would
+// cost elsewhere" estimate (internal/costestimate) derived from the
+// app's declared or observed CPU/memory. Note always restates that
+// this is an estimate, not a real bill.
+type CostEstimateResource struct {
+	ServiceName string                         `json:"service_name"`
+	VCPUCores   float64                        `json:"vcpu_cores"`
+	MemoryGiB   float64                        `json:"memory_gib"`
+	CPUBasis    string                         `json:"cpu_basis"`
+	MemoryBasis string                         `json:"memory_basis"`
+	Providers   []CostEstimateProviderResource `json:"providers"`
+	Note        string                         `json:"note"`
+}
+
+// CapacityForecastMetric mirrors internal/api's capacityForecastMetric:
+// one resource's (disk or memory) rough days-until-full projection from
+// internal/forecast's ordinary-least-squares trend fit. Absent (nil)
+// from NodeCapacityForecastResource whenever the fitted trend is flat
+// or improving, or there isn't enough history yet, never a zero-value
+// struct with DaysUntilFull: 0.
+type CapacityForecastMetric struct {
+	CurrentUsedBytes float64   `json:"current_used_bytes"`
+	TotalBytes       float64   `json:"total_bytes"`
+	SlopeBytesPerDay float64   `json:"slope_bytes_per_day"`
+	DaysUntilFull    float64   `json:"days_until_full"`
+	ProjectedFullAt  time.Time `json:"projected_full_at"`
+	SampleCount      int       `json:"sample_count"`
+	CoverageWindow   string    `json:"coverage_window"`
+}
+
+// NodeCapacityForecastResource mirrors internal/api's
+// nodeCapacityForecastResponse: GET
+// /api/v1/nodes/{id}/capacity-forecast's wire shape. Note is always
+// present, a plain-English restatement of this being a rough trend
+// projection, not a guarantee.
+type NodeCapacityForecastResource struct {
+	NodeID         string                  `json:"node_id"`
+	LookbackWindow string                  `json:"lookback_window"`
+	Disk           *CapacityForecastMetric `json:"disk,omitempty"`
+	Memory         *CapacityForecastMetric `json:"memory,omitempty"`
+	Note           string                  `json:"note"`
 }
 
 // AlertRuleResource mirrors internal/api's ruleResource
@@ -2936,6 +3129,83 @@ type UpdateAIAssistantSettingsRequest struct {
 	Provider string `json:"provider"`
 	Model    string `json:"model"`
 	APIKey   string `json:"api_key"`
+}
+
+// AIChatSessionCreatedResource mirrors internal/api's
+// aiChatSessionCreatedResource: POST /api/v1/ai/sessions's response.
+type AIChatSessionCreatedResource struct {
+	ID string `json:"id"`
+}
+
+// AIChatSessionSummaryResource mirrors internal/api's
+// aiChatSessionSummaryResource: one row of GET /api/v1/ai/sessions's
+// list response, no message content.
+type AIChatSessionSummaryResource struct {
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// AIChatToolCallResource mirrors store.AIChatToolCall's JSON shape, as
+// carried on an AIChatMessageResource.
+type AIChatToolCallResource struct {
+	ID             string          `json:"id"`
+	ConfirmationID string          `json:"confirmation_id,omitempty"`
+	Name           string          `json:"name"`
+	Arguments      json.RawMessage `json:"arguments"`
+	ReadOnly       bool            `json:"read_only"`
+	Status         string          `json:"status"`
+	Result         json.RawMessage `json:"result,omitempty"`
+	IsError        bool            `json:"is_error,omitempty"`
+}
+
+// AIChatMessageResource mirrors internal/api's aiChatMessageResource.
+type AIChatMessageResource struct {
+	ID        string                   `json:"id"`
+	Role      string                   `json:"role"`
+	Content   string                   `json:"content"`
+	ToolCalls []AIChatToolCallResource `json:"tool_calls"`
+	CreatedAt time.Time                `json:"created_at"`
+}
+
+// AIChatSessionResource mirrors internal/api's aiChatSessionResource:
+// GET /api/v1/ai/sessions/{id}'s response, the full transcript.
+type AIChatSessionResource struct {
+	ID       string                  `json:"id"`
+	Messages []AIChatMessageResource `json:"messages"`
+}
+
+// AIChatSSEEvent mirrors every shape internal/api/ai_chat.go's
+// aiSSESink can write on the bare "data: <json>\n\n" line
+// POST /api/v1/ai/sessions/{id}/messages and
+// POST .../confirmations/{id} stream: Type discriminates which of the
+// other fields are populated (text_delta -> Text, tool_call_proposed ->
+// ConfirmationID/ToolUseID/Name/Arguments, tool_result ->
+// ToolUseID/Name/Result/IsError, done -> no other field).
+type AIChatSSEEvent struct {
+	Type           string          `json:"type"`
+	Text           string          `json:"text,omitempty"`
+	ConfirmationID string          `json:"confirmation_id,omitempty"`
+	ToolUseID      string          `json:"tool_use_id,omitempty"`
+	Name           string          `json:"name,omitempty"`
+	Arguments      json.RawMessage `json:"arguments,omitempty"`
+	ReadOnly       bool            `json:"read_only,omitempty"`
+	Result         json.RawMessage `json:"result,omitempty"`
+	IsError        bool            `json:"is_error,omitempty"`
+}
+
+// CreateAIChatMessageRequest mirrors internal/api's
+// createAIChatMessageRequest: POST
+// /api/v1/ai/sessions/{id}/messages's request body.
+type CreateAIChatMessageRequest struct {
+	Content string `json:"content"`
+}
+
+// ResolveAIChatConfirmationRequest mirrors internal/api's
+// resolveAIChatConfirmationRequest: POST
+// /api/v1/ai/sessions/{id}/confirmations/{confirmation_id}'s request body.
+type ResolveAIChatConfirmationRequest struct {
+	Approve bool `json:"approve"`
 }
 
 // AppStorageResource mirrors internal/api's appStorageResource

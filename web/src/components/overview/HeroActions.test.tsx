@@ -22,6 +22,7 @@ vi.mock('./useOverviewActions', () => ({
 vi.mock('../PromoteAppDialog', () => ({ PromoteAppDialog: () => null }))
 vi.mock('../CloneAppDialog', () => ({ CloneAppDialog: () => null }))
 vi.mock('../DeleteAppDialog', () => ({ DeleteAppDialog: () => null }))
+vi.mock('../SaveAsTemplateDialog', () => ({ SaveAsTemplateDialog: () => null }))
 
 const app = { name: 'web', suspended: false } as AppDetail
 
