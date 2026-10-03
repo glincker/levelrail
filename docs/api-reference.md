@@ -55,7 +55,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 57 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 61 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -124,12 +124,16 @@ Endpoints for:
 | DELETE | /api/v1/auth/passkeys/{id} | Session | handleDeletePasskey |
 | POST | /api/v1/auth/passkey-login/begin | Public | handleBeginPasskeyLogin |
 | POST | /api/v1/auth/passkey-login/finish | Public | handleFinishPasskeyLogin |
+| GET | /api/v1/settings/push-subscriptions/vapid-public-key | Session | handleGetPushVAPIDPublicKey |
+| GET | /api/v1/settings/push-subscriptions | Session | handleListPushSubscriptions |
+| POST | /api/v1/settings/push-subscriptions | Session | handleCreatePushSubscription |
+| DELETE | /api/v1/settings/push-subscriptions/{id} | Session | handleDeletePushSubscription |
 
 :::
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 123 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 125 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -264,6 +268,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/connectable-databases | AbilityRead | handleListConnectableDatabases |
 | POST | /api/v1/apps/{name}/validate-spec | AbilityRead | handleValidateSpec |
 | GET | /api/v1/apps/{name}/health-score | AbilityRead | handleGetAppHealthScore |
+| POST | /api/v1/apps/{name}/save-as-template | AbilityWrite | handleSaveAppAsTemplate |
+| GET | /api/v1/apps/{name}/cost-estimate | AbilityRead | handleAppCostEstimate |
 
 :::
 
@@ -297,6 +303,8 @@ Endpoints for:
 | GET | /api/v1/previews | AbilityRead | handleListAllPreviews |
 | POST | /api/v1/apps/{name}/previews/{number}/approve | AbilityWriteSensitive | handleApprovePreviewEnvironment |
 | POST | /api/v1/apps/{name}/git-source/rotate-webhook-secret | AbilityWriteSensitive | handleRotateGitSourceWebhookSecret |
+| POST | /api/v1/webhooks/slack/interactions | Public | handleSlackInteraction |
+| POST | /api/v1/webhooks/discord/interactions | Public | handleDiscordInteraction |
 
 ## Telemetry
 
@@ -431,6 +439,8 @@ Endpoints for:
 | GET | /api/v1/projects/{id}/env/secrets | AbilityRead | handleListProjectEnvSecretKeys |
 | PUT | /api/v1/projects/{id}/env/secrets/{key} | AbilityWrite | handleSetProjectEnvSecret |
 | DELETE | /api/v1/projects/{id}/env/secrets/{key} | AbilityWrite | handleDeleteProjectEnvSecret |
+| GET | /api/v1/projects/{id}/environments/compare | AbilityRead | handleCompareEnvironmentEnv |
+| GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
 
 ## Nodes
 
@@ -456,6 +466,7 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/metrics | AbilityRoot | handleQueryNodeMetrics |
 | GET | /api/v1/nodes/{id}/patch-status | AbilityRoot | handleGetNodePatchStatus |
 | GET | /api/v1/nodes/{id}/events | AbilityRoot | handleListNodeEvents |
+| GET | /api/v1/nodes/{id}/capacity-forecast | AbilityRoot | handleNodeCapacityForecast |
 | POST | /api/v1/nodes/{id}/reenroll-token | AbilityRoot | handleCreateNodeReenrollToken |
 | POST | /api/v1/nodes/{id}/revoke-cert | AbilityRoot | handleRevokeNodeCert |
 | POST | /api/v1/nodes/{id}/mesh/rotate-key | AbilityRoot | handleRotateNodeMeshKey |
@@ -840,6 +851,10 @@ Routes that do not fit an existing group.
 | GET | /api/v1/firewall-rules | AbilityRead | handleListFirewallRules |
 | POST | /api/v1/firewall-rules | AbilityWriteSensitive | handleCreateFirewallRule |
 | DELETE | /api/v1/firewall-rules/{id} | AbilityWriteSensitive | handleDeleteFirewallRule |
+| GET | /api/v1/openapi.json | AbilityRead | handleOpenAPISpec |
+| GET | /api/v1/changelog | AbilityRead | handleGetChangelog |
+| GET | /api/v1/templates/custom | AbilityRead | handleListCustomTemplates |
+| DELETE | /api/v1/templates/custom/{id} | AbilityWrite | handleDeleteCustomTemplate |
 
 ## See also
 

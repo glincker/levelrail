@@ -138,7 +138,7 @@ func TestSendDeployOutcome_Slack_PostsTextField(t *testing.T) {
 	defer srv.Close()
 
 	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifySlack, Enabled: true}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -157,7 +157,7 @@ func TestSendDeployOutcome_Discord_PostsContentField(t *testing.T) {
 	defer srv.Close()
 
 	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifyDiscord, Enabled: true}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false, Error: "boom"})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false, Error: "boom"})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -176,7 +176,7 @@ func TestSendDeployOutcome_Telegram_PostsChatIDAndText(t *testing.T) {
 	defer srv.Close()
 
 	target := DeployTarget{NotifyURL: srv.URL + "/bot123/sendMessage?chat_id=42", NotifyKind: NotifyTelegram, Enabled: true}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -190,7 +190,7 @@ func TestSendDeployOutcome_Telegram_PostsChatIDAndText(t *testing.T) {
 
 func TestSendDeployOutcome_Telegram_MissingChatID_Errors(t *testing.T) {
 	target := DeployTarget{NotifyURL: "https://example.com/bot123/sendMessage", NotifyKind: NotifyTelegram, Enabled: true}
-	if err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web"}); err == nil {
+	if err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web"}); err == nil {
 		t.Error("sendDeployOutcome() error = nil, want an error when notify_url has no chat_id query parameter")
 	}
 }
@@ -204,7 +204,7 @@ func TestSendDeployOutcome_Mattermost_PostsTextField(t *testing.T) {
 	defer srv.Close()
 
 	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifyMattermost, Enabled: true}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -223,7 +223,7 @@ func TestSendDeployOutcome_Lark_PostsMsgTypeAndContent(t *testing.T) {
 	defer srv.Close()
 
 	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifyLark, Enabled: true}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false, Error: "boom"})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false, Error: "boom"})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -241,7 +241,7 @@ func TestSendDeployOutcome_RocketChat_PostsTextAliasAndEmoji(t *testing.T) {
 	defer srv.Close()
 
 	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifyRocketChat, Enabled: true}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -262,7 +262,7 @@ func TestSendDeployOutcome_Webex_PostsMarkdownField(t *testing.T) {
 	defer srv.Close()
 
 	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifyWebex, Enabled: true}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false, Error: "boom"})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false, Error: "boom"})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -280,7 +280,7 @@ func TestSendDeployOutcome_GoogleChat_PostsTextField(t *testing.T) {
 	defer srv.Close()
 
 	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifyGoogleChat, Enabled: true}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -307,7 +307,7 @@ func TestSendDeployOutcome_Opsgenie_PostsAuthHeaderAndPayload(t *testing.T) {
 		NotifyURL:  "https://api.opsgenie.com/v2/alerts?key=og_secret",
 		NotifyKind: NotifyOpsgenie, Enabled: true,
 	}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -331,7 +331,7 @@ func TestSendDeployOutcome_Gotify_PostsTitleAndMessage(t *testing.T) {
 	defer srv.Close()
 
 	target := DeployTarget{NotifyURL: srv.URL + "/message?token=t", NotifyKind: NotifyGotify, Enabled: true}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -352,7 +352,7 @@ func TestSendDeployOutcome_Ntfy_AuthTokenMovedToHeader(t *testing.T) {
 	defer srv.Close()
 
 	target := DeployTarget{NotifyURL: srv.URL + "/topic?auth=tk", NotifyKind: NotifyNtfy, Enabled: true}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -378,7 +378,7 @@ func TestSendDeployOutcome_Resend_PostsAuthHeaderAndPayload(t *testing.T) {
 		NotifyURL:  "https://api.resend.com/emails?key=re_secret&to=ops%40example.com",
 		NotifyKind: NotifyResend, Enabled: true,
 	}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -399,7 +399,7 @@ func TestSendDeployOutcome_Generic_PostsStructuredPayload(t *testing.T) {
 	defer srv.Close()
 
 	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifyGeneric, Enabled: true}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false, Error: "boom"})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false, Error: "boom"})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -417,7 +417,7 @@ func TestSendDeployOutcome_UnknownKind_FallsBackToGeneric(t *testing.T) {
 	defer srv.Close()
 
 	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: "typo'd-kind", Enabled: true}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v", err)
 	}
@@ -428,7 +428,7 @@ func TestSendDeployOutcome_UnknownKind_FallsBackToGeneric(t *testing.T) {
 
 func TestSendDeployOutcome_Email_NoSMTPConfigured_Errors(t *testing.T) {
 	target := DeployTarget{NotifyURL: "ops@example.com", NotifyKind: NotifyEmail, Enabled: true}
-	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web"})
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web"})
 	if err == nil || !strings.Contains(err.Error(), "not configured") {
 		t.Errorf("sendDeployOutcome() error = %v, want a clear 'not configured' error", err)
 	}
@@ -440,7 +440,7 @@ func TestSendDeployOutcome_Email_NoDestinationAddress_Errors(t *testing.T) {
 		t.Fatalf("email.NewSender() error = %v", err)
 	}
 	target := DeployTarget{NotifyKind: NotifyEmail, Enabled: true} // NotifyURL left empty
-	if err := sendDeployOutcome(context.Background(), nil, sender, target, DeployOutcome{AppName: "web"}); err == nil {
+	if err := sendDeployOutcome(context.Background(), nil, sender, nil, target, DeployOutcome{AppName: "web"}); err == nil {
 		t.Error("sendDeployOutcome() error = nil, want an error when no destination address is configured")
 	}
 }
@@ -450,7 +450,7 @@ func TestSendDeployOutcome_Email_TransientSMTPError_RetriesThenSucceeds(t *testi
 	sender := &fakeEmailSender{errs: []error{transient, transient}}
 	target := DeployTarget{NotifyURL: "ops@example.com", NotifyKind: NotifyEmail, Enabled: true}
 
-	err := sendDeployOutcome(context.Background(), nil, sender, target, DeployOutcome{AppName: "web", Succeeded: true})
+	err := sendDeployOutcome(context.Background(), nil, sender, nil, target, DeployOutcome{AppName: "web", Succeeded: true})
 	if err != nil {
 		t.Fatalf("sendDeployOutcome() error = %v, want the third attempt (which succeeds) to win", err)
 	}
@@ -466,7 +466,7 @@ func TestSendDeployOutcome_ReceiverErrorStatus_Errors(t *testing.T) {
 	defer srv.Close()
 
 	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifyGeneric, Enabled: true}
-	if err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web"}); err == nil {
+	if err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web"}); err == nil {
 		t.Error("sendDeployOutcome() error = nil, want an error when the receiver returns a non-2xx status")
 	}
 }
@@ -499,7 +499,7 @@ func TestDeployDispatcher_Dispatch_SendsToEnabledTargetsOnly(t *testing.T) {
 		t.Fatalf("seed: %v", err)
 	}
 
-	dispatcher := NewDeployDispatcher(db, nil, nil, nil)
+	dispatcher := NewDeployDispatcher(db, nil, nil, nil, nil)
 	dispatcher.Dispatch(ctx, "service:web", DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 
 	if received != 1 {
@@ -536,7 +536,7 @@ func TestDeployDispatcher_Dispatch_MixedLegacyAndChannelTargets(t *testing.T) {
 		t.Fatalf("seed channel-attached target: %v", err)
 	}
 
-	dispatcher := NewDeployDispatcher(db, nil, nil, nil)
+	dispatcher := NewDeployDispatcher(db, nil, nil, nil, nil)
 	dispatcher.Dispatch(ctx, "service:web", DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 
 	if !legacyHit {
@@ -549,7 +549,7 @@ func TestDeployDispatcher_Dispatch_MixedLegacyAndChannelTargets(t *testing.T) {
 
 func TestDeployDispatcher_Dispatch_NoTargets_NoPanic(t *testing.T) {
 	db := newTestDeployNotifyDB(t)
-	dispatcher := NewDeployDispatcher(db, nil, nil, nil)
+	dispatcher := NewDeployDispatcher(db, nil, nil, nil, nil)
 	// Must not panic or block: a resource with zero configured targets is
 	// the common case (deploy-outcome notifications are opt-in per app).
 	dispatcher.Dispatch(context.Background(), "service:web", DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
@@ -579,7 +579,7 @@ func TestDeployDispatcher_Dispatch_RecordsDeliveryForChannelAttachedTarget(t *te
 		t.Fatalf("seed legacy target: %v", err)
 	}
 
-	dispatcher := NewDeployDispatcher(db, nil, nil, nil)
+	dispatcher := NewDeployDispatcher(db, nil, nil, nil, nil)
 	dispatcher.Dispatch(ctx, "service:web", DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 
 	deliveries, err := db.ListNotificationDeliveries(ctx, "chn_1", 50, nil)
@@ -608,7 +608,7 @@ func TestDeployDispatcher_Dispatch_RecordsFailedDelivery(t *testing.T) {
 		t.Fatalf("seed target: %v", err)
 	}
 
-	dispatcher := NewDeployDispatcher(db, nil, nil, nil)
+	dispatcher := NewDeployDispatcher(db, nil, nil, nil, nil)
 	dispatcher.Dispatch(ctx, "service:web", DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false, Error: "buildkit: boom"})
 
 	deliveries, err := db.ListNotificationDeliveries(ctx, "chn_1", 50, nil)
@@ -623,6 +623,31 @@ func TestDeployDispatcher_Dispatch_RecordsFailedDelivery(t *testing.T) {
 	}
 }
 
+func TestSendDeployOutcome_Webpush_Success(t *testing.T) {
+	sender := &fakePushSender{}
+	target := DeployTarget{NotifyKind: NotifyWebpush, Enabled: true}
+	if err := sendDeployOutcome(context.Background(), nil, nil, sender, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true}); err != nil {
+		t.Fatalf("sendDeployOutcome() error = %v", err)
+	}
+	if sender.called != 1 {
+		t.Fatalf("PushSender.Send called %d times, want 1", sender.called)
+	}
+	if !strings.Contains(sender.title, "web") {
+		t.Errorf("title = %q, want it to include the app name", sender.title)
+	}
+}
+
+func TestSendDeployOutcome_Webpush_NotConfigured_Errors(t *testing.T) {
+	target := DeployTarget{NotifyKind: NotifyWebpush, Enabled: true}
+	err := sendDeployOutcome(context.Background(), nil, nil, nil, target, DeployOutcome{AppName: "web"})
+	if err == nil {
+		t.Fatal("sendDeployOutcome() error = nil, want a clear 'not configured' error")
+	}
+	if !strings.Contains(err.Error(), "not configured") {
+		t.Errorf("error = %q, want it to say browser push is not configured", err.Error())
+	}
+}
+
 func TestDeployDispatcher_Dispatch_TargetSendFailure_DoesNotPanic(t *testing.T) {
 	db := newTestDeployNotifyDB(t)
 	ctx := context.Background()
@@ -631,7 +656,7 @@ func TestDeployDispatcher_Dispatch_TargetSendFailure_DoesNotPanic(t *testing.T) 
 		t.Fatalf("seed: %v", err)
 	}
 
-	dispatcher := NewDeployDispatcher(db, nil, nil, nil)
+	dispatcher := NewDeployDispatcher(db, nil, nil, nil, nil)
 	// An empty NotifyURL makes postJSON fail immediately (notify.go's own
 	// "no notify_url configured" check): Dispatch must log and continue,
 	// not panic or propagate, matching its own doc comment.

@@ -84,9 +84,9 @@ Test counts are `*_test.go` files in the named directory. "CLI" and "web" list t
 - Real infra: none found.
 - Label: **beta**. Better evidenced than most, but `test/e2e` does not cover it.
 
-### Notification channels (all 17)
+### Notification channels (all 18)
 
-Kinds, from `internal/alerting/rules.go:82-98`: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat. That is 17, so the README and comparison count is correct.
+Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat, webpush. That is 18, matching the README and comparison count. `webpush` (browser push, `internal/webpush/`) is the newest and the only kind whose destination isn't an operator-supplied URL: it fans out to every registered browser subscription instead.
 
 - Unit: `internal/alerting/` (28 files). Payload tests live in `notify_test.go` (`TestNotifyTelegram_PostsChatIDAndText`, `TestNotifyResend_PostsAuthHeaderAndPayload`, `TestNotifyOpsgenie_PostsAuthHeaderAndPayload`) and `TestNewNotifier_AllValidKinds_Recognized` (`notify_test.go:1095`). That table test lists 13 kinds, so email, resend, ntfy and opsgenie rely on their own tests. Files that mention each kind by name: telegram 2, pushover 1, pagerduty 1, teams 1, the rest 3 to 7. Thin coverage for pushover, pagerduty and teams.
 - API `notification_channels_test.go`; CLI: no dedicated channel test file found; email retry tests at `notify_test.go:569-629`.

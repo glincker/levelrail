@@ -33,6 +33,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/changelog"
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/deploy"
@@ -71,6 +72,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/vault"
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/GLINCKER/levelrail/internal/webpush"
 	"github.com/GLINCKER/levelrail/web"
 )
 
@@ -84,6 +86,12 @@ const (
 	// defaultBrandFile is the same "relative default, env override"
 	// pattern as defaultDataDir.
 	defaultBrandFile = "./brand.yaml"
+	// defaultChangelogFile is the same "relative default, env override"
+	// pattern as defaultBrandFile, for the optional CHANGELOG.md the
+	// dashboard's "What's new" panel reads (GET /api/v1/changelog).
+	// Unlike brand.yaml, absence is not an error: loadChangelog logs a
+	// warning and the route just answers an empty entries list.
+	defaultChangelogFile = "./CHANGELOG.md"
 	// defaultGitHubAppManifestFile is the same "relative default, env
 	// override" pattern as defaultBrandFile, for the optional GitHub App
 	// manifest permissions/events file (internal/githubapp.ManifestConfig).
@@ -569,7 +577,30 @@ func run(logger *slog.Logger) error {
 	// fresh on every send, deferring "not configured" to send time.
 	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv()))
 	notifyClient := netguard.NewClient()
-	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, emailSender, logger)
+
+	// pushSender backs the "webpush" notification-channel kind: nil
+	// until a master key exists, the same gate backupRunner below
+	// applies, since the VAPID private key can only ever be stored
+	// through secretsManager. pushVAPIDPublicKey is threaded into
+	// rootHandler below so the dashboard can fetch it without a second
+	// secretsManager dependency of its own.
+	var pushSender alerting.PushSender
+	var pushVAPIDPublicKey string
+	if secretsManager != nil {
+		publicKey, privateKey, err := webpush.EnsureVAPIDKeys(ctx, secretsManager)
+		if err != nil {
+			logger.Error("webpush: ensure vapid keys failed", slog.String("error", err.Error()))
+		} else {
+			pushVAPIDPublicKey = publicKey
+			subscriber := b.SupportEmail
+			if subscriber == "" {
+				subscriber = b.SupportURL
+			}
+			pushSender = webpush.NewSender(db, publicKey, privateKey, subscriber, notifyClient, logger)
+		}
+	}
+
+	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, emailSender, pushSender, logger)
 
 	// backupRunner is constructed once, here in run(), not inside
 	// rootHandler where it used to live: wave-2 roadmap item 6
@@ -672,7 +703,7 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
-	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver)
+	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver, pushVAPIDPublicKey)
 	configureNodeCerts(apiRouter, agentServer)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
@@ -841,7 +872,9 @@ func run(logger *slog.Logger) error {
 	}()
 
 	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
-	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier { return alerting.NewNotifier(notifyClient, emailSender, r) }
+	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier {
+		return alerting.NewNotifier(notifyClient, emailSender, pushSender, r)
+	}
 	// db (the same *store.DB every other cert-storage reader in this
 	// function uses) satisfies alerting.CertSource structurally, so a
 	// kind=cert_expiry rule reads the exact same certificate storage GET
@@ -1584,6 +1617,24 @@ func loadBrand() (*brand.Brand, error) {
 	return b, err
 }
 
+// loadChangelog resolves CHANGELOG.md the same default-plus-env-override
+// shape as loadBrand, but a missing file is never fatal here: a bare,
+// non-Docker install that hasn't shipped CHANGELOG.md next to the binary
+// yet just gets an empty "what's new" panel (api.WithChangelog's own doc
+// comment).
+func loadChangelog(logger *slog.Logger) []changelog.Entry {
+	path := os.Getenv("APP_CHANGELOG_FILE")
+	content, found, err := changelog.ReadFile(path, defaultChangelogFile)
+	if err != nil {
+		logger.Warn("read changelog file failed", slog.String("error", err.Error()))
+		return nil
+	}
+	if !found {
+		return nil
+	}
+	return changelog.Parse(content)
+}
+
 func loadGitHubAppManifestConfig() (githubapp.ManifestConfig, error) {
 	path := os.Getenv("APP_GITHUB_APP_MANIFEST_FILE")
 	if path == "" {
@@ -2024,7 +2075,7 @@ func buildNodeSource(db *store.DB, agentRegistry *agent.Registry) build.NodeSour
 // calling rootHandler): api.WithIngressPortOwner wires it in
 // unconditionally so GET /system/doctor can tell this control plane's
 // own ingress apart from an unrelated process on ports 80/443.
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, agentCAFingerprint string, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner, engine *reconcile.Engine, ingressDriver *ingressdriver.Driver) (http.Handler, *api.Router) {
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, agentCAFingerprint string, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner, engine *reconcile.Engine, ingressDriver *ingressdriver.Driver, pushVAPIDPublicKey string) (http.Handler, *api.Router) {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -2042,6 +2093,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithNotificationChannels(alertingDB),
 		api.WithNotificationChannelTester(deployDispatcher),
 		api.WithNotificationDeliveries(alertingDB),
+		api.WithApprovalChatNotifier(deployDispatcher),
 		api.WithFirewallRequiredPorts(platformRequiredPorts()),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
@@ -2090,6 +2142,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			nodeCPUThreshold(logger), nodeMemoryThreshold(logger),
 		),
 		api.WithResourceRecommendationLookback(resourceRecommendationLookback(logger)),
+		api.WithCapacityForecastLookback(capacityForecastLookback(logger)),
 		api.WithPreviewTTL(previewTTL(logger)),
 		api.WithPreviewLimits(previewLimits(logger)),
 		api.WithPreviewStuckAfter(previewStuckAfter(logger)),
@@ -2107,6 +2160,11 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// forgot-password always exists, it just fails clearly at send
 		// time when nothing is actually configured.
 		api.WithEmailSender(emailSender),
+		// pushVAPIDPublicKey is "" whenever secretsManager is nil (set
+		// just above, in run()): WithPushVAPIDPublicKey's own doc comment
+		// covers the resulting 501, so this is applied unconditionally
+		// like WithEmailSender above.
+		api.WithPushVAPIDPublicKey(pushVAPIDPublicKey),
 	}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
@@ -2358,6 +2416,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	} else {
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
+	opts = append(opts, api.WithChangelog(loadChangelog(logger)))
 
 	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
 	wireModelPreflight(modelSvc, client, b.ShortName, logger)
@@ -3011,6 +3070,25 @@ func resourceRecommendationLookback(logger *slog.Logger) time.Duration {
 	d, err := time.ParseDuration(raw)
 	if err != nil {
 		logger.Warn("invalid APP_RESOURCE_RECOMMENDATION_LOOKBACK, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// capacityForecastLookback reads APP_CAPACITY_FORECAST_LOOKBACK as a Go
+// duration string, the same env-var-with-default shape
+// resourceRecommendationLookback above already uses for its own
+// duration-typed option. Returns 0 (api's own signal to fall back to
+// its internal default, api.defaultCapacityForecastLookback) when unset
+// or unparseable, logging a warning in the latter case.
+func capacityForecastLookback(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_CAPACITY_FORECAST_LOOKBACK")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_CAPACITY_FORECAST_LOOKBACK, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
 	}
 	return d

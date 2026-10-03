@@ -128,6 +128,8 @@ type (
 	diagnosisSignal                  = apiclient.DiagnosisSignal
 	resourceRecommendationResource   = apiclient.ResourceRecommendationResource
 	dimensionRecommendationResource  = apiclient.DimensionRecommendationResource
+	costEstimateResource             = apiclient.CostEstimateResource
+	costEstimateProviderResource     = apiclient.CostEstimateProviderResource
 
 	backupTargetResource            = apiclient.BackupTargetResource
 	createBackupTargetRequest       = apiclient.CreateBackupTargetRequest
@@ -143,6 +145,7 @@ type (
 	updateNotificationChannelRequest = apiclient.UpdateNotificationChannelRequest
 	testNotificationChannelRequest   = apiclient.TestNotificationChannelRequest
 	notificationDeliveryResource     = apiclient.NotificationDeliveryResource
+	pushSubscriptionResource         = apiclient.PushSubscriptionResource
 	logDrainResource                 = apiclient.LogDrainResource
 	setLogDrainRequest               = apiclient.SetLogDrainRequest
 
@@ -163,10 +166,14 @@ type (
 	systemStatusResource        = apiclient.SystemStatusResource
 	doctorCheckResource         = apiclient.DoctorCheckResource
 	systemDoctorResource        = apiclient.SystemDoctorResource
+	openAPISpecResource         = apiclient.OpenAPISpecResource
+	openAPIRouteResource        = apiclient.OpenAPIRouteResource
 	containerResource           = apiclient.ContainerResource
 	containerPortResource       = apiclient.ContainerPortResource
 	updatesResource             = apiclient.UpdatesResource
 	updatePreflight             = apiclient.UpdatePreflight
+	changelogResource           = apiclient.ChangelogResource
+	changelogEntryResource      = apiclient.ChangelogEntryResource
 	nodeResource                = apiclient.NodeResource
 	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest
 	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse
@@ -211,6 +218,10 @@ type (
 	environmentCloneRequest          = apiclient.EnvironmentCloneRequest
 	environmentCloneAppInput         = apiclient.EnvironmentCloneAppInput
 	environmentCloneResultResource   = apiclient.EnvironmentCloneResultResource
+	environmentEnvEntryResource      = apiclient.EnvironmentEnvEntryResource
+	environmentEnvDiffEntry          = apiclient.EnvironmentEnvDiffEntry
+	environmentCompareSide           = apiclient.EnvironmentCompareSide
+	environmentCompareResource       = apiclient.EnvironmentCompareResource
 	previewEnvironmentResource       = apiclient.PreviewEnvironmentResource
 	previewEphemeralDatabaseResource = apiclient.PreviewEphemeralDatabaseResource
 	previewDatabaseIsolationResource = apiclient.PreviewDatabaseIsolationResource
@@ -294,6 +305,7 @@ type (
 	giteaAppRepoResource               = apiclient.GiteaAppRepoResource
 	serviceTemplateListItem            = apiclient.ServiceTemplateListItem
 	serviceTemplateDetail              = apiclient.ServiceTemplateDetail
+	customTemplateListItem             = apiclient.CustomTemplateListItem
 	staticSiteResource                 = apiclient.StaticSiteResource
 
 	tagResource         = apiclient.TagResource
@@ -304,6 +316,9 @@ type (
 	nodeResourceUsageResource  = apiclient.NodeResourceUsageResource
 	fleetResourceUsageRollup   = apiclient.FleetResourceUsageRollup
 	fleetResourceUsageResource = apiclient.FleetResourceUsageResource
+
+	capacityForecastMetric       = apiclient.CapacityForecastMetric
+	nodeCapacityForecastResource = apiclient.NodeCapacityForecastResource
 )
 
 // NewClient builds a Client, identifying every request as this CLI's own

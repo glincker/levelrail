@@ -73,6 +73,55 @@ Submitting calls the same `useDeployCompose()` mutation, which is the same `POST
 
 The `Starter Kits` category holds seven templates that demonstrate multi-service wiring patterns (a web tier plus a database, a worker plus a queue, a reverse proxy fanning out to two backends) rather than deploying a single known project; see [Starter kit templates](/templates) for the full list and what each one demonstrates.
 
+## Custom templates (save an app as a template)
+
+The catalog above is static and ships with the binary. Custom templates are the operator-defined counterpart: turn an app you already have configured and running into a reusable, one-click template, stored in the database (`custom_templates` table, `migrations/0270_custom_templates.sql`) instead of compiled into the binary. This is the growth-loop version of the catalog: replicate your own stack, or hand a teammate a template of something you already run, without either of you hand-writing a Compose file.
+
+::: details For contributors: where this lives in the source
+- `internal/compose/export.go` - `FromDesiredServices`, the app-state-to-compose.yaml derivation
+- `internal/store/custom_template.go` - the `custom_templates` table
+- `internal/api/service_templates_custom.go` - API handlers
+- `cmd/levelrail-cli/apps_save_as_template.go`, `cmd/levelrail-cli/templates.go` - CLI commands
+:::
+
+**How it works**
+
+`POST /api/v1/apps/{name}/save-as-template` reads `{name}`'s current desired state (one service, or every member service of a multi-service app) and derives a `compose.yaml` body from it with `compose.FromDesiredServices`, the structural reverse of the same `ToDesiredServices` function a catalog deploy or a hand-written Compose deploy already goes through. The result is saved as a `store.CustomTemplate` row: an id (`custom-` plus 16 random hex characters, so it can never collide with a catalog slug), a name, an optional description, and the derived Compose body.
+
+Because the output is an ordinary `compose.yaml` body in the same shape a catalog entry already has, a custom template id works through the exact same read and deploy routes the built-in catalog uses (`resolveTemplate` in `internal/api/service_templates.go` tries the static catalog first, then falls back to the custom template store): `GET /api/v1/service-templates/{id}` and `POST /api/v1/service-templates/{id}/deploy` both resolve a custom template id transparently. There is no second deploy mechanism.
+
+**Secret handling (read this before relying on it)**
+
+A custom template never contains a real secret value. This is enforced structurally, not by a filter that could miss a field:
+
+- `store.DesiredService.SecretEnv`, `.DatabaseEnv`, and `.VaultEnv` never carry a decrypted value in the first place, only a key name or reference (`internal/secrets` resolves the real value separately, immediately before container creation, and always has). There is nothing for the export step to accidentally copy.
+- Every one of those captured keys becomes a `${SERVICE_SECRET_<key>}` placeholder in the saved Compose body, deliberately never reusing the key's own name as the magic-var "kind" segment: a secret literally named e.g. `PASSWORD_RESET_SALT` would otherwise risk being misread as the auto-generatable `PASSWORD` kind by `internal/compose`'s own `SERVICE_<KIND>_<rest>` convention and silently filled with a random value. `SECRET` is not one of the generatable kinds (`PASSWORD`, `USER`, `BASE64`, `HEX`, `REALBASE64`), so it is always reported unresolved.
+- An unresolved placeholder makes `requires_configuration: true` on the saved template, the same signal a built-in catalog entry with a required secret already has. The one-click deploy path (`POST /api/v1/service-templates/{id}/deploy`) refuses a template in that state with a 409; deploying it instead goes through the dashboard's pre-filled Compose textarea (or `templates get` on the CLI), where the real value is supplied before the request is sent.
+
+Also dropped, each for its own reason (not a secret-handling concern, but worth knowing before relying on a saved template as a full backup of an app's configuration):
+
+- **Domains** - the source app still owns them; a deployed-from-template app starts domainless, same as `apps clone`.
+- **HostPort, BindAddress, and bind mounts** - host-specific placement and host filesystem paths from the source machine, meaningless (or outright wrong) once redeployed elsewhere.
+- **Resources (memory/CPU/swap) and health checks** - `internal/compose`'s own `deploy:` block only reads GPU device reservations and `replicas:` (see "Not built yet" above); there is no Compose representation for the rest that this same package can parse back.
+
+See `internal/compose/export.go`'s own doc comment on `FromDesiredServices` for the exact field-by-field list.
+
+**Listing and deleting**
+
+`GET /api/v1/templates/custom` lists every saved custom template (without its Compose body, same list/detail split as the built-in catalog). `DELETE /api/v1/templates/custom/{id}` removes one; this never touches the source app or any app already deployed from the template, it only removes the saved template row itself.
+
+In the dashboard, custom templates show up under a "Your templates" category in the same template marketplace grid the built-in catalog uses (`web/src/components/TemplateMarketplace.tsx`), with their own delete action; "Save as template" is an action on the app detail page's overflow menu.
+
+From the CLI:
+
+```bash
+levelrail-cli apps save-as-template my-app --description "staging-ready stack"
+levelrail-cli templates list --custom
+levelrail-cli templates get custom-a1b2c3d4e5f6a7b8
+levelrail-cli templates deploy custom-a1b2c3d4e5f6a7b8 --name my-app-copy
+levelrail-cli templates delete custom-a1b2c3d4e5f6a7b8
+```
+
 ## End-to-end integration walkthrough
 
 1. **Browse the catalog**:
@@ -158,31 +207,44 @@ The `Starter Kits` category holds seven templates that demonstrate multi-service
 | Method | Path | Ability |
 | --- | --- | --- |
 | `GET` | `/api/v1/service-templates` | `read` |
-| `GET` | `/api/v1/service-templates/{id}` | `read` |
+| `GET` | `/api/v1/service-templates/{id}` | `read` (also resolves a custom template id) |
+| `POST` | `/api/v1/service-templates/{id}/deploy` | `deploy` (also deploys a custom template id, when it needs no configuration) |
 | `POST` | `/api/v1/apps/{name}/compose` | `deploy` (plus `root` if the Compose body bind-mounts a host directory) |
+| `POST` | `/api/v1/apps/{name}/save-as-template` | `write`, scoped to `{name}` |
+| `GET` | `/api/v1/templates/custom` | `read` |
+| `DELETE` | `/api/v1/templates/custom/{id}` | `write` |
 | `GET` | `/api/v1/static-sites` | `read` |
 
 The catalog routes are read-only and serve `internal/catalog.Templates`
 directly, no store or database involved. The deploy route is shared with
 `apps deploy-compose`, not a template-specific endpoint: a template deploy
 and a hand-written Compose deploy are indistinguishable to the API once the
-request body leaves the client.
+request body leaves the client. A custom template id flows through that
+same `GET`/`POST .../deploy` pair, `resolveTemplate` falling back to the
+`custom_templates` table when the id doesn't match the static catalog; see
+"Custom templates" above.
 
 ## CLI
 
 ```bash
-levelrail-cli templates list [flags]
+levelrail-cli templates list [--custom] [flags]
 levelrail-cli templates get <id> [flags]
 levelrail-cli templates deploy <id> [--name NAME] [flags]
+levelrail-cli templates delete <id> [flags]
+
+levelrail-cli apps save-as-template <name> [--template-name NAME] [--description TEXT] [flags]
 
 levelrail-cli static-sites list [flags]
 ```
 
 `templates deploy` defaults the app name to the template's own `id`; pass
-`--name` to deploy the same template again under a different name.
-`static-sites` has one verb (`list`) because it has one backing route: it
-exists as a quick filter over apps that are plain static sites, since `apps
-list` already shows every app including these.
+`--name` to deploy the same template again under a different name. `templates
+list --custom` lists your own saved templates instead of the built-in
+catalog; `templates delete` only ever removes a custom template, the
+built-in catalog is read-only. `static-sites` has one verb (`list`) because
+it has one backing route: it exists as a quick filter over apps that are
+plain static sites, since `apps list` already shows every app including
+these.
 
 ::: details Not built yet (deliberate follow-ups)
 

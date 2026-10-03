@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/changelog"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
@@ -18,6 +19,16 @@ type Option func(*Router)
 // deploys over the cap wait as queued. Zero or less means unlimited.
 func WithDeployMaxConcurrent(n int) Option {
 	return func(rt *Router) { rt.deployMaxConcurrent = n }
+}
+
+// WithChangelog supplies the entries GET /api/v1/changelog serves,
+// parsed once at startup from the repo's own CHANGELOG.md (see
+// cmd/levelrail's loadChangelog). Without one configured (the default,
+// nil), that route answers an empty entries list rather than failing: a
+// bare, non-Docker install that hasn't shipped CHANGELOG.md next to the
+// binary yet just sees an empty "what's new" panel, not a broken one.
+func WithChangelog(entries []changelog.Entry) Option {
+	return func(rt *Router) { rt.changelogEntries = entries }
 }
 
 // WithSecretSetter enables PUT /api/v1/apps/{name}/secrets/{key}.
@@ -477,6 +488,25 @@ func WithNotificationDeliveries(d NotificationDeliveryStore) Option {
 	return func(rt *Router) { rt.notificationDeliveries = d }
 }
 
+// WithPushVAPIDPublicKey enables browser push notifications: GET
+// .../push-subscriptions/vapid-public-key returns publicKey, and POST
+// .../push-subscriptions accepts new registrations. Without one
+// configured (the default, no master key set), both return 501: the
+// VAPID private key half can only ever be stored through secretsManager.
+func WithPushVAPIDPublicKey(publicKey string) Option {
+	return func(rt *Router) { rt.pushVAPIDPublicKey = publicKey }
+}
+
+// WithApprovalChatNotifier enables posting an interactive Approve/Deny
+// message (deploy_approval_chat_notify.go) when a deploy approval is
+// requested, to every notification channel that opted into
+// InteractiveApprovals. Without one, requestDeployApproval simply
+// doesn't post anything, the same "optional signal" shape as
+// WithDeployNotifier.
+func WithApprovalChatNotifier(n ApprovalChatNotifier) Option {
+	return func(rt *Router) { rt.approvalChatNotifier = n }
+}
+
 // WithDataDir enables disk-usage reporting on GET /api/v1/system/status.
 // path should be the same APP_DATA_DIR the control plane itself was
 // started with. Without one configured (the default), the status
@@ -913,6 +943,18 @@ func WithDeployApprovalTTL(d time.Duration) Option {
 // and passes the parsed duration here.
 func WithResourceRecommendationLookback(d time.Duration) Option {
 	return func(rt *Router) { rt.resourceRecommendationLookback = d }
+}
+
+// WithCapacityForecastLookback overrides how far back GET
+// /api/v1/nodes/{id}/capacity-forecast looks for disk/memory history
+// (handleNodeCapacityForecast). Without one configured (or passed as
+// 0), defaultCapacityForecastLookback (14 days) applies. Same "no
+// hardcoded thresholds, use env vars" shape as
+// WithResourceRecommendationLookback: this package never reads the
+// environment directly, cmd/levelrail/main.go reads
+// APP_CAPACITY_FORECAST_LOOKBACK and passes the parsed duration here.
+func WithCapacityForecastLookback(d time.Duration) Option {
+	return func(rt *Router) { rt.capacityForecastLookback = d }
 }
 
 // WithPublicHost sets the IP or hostname GET

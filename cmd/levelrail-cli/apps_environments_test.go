@@ -156,6 +156,51 @@ func TestRun_AppsEnvironmentsEnvSet_NoVars_ClearsAll(t *testing.T) {
 	testEnvSetClearsAll(t, []string{"apps", "environments"}, "env_1", "environment")
 }
 
+func TestRun_AppsEnvironmentsEnvDiff(t *testing.T) {
+	var gotMethod, gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath, gotQuery = r.Method, r.URL.Path, r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(environmentCompareResource{
+			ProjectID: "proj_1",
+			A:         environmentCompareSide{Environment: environmentResource{ID: "env_a", Name: "staging"}},
+			B:         environmentCompareSide{Environment: environmentResource{ID: "env_b", Name: "production"}},
+			Diff: []environmentEnvDiffEntry{
+				{Key: "DEBUG", Status: "only_in_a", A: "true"},
+				{Key: "API_KEY", Secret: true, Status: "masked"},
+			},
+			Note: "test note",
+		})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "environments", "env-diff", "proj_1", "env_a", "env_b", "--api-url", srv.URL})
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/projects/proj_1/environments/compare" {
+		t.Errorf("request = %s %s, want GET /api/v1/projects/proj_1/environments/compare", gotMethod, gotPath)
+	}
+	if gotQuery != "a=env_a&b=env_b" {
+		t.Errorf("query = %q, want a=env_a&b=env_b", gotQuery)
+	}
+	if !strings.Contains(stdout, "DEBUG") || !strings.Contains(stdout, "only in a") {
+		t.Errorf("stdout = %q, want the DEBUG diff row", stdout)
+	}
+	if !strings.Contains(stdout, "(secret)") {
+		t.Errorf("stdout = %q, want the secret key masked, never a real value", stdout)
+	}
+}
+
+func TestRun_AppsEnvironmentsEnvDiff_MissingArgs(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "environments", "env-diff", "proj_1", "env_a"}, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d", got, exitUsage)
+	}
+	if !strings.Contains(stderr.String(), "env-diff requires") {
+		t.Errorf("stderr = %q, want a requires-arguments usage error", stderr.String())
+	}
+}
+
 func TestRun_AppsEnvironments_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"apps", "environments", "-h"}, &stdout, &stderr, envMap())

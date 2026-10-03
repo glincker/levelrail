@@ -236,6 +236,14 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/projects/{id}/stop", rt.requireAbility(AbilityDeploy, rt.handleStopProject))
 	mux.HandleFunc("POST /api/v1/projects/{id}/start", rt.requireAbility(AbilityDeploy, rt.handleStartProject))
 
+	// Topology (topology.go): a read-only diagram-ready graph derived
+	// from this project's existing desired state, AbilityRead like the
+	// project read itself above, not a new server-side list filter (see
+	// this file's own package doc comment on why apps/databases stay
+	// client-filtered elsewhere): a graph's nodes and edges aren't a
+	// list page.
+	mux.HandleFunc("GET /api/v1/projects/{id}/topology", rt.requireAbility(AbilityRead, rt.handleGetProjectTopology))
+
 	// Organizations (organizations.go): groups projects, same ordinary
 	// AbilityRead/AbilityWrite boundary as projects above.
 	mux.HandleFunc("GET /api/v1/organizations", rt.requireAbility(AbilityRead, rt.handleListOrganizations))
@@ -264,6 +272,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// scoped to a project, tagged onto a service via its own app route.
 	mux.HandleFunc("GET /api/v1/projects/{id}/environments", rt.requireAbility(AbilityRead, rt.handleListEnvironments))
 	mux.HandleFunc("POST /api/v1/projects/{id}/environments", rt.requireAbility(AbilityWrite, rt.handleCreateEnvironment))
+	// Cross-environment env var drift check (environment_compare.go):
+	// resolved effective env vars for two of this project's environments,
+	// secret values always redacted.
+	mux.HandleFunc("GET /api/v1/projects/{id}/environments/compare", rt.requireAbility(AbilityRead, rt.handleCompareEnvironmentEnv))
 	mux.HandleFunc("PATCH /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleUpdateEnvironment))
 	mux.HandleFunc("DELETE /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteEnvironment))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/environment", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppEnvironment))
@@ -284,6 +296,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/deploy-approvals/{id}", rt.requireAbility(AbilityRead, rt.handleGetDeployApproval))
 	mux.HandleFunc("POST /api/v1/deploy-approvals/{id}/approve", rt.requireAbility(AbilityDeploy, rt.handleApproveDeployApproval))
 	mux.HandleFunc("POST /api/v1/deploy-approvals/{id}/reject", rt.requireAbility(AbilityDeploy, rt.handleRejectDeployApproval))
+
+	// Chat-interactive deploy approval (chat_interactions.go): a
+	// Slack/Discord button click posts back here, unauthenticated like
+	// POST .../webhooks/github/{name} above; its own signature check
+	// (Slack HMAC, Discord Ed25519) stands in for auth, and the decision
+	// itself runs through the exact same functions the gated routes
+	// above call.
+	mux.HandleFunc("POST /api/v1/webhooks/slack/interactions", rt.handleSlackInteraction)
+	mux.HandleFunc("POST /api/v1/webhooks/discord/interactions", rt.handleDiscordInteraction)
 
 	// Shared env vars every service tagged with this environment inherits
 	// (environment_env.go): the tier between organizations/{id}/env and
@@ -412,6 +433,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// series, same AbilityRoot boundary as every other node route.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/patch-status", rt.requireAbility(AbilityRoot, rt.handleGetNodePatchStatus))
 	mux.HandleFunc("GET /api/v1/nodes/{id}/events", rt.requireAbility(AbilityRoot, rt.handleListNodeEvents))
+	// Rough disk/memory exhaustion projection (node_capacity_forecast.go),
+	// a read-and-suggest layer over the same host samples
+	// patch-status/metrics above read, same AbilityRoot boundary and
+	// nil-telemetry 501 shape as every other node route.
+	mux.HandleFunc("GET /api/v1/nodes/{id}/capacity-forecast", rt.requireAbility(AbilityRoot, rt.handleNodeCapacityForecast))
 	// Agent certificate lifecycle (node_cert.go, ADR 021).
 	mux.HandleFunc("POST /api/v1/nodes/{id}/reenroll-token", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleCreateNodeReenrollToken))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/revoke-cert", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleRevokeNodeCert))

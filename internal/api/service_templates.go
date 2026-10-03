@@ -69,25 +69,81 @@ func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Requ
 }
 
 // handleGetServiceTemplate handles GET /api/v1/service-templates/{id}:
-// one catalog.Templates entry, including its full Compose body.
+// one catalog.Templates entry, or one operator-defined custom template
+// (resolveTemplate), including its full Compose body either way.
 func (rt *Router) handleGetServiceTemplate(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	tpl, ok := catalog.TemplateByID(id)
+	tpl, ok, err := rt.resolveTemplate(r.Context(), id)
+	if err != nil {
+		rt.internalError(w, "api: get service template: resolve failed", err, slog.String("id", id))
+		return
+	}
 	if !ok {
 		writeError(w, http.StatusNotFound, "service template not found")
 		return
 	}
-	writeJSON(w, http.StatusOK, serviceTemplateDetail{
-		ID:                     tpl.ID,
-		Name:                   tpl.Name,
-		Slogan:                 tpl.Slogan,
-		Category:               tpl.Category,
-		DocumentationURL:       tpl.DocumentationURL,
-		Compose:                tpl.Compose,
-		RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
-		RequiresGPU:            tpl.RequiresGPU,
-		RequiresConfiguration:  rt.templateRequiresConfig[tpl.ID],
-	})
+	// templateView's fields mirror serviceTemplateDetail's exactly (see
+	// that type's own doc comment), so this is a plain reshape, not a
+	// semantic conversion.
+	writeJSON(w, http.StatusOK, serviceTemplateDetail(tpl))
+}
+
+// templateView is the common shape handleGetServiceTemplate and
+// handleDeployServiceTemplateNow both work with, whichever of
+// catalog.Templates (static) or store.CustomTemplate (operator-defined,
+// service_templates_custom.go) resolveTemplate found id in. This is
+// what lets a custom template reuse the one-click deploy path with no
+// second deploy mechanism: both branches end up as the same templateView.
+type templateView struct {
+	ID                     string
+	Name                   string
+	Slogan                 string
+	Category               string
+	DocumentationURL       string
+	Compose                string
+	RecommendedMemoryBytes int64
+	RequiresGPU            bool
+	RequiresConfiguration  bool
+}
+
+// resolveTemplate looks id up in catalog.Templates first (static, so
+// this is a cheap map read via rt.templateRequiresConfig), then falls
+// back to rt.customTemplates: catalog IDs are hand-written slugs
+// (catalog's own ID convention), custom template IDs are always
+// "custom-" prefixed (service_templates_custom.go's newCustomTemplateID),
+// so the two ID spaces can never collide. ok is false, with a nil error,
+// when id matches neither; a non-nil error means the custom-template
+// store lookup itself failed, not that id is merely unknown.
+func (rt *Router) resolveTemplate(ctx context.Context, id string) (templateView, bool, error) {
+	if tpl, ok := catalog.TemplateByID(id); ok {
+		return templateView{
+			ID:                     tpl.ID,
+			Name:                   tpl.Name,
+			Slogan:                 tpl.Slogan,
+			Category:               tpl.Category,
+			DocumentationURL:       tpl.DocumentationURL,
+			Compose:                tpl.Compose,
+			RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
+			RequiresGPU:            tpl.RequiresGPU,
+			RequiresConfiguration:  rt.templateRequiresConfig[tpl.ID],
+		}, true, nil
+	}
+
+	ct, err := rt.customTemplates.GetCustomTemplate(ctx, id)
+	if errors.Is(err, store.ErrCustomTemplateNotFound) {
+		return templateView{}, false, nil
+	}
+	if err != nil {
+		return templateView{}, false, fmt.Errorf("get custom template %q: %w", id, err)
+	}
+	return templateView{
+		ID:                    ct.ID,
+		Name:                  ct.Name,
+		Slogan:                ct.Description,
+		Category:              "Custom",
+		Compose:               ct.Compose,
+		RequiresConfiguration: composeNeedsConfiguration(ct.Compose),
+	}, true, nil
 }
 
 // handleDeployServiceTemplateNow handles
@@ -105,12 +161,16 @@ func (rt *Router) handleGetServiceTemplate(w http.ResponseWriter, r *http.Reques
 // back to BrowseTemplatesFields' existing pre-filled wizard step.
 func (rt *Router) handleDeployServiceTemplateNow(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	tpl, ok := catalog.TemplateByID(id)
+	tpl, ok, err := rt.resolveTemplate(r.Context(), id)
+	if err != nil {
+		rt.internalError(w, "api: deploy service template now: resolve failed", err, slog.String("template", id))
+		return
+	}
 	if !ok {
 		writeError(w, http.StatusNotFound, "service template not found")
 		return
 	}
-	if rt.templateRequiresConfig[tpl.ID] {
+	if tpl.RequiresConfiguration {
 		writeError(w, http.StatusConflict, "this template needs configuration (a secret with no default) before it can deploy; use the full setup flow instead")
 		return
 	}
@@ -177,13 +237,21 @@ func (rt *Router) generateOneClickAppName(ctx context.Context, templateID string
 func computeTemplateRequiresConfig() map[string]bool {
 	out := make(map[string]bool, len(catalog.Templates))
 	for _, tpl := range catalog.Templates {
-		out[tpl.ID] = templateNeedsConfiguration(tpl)
+		out[tpl.ID] = composeNeedsConfiguration(tpl.Compose)
 	}
 	return out
 }
 
-func templateNeedsConfiguration(tpl catalog.Template) bool {
-	f, err := compose.Parse([]byte(tpl.Compose))
+// composeNeedsConfiguration reports whether composeBody has any
+// SERVICE_ magic var compose.ResolveMagicVars can't resolve on its own:
+// the exact same signal handleDeployCompose already turns into a hard
+// "unresolved template variable(s)" error at real deploy time. Shared by
+// computeTemplateRequiresConfig (catalog.Templates, computed once at
+// startup since that catalog is static for the process lifetime) and
+// resolveTemplate's own custom-template branch (computed per request,
+// since store.CustomTemplate rows are created and deleted at runtime).
+func composeNeedsConfiguration(composeBody string) bool {
+	f, err := compose.Parse([]byte(composeBody))
 	if err != nil {
 		return true
 	}
@@ -196,7 +264,7 @@ func templateNeedsConfiguration(tpl catalog.Template) bool {
 
 // detectionGenerate/detectionPersist stand in for the real
 // generate/persist callbacks handleDeployCompose passes to
-// compose.ResolveMagicVars: templateNeedsConfiguration only needs to
+// compose.ResolveMagicVars: composeNeedsConfiguration only needs to
 // know whether resolution *would* succeed, never a real generated value
 // or a real secret write.
 func detectionGenerate(_, _ string, _ int) (string, error) { return "x", nil }
