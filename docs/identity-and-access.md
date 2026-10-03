@@ -125,6 +125,8 @@ Details:
 
 A policy attaches to a `user` or a `token` (`principal_type`), by that principal's id. A malformed stored document can never grant or deny anything; it's treated as if it simply doesn't mention the pair being checked.
 
+Proven end to end, not just at the handler level: `test/e2e/iam_policy_enforcement_test.go` drives a real admin session through the real HTTP API to mint a second user and a token, attach Deny and Allow policies through the real IAM endpoints, and confirm the resulting 403/200s correspond to real state changes (or their absence).
+
 ### Bootstrap: exactly one path to the first admin
 
 On startup, `BootstrapAdmin` creates a user from `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` only if zero users exist. It is a no-op on later restarts, so a password change doesn't get silently reverted.
