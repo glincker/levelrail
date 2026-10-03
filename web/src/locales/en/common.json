@@ -1,6 +1,18 @@
 {
   "actions": {
     "copy": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "retry": "Retry",
+    "backToApps": "Back to apps"
+  },
+  "healthScore": {
+    "title": "Health & readiness",
+    "notFound": "\"{{appName}}\" couldn't be found. It may have been deleted, or belong to a different instance than the one you're signed into.",
+    "loadFailed": "Couldn't load health & readiness. {{message}}",
+    "status": {
+      "pass": "Pass",
+      "warn": "Warn",
+      "fail": "Fail"
+    }
   }
 }
