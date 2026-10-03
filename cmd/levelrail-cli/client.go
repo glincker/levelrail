@@ -139,6 +139,8 @@ type (
 	updateRegistryCredentialRequest = apiclient.UpdateRegistryCredentialRequest
 	firewallRuleResource            = apiclient.FirewallRuleResource
 	createFirewallRuleRequest       = apiclient.CreateFirewallRuleRequest
+	appStreamResource               = apiclient.AppStreamResource
+	createAppStreamRequest          = apiclient.CreateAppStreamRequest
 
 	notificationChannelResource      = apiclient.NotificationChannelResource
 	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest

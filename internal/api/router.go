@@ -353,6 +353,7 @@ type Router struct {
 	networkShares                NetworkShareStore                // always set, same "core Store interface" shape as registryCredentials above
 	networkShareSecrets          NetworkShareSecretsSetter        // nil is valid: POST /api/v1/network-shares (for a cifs share) returns 501, same shape as registryCredentialSecrets above
 	firewallRules                FirewallRuleStore                // always set, same "core Store interface" shape as backupTargets above
+	appStreams                   AppStreamStore                   // always set, same "core Store interface" shape as firewallRules above
 	firewallRequiredPorts        []int                            // defaults to firewall.DefaultRequiredPorts in NewRouter; WithFirewallRequiredPorts overrides with this instance's actually configured ports
 	backupHistory                BackupHistoryStore               // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
 	backupRunner                 BackupRunner                     // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
@@ -577,6 +578,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		registryCredentials:         s,
 		networkShares:               s,
 		firewallRules:               s,
+		appStreams:                  s,
 		firewallRequiredPorts:       firewall.DefaultRequiredPorts,
 		backupHistory:               s,
 		backupVerifications:         s,
