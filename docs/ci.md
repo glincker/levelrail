@@ -89,20 +89,9 @@ required check, so auto-merge does not wait on it.
 
 **CI required** is the aggregator: it always runs, needs every gating job,
 and fails if change detection did not succeed or any job it needs failed or
-was cancelled. The recommended setup is to require only that one check,
-which also keeps branch protection stable if jobs are later split or
-renamed. This is not applied automatically. To switch (owner action, not
-run by CI):
-
-```sh
-gh api -X PATCH repos/glincker/levelrail/branches/main/protection/required_status_checks \
-  --input - <<'EOF'
-{"strict": false, "checks": [{"context": "CI required", "app_id": 15368}]}
-EOF
-```
-
-Keep the six job names unchanged until the switch is confirmed, so both
-configurations work during the transition.
+was cancelled. Branch protection requires only this one context (confirmed
+against the live ruleset), not the six job names individually, so it stays
+stable if jobs are later split or renamed.
 
 ## Other workflows on a PR
 
@@ -131,6 +120,17 @@ a merge queue are never cancelled.
 `ci.yml` already listens for `merge_group`, so turning on a merge queue for
 `main` needs only the branch protection setting. A queue run scopes itself
 against the queue's base commit with the same rules as a PR.
+
+The ruleset's `merge_queue` rule sets `min_entries_to_merge: 1`, so a PR
+queued alone merges as soon as its own checks pass rather than waiting for
+others to batch with (`min_entries_to_merge_wait_minutes: 5` only matters
+once a second PR is already queued). `grouping_strategy: ALLGREEN` with
+`max_entries_to_build/merge: 5` lets GitHub batch up to 5 queued PRs into
+one `merge_group` run when several land at once, without adding latency
+to a lone PR. Raising the minimums would cut total `merge_group` runs on
+busy days at the cost of making every PR wait for others to queue up
+first: not worth it while the complaint is per-PR wait time, not total
+run count.
 
 A merge queue means every merged commit triggers two CI runs on the same
 tree: `merge_group` (pre-merge gate) then `push` (post-merge). Both are
