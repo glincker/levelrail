@@ -27,6 +27,11 @@ type statusRecorder struct {
 	http.ResponseWriter
 	status      int
 	wroteHeader bool
+	// hijacked is set by Hijack: a WebSocket upgrade (the terminal
+	// route) bypasses WriteHeader/Write entirely, so requestLoggingMiddleware
+	// (request_logging.go) checks this to avoid grading an interactive
+	// session's lifetime as request latency.
+	hijacked bool
 }
 
 func (s *statusRecorder) WriteHeader(status int) {
@@ -59,6 +64,7 @@ func (s *statusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if !ok {
 		return nil, nil, http.ErrNotSupported
 	}
+	s.hijacked = true
 	return h.Hijack()
 }
 

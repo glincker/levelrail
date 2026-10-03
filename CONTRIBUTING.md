@@ -117,6 +117,11 @@ the overall number still passes.
 Frontend tests live alongside components in `web/`; see `web/README.md`
 for how to run them.
 
+To find which tests in a package are actually slow, run
+`scripts/go-test-slowest.sh <package>...` (`-t <threshold>` to change the
+cutoff, default `500ms`). It wraps gotestsum's `--jsonfile` plus
+`tool slowest` so that two-step doesn't need hand-assembling every time.
+
 ## Flaky tests
 
 CI reruns a failed Go test at most twice (`scripts/ci-go-test.sh`, via

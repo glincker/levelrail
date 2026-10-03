@@ -127,11 +127,19 @@ type Router struct {
 	composeSecrets         ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
 	requestSummaryWindow   time.Duration      // 0 keeps defaultRequestSummaryWindow
-	alertRules             AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
-	lb                     lbDeps             // zero value is valid: load balancer routes return 501
-	iac                    iacDeps            // zero value is valid: lazily builds the in-process handler apply calls
-	alertNoise             AlertNoise         // nil is valid: silence, maintenance window and alert history routes return 501
-	statusPage             StatusPageStore    // nil is valid: status page routes return 501 and the public page stays off
+	// requestLogThresholds are requestLoggingMiddleware's Warn/Error
+	// duration bands (request_logging.go). Zero fields mean "use the
+	// matching default", set via WithRequestLogThresholds;
+	// cmd/levelrail/main.go resolves APP_SLOW_REQUEST_THRESHOLD/
+	// APP_CRITICAL_REQUEST_THRESHOLD and calls it unconditionally, the
+	// same "this package never reads the environment directly"
+	// convention WithSessionTTL's own doc comment establishes.
+	requestLogThresholds   requestLogThresholds
+	alertRules             AlertRules      // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
+	lb                     lbDeps          // zero value is valid: load balancer routes return 501
+	iac                    iacDeps         // zero value is valid: lazily builds the in-process handler apply calls
+	alertNoise             AlertNoise      // nil is valid: silence, maintenance window and alert history routes return 501
+	statusPage             StatusPageStore // nil is valid: status page routes return 501 and the public page stays off
 	statusView             StatusPageViewer
 	statusSampler          *statuspage.Service
 	statusLimiter          *apiRateLimiter
