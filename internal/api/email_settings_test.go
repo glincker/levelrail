@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -367,6 +368,57 @@ func TestHandleUpdateEmailSettings_RealSecretsManager_RoundTripsThroughEncryptio
 	}
 }
 
+func TestHandleTestEmail_Success(t *testing.T) {
+	sender := newFakeEmailSender()
+	rt, db := newTestRouterWithEmailSender(t, sender)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/settings/email/test", `{"to":"ops@example.com"}`))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNoContent, rec.Body.String())
+	}
+	sent := waitForSend(t, sender.calls)
+	if sent.to != "ops@example.com" {
+		t.Errorf("to = %q, want %q", sent.to, "ops@example.com")
+	}
+}
+
+func TestHandleTestEmail_SendFails(t *testing.T) {
+	sender := newFakeEmailSender()
+	sender.err = errors.New("smtp: connection refused")
+	rt, db := newTestRouterWithEmailSender(t, sender)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/settings/email/test", `{"to":"ops@example.com"}`))
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadGateway, rec.Body.String())
+	}
+}
+
+func TestHandleTestEmail_InvalidAddress(t *testing.T) {
+	rt, db := newTestRouterWithEmailSender(t, newFakeEmailSender())
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/settings/email/test", `{"to":"not-an-email"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandleTestEmail_NotConfigured(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/settings/email/test", `{"to":"ops@example.com"}`))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
+	}
+}
+
 func TestEmailSettingsRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
@@ -376,6 +428,7 @@ func TestEmailSettingsRoutes_RequireAuth(t *testing.T) {
 	}{
 		{http.MethodGet, "/api/v1/settings/email"},
 		{http.MethodPut, "/api/v1/settings/email"},
+		{http.MethodPost, "/api/v1/settings/email/test"},
 	}
 	for _, r := range routes {
 		t.Run(r.method+" "+r.target, func(t *testing.T) {
