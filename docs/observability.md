@@ -251,7 +251,7 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 | `domain_health` | one app's own domains | a DNS check gone bad (not resolving, or resolving somewhere else) on any of the app's configured domains | `for_duration` (optional debounce) |
 | `backup_missing` | one database (platform-wide) or one app's own volume | last successful backup trailing its own cron schedule's expected interval by more than a grace period | `backup_resource_kind` (`database` or `volume`), `backup_database_name` or `backup_service_name`/`backup_volume_name`, `for_duration` (reused as the overdue grace period, default 6h) |
 | `control_plane_backup_stale` | platform-wide | the newest control plane self-backup snapshot (see [control plane backup](/control-plane-backup)) being older than a maximum age; quiet when scheduled backups are disabled or no snapshot exists yet | `for_duration` (reused as the maximum age, default 3d) |
-| `log_archive_stale` | platform-wide | a log archive policy's last run failed, or it has not succeeded within a maximum age (see [object storage](/object-storage)) | `for_duration` (reused as the maximum age, default three intervals, at least 2h) |
+| `log_archive_stale` | platform-wide | a log archive policy's last run failed, or it has not succeeded within a maximum age (see [log archive](/log-archive)) | `for_duration` (reused as the maximum age, default three intervals, at least 2h) |
 
 :::
 
