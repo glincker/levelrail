@@ -1,0 +1,58 @@
+{
+  "autoRollback": {
+    "title": "Auto-rollback on crashloop",
+    "infoTipLabel": "About auto-rollback on crashloop",
+    "helpLabel": "Auto-rollback guide",
+    "enabledLabel": "Redeploy the last working image automatically",
+    "description": "When a crashloop alert fires for this app, automatically redeploy the most recent successful image older than the one that's crashlooping. Fires at most once per episode; with no older image to fall back to, the app is left to the alert alone.",
+    "switchAriaLabel": "Auto-rollback on crashloop enabled",
+    "toast": {
+      "enabled": "Auto-rollback on crashloop enabled.",
+      "disabled": "Auto-rollback on crashloop disabled.",
+      "errorTitle": "Could not update auto-rollback."
+    }
+  },
+  "autoRollbackSloBurn": {
+    "title": "Auto-rollback on SLO burn",
+    "infoTipLabel": "About auto-rollback on SLO burn",
+    "helpLabel": "Auto-rollback guide",
+    "modeLabel": "Mode",
+    "modeAriaLabel": "Auto-rollback on SLO burn mode",
+    "defaultDescription": "Choose how this app reacts when an SLO burn-rate alert fires.",
+    "modes": {
+      "off": {
+        "label": "Off",
+        "description": "Only alert; never act automatically."
+      },
+      "auto": {
+        "label": "Auto rollback",
+        "description": "Roll back immediately to the most recent successful image older than the one burning the error budget."
+      },
+      "dry_run": {
+        "label": "Dry run",
+        "description": "Log what would have been rolled back, without ever deploying."
+      },
+      "pause_for_human": {
+        "label": "Pause for human",
+        "description": "Open a pending deploy approval for the rollback instead of deploying directly; a teammate approves or rejects it."
+      }
+    },
+    "toast": {
+      "modeSet": "Auto-rollback on SLO burn set to: {{mode}}.",
+      "errorTitle": "Could not update auto-rollback on SLO burn."
+    }
+  },
+  "badgeSettings": {
+    "title": "Deploy status badge",
+    "infoTipLabel": "About the deploy status badge",
+    "enabledLabel": "Public README badge",
+    "description": "Serves a small public SVG showing this app's latest deploy status and when it happened, no authentication required. Leave this off for an app whose deploy status shouldn't be public.",
+    "switchAriaLabel": "Deploy status badge enabled",
+    "embedLabel": "Embed in your README",
+    "toast": {
+      "enabled": "Deploy status badge enabled.",
+      "disabled": "Deploy status badge disabled.",
+      "errorTitle": "Could not update the deploy status badge."
+    }
+  }
+}
