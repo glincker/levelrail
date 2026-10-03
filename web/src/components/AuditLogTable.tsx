@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { RobotIcon } from '@phosphor-icons/react/dist/ssr'
+import { Link } from '@tanstack/react-router'
 import {
   Table,
   TableBody,
@@ -11,6 +12,38 @@ import {
 } from './ui/table'
 import { Badge } from './ui/badge'
 import { CLIENT_KIND_LABELS, type AuditLogEntry } from '../queries/auditLog'
+import { auditFriendlyLabel } from '../lib/auditLabels'
+
+// domainApp resolves a domain tag to its owning app, for a link to that
+// app's own domains page (settings/certificates.tsx and
+// CertificateCenterTable.tsx already treat a domain owned by no current
+// app as an orphaned row to display plainly rather than link, the same
+// fallback DomainTag below applies).
+export type DomainAppLookup = Map<string, string>
+
+function DomainTag({
+  domain,
+  domainApp,
+}: {
+  domain: string
+  domainApp?: DomainAppLookup
+}) {
+  const appName = domainApp?.get(domain)
+  if (!appName) {
+    return (
+      <span className="font-mono text-xs text-muted-foreground">{domain}</span>
+    )
+  }
+  return (
+    <Link
+      to="/apps/$name/domains"
+      params={{ name: appName }}
+      className="font-mono text-xs text-foreground underline-offset-2 hover:underline"
+    >
+      {domain}
+    </Link>
+  )
+}
 
 export const AUDIT_VIRTUALIZE_OVER = 50
 
@@ -52,7 +85,43 @@ function AgentCell({ entry }: { entry: AuditLogEntry }) {
   )
 }
 
-function VirtualAuditRow({ entry }: { entry: AuditLogEntry }) {
+// AbilityCell shows a specific, human-readable label and domain tag for
+// an entry auditFriendlyLabel recognizes (certificate issuance, renewal,
+// upload, removal); every other entry keeps the raw ability string it
+// always showed, so an ability with no mapping yet is never hidden.
+function AbilityCell({
+  entry,
+  domainApp,
+}: {
+  entry: AuditLogEntry
+  domainApp?: DomainAppLookup
+}) {
+  const friendly = auditFriendlyLabel(entry)
+  if (!friendly) {
+    return <span>{entry.ability}</span>
+  }
+  const FriendlyIcon = friendly.icon
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <FriendlyIcon
+        className="size-3.5 shrink-0 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <span>{friendly.label}</span>
+      {friendly.domain ? (
+        <DomainTag domain={friendly.domain} domainApp={domainApp} />
+      ) : null}
+    </span>
+  )
+}
+
+function VirtualAuditRow({
+  entry,
+  domainApp,
+}: {
+  entry: AuditLogEntry
+  domainApp?: DomainAppLookup
+}) {
   return (
     <div role="row" className={`${GRID} border-b border-border py-2 text-sm`}>
       <span role="cell" className="text-muted-foreground">
@@ -70,7 +139,9 @@ function VirtualAuditRow({ entry }: { entry: AuditLogEntry }) {
       <span role="cell">
         <ClientKindBadge clientKind={entry.client_kind} />
       </span>
-      <span role="cell">{entry.ability}</span>
+      <span role="cell">
+        <AbilityCell entry={entry} domainApp={domainApp} />
+      </span>
       <span role="cell" className="font-mono text-xs">
         {entry.method}
       </span>
@@ -84,7 +155,13 @@ function VirtualAuditRow({ entry }: { entry: AuditLogEntry }) {
   )
 }
 
-function VirtualAuditTable({ entries }: { entries: AuditLogEntry[] }) {
+function VirtualAuditTable({
+  entries,
+  domainApp,
+}: {
+  entries: AuditLogEntry[]
+  domainApp?: DomainAppLookup
+}) {
   const parentRef = useRef<HTMLDivElement>(null)
   const virtualizer = useVirtualizer({
     count: entries.length,
@@ -134,7 +211,7 @@ function VirtualAuditTable({ entries }: { entries: AuditLogEntry[] }) {
                   transform: `translateY(${v.start}px)`,
                 }}
               >
-                <VirtualAuditRow entry={entry} />
+                <VirtualAuditRow entry={entry} domainApp={domainApp} />
               </div>
             )
           })}
@@ -144,9 +221,15 @@ function VirtualAuditTable({ entries }: { entries: AuditLogEntry[] }) {
   )
 }
 
-export function AuditLogTable({ entries }: { entries: AuditLogEntry[] }) {
+export function AuditLogTable({
+  entries,
+  domainApp,
+}: {
+  entries: AuditLogEntry[]
+  domainApp?: DomainAppLookup
+}) {
   if (entries.length > AUDIT_VIRTUALIZE_OVER) {
-    return <VirtualAuditTable entries={entries} />
+    return <VirtualAuditTable entries={entries} domainApp={domainApp} />
   }
   return (
     <div className="rounded-lg border border-border">
@@ -181,7 +264,9 @@ export function AuditLogTable({ entries }: { entries: AuditLogEntry[] }) {
               <TableCell>
                 <ClientKindBadge clientKind={entry.client_kind} />
               </TableCell>
-              <TableCell>{entry.ability}</TableCell>
+              <TableCell>
+                <AbilityCell entry={entry} domainApp={domainApp} />
+              </TableCell>
               <TableCell className="font-mono text-xs">
                 {entry.method}
               </TableCell>
