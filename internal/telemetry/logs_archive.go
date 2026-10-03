@@ -43,7 +43,7 @@ func (db *DB) DistinctLogResources(ctx context.Context, fromNs, toNs int64) ([]s
 // repeats nor skips lines.
 func (db *DB) StreamLogs(ctx context.Context, resourceID string, fromNs, toNs int64, maxLines int, fn func(LogEntry) error) (LogStreamResult, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT resource_id, stream, ts, message, structured, fields_json
+		SELECT resource_id, container_id, stream, ts, message, structured, fields_json
 		FROM log_entries WHERE resource_id = ? AND ts >= ? AND ts < ?
 		ORDER BY ts ASC, id ASC LIMIT ?
 	`, resourceID, fromNs, toNs, maxLines+1)
@@ -106,7 +106,7 @@ func scanStreamRow(rows *sql.Rows) (LogEntry, int64, error) {
 		structured int
 		fieldsJSON sql.NullString
 	)
-	if err := rows.Scan(&e.ResourceID, &e.Stream, &tsNano, &e.Message, &structured, &fieldsJSON); err != nil {
+	if err := rows.Scan(&e.ResourceID, &e.ContainerID, &e.Stream, &tsNano, &e.Message, &structured, &fieldsJSON); err != nil {
 		return LogEntry{}, 0, fmt.Errorf("telemetry: scan stream log row: %w", err)
 	}
 	e.Timestamp = time.Unix(0, tsNano).UTC()
