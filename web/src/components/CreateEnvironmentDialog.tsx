@@ -1,24 +1,12 @@
 import { useState } from 'react'
-import {
-  PlusIcon,
-  StackSimpleIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { PlusIcon, StackSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
+import { CreateFlowShell } from './CreateFlowKit'
 import { useCreateEnvironment } from '../queries/environments'
 
 // A single name field, mirroring CreateProjectDialog: an environment is
@@ -70,17 +58,24 @@ export function CreateEnvironmentDialog({ projectId }: { projectId: string }) {
         New environment
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <StackSimpleIcon className="size-4 text-muted-foreground" />
-            New environment
-          </DialogTitle>
-          <DialogDescription>
-            A staging/production-style label for this project. Tag an app
-            with it from the app&apos;s own Overview page.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <CreateFlowShell
+          icon={<StackSimpleIcon className="size-4 text-muted-foreground" />}
+          title="New environment"
+          description={
+            <>
+              A staging/production-style label for this project. Tag an app with
+              it from the app&apos;s own Overview page.
+            </>
+          }
+          onSubmit={handleSubmit}
+          error={
+            createEnvironment.isError ? createEnvironment.error.message : null
+          }
+          submitLabel="Create environment"
+          submitPendingLabel="Creating..."
+          pending={createEnvironment.isPending}
+          submitDisabled={name.trim() === ''}
+        >
           <Field>
             <FieldLabel htmlFor="environment-name">Name</FieldLabel>
             <Input
@@ -104,25 +99,7 @@ export function CreateEnvironmentDialog({ projectId }: { projectId: string }) {
             Protected: require confirmation before a deploy, rollback, or
             promote can target an app tagged with this environment
           </label>
-
-          {createEnvironment.isError ? (
-            <Alert variant="destructive">
-              <WarningIcon />
-              <AlertDescription>
-                {createEnvironment.error.message}
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          <DialogFooter>
-            <Button
-              type="submit"
-              disabled={createEnvironment.isPending || name.trim() === ''}
-            >
-              {createEnvironment.isPending ? 'Creating...' : 'Create environment'}
-            </Button>
-          </DialogFooter>
-        </form>
+        </CreateFlowShell>
       </DialogContent>
     </Dialog>
   )
