@@ -69,54 +69,7 @@ Outbound connections to a destination go through the same SSRF guard as webhooks
 
 ## Log archive
 
-Container logs are stored node-local. Log archive ships them to a destination as gzip-compressed NDJSON, on a schedule you set per app or once for every app.
-
-Objects are written to:
-
-```
-log-archive/<kind>/<name>/<yyyy>/<mm>/<dd>/<hh>/<start-ns>.ndjson.gz
-```
-
-for example `log-archive/service/web/2026/09/24/13/1790255400000000000.ndjson.gz`. The prefix can be changed with `APP_LOG_ARCHIVE_PREFIX`. Each line is a JSON object with `resource`, `stream`, `ts`, `message`, and `fields` for structured lines.
-
-How it behaves:
-
-- **Pull, not push.** A scheduler wakes once a minute, checks which policies are due, and reads new lines from the node-local store. With no policies it does one small query per minute.
-- **Idempotent and resumable.** Each policy keeps a watermark. Objects are named by their chunk start, so a retry after a failure overwrites the same key instead of duplicating lines. A failed window keeps the watermark in place and is retried on the next run.
-- **Bounded.** One archive run at a time, at most 24 hour-windows per run, and at most 200,000 lines per object (`APP_LOG_ARCHIVE_MAX_LINES_PER_OBJECT`). Lines are spooled to a temp file first so the log database is never held open during an upload. A new policy archives forward from the moment it is created; use a dump for history.
-- **Compaction-safe.** Objects are immutable and contiguous, and sort by name, so a later compaction job can merge them by prefix.
-- **Retention.** Set "Keep for (days)" to have the archiver delete objects older than that after each successful run (up to 500 deletions per run). The global policy leaves apps that have their own policy alone. If you would rather let the provider do it, add a bucket lifecycle rule on the `log-archive/` prefix and leave retention at 0.
-
-### Dump now
-
-Archive a past range immediately, without waiting for the schedule:
-
-```
-levelrail logs dump --target <id> --app web --from 24h --wait
-levelrail logs dump --target <id> --from 2026-09-24T00:00:00Z --to 2026-09-24T06:00:00Z
-```
-
-`--from` and `--to` take an RFC3339 timestamp or a duration back from now. The range is capped at 31 days. The dashboard has the same control on the Archive tab.
-
-### Browsing and downloading
-
-```
-levelrail logs ls --target <id> --app web
-levelrail logs fetch --target <id> --key log-archive/service/web/2026/09/24/13/1790255400000000000.ndjson.gz
-```
-
-Download is limited to keys under the archive prefix. `zcat file.ndjson.gz | jq .` reads an object. There is no search index over archived objects on purpose; use the bucket provider's tooling (Athena, DuckDB, `zgrep`) for that.
-
-### Managing policies
-
-```
-levelrail logs archive set --target <id> --app web --interval 1h --retention-days 30
-levelrail logs archive set --target <id> --interval 6h        # every app
-levelrail logs archive status
-levelrail logs archive remove --app web
-```
-
-Intervals run from 5 minutes to 24 hours.
+Log archive ships node-local container logs to a destination as gzip-compressed NDJSON, on a schedule or on demand. See [Log archive](/log-archive) for what gets archived, retention, dump, and how to retrieve archived objects.
 
 ## Build cache
 
