@@ -103,17 +103,25 @@ function DialogContent({
   children,
   showCloseButton = true,
   size,
+  glass = false,
   ...props
 }: DialogPrimitive.Popup.Props &
   VariantProps<typeof dialogContentVariants> & {
     showCloseButton?: boolean
+    /** Opt into the glinui blurred glass surface (adr/024) instead of the
+     * default solid popover background. Additive: existing dialogs keep
+     * their current look unless they pass this explicitly. */
+    glass?: boolean
   }) {
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
-        className={cn(dialogContentVariants({ size, className }))}
+        className={cn(
+          dialogContentVariants({ size, className }),
+          glass && 'glinui-glass-surface',
+        )}
         {...props}
       >
         {children}

@@ -85,7 +85,11 @@ export function DashboardHome({
           description="Deploy your first app in under a minute."
           action={
             <CreateResourceWizard
-              trigger={<Button size="lg">Deploy your first app</Button>}
+              trigger={
+                <Button size="lg" variant="glinui">
+                  Deploy your first app
+                </Button>
+              }
             />
           }
         />

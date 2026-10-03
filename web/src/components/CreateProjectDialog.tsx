@@ -68,7 +68,7 @@ export function CreateProjectDialog() {
         <PlusIcon />
         New project
       </DialogTrigger>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-sm" glass>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FolderIcon className="size-4 text-muted-foreground" />

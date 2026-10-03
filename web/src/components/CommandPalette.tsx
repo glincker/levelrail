@@ -34,6 +34,7 @@ import { serviceTemplatesQueryOptions } from '../queries/serviceTemplates'
 import { domainsQueryOptions } from '../queries/domains'
 import { useTheme, type Theme } from './ThemeProvider'
 import {
+  DEFAULT_QUICK_ACTION_KEYS,
   GROUP_ORDER,
   ROUTE_ENTRIES,
   THEME_ACTION,
@@ -290,7 +291,24 @@ export function CommandPalette({
           run: go('/apps/$name', { name: app }),
         }
       })
-      byGroup.set('Suggested', suggested)
+      // Dynamic suggestions (current app, failing apps, recents, assistant)
+      // can all be empty for a first-time user; the quick actions below
+      // keep "Suggested" non-empty regardless.
+      const quickActions: PaletteItem[] = DEFAULT_QUICK_ACTION_KEYS.flatMap(
+        (k) => {
+          const item = byKey.get(k)
+          return item
+            ? [
+                {
+                  ...item,
+                  key: `suggested-quick-${item.key}`,
+                  group: 'Suggested',
+                },
+              ]
+            : []
+        },
+      )
+      byGroup.set('Suggested', [...suggested, ...quickActions])
       if (recent.length > 0) byGroup.set('Recent', recent)
       for (const item of baseItems) {
         byGroup.set(item.group, [...(byGroup.get(item.group) ?? []), item])
