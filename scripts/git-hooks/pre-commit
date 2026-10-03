@@ -93,14 +93,14 @@ if [ -n "$marker_hits" ]; then
 	fail=1
 fi
 
-echo "pre-commit: comment density (new Go lines only, >8 consecutive)"
-staged_go_files_density=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' | grep -v '^docs-local/')
+echo "pre-commit: comment density (new Go/TS/TSX lines only, >8 consecutive)"
+staged_go_files_density=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' 'web/*.ts' 'web/*.tsx' | grep -v '^docs-local/')
 bloat_hits=""
 for f in $staged_go_files_density; do
 	[ -f "$f" ] || continue
 	max_run=$(git diff --cached -U0 -- "$f" | awk '
 		/^\+\+\+/ { next }
-		/^\+[[:space:]]*\/\// { run++; if (run > max) max = run; next }
+		/^\+[[:space:]]*(\/\/|\*)/ { run++; if (run > max) max = run; next }
 		/^\+/ { run = 0 }
 		{ if (!/^\+/) run = 0 }
 		END { print max + 0 }
