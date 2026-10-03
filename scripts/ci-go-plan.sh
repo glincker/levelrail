@@ -94,12 +94,15 @@ if [ "${#api[@]}" -gt 0 ]; then
 fi
 
 other=$((${#docker[@]} + ${#rest[@]}))
+# Docker-backed packages run real container lifecycles, not unit logic;
+# timeout-minutes: 20 on the job already budgets for this, -timeout just
+# needs to use more of it (test/e2e grew past 12m, see docs/ci.md).
 if [ "$scope" != all ] && [ "$other" -gt 0 ] && [ "$other" -le "$small_max" ]; then
-	lane rest "$(join "${docker[@]}" "${rest[@]}")" "" "-short -p 2 -timeout=12m" rest false
+	lane rest "$(join "${docker[@]}" "${rest[@]}")" "" "-short -p 2 -timeout=18m" rest false
 	rest_checks+=("Test (rest)")
 else
 	if [ "${#docker[@]}" -gt 0 ]; then
-		lane docker "$(join "${docker[@]}")" "" "-short -p 2 -timeout=12m" docker true
+		lane docker "$(join "${docker[@]}")" "" "-short -p 2 -timeout=18m" docker true
 		rest_checks+=("Test (docker)")
 	fi
 	if [ "${#rest[@]}" -gt 0 ]; then

@@ -189,7 +189,7 @@ jobs:
     needs: [changes, build-vet]
     if: needs.build-vet.result == 'success' && needs.build-vet.outputs.has_tests == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 22
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.build-vet.outputs.matrix) }}
