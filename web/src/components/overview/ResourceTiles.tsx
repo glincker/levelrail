@@ -40,7 +40,7 @@ export function ResourceTile({
   info: string
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-3">
+    <div className="rounded-[var(--glinui-radius-md)] border border-border bg-card p-3">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         {icon}
         <span>{label}</span>
