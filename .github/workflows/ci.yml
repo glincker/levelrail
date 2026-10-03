@@ -115,30 +115,11 @@ jobs:
       - name: Check for duplicate migration versions
         run: scripts/check-migration-versions.sh
 
-      - name: Set up Go
-        id: go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: go.mod
-          cache: false
-
-      # PRs only restore; main saves one fresh cache per day, so PR runs
-      # can't churn the repo's cache quota.
-      - name: Cache key
-        id: day
-        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
-
-      - name: Restore Go cache
-        id: cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ steps.day.outputs.day }}
-          restore-keys: |
-            go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
+          cache-prefix: go-build
+          save: ${{ github.event_name == 'push' }}
 
       - name: Plan affected packages and test lanes
         id: plan
@@ -174,15 +155,6 @@ jobs:
         if: needs.changes.outputs.tools == 'true'
         run: go -C tools vet ./releasenotes/ && go -C tools test ./releasenotes/
 
-      - name: Save Go cache
-        if: github.event_name == 'push' && steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ steps.cache.outputs.cache-primary-key }}
-
   # Lanes come from scripts/ci-go-plan.sh: internal/api sharded by test
   # name when it is affected, Docker-backed packages with bounded -p, the
   # rest in one lane, and a single merged lane when few packages are
@@ -201,28 +173,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Go
-        id: go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: go.mod
-          cache: false
-
-      - name: Cache key
-        id: day
-        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
-
-      - name: Restore Go cache
-        id: cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-test-${{ matrix.cache }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ steps.day.outputs.day }}
-          restore-keys: |
-            go-test-${{ matrix.cache }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-test-${{ matrix.cache }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
+          cache-prefix: go-test-${{ matrix.cache }}
+          save: ${{ github.event_name == 'push' && matrix.save_cache }}
 
       # Version and checksums locked by tools/go.mod and tools/go.sum.
       - name: Install gotestsum
@@ -266,15 +221,6 @@ jobs:
           path: test-results/
           retention-days: 7
           overwrite: true
-
-      - name: Save Go cache
-        if: github.event_name == 'push' && matrix.save_cache && steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ steps.cache.outputs.cache-primary-key }}
 
   # Required check names from before the lanes were split: each passes only
   # if its planned lanes passed.
@@ -349,22 +295,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Go
-        id: go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: go.mod
-          cache: false
-
-      - name: Restore Go cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-test-rest-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-          restore-keys: |
-            go-test-rest-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
+          cache-prefix: go-test-rest
 
       # Version and checksums locked by tools/go.mod and tools/go.sum.
       - name: Install gotestsum
@@ -487,31 +421,12 @@ jobs:
           tar -xzf "$tarball" actionlint
           ./actionlint -color "${files[@]}"
 
-      - name: Set up Go
+      - name: Set up Go (cached)
         if: env.LINT != 'none'
-        id: go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: go.mod
-          cache: false
-
-      - name: Cache key
-        if: env.LINT != 'none'
-        id: day
-        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
-
-      - name: Restore Go cache
-        if: env.LINT != 'none'
-        id: cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-lint-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ steps.day.outputs.day }}
-          restore-keys: |
-            go-lint-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-lint-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
+          cache-prefix: go-lint
+          save: ${{ github.event_name == 'push' }}
 
       # changed: only the packages holding a changed .go file, and only
       # issues on lines this diff touched. all: go.mod, .golangci.yml or
@@ -523,15 +438,6 @@ jobs:
           version: v2.12
           args: ${{ env.LINT == 'changed' && format('--new-from-rev={0} {1}', needs.changes.outputs.base, needs.changes.outputs.lint_dirs) || '' }}
           skip-save-cache: ${{ github.event_name != 'push' }}
-
-      - name: Save Go cache
-        if: env.LINT != 'none' && github.event_name == 'push' && steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ steps.cache.outputs.cache-primary-key }}
 
   web-check:
     name: Web (tsc, eslint)
@@ -644,22 +550,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Go
-        id: go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: go.mod
-          cache: false
-
-      - name: Restore Go cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-          restore-keys: |
-            go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
+          cache-prefix: go-build
 
       - name: Build control plane binary
         run: CGO_ENABLED=0 go build -o levelrail-linux-amd64 ./cmd/levelrail

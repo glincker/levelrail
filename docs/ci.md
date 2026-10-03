@@ -108,7 +108,10 @@ stable if jobs are later split or renamed.
 - Go: `~/.cache/go-build` and `~/go/pkg/mod`, one cache per job kind (build,
   lint, and each test lane group), keyed on the Go version and `go.sum` plus
   `tools/go.sum`. Pushes to `main` save one fresh cache per day. PR runs only
-  restore, so they cannot churn the repository's 10 GB cache quota.
+  restore, so they cannot churn the repository's 10 GB cache quota. Every
+  job that needs this shares `.github/actions/setup-go-cached` rather than
+  repeating setup-go plus restore/save inline (five jobs did, byte-for-byte
+  identical except the cache-key prefix).
 - golangci-lint: the action's own analysis cache, saved on `main` only.
 - npm: `actions/setup-node`'s npm cache, keyed on `web/package-lock.json`.
 
