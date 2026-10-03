@@ -2,10 +2,12 @@ import { createFileRoute } from '@tanstack/react-router'
 import { deployAttemptsQueryOptions } from '../../../../queries/deployAttempts'
 import { autoRollbackQueryOptions } from '../../../../queries/autoRollback'
 import { autoRollbackSLOBurnQueryOptions } from '../../../../queries/autoRollbackSLOBurn'
+import { badgeQueryOptions } from '../../../../queries/badge'
 import { useDeployProgress } from '../../../../hooks/useDeployProgress'
 import { DeployAttemptsList } from '../../../../components/DeployAttemptsList'
 import { AutoRollbackCard } from '../../../../components/AutoRollbackCard'
 import { AutoRollbackSLOBurnCard } from '../../../../components/AutoRollbackSLOBurnCard'
+import { BadgeSettingsCard } from '../../../../components/BadgeSettingsCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -27,6 +29,7 @@ export const Route = createFileRoute('/apps/$name/deploys/')({
       queryClient.ensureQueryData(deployAttemptsQueryOptions(name)),
       queryClient.ensureQueryData(autoRollbackQueryOptions(name)),
       queryClient.ensureQueryData(autoRollbackSLOBurnQueryOptions(name)),
+      queryClient.ensureQueryData(badgeQueryOptions(name)),
     ])
   },
   component: DeploysSection,
@@ -41,6 +44,7 @@ function DeploysSection() {
     <div className="space-y-4">
       <AutoRollbackCard appName={name} />
       <AutoRollbackSLOBurnCard appName={name} />
+      <BadgeSettingsCard appName={name} />
       <DeployAttemptsList
         appName={name}
         attempts={attempts}

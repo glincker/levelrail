@@ -507,6 +507,15 @@ type DesiredService struct {
 	// SaveDesiredService never writes this field: only
 	// SetServiceExecEnabled does.
 	ExecEnabled bool
+
+	// BadgeEnabled opts this app into the public, unauthenticated
+	// GET /api/v1/apps/{name}/badge.svg deploy-status badge
+	// (migrations/0278_service_badge_enabled.sql). Default false, unlike
+	// ExecEnabled: a badge exposes deploy status to anyone with the URL,
+	// so it must be an explicit per-app choice. Like ExecEnabled,
+	// SaveDesiredService never writes this field: only
+	// SetServiceBadgeEnabled does.
+	BadgeEnabled bool
 }
 
 // AutoRollbackSLOBurn* are DesiredService.AutoRollbackOnSLOBurn's valid
@@ -1186,6 +1195,26 @@ func (db *DB) SetServiceAutoRollbackOnSLOBurn(ctx context.Context, name, mode st
 	return nil
 }
 
+// SetServiceBadgeEnabled is the only way badge_enabled ever changes, the
+// same "own single-purpose setter, excluded from SaveDesiredService"
+// reasoning SetServiceExecEnabled already establishes.
+func (db *DB) SetServiceBadgeEnabled(ctx context.Context, name string, enabled bool) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_services SET badge_enabled = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, enabled, name)
+	if err != nil {
+		return fmt.Errorf("store: update badge enabled for service %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update badge enabled for service %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
+
 // SetServiceExecEnabled is the only way exec_enabled ever changes, the
 // same "own single-purpose setter, excluded from SaveDesiredService"
 // reasoning SetServiceAutoRollbackOnCrashloop and
@@ -1489,7 +1518,7 @@ func (s DesiredService) LocalImageID() string {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref, depends_on, auto_rollback_on_slo_burn, is_trial"
+const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref, depends_on, auto_rollback_on_slo_burn, is_trial, badge_enabled"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
@@ -1503,7 +1532,7 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                                                             string
 		dependsOnJSON                                                                                                                                                                       string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef, &dependsOnJSON, &svc.AutoRollbackOnSLOBurn, &svc.IsTrial); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef, &dependsOnJSON, &svc.AutoRollbackOnSLOBurn, &svc.IsTrial, &svc.BadgeEnabled); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
