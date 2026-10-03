@@ -4,8 +4,8 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -32,16 +32,16 @@ func (db *DB) ListDeployFreezeWindows(ctx context.Context, scopes ...string) ([]
 	if len(scopes) == 0 {
 		return nil, nil
 	}
-	args := make([]any, 0, len(scopes))
-	for _, s := range scopes {
-		args = append(args, s)
+	scopesJSON, err := json.Marshal(scopes)
+	if err != nil {
+		return nil, fmt.Errorf("store: marshal deploy freeze scopes: %w", err)
 	}
 	rows, err := db.QueryContext(ctx, `
 		SELECT id, scope, cron, duration_seconds, timezone, reason, created_at
 		FROM deploy_freeze_windows
-		WHERE scope IN (?`+strings.Repeat(", ?", len(scopes)-1)+`)
+		WHERE scope IN (SELECT value FROM json_each(?))
 		ORDER BY created_at ASC, id ASC
-	`, args...)
+	`, scopesJSON)
 	if err != nil {
 		return nil, fmt.Errorf("store: list deploy freeze windows: %w", err)
 	}
