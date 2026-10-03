@@ -38,6 +38,17 @@ Exit codes are stable and shared by every command:
 
 Codes 3 and 4 are broad on purpose so existing scripts keep working; the JSON error object carries the finer distinction.
 
+## Scripting: `--debug`
+
+`--debug` works anywhere on the command line (before or after the subcommand) and traces every outgoing request this invocation makes to stderr: method, URL, and the response status and timing, one line per call. It never prints request/response headers or bodies, so `Authorization` and any token value never appear, even in debug mode; a token that somehow ended up in a URL's query string is also redacted. stdout is untouched, so `--debug` composes with `--json`/`--query` for scripting.
+
+```
+levelrail apps list --debug --api-url http://10.0.0.5:8080
+```
+```
+DEBUG: GET http://10.0.0.5:8080/api/v1/apps -> 200 OK (42ms)
+```
+
 ## Top-level convenience aliases
 
 ```
@@ -51,6 +62,14 @@ levelrail rollback <name> --image IMAGE [flags]
 Alias for `apps rollback`; redeploy an older image.
 
 ## Apps
+
+`apps list` prints every app the caller can read as a bare JSON array, unchanged from before. On a fleet large enough that matters, add `--max-items N` to cap the page size; the response becomes `{"items": [...], "next_token": "...", "total_count": N}` instead, and an empty `next_token` means there is no further page. Pass that `next_token` back in as `--starting-token` to fetch the next page (requires `--max-items`, since the server only pages a result when a limit is set):
+
+```
+levelrail apps list --max-items 50 --json
+levelrail apps list --max-items 50 --starting-token 50 --json
+```
+
 
 ```
 levelrail apps alerts create <app> --name NAME --kind threshold --metric METRIC --comparator OP --threshold N [flags]

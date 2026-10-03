@@ -55,7 +55,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 61 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 63 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -128,12 +128,14 @@ Endpoints for:
 | GET | /api/v1/settings/push-subscriptions | Session | handleListPushSubscriptions |
 | POST | /api/v1/settings/push-subscriptions | Session | handleCreatePushSubscription |
 | DELETE | /api/v1/settings/push-subscriptions/{id} | Session | handleDeletePushSubscription |
+| GET | /api/v1/settings/observability | AbilityRead | handleGetObservabilitySettings |
+| PUT | /api/v1/settings/observability | AbilityRoot | handleUpdateObservabilitySettings |
 
 :::
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 128 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 130 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -273,6 +275,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/badge | AbilityRead | handleGetBadgeSettings |
 | PUT | /api/v1/apps/{name}/badge | AbilityRoot | handleSetBadgeSettings |
 | GET | /api/v1/apps/{name}/badge.svg | Public | handlePublicAppBadge |
+| GET | /api/v1/apps/{name}/deploys/{deployId}/probes | AbilityRead | handleListProbeAttempts |
+| POST | /api/v1/apps/{name}/health/discover | AbilityRead | handleDiscoverAppHealth |
 
 :::
 
@@ -481,7 +485,7 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 52 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+::: details 53 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -546,6 +550,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleCreateDNSRecord |
 | PUT | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleUpdateDNSRecord |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleDeleteDNSRecord |
+| POST | /api/v1/settings/email/test | AbilityWrite | handleTestEmail |
 
 :::
 

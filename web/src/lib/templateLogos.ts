@@ -197,4 +197,12 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   netbox: () => import('@thesvg/react/netbox'),
   postiz: () => import('@thesvg/react/postiz'),
   zabbix: () => import('@thesvg/react/zabbix'),
+  // Email settings backends and SMTP provider presets.
+  resend: () => import('@thesvg/react/resend'),
+  'aws-ses': () => import('@thesvg/react/aws-amazon-simple-email-service'),
+  gmail: () => import('@thesvg/react/gmail'),
+  mailgun: () => import('@thesvg/react/mailgun'),
+  postmark: () => import('@thesvg/react/postmark'),
+  brevo: () => import('@thesvg/react/brevo'),
+  mailtrap: () => import('@thesvg/react/mailtrap'),
 }

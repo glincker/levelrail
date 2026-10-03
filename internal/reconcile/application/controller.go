@@ -229,6 +229,7 @@ type Controller struct {
 	vaultSettings   VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
 	vaultResolver   VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
 	hookRuns        HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
+	probeAttempts   ProbeAttemptRecorder    // nil is valid: individual probe attempts just aren't persisted, see WithProbeAttemptRecorder
 	hookTimeout     time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
 	liveness        *LivenessTracker        // per-container liveness failure counts, in memory only, see LivenessTracker
 	instanceID      string                  // empty means no instance-ownership check, see WithInstanceID
@@ -1817,7 +1818,7 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 	cfg := readiness.ProbeConfig()
 
 	readyErr := make(chan error, 1)
-	go func() { readyErr <- c.prober().WaitReady(probeCtx, target, cfg) }()
+	go func() { readyErr <- c.deployProber(ctx, desired).WaitReady(probeCtx, target, cfg) }()
 
 	// inspector is present only for a Runtime that can tell "still
 	// starting" apart from "already exited/OOM-killed" (docker.Client
@@ -2036,9 +2037,11 @@ func (c *Controller) removeContainers(ctx context.Context, cs []docker.Container
 	return firstErr
 }
 
-// primaryAddr picks the address a readiness probe should hit: the sole
+// PrimaryAddr picks the address a readiness probe should hit: the sole
 // port binding a service with exactly one declared port produces.
-func primaryAddr(state *docker.ContainerState) (string, error) {
+// Exported so internal/api's health-discovery endpoint (apps_health_discover.go)
+// can resolve the same address without reimplementing this lookup.
+func PrimaryAddr(state *docker.ContainerState) (string, error) {
 	if len(state.Ports) == 0 {
 		return "", fmt.Errorf("container %s has no published ports to probe", state.Name)
 	}

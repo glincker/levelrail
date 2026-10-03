@@ -60,6 +60,7 @@ var Templates = concat(
 	devtoolsBatchTemplates,
 	productivityBatchTemplates,
 	automationBatchTemplates,
+	catalogBatch2Templates,
 )
 
 // TemplateByID returns the Templates entry with this ID, or false if

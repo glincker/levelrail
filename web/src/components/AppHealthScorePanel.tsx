@@ -1,15 +1,20 @@
 import {
+  ArrowCounterClockwiseIcon,
   CheckCircleIcon,
   WarningCircleIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
+import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import type { VariantProps } from 'class-variance-authority'
 import { Skeleton } from '@/components/ui/skeleton'
+import { buttonVariants } from '@/components/ui/button'
 import { useAppHealthScore } from '../queries/healthScore'
 import type { HealthScoreStatus } from '../types/healthScore'
+import { ApiError } from '../lib/apiError'
 
 // Per-app "is this production-ready" summary, synthesizing signals this
 // dashboard otherwise shows only one at a time on separate pages (deploy
@@ -20,11 +25,11 @@ import type { HealthScoreStatus } from '../types/healthScore'
 // percentage hides which specific thing needs attention, a one-line
 // reason per category does not.
 
-const STATUS_LABEL: Record<HealthScoreStatus, string> = {
-  pass: 'Pass',
-  warn: 'Warn',
-  fail: 'Fail',
-}
+const STATUS_LABEL_KEY = {
+  pass: 'healthScore.status.pass',
+  warn: 'healthScore.status.warn',
+  fail: 'healthScore.status.fail',
+} as const satisfies Record<HealthScoreStatus, string>
 
 const STATUS_BADGE_VARIANT: Record<
   HealthScoreStatus,
@@ -48,13 +53,15 @@ const STATUS_ICON_CLASS: Record<HealthScoreStatus, string> = {
 }
 
 export function AppHealthScorePanel({ appName }: { appName: string }) {
-  const { data: score, isLoading, error } = useAppHealthScore(appName)
+  const { t } = useTranslation('common')
+  const { data: score, isLoading, error, refetch } = useAppHealthScore(appName)
+  const notFound = error instanceof ApiError && error.status === 404
 
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-3">
         <CardTitle className="text-sm font-semibold">
-          Health & readiness
+          {t('healthScore.title')}
         </CardTitle>
         {score ? (
           <Badge variant={STATUS_BADGE_VARIANT[score.status]} className="gap-1">
@@ -62,7 +69,7 @@ export function AppHealthScorePanel({ appName }: { appName: string }) {
               const Icon = STATUS_ICON[score.status]
               return <Icon aria-hidden="true" />
             })()}
-            {STATUS_LABEL[score.status]}
+            {t(STATUS_LABEL_KEY[score.status])}
           </Badge>
         ) : null}
       </CardHeader>
@@ -74,7 +81,30 @@ export function AppHealthScorePanel({ appName }: { appName: string }) {
             ))}
           </div>
         ) : error ? (
-          <p className="text-sm text-destructive">{error.message}</p>
+          <div className="flex flex-col items-start gap-2 py-2">
+            <p className="text-sm text-muted-foreground">
+              {notFound
+                ? t('healthScore.notFound', { appName })
+                : t('healthScore.loadFailed', { message: error.message })}
+            </p>
+            {notFound ? (
+              <Link
+                to="/apps"
+                className={buttonVariants({ size: 'sm', variant: 'outline' })}
+              >
+                {t('actions.backToApps')}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void refetch()}
+                className={buttonVariants({ size: 'sm', variant: 'outline' })}
+              >
+                <ArrowCounterClockwiseIcon className="size-3.5" />
+                {t('actions.retry')}
+              </button>
+            )}
+          </div>
         ) : (
           <ul className="divide-y divide-border">
             {score?.categories.map((category) => {
@@ -94,7 +124,7 @@ export function AppHealthScorePanel({ appName }: { appName: string }) {
                         {category.label}
                       </span>
                       <Badge variant={STATUS_BADGE_VARIANT[category.status]}>
-                        {STATUS_LABEL[category.status]}
+                        {t(STATUS_LABEL_KEY[category.status])}
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
