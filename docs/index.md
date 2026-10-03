@@ -66,6 +66,14 @@ Four steps, the same ones the reconciler itself runs on every deploy. Click a st
 
 </section>
 
+<section class="landing-section landing-section--features-tabs">
+
+## Explore the platform
+
+<FeatureTabsSection />
+
+</section>
+
 <section class="landing-section landing-section--compare">
 
 ## How it compares
@@ -144,6 +152,22 @@ Most self-hosted PaaS tools in this category drive remote servers by SSHing in a
     <img src="/assets/screenshots/nodes.png" alt="Levelrail nodes list showing node health and placement" loading="lazy" width="1280" height="700">
   </div>
 </div>
+
+</section>
+
+<section class="landing-section landing-section--releases">
+
+## Latest releases
+
+<LatestReleasesSection />
+
+</section>
+
+<section class="landing-section landing-section--faq">
+
+## Frequently asked questions
+
+<FaqSection />
 
 </section>
 

@@ -81,9 +81,12 @@ onMounted(() => {
 
   const giant = footerRef.value.querySelector('.custom-footer__giant')
   if (giant) {
+    // Tween to the CSS-declared opacity, not 1: an inline style beats the
+    // class rule, so animating to 1 permanently un-dimmed the watermark.
+    const watermarkOpacity = parseFloat(getComputedStyle(giant).opacity) || 0.05
     gsap.set(giant, { opacity: 0, y: 20 })
     const giantTween = gsap.to(giant, {
-      opacity: 1,
+      opacity: watermarkOpacity,
       y: 0,
       duration: 1.1,
       ease: 'power1.out',

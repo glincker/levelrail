@@ -250,6 +250,16 @@ describe('CommandPalette', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows static quick-action CTAs with no recents and no app data', () => {
+    experimentalOn = []
+    renderPalette()
+    const suggested = screen.getByRole('group', { name: 'Suggested' })
+    expect(suggested).toHaveTextContent('Create app')
+    expect(suggested).toHaveTextContent('Go to Apps')
+    expect(suggested).toHaveTextContent('Deployments')
+    expect(suggested).toHaveTextContent('Help')
+  })
+
   it('shows gated destinations once their feature is on', () => {
     experimentalOn = ['ai-chat', 'ai-models', 'load-balancer']
     renderPalette()

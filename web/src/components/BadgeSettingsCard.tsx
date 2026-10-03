@@ -5,6 +5,7 @@ import {
   SealCheckIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { InfoTip } from '@/components/kit'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -83,19 +84,18 @@ export function BadgeSettingsCard({ appName }: { appName: string }) {
         <CardTitle className="flex items-center gap-2">
           <SealCheckIcon className="size-4 text-muted-foreground" />
           Deploy status badge
+          <InfoTip label="About the deploy status badge">
+            Serves a small public SVG showing this app&apos;s latest deploy
+            status and when it happened, no authentication required. Leave this
+            off for an app whose deploy status shouldn&apos;t be public.
+          </InfoTip>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-foreground">Enabled</p>
-            <p className="text-sm text-muted-foreground">
-              Serve a small public SVG badge showing this app&apos;s latest
-              deploy status and when it happened, for embedding in your own
-              project&apos;s README. No authentication, so leave this off for an
-              app whose deploy status shouldn&apos;t be public.
-            </p>
-          </div>
+          <p className="text-sm font-medium text-foreground">
+            Public README badge
+          </p>
           <Switch
             checked={setting.data.enabled}
             onCheckedChange={toggle}

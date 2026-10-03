@@ -181,7 +181,7 @@ function AppListPage() {
               <CreateResourceWizard
                 scope="applications"
                 trigger={
-                  <Button>
+                  <Button variant="glinui">
                     <PlusIcon />
                     New app
                   </Button>

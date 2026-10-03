@@ -13,9 +13,15 @@ const { hasSidebar } = useSidebar()
 
 <template>
   <Layout>
-    <template v-if="hasSidebar" #layout-top>
+    <template #layout-top>
+      <!-- CustomTopNav renders on every page, including home: it has no
+           sidebar dependency of its own. CustomSidebar stays gated on
+           hasSidebar -- the home page has no sidebar at all. Previously
+           both were bundled under the same v-if, so CustomTopNav (and
+           its floating-pill/glass styling) never actually mounted on the
+           home page; only VitePress's own unstyled default nav did. -->
       <CustomTopNav />
-      <CustomSidebar />
+      <CustomSidebar v-if="hasSidebar" />
     </template>
     <template v-if="hasSidebar" #doc-before>
       <PageActions />

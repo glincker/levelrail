@@ -1,0 +1,256 @@
+/* CustomSidebar.vue (doc-page sidebar) + its section/list/link styling,
+   plus the page-actions dropdown (edit/view-source menu). */
+
+.custom-sidebar {
+  position: fixed;
+  top: 86px;
+  bottom: 16px;
+  left: 12px;
+  width: 248px;
+  z-index: 20;
+  overflow-y: auto;
+  padding: 20px 16px 32px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 16px;
+  background-color: var(--vp-c-bg-soft);
+  box-shadow: 0 4px 16px -8px rgba(15, 15, 15, 0.1);
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s ease;
+}
+
+/* Invisible until you hover the panel, then fades in -- the thumb itself
+   glows brand-accent on direct hover. Firefox gets the fade via
+   scrollbar-color; Chromium/Safari via the pseudo-elements below. */
+.custom-sidebar:hover {
+  scrollbar-color: var(--vp-c-divider) transparent;
+}
+
+.custom-sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+  margin-block: 8px;
+}
+
+.custom-sidebar::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 999px;
+  transition: background-color 0.2s ease;
+}
+
+.custom-sidebar:hover::-webkit-scrollbar-thumb {
+  background-color: var(--vp-c-divider);
+}
+
+.custom-sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--vp-c-brand-1);
+}
+
+@media (max-width: 959px) {
+  .custom-sidebar {
+    display: none;
+  }
+}
+
+.sidebar-section + .sidebar-section {
+  margin-top: 24px;
+}
+
+.sidebar-section__heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-3);
+}
+
+.sidebar-section__icon {
+  flex-shrink: 0;
+  color: var(--vp-c-brand-1);
+}
+
+.sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-list--nested {
+  margin: 2px 0 6px;
+  padding-left: 14px;
+  border-left: 1px solid var(--vp-c-divider);
+}
+
+.sidebar-link {
+  display: block;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  line-height: 20px;
+  color: var(--vp-c-text-2);
+  text-decoration: none !important;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.sidebar-link:hover {
+  color: var(--vp-c-text-1);
+  background-color: var(--vp-c-bg-alt);
+}
+
+.sidebar-link.is-active {
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+  background-color: var(--vp-c-brand-soft);
+}
+
+.sidebar-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.sidebar-group-toggle:hover {
+  background-color: var(--vp-c-bg-alt);
+}
+
+.sidebar-group-toggle.is-active {
+  color: var(--vp-c-brand-1);
+}
+
+.sidebar-group-toggle__caret {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.sidebar-group-toggle__caret.is-open {
+  transform: rotate(90deg);
+}
+
+/* Content/TOC still come from VitePress's own VPDoc, just pushed right to
+   clear the fixed custom sidebar+nav above. */
+@media (min-width: 960px) {
+  /* padding-top matches the floating nav pill's bottom edge (16px top +
+     56px height = 72px), not the sidebar's 86px (which includes its own
+     separate floating-panel gap) -- content/the gradient wash should
+     start flush against the pill, not leave a dead strip below it. */
+  .VPContent.has-sidebar {
+    padding-top: 72px !important;
+    padding-left: calc(248px + 24px) !important;
+  }
+}
+
+/* PageActions.vue: Copy Markdown + Open-in-AI-tool bar (Fumadocs-style),
+   fed by the raw .md files rawMarkdown.mts writes alongside each page's
+   HTML at build time. */
+.page-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.page-actions__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+  list-style: none;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.page-actions__btn::-webkit-details-marker {
+  display: none;
+}
+
+.page-actions__btn:hover {
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+}
+
+.page-actions__dropdown {
+  position: relative;
+}
+
+.page-actions__dropdown[open] .page-actions__btn {
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+}
+
+.page-actions__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  min-width: 180px;
+  padding: 6px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 14px;
+  background: var(--vp-c-bg-elv, var(--vp-c-bg-soft));
+  box-shadow: 0 8px 24px -8px rgba(15, 15, 15, 0.25);
+}
+
+.page-actions__menu-item {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--vp-c-text-2);
+  text-decoration: none !important;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.page-actions__menu-item:hover {
+  color: var(--vp-c-text-1);
+  background-color: var(--vp-c-bg-alt);
+}
+
+.page-actions__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-actions__menu-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--vp-c-text-2);
+}
+
+/* !important: the raw brand SVGs from thesvg carry their own width/height
+   attributes (e.g. claude-ai's is 256x257) -- without this, the intrinsic
+   size wins and the icon fills (and grows) the whole dropdown instead of
+   sitting at a fixed 16px. */
+.page-actions__menu-icon svg {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}

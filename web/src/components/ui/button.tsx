@@ -18,6 +18,17 @@ const buttonVariants = cva(
         destructive:
           'bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40',
         link: 'text-primary underline-offset-4 hover:underline',
+        // Brand gradient-stroke CTA (adr/024): same two-layer background-image
+        // recipe as .glinui-btn--primary in styles/glinui-tokens.css, written
+        // as Tailwind utilities so it composes with the existing cva shape
+        // instead of mixing class systems. Additive only, never the default.
+        // glinui-bg-clip-split: Tailwind's bg-clip-*/bg-origin-* utilities
+        // are enumerated keywords, not arbitrary-value utilities --
+        // bg-clip-[padding-box,border-box] silently compiles to nothing
+        // (confirmed against the built CSS), which breaks the padding-box/
+        // border-box split this recipe depends on. Real CSS class instead.
+        glinui:
+          'glinui-bg-clip-split rounded-full border-[1.5px] bg-[image:linear-gradient(160deg,var(--glinui-accent-soft-text)_0%,var(--glinui-accent-strong)_100%),linear-gradient(180deg,var(--glinui-accent-soft-text)_0%,transparent_100%)] font-semibold text-white hover:brightness-110 active:scale-[0.98]',
       },
       size: {
         default:

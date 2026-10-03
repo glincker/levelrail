@@ -3,6 +3,7 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 import { buildEnd, changelogHead, changelogPageData } from './changelog.mts'
 import { buildLlmsFullTxt } from './llmsFull.mts'
 import { writeRawMarkdown } from './rawMarkdown.mts'
+import { faqItems } from './theme/faqData'
 
 const description =
   'A self-hosted deployment platform whose agent talks to Docker’s own Engine API directly, ' +
@@ -374,6 +375,26 @@ export default withMermaid({
       ...changelogHead(pageData, siteUrl),
     ]
 
+    // FAQPage structured data for Google's FAQ rich-result eligibility.
+    // path === '' is the homepage (index.md), the only page with
+    // <FaqSection />. faqItems is shared with FaqSection.vue itself so
+    // this can never drift from what's actually rendered.
+    if (path === '') {
+      head.push([
+        'script',
+        { type: 'application/ld+json' },
+        JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqItems.map((item) => ({
+            '@type': 'Question',
+            name: item.q,
+            acceptedAnswer: { '@type': 'Answer', text: item.a },
+          })),
+        }),
+      ])
+    }
+
     const section = pageToSection.get(path)
     if (section) {
       head.push([
@@ -399,7 +420,7 @@ export default withMermaid({
     themeVariables: {
       primaryColor: '#161b24',
       primaryTextColor: '#e4e4e7',
-      primaryBorderColor: '#f59e0b',
+      primaryBorderColor: '#2fb3dc',
       lineColor: '#a1a1aa',
       secondaryColor: '#10141c',
       tertiaryColor: '#0b0e14',

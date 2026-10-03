@@ -133,8 +133,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 133 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 133 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 128 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -269,11 +268,6 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/connectable-databases | AbilityRead | handleListConnectableDatabases |
 | POST | /api/v1/apps/{name}/validate-spec | AbilityRead | handleValidateSpec |
 | GET | /api/v1/apps/{name}/health-score | AbilityRead | handleGetAppHealthScore |
-| POST | /api/v1/apps/{name}/save-as-template | AbilityWrite | handleSaveAppAsTemplate |
-| GET | /api/v1/apps/{name}/cost-estimate | AbilityRead | handleAppCostEstimate |
-| GET | /api/v1/apps/{name}/badge | AbilityRead | handleGetBadgeSettings |
-| PUT | /api/v1/apps/{name}/badge | AbilityRoot | handleSetBadgeSettings |
-| GET | /api/v1/apps/{name}/badge.svg | Public | handlePublicAppBadge |
 | POST | /api/v1/apps/{name}/save-as-template | AbilityWrite | handleSaveAppAsTemplate |
 | GET | /api/v1/apps/{name}/cost-estimate | AbilityRead | handleAppCostEstimate |
 | GET | /api/v1/apps/{name}/badge | AbilityRead | handleGetBadgeSettings |
