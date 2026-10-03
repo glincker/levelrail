@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 638 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 642 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -277,6 +277,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutGlobalDeployFreeze", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/oauth", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListOAuthSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/oauth/{provider}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateOAuthProviderSettings", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/observability", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetObservabilitySettings", Description: "Observability settings: the external Grafana/dashboard link, same precedent as email settings just above. GET is AbilityRead; PUT is AbilityRoot, matching every other instance-level config row."},
+	{Method: "PUT", Path: "/api/v1/settings/observability", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateObservabilitySettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/push-subscriptions", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListPushSubscriptions", Description: ""},
 	{Method: "POST", Path: "/api/v1/settings/push-subscriptions", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreatePushSubscription", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/push-subscriptions/vapid-public-key", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetPushVAPIDPublicKey", Description: "Browser push notification subscriptions (push_subscriptions.go): one admin account's registered browsers, the delivery target for the \"webpush\" notification-channel kind. Self-service like passkeys above, so requireAuth not requireAbility."},
