@@ -64,6 +64,49 @@ func TestRun_AppsHealth_Set(t *testing.T) {
 			},
 			wantInOut: `liveness: exec "pg_isready -U app", 5 failures`,
 		},
+		{
+			name: "preset fills path interval timeout for readiness",
+			args: []string{"--probe", "readiness", "--preset", "healthz"},
+			check: func(t *testing.T, h *serviceHealth) {
+				r := h.Readiness
+				if r == nil || r.Path != "/healthz" || r.Interval != 5e9 || r.Timeout != 2e9 || r.Failures != 0 {
+					t.Errorf("readiness = %+v", r)
+				}
+			},
+			wantInOut: "readiness: GET http://:port/healthz (expect 200-299) every 5s, timeout 2s",
+		},
+		{
+			name: "preset fills interval and failures for liveness",
+			args: []string{"--probe", "liveness", "--preset", "ping"},
+			check: func(t *testing.T, h *serviceHealth) {
+				l := h.Liveness
+				if l == nil || l.Path != "/ping" || l.Interval != 30e9 || l.Timeout != 0 || l.Failures != 3 {
+					t.Errorf("liveness = %+v", l)
+				}
+			},
+			wantInOut: "liveness: GET http://:port/ping (expect 200-299) every 30s, 3 failures",
+		},
+		{
+			name: "explicit path wins over preset",
+			args: []string{"--probe", "readiness", "--preset", "healthz", "--path", "/custom"},
+			check: func(t *testing.T, h *serviceHealth) {
+				if h.Readiness == nil || h.Readiness.Path != "/custom" {
+					t.Errorf("readiness = %+v, want path /custom", h.Readiness)
+				}
+			},
+			wantInOut: "readiness: GET http://:port/custom",
+		},
+		{
+			name: "explicit interval and failures win over preset",
+			args: []string{"--probe", "liveness", "--preset", "ping", "--interval", "10s", "--failures", "7"},
+			check: func(t *testing.T, h *serviceHealth) {
+				l := h.Liveness
+				if l == nil || l.Path != "/ping" || l.Interval != 10e9 || l.Failures != 7 {
+					t.Errorf("liveness = %+v, want interval 10s and 7 failures", l)
+				}
+			},
+			wantInOut: "liveness: GET http://:port/ping (expect 200-299) every 10s, 7 failures",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -92,6 +135,7 @@ func TestRun_AppsHealth_Set_Invalid(t *testing.T) {
 		{name: "skip verify on http", args: []string{"--probe", "readiness", "--path", "/", "--tls-skip-verify"}, wantErr: "tls_skip_verify only applies to scheme: https"},
 		{name: "path and exec", args: []string{"--probe", "readiness", "--path", "/", "--exec", "true"}, wantErr: "not both"},
 		{name: "bad follow", args: []string{"--probe", "readiness", "--path", "/", "--follow-redirects", "maybe"}, wantErr: "must be true or false"},
+		{name: "unknown preset", args: []string{"--probe", "readiness", "--preset", "nope"}, wantErr: "unknown preset"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
