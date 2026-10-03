@@ -9,7 +9,7 @@ describe('auditFriendlyLabel', () => {
       path: '/api/v1/certificates/prometheus.example.com',
     })
     expect(label).not.toBeNull()
-    expect(label?.label).toBe('Issued Certificate')
+    expect(label?.labelKey).toBe('labels.certIssued')
     expect(label?.domain).toBe('prometheus.example.com')
   })
 
@@ -19,7 +19,7 @@ describe('auditFriendlyLabel', () => {
       method: 'EVENT',
       path: '/api/v1/certificates/prometheus.example.com',
     })
-    expect(label?.label).toBe('Renewed Certificate')
+    expect(label?.labelKey).toBe('labels.certRenewed')
     expect(label?.domain).toBe('prometheus.example.com')
   })
 
@@ -29,7 +29,7 @@ describe('auditFriendlyLabel', () => {
       method: 'POST',
       path: '/api/v1/apps/web/domains/app.example.com/cert/renew',
     })
-    expect(label?.label).toBe('Requested Certificate Renewal')
+    expect(label?.labelKey).toBe('labels.certRenewalRequested')
     expect(label?.domain).toBe('app.example.com')
   })
 
@@ -39,7 +39,7 @@ describe('auditFriendlyLabel', () => {
       method: 'PUT',
       path: '/api/v1/apps/web/domains/app.example.com/tls-cert',
     })
-    expect(label?.label).toBe('Uploaded Certificate')
+    expect(label?.labelKey).toBe('labels.certUploaded')
     expect(label?.domain).toBe('app.example.com')
   })
 
@@ -49,7 +49,7 @@ describe('auditFriendlyLabel', () => {
       method: 'DELETE',
       path: '/api/v1/apps/web/domains/app.example.com/tls-cert',
     })
-    expect(label?.label).toBe('Removed Certificate')
+    expect(label?.labelKey).toBe('labels.certRemoved')
     expect(label?.domain).toBe('app.example.com')
   })
 

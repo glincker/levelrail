@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { RobotIcon } from '@phosphor-icons/react/dist/ssr'
 import { Link } from '@tanstack/react-router'
@@ -96,6 +97,7 @@ function AbilityCell({
   entry: AuditLogEntry
   domainApp?: DomainAppLookup
 }) {
+  const { t } = useTranslation('auditLog')
   const friendly = auditFriendlyLabel(entry)
   if (!friendly) {
     return <span>{entry.ability}</span>
@@ -107,7 +109,7 @@ function AbilityCell({
         className="size-3.5 shrink-0 text-muted-foreground"
         aria-hidden="true"
       />
-      <span>{friendly.label}</span>
+      <span>{t(friendly.labelKey)}</span>
       {friendly.domain ? (
         <DomainTag domain={friendly.domain} domainApp={domainApp} />
       ) : null}

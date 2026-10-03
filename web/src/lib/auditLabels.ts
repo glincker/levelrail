@@ -5,10 +5,20 @@ import {
   ShieldWarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { AuditLogEntry } from '../queries/auditLog'
+import type auditLogEn from '../locales/en/auditLog.json'
+
+// Derived from the real auditLog.json's own "labels" keys, not
+// hand-duplicated, so a renamed/removed JSON key is a tsc error here
+// too, the same "JSON file is the schema" guarantee docs/i18n.md
+// describes for resources.ts.
+type AuditLabelKey = `labels.${keyof typeof auditLogEn.labels}`
 
 export interface AuditFriendlyLabel {
   icon: Icon
-  label: string
+  // labelKey is an auditLog namespace key, translated by the caller
+  // (AuditLogTable's useTranslation('auditLog')); this module has no
+  // JSX and renders no text itself.
+  labelKey: AuditLabelKey
   // domain is set whenever path carries one, even if no rule below
   // matched: callers (AuditLogTable) still want it for the "could not
   // be read" fallback case the task this file was built for calls out.
@@ -43,7 +53,7 @@ function domainFromPath(path: string): string | undefined {
 // (e.g. a deploy rollback) without restructuring anything.
 interface AuditLabelRule {
   icon: Icon
-  label: string
+  labelKey: AuditLabelKey
   matches: (
     entry: Pick<AuditLogEntry, 'ability' | 'method' | 'path'>,
   ) => boolean
@@ -52,38 +62,37 @@ interface AuditLabelRule {
 const AUDIT_LABEL_RULES: AuditLabelRule[] = [
   {
     icon: ShieldCheckIcon,
-    label: 'Issued Certificate',
+    labelKey: 'labels.certIssued',
     matches: (e) => e.ability === 'cert.issued',
   },
   {
     icon: ShieldCheckIcon,
-    label: 'Renewed Certificate',
+    labelKey: 'labels.certRenewed',
     matches: (e) => e.ability === 'cert.renewed',
   },
   {
     icon: ShieldIcon,
-    label: 'Requested Certificate Renewal',
+    labelKey: 'labels.certRenewalRequested',
     matches: (e) => e.method === 'POST' && e.path.endsWith('/cert/renew'),
   },
   {
     icon: ShieldCheckIcon,
-    label: 'Uploaded Certificate',
+    labelKey: 'labels.certUploaded',
     matches: (e) => e.method === 'PUT' && e.path.endsWith('/tls-cert'),
   },
   {
     icon: ShieldWarningIcon,
-    label: 'Removed Certificate',
+    labelKey: 'labels.certRemoved',
     matches: (e) => e.method === 'DELETE' && e.path.endsWith('/tls-cert'),
   },
 ]
 
-// auditFriendlyLabel maps one audit_log entry to a specific,
-// human-readable label and domain tag, the same idea Nginx Proxy
-// Manager's own audit log applies to its certificate rows ("Renewed
-// Certificate", the domain as a tag) rather than this page's previous
-// raw ability/method/path columns for every row regardless of what it
-// represents. Returns null when no rule matches, so callers fall back to
-// the existing raw columns unchanged.
+// auditFriendlyLabel maps one audit_log entry to a specific label key
+// and domain tag, the same idea Nginx Proxy Manager's own audit log
+// applies to its certificate rows ("Renewed Certificate", the domain as
+// a tag) rather than this page's previous raw ability/method/path
+// columns for every row. Returns null when no rule matches, so callers
+// fall back to the existing raw columns unchanged.
 export function auditFriendlyLabel(
   entry: Pick<AuditLogEntry, 'ability' | 'method' | 'path'>,
 ): AuditFriendlyLabel | null {
@@ -93,7 +102,7 @@ export function auditFriendlyLabel(
   }
   return {
     icon: rule.icon,
-    label: rule.label,
+    labelKey: rule.labelKey,
     domain: domainFromPath(entry.path),
   }
 }

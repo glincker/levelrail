@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Input } from '@/components/ui/input'
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import {
@@ -85,6 +86,7 @@ function ExportAuditLogLink({
 }
 
 function AuditLogSettingsPage() {
+  const { t } = useTranslation('auditLog')
   const { data: initial } = useSuspenseQuery(auditLogQueryOptions())
   const [entries, setEntries] = useState<AuditLogEntry[]>(initial)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -192,10 +194,7 @@ function AuditLogSettingsPage() {
           <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <ClockCounterClockwiseIcon className="size-4" />
           </div>
-          <PageHeader
-            title="Audit log"
-            description="Who changed what: every write, deploy, or root-tier request, plus automatic certificate renewals, newest first. Read-only requests aren't recorded here."
-          />
+          <PageHeader title="Audit log" description={t('page.description')} />
         </div>
         <div className="flex items-center gap-2">
           <Select
