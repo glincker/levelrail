@@ -118,9 +118,9 @@ func auditLogUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s audit-log [flags]
 
-Lists every recorded write/deploy/root-tier request, newest first
-(read-only requests aren't recorded). Requires an admin/root-scoped
-token, the same as the underlying API route.
+Lists every recorded write/deploy/root-tier request, plus automatic
+certificate renewals, newest first (read-only requests aren't recorded).
+Requires an admin/root-scoped token, the same as the underlying API route.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
