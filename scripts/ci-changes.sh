@@ -2,8 +2,8 @@
 # Decides which ci.yml jobs have real work for a change, without a Go
 # toolchain (the Go-level scoping happens in scripts/ci-go-plan.sh).
 #
-# Usage: scripts/ci-changes.sh <base> [head]   diff base..head (default HEAD)
-#        scripts/ci-changes.sh --full          everything (push to main)
+# Usage: scripts/ci-changes.sh <base> [head]   diff base..head
+#        scripts/ci-changes.sh --full          everything
 # Output: key=value lines for $GITHUB_OUTPUT, a human summary on stderr.
 #
 #   full        true when the CI pipeline itself changed, so run everything
