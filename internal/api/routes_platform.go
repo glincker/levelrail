@@ -576,6 +576,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
 	mux.HandleFunc("PUT /api/v1/settings/email", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailSettings))
 
+	// Observability settings: the external Grafana/dashboard link,
+	// same precedent as email settings just above. GET is AbilityRead;
+	// PUT is AbilityRoot, matching every other instance-level config row.
+	mux.HandleFunc("GET /api/v1/settings/observability", rt.requireAbility(AbilityRead, rt.handleGetObservabilitySettings))
+	mux.HandleFunc("PUT /api/v1/settings/observability", rt.requireAbility(AbilityRoot, rt.handleUpdateObservabilitySettings))
+
 	// Cloudflare Tunnel (instance-level, one connection per control
 	// plane): GET is AbilityRead; PUT/DELETE are AbilityRoot, matching
 	// PUT /api/v1/settings/email's own tier for infrastructure config

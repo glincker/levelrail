@@ -411,6 +411,14 @@ type CloudflareTunnelStore interface {
 	UpdateCloudflareTunnelSettings(ctx context.Context, s store.CloudflareTunnelSettings) error
 }
 
+// ObservabilityStore is the store surface GET/PUT
+// /api/v1/settings/observability need: the single platform-wide row,
+// always present, the same shape EmailSettingsStore has for its own row.
+type ObservabilityStore interface {
+	GetObservabilitySettings(ctx context.Context) (store.ObservabilitySettings, error)
+	UpdateObservabilitySettings(ctx context.Context, s store.ObservabilitySettings) error
+}
+
 // CloudflareDNSStore is the store surface GET/PUT
 // /api/v1/settings/cloudflare-dns need, the same "single platform-wide
 // row" shape CloudflareTunnelStore already establishes.
@@ -566,6 +574,7 @@ type Store interface {
 	OAuthSettingsStore
 	OAuthIdentityStore
 	EmailSettingsStore
+	ObservabilityStore
 	CloudflareTunnelStore
 	RegistryStore
 	CloudflareDNSStore

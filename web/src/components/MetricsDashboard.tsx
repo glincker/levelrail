@@ -3,6 +3,7 @@ import { PulseIcon } from '@phosphor-icons/react/dist/ssr'
 import { RequestMetricsSection } from './RequestMetricsSection'
 import { MetricChartCard } from './MetricChartCard'
 import { TimeRangeControls } from './TimeRangeControls'
+import { ViewInGrafanaLink } from './ViewInGrafanaLink'
 import { useMetricSeries } from '../queries/metrics'
 import type { MetricName } from '../types/metrics'
 import type { DeployAttempt, DeployAttemptStatus } from '../types/deployAttempt'
@@ -302,13 +303,16 @@ export function MetricsDashboard({
               : ''}
           </p>
         </div>
-        <TimeRangeControls
-          rangeKey={rangeKey}
-          onRangeChange={setRangeKey}
-          onRefresh={() => {
-            setRefreshNonce((n) => n + 1)
-          }}
-        />
+        <div className="flex items-center gap-2">
+          <ViewInGrafanaLink />
+          <TimeRangeControls
+            rangeKey={rangeKey}
+            onRangeChange={setRangeKey}
+            onRefresh={() => {
+              setRefreshNonce((n) => n + 1)
+            }}
+          />
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
