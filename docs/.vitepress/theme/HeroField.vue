@@ -16,6 +16,7 @@ const mouseTarget = { x: 0.5, y: 0.5 }
 let uTime: WebGLUniformLocation | null = null
 let uMouse: WebGLUniformLocation | null = null
 let uRes: WebGLUniformLocation | null = null
+let uLight: WebGLUniformLocation | null = null
 
 let motionQuery: MediaQueryList | null = null
 let visibilityObserver: IntersectionObserver | null = null
@@ -26,15 +27,15 @@ attribute vec2 a_pos;
 void main(){ gl_Position = vec4(a_pos, 0.0, 1.0); }
 `
 
-// Amber "rail signal" recolor of a violet-nebula ambient field shader.
-// Sky fades from the site's own near-black bg into warm amber near the
-// horizon; mountains, ridge glow and star tint all lean into the same
-// amber/gold hue family instead of the original's blue-violet.
+// Petrol-blue recolor of a violet-nebula ambient field shader (R/B channel
+// swap from the prior amber "rail signal" palette, matching brand.yaml's
+// primary_color #107292 family instead of amber/gold).
 const FS = `
 precision highp float;
 uniform vec2 u_res;
 uniform float u_time;
 uniform vec2 u_mouse;
+uniform float u_light;
 
 float hash(float n){ return fract(sin(n)*43758.5453123); }
 float hash2(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
@@ -97,20 +98,30 @@ void main(){
     float aspect = u_res.x / u_res.y;
     vec2 mouse = u_mouse * 2.0 - 1.0;
 
-    vec3 skyTop    = vec3(0.010, 0.012, 0.020);
-    vec3 skyMid    = vec3(0.026, 0.021, 0.020);
-    vec3 skyBottom = vec3(0.058, 0.040, 0.024);
+    // Night palette (dark mode) mixed against a warm evening/sunset palette
+    // (light mode) via u_light -- a flat pale-gray day sky read as lifeless,
+    // so light mode is dusk instead of noon: warm orange sky with the same
+    // petrol-blue rail-glow lines reading as lit signals against it.
+    // Muted, not a literal painted sunset: a saturated orange landscape
+    // read as decorative/whimsical rather than an infra tool. Desaturated
+    // warm-neutral gradient keeps the mood without the postcard look.
+    vec3 skyTop    = mix(vec3(0.010, 0.012, 0.020), vec3(0.975, 0.968, 0.958), u_light);
+    vec3 skyMid    = mix(vec3(0.026, 0.021, 0.020), vec3(0.930, 0.895, 0.860), u_light);
+    vec3 skyBottom = mix(vec3(0.024, 0.040, 0.058), vec3(0.860, 0.795, 0.740), u_light);
 
     float skyGrad = uv.y;
     vec3 col = mix(skyBottom, skyMid, smoothstep(0.3, 0.6, skyGrad));
     col = mix(col, skyTop, smoothstep(0.6, 1.0, skyGrad));
 
+    float glowAmt = mix(1.0, 0.3, u_light);
+    vec3 horizonGlowCol = mix(vec3(0.03, 0.15, 0.26), vec3(0.58, 0.40, 0.28), u_light);
+    vec3 centerGlowCol  = mix(vec3(0.03, 0.12, 0.20), vec3(0.52, 0.36, 0.26), u_light);
     float horizonY = 0.35;
     float horizonGlow = exp(-pow((uv.y - horizonY) * 3.8, 2.0));
-    col += vec3(0.26, 0.15, 0.03) * horizonGlow * 0.8;
+    col += horizonGlowCol * horizonGlow * 0.8 * glowAmt;
 
     float centerGlow = exp(-pow((uv.x - 0.5) * 1.5, 2.0)) * exp(-pow((uv.y - horizonY) * 4.0, 2.0));
-    col += vec3(0.20, 0.12, 0.03) * centerGlow * 0.6;
+    col += centerGlowCol * centerGlow * 0.6 * glowAmt;
 
     float starField = stars(uv * vec2(aspect, 1.0), 60.0)
                     + stars(uv * vec2(aspect, 1.0) + 500.0, 100.0) * 0.7
@@ -118,7 +129,7 @@ void main(){
 
     float starMask = 1.0;
     float xC, yS, prof, mTop, mtn, rDist, rGlow, rAmb;
-    vec3 lC = vec3(0.11, 0.078, 0.045);
+    vec3 lC = mix(vec3(0.045, 0.078, 0.11), vec3(0.680, 0.650, 0.620), u_light);
 
     // Layer 0 (farthest)
     xC = uv.x * aspect * 1.6 + u_time * 0.006 + mouse.x * 0.010;
@@ -130,8 +141,8 @@ void main(){
     rGlow = smoothstep(0.012, 0.0, rDist) * 0.18;
     rAmb = smoothstep(0.04, 0.0, rDist) * 0.06;
     col = mix(col, lC, mtn);
-    col += vec3(0.30, 0.16, 0.03) * rGlow;
-    col += vec3(0.18, 0.10, 0.025) * rAmb;
+    col += vec3(0.03, 0.16, 0.30) * rGlow * glowAmt;
+    col += vec3(0.025, 0.10, 0.18) * rAmb * glowAmt;
     starMask *= (1.0 - mtn);
 
     // Layer 1
@@ -144,8 +155,8 @@ void main(){
     rGlow = smoothstep(0.012, 0.0, rDist) * 0.18;
     rAmb = smoothstep(0.04, 0.0, rDist) * 0.06;
     col = mix(col, lC, mtn);
-    col += vec3(0.30, 0.16, 0.03) * rGlow;
-    col += vec3(0.18, 0.10, 0.025) * rAmb;
+    col += vec3(0.03, 0.16, 0.30) * rGlow * glowAmt;
+    col += vec3(0.025, 0.10, 0.18) * rAmb * glowAmt;
     starMask *= (1.0 - mtn);
 
     // Layer 2
@@ -158,8 +169,8 @@ void main(){
     rGlow = smoothstep(0.012, 0.0, rDist) * 0.18;
     rAmb = smoothstep(0.04, 0.0, rDist) * 0.06;
     col = mix(col, lC, mtn);
-    col += vec3(0.30, 0.16, 0.03) * rGlow;
-    col += vec3(0.18, 0.10, 0.025) * rAmb;
+    col += vec3(0.03, 0.16, 0.30) * rGlow * glowAmt;
+    col += vec3(0.025, 0.10, 0.18) * rAmb * glowAmt;
     starMask *= (1.0 - mtn);
 
     // Layer 3
@@ -172,8 +183,8 @@ void main(){
     rGlow = smoothstep(0.012, 0.0, rDist) * 0.18;
     rAmb = smoothstep(0.04, 0.0, rDist) * 0.06;
     col = mix(col, lC, mtn);
-    col += vec3(0.30, 0.16, 0.03) * rGlow;
-    col += vec3(0.18, 0.10, 0.025) * rAmb;
+    col += vec3(0.03, 0.16, 0.30) * rGlow * glowAmt;
+    col += vec3(0.025, 0.10, 0.18) * rAmb * glowAmt;
     starMask *= (1.0 - mtn);
 
     // Layer 4 (nearest)
@@ -186,13 +197,14 @@ void main(){
     rGlow = smoothstep(0.012, 0.0, rDist) * 0.18;
     rAmb = smoothstep(0.04, 0.0, rDist) * 0.06;
     col = mix(col, lC, mtn);
-    col += vec3(0.30, 0.16, 0.03) * rGlow;
-    col += vec3(0.18, 0.10, 0.025) * rAmb;
+    col += vec3(0.03, 0.16, 0.30) * rGlow * glowAmt;
+    col += vec3(0.025, 0.10, 0.18) * rAmb * glowAmt;
     starMask *= (1.0 - mtn);
 
-    col += vec3(1.0, 0.90, 0.72) * starField * starMask;
+    float nightAmt = 1.0 - u_light;
+    col += vec3(0.72, 0.90, 1.0) * starField * starMask * nightAmt;
     float met = meteor(uv * vec2(aspect, 1.0), u_time);
-    col += vec3(1.0, 0.72, 0.32) * met * starMask;
+    col += vec3(0.32, 0.72, 1.0) * met * starMask * nightAmt;
 
     float vig = 1.0 - 0.3 * pow(length((uv - 0.5) * vec2(1.1, 1.6)), 2.0);
     col *= vig;
@@ -228,6 +240,12 @@ function drawFrame(t: number) {
   if (!gl) return
   gl.uniform1f(uTime, t)
   gl.uniform2f(uMouse, mouse.x, mouse.y)
+  // Always night: a light-mode sky palette was tried and read as a
+  // decorative postcard rather than an infra tool, so the hero stays dark
+  // regardless of the site's own light/dark toggle for now. u_light and
+  // the day-palette mix() calls below are left in the shader rather than
+  // ripped out, in case this gets revisited.
+  gl.uniform1f(uLight, 0.0)
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 }
 
@@ -321,6 +339,7 @@ onMounted(() => {
   uTime = gl.getUniformLocation(prog, 'u_time')
   uMouse = gl.getUniformLocation(prog, 'u_mouse')
   uRes = gl.getUniformLocation(prog, 'u_res')
+  uLight = gl.getUniformLocation(prog, 'u_light')
 
   resizeCanvas()
 

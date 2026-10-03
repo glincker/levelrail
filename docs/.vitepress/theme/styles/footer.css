@@ -1,0 +1,265 @@
+/* Cinematic site footer (CustomFooter.vue), every page. */
+
+.custom-footer {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border-top: 1px solid var(--vp-c-divider);
+  padding: 56px 24px 40px;
+}
+
+.custom-footer__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.custom-footer__glow {
+  position: absolute;
+  top: -15%;
+  left: 50%;
+  width: 70vw;
+  height: 50vh;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(47, 179, 220, 0.14) 0%, transparent 70%);
+  filter: blur(20px);
+}
+
+.custom-footer__grid {
+  position: absolute;
+  inset: 0;
+  background-size: 48px 48px;
+  background-image: linear-gradient(to right, rgba(161, 161, 170, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(161, 161, 170, 0.05) 1px, transparent 1px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 25%, black 75%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 25%, black 75%, transparent);
+}
+
+.custom-footer__marquee {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 48px;
+  padding: 10px 0;
+  background: var(--vp-c-bg-soft);
+  border-top: 1px solid var(--vp-c-divider);
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.custom-footer__marquee-track {
+  display: flex;
+  width: max-content;
+  animation: custom-footer-marquee 32s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .custom-footer__marquee-track {
+    animation: none;
+  }
+}
+
+.custom-footer__marquee-group {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.custom-footer__marquee-item {
+  padding: 0 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-3);
+  white-space: nowrap;
+}
+
+.custom-footer__marquee-dot {
+  font-size: 8px;
+  color: var(--vp-c-brand-1);
+}
+
+@keyframes custom-footer-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.custom-footer__giant {
+  position: absolute;
+  left: 50%;
+  bottom: 4vw;
+  transform: translateX(-50%);
+  z-index: -1;
+  font-family: var(--vp-font-family-display);
+  font-weight: 700;
+  font-size: clamp(72px, 16vw, 260px);
+  line-height: 0.8;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  color: transparent;
+  background: linear-gradient(180deg, var(--vp-c-text-1) 0%, transparent 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  opacity: 0.05;
+  pointer-events: none;
+  user-select: none;
+}
+
+.custom-footer__inner {
+  position: relative;
+  max-width: 1152px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+
+/* Below this, two columns squeeze fixed-width content (the GLINCKER
+   pill) past the column edge: stack single-column until there is room. */
+@media (min-width: 480px) {
+  .custom-footer__inner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .custom-footer__inner {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.custom-footer__col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.custom-footer__heading {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-2);
+  margin: 0 0 2px;
+}
+
+.custom-footer__col a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  font-size: 13px;
+  color: var(--vp-c-text-2);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.custom-footer__col a:hover {
+  color: var(--vp-c-brand-1);
+}
+
+.custom-footer__blurb {
+  font-size: 13px;
+  color: var(--vp-c-text-2);
+  margin: 0;
+}
+
+.custom-footer__badge {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--vp-c-brand-1) !important;
+}
+
+.custom-footer__bottom {
+  position: relative;
+  max-width: 1152px;
+  margin: 48px auto 0;
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+@media (min-width: 768px) {
+  .custom-footer__bottom {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+.custom-footer__credits {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--vp-c-text-2);
+  background: linear-gradient(145deg, rgba(161, 161, 170, 0.08) 0%, rgba(161, 161, 170, 0.02) 100%);
+  border: 1px solid var(--vp-c-divider);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.custom-footer__credits a {
+  color: var(--vp-c-text-1);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.custom-footer__credits:hover {
+  border-color: var(--vp-c-brand-1);
+  background: linear-gradient(145deg, rgba(161, 161, 170, 0.12) 0%, rgba(161, 161, 170, 0.03) 100%);
+}
+
+.custom-footer__heart {
+  color: var(--vp-c-brand-1);
+}
+
+.custom-footer__to-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  color: var(--vp-c-text-2);
+  background: linear-gradient(145deg, rgba(161, 161, 170, 0.08) 0%, rgba(161, 161, 170, 0.02) 100%);
+  border: 1px solid var(--vp-c-divider);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+@media (min-width: 768px) {
+  .custom-footer__to-top {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+
+.custom-footer__to-top:hover {
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+}
+
