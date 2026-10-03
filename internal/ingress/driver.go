@@ -39,6 +39,17 @@ import (
 	// Registers http.handlers.rate_limit: opt-in per-domain rate
 	// limiting, see routes.go's NewRateLimitHandler.
 	_ "github.com/mholt/caddy-ratelimit"
+
+	// Registers the "layer4" app and its base route/matcher machinery
+	// (caddy-l4's own imports.go pulls in every one of its handler and
+	// matcher modules via one bundled package; this package imports only
+	// the two it actually uses, layer4 itself and l4proxy below, to keep
+	// this binary's dependency footprint to what layer4.go's
+	// NewLayer4ProxyHandler actually builds).
+	_ "github.com/mholt/caddy-l4/layer4"
+	// Registers layer4.handlers.proxy (layer4.go's NewLayer4ProxyHandler):
+	// plain TCP passthrough, no TLS termination.
+	_ "github.com/mholt/caddy-l4/modules/l4proxy"
 )
 
 // Driver drives an in-process Caddy instance through the same code path as

@@ -193,6 +193,9 @@ func (f *fakeProjectLifecycleAppStore) ListDesiredServices(context.Context) ([]s
 func (f *fakeProjectLifecycleAppStore) DeleteDesiredService(context.Context, string) error {
 	return nil
 }
+func (f *fakeProjectLifecycleAppStore) ListAppStreamsForService(context.Context, string) ([]store.AppStream, error) {
+	return nil, nil
+}
 func (f *fakeProjectLifecycleAppStore) UpdateServiceNode(context.Context, string, string) error {
 	return nil
 }
