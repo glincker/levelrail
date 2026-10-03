@@ -129,7 +129,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 122 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 123 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -263,6 +263,7 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/connections/{env_var} | AbilityWrite | handleDeleteAppConnection |
 | GET | /api/v1/apps/{name}/connectable-databases | AbilityRead | handleListConnectableDatabases |
 | POST | /api/v1/apps/{name}/validate-spec | AbilityRead | handleValidateSpec |
+| GET | /api/v1/apps/{name}/health-score | AbilityRead | handleGetAppHealthScore |
 
 :::
 

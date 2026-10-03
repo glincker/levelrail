@@ -10,6 +10,7 @@ import { registerPageActions } from '../../lib/pageActions'
 import type { AppDetail } from '../../types/appDetail'
 import type { ReconcileCondition } from '../../types/deploy'
 import type { DeployAttempt } from '../../types/deployAttempt'
+import { AppHealthScorePanel } from '../AppHealthScorePanel'
 import { ActivityTimeline } from './ActivityTimeline'
 import { DeploySheet, type DeployTab } from './DeploySheet'
 import { DetailsSection } from './DetailsSection'
@@ -102,6 +103,7 @@ export function OverviewPage({
         latest={latest}
         conditions={conditions}
       />
+      <AppHealthScorePanel appName={app.name} />
       <section
         aria-label="Live traffic and resources"
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5"

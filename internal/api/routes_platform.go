@@ -119,6 +119,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/alerts/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleUpdateAlertRule))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/alerts/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteAlertRule))
 
+	// Health & readiness score: a read-only synthesis of signals this
+	// router already exposes separately (deploys, crashloop, TLS,
+	// secrets, backups, health checks, alerting). See
+	// app_health_score.go's own doc comment.
+	mux.HandleFunc("GET /api/v1/apps/{name}/health-score", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppHealthScore))
+
 	// Scheduled tasks: run an arbitrary command inside this app's
 	// container on a cron schedule (internal/scheduledtask). CRUD sits at
 	// AbilityWrite, the same config-mutation tier alert rules above and
