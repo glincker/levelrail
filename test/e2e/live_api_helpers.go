@@ -3,6 +3,7 @@ package e2e
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 )
 
 // liveBuildEnv bundles the real Docker client, real BuildKit client, and
@@ -140,5 +143,33 @@ func removeContainerAndVolumes(cli *dockerclient.Client, containerName string, n
 	_ = cli.ContainerRemove(ctx, containerName, container.RemoveOptions{Force: true, RemoveVolumes: true})
 	for _, name := range namedVolumes {
 		_ = cli.VolumeRemove(ctx, name, true)
+	}
+}
+
+// reconcileUntilAppReady calls ctrl.Reconcile repeatedly until it
+// reports a True Ready condition or overallTimeout elapses. A single
+// Reconcile call isn't enough for a dependent service started right
+// after its own dependency: depends_on only orders container start, it
+// never waits for that dependency's own readiness (internal/compose's
+// documented limitation), so a db-backed app can exit once on its first
+// connection attempt and only recover on the next pass, the same resync
+// shape reconcile.Engine applies in production.
+func reconcileUntilAppReady(parent context.Context, ctrl *application.Controller, overallTimeout time.Duration) (reconcile.Result, error) {
+	deadline := time.Now().Add(overallTimeout)
+	var lastResult reconcile.Result
+	var lastErr error
+	for {
+		lastResult, lastErr = ctrl.Reconcile(parent)
+		if lastErr == nil && len(lastResult.Conditions) > 0 && lastResult.Conditions[0].Status == reconcile.ConditionTrue {
+			return lastResult, nil
+		}
+		if time.Now().After(deadline) {
+			return lastResult, fmt.Errorf("did not reach a True Ready condition within %s: last error = %v, last result = %+v", overallTimeout, lastErr, lastResult)
+		}
+		select {
+		case <-parent.Done():
+			return lastResult, parent.Err()
+		case <-time.After(3 * time.Second):
+		}
 	}
 }

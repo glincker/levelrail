@@ -64,7 +64,7 @@ func deployCatalogTemplateLive(t *testing.T, runtime docker.Runtime, templateID,
 	}
 	manager := secrets.NewManager(svcStore, mk)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
 
 	generate := func(kind, _ string, length int) (string, error) {
@@ -110,7 +110,7 @@ func deployCatalogTemplateLive(t *testing.T, runtime docker.Runtime, templateID,
 			t.Fatalf("template %q: no translated service for key %q", templateID, key)
 		}
 		ctrl := application.New(svc.Name, svcStore, runtime, application.WithSecretResolver(manager), application.WithReadyBudget(3*time.Minute))
-		result, err := ctrl.Reconcile(ctx)
+		result, err := reconcileUntilAppReady(ctx, ctrl, 4*time.Minute)
 		if err != nil {
 			t.Fatalf("Reconcile(%q) error = %v, result = %+v", svc.Name, err, result)
 		}
