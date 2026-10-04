@@ -7,12 +7,38 @@ description: Fixes for the most common problems when deploying, logging in, or r
 Start here for a fast fix. Each entry links to the full page if you need more depth.
 
 ::: details My deploy is stuck or failed
-0. Run `levelrail-cli apps deploys show <name>`: a failed or blocked deploy carries a classified cause and fix, see [Deploy failures](deploy-failures.md).
-1. Check the build log first: dashboard's deploy detail page, or `levelrail-cli apps deploys logs <name> <deploy-id>`.
-2. If the build succeeded but the app never came up, the readiness probe is the usual cause. The `Ready` condition's message names the exact request or command and what came back (a status, a redirect target, a TLS error, an exec exit code). A 302 to a login page wants `follow_redirects` or `expected_status: 200-399`; a self-signed HTTPS endpoint wants `scheme: https` with `tls_skip_verify: true`; a database is better checked with an `exec` probe. See [Health checks](app-spec-reference.md#health-checks). A slow cold start (JVM warm-up, a large migration) can also legitimately take longer than the default 60s readiness budget: raise it with `health.readyTimeout` instead of treating the false `ReadinessFailed` as a real bug.
-3. A crashlooping container gets its last 200 log lines surfaced automatically in the dashboard, no separate log search needed.
-4. If this keeps happening on every deploy of a given app, consider turning on "Auto-rollback on crashloop" (Deploys tab, off by default) so the next crashloop redeploys the previous known-good image automatically instead of retrying the same bad one. See [Observability](observability.md).
-5. Still stuck: [Deploying apps](deploying-apps.md#health-checks) covers the full health check contract.
+<Steps>
+<Step title="Check the classified cause">
+
+Run `levelrail-cli apps deploys show <name>`: a failed or blocked deploy carries a classified cause and fix, see [Deploy failures](deploy-failures.md).
+
+</Step>
+<Step title="Check the build log">
+
+Dashboard's deploy detail page, or `levelrail-cli apps deploys logs <name> <deploy-id>`.
+
+</Step>
+<Step title="Build succeeded, app never came up">
+
+The readiness probe is the usual cause. The `Ready` condition's message names the exact request or command and what came back (a status, a redirect target, a TLS error, an exec exit code). A 302 to a login page wants `follow_redirects` or `expected_status: 200-399`; a self-signed HTTPS endpoint wants `scheme: https` with `tls_skip_verify: true`; a database is better checked with an `exec` probe. See [Health checks](app-spec-reference.md#health-checks). A slow cold start (JVM warm-up, a large migration) can also legitimately take longer than the default 60s readiness budget: raise it with `health.readyTimeout` instead of treating the false `ReadinessFailed` as a real bug.
+
+</Step>
+<Step title="Check the crashloop logs">
+
+A crashlooping container gets its last 200 log lines surfaced automatically in the dashboard, no separate log search needed.
+
+</Step>
+<Step title="Stop it from recurring">
+
+If this keeps happening on every deploy of a given app, consider turning on "Auto-rollback on crashloop" (Deploys tab, off by default) so the next crashloop redeploys the previous known-good image automatically instead of retrying the same bad one. See [Observability](observability.md).
+
+</Step>
+<Step title="Still stuck?">
+
+[Deploying apps](deploying-apps.md#health-checks) covers the full health check contract.
+
+</Step>
+</Steps>
 :::
 
 ::: details Something is wrong but I don't know what
@@ -63,15 +89,26 @@ The compose file falls back to `999` (the common Debian/Ubuntu default) if `DOCK
 ::: details Ports 80/443 are open on the server but blocked by a firewall
 `install.sh`'s own reachability self-test, and doctor's `external_reachability_80`/`external_reachability_443` checks, both warn rather than fail here, since a host firewall looks the same from outside as a closed port. Open both ports:
 
-```bash
-# ufw (Ubuntu/Debian)
-sudo ufw allow 80/tcp && sudo ufw allow 443/tcp
+<Tabs :items="['Ubuntu/Debian (ufw)', 'RHEL/Fedora/Rocky (firewalld)']">
+<Tab value="Ubuntu/Debian (ufw)">
 
-# firewalld (RHEL/Fedora/Rocky)
+```bash
+sudo ufw allow 80/tcp && sudo ufw allow 443/tcp
+```
+
+`install.sh` can configure `ufw` for you on install with `LEVELRAIL_CONFIGURE_UFW=1`.
+
+</Tab>
+<Tab value="RHEL/Fedora/Rocky (firewalld)">
+
+```bash
 sudo firewall-cmd --permanent --add-service=http --add-service=https && sudo firewall-cmd --reload
 ```
 
-Then also check your cloud provider's firewall or security group rules; a host firewall being open doesn't mean the provider's edge is. `install.sh` can configure `ufw` for you on install with `LEVELRAIL_CONFIGURE_UFW=1`.
+</Tab>
+</Tabs>
+
+Then also check your cloud provider's firewall or security group rules; a host firewall being open doesn't mean the provider's edge is.
 :::
 
 ::: details My domain won't resolve, or the setup wizard's DNS check stays red

@@ -1,0 +1,68 @@
+/* InlineToc.vue: a collapsible in-body table of contents for long
+   reference pages (cli-reference.md, api-reference.md, app-spec-reference.md),
+   where the sidebar outline alone is too far away to scan quickly. */
+
+.vp-inline-toc {
+  margin: 20px 0;
+  border: 1px solid var(--glinui-glass-border-strong);
+  border-radius: var(--glinui-radius-md);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 60%);
+}
+
+.vp-inline-toc__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 18px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-family: var(--glinui-font-sans);
+  color: inherit;
+  cursor: pointer;
+}
+
+.vp-inline-toc__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
+.vp-inline-toc__caret {
+  color: var(--vp-c-text-3);
+  transition: transform 0.2s ease;
+}
+
+.vp-inline-toc--open .vp-inline-toc__caret {
+  transform: rotate(180deg);
+}
+
+.vp-inline-toc__list {
+  margin: 0;
+  padding: 0 18px 14px;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.vp-inline-toc__item--level-3 {
+  padding-left: 16px;
+}
+
+.vp-inline-toc__item a {
+  font-size: 13.5px;
+  color: var(--vp-c-text-2);
+  text-decoration: none;
+}
+
+.vp-inline-toc__item a:hover {
+  color: var(--glinui-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vp-inline-toc__caret {
+    transition: none;
+  }
+}
