@@ -18,6 +18,11 @@ type AppStore interface {
 	GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 	DeleteDesiredService(ctx context.Context, name string) error
+	// ListAppStreamsForService backs internal/reconcile/application's
+	// ServiceStore (the same interface this type satisfies for the
+	// application controller's own New call): one extra published
+	// container port per raw TCP stream (migrations/0279_app_streams.sql).
+	ListAppStreamsForService(ctx context.Context, serviceName string) ([]store.AppStream, error)
 	// UpdateServiceNode is the placement mutation, separate
 	// from SaveDesiredService on purpose: see store.DB.SaveDesiredService's
 	// own doc comment for why an ordinary app update must never be able
@@ -551,6 +556,7 @@ type Store interface {
 	RegistryCredentialStore
 	NetworkShareStore
 	FirewallRuleStore
+	AppStreamStore
 	BackupHistoryStore
 	BackupVerificationStore
 	RestoreHistoryStore

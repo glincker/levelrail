@@ -47,6 +47,8 @@ type fakeStore struct {
 	errorPagesErr      error
 	notReadyServices   map[string]bool
 	conditionsErr      error
+	streams            []store.AppStream
+	streamsErr         error
 }
 
 // GetConditionsForControllers defaults every requested controller to
@@ -70,6 +72,16 @@ func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredServi
 		return nil, f.err
 	}
 	return f.services, nil
+}
+
+// ListAllAppStreams mirrors ListStaticSites' own "empty unless a test
+// opts in" convention: no streams unless f.streams is set, so tests
+// written before this method existed are unaffected.
+func (f *fakeStore) ListAllAppStreams(_ context.Context) ([]store.AppStream, error) {
+	if f.streamsErr != nil {
+		return nil, f.streamsErr
+	}
+	return f.streams, nil
 }
 
 func (f *fakeStore) ListStaticSites(_ context.Context) ([]store.StaticSite, error) {

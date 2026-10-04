@@ -22,6 +22,7 @@ import {
   KeyIcon,
   PackageIcon,
   PlugsConnectedIcon,
+  PlugsIcon,
   PulseIcon,
   RobotIcon,
   RocketLaunchIcon,
@@ -293,6 +294,7 @@ export type AppTo =
   | '/apps/$name/deploy-settings'
   | '/apps/$name/pipelines'
   | '/apps/$name/domains'
+  | '/apps/$name/streams'
   | '/apps/$name/loadbalancer'
   | '/apps/$name/network'
   | '/apps/$name/environment'
@@ -373,6 +375,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
     icon: <ShareNetworkIcon />,
     items: [
       item('domains', 'Domains', '/apps/$name/domains', <GlobeIcon />),
+      item('streams', 'Streams', '/apps/$name/streams', <PlugsIcon />),
       item(
         'loadbalancer',
         'Load balancer',

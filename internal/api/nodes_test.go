@@ -888,6 +888,9 @@ func (f *fakeDrainAppStore) ListDesiredServices(context.Context) ([]store.Desire
 	return nil, nil
 }
 func (f *fakeDrainAppStore) DeleteDesiredService(context.Context, string) error { return nil }
+func (f *fakeDrainAppStore) ListAppStreamsForService(context.Context, string) ([]store.AppStream, error) {
+	return nil, nil
+}
 func (f *fakeDrainAppStore) UpdateServiceNode(_ context.Context, name, _ string) error {
 	f.updateCalls = append(f.updateCalls, name)
 	if err, ok := f.failOnUpdate[name]; ok {

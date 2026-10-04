@@ -1760,6 +1760,23 @@ type CreateFirewallRuleRequest struct {
 	Label      string `json:"label,omitempty"`
 }
 
+// AppStreamResource mirrors internal/api's appStreamResource.
+type AppStreamResource struct {
+	ID            string `json:"id"`
+	App           string `json:"app"`
+	ContainerPort int    `json:"container_port"`
+	HostPort      int    `json:"host_port"`
+	Protocol      string `json:"protocol"`
+	CreatedAt     string `json:"created_at"`
+}
+
+// CreateAppStreamRequest mirrors internal/api's createAppStreamRequest.
+type CreateAppStreamRequest struct {
+	ContainerPort int    `json:"container_port"`
+	HostPort      int    `json:"host_port"`
+	Protocol      string `json:"protocol,omitempty"`
+}
+
 // CreateRegistryCredentialRequest mirrors internal/api's
 // createRegistryCredentialRequest: Password is required here, unlike
 // UpdateRegistryCredentialRequest where it's optional.

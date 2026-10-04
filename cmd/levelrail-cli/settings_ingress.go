@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 )
@@ -81,14 +82,31 @@ func runSettingsIngressSet(prog string, args []string, stdout, stderr io.Writer,
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	ctx := context.Background()
 
-	settings, err := client.UpdateIngressSettings(context.Background(), ingressSettingsResource{
-		PrimaryDomain:    primaryDomain,
-		ACMEEnabled:      acmeEnabled,
-		ACMEEmail:        acmeEmail,
-		ACMEDirectoryURL: acmeDirectoryURL,
-		HSTSEnabled:      hstsEnabled,
+	// PUT /api/v1/settings/ingress replaces the whole resource, so a flag
+	// left at its zero value would silently clear it. Start from what's
+	// already stored and apply only the flags actually given.
+	req, err := client.GetIngressSettings(ctx)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get current ingress settings: %w", err))
+	}
+	fs.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "primary-domain":
+			req.PrimaryDomain = primaryDomain
+		case "acme-enabled":
+			req.ACMEEnabled = acmeEnabled
+		case "acme-email":
+			req.ACMEEmail = acmeEmail
+		case "acme-directory-url":
+			req.ACMEDirectoryURL = acmeDirectoryURL
+		case "hsts-enabled":
+			req.HSTSEnabled = hstsEnabled
+		}
 	})
+
+	settings, err := client.UpdateIngressSettings(ctx, req)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set ingress settings: %w", err))
 	}

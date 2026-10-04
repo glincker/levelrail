@@ -14,5 +14,8 @@
       "warn": "Warn",
       "fail": "Fail"
     }
+  },
+  "logs": {
+    "previousContainerEnded": "Previous container instance ended"
   }
 }

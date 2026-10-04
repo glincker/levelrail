@@ -35,6 +35,7 @@ func (rt *Router) Handler() http.Handler {
 		h = hstsDBOverrideMiddleware(rt)(h)
 	}
 	h = panicRecoveryMiddleware(rt.logger)(h)
+	h = requestLoggingMiddleware(rt.logger, rt.requestLogThresholds)(h)
 	h = requestIDMiddleware(h)
 	return h
 }
@@ -371,6 +372,15 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/pending-changes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePendingChanges))
 	mux.HandleFunc("POST /api/v1/apps/{name}/apply-pending", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleApplyPending))
 	mux.HandleFunc("PATCH /api/v1/apps/{name}/domains", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleEditAppDomains))
+
+	// Streams (app_streams.go): raw TCP port forwards, host port to one
+	// container port, proxied by Caddy's layer4 app
+	// (internal/reconcile/ingress). AbilityWriteSensitive for create/
+	// delete, the same tier as a firewall rule: a stream opens a new
+	// host port to raw TCP traffic. List is ordinary AbilityRead.
+	mux.HandleFunc("GET /api/v1/apps/{name}/streams", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppStreams))
+	mux.HandleFunc("POST /api/v1/apps/{name}/streams", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleCreateAppStream))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/streams/{id}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteAppStream))
 
 	// Restart (handleRestartApp's own doc comment): AbilityDeploy, the
 	// same boundary as the deploy trigger above, since forcing a

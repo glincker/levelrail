@@ -10,6 +10,8 @@ export const NAMESPACES = [
   'deploys',
   'settings',
   'dashboard',
+  'auditLog',
+  'streams',
 ] as const
 
 void i18n

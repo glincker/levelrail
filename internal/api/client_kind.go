@@ -10,6 +10,10 @@ const (
 	ClientKindDashboard = "dashboard"
 	ClientKindMCP       = "mcp"
 	ClientKindAPI       = "api"
+	// ClientKindSystem is written directly by internal/ingress's
+	// SQLiteStorage for a certificate issuance/renewal it detects, not
+	// derived here: there is no User-Agent, because there is no request.
+	ClientKindSystem = "system"
 )
 
 // cliUserAgentPrefix and mcpUserAgentPrefix are the exact prefixes

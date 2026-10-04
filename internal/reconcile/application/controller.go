@@ -50,6 +50,11 @@ import (
 // *store.DB satisfies this.
 type ServiceStore interface {
 	GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
+	// ListAppStreamsForService returns every raw TCP stream
+	// (migrations/0279_app_streams.sql) targeting this service, read
+	// fresh on every container creation: createAndStart publishes one
+	// extra container port per entry, alongside desired.Port.
+	ListAppStreamsForService(ctx context.Context, serviceName string) ([]store.AppStream, error)
 }
 
 // SecretResolver is the narrow surface this controller needs from
@@ -1020,6 +1025,11 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if err != nil {
 		return fmt.Errorf("container spec: %w", err)
 	}
+	streamPorts, err := c.streamPortBindings(ctx, desired.Name)
+	if err != nil {
+		return fmt.Errorf("app streams: %w", err)
+	}
+	spec.Ports = append(spec.Ports, streamPorts...)
 	spec.Env = env
 	if c.instanceID != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
@@ -1050,6 +1060,32 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		return fmt.Errorf("start %q after create: %w", name, err)
 	}
 	return nil
+}
+
+// streamPortBindings returns one extra docker.PortBinding per raw TCP
+// stream (store.AppStream) targeting serviceName, for createAndStart to
+// append to the container spec's main Ports entry. HostPort is left 0
+// (an ephemeral port): s.HostPort is what Caddy's own layer4 listener
+// binds instead (internal/reconcile/ingress's dialForStreamPort), so
+// publishing straight to it here would race Caddy for the same port.
+// HostIP is pinned to loopback, reachable only from this same host.
+func (c *Controller) streamPortBindings(ctx context.Context, serviceName string) ([]docker.PortBinding, error) {
+	streams, err := c.store.ListAppStreamsForService(ctx, serviceName)
+	if err != nil {
+		return nil, fmt.Errorf("list app streams for %q: %w", serviceName, err)
+	}
+	if len(streams) == 0 {
+		return nil, nil
+	}
+	bindings := make([]docker.PortBinding, 0, len(streams))
+	for _, s := range streams {
+		bindings = append(bindings, docker.PortBinding{
+			ContainerPort: s.ContainerPort,
+			HostIP:        "127.0.0.1",
+			Protocol:      s.Protocol,
+		})
+	}
+	return bindings, nil
 }
 
 // resolveEnv merges desired.Env's literal values with each of

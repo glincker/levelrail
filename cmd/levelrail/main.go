@@ -2096,6 +2096,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithApprovalChatNotifier(deployDispatcher),
 		api.WithFirewallRequiredPorts(platformRequiredPorts()),
 		api.WithSessionTTL(sessionTTL(logger)),
+		api.WithRequestLogThresholds(slowRequestThreshold(logger), criticalRequestThreshold(logger)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
 		api.WithHSTS(hstsEnabled(logger)),
 		api.WithAllowInsecureLogin(allowInsecureLogin(logger)),
@@ -2618,6 +2619,41 @@ func sessionTTL(logger *slog.Logger) time.Duration {
 	d, err := time.ParseDuration(raw)
 	if err != nil {
 		logger.Warn("invalid APP_SESSION_TTL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// slowRequestThreshold reads APP_SLOW_REQUEST_THRESHOLD as a Go
+// duration string (e.g. "500ms"), the value
+// api.WithRequestLogThresholds's first argument configures: the request
+// logging middleware logs a request at Warn at or above this duration.
+// Returns 0 (api's own signal to fall back to its internal default)
+// when unset or unparseable, logging a warning in the latter case so a
+// typo'd env var is visible rather than silently ignored.
+func slowRequestThreshold(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_SLOW_REQUEST_THRESHOLD")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_SLOW_REQUEST_THRESHOLD, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// criticalRequestThreshold reads APP_CRITICAL_REQUEST_THRESHOLD, the
+// same shape as slowRequestThreshold but for the Error band.
+func criticalRequestThreshold(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_CRITICAL_REQUEST_THRESHOLD")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_CRITICAL_REQUEST_THRESHOLD, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
 	}
 	return d

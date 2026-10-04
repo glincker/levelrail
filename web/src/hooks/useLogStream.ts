@@ -20,7 +20,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 //
 // Each event's `data:` payload is EITHER:
 //   - a bare string: the raw log line, no framing, OR
-//   - a JSON object: { "line": string, "stream": "stdout" | "stderr" }
+//   - a JSON object: { "line": string, "stream": "stdout" | "stderr" | "system" }
+//     ("system" is the live app-log stream's own container-cutover
+//     marker, see LogLine.stream's own doc comment.)
 //
 // Both real backends send the JSON shape (sseLogEvent in
 // internal/api/deploy_attempts.go), since distinguishing stdout/stderr is
@@ -51,7 +53,12 @@ export interface LogLine {
   /** Monotonic id local to this hook instance, stable virtualization key. */
   id: number
   line: string
-  stream: 'stdout' | 'stderr'
+  // 'system' is a control-plane-synthesized marker, not real container
+  // output (internal/api/live_logs.go's previousContainerTransitionLine):
+  // a live app log stream cutting from one container to another mid-session
+  // after a deploy. Only the live app-log backend ever sends it; the
+  // deploy-log backend never does.
+  stream: 'stdout' | 'stderr' | 'system'
 }
 
 export type LogStreamConnectionState = 'connecting' | 'open' | 'error'
@@ -80,7 +87,7 @@ const MAX_BUFFERED_LINES = 8000
 
 interface ParsedLogEvent {
   line: string
-  stream: 'stdout' | 'stderr'
+  stream: 'stdout' | 'stderr' | 'system'
 }
 
 interface RawLogEventPayload {
@@ -101,10 +108,13 @@ function parseEventPayload(raw: string): ParsedLogEvent {
   try {
     const parsed: unknown = JSON.parse(raw)
     if (isRawLogEventPayload(parsed)) {
-      return {
-        line: parsed.line,
-        stream: parsed.stream === 'stderr' ? 'stderr' : 'stdout',
+      let stream: ParsedLogEvent['stream'] = 'stdout'
+      if (parsed.stream === 'stderr') {
+        stream = 'stderr'
+      } else if (parsed.stream === 'system') {
+        stream = 'system'
       }
+      return { line: parsed.line, stream }
     }
   } catch {
     // Not JSON: fall through and treat the whole payload as a bare line.
@@ -177,7 +187,10 @@ export function useLogStream(url: string): UseLogStreamResult {
     source.onopen = () => {
       setConnectionState('open')
       if (hasConnectedOnce) {
-        overlapExpected = bufferedLines.map((l) => ({ line: l.line, stream: l.stream }))
+        overlapExpected = bufferedLines.map((l) => ({
+          line: l.line,
+          stream: l.stream,
+        }))
         overlapIndex = 0
       }
       hasConnectedOnce = true
@@ -196,7 +209,10 @@ export function useLogStream(url: string): UseLogStreamResult {
 
       const expected = overlapExpected[overlapIndex]
       if (expected !== undefined) {
-        if (expected.line === parsed.line && expected.stream === parsed.stream) {
+        if (
+          expected.line === parsed.line &&
+          expected.stream === parsed.stream
+        ) {
           overlapIndex += 1
           return
         }

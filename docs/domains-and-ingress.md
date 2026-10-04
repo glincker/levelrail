@@ -393,6 +393,38 @@ APP_INGRESS_HTTP_ADDR=:8080 \
 
 `GET /api/v1/system/doctor`'s port checks follow whatever you set here, so a second instance running on `:8443`/`:8080` reports those ports as owned and available, not `:443`/`:80`.
 
+## Raw TCP streams: forwarding a non-HTTP port
+
+Domains and WAF/redirects/error pages above are all for HTTP(S). Some
+services aren't HTTP at all: a Postgres instance, an SSH server, a game
+server, anything that speaks its own protocol over raw TCP. A **stream**
+forwards a host port straight to one of an app's container ports, byte
+for byte, with no Host-header routing and no protocol awareness on
+Levelrail's side.
+
+```bash
+levelrail apps streams create my-postgres --host-port 15432 --container-port 5432
+levelrail apps streams list my-postgres
+levelrail apps streams delete my-postgres <id>
+```
+
+Or from the dashboard: an app's **Streams** tab lists its forwards and
+lets you add or remove one. The same thing is available via
+`GET`/`POST`/`DELETE /api/v1/apps/{name}/streams`.
+
+Under the hood this uses the same embedded Caddy instance as every HTTP
+route above, via its `layer4` app
+([`github.com/mholt/caddy-l4`](https://github.com/mholt/caddy-l4)), not a
+second proxy process. A stream added to an already-running app takes
+effect on that app's next restart (triggered automatically when you
+create or delete one), the same way an env var change does, since Docker
+has no way to add a published port to a running container.
+
+**v1 scope, deliberately:** TCP only, one stream per forward, no access
+lists, no TLS termination on the stream itself (if the backend speaks
+TLS, that's between the client and the backend, Levelrail just carries
+the bytes), and no multi-app or load-balanced streams yet.
+
 ## Walkthrough: your first domain, from install to HTTPS
 
 This assumes you already have the control plane running and an app deployed (see [docs/getting-started.md](getting-started.md)).

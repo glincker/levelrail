@@ -59,6 +59,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsApply(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "domains":
 		return runAppsDomains(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "streams":
+		return runAppsStreams(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "restart":
 		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "stop":
@@ -209,6 +211,9 @@ func appsUsage(prog string) string {
   %[1]s apps timeline <name> [--limit N] [flags]   what happened to an app: deploys, restarts, env, secret and config changes
   %[1]s apps apply <name> [flags]       restart an app so saved env, secret and config changes take effect
   %[1]s apps domains list|add|remove <name> [domain...] [flags]   show or change an app's domains
+  %[1]s apps streams list <name> [flags]                                                    list an app's raw TCP port forwards
+  %[1]s apps streams create <name> --host-port N --container-port N [--protocol tcp] [flags]   forward a host port to one container port
+  %[1]s apps streams delete <name> <id> [flags]                                              remove a stream
   %[1]s apps stop <name> [flags]        stop an app's running container
   %[1]s apps start <name> [flags]       start an app previously stopped
   %[1]s apps delete <name> [flags]      remove an app's desired state
