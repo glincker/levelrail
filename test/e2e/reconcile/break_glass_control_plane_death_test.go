@@ -11,7 +11,7 @@
 // restarted control plane's level-triggered reconciler picks the
 // already-running container back up without recreating or restarting
 // it, and Caddy resumes routing once it reconciles again.
-package e2e
+package reconcile
 
 import (
 	"context"
@@ -261,12 +261,12 @@ func TestBreakGlass_Live_ControlPlaneDeath_WorkloadAndIngress(t *testing.T) {
 
 	buildCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
-	res, err := env.BuildClient.Build(buildCtx, build.Request{ContextDir: "../fixtures/hello-e2e", Tag: tag}, nil)
+	res, err := env.BuildClient.Build(buildCtx, build.Request{ContextDir: "../../fixtures/hello-e2e", Tag: tag}, nil)
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}
 
-	repoRoot, err := filepath.Abs("../..")
+	repoRoot, err := filepath.Abs("../../..")
 	if err != nil {
 		t.Fatalf("resolve repo root: %v", err)
 	}

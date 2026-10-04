@@ -63,6 +63,7 @@ var Templates = concat(
 	productivityBatchTemplates,
 	automationBatchTemplates,
 	catalogBatch4Templates,
+	catalogBatch5Templates,
 	contribTemplates,
 )
 

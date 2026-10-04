@@ -111,6 +111,50 @@ func TestHasSecretValue(t *testing.T) {
 	}
 }
 
+// TestHasSecretValueForServices covers the batch lookup
+// databaseTLSStatuses uses instead of a HasSecretValue call per
+// TLS-capable database: a mix of services with and without the key set,
+// a different envKey that shouldn't match, and the empty-input case.
+func TestHasSecretValueForServices(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	for _, name := range []string{"pg-a", "pg-b", "pg-c"} {
+		if err := db.SaveServiceDEK(ctx, name, []byte("dek")); err != nil {
+			t.Fatalf("SaveServiceDEK(%q) error = %v", name, err)
+		}
+	}
+	if err := db.SaveSecretValue(ctx, "pg-a", "tls_cert", []byte("cert-a")); err != nil {
+		t.Fatalf("SaveSecretValue(pg-a) error = %v", err)
+	}
+	if err := db.SaveSecretValue(ctx, "pg-b", "tls_cert", []byte("cert-b")); err != nil {
+		t.Fatalf("SaveSecretValue(pg-b) error = %v", err)
+	}
+	// pg-c has a value under a different key, which must not count.
+	if err := db.SaveSecretValue(ctx, "pg-c", "other_key", []byte("x")); err != nil {
+		t.Fatalf("SaveSecretValue(pg-c) error = %v", err)
+	}
+
+	got, err := db.HasSecretValueForServices(ctx, []string{"pg-a", "pg-b", "pg-c", "pg-missing"}, "tls_cert")
+	if err != nil {
+		t.Fatalf("HasSecretValueForServices() error = %v", err)
+	}
+	if len(got) != 2 || !got["pg-a"] || !got["pg-b"] {
+		t.Errorf("got %+v, want exactly pg-a and pg-b true", got)
+	}
+	if got["pg-c"] {
+		t.Errorf("got[pg-c] = true, want false (value is under a different key)")
+	}
+
+	empty, err := db.HasSecretValueForServices(ctx, nil, "tls_cert")
+	if err != nil {
+		t.Fatalf("HasSecretValueForServices(nil) error = %v", err)
+	}
+	if len(empty) != 0 {
+		t.Errorf("HasSecretValueForServices(nil) = %+v, want empty map", empty)
+	}
+}
+
 func TestDeleteServiceSecrets_RemovesValuesAndDEK(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

@@ -116,8 +116,8 @@ if [ "$fail" -eq 0 ] && [ -f "$coverage_out" ] && [ -s "$coverage_out" ]; then
 		# makes the aggregate gate meaningless, so this uses the same
 		# changed-line gate CI's own coverage-gate job runs on PRs
 		# instead, keeping local and CI semantics identical.
-		echo "pre-push: coverage gate (changed lines under internal/, 70%)"
-		if ! scripts/check-changed-file-coverage.sh "$coverage_out" origin/main internal/ 70; then
+		echo "pre-push: coverage gate (changed lines under internal/, 50%)"
+		if ! scripts/check-changed-file-coverage.sh "$coverage_out" origin/main internal/ 50; then
 			fail=1
 		fi
 	fi

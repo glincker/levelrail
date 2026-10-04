@@ -236,6 +236,7 @@ func randomEnvironmentID() (string, error) {
 type EnvironmentStore interface {
 	SaveEnvironment(ctx context.Context, e store.Environment) error
 	GetEnvironment(ctx context.Context, id string) (store.Environment, error)
+	GetEnvironmentsByIDs(ctx context.Context, ids []string) (map[string]store.Environment, error)
 	ListEnvironmentsByProject(ctx context.Context, projectID string) ([]store.Environment, error)
 	DeleteEnvironment(ctx context.Context, id string) error
 	SetEnvironmentProtected(ctx context.Context, id string, protected bool) error

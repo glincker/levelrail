@@ -24,8 +24,15 @@ type PasskeyCredential struct {
 	AAGUID       string
 	Transports   []string
 	Label        string
-	CreatedAt    time.Time
-	LastUsedAt   *time.Time
+	// BackupEligible and BackupState are the authenticator's BE/BS flags
+	// as recorded at registration (migrations/0280). FinishLogin compares
+	// BackupEligible against the live assertion on every sign-in and
+	// rejects a mismatch, so this must be the real registration-time
+	// value, never a zero-value default.
+	BackupEligible bool
+	BackupState    bool
+	CreatedAt      time.Time
+	LastUsedAt     *time.Time
 }
 
 // ErrPasskeyCredentialNotFound is returned by DeletePasskeyCredential
@@ -41,9 +48,9 @@ var ErrPasskeyCredentialAlreadyRegistered = errors.New("store: passkey credentia
 // SavePasskeyCredential inserts a newly registered credential, insert-only.
 func (db *DB) SavePasskeyCredential(ctx context.Context, c PasskeyCredential) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO user_passkeys (id, user_id, credential_id, public_key, sign_count, aaguid, transports, label, created_at, last_used_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
-	`, c.ID, c.UserID, c.CredentialID, c.PublicKey, c.SignCount, c.AAGUID, strings.Join(c.Transports, ","), c.Label, formatTime(c.CreatedAt))
+		INSERT INTO user_passkeys (id, user_id, credential_id, public_key, sign_count, aaguid, transports, label, backup_eligible, backup_state, created_at, last_used_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+	`, c.ID, c.UserID, c.CredentialID, c.PublicKey, c.SignCount, c.AAGUID, strings.Join(c.Transports, ","), c.Label, c.BackupEligible, c.BackupState, formatTime(c.CreatedAt))
 	if err == nil {
 		return nil
 	}
@@ -55,7 +62,7 @@ func (db *DB) SavePasskeyCredential(ctx context.Context, c PasskeyCredential) er
 
 func (db *DB) getPasskeyCredentialByCredentialID(ctx context.Context, credentialID string) (*PasskeyCredential, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, user_id, credential_id, public_key, sign_count, aaguid, transports, label, created_at, last_used_at
+		SELECT id, user_id, credential_id, public_key, sign_count, aaguid, transports, label, backup_eligible, backup_state, created_at, last_used_at
 		FROM user_passkeys WHERE credential_id = ?
 	`, credentialID)
 	return scanPasskeyCredential(row.Scan)
@@ -66,7 +73,7 @@ func (db *DB) getPasskeyCredentialByCredentialID(ctx context.Context, credential
 // ceremony's own "which credentials does this account hold" lookup.
 func (db *DB) ListPasskeyCredentialsForUser(ctx context.Context, userID string) ([]PasskeyCredential, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, user_id, credential_id, public_key, sign_count, aaguid, transports, label, created_at, last_used_at
+		SELECT id, user_id, credential_id, public_key, sign_count, aaguid, transports, label, backup_eligible, backup_state, created_at, last_used_at
 		FROM user_passkeys WHERE user_id = ? ORDER BY created_at
 	`, userID)
 	if err != nil {
@@ -122,7 +129,7 @@ func scanPasskeyCredential(scan func(dest ...any) error) (*PasskeyCredential, er
 		createdAt  string
 		lastUsedAt sql.NullString
 	)
-	if err := scan(&c.ID, &c.UserID, &c.CredentialID, &c.PublicKey, &c.SignCount, &c.AAGUID, &transports, &c.Label, &createdAt, &lastUsedAt); err != nil {
+	if err := scan(&c.ID, &c.UserID, &c.CredentialID, &c.PublicKey, &c.SignCount, &c.AAGUID, &transports, &c.Label, &c.BackupEligible, &c.BackupState, &createdAt, &lastUsedAt); err != nil {
 		return nil, err
 	}
 	parsed, err := time.Parse(time.RFC3339Nano, createdAt)

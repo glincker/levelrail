@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -181,6 +182,61 @@ func TestHandleListApps_Status(t *testing.T) {
 	}
 	if s := byName["pending-app"].Status; s.Label != "No status yet" || s.Variant != "muted" {
 		t.Errorf("pending-app status = %+v, want No status yet/muted", s)
+	}
+}
+
+// GET /api/v1/apps and /api/v1/apps-summary must both downgrade a
+// domain-bearing app placed off the control plane's own node away from
+// "Healthy": its own reconcile conditions are all true (the container
+// really is running fine), but nobody outside this node can reach its
+// domain yet (see crossNodeIngressAppCondition).
+func TestHandleListAppsAndSummary_CrossNodeDomainApp_NotHealthy(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveNode(ctx, store.Node{ID: "node-2", Name: "worker-1", Status: store.NodeStatusOnline, Schedulable: true}); err != nil {
+		t.Fatalf("SaveNode() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, store.DesiredService{
+		Name: "static-test", Image: "nginx:1.27-alpine", Port: 80,
+		Domains: []string{"levelrail-test-2.levelrail.com"},
+	}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "static-test", "node-2"); err != nil {
+		t.Fatalf("UpdateServiceNode() error = %v", err)
+	}
+	if err := db.UpsertConditions(ctx, applicationControllerName("static-test"), []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Running"},
+	}); err != nil {
+		t.Fatalf("seed conditions: %v", err)
+	}
+
+	recList := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recList, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps", ""))
+	if recList.Code != http.StatusOK {
+		t.Fatalf("list status = %d, want %d; body = %s", recList.Code, http.StatusOK, recList.Body.String())
+	}
+	var list []appListResource
+	if err := json.Unmarshal(recList.Body.Bytes(), &list); err != nil {
+		t.Fatalf("decode list: %v", err)
+	}
+	if len(list) != 1 || list[0].Status.Label != "Attention needed" {
+		t.Fatalf("list = %+v, want one app with status Attention needed", list)
+	}
+
+	recSummary := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recSummary, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps-summary", ""))
+	if recSummary.Code != http.StatusOK {
+		t.Fatalf("summary status = %d, want %d; body = %s", recSummary.Code, http.StatusOK, recSummary.Body.String())
+	}
+	var sum appsSummaryResource
+	if err := json.Unmarshal(recSummary.Body.Bytes(), &sum); err != nil {
+		t.Fatalf("decode summary: %v", err)
+	}
+	if sum.Running != 0 || sum.Failing != 1 {
+		t.Errorf("summary = %+v, want Running=0 Failing=1", sum)
 	}
 }
 

@@ -313,6 +313,10 @@ type (
 	gitLabAppStatusResource            = apiclient.GitLabAppStatusResource
 	bitbucketAppStatusResource         = apiclient.BitbucketAppStatusResource
 	gitHubAppRepoResource              = apiclient.GitHubAppRepoResource
+	gitHubAppRepoListResource          = apiclient.GitHubAppRepoListResource
+	gitHubAppRepoListErrResource       = apiclient.GitHubAppRepoListErrResource
+	gitHubAppInstallationResource      = apiclient.GitHubAppInstallationResource
+	gitHubAppInstallationListResource  = apiclient.GitHubAppInstallationListResource
 	gitAppBranchResource               = apiclient.GitAppBranchResource
 	useRepoAsSourceRequest             = apiclient.UseRepoAsSourceRequest
 	useGitHubRepoAsSourceResponse      = apiclient.UseGitHubRepoAsSourceResponse

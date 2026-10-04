@@ -3405,6 +3405,46 @@ type GitHubAppRepoResource struct {
 	Private       bool   `json:"private"`
 	DefaultBranch string `json:"default_branch"`
 	CloneURL      string `json:"clone_url"`
+	// AccountType is "user" or "organization" (migrations/0282): which
+	// connected installation this repo came from.
+	AccountType string `json:"account_type"`
+}
+
+// GitHubAppRepoListResource mirrors internal/api's
+// gitHubAppRepoListResource: GET /api/v1/github-app/repos's response,
+// repos from every connected installation plus one error per
+// installation that failed to list.
+type GitHubAppRepoListResource struct {
+	Repos  []GitHubAppRepoResource        `json:"repos"`
+	Errors []GitHubAppRepoListErrResource `json:"errors,omitempty"`
+}
+
+// GitHubAppRepoListErrResource is one entry of
+// GitHubAppRepoListResource.Errors.
+type GitHubAppRepoListErrResource struct {
+	AccountLogin string `json:"account_login"`
+	Error        string `json:"error"`
+}
+
+// GitHubAppInstallationResource mirrors internal/api's
+// gitHubAppInstallationResource: one entry of
+// GET /api/v1/github-app/installations.
+type GitHubAppInstallationResource struct {
+	ID             int64  `json:"id"`
+	InstallationID int64  `json:"installation_id"`
+	AccountLogin   string `json:"account_login"`
+	AccountType    string `json:"account_type"`
+	ConnectedAt    string `json:"connected_at"`
+}
+
+// GitHubAppInstallationListResource mirrors internal/api's
+// gitHubAppInstallationListResource: GET
+// /api/v1/github-app/installations's response. AddOrgURL is empty when
+// the connection predates migrations/0282's slug column and hasn't been
+// re-registered since.
+type GitHubAppInstallationListResource struct {
+	Installations []GitHubAppInstallationResource `json:"installations"`
+	AddOrgURL     string                          `json:"add_org_url,omitempty"`
 }
 
 // GitAppBranchResource mirrors the identical branch wire shape every git

@@ -212,6 +212,14 @@ function Toaster({
 const createToastManager = ToastPrimitive.createToastManager
 const useToastManager = ToastPrimitive.useToastManager
 
+/** Shorthand for a toast's actionProps: a labeled button that runs onClick. */
+function toastAction(
+  label: React.ReactNode,
+  onClick: () => void,
+): React.ComponentPropsWithoutRef<'button'> {
+  return { children: label, onClick }
+}
+
 export {
   Toaster,
   Toast,
@@ -225,5 +233,6 @@ export {
   ToastViewport,
   createToastManager,
   toast,
+  toastAction,
   useToastManager,
 }

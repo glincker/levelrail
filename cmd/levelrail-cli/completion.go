@@ -237,8 +237,10 @@ var cliCommandTree = map[string]*cmdNode{
 		"ai-assistant":  {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"updates":       {subs: map[string]*cmdNode{"get": nil, "set": nil}},
 	}},
-	"git-providers":    nil,
-	"github-app":       {subs: map[string]*cmdNode{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil}},
+	"git-providers": nil,
+	"github-app": {subs: map[string]*cmdNode{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil, "installations": {subs: map[string]*cmdNode{
+		"list": nil, "add": nil, "remove": nil,
+	}}}},
 	"gitlab-app":       {subs: map[string]*cmdNode{"status": nil, "disconnect": nil, "projects": nil, "branches": nil, "use-as-source": nil}},
 	"bitbucket-app":    {subs: map[string]*cmdNode{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil}},
 	"gitea-app":        {subs: map[string]*cmdNode{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil}},

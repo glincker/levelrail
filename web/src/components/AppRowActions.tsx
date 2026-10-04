@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import {
   ArrowClockwiseIcon,
   ArrowSquareOutIcon,
@@ -33,11 +33,16 @@ import { useRestartApp, useStartApp, useStopApp } from '../queries/apps'
 import type { AppListEntry } from '../types/appDetail'
 
 export function AppRowActions({ app }: { app: AppListEntry }) {
+  const navigate = useNavigate()
   const [confirmStop, setConfirmStop] = useState(false)
   const restartApp = useRestartApp()
   const stopApp = useStopApp()
   const startApp = useStartApp()
-  const { redeploy } = useRedeployApp(app.name, app.image)
+  const { redeploy } = useRedeployApp(app.name, app.image, {
+    onViewApp: () => {
+      void navigate({ to: '/apps/$name/overview', params: { name: app.name } })
+    },
+  })
   const domain = app.domains?.[0]
 
   function run(

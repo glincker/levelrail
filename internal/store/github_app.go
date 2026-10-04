@@ -21,6 +21,14 @@ var ErrGitHubAppConnectionNotFound = errors.New("store: github app connection no
 type GitHubAppConnection struct {
 	AppID    int64
 	ClientID string
+	// Slug is the App's github.com/apps/<slug> URL segment (migrations/0282).
+	// Nil for a connection created before that migration, until the next
+	// successful installation check backfills it (GitHub's installation
+	// API response doesn't carry it, so a plain nil stays nil until the
+	// operator re-registers or an "add org" attempt has somewhere to
+	// resolve it from; see handleListGitHubAppInstallations's own doc
+	// comment for the current gap).
+	Slug *string
 	// InstanceURL is the GitHub instance this App is registered
 	// against: "https://github.com" for every connection until GitHub
 	// Enterprise Server support (migrations/0061), a real GHES base URL
@@ -72,9 +80,9 @@ func GitHubAppSecretsKey() string {
 func (db *DB) SaveGitHubAppConnection(ctx context.Context, c GitHubAppConnection) error {
 	_, err := db.ExecContext(ctx, `
 		INSERT OR REPLACE INTO github_app_connections
-			(id, app_id, client_id, instance_url, installation_id, account_login, created_at)
-		VALUES (1, ?, ?, ?, ?, ?, ?)
-	`, c.AppID, c.ClientID, c.InstanceURL, nullableInt64(c.InstallationID), nullableString(c.AccountLogin), c.CreatedAt)
+			(id, app_id, client_id, slug, instance_url, installation_id, account_login, created_at)
+		VALUES (1, ?, ?, ?, ?, ?, ?, ?)
+	`, c.AppID, c.ClientID, nullableString(c.Slug), c.InstanceURL, nullableInt64(c.InstallationID), nullableString(c.AccountLogin), c.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("store: save github app connection: %w", err)
 	}
@@ -87,19 +95,24 @@ func (db *DB) SaveGitHubAppConnection(ctx context.Context, c GitHubAppConnection
 func (db *DB) GetGitHubAppConnection(ctx context.Context) (GitHubAppConnection, error) {
 	var (
 		c              GitHubAppConnection
+		slug           sql.NullString
 		installationID sql.NullInt64
 		accountLogin   sql.NullString
 	)
 	err := db.QueryRowContext(ctx, `
-		SELECT app_id, client_id, instance_url, installation_id, account_login, created_at
+		SELECT app_id, client_id, slug, instance_url, installation_id, account_login, created_at
 		FROM github_app_connections
 		WHERE id = 1
-	`).Scan(&c.AppID, &c.ClientID, &c.InstanceURL, &installationID, &accountLogin, &c.CreatedAt)
+	`).Scan(&c.AppID, &c.ClientID, &slug, &c.InstanceURL, &installationID, &accountLogin, &c.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return GitHubAppConnection{}, ErrGitHubAppConnectionNotFound
 	}
 	if err != nil {
 		return GitHubAppConnection{}, fmt.Errorf("store: get github app connection: %w", err)
+	}
+	if slug.Valid {
+		v := slug.String
+		c.Slug = &v
 	}
 	if installationID.Valid {
 		v := installationID.Int64
@@ -159,6 +172,95 @@ func (db *DB) DeleteGitHubAppConnection(ctx context.Context) error {
 	}
 	if n == 0 {
 		return ErrGitHubAppConnectionNotFound
+	}
+	return nil
+}
+
+// ErrGitHubAppInstallationNotFound is returned by
+// UpdateGitHubAppInstallationAccountType and DeleteGitHubAppInstallation
+// when no github_app_installations row matches the given id.
+var ErrGitHubAppInstallationNotFound = errors.New("store: github app installation not found")
+
+// GitHubAppInstallation is one row of github_app_installations
+// (migrations/0282), one GitHub account or org the platform's single
+// GitHub App has been installed into. Unlike GitHubAppConnection (the
+// App's own one-time registration), this table is one-to-many: an admin
+// can connect any number of accounts/orgs.
+type GitHubAppInstallation struct {
+	ID             int64
+	InstallationID int64
+	AccountLogin   string
+	// AccountType is "user" or "organization" (migrations/0282's CHECK
+	// constraint), lowercased to match githubapp.InstallationInfo.
+	AccountType string
+	ConnectedAt string
+}
+
+// UpsertGitHubAppInstallation records an installation by installation_id:
+// a first-time id inserts a new row, a repeat id (re-authorizing, or
+// GitHub's installation_repositories webhook firing again) updates
+// account_login/account_type in place rather than creating a duplicate.
+// This single upsert is what makes "connect the first org" and "add
+// another org" the same code path in handleGitHubAppInstalled.
+func (db *DB) UpsertGitHubAppInstallation(ctx context.Context, installationID int64, accountLogin, accountType string) error {
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO github_app_installations (installation_id, account_login, account_type, connected_at)
+		VALUES (?, ?, ?, datetime('now'))
+		ON CONFLICT(installation_id) DO UPDATE SET
+			account_login = excluded.account_login,
+			account_type = excluded.account_type
+	`, installationID, accountLogin, accountType)
+	if err != nil {
+		return fmt.Errorf("store: upsert github app installation: %w", err)
+	}
+	return nil
+}
+
+// ListGitHubAppInstallations returns every connected account/org, oldest
+// first (the order accounts were connected in, so "Personal" or the
+// first org an admin ever connected stays first in the picker).
+func (db *DB) ListGitHubAppInstallations(ctx context.Context) ([]GitHubAppInstallation, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT id, installation_id, account_login, account_type, connected_at
+		FROM github_app_installations
+		ORDER BY id ASC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list github app installations: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []GitHubAppInstallation
+	for rows.Next() {
+		var inst GitHubAppInstallation
+		if err := rows.Scan(&inst.ID, &inst.InstallationID, &inst.AccountLogin, &inst.AccountType, &inst.ConnectedAt); err != nil {
+			return nil, fmt.Errorf("store: scan github app installation: %w", err)
+		}
+		out = append(out, inst)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: list github app installations: %w", err)
+	}
+	return out, nil
+}
+
+// DeleteGitHubAppInstallation removes one connected account/org by its
+// github_app_installations id (not GitHub's installation_id). Callers
+// must check for in-use git sources first: this does no such check
+// itself, matching DeleteGitHubAppConnection's own division of
+// responsibility (the store layer does the write, internal/api owns the
+// business rule).
+func (db *DB) DeleteGitHubAppInstallation(ctx context.Context, id int64) error {
+	res, err := db.ExecContext(ctx, `DELETE FROM github_app_installations WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("store: delete github app installation: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: delete github app installation: %w", err)
+	}
+	if n == 0 {
+		return ErrGitHubAppInstallationNotFound
 	}
 	return nil
 }

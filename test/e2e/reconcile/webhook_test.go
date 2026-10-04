@@ -1,15 +1,11 @@
-package e2e
+package reconcile
 
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
@@ -212,14 +208,4 @@ func TestWebhook_Live_PushToRunningContainer(t *testing.T) {
 	if body != helloBody+"\n" {
 		t.Errorf("response body = %q, want %q", body, helloBody+"\n")
 	}
-}
-
-func signHMAC(secret string, payload []byte) string {
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(payload)
-	return hex.EncodeToString(mac.Sum(nil))
-}
-
-func writeFile(dir, name, content string) error {
-	return os.WriteFile(filepath.Join(dir, name), []byte(content), 0o600)
 }

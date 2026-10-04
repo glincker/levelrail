@@ -3,7 +3,6 @@ package e2e
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -15,60 +14,7 @@ import (
 	dockerclient "github.com/docker/docker/client"
 
 	"github.com/GLINCKER/levelrail/internal/api"
-	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 )
-
-// liveBuildEnv bundles the real Docker client, real BuildKit client, and
-// real docker.Runtime every live test in this package that builds an
-// actual image needs, cleanly skipping the calling test if Docker or
-// BuildKit aren't reachable. Extracted here once deploy_test.go,
-// compose_healthcheck_test.go, and multi_service_test.go had each grown
-// their own copy of the identical skip-if-unavailable setup.
-type liveBuildEnv struct {
-	DockerCli   *dockerclient.Client
-	BuildClient *build.Client
-	Runtime     docker.Runtime
-}
-
-func newLiveBuildEnv(t *testing.T) liveBuildEnv {
-	t.Helper()
-
-	dockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
-	if err != nil {
-		t.Skipf("no docker client available: %v", err)
-	}
-	t.Cleanup(func() { _ = dockerCli.Close() })
-
-	pingCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	_, err = dockerCli.Ping(pingCtx)
-	cancel()
-	if err != nil {
-		t.Skipf("docker daemon not reachable: %v", err)
-	}
-
-	connectCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	buildClient, err := build.NewClient(connectCtx, dockerCli)
-	cancel()
-	if err != nil {
-		t.Skipf("could not connect to buildkit: %v", err)
-	}
-	t.Cleanup(func() { _ = buildClient.Close() })
-
-	runtime, err := docker.NewClient()
-	if err != nil {
-		t.Fatalf("docker.NewClient() error = %v", err)
-	}
-	t.Cleanup(func() {
-		if err := runtime.Close(); err != nil {
-			t.Errorf("closing docker.Client: %v", err)
-		}
-	})
-
-	return liveBuildEnv{DockerCli: dockerCli, BuildClient: buildClient, Runtime: runtime}
-}
 
 // discardTestWriter throws away a router's own request logging, the
 // same discard-writer shape test/e2e/metrics_test.go's own
@@ -143,33 +89,5 @@ func removeContainerAndVolumes(cli *dockerclient.Client, containerName string, n
 	_ = cli.ContainerRemove(ctx, containerName, container.RemoveOptions{Force: true, RemoveVolumes: true})
 	for _, name := range namedVolumes {
 		_ = cli.VolumeRemove(ctx, name, true)
-	}
-}
-
-// reconcileUntilAppReady calls ctrl.Reconcile repeatedly until it
-// reports a True Ready condition or overallTimeout elapses. A single
-// Reconcile call isn't enough for a dependent service started right
-// after its own dependency: depends_on only orders container start, it
-// never waits for that dependency's own readiness (internal/compose's
-// documented limitation), so a db-backed app can exit once on its first
-// connection attempt and only recover on the next pass, the same resync
-// shape reconcile.Engine applies in production.
-func reconcileUntilAppReady(parent context.Context, ctrl *application.Controller, overallTimeout time.Duration) (reconcile.Result, error) {
-	deadline := time.Now().Add(overallTimeout)
-	var lastResult reconcile.Result
-	var lastErr error
-	for {
-		lastResult, lastErr = ctrl.Reconcile(parent)
-		if lastErr == nil && len(lastResult.Conditions) > 0 && lastResult.Conditions[0].Status == reconcile.ConditionTrue {
-			return lastResult, nil
-		}
-		if time.Now().After(deadline) {
-			return lastResult, fmt.Errorf("did not reach a True Ready condition within %s: last error = %v, last result = %+v", overallTimeout, lastErr, lastResult)
-		}
-		select {
-		case <-parent.Done():
-			return lastResult, parent.Err()
-		case <-time.After(3 * time.Second):
-		}
 	}
 }

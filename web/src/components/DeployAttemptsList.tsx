@@ -1,5 +1,6 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ScrollIcon,
   ArrowCounterClockwiseIcon,
@@ -34,7 +35,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { EmptyState } from '@/components/ui/empty-state'
-import { toast } from '@/components/ui/toast'
+import { toast, toastAction } from '@/components/ui/toast'
 
 // Scrolls to the "Trigger a deploy" card pinned above this list on the
 // same route (see routes/apps/$name.tsx's showDeployTrigger) rather than
@@ -216,6 +217,8 @@ function DeployAttemptRow({
   protectedEnv: EnvironmentResource | undefined
   ackProtected: boolean
 }) {
+  const { t } = useTranslation('common')
+  const navigate = useNavigate()
   const triggerDeploy = useTriggerDeploy(appName)
   const rollbackTo = useRollbackToDeploy(appName)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
@@ -242,12 +245,21 @@ function DeployAttemptRow({
     (protectedEnv?.protected && !ackProtected)
 
   const notifyRollback = (result: Parameters<typeof isPendingApproval>[0]) => {
+    const pending = isPendingApproval(result)
     toast.add({
-      title: isPendingApproval(result)
+      title: pending
         ? 'Rollback is waiting for approval.'
         : 'Rollback triggered.',
       description: `Redeploying ${unpinnedImage(attempt.image)}.`,
       type: 'success',
+      actionProps: pending
+        ? undefined
+        : toastAction(t('actions.viewOverview'), () => {
+            void navigate({
+              to: '/apps/$name/overview',
+              params: { name: appName },
+            })
+          }),
     })
   }
 

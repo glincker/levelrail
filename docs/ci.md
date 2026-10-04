@@ -23,13 +23,16 @@ A PR runs only the work its diff can affect:
 - **Workflow files only**: actionlint on the changed workflow files, inside
   the Lint job.
 
-A `main` push is scoped the same way, against `github.event.before`: most
-merges only re-verify what their own diff touched, not the whole tree.
-`nightly.yml` runs the full `-race`, no `-short` sweep once a day: that is
-the actual safety net for anything the PR-time scoping under-selects, not
-a second full run on every single merge. A push falls back to `--full`
-when its `before` SHA is missing or unresolvable (a force-pushed or newly
-created `main`, which branch protection should make rare).
+A `main` push only runs `Build, vet` (scoped against `github.event.before`,
+same as a PR, falling back to `--full` when that SHA is missing or
+unresolvable). `Lint`, every `Test (*)` job, `Coverage gate`,
+`Web (tsc, eslint)` and `install.sh` all skip on `push`: branch protection
+means a commit only reaches `main` by the merge queue fast-forwarding to a
+commit `merge_group` already fully verified, so re-running them finds
+nothing new. See "Concurrency and merge queue" below for the reasoning and
+the risk it accepts. `nightly.yml` runs the full `-race`, no `-short` sweep
+once a day regardless: the actual safety net for anything the PR-time
+scoping under-selects, and now also for that residual risk.
 
 ## How a change is scoped
 
@@ -66,9 +69,19 @@ selects that package alone, not its dependents. Lanes:
   lane with bounded `-p` and the rest share `rest`.
 - No lane at all when nothing Go-related is affected.
 
-The coverage gate follows the plan: a full run checks the 70% aggregate for
-`internal/` and the changed-line gate, a scoped run checks the changed-line
-gate only (a partial profile makes the aggregate meaningless, same as the
+`test/e2e` is split from `test/e2e/reconcile` along the one dependency that
+mattered: only the former constructs a live `api.Router`. Since
+`internal/api` is the package most PRs touch, a one-file fix there used to
+select the whole 36-file suite through the test-import walk; now it selects
+only the ~18 files that actually exercise the HTTP API, and
+`test/e2e/reconcile`'s ~18 reconciler/Docker-only tests run only when a PR's
+diff genuinely reaches something they import (see
+`test/e2e/testenv`'s doc comment for the shared, `internal/api`-free
+helpers both packages use).
+
+The coverage gate follows the plan: a full run checks the 70% aggregate
+for `internal/`, a scoped run checks the changed-line gate only, at a
+lower 50% bar (a partial profile makes the aggregate meaningless, same as the
 pre-push hook).
 
 ## Required checks
@@ -103,6 +116,18 @@ stable if jobs are later split or renamed.
 | `dependabot-auto-merge.yml` | Dependabot PRs only (listed as skipped elsewhere) | |
 | SonarCloud, Greptile | Every PR | GitHub Apps, not Actions: they run on the vendor's infrastructure and use no Actions minutes |
 
+## Scheduled, not PR-triggered
+
+- `branch-cleanup.yml`: deletes a merged PR's head branch immediately, plus a
+  weekly sweep (Monday) for anything left over from before branch deletion
+  on merge was enabled.
+- `backup-tags.yml`: moves `backup/daily` to `main`'s tip every day, and
+  `backup/weekly` on Mondays, as a known-name emergency rollback target.
+  Tags, not branches, so they never show up in the list the cleanup above
+  is shrinking. Every commit on `main` is already a valid, permanent
+  rollback point on its own (no force-push, no deletion); these tags exist
+  only so finding one doesn't mean hunting for a SHA by hand first.
+
 ## Caching
 
 - Go: `~/.cache/go-build` and `~/go/pkg/mod`, one cache per job kind (build,
@@ -136,13 +161,37 @@ first: not worth it while the complaint is per-PR wait time, not total
 run count.
 
 A merge queue means every merged commit triggers two CI runs on the same
-tree: `merge_group` (pre-merge gate) then `push` (post-merge). Both are
-scoped identically now, so the second run costs roughly what the first
-did, not a forced full sweep: real but small duplication, not the
-dominant cost. Collapsing it to one run would mean either skipping
-`merge_group` (losing the pre-merge gate) or skipping `push` (losing the
-cache save and `codeql.yml`/`secret-scan.yml`'s own push triggers, plus
-any direct push that bypassed the queue), so it stays as is.
+tree: `merge_group` (pre-merge gate) then `push` (post-merge). Both used
+to be scoped identically, so the second run cost roughly what the first
+did on every full-scope PR (a schema migration, `go.mod`, or the
+pipeline itself), which made the duplication large exactly when it
+mattered most, not small.
+
+Fixed 2026-10-04: `Lint`, `Test (*)` (every lane plus the quarantined
+and aggregator jobs), `Coverage gate`, `Web (tsc, eslint)` and
+`install.sh` all skip on `push` now (`github.event_name != 'push'` in
+each job's own `if`), reported as a passing skip the same way an area
+with no changed files already was. `merge_group` is the one branch
+protection actually requires before admission, and branch protection
+also blocks every other path onto `main`, so a `push` to `main` can
+only be the merge queue fast-forwarding to a commit `merge_group` just
+finished verifying: re-running the same suite a second time added no
+new information, only cost.
+
+`Build, vet` keeps running on `push` unconditionally: it is cheap
+(around a minute) and is what refreshes the daily Go build cache
+(`save: ${{ github.event_name == 'push' }}`), which PR runs depend on
+staying warm. `codeql.yml` and `secret-scan.yml` are separate workflow
+files with their own `push` triggers, unaffected by anything in
+`ci.yml`.
+
+The residual risk this accepts: a commit that reaches `main` by some
+path branch protection was supposed to block (a misconfigured ruleset,
+an admin override) now gets zero same-day verification instead of a
+redundant one, until `nightly.yml`'s full `-race` sweep catches it
+within 24 hours. That is the same safety net the PR-time scoping above
+already leans on for whatever it under-selects, just covering one more
+case.
 
 ## Measured cost before this change
 
@@ -248,3 +297,13 @@ scripts/ci-go-plan.sh <sha>^ <sha>
 - To force the full suite on a PR, change `.github/workflows/ci.yml` or one
   of the pipeline scripts, or run the nightly workflow on the branch with
   `workflow_dispatch`.
+- The docker/rest lane's `go test -timeout` (27m, job `timeout-minutes: 32`)
+  has headroom above `test/e2e`'s own measured cost, not a tight fit:
+  `test/e2e` runs a fixed ~16-template fleet plus a growing set of
+  per-batch catalog live tests sequentially in one binary (no
+  `t.Parallel()`), so its floor rises independent of any one PR's diff
+  size. #925 and #912 both hit the old 18m/22m budget this way, not from
+  a real hang. Raising the ceiling again later means the floor has grown
+  further; parallelizing those subtests (independent Docker networks per
+  template, should be safe) is the real fix but is a bigger, unverified
+  change not made here.

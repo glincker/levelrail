@@ -85,6 +85,7 @@ const fakeGitHubRepo = {
   private: false,
   default_branch: 'main',
   clone_url: 'https://github.com/acme/app.git',
+  account_type: 'organization' as const,
 }
 
 const fakeGiteaRepo = {
@@ -292,7 +293,7 @@ describe('GitRepoSourcePicker', () => {
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
-      'GET /api/v1/github-app/repos': jsonRoute([fakeGitHubRepo]),
+      'GET /api/v1/github-app/repos': jsonRoute({ repos: [fakeGitHubRepo] }),
     })
 
     renderPicker()
@@ -324,7 +325,7 @@ describe('GitRepoSourcePicker', () => {
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
-      'GET /api/v1/github-app/repos': jsonRoute([fakeGitHubRepo]),
+      'GET /api/v1/github-app/repos': jsonRoute({ repos: [fakeGitHubRepo] }),
       'GET /api/v1/github-app/repos/acme/app/branches': jsonRoute([
         { name: 'main', commit_sha: 'abc123' },
       ]),
@@ -358,6 +359,70 @@ describe('GitRepoSourcePicker', () => {
       branch: 'main',
       providerRef: { kind: 'github', owner: 'acme', repo: 'app' },
     })
+  })
+
+  it('groups GitHub repos by connected account and filters the grid via chips, without hiding another account on a listing error', async () => {
+    providers = [
+      {
+        provider: 'github',
+        connected: true,
+        can_list_branches: true,
+        can_register_webhook: true,
+        can_auth_clone: true,
+      },
+      disconnected('gitlab'),
+      disconnected('bitbucket'),
+      disconnected('gitea'),
+    ]
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': jsonRoute(providers),
+      'GET /api/v1/github-app/repos': jsonRoute({
+        repos: [
+          fakeGitHubRepo,
+          {
+            full_name: 'acme-person/dotfiles',
+            name: 'dotfiles',
+            owner_login: 'acme-person',
+            private: true,
+            default_branch: 'main',
+            clone_url: 'https://github.com/acme-person/dotfiles.git',
+            account_type: 'user',
+          },
+        ],
+        errors: [
+          { account_login: 'suspended-org', error: 'installation suspended' },
+        ],
+      }),
+    })
+
+    renderPicker()
+    await screen.findByText('Repository')
+
+    // Three accounts (two with repos, one suspended): the "All" chip
+    // plus one per account, not the single ungrouped grid a lone
+    // account would get. Chips only mount once the repos fetch itself
+    // resolves, so this waits rather than asserting immediately.
+    expect(
+      await screen.findByRole('button', { name: 'All' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'acme' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Personal (acme-person)' }),
+    ).toBeInTheDocument()
+    // "suspended-org" appears twice (its filter chip and its own group
+    // header), so this checks presence via getAllByText rather than the
+    // single-match getByText the other two account names use above.
+    expect(screen.getAllByText('suspended-org').length).toBeGreaterThan(0)
+    expect(screen.getByText('installation suspended')).toBeInTheDocument()
+
+    // All accounts' repos show at once by default.
+    expect(screen.getByText('acme/app')).toBeInTheDocument()
+    expect(screen.getByText('acme-person/dotfiles')).toBeInTheDocument()
+
+    // Picking the "acme" chip narrows the grid to that account alone.
+    fireEvent.click(screen.getByRole('button', { name: 'acme' }))
+    expect(screen.getByText('acme/app')).toBeInTheDocument()
+    expect(screen.queryByText('acme-person/dotfiles')).not.toBeInTheDocument()
   })
 
   it('shows a real branch select for a connected GitLab project, not the old free-text fallback', async () => {

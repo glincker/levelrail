@@ -3724,11 +3724,30 @@ func (c *Client) DisconnectGitHubApp(ctx context.Context) error {
 }
 
 // ListGitHubAppRepos calls GET /api/v1/github-app/repos: every
-// repository the connected GitHub App installation can access.
-func (c *Client) ListGitHubAppRepos(ctx context.Context) ([]GitHubAppRepoResource, error) {
-	var out []GitHubAppRepoResource
+// repository every connected installation can access, plus one error
+// per installation that failed to list (migrations/0282 made
+// installations one-to-many).
+func (c *Client) ListGitHubAppRepos(ctx context.Context) (GitHubAppRepoListResource, error) {
+	var out GitHubAppRepoListResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/github-app/repos", nil, &out)
 	return out, err
+}
+
+// ListGitHubAppInstallations calls GET
+// /api/v1/github-app/installations: every connected GitHub account/org,
+// plus the URL to connect another one.
+func (c *Client) ListGitHubAppInstallations(ctx context.Context) (GitHubAppInstallationListResource, error) {
+	var out GitHubAppInstallationListResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/github-app/installations", nil, &out)
+	return out, err
+}
+
+// DeleteGitHubAppInstallation calls DELETE
+// /api/v1/github-app/installations/{id}: disconnects one account/org.
+// Refused with a 409 (surfaced as *APIError) while a git source still
+// points at a repo under that account.
+func (c *Client) DeleteGitHubAppInstallation(ctx context.Context, id int64) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/github-app/installations/"+strconv.FormatInt(id, 10), nil, nil)
 }
 
 // ListGitHubAppBranches calls GET

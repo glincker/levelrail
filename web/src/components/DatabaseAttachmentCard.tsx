@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   DatabaseIcon,
   PlugsConnectedIcon,
@@ -15,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
-import { toast } from '@/components/ui/toast'
+import { toast, toastAction } from '@/components/ui/toast'
 import { DisconnectConnectionDialog } from './ConnectionCard'
 import { useSetAppDatabase, useClearAppDatabase } from '../queries/apps'
 import { useDatabases } from '../queries/databases'
@@ -42,6 +44,8 @@ const fieldOptions = [
 ]
 
 export function DatabaseAttachmentCard({ app }: { app: AppDetail }) {
+  const { t } = useTranslation('common')
+  const navigate = useNavigate()
   const [selectedDatabase, setSelectedDatabase] = useState('')
   const [envVar, setEnvVar] = useState('DATABASE_URL')
   const [field, setField] = useState('url')
@@ -75,11 +79,18 @@ export function DatabaseAttachmentCard({ app }: { app: AppDetail }) {
       },
       {
         onSuccess: () => {
+          const attachedName = selectedDatabase
           setSelectedDatabase('')
           toast.add({
             title: 'Database attached.',
             description: `${app.name} now gets its connection value as ${envVar || 'DATABASE_URL'}.`,
             type: 'success',
+            actionProps: toastAction(t('actions.viewDatabase'), () => {
+              void navigate({
+                to: '/databases/$name',
+                params: { name: attachedName },
+              })
+            }),
           })
         },
         onError: (error) => {

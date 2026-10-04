@@ -134,6 +134,14 @@ const (
 
 	httpShutdownTimeout = 10 * time.Second
 
+	// agentGRPCShutdownTimeout bounds GracefulStop: it waits for every
+	// open Session stream to close, which a live, well-behaved agent
+	// never does on its own since nothing tells it the server is
+	// restarting. Unbounded, that stalls process exit until systemd's
+	// own TimeoutStopSec (90s default) SIGKILLs it, holding the
+	// ingress ports bound by a process that already stopped serving.
+	agentGRPCShutdownTimeout = 5 * time.Second
+
 	// metricsCollectionInterval matches the observability design's "15s
 	// resolution" default. Not env-configurable like retention below:
 	// resolution changes the shape of every stored sample going forward,
@@ -555,7 +563,18 @@ func run(logger *slog.Logger) error {
 			logger.Error("agent grpc server stopped", slog.String("error", err.Error()))
 		}
 	}()
-	defer agentGRPCServer.GracefulStop()
+	// Fired as soon as ctx is cancelled (SIGTERM), overlapping with the
+	// rest of this function's own shutdown sequence (engine drain, HTTP
+	// server shutdown) rather than waiting for stopAgentGRPCServer's own
+	// defer to run: a well-behaved agent's GoAway round trip then has the
+	// whole rest of shutdown to complete in, so GracefulStop below
+	// usually finds nothing left to wait for instead of burning its full
+	// timeout.
+	go func() {
+		<-ctx.Done()
+		agentServer.NotifyShutdown()
+	}()
+	defer stopAgentGRPCServer(agentGRPCServer, logger, agentGRPCShutdownTimeout)
 
 	secretsManager, masterKeyFilePath, err := loadSecretsManager(db, agentDataDir, secretsManagerOptions(logger)...)
 	if err != nil {
@@ -1083,6 +1102,34 @@ func run(logger *slog.Logger) error {
 		return nil // Ctrl+C / SIGTERM is a clean shutdown, not a failure
 	}
 	return engineErr
+}
+
+// gracefulStopper is the subset of *grpc.Server stopAgentGRPCServer
+// needs, narrowed so a test can exercise the timeout/fallback path
+// without a real listener and a real stuck stream.
+type gracefulStopper interface {
+	GracefulStop()
+	Stop()
+}
+
+// stopAgentGRPCServer bounds GracefulStop with timeout and falls back
+// to the hard Stop, so a live agent Session stream can no longer stall
+// process exit until systemd SIGKILLs it (see agentGRPCShutdownTimeout's
+// own doc comment).
+func stopAgentGRPCServer(server gracefulStopper, logger *slog.Logger, timeout time.Duration) {
+	done := make(chan struct{})
+	go func() {
+		server.GracefulStop()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(timeout):
+		logger.Warn("agent grpc server did not drain in time, forcing stop",
+			slog.Duration("timeout", timeout))
+		server.Stop()
+		<-done
+	}
 }
 
 func openStore(ctx context.Context) (*store.DB, error) {

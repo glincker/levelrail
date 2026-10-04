@@ -2,7 +2,7 @@
 // batch catalog entries boot for real: the same parse/resolve/translate
 // pipeline handleDeployCompose uses, reconciled against real Docker in
 // dependency order, secrets included.
-package e2e
+package reconcile
 
 import (
 	"context"

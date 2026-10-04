@@ -56,7 +56,7 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 	}
 
 	ctx := r.Context()
-	instanceURL, token, err := rt.mintGitHubAppInstallationToken(ctx)
+	instanceURL, token, err := rt.mintGitHubAppInstallationTokenForOwner(ctx, owner)
 	if err != nil {
 		rt.writeGitHubAppTokenError(w, "api: mint github app installation token for use-as-source failed", err)
 		return
