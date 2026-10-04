@@ -6,6 +6,8 @@ description: Seven curated starter-kit templates demonstrating real multi-servic
 
 Seven curated, tested multi-service templates in the `Starter Kits` category of the [service template catalog](/templates-and-registry). Unlike the rest of the catalog, which deploys one well-known open-source project per entry, these demonstrate common **wiring patterns** across two or three services: a web tier talking to a database, a worker pulling off a queue, a reverse proxy fanning out to backends. Swap the `web`/`api`/`worker` service's `image:` for your own build output; the environment variable names and `depends_on:` graph are the part meant to be copied as-is.
 
+![Levelrail service templates page with category filters and the Starter Kits cards at the top](assets/screenshots/templates-catalog.png)
+
 See the [full template catalog](/template-catalog) for every other category (AI, Monitoring, Productivity, and the rest).
 
 Every template's Compose body is parsed, validated, and expanded through `internal/compose.Parse`/`Validate`/`ToDesiredServices` in `internal/catalog/catalog_test.go`, the same check every catalog entry gets. They have not been deployed against real Docker as part of this change; only structural/schema validation has run.

@@ -301,7 +301,7 @@ secret_status="$(curl -s -o /dev/null -w '%{http_code}' -X PUT \
   -H "Authorization: Bearer ${API_TOKEN}" -H "Content-Type: application/json" \
   -d '{"value":"docs-example-secret-value"}' \
   "$BASE_URL/api/v1/apps/${HERO_APP}/secrets/API_KEY")"
-[ "$secret_status" = "200" ] || fail "setting example secret on $HERO_APP returned $secret_status, expected 200"
+[ "$secret_status" = "204" ] || fail "setting example secret on $HERO_APP returned $secret_status, expected 204"
 
 log "scaling $HERO_APP to 2 replicas for the load balancer screenshot"
 # domains is set here too: the ingress reconciler only ever calls

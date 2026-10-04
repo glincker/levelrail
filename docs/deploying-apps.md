@@ -365,9 +365,9 @@ levelrail-cli apps env export <name> --out backup.env             # or stdout wi
 
 Apps with `{ secret: true }` env vars store encrypted values locally. After an app is created, update secrets individually or in bulk.
 
-An app's Environment tab lists every plain and secret-backed variable together, with age and staleness shown per secret:
+An app's Environment tab holds plain variables and write-only secrets, with each secret's age shown:
 
-![Levelrail app Environment tab showing plain env vars and a locked, age-tracked secret](assets/screenshots/app-environment.png)
+![Levelrail app Environment tab with the variables editor and a locked secret showing how long ago it was set](assets/screenshots/app-environment.png)
 
 ### Single secret
 

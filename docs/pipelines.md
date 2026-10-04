@@ -63,7 +63,9 @@ What happens on a push to `main`:
 
 ## Where to find it
 
-Open **Pipelines** in the main sidebar (or press the command palette and type "Pipelines") to see recent runs across every app you can read. The page shows how many runs are active, how many failed in the last 24 hours, how many wait for approval, and the 24 hour success rate. A "Needs attention" strip lists failed runs and runs waiting on an approval or a fork hold, with **Approve** and **Reject** buttons when you hold the required ability. The table below filters by status, app, pipeline name, and trigger, loads more on demand, and refreshes on its own while a run is active. Click a row to open the run. With no runs yet, the page shows a sample pipeline and a **Create a pipeline** button that asks for an app and opens its Pipelines tab.
+![Levelrail Pipelines page before any run exists, showing a sample pipeline file and the Create a pipeline button](assets/screenshots/pipelines.png)
+
+Open **Pipelines** in the main sidebar (or press the command palette and type "Pipelines") to see recent runs across every app you can read. The screenshot shows the first-run view, before any pipeline has run. The page shows how many runs are active, how many failed in the last 24 hours, how many wait for approval, and the 24 hour success rate. A "Needs attention" strip lists failed runs and runs waiting on an approval or a fork hold, with **Approve** and **Reject** buttons when you hold the required ability. The table below filters by status, app, pipeline name, and trigger, loads more on demand, and refreshes on its own while a run is active. Click a row to open the run. With no runs yet, the page shows a sample pipeline and a **Create a pipeline** button that asks for an app and opens its Pipelines tab.
 
 The same view is available from the CLI and API:
 

@@ -75,3 +75,33 @@
   width: 1280
   height: 800
   wait: 2000
+
+- output: docs/assets/screenshots/templates-catalog.png
+  url: __BASE_URL__/templates/
+  width: 1280
+  height: 900
+  wait: 3000
+
+- output: docs/assets/screenshots/deployments-all.png
+  url: __BASE_URL__/deployments
+  width: 1500
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/pipelines.png
+  url: __BASE_URL__/pipelines/
+  width: 1280
+  height: 700
+  wait: 2000
+
+- output: docs/assets/screenshots/backups.png
+  url: __BASE_URL__/backups/
+  width: 1280
+  height: 700
+  wait: 2000
+
+- output: docs/assets/screenshots/node-providers.png
+  url: __BASE_URL__/settings/node-providers
+  width: 1280
+  height: 800
+  wait: 2000
