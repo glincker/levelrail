@@ -486,7 +486,7 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 **What's scoped:** One new agent request/response message, plus a case in `internal/agent.Execute` calling `Mesh.Apply`. It's defined work, not built.
 
-This is the same gap the `::: danger` callout near the top of this page describes: until mesh spans nodes, a domain-routed app placed off the control-plane node is unreachable via its domain, and `levelrail-cli doctor`'s `cross_node_ingress` check exists to catch it.
+This is the same gap the `::: danger` callout near the top of this page describes: until mesh spans nodes, a domain-routed app placed off the control-plane node is unreachable via its domain, and `levelrail-cli doctor`'s `cross_node_ingress` check exists to catch it. See [Domains and ingress: Traffic](domains-and-ingress.md#traffic-routing-status-for-every-domain-at-a-glance) for the dashboard page that surfaces exactly this, per domain, with a one-click fix.
 
 ## API reference
 

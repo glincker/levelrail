@@ -266,6 +266,37 @@ The device-code flow (`POST /api/v1/auth/device/start` and `/token`, `levelrail-
 - The resulting token inherits exactly that operator's abilities.
 - The CLI never picks the permissions.
 
+### Session links
+
+A session link is a one-time login URL rather than a credential you type. Mint one from an already-authenticated context and hand the URL to whatever needs to sign in next: CI, an AI agent driving the dashboard through browser automation, or a fresh incognito window you don't want to type a password into. Opening it signs that browser in immediately, no username or password prompt.
+
+`POST /api/v1/auth/session-links` mints one. Gated `root`, because the link it produces is root-equivalent: anyone who gets hold of the token before it's used can sign in as whoever minted it.
+
+```bash
+curl -s -X POST https://your-control-plane/api/v1/auth/session-links \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```json
+{ "token": "st_...", "url": "https://your-control-plane/login?session_link=st_..." }
+```
+
+Open the `url` in a browser. `/login?session_link=<token>` consumes the token automatically on page load (`GET /api/v1/auth/session-links/{token}/consume`, public, gated by possession of the token itself) and establishes a session, the same way a normal login does. No form, no click-through.
+
+**CLI shortcut**
+
+```bash
+levelrail-cli auth session-link
+# prints the ready-to-open URL and nothing else
+```
+
+**Security model**
+
+- **Short-lived.** The token expires 2 minutes after minting, whether or not it's used.
+- **Single-use.** Consuming it is an atomic claim; if two requests race on the same token, at most one succeeds and the other gets the same "invalid or expired" error a stale token would.
+- **Can't escalate.** The resulting session carries exactly the minting identity's own abilities, snapshotted at mint time, never more. Minting one already requires `root`; it's a convenience for an identity that could already do anything, not a way to grant new access.
+- **Minting a link on behalf of an API token** (rather than a logged-in user) produces a session pinned to that token's ability snapshot, since there's no user row to attach an ordinary session to. Revoking the underlying token afterward doesn't retroactively end a session already established from it, the same way revoking a token never ends sessions a user already has open.
+
 ### Audit log
 
 Every request gated above `AbilityRead` (write, deploy, root-tier, and `read:sensitive`) gets one row:
@@ -454,6 +485,13 @@ Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automati
 | `GET` | `/api/v1/auth/tokens` | session |
 | `DELETE` | `/api/v1/auth/tokens/{id}` | session |
 
+**Session links**
+
+| Method | Path | Ability |
+| --- | --- | --- |
+| `POST` | `/api/v1/auth/session-links` | `root` |
+| `GET` | `/api/v1/auth/session-links/{token}/consume` | public (token required) |
+
 **Invites**
 
 | Method | Path | Ability |
@@ -516,6 +554,7 @@ levelrail-cli tokens revoke <id>
 # Auth: login, identity check, two-factor
 levelrail-cli auth login [--device] [--token-name NAME] [--abilities LIST] [--expires-in-days N]
 levelrail-cli auth whoami
+levelrail-cli auth session-link
 levelrail-cli auth 2fa status
 levelrail-cli auth 2fa setup
 levelrail-cli auth 2fa enable --code CODE
