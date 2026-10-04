@@ -428,7 +428,7 @@ func describeResolution(res deploy.ImageResolution) (digestReason, reason string
 func (rt *Router) handleDeployHistory(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
-	_, err := rt.apps.GetDesiredService(r.Context(), name)
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -444,6 +444,12 @@ func (rt *Router) handleDeployHistory(w http.ResponseWriter, r *http.Request) {
 		rt.logger.Error("api: deploy history failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
+	}
+	// This app's own controller never sees CrossNodeIngress, reported
+	// under the ingress controller's own singleton name: see
+	// crossNodeIngressAppCondition's doc comment.
+	if cond := rt.crossNodeIngressAppCondition(*svc); cond != nil {
+		conditions = append(conditions, *cond)
 	}
 	writeJSON(w, http.StatusOK, conditions)
 }

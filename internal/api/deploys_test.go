@@ -278,6 +278,64 @@ func TestHandleDeployHistory(t *testing.T) {
 	}
 }
 
+// A domain-bearing app placed off the control plane's own node is
+// unreachable (no mesh path yet), but its own reconcile controller never
+// reports that: the ingress controller does, under its own singleton
+// name. handleDeployHistory must inject the synthetic condition itself
+// so the app's status stops reading "Healthy" for an app nobody outside
+// the control plane's own node can reach.
+func TestHandleDeployHistory_CrossNodeDomainApp_AddsUnreachableCondition(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveNode(ctx, store.Node{ID: "node-2", Name: "worker-1", Status: store.NodeStatusOnline, Schedulable: true}); err != nil {
+		t.Fatalf("SaveNode() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, store.DesiredService{
+		Name: "static-test", Image: "nginx:1.27-alpine", Port: 80,
+		Domains: []string{"levelrail-test-2.levelrail.com"},
+	}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "static-test", "node-2"); err != nil {
+		t.Fatalf("UpdateServiceNode() error = %v", err)
+	}
+	if err := db.UpsertConditions(ctx, applicationControllerName("static-test"), []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Created"},
+	}); err != nil {
+		t.Fatalf("seed conditions: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/static-test/deploys", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var got []reconcile.Condition
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("len(conditions) = %d, want 2 (Ready + synthetic CrossNodeIngress), got %+v", len(got), got)
+	}
+	if summarizeAppConditions(got).Label != "Attention needed" {
+		t.Errorf("summarizeAppConditions(got).Label = %q, want %q", summarizeAppConditions(got).Label, "Attention needed")
+	}
+	found := false
+	for _, c := range got {
+		if c.Type == "CrossNodeIngress" {
+			found = true
+			if c.Status != reconcile.ConditionFalse {
+				t.Errorf("CrossNodeIngress.Status = %q, want %q", c.Status, reconcile.ConditionFalse)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("conditions %+v, want a CrossNodeIngress condition", got)
+	}
+}
+
 func TestHandleAutoRollback_GetDefaultOffAndSetToggles(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
