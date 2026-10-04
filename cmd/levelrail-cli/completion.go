@@ -109,7 +109,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"untag":              nil,
 		"egress":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"build-cache":        {subs: map[string]*cmdNode{"show": nil, "set": nil, "clear": nil, "remove": nil}},
-		"health":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
+		"health":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil, "discover": nil}},
 		"health-score":       nil,
 		"volumes":            {subs: map[string]*cmdNode{"get": nil, "attach": nil, "detach": nil}},
 		"integrations":       {subs: map[string]*cmdNode{"catalog": nil, "list": nil, "add": nil, "remove": nil}},
@@ -251,8 +251,10 @@ var cliCommandTree = map[string]*cmdNode{
 }
 
 // globalFlags lists the flags apiFlagSet registers on nearly every
-// subcommand (flagutil.go), offered as completions at every command depth.
-var globalFlags = []string{"--json", "--output", "--query", "--token", "--api-url", "-h", "--help"}
+// subcommand (flagutil.go), plus the handful main.go's run() itself
+// strips out before dispatch (--debug, see extractDebugFlag), offered as
+// completions at every command depth.
+var globalFlags = []string{"--json", "--output", "--query", "--token", "--api-url", "--debug", "-h", "--help"}
 
 // treeEntry is cliCommandTree flattened to one entry per node that has
 // children: path is the space-joined verb sequence leading to that node

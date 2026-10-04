@@ -22,6 +22,8 @@ type (
 	appHealthResource                = apiclient.AppHealthResource
 	appHealthScoreResource           = apiclient.AppHealthScoreResource
 	appHealthScoreCategory           = apiclient.AppHealthScoreCategory
+	healthDiscoveryResponse          = apiclient.HealthDiscoveryResponse
+	healthDiscoveryAttempt           = apiclient.HealthDiscoveryAttempt
 	serviceHooks                     = apiclient.ServiceHooks
 	buildTriggerRequest              = apiclient.BuildTriggerRequest
 	buildTriggerRequestBuild         = apiclient.BuildTriggerRequestBuild

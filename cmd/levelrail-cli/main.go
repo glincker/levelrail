@@ -40,6 +40,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 func main() {
@@ -53,6 +55,16 @@ func main() {
 // flag-parsing logic can be exercised by table-driven tests without
 // forking a subprocess.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	args, debug := extractDebugFlag(args)
+	if debug {
+		apiclient.SetDebugTrace(stderr)
+	} else {
+		// Always set, never left as whatever a previous run() call in
+		// this process left behind (a test binary calls run() many
+		// times, e.g. completion_test.go's dispatch table).
+		apiclient.SetDebugTrace(nil)
+	}
+
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, rootUsage(prog))
 		return exitUsage
@@ -311,6 +323,9 @@ Usage:
   %[1]s app-volume-backups restores <app> <volume> [flags]   volume restore attempt history
 
 Auth and target:
+  --debug                 trace every outgoing request's method, URL, and
+                          response status/timing to stderr (never stdout);
+                          Authorization and any token are always redacted
   --token, %[2]s          API token
   --api-url, %[3]s      control plane base URL (default %[4]s)
   --profile, %[5]s        named credentials profile to use (default "%[6]s")

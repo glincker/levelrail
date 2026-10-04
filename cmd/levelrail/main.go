@@ -814,9 +814,10 @@ func run(logger *slog.Logger) error {
 		go models.NewEngineMetricsCollector(db, telemetryDB, nil, logger).Run(ctx, models.EngineMetricsInterval())
 	}
 
-	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
+	collector := telemetry.NewCollector(&multiNodeStatsSource{local: client, registry: agentRegistry}, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
-		if err := collector.Run(ctx, withModelTelemetryTargets(telemetryTargets(db, client), db, client, b.ShortName)); err != nil && !errors.Is(err, context.Canceled) {
+		targets := telemetryTargets(db, client, agentRegistry, meshCfg, logger)
+		if err := collector.Run(ctx, withModelTelemetryTargets(targets, db, client, b.ShortName)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("telemetry collector stopped", slog.String("error", err.Error()))
 		}
 	}()
@@ -1357,7 +1358,11 @@ func agentAdvertiseHost() string {
 // keeping this package decoupled from that one's internals: a service
 // converged to steady state has exactly one running container under its
 // service-name prefix, per that package's own blue-green design.
-func telemetryTargets(db *store.DB, runtime docker.Runtime) func(context.Context) ([]telemetry.Target, error) {
+// Resolves each service's own node via resolveNodeTransport, so a
+// remote node's container is discovered (and later polled for stats by
+// multiNodeStatsSource below) through its own agent, not local's.
+func telemetryTargets(db *store.DB, local docker.Runtime, registry *agent.Registry, meshCfg *meshSetup, logger *slog.Logger) func(context.Context) ([]telemetry.Target, error) {
+	deps := dynamicSourceDeps{meshCfg: meshCfg}
 	return func(ctx context.Context) ([]telemetry.Target, error) {
 		services, err := db.ListDesiredServices(ctx)
 		if err != nil {
@@ -1366,9 +1371,23 @@ func telemetryTargets(db *store.DB, runtime docker.Runtime) func(context.Context
 
 		var targets []telemetry.Target
 		for _, svc := range services {
-			containers, err := runtime.ListByPrefix(ctx, svc.Name+"-")
+			nodeID := runtimeNodeID(deps, svc.NodeID)
+			nodeRuntime, err := resolveNodeTransport(local, registry, nodeID)
 			if err != nil {
-				return nil, fmt.Errorf("list containers for %s: %w", svc.Name, err)
+				// A disconnected node just means this tick skips its
+				// services, the same "one broken resource must not
+				// block others" resolveNodeTransport's own doc comment
+				// already establishes for reconcile; metrics pick back
+				// up automatically once the node reconnects.
+				logger.Warn("telemetry: service's node unreachable, skipping this tick",
+					slog.String("service", svc.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
+				continue
+			}
+			containers, err := nodeRuntime.ListByPrefix(ctx, svc.Name+"-")
+			if err != nil {
+				logger.Warn("telemetry: list containers failed, skipping this tick",
+					slog.String("service", svc.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
+				continue
 			}
 			for _, c := range containers {
 				if !c.Running {
@@ -1377,11 +1396,12 @@ func telemetryTargets(db *store.DB, runtime docker.Runtime) func(context.Context
 				targets = append(targets, telemetry.Target{
 					ResourceID:  "service:" + svc.Name,
 					ContainerID: c.ID,
+					NodeID:      nodeID,
 				})
 			}
 		}
 
-		dbTargets, err := databaseTelemetryTargets(ctx, db, runtime)
+		dbTargets, err := databaseTelemetryTargets(ctx, db, local, registry, meshCfg, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -1400,7 +1420,8 @@ func telemetryTargets(db *store.DB, runtime docker.Runtime) func(context.Context
 // deterministic "db-" + name with no suffix, so an exact lookup is both
 // correct and avoids ListByPrefix("db-foo") also matching a differently
 // named "db-foobar" container.
-func databaseTelemetryTargets(ctx context.Context, db *store.DB, runtime docker.Runtime) ([]telemetry.Target, error) {
+func databaseTelemetryTargets(ctx context.Context, db *store.DB, local docker.Runtime, registry *agent.Registry, meshCfg *meshSetup, logger *slog.Logger) ([]telemetry.Target, error) {
+	deps := dynamicSourceDeps{meshCfg: meshCfg}
 	databases, err := db.ListDesiredDatabases(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list desired databases: %w", err)
@@ -1408,9 +1429,18 @@ func databaseTelemetryTargets(ctx context.Context, db *store.DB, runtime docker.
 
 	var targets []telemetry.Target
 	for _, d := range databases {
-		cs, err := runtime.InspectByName(ctx, "db-"+d.Name)
+		nodeID := runtimeNodeID(deps, d.NodeID)
+		nodeRuntime, err := resolveNodeTransport(local, registry, nodeID)
 		if err != nil {
-			return nil, fmt.Errorf("inspect container for database %s: %w", d.Name, err)
+			logger.Warn("telemetry: database's node unreachable, skipping this tick",
+				slog.String("database", d.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
+			continue
+		}
+		cs, err := nodeRuntime.InspectByName(ctx, "db-"+d.Name)
+		if err != nil {
+			logger.Warn("telemetry: inspect database container failed, skipping this tick",
+				slog.String("database", d.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
+			continue
 		}
 		if cs == nil || !cs.Running {
 			continue
@@ -1418,9 +1448,31 @@ func databaseTelemetryTargets(ctx context.Context, db *store.DB, runtime docker.
 		targets = append(targets, telemetry.Target{
 			ResourceID:  "database:" + d.Name,
 			ContainerID: cs.ID,
+			NodeID:      nodeID,
 		})
 	}
 	return targets, nil
+}
+
+// multiNodeStatsSource implements telemetry.StatsSource, routing each
+// poll through resolveNodeTransport (local client, or a remote agent's
+// Transport). Samples land centrally rather than per-node, a narrower
+// scope than ADR 008's ideal; see docs-local/agent-metrics-findings-2026-10-04.md.
+type multiNodeStatsSource struct {
+	local    docker.Runtime
+	registry *agent.Registry
+}
+
+func (s *multiNodeStatsSource) Stats(ctx context.Context, nodeID, containerID string) (docker.ContainerStats, error) {
+	nodeRuntime, err := resolveNodeTransport(s.local, s.registry, nodeID)
+	if err != nil {
+		return docker.ContainerStats{}, err
+	}
+	inspector, ok := nodeRuntime.(docker.StatsInspector)
+	if !ok {
+		return docker.ContainerStats{}, fmt.Errorf("telemetry: node %q's runtime cannot report container stats", nodeID)
+	}
+	return inspector.Stats(ctx, containerID)
 }
 
 // logTargets lists every desired service's currently running container(s)
@@ -3554,6 +3606,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 	appOpts := []application.Option{
 		application.WithDeployRecorder(deps.telemetryDB),
 		application.WithHookRunRecorder(deps.db),
+		application.WithProbeAttemptRecorder(deps.db),
 		application.WithStorageTargets(deps.db),
 		application.WithDatabaseAttachments(deps.db),
 		application.WithVaultSettings(deps.db),

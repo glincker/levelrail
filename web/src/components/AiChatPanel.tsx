@@ -1,9 +1,10 @@
-import { Suspense } from 'react'
+import { Suspense, useEffect, useRef } from 'react'
 import {
   ArrowClockwiseIcon,
   ChatCircleTextIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { useAiChatSession } from '../hooks/useAiChatSession'
+import { takeAiChatSeed } from '../lib/aiChatSeed'
 import { AiChatComposer } from './AiChatComposer'
 import { AiChatHistoryMenu } from './AiChatHistoryMenu'
 import { AiChatMessageList } from './AiChatMessageList'
@@ -27,6 +28,18 @@ export function AiChatPanel() {
     startNewSession,
     resumeSession,
   } = useAiChatSession()
+
+  // Consumes a seed queued by a dashboard "Ask AI" click (see
+  // lib/aiChatSeed.ts) the moment the first session is ready, so the
+  // assistant opens already holding the specific item's context.
+  const seededRef = useRef(false)
+  useEffect(() => {
+    if (seededRef.current) return
+    if (connectionState !== 'ready' || !sessionId) return
+    seededRef.current = true
+    const seed = takeAiChatSeed()
+    if (seed) void sendMessage(seed)
+  }, [connectionState, sessionId, sendMessage])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">

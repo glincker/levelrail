@@ -44,10 +44,11 @@ export function SettingsScopedSidebar() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const stored = readStoredOpenGroups()
     if (stored) return stored
-    const activeSection = sections.find((section) =>
-      section.items.some((item) => item.to === pathname),
+    // No stored preference yet: open every group by default so a first
+    // visit doesn't require a click per heading just to see what's inside.
+    return Object.fromEntries(
+      sections.map((section) => [section.heading, true]),
     )
-    return activeSection ? { [activeSection.heading]: true } : {}
   })
 
   useEffect(() => {

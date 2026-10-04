@@ -87,3 +87,21 @@ export function useUpdateEmailSettings() {
     },
   })
 }
+
+export async function sendTestEmail(to: string): Promise<void> {
+  const res = await fetch('/api/v1/settings/email/test', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to }),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `send test email failed: ${res.status}`),
+    )
+  }
+}
+
+export function useSendTestEmail() {
+  return useMutation({ mutationFn: sendTestEmail })
+}

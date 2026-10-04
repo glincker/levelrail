@@ -55,7 +55,7 @@ func TestCollector_Live_RealContainerToRealStore(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = store.Close() })
 
-	collector := NewCollector(client, store, time.Second, nil)
+	collector := NewCollector(LocalStatsSource{StatsInspector: client}, store, time.Second, nil)
 	if err := collector.CollectOnce(context.Background(), []Target{
 		{ResourceID: "service:live-test", ContainerID: id},
 	}); err != nil {

@@ -41,6 +41,16 @@ type ContainerStats struct {
 	DiskWriteBytes uint64
 }
 
+// StatsInspector is an optional Runtime capability for reading one-shot
+// container resource usage, checked via a type assertion rather than
+// added to Runtime itself, the same reasoning ExitStateInspector's own
+// doc comment gives (runtime.go): *Client satisfies it structurally
+// already, and internal/agent's GRPCTransport implements it by
+// dispatching to the remote node's own *Client over the wire.
+type StatsInspector interface {
+	Stats(ctx context.Context, containerID string) (ContainerStats, error)
+}
+
 // Stats fetches one resource-usage snapshot for the container with this
 // ID, via Docker's one-shot stats endpoint (a single accurate sample,
 // not a subscription): correct for a periodic 15s-resolution collector,
