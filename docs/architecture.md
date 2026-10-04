@@ -4,7 +4,7 @@ description: Core architecture of Levelrail's reconciler, agent, builds, ingress
 
 # Architecture
 
-> This is a developer-facing explanation of how Levelrail is built internally. If you are an operator looking for how to use the platform, start with [Getting started](getting-started.md) or browse the [How-to guides](README.md#how-to-guides) instead.
+This page explains how Levelrail is built, for contributors and for operators who want to know what runs on their server. To use the platform, start with [Getting started](getting-started.md).
 
 This is how Levelrail is actually built today, not just how the phase plan
 describes it. Where "shipped" and "designed for later" differ, this page
@@ -139,7 +139,7 @@ graph TD
 **Prometheus compatibility:** A Prometheus remote-read endpoint exposes the same data for anyone who wants to point their own Grafana at it.
 
 **Alerting and detection:** Built on top of the metrics/log layer:
-- Threshold-based alerting with notification channels (webhook, Slack, Discord, email, Telegram)
+- Alerting rules (threshold, crashloop, certificate expiry, and more) delivered over 18 notification kinds, from Slack, Discord, email, and Telegram to PagerDuty, ntfy, a generic webhook, and browser push
 - Crashloop detection that surfaces the last 200 lines of a failing container's logs directly in the UI
 
 ## Secrets

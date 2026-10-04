@@ -6,9 +6,9 @@ description: Complete index and guide to Levelrail's documentation organized by 
 
 This directory is the source of truth for Levelrail's user-facing and contributor-facing documentation.
 
-**It ships with the repo, not the binary.** Nothing under `/docs` is embedded into the control plane or Docker image. It lives on GitHub today; if it moves to a hosted site later, that is a publishing step on top of these files, not a rewrite of them.
+**It ships with the repo, not the binary.** Nothing under `/docs` is embedded into the control plane or Docker image. The same files are published at [levelrail.com](https://levelrail.com) and render on GitHub too.
 
-**It is plain Markdown, deliberately.** No MDX, no build-tool-specific syntax, no platform-specific frontmatter. Markdown renders anywhere (GitHub, static site generators, README previews, raw repo reads) without conversion. Platform-specific fields (`sidebar_position`, `layout`) get added later if needed, not guessed at now.
+**New here?** Read [Getting started](getting-started.md), then [Installing](installing.md) if you want the details behind the one-line install.
 
 ## How this index is organized
 
@@ -31,7 +31,7 @@ Four main types, plus two Levelrail-specific categories:
 
 | Doc | Covers |
 | --- | --- |
-| [getting-started.md](getting-started.md) | Start self-hosted with `install.sh` or build from source, then deploy a first app |
+| [getting-started.md](getting-started.md) | Install on a Linux server, sign in, and deploy a first app from the dashboard or the CLI |
 
 ### How-to guides
 
@@ -122,9 +122,9 @@ Four main types, plus two Levelrail-specific categories:
 | --- | --- |
 | [app-spec-reference.md](app-spec-reference.md) | Every `app.yaml` field, validated against `internal/spec`'s JSON Schema |
 | [feature-catalog.md](feature-catalog.md) | Every dashboard page, API resource group, and CLI command group, plus known UI gaps |
-| [cli-reference.md](cli-reference.md) | Every `levelrail` CLI command, organized by command group, extracted from source |
+| [cli-reference.md](cli-reference.md) | Every `levelrail-cli` command, organized by command group, extracted from source |
 | [mcp-tool-surface.md](mcp-tool-surface.md) | Estimated model context cost of the MCP tool list per toolset, and the `agent-core` profile |
-| [api-reference.md](api-reference.md) | Every REST route (272 total) grouped by resource, with ability and handler |
+| [api-reference.md](api-reference.md) | Every REST route grouped by resource, with ability and handler |
 
 ### Explanation
 
