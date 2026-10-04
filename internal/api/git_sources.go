@@ -30,6 +30,11 @@ type GitSourceStore interface {
 	SaveGitSource(ctx context.Context, g store.GitSource) error
 	GetGitSource(ctx context.Context, serviceName string) (*store.GitSource, error)
 	DeleteGitSource(ctx context.Context, serviceName string) error
+	// ListGitSources backs GET /api/v1/apps/git-sources: every connected
+	// source's service name, repo URL and branch, filtered to the
+	// caller's visible apps by handleListGitSources itself (callerAppVisibility),
+	// the same shape handleListApps already uses for its own bulk list.
+	ListGitSources(ctx context.Context) ([]store.GitSourceSummary, error)
 	// SetGitSourcePreviewEnabled backs PUT
 	// /api/v1/apps/{name}/preview-settings (preview_environments_handlers.go):
 	// the opt-in toggle for preview environments per pull request.
@@ -425,6 +430,39 @@ func randomWebhookSecret() (string, error) {
 		return "", fmt.Errorf("api: generate webhook secret: %w", err)
 	}
 	return base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// gitSourceSummaryResource is GET /api/v1/apps/git-sources' per-row shape:
+// just enough for a repo picker to flag "this repo is already deployed as
+// app X", never the full connect-flow detail handleGetGitSource returns.
+type gitSourceSummaryResource struct {
+	ServiceName string `json:"service_name"`
+	RepoURL     string `json:"repo_url"`
+	Branch      string `json:"branch"`
+}
+
+// handleListGitSources handles GET /api/v1/apps/git-sources: not scoped
+// to one app, so it filters with callerAppVisibility the same way
+// handleListApps/handleAppsSummary do, rather than requireAbilityForResource.
+func (rt *Router) handleListGitSources(w http.ResponseWriter, r *http.Request) {
+	canRead, filtered, err := rt.callerAppVisibility(r)
+	if err != nil {
+		rt.internalError(w, "api: list git sources: resolve caller failed", err)
+		return
+	}
+	sources, err := rt.gitSources.ListGitSources(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: list git sources failed", err)
+		return
+	}
+	out := make([]gitSourceSummaryResource, 0, len(sources))
+	for _, s := range sources {
+		if filtered && !canRead(s.ServiceName) {
+			continue
+		}
+		out = append(out, gitSourceSummaryResource{ServiceName: s.ServiceName, RepoURL: s.RepoURL, Branch: s.Branch})
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 // handleGetGitSource handles GET /api/v1/apps/{name}/git-source.

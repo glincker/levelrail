@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 637 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 638 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -91,6 +91,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListApps", Description: "Apps CRUD. requireAbility accepts either a session (implicitly root, there is exactly one human identity in Phase 1) or a bearer token scoped to at least the named ability, so a read-only MCP-issued token is provably unable to reach a write/deploy route, not just conventionally discouraged from calling it."},
 	{Method: "POST", Path: "/api/v1/apps", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateApp", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/bulk", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBulkApps", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/git-sources", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListGitSources", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetApp", Description: "Resource-scoped (iam.go): a policy can Deny or narrowly Allow write/delete on one specific app by name, e.g. a token whose flat abilities grant write everywhere except an app: prod-web Deny policy attached to it. Every other per-app and per-database mutating route in this file and routes_platform.go is now on the same requireAbilityForResource gate; only POST /apps (creation, no existing resource to scope to) and GET .../terminal (websocket upgrade, not touched in this pass) remain on plain requireAbility."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUpdateApp", Description: ""},
