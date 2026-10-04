@@ -1,4 +1,4 @@
-// This file proves one specific thing test/e2e/deploy_test.go's chain
+// This file proves one specific thing deploy_test.go's chain
 // does not: every fixture that test uses, and every fixture in this
 // directory before this file existed, listens on 8080. A test suite where
 // every fixture agrees on the same port cannot tell the difference
@@ -17,7 +17,7 @@
 // mirrors its Docker/BuildKit reachability skip pattern exactly. What
 // this suite as a whole proves and deliberately does not: no rollback,
 // no webhook/git-push path, a single service only, no multi-node.
-package e2e
+package reconcile
 
 import (
 	"context"
@@ -100,7 +100,7 @@ func TestPortMapping_Live_NonDefaultPortRouting(t *testing.T) {
 
 	// Step 1: a real build via internal/build, of the alt-port fixture.
 	res, err := buildClient.Build(buildCtx, build.Request{
-		ContextDir: "../fixtures/hello-e2e-altport",
+		ContextDir: "../../fixtures/hello-e2e-altport",
 		Tag:        tag,
 	}, nil)
 	if err != nil {
