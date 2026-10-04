@@ -202,6 +202,7 @@ jobs:
         env:
           GO_TEST_FLAGS: ${{ matrix.flags }}
           SHARD: ${{ matrix.shard }}
+          TEST_NAME_FILTER: ${{ matrix.name_filter }}
           COVERPROFILE: coverage-${{ matrix.lane }}.out
           LANE: ${{ matrix.lane }}
           PACKAGES: ${{ matrix.packages }}

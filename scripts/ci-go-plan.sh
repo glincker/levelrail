@@ -76,19 +76,34 @@ entries=()
 api_checks=()
 rest_checks=()
 lanes=()
-lane() { # name packages shard flags cache save_cache
+lane() { # name packages shard flags cache save_cache name_filter
 	entries+=("$(jq -nc --arg lane "$1" --arg packages "$2" --arg shard "$3" --arg flags "$4" \
-		--arg cache "$5" --argjson save "$6" \
-		'{lane: $lane, packages: $packages, shard: $shard, flags: $flags, cache: $cache, save_cache: $save}')")
+		--arg cache "$5" --argjson save "$6" --arg name_filter "${7:-}" \
+		'{lane: $lane, packages: $packages, shard: $shard, flags: $flags, cache: $cache, save_cache: $save, name_filter: $name_filter}')")
 	lanes+=("$1")
 }
 join() { local IFS=' '; echo "$*"; }
 
 if [ "${#api[@]}" -gt 0 ]; then
+	# api affected only via a dependency, not a direct file change:
+	# scripts/affected-api-tests.sh can sometimes narrow the shards to
+	# the tests that actually reach it, instead of the whole package.
+	api_name_filter=""
+	if [ "$scope" = some ] && ! printf '%s\n' "${files[@]}" | grep -q '^internal/api/'; then
+		seed_dirs="$(printf '%s\n' "${files[@]}" | scripts/affected-go-packages.sh --stdin --seeds 2>/dev/null || true)"
+		if [ -n "$seed_dirs" ]; then
+			mapfile -t seed_dirs_arr <<<"$seed_dirs"
+			mapfile -t seed_pkgs < <(go list -e -f '{{.ImportPath}}' "${seed_dirs_arr[@]}" 2>/dev/null | grep -vxF "$api_pkg" || true)
+			if [ "${#seed_pkgs[@]}" -gt 0 ]; then
+				narrowed="$(scripts/affected-api-tests.sh "${seed_pkgs[@]}" 2>/dev/null || echo ALL)"
+				[ "$narrowed" != ALL ] && api_name_filter="$narrowed"
+			fi
+		fi
+	fi
 	for i in $(seq 1 "$api_shards"); do
 		save=false
 		[ "$i" -eq 1 ] && save=true
-		lane "api-$i" "$api_pkg" "$i/$api_shards" "-short -timeout=10m" api "$save"
+		lane "api-$i" "$api_pkg" "$i/$api_shards" "-short -timeout=10m" api "$save" "$api_name_filter"
 		api_checks+=("Test (api-$i)")
 	done
 fi
