@@ -1,9 +1,9 @@
 name: Release
 
 on:
+  # Tag push only: fires once per real release, not once per PR merge.
+  # Dispatch manually against main for an ad hoc :edge build.
   push:
-    branches:
-      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -47,7 +47,7 @@ jobs:
 
       - name: Build
         working-directory: web
-        run: npm run build
+        run: npm run build && test -s dist/index.html
 
       - name: Upload dist
         uses: actions/upload-artifact@v7
@@ -207,11 +207,9 @@ jobs:
       tags: ${{ steps.resolve.outputs.tags }}
       primary_tag: ${{ steps.resolve.outputs.primary_tag }}
     steps:
-      # One place decides which tags a build gets, shared by both
-      # merge-image-* jobs below: a main push only ever gets :edge, a
-      # prerelease tag (a hyphen in the SemVer sense, e.g.
-      # v1.2.3-beta.1) gets :beta, and a stable tag gets its own
-      # :vX.Y.Z (unchanged), plus :vX.Y and :latest.
+      # Shared by both merge-image-* jobs: dispatching against main gets
+      # :edge, a prerelease tag gets :beta, a stable tag gets :vX.Y.Z,
+      # :vX.Y, and :latest.
       - name: Resolve
         id: resolve
         env:
@@ -228,47 +226,9 @@ jobs:
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
           echo "primary_tag=$(echo "$tags" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
-  image-changes:
-    name: Detect image-relevant changes
-    # Only a plain main push (the rolling :edge build) is worth scoping:
-    # a real release (tag or workflow_dispatch) always builds.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      levelrail: ${{ steps.detect.outputs.levelrail }}
-      agent: ${{ steps.detect.outputs.agent }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
-      - name: Detect
-        id: detect
-        env:
-          BEFORE: ${{ github.event.before }}
-        run: |
-          scripts/ci-changes.sh "$BEFORE" HEAD 2>/dev/null > /tmp/ci-changes.env
-          . /tmp/ci-changes.env
-          changed="$(git diff --name-only "$BEFORE" HEAD)"
-          levelrail=false
-          agent=false
-          if [ "$go" = true ] || [ "$web" != none ] || echo "$changed" | grep -qx 'Dockerfile.levelrail'; then
-            levelrail=true
-          fi
-          if [ "$go" = true ] || echo "$changed" | grep -qx 'Dockerfile.levelrail-agent'; then
-            agent=true
-          fi
-          echo "levelrail=$levelrail" >> "$GITHUB_OUTPUT"
-          echo "agent=$agent" >> "$GITHUB_OUTPUT"
-
   build-image-levelrail:
     name: Build levelrail image (${{ matrix.platform }})
-    needs: image-changes
-    if: >-
-      github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
-      || (needs.image-changes.result == 'success' && needs.image-changes.outputs.levelrail == 'true')
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     permissions:
@@ -390,10 +350,7 @@ jobs:
 
   build-image-levelrail-agent:
     name: Build levelrail-agent image (${{ matrix.platform }})
-    needs: image-changes
-    if: >-
-      github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
-      || (needs.image-changes.result == 'success' && needs.image-changes.outputs.agent == 'true')
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     permissions:

@@ -14,7 +14,9 @@ COPY docs/ /src/docs/
 # stats every file under docs/public, so the symlink targets must
 # resolve inside the build context too.
 COPY install.sh install-cli.sh /src/
-RUN npm run build
+# A silently empty/partial dist (e.g. the symlink bug #911 fixed) must
+# fail the build here, not ship as a binary with no embedded frontend.
+RUN npm run build && test -s dist/index.html
 
 FROM golang:1.26-alpine AS build
 ARG VERSION

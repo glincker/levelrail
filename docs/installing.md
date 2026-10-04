@@ -171,9 +171,9 @@ Both are published for `linux/amd64` and `linux/arm64`, multi-arch, under three 
 | --- | --- | --- |
 | `:latest`, `:vX.Y`, `:vX.Y.Z` | a non-prerelease tag (`v1.2.3`) | stable release |
 | `:beta` | a prerelease tag (`v1.2.3-beta.1`, `-rc.1`, etc.) | prerelease |
-| `:edge` | every push to `main` | unreleased, use for testing only |
+| `:edge` | manual dispatch of the Release workflow against `main` | unreleased, use for testing only |
 
-`:latest` and `:vX.Y` only ever move on a stable tag; `:beta` and `:edge` move continuously, so pin an exact `:vX.Y.Z` tag for anything you care about staying still.
+`:latest` and `:vX.Y` only ever move on a stable tag; `:beta` moves on every prerelease tag. `:edge` only moves when someone manually triggers a build against `main`, not on every push, so it stays still between those. Pin an exact `:vX.Y.Z` tag for anything you care about staying still regardless.
 
 ::: warning No stable release yet
 No non-prerelease tag has shipped as of this writing, so `:latest` currently
