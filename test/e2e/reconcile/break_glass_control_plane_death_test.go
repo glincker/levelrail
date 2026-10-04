@@ -11,7 +11,7 @@
 // restarted control plane's level-triggered reconciler picks the
 // already-running container back up without recreating or restarting
 // it, and Caddy resumes routing once it reconciles again.
-package e2e
+package reconcile
 
 import (
 	"context"

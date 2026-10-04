@@ -11,7 +11,7 @@ The honest answer has two different halves, because the control plane is one pro
 Everything below was verified live against a real control plane binary, real Docker containers, a real node agent process, and a real `SIGKILL`, not read off the architecture and assumed to be true.
 
 ::: details For contributors: the tests behind this page
-`test/e2e/break_glass_control_plane_death_test.go` and `test/e2e/break_glass_agent_reconnect_test.go`. Run them yourself with `go test -run TestBreakGlass -v ./test/e2e/...` (needs a local Docker daemon).
+`test/e2e/reconcile/break_glass_control_plane_death_test.go` and `test/e2e/reconcile/break_glass_agent_reconnect_test.go`. Run them yourself with `go test -run TestBreakGlass -v ./test/e2e/...` (needs a local Docker daemon).
 :::
 
 ### The crash-and-recovery timeline

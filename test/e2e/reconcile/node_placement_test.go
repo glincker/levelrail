@@ -11,7 +11,7 @@
 // only ever touches the docker.Runtime it was constructed with, never
 // some other implicit one, which is the real invariant placement
 // depends on once resolveNodeTransport has picked a Runtime for it.
-package e2e
+package reconcile
 
 import (
 	"context"

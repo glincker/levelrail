@@ -1,5 +1,5 @@
-// Package e2e is the whole-chain proof this repo's other live tests only
-// prove piece by piece: internal/build builds a real image from a real
+// Package reconcile is the whole-chain proof this repo's other live tests
+// only prove piece by piece: internal/build builds a real image from a real
 // fixture, internal/store saves it as desired state with a domain, a real
 // application.Controller converges it into a real running container, a
 // real ingress.Controller converges Caddy's routing for that domain, and
@@ -13,16 +13,14 @@
 // What this proves, and as importantly, what it deliberately does not:
 // no rollback, no webhook/git-push path, a single service only, no
 // multi-node.
-package e2e
+package reconcile
 
 import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -30,9 +28,7 @@ import (
 	"github.com/docker/docker/api/types/image"
 
 	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -213,113 +209,4 @@ func TestDeploy_Live_BuildToHTTPS(t *testing.T) {
 	if !strings.Contains(body, helloBody) {
 		t.Fatalf("response for %s = %q, want it to contain the fixture's distinctive body %q", domain, body, helloBody)
 	}
-}
-
-// persistReadyCondition writes appResult's conditions to store the same
-// way reconcile.Engine's reconcileOne does after every controller call in
-// production. These tests drive application.Controller and
-// ingress.Controller directly instead of through the Engine, so without
-// this call the ingress controller's own readiness gate (F-002) never
-// sees the application controller's Ready condition and refuses to
-// route, exactly the failure this fix exists to prevent for a real
-// unready deploy.
-func persistReadyCondition(ctx context.Context, t *testing.T, svcStore *store.DB, controllerName string, conditions []reconcile.Condition) {
-	t.Helper()
-	if err := svcStore.UpsertConditions(ctx, controllerName, conditions); err != nil {
-		t.Fatalf("UpsertConditions() error = %v", err)
-	}
-}
-
-func cleanupContainers(ctx context.Context, t *testing.T, rt docker.Runtime, serviceName string) {
-	t.Helper()
-	found, err := rt.ListByPrefix(ctx, serviceName+"-")
-	if err != nil {
-		return
-	}
-	for _, cs := range found {
-		_ = rt.Stop(ctx, cs.ID, 3*time.Second)
-		_ = rt.Remove(ctx, cs.ID, true)
-	}
-}
-
-func openLiveStore(t *testing.T) *store.DB {
-	t.Helper()
-	path := filepath.Join(t.TempDir(), "levelrail.db")
-	db, err := store.Open(context.Background(), path)
-	if err != nil {
-		t.Fatalf("store.Open() error = %v", err)
-	}
-	t.Cleanup(func() {
-		if err := db.Close(); err != nil {
-			t.Errorf("closing store: %v", err)
-		}
-	})
-	return db
-}
-
-// freePort asks the OS for an unused TCP port on 127.0.0.1, the same
-// approach internal/reconcile/ingress/controller_live_test.go uses for the
-// identical reason: there's an inherent (tiny) race between releasing the
-// probe port here and Caddy binding it a few lines later, but this is the
-// standard way to get an ephemeral port for a test.
-func freePort(t *testing.T) int {
-	t.Helper()
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("freePort: listen: %v", err)
-	}
-	defer func() {
-		if err := l.Close(); err != nil {
-			t.Logf("freePort: closing probe listener: %v", err)
-		}
-	}()
-	return l.Addr().(*net.TCPAddr).Port
-}
-
-// getBodyWithRetry issues GET requests against url until one succeeds or
-// the deadline passes. Caddy's listeners come up asynchronously inside
-// caddy.Load, and the internal-TLS case also has to finish a synchronous
-// certificate issuance during Provision, so a short retry loop here is
-// standalone-test plumbing, matching
-// internal/reconcile/ingress/controller_live_test.go's identical helper.
-func getBodyWithRetry(t *testing.T, client *http.Client, url string) string {
-	t.Helper()
-
-	deadline := time.Now().Add(8 * time.Second)
-	var lastErr error
-	for time.Now().Before(deadline) {
-		body, status, err := doGet(client, url)
-		if err != nil {
-			lastErr = err
-			time.Sleep(100 * time.Millisecond)
-			continue
-		}
-		if status != http.StatusOK {
-			lastErr = fmt.Errorf("status %d", status)
-			time.Sleep(100 * time.Millisecond)
-			continue
-		}
-		return body
-	}
-
-	t.Fatalf("GET %s never succeeded within the retry window, last error: %v", url, lastErr)
-	return ""
-}
-
-func doGet(client *http.Client, url string) (body string, status int, err error) {
-	resp, err := client.Get(url) //nolint:noctx // test helper, no context to plumb through
-	if err != nil {
-		return "", 0, err
-	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil && err == nil {
-			err = fmt.Errorf("closing response body: %w", closeErr)
-		}
-	}()
-
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", resp.StatusCode, fmt.Errorf("reading response body: %w", err)
-	}
-	return string(b), resp.StatusCode, nil
 }

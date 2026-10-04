@@ -10,7 +10,7 @@
 // two independent images, both land under the same store.App, both become
 // real running containers, and both are independently reachable over
 // HTTPS, not just independently deployed.
-package e2e
+package reconcile
 
 import (
 	"context"

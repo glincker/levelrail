@@ -8,7 +8,7 @@
 // (cmd/levelrail-agent's own runReconnectLoop), logs the disconnect
 // clearly, and picks the connection back up once the control plane
 // returns, without disturbing the container it already placed.
-package e2e
+package reconcile
 
 import (
 	"context"

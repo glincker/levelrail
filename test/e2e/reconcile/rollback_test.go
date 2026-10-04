@@ -1,4 +1,4 @@
-package e2e
+package reconcile
 
 import (
 	"context"
@@ -193,20 +193,5 @@ func deployAndVerify(
 	}
 	if state == nil || !state.Running {
 		t.Fatalf("InspectByName(%q) = %+v, want a running container", wantContainerName, state)
-	}
-}
-
-// assertContainerAbsent verifies removeStale actually removed the
-// superseded container, not merely that a different one is now running
-// alongside it. label is only used in the failure message.
-func assertContainerAbsent(ctx context.Context, t *testing.T, runtime docker.Runtime, containerName, label string) {
-	t.Helper()
-
-	state, err := runtime.InspectByName(ctx, containerName)
-	if err != nil {
-		t.Fatalf("InspectByName(%q) error = %v", containerName, err)
-	}
-	if state != nil {
-		t.Fatalf("container %s (%s) still exists after being superseded, want it removed by removeStale: %+v", label, containerName, state)
 	}
 }

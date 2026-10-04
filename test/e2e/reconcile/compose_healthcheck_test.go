@@ -11,7 +11,7 @@
 // never serves the declared health path. This is exactly the failure
 // mode this project treats as its main risk: a health check that
 // silently stops being enforced.
-package e2e
+package reconcile
 
 import (
 	"context"

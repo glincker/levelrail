@@ -8,7 +8,7 @@
 // container via the real Docker Engine API exec facility, not a
 // simulated one, by having each hook write a marker file this test then
 // reads back via a second, independent Exec call.
-package e2e
+package reconcile
 
 import (
 	"context"

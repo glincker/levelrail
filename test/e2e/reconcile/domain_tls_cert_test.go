@@ -7,7 +7,7 @@
 // certificate configured is served that exact certificate over TLS,
 // instead of one from Caddy's own automatic internal issuer, on the
 // very next ingress reconcile pass.
-package e2e
+package reconcile
 
 import (
 	"context"

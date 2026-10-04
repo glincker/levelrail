@@ -9,7 +9,7 @@
 // stopping, and disabling it again restores real traffic, both changes
 // taking effect on the very next ingress reconcile pass with no
 // redeploy.
-package e2e
+package reconcile
 
 import (
 	"context"

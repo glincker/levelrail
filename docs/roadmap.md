@@ -80,7 +80,7 @@ flowchart LR
   into one `app.yaml` (file mode) or fanning out through `deploy-spec`
   (API mode).
   
-  Live end-to-end coverage (`test/e2e/multi_service_test.go`): two
+  Live end-to-end coverage (`test/e2e/reconcile/multi_service_test.go`): two
   services built from one shared checkout, each scoped to its own
   `build.baseDirectory`, linked under one `store.App`, and
   independently reachable over HTTPS.
