@@ -50,6 +50,11 @@ type execRuntime struct {
 	networks                 []docker.NetworkInfo
 	networksErr              error
 	networksPrefix           string
+	networkConnectErr        error
+	networkConnectArgs       [2]string
+	networkDisconnectErr     error
+	networkDisconnectArgs    [2]string
+	networkDisconnectForce   bool
 }
 
 func newExecRuntime() *execRuntime {
@@ -114,9 +119,16 @@ func (f *execRuntime) RemoveNetwork(_ context.Context, name string) error {
 	return f.removeNetworkErr
 }
 
-func (f *execRuntime) NetworkConnect(context.Context, string, string) error { return nil }
+func (f *execRuntime) NetworkConnect(_ context.Context, network, containerID string) error {
+	f.networkConnectArgs = [2]string{network, containerID}
+	return f.networkConnectErr
+}
 
-func (f *execRuntime) NetworkDisconnect(context.Context, string, string, bool) error { return nil }
+func (f *execRuntime) NetworkDisconnect(_ context.Context, network, containerID string, force bool) error {
+	f.networkDisconnectArgs = [2]string{network, containerID}
+	f.networkDisconnectForce = force
+	return f.networkDisconnectErr
+}
 
 func (f *execRuntime) ListNetworksByPrefix(_ context.Context, prefix string) ([]docker.NetworkInfo, error) {
 	f.networksPrefix = prefix
@@ -385,6 +397,52 @@ func TestExecute_Networks(t *testing.T) {
 				RemoveNetwork: &agentpb.RemoveNetworkRequest{Name: "levelrail-app-old"},
 			}},
 			wantErr: "network still in use",
+		},
+		{
+			name:  "network connect",
+			setup: func(*execRuntime) {},
+			req: &agentpb.AgentRequest{Op: &agentpb.AgentRequest_NetworkConnect{
+				NetworkConnect: &agentpb.NetworkConnectRequest{Network: "levelrail-app-web", ContainerId: "db-main"},
+			}},
+			check: func(t *testing.T, rt *execRuntime, resp *agentpb.AgentResponse) {
+				if rt.networkConnectArgs != [2]string{"levelrail-app-web", "db-main"} {
+					t.Errorf("networkConnectArgs = %v, want [levelrail-app-web db-main]", rt.networkConnectArgs)
+				}
+				if resp.GetEmpty() == nil {
+					t.Error("NetworkConnect response has no Empty result")
+				}
+			},
+		},
+		{
+			name:  "network connect error",
+			setup: func(rt *execRuntime) { rt.networkConnectErr = errors.New("network connect refused") },
+			req: &agentpb.AgentRequest{Op: &agentpb.AgentRequest_NetworkConnect{
+				NetworkConnect: &agentpb.NetworkConnectRequest{Network: "levelrail-app-web", ContainerId: "db-main"},
+			}},
+			wantErr: "network connect refused",
+		},
+		{
+			name:  "network disconnect",
+			setup: func(*execRuntime) {},
+			req: &agentpb.AgentRequest{Op: &agentpb.AgentRequest_NetworkDisconnect{
+				NetworkDisconnect: &agentpb.NetworkDisconnectRequest{Network: "levelrail-app-old", ContainerId: "db-main", Force: true},
+			}},
+			check: func(t *testing.T, rt *execRuntime, resp *agentpb.AgentResponse) {
+				if rt.networkDisconnectArgs != [2]string{"levelrail-app-old", "db-main"} || !rt.networkDisconnectForce {
+					t.Errorf("networkDisconnectArgs = %v force=%v, want [levelrail-app-old db-main] true", rt.networkDisconnectArgs, rt.networkDisconnectForce)
+				}
+				if resp.GetEmpty() == nil {
+					t.Error("NetworkDisconnect response has no Empty result")
+				}
+			},
+		},
+		{
+			name:  "network disconnect error",
+			setup: func(rt *execRuntime) { rt.networkDisconnectErr = errors.New("network disconnect refused") },
+			req: &agentpb.AgentRequest{Op: &agentpb.AgentRequest_NetworkDisconnect{
+				NetworkDisconnect: &agentpb.NetworkDisconnectRequest{Network: "levelrail-app-old", ContainerId: "db-main"},
+			}},
+			wantErr: "network disconnect refused",
 		},
 		{
 			name: "list networks by prefix",

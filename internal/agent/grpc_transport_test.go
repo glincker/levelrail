@@ -239,6 +239,52 @@ func TestGRPCTransport_Networks(t *testing.T) {
 			wantErr: "network still in use",
 		},
 		{
+			name: "network connect",
+			call: func(tr *GRPCTransport) (string, []docker.NetworkInfo, error) {
+				return "", nil, tr.NetworkConnect(context.Background(), "levelrail-app-web", "db-main")
+			},
+			respond: func(req *agentpb.AgentRequest) *agentpb.AgentResponse {
+				got := req.GetNetworkConnect()
+				if got.GetNetwork() != "levelrail-app-web" || got.GetContainerId() != "db-main" {
+					return &agentpb.AgentResponse{Error: "unexpected network connect request"}
+				}
+				return &agentpb.AgentResponse{Result: &agentpb.AgentResponse_Empty{Empty: &agentpb.Empty{}}}
+			},
+		},
+		{
+			name: "network connect remote error",
+			call: func(tr *GRPCTransport) (string, []docker.NetworkInfo, error) {
+				return "", nil, tr.NetworkConnect(context.Background(), "levelrail-app-web", "db-main")
+			},
+			respond: func(*agentpb.AgentRequest) *agentpb.AgentResponse {
+				return &agentpb.AgentResponse{Error: "network connect refused"}
+			},
+			wantErr: "network connect refused",
+		},
+		{
+			name: "network disconnect",
+			call: func(tr *GRPCTransport) (string, []docker.NetworkInfo, error) {
+				return "", nil, tr.NetworkDisconnect(context.Background(), "levelrail-app-old", "db-main", true)
+			},
+			respond: func(req *agentpb.AgentRequest) *agentpb.AgentResponse {
+				got := req.GetNetworkDisconnect()
+				if got.GetNetwork() != "levelrail-app-old" || got.GetContainerId() != "db-main" || !got.GetForce() {
+					return &agentpb.AgentResponse{Error: "unexpected network disconnect request"}
+				}
+				return &agentpb.AgentResponse{Result: &agentpb.AgentResponse_Empty{Empty: &agentpb.Empty{}}}
+			},
+		},
+		{
+			name: "network disconnect remote error",
+			call: func(tr *GRPCTransport) (string, []docker.NetworkInfo, error) {
+				return "", nil, tr.NetworkDisconnect(context.Background(), "levelrail-app-old", "db-main", false)
+			},
+			respond: func(*agentpb.AgentRequest) *agentpb.AgentResponse {
+				return &agentpb.AgentResponse{Error: "network disconnect refused"}
+			},
+			wantErr: "network disconnect refused",
+		},
+		{
 			name: "list networks by prefix",
 			call: func(tr *GRPCTransport) (string, []docker.NetworkInfo, error) {
 				nets, err := tr.ListNetworksByPrefix(context.Background(), "levelrail-app-")
