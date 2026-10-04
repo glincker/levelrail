@@ -19,12 +19,17 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
-import type { GitSourceResource, SetGitSourceRequest } from '../types/gitSource'
+import type {
+  GitSourceResource,
+  GitSourceSummaryResource,
+  SetGitSourceRequest,
+} from '../types/gitSource'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const gitSourceKeys = {
   all: ['git-sources'] as const,
   detail: (name: string) => [...gitSourceKeys.all, 'detail', name] as const,
+  summaries: () => [...gitSourceKeys.all, 'summaries'] as const,
 }
 
 export async function fetchGitSource(name: string): Promise<GitSourceResource> {
@@ -165,6 +170,35 @@ export function useRotateGitSourceWebhookSecret(name: string) {
       queryClient.setQueryData(gitSourceKeys.detail(name), resource)
     },
   })
+}
+
+// Bulk read for the "already running as X" badge, not a per-repo fetch.
+export async function fetchGitSourceSummaries(): Promise<
+  GitSourceSummaryResource[]
+> {
+  const res = await fetch('/api/v1/apps/git-sources')
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `fetch git source summaries failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as GitSourceSummaryResource[]
+}
+
+export function gitSourceSummariesQueryOptions() {
+  return queryOptions({
+    queryKey: gitSourceKeys.summaries(),
+    queryFn: fetchGitSourceSummaries,
+  })
+}
+
+// Degrades to "no known running repos" on failure, never blocks the picker.
+export function useGitSourceSummariesOptional() {
+  return useQuery({ ...gitSourceSummariesQueryOptions(), retry: false })
 }
 
 export function useDeleteGitSource(name: string) {

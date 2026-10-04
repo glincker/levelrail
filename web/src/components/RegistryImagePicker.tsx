@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -204,33 +205,20 @@ export function RegistryImagePicker({
         <>
           <Field>
             <FieldLabel htmlFor="registry-picker-repo">Repository</FieldLabel>
-            <Select
+            <Combobox
+              id="registry-picker-repo"
               value={selectedRepo}
-              onValueChange={(value) => {
-                if (typeof value === 'string') setSelectedRepo(value)
-              }}
+              options={(repos.data ?? []).map((repo) => ({
+                value: repo,
+                label: repo,
+              }))}
+              isLoading={repos.isLoading}
               disabled={disabled || repos.isLoading}
-            >
-              <SelectTrigger
-                id="registry-picker-repo"
-                className="w-full font-mono"
-              >
-                <SelectValue
-                  placeholder={
-                    repos.isLoading
-                      ? 'Loading repositories...'
-                      : 'Select a repository'
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {(repos.data ?? []).map((repo) => (
-                  <SelectItem key={repo} value={repo} className="font-mono">
-                    {repo}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Select a repository"
+              searchPlaceholder="Search repositories..."
+              triggerClassName="font-mono"
+              onValueChange={setSelectedRepo}
+            />
             {repos.isError ? (
               <p className="text-xs text-destructive">{repos.error.message}</p>
             ) : null}
@@ -248,32 +236,23 @@ export function RegistryImagePicker({
           {selectedRepo ? (
             <Field>
               <FieldLabel htmlFor="registry-picker-tag">Tag</FieldLabel>
-              <Select
+              <Combobox
+                id="registry-picker-tag"
                 value=""
+                options={(tags.data ?? []).map((tag) => ({
+                  value: tag,
+                  label: tag,
+                }))}
+                isLoading={tags.isLoading}
+                disabled={disabled || tags.isLoading || !host}
+                placeholder="Select a tag"
+                searchPlaceholder="Search tags..."
+                triggerClassName="font-mono"
                 onValueChange={(tag) => {
-                  if (typeof tag !== 'string' || !tag || !host) return
+                  if (!host) return
                   onSelect(buildImageRef(host, selectedRepo, tag))
                 }}
-                disabled={disabled || tags.isLoading}
-              >
-                <SelectTrigger
-                  id="registry-picker-tag"
-                  className="w-full font-mono"
-                >
-                  <SelectValue
-                    placeholder={
-                      tags.isLoading ? 'Loading tags...' : 'Select a tag'
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {(tags.data ?? []).map((tag) => (
-                    <SelectItem key={tag} value={tag} className="font-mono">
-                      {tag}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
               {tags.isError ? (
                 <p className="text-xs text-destructive">{tags.error.message}</p>
               ) : null}
@@ -387,27 +366,17 @@ function DockerHubSearchFields({
       {selectedRepo ? (
         <Field>
           <FieldLabel htmlFor="dockerhub-tag">Tag</FieldLabel>
-          <Select
+          <Combobox
+            id="dockerhub-tag"
             value=""
-            onValueChange={(tag) => {
-              if (typeof tag !== 'string' || !tag) return
-              onSelectTag(tag)
-            }}
+            options={tags.map((tag) => ({ value: tag, label: tag }))}
+            isLoading={tagsLoading}
             disabled={disabled || tagsLoading}
-          >
-            <SelectTrigger id="dockerhub-tag" className="w-full font-mono">
-              <SelectValue
-                placeholder={tagsLoading ? 'Loading tags...' : 'Select a tag'}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {tags.map((tag) => (
-                <SelectItem key={tag} value={tag} className="font-mono">
-                  {tag}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Select a tag"
+            searchPlaceholder="Search tags..."
+            triggerClassName="font-mono"
+            onValueChange={onSelectTag}
+          />
           {tagsError ? (
             <p className="text-xs text-destructive">{tagsError}</p>
           ) : null}

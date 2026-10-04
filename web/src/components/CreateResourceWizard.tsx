@@ -292,9 +292,8 @@ export function CreateResourceWizard({
         ? 'New database'
         : 'New resource'
 
-  const gridClassName = fullscreen
-    ? 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5'
-    : 'grid grid-cols-2 gap-3'
+  // Capped at md:grid-cols-4 to match the picker's own max-w-4xl below.
+  const gridClassName = 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4'
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -349,7 +348,15 @@ export function CreateResourceWizard({
             />
           </div>
         ) : selected === null ? (
-          <>
+          // Width-capped even in fullscreen: unconstrained, the search bar
+          // and 4-card grid stretched across the whole viewport.
+          <div
+            className={
+              fullscreen
+                ? 'mx-auto flex w-full max-w-4xl flex-col gap-3 py-2'
+                : 'contents'
+            }
+          >
             <DialogHeader>
               <DialogTitle className={fullscreen ? 'text-lg' : undefined}>
                 {pickerTitle}
@@ -429,7 +436,7 @@ export function CreateResourceWizard({
                 No resources match &ldquo;{search}&rdquo;.
               </p>
             ) : null}
-          </>
+          </div>
         ) : (
           // `display: contents` when compact makes this wrapper invisible
           // to layout. Full screen swaps it for a real flex column that
