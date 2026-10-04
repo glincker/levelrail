@@ -207,6 +207,36 @@ func TestReportWorstStatus(t *testing.T) {
 	}
 }
 
+// A domain assigned to an app placed off the control plane's own node
+// can never be reached (no mesh path yet): this must warn even when the
+// domain's DNS is already set up correctly, since checkDomains alone
+// only verifies the domain resolves to this server, not that this
+// server can route to the app's node.
+func TestCheckCrossNodeIngress(t *testing.T) {
+	rep := Run(context.Background(), Request{Name: "static-test", Domains: []string{"levelrail-test-2.levelrail.com"}, IsLocalNode: false}, Env{})
+	c := find(t, rep, "cross_node_ingress")
+	if c.Status != StatusWarn {
+		t.Errorf("Status = %q, want %q", c.Status, StatusWarn)
+	}
+	if c.Fix == "" {
+		t.Error("Fix = \"\", want a concrete next step")
+	}
+
+	repLocal := Run(context.Background(), Request{Name: "web", Domains: []string{"web.example.com"}, IsLocalNode: true}, Env{})
+	for _, c := range repLocal.Checks {
+		if c.ID == "cross_node_ingress" {
+			t.Errorf("unexpected cross_node_ingress check for a local-node app: %+v", c)
+		}
+	}
+
+	repNoDomain := Run(context.Background(), Request{Name: "worker", IsLocalNode: false}, Env{})
+	for _, c := range repNoDomain.Checks {
+		if c.ID == "cross_node_ingress" {
+			t.Errorf("unexpected cross_node_ingress check for a domainless app: %+v", c)
+		}
+	}
+}
+
 func TestParseImageRef(t *testing.T) {
 	tests := []struct {
 		in   string
