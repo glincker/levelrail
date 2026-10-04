@@ -1,6 +1,7 @@
 import type common from '../locales/en/common.json'
 import type deploys from '../locales/en/deploys.json'
 import type auditLog from '../locales/en/auditLog.json'
+import type streams from '../locales/en/streams.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -10,6 +11,7 @@ declare module 'i18next' {
       common: typeof common
       deploys: typeof deploys
       auditLog: typeof auditLog
+      streams: typeof streams
     }
   }
 }

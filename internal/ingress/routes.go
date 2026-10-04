@@ -282,6 +282,21 @@ type RedirectRoute struct {
 	StatusCode int
 }
 
+// StreamRoute is one raw TCP port forward (store.AppStream): every byte
+// received on ListenAddr is proxied unconditionally to BackendDial, no
+// Host-based matching, no TLS termination/re-encryption, no access
+// list. Unlike ProxyRoute, a StreamRoute never shares a listener with
+// anything else: ListenAddr is the operator-chosen host port that
+// disambiguates it, the same role Host plays for a ProxyRoute.
+type StreamRoute struct {
+	// ListenAddr is a Caddy network address, e.g. ":9000". Always a
+	// single stream's own dedicated port; never shared with HTTP's
+	// listener or another stream's.
+	ListenAddr string
+	// BackendDial is the TCP proxy target, e.g. "127.0.0.1:5432".
+	BackendDial string
+}
+
 // RoutesOptions is the input to BuildRoutesConfig: everything needed to
 // stand up one Caddy server carrying many independently host-routed
 // backends on a single shared listener. This is the shape a real ingress
@@ -419,6 +434,13 @@ type RoutesOptions struct {
 	// RequestStats, if true, wraps every proxy and static route in the
 	// request_stats handler (per-app request rate, errors, latency).
 	RequestStats bool
+	// Streams is every raw TCP port forward to proxy, each on its own
+	// dedicated listener (apps.layer4.servers), applied in this same
+	// Config/caddy.Load call: see layer4.go's package doc comment for
+	// why this can't be a second, independently-applied Caddy config.
+	// Empty (the default) adds no layer4 app at all, reproducing this
+	// package's behavior before this field existed exactly.
+	Streams []StreamRoute
 }
 
 // BuildRoutesConfig builds a Config with one server carrying one route
@@ -559,6 +581,24 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			},
 		},
 	}
+	if len(opts.Streams) > 0 {
+		servers := make(map[string]*Layer4Server, len(opts.Streams))
+		for i, s := range opts.Streams {
+			if s.ListenAddr == "" {
+				return nil, fmt.Errorf("ingress: build routes config: stream %d has no listen address", i)
+			}
+			if s.BackendDial == "" {
+				return nil, fmt.Errorf("ingress: build routes config: stream %d has no backend dial address", i)
+			}
+			name := fmt.Sprintf("stream-%d", i)
+			servers[name] = &Layer4Server{
+				Listen: []string{s.ListenAddr},
+				Routes: []Layer4Route{{Handle: []any{NewLayer4ProxyHandler(s.BackendDial)}}},
+			}
+		}
+		cfg.Apps.Layer4 = &Layer4App{Servers: servers}
+	}
+
 	cfg.Admin = newAdminConfig(opts.AdminListen)
 	switch {
 	case opts.CertStorage != nil:

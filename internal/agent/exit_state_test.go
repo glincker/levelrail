@@ -340,6 +340,10 @@ func (s *wireStore) GetDesiredService(context.Context, string) (*store.DesiredSe
 	return s.svc, nil
 }
 
+func (s *wireStore) ListAppStreamsForService(context.Context, string) ([]store.AppStream, error) {
+	return nil, nil
+}
+
 func serverPort(t *testing.T, srv *httptest.Server) int {
 	t.Helper()
 	_, port, err := net.SplitHostPort(strings.TrimPrefix(srv.URL, "http://"))

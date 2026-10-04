@@ -186,6 +186,16 @@ func TestStreamReauth_RevokedTokenEndsBlockedStream(t *testing.T) {
 	waitClosed(t, ended, "SSE stream")
 }
 
+// crudOnStreamsResource lists handlers whose name matches the detector
+// below only because they manage "streams" (TCP port-forward configs) as
+// a plain CRUD resource; they return a normal JSON response and never
+// hold a connection open, so withStreamReauth does not apply to them.
+var crudOnStreamsResource = map[string]bool{
+	"handleListAppStreams":  true,
+	"handleCreateAppStream": true,
+	"handleDeleteAppStream": true,
+}
+
 func TestStreamingRoutesAreWrappedForReauth(t *testing.T) {
 	stream := regexp.MustCompile(`mux\.HandleFunc\("[A-Z]+ [^"]+", .*rt\.(handle\w*Stream\w*)`)
 	files, err := filepath.Glob("routes*.go")
@@ -200,6 +210,9 @@ func TestStreamingRoutesAreWrappedForReauth(t *testing.T) {
 		}
 		for _, line := range strings.Split(string(src), "\n") {
 			if m := stream.FindStringSubmatch(line); m != nil {
+				if crudOnStreamsResource[m[1]] {
+					continue
+				}
 				seen++
 				if !strings.Contains(line, "withStreamReauth(") {
 					t.Errorf("%s registers %s without withStreamReauth, so a revoked caller keeps its stream", f, m[1])
