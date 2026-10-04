@@ -82,6 +82,12 @@ func gitCheckout(ctx context.Context, repoURL, ref, token string) (dir string, c
 	// error.
 	hash, err := repo.ResolveRevision(plumbing.Revision(ref))
 	if err != nil {
+		// A plain clone only creates refs/heads/* for the remote's default
+		// branch; every other branch exists solely as refs/remotes/origin/*,
+		// which ResolveRevision does not fall back to on its own.
+		hash, err = repo.ResolveRevision(plumbing.Revision("refs/remotes/origin/" + ref))
+	}
+	if err != nil {
 		cleanup()
 		return "", "", nil, fmt.Errorf("api: resolve ref %q in %q: %w", ref, repoURL, err)
 	}
