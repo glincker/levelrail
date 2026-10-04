@@ -14,6 +14,9 @@ export interface NormalizedRepoOption {
   defaultBranch: string
   cloneUrl: string
   providerRef: NonNullable<GitRepoSourceValue['providerRef']>
+  /** GitHub only: which connected account this repo came from, for the picker's grouping. */
+  ownerLogin?: string
+  accountType?: 'user' | 'organization'
 }
 
 export function fromGitHubRepo(repo: GitHubAppRepo): NormalizedRepoOption {
@@ -24,7 +27,65 @@ export function fromGitHubRepo(repo: GitHubAppRepo): NormalizedRepoOption {
     defaultBranch: repo.default_branch,
     cloneUrl: repo.clone_url,
     providerRef: { kind: 'github', owner: repo.owner_login, repo: repo.name },
+    ownerLogin: repo.owner_login,
+    accountType: repo.account_type,
   }
+}
+
+// GitHubRepoGroup is one connected account's slice of the repo picker's
+// card grid: a header (account login, "Personal" for a user account)
+// plus that account's own repos, or an error when the installation
+// failed to list instead of any repos.
+export interface GitHubRepoGroup {
+  key: string
+  label: string
+  options: NormalizedRepoOption[]
+  error?: string
+}
+
+// groupGitHubRepos preserves installation order (the backend lists
+// installations oldest-first): a login appearing in both repos and
+// errors (shouldn't happen, each installation either lists or fails)
+// keeps its repos and picks up the error too, rather than one silently
+// overwriting the other.
+export function groupGitHubRepos(
+  options: NormalizedRepoOption[],
+  errors: { account_login: string; error: string }[],
+): GitHubRepoGroup[] {
+  const groups = new Map<string, GitHubRepoGroup>()
+
+  function groupFor(
+    login: string,
+    accountType: 'user' | 'organization' | undefined,
+  ): GitHubRepoGroup {
+    const existing = groups.get(login)
+    if (existing) {
+      return existing
+    }
+    const created: GitHubRepoGroup = {
+      key: login,
+      label: githubAccountLabel(login, accountType),
+      options: [],
+    }
+    groups.set(login, created)
+    return created
+  }
+
+  for (const option of options) {
+    groupFor(option.ownerLogin ?? '', option.accountType).options.push(option)
+  }
+  for (const err of errors) {
+    groupFor(err.account_login, undefined).error = err.error
+  }
+
+  return Array.from(groups.values())
+}
+
+function githubAccountLabel(
+  login: string,
+  accountType: 'user' | 'organization' | undefined,
+): string {
+  return accountType === 'user' ? `Personal (${login})` : login
 }
 
 export function fromGitLabProject(

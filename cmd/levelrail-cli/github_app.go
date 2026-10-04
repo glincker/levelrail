@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"text/tabwriter"
 )
 
@@ -35,6 +36,8 @@ func runGitHubApp(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runGitHubAppBranches(prog, args[1:], stdout, stderr, lookupEnv)
 	case "use-as-source":
 		return runGitHubAppUseAsSource(prog, args[1:], stdout, stderr, lookupEnv)
+	case "installations":
+		return runGitHubAppInstallations(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown github-app subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, githubAppUsage(prog))
@@ -46,9 +49,12 @@ func githubAppUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s github-app status [flags]                                         show the connection status
   %[1]s github-app disconnect [flags]                                     forget the stored connection (local only)
-  %[1]s github-app repos [flags]                                          list repos the connected installation can access
+  %[1]s github-app repos [flags]                                          list repos every connected installation can access
   %[1]s github-app branches <owner> <repo> [flags]                        list a repo's branches
   %[1]s github-app use-as-source <owner> <repo> --app-name NAME [flags]   connect a repo as an app's git source
+  %[1]s github-app installations list [flags]                             list every connected account/org
+  %[1]s github-app installations add [flags]                              print the URL to install the App on another account/org
+  %[1]s github-app installations remove <id> [flags]                      disconnect one account/org
 
 Connecting the GitHub App itself is dashboard-only (it's a real browser
 redirect through GitHub's manifest flow); once connected, these
@@ -107,11 +113,11 @@ func runGitHubAppDisconnect(prog string, args []string, stdout, stderr io.Writer
 }
 
 func runGitHubAppRepos(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[[]gitHubAppRepoResource]{
+	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[gitHubAppRepoListResource]{
 		cmdLabel:  "github-app repos",
-		jsonUsage: "print repos as a JSON array to stdout and nothing else",
-		usageText: fmt.Sprintf("Usage:\n  %s github-app repos [flags]\n\nLists every repository the connected GitHub App installation can access.\n\nFlags:\n", prog),
-		fetch: func(c *Client, ctx context.Context) ([]gitHubAppRepoResource, error) {
+		jsonUsage: "print {repos, errors} as JSON to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s github-app repos [flags]\n\nLists every repository every connected installation can access.\n\nFlags:\n", prog),
+		fetch: func(c *Client, ctx context.Context) (gitHubAppRepoListResource, error) {
 			return c.ListGitHubAppRepos(ctx)
 		},
 		errVerb: "list github app repos",
@@ -119,17 +125,20 @@ func runGitHubAppRepos(prog string, args []string, stdout, stderr io.Writer, loo
 	})
 }
 
-func printGitHubAppReposTable(out io.Writer, repos []gitHubAppRepoResource) {
-	if len(repos) == 0 {
+func printGitHubAppReposTable(out io.Writer, list gitHubAppRepoListResource) {
+	if len(list.Repos) == 0 {
 		_, _ = fmt.Fprintln(out, "no repositories")
-		return
+	} else {
+		tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+		_, _ = fmt.Fprintln(tw, "FULL_NAME\tPRIVATE\tDEFAULT_BRANCH\tACCOUNT_TYPE")
+		for _, r := range list.Repos {
+			_, _ = fmt.Fprintf(tw, "%s\t%v\t%s\t%s\n", r.FullName, r.Private, r.DefaultBranch, r.AccountType)
+		}
+		_ = tw.Flush()
 	}
-	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "FULL_NAME\tPRIVATE\tDEFAULT_BRANCH")
-	for _, r := range repos {
-		_, _ = fmt.Fprintf(tw, "%s\t%v\t%s\n", r.FullName, r.Private, r.DefaultBranch)
+	for _, e := range list.Errors {
+		_, _ = fmt.Fprintf(out, "warning: could not list repos for %s: %s\n", e.AccountLogin, e.Error)
 	}
-	_ = tw.Flush()
 }
 
 func runGitHubAppBranches(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -175,5 +184,123 @@ func runGitHubAppUseAsSource(prog string, args []string, stdout, stderr io.Write
 				_, _ = fmt.Fprintf(out, "webhook_error:       %s\n", result.WebhookError)
 			}
 		},
+	})
+}
+
+// runGitHubAppInstallations dispatches "github-app installations <verb>"
+// to list/add/remove: internal/api/github_app_installations.go's
+// routes, wired into the CLI the same way the connection's own
+// repos/branches routes are above. "add" never drives GitHub's install
+// flow itself (another real, full-page browser redirect), it only
+// prints the URL to start it, the same reasoning connecting the App
+// itself stays dashboard-only for.
+func runGitHubAppInstallations(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) == 0 {
+		_, _ = fmt.Fprint(stderr, githubAppInstallationsUsage(prog))
+		return exitUsage
+	}
+
+	switch args[0] {
+	case "-h", "--help", "help":
+		_, _ = fmt.Fprint(stdout, githubAppInstallationsUsage(prog))
+		return exitOK
+	case "list":
+		return runGitHubAppInstallationsList(prog, args[1:], stdout, stderr, lookupEnv)
+	case "add":
+		return runGitHubAppInstallationsAdd(prog, args[1:], stdout, stderr, lookupEnv)
+	case "remove":
+		return runGitHubAppInstallationsRemove(prog, args[1:], stdout, stderr, lookupEnv)
+	default:
+		_, _ = fmt.Fprintf(stderr, "%s: unknown github-app installations subcommand %q\n\n", prog, args[0])
+		_, _ = fmt.Fprint(stderr, githubAppInstallationsUsage(prog))
+		return exitUsage
+	}
+}
+
+func githubAppInstallationsUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s github-app installations list [flags]        list every connected account/org
+  %[1]s github-app installations add [flags]         print the URL to install the App on another account/org
+  %[1]s github-app installations remove <id> [flags] disconnect one account/org
+
+Run "%[1]s github-app installations <subcommand> -h" for a subcommand's own flags.
+`, prog)
+}
+
+func runGitHubAppInstallationsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[gitHubAppInstallationListResource]{
+		cmdLabel:  "github-app installations list",
+		jsonUsage: "print {installations, add_org_url} as JSON to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s github-app installations list [flags]\n\nLists every GitHub account/org the App is connected to.\n\nFlags:\n", prog),
+		fetch: func(c *Client, ctx context.Context) (gitHubAppInstallationListResource, error) {
+			return c.ListGitHubAppInstallations(ctx)
+		},
+		errVerb: "list github app installations",
+		print:   printGitHubAppInstallationsTable,
+	})
+}
+
+func printGitHubAppInstallationsTable(out io.Writer, list gitHubAppInstallationListResource) {
+	if len(list.Installations) == 0 {
+		_, _ = fmt.Fprintln(out, "no connected accounts")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "ID\tACCOUNT_LOGIN\tACCOUNT_TYPE\tCONNECTED_AT")
+	for _, inst := range list.Installations {
+		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\n", inst.ID, inst.AccountLogin, inst.AccountType, inst.ConnectedAt)
+	}
+	_ = tw.Flush()
+}
+
+func runGitHubAppInstallationsAdd(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[gitHubAppInstallationListResource]{
+		cmdLabel:  "github-app installations add",
+		jsonUsage: "print {installations, add_org_url} as JSON to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s github-app installations add [flags]\n\nPrints the URL to install the App on another GitHub account/org.\nDoes not open a browser or drive the install flow itself: visit the\nprinted URL yourself, the same way the App's own initial connect is a\nreal browser redirect, not something this CLI can script.\n\nFlags:\n", prog),
+		fetch: func(c *Client, ctx context.Context) (gitHubAppInstallationListResource, error) {
+			return c.ListGitHubAppInstallations(ctx)
+		},
+		errVerb: "get github app add-org url",
+		print: func(out io.Writer, list gitHubAppInstallationListResource) {
+			if list.AddOrgURL == "" {
+				_, _ = fmt.Fprintln(out, "no add-org URL on record: reconnect the GitHub App from the dashboard (Settings > GitHub App) to enable this")
+				return
+			}
+			_, _ = fmt.Fprintln(out, list.AddOrgURL)
+		},
+	})
+}
+
+func runGitHubAppInstallationsRemove(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "github-app installations remove", "print {\"removed\": true} as JSON to stdout on success and nothing else", stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s github-app installations remove <id> [flags]\n\nDisconnects one account/org. Refused (409) while a git source still\npoints at a repo under it; disconnect or move those git sources first.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	idRaw, ok := requireOneArg(fs, stderr, prog, "github-app installations remove", "installation id")
+	if !ok {
+		return exitUsage
+	}
+	id, err := strconv.ParseInt(idRaw, 10, 64)
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: github-app installations remove: %q is not a valid id\n", prog, idRaw)
+		return exitUsage
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	if err := client.DeleteGitHubAppInstallation(context.Background(), id); err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("remove github app installation %d: %w", id, err))
+	}
+
+	return writeScheduledTaskResult(stdout, stderr, of, map[string]bool{"removed": true}, func() {
+		_, _ = fmt.Fprintf(stdout, "installation %d removed\n", id)
 	})
 }
