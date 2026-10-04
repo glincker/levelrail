@@ -15,47 +15,79 @@ import {
 } from '../queries/bitbucketApp'
 import { useGiteaAppBranches, useGiteaAppRepos } from '../queries/giteaApp'
 import { NotConnectedPrompt, type ProviderRowProps } from './GitRepoSourceRows'
-import type { GitRepoSourceValue } from './GitRepoSourcePicker'
+import type {
+  GitRepoSourceProvider,
+  GitRepoSourceValue,
+} from './GitRepoSourcePicker'
 
-// GitHub/Bitbucket/Gitea tabs: structurally identical (full_name-keyed
-// repo-then-branch picker), split from GitRepoSourceRows.tsx for the
-// 500-line cap. SimpleProviderRepoBody is controlled: each
-// *RepoBranchFields wrapper owns selectedRepoKey/selectedBranch itself
-// since its branches hook needs owner/name split out of that same state.
-function SimpleProviderRepoBody({
-  idPrefix,
-  options,
-  repoState,
-  branchState,
-  selectedRepoKey,
-  selectedBranch,
+type RepoQuery<TRepo> = {
+  data?: TRepo[]
+  isLoading: boolean
+  isError: boolean
+  error: Error | null
+}
+
+type BranchQuery = {
+  data?: { name: string }[]
+  isLoading: boolean
+  isError: boolean
+  error: Error | null
+}
+
+type ProviderRef = NonNullable<GitRepoSourceValue['providerRef']>
+
+// GitHub, Bitbucket and Gitea are the same shape (full_name-keyed
+// repo-then-branch picker, and every *AppBranches hook is literally
+// `(a: string, b: string, enabled: boolean) => BranchQuery`), so one
+// generic component backs all three instead of three copy-pasted ones.
+// A fifth provider of this same shape is one more `useRepos`/`fromRepo`/
+// `useBranches`/`branchArgsFrom` config passed to it, not a new file.
+function ConnectedProviderRow<TRepo>({
+  provider,
   disabled,
+  onSelect,
   runningRepoByUrl,
-  onRepoSelect,
-  onBranchSelect,
-}: Readonly<{
-  idPrefix: string
-  options: NormalizedRepoOption[]
-  repoState: { isLoading: boolean; isError: boolean; error: Error | null }
-  branchState: {
-    data?: { name: string }[]
-    isLoading: boolean
-    isError: boolean
-    error: Error | null
+  providerKey,
+  displayName,
+  settingsPath,
+  useRepos,
+  fromRepo,
+  useBranches,
+  branchArgsFrom,
+}: Readonly<
+  ProviderRowProps & {
+    providerKey: GitRepoSourceProvider
+    displayName: string
+    settingsPath: string
+    useRepos: (enabled: boolean) => RepoQuery<TRepo>
+    fromRepo: (repo: TRepo) => NormalizedRepoOption
+    useBranches: (a: string, b: string, enabled: boolean) => BranchQuery
+    branchArgsFrom: (ref: ProviderRef) => [string, string]
   }
-  selectedRepoKey: string
-  selectedBranch: string
-  disabled?: boolean
-  runningRepoByUrl: Map<string, string>
-  onRepoSelect: (option: NormalizedRepoOption) => void
-  onBranchSelect: (branch: string) => void
-}>) {
-  const hasSelected = options.some((option) => option.key === selectedRepoKey)
-  const branchOptions = useMemo(
-    () =>
-      (branchState.data ?? []).map((b) => ({ value: b.name, label: b.name })),
-    [branchState.data],
+>) {
+  const enabled = provider.connected
+  const repos = useRepos(enabled)
+  const options = useMemo(
+    () => (repos.data ?? []).map(fromRepo),
+    [repos.data, fromRepo],
   )
+  const [selectedRepoKey, setSelectedRepoKey] = useState('')
+  const [selectedBranch, setSelectedBranch] = useState('')
+  const selected = options.find((option) => option.key === selectedRepoKey)
+  const [branchArgA, branchArgB] = selected
+    ? branchArgsFrom(selected.providerRef)
+    : ['', '']
+  const branches = useBranches(branchArgA, branchArgB, selected !== undefined)
+  const branchOptions = useMemo(
+    () => (branches.data ?? []).map((b) => ({ value: b.name, label: b.name })),
+    [branches.data],
+  )
+
+  if (!enabled) {
+    return <NotConnectedPrompt name={displayName} settingsPath={settingsPath} />
+  }
+
+  const idPrefix = `git-picker-${providerKey}`
 
   return (
     <div className="space-y-2">
@@ -64,32 +96,43 @@ function SimpleProviderRepoBody({
         <RepoPickerGrid
           searchInputId={`${idPrefix}-repo`}
           options={options}
-          isLoading={repoState.isLoading}
-          isError={repoState.isError}
-          errorMessage={repoState.error?.message}
+          isLoading={repos.isLoading}
+          isError={repos.isError}
+          errorMessage={repos.error?.message}
           selectedKey={selectedRepoKey}
           disabled={disabled}
           runningRepoByUrl={runningRepoByUrl}
-          onSelect={onRepoSelect}
+          onSelect={(option) => {
+            setSelectedRepoKey(option.key)
+            setSelectedBranch('')
+          }}
         />
       </Field>
 
-      {hasSelected ? (
+      {selected ? (
         <Field>
           <FieldLabel htmlFor={`${idPrefix}-branch`}>Branch</FieldLabel>
           <Combobox
             id={`${idPrefix}-branch`}
             options={branchOptions}
             value={selectedBranch}
-            isLoading={branchState.isLoading}
+            isLoading={branches.isLoading}
             disabled={disabled}
             placeholder="Select a branch"
             searchPlaceholder="Search branches..."
-            onValueChange={onBranchSelect}
+            onValueChange={(branch) => {
+              setSelectedBranch(branch)
+              onSelect({
+                provider: providerKey,
+                repoUrl: selected.cloneUrl,
+                branch,
+                providerRef: selected.providerRef,
+              })
+            }}
           />
-          {branchState.isError ? (
+          {branches.isError ? (
             <p className="text-sm text-destructive">
-              {branchState.error?.message}
+              {branches.error?.message}
             </p>
           ) : null}
         </Field>
@@ -98,252 +141,53 @@ function SimpleProviderRepoBody({
   )
 }
 
-export function GitHubProviderRow({
-  provider,
-  disabled,
-  onSelect,
-  runningRepoByUrl,
-}: ProviderRowProps) {
-  const enabled = provider.connected
-  const repos = useGitHubAppRepos(enabled)
-  const options = useMemo(
-    () => (repos.data ?? []).map(fromGitHubRepo),
-    [repos.data],
-  )
-
-  if (!enabled) {
-    return (
-      <NotConnectedPrompt name="GitHub" settingsPath="/settings/github-app" />
-    )
-  }
-
+export function GitHubProviderRow(props: ProviderRowProps) {
   return (
-    <GitHubRepoBranchFields
-      options={options}
-      repos={repos}
-      disabled={disabled}
-      onSelect={onSelect}
-      runningRepoByUrl={runningRepoByUrl}
+    <ConnectedProviderRow
+      {...props}
+      providerKey="github"
+      displayName="GitHub"
+      settingsPath="/settings/github-app"
+      useRepos={useGitHubAppRepos}
+      fromRepo={fromGitHubRepo}
+      useBranches={useGitHubAppBranches}
+      branchArgsFrom={(ref) =>
+        ref.kind === 'github' ? [ref.owner, ref.repo] : ['', '']
+      }
     />
   )
 }
 
-// Split from GitHubProviderRow purely so useGitHubAppBranches (which
-// needs the selected repo's owner/name split out of its key) can live
-// next to the selectedRepoKey state it depends on.
-function GitHubRepoBranchFields({
-  options,
-  repos,
-  disabled,
-  onSelect,
-  runningRepoByUrl,
-}: Readonly<{
-  options: NormalizedRepoOption[]
-  repos: { isLoading: boolean; isError: boolean; error: Error | null }
-  disabled?: boolean
-  onSelect: (value: GitRepoSourceValue) => void
-  runningRepoByUrl: Map<string, string>
-}>) {
-  const [selectedRepoKey, setSelectedRepoKey] = useState('')
-  const [selectedBranch, setSelectedBranch] = useState('')
-  const selected = options.find((option) => option.key === selectedRepoKey)
-  const [owner, repoName] =
-    selected?.providerRef.kind === 'github'
-      ? [selected.providerRef.owner, selected.providerRef.repo]
-      : ['', '']
-  const branches = useGitHubAppBranches(owner, repoName, selected !== undefined)
-
+export function BitbucketProviderRow(props: ProviderRowProps) {
   return (
-    <SimpleProviderRepoBody
-      idPrefix="git-picker-github"
-      options={options}
-      repoState={repos}
-      branchState={branches}
-      selectedRepoKey={selectedRepoKey}
-      selectedBranch={selectedBranch}
-      disabled={disabled}
-      runningRepoByUrl={runningRepoByUrl}
-      onRepoSelect={(option) => {
-        setSelectedRepoKey(option.key)
-        setSelectedBranch('')
-      }}
-      onBranchSelect={(branch) => {
-        setSelectedBranch(branch)
-        if (!selected) return
-        onSelect({
-          provider: 'github',
-          repoUrl: selected.cloneUrl,
-          branch,
-          providerRef: selected.providerRef,
-        })
-      }}
+    <ConnectedProviderRow
+      {...props}
+      providerKey="bitbucket"
+      displayName="Bitbucket"
+      settingsPath="/settings/bitbucket-app"
+      useRepos={useBitbucketAppRepos}
+      fromRepo={fromBitbucketRepo}
+      useBranches={useBitbucketAppBranches}
+      branchArgsFrom={(ref) =>
+        ref.kind === 'bitbucket' ? [ref.workspace, ref.repoSlug] : ['', '']
+      }
     />
   )
 }
 
-export function BitbucketProviderRow({
-  provider,
-  disabled,
-  onSelect,
-  runningRepoByUrl,
-}: ProviderRowProps) {
-  const enabled = provider.connected
-  const repos = useBitbucketAppRepos(enabled)
-  const options = useMemo(
-    () => (repos.data ?? []).map(fromBitbucketRepo),
-    [repos.data],
-  )
-
-  if (!enabled) {
-    return (
-      <NotConnectedPrompt
-        name="Bitbucket"
-        settingsPath="/settings/bitbucket-app"
-      />
-    )
-  }
-
+export function GiteaProviderRow(props: ProviderRowProps) {
   return (
-    <BitbucketRepoBranchFields
-      options={options}
-      repos={repos}
-      disabled={disabled}
-      onSelect={onSelect}
-      runningRepoByUrl={runningRepoByUrl}
-    />
-  )
-}
-
-function BitbucketRepoBranchFields({
-  options,
-  repos,
-  disabled,
-  onSelect,
-  runningRepoByUrl,
-}: Readonly<{
-  options: NormalizedRepoOption[]
-  repos: { isLoading: boolean; isError: boolean; error: Error | null }
-  disabled?: boolean
-  onSelect: (value: GitRepoSourceValue) => void
-  runningRepoByUrl: Map<string, string>
-}>) {
-  const [selectedRepoKey, setSelectedRepoKey] = useState('')
-  const [selectedBranch, setSelectedBranch] = useState('')
-  const selected = options.find((option) => option.key === selectedRepoKey)
-  const [workspace, repoSlug] =
-    selected?.providerRef.kind === 'bitbucket'
-      ? [selected.providerRef.workspace, selected.providerRef.repoSlug]
-      : ['', '']
-  const branches = useBitbucketAppBranches(
-    workspace,
-    repoSlug,
-    selected !== undefined,
-  )
-
-  return (
-    <SimpleProviderRepoBody
-      idPrefix="git-picker-bitbucket"
-      options={options}
-      repoState={repos}
-      branchState={branches}
-      selectedRepoKey={selectedRepoKey}
-      selectedBranch={selectedBranch}
-      disabled={disabled}
-      runningRepoByUrl={runningRepoByUrl}
-      onRepoSelect={(option) => {
-        setSelectedRepoKey(option.key)
-        setSelectedBranch('')
-      }}
-      onBranchSelect={(branch) => {
-        setSelectedBranch(branch)
-        if (!selected) return
-        onSelect({
-          provider: 'bitbucket',
-          repoUrl: selected.cloneUrl,
-          branch,
-          providerRef: selected.providerRef,
-        })
-      }}
-    />
-  )
-}
-
-export function GiteaProviderRow({
-  provider,
-  disabled,
-  onSelect,
-  runningRepoByUrl,
-}: ProviderRowProps) {
-  const enabled = provider.connected
-  const repos = useGiteaAppRepos(enabled)
-  const options = useMemo(
-    () => (repos.data ?? []).map(fromGiteaRepo),
-    [repos.data],
-  )
-
-  if (!enabled) {
-    return (
-      <NotConnectedPrompt name="Gitea" settingsPath="/settings/gitea-app" />
-    )
-  }
-
-  return (
-    <GiteaRepoBranchFields
-      options={options}
-      repos={repos}
-      disabled={disabled}
-      onSelect={onSelect}
-      runningRepoByUrl={runningRepoByUrl}
-    />
-  )
-}
-
-function GiteaRepoBranchFields({
-  options,
-  repos,
-  disabled,
-  onSelect,
-  runningRepoByUrl,
-}: Readonly<{
-  options: NormalizedRepoOption[]
-  repos: { isLoading: boolean; isError: boolean; error: Error | null }
-  disabled?: boolean
-  onSelect: (value: GitRepoSourceValue) => void
-  runningRepoByUrl: Map<string, string>
-}>) {
-  const [selectedRepoKey, setSelectedRepoKey] = useState('')
-  const [selectedBranch, setSelectedBranch] = useState('')
-  const selected = options.find((option) => option.key === selectedRepoKey)
-  const [owner, repoName] =
-    selected?.providerRef.kind === 'gitea'
-      ? [selected.providerRef.owner, selected.providerRef.repo]
-      : ['', '']
-  const branches = useGiteaAppBranches(owner, repoName, selected !== undefined)
-
-  return (
-    <SimpleProviderRepoBody
-      idPrefix="git-picker-gitea"
-      options={options}
-      repoState={repos}
-      branchState={branches}
-      selectedRepoKey={selectedRepoKey}
-      selectedBranch={selectedBranch}
-      disabled={disabled}
-      runningRepoByUrl={runningRepoByUrl}
-      onRepoSelect={(option) => {
-        setSelectedRepoKey(option.key)
-        setSelectedBranch('')
-      }}
-      onBranchSelect={(branch) => {
-        setSelectedBranch(branch)
-        if (!selected) return
-        onSelect({
-          provider: 'gitea',
-          repoUrl: selected.cloneUrl,
-          branch,
-          providerRef: selected.providerRef,
-        })
-      }}
+    <ConnectedProviderRow
+      {...props}
+      providerKey="gitea"
+      displayName="Gitea"
+      settingsPath="/settings/gitea-app"
+      useRepos={useGiteaAppRepos}
+      fromRepo={fromGiteaRepo}
+      useBranches={useGiteaAppBranches}
+      branchArgsFrom={(ref) =>
+        ref.kind === 'gitea' ? [ref.owner, ref.repo] : ['', '']
+      }
     />
   )
 }
