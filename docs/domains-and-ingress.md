@@ -425,6 +425,20 @@ lists, no TLS termination on the stream itself (if the backend speaks
 TLS, that's between the client and the backend, Levelrail just carries
 the bytes), and no multi-app or load-balanced streams yet.
 
+## Traffic: routing status for every domain at a glance
+
+**Infrastructure > Traffic** in the dashboard (`GET /api/v1/network/proxy`, `read` ability, so any signed-in user can check it) is a flat, one-row-per-domain table: which app a domain routes to, which node that app actually runs on, whether this control plane's own embedded ingress can reach it, its port, and TLS status and issuer.
+
+It exists for one specific, otherwise-invisible failure: the embedded Caddy ingress above only ever routes containers on **its own node**. If an app gets placed on a different node, its container can be perfectly healthy while its domain silently never routes, because there's no mesh path to it yet. See [Multi-node: WireGuard mesh and internal DNS](multi-node.md#wireguard-mesh-and-internal-dns) for why that gap exists today.
+
+This is the fastest way to spot it. A domain in that state shows an **Unreachable** badge (with a banner at the top of the page when any exist) instead of only turning up as a line in `GET /api/v1/doctor`'s report. Each unreachable row carries a **Move** button straight to the same move-with-volumes flow described in [Moving an app with its volumes](multi-node.md#moving-an-app-with-its-volumes), or run the fix directly:
+
+```bash
+levelrail-cli apps set-node <app-name> <this control plane's own node id>
+# or, to let auto-placement choose again:
+levelrail-cli apps clear-node <app-name>
+```
+
 ## Walkthrough: your first domain, from install to HTTPS
 
 This assumes you already have the control plane running and an app deployed (see [docs/getting-started.md](getting-started.md)).

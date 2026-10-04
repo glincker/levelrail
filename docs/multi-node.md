@@ -470,6 +470,8 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 **What's scoped:** One new agent request/response message, plus a case in `internal/agent.Execute` calling `Mesh.Apply`. It's defined work, not built.
 
+**Concrete symptom today:** an app placed on a node other than the control plane's own has a domain that never routes, since the embedded ingress only ever serves containers on its own node (see [Domains and ingress: Traffic](domains-and-ingress.md#traffic-routing-status-for-every-domain-at-a-glance) for the dashboard page that surfaces exactly this, per domain, with a one-click fix).
+
 ## API reference
 
 | Method | Path | Ability |
