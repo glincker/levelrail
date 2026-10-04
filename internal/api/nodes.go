@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -171,13 +172,31 @@ func (rt *Router) respondPlacementValidationError(w http.ResponseWriter, err err
 	}
 }
 
-// handleListNodes handles GET /api/v1/nodes.
+// handleListNodes handles GET /api/v1/nodes with optional q, limit and
+// offset (same shape as handleListApps). Without limit the full list
+// returns as before; X-Total-Count always carries the match count
+// before paging. Falls back to the plain, unfiltered ListNodes when
+// rt.nodes doesn't implement nodeFilterStore (only a test fake would
+// not; *store.DB always does).
 func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
-	nodes, err := rt.nodes.ListNodes(r.Context())
-	if err != nil {
-		rt.logger.Error("api: list nodes failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
+	var nodes []store.Node
+	var total int
+	if fs, ok := rt.nodes.(nodeFilterStore); ok {
+		var err error
+		nodes, total, err = fs.ListNodesFiltered(r.Context(), parseNodeListFilter(r))
+		if err != nil {
+			rt.logger.Error("api: list nodes failed", slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	} else {
+		all, err := rt.nodes.ListNodes(r.Context())
+		if err != nil {
+			rt.logger.Error("api: list nodes failed", slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		nodes, total = all, len(all)
 	}
 	gpus := rt.nodeGPUResources(r.Context())
 	now := time.Now()
@@ -189,6 +208,7 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 		res.Cert, res.Agent = rt.nodeCertAndAgent(n, now)
 		out = append(out, res)
 	}
+	w.Header().Set("X-Total-Count", strconv.Itoa(total))
 	writeJSON(w, http.StatusOK, out)
 }
 
