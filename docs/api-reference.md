@@ -864,6 +864,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/changelog | AbilityRead | handleGetChangelog |
 | GET | /api/v1/templates/custom | AbilityRead | handleListCustomTemplates |
 | DELETE | /api/v1/templates/custom/{id} | AbilityWrite | handleDeleteCustomTemplate |
+| GET | /api/v1/network/proxy | AbilityRead | handleGetNetworkProxy |
 
 ## See also
 
