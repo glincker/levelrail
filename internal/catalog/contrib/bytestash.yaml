@@ -1,0 +1,26 @@
+id: bytestash
+name: ByteStash
+slogan: A fast, self-hosted code snippet manager with syntax highlighting, tagging, and a built-in MCP endpoint for AI assistants.
+category: Developer Tools
+documentation_url: https://github.com/jordan-dalby/ByteStash
+recommended_memory_bytes: 268435456
+compose: |
+  services:
+    bytestash:
+      image: ghcr.io/jordan-dalby/bytestash:1.5.13
+      ports: ["5000:5000"]
+      environment:
+        BASE_PATH: ""
+        TOKEN_EXPIRY: 24h
+        ALLOW_NEW_ACCOUNTS: "true"
+        DISABLE_ACCOUNTS: "false"
+        DISABLE_INTERNAL_ACCOUNTS: "false"
+        OIDC_ENABLED: "false"
+      volumes:
+        - bytestash_data:/data/snippets
+      healthcheck:
+        test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5000/ || exit 1"]
+        interval: 30s
+        timeout: 5s
+        retries: 3
+        start_period: 30s
