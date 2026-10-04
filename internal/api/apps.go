@@ -513,8 +513,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// override, validated the same way handleSetAppNode validates one.
 	// Omitted entirely lets simple spread scheduling (autoPlaceNode) pick
 	// a node when more than one is registered; AutoPlaced only turns
-	// true when that pick actually lands somewhere other than local.
-	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, "api: create app") {
+	// true when that pick actually lands somewhere other than local. A
+	// domain-bearing app prefers the control plane's own node, since
+	// ingress has no mesh path to a worker node yet (CrossNodeIngress).
+	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, len(req.Domains) > 0, "api: create app") {
 		return
 	}
 	if !rt.settleGPUCreatePlacement(w, r, body, &req) {
