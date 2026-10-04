@@ -56,7 +56,7 @@ This section lists what you can see and do for each app, database, and system ar
 
 - **Nodes** - List all managed servers, check their health status, drain workloads before maintenance, prevent scheduling new apps on a node, and view node metrics
 - **Cross-app domains** - Configure shared domain routing and TLS settings that apply to all apps using them
-- **Projects** - Group apps and databases by project for better organization
+- **Projects** - Group apps and databases by project for better organization; each project has a [Topology](service-topology-graph.md) page drawing its apps, databases, and shared volumes as a diagram
 - **Environments** - Create environment tiers (staging, production) and scope app settings and variables per environment
 - **Organizations** - Set up multi-tenant structure for teams or separate business units
 
@@ -106,6 +106,7 @@ the exact method/path/ability of every one), grouped by resource:
 | Ingress / certs / domains / email / Cloudflare | 19 | `/certificates`, `/settings/ingress*`, `/settings/cloudflare-tunnel*`, `/domains/{domain}/tls-cert` |
 | Static sites / backup targets / registry credentials | 15 | `/static-sites`, `/backup-targets*`, `/registry-credentials*` |
 | Built-in container registry | 5 | `/settings/registry`, `/registry/repositories`, `/registry/tags` |
+| Public Docker Hub search (docker-image deploy picker) | 2 | `/dockerhub/search`, `/dockerhub/repositories/{namespace}/{repo}/tags` |
 | Git provider apps (GitHub/GitLab/Bitbucket/Gitea) | 34 | `/github-app*`, `/gitlab-app*`, `/bitbucket-app*`, `/gitea-app*` |
 | DB backups/restore/clone-restore | 17 | `/databases/{name}/backups*`, `/restore-as-new`, `/backup-schedule`, `/backups` |
 | DB point-in-time restore (PITR, postgres only) | 7 | `/databases/{name}/pitr*`, `/base-backups*`, `/pitr-restore*` |
@@ -125,7 +126,7 @@ All command groups available:
 
 **apps**
 
-`create`, `list`, `get`, `deploy`, `deploy-compose`, `deploy-spec`, `validate` (local app.yaml/compose parse, no API call), `group`, `hook-runs`, `rollback`, `auto-rollback`, `deploys`, `promote`, `restart`, `stop`, `start`, `delete`, `status`, `diagnose`, `resource-recommendation`, `network`, `logs` (with `--follow`/`-f` for live tail), `metrics`, `exec`, `log-drain`, `scheduled-tasks`, `alerts`, `organizations`, `projects`, `environments`, `previews`, `secrets`, `git-source`, `webhook-deliveries`, `storage`, `tag`, `untag`.
+`create`, `list`, `get`, `deploy`, `deploy-compose`, `deploy-spec`, `validate` (local app.yaml/compose parse, no API call), `group`, `hook-runs`, `rollback`, `auto-rollback`, `auto-rollback-slo-burn`, `deploys`, `promote`, `restart`, `stop`, `start`, `delete`, `status`, `diagnose`, `resource-recommendation`, `network`, `logs` (with `--follow`/`-f` for live tail), `metrics`, `exec`, `log-drain`, `scheduled-tasks`, `alerts`, `organizations`, `projects`, `environments`, `previews`, `secrets`, `git-source`, `webhook-deliveries`, `storage`, `tag`, `untag`.
 
 **databases**
 
@@ -133,7 +134,7 @@ All command groups available:
 
 **nodes**
 
-`list`, `get`, `delete`, `join-token`, `cordon`, `uncordon`, `drain`, `workloads`, `health`, `patch-status`, `metrics`, `events` (connection history).
+`list`, `get`, `delete`, `join-token`, `cordon`, `uncordon`, `drain`, `workloads`, `health`, `patch-status`, `metrics`, `events` (connection history), `resource-usage`, `capacity-forecast`.
 
 **iam**
 

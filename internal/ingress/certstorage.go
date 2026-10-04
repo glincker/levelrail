@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"net/http"
+	"path"
 	"sync"
 	"time"
 
@@ -27,6 +29,40 @@ type CertStore interface {
 	AcquireCertStorageLock(ctx context.Context, name string, staleAfter time.Duration) (bool, error)
 	TouchCertStorageLock(ctx context.Context, name string) error
 	ReleaseCertStorageLock(ctx context.Context, name string) error
+}
+
+// AuditRecorder is the narrow surface SQLiteStorage needs to record a
+// certificate issuance or renewal as a system-driven audit_log row.
+// *store.DB satisfies this via the same SaveAuditEntry internal/api's
+// requireAbility already calls for every request-driven row; a
+// background ACME renewal has no request behind it, so this is the one
+// other call site audit_log ever gets written from.
+type AuditRecorder interface {
+	SaveAuditEntry(ctx context.Context, e store.AuditEntry) error
+}
+
+// Synthetic actor/caller fields for a Store-triggered audit_log row,
+// mirroring internal/api.ClientKindCLI et al.'s "named caller surface"
+// constants. Ability doubles as the issued-vs-renewed distinction a
+// reader (web/src/lib/auditLabels.ts) keys its friendly label off.
+const (
+	certEventActorType  = "system"
+	certEventActorID    = "ingress"
+	certEventActorName  = "Automatic TLS"
+	certEventClientKind = "system"
+	certEventMethod     = "EVENT"
+
+	CertEventAbilityIssued  = "cert.issued"
+	CertEventAbilityRenewed = "cert.renewed"
+)
+
+// certEventPath builds the audit_log row's Path for domain, reusing the
+// real GET /api/v1/certificates collection path as a prefix so a reader
+// already parsing that family of paths for a domain segment (the
+// request-driven .../domains/{domain}/... rows) can extract this one the
+// same way.
+func certEventPath(domain string) string {
+	return "/api/v1/certificates/" + domain
 }
 
 const (
@@ -58,8 +94,22 @@ type SQLiteStorage struct {
 	store  CertStore
 	logger *slog.Logger
 
+	// auditRecorder, set via WithAuditRecorder, is nil until an operator's
+	// wiring opts in; Store() skips the audit write entirely when nil, the
+	// same "absent means skip, not error" shape WithCertStore's own
+	// doc comment already establishes for an unset optional dependency.
+	auditRecorder AuditRecorder
+
 	mu          sync.Mutex
 	refreshStop map[string]chan struct{}
+}
+
+// WithAuditRecorder sets the audit log destination for certificate
+// issuance/renewal events this storage detects. Returns s so it can be
+// chained onto NewSQLiteStorage's result at the construction site.
+func (s *SQLiteStorage) WithAuditRecorder(ar AuditRecorder) *SQLiteStorage {
+	s.auditRecorder = ar
+	return s
 }
 
 var _ certmagic.Storage = (*SQLiteStorage)(nil)
@@ -74,12 +124,66 @@ func NewSQLiteStorage(certStore CertStore, logger *slog.Logger) *SQLiteStorage {
 	return &SQLiteStorage{store: certStore, logger: logger}
 }
 
-// Store implements certmagic.Storage.
+// Store implements certmagic.Storage. A ".crt" key write is the one
+// unambiguous "a certificate was (re)issued" signal regardless of which
+// caller triggered it (Caddy's own ACME timer, or a reconciler nudge),
+// so the audit hook lives here, the single choke point, not in any one
+// caller. existedBefore is checked ahead of the real write so it always
+// reflects state right before this write lands.
 func (s *SQLiteStorage) Store(ctx context.Context, key string, value []byte) error {
+	isLeafCert := s.auditRecorder != nil && path.Ext(key) == ".crt"
+	var existedBefore bool
+	if isLeafCert {
+		existedBefore = s.Exists(ctx, key)
+	}
+
 	if err := s.store.SaveCertStorageValue(ctx, key, value); err != nil {
 		return fmt.Errorf("ingress: cert storage: store %q: %w", key, err)
 	}
+
+	if isLeafCert {
+		s.recordCertEvent(ctx, key, existedBefore)
+	}
 	return nil
+}
+
+// recordCertEvent writes a best-effort, system-actor audit_log row for a
+// certificate file Store just saved: domain is the storage key's own
+// directory segment, the same fallback alerting.certDomain uses when a
+// certificate has neither SANs nor a CommonName, cheap enough to use
+// unconditionally here since this hook has no parsed certificate to
+// prefer over it anyway. A save failure is logged, never returned: by the
+// time this runs the actual certificate write already succeeded, so
+// there's nothing left to fail the caller over.
+func (s *SQLiteStorage) recordCertEvent(ctx context.Context, key string, existedBefore bool) {
+	domain := path.Base(path.Dir(key))
+	ability := CertEventAbilityIssued
+	if existedBefore {
+		ability = CertEventAbilityRenewed
+	}
+
+	id, err := store.NewAuditEntryID()
+	if err != nil {
+		s.logger.WarnContext(ctx, "ingress: cert storage: generate cert event audit id failed",
+			slog.String("domain", domain), slog.String("error", err.Error()))
+		return
+	}
+	entry := store.AuditEntry{
+		ID:         id,
+		ActorType:  certEventActorType,
+		ActorID:    certEventActorID,
+		ActorName:  certEventActorName,
+		Ability:    ability,
+		Method:     certEventMethod,
+		Path:       certEventPath(domain),
+		StatusCode: http.StatusOK,
+		CreatedAt:  store.FormatAuditTime(time.Now()),
+		ClientKind: certEventClientKind,
+	}
+	if err := s.auditRecorder.SaveAuditEntry(ctx, entry); err != nil {
+		s.logger.WarnContext(ctx, "ingress: cert storage: save cert event audit entry failed",
+			slog.String("domain", domain), slog.String("error", err.Error()))
+	}
 }
 
 // Load implements certmagic.Storage.

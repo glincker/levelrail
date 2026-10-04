@@ -42,16 +42,8 @@ type slowQueriesResponse struct {
 }
 
 // handleQueryDatabaseSlowQueries handles GET
-// /api/v1/databases/{name}/slow-queries. Only Postgres and MySQL are
-// supported; every other engine returns 400 (see internal/slowquery's
-// package doc comment for why). Postgres reads its already-stored
-// container log lines (internal/slowquery), the same source
-// database_logs.go uses. MySQL execs into the running container to read
-// MySQLSlowQueryLogPath directly instead: MySQL 8's FILE log sink
-// cannot reliably open /dev/stderr from inside a container (confirmed
-// against a real container, see database.MySQLSlowQueryLogPath's own
-// doc comment), so there is no Docker-log-stream source to read for
-// this engine.
+// /api/v1/databases/{name}/slow-queries. Postgres, MySQL, and MariaDB
+// (same wire format as MySQL) only; every other engine returns 400.
 func (rt *Router) handleQueryDatabaseSlowQueries(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	ctx := r.Context()
@@ -81,7 +73,7 @@ func (rt *Router) handleQueryDatabaseSlowQueries(w http.ResponseWriter, r *http.
 	switch desired.Engine {
 	case store.EnginePostgres:
 		parsed, ok = rt.postgresSlowQueryEntries(w, r, name, from, to)
-	case store.EngineMySQL:
+	case store.EngineMySQL, store.EngineMariaDB:
 		parsed, ok = rt.mysqlSlowQueryEntries(w, r, name, desired.NodeID)
 	default:
 		writeError(w, http.StatusBadRequest, "slow query log is not supported for engine "+desired.Engine)

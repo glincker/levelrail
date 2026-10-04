@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gitprovider"
@@ -223,17 +224,21 @@ type InstallationInfo struct {
 	ID           int64
 	AppID        int64
 	AccountLogin string
-	SuspendedAt  string
+	// AccountType is GitHub's own "User" or "Organization", lowercased
+	// to match github_app_installations.account_type's CHECK constraint.
+	AccountType string
+	SuspendedAt string
 }
 
 type installationResponse struct {
 	ID    int64 `json:"id"`
 	AppID int64 `json:"app_id"`
 	// Account is either a user or an organization in GitHub's schema;
-	// both shapes carry "login" at the top level, so decoding just that
-	// one field works for either.
+	// both shapes carry "login" and "type" at the top level, so decoding
+	// just those two fields works for either.
 	Account struct {
 		Login string `json:"login"`
+		Type  string `json:"type"`
 	} `json:"account"`
 	SuspendedAt *string `json:"suspended_at"`
 }
@@ -259,7 +264,12 @@ func (c *Client) GetInstallation(ctx context.Context, instanceURL, appJWT string
 		}
 		return InstallationInfo{}, err
 	}
-	info := InstallationInfo{ID: resp.ID, AppID: resp.AppID, AccountLogin: resp.Account.Login}
+	info := InstallationInfo{
+		ID:           resp.ID,
+		AppID:        resp.AppID,
+		AccountLogin: resp.Account.Login,
+		AccountType:  strings.ToLower(resp.Account.Type),
+	}
 	if resp.SuspendedAt != nil {
 		info.SuspendedAt = *resp.SuspendedAt
 	}

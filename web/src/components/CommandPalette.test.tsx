@@ -41,6 +41,29 @@ vi.mock('../queries/databases', () => ({
     queryFn: () => Promise.resolve([]),
   }),
 }))
+vi.mock('../queries/nodes', () => ({
+  nodeListQueryOptions: () => ({
+    queryKey: ['nodes'],
+    queryFn: () =>
+      Promise.resolve([{ id: 'node-1', name: 'fsn1-a', status: 'ready' }]),
+  }),
+}))
+vi.mock('../queries/serviceTemplates', () => ({
+  serviceTemplatesQueryOptions: () => ({
+    queryKey: ['service-templates'],
+    queryFn: () =>
+      Promise.resolve([
+        { id: 'postgres', name: 'PostgreSQL', category: 'database' },
+      ]),
+  }),
+}))
+vi.mock('../queries/domains', () => ({
+  domainsQueryOptions: () => ({
+    queryKey: ['domains'],
+    queryFn: () =>
+      Promise.resolve([{ domain: 'app.example.com', service_name: 'web' }]),
+  }),
+}))
 
 function renderPalette() {
   const client = new QueryClient({
@@ -143,6 +166,41 @@ describe('CommandPalette', () => {
     })
   })
 
+  it('finds and navigates to a node by name', async () => {
+    const user = userEvent.setup()
+    renderPalette()
+    await user.type(screen.getByRole('combobox'), 'fsn1-a')
+    await user.click(await screen.findByRole('option', { name: 'fsn1-a' }))
+    expect(navigate).toHaveBeenCalledWith({
+      to: '/nodes/$id',
+      params: { id: 'node-1' },
+    })
+  })
+
+  it('finds and navigates to a template by name', async () => {
+    const user = userEvent.setup()
+    renderPalette()
+    await user.type(screen.getByRole('combobox'), 'PostgreSQL')
+    await user.click(await screen.findByRole('option', { name: 'PostgreSQL' }))
+    expect(navigate).toHaveBeenCalledWith({
+      to: '/templates/$id',
+      params: { id: 'postgres' },
+    })
+  })
+
+  it('finds and navigates to a domain by name', async () => {
+    const user = userEvent.setup()
+    renderPalette()
+    await user.type(screen.getByRole('combobox'), 'app.example.com')
+    await user.click(
+      await screen.findByRole('option', { name: 'app.example.com' }),
+    )
+    expect(navigate).toHaveBeenCalledWith({
+      to: '/apps/$name/domains',
+      params: { name: 'web' },
+    })
+  })
+
   it('does not refetch the app list per keystroke', async () => {
     const user = userEvent.setup()
     renderPalette()
@@ -190,6 +248,16 @@ describe('CommandPalette', () => {
     expect(
       screen.getByRole('option', { name: /Databases/ }),
     ).toBeInTheDocument()
+  })
+
+  it('shows static quick-action CTAs with no recents and no app data', () => {
+    experimentalOn = []
+    renderPalette()
+    const suggested = screen.getByRole('group', { name: 'Suggested' })
+    expect(suggested).toHaveTextContent('Create app')
+    expect(suggested).toHaveTextContent('Go to Apps')
+    expect(suggested).toHaveTextContent('Deployments')
+    expect(suggested).toHaveTextContent('Help')
   })
 
   it('shows gated destinations once their feature is on', () => {

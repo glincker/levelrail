@@ -37,13 +37,11 @@ import {
 // request (internal/api/database_slow_queries.go's own limit/offset), so
 // this stays a "one bounded page" view, not a paginated table.
 //
-// Engines other than Postgres/MySQL (Redis, MongoDB, MariaDB, KeyDB,
-// Dragonfly, ClickHouse) have no slow-query-log support server-side yet
-// (see internal/slowquery's package doc comment for why Redis in
-// particular doesn't fit this log-parsing shape); this renders an
-// explanatory empty state instead of firing a request that would 400.
+// Other engines (Redis, MongoDB, KeyDB, Dragonfly, ClickHouse) have no
+// slow-query-log support server-side; this renders an explanatory empty
+// state instead of firing a request that would 400.
 
-const SUPPORTED_ENGINES = new Set(['postgres', 'mysql'])
+const SUPPORTED_ENGINES = new Set(['postgres', 'mysql', 'mariadb'])
 const MAX_FETCH_LIMIT = 500
 const MAX_QUERY_PREVIEW_CHARS = 300
 
@@ -129,7 +127,7 @@ export function DatabaseSlowQueriesPanel({
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Statements parsed from this database&apos;s own slow query log.
-            Postgres and MySQL only.
+            Postgres, MySQL, and MariaDB only.
           </p>
         </div>
         {supported ? (
@@ -150,7 +148,7 @@ export function DatabaseSlowQueriesPanel({
           title="Slow query log not available for this engine"
           description={
             engine
-              ? `Slow query log parsing is only wired up for Postgres and MySQL databases; "${engine}" isn't supported. Redis-family engines expose SLOWLOG on the live server instead of a log file, a different data source this view doesn't read.`
+              ? `Slow query log parsing is only wired up for Postgres, MySQL, and MariaDB databases; "${engine}" isn't supported. Redis-family engines expose SLOWLOG on the live server instead of a log file, a different data source this view doesn't read.`
               : 'Loading database details...'
           }
         />

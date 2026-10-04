@@ -8,13 +8,14 @@ import (
 // Email backends store.EmailSettings.Backend accepts. Empty string means
 // "unset": the caller falls back to APP_SMTP_* env vars if set.
 const (
-	EmailBackendSMTP = "smtp"
-	EmailBackendSES  = "ses"
+	EmailBackendSMTP   = "smtp"
+	EmailBackendSES    = "ses"
+	EmailBackendResend = "resend"
 )
 
 // EmailSettingsSecretsKey is the internal/secrets serviceName the
 // platform-wide email settings' credentials are stored under (envKeys
-// "smtp_password" and "ses_secret_access_key").
+// "smtp_password", "ses_secret_access_key", and "resend_api_key").
 func EmailSettingsSecretsKey() string {
 	return "email-settings"
 }
@@ -22,7 +23,7 @@ func EmailSettingsSecretsKey() string {
 // EmailSettings is the single platform-wide email-sending configuration
 // row. No credential fields: those go through internal/secrets instead.
 type EmailSettings struct {
-	// Backend is "", EmailBackendSMTP, or EmailBackendSES.
+	// Backend is "", EmailBackendSMTP, EmailBackendSES, or EmailBackendResend.
 	Backend        string
 	SMTPHost       string
 	SMTPPort       int
@@ -31,6 +32,7 @@ type EmailSettings struct {
 	SESRegion      string
 	SESAccessKeyID string
 	SESFrom        string
+	ResendFrom     string
 }
 
 // GetEmailSettings returns the single email_settings row. Always
@@ -39,11 +41,11 @@ func (db *DB) GetEmailSettings(ctx context.Context) (EmailSettings, error) {
 	var s EmailSettings
 	err := db.QueryRowContext(ctx, `
 		SELECT backend, smtp_host, smtp_port, smtp_username, smtp_from,
-		       ses_region, ses_access_key_id, ses_from
+		       ses_region, ses_access_key_id, ses_from, resend_from
 		FROM email_settings
 		WHERE id = 1
 	`).Scan(&s.Backend, &s.SMTPHost, &s.SMTPPort, &s.SMTPUsername, &s.SMTPFrom,
-		&s.SESRegion, &s.SESAccessKeyID, &s.SESFrom)
+		&s.SESRegion, &s.SESAccessKeyID, &s.SESFrom, &s.ResendFrom)
 	if err != nil {
 		return EmailSettings{}, fmt.Errorf("store: get email settings: %w", err)
 	}
@@ -56,10 +58,10 @@ func (db *DB) UpdateEmailSettings(ctx context.Context, s EmailSettings) error {
 	_, err := db.ExecContext(ctx, `
 		UPDATE email_settings
 		SET backend = ?, smtp_host = ?, smtp_port = ?, smtp_username = ?, smtp_from = ?,
-		    ses_region = ?, ses_access_key_id = ?, ses_from = ?
+		    ses_region = ?, ses_access_key_id = ?, ses_from = ?, resend_from = ?
 		WHERE id = 1
 	`, s.Backend, s.SMTPHost, s.SMTPPort, s.SMTPUsername, s.SMTPFrom,
-		s.SESRegion, s.SESAccessKeyID, s.SESFrom)
+		s.SESRegion, s.SESAccessKeyID, s.SESFrom, s.ResendFrom)
 	if err != nil {
 		return fmt.Errorf("store: update email settings: %w", err)
 	}

@@ -78,6 +78,31 @@ func TestRun_AppsGitSourceSet_MissingRepoURL(t *testing.T) {
 	}
 }
 
+func TestRun_AppsGitSourceRotateSecret(t *testing.T) {
+	var gotPath, gotMethod string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotMethod = r.URL.Path, r.Method
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gitSourceResource{
+			ServiceName:   "web",
+			RepoURL:       "https://github.com/acme/web",
+			Branch:        "main",
+			BuildType:     "dockerfile",
+			WebhookURL:    "/api/v1/webhooks/github/web",
+			WebhookSecret: "freshsecret123",
+		})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "git-source", "rotate-secret", "web", "--api-url", srv.URL})
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/apps/web/git-source/rotate-webhook-secret" {
+		t.Errorf("request = %s %s, want POST /api/v1/apps/web/git-source/rotate-webhook-secret", gotMethod, gotPath)
+	}
+	if !strings.Contains(stdout, "freshsecret123") {
+		t.Errorf("stdout = %q, want the rotated secret shown once", stdout)
+	}
+}
+
 func TestRun_AppsGitSourceDelete(t *testing.T) {
 	srv, gotPath, gotMethod := newNoContentEchoServer(t)
 	defer srv.Close()

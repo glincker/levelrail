@@ -61,6 +61,9 @@ func (f *fakeSecretResolver) DeleteAll(context.Context, string) error {
 func (f *fakeSecretResolver) Exists(context.Context, string, string) (bool, error) {
 	return false, errors.New("not implemented")
 }
+func (f *fakeSecretResolver) ExistsForServices(context.Context, []string, string) (map[string]bool, error) {
+	return nil, errors.New("not implemented")
+}
 func (f *fakeSecretResolver) Resolve(_ context.Context, serviceName, envKey string) (string, error) {
 	if f.err != nil {
 		return "", f.err

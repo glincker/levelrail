@@ -60,6 +60,46 @@ export interface GitHubAppRepo {
   private: boolean
   default_branch: string
   clone_url: string
+  // account_type groups the picker's card grid by account
+  // (migrations/0282): "user" for the admin's own personal account,
+  // "organization" otherwise.
+  account_type: 'user' | 'organization'
+}
+
+// GitHubAppRepoListError is one entry of GitHubAppRepoListResponse.errors.
+export interface GitHubAppRepoListError {
+  account_login: string
+  error: string
+}
+
+// GitHubAppRepoListResponse mirrors gitHubAppRepoListResource
+// (internal/api/github_app_repos.go): GET /api/v1/github-app/repos's
+// response. errors lists any connected installation that failed to
+// list (suspended, revoked, transient GitHub error) without failing the
+// other installations' results.
+export interface GitHubAppRepoListResponse {
+  repos: GitHubAppRepo[]
+  errors?: GitHubAppRepoListError[]
+}
+
+// GitHubAppInstallation mirrors gitHubAppInstallationResource
+// (internal/api/github_app_installations.go): one connected GitHub
+// account/org.
+export interface GitHubAppInstallation {
+  id: number
+  installation_id: number
+  account_login: string
+  account_type: 'user' | 'organization'
+  connected_at: string
+}
+
+// GitHubAppInstallationListResponse mirrors
+// gitHubAppInstallationListResource: GET /api/v1/github-app/installations's
+// response. add_org_url is absent when the connection predates
+// migrations/0282's slug column and hasn't been re-registered since.
+export interface GitHubAppInstallationListResponse {
+  installations: GitHubAppInstallation[]
+  add_org_url?: string
 }
 
 // GitHubAppBranch mirrors gitHubAppBranchResource

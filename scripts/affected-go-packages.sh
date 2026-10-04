@@ -68,6 +68,7 @@ for f in "${CHANGED_FILES[@]}"; do
 	.github/* | adr/* | web/*) continue ;;
 	test/fixtures/*)
 		add_seed test/e2e test
+		add_seed test/e2e/reconcile test
 		continue
 		;;
 	esac

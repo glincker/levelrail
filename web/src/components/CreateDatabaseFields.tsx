@@ -182,11 +182,19 @@ export function CreateDatabaseFields({
     node: LOCAL_NODE_VALUE,
     project: NO_PROJECT_VALUE,
   }
-  const { control, register, handleSubmit, formState, reset, watch, setValue, getValues } =
-    useForm<CreateDatabaseFormInput, unknown, CreateDatabaseFormOutput>({
-      resolver: zodResolver(createDatabaseSchema),
-      defaultValues,
-    })
+  const {
+    control,
+    register,
+    handleSubmit,
+    formState,
+    reset,
+    watch,
+    setValue,
+    getValues,
+  } = useForm<CreateDatabaseFormInput, unknown, CreateDatabaseFormOutput>({
+    resolver: zodResolver(createDatabaseSchema),
+    defaultValues,
+  })
   const watchedEngine = watch('engine')
 
   useEffect(() => {
@@ -209,7 +217,9 @@ export function CreateDatabaseFields({
   useEffect(() => {
     if (formState.dirtyFields.version) return
     if (getValues('version').trim() !== '') return
-    const fallback = engines.find((e) => e.id === watchedEngine)?.default_version
+    const fallback = engines.find(
+      (e) => e.id === watchedEngine,
+    )?.default_version
     if (fallback) {
       setValue('version', fallback)
     }
@@ -217,6 +227,17 @@ export function CreateDatabaseFields({
     // arriving, not to formState/getValues/setValue identity churn.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedEngine, engines])
+
+  // Same pre-fill treatment for name: the engine's own id ("postgres",
+  // "redis") is a real, renamable suggestion, not a fixed value.
+  useEffect(() => {
+    if (formState.dirtyFields.name) return
+    if (getValues('name').trim() !== '') return
+    if (watchedEngine) {
+      setValue('name', watchedEngine)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedEngine])
 
   // No secret field exists on this form: database credentials are
   // generated server-side, never collected here.

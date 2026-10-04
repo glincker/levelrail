@@ -35,6 +35,13 @@ func TestNewSender_SES_NoConfig_Errors(t *testing.T) {
 	}
 }
 
+func TestNewSender_Resend_NoConfig_Errors(t *testing.T) {
+	_, err := NewSender(Config{Backend: BackendResend})
+	if err == nil {
+		t.Fatal("error = nil, want an error when Backend is resend but Resend is nil")
+	}
+}
+
 func TestNewSender_SMTP_ReturnsSender(t *testing.T) {
 	s, err := NewSender(Config{Backend: BackendSMTP, SMTP: &SMTPConfig{Addr: "127.0.0.1:1", Host: "127.0.0.1", From: "a@example.com"}})
 	if err != nil {
@@ -47,6 +54,16 @@ func TestNewSender_SMTP_ReturnsSender(t *testing.T) {
 
 func TestNewSender_SES_ReturnsSender(t *testing.T) {
 	s, err := NewSender(Config{Backend: BackendSES, SES: &SESConfig{Region: "us-east-1", AccessKeyID: "AKID", SecretAccessKey: "secret", From: "a@example.com"}})
+	if err != nil {
+		t.Fatalf("NewSender() error = %v", err)
+	}
+	if s == nil {
+		t.Fatal("NewSender() sender = nil")
+	}
+}
+
+func TestNewSender_Resend_ReturnsSender(t *testing.T) {
+	s, err := NewSender(Config{Backend: BackendResend, Resend: &ResendConfig{APIKey: "key", From: "a@example.com"}})
 	if err != nil {
 		t.Fatalf("NewSender() error = %v", err)
 	}

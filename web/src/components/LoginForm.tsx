@@ -12,12 +12,13 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 import { TwoFactorVerifyForm } from './TwoFactorVerifyForm'
 
 const loginSchema = z.object({
-  username: z.string().trim().min(1, 'Username is required'),
   password: z.string().min(1, 'Password is required'),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
+// Username is lifted to LoginScreen so this form and PasskeyLoginButton share one field.
+//
 // internal/api/auth.go's handleLogin deliberately returns the same
 // generic "invalid credentials" message whether the username is unknown
 // or the password is wrong, so this form never tries to guess which one
@@ -25,13 +26,23 @@ type LoginFormValues = z.infer<typeof loginSchema>
 // code that gets different treatment is 429: ratelimit.go's real
 // exponential backoff means the operator needs a concrete "try again in
 // Ns" countdown, not a message indistinguishable from a wrong password.
-export function LoginForm() {
+export function LoginForm({
+  username,
+  onUsernameChange,
+  showUsernameField = true,
+}: {
+  username: string
+  onUsernameChange: (value: string) => void
+  showUsernameField?: boolean
+}) {
   const login = useLogin()
   const [mfaToken, setMfaToken] = useState<string | null>(null)
+  const [usernameTouched, setUsernameTouched] = useState(false)
   const { register, handleSubmit, formState } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { username: '', password: '' },
+    defaultValues: { password: '' },
   })
+  const usernameMissing = usernameTouched && username.trim() === ''
 
   // A plain decrementing counter, not a target-timestamp computed against
   // Date.now() at render time: React's rules-of-hooks purity lint flags
@@ -61,22 +72,29 @@ export function LoginForm() {
   }, [isRateLimited])
 
   const onSubmit = handleSubmit((values) => {
-    login.mutate(values, {
-      // Setting state from a mutation callback (an event handler, not a
-      // render effect) is the allowed place to do this: it runs in
-      // response to the login attempt actually failing, not as a
-      // synchronous side effect of rendering.
-      onSuccess: (result) => {
-        if ('mfa_required' in result && result.mfa_required) {
-          setMfaToken(result.mfa_token)
-        }
+    setUsernameTouched(true)
+    if (username.trim() === '') {
+      return
+    }
+    login.mutate(
+      { username: username.trim(), password: values.password },
+      {
+        // Setting state from a mutation callback (an event handler, not a
+        // render effect) is the allowed place to do this: it runs in
+        // response to the login attempt actually failing, not as a
+        // synchronous side effect of rendering.
+        onSuccess: (result) => {
+          if ('mfa_required' in result && result.mfa_required) {
+            setMfaToken(result.mfa_token)
+          }
+        },
+        onError: (error) => {
+          if (error instanceof RateLimitError) {
+            setSecondsRemaining(error.retryAfterSeconds)
+          }
+        },
       },
-      onError: (error) => {
-        if (error instanceof RateLimitError) {
-          setSecondsRemaining(error.retryAfterSeconds)
-        }
-      },
-    })
+    )
   })
 
   if (mfaToken) {
@@ -98,16 +116,28 @@ export function LoginForm() {
       className="mt-4 space-y-4"
     >
       <FieldGroup>
-        <Field data-invalid={formState.errors.username ? true : undefined}>
-          <FieldLabel htmlFor="login-username">Username</FieldLabel>
-          <Input
-            id="login-username"
-            autoComplete="username"
-            aria-invalid={!!formState.errors.username}
-            {...register('username')}
-          />
-          <FieldError errors={[formState.errors.username]} />
-        </Field>
+        {showUsernameField ? (
+          <Field data-invalid={usernameMissing ? true : undefined}>
+            <FieldLabel htmlFor="login-username">Username</FieldLabel>
+            <Input
+              id="login-username"
+              autoComplete="username webauthn"
+              aria-invalid={usernameMissing}
+              value={username}
+              onChange={(e) => {
+                onUsernameChange(e.target.value)
+              }}
+              onBlur={() => {
+                setUsernameTouched(true)
+              }}
+            />
+            <FieldError
+              errors={
+                usernameMissing ? [{ message: 'Username is required' }] : []
+              }
+            />
+          </Field>
+        ) : null}
         <Field data-invalid={formState.errors.password ? true : undefined}>
           <div className="flex items-center justify-between">
             <FieldLabel htmlFor="login-password">Password</FieldLabel>

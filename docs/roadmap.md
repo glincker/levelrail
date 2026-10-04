@@ -80,11 +80,11 @@ flowchart LR
   into one `app.yaml` (file mode) or fanning out through `deploy-spec`
   (API mode).
   
-  Live end-to-end coverage (`test/e2e/multi_service_test.go`): two
+  Live end-to-end coverage (`test/e2e/reconcile/multi_service_test.go`): two
   services built from one shared checkout, each scoped to its own
   `build.baseDirectory`, linked under one `store.App`, and
   independently reachable over HTTPS.
-- A curated 206-entry service template catalog (ADR 015: reverses the
+- A curated 265-entry service template catalog (ADR 015: reverses the
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
   from the creation wizard, with a category-specific icon per card.
@@ -379,7 +379,11 @@ flowchart LR
   multi-service fan-out (see Multi-service apps, above).
   
   Does not yet exercise a full multi-node mesh or real ACME against a live
-  domain.
+  domain. Also does not deploy any service template: the 265-entry
+  catalog (up from the 206 counted when this note was first written;
+  Coolify's own catalog is around 371 for comparison) is checked for
+  shape and a floor of 180 entries, not for whether any one template
+  actually deploys.
 
 **Observability**
 
@@ -403,7 +407,7 @@ flowchart LR
   - Domain health (periodic DNS check against every domain, catches silently repointed CNAMEs)
   - Backup missing (when scheduled backup trails its cron schedule, catches silently stopped backups)
   
-  Each evaluator is independent. Seventeen notification channel kinds supported: webhook, Slack, Discord, email, Telegram, Pushover, PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark, Rocket.Chat, Opsgenie, Webex, and Google Chat, plus separate deploy-outcome notifications.
+  Each evaluator is independent. Eighteen notification channel kinds supported: webhook, Slack, Discord, email, Telegram, Pushover, PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark, Rocket.Chat, Opsgenie, Webex, Google Chat, and browser push, plus separate deploy-outcome notifications.
   
   Every channel, including email, retries transient failures up to 3 times with short backoff rather than dropping alerts on one-off hiccups: HTTP-based channels on transport errors or 5xx/429 responses, email on transport errors or an SMTP 4xx reply.
   
@@ -430,6 +434,14 @@ flowchart LR
   critical below 5%, with the reclaimable size and the one-click cleanup
   dialog. Thresholds are build-time overrides
   (`VITE_DISK_WARN_FREE_PERCENT`, `VITE_DISK_CRITICAL_FREE_PERCENT`).
+- Capacity forecast: `GET /api/v1/nodes/{id}/capacity-forecast` projects
+  a node's disk and memory usage forward from a simple linear trend fit
+  over recent history and reports roughly how many days remain until
+  each is full, surfaced on the node detail page and via
+  `levelrail-cli nodes capacity-forecast <id>`. A flat or improving
+  trend is omitted entirely rather than shown as "fine forever."
+  Lookback window defaults to 14 days, overridable with
+  `APP_CAPACITY_FORECAST_LOOKBACK`.
 - Node connection history: every node status change is recorded (capped at
   200 per node), shown as a card on the node detail page, served by
   `GET /api/v1/nodes/{id}/events`, and available as `nodes events <id>`.

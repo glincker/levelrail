@@ -9,7 +9,14 @@ COPY web/ ./
 # vite-plugins/docsManifest.ts reads ../../docs (repo root) to bundle
 # the in-app help pages, so the sibling docs/ dir must exist here too.
 COPY docs/ /src/docs/
-RUN npm run build
+# docs/public/install.sh and install-cli.sh are symlinks to these
+# repo-root scripts (served by the docs site); the manifest plugin
+# stats every file under docs/public, so the symlink targets must
+# resolve inside the build context too.
+COPY install.sh install-cli.sh /src/
+# A silently empty/partial dist (e.g. the symlink bug #911 fixed) must
+# fail the build here, not ship as a binary with no embedded frontend.
+RUN npm run build && test -s dist/index.html
 
 FROM golang:1.26-alpine AS build
 ARG VERSION
@@ -43,6 +50,10 @@ COPY --from=build --chown=nonroot:nonroot /levelrail /app/levelrail
 # sit in WORKDIR, not wherever the base image's own default WorkingDir
 # (distroless nonroot defaults to /home/nonroot) happens to be.
 COPY --from=build --chown=nonroot:nonroot /src/brand.yaml /app/brand.yaml
+# CHANGELOG.md backs GET /api/v1/changelog (the dashboard's "What's new"
+# panel, internal/changelog.ReadFile's "./CHANGELOG.md" default): same
+# disk-read, not-embedded shape as brand.yaml above, same reason.
+COPY --from=build --chown=nonroot:nonroot /src/CHANGELOG.md /app/CHANGELOG.md
 COPY --from=build --chown=nonroot:nonroot /data/levelrail /var/lib/levelrail-data
 USER nonroot:nonroot
 EXPOSE 8080

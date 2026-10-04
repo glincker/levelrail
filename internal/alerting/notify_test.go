@@ -43,7 +43,7 @@ func TestNewNotifier_DefaultClient_BlocksInternal(t *testing.T) {
 
 	for _, target := range []string{srv.URL, "http://169.254.169.254/latest/meta-data/"} {
 		r := Rule{ID: "r1", Name: "x", NotifyURL: target}
-		err := NewNotifier(nil, nil, r).Notify(context.Background(), Event{Rule: r})
+		err := NewNotifier(nil, nil, nil, r).Notify(context.Background(), Event{Rule: r})
 		if !errors.Is(err, netguard.ErrBlockedAddress) {
 			t.Fatalf("Notify(%s) error = %v, want netguard.ErrBlockedAddress", target, err)
 		}
@@ -65,7 +65,7 @@ func TestNotifyGeneric_PostsExpectedPayload(t *testing.T) {
 
 	value := 95.5
 	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, LastValue: &value, Firing: true}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -94,7 +94,7 @@ func TestNotifySlack_PostsTextField(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifySlack}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -115,7 +115,7 @@ func TestNotifyDiscord_PostsContentField(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", Name: "crashloop", Kind: KindCrashloop, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyDiscord}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	err := notifier.Notify(context.Background(), Event{Rule: r, LogLines: []string{"line 1", "line 2"}})
 	if err != nil {
@@ -137,7 +137,7 @@ func TestNotify_ResolvedEvent(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: srv.URL}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -149,7 +149,7 @@ func TestNotify_ResolvedEvent(t *testing.T) {
 
 func TestNotify_NoURL_Errors(t *testing.T) {
 	r := Rule{ID: "r1", Name: "high cpu"}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error when NotifyURL is empty")
@@ -163,7 +163,7 @@ func TestNotify_ReceiverErrorStatus_Errors(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", NotifyURL: srv.URL}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error when the receiver returns a non-2xx status")
@@ -182,7 +182,7 @@ func TestNotify_TransientServerError_RetriesThenSucceeds(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", NotifyURL: srv.URL}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v, want the last attempt (which succeeds) to win", err)
@@ -201,7 +201,7 @@ func TestNotify_PersistentServerError_RetriesExactlyMaxAttemptsThenFails(t *test
 	defer srv.Close()
 
 	r := Rule{ID: "r1", NotifyURL: srv.URL}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Fatal("Notify() error = nil, want every attempt to fail against an always-502 receiver")
@@ -220,7 +220,7 @@ func TestNotify_ClientErrorStatus_NeverRetried(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", NotifyURL: srv.URL}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Fatal("Notify() error = nil, want an error for a 400 response")
@@ -239,7 +239,7 @@ func TestNotify_TransportError_Retries(t *testing.T) {
 	srv.Close()
 
 	r := Rule{ID: "r1", NotifyURL: url}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Fatal("Notify() error = nil, want an error against a closed server")
@@ -264,7 +264,7 @@ func TestNotify_ContextCanceledDuringBackoff_StopsRetrying(t *testing.T) {
 	defer cancel()
 
 	r := Rule{ID: "r1", NotifyURL: srv.URL}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(ctx, Event{Rule: r}); err == nil {
 		t.Fatal("Notify() error = nil, want an error once the context is canceled mid-backoff")
@@ -289,7 +289,7 @@ func TestNotifyTelegram_PostsChatIDAndText(t *testing.T) {
 		NotifyURL:  srv.URL + "/bot123456:ABC-DEF/sendMessage?chat_id=987654321",
 		NotifyKind: NotifyTelegram,
 	}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -312,7 +312,7 @@ func TestNotifyTelegram_MissingChatID_Errors(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", Name: "x", NotifyURL: srv.URL + "/bot123/sendMessage", NotifyKind: NotifyTelegram}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error when notify_url has no chat_id query parameter")
@@ -321,7 +321,7 @@ func TestNotifyTelegram_MissingChatID_Errors(t *testing.T) {
 
 func TestNotifyTelegram_InvalidURL_Errors(t *testing.T) {
 	r := Rule{ID: "r1", Name: "x", NotifyURL: "://not a url", NotifyKind: NotifyTelegram}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error for an unparseable notify_url")
@@ -341,7 +341,7 @@ func TestNotifyPushover_PostsTokenUserAndMessage(t *testing.T) {
 		NotifyURL:  srv.URL + "/1/messages.json?token=app-token-123&user=user-key-456",
 		NotifyKind: NotifyPushover,
 	}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -377,7 +377,7 @@ func TestNotifyPushover_MissingCreds_Errors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := Rule{ID: "r1", Name: "x", NotifyURL: tt.url, NotifyKind: NotifyPushover}
-			notifier := NewNotifier(nil, nil, r)
+			notifier := NewNotifier(nil, nil, nil, r)
 
 			if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 				t.Error("Notify() error = nil, want an error when notify_url is missing token or user")
@@ -388,7 +388,7 @@ func TestNotifyPushover_MissingCreds_Errors(t *testing.T) {
 
 func TestNotifyPushover_InvalidURL_Errors(t *testing.T) {
 	r := Rule{ID: "r1", Name: "x", NotifyURL: "://not a url", NotifyKind: NotifyPushover}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error for an unparseable notify_url")
@@ -415,7 +415,7 @@ func TestNotifyPagerDuty_PostsRoutingKeyAndSummary(t *testing.T) {
 		ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web",
 		NotifyURL: "routing-key-123", NotifyKind: NotifyPagerDuty,
 	}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -447,7 +447,7 @@ func TestNotifyPagerDuty_ResolvedEvent_SeverityInfo(t *testing.T) {
 	withPagerDutyEventsURL(t, srv.URL)
 
 	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "routing-key-123", NotifyKind: NotifyPagerDuty}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -459,7 +459,7 @@ func TestNotifyPagerDuty_ResolvedEvent_SeverityInfo(t *testing.T) {
 
 func TestNotifyPagerDuty_MissingRoutingKey_Errors(t *testing.T) {
 	r := Rule{ID: "r1", Name: "x", NotifyKind: NotifyPagerDuty}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error when notify_url (routing key) is empty")
@@ -475,7 +475,7 @@ func TestNotifyTeams_PostsMessageCard(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", Name: "crashloop", Kind: KindCrashloop, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyTeams}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	err := notifier.Notify(context.Background(), Event{Rule: r, LogLines: []string{"line 1", "line 2"}})
 	if err != nil {
@@ -491,7 +491,7 @@ func TestNotifyTeams_PostsMessageCard(t *testing.T) {
 
 func TestNotifyTeams_NoURL_Errors(t *testing.T) {
 	r := Rule{ID: "r1", Name: "x", NotifyKind: NotifyTeams}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error when notify_url is empty")
@@ -500,7 +500,7 @@ func TestNotifyTeams_NoURL_Errors(t *testing.T) {
 
 func TestNewNotifier_Email_NoSMTPConfigured_Errors(t *testing.T) {
 	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "ops@example.com", NotifyKind: NotifyEmail}
-	notifier := NewNotifier(nil, nil, r) // no email.Sender
+	notifier := NewNotifier(nil, nil, nil, r) // no email.Sender
 
 	err := notifier.Notify(context.Background(), Event{Rule: r})
 	if err == nil {
@@ -523,7 +523,7 @@ func mustSMTPSender(t *testing.T, cfg email.SMTPConfig) email.Sender {
 func TestNewNotifier_Email_NoDestinationAddress_Errors(t *testing.T) {
 	sender := mustSMTPSender(t, email.SMTPConfig{Addr: "smtp.example.com:587", Host: "smtp.example.com", From: "alerts@example.com"})
 	r := Rule{ID: "r1", Name: "high cpu", NotifyKind: NotifyEmail} // NotifyURL (the "to" address) left empty
-	notifier := NewNotifier(nil, sender, r)
+	notifier := NewNotifier(nil, sender, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error when no destination address is configured")
@@ -537,7 +537,7 @@ func TestNewNotifier_Email_UnreachableServer_ErrorPropagates(t *testing.T) {
 	// connection failure.
 	sender := mustSMTPSender(t, email.SMTPConfig{Addr: "127.0.0.1:1", Host: "127.0.0.1", From: "alerts@example.com"})
 	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "ops@example.com", NotifyKind: NotifyEmail}
-	notifier := NewNotifier(nil, sender, r)
+	notifier := NewNotifier(nil, sender, nil, r)
 
 	err := notifier.Notify(context.Background(), Event{Rule: r})
 	if err == nil {
@@ -657,7 +657,7 @@ func TestNotifyMattermost_PostsTextField(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyMattermost}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -678,7 +678,7 @@ func TestNotifyLark_PostsMsgTypeAndContent(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyLark}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -705,7 +705,7 @@ func TestNotifyGotify_PostsTitleMessageAndToken(t *testing.T) {
 		ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web",
 		NotifyURL: srv.URL + "/message?token=app-token-123", NotifyKind: NotifyGotify,
 	}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -733,7 +733,7 @@ func TestNotifyGotify_ResolvedEvent_LowerPriority(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: srv.URL + "/message?token=x", NotifyKind: NotifyGotify}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -757,7 +757,7 @@ func TestNotifyNtfy_PostsTitleAndMessage_NoAuthHeaderWhenNoToken(t *testing.T) {
 		ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web",
 		NotifyURL: srv.URL + "/my-topic", NotifyKind: NotifyNtfy,
 	}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -790,7 +790,7 @@ func TestNotifyNtfy_AuthTokenMovedToHeaderAndStrippedFromURL(t *testing.T) {
 	r := Rule{
 		ID: "r1", Name: "high cpu", NotifyURL: srv.URL + "/my-topic?auth=tk_secret", NotifyKind: NotifyNtfy,
 	}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -808,7 +808,7 @@ func TestNotifyNtfy_AuthTokenMovedToHeaderAndStrippedFromURL(t *testing.T) {
 
 func TestNotifyNtfy_InvalidURL_Errors(t *testing.T) {
 	r := Rule{ID: "r1", Name: "x", NotifyURL: "://not a url", NotifyKind: NotifyNtfy}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error for an unparseable notify_url")
@@ -833,7 +833,7 @@ func TestNotifyResend_PostsAuthHeaderAndPayload(t *testing.T) {
 		NotifyURL:  "https://api.resend.com/emails?key=re_secret123&to=ops%40example.com",
 		NotifyKind: NotifyResend,
 	}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -868,7 +868,7 @@ func TestNotifyResend_CustomFromParam(t *testing.T) {
 		NotifyURL:  "https://api.resend.com/emails?key=re_secret&to=ops%40example.com&from=alerts%40example.com",
 		NotifyKind: NotifyResend,
 	}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -890,7 +890,7 @@ func TestNotifyResend_ResolvedEvent_SubjectMarksResolved(t *testing.T) {
 	t.Cleanup(func() { resendAPIURL = original })
 
 	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "https://api.resend.com/emails?key=k&to=ops%40example.com", NotifyKind: NotifyResend}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -912,7 +912,7 @@ func TestNotifyResend_MissingCreds_Errors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := Rule{ID: "r1", Name: "x", NotifyURL: tt.url, NotifyKind: NotifyResend}
-			notifier := NewNotifier(nil, nil, r)
+			notifier := NewNotifier(nil, nil, nil, r)
 
 			if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 				t.Error("Notify() error = nil, want an error when notify_url is missing key or to")
@@ -923,7 +923,7 @@ func TestNotifyResend_MissingCreds_Errors(t *testing.T) {
 
 func TestNotifyResend_InvalidURL_Errors(t *testing.T) {
 	r := Rule{ID: "r1", Name: "x", NotifyURL: "://not a url", NotifyKind: NotifyResend}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error for an unparseable notify_url")
@@ -939,7 +939,7 @@ func TestNotifyRocketChat_PostsTextAliasAndEmoji(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyRocketChat}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -964,7 +964,7 @@ func TestNotifyRocketChat_ResolvedEvent_DifferentEmoji(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: srv.URL, NotifyKind: NotifyRocketChat}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -983,7 +983,7 @@ func TestNotifyWebex_PostsMarkdownField(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyWebex}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -1002,7 +1002,7 @@ func TestNotifyGoogleChat_PostsTextField(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyGoogleChat}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -1035,7 +1035,7 @@ func TestNotifyOpsgenie_PostsAuthHeaderAndPayload(t *testing.T) {
 		ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web",
 		NotifyURL: "https://api.opsgenie.com/v2/alerts?key=og_secret123", NotifyKind: NotifyOpsgenie,
 	}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -1064,7 +1064,7 @@ func TestNotifyOpsgenie_ResolvedEvent_LowerPriority(t *testing.T) {
 	withOpsgenieAPIURL(t, srv.URL)
 
 	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "https://api.opsgenie.com/v2/alerts?key=og_secret", NotifyKind: NotifyOpsgenie}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
 		t.Fatalf("Notify() error = %v", err)
@@ -1076,7 +1076,7 @@ func TestNotifyOpsgenie_ResolvedEvent_LowerPriority(t *testing.T) {
 
 func TestNotifyOpsgenie_MissingKey_Errors(t *testing.T) {
 	r := Rule{ID: "r1", Name: "x", NotifyURL: "https://api.opsgenie.com/v2/alerts", NotifyKind: NotifyOpsgenie}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error when notify_url is missing the key query parameter")
@@ -1085,7 +1085,7 @@ func TestNotifyOpsgenie_MissingKey_Errors(t *testing.T) {
 
 func TestNotifyOpsgenie_InvalidURL_Errors(t *testing.T) {
 	r := Rule{ID: "r1", Name: "x", NotifyURL: "://not a url", NotifyKind: NotifyOpsgenie}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error for an unparseable notify_url")
@@ -1120,11 +1120,84 @@ func TestNewNotifier_AllValidKinds_Recognized(t *testing.T) {
 			if kind == NotifyPagerDuty {
 				withPagerDutyEventsURL(t, srv.URL)
 			}
-			notifier := NewNotifier(nil, nil, r)
+			notifier := NewNotifier(nil, nil, nil, r)
 			if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 				t.Errorf("Notify() error = %v for kind %q", err, kind)
 			}
 		})
+	}
+}
+
+// fakePushSender is a minimal alerting.PushSender for tests: it records
+// every call and can be told to fail, the same "narrow fake over a
+// consumer-defined interface" shape mustSMTPSender's real email.Sender
+// doesn't need but a non-HTTP channel's own tests otherwise would.
+type fakePushSender struct {
+	err    error
+	title  string
+	body   string
+	called int
+}
+
+func (f *fakePushSender) Send(_ context.Context, title, body string) error {
+	f.called++
+	f.title, f.body = title, body
+	return f.err
+}
+
+func TestNewNotifier_Webpush_Success(t *testing.T) {
+	sender := &fakePushSender{}
+	r := Rule{ID: "r1", Name: "high cpu", NotifyKind: NotifyWebpush}
+	notifier := NewNotifier(nil, nil, sender, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if sender.called != 1 {
+		t.Fatalf("PushSender.Send called %d times, want 1", sender.called)
+	}
+	if !strings.Contains(sender.title, "high cpu") {
+		t.Errorf("title = %q, want it to include the rule name", sender.title)
+	}
+}
+
+func TestNewNotifier_Webpush_Resolved_TitleSaysResolved(t *testing.T) {
+	sender := &fakePushSender{}
+	r := Rule{ID: "r1", Name: "high cpu", NotifyKind: NotifyWebpush}
+	notifier := NewNotifier(nil, nil, sender, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if !strings.Contains(sender.title, "RESOLVED") {
+		t.Errorf("title = %q, want it to say RESOLVED", sender.title)
+	}
+}
+
+func TestNewNotifier_Webpush_NotConfigured_Errors(t *testing.T) {
+	r := Rule{ID: "r1", Name: "high cpu", NotifyKind: NotifyWebpush}
+	notifier := NewNotifier(nil, nil, nil, r) // no PushSender
+
+	err := notifier.Notify(context.Background(), Event{Rule: r})
+	if err == nil {
+		t.Fatal("Notify() error = nil, want a clear 'not configured' error when no browser has registered")
+	}
+	if !strings.Contains(err.Error(), "not configured") {
+		t.Errorf("error = %q, want it to say browser push is not configured", err.Error())
+	}
+}
+
+func TestNewNotifier_Webpush_SendError_Propagates(t *testing.T) {
+	sender := &fakePushSender{err: errors.New("boom")}
+	r := Rule{ID: "r1", Name: "high cpu", NotifyKind: NotifyWebpush}
+	notifier := NewNotifier(nil, nil, sender, r)
+
+	err := notifier.Notify(context.Background(), Event{Rule: r})
+	if err == nil {
+		t.Fatal("Notify() error = nil, want the PushSender's own error to propagate")
+	}
+	if !strings.Contains(err.Error(), "boom") {
+		t.Errorf("error = %q, want it to wrap the underlying send error", err.Error())
 	}
 }
 
@@ -1137,7 +1210,7 @@ func TestNewNotifier_UnknownKind_FallsBackToGeneric(t *testing.T) {
 	defer srv.Close()
 
 	r := Rule{ID: "r1", Name: "x", NotifyURL: srv.URL, NotifyKind: "typo'd-kind"}
-	notifier := NewNotifier(nil, nil, r)
+	notifier := NewNotifier(nil, nil, nil, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
 		t.Fatalf("Notify() error = %v", err)

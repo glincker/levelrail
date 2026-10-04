@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"io"
+	"log/slog"
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -56,6 +58,12 @@ func (f *fakeInspectRuntime) EnsureNetwork(context.Context, string) (string, err
 func (f *fakeInspectRuntime) RemoveNetwork(context.Context, string) error {
 	panic("not used by databaseTelemetryTargets/databaseLogTargets")
 }
+func (f *fakeInspectRuntime) NetworkConnect(context.Context, string, string) error {
+	panic("not used by databaseTelemetryTargets/databaseLogTargets")
+}
+func (f *fakeInspectRuntime) NetworkDisconnect(context.Context, string, string, bool) error {
+	panic("not used by databaseTelemetryTargets/databaseLogTargets")
+}
 func (f *fakeInspectRuntime) ListNetworksByPrefix(context.Context, string) ([]docker.NetworkInfo, error) {
 	panic("not used by databaseTelemetryTargets/databaseLogTargets")
 }
@@ -87,7 +95,7 @@ func TestDatabaseTelemetryTargets_OnlyRunningContainersIncluded(t *testing.T) {
 		// documented (nil, nil) "no such container" contract.
 	}}
 
-	targets, err := databaseTelemetryTargets(ctx, db, runtime)
+	targets, err := databaseTelemetryTargets(ctx, db, runtime, agent.NewRegistry(), nil, slog.Default())
 	if err != nil {
 		t.Fatalf("databaseTelemetryTargets() error = %v", err)
 	}

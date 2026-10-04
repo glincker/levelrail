@@ -28,7 +28,7 @@ func (rt *Router) previewGiteaTarget(ctx context.Context, appName string, gs sto
 	fullName, ok = giteaFullNameFromURL(gs.RepoURL, conn.InstanceURL)
 	if !ok {
 		rt.logger.Info("api: preview gitea notification skipped: repo_url is not on the connected gitea instance",
-			slog.String("app_name", appName), slog.String("repo_url", gs.RepoURL))
+			slog.String("app_name", appName), slog.String("repo_url", redactURLCredentials(gs.RepoURL)))
 		return "", "", "", false
 	}
 	return conn.InstanceURL, accessToken, fullName, true

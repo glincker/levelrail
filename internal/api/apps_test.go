@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -181,6 +182,61 @@ func TestHandleListApps_Status(t *testing.T) {
 	}
 	if s := byName["pending-app"].Status; s.Label != "No status yet" || s.Variant != "muted" {
 		t.Errorf("pending-app status = %+v, want No status yet/muted", s)
+	}
+}
+
+// GET /api/v1/apps and /api/v1/apps-summary must both downgrade a
+// domain-bearing app placed off the control plane's own node away from
+// "Healthy": its own reconcile conditions are all true (the container
+// really is running fine), but nobody outside this node can reach its
+// domain yet (see crossNodeIngressAppCondition).
+func TestHandleListAppsAndSummary_CrossNodeDomainApp_NotHealthy(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveNode(ctx, store.Node{ID: "node-2", Name: "worker-1", Status: store.NodeStatusOnline, Schedulable: true}); err != nil {
+		t.Fatalf("SaveNode() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, store.DesiredService{
+		Name: "static-test", Image: "nginx:1.27-alpine", Port: 80,
+		Domains: []string{"levelrail-test-2.levelrail.com"},
+	}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "static-test", "node-2"); err != nil {
+		t.Fatalf("UpdateServiceNode() error = %v", err)
+	}
+	if err := db.UpsertConditions(ctx, applicationControllerName("static-test"), []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Running"},
+	}); err != nil {
+		t.Fatalf("seed conditions: %v", err)
+	}
+
+	recList := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recList, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps", ""))
+	if recList.Code != http.StatusOK {
+		t.Fatalf("list status = %d, want %d; body = %s", recList.Code, http.StatusOK, recList.Body.String())
+	}
+	var list []appListResource
+	if err := json.Unmarshal(recList.Body.Bytes(), &list); err != nil {
+		t.Fatalf("decode list: %v", err)
+	}
+	if len(list) != 1 || list[0].Status.Label != "Attention needed" {
+		t.Fatalf("list = %+v, want one app with status Attention needed", list)
+	}
+
+	recSummary := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recSummary, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps-summary", ""))
+	if recSummary.Code != http.StatusOK {
+		t.Fatalf("summary status = %d, want %d; body = %s", recSummary.Code, http.StatusOK, recSummary.Body.String())
+	}
+	var sum appsSummaryResource
+	if err := json.Unmarshal(recSummary.Body.Bytes(), &sum); err != nil {
+		t.Fatalf("decode summary: %v", err)
+	}
+	if sum.Running != 0 || sum.Failing != 1 {
+		t.Errorf("summary = %+v, want Running=0 Failing=1", sum)
 	}
 }
 
@@ -474,6 +530,58 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 		if saved.NodeID != "node_b" {
 			t.Errorf("persisted NodeID = %q, want %q", saved.NodeID, "node_b")
 		}
+	})
+
+	// A domain-bearing app must not spread onto a worker node: ingress
+	// (Caddy) only ever routes locally, no mesh path exists yet
+	// (CrossNodeIngress, internal/reconcile/ingress/cross_node.go).
+	t.Run("domain set, node_id omitted: placed on the control-plane node despite more load", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.localNodeID = "node_local"
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_local", "control-plane", true)
+		seedOnlineNode(t, db, "node_worker", "worker", true)
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "existing", Image: "img:1", Port: 80}); err != nil {
+			t.Fatalf("seed existing service: %v", err)
+		}
+		if err := db.UpdateServiceNode(ctx, "existing", "node_local"); err != nil {
+			t.Fatalf("place existing service: %v", err)
+		}
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"domains":["web.example.com"]}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_local", true)
+	})
+
+	// No domains: ordinary spread scheduling applies, the same as before
+	// ingress-aware placement existed.
+	t.Run("no domain, node_id omitted: ordinary spread still applies", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.localNodeID = "node_local"
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_local", "control-plane", true)
+		seedOnlineNode(t, db, "node_worker", "worker", true)
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "existing", Image: "img:1", Port: 80}); err != nil {
+			t.Fatalf("seed existing service: %v", err)
+		}
+		if err := db.UpdateServiceNode(ctx, "existing", "node_local"); err != nil {
+			t.Fatalf("place existing service: %v", err)
+		}
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_worker", true)
+	})
+
+	// An explicit node_id is the operator's call; ingress preference is a
+	// default, never a forced override.
+	t.Run("domain set but node_id explicit: the explicit worker is respected", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.localNodeID = "node_local"
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_local", "control-plane", true)
+		seedOnlineNode(t, db, "node_worker", "worker", true)
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"domains":["web.example.com"],"node_id":"node_worker"}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_worker", false)
 	})
 
 	t.Run("explicit node_id overrides auto-placement", func(t *testing.T) {

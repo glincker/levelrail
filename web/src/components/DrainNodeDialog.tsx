@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -140,7 +141,10 @@ export function DrainNodeDialog({ node }: { node: NodeResource }) {
             </div>
 
             {drain.isError ? (
-              <p className="text-sm text-destructive">{drain.error.message}</p>
+              <Alert variant="destructive">
+                <WarningIcon />
+                <AlertDescription>{drain.error.message}</AlertDescription>
+              </Alert>
             ) : null}
 
             <DialogFooter>

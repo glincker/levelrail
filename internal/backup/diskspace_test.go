@@ -134,7 +134,7 @@ func TestRunner_RunVolumeBackup_InsufficientDiskSpace_NeverStartsHistory(t *test
 		WorkDir:        "/data",
 	}
 
-	err := r.RunVolumeBackup(context.Background(), "bkh_1", "myapp", "data", "myapp_data", "bkt_test")
+	err := r.RunVolumeBackup(context.Background(), "bkh_1", "myapp", "data", "myapp_data", "bkt_test", "")
 	if err == nil {
 		t.Fatal("RunVolumeBackup() error = nil, want an error for insufficient disk space")
 	}

@@ -137,6 +137,14 @@ func (f *fakeRuntime) RemoveNetwork(_ context.Context, _ string) error {
 	return nil
 }
 
+func (f *fakeRuntime) NetworkConnect(_ context.Context, _, _ string) error {
+	return nil
+}
+
+func (f *fakeRuntime) NetworkDisconnect(_ context.Context, _, _ string, _ bool) error {
+	return nil
+}
+
 func (f *fakeRuntime) ListNetworksByPrefix(_ context.Context, _ string) ([]docker.NetworkInfo, error) {
 	return nil, nil
 }
@@ -2142,6 +2150,29 @@ func TestController_Reconcile_MySQL_WithSlowQueryThreshold_ConvertsMsToSeconds(t
 	wantCommand := []string{
 		"--slow-query-log=1",
 		"--long-query-time=0.5",
+		"--slow-query-log-file=" + MySQLSlowQueryLogPath,
+		"--log-output=FILE",
+	}
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+}
+
+func TestController_Reconcile_MariaDB_SetsSlowQueryLogFlagsByDefault(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMariaDB, Version: "11"}
+	c := New("main", &fakeStore{db: desired}, rt, WithMariaDBCredentials(&MariaDBCredentials{
+		Username: "main",
+		Password: "s3cret",
+	}))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	wantCommand := []string{
+		"--slow-query-log=1",
+		"--long-query-time=1",
 		"--slow-query-log-file=" + MySQLSlowQueryLogPath,
 		"--log-output=FILE",
 	}

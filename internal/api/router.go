@@ -75,30 +75,37 @@ import (
 	"github.com/GLINCKER/levelrail/internal/statuspage"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/changelog"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockerhub"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/firewall"
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
 	"github.com/GLINCKER/levelrail/internal/importplan"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/upgrade"
 )
 
 // Router wires every internal/api handler onto one http.Handler.
 type Router struct {
 	logger                 *slog.Logger
 	brand                  *brand.Brand
+	changelogEntries       []changelog.Entry // nil is valid: GET /api/v1/changelog answers an empty list, see WithChangelog
 	apps                   AppStore
 	appGroups              AppGroupLister
 	appCompose             AppComposeStore
+	customTemplates        CustomTemplateStore
 	deploys                DeployStore
 	databases              DatabaseStore
 	auth                   AuthStore
@@ -110,6 +117,9 @@ type Router struct {
 	nodeProviderSecrets    NodeProviderSecrets    // nil is valid: POST /api/v1/node-providers and every node-providers/{provider}/... route return 501, same shape as cloudflareDNSSecrets above
 	nodeProviderCatalog    *providerCatalogCache  // always set (NewRouter constructs one unconditionally); purely in-memory, brief cache, see its own doc comment
 	nodeProvisionerFactory NodeProvisionerFactory // nil uses defaultNodeProvisionerFactory, overridable in this package's own tests
+	sshProvisions          SSHNodeProvisionStore  // always set, same "core Store interface" shape as nodeProvisions above
+	sshProvisioner         SSHProvisioner         // nil uses sshprovision.New(), overridable in this package's own tests
+	templateRequiresConfig map[string]bool        // always set (NewRouter computes it once, catalog.Templates is static for the process lifetime), see service_templates.go's computeTemplateRequiresConfig
 	projects               ProjectStore
 	organizations          OrganizationStore
 	environments           EnvironmentStore
@@ -117,51 +127,65 @@ type Router struct {
 	composeSecrets         ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
 	requestSummaryWindow   time.Duration      // 0 keeps defaultRequestSummaryWindow
-	alertRules             AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
-	lb                     lbDeps             // zero value is valid: load balancer routes return 501
-	iac                    iacDeps            // zero value is valid: lazily builds the in-process handler apply calls
-	alertNoise             AlertNoise         // nil is valid: silence, maintenance window and alert history routes return 501
-	statusPage             StatusPageStore    // nil is valid: status page routes return 501 and the public page stays off
+	// requestLogThresholds are requestLoggingMiddleware's Warn/Error
+	// duration bands (request_logging.go). Zero fields mean "use the
+	// matching default", set via WithRequestLogThresholds;
+	// cmd/levelrail/main.go resolves APP_SLOW_REQUEST_THRESHOLD/
+	// APP_CRITICAL_REQUEST_THRESHOLD and calls it unconditionally, the
+	// same "this package never reads the environment directly"
+	// convention WithSessionTTL's own doc comment establishes.
+	requestLogThresholds   requestLogThresholds
+	alertRules             AlertRules      // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
+	lb                     lbDeps          // zero value is valid: load balancer routes return 501
+	iac                    iacDeps         // zero value is valid: lazily builds the in-process handler apply calls
+	alertNoise             AlertNoise      // nil is valid: silence, maintenance window and alert history routes return 501
+	statusPage             StatusPageStore // nil is valid: status page routes return 501 and the public page stays off
 	statusView             StatusPageViewer
 	statusSampler          *statuspage.Service
 	statusLimiter          *apiRateLimiter
 	statusHost             statusHostCache
 	sessions               *sessionStore
 	logins                 *loginLimiter
-	recoveryCodes          RecoveryCodeStore // always set, same "core Store interface" shape as auth above
-	twoFactorSecrets       TwoFactorSecrets  // nil is valid: POST /api/v1/auth/2fa/setup (and confirm/disable/regenerate) return 501, same "not configured" shape as githubAppSecrets above
-	mfaPending             *mfaPendingStore  // always set, same "always present, not an Option" shape sessions itself has
-	mfaVerify              *loginLimiter     // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
-	sessionTTL             time.Duration     // 0 means "use defaultSessionTTL", set via WithSessionTTL
-	dataDir                string            // "" means "don't report disk usage", set via WithDataDir
-	localNodeID            string            // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
+	recoveryCodes          RecoveryCodeStore     // always set, same "core Store interface" shape as auth above
+	twoFactorSecrets       TwoFactorSecrets      // nil is valid: POST /api/v1/auth/2fa/setup (and confirm/disable/regenerate) return 501, same "not configured" shape as githubAppSecrets above
+	mfaPending             *mfaPendingStore      // always set, same "always present, not an Option" shape sessions itself has
+	mfaVerify              *loginLimiter         // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
+	passkeys               PasskeyStore          // always set, same "core Store interface" shape as recoveryCodes above
+	passkeyRegSessions     *passkeyCeremonyStore // always set; short-TTL, single-use WebAuthn registration challenges (passkeys.go)
+	passkeyLoginSessions   *passkeyCeremonyStore // always set; short-TTL, single-use WebAuthn login challenges (passkeys.go)
+	passkeyLogin           *loginLimiter         // separate budget from logins/mfaVerify above, same reasoning: a distinct attack surface gets its own independent rate limit
+	sessionTTL             time.Duration         // 0 means "use defaultSessionTTL", set via WithSessionTTL
+	dataDir                string                // "" means "don't report disk usage", set via WithDataDir
+	localNodeID            string                // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
+	meshZone               string                // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness              ReadinessProbes
-	dockerPinger           DockerPinger           // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
-	images                 ImageLister            // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
-	containers             ContainerLister        // nil is valid: GET /api/v1/system/containers returns 501, same shape as execRuntime above
-	dockerDiskUsage        DockerDiskUsager       // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
-	dockerPruner           DockerPruner           // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
-	orphanedVolumes        OrphanedVolumeManager  // nil is valid: GET/POST /system/volumes/orphaned* return 501, same shape as dockerPruner above
-	registryAuthTester     RegistryAuthTester     // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
-	execRuntime            NodeRuntimeResolver    // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
-	models                 ModelService           // nil is valid: /api/v1/models routes return 501, see WithModels
-	gpuHostDiagnoser       GPUHostDiagnoser       // nil is valid: doctor skips the detailed host GPU checks
-	deploySafety           DeploySafetyStore      // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
-	imageResolver          docker.ImageResolver   // nil deploys image tags unresolved, see WithDeploySafety
-	reconcileNudger        ReconcileNudger        // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
-	certs                  CertStore              // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
-	ingressSettings        IngressSettingsStore   // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
-	domains                DomainStore            // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
-	domainBasicAuth        DomainBasicAuthStore   // always set, same "core Store interface" shape as domains above
-	domainBasicAuthSecrets DomainBasicAuthSecrets // nil is valid: PUT/DELETE .../domains/{domain}/auth return 501, same shape as cloudflareTunnelSecrets above
-	domainMaintenance      DomainMaintenanceStore // always set, same "core Store interface" shape as domainBasicAuth above; unlike it, no secrets dependency at all, so no nil/501 case
-	domainTLSCert          DomainTLSCertStore     // always set, same "core Store interface" shape as domainBasicAuth above
-	domainTLSCertSecrets   DomainTLSCertSecrets   // nil is valid: PUT/DELETE .../domains/{domain}/tls-cert return 501, same shape as domainBasicAuthSecrets above
-	domainWAF              DomainWAFStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
-	domainRedirect         DomainRedirectStore    // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
-	domainErrorPages       DomainErrorPagesStore  // always set, same "core Store interface" shape as domainWAF above; no secrets dependency either
-	masterKeyRotator       MasterKeyRotator       // nil is valid: POST /system/master-key/rotate returns 501, same shape as domainBasicAuthSecrets above
-	secretBinder           SecretBinder           // nil is valid: the secrets binding routes return 501
+	dockerPinger           DockerPinger             // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
+	images                 ImageLister              // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
+	containers             ContainerLister          // nil is valid: GET /api/v1/system/containers returns 501, same shape as execRuntime above
+	dockerDiskUsage        DockerDiskUsager         // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
+	dockerPruner           DockerPruner             // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
+	orphanedVolumes        OrphanedVolumeManager    // nil is valid: GET/POST /system/volumes/orphaned* return 501, same shape as dockerPruner above
+	orphanedContainers     OrphanedContainerManager // nil is valid: POST /system/containers/{name}/stop and .../remove return 501, same shape as orphanedVolumes above
+	registryAuthTester     RegistryAuthTester       // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
+	execRuntime            NodeRuntimeResolver      // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
+	models                 ModelService             // nil is valid: /api/v1/models routes return 501, see WithModels
+	gpuHostDiagnoser       GPUHostDiagnoser         // nil is valid: doctor skips the detailed host GPU checks
+	deploySafety           DeploySafetyStore        // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
+	imageResolver          docker.ImageResolver     // nil deploys image tags unresolved, see WithDeploySafety
+	reconcileNudger        ReconcileNudger          // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
+	certs                  CertStore                // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
+	ingressSettings        IngressSettingsStore     // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
+	domains                DomainStore              // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
+	domainBasicAuth        DomainBasicAuthStore     // always set, same "core Store interface" shape as domains above
+	domainBasicAuthSecrets DomainBasicAuthSecrets   // nil is valid: PUT/DELETE .../domains/{domain}/auth return 501, same shape as cloudflareTunnelSecrets above
+	domainMaintenance      DomainMaintenanceStore   // always set, same "core Store interface" shape as domainBasicAuth above; unlike it, no secrets dependency at all, so no nil/501 case
+	domainTLSCert          DomainTLSCertStore       // always set, same "core Store interface" shape as domainBasicAuth above
+	domainTLSCertSecrets   DomainTLSCertSecrets     // nil is valid: PUT/DELETE .../domains/{domain}/tls-cert return 501, same shape as domainBasicAuthSecrets above
+	domainWAF              DomainWAFStore           // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
+	domainRedirect         DomainRedirectStore      // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
+	domainErrorPages       DomainErrorPagesStore    // always set, same "core Store interface" shape as domainWAF above; no secrets dependency either
+	masterKeyRotator       MasterKeyRotator         // nil is valid: POST /system/master-key/rotate returns 501, same shape as domainBasicAuthSecrets above
+	secretBinder           SecretBinder             // nil is valid: the secrets binding routes return 501
 	// masterKeyFilePath is where the currently active master key came
 	// from on disk, "" if it was sourced from APP_MASTER_KEY instead
 	// (see cmd/levelrail/main.go's loadSecretsManager). A successful
@@ -190,7 +214,25 @@ type Router struct {
 	// escape hatch on the next visit, turning a certificate warning into
 	// a hard lockout, so this stays opt-in (APP_ENABLE_HSTS) rather than
 	// inferred. Set via WithHSTS.
+	//
+	// This is the env-var half of HSTS's two knobs; ingress_settings.hsts_enabled
+	// (the dashboard toggle, see hstsDBEnabled below) is the other. The
+	// two are OR'd, never one overriding the other: a deployment that
+	// already exports APP_ENABLE_HSTS keeps HSTS on across an upgrade
+	// even though the new database column defaults to false, and an
+	// operator can additionally turn HSTS on from the dashboard without
+	// touching the environment. See securityHeadersMiddleware and
+	// hstsDBOverrideMiddleware for where each half is applied.
 	hstsEnabled bool
+	// hstsDBEnabled caches ingress_settings.hsts_enabled so the dashboard
+	// toggle takes effect on the next request, not the next restart, the
+	// same "no restart needed" expectation every other ingress setting
+	// already gives an operator. Lazily populated by hstsEnabledFromDB on
+	// first use (hstsDBLoaded) and kept fresh by
+	// handleUpdateIngressSettings on every write, so the request hot path
+	// never itself blocks on a database read.
+	hstsDBEnabled atomic.Bool
+	hstsDBLoaded  sync.Once
 	// allowInsecureLogin disables the plain-HTTP login refusal (APP_ALLOW_INSECURE_LOGIN).
 	allowInsecureLogin bool
 	// lookupHost resolves a hostname's A/AAAA addresses for
@@ -230,6 +272,18 @@ type Router struct {
 	// updatesCache caches fetchLatestRelease's result; always non-nil,
 	// constructed in NewRouter.
 	updatesCache *updatesCache
+	// updateSettings is the update_settings store surface (migrations/0258),
+	// always set, same "core Store interface" shape as ingressSettings above.
+	updateSettings UpdateSettingsStore
+	// upgradeFetchers is the beta/edge channel lookup, defaulted to
+	// upgrade.DefaultFetchers() in NewRouter, overridable in tests the
+	// same way fetchLatestRelease is above.
+	upgradeFetchers upgrade.Fetchers
+	// channelUpdatesCache caches upgradeFetchers' result for whichever
+	// channel update_settings currently names; always non-nil,
+	// constructed in NewRouter. Separate from updatesCache above so the
+	// stable channel's existing cache/behavior stays untouched.
+	channelUpdatesCache *upgrade.Cache
 	// certExpiryWarningWindow overrides alerting.DefaultCertExpiryWarningWindow
 	// for GET /api/v1/certificates's "expiring_soon" threshold, and for a
 	// kind=cert_expiry alert rule's own evaluation (cmd/levelrail/main.go
@@ -266,6 +320,11 @@ type Router struct {
 	// PurgeOldAuditEntries removes it. 0 means "use the default", set via
 	// WithAuditLogRetention.
 	auditLogRetention time.Duration
+	// webhookDeliveryRetention overrides defaultWebhookDeliveryRetention
+	// (webhook_delivery_retention.go): how long a webhook_deliveries row
+	// survives before PurgeOldWebhookDeliveries removes it. 0 means "use
+	// the default", set via WithWebhookDeliveryRetention.
+	webhookDeliveryRetention time.Duration
 	// secretRotationWarnAge overrides defaultSecretRotationWarnAge
 	// (secret_rotation.go): how old a secret's last-set value can get
 	// before GET /apps/{name}/secrets, GET .../env/all, and the doctor's
@@ -283,135 +342,154 @@ type Router struct {
 	// /api/v1/apps/{name}/resource-recommendation's usage-history window.
 	// 0 means "use the default", set via WithResourceRecommendationLookback.
 	resourceRecommendationLookback time.Duration
-	builder                        Builder                          // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
-	fetch                          fetchFunc                        // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
-	listBranches                   listBranchesFunc                 // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
-	importFiles                    func() importplan.FileSource     // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
-	detect                         detectFunc                       // framework pre-flight detector for handleDetectFramework; always non-nil, defaulted to build.Detect in NewRouter, overridable in this package's own tests
-	staticSites                    StaticSiteStore                  // always set, same "core Store interface, not an optional plug-in" shape as certs above
-	backupTargets                  BackupTargetStore                // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
-	storage                        *StorageDeps                     // nil is valid: /api/v1/storage and /api/v1/log-archive routes return 501
-	backupSecrets                  BackupSecretsSetter              // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
-	registryCredentials            RegistryCredentialStore          // always set, same "core Store interface" shape as backupTargets above
-	registryCredentialSecrets      RegistryCredentialSecretsSetter  // nil is valid: POST /api/v1/registry-credentials returns 501, same shape as backupSecrets above
-	backupHistory                  BackupHistoryStore               // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
-	backupRunner                   BackupRunner                     // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
-	backupDownloader               BackupDownloader                 // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
-	backupDeleter                  BackupDeleter                    // nil is valid: DELETE .../backups/{historyId} returns 501, same shape as backupDownloader above
-	backupVerifications            BackupVerificationStore          // always set, same "core Store interface" shape as backupHistory above: listing verification attempts needs no runner configuration, only triggering a new one does
-	backupVerifier                 BackupVerifier                   // nil is valid: POST .../backups/{historyId}/verify returns 501, same shape as backupRunner above
-	backupTargetTester             BackupTargetTester               // nil is valid: POST /api/v1/backup-targets/{id}/test returns 501, same shape as registryAuthTester above
-	restoreHistory                 RestoreHistoryStore              // always set, same "core Store interface" shape as backupHistory above
-	restoreRunner                  RestoreRunner                    // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
-	cloneRestoreHistory            CloneRestoreHistoryStore         // always set, same "core Store interface" shape as restoreHistory above
-	cloneRestoreRunner             CloneRestoreRunner               // nil is valid: POST /api/v1/databases/{name}/restore-as-new returns 501, same shape as restoreRunner above
-	baseBackupHistory              BaseBackupHistoryStore           // always set, same "core Store interface" shape as backupHistory above
-	baseBackupRunner               BaseBackupRunner                 // nil is valid: POST /api/v1/databases/{name}/base-backups returns 501, same shape as backupRunner above
-	pitrRestoreHistory             PITRRestoreHistoryStore          // always set, same "core Store interface" shape as restoreHistory above
-	pitrRestoreRunner              PITRRestoreRunner                // nil is valid: POST /api/v1/databases/{name}/pitr-restore returns 501, same shape as restoreRunner above
-	serviceVolumeBackupHistory     ServiceVolumeBackupHistoryStore  // always set, same "core Store interface" shape as backupHistory above
-	serviceVolumeBackupSchedule    ServiceVolumeBackupScheduleStore // always set, same "core Store interface" shape as backupTargets above: reading a volume's schedule needs no runner configuration, only triggering a manual backup does
-	serviceVolumeBackupRunner      ServiceVolumeBackupRunner        // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/backups returns 501, same shape as backupRunner above
-	serviceVolumeRestoreHistory    ServiceVolumeRestoreHistoryStore // always set, same "core Store interface" shape as restoreHistory above
-	serviceVolumeRestoreRunner     ServiceVolumeRestoreRunner       // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore returns 501, same shape as restoreRunner above
-	volumeCloneRestoreHistory      VolumeCloneRestoreHistoryStore   // always set, same "core Store interface" shape as cloneRestoreHistory above
-	appVolumeMoves                 AppVolumeMoveStore               // always set, same "core Store interface" shape as backupHistory above
-	volumeCloneRestoreRunner       VolumeCloneRestoreRunner         // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new returns 501, same shape as cloneRestoreRunner above
-	deployAttempts                 DeployAttemptStore               // always set, same "core Store interface" shape as certs/staticSites above
-	buildStartMu                   sync.Mutex                       // serializes the running-attempt check and row insert in handleTriggerBuild
-	cancels                        *deploy.CancelRegistry           // always set by NewRouter: in-flight deploys an operator can cancel
-	startingDeploys                map[string]int                   // guarded by buildStartMu: apps whose webhook deploy is fetching before its attempt row exists
-	deployMaxConcurrent            int                              // 0 means unlimited, set via WithDeployMaxConcurrent
-	deployLogStore                 DeployLogQuerier                 // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
-	deployRecorder                 *deploylog.Recorder              // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
-	logBroadcaster                 *telemetry.LogBroadcaster        // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
-	deployNotifyTargets            DeployNotifyTargets              // nil is valid: deploy-notify-target routes return 501, same shape as alertRules above
-	deployNotifier                 DeployNotifier                   // nil is valid: recordPlainDeployAttempt/beginBuildDeployAttempt simply don't dispatch a deploy-outcome notification, same "optional signal, absence is not an error" shape as dockerPinger above
-	notificationChannels           NotificationChannels             // nil is valid: notification-channel routes return 501, same shape as deployNotifyTargets above
-	notificationChannelTester      NotificationChannelTester        // nil is valid: the test-send routes return 501, same shape as deployNotifier above
-	notificationDeliveries         NotificationDeliveryStore        // nil is valid: the deliveries route returns 501, and test-send simply doesn't record history, same shape as notificationChannelTester above
-	gitSources                     GitSourceStore                   // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
-	appSchedules                   AppScheduleStore                 // always set, same "core Store interface" shape as gitSources above
-	resolveBranchSHA               resolveBranchSHAFunc             // remote branch head resolver for TriggerScheduledDeploy; always non-nil, defaulted to resolveRemoteBranchSHA in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape listBranches above already uses
-	previewEnvironments            PreviewEnvironmentStore          // always set, same "core Store interface" shape as gitSources above: listing/tearing down a preview needs no extra secrets configuration, deploying a new one reuses gitSourceSecrets/gitSourceFetch/builder already above
-	gitSourceSecrets               GitSourceSecrets                 // nil is valid: PUT /apps/{name}/git-source and the git-push webhook route both return 501, same shape as backupSecrets above
-	gitSourceFetch                 gitSourceFetchFunc               // git-source fetcher for handleGitPushWebhook; always non-nil, defaulted to gitCheckoutWithToken in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches above already use
-	githubApp                      GitHubAppStore                   // always set, same "core Store interface" shape as backupTargets/certs above: the connection row/its absence is always queryable, no secrets configuration needed just to read status
-	githubAppSecrets               GitHubAppSecrets                 // nil is valid: every github-app route that needs it (register/start, callback, installed, repos, branches) returns 501, same shape as backupSecrets above
-	githubAppClient                GitHubAppClient                  // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
-	githubAppState                 *pendingState                    // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see pendingState's own doc comment
-	githubAppManifestConfig        githubapp.ManifestConfig         // always set, defaulted to githubapp.DefaultManifestConfig() in NewRouter, overridable via WithGitHubAppManifestConfig: the permissions/events a fresh App registration requests
-	gitlabApp                      GitLabAppStore                   // always set, same "core Store interface" shape as githubApp above
-	gitlabAppSecrets               GitLabAppSecrets                 // nil is valid: every gitlab-app route that needs it returns 501, same shape as githubAppSecrets above
-	gitlabAppClient                GitLabAppClient                  // always set (NewRouter defaults it to a real *gitlabapp.Client), overridable in this package's own tests
-	gitlabAppState                 *pendingState                    // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
-	oauthSettings                  OAuthSettingsStore               // always set, same "core Store interface" shape as ingressSettings above: both provider rows always exist (migrations/0035's own seeded rows)
-	oauthIdentities                OAuthIdentityStore               // always set, same shape as oauthSettings above
-	oauthSecrets                   OAuthSecrets                     // nil is valid: every /auth/oauth/... sign-in route and PUT /settings/oauth/{provider} return 501/501, same "not configured" shape as gitSourceSecrets above
-	oauthState                     *oauthStateStore                 // built in NewRouter unconditionally, the same "always present, not an Option" shape sessions itself has
-	oauthClientFactory             oauthClientFactory               // defaulted to defaultOAuthClientFactory in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches/gitSourceFetch above already use
-	emailSettings                  EmailSettingsStore               // always set, same shape as ingressSettings above
-	emailSecrets                   EmailSecretsStore                // nil is valid: PUT /api/v1/settings/email returns 501
-	cloudflareTunnel               CloudflareTunnelStore            // always set, same shape as emailSettings above
-	cloudflareTunnelSecrets        CloudflareTunnelSecrets          // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-tunnel return 501, same shape as emailSecrets above
-	cloudflareDNS                  CloudflareDNSStore               // always set, same shape as cloudflareTunnel above
-	cloudflareDNSSecrets           CloudflareDNSSecrets             // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-dns return 501, same shape as cloudflareTunnelSecrets above
-	route53DNS                     Route53DNSStore                  // always set, same shape as cloudflareDNS above: a second, independent ACME DNS-01 provider, not a replacement
-	route53DNSSecrets              Route53DNSSecrets                // nil is valid: PUT/DELETE /api/v1/settings/route53-dns return 501, same shape as cloudflareDNSSecrets above
-	registry                       RegistryStore                    // always set, same shape as cloudflareTunnel above
-	registrySecrets                RegistrySecrets                  // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
-	vault                          VaultSettingsStore               // always set, same shape as cloudflareTunnel above
-	vaultSecrets                   VaultSecrets                     // nil is valid: PUT/DELETE /api/v1/settings/vault return 501, same shape as cloudflareTunnelSecrets above
-	registryCatalog                RegistryCatalogClient            // always set (NewRouter defaults it to a real *registrycatalog.Client, which needs no configuration to construct), overridable in this package's own tests the same way githubAppClient is
-	registryCatalogSecrets         RegistryCatalogSecrets           // nil is valid: GET /api/v1/registry/repositories and /api/v1/registry/tags return 501, same shape as registrySecrets above
-	emailSender                    email.Sender                     // nil is valid: forgot-password still returns its generic success response
-	passwordResetTokens            PasswordResetTokenStore          // always set, same shape as backupTargets above
-	forgotPasswordByIP             *loginLimiter                    // per-IP forgot-password budget, distinct from logins above
-	forgotPasswordByEmail          *loginLimiter                    // per-(IP,email) forgot-password budget; both this and forgotPasswordByIP must allow a request
-	auditLog                       AuditStore                       // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
-	scheduledTasks                 ScheduledTaskStore               // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task needs no runner configuration, only actually running one does
-	scheduledTaskRunner            ScheduledTaskRunner              // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
-	preview                        PreviewService                   // nil is valid: preview routes return 501 (SetPreview)
-	supplyChain                    SupplyChainService               // nil is valid: supply chain routes return 501 (SetSupplyChain)
-	pipelineStore                  PipelineStore                    // nil is valid: pipeline routes return 501 (WithPipelines)
-	pipelineRunner                 PipelineRunner                   // nil is valid: run/cancel/rerun return 501
-	pipelineEvents                 PipelineEvents                   // nil is valid: git events start no pipelines
-	forgeDeployments               ForgeDeploymentStore             // nil is valid: app deploys are not reported to git forges
-	pipelineSync                   *pipelineSyncWiring              // nil is valid: pushes do not sync pipeline files and the sync routes return 501
-	oidcJWKS                       OIDCJWKSProvider                 // nil is valid: GET /.well-known/jwks.json returns 404, no pipeline job can mint an oidc token either (internal/pipeline.Config.OIDCIssuer is left unset by cmd wiring in that case)
-	oidcJWKSLimiter                *apiRateLimiter                  // per-IP budget for the unauthenticated JWKS endpoint, set alongside oidcJWKS
-	oidcIssuerURL                  string                           // "" means not configured, set alongside oidcJWKS via SetOIDCManager
-	oidcRotator                    OIDCKeyRotator                   // nil is valid: POST /pipelines/oidc/rotate-key returns 501
-	featureFlags                   FeatureFlagStore                 // always set, same "core Store interface" shape as scheduledTasks above
-	tags                           TagStore                         // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
-	appIntegrations                AppIntegrationStore              // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)
-	bitbucketApp                   BitbucketAppStore                // always set, same "core Store interface" shape as gitlabApp above
-	bitbucketAppSecrets            BitbucketAppSecrets              // nil is valid: every bitbucket-app route that needs it returns 501, same shape as gitlabAppSecrets above
-	bitbucketAppClient             BitbucketAppClient               // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
-	bitbucketAppState              *pendingState                    // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
-	giteaApp                       GiteaAppStore                    // always set, same "core Store interface" shape as gitlabApp above
-	giteaAppSecrets                GiteaAppSecrets                  // nil is valid: every gitea-app route that needs it returns 501, same shape as gitlabAppSecrets above
-	giteaAppClient                 GiteaAppClient                   // always set (NewRouter defaults it to a real *giteaapp.Client), overridable in this package's own tests
-	giteaAppState                  *pendingState                    // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
-	onboarding                     OnboardingStore                  // always set, same "core Store interface, not an optional plug-in" shape as ingressSettings above: the row always exists (migrations/0067's own seeded row)
-	dbPinger                       DBPinger                         // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
-	doctorDiskWarningBytes         int64                            // 0 means "use defaultDoctorDiskWarningBytes", set via WithDoctorDiskWarningBytes
-	ingressPortOwner               IngressPortOwner                 // nil is valid: GET /system/doctor's port checks can't tell this control plane's own ingress apart from another process, same "can't check further, don't guess" shape as dbPinger above
-	doctorHTTPPort                 int                              // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
-	doctorHTTPSPort                int                              // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
-	webhookDeliveries              WebhookDeliveryStore             // always set, same "core Store interface" shape as deployAttempts above
-	policies                       PolicyStore                      // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
-	deviceAuth                     DeviceAuthStore                  // always set, same "core Store interface" shape as policies above: device_auth_requests always exists
-	deviceFlow                     *loginLimiter                    // per-IP device-login-start budget, distinct from logins/forgotPasswordByIP above
-	hookRuns                       HookRunStore                     // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
-	deployApprovals                DeployApprovalStore              // always set, same "core Store interface" shape as hookRuns above: deploy_approvals always exists, empty is a valid, non-error result
-	deployApprovalTTL              time.Duration                    // 0 means "use defaultDeployApprovalTTL", set via WithDeployApprovalTTL
-	invites                        InviteStore                      // always set, same "core Store interface" shape as passwordResetTokens above
-	inviteTTL                      time.Duration                    // 0 means "use defaultInviteTTL", set via WithInviteTTL
-	aiSettings                     AIAssistantSettingsStore         // always set, same shape as emailSettings above: the provider/model row always exists (migrations/0106's own seeded row)
-	aiSecrets                      AIAssistantSecrets               // nil is valid: PUT/DELETE /api/v1/settings/ai-assistant return 501, same shape as emailSecrets above
-	aiChat                         AIChatStore                      // always set, same "core Store interface" shape as backupTargets above
-	aiEngine                       AIEngine                         // nil is valid: every /api/v1/ai/... session route returns 501, same shape as builder above
+	// capacityForecastLookback overrides defaultCapacityForecastLookback
+	// for GET /api/v1/nodes/{id}/capacity-forecast's usage-history
+	// window. 0 means "use the default", set via
+	// WithCapacityForecastLookback.
+	capacityForecastLookback     time.Duration
+	builder                      Builder                          // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
+	fetch                        fetchFunc                        // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
+	listBranches                 listBranchesFunc                 // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
+	importFiles                  func() importplan.FileSource     // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
+	detect                       detectFunc                       // framework pre-flight detector for handleDetectFramework; always non-nil, defaulted to build.Detect in NewRouter, overridable in this package's own tests
+	staticSites                  StaticSiteStore                  // always set, same "core Store interface, not an optional plug-in" shape as certs above
+	backupTargets                BackupTargetStore                // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
+	storage                      *StorageDeps                     // nil is valid: /api/v1/storage and /api/v1/log-archive routes return 501
+	backupSecrets                BackupSecretsSetter              // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
+	registryCredentials          RegistryCredentialStore          // always set, same "core Store interface" shape as backupTargets above
+	registryCredentialSecrets    RegistryCredentialSecretsSetter  // nil is valid: POST /api/v1/registry-credentials returns 501, same shape as backupSecrets above
+	networkShares                NetworkShareStore                // always set, same "core Store interface" shape as registryCredentials above
+	networkShareSecrets          NetworkShareSecretsSetter        // nil is valid: POST /api/v1/network-shares (for a cifs share) returns 501, same shape as registryCredentialSecrets above
+	firewallRules                FirewallRuleStore                // always set, same "core Store interface" shape as backupTargets above
+	appStreams                   AppStreamStore                   // always set, same "core Store interface" shape as firewallRules above
+	firewallRequiredPorts        []int                            // defaults to firewall.DefaultRequiredPorts in NewRouter; WithFirewallRequiredPorts overrides with this instance's actually configured ports
+	backupHistory                BackupHistoryStore               // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
+	backupRunner                 BackupRunner                     // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
+	backupDownloader             BackupDownloader                 // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
+	backupDeleter                BackupDeleter                    // nil is valid: DELETE .../backups/{historyId} returns 501, same shape as backupDownloader above
+	backupVerifications          BackupVerificationStore          // always set, same "core Store interface" shape as backupHistory above: listing verification attempts needs no runner configuration, only triggering a new one does
+	backupVerifier               BackupVerifier                   // nil is valid: POST .../backups/{historyId}/verify returns 501, same shape as backupRunner above
+	backupTargetTester           BackupTargetTester               // nil is valid: POST /api/v1/backup-targets/{id}/test returns 501, same shape as registryAuthTester above
+	restoreHistory               RestoreHistoryStore              // always set, same "core Store interface" shape as backupHistory above
+	restoreRunner                RestoreRunner                    // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
+	cloneRestoreHistory          CloneRestoreHistoryStore         // always set, same "core Store interface" shape as restoreHistory above
+	cloneRestoreRunner           CloneRestoreRunner               // nil is valid: POST /api/v1/databases/{name}/restore-as-new returns 501, same shape as restoreRunner above
+	baseBackupHistory            BaseBackupHistoryStore           // always set, same "core Store interface" shape as backupHistory above
+	baseBackupRunner             BaseBackupRunner                 // nil is valid: POST /api/v1/databases/{name}/base-backups returns 501, same shape as backupRunner above
+	pitrRestoreHistory           PITRRestoreHistoryStore          // always set, same "core Store interface" shape as restoreHistory above
+	pitrRestoreRunner            PITRRestoreRunner                // nil is valid: POST /api/v1/databases/{name}/pitr-restore returns 501, same shape as restoreRunner above
+	serviceVolumeBackupHistory   ServiceVolumeBackupHistoryStore  // always set, same "core Store interface" shape as backupHistory above
+	serviceVolumeBackupSchedule  ServiceVolumeBackupScheduleStore // always set, same "core Store interface" shape as backupTargets above: reading a volume's schedule needs no runner configuration, only triggering a manual backup does
+	serviceVolumeBackupRunner    ServiceVolumeBackupRunner        // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/backups returns 501, same shape as backupRunner above
+	serviceVolumeRestoreHistory  ServiceVolumeRestoreHistoryStore // always set, same "core Store interface" shape as restoreHistory above
+	serviceVolumeRestoreRunner   ServiceVolumeRestoreRunner       // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore returns 501, same shape as restoreRunner above
+	volumeCloneRestoreHistory    VolumeCloneRestoreHistoryStore   // always set, same "core Store interface" shape as cloneRestoreHistory above
+	appVolumeMoves               AppVolumeMoveStore               // always set, same "core Store interface" shape as backupHistory above
+	volumeCloneRestoreRunner     VolumeCloneRestoreRunner         // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new returns 501, same shape as cloneRestoreRunner above
+	deployAttempts               DeployAttemptStore               // always set, same "core Store interface" shape as certs/staticSites above
+	buildStartMu                 sync.Mutex                       // serializes the running-attempt check and row insert in handleTriggerBuild
+	cancels                      *deploy.CancelRegistry           // always set by NewRouter: in-flight deploys an operator can cancel
+	startingDeploys              map[string]int                   // guarded by buildStartMu: apps whose webhook deploy is fetching before its attempt row exists
+	deployMaxConcurrent          int                              // 0 means unlimited, set via WithDeployMaxConcurrent
+	deployLogStore               DeployLogQuerier                 // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
+	deployRecorder               *deploylog.Recorder              // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
+	logBroadcaster               *telemetry.LogBroadcaster        // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
+	deployNotifyTargets          DeployNotifyTargets              // nil is valid: deploy-notify-target routes return 501, same shape as alertRules above
+	deployNotifier               DeployNotifier                   // nil is valid: recordPlainDeployAttempt/beginBuildDeployAttempt simply don't dispatch a deploy-outcome notification, same "optional signal, absence is not an error" shape as dockerPinger above
+	notificationChannels         NotificationChannels             // nil is valid: notification-channel routes return 501, same shape as deployNotifyTargets above
+	notificationChannelTester    NotificationChannelTester        // nil is valid: the test-send routes return 501, same shape as deployNotifier above
+	notificationDeliveries       NotificationDeliveryStore        // nil is valid: the deliveries route returns 501, and test-send simply doesn't record history, same shape as notificationChannelTester above
+	approvalChatNotifier         ApprovalChatNotifier             // nil is valid: requestDeployApproval simply doesn't post an interactive chat message, same "optional signal, absence is not an error" shape as deployNotifier above
+	pushSubscriptions            PushSubscriptions                // always set, same "core Store interface" shape as passkeys below: registering/listing/deleting a browser subscription needs no secrets configuration, only actually sending to one does
+	pushVAPIDPublicKey           string                           // "" means browser push is not configured on this control plane (no master key set), same nil-secretsManager hazard as every Secrets-flavored dependency
+	gitSources                   GitSourceStore                   // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
+	appSchedules                 AppScheduleStore                 // always set, same "core Store interface" shape as gitSources above
+	resolveBranchSHA             resolveBranchSHAFunc             // remote branch head resolver for TriggerScheduledDeploy; always non-nil, defaulted to resolveRemoteBranchSHA in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape listBranches above already uses
+	previewEnvironments          PreviewEnvironmentStore          // always set, same "core Store interface" shape as gitSources above: listing/tearing down a preview needs no extra secrets configuration, deploying a new one reuses gitSourceSecrets/gitSourceFetch/builder already above
+	gitSourceSecrets             GitSourceSecrets                 // nil is valid: PUT /apps/{name}/git-source and the git-push webhook route both return 501, same shape as backupSecrets above
+	gitSourceFetch               gitSourceFetchFunc               // git-source fetcher for handleGitPushWebhook; always non-nil, defaulted to gitCheckoutWithToken in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches above already use
+	githubApp                    GitHubAppStore                   // always set, same "core Store interface" shape as backupTargets/certs above: the connection row/its absence is always queryable, no secrets configuration needed just to read status
+	githubAppSecrets             GitHubAppSecrets                 // nil is valid: every github-app route that needs it (register/start, callback, installed, repos, branches) returns 501, same shape as backupSecrets above
+	githubAppClient              GitHubAppClient                  // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
+	githubAppState               *pendingState                    // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see pendingState's own doc comment
+	githubAppManifestConfig      githubapp.ManifestConfig         // always set, defaulted to githubapp.DefaultManifestConfig() in NewRouter, overridable via WithGitHubAppManifestConfig: the permissions/events a fresh App registration requests
+	gitlabApp                    GitLabAppStore                   // always set, same "core Store interface" shape as githubApp above
+	gitlabAppSecrets             GitLabAppSecrets                 // nil is valid: every gitlab-app route that needs it returns 501, same shape as githubAppSecrets above
+	gitlabAppClient              GitLabAppClient                  // always set (NewRouter defaults it to a real *gitlabapp.Client), overridable in this package's own tests
+	gitlabAppState               *pendingState                    // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
+	oauthSettings                OAuthSettingsStore               // always set, same "core Store interface" shape as ingressSettings above: both provider rows always exist (migrations/0035's own seeded rows)
+	oauthIdentities              OAuthIdentityStore               // always set, same shape as oauthSettings above
+	oauthSecrets                 OAuthSecrets                     // nil is valid: every /auth/oauth/... sign-in route and PUT /settings/oauth/{provider} return 501/501, same "not configured" shape as gitSourceSecrets above
+	oauthState                   *oauthStateStore                 // built in NewRouter unconditionally, the same "always present, not an Option" shape sessions itself has
+	oauthClientFactory           oauthClientFactory               // defaulted to defaultOAuthClientFactory in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches/gitSourceFetch above already use
+	emailSettings                EmailSettingsStore               // always set, same shape as ingressSettings above
+	emailSecrets                 EmailSecretsStore                // nil is valid: PUT /api/v1/settings/email returns 501
+	cloudflareTunnel             CloudflareTunnelStore            // always set, same shape as emailSettings above
+	cloudflareTunnelSecrets      CloudflareTunnelSecrets          // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-tunnel return 501, same shape as emailSecrets above
+	cloudflareDNS                CloudflareDNSStore               // always set, same shape as cloudflareTunnel above
+	cloudflareDNSSecrets         CloudflareDNSSecrets             // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-dns return 501, same shape as cloudflareTunnelSecrets above
+	route53DNS                   Route53DNSStore                  // always set, same shape as cloudflareDNS above: a second, independent ACME DNS-01 provider, not a replacement
+	route53DNSSecrets            Route53DNSSecrets                // nil is valid: PUT/DELETE /api/v1/settings/route53-dns return 501, same shape as cloudflareDNSSecrets above
+	cloudflareDNSTokenResolver   CloudflareDNSTokenResolver       // nil is valid: dns-records routes return 501, same shape as cloudflareDNSSecrets above but resolves the plaintext token instead of just checking presence
+	route53DNSCredentialResolver Route53DNSCredentialResolver     // nil is valid: dns-records routes return 501, same shape as cloudflareDNSTokenResolver above
+	dnsRecordManager             dnsRecordManagerFunc             // always set, defaulted to rt.resolveDNSRecordManager below, overridable in this package's own tests, the same "seam, not an interface" shape lookupHost already uses
+	dnsRecordStatus              dnsRecordStatusFunc              // always set, defaulted to defaultDNSRecordStatus below, overridable in this package's own tests so none of them perform a real DNS query
+	registry                     RegistryStore                    // always set, same shape as cloudflareTunnel above
+	registrySecrets              RegistrySecrets                  // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
+	vault                        VaultSettingsStore               // always set, same shape as cloudflareTunnel above
+	vaultSecrets                 VaultSecrets                     // nil is valid: PUT/DELETE /api/v1/settings/vault return 501, same shape as cloudflareTunnelSecrets above
+	registryCatalog              RegistryCatalogClient            // always set (NewRouter defaults it to a real *registrycatalog.Client, which needs no configuration to construct), overridable in this package's own tests the same way githubAppClient is
+	registryCatalogSecrets       RegistryCatalogSecrets           // nil is valid: GET /api/v1/registry/repositories and /api/v1/registry/tags return 501, same shape as registrySecrets above
+	dockerHubClient              DockerHubClient                  // always set (NewRouter defaults it to a real *dockerhub.Client, unauthenticated so no secrets wiring needed), overridable in this package's own tests the same way registryCatalog is
+	emailSender                  email.Sender                     // nil is valid: forgot-password still returns its generic success response
+	passwordResetTokens          PasswordResetTokenStore          // always set, same shape as backupTargets above
+	sessionLinkTokens            SessionLinkTokenStore            // always set, same shape as passwordResetTokens above
+	forgotPasswordByIP           *loginLimiter                    // per-IP forgot-password budget, distinct from logins above
+	forgotPasswordByEmail        *loginLimiter                    // per-(IP,email) forgot-password budget; both this and forgotPasswordByIP must allow a request
+	auditLog                     AuditStore                       // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
+	scheduledTasks               ScheduledTaskStore               // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task needs no runner configuration, only actually running one does
+	scheduledTaskRunner          ScheduledTaskRunner              // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
+	preview                      PreviewService                   // nil is valid: preview routes return 501 (SetPreview)
+	supplyChain                  SupplyChainService               // nil is valid: supply chain routes return 501 (SetSupplyChain)
+	pipelineStore                PipelineStore                    // nil is valid: pipeline routes return 501 (WithPipelines)
+	pipelineRunner               PipelineRunner                   // nil is valid: run/cancel/rerun return 501
+	pipelineEvents               PipelineEvents                   // nil is valid: git events start no pipelines
+	forgeDeployments             ForgeDeploymentStore             // nil is valid: app deploys are not reported to git forges
+	pipelineSync                 *pipelineSyncWiring              // nil is valid: pushes do not sync pipeline files and the sync routes return 501
+	oidcJWKS                     OIDCJWKSProvider                 // nil is valid: GET /.well-known/jwks.json returns 404, no pipeline job can mint an oidc token either (internal/pipeline.Config.OIDCIssuer is left unset by cmd wiring in that case)
+	oidcJWKSLimiter              *apiRateLimiter                  // per-IP budget for the unauthenticated JWKS endpoint, set alongside oidcJWKS
+	oidcIssuerURL                string                           // "" means not configured, set alongside oidcJWKS via SetOIDCManager
+	oidcRotator                  OIDCKeyRotator                   // nil is valid: POST /pipelines/oidc/rotate-key returns 501
+	featureFlags                 FeatureFlagStore                 // always set, same "core Store interface" shape as scheduledTasks above
+	tags                         TagStore                         // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
+	appIntegrations              AppIntegrationStore              // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)
+	bitbucketApp                 BitbucketAppStore                // always set, same "core Store interface" shape as gitlabApp above
+	bitbucketAppSecrets          BitbucketAppSecrets              // nil is valid: every bitbucket-app route that needs it returns 501, same shape as gitlabAppSecrets above
+	bitbucketAppClient           BitbucketAppClient               // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
+	bitbucketAppState            *pendingState                    // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
+	giteaApp                     GiteaAppStore                    // always set, same "core Store interface" shape as gitlabApp above
+	giteaAppSecrets              GiteaAppSecrets                  // nil is valid: every gitea-app route that needs it returns 501, same shape as gitlabAppSecrets above
+	giteaAppClient               GiteaAppClient                   // always set (NewRouter defaults it to a real *giteaapp.Client), overridable in this package's own tests
+	giteaAppState                *pendingState                    // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
+	onboarding                   OnboardingStore                  // always set, same "core Store interface, not an optional plug-in" shape as ingressSettings above: the row always exists (migrations/0067's own seeded row)
+	dbPinger                     DBPinger                         // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
+	doctorDiskWarningBytes       int64                            // 0 means "use defaultDoctorDiskWarningBytes", set via WithDoctorDiskWarningBytes
+	ingressPortOwner             IngressPortOwner                 // nil is valid: GET /system/doctor's port checks can't tell this control plane's own ingress apart from another process, same "can't check further, don't guess" shape as dbPinger above
+	doctorHTTPPort               int                              // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
+	doctorHTTPSPort              int                              // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
+	webhookDeliveries            WebhookDeliveryStore             // always set, same "core Store interface" shape as deployAttempts above
+	policies                     PolicyStore                      // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
+	deviceAuth                   DeviceAuthStore                  // always set, same "core Store interface" shape as policies above: device_auth_requests always exists
+	deviceFlow                   *loginLimiter                    // per-IP device-login-start budget, distinct from logins/forgotPasswordByIP above
+	hookRuns                     HookRunStore                     // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
+	deployApprovals              DeployApprovalStore              // always set, same "core Store interface" shape as hookRuns above: deploy_approvals always exists, empty is a valid, non-error result
+	deployApprovalTTL            time.Duration                    // 0 means "use defaultDeployApprovalTTL", set via WithDeployApprovalTTL
+	invites                      InviteStore                      // always set, same "core Store interface" shape as passwordResetTokens above
+	inviteTTL                    time.Duration                    // 0 means "use defaultInviteTTL", set via WithInviteTTL
+	aiSettings                   AIAssistantSettingsStore         // always set, same shape as emailSettings above: the provider/model row always exists (migrations/0106's own seeded row)
+	aiSecrets                    AIAssistantSecrets               // nil is valid: PUT/DELETE /api/v1/settings/ai-assistant return 501, same shape as emailSecrets above
+	aiChat                       AIChatStore                      // always set, same "core Store interface" shape as backupTargets above
+	aiEngine                     AIEngine                         // nil is valid: every /api/v1/ai/... session route returns 501, same shape as builder above
 	// mesh is this node's live network.Mesh handle (GET /api/v1/mesh's
 	// real, UAPI-backed half). nil is valid: APP_MESH_ENABLED defaults
 	// off (cmd/levelrail/mesh.go's own doc comment), and the route
@@ -481,6 +559,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		apps:                        s,
 		appGroups:                   s,
 		appCompose:                  s,
+		customTemplates:             s,
 		deploys:                     s,
 		deployAttempts:              s,
 		databases:                   s,
@@ -506,6 +585,10 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainChecks:                newDomainCheckCache(),
 		backupTargets:               s,
 		registryCredentials:         s,
+		networkShares:               s,
+		firewallRules:               s,
+		appStreams:                  s,
+		firewallRequiredPorts:       firewall.DefaultRequiredPorts,
 		backupHistory:               s,
 		backupVerifications:         s,
 		restoreHistory:              s,
@@ -534,6 +617,11 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		recoveryCodes:               s,
 		mfaPending:                  newMFAPendingStore(),
 		mfaVerify:                   newLoginLimiter(),
+		passkeys:                    s,
+		pushSubscriptions:           s,
+		passkeyRegSessions:          newPasskeyCeremonyStore(),
+		passkeyLoginSessions:        newPasskeyCeremonyStore(),
+		passkeyLogin:                newLoginLimiter(),
 		oauthSettings:               s,
 		oauthIdentities:             s,
 		oauthState:                  newOAuthStateStore(),
@@ -543,17 +631,24 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		cloudflareDNS:               s,
 		route53DNS:                  s,
 		nodeProvisions:              s,
+		sshProvisions:               s,
 		nodeProviderCatalog:         newProviderCatalogCache(),
+		templateRequiresConfig:      computeTemplateRequiresConfig(),
 		registry:                    s,
 		vault:                       s,
 		registryCatalog:             registrycatalog.NewClient(),
+		dockerHubClient:             dockerhub.NewClient(),
 		passwordResetTokens:         s,
+		sessionLinkTokens:           s,
 		forgotPasswordByIP:          newLoginLimiter(),
 		forgotPasswordByEmail:       newLoginLimiter(),
 		deviceAuth:                  s,
 		deviceFlow:                  newLoginLimiter(),
 		fetchLatestRelease:          defaultFetchLatestRelease,
 		updatesCache:                newUpdatesCache(),
+		updateSettings:              s,
+		upgradeFetchers:             upgrade.DefaultFetchers(),
+		channelUpdatesCache:         upgrade.NewCache(),
 		auditLog:                    s,
 		scheduledTasks:              s,
 		featureFlags:                s,
@@ -576,6 +671,13 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		aiChat:                      s,
 		autoPlacementEnabled:        true,
 	}
+	// Bound method values, so they must be assigned after rt exists
+	// rather than in the struct literal above; same reasoning as
+	// rt.sessions below. Both are overridable directly by this
+	// package's own tests, no Option needed.
+	rt.dnsRecordManager = rt.resolveDNSRecordManager
+	rt.dnsRecordStatus = defaultDNSRecordStatus
+
 	for _, opt := range opts {
 		opt(rt)
 	}

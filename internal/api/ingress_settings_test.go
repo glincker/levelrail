@@ -168,6 +168,168 @@ func TestHandleUpdateIngressSettings_AcceptsValidConfig(t *testing.T) {
 	}
 }
 
+// TestHandleUpdateIngressSettings_HSTSRoundTrip covers hsts_enabled's
+// default (false, same seeded-default shape every other ingress setting
+// field has) and that a PUT persists it for a later GET to see, matching
+// TestHandleUpdateIngressSettings_AcceptsValidConfig's own round-trip
+// shape for the pre-existing fields.
+func TestHandleUpdateIngressSettings_HSTSRoundTrip(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress", ""))
+	var initial ingressSettingsResource
+	if err := json.Unmarshal(getRec.Body.Bytes(), &initial); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if initial.HSTSEnabled {
+		t.Errorf("HSTSEnabled = true on a fresh control plane, want the seeded default false")
+	}
+
+	putRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(putRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/ingress", `{"hsts_enabled":true}`))
+	if putRec.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, want %d, body = %s", putRec.Code, http.StatusOK, putRec.Body.String())
+	}
+	var putGot ingressSettingsResource
+	if err := json.Unmarshal(putRec.Body.Bytes(), &putGot); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !putGot.HSTSEnabled {
+		t.Errorf("PUT response HSTSEnabled = false, want true")
+	}
+
+	rereadRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rereadRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress", ""))
+	var reread ingressSettingsResource
+	if err := json.Unmarshal(rereadRec.Body.Bytes(), &reread); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !reread.HSTSEnabled {
+		t.Errorf("GET after PUT HSTSEnabled = false, want the persisted true")
+	}
+}
+
+// TestHSTSDBOverride_TogglesHeader covers the actual point of
+// hsts_enabled: enabling it from the dashboard, with APP_ENABLE_HSTS
+// left unset, makes Strict-Transport-Security appear on the very next
+// request, no restart needed (Router.hstsDBEnabled's own doc comment).
+func TestHSTSDBOverride_TogglesHeader(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	before := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(before, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress", ""))
+	if got := before.Header().Get("Strict-Transport-Security"); got != "" {
+		t.Errorf("Strict-Transport-Security = %q before enabling hsts_enabled, want unset", got)
+	}
+
+	putRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(putRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/ingress", `{"hsts_enabled":true}`))
+	if putRec.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, want %d, body = %s", putRec.Code, http.StatusOK, putRec.Body.String())
+	}
+
+	after := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(after, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress", ""))
+	got := after.Header().Get("Strict-Transport-Security")
+	if got == "" {
+		t.Fatal("Strict-Transport-Security unset after enabling hsts_enabled, want it set without a restart")
+	}
+	if !strings.Contains(got, "includeSubDomains") {
+		t.Errorf("Strict-Transport-Security = %q, want includeSubDomains", got)
+	}
+
+	disableRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(disableRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/ingress", `{"hsts_enabled":false}`))
+	if disableRec.Code != http.StatusOK {
+		t.Fatalf("disable status = %d, want %d, body = %s", disableRec.Code, http.StatusOK, disableRec.Body.String())
+	}
+
+	afterDisable := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(afterDisable, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress", ""))
+	if got := afterDisable.Header().Get("Strict-Transport-Security"); got != "" {
+		t.Errorf("Strict-Transport-Security = %q after disabling hsts_enabled, want unset", got)
+	}
+}
+
+// TestHandleUpdateIngressSettings_PrimaryDomainConflict covers the
+// collision this endpoint didn't check before: setting PrimaryDomain to
+// a domain an app already owns must be rejected with 409, naming the
+// conflicting app, the same shape apps domains add's own
+// store.ErrDomainTaken already gives a per-app domain conflict.
+func TestHandleUpdateIngressSettings_PrimaryDomainConflict(t *testing.T) {
+	tests := []struct {
+		name          string
+		seedDomain    string
+		primaryDomain string
+		wantConflict  bool
+	}{
+		{
+			name:          "exact match conflicts",
+			seedDomain:    "app.example.com",
+			primaryDomain: "app.example.com",
+			wantConflict:  true,
+		},
+		{
+			name:          "case-insensitive match conflicts",
+			seedDomain:    "App.Example.com",
+			primaryDomain: "app.example.com",
+			wantConflict:  true,
+		},
+		{
+			name:          "different domain does not conflict",
+			seedDomain:    "app.example.com",
+			primaryDomain: "dashboard.example.com",
+			wantConflict:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+
+			if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+				Name: "web", Image: "img:v1", Port: 80,
+				Domains: []string{tt.seedDomain},
+			}); err != nil {
+				t.Fatalf("seed service: %v", err)
+			}
+
+			body := `{"primary_domain":"` + tt.primaryDomain + `"}`
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/ingress", body))
+
+			if tt.wantConflict {
+				if rec.Code != http.StatusConflict {
+					t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+				}
+				if !strings.Contains(rec.Body.String(), "web") {
+					t.Errorf("conflict body = %q, want it to name the owning app %q", rec.Body.String(), "web")
+				}
+
+				// The row must be untouched by a rejected request.
+				getRec := httptest.NewRecorder()
+				rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress", ""))
+				var got ingressSettingsResource
+				if err := json.Unmarshal(getRec.Body.Bytes(), &got); err != nil {
+					t.Fatalf("decode: %v", err)
+				}
+				if got.PrimaryDomain != "" {
+					t.Errorf("PrimaryDomain = %q after a rejected update, want left unchanged", got.PrimaryDomain)
+				}
+				return
+			}
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+			}
+		})
+	}
+}
+
 func TestHandleUpdateIngressSettings_CanDisableAndClear(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -445,6 +607,65 @@ func TestHandleListDomains(t *testing.T) {
 	for i := range want {
 		if got[i] != want[i] {
 			t.Errorf("GET /domains[%d] = %+v, want %+v", i, got[i], want[i])
+		}
+	}
+}
+
+// TestHandleListDomains_StatusFlags proves the four read-only status
+// flags (waf_enabled, has_redirect, maintenance_enabled, has_basic_auth)
+// round-trip correctly per domain, each sourced from its own table via
+// a bulk List* read rather than a per-domain lookup, and that a domain
+// with none of them configured reports all four false.
+func TestHandleListDomains_StatusFlags(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Domains: []string{"configured.example.com", "plain.example.com"},
+	}); err != nil {
+		t.Fatalf("seed service: %v", err)
+	}
+
+	if err := db.SetDomainWAF(ctx, "configured.example.com", true, store.DomainWAFModeBlock, 0, 0); err != nil {
+		t.Fatalf("set domain waf: %v", err)
+	}
+	if err := db.SetDomainRedirect(ctx, "configured.example.com", "https://target.example.com", store.DomainRedirectPermanent); err != nil {
+		t.Fatalf("set domain redirect: %v", err)
+	}
+	if err := db.SetDomainMaintenance(ctx, "configured.example.com"); err != nil {
+		t.Fatalf("set domain maintenance: %v", err)
+	}
+	if err := db.SetDomainBasicAuth(ctx, "configured.example.com", "admin"); err != nil {
+		t.Fatalf("set domain basic auth: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/domains", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got []domainResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	want := map[string]domainResource{
+		"configured.example.com": {
+			Domain: "configured.example.com", ServiceName: "web",
+			WAFEnabled: true, HasRedirect: true, MaintenanceEnabled: true, HasBasicAuth: true,
+		},
+		"plain.example.com": {
+			Domain: "plain.example.com", ServiceName: "web",
+		},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("GET /domains = %+v, want %d rows", got, len(want))
+	}
+	for _, row := range got {
+		if row != want[row.Domain] {
+			t.Errorf("GET /domains[%q] = %+v, want %+v", row.Domain, row, want[row.Domain])
 		}
 	}
 }

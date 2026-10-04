@@ -121,12 +121,25 @@ log "building control plane and CLI binaries"
 # the scratch dir instead of touching the real one.
 export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/Library/Caches/ms-playwright}"
 export HOME="$FAKE_HOME"
+# load-balancer.png needs a real, populated load balancer view. The load
+# balancer feature is gated behind APP_EXPERIMENTAL (internal/experimental):
+# this both wires up the ingress reconciler's live upstream registry on the
+# server (main.go's experimental.Enabled(LoadBalancer) checks) and unlocks
+# the CLI's "lb" subcommand used in the scaling step below.
+export APP_EXPERIMENTAL=load-balancer
+# APP_AUTO_PLACEMENT=false: with mesh on, bootstrapLocalNode gives this
+# solo control plane one real node row, so auto-placement would assign
+# new apps that node's ID instead of leaving node_id empty. Nothing ever
+# dials in as that node's agent (single-node has none), so the reconciler
+# can never resolve a transport for it. Keeping node_id empty resolves to
+# this process's own local runtime directly instead.
 APP_ADMIN_USERNAME=dev \
   APP_ADMIN_PASSWORD=dev \
   APP_DATA_DIR="$DATA_DIR" \
   APP_HTTP_ADDR=":${HTTP_PORT}" \
   APP_AGENT_ADDR=":${AGENT_PORT}" \
   APP_MESH_ENABLED=1 \
+  APP_AUTO_PLACEMENT=false \
   "$BIN" >"$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 log "control plane starting (pid $SERVER_PID), log at $SERVER_LOG"
@@ -237,6 +250,57 @@ log "triggering third deploy on $HERO_APP (real rollback-shaped history)"
 "$CLI" apps deploy "$HERO_APP" --image nginx:alpine || fail "deploy 3 on $HERO_APP failed"
 wait_for_running "$HERO_APP"
 send_traffic "$(host_port_for "$HERO_APP")"
+
+# --- scale up and configure a load balancer ---------------------------------
+#
+# load-balancer.png needs real upstreams, not an empty "not configured"
+# state. "apps create"/"apps deploy" have no --replicas flag, so this goes
+# straight at PUT /api/v1/apps/{name} (replicas is a plain field on that
+# resource) using the CLI's own device-login token. Container names for
+# replicas follow application.ReplicaContainerName: "<app>-<8hex>" for
+# replica 0, "<app>-<8hex>-r<N>" for replica N>0, both still prefixed with
+# "<app>-", so the existing cleanup trap's prefix match already tears them
+# down along with everything else.
+wait_for_replica_count() {
+  local app="$1" want="$2" i=0
+  until [ "$(docker ps --format '{{.Names}}' 2>/dev/null | grep -cE "^${app}-")" -ge "$want" ]; do
+    i=$((i + 1))
+    [ "$i" -ge 30 ] && fail "$app never reached $want running replicas"
+    sleep 2
+  done
+}
+
+CRED_FILE="$FAKE_HOME/.config/levelrail-cli/credentials"
+API_TOKEN="$(awk -F= '/^APP_API_TOKEN=/{print $2}' "$CRED_FILE" 2>/dev/null | tr -d '[:space:]')"
+[ -n "$API_TOKEN" ] || fail "could not read CLI API token from $CRED_FILE"
+
+log "scaling $HERO_APP to 2 replicas for the load balancer screenshot"
+# domains is set here too: the ingress reconciler only ever calls
+# planLoadBalancer for a service with at least one active host (an
+# operator domain or the zero-config sslip.io fallback), so without one
+# the load balancer stays permanently "never observed" no matter how
+# many replicas are running. example.com is IANA-reserved for exactly
+# this: it never issues a real cert and never resolves to this machine,
+# so ACME just fails quietly in the background.
+scale_status="$(curl -s -o /dev/null -w '%{http_code}' -X PUT \
+  -H "Authorization: Bearer ${API_TOKEN}" -H "Content-Type: application/json" \
+  -d '{"image":"nginx:alpine","port":80,"replicas":2,"domains":["marketing-site.example.com"]}' \
+  "$BASE_URL/api/v1/apps/${HERO_APP}")"
+[ "$scale_status" = "200" ] || fail "scale $HERO_APP to 2 replicas returned $scale_status, expected 200"
+wait_for_replica_count "$HERO_APP" 2
+
+log "configuring load balancer on $HERO_APP"
+"$CLI" lb set "$HERO_APP" --algorithm round_robin --health-path / --health-interval 5s --health-timeout 2s \
+  || fail "lb set on $HERO_APP failed"
+
+log "waiting for the ingress reconciler to observe both upstreams"
+i=0
+until [ "$("$CLI" lb status "$HERO_APP" --json 2>/dev/null | jq '[.upstreams[] | select(.dial != "")] | length' 2>/dev/null)" -ge 2 ] 2>/dev/null; do
+  i=$((i + 1))
+  [ "$i" -ge 30 ] && fail "$HERO_APP load balancer never reported 2 upstreams"
+  sleep 2
+done
+"$CLI" lb check "$HERO_APP" || fail "lb check on $HERO_APP failed"
 
 # --- let metrics accumulate -------------------------------------------------
 #

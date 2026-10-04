@@ -66,8 +66,8 @@ func TestHandleGetEmailSettings_SeededDefault(t *testing.T) {
 	if got.Backend != "" {
 		t.Errorf("Backend = %q, want empty", got.Backend)
 	}
-	if got.SMTPPasswordSet || got.SESSecretAccessKeySet {
-		t.Errorf("got %+v, want both secret-set flags false with no secrets configured", got)
+	if got.SMTPPasswordSet || got.SESSecretAccessKeySet || got.ResendAPIKeySet {
+		t.Errorf("got %+v, want every secret-set flag false with no secrets configured", got)
 	}
 }
 
@@ -178,6 +178,41 @@ func TestHandleUpdateEmailSettings_SES_Success(t *testing.T) {
 	}
 }
 
+func TestHandleUpdateEmailSettings_Resend_Success(t *testing.T) {
+	secrets := newFakeEmailSecretsStore()
+	rt, db := newTestRouterWithEmailSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"backend":"resend","resend_from":"a@example.com","resend_api_key":"shh"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/email", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	settings, err := db.GetEmailSettings(context.Background())
+	if err != nil {
+		t.Fatalf("GetEmailSettings() error = %v", err)
+	}
+	if settings.Backend != store.EmailBackendResend || settings.ResendFrom != "a@example.com" {
+		t.Errorf("got %+v, want resend backend with the submitted from address", settings)
+	}
+	if secrets.values[emailSecretsResendAPIKey] != "shh" {
+		t.Errorf("stored resend api key = %q, want shh", secrets.values[emailSecretsResendAPIKey])
+	}
+
+	var got emailSettingsResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.ResendAPIKeySet {
+		t.Error("ResendAPIKeySet = false, want true after a save with an api key")
+	}
+	if got.ResendAPIKey != "" {
+		t.Errorf("response leaked the api key: %+v", got)
+	}
+}
+
 func TestValidateEmailSettingsRequest(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -194,6 +229,8 @@ func TestValidateEmailSettingsRequest(t *testing.T) {
 		{name: "ses missing from", req: emailSettingsResource{Backend: store.EmailBackendSES, SESRegion: "us-east-1", SESAccessKeyID: "id"}, wantErr: true},
 		{name: "ses missing access key id", req: emailSettingsResource{Backend: store.EmailBackendSES, SESRegion: "us-east-1", SESFrom: "a@example.com"}, wantErr: true},
 		{name: "ses valid", req: emailSettingsResource{Backend: store.EmailBackendSES, SESRegion: "us-east-1", SESFrom: "a@example.com", SESAccessKeyID: "id"}, wantErr: false},
+		{name: "resend missing from", req: emailSettingsResource{Backend: store.EmailBackendResend}, wantErr: true},
+		{name: "resend valid", req: emailSettingsResource{Backend: store.EmailBackendResend, ResendFrom: "a@example.com"}, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -446,6 +446,11 @@ func (rt *Router) cloneOneApp(ctx context.Context, source store.DesiredService, 
 			return store.DesiredService{}, fmt.Errorf("set auto rollback on crashloop: %w", err)
 		}
 	}
+	if source.AutoRollbackOnSLOBurn != "" && source.AutoRollbackOnSLOBurn != store.AutoRollbackSLOBurnOff {
+		if err := rt.apps.SetServiceAutoRollbackOnSLOBurn(ctx, newName, source.AutoRollbackOnSLOBurn); err != nil {
+			return store.DesiredService{}, fmt.Errorf("set auto rollback on slo burn: %w", err)
+		}
+	}
 	if err := rt.apps.SetServiceExecEnabled(ctx, newName, source.ExecEnabled); err != nil {
 		return store.DesiredService{}, fmt.Errorf("set exec enabled: %w", err)
 	}

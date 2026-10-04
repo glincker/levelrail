@@ -153,6 +153,33 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		}
 		resp.Result = emptyResult()
 
+	case *agentpb.AgentRequest_NetworkConnect:
+		if err := rt.NetworkConnect(ctx, op.NetworkConnect.GetNetwork(), op.NetworkConnect.GetContainerId()); err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = emptyResult()
+
+	case *agentpb.AgentRequest_NetworkDisconnect:
+		if err := rt.NetworkDisconnect(ctx, op.NetworkDisconnect.GetNetwork(), op.NetworkDisconnect.GetContainerId(), op.NetworkDisconnect.GetForce()); err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = emptyResult()
+
+	case *agentpb.AgentRequest_Stats:
+		inspector, ok := rt.(docker.StatsInspector)
+		if !ok {
+			resp.Error = ErrStatsUnsupported.Error()
+			return resp
+		}
+		stats, err := inspector.Stats(ctx, op.Stats.GetContainerId())
+		if err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = &agentpb.AgentResponse_Stats{Stats: &agentpb.StatsResponse{Stats: containerStatsToPB(stats)}}
+
 	case *agentpb.AgentRequest_ListNetworksByPrefix:
 		networks, err := rt.ListNetworksByPrefix(ctx, op.ListNetworksByPrefix.GetPrefix())
 		if err != nil {
@@ -202,6 +229,10 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 // treat any error here as "can't tell" and fall back to waiting out the
 // full readiness budget.
 var ErrExitStateUnsupported = errors.New("agent: this node's container runtime cannot inspect container exit state")
+
+// ErrStatsUnsupported is what a Stats request gets when this node's
+// runtime cannot report container resource usage.
+var ErrStatsUnsupported = errors.New("agent: this node's container runtime cannot report container stats")
 
 func emptyResult() *agentpb.AgentResponse_Empty {
 	return &agentpb.AgentResponse_Empty{Empty: &agentpb.Empty{}}

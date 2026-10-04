@@ -8,7 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { EmptyState, RelativeTime } from '../kit'
+import { RelativeTime } from '../kit'
+import { EmptyState } from '../ui/empty-state'
 import { RevokeTokenDialog } from '../RevokeTokenDialog'
 import { CreateAgentTokenDialog } from './CreateAgentTokenDialog'
 import { ABILITY_BADGE_VARIANT, type TokenResource } from '../../types/token'

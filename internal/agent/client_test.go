@@ -103,6 +103,30 @@ func TestServeSession_RecvError_ReturnsImmediately(t *testing.T) {
 	}
 }
 
+// TestServeSession_GoAway_ReturnsImmediately is the agent-side half of
+// the stream-close-signal fix: a GoAway frame must end serveSession right
+// away, not wait for the server to actually hang up.
+func TestServeSession_GoAway_ReturnsImmediately(t *testing.T) {
+	stream := newFakeAgentClientStream()
+	rt := newExecRuntime()
+
+	done := make(chan error, 1)
+	go func() {
+		done <- serveSession(context.Background(), stream, rt, nil, nil, "", time.Hour, nil, testLogger())
+	}()
+
+	stream.recv <- &agentpb.ControlMessage{Payload: &agentpb.ControlMessage_GoAway{GoAway: &agentpb.GoAway{}}}
+
+	select {
+	case err := <-done:
+		if !errors.Is(err, errControlPlaneGoAway) {
+			t.Errorf("serveSession() error = %v, want errControlPlaneGoAway", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for serveSession() to return after GoAway")
+	}
+}
+
 func TestServeSession_MultipleRequests_AllAnswered(t *testing.T) {
 	stream := newFakeAgentClientStream()
 	rt := newExecRuntime()

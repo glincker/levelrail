@@ -448,6 +448,14 @@ type DesiredService struct {
 	// at creation.
 	AppID string
 
+	// IsTrial marks a service deployed via the one-click template
+	// "Deploy now" path (migrations/0264_service_is_trial.sql) as an
+	// obviously-temporary trial instance. Like AppID, SaveDesiredService
+	// writes it only on first INSERT, never on an ON CONFLICT update: a
+	// redeploy must never flip an existing service's trial status either
+	// way.
+	IsTrial bool
+
 	// LogDrain is this service's external log-forwarding config
 	// (migrations/0047_service_log_drain.sql), nil meaning none
 	// configured. Like NodeID/ProjectID/StorageTargetID/Suspended,
@@ -474,6 +482,19 @@ type DesiredService struct {
 	// this field: only SetServiceAutoRollbackOnCrashloop does.
 	AutoRollbackOnCrashloop bool
 
+	// AutoRollbackOnSLOBurn opts this app into automatic rollback on a
+	// KindSLOBurn alert rule (migrations/0251), one of the
+	// AutoRollbackSLOBurn* constants below. "" behaves like
+	// AutoRollbackSLOBurnOff, the same off-by-default shape
+	// AutoRollbackOnCrashloop already establishes, but as a mode rather
+	// than a bool: auto mirrors AutoRollbackOnCrashloop's own immediate
+	// rollback, dry_run only records what would have happened, and
+	// pause_for_human opens a pending DeployApproval for a human to
+	// decide instead of deploying directly. Like AutoRollbackOnCrashloop,
+	// SaveDesiredService never writes this field: only
+	// SetServiceAutoRollbackOnSLOBurn does.
+	AutoRollbackOnSLOBurn string
+
 	// ExecEnabled gates POST /apps/{name}/exec and GET
 	// /apps/{name}/terminal (migrations/0112_service_exec_enabled.sql,
 	// internal/api/exec.go and terminal.go): both check this in addition
@@ -486,7 +507,25 @@ type DesiredService struct {
 	// SaveDesiredService never writes this field: only
 	// SetServiceExecEnabled does.
 	ExecEnabled bool
+
+	// BadgeEnabled opts this app into the public, unauthenticated
+	// GET /api/v1/apps/{name}/badge.svg deploy-status badge
+	// (migrations/0278_service_badge_enabled.sql). Default false, unlike
+	// ExecEnabled: a badge exposes deploy status to anyone with the URL,
+	// so it must be an explicit per-app choice. Like ExecEnabled,
+	// SaveDesiredService never writes this field: only
+	// SetServiceBadgeEnabled does.
+	BadgeEnabled bool
 }
+
+// AutoRollbackSLOBurn* are DesiredService.AutoRollbackOnSLOBurn's valid
+// values.
+const (
+	AutoRollbackSLOBurnOff           = "off"
+	AutoRollbackSLOBurnAuto          = "auto"
+	AutoRollbackSLOBurnDryRun        = "dry_run"
+	AutoRollbackSLOBurnPauseForHuman = "pause_for_human"
+)
 
 // DefaultDeployStrategy and DefaultReplicas mirror internal/spec's
 // StrategyBlueGreen/DefaultReplicas exactly (same values), kept as this
@@ -666,8 +705,8 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 	}
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, host_port, bind_address, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, pull_policy, image_id, image_id_ref, depends_on, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, host_port, bind_address, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, is_trial, pull_policy, image_id, image_id_ref, depends_on, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -696,7 +735,7 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 			image_id_ref = excluded.image_id_ref,
 			depends_on = excluded.depends_on,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), bindAddress, string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), string(egressJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""}, svc.PullPolicy, svc.ImageID, svc.ImageIDRef, string(dependsOnJSON))
+	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), bindAddress, string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), string(egressJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""}, svc.IsTrial, svc.PullPolicy, svc.ImageID, svc.ImageIDRef, string(dependsOnJSON))
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -875,6 +914,22 @@ func (db *DB) UpdateServiceEgressPolicy(ctx context.Context, name string, policy
 	`, policy)
 }
 
+// UpdateServiceVolumes replaces svc's named-volume list as a whole,
+// without SaveDesiredService's full-record replace: the dedicated
+// dual-write path Volumes lacked until now, mirroring
+// UpdateServiceEgressPolicy (app.yaml's volumes: block also sets this,
+// via the ordinary SaveDesiredService replace). A nil slice persists as
+// "[]", matching SaveDesiredService's own nil-to-empty handling, so a
+// service with no volumes always reads back an empty slice, never nil.
+func (db *DB) UpdateServiceVolumes(ctx context.Context, name string, volumes []ServiceVolume) error {
+	if volumes == nil {
+		volumes = []ServiceVolume{}
+	}
+	return db.updateServiceJSONColumn(ctx, name, "volumes", `
+		UPDATE desired_services SET volumes = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, volumes)
+}
+
 // UpdateServiceHealth replaces svc's readiness/liveness config as a whole
 // (health nil clears it), without SaveDesiredService's full-record replace.
 func (db *DB) UpdateServiceHealth(ctx context.Context, name string, health *ServiceHealth) error {
@@ -985,6 +1040,62 @@ func (db *DB) SetServiceVaultEnvVar(ctx context.Context, name, envVar string, re
 	return nil
 }
 
+// SetServiceDatabaseEnvVar adds or replaces (ref non-nil) or removes
+// (ref nil) exactly one entry in name's DatabaseEnv map, the narrow
+// single-key mutation POST/DELETE /api/v1/apps/{name}/connections needs
+// for an app to declare more than one database connection without
+// app.yaml. Same read-modify-write-in-one-transaction shape as
+// SetServiceVaultEnvVar just above, since DatabaseEnv is a JSON blob
+// (like VaultEnv), not one column per key; DatabaseAttachment remains
+// its own single-slot field with its own setter
+// (UpdateServiceDatabaseAttachment), untouched by this method.
+func (db *DB) SetServiceDatabaseEnvVar(ctx context.Context, name, envVar string, ref *DatabaseEnvRef) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: set database env var for service %q: begin transaction: %w", name, err)
+	}
+	defer func() {
+		_ = tx.Rollback() // no-op if Commit already succeeded
+	}()
+
+	var databaseEnvJSON string
+	err = tx.QueryRowContext(ctx, `SELECT database_env FROM desired_services WHERE name = ?`, name).Scan(&databaseEnvJSON)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrServiceNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("store: set database env var for service %q: read existing: %w", name, err)
+	}
+
+	databaseEnv := map[string]DatabaseEnvRef{}
+	if databaseEnvJSON != "" {
+		if err := json.Unmarshal([]byte(databaseEnvJSON), &databaseEnv); err != nil {
+			return fmt.Errorf("store: set database env var for service %q: decode existing: %w", name, err)
+		}
+	}
+	if ref == nil {
+		delete(databaseEnv, envVar)
+	} else {
+		databaseEnv[envVar] = *ref
+	}
+
+	updated, err := json.Marshal(databaseEnv)
+	if err != nil {
+		return fmt.Errorf("store: set database env var for service %q: encode: %w", name, err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE desired_services SET database_env = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, string(updated), name); err != nil {
+		return fmt.Errorf("store: set database env var for service %q: %w", name, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: set database env var for service %q: commit: %w", name, err)
+	}
+	return nil
+}
+
 // UpdateServiceApp assigns svc to app appID, the only way
 // desired_services.app_id ever changes outside migrations/0039_apps.sql's
 // own backfill: SaveDesiredService's own doc comment explains why this
@@ -1054,6 +1165,49 @@ func (db *DB) SetServiceAutoRollbackOnCrashloop(ctx context.Context, name string
 	n, err := res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("store: update auto rollback on crashloop for service %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
+
+// SetServiceAutoRollbackOnSLOBurn is the only way
+// auto_rollback_on_slo_burn ever changes, the same "own single-purpose
+// setter, excluded from SaveDesiredService" reasoning
+// SetServiceAutoRollbackOnCrashloop already establishes. mode must be one
+// of the AutoRollbackSLOBurn* constants; the caller (handleSetAutoRollbackSLOBurn)
+// validates that before calling this.
+func (db *DB) SetServiceAutoRollbackOnSLOBurn(ctx context.Context, name, mode string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_services SET auto_rollback_on_slo_burn = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, mode, name)
+	if err != nil {
+		return fmt.Errorf("store: update auto rollback on slo burn for service %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update auto rollback on slo burn for service %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
+
+// SetServiceBadgeEnabled is the only way badge_enabled ever changes, the
+// same "own single-purpose setter, excluded from SaveDesiredService"
+// reasoning SetServiceExecEnabled already establishes.
+func (db *DB) SetServiceBadgeEnabled(ctx context.Context, name string, enabled bool) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_services SET badge_enabled = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, enabled, name)
+	if err != nil {
+		return fmt.Errorf("store: update badge enabled for service %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update badge enabled for service %q: rows affected: %w", name, err)
 	}
 	if n == 0 {
 		return ErrServiceNotFound
@@ -1364,7 +1518,7 @@ func (s DesiredService) LocalImageID() string {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref, depends_on"
+const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref, depends_on, auto_rollback_on_slo_burn, is_trial, badge_enabled"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
@@ -1378,7 +1532,7 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                                                             string
 		dependsOnJSON                                                                                                                                                                       string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef, &dependsOnJSON); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef, &dependsOnJSON, &svc.AutoRollbackOnSLOBurn, &svc.IsTrial, &svc.BadgeEnabled); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String

@@ -25,6 +25,40 @@ export function certRenewalBadge(
     : null
 }
 
+// certAttentionRank orders certificates for the "needs attention first"
+// view on the domains page: stalled renewals ahead of any other
+// non-healthy status, healthy or missing certs last.
+export function certAttentionRank(cert?: CertificateStatus): number {
+  if (!cert || cert.status === 'healthy') {
+    return 2
+  }
+  return certRenewalBadge(cert) ? 0 : 1
+}
+
+function compareCertAttention(
+  a: CertificateStatus | undefined,
+  b: CertificateStatus | undefined,
+): number {
+  const rankA = certAttentionRank(a)
+  const rankB = certAttentionRank(b)
+  if (rankA !== rankB) {
+    return rankA - rankB
+  }
+  return rankA === 2
+    ? 0
+    : new Date(a!.not_after).getTime() - new Date(b!.not_after).getTime()
+}
+
+// sortByCertAttention puts stalled-renewal items first, then non-healthy
+// items by soonest expiry, leaving healthy/uncertified items in their
+// existing relative order (stable sort).
+export function sortByCertAttention<T>(
+  items: T[],
+  certFor: (item: T) => CertificateStatus | undefined,
+): T[] {
+  return [...items].sort((a, b) => compareCertAttention(certFor(a), certFor(b)))
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000
 
 export function certExpiryLabel(notAfter: string, now = new Date()): string {

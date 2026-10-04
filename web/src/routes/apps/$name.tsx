@@ -21,10 +21,11 @@ import { RedeployAppButton } from '../../components/RedeployAppButton'
 import { RestartAppButton } from '../../components/RestartAppButton'
 import { StopStartAppButton } from '../../components/StopStartAppButton'
 import { ConvergenceIndicator } from '../../components/ConvergenceIndicator'
-import { TagsControl } from '../../components/TagsControl'
+import { TrialAppBanner } from '../../components/TrialAppBanner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { PageSpinner } from '@/components/ui/page-spinner'
+import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Matches the 18 real section routes under /apps/$name/* (see
 // AppScopedSidebar.tsx's own nav, the source of truth for these labels):
@@ -79,7 +80,7 @@ export const Route = createFileRoute('/apps/$name')({
       queryClient.ensureQueryData(deployStatusQueryOptions(name)),
     ]),
   component: AppDetailLayout,
-  pendingComponent: PageSpinner,
+  pendingComponent: AppDetailLayoutSkeleton,
   errorComponent: AppDetailError,
 })
 
@@ -131,27 +132,32 @@ function AppDetailLayout() {
       </div>
       {isOverview ? null : (
         <>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold text-foreground">
-                {app.name}
-              </h1>
-              <Badge variant={status.variant}>{status.label}</Badge>
-              <ConvergenceIndicator conditions={conditions} />
-            </div>
-            <div className="flex items-center gap-2">
-              <StopStartAppButton name={app.name} suspended={app.suspended} />
-              <RestartAppButton name={app.name} />
-              <RedeployAppButton name={app.name} image={app.image} />
-              <PromoteAppDialog appName={app.name} projectId={app.project_id} />
-              <CloneAppDialog name={app.name} />
-              <DeleteAppDialog name={app.name} />
-            </div>
-          </div>
-
-          <TagsControl appName={app.name} tags={app.tags} />
+          <PageHeader
+            title={app.name}
+            status={
+              <>
+                <Badge variant={status.variant}>{status.label}</Badge>
+                <ConvergenceIndicator conditions={conditions} />
+              </>
+            }
+            actions={
+              <>
+                <StopStartAppButton name={app.name} suspended={app.suspended} />
+                <RestartAppButton name={app.name} />
+                <RedeployAppButton name={app.name} image={app.image} />
+                <PromoteAppDialog
+                  appName={app.name}
+                  projectId={app.project_id}
+                />
+                <CloneAppDialog name={app.name} />
+                <DeleteAppDialog name={app.name} />
+              </>
+            }
+          />
         </>
       )}
+
+      {app.is_trial ? <TrialAppBanner name={app.name} /> : null}
 
       <PendingDeployApprovalBanner appName={app.name} />
 
@@ -160,6 +166,35 @@ function AppDetailLayout() {
       ) : null}
 
       <Outlet />
+    </div>
+  )
+}
+
+// Mirrors the layout's own header (breadcrumb, name/badge/actions) plus a
+// generic content block, since which section route is loading underneath
+// isn't known yet.
+function AppDetailLayoutSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <Skeleton className="h-4 w-56" />
+
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+        <div className="flex items-center gap-2">
+          {Array.from({ length: 5 }, (_, i) => (
+            <Skeleton key={i} className="h-8 w-8 rounded-md" />
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3 rounded-lg border border-border p-4">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-2/3" />
+      </div>
     </div>
   )
 }

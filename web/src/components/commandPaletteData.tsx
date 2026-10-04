@@ -63,6 +63,9 @@ export const GROUP_ORDER = [
   'Settings',
   'Apps',
   'Databases',
+  'Nodes',
+  'Templates',
+  'Domains',
 ] as const
 
 const nav = (
@@ -254,6 +257,16 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'Settings',
   ),
 ]
+
+// Always-available empty-query CTAs, independent of recents/app data.
+// Keys into ROUTE_ENTRIES/baseItems; order is the display order.
+export const DEFAULT_QUICK_ACTION_KEYS = [
+  'action-create-app',
+  'action-apps',
+  'nav-deployments',
+  'nav-help',
+  'action-shortcuts',
+] as const
 
 export const THEME_ACTION = {
   key: 'action-toggle-theme',

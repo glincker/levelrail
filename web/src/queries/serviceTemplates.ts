@@ -5,8 +5,15 @@
 // for a grid); the detail endpoint adds it back in, fetched only once an
 // operator picks a specific template.
 
-import { useQuery, queryOptions } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  queryOptions,
+} from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { appKeys } from './apps'
+import type { ComposeDeployResponse } from './compose'
 
 export const serviceTemplateKeys = {
   all: ['service-templates'] as const,
@@ -26,6 +33,12 @@ export interface ServiceTemplateListItem {
   // why). Absent (omitempty) when a template has no advisory.
   recommended_memory_bytes?: number
   requires_gpu?: boolean
+  // True when the template's Compose body has a required secret with
+  // no default (internal/api/service_templates.go's
+  // Router.templateRequiresConfig): the one-click deploy path
+  // (useDeployServiceTemplateNow below) isn't safe for these, the UI
+  // falls back to the pre-filled wizard step instead.
+  requires_configuration: boolean
 }
 
 // Mirrors serviceTemplateDetail's wire shape: the list item's fields plus
@@ -100,5 +113,48 @@ export function useServiceTemplate(id: string) {
   return useQuery({
     ...serviceTemplateQueryOptions(id),
     enabled: !!id,
+  })
+}
+
+// POST /api/v1/service-templates/{id}/deploy
+// (internal/api/service_templates.go's handleDeployServiceTemplateNow):
+// the one-click fast path for a template with no required, default-less
+// secret. The backend picks the app name (a slugified, collision-
+// checked id) and deploys with whatever defaults the template's own
+// Compose body already declares, reusing the exact same
+// deployComposeBody core useDeployCompose's endpoint calls, so the
+// response is the same ComposeDeployResponse shape.
+export async function deployServiceTemplateNow(
+  id: string,
+): Promise<ComposeDeployResponse> {
+  const res = await fetch(
+    `/api/v1/service-templates/${encodeURIComponent(id)}/deploy`,
+    { method: 'POST' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `deploy service template failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as ComposeDeployResponse
+}
+
+// Same cache-write shape useDeployCompose already establishes: every
+// returned service is a full AppDetail, written straight into its own
+// detail cache entry.
+export function useDeployServiceTemplateNow() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deployServiceTemplateNow,
+    onSuccess: (result) => {
+      for (const service of result.services) {
+        queryClient.setQueryData(appKeys.detail(service.name), service)
+      }
+      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+    },
   })
 }

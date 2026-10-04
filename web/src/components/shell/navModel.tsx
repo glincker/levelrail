@@ -6,10 +6,12 @@ import {
   BracketsCurlyIcon,
   ClockCountdownIcon,
   CloudArrowUpIcon,
+  CloudIcon,
   CpuIcon,
   DatabaseIcon,
   FlagIcon,
   FolderIcon,
+  FolderOpenIcon,
   GaugeIcon,
   GavelIcon,
   GearIcon,
@@ -17,12 +19,16 @@ import {
   GlobeIcon,
   HardDrivesIcon,
   HeartbeatIcon,
+  KeyIcon,
+  PackageIcon,
   PlugsConnectedIcon,
+  PlugsIcon,
   PulseIcon,
   RobotIcon,
   RocketLaunchIcon,
   ScrollIcon,
   ShareNetworkIcon,
+  ShieldCheckIcon,
   SlidersHorizontalIcon,
   SquaresFourIcon,
   StackIcon,
@@ -30,6 +36,7 @@ import {
   TreeStructureIcon,
   ClockCounterClockwiseIcon,
   EyeIcon,
+  TrafficSignalIcon,
   WrenchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { GO_TARGETS } from '@/lib/shortcuts'
@@ -44,6 +51,8 @@ export type GlobalTo =
   | '/databases'
   | '/backups'
   | '/nodes'
+  | '/network'
+  | '/network/proxy'
   | '/domains'
   | '/loadbalancers'
   | '/models'
@@ -52,6 +61,11 @@ export type GlobalTo =
   | '/approvals'
   | '/alerts'
   | '/settings'
+  | '/settings/iam-policies'
+  | '/settings/registry'
+  | '/settings/registry-credentials'
+  | '/settings/network-shares'
+  | '/settings/node-providers'
   | '/help'
 
 export type GlobalBadge = 'failing-apps' | 'approvals'
@@ -135,6 +149,18 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
     label: 'Infrastructure',
     items: [
       { id: 'nodes', label: 'Nodes', to: '/nodes', icon: <HardDrivesIcon /> },
+      {
+        id: 'network',
+        label: 'Network',
+        to: '/network',
+        icon: <ShareNetworkIcon />,
+      },
+      {
+        id: 'traffic',
+        label: 'Traffic',
+        to: '/network/proxy',
+        icon: <TrafficSignalIcon />,
+      },
       { id: 'domains', label: 'Domains', to: '/domains', icon: <GlobeIcon /> },
       {
         id: 'loadbalancers',
@@ -142,6 +168,42 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/loadbalancers',
         icon: <ArrowsSplitIcon />,
         feature: 'load-balancer',
+      },
+      {
+        id: 'registry',
+        label: 'Container registry',
+        to: '/settings/registry',
+        icon: <PackageIcon />,
+      },
+      {
+        id: 'registry-credentials',
+        label: 'Registry credentials',
+        to: '/settings/registry-credentials',
+        icon: <KeyIcon />,
+      },
+      {
+        id: 'network-shares',
+        label: 'Network shares',
+        to: '/settings/network-shares',
+        icon: <FolderOpenIcon />,
+      },
+      {
+        id: 'node-providers',
+        label: 'Cloud node providers',
+        to: '/settings/node-providers',
+        icon: <CloudIcon />,
+      },
+    ],
+  },
+  {
+    id: 'access',
+    label: 'Access control',
+    items: [
+      {
+        id: 'iam-policies',
+        label: 'IAM policies',
+        to: '/settings/iam-policies',
+        icon: <ShieldCheckIcon />,
       },
     ],
   },
@@ -240,6 +302,7 @@ export type AppTo =
   | '/apps/$name/deploy-settings'
   | '/apps/$name/pipelines'
   | '/apps/$name/domains'
+  | '/apps/$name/streams'
   | '/apps/$name/loadbalancer'
   | '/apps/$name/network'
   | '/apps/$name/environment'
@@ -320,6 +383,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
     icon: <ShareNetworkIcon />,
     items: [
       item('domains', 'Domains', '/apps/$name/domains', <GlobeIcon />),
+      item('streams', 'Streams', '/apps/$name/streams', <PlugsIcon />),
       item(
         'loadbalancer',
         'Load balancer',

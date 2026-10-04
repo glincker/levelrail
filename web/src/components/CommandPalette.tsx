@@ -6,11 +6,14 @@ import {
   ArrowClockwiseIcon,
   ClockCounterClockwiseIcon,
   DatabaseIcon,
+  GlobeIcon,
+  HardDrivesIcon,
   KeyboardIcon,
   RobotIcon,
   WarningCircleIcon,
   MagnifyingGlassIcon,
   RocketLaunchIcon,
+  SquaresFourIcon,
   StackIcon,
   TerminalWindowIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -26,8 +29,12 @@ import { usePaletteAppActions } from '../hooks/usePaletteAppActions'
 import { usePageActions } from '@/lib/pageActions'
 import { appListQueryOptions } from '../queries/apps'
 import { databaseListQueryOptions } from '../queries/databases'
+import { nodeListQueryOptions } from '../queries/nodes'
+import { serviceTemplatesQueryOptions } from '../queries/serviceTemplates'
+import { domainsQueryOptions } from '../queries/domains'
 import { useTheme, type Theme } from './ThemeProvider'
 import {
+  DEFAULT_QUICK_ACTION_KEYS,
   GROUP_ORDER,
   ROUTE_ENTRIES,
   THEME_ACTION,
@@ -40,6 +47,14 @@ import { useExperimentalFeatures } from '../hooks/useExperimental'
 import { buildPaletteSuggestions } from './shell/paletteSuggestions'
 
 const MAX_APP_MATCHES = 3
+const MAX_NODE_MATCHES = 5
+const MAX_TEMPLATE_MATCHES = 5
+const MAX_DOMAIN_MATCHES = 5
+const CAPPED_SEARCH_GROUPS: readonly (readonly [string, number])[] = [
+  ['Nodes', MAX_NODE_MATCHES],
+  ['Templates', MAX_TEMPLATE_MATCHES],
+  ['Domains', MAX_DOMAIN_MATCHES],
+]
 const NO_HINT_KEYS = new Set(['action-create-app', 'action-templates'])
 const NEXT_THEME: Record<Theme, Theme> = {
   light: 'dark',
@@ -89,6 +104,12 @@ export function CommandPalette({
     ...databaseListQueryOptions(),
     enabled: open,
   })
+  const nodesQuery = useQuery({ ...nodeListQueryOptions(), enabled: open })
+  const templatesQuery = useQuery({
+    ...serviceTemplatesQueryOptions(),
+    enabled: open,
+  })
+  const domainsQuery = useQuery({ ...domainsQueryOptions(), enabled: open })
 
   React.useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -175,6 +196,33 @@ export function CommandPalette({
         run: go('/databases/$name', { name: db.name }),
       })
     }
+    for (const node of nodesQuery.data ?? []) {
+      items.push({
+        key: `node-${node.id}`,
+        label: node.name,
+        group: 'Nodes',
+        icon: <HardDrivesIcon />,
+        run: go('/nodes/$id', { id: node.id }),
+      })
+    }
+    for (const template of templatesQuery.data ?? []) {
+      items.push({
+        key: `template-${template.id}`,
+        label: template.name,
+        group: 'Templates',
+        icon: <SquaresFourIcon />,
+        run: go('/templates/$id', { id: template.id }),
+      })
+    }
+    for (const domain of domainsQuery.data ?? []) {
+      items.push({
+        key: `domain-${domain.domain}`,
+        label: domain.domain,
+        group: 'Domains',
+        icon: <GlobeIcon />,
+        run: go('/apps/$name/domains', { name: domain.service_name }),
+      })
+    }
     return items
   }, [
     navigate,
@@ -182,6 +230,9 @@ export function CommandPalette({
     theme,
     appsQuery.data,
     databasesQuery.data,
+    nodesQuery.data,
+    templatesQuery.data,
+    domainsQuery.data,
     onShowShortcuts,
     pageActions,
     experimental,
@@ -240,7 +291,24 @@ export function CommandPalette({
           run: go('/apps/$name', { name: app }),
         }
       })
-      byGroup.set('Suggested', suggested)
+      // Dynamic suggestions (current app, failing apps, recents, assistant)
+      // can all be empty for a first-time user; the quick actions below
+      // keep "Suggested" non-empty regardless.
+      const quickActions: PaletteItem[] = DEFAULT_QUICK_ACTION_KEYS.flatMap(
+        (k) => {
+          const item = byKey.get(k)
+          return item
+            ? [
+                {
+                  ...item,
+                  key: `suggested-quick-${item.key}`,
+                  group: 'Suggested',
+                },
+              ]
+            : []
+        },
+      )
+      byGroup.set('Suggested', [...suggested, ...quickActions])
       if (recent.length > 0) byGroup.set('Recent', recent)
       for (const item of baseItems) {
         byGroup.set(item.group, [...(byGroup.get(item.group) ?? []), item])
@@ -289,6 +357,10 @@ export function CommandPalette({
       if (appActions.length > 0) byGroup.set('App actions', appActions)
       for (const item of fuzzyFilter(baseItems, q, (i) => i.label)) {
         byGroup.set(item.group, [...(byGroup.get(item.group) ?? []), item])
+      }
+      for (const [group, max] of CAPPED_SEARCH_GROUPS) {
+        const items = byGroup.get(group)
+        if (items && items.length > max) byGroup.set(group, items.slice(0, max))
       }
     }
 
@@ -362,7 +434,7 @@ export function CommandPalette({
         <DialogOverlay />
         <DialogPrimitive.Popup
           data-slot="command-palette"
-          className="fixed top-24 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 gap-0 overflow-hidden rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+          className="glinui-glass-surface fixed top-24 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 gap-0 overflow-hidden text-sm text-popover-foreground duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
           <DialogTitle className="sr-only">Command palette</DialogTitle>
           <div className="flex items-center gap-2 border-b border-border px-3">

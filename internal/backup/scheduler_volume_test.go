@@ -8,10 +8,38 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-func scheduledVolume(service, volume, schedule string, retain int) store.ServiceVolumeBackupConfig {
+func scheduledVolume(retain int) store.ServiceVolumeBackupConfig {
 	return store.ServiceVolumeBackupConfig{
-		ServiceName: service, VolumeName: volume,
-		BackupTargetID: "bkt_1", BackupSchedule: schedule, BackupRetain: retain,
+		ServiceName: "web", VolumeName: "data",
+		BackupTargetID: "bkt_1", BackupSchedule: "0 3 * * *", BackupRetain: retain,
+	}
+}
+
+// TestScheduler_Tick_Volume_FiresOnceDue_PassesSqlitePath covers the
+// sqlite_path passthrough runScheduledVolume's RunVolumeBackup call added.
+func TestScheduler_Tick_Volume_FiresOnceDue_PassesSqlitePath(t *testing.T) {
+	v := scheduledVolume(0)
+	v.SqlitePath = "app/data.db"
+	fakeStore := &fakeScheduleStore{
+		volumes:           []store.ServiceVolumeBackupConfig{v},
+		resolveVolumeName: map[string]string{"web/data": "app-web-data"},
+	}
+	runner := &fakeScheduledRunner{}
+	s := NewScheduler(fakeStore, runner, nil, nil)
+
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 2, 0, 0, 0, time.UTC) }
+	_ = s.Tick(context.Background())
+
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC) }
+	if err := s.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+
+	if len(runner.volumeCalls) != 1 {
+		t.Fatalf("volume backup calls = %d, want 1", len(runner.volumeCalls))
+	}
+	if got := runner.volumeCalls[0].sqlitePath; got != "app/data.db" {
+		t.Errorf("RunVolumeBackup sqlitePath = %q, want %q", got, "app/data.db")
 	}
 }
 
@@ -21,7 +49,7 @@ func scheduledVolume(service, volume, schedule string, retain int) store.Service
 // a schedule is first observed" rule applies identically to both.
 func TestScheduler_Tick_Volume_FirstSightingArmsWithoutFiring(t *testing.T) {
 	now := time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC)
-	fakeStore := &fakeScheduleStore{volumes: []store.ServiceVolumeBackupConfig{scheduledVolume("web", "data", "0 3 * * *", 0)}}
+	fakeStore := &fakeScheduleStore{volumes: []store.ServiceVolumeBackupConfig{scheduledVolume(0)}}
 	runner := &fakeScheduledRunner{}
 	s := NewScheduler(fakeStore, runner, nil, nil)
 	s.Now = func() time.Time { return now }
@@ -40,7 +68,7 @@ func TestScheduler_Tick_Volume_FirstSightingArmsWithoutFiring(t *testing.T) {
 // volume's logical name to its real Docker volume name first.
 func TestScheduler_Tick_Volume_FiresOnceDue(t *testing.T) {
 	fakeStore := &fakeScheduleStore{
-		volumes:           []store.ServiceVolumeBackupConfig{scheduledVolume("web", "data", "0 3 * * *", 0)},
+		volumes:           []store.ServiceVolumeBackupConfig{scheduledVolume(0)},
 		resolveVolumeName: map[string]string{"web/data": "app-web-data"},
 	}
 	runner := &fakeScheduledRunner{}
@@ -73,7 +101,7 @@ func TestScheduler_Tick_Volume_FiresOnceDue(t *testing.T) {
 // afterward.
 func TestScheduler_Tick_Volume_RetentionPrune(t *testing.T) {
 	fakeStore := &fakeScheduleStore{
-		volumes:           []store.ServiceVolumeBackupConfig{scheduledVolume("web", "data", "0 3 * * *", 5)},
+		volumes:           []store.ServiceVolumeBackupConfig{scheduledVolume(5)},
 		resolveVolumeName: map[string]string{"web/data": "app-web-data"},
 	}
 	runner := &fakeScheduledRunner{}

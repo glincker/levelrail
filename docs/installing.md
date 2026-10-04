@@ -8,7 +8,28 @@ Levelrail ships as two static Go binaries (`levelrail`, the control
 plane, and `levelrail-agent`, the node agent) plus a CLI
 (`levelrail-cli`). This page covers every supported way to get the
 control plane running on a real Linux host, how to verify it worked,
-and how to upgrade or remove it afterward.
+and how to upgrade or remove it afterward. If you only want the CLI, to
+control an already-running instance from your own laptop, skip to
+[Installing just the CLI](#installing-just-the-cli) instead, `install.sh`
+below sets up the server, not a remote client.
+
+<CardGroup :cols="3">
+<Card title="install.sh" href="#option-1-install-sh-recommended">
+
+**Recommended.** One command provisions Docker, a systemd unit, and the control plane on a real Linux server.
+
+</Card>
+<Card title="Docker" href="#option-2-docker">
+
+Already running everything else as containers? Pull the published images instead.
+
+</Card>
+<Card title="Build from source" href="#option-3-build-from-source">
+
+For contributors, unreleased commits, or trying Levelrail locally without a server.
+
+</Card>
+</CardGroup>
 
 ## Requirements
 
@@ -33,7 +54,7 @@ As a practical starting point, not a hard requirement: 1 vCPU / 1 GB RAM / 10 GB
 ## Option 1: install.sh (recommended)
 
 ```
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
+curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
 This is the same script linked from the root [README](../README.md). It:
@@ -49,13 +70,15 @@ Requires `curl`, `systemd`, and root access.
 
 ### First sign-in
 
-Open one of the printed `http://<ip>:8080/login?setup=<token>` links. The login page switches to "Set up the admin account" on its own and the token is pre-filled. Lost the summary? Print the token again on the server:
+Open one of the printed `http://<ip>:8080/login?setup=<token>` links from the install summary. **8080 is the default, not a guarantee**: if that port was already taken on the server, `install.sh` picks the next free one automatically (`LEVELRAIL_DASHBOARD_PORT`) and prints the real one it used, so always use the port from your own install's output, not the number in this doc. Lost the summary? Print the token again on the server (the dashboard port is also in the unit file, `systemctl cat levelrail | grep APP_HTTP_ADDR`):
 
 ```bash
 sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
 ```
 
 The dashboard shows a "connection is not encrypted" banner until you point a domain at the server (Domains page, primary domain plus ACME) and set an `https://` **dashboard URL**. After that, sign-in over plain HTTP is refused. To recover if the https URL breaks, add `APP_ALLOW_INSECURE_LOGIN=true` with `sudo systemctl edit levelrail` (`[Service]` then `Environment=APP_ALLOW_INSECURE_LOGIN=true`) and restart.
+
+**Pick a dashboard-only subdomain, not an app's own domain.** Use something like `console.example.com` or `panel.example.com` for the primary domain, the same convention CapRover uses for its own panel (`captain.<domain>`). Reusing a domain an app already serves breaks whichever one loses the conflict, silently, with no warning. See [Domains and ingress](domains-and-ingress.md#the-dashboards-own-domain) for why this matters.
 
 To skip the setup token and create the admin non-interactively, set `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` in the unit (again via `systemctl edit levelrail`) before the first start.
 
@@ -77,6 +100,8 @@ AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel ar
 | `LEVELRAIL_MIN_RAM_MB` / `LEVELRAIL_MIN_DISK_GB` / `LEVELRAIL_MIN_DOCKER_MAJOR` | `1024` / `10` / `24` | Preflight thresholds |
 | `LEVELRAIL_HEALTH_WAIT` | `60` | Seconds to wait for the service to become healthy |
 | `LEVELRAIL_CONFIGURE_UFW` | unset (off) | Set to `1` to allow SSH, then 80/443, then enable `ufw` if it wasn't already active. The script never touches your firewall otherwise. |
+| `LEVELRAIL_DASHBOARD_PORT` | `8080` | Dashboard/API port. If this default is taken, the installer picks the next free port on its own (no action needed); set this to pin a specific one instead |
+| `LEVELRAIL_HTTP_PORT` / `LEVELRAIL_HTTPS_PORT` | `80` / `443` | Ingress ports. Unlike the dashboard port, the installer never moves these on its own: Let's Encrypt's HTTP-01 challenge only ever talks to 80/443, so if either is already taken (an existing reverse proxy, another Coolify/Dokploy instance, etc.) preflight fails with the fix spelled out. Set both explicitly once you've accepted that moving off 80/443 means no automatic ACME TLS |
 
 :::
 
@@ -84,22 +109,22 @@ Common scenarios:
 
 ::: code-group
 ```bash [Pin a specific release]
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+curl -fsSL https://levelrail.com/install.sh \
   | sudo LEVELRAIL_VERSION=v0.2.0-beta.5 sh
 ```
 
 ```bash [Custom data directory]
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+curl -fsSL https://levelrail.com/install.sh \
   | sudo LEVELRAIL_DATA_DIR=/data/levelrail sh
 ```
 
 ```bash [Configure UFW automatically]
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+curl -fsSL https://levelrail.com/install.sh \
   | sudo LEVELRAIL_CONFIGURE_UFW=1 sh
 ```
 
 ```bash [Ignore a failed preflight check]
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+curl -fsSL https://levelrail.com/install.sh \
   | sudo sh -s -- --force
 ```
 :::
@@ -111,7 +136,7 @@ Each release publishes `checksums.txt` (SHA-256 of every CLI, agent and control 
 `install.sh` always verifies the SHA-256 checksum and refuses to install on a mismatch. It also verifies the signature when `cosign` is installed and the release ships a bundle. Set `APP_INSTALL_VERIFY=require` to fail unless the signature verifies (no cosign, no bundle, or a bad signature all abort), or `APP_INSTALL_VERIFY=off` to skip only the signature step.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+curl -fsSL https://levelrail.com/install.sh \
   | sudo APP_INSTALL_VERIFY=require sh
 ```
 
@@ -146,9 +171,9 @@ Both are published for `linux/amd64` and `linux/arm64`, multi-arch, under three 
 | --- | --- | --- |
 | `:latest`, `:vX.Y`, `:vX.Y.Z` | a non-prerelease tag (`v1.2.3`) | stable release |
 | `:beta` | a prerelease tag (`v1.2.3-beta.1`, `-rc.1`, etc.) | prerelease |
-| `:edge` | every push to `main` | unreleased, use for testing only |
+| `:edge` | manual dispatch of the Release workflow against `main` | unreleased, use for testing only |
 
-`:latest` and `:vX.Y` only ever move on a stable tag; `:beta` and `:edge` move continuously, so pin an exact `:vX.Y.Z` tag for anything you care about staying still.
+`:latest` and `:vX.Y` only ever move on a stable tag; `:beta` moves on every prerelease tag. `:edge` only moves when someone manually triggers a build against `main`, not on every push, so it stays still between those. Pin an exact `:vX.Y.Z` tag for anything you care about staying still regardless.
 
 ::: warning No stable release yet
 No non-prerelease tag has shipped as of this writing, so `:latest` currently
@@ -186,6 +211,45 @@ docker buildx imagetools inspect ghcr.io/glincker/levelrail:beta --format '{{ js
 See [Getting started: building from source](getting-started.md#build-the-binaries)
 for the `go build` commands. This is the path for contributors and anyone
 who wants to run an unreleased commit rather than a tagged version.
+
+## Installing just the CLI
+
+`install.sh` and the Docker/source paths above are for the **server**
+(the control plane). `levelrail-cli` is a separate, small client binary
+for your own laptop or a CI runner, the same shape as `aws` or `gh`:
+install it locally, point it at a running instance, authenticate over
+the network, no SSH key and no inbound port on the server.
+
+```bash
+curl -fsSL https://levelrail.com/install-cli.sh | sh
+```
+
+Detects your OS and architecture, verifies the release checksum (and its
+cosign signature, if `cosign` is installed) the same way `install.sh`
+does, and installs to `~/.local/bin`, no root needed. Set
+`LEVELRAIL_CLI_INSTALL_DIR=/usr/local/bin` and run with `sudo` instead
+for a system-wide install. macOS and Linux only today (no Windows build
+yet, run the command above from WSL).
+
+Then point it at your instance and log in:
+
+```bash
+export APP_API_URL=https://your-dashboard-domain
+levelrail-cli auth login --device
+```
+
+`--device` prints a short code and opens a browser approval page on the
+control plane itself, the same model `gh auth login` and `aws sso login`
+use. Approving a code requires an already-authenticated dashboard
+session, so it inherits whatever two-factor or passkey requirement that
+account already has, there is nothing extra to configure for this. See
+[CLI reference](cli-reference.md) for every command, or
+[Settings → CLI access](https://your-instance/settings/cli-access) in
+the dashboard itself for a copy-pasteable version of the steps above.
+
+Running from CI or a script instead of a person approving in a browser?
+Mint an [API token](getting-started.md#deploy-your-first-app) instead,
+`--api-token` or `APP_API_TOKEN` skips the device flow entirely.
 
 ## Verifying the install
 
@@ -248,7 +312,7 @@ The live database is kept beside the restored one as `.before-restore-<timestamp
 Run the `upgrade` subcommand. It replaces the binary with the newest release, keeps your unit file (and any `systemctl edit` overrides) and data, restarts the service, and waits for it to come back healthy.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh -s upgrade
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s upgrade
 ```
 
 Re-running the installer without arguments also works: it repairs the installation and rewrites the unit file.
@@ -256,7 +320,7 @@ Re-running the installer without arguments also works: it repairs the installati
 To pin a specific release instead of the latest:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+curl -fsSL https://levelrail.com/install.sh \
   | sudo LEVELRAIL_VERSION=v0.1.0 sh
 ```
 
@@ -284,10 +348,10 @@ The named volume holding `/var/lib/levelrail-data` persists across recreation.
 
 ```bash
 # removes the service, unit file, and binary; keeps /var/lib/levelrail-data
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh -s uninstall
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s uninstall
 
 # also deletes the data directory (database, master key, certificates)
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh -s uninstall --purge
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s uninstall --purge
 ```
 
 ::: warning
@@ -306,7 +370,8 @@ docker volume rm levelrail-data
 ## Getting help
 
 - Ran into a specific error? Check [Troubleshooting](troubleshooting.md) first.
-- Everything else (bugs, questions, feature requests): open an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+- Bugs, questions, feature requests: open an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+- Everything else: email [support@levelrail.com](mailto:support@levelrail.com).
 
 ## See also
 

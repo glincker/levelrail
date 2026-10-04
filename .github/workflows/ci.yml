@@ -69,6 +69,10 @@ jobs:
           echo "base=$base" >> "$GITHUB_OUTPUT"
           if [ "$EVENT" = pull_request ] || [ "$EVENT" = merge_group ]; then
             scripts/ci-changes.sh "$base" HEAD 2>summary.txt >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT" = push ] && [ -n "$base" ] \
+            && [ "$base" != "0000000000000000000000000000000000000000" ] \
+            && git cat-file -e "$base" 2>/dev/null; then
+            scripts/ci-changes.sh "$base" HEAD 2>summary.txt >> "$GITHUB_OUTPUT"
           else
             scripts/ci-changes.sh --full 2>summary.txt >> "$GITHUB_OUTPUT"
           fi
@@ -111,30 +115,11 @@ jobs:
       - name: Check for duplicate migration versions
         run: scripts/check-migration-versions.sh
 
-      - name: Set up Go
-        id: go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: go.mod
-          cache: false
-
-      # PRs only restore; main saves one fresh cache per day, so PR runs
-      # can't churn the repo's cache quota.
-      - name: Cache key
-        id: day
-        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
-
-      - name: Restore Go cache
-        id: cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ steps.day.outputs.day }}
-          restore-keys: |
-            go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
+          cache-prefix: go-build
+          save: ${{ github.event_name == 'push' }}
 
       - name: Plan affected packages and test lanes
         id: plan
@@ -170,15 +155,6 @@ jobs:
         if: needs.changes.outputs.tools == 'true'
         run: go -C tools vet ./releasenotes/ && go -C tools test ./releasenotes/
 
-      - name: Save Go cache
-        if: github.event_name == 'push' && steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ steps.cache.outputs.cache-primary-key }}
-
   # Lanes come from scripts/ci-go-plan.sh: internal/api sharded by test
   # name when it is affected, Docker-backed packages with bounded -p, the
   # rest in one lane, and a single merged lane when few packages are
@@ -187,9 +163,16 @@ jobs:
   test-go:
     name: Test (${{ matrix.lane }})
     needs: [changes, build-vet]
-    if: needs.build-vet.result == 'success' && needs.build-vet.outputs.has_tests == 'true'
+    # Skipped on push: branch protection only lets a commit reach main
+    # through the merge queue, so a push-triggered run retests a tree
+    # merge_group already fully verified seconds earlier. See docs/ci.md.
+    if: >-
+      github.event_name != 'push' && needs.build-vet.result == 'success'
+      && needs.build-vet.outputs.has_tests == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 5 min above the docker/rest lanes' own -timeout=27m (scripts/ci-go-plan.sh):
+    # enough slack for checkout/setup/teardown/upload around go test's own budget.
+    timeout-minutes: 32
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.build-vet.outputs.matrix) }}
@@ -197,28 +180,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Go
-        id: go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: go.mod
-          cache: false
-
-      - name: Cache key
-        id: day
-        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
-
-      - name: Restore Go cache
-        id: cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-test-${{ matrix.cache }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ steps.day.outputs.day }}
-          restore-keys: |
-            go-test-${{ matrix.cache }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-test-${{ matrix.cache }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
+          cache-prefix: go-test-${{ matrix.cache }}
+          save: ${{ github.event_name == 'push' && matrix.save_cache }}
 
       # Version and checksums locked by tools/go.mod and tools/go.sum.
       - name: Install gotestsum
@@ -263,22 +229,15 @@ jobs:
           retention-days: 7
           overwrite: true
 
-      - name: Save Go cache
-        if: github.event_name == 'push' && matrix.save_cache && steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ steps.cache.outputs.cache-primary-key }}
-
   # Required check names from before the lanes were split: each passes only
   # if its planned lanes passed.
   test-api:
     name: Test (internal/api)
     needs: [changes, build-vet, test-go]
+    # Mirrors test-go's own push skip: its lanes never ran on push, so
+    # checking their results here would find nothing instead of a pass.
     if: >-
-      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.build-vet.result != 'success' || contains(needs.build-vet.outputs.api_checks, 'Test ('))))
     runs-on: ubuntu-latest
     permissions:
@@ -306,8 +265,9 @@ jobs:
   test-rest:
     name: Test (everything else)
     needs: [changes, build-vet, test-go]
+    # Mirrors test-go's own push skip, same reasoning test-api's if has.
     if: >-
-      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.build-vet.result != 'success' || contains(needs.build-vet.outputs.rest_checks, 'Test ('))))
     runs-on: ubuntu-latest
     permissions:
@@ -337,7 +297,11 @@ jobs:
   test-quarantined:
     name: Test (quarantined, non-blocking)
     needs: [changes, build-vet]
-    if: needs.build-vet.result == 'success' && needs.build-vet.outputs.quarantine == 'true'
+    # Not a required check, but still a real test run: skip the push
+    # repeat for the same reason test-go's own if skips it.
+    if: >-
+      github.event_name != 'push' && needs.build-vet.result == 'success'
+      && needs.build-vet.outputs.quarantine == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 15
@@ -345,22 +309,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Go
-        id: go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: go.mod
-          cache: false
-
-      - name: Restore Go cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-test-rest-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-          restore-keys: |
-            go-test-rest-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
+          cache-prefix: go-test-rest
 
       # Version and checksums locked by tools/go.mod and tools/go.sum.
       - name: Install gotestsum
@@ -376,8 +328,10 @@ jobs:
   coverage-gate:
     name: Coverage gate
     needs: [changes, build-vet, test-go]
+    # No coverage artifacts exist on push (test-go didn't run), same
+    # reasoning as test-api/test-rest's own push skip above.
     if: >-
-      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.build-vet.result != 'success' || needs.build-vet.outputs.has_tests == 'true')))
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -428,19 +382,25 @@ jobs:
         if: env.COVERAGE == 'full'
         run: scripts/check-coverage.sh coverage.out internal/ 70
 
-      # Scopes the same 70% bar to only the statements this change added or
-      # modified, so well-covered neighbours can't dilute new, untested code.
-      - name: Changed-line coverage gate (70% for /internal)
-        if: github.event_name != 'push'
-        run: scripts/check-changed-file-coverage.sh coverage.out "$BASE" internal/ 70
+      # A lower bar than the aggregate gate's 70%: new code only reachable
+      # through a live daemon or a real external process (see
+      # scripts/check-changed-file-coverage.sh's own comment) can't hit
+      # 70% without disproportionate test-harness-building for the risk
+      # involved, when a live test plus nightly.yml's full sweep already
+      # cover it. 50% still catches genuinely untested new code.
+      - name: Changed-line coverage gate (50% for /internal)
+        if: env.COVERAGE != 'full'
+        run: scripts/check-changed-file-coverage.sh coverage.out "$BASE" internal/ 50
 
   # Go lint and, when a workflow file changed, actionlint: one check line
   # instead of two.
   lint:
     name: Lint
     needs: changes
+    # Skipped on push, same reasoning as test-go's own if: merge_group
+    # already lints this exact tree before the merge queue admits it.
     if: >-
-      ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.lint != 'none'
+      ${{ github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.lint != 'none'
       || needs.changes.outputs.workflows == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -483,31 +443,12 @@ jobs:
           tar -xzf "$tarball" actionlint
           ./actionlint -color "${files[@]}"
 
-      - name: Set up Go
+      - name: Set up Go (cached)
         if: env.LINT != 'none'
-        id: go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: go.mod
-          cache: false
-
-      - name: Cache key
-        if: env.LINT != 'none'
-        id: day
-        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
-
-      - name: Restore Go cache
-        if: env.LINT != 'none'
-        id: cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-lint-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ steps.day.outputs.day }}
-          restore-keys: |
-            go-lint-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-lint-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
+          cache-prefix: go-lint
+          save: ${{ github.event_name == 'push' }}
 
       # changed: only the packages holding a changed .go file, and only
       # issues on lines this diff touched. all: go.mod, .golangci.yml or
@@ -520,19 +461,11 @@ jobs:
           args: ${{ env.LINT == 'changed' && format('--new-from-rev={0} {1}', needs.changes.outputs.base, needs.changes.outputs.lint_dirs) || '' }}
           skip-save-cache: ${{ github.event_name != 'push' }}
 
-      - name: Save Go cache
-        if: env.LINT != 'none' && github.event_name == 'push' && steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ steps.cache.outputs.cache-primary-key }}
-
   web-check:
     name: Web (tsc, eslint)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.web != 'none') }}
+    # Skipped on push, same reasoning as test-go's own if.
+    if: ${{ github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.web != 'none') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -629,7 +562,8 @@ jobs:
   install-sh:
     name: install.sh (${{ matrix.image }})
     needs: changes
-    if: needs.changes.outputs.installer == 'true'
+    # Skipped on push, same reasoning as test-go's own if.
+    if: github.event_name != 'push' && needs.changes.outputs.installer == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -640,31 +574,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Go
-        id: go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: go.mod
-          cache: false
-
-      - name: Restore Go cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-          restore-keys: |
-            go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
+          cache-prefix: go-build
 
       - name: Build control plane binary
         run: CGO_ENABLED=0 go build -o levelrail-linux-amd64 ./cmd/levelrail
 
+      - name: Build CLI binary
+        run: CGO_ENABLED=0 go build -o levelrail-cli-linux-amd64 ./cmd/levelrail-cli
+
       - name: shellcheck
-        run: shellcheck -s sh install.sh scripts/test-install-sh.sh
+        run: shellcheck -s sh install.sh install-cli.sh scripts/test-install-sh.sh scripts/test-install-cli.sh
 
       - name: Run install.sh in a systemd container
         run: scripts/test-install-sh.sh '${{ matrix.image }}' ./levelrail-linux-amd64
+
+      - name: Run install-cli.sh in a container
+        run: scripts/test-install-cli.sh '${{ matrix.image }}' ./levelrail-cli-linux-amd64
 
   # The single check to require in branch protection (docs/ci.md): always
   # runs, and fails if change detection did not succeed or any job it needs

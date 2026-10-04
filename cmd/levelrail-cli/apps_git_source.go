@@ -30,6 +30,8 @@ func runAppsGitSource(prog string, args []string, stdout, stderr io.Writer, look
 		return runAppsGitSourceSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "settings":
 		return runAppsGitSourceSettings(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rotate-secret":
+		return runAppsGitSourceRotateSecret(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runAppsGitSourceDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -44,6 +46,7 @@ func appsGitSourceUsage(prog string) string {
   %[1]s apps git-source get <name> [flags]                              show an app's connected repo
   %[1]s apps git-source set <name> --repo-url URL [flags]              connect (or edit) a repo for auto-deploy-on-push
   %[1]s apps git-source settings <name> [flags]                         set push path filters and forge status reporting
+  %[1]s apps git-source rotate-secret <name> [flags]                    mint a fresh webhook secret, shown once
   %[1]s apps git-source delete <name> [flags]                           disconnect an app's repo
 
 Run "%[1]s apps git-source <subcommand> -h" for a subcommand's own flags.
@@ -111,6 +114,39 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, gs, func() { printGitSourceHuman(stdout, gs) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+// runAppsGitSourceRotateSecret mints a fresh webhook secret for an
+// already-connected source, leaving repo_url/branch/build config
+// untouched: the narrow alternative to delete-then-set for an operator
+// who only wants to rotate a compromised or stale secret. The new secret
+// is shown once, here, the same "shown once, at mint time" shape
+// runAppsGitSourceSet's own create-path response already has.
+func runAppsGitSourceRotateSecret(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps git-source rotate-secret", "print the git source (including the new webhook_secret) as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source rotate-secret <name> [flags]\n\nMints a fresh webhook secret without touching repo_url, branch, or build\nconfig. The old secret stops verifying immediately; paste the new one\ninto the git provider's webhook settings before the next delivery.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+
+	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps git-source rotate-secret", "app name"}, lookupEnv)
+	if !ok {
+		return exitCode
+	}
+
+	gs, err := client.RotateGitSourceWebhookSecret(context.Background(), name)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("rotate git source webhook secret for app %q: %w", name, err))
+	}
+
+	if err := renderResult(stdout, of.Format, of.Query, gs, func() {
+		printGitSourceHuman(stdout, gs)
+		_, _ = fmt.Fprintf(stdout, "webhook_secret: %s (shown once, will not be shown again)\n", gs.WebhookSecret)
+	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}

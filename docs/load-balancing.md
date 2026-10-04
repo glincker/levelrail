@@ -4,9 +4,22 @@ description: Balance traffic across an app's replicas with health checks, retrie
 
 # Load balancing across replicas
 
-Set `replicas: 3` and the control plane starts three containers. A load balancer decides which of them answers each request. It is built on the same embedded Caddy that already terminates TLS for your domains, so there is no extra container and no separate config surface: the ingress reconciler feeds Caddy's `reverse_proxy` upstream pool.
+Set `replicas: 3` and the control plane starts three containers. Without a load balancer, your domain only ever routes to one of them (the first replica); turn on load balancing from the app's Load balancer tab, the CLI, or `app.yaml`, and the domain routes to every running replica instead, with health checks, retries, and sticky sessions available out of the box. There's no extra container to run and no separate config surface to learn: it uses the same embedded Caddy that already terminates TLS for your domains.
 
-Without a load balancer, a domain routes to one container (the first replica). Turn it on and the domain routes to every running replica.
+```mermaid
+flowchart LR
+  Client["Client request"] --> Caddy["Embedded Caddy<br/>reverse_proxy upstream pool"]
+  Caddy -->|active + passive health checks| R1["Replica 1 (healthy)"]
+  Caddy -->|active + passive health checks| R2["Replica 2 (healthy)"]
+  Caddy -.->|held out of pool| R3["Replica 3 (unhealthy / draining)"]
+  R1 --> Caddy
+  R2 --> Caddy
+  Caddy --> Client
+```
+
+::: details For contributors: where this lives in the source
+The ingress reconciler feeds Caddy's `reverse_proxy` upstream pool directly, in-process.
+:::
 
 ## Where to find it
 
@@ -81,6 +94,8 @@ A deploy that carries a `loadbalancer:` block saves it. A deploy without the blo
 The single node case and the multi-node case use the same code path. For a service placed on another node, upstreams are resolved through that node's runtime and addressed by its mesh address (or its node address when it is not on the mesh). The replica's port must be reachable from the control plane, so set `bind_address: public` (or a mesh address) on services you balance across nodes. A replica published on loopback is reported with the note `published on loopback` and left out of the pool.
 
 ## Live status
+
+![Levelrail load balancer view showing two healthy replicas behind a round robin proxy](assets/screenshots/load-balancer.png)
 
 **Load balancer** in the dashboard shows an upstream table refreshed every five seconds: state (`healthy`, `unhealthy`, `draining`), weight, active requests, recent failures, last check time and the reason a replica is out of the pool. The same data is available from `levelrail lb status web`, `GET /api/v1/apps/web/loadbalancer/status`, and the `get_app_load_balancer_status` MCP tool.
 

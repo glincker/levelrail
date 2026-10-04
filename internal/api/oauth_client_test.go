@@ -7,12 +7,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
+	"golang.org/x/oauth2"
 )
 
 // fakeOIDCIssuer serves discovery, JWKS, and token-exchange endpoints
@@ -165,5 +168,81 @@ func TestDefaultOAuthClientFactory_OIDC(t *testing.T) {
 	}
 	if _, ok := client.(*oidcOAuthClient); !ok {
 		t.Errorf("defaultOAuthClientFactory returned %T, want *oidcOAuthClient", client)
+	}
+}
+
+func TestDefaultOAuthClientFactory_Microsoft(t *testing.T) {
+	settings := store.OAuthProviderSettings{Provider: store.OAuthProviderMicrosoft, ClientID: "client-id"}
+	client, err := defaultOAuthClientFactory(store.OAuthProviderMicrosoft, settings, "secret", "https://levelrail.example/callback")
+	if err != nil {
+		t.Fatalf("defaultOAuthClientFactory: %v", err)
+	}
+	msClient, ok := client.(*microsoftOAuthClient)
+	if !ok {
+		t.Fatalf("defaultOAuthClientFactory returned %T, want *microsoftOAuthClient", client)
+	}
+	if url := msClient.AuthCodeURL("state123"); !strings.Contains(url, "login.microsoftonline.com/common/") {
+		t.Errorf("AuthCodeURL = %q, want the common multi-tenant endpoint", url)
+	}
+}
+
+// graphRedirectTransport rewrites any request bound for
+// graph.microsoft.com to target, so microsoftOAuthClient.FetchUserInfo's
+// hardcoded Graph URL can be tested against a local fake server without
+// a real network call, the same trick a custom RoundTripper injected via
+// oauth2.HTTPClient's context key always enables regardless of what URL
+// the caller hardcodes.
+type graphRedirectTransport struct {
+	target *url.URL
+}
+
+func (t graphRedirectTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req = req.Clone(req.Context())
+	req.URL.Scheme = t.target.Scheme
+	req.URL.Host = t.target.Host
+	req.Host = t.target.Host
+	return http.DefaultTransport.RoundTrip(req)
+}
+
+func TestMicrosoftOAuthClient_FetchUserInfo_MailFallsBackToUserPrincipalName(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"id":                "ms-user-1",
+			"mail":              "",
+			"userPrincipalName": "person@tenant.example",
+			"displayName":       "Person",
+		})
+	}))
+	t.Cleanup(srv.Close)
+	target, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatalf("parse test server url: %v", err)
+	}
+
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, &http.Client{Transport: graphRedirectTransport{target: target}})
+	client := &microsoftOAuthClient{}
+	info, err := client.FetchUserInfo(ctx, &oauth2.Token{AccessToken: "test"})
+	if err != nil {
+		t.Fatalf("FetchUserInfo: %v", err)
+	}
+	if info.ProviderUserID != "ms-user-1" || info.Email != "person@tenant.example" || info.DisplayName != "Person" {
+		t.Errorf("FetchUserInfo = %+v, want id=ms-user-1 email=person@tenant.example name=Person", info)
+	}
+}
+
+func TestMicrosoftOAuthClient_FetchUserInfo_NoEmailAvailable(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]string{"id": "ms-user-1"})
+	}))
+	t.Cleanup(srv.Close)
+	target, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatalf("parse test server url: %v", err)
+	}
+
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, &http.Client{Transport: graphRedirectTransport{target: target}})
+	client := &microsoftOAuthClient{}
+	if _, err := client.FetchUserInfo(ctx, &oauth2.Token{AccessToken: "test"}); err == nil {
+		t.Fatal("FetchUserInfo succeeded with no mail or userPrincipalName, want error")
 	}
 }

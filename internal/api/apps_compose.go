@@ -63,16 +63,37 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	resp, ok := rt.deployComposeBody(w, r, name, body, false)
+	if !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// deployComposeBody is the compose.yaml-to-running-services core both
+// handleDeployCompose and the one-click template deploy path
+// (handleDeployServiceTemplateNow, service_templates.go) share: parse,
+// resolve magic vars, translate to desired services, save, and prune
+// whatever the previous deploy under this name no longer declares. name
+// is the store.App this becomes (App.ID == App.Name), body is a
+// compose.yaml document. isTrial marks every resulting service
+// store.DesiredService.IsTrial (handleDeployCompose always passes
+// false; only the one-click template path opts in), never read from the
+// request body itself. On failure it writes the response itself
+// (matching writeError/internalError's own w-owns-the-response
+// convention) and returns ok == false; the caller has nothing left to
+// do but return.
+func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name string, body []byte, isTrial bool) (composeDeployResponse, bool) {
 	file, err := compose.Parse(body)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
-		return
+		return composeDeployResponse{}, false
 	}
 
 	secretEnv, unresolved, err := compose.ResolveMagicVars(file, rt.generateComposeSecret(r.Context(), name), rt.persistComposeSecret(r.Context(), name))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
-		return
+		return composeDeployResponse{}, false
 	}
 	if len(unresolved) > 0 {
 		msgs := make([]string, len(unresolved))
@@ -80,17 +101,17 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 			msgs[i] = u.String()
 		}
 		writeError(w, http.StatusBadRequest, "unresolved template variable(s), no default and not auto-generatable: "+strings.Join(msgs, "; "))
-		return
+		return composeDeployResponse{}, false
 	}
 
 	services, healthWarnings, err := compose.ToDesiredServices(name, file)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
-		return
+		return composeDeployResponse{}, false
 	}
 	if hasBindMount(services) && !rt.callerHasAbility(r, AbilityRoot) {
 		writeError(w, http.StatusForbidden, "this compose file bind-mounts a host directory, which requires the root ability")
-		return
+		return composeDeployResponse{}, false
 	}
 	for _, warning := range healthWarnings {
 		rt.logger.Warn("api: deploy compose: healthcheck not translatable to a readiness probe", slog.String("app", name), slog.String("detail", warning))
@@ -98,6 +119,7 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 	for i := range services {
 		key := strings.TrimPrefix(services[i].Name, name+"-")
 		services[i].SecretEnv = append(services[i].SecretEnv, store.SecretEnvRefsFromNames(secretEnv[key])...)
+		services[i].IsTrial = isTrial
 	}
 
 	// Loaded before this deploy writes anything: staleComposeServices
@@ -109,20 +131,20 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 	previousServices, err := rt.appGroups.ListServicesByApp(r.Context(), name)
 	if err != nil {
 		rt.internalError(w, "api: deploy compose: list previous services failed", err, slog.String("name", name))
-		return
+		return composeDeployResponse{}, false
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
 	if err := rt.appCompose.SaveApp(r.Context(), store.App{ID: name, Name: name, CreatedAt: now, UpdatedAt: now}); err != nil {
 		rt.internalError(w, "api: deploy compose: save app failed", err, slog.String("name", name))
-		return
+		return composeDeployResponse{}, false
 	}
 
 	out := make([]appResource, 0, len(services))
 	for _, svc := range services {
 		if err := rt.appCompose.SaveDesiredService(r.Context(), svc); err != nil {
 			rt.internalError(w, "api: deploy compose: save service failed", err, slog.String("service", svc.Name))
-			return
+			return composeDeployResponse{}, false
 		}
 		rt.recordInstantDeployAttempt(r.Context(), svc, svc.Image, store.DeployAttemptSourceCompose)
 		out = append(out, toAppResource(svc))
@@ -137,7 +159,7 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rt.nudgeReconciler()
-	writeJSON(w, http.StatusOK, composeDeployResponse{AppID: name, Services: out, Notices: notices})
+	return composeDeployResponse{AppID: name, Services: out, Notices: notices}, true
 }
 
 // pruneStaleComposeServices deletes every member of appName's previous

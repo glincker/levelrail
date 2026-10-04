@@ -14,6 +14,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { certificatesKeys } from './certificates'
 
 // Mirrors internal/api's domainTLSCertResource wire shape exactly.
 export interface DomainTLSCert {
@@ -45,7 +46,10 @@ export async function fetchDomainTLSCert(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch domain tls cert failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch domain tls cert failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as DomainTLSCert
@@ -98,7 +102,10 @@ export function useSetDomainTLSCert(appName: string, domain: string) {
   return useMutation<DomainTLSCert, ApiError, SetDomainTLSCertRequest>({
     mutationFn: (req) => setDomainTLSCert(appName, domain, req),
     onSuccess: (updated) => {
-      queryClient.setQueryData(domainTLSCertKeys.detail(appName, domain), updated)
+      queryClient.setQueryData(
+        domainTLSCertKeys.detail(appName, domain),
+        updated,
+      )
     },
   })
 }
@@ -117,7 +124,10 @@ export async function clearDomainTLSCert(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `clear domain tls cert failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `clear domain tls cert failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as DomainTLSCert
@@ -128,7 +138,55 @@ export function useClearDomainTLSCert(appName: string, domain: string) {
   return useMutation<DomainTLSCert, ApiError, void>({
     mutationFn: () => clearDomainTLSCert(appName, domain),
     onSuccess: (updated) => {
-      queryClient.setQueryData(domainTLSCertKeys.detail(appName, domain), updated)
+      queryClient.setQueryData(
+        domainTLSCertKeys.detail(appName, domain),
+        updated,
+      )
+    },
+  })
+}
+
+// RenewCertificateResult mirrors internal/api's renewCertificateResponse
+// wire shape exactly (POST .../cert/renew's body).
+export interface RenewCertificateResult {
+  domain: string
+  had_stored_certificate: boolean
+  status: string
+}
+
+// renewDomainCertificate calls POST
+// /api/v1/apps/{name}/domains/{domain}/cert/renew: forces re-issuance of
+// domain's automatic certificate. 409 means domain currently has a
+// custom certificate uploaded, surfaced verbatim since the server's
+// message already names the exact fix (clear the custom cert first).
+export async function renewDomainCertificate(
+  appName: string,
+  domain: string,
+): Promise<RenewCertificateResult> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(appName)}/domains/${encodeURIComponent(domain)}/cert/renew`,
+    { method: 'POST' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `renew certificate failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as RenewCertificateResult
+}
+
+// On success, invalidates the certificate center's list query: the
+// renewed certificate's new expiry only exists once the next reconcile
+// pass actually re-issues it, so a plain refetch (rather than an
+// optimistic cache write, which has nothing accurate to write yet) is
+// the honest thing to do here.
+export function useRenewDomainCertificate(appName: string, domain: string) {
+  const queryClient = useQueryClient()
+  return useMutation<RenewCertificateResult, ApiError, void>({
+    mutationFn: () => renewDomainCertificate(appName, domain),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: certificatesKeys.all })
     },
   })
 }

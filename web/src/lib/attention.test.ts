@@ -20,6 +20,7 @@ describe('buildAttentionItems', () => {
             status: 'healthy',
             not_before: '',
             not_after: '',
+            source: 'acme',
           },
         ],
         doctor: {
@@ -40,12 +41,14 @@ describe('buildAttentionItems', () => {
           status: 'expiring_soon',
           not_before: '',
           not_after: '2026-10-01',
+          source: 'acme',
         },
         {
           domain: 'b.io',
           status: 'expired',
           not_before: '',
           not_after: '2026-09-01',
+          source: 'acme',
         },
       ],
       doctor: {

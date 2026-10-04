@@ -25,6 +25,8 @@ type ServiceVolumeBackupConfig struct {
 	BackupSchedule   string
 	BackupRetain     int
 	BackupRetainDays int
+	// SqlitePath: see migrations/0259.
+	SqlitePath string
 }
 
 // SetServiceVolumeBackupSchedule upserts serviceName/volumeName's backup
@@ -33,16 +35,17 @@ type ServiceVolumeBackupConfig struct {
 // "not scheduled", the same "" sentinel SetDatabaseBackupSchedule already
 // establishes: internal/backup.Scheduler's own ListScheduledServiceVolumes
 // query treats an empty schedule exactly like the row was never written.
-func (db *DB) SetServiceVolumeBackupSchedule(ctx context.Context, serviceName, volumeName, targetID, schedule string, retain, retainDays int) error {
+func (db *DB) SetServiceVolumeBackupSchedule(ctx context.Context, serviceName, volumeName, targetID, schedule string, retain, retainDays int, sqlitePath string) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO service_volume_backups (service_name, volume_name, backup_target_id, backup_schedule, backup_retain, backup_retain_days)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO service_volume_backups (service_name, volume_name, backup_target_id, backup_schedule, backup_retain, backup_retain_days, sqlite_path)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (service_name, volume_name) DO UPDATE SET
 			backup_target_id = excluded.backup_target_id,
 			backup_schedule = excluded.backup_schedule,
 			backup_retain = excluded.backup_retain,
-			backup_retain_days = excluded.backup_retain_days
-	`, serviceName, volumeName, sql.NullString{String: targetID, Valid: targetID != ""}, schedule, retain, retainDays)
+			backup_retain_days = excluded.backup_retain_days,
+			sqlite_path = excluded.sqlite_path
+	`, serviceName, volumeName, sql.NullString{String: targetID, Valid: targetID != ""}, schedule, retain, retainDays, sqlitePath)
 	if err != nil {
 		return fmt.Errorf("store: set backup schedule for service %q volume %q: %w", serviceName, volumeName, err)
 	}
@@ -57,10 +60,10 @@ func (db *DB) GetServiceVolumeBackupSchedule(ctx context.Context, serviceName, v
 		backupTargetID sql.NullString
 	)
 	err := db.QueryRowContext(ctx, `
-		SELECT service_name, volume_name, backup_target_id, backup_schedule, backup_retain, backup_retain_days
+		SELECT service_name, volume_name, backup_target_id, backup_schedule, backup_retain, backup_retain_days, sqlite_path
 		FROM service_volume_backups
 		WHERE service_name = ? AND volume_name = ?
-	`, serviceName, volumeName).Scan(&c.ServiceName, &c.VolumeName, &backupTargetID, &c.BackupSchedule, &c.BackupRetain, &c.BackupRetainDays)
+	`, serviceName, volumeName).Scan(&c.ServiceName, &c.VolumeName, &backupTargetID, &c.BackupSchedule, &c.BackupRetain, &c.BackupRetainDays, &c.SqlitePath)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ServiceVolumeBackupConfig{}, ErrServiceVolumeBackupNotFound
 	}
@@ -78,7 +81,7 @@ func (db *DB) GetServiceVolumeBackupSchedule(ctx context.Context, serviceName, v
 // comment for why both are required together rather than schedule alone.
 func (db *DB) ListScheduledServiceVolumes(ctx context.Context) ([]ServiceVolumeBackupConfig, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT service_name, volume_name, backup_target_id, backup_schedule, backup_retain, backup_retain_days
+		SELECT service_name, volume_name, backup_target_id, backup_schedule, backup_retain, backup_retain_days, sqlite_path
 		FROM service_volume_backups
 		WHERE backup_schedule != '' AND backup_target_id IS NOT NULL
 		ORDER BY service_name, volume_name
@@ -96,7 +99,7 @@ func (db *DB) ListScheduledServiceVolumes(ctx context.Context) ([]ServiceVolumeB
 			c              ServiceVolumeBackupConfig
 			backupTargetID sql.NullString
 		)
-		if err := rows.Scan(&c.ServiceName, &c.VolumeName, &backupTargetID, &c.BackupSchedule, &c.BackupRetain, &c.BackupRetainDays); err != nil {
+		if err := rows.Scan(&c.ServiceName, &c.VolumeName, &backupTargetID, &c.BackupSchedule, &c.BackupRetain, &c.BackupRetainDays, &c.SqlitePath); err != nil {
 			return nil, fmt.Errorf("store: scan scheduled service volume row: %w", err)
 		}
 		c.BackupTargetID = backupTargetID.String

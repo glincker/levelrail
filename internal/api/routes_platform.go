@@ -31,6 +31,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitSource))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source/deploy-settings", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitDeploySettings))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteGitSource))
+	// Rotate webhook secret (git_sources.go): mints a fresh secret without
+	// touching repo_url/branch/build config, the narrow alternative to a
+	// full DELETE-then-PUT reconnect. Same AbilityWriteSensitive tier as
+	// PUT .../git-source, since it's the identical class of credential
+	// write.
+	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/rotate-webhook-secret", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateGitSourceWebhookSecret))
 
 	// Scheduled deploys (app_schedule.go): a per-app cron schedule that
 	// redeploys the latest commit on a branch, checked by
@@ -112,6 +118,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/alerts", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAlertRules))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/alerts/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleUpdateAlertRule))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/alerts/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteAlertRule))
+
+	// Health & readiness score: a read-only synthesis of signals this
+	// router already exposes separately (deploys, crashloop, TLS,
+	// secrets, backups, health checks, alerting). See
+	// app_health_score.go's own doc comment.
+	mux.HandleFunc("GET /api/v1/apps/{name}/health-score", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppHealthScore))
 
 	// Scheduled tasks: run an arbitrary command inside this app's
 	// container on a cron schedule (internal/scheduledtask). CRUD sits at
@@ -224,6 +236,14 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/projects/{id}/stop", rt.requireAbility(AbilityDeploy, rt.handleStopProject))
 	mux.HandleFunc("POST /api/v1/projects/{id}/start", rt.requireAbility(AbilityDeploy, rt.handleStartProject))
 
+	// Topology (topology.go): a read-only diagram-ready graph derived
+	// from this project's existing desired state, AbilityRead like the
+	// project read itself above, not a new server-side list filter (see
+	// this file's own package doc comment on why apps/databases stay
+	// client-filtered elsewhere): a graph's nodes and edges aren't a
+	// list page.
+	mux.HandleFunc("GET /api/v1/projects/{id}/topology", rt.requireAbility(AbilityRead, rt.handleGetProjectTopology))
+
 	// Organizations (organizations.go): groups projects, same ordinary
 	// AbilityRead/AbilityWrite boundary as projects above.
 	mux.HandleFunc("GET /api/v1/organizations", rt.requireAbility(AbilityRead, rt.handleListOrganizations))
@@ -252,6 +272,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// scoped to a project, tagged onto a service via its own app route.
 	mux.HandleFunc("GET /api/v1/projects/{id}/environments", rt.requireAbility(AbilityRead, rt.handleListEnvironments))
 	mux.HandleFunc("POST /api/v1/projects/{id}/environments", rt.requireAbility(AbilityWrite, rt.handleCreateEnvironment))
+	// Cross-environment env var drift check (environment_compare.go):
+	// resolved effective env vars for two of this project's environments,
+	// secret values always redacted.
+	mux.HandleFunc("GET /api/v1/projects/{id}/environments/compare", rt.requireAbility(AbilityRead, rt.handleCompareEnvironmentEnv))
 	mux.HandleFunc("PATCH /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleUpdateEnvironment))
 	mux.HandleFunc("DELETE /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteEnvironment))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/environment", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppEnvironment))
@@ -272,6 +296,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/deploy-approvals/{id}", rt.requireAbility(AbilityRead, rt.handleGetDeployApproval))
 	mux.HandleFunc("POST /api/v1/deploy-approvals/{id}/approve", rt.requireAbility(AbilityDeploy, rt.handleApproveDeployApproval))
 	mux.HandleFunc("POST /api/v1/deploy-approvals/{id}/reject", rt.requireAbility(AbilityDeploy, rt.handleRejectDeployApproval))
+
+	// Chat-interactive deploy approval (chat_interactions.go): a
+	// Slack/Discord button click posts back here, unauthenticated like
+	// POST .../webhooks/github/{name} above; its own signature check
+	// (Slack HMAC, Discord Ed25519) stands in for auth, and the decision
+	// itself runs through the exact same functions the gated routes
+	// above call.
+	mux.HandleFunc("POST /api/v1/webhooks/slack/interactions", rt.handleSlackInteraction)
+	mux.HandleFunc("POST /api/v1/webhooks/discord/interactions", rt.handleDiscordInteraction)
 
 	// Shared env vars every service tagged with this environment inherits
 	// (environment_env.go): the tier between organizations/{id}/env and
@@ -332,6 +365,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNode))
 	mux.HandleFunc("DELETE /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteNode))
 	mux.HandleFunc("PUT /api/v1/nodes/{id}/workloads", rt.requireAbility(AbilityRoot, rt.handleSetNodeWorkloads))
+	mux.HandleFunc("PUT /api/v1/nodes/{id}/region", rt.requireAbility(AbilityRoot, rt.handleSetNodeRegion))
 	mux.HandleFunc("POST /api/v1/nodes/join-tokens", rt.requireAbility(AbilityRoot, rt.handleCreateNodeJoinToken))
 	// Health, cordon, drain, same AbilityRoot boundary as
 	// every other node route above.
@@ -345,6 +379,19 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// above.
 	mux.HandleFunc("GET /api/v1/mesh", rt.requireAbility(AbilityRoot, rt.handleGetMeshStatus))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/mesh/rotate-key", rt.requireAbility(AbilityRoot, rt.handleRotateNodeMeshKey))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/mesh/rejoin", rt.requireAbility(AbilityRoot, rt.handleRejoinNodeMesh))
+	// Network topology: a read-only, whole-mesh summary (nodes, apps,
+	// databases, load balancers, app-to-database connections). Unlike
+	// every other node/mesh route above, AbilityRead rather than
+	// AbilityRoot: it exposes no key material, no join tokens, and no
+	// mutation, just the same placement/DNS-name facts already visible
+	// piecemeal across GET /apps, /databases and /nodes.
+	mux.HandleFunc("GET /api/v1/network/topology", rt.requireAbility(AbilityRead, rt.handleGetNetworkTopology))
+	// Proxy/traffic: per-domain reachability (CrossNodeIngress, see
+	// doctor_cross_node_ingress.go) plus TLS status, joined for the
+	// Traffic/Proxy dashboard page. Same AbilityRead boundary as
+	// topology above, same reasoning: read-only, no key material.
+	mux.HandleFunc("GET /api/v1/network/proxy", rt.requireAbility(AbilityRead, rt.handleGetNetworkProxy))
 	// Cloud node provisioning: same AbilityRoot boundary as every other
 	// node route above, a provider credential and the ability to spin up
 	// a VM are at least as sensitive as a join token.
@@ -359,6 +406,20 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// ServeMux refuses to register together.
 	mux.HandleFunc("GET /api/v1/node-provisions", rt.requireAbility(AbilityRoot, rt.handleListNodeProvisions))
 	mux.HandleFunc("GET /api/v1/node-provisions/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNodeProvision))
+	// SSH-based node provisioning: adopts a machine the operator already
+	// has instead of creating one at a cloud provider, same AbilityRoot
+	// boundary as every other node route above (an SSH credential is at
+	// least as sensitive as a join token or a provider credential). The
+	// create route has no path wildcard, so it can live under
+	// /api/v1/nodes/ like /api/v1/nodes/provision does; the show route
+	// needs a wildcard {id} and so, like /api/v1/node-provisions/{id}
+	// above, must be a top-level sibling rather than nested under
+	// /api/v1/nodes/{id}/...: "/api/v1/nodes/ssh-provisions/{id}" would
+	// conflict with "/api/v1/nodes/{id}/health" the exact way that
+	// comment already explains for the cloud path.
+	mux.HandleFunc("POST /api/v1/nodes/ssh-provision", rt.requireAbility(AbilityRoot, rt.handleCreateSSHNodeProvision))
+	mux.HandleFunc("GET /api/v1/ssh-node-provisions", rt.requireAbility(AbilityRoot, rt.handleListSSHNodeProvisions))
+	mux.HandleFunc("GET /api/v1/ssh-node-provisions/{id}", rt.requireAbility(AbilityRoot, rt.handleGetSSHNodeProvision))
 	// Node-level metrics (sum of per-container samples for everything
 	// placed on this node, see handleQueryNodeMetrics's own doc comment
 	// for exactly what that does and doesn't mean): same AbilityRoot
@@ -377,6 +438,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// series, same AbilityRoot boundary as every other node route.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/patch-status", rt.requireAbility(AbilityRoot, rt.handleGetNodePatchStatus))
 	mux.HandleFunc("GET /api/v1/nodes/{id}/events", rt.requireAbility(AbilityRoot, rt.handleListNodeEvents))
+	// Rough disk/memory exhaustion projection (node_capacity_forecast.go),
+	// a read-and-suggest layer over the same host samples
+	// patch-status/metrics above read, same AbilityRoot boundary and
+	// nil-telemetry 501 shape as every other node route.
+	mux.HandleFunc("GET /api/v1/nodes/{id}/capacity-forecast", rt.requireAbility(AbilityRoot, rt.handleNodeCapacityForecast))
 	// Agent certificate lifecycle (node_cert.go, ADR 021).
 	mux.HandleFunc("POST /api/v1/nodes/{id}/reenroll-token", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleCreateNodeReenrollToken))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/revoke-cert", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleRevokeNodeCert))
@@ -458,6 +524,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetDomainTLSCert))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleClearDomainTLSCert))
 
+	// Force re-issuance of domain's automatic certificate (domain_tls_cert.go's
+	// handleRenewDomainCertificate): deletes the stored certmagic entry
+	// and nudges the reconciler. AbilityRoot, same tier as PUT/DELETE
+	// .../tls-cert above: real infra, real blast radius.
+	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/cert/renew", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleRenewDomainCertificate))
+
 	// Opt-in WAF and rate limiting (domain_waf.go): OWASP Coraza and
 	// Caddy's rate_limit handler on one app-owned domain, enforced on
 	// the next ingress reconcile pass. GET is AbilityRead, matching the
@@ -469,6 +541,19 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainWAF))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainWAF))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearDomainWAF))
+
+	// DNS records (dns_records.go): list/add/edit/delete the actual
+	// A/AAAA/CNAME/TXT/MX/SRV/CAA records in one app-owned domain's
+	// best-effort zone, via whichever ACME DNS-01 provider (Cloudflare or
+	// Route53) is configured. GET is AbilityRead: a live provider API
+	// read plus a DNS lookup, no write. POST/PUT/DELETE are AbilityRoot,
+	// the same "real infrastructure, high blast radius" tier PUT/DELETE
+	// .../tls-cert and .../auth already reserve: this writes directly to
+	// a live, externally visible DNS zone.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListDNSRecords))
+	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleCreateDNSRecord))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleUpdateDNSRecord))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleDeleteDNSRecord))
 
 	// Domain redirect (domain_redirect.go): points one app-owned domain
 	// at an arbitrary target URL, enforced by Caddy's static_response
@@ -536,6 +621,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/registry/repositories", rt.requireAbility(AbilityRead, rt.handleListRegistryRepositories))
 	mux.HandleFunc("GET /api/v1/registry/tags", rt.requireAbility(AbilityRead, rt.handleListRegistryTags))
 
+	// Public Docker Hub search (dockerhub_search.go): the same picker's
+	// third source, for a well-known public image that isn't in the
+	// built-in registry or a connected credential. AbilityRead, same tier
+	// as the built-in catalog just above: a read of a public,
+	// unauthenticated upstream, proxied server-side only to avoid a
+	// browser-to-hub.docker.com CORS call.
+	mux.HandleFunc("GET /api/v1/dockerhub/search", rt.requireAbility(AbilityRead, rt.handleDockerHubSearch))
+	mux.HandleFunc("GET /api/v1/dockerhub/repositories/{namespace}/{repo}/tags", rt.requireAbility(AbilityRead, rt.handleDockerHubTags))
+
 	// Domains (centralized cross-app list, web/src/routes/domains):
 	// every service_domains row, AbilityRead like GET /api/v1/apps,
 	// no new ability tier: this is the same data DomainEditor already
@@ -574,6 +668,26 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateRegistryCredential))
 	mux.HandleFunc("DELETE /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteRegistryCredential))
 	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryCredential))
+
+	// Network shares (network_shares.go): an NFS/CIFS export mountable
+	// as a Docker local-driver volume. Same ability tiers as registry
+	// credentials just above: POST/PUT/DELETE handle a live CIFS
+	// password, test is a read-only reachability dial.
+	mux.HandleFunc("GET /api/v1/network-shares", rt.requireAbility(AbilityRead, rt.handleListNetworkShares))
+	mux.HandleFunc("POST /api/v1/network-shares", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateNetworkShare))
+	mux.HandleFunc("GET /api/v1/network-shares/{id}", rt.requireAbility(AbilityRead, rt.handleGetNetworkShare))
+	mux.HandleFunc("PUT /api/v1/network-shares/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateNetworkShare))
+	mux.HandleFunc("DELETE /api/v1/network-shares/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteNetworkShare))
+	mux.HandleFunc("POST /api/v1/network-shares/{id}/test", rt.requireAbility(AbilityRead, rt.handleTestNetworkShare))
+
+	// Firewall rules (firewall_rules.go): declarative host firewall
+	// rules internal/reconcile/firewall converges onto ufw.
+	// AbilityWriteSensitive for create/delete, same tier as a backup
+	// target: a rule here changes what inbound traffic this host
+	// accepts. List is ordinary AbilityRead.
+	mux.HandleFunc("GET /api/v1/firewall-rules", rt.requireAbility(AbilityRead, rt.handleListFirewallRules))
+	mux.HandleFunc("POST /api/v1/firewall-rules", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateFirewallRule))
+	mux.HandleFunc("DELETE /api/v1/firewall-rules/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteFirewallRule))
 
 	// Registry credential browsing (registry_catalog.go): repository/tag
 	// lookup for a stored external credential, the same generic catalog
@@ -625,6 +739,8 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/github-app/register/start", rt.requireAbility(AbilityRoot, rt.handleStartGitHubAppRegistration))
 	mux.HandleFunc("GET /api/v1/github-app/callback", rt.requireAbility(AbilityRoot, rt.handleGitHubAppCallback))
 	mux.HandleFunc("GET /api/v1/github-app/installed", rt.requireAbility(AbilityRoot, rt.handleGitHubAppInstalled))
+	mux.HandleFunc("GET /api/v1/github-app/installations", rt.requireAbility(AbilityRoot, rt.handleListGitHubAppInstallations))
+	mux.HandleFunc("DELETE /api/v1/github-app/installations/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteGitHubAppInstallation))
 	mux.HandleFunc("GET /api/v1/github-app/repos", rt.requireAbility(AbilityReadSensitive, rt.handleListGitHubAppRepos))
 	mux.HandleFunc("GET /api/v1/github-app/repos/{owner}/{repo}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListGitHubAppBranches))
 	mux.HandleFunc("POST /api/v1/github-app/repos/{owner}/{repo}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseGitHubRepoAsSource))
@@ -838,6 +954,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// later" shape PUT .../storage/.../node/.../project already have).
 	mux.HandleFunc("PUT /api/v1/apps/{name}/database", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppDatabase))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/database", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleClearAppDatabase))
+	// Multi-connection app-to-database (apps_connections.go): the
+	// DatabaseEnv-map-backed sibling of PUT/DELETE .../database just
+	// above, for an app that connects to more than one managed database.
+	// Same AbilityWrite tier and "config write, not a deploy trigger"
+	// reasoning; GET is AbilityRead like any other app-detail read.
+	mux.HandleFunc("GET /api/v1/apps/{name}/connections", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppConnections))
+	mux.HandleFunc("POST /api/v1/apps/{name}/connections", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCreateAppConnection))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/connections/{env_var}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteAppConnection))
+	mux.HandleFunc("GET /api/v1/apps/{name}/connectable-databases", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListConnectableDatabases))
 	// One Vault-sourced env var declaration at a time (apps_vault_env.go):
 	// same AbilityWrite tier and "config write, not a deploy trigger"
 	// reasoning as PUT/DELETE .../database just above.
@@ -873,6 +998,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppHealth))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppHealth))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleClearAppHealth))
+	// Attach/detach a named Docker volume outside a redeploy
+	// (apps_volumes_attach.go): AbilityWrite, the same tier health above
+	// uses, since this is an ordinary declarative resource, not a secret
+	// or network-exfiltration surface like egress-policy/storage.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppVolumes))
 	// Read-only, not scoped to any one app: the static list of env var
 	// names attaching storage can inject, backed by
 	// application.StorageEnvKeys rather than a hardcoded list, see
@@ -915,7 +1045,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// so on) once a human approves it, the same blast radius as the
 	// scoped token itself would need to reach those actions directly.
 	mux.HandleFunc("POST /api/v1/ai/sessions", rt.requireAbility(AbilityRoot, rt.handleCreateAIChatSession))
+	mux.HandleFunc("GET /api/v1/ai/sessions", rt.requireAbility(AbilityRoot, rt.handleListAIChatSessions))
 	mux.HandleFunc("GET /api/v1/ai/sessions/{id}", rt.requireAbility(AbilityRoot, rt.handleGetAIChatSession))
+	mux.HandleFunc("DELETE /api/v1/ai/sessions/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteAIChatSession))
 	mux.HandleFunc("POST /api/v1/ai/sessions/{id}/messages", rt.requireAbility(AbilityRoot, rt.handleCreateAIChatMessage))
 	mux.HandleFunc("POST /api/v1/ai/sessions/{id}/confirmations/{confirmation_id}", rt.requireAbility(AbilityRoot, rt.handleResolveAIChatConfirmation))
 }

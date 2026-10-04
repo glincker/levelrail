@@ -18,6 +18,11 @@ type AppStore interface {
 	GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 	DeleteDesiredService(ctx context.Context, name string) error
+	// ListAppStreamsForService backs internal/reconcile/application's
+	// ServiceStore (the same interface this type satisfies for the
+	// application controller's own New call): one extra published
+	// container port per raw TCP stream (migrations/0279_app_streams.sql).
+	ListAppStreamsForService(ctx context.Context, serviceName string) ([]store.AppStream, error)
 	// UpdateServiceNode is the placement mutation, separate
 	// from SaveDesiredService on purpose: see store.DB.SaveDesiredService's
 	// own doc comment for why an ordinary app update must never be able
@@ -96,6 +101,13 @@ type AppStore interface {
 	// separation-from-ordinary-update reasoning as UpdateServiceStorageTarget,
 	// see store.DB.SetServiceAutoRollbackOnCrashloop's own doc comment.
 	SetServiceAutoRollbackOnCrashloop(ctx context.Context, name string, enabled bool) error
+	// SetServiceAutoRollbackOnSLOBurn backs PUT
+	// /api/v1/apps/{name}/auto-rollback-slo-burn (deploys.go): which mode
+	// internal/alerting.MaybeAutoRollbackOnSLOBurn acts in the next time a
+	// KindSLOBurn rule fires for this app. Same separation-from-ordinary-
+	// update reasoning as SetServiceAutoRollbackOnCrashloop, see
+	// store.DB.SetServiceAutoRollbackOnSLOBurn's own doc comment.
+	SetServiceAutoRollbackOnSLOBurn(ctx context.Context, name, mode string) error
 	// SetServiceExecEnabled backs PUT /api/v1/apps/{name}/exec-access
 	// (exec.go): whether POST .../exec and GET .../terminal are even
 	// attempted for this app, independent of the caller's own IAM
@@ -103,6 +115,12 @@ type AppStore interface {
 	// SetServiceAutoRollbackOnCrashloop, see
 	// store.DB.SetServiceExecEnabled's own doc comment.
 	SetServiceExecEnabled(ctx context.Context, name string, enabled bool) error
+	// SetServiceBadgeEnabled backs PUT /api/v1/apps/{name}/badge
+	// (app_badge.go): whether GET .../badge.svg serves anything for
+	// this app, or 404s. Same separation-from-ordinary-update reasoning
+	// as SetServiceAutoRollbackOnCrashloop, see
+	// store.DB.SetServiceBadgeEnabled's own doc comment.
+	SetServiceBadgeEnabled(ctx context.Context, name string, enabled bool) error
 	// SetServiceVaultEnvVar backs PUT/DELETE
 	// /api/v1/apps/{name}/vault-env/{key} (apps_vault_env.go): the
 	// UI/CLI-facing way to declare (or remove) one Vault-sourced env var
@@ -113,6 +131,14 @@ type AppStore interface {
 	// UpdateServiceDatabaseAttachment, see store.DB.SetServiceVaultEnvVar's
 	// own doc comment.
 	SetServiceVaultEnvVar(ctx context.Context, name, envVar string, ref *store.VaultEnvRef) error
+	// SetServiceDatabaseEnvVar backs POST/DELETE
+	// /api/v1/apps/{name}/connections[/{env_var}] (apps_connections.go):
+	// the UI/CLI-facing way to declare (or remove) one entry in an app's
+	// DatabaseEnv map, letting an app connect to more than one managed
+	// database without app.yaml. Same separation-from-ordinary-update
+	// reasoning as SetServiceVaultEnvVar, see
+	// store.DB.SetServiceDatabaseEnvVar's own doc comment.
+	SetServiceDatabaseEnvVar(ctx context.Context, name, envVar string, ref *store.DatabaseEnvRef) error
 	// SetServicePreviewEnvOverride backs PUT/DELETE
 	// /api/v1/apps/{name}/preview-env/{key} (apps_preview_env.go): the
 	// UI/CLI-facing way to declare (or remove), on an app that already
@@ -136,6 +162,12 @@ type AppStore interface {
 	UpdateServiceEgressPolicy(ctx context.Context, name string, policy *store.ServiceEgressPolicy) error
 	// UpdateServiceHealth backs PUT /api/v1/apps/{name}/health (apps_health.go).
 	UpdateServiceHealth(ctx context.Context, name string, health *store.ServiceHealth) error
+	// UpdateServiceVolumes backs PUT /api/v1/apps/{name}/volumes
+	// (apps_volumes_attach.go): the UI/CLI-facing way to attach or
+	// remove a named Docker volume outside a redeploy, mirroring
+	// UpdateServiceEgressPolicy's own dual write path. See
+	// store.DB.UpdateServiceVolumes's own doc comment.
+	UpdateServiceVolumes(ctx context.Context, name string, volumes []store.ServiceVolume) error
 	// SetServiceBranchEnvOverride, DeleteServiceBranchEnvOverride, and
 	// ListServiceBranchEnvOverrides back POST/DELETE/GET
 	// /api/v1/apps/{name}/branch-env (apps_branch_env.go): a narrower,
@@ -171,6 +203,18 @@ type AppComposeStore interface {
 	SaveApp(ctx context.Context, a store.App) error
 	GetAppByName(ctx context.Context, name string) (store.App, error)
 	SaveDesiredService(ctx context.Context, svc store.DesiredService) error
+}
+
+// CustomTemplateStore is the store surface save-as-template needs
+// (service_templates_custom.go): CRUD on operator-defined templates,
+// the growth-loop counterpart to internal/catalog's static built-in
+// catalog. See store.CustomTemplate's own doc comment for why a
+// template row never holds a real secret value.
+type CustomTemplateStore interface {
+	SaveCustomTemplate(ctx context.Context, t store.CustomTemplate) error
+	GetCustomTemplate(ctx context.Context, id string) (store.CustomTemplate, error)
+	ListCustomTemplates(ctx context.Context) ([]store.CustomTemplate, error)
+	DeleteCustomTemplate(ctx context.Context, id string) error
 }
 
 // ComposeSecretStore is the surface POST /api/v1/apps/{name}/compose
@@ -220,6 +264,10 @@ type WebhookDeliveryStore interface {
 	SaveWebhookDelivery(ctx context.Context, d store.WebhookDelivery) error
 	GetWebhookDelivery(ctx context.Context, id string) (*store.WebhookDelivery, error)
 	ListWebhookDeliveries(ctx context.Context, serviceName string, limit int, before *time.Time) ([]store.WebhookDelivery, error)
+	// DeleteWebhookDeliveriesOlderThan backs the retention sweep
+	// (webhook_delivery_retention.go), the same age-based deletion
+	// AuditStore.DeleteAuditEntriesOlderThan already provides for audit_log.
+	DeleteWebhookDeliveriesOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
 }
 
 // DeployLogQuerier is the telemetry-side read surface
@@ -341,6 +389,17 @@ type RecoveryCodeStore interface {
 	DeleteUserRecoveryCodes(ctx context.Context, userID string) error
 }
 
+// PasskeyStore is the store surface the passkey handlers (passkeys.go)
+// need: always set, part of the core Store interface, the same
+// "no secrets configuration needed" shape RecoveryCodeStore has (a
+// credential's public key is ordinary key material, not a secret).
+type PasskeyStore interface {
+	SavePasskeyCredential(ctx context.Context, c store.PasskeyCredential) error
+	ListPasskeyCredentialsForUser(ctx context.Context, userID string) ([]store.PasskeyCredential, error)
+	UpdatePasskeySignCountByCredentialID(ctx context.Context, credentialID string, signCount uint32, usedAt time.Time) error
+	DeletePasskeyCredential(ctx context.Context, id, userID string) error
+}
+
 // EmailSettingsStore is the store surface GET/PUT
 // /api/v1/settings/email need: the single platform-wide row, always
 // present, the same shape IngressSettingsStore has for its own row.
@@ -396,6 +455,15 @@ type PasswordResetTokenStore interface {
 	SavePasswordResetToken(ctx context.Context, t store.PasswordResetToken) error
 	GetPasswordResetTokenByHash(ctx context.Context, hash string) (*store.PasswordResetToken, error)
 	ClaimPasswordResetToken(ctx context.Context, id string) error
+}
+
+// SessionLinkTokenStore is the store surface the session-link flow
+// needs: always set, part of the core Store interface, same shape as
+// PasswordResetTokenStore above.
+type SessionLinkTokenStore interface {
+	SaveSessionLinkToken(ctx context.Context, t store.SessionLinkToken) error
+	GetSessionLinkTokenByHash(ctx context.Context, hash string) (*store.SessionLinkToken, error)
+	ClaimSessionLinkToken(ctx context.Context, id string) error
 }
 
 // InviteStore is the store surface the team-invite flow needs: always
@@ -466,6 +534,7 @@ type Store interface {
 	AppStore
 	AppGroupLister
 	AppComposeStore
+	CustomTemplateStore
 	DeployStore
 	DeployAttemptStore
 	DatabaseStore
@@ -476,6 +545,9 @@ type Store interface {
 	StaticSiteStore
 	BackupTargetStore
 	RegistryCredentialStore
+	NetworkShareStore
+	FirewallRuleStore
+	AppStreamStore
 	BackupHistoryStore
 	BackupVerificationStore
 	RestoreHistoryStore
@@ -491,6 +563,7 @@ type Store interface {
 	OrganizationStore
 	EnvironmentStore
 	IngressSettingsStore
+	UpdateSettingsStore
 	DomainStore
 	DomainBasicAuthStore
 	DomainMaintenanceStore
@@ -513,10 +586,14 @@ type Store interface {
 	CloudflareDNSStore
 	Route53DNSStore
 	NodeProvisionStore
+	SSHNodeProvisionStore
 	VaultSettingsStore
 	PasswordResetTokenStore
+	SessionLinkTokenStore
 	InviteStore
 	RecoveryCodeStore
+	PasskeyStore
+	PushSubscriptions
 	AuditStore
 	ScheduledTaskStore
 	FeatureFlagStore
@@ -545,6 +622,10 @@ type SecretSetter interface {
 	ListKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
 	SetLocked(ctx context.Context, serviceName, envKey string, locked bool) error
 	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
+	// ExistsForServices is Exists batched over many service names in one
+	// call, used by databases.go's handleListDatabases to show every
+	// row's TLS status without an Exists call per database.
+	ExistsForServices(ctx context.Context, serviceNames []string, envKey string) (map[string]bool, error)
 	// Resolve decrypts and returns one secret's plaintext value, the same
 	// read internal/reconcile/application already does immediately before
 	// container creation. environment_clone.go's own explicit,
@@ -698,6 +779,27 @@ type DockerPruner interface {
 type OrphanedVolumeManager interface {
 	ListNamedVolumes(ctx context.Context) ([]docker.NamedVolume, error)
 	RemoveVolume(ctx context.Context, name string) error
+}
+
+// OrphanedContainerManager is the surface POST
+// /api/v1/system/containers/{name}/stop and .../remove need: stop or
+// remove one container by ID. Unlike ContainerLister, which only reads,
+// this is the mutating half, the same read/destructive-action split
+// DockerDiskUsager/DockerPruner and OrphanedVolumeManager's own
+// list/remove pair already establish. Deliberately narrower than
+// docker.Runtime (just the two methods these routes call), the same
+// "consumer-defined boundary, no second divergent surface" reasoning
+// DockerPinger/ImageLister give; *docker.Client satisfies this
+// structurally via Stop and Remove (internal/docker/client.go).
+//
+// isManagedContainer (containers_orphaned.go), not this package's
+// callers of this interface, decides which containers these methods may
+// ever be invoked against: every route calling it re-confirms a
+// container is genuinely orphaned before calling Stop/Remove, never
+// trusting a client-supplied flag.
+type OrphanedContainerManager interface {
+	Stop(ctx context.Context, id string, timeout time.Duration) error
+	Remove(ctx context.Context, id string, force bool) error
 }
 
 // RegistryAuthTester is the surface POST

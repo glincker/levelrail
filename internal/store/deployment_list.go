@@ -223,14 +223,19 @@ func deploymentWhere(f DeploymentFilter, withCursor bool) (string, []any, error)
 		if len(stored) == 0 {
 			conds = append(conds, "0")
 		} else {
-			conds = append(conds, "d.status IN ("+placeholders(len(stored))+")")
-			for _, s := range stored {
-				args = append(args, s)
+			bStored, err := json.Marshal(stored)
+			if err != nil {
+				return "", nil, fmt.Errorf("marshal stored statuses: %w", err)
 			}
-			conds = append(conds, deploymentStatusSQL+" IN ("+placeholders(len(f.Statuses))+")")
-			for _, s := range f.Statuses {
-				args = append(args, s)
+			conds = append(conds, "d.status IN (SELECT value FROM json_each(?))")
+			args = append(args, string(bStored))
+
+			bStatuses, err := json.Marshal(f.Statuses)
+			if err != nil {
+				return "", nil, fmt.Errorf("marshal statuses: %w", err)
 			}
+			conds = append(conds, deploymentStatusSQL+" IN (SELECT value FROM json_each(?))")
+			args = append(args, string(bStatuses))
 		}
 	}
 	if f.ID != "" {

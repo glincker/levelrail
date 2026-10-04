@@ -2,7 +2,11 @@ import { useRef } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { PackageIcon, StackSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ArrowsLeftRightIcon,
+  PackageIcon,
+  StackSimpleIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   projectDetailQueryOptions,
   useProject,
@@ -22,8 +26,10 @@ import { SharedEnvSecretsCard } from '../../../../components/SharedEnvSecretsCar
 import { AppRow, RowSkeleton } from '../../../../components/AppRow'
 import { routeErrorMessage } from '../../../../lib/apiError'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Environment detail route: the one place an operator can see every app
 // tagged with a specific staging/production-style label, plus jump to a
@@ -91,14 +97,36 @@ function EnvironmentDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Breadcrumbs projectId={id} environmentId={envId} />
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+      <PageHeader
+        breadcrumb={<Breadcrumbs projectId={id} environmentId={envId} />}
+        title={
+          <span className="flex items-center gap-2">
             <StackSimpleIcon className="size-4 text-muted-foreground" />
             {environment.name}
-          </h1>
+          </span>
+        }
+        actions={
           <div className="flex items-center gap-4">
+            {siblingEnvironments.length > 0 ? (
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={
+                  <Link
+                    to="/projects/$id/environments/compare"
+                    params={{ id }}
+                    search={{ a: envId }}
+                  />
+                }
+              >
+                <ArrowsLeftRightIcon
+                  className="size-3.5"
+                  data-icon="inline-start"
+                />
+                Compare
+              </Button>
+            ) : null}
             <ProtectedEnvironmentToggle
               id={environment.id}
               name={environment.name}
@@ -119,8 +147,8 @@ function EnvironmentDetailPage() {
               }}
             />
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <EnvironmentEnvEditor environmentId={envId} />
       <SharedEnvSecretsCard scope="environment" id={envId} />

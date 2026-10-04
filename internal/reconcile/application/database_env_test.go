@@ -123,6 +123,62 @@ func TestController_Reconcile_DatabaseEnv_Postgres_URL_Injected(t *testing.T) {
 	}
 }
 
+// TestController_Reconcile_DatabaseEnv_WithMeshZone_UsesMeshDNSName locks
+// in the cross-node database connectivity fix: with WithMeshZone
+// configured, resolveDatabaseField must resolve host to the database's
+// mesh DNS name (<dbName>.<zone>, the same name
+// internal/reconcile/mesh's refreshDNS already publishes for every
+// database Placement), not the container name that only resolves on the
+// database's own node.
+func TestController_Reconcile_DatabaseEnv_WithMeshZone_UsesMeshDNSName(t *testing.T) {
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"main": {Name: "main", Engine: store.EnginePostgres},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"DATABASE_URL": {Database: "main", Field: "url"},
+			"DB_HOST":      {Database: "main", Field: "host"},
+		},
+	}
+	rt := newFakeRuntime(0)
+	c := New("web", &fakeStore{svc: desired}, rt,
+		WithDatabaseAttachments(dbStore),
+		WithSecretResolver(newFakeSecretResolver(map[string]string{
+			"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
+		})),
+		WithMeshZone("levelrail"),
+	)
+
+	reconcileAndAssertEnv(t, c, rt, map[string]string{ //nolint:gosec // fake fixture, not a real credential
+		"DB_HOST":      "main.levelrail",
+		"DATABASE_URL": "postgres://main:s3cr3t@main.levelrail:5432/main",
+	})
+}
+
+// TestController_Reconcile_DatabaseEnv_WithoutMeshZone_UsesContainerName
+// is the regression-safety half of the mesh-zone test: single-node/
+// mesh-disabled installs (the default, no WithMeshZone) must keep
+// resolving to the container name exactly as before this option
+// existed, since that's the only name Docker's own embedded DNS
+// resolves when there's no mesh DNS server pointed to.
+func TestController_Reconcile_DatabaseEnv_WithoutMeshZone_UsesContainerName(t *testing.T) {
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"main": {Name: "main", Engine: store.EnginePostgres},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"DB_HOST": {Database: "main", Field: "host"},
+		},
+	}
+	c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{
+		"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
+	})
+
+	reconcileAndAssertEnv(t, c, rt, map[string]string{"DB_HOST": "db-main"})
+}
+
 func TestController_Reconcile_DatabaseEnv_PerFieldVariants(t *testing.T) {
 	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
 		"main": {Name: "main", Engine: store.EngineMySQL},
@@ -327,4 +383,133 @@ func TestController_Reconcile_DatabaseAttachment_Injected(t *testing.T) {
 
 	want := "postgres://main:s3cr3t@db-main:5432/main" //nolint:gosec // fake fixture, not a real credential
 	reconcileAndAssertEnv(t, c, rt, map[string]string{"DATABASE_URL": want})
+}
+
+// TestController_Reconcile_DatabaseEnv_ConnectsDatabaseToAppNetwork locks
+// in the same-host database connectivity fix: a service with an AppID
+// (so it gets a per-app network) and a DatabaseEnv reference must get
+// that database's container connected onto its own network, or the
+// resolved hostname (db-main) is unreachable from inside the container
+// regardless of what connectReferencedDatabases is for.
+func TestController_Reconcile_DatabaseEnv_ConnectsDatabaseToAppNetwork(t *testing.T) {
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"main": {Name: "main", Engine: store.EnginePostgres},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", AppID: "app-1", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"DATABASE_URL": {Database: "main", Field: "url"},
+		},
+	}
+	c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{
+		"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
+	})
+	rt.seed(database.ContainerName("main"), true)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	wantNetwork := NetworkName(defaultNetworkPrefix, "app-1")
+	wantConn := wantNetwork + ":" + database.ContainerName("main")
+	found := false
+	for _, conn := range rt.connections {
+		if conn == wantConn {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("connections = %v, want it to contain %q", rt.connections, wantConn)
+	}
+}
+
+// TestController_Reconcile_DatabaseEnv_WithMeshZone_DoesNotConnectNetwork
+// proves the same-host bridging in connectReferencedDatabases is skipped
+// once a mesh zone is configured: resolveDatabaseField already resolves
+// to the mesh DNS name in that case (TestController_Reconcile_
+// DatabaseEnv_WithMeshZone_UsesMeshDNSName above), a routed address this
+// same-host network-connect hack would be redundant with.
+func TestController_Reconcile_DatabaseEnv_WithMeshZone_DoesNotConnectNetwork(t *testing.T) {
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"main": {Name: "main", Engine: store.EnginePostgres},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", AppID: "app-1", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"DATABASE_URL": {Database: "main", Field: "url"},
+		},
+	}
+	rt := newFakeRuntime(0)
+	rt.seed(database.ContainerName("main"), true)
+	c := New("web", &fakeStore{svc: desired}, rt,
+		WithDatabaseAttachments(dbStore),
+		WithSecretResolver(newFakeSecretResolver(map[string]string{"main/" + database.PostgresPasswordEnvKey: "s3cr3t"})),
+		WithMeshZone("mesh.internal"),
+	)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if len(rt.connections) != 0 {
+		t.Errorf("connections = %v, want none (mesh zone configured)", rt.connections)
+	}
+}
+
+// TestController_Reconcile_DatabaseEnv_DatabaseContainerNotYetRunning_SkipsConnect
+// proves a database that has not been reconciled into a real container
+// yet does not fail the app's own reconcile: connectReferencedDatabases
+// must skip it quietly and let a later pass (once the database
+// controller catches up) pick it up, the same level-triggered retry
+// shape every other "depends on something else's state" check in this
+// controller already uses.
+func TestController_Reconcile_DatabaseEnv_DatabaseContainerNotYetRunning_SkipsConnect(t *testing.T) {
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"main": {Name: "main", Engine: store.EnginePostgres},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", AppID: "app-1", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"DATABASE_URL": {Database: "main", Field: "url"},
+		},
+	}
+	c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{
+		"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
+	})
+	// Deliberately not seeded: the database container does not exist yet.
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if conditionOf(t, result).Status != reconcile.ConditionTrue {
+		t.Errorf("condition status = %v, want True", conditionOf(t, result).Status)
+	}
+	if len(rt.connections) != 0 {
+		t.Errorf("connections = %v, want none (database container does not exist yet)", rt.connections)
+	}
+}
+
+// TestDatabaseHost locks in DatabaseHost as resolveDatabaseField's own
+// exported single source of truth for host selection: internal/api's
+// GET /api/v1/apps/{name}/connections calls this directly to preview a
+// connection's resolved host without duplicating the mesh-zone-vs-
+// container-name logic.
+func TestDatabaseHost(t *testing.T) {
+	tests := []struct {
+		name   string
+		dbName string
+		zone   string
+		want   string
+	}{
+		{"no mesh zone falls back to container name", "main", "", "db-main"},
+		{"mesh zone resolves to mesh DNS name", "main", "levelrail", "main.levelrail"},
+		{"database name lowercased in mesh DNS name", "Main", "levelrail", "main.levelrail"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := DatabaseHost(tt.dbName, tt.zone); got != tt.want {
+				t.Errorf("DatabaseHost(%q, %q) = %q, want %q", tt.dbName, tt.zone, got, tt.want)
+			}
+		})
+	}
 }

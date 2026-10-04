@@ -1,6 +1,11 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { DatabaseIcon, PackageIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  DatabaseIcon,
+  PackageIcon,
+  FolderIcon,
+  ShareNetworkIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   projectDetailQueryOptions,
   useProject,
@@ -29,6 +34,10 @@ import { ProjectEnvEditor } from '../../../components/ProjectEnvEditor'
 import { SharedEnvSecretsCard } from '../../../components/SharedEnvSecretsCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { buttonVariants } from '@/components/ui/button'
+import { EmptyState } from '../../../components/ui/empty-state'
+import { PageHeader } from '@/components/shell/PageHeader'
+import { cn } from '@/lib/utils'
 
 // Project detail route: the project's own name plus every app and
 // database currently filed under it. Deliberately not a new,
@@ -82,28 +91,40 @@ function ProjectDetailPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Breadcrumbs projectId={id} />
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-lg font-semibold text-foreground">
-            {project.name}
-          </h1>
-          <div className="flex items-center gap-2">
-            {isEmpty ? null : (
-              <PauseResumeProjectButton id={project.id} name={project.name} />
-            )}
-            <RestartProjectButton
-              id={project.id}
-              disabled={projectApps.length === 0}
-            />
-            <DeleteProjectDialog
-              id={project.id}
-              name={project.name}
-              onDeleted={() => {
-                void navigate({ to: '/projects' })
-              }}
-            />
-          </div>
-        </div>
+        <PageHeader
+          breadcrumb={<Breadcrumbs projectId={id} />}
+          title={project.name}
+          actions={
+            <>
+              {isEmpty ? null : (
+                <Link
+                  to="/projects/$id/topology"
+                  params={{ id: project.id }}
+                  className={cn(
+                    buttonVariants({ variant: 'outline', size: 'sm' }),
+                  )}
+                >
+                  <ShareNetworkIcon aria-hidden="true" />
+                  Topology
+                </Link>
+              )}
+              {isEmpty ? null : (
+                <PauseResumeProjectButton id={project.id} name={project.name} />
+              )}
+              <RestartProjectButton
+                id={project.id}
+                disabled={projectApps.length === 0}
+              />
+              <DeleteProjectDialog
+                id={project.id}
+                name={project.name}
+                onDeleted={() => {
+                  void navigate({ to: '/projects' })
+                }}
+              />
+            </>
+          }
+        />
         <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
           <span>Organization:</span>
           {project.org_id ? (
@@ -130,17 +151,11 @@ function ProjectDetailPage() {
       <SharedEnvSecretsCard scope="project" id={project.id} />
 
       {isEmpty ? (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">
-              Nothing filed under this project yet
-            </p>
-            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-              Assign a project when creating a new app or database, or move an
-              existing one here from its own Overview page.
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          icon={<FolderIcon className="size-5" />}
+          title="Nothing filed under this project yet"
+          description="Assign a project when creating a new app or database, or move an existing one here from its own Overview page."
+        />
       ) : (
         <>
           {projectApps.length > 0 ? (

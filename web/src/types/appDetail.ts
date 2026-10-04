@@ -147,13 +147,14 @@ export interface AppDetail {
   // (useSetAppStorage/useClearAppStorage), the same node_id/project_id
   // shape just above.
   storage_target_id?: string
-  // database_env carries `omitempty` on the Go side and is response-only
-  // (internal/api/apps.go's appResource own doc comment): every env var
-  // this app.yaml-deployed service resolves from a managed database
-  // (internal/spec's own { from: "<database>.<field>" } syntax), keyed by
-  // env var name. Read-only here on purpose: it comes from the deploy
-  // pipeline, not this endpoint. See database_attachment below for the
-  // settable, single-attachment counterpart.
+  // database_env carries `omitempty` on the Go side and is read-only on
+  // this endpoint (an ordinary PUT /api/v1/apps/{name} would silently
+  // drop it, the same appDatabaseResource/appVaultEnvRef boundary every
+  // other map-shaped field here has): app.yaml's own
+  // { from: "<database>.<field>" } syntax populates it, and so does
+  // POST/DELETE /api/v1/apps/{name}/connections[/{env_var}]
+  // (queries/appConnections.ts), the settable multi-connection
+  // counterpart to database_attachment's single-slot shape below.
   database_env?: Record<string, { database: string; field: string }>
   // vault_env carries `omitempty` on the Go side: every env var this app
   // resolves live from an external HashiCorp Vault instance
@@ -189,6 +190,11 @@ export interface AppDetail {
   // (useStopApp/useStartApp), the same node_id/project_id shape above.
   // No omitempty on the Go side (always present, never ambiguous).
   suspended: boolean
+  // is_trial carries `omitempty` on the Go side: true only for a service
+  // deployed through the template catalog's one-click "Deploy now" path
+  // (internal/api/service_templates.go's handleDeployServiceTemplateNow).
+  // Response-only and never flips after create, drives TrialAppBanner.
+  is_trial?: boolean
   // log_drain carries `omitempty` on the Go side and is response-only
   // (internal/api/apps.go's appResource own doc comment): forwards this
   // app's container logs to an external HTTP or syslog sink, additive

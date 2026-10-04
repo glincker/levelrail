@@ -888,6 +888,9 @@ func (f *fakeDrainAppStore) ListDesiredServices(context.Context) ([]store.Desire
 	return nil, nil
 }
 func (f *fakeDrainAppStore) DeleteDesiredService(context.Context, string) error { return nil }
+func (f *fakeDrainAppStore) ListAppStreamsForService(context.Context, string) ([]store.AppStream, error) {
+	return nil, nil
+}
 func (f *fakeDrainAppStore) UpdateServiceNode(_ context.Context, name, _ string) error {
 	f.updateCalls = append(f.updateCalls, name)
 	if err, ok := f.failOnUpdate[name]; ok {
@@ -917,10 +920,19 @@ func (f *fakeDrainAppStore) UpdateServiceDatabaseAttachment(context.Context, str
 func (f *fakeDrainAppStore) SetServiceAutoRollbackOnCrashloop(context.Context, string, bool) error {
 	return nil
 }
+func (f *fakeDrainAppStore) SetServiceAutoRollbackOnSLOBurn(context.Context, string, string) error {
+	return nil
+}
 func (f *fakeDrainAppStore) SetServiceExecEnabled(context.Context, string, bool) error {
 	return nil
 }
+func (f *fakeDrainAppStore) SetServiceBadgeEnabled(context.Context, string, bool) error {
+	return nil
+}
 func (f *fakeDrainAppStore) SetServiceVaultEnvVar(context.Context, string, string, *store.VaultEnvRef) error {
+	return nil
+}
+func (f *fakeDrainAppStore) SetServiceDatabaseEnvVar(context.Context, string, string, *store.DatabaseEnvRef) error {
 	return nil
 }
 func (f *fakeDrainAppStore) UpdateServiceSuspended(context.Context, string, bool) error {
@@ -936,6 +948,9 @@ func (f *fakeDrainAppStore) SetServicePreviewEnvOverride(context.Context, string
 	return nil
 }
 func (f *fakeDrainAppStore) UpdateServiceEgressPolicy(context.Context, string, *store.ServiceEgressPolicy) error {
+	return nil
+}
+func (f *fakeDrainAppStore) UpdateServiceVolumes(context.Context, string, []store.ServiceVolume) error {
 	return nil
 }
 
@@ -999,6 +1014,7 @@ func (f *fakeDrainNodeStore) SetNodeSchedulable(context.Context, string, bool) e
 func (f *fakeDrainNodeStore) UpdateNodeWorkloads(context.Context, string, bool, bool) error {
 	return nil
 }
+func (f *fakeDrainNodeStore) UpdateNodeRegion(context.Context, string, string) error { return nil }
 
 // TestHandleDrainNode_PartialFailure is the exact scenario worth
 // covering: moving service 2 of 3 off a node fails partway through.

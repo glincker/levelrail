@@ -39,6 +39,11 @@ export interface NodeResource {
   // PUT /api/v1/nodes/{id}/workloads, never patched individually.
   accepts_app_workloads: boolean
   accepts_build_workloads: boolean
+  // Region is an optional, free-text operator-facing location label
+  // (internal/store.Node.Region), e.g. "hetzner-fsn1" or "home-lab":
+  // display/grouping metadata for the network topology view, not a
+  // routing or access-control input. Set via PUT /api/v1/nodes/{id}/region.
+  region?: string
   created_at: string
   // AlertStatus is only present on GET /api/v1/nodes/{id} (the single-
   // node fetch), never the list response, and is absent when telemetry
@@ -133,4 +138,31 @@ export interface NodePatchStatusResource {
   total: number
   security: number
   checked_at?: string
+}
+
+// Response body for GET /api/v1/nodes/{id}/capacity-forecast
+// (internal/api/node_capacity_forecast.go's
+// nodeCapacityForecastResponse): a rough "days until full at the
+// current trend" projection, from a deterministic linear fit over
+// recent disk/memory history, never from an external model. `disk` and
+// `memory` are absent (not a zero-value object) whenever the fitted
+// trend is flat or improving, or there isn't enough history yet: UI
+// code must treat absence as "nothing to warn about," never render a
+// 0-day countdown for a missing field.
+export interface CapacityForecastMetric {
+  current_used_bytes: number
+  total_bytes: number
+  slope_bytes_per_day: number
+  days_until_full: number
+  projected_full_at: string
+  sample_count: number
+  coverage_window: string
+}
+
+export interface NodeCapacityForecastResource {
+  node_id: string
+  lookback_window: string
+  disk?: CapacityForecastMetric
+  memory?: CapacityForecastMetric
+  note: string
 }

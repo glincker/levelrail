@@ -2,7 +2,6 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ActionMenu } from './ActionMenu'
-import { EmptyState } from './EmptyState'
 import { InfoTip } from './InfoTip'
 import { MetricTile } from './MetricTile'
 import { Suggestion } from './Suggestion'
@@ -184,29 +183,6 @@ describe('SuggestionList', () => {
     )
     rerender(<SuggestionList items={[item('a')]} />)
     expect(screen.queryByText('Title b')).toBeNull()
-  })
-})
-
-describe('EmptyState', () => {
-  it('renders copy, action and illustration', () => {
-    render(
-      <EmptyState
-        icon={<span>i</span>}
-        illustration="rocket"
-        title="Nothing yet"
-        description="Deploy one."
-        action={<button>Deploy</button>}
-      />,
-    )
-    expect(screen.getByText('Nothing yet')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Deploy' })).toBeInTheDocument()
-    expect(
-      document.querySelector('[data-illustration="rocket"]'),
-    ).not.toBeNull()
-  })
-  it('falls back to the icon', () => {
-    render(<EmptyState icon={<span>ICON</span>} title="t" />)
-    expect(screen.getByText('ICON')).toBeInTheDocument()
   })
 })
 

@@ -84,6 +84,11 @@ type Apps struct {
 	HTTP *HTTPApp `json:"http,omitempty"`
 	TLS  *TLSApp  `json:"tls,omitempty"`
 	PKI  *PKIApp  `json:"pki,omitempty"`
+	// Layer4 carries every raw TCP stream (internal/reconcile/ingress's
+	// StreamRoute), applied in the exact same Config/caddy.Load call as
+	// HTTP/TLS/PKI above: see layer4.go's own package doc comment for why
+	// a stream can't be a second, independently-applied Caddy config.
+	Layer4 *Layer4App `json:"layer4,omitempty"`
 }
 
 // HTTPApp is Caddy's "http" app: one or more named servers, each with its

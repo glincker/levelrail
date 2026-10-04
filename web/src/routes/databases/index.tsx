@@ -12,6 +12,7 @@ import {
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { Button } from '../../components/ui/button'
 import { EmptyState } from '../../components/ui/empty-state'
+import { PageHeader } from '../../components/shell/PageHeader'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useSuspenseQuery against the same key, mirroring
@@ -58,25 +59,29 @@ function DatabaseListPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-baseline justify-between gap-3">
-        <h1 className="text-lg font-semibold text-foreground">Databases</h1>
-        <div className="flex items-baseline gap-3">
-          {databases.length > 0 ? (
-            <span className="text-sm text-muted-foreground">
-              {databases.length}{' '}
-              {databases.length === 1 ? 'database' : 'databases'}
-            </span>
-          ) : null}
-          <CreateResourceWizard
-            scope="databases"
-            trigger={
-              <Button size="sm">
-                <PlusIcon />
-                New database
-              </Button>
-            }
-          />
-        </div>
+      <div className="mb-4">
+        <PageHeader
+          title="Databases"
+          actions={
+            <>
+              {databases.length > 0 ? (
+                <span className="text-sm text-muted-foreground">
+                  {databases.length}{' '}
+                  {databases.length === 1 ? 'database' : 'databases'}
+                </span>
+              ) : null}
+              <CreateResourceWizard
+                scope="databases"
+                trigger={
+                  <Button size="sm">
+                    <PlusIcon />
+                    New database
+                  </Button>
+                }
+              />
+            </>
+          }
+        />
       </div>
       {databases.length === 0 ? (
         <EmptyState
@@ -87,7 +92,7 @@ function DatabaseListPage() {
             <CreateResourceWizard
               scope="databases"
               trigger={
-                <Button size="sm">
+                <Button size="sm" variant="glinui">
                   <PlusIcon />
                   New database
                 </Button>
@@ -142,8 +147,8 @@ function DatabaseListPage() {
 function DatabaseListPending() {
   return (
     <div>
-      <div className="mb-4 flex items-baseline justify-between">
-        <h1 className="text-lg font-semibold text-foreground">Databases</h1>
+      <div className="mb-4">
+        <PageHeader title="Databases" />
       </div>
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <ListHeader />

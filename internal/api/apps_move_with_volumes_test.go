@@ -58,7 +58,11 @@ func (f *fakeMoveVolumeRuntime) EnsureVolume(context.Context, string) error { re
 func (f *fakeMoveVolumeRuntime) EnsureNetwork(context.Context, string) (string, error) {
 	return "", nil
 }
-func (f *fakeMoveVolumeRuntime) RemoveNetwork(context.Context, string) error { return nil }
+func (f *fakeMoveVolumeRuntime) RemoveNetwork(context.Context, string) error          { return nil }
+func (f *fakeMoveVolumeRuntime) NetworkConnect(context.Context, string, string) error { return nil }
+func (f *fakeMoveVolumeRuntime) NetworkDisconnect(context.Context, string, string, bool) error {
+	return nil
+}
 func (f *fakeMoveVolumeRuntime) ListNetworksByPrefix(context.Context, string) ([]docker.NetworkInfo, error) {
 	return nil, nil
 }

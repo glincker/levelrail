@@ -1,0 +1,37 @@
+{
+  "page": {
+    "title": "Streams",
+    "description": "Forward a host port to one of this app's container ports, as raw TCP. UDP, TLS termination, and access lists are not supported yet.",
+    "pendingNote": "A stream added to a running app takes effect on its next restart, which happens automatically."
+  },
+  "table": {
+    "hostPort": "Host port",
+    "containerPort": "Container port",
+    "protocol": "Protocol",
+    "created": "Added",
+    "actions": "Actions"
+  },
+  "empty": {
+    "title": "No streams configured",
+    "description": "Add a stream to forward a host port to one of this app's container ports."
+  },
+  "add": {
+    "trigger": "Add stream",
+    "hostPortLabel": "Host port",
+    "hostPortPlaceholder": "15432",
+    "containerPortLabel": "Container port",
+    "containerPortPlaceholder": "5432",
+    "protocolLabel": "Protocol",
+    "submit": "Add stream",
+    "submitting": "Adding..."
+  },
+  "remove": {
+    "trigger": "Remove",
+    "removing": "Removing..."
+  },
+  "toast": {
+    "created": "Stream on host port {{hostPort}} created.",
+    "removed": "Stream removed.",
+    "errorTitle": "Could not save this stream."
+  }
+}

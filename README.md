@@ -10,9 +10,9 @@
 [![Discussions](https://img.shields.io/github/discussions/glincker/levelrail)](https://github.com/glincker/levelrail/discussions)
 [![Discord](https://img.shields.io/discord/829168897080557579?style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2)](https://discord.gg/Ar5pcaZB99)
 [![Status: pre-release](https://img.shields.io/badge/status-pre--release-orange.svg)](#status)
-[![Docs](https://img.shields.io/badge/docs-levelrail.glinr.com-f59e0b.svg)](https://levelrail.glinr.com)
+[![Docs](https://img.shields.io/badge/docs-levelrail.com-f59e0b.svg)](https://levelrail.com)
 
-**[Read the docs at levelrail.glinr.com](https://levelrail.glinr.com)**
+**[Read the docs at levelrail.com](https://levelrail.com)**
 
 Levelrail is a self-hosted, open-source PaaS: an alternative to Heroku,
 Vercel, and Railway for teams who'd rather run their own deployment
@@ -43,7 +43,7 @@ in [docs/installing.md](docs/installing.md).
 **Linux server, recommended:**
 
 ```
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
+curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
 Checks the host first, installs Docker if it's missing, sets up a
@@ -128,7 +128,7 @@ unverified. Cloud node provisioning now covers five providers (Hetzner,
 DigitalOcean, AWS, Azure, GCP), and apps can redeploy a branch's latest
 commit on a cron schedule. Beyond the core deploy path, an IAM-style
 policy engine, audit logging, feature flags, alerting across
-nine rule kinds and seventeen notification channels, a self-service
+multiple rule kinds and eighteen notification channels, a self-service
 team invite flow, and eight managed database engines with
 backup/restore/verification are also shipped
 (see [docs/roadmap.md](docs/roadmap.md) for the full, current list).
@@ -145,10 +145,12 @@ notice.
 Maturity is uneven. Per [docs/feature-status.md](docs/feature-status.md),
 only deploy approvals, database backups with point-in-time recovery, and
 GitHub previews are labeled stable (each has a live end-to-end test).
-Most other areas, including IAM, multi-node and WireGuard, the 17
+Most other areas, including IAM, multi-node and WireGuard, the 18
 notification channels, and the MCP server, are beta, and the in-app AI
 chat, GPU models, load balancer, platform as code, and Cloudflare tunnel
-are hidden behind flags. Multi-node's join flow is the one area with a
+are hidden behind flags, off by default via
+[docs/experimental-features.md](docs/experimental-features.md)'s
+`APP_EXPERIMENTAL` switch. Multi-node's join flow is the one area with a
 documented real-infrastructure run, across two real Docker daemons
 rather than a fresh VPS; see
 [docs/multi-node-quickstart.md](docs/multi-node-quickstart.md) for what
@@ -174,7 +176,9 @@ to detect state changes. Levelrail takes a different approach:
 - **Low idle footprint.** A single static Go binary for the control
   plane, a single static Go binary for the agent, no separate database
   server, no message queue, no extra containers just to run the
-  platform itself.
+  platform itself. Measured numbers and conditions (currently a macOS
+  dev build; no Linux release-build number yet) are in
+  [docs/performance.md](docs/performance.md).
 
 Levelrail is not a Kubernetes competitor. It targets teams running
 somewhere between 3 and 50 services across 1 to 10 machines who want a
@@ -240,13 +244,17 @@ matrix.
   taking it: Coolify checks only that the dump file is non-empty,
   Dokploy and CapRover do no check at all, and Dokku and Kamal have no
   built-in backup feature in the first place.
-- **AI-agent surface.** 144 registered MCP tools (`cmd/levelrail-mcp`),
-  with a 12-tool `agent-core` profile for small context budgets. Of the
-  other projects researched here, only Coolify ships an MCP server. The
-  MCP server is beta, see [docs/feature-status.md](docs/feature-status.md)
-  and [docs/mcp-tool-surface.md](docs/mcp-tool-surface.md).
+- **AI-agent surface.** MCP tools covering apps, deploys, databases,
+  nodes, domains, and more (`cmd/levelrail-mcp`), with a small
+  `agent-core` profile for constrained context budgets. Of the other
+  projects researched here, only Coolify ships an MCP server. The MCP
+  server is beta, see [docs/feature-status.md](docs/feature-status.md);
+  current tool counts by toolset are generated and kept current at
+  [docs/mcp-tool-surface.md](docs/mcp-tool-surface.md), rather than a
+  number here that can drift.
 - **Notification channels.** 17 kinds against Dokploy's 12, the next
-  closest.
+  closest, unit-tested against mock endpoints; none has a recorded run
+  against a real vendor yet.
 - **Fine-grained RBAC.** Resource-scoped IAM policies (`app:name`,
   `database:name`, or `*`) ship in the free, Apache 2.0 core. Dokploy's
   comparable granularity sits behind a paid enterprise license.
@@ -311,10 +319,11 @@ commit conventions, and how to run tests and the linter locally.
 
 ## Docs and community
 
-- [levelrail.glinr.com](https://levelrail.glinr.com) -- the hosted docs site: getting started, architecture, app spec reference, roadmap, full index
+- [levelrail.com](https://levelrail.com) -- the hosted docs site: getting started, architecture, app spec reference, roadmap, full index
 - [docs/](docs/README.md) -- the same content as plain Markdown, for browsing directly on GitHub
 - [GitHub Discussions](https://github.com/glincker/levelrail/discussions) -- questions, ideas, show and tell
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99) -- live chat with maintainers and other users, with a dedicated `#levelrail` forum channel for questions and support
+- [support@levelrail.com](mailto:support@levelrail.com) -- direct email support
 
 <a href="https://discord.gg/Ar5pcaZB99"><img src="https://discord.com/api/guilds/829168897080557579/widget.png?style=banner2" alt="Join the GLINR Discord" /></a>
 

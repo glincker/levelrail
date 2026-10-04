@@ -435,10 +435,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MARIADB_USER":          c.mariadbCreds.Username,
 			"MARIADB_PASSWORD":      c.mariadbCreds.Password,
 		}
-		// MariaDB is a MySQL-protocol-compatible fork: same data
-		// directory and port as the mysql image, reused directly rather
-		// than duplicating identical constants under a new name.
-		return c.reconcileEngine(ctx, desired, env, nil, mysqlDataPath, mysqlContainerPort, nil)
+		// Same data path/port/slow-query flags as mysql, MariaDB is a compatible fork.
+		command := mysqlCommand(c.effectiveSlowQueryThresholdMs())
+		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, nil)
 
 	case store.EngineKeyDB:
 		// KeyDB is a Redis-protocol-compatible drop-in fork: same
@@ -946,7 +945,7 @@ func walArchiveVolumeName(dbName string) string {
 
 func ready(reason string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionTrue, Reason: reason,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue, Reason: reason,
 	}}}
 }
 
@@ -956,13 +955,13 @@ func notReady(reason string, err error) reconcile.Result {
 		msg = err.Error()
 	}
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
 	}}}
 }
 
 func unknownResult(reason string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionUnknown, Reason: reason,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: reason,
 	}}}
 }
 
@@ -971,7 +970,7 @@ func unknownResult(reason string) reconcile.Result {
 // than running unauthenticated. See the package doc comment.
 func credentialsBlockedResult() reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type:   "Ready",
+		Type:   reconcile.ConditionTypeReady,
 		Status: reconcile.ConditionFalse,
 		Reason: "CredentialsNotConfigured",
 		Message: "no credentials available for this database; either the control plane has no secrets master key configured, " +

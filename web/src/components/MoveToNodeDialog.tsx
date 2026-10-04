@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -174,7 +175,11 @@ export function MoveToNodeDialog({
 
   const resolvedTarget = targetNodeId === LOCAL_NODE_VALUE ? '' : targetNodeId
   const isNoop = (currentNodeId ?? '') === resolvedTarget
-  const hasNoOtherNodes = otherNodes.length === 0
+  // "This control plane (local)" is always a real option whenever the
+  // resource isn't already there, even with zero other registered
+  // nodes: nodes list never includes the local node itself, so
+  // otherNodes.length alone undercounts by one in exactly that case.
+  const hasNoOtherNodes = otherNodes.length === 0 && !currentNodeId
   // A move-with-volumes attempt is "in flight" from the moment the
   // trigger request is sent until GetAppVolumeMove reports it's no
   // longer running: the synchronous no-volumes/same-node shortcut on the
@@ -325,33 +330,26 @@ export function MoveToNodeDialog({
         ) : null}
 
         {mutation.isError ? (
-          <p className="flex items-start gap-1.5 text-sm text-destructive">
-            <WarningIcon
-              className="mt-0.5 size-4 shrink-0"
-              aria-hidden="true"
-            />
-            {mutation.error.message}
-          </p>
+          <Alert variant="destructive">
+            <WarningIcon />
+            <AlertDescription>{mutation.error.message}</AlertDescription>
+          </Alert>
         ) : null}
 
         {moveWithVolumes.isError ? (
-          <p className="flex items-start gap-1.5 text-sm text-destructive">
-            <WarningIcon
-              className="mt-0.5 size-4 shrink-0"
-              aria-hidden="true"
-            />
-            {moveWithVolumes.error.message}
-          </p>
+          <Alert variant="destructive">
+            <WarningIcon />
+            <AlertDescription>{moveWithVolumes.error.message}</AlertDescription>
+          </Alert>
         ) : null}
 
         {failedMove ? (
-          <p className="flex items-start gap-1.5 text-sm text-destructive">
-            <WarningIcon
-              className="mt-0.5 size-4 shrink-0"
-              aria-hidden="true"
-            />
-            {failedMove.error || 'The move failed partway through.'}
-          </p>
+          <Alert variant="destructive">
+            <WarningIcon />
+            <AlertDescription>
+              {failedMove.error || 'The move failed partway through.'}
+            </AlertDescription>
+          </Alert>
         ) : null}
 
         <DialogFooter>

@@ -84,6 +84,13 @@ export interface GitSourceResource {
   updated_at: string
 }
 
+// Mirrors gitSourceSummaryResource (internal/api/git_sources.go).
+export interface GitSourceSummaryResource {
+  service_name: string
+  repo_url: string
+  branch: string
+}
+
 export interface GitDeploySettings {
   deploy_paths: string[]
   deploy_paths_ignore: string[]

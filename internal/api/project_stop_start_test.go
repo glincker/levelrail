@@ -193,6 +193,9 @@ func (f *fakeProjectLifecycleAppStore) ListDesiredServices(context.Context) ([]s
 func (f *fakeProjectLifecycleAppStore) DeleteDesiredService(context.Context, string) error {
 	return nil
 }
+func (f *fakeProjectLifecycleAppStore) ListAppStreamsForService(context.Context, string) ([]store.AppStream, error) {
+	return nil, nil
+}
 func (f *fakeProjectLifecycleAppStore) UpdateServiceNode(context.Context, string, string) error {
 	return nil
 }
@@ -231,16 +234,28 @@ func (f *fakeProjectLifecycleAppStore) SetServicePreviewEnvOverride(context.Cont
 func (f *fakeProjectLifecycleAppStore) UpdateServiceEgressPolicy(context.Context, string, *store.ServiceEgressPolicy) error {
 	return nil
 }
+func (f *fakeProjectLifecycleAppStore) UpdateServiceVolumes(context.Context, string, []store.ServiceVolume) error {
+	return nil
+}
 func (f *fakeProjectLifecycleAppStore) UpdateServiceDatabaseAttachment(context.Context, string, *store.DatabaseAttachment) error {
 	return nil
 }
 func (f *fakeProjectLifecycleAppStore) SetServiceVaultEnvVar(context.Context, string, string, *store.VaultEnvRef) error {
 	return nil
 }
+func (f *fakeProjectLifecycleAppStore) SetServiceDatabaseEnvVar(context.Context, string, string, *store.DatabaseEnvRef) error {
+	return nil
+}
 func (f *fakeProjectLifecycleAppStore) SetServiceAutoRollbackOnCrashloop(context.Context, string, bool) error {
 	return nil
 }
+func (f *fakeProjectLifecycleAppStore) SetServiceAutoRollbackOnSLOBurn(context.Context, string, string) error {
+	return nil
+}
 func (f *fakeProjectLifecycleAppStore) SetServiceExecEnabled(context.Context, string, bool) error {
+	return nil
+}
+func (f *fakeProjectLifecycleAppStore) SetServiceBadgeEnabled(context.Context, string, bool) error {
 	return nil
 }
 

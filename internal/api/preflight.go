@@ -66,6 +66,7 @@ func (rt *Router) handlePreflightNew(w http.ResponseWriter, r *http.Request) {
 		Name: body.Name, NodeID: body.NodeID, Image: body.Image, Port: body.Port, HostPort: body.HostPort,
 		Domains: body.Domains, MemoryBytes: body.MemoryBytes, RequiredEnv: body.RequiredEnv, EnvKeys: body.EnvKeys,
 		BindMounts: body.BindMounts, VolumePaths: body.VolumePaths, GPU: body.GPU, GitURL: body.GitURL, GitBranch: body.GitBranch,
+		IsLocalNode: rt.isLocalNode(body.NodeID),
 	}
 	writeJSON(w, http.StatusOK, preflight.Run(r.Context(), req, rt.preflightEnv(req, false)))
 }
@@ -103,6 +104,7 @@ func (rt *Router) preflightRequestFor(ctx context.Context, svc *store.DesiredSer
 	req := preflight.Request{
 		Name: svc.Name, NodeID: svc.NodeID, Image: svc.Image, Port: svc.Port,
 		Domains: svc.Domains, EnvKeys: configuredEnvKeys(svc),
+		IsLocalNode: rt.isLocalNode(svc.NodeID),
 	}
 	if svc.HostPort != nil {
 		req.HostPort = *svc.HostPort

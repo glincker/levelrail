@@ -91,7 +91,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 
 	t.Run("no nodes registered: local", func(t *testing.T) {
 		rt, _ := newTestRouter(t)
-		got, err := rt.autoPlaceNode(ctx)
+		got, err := rt.autoPlaceNode(ctx, false)
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -104,7 +104,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 		rt, db := newTestRouter(t)
 		rt.autoPlacementEnabled = false
 		seedOnlineNode(t, db, "node_a", "alpha", true)
-		got, err := rt.autoPlaceNode(ctx)
+		got, err := rt.autoPlaceNode(ctx, false)
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -116,7 +116,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 	t.Run("one cordoned node, none eligible: local", func(t *testing.T) {
 		rt, db := newTestRouter(t)
 		seedOnlineNode(t, db, "node_a", "alpha", false)
-		got, err := rt.autoPlaceNode(ctx)
+		got, err := rt.autoPlaceNode(ctx, false)
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -128,7 +128,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 	t.Run("pending (not yet online) node excluded: local", func(t *testing.T) {
 		rt, db := newTestRouter(t)
 		seedNode(t, db, "node_a", "alpha") // seedNode defaults to NodeStatusPending
-		got, err := rt.autoPlaceNode(ctx)
+		got, err := rt.autoPlaceNode(ctx, false)
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -141,7 +141,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 		rt, db := newTestRouter(t)
 		seedOnlineNode(t, db, "node_a", "alpha", true)
 		seedOnlineNode(t, db, "node_b", "bravo", false)
-		got, err := rt.autoPlaceNode(ctx)
+		got, err := rt.autoPlaceNode(ctx, false)
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -162,7 +162,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 			t.Fatalf("UpdateServiceNode: %v", err)
 		}
 
-		got, err := rt.autoPlaceNode(ctx)
+		got, err := rt.autoPlaceNode(ctx, false)
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -183,12 +183,101 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 			t.Fatalf("UpdateDatabaseNode: %v", err)
 		}
 
-		got, err := rt.autoPlaceNode(ctx)
+		got, err := rt.autoPlaceNode(ctx, false)
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
 		if got != "node_a" {
 			t.Errorf("autoPlaceNode() = %q, want %q (node_b already has a database)", got, "node_a")
+		}
+	})
+
+	// preferLocalIngress: a domain-bearing app must not spread onto a
+	// worker node, since ingress (Caddy) only ever routes locally
+	// (CrossNodeIngress, internal/reconcile/ingress/cross_node.go).
+	t.Run("preferLocalIngress: local node wins over a less-loaded worker", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.localNodeID = "node_local"
+		seedOnlineNode(t, db, "node_local", "control-plane", true)
+		seedOnlineNode(t, db, "node_worker", "worker", true)
+
+		// Load the local node to prove preference beats least-loaded.
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "svc1", Image: "img:1", Port: 80}); err != nil {
+			t.Fatalf("SaveDesiredService: %v", err)
+		}
+		if err := db.UpdateServiceNode(ctx, "svc1", "node_local"); err != nil {
+			t.Fatalf("UpdateServiceNode: %v", err)
+		}
+
+		got, err := rt.autoPlaceNode(ctx, true)
+		if err != nil {
+			t.Fatalf("autoPlaceNode() error = %v", err)
+		}
+		if got != "node_local" {
+			t.Errorf("autoPlaceNode(preferLocalIngress) = %q, want %q (local node, despite more load)", got, "node_local")
+		}
+	})
+
+	t.Run("preferLocalIngress false: ordinary spread still applies", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.localNodeID = "node_local"
+		seedOnlineNode(t, db, "node_local", "control-plane", true)
+		seedOnlineNode(t, db, "node_worker", "worker", true)
+
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "svc1", Image: "img:1", Port: 80}); err != nil {
+			t.Fatalf("SaveDesiredService: %v", err)
+		}
+		if err := db.UpdateServiceNode(ctx, "svc1", "node_local"); err != nil {
+			t.Fatalf("UpdateServiceNode: %v", err)
+		}
+
+		got, err := rt.autoPlaceNode(ctx, false)
+		if err != nil {
+			t.Fatalf("autoPlaceNode() error = %v", err)
+		}
+		if got != "node_worker" {
+			t.Errorf("autoPlaceNode(no preference) = %q, want %q (fewer resources placed)", got, "node_worker")
+		}
+	})
+
+	t.Run("preferLocalIngress but local node not registered: falls back to spread", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.localNodeID = "node_local" // mesh-enabled, but this node row doesn't exist
+		seedOnlineNode(t, db, "node_worker", "worker", true)
+
+		got, err := rt.autoPlaceNode(ctx, true)
+		if err != nil {
+			t.Fatalf("autoPlaceNode() error = %v", err)
+		}
+		if got != "node_worker" {
+			t.Errorf("autoPlaceNode(preferLocalIngress) = %q, want %q (only eligible candidate)", got, "node_worker")
+		}
+	})
+
+	t.Run("preferLocalIngress but local node cordoned: falls back to spread", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.localNodeID = "node_local"
+		seedOnlineNode(t, db, "node_local", "control-plane", false)
+		seedOnlineNode(t, db, "node_worker", "worker", true)
+
+		got, err := rt.autoPlaceNode(ctx, true)
+		if err != nil {
+			t.Fatalf("autoPlaceNode() error = %v", err)
+		}
+		if got != "node_worker" {
+			t.Errorf("autoPlaceNode(preferLocalIngress) = %q, want %q (local node cordoned, not a candidate)", got, "node_worker")
+		}
+	})
+
+	t.Run("preferLocalIngress in single-node/non-mesh setup: no-op", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		seedOnlineNode(t, db, "node_a", "alpha", true)
+		got, err := rt.autoPlaceNode(ctx, true)
+		if err != nil {
+			t.Fatalf("autoPlaceNode() error = %v", err)
+		}
+		if got != "node_a" {
+			t.Errorf("autoPlaceNode(preferLocalIngress) = %q, want %q (no local node ID set)", got, "node_a")
 		}
 	})
 }

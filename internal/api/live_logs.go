@@ -46,7 +46,7 @@ const liveLogBackfillMaxLines = 200
 // streamResourceLogs for the shared implementation and the
 // backfill-to-live handoff this depends on.
 func (rt *Router) handleLiveLogStream(w http.ResponseWriter, r *http.Request) {
-	rt.streamResourceLogs(w, r, rt.lookupAppResource, "live log stream", "app")
+	rt.streamResourceLogs(w, r, rt.lookupAppResource, rt.currentAppContainerIDs, "live log stream", "app")
 }
 
 // streamResourceLogs is the shared body behind handleLiveLogStream and
@@ -82,7 +82,7 @@ func (rt *Router) handleLiveLogStream(w http.ResponseWriter, r *http.Request) {
 // microsecond-scale race in practice, not a realistic operational
 // concern, and is called out here rather than either quietly ignored or
 // overclaimed as fully solved.
-func (rt *Router) streamResourceLogs(w http.ResponseWriter, r *http.Request, lookup resourceLookup, opName, noun string) {
+func (rt *Router) streamResourceLogs(w http.ResponseWriter, r *http.Request, lookup resourceLookup, currentLookup currentContainerLookup, opName, noun string) {
 	if rt.telemetry == nil || rt.logBroadcaster == nil {
 		writeError(w, http.StatusNotImplemented, "live log streaming is not configured on this control plane")
 		return
@@ -107,6 +107,14 @@ func (rt *Router) streamResourceLogs(w http.ResponseWriter, r *http.Request, loo
 	live, unsubscribe := rt.logBroadcaster.Subscribe(resourceID)
 	defer unsubscribe()
 	subscribeTime := time.Now()
+
+	// Resolved once here, not per Subscribe: "current" is this resource's
+	// property (its desired state and runtime placement), not this
+	// connection's, but each connection gets its own filter instance
+	// since admit's re-resolve caching (log_live_container.go) must not
+	// leak across viewers who might open the stream at different moments
+	// around a deploy cutover.
+	containerFilter := newCurrentContainerFilter(r.Context(), currentLookup, name)
 
 	entries, err := rt.telemetry.QueryLogs(r.Context(), resourceID, subscribeTime.Add(-liveLogBackfillWindow), subscribeTime, "")
 	if err != nil {
@@ -139,6 +147,15 @@ func (rt *Router) streamResourceLogs(w http.ResponseWriter, r *http.Request, loo
 	flusher.Flush()
 
 	for _, e := range trimBackfill(entries, subscribeTime, liveLogBackfillMaxLines) {
+		// Backfill entries are processed through the same filter, in
+		// timestamp order, as the live loop below: see
+		// currentContainerFilter's own doc comment. No transition marker
+		// here, only in the live loop, since a marker belongs at the
+		// moment a viewer is watching the cutover happen, not scattered
+		// through a recent-context replay.
+		if show, _ := containerFilter.admit(r.Context(), e.ContainerID); !show {
+			continue
+		}
 		writeSSEEvent(w, sseLogEvent{Line: e.Message, Stream: e.Stream})
 	}
 	flusher.Flush()
@@ -162,6 +179,14 @@ func (rt *Router) streamResourceLogs(w http.ResponseWriter, r *http.Request, loo
 				// channel lifecycle is exactly the kind of bug that's
 				// cheap to guard against and expensive to debug blind.
 				return
+			}
+			show, transitioned := containerFilter.admit(r.Context(), entry.ContainerID)
+			if transitioned {
+				writeSSEEvent(w, sseLogEvent{Line: previousContainerTransitionLine, Stream: "system"})
+				flusher.Flush()
+			}
+			if !show {
+				continue
 			}
 			writeSSEEvent(w, sseLogEvent{Line: entry.Message, Stream: entry.Stream})
 			flusher.Flush()

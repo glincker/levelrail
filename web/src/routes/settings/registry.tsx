@@ -4,7 +4,11 @@ import {
   useRegistrySettings,
 } from '../../queries/registry'
 import { RegistrySettingsCard } from '../../components/RegistrySettingsCard'
-import { PageSpinner } from '../../components/ui/page-spinner'
+import { PageHeader } from '../../components/shell/PageHeader'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '../../components/settings/SettingsSkeletons'
 
 // Instance-level, not scoped to one app: lives under routes/settings/
 // next to cloudflare-tunnel.tsx, the same reasoning that file's own
@@ -18,23 +22,27 @@ export const Route = createFileRoute('/settings/registry')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(registrySettingsQueryOptions()),
   component: RegistrySettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: RegistrySettingsSkeleton,
 })
+
+function RegistrySettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton />
+      <SettingsCardSkeleton rows={1} />
+    </div>
+  )
+}
 
 function RegistrySettingsPage() {
   const { data: settings } = useRegistrySettings()
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">
-          Container registry
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Levelrail&apos;s own built-in image registry for multi-node build
-          caching and image distribution.
-        </p>
-      </div>
+      <PageHeader
+        title="Container registry"
+        description="Levelrail's own built-in image registry for multi-node build caching and image distribution."
+      />
 
       <RegistrySettingsCard settings={settings} />
     </div>

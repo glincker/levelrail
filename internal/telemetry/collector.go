@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -20,19 +21,21 @@ import (
 type Target struct {
 	ResourceID  string
 	ContainerID string
+	// NodeID is resolveNodeTransport's own "" means local convention
+	// (cmd/levelrail/main.go): which node ContainerID actually runs on,
+	// so a StatsSource covering more than one node can route each poll
+	// correctly without Target carrying a whole Transport.
+	NodeID string
 }
 
-// StatsSource is the narrow Docker surface a Collector needs: nothing
-// about container discovery, only "give me a snapshot for this ID."
-// *docker.Client satisfies this structurally. Deliberately not part of
-// docker.Runtime (the interface every reconcile controller depends on
-// and every existing fake implements): adding a method there would
-// require updating every one of those fakes for a capability only this
-// package needs, so this stays its own minimal, consumer-defined
-// interface instead, the same shape internal/reconcile/application's
-// ServiceStore already establishes for the same reason.
+// StatsSource is the narrow Docker surface a Collector needs: a
+// snapshot for one container on one node. Deliberately not part of
+// docker.Runtime (would ripple into every existing fake, the same
+// reasoning internal/reconcile/application's ServiceStore already
+// gives); cmd/levelrail/main.go's multiNodeStatsSource routes local vs.
+// remote nodes behind this one interface.
 type StatsSource interface {
-	Stats(ctx context.Context, containerID string) (docker.ContainerStats, error)
+	Stats(ctx context.Context, nodeID, containerID string) (docker.ContainerStats, error)
 }
 
 // Collector polls a caller-supplied set of targets on an interval and
@@ -42,6 +45,25 @@ type Collector struct {
 	store    *DB
 	interval time.Duration
 	logger   *slog.Logger
+
+	// prevCPU replaces a one-shot stats response's own PreCPUStats (see
+	// docker.ContainerStats.CPUPercent): a container's first sample
+	// reads 0 and self-corrects next tick.
+	cpuMu   sync.Mutex
+	prevCPU map[string]docker.CPUStatsRaw
+}
+
+// LocalStatsSource adapts a docker.StatsInspector (this process's own
+// Docker client) into a StatsSource that ignores nodeID, for a
+// single-node deployment with no remote agents to route to.
+type LocalStatsSource struct {
+	docker.StatsInspector
+}
+
+// Stats implements StatsSource by ignoring nodeID and calling the
+// wrapped local inspector directly.
+func (s LocalStatsSource) Stats(ctx context.Context, _, containerID string) (docker.ContainerStats, error) {
+	return s.StatsInspector.Stats(ctx, containerID)
 }
 
 // NewCollector builds a Collector. logger defaults to slog.Default() if
@@ -50,7 +72,13 @@ func NewCollector(source StatsSource, store *DB, interval time.Duration, logger 
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Collector{source: source, store: store, interval: interval, logger: logger}
+	return &Collector{
+		source:   source,
+		store:    store,
+		interval: interval,
+		logger:   logger,
+		prevCPU:  make(map[string]docker.CPUStatsRaw),
+	}
 }
 
 // CollectOnce polls every target once and writes whatever succeeded.
@@ -68,11 +96,12 @@ func (c *Collector) CollectOnce(ctx context.Context, targets []Target) error {
 	var errs []error
 
 	for _, target := range targets {
-		stats, err := c.source.Stats(ctx, target.ContainerID)
+		stats, err := c.source.Stats(ctx, target.NodeID, target.ContainerID)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("collect %s: %w", target.ResourceID, err))
 			continue
 		}
+		stats.CPUPercent = c.cpuPercent(cpuCacheKey(target.NodeID, target.ContainerID), stats.CPURaw)
 		samples = append(samples, sampleValues(target.ResourceID, now, stats)...)
 	}
 
@@ -80,7 +109,43 @@ func (c *Collector) CollectOnce(ctx context.Context, targets []Target) error {
 		errs = append(errs, fmt.Errorf("write samples: %w", err))
 	}
 
+	c.pruneCPUCache(targets)
 	return errors.Join(errs...)
+}
+
+func (c *Collector) cpuPercent(cacheKey string, raw docker.CPUStatsRaw) float64 {
+	c.cpuMu.Lock()
+	defer c.cpuMu.Unlock()
+	prev, ok := c.prevCPU[cacheKey]
+	c.prevCPU[cacheKey] = raw
+	if !ok {
+		return 0
+	}
+	return docker.CPUPercent(raw, prev)
+}
+
+// cpuCacheKey scopes the previous-sample cache by node as well as
+// container ID: two different nodes' Docker daemons can in principle
+// hand out the same container ID, and NodeID is free to include in the
+// key since it's already carried on every Target.
+func cpuCacheKey(nodeID, containerID string) string {
+	return nodeID + "\x00" + containerID
+}
+
+// pruneCPUCache keeps a long-running control plane's cache from growing
+// across every redeploy and removal it has ever seen.
+func (c *Collector) pruneCPUCache(targets []Target) {
+	live := make(map[string]struct{}, len(targets))
+	for _, t := range targets {
+		live[cpuCacheKey(t.NodeID, t.ContainerID)] = struct{}{}
+	}
+	c.cpuMu.Lock()
+	defer c.cpuMu.Unlock()
+	for key := range c.prevCPU {
+		if _, ok := live[key]; !ok {
+			delete(c.prevCPU, key)
+		}
+	}
 }
 
 // Run calls CollectOnce every interval until ctx is done. targetsFunc is

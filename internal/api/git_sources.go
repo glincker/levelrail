@@ -30,6 +30,11 @@ type GitSourceStore interface {
 	SaveGitSource(ctx context.Context, g store.GitSource) error
 	GetGitSource(ctx context.Context, serviceName string) (*store.GitSource, error)
 	DeleteGitSource(ctx context.Context, serviceName string) error
+	// ListGitSources backs GET /api/v1/apps/git-sources: every connected
+	// source's service name, repo URL and branch, filtered to the
+	// caller's visible apps by handleListGitSources itself (callerAppVisibility),
+	// the same shape handleListApps already uses for its own bulk list.
+	ListGitSources(ctx context.Context) ([]store.GitSourceSummary, error)
 	// SetGitSourcePreviewEnabled backs PUT
 	// /api/v1/apps/{name}/preview-settings (preview_environments_handlers.go):
 	// the opt-in toggle for preview environments per pull request.
@@ -74,9 +79,10 @@ const (
 
 // gitSourceResource is the wire shape for a connected git source.
 // WebhookSecret is the one field that's ever populated on the way out: a
-// generated-at-connect-time value, present only in handleSetGitSource's
-// own create-time response (never on GET, never on an update PUT), the
-// same "shown once, at mint time" shape handleCreateNodeJoinToken's own
+// generated-at-connect-time (or generated-at-rotation-time) value,
+// present only in handleSetGitSource's own create-time response and
+// handleRotateGitSourceWebhookSecret's response (never on GET, never on
+// an update PUT), the same "shown once, at mint time" shape handleCreateNodeJoinToken's own
 // plaintext token response already establishes for a different
 // generated-once credential in this codebase. Unlike a node join token,
 // this value is also kept (envelope-encrypted) for later use, since this
@@ -426,6 +432,39 @@ func randomWebhookSecret() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
+// gitSourceSummaryResource is GET /api/v1/apps/git-sources' per-row shape:
+// just enough for a repo picker to flag "this repo is already deployed as
+// app X", never the full connect-flow detail handleGetGitSource returns.
+type gitSourceSummaryResource struct {
+	ServiceName string `json:"service_name"`
+	RepoURL     string `json:"repo_url"`
+	Branch      string `json:"branch"`
+}
+
+// handleListGitSources handles GET /api/v1/apps/git-sources: not scoped
+// to one app, so it filters with callerAppVisibility the same way
+// handleListApps/handleAppsSummary do, rather than requireAbilityForResource.
+func (rt *Router) handleListGitSources(w http.ResponseWriter, r *http.Request) {
+	canRead, filtered, err := rt.callerAppVisibility(r)
+	if err != nil {
+		rt.internalError(w, "api: list git sources: resolve caller failed", err)
+		return
+	}
+	sources, err := rt.gitSources.ListGitSources(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: list git sources failed", err)
+		return
+	}
+	out := make([]gitSourceSummaryResource, 0, len(sources))
+	for _, s := range sources {
+		if filtered && !canRead(s.ServiceName) {
+			continue
+		}
+		out = append(out, gitSourceSummaryResource{ServiceName: s.ServiceName, RepoURL: s.RepoURL, Branch: s.Branch})
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
 // handleGetGitSource handles GET /api/v1/apps/{name}/git-source.
 func (rt *Router) handleGetGitSource(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
@@ -545,7 +584,7 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 	if result.Creating {
 		status = http.StatusCreated
 	}
-	rt.logger.Info("api: git source connected", slog.String("name", name), slog.String("repo_url", req.RepoURL), slog.Bool("creating", result.Creating))
+	rt.logger.Info("api: git source connected", slog.String("name", name), slog.String("repo_url", redactURLCredentials(req.RepoURL)), slog.Bool("creating", result.Creating))
 	writeJSON(w, status, result.Resource)
 }
 
@@ -639,6 +678,59 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 		resource.WebhookSecret = webhookSecretPlain
 	}
 	return connectGitSourceResult{Resource: resource, Creating: creating}, nil
+}
+
+// handleRotateGitSourceWebhookSecret handles POST
+// /api/v1/apps/{name}/git-source/rotate-webhook-secret: mints a fresh
+// secret without touching repo_url/branch/build config, the narrow
+// alternative to DELETE-then-PUT. WebhookSecret is populated once, same
+// as handleSetGitSource's create path; the old secret stops verifying
+// the instant this returns.
+func (rt *Router) handleRotateGitSourceWebhookSecret(w http.ResponseWriter, r *http.Request) {
+	if rt.gitSourceSecrets == nil {
+		writeError(w, http.StatusNotImplemented, "git sources are not configured on this control plane (no master key set)")
+		return
+	}
+
+	name := r.PathValue("name")
+
+	gs, err := rt.gitSources.GetGitSource(r.Context(), name)
+	if errors.Is(err, store.ErrGitSourceNotFound) {
+		writeError(w, http.StatusNotFound, "no git source connected for this app")
+		return
+	}
+	if err != nil {
+		rt.logger.Error("api: rotate git source webhook secret: load git source failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	newSecret, err := randomWebhookSecret()
+	if err != nil {
+		rt.logger.Error("api: rotate git source webhook secret: generate secret failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	key := store.GitSourceSecretsKey(name)
+	if err := rt.gitSourceSecrets.SetValue(r.Context(), key, gitSourceSecretKey, newSecret); err != nil {
+		rt.logger.Error("api: rotate git source webhook secret: save secret failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	hasToken, err := rt.gitSourceSecrets.Exists(r.Context(), key, gitSourceTokenKey)
+	if err != nil {
+		rt.logger.Error("api: rotate git source webhook secret: check deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	resource := toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(r.Context(), name))
+	resource.WebhookSecret = newSecret
+
+	rt.logger.Info("api: git source webhook secret rotated", slog.String("name", name))
+	writeJSON(w, http.StatusOK, resource)
 }
 
 // handleDeleteGitSource handles DELETE /api/v1/apps/{name}/git-source.

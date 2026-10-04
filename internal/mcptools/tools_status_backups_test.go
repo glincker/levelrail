@@ -29,6 +29,8 @@ func TestGetAttention(t *testing.T) {
 			_, _ = w.Write([]byte(`{"data_dir_total_bytes":100,"data_dir_free_bytes":3}`))
 		case "/api/v1/apps/api/diagnose", "/api/v1/apps/web/diagnose":
 			_, _ = w.Write([]byte(`{"confidence":"none","fixable":false}`))
+		case "/api/v1/updates":
+			_, _ = w.Write([]byte(`{"current_version":"v1.0.0"}`))
 		default:
 			t.Errorf("unexpected path %q", r.URL.Path)
 		}

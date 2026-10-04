@@ -1,5 +1,6 @@
 ---
 layout: home
+title: Self-hosted deployment platform
 description: Push to a git repo, get a running app with TLS, logs, metrics, and rollback. The agent talks to Docker's own Engine API directly, no SSH, no CLI shelling.
 
 hero:
@@ -19,31 +20,156 @@ hero:
 
 features:
   - title: Zero-downtime deploys
-    details: Rolling, recreate, or blue-green strategy, gated on real readiness and liveness probes, with rollback to pinned prior images always available.
+    details: 'Rolling, recreate, or blue-green strategy, gated on real readiness and liveness probes, with rollback to pinned prior images always available.<span class="feature-proof feature-proof--chips"><span class="feature-chip">rolling</span><span class="feature-chip">recreate</span><span class="feature-chip">blue-green</span></span>'
   - title: Observability built in
-    details: Node-local metrics at 15s resolution and full-text log search, no separate Grafana or Loki install. Deploy markers overlay directly on metric charts.
+    details: 'Node-local metrics at 15s resolution and full-text log search, no separate Grafana or Loki install. Deploy markers overlay directly on metric charts.<span class="feature-proof feature-proof--stat"><span class="feature-stat-value">15s</span><span class="feature-stat-label">metric resolution</span></span>'
   - title: Eight managed database engines
-    details: Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse, with scheduled backups, restore, and automatic post-backup verification.
+    details: 'Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse, with scheduled backups, restore, and automatic post-backup verification.<span class="feature-proof feature-proof--chips feature-proof--chips-wrap"><span class="feature-chip feature-chip--mono">postgres</span><span class="feature-chip feature-chip--mono">redis</span><span class="feature-chip feature-chip--mono">mysql</span><span class="feature-chip feature-chip--mono">mongodb</span><span class="feature-chip feature-chip--mono">mariadb</span><span class="feature-chip feature-chip--mono">keydb</span><span class="feature-chip feature-chip--mono">dragonfly</span><span class="feature-chip feature-chip--mono">clickhouse</span></span>'
   - title: Multi-node from day one
+    icon: '<svg width="64" height="36" viewBox="0 0 64 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><line x1="8" y1="9" x2="32" y2="28" stroke="currentColor" stroke-width="1.5" opacity="0.45"/><line x1="32" y1="28" x2="56" y2="9" stroke="currentColor" stroke-width="1.5" opacity="0.45"/><line x1="8" y1="9" x2="56" y2="9" stroke="currentColor" stroke-width="1.5" opacity="0.3"/><line x1="32" y1="28" x2="32" y2="7" stroke="currentColor" stroke-width="1.5" opacity="0.3" stroke-dasharray="2 3"/><circle cx="8" cy="9" r="3.5" fill="currentColor"/><circle cx="56" cy="9" r="3.5" fill="currentColor"/><circle cx="32" cy="28" r="3.5" fill="currentColor"/><circle cx="32" cy="7" r="2.5" fill="currentColor" opacity="0.55"/></svg>'
     details: WireGuard mesh, internal DNS across nodes, cordon and drain, no inbound ports required on any managed server.
   - title: Know what needs attention
-    details: A Status page and an attention CLI command list failing apps, offline nodes, expiring certificates, and doctor findings, with a disk pressure banner and stalled certificate renewal detection.
+    details: 'A Status page and an attention CLI command list failing apps, offline nodes, expiring certificates, and doctor findings, with a disk pressure banner and stalled certificate renewal detection.<span class="feature-proof feature-proof--status"><span class="feature-status"><span class="feature-dot feature-dot--bad"></span>app failing</span><span class="feature-status"><span class="feature-dot feature-dot--warn"></span>cert expiring</span><span class="feature-status"><span class="feature-dot feature-dot--off"></span>node offline</span></span>'
   - title: Resource-scoped IAM
-    details: AWS-IAM-shaped Allow/Deny policies scoped to a specific app or database, with a full audit log and CSV export, in the free Apache 2.0 core.
+    details: 'AWS-IAM-shaped Allow/Deny policies scoped to a specific app or database, with a full audit log and CSV export, in the free Apache 2.0 core.<span class="feature-proof feature-proof--code"><code class="feature-code-line">allow: app:web:deploy</code></span>'
   - title: AI-ready API
-    details: 144 MCP tools (beta) backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a crashloop directly.
+    details: 'MCP tools (beta) backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a crashloop directly. Current count by toolset: <a href="/mcp-tool-surface">docs/mcp-tool-surface.md</a>.<span class="feature-proof feature-proof--code"><code class="feature-code-line">mcp.call("get_logs", app="web")</code></span>'
 ---
 
-<div class="vp-doc" style="max-width: 1152px; margin: 0 auto; padding: 0 24px 64px;">
+<script setup lang="ts">
+import TerminalDemo from './.vitepress/theme/TerminalDemo.vue'
+import HowItWorksFlow from './.vitepress/theme/HowItWorksFlow.vue'
+import { PhCheck, PhX } from '@phosphor-icons/vue'
+</script>
+
+<div class="vp-doc landing-body">
+
+<section class="landing-section landing-section--quickstart">
+
+## Quickstart
+
+<div class="quickstart-shell">
+  <TerminalDemo />
+</div>
+
+That install script checks the host, installs Docker if it's missing, and starts the control plane as a systemd service. `deploy` builds from `app.yaml` and only cuts traffic to the new container once its readiness probe passes. The full walkthrough, including the setup wizard and database attachment, is in [Getting started](/getting-started).
+
+</section>
+
+<section class="landing-section landing-section--steps">
+
+## How it works
+
+Four steps, the same ones the reconciler itself runs on every deploy. Click a step to see what it actually does.
+
+<HowItWorksFlow />
+
+</section>
+
+<section class="landing-section landing-section--features-tabs">
+
+## Explore the platform
+
+<FeatureTabsSection />
+
+</section>
+
+<section class="landing-section landing-section--compare">
+
+## How it compares
+
+Most self-hosted PaaS tools in this category drive remote servers by SSHing in and shelling out `docker` CLI commands, then parsing text output. That's the source of most of the flakiness and the idle CPU burn, because it forces polling loops. Levelrail doesn't do that.
+
+<div class="compare-table">
+
+<div class="compare-table__row compare-table__row--head" role="presentation">
+<span class="compare-table__cell compare-table__cell--label"></span>
+<span class="compare-table__cell compare-table__cell--before">SSH + shell out</span>
+<span class="compare-table__cell compare-table__cell--after">Levelrail</span>
+</div>
+
+<div class="compare-table__row">
+<span class="compare-table__cell compare-table__cell--label">Server management</span>
+<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">SSHes into every node and shells out <code>docker</code> CLI commands, then parses text output.</span></span>
+<span class="compare-table__cell compare-table__cell--after"><PhCheck class="compare-table__icon compare-table__icon--after" weight="bold" /><span class="compare-table__cell-text">The agent dials out over mTLS and talks to the Docker Engine API directly. Nothing shells out to the <code>docker</code> CLI.</span></span>
+</div>
+
+<div class="compare-table__row">
+<span class="compare-table__cell compare-table__cell--label">Orchestration</span>
+<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">Ad hoc polling loops, with no recorded reason for why a resource is in its current state.</span></span>
+<span class="compare-table__cell compare-table__cell--after"><PhCheck class="compare-table__icon compare-table__icon--after" weight="bold" /><span class="compare-table__cell-text">A level-triggered reconciler diffs desired against observed state and writes a status condition with a reason after every pass.</span></span>
+</div>
+
+<div class="compare-table__row">
+<span class="compare-table__cell compare-table__cell--label">Observability</span>
+<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">Bolted on: install Grafana or Loki yourself, then wire them up to get metrics and logs.</span></span>
+<span class="compare-table__cell compare-table__cell--after"><PhCheck class="compare-table__icon compare-table__icon--after" weight="bold" /><span class="compare-table__cell-text">Node-local metrics at 15 second resolution and full-text log search are built in, no separate install.</span></span>
+</div>
+
+<div class="compare-table__row">
+<span class="compare-table__cell compare-table__cell--label">Footprint</span>
+<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">A stack of separate services: reverse proxy, metrics store, log store, dashboard.</span></span>
+<span class="compare-table__cell compare-table__cell--after"><PhCheck class="compare-table__icon compare-table__icon--after" weight="bold" /><span class="compare-table__cell-text">SQLite in WAL mode, an embedded Caddy ingress, and an embedded dashboard: one binary on one node.</span></span>
+</div>
+
+</div>
+
+<a class="compare-cta" href="/comparison">See the full comparison against Coolify, Dokploy, CapRover, Dokku, and Kamal</a>
+
+</section>
+
+<section class="landing-section landing-section--statement">
+
+<div class="statement-block">
+
+<p class="statement-text">Not a Kubernetes competitor.<br>Not a Vercel competitor.</p>
+
+<p class="statement-context">The target user runs between 3 and 50 services on between 1 and 10 machines, and doesn't want to learn Kubernetes.</p>
+
+</div>
+
+</section>
+
+<section class="landing-section landing-section--screenshots">
 
 ## See it running
 
 <div class="screenshot-grid">
-  <img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list showing all services across nodes at a glance" loading="lazy">
-  <img src="/assets/screenshots/deploy-history.png" alt="Levelrail deploy history view with one-click rollback" loading="lazy">
-  <img src="/assets/screenshots/logs.png" alt="Levelrail live log viewer with full-text search" loading="lazy">
-  <img src="/assets/screenshots/nodes.png" alt="Levelrail nodes list showing node health and placement" loading="lazy">
+  <div class="screenshot-frame">
+    <div class="screenshot-frame__chrome" aria-hidden="true"><span class="screenshot-frame__dot screenshot-frame__dot--red"></span><span class="screenshot-frame__dot screenshot-frame__dot--yellow"></span><span class="screenshot-frame__dot screenshot-frame__dot--green"></span><span class="screenshot-frame__url">levelrail.local/apps</span></div>
+    <img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list showing all services across nodes at a glance" loading="lazy" width="1280" height="800">
+  </div>
+  <div class="screenshot-frame">
+    <div class="screenshot-frame__chrome" aria-hidden="true"><span class="screenshot-frame__dot screenshot-frame__dot--red"></span><span class="screenshot-frame__dot screenshot-frame__dot--yellow"></span><span class="screenshot-frame__dot screenshot-frame__dot--green"></span><span class="screenshot-frame__url">levelrail.local/apps/web/deploys</span></div>
+    <img src="/assets/screenshots/deploy-history.png" alt="Levelrail deploy history view with one-click rollback" loading="lazy" width="1280" height="800">
+  </div>
+  <div class="screenshot-frame">
+    <div class="screenshot-frame__chrome" aria-hidden="true"><span class="screenshot-frame__dot screenshot-frame__dot--red"></span><span class="screenshot-frame__dot screenshot-frame__dot--yellow"></span><span class="screenshot-frame__dot screenshot-frame__dot--green"></span><span class="screenshot-frame__url">levelrail.local/apps/web/logs</span></div>
+    <img src="/assets/screenshots/logs.png" alt="Levelrail live log viewer with full-text search" loading="lazy" width="1280" height="800">
+  </div>
+  <div class="screenshot-frame">
+    <div class="screenshot-frame__chrome" aria-hidden="true"><span class="screenshot-frame__dot screenshot-frame__dot--red"></span><span class="screenshot-frame__dot screenshot-frame__dot--yellow"></span><span class="screenshot-frame__dot screenshot-frame__dot--green"></span><span class="screenshot-frame__url">levelrail.local/nodes</span></div>
+    <img src="/assets/screenshots/nodes.png" alt="Levelrail nodes list showing node health and placement" loading="lazy" width="1280" height="700">
+  </div>
 </div>
+
+</section>
+
+<section class="landing-section landing-section--releases">
+
+## Latest releases
+
+<LatestReleasesSection />
+
+</section>
+
+<section class="landing-section landing-section--faq">
+
+## Frequently asked questions
+
+<FaqSection />
+
+</section>
 
 </div>
 

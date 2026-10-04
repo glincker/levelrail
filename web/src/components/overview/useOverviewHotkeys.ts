@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { isTypingTarget } from '@/lib/shortcuts'
+import { isDialogOpen, isTypingTarget } from '@/lib/shortcuts'
 
 interface Handlers {
   onOpenApp: () => void
@@ -17,7 +17,7 @@ export function useOverviewHotkeys({
     function onKeyDown(e: KeyboardEvent) {
       if (e.ctrlKey || e.metaKey || e.altKey) return
       if (isTypingTarget(e.target)) return
-      if (document.querySelector('[role="dialog"]')) return
+      if (isDialogOpen()) return
       if (e.key === 'o') onOpenApp()
       else if (e.key === 'c') onCopyUrl()
       else if (e.key === 'D') onDeploy()

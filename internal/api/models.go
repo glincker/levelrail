@@ -376,8 +376,13 @@ func (rt *Router) handleQueryModelLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleLiveModelLogStream handles GET /api/v1/models/{name}/logs/stream.
+// nil currentContainerLookup: model-serving containers have no
+// blue-green overlap concept today (this task's fix targets apps and
+// databases, see log_live_container.go's own doc comment), so this
+// preserves the existing cross-container behavior unfiltered rather than
+// guessing at a "current" definition that doesn't exist yet for models.
 func (rt *Router) handleLiveModelLogStream(w http.ResponseWriter, r *http.Request) {
-	rt.streamResourceLogs(w, r, rt.lookupModelResource, "live model log stream", "model")
+	rt.streamResourceLogs(w, r, rt.lookupModelResource, nil, "live model log stream", "model")
 }
 
 // doctorCheckGPUs adds one doctor check per GPU node with a problem, or a

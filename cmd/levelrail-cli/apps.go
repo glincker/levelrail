@@ -45,10 +45,12 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback":
 		return runAppsAutoRollback(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "auto-rollback-slo-burn":
+		return runAppsAutoRollbackSLOBurn(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "cancel-superseded":
 		return runAppsCancelSuperseded(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploys":
-		return runAppsDeploys(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsDeploys(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "promote":
 		return runAppsPromote(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin) //nolint:gosec // same guard as below
 	case "timeline":
@@ -57,6 +59,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsApply(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "domains":
 		return runAppsDomains(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "streams":
+		return runAppsStreams(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "restart":
 		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "stop":
@@ -73,6 +77,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsPreflight(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "resource-recommendation":
 		return runAppsResourceRecommendation(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "cost":
+		return runAppsCostEstimate(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "network":
 		return runAppsNetwork(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "logs":
@@ -135,12 +141,20 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsBulk(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin) //nolint:gosec // same guard as below
 	case "clone":
 		return runAppsClone(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "save-as-template":
+		return runAppsSaveAsTemplate(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "images":
 		return runAppsImages(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "storage":
 		return runAppsStorage(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "database":
 		return runAppsDatabase(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "connect":
+		return runAppsConnect(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "disconnect":
+		return runAppsDisconnect(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "connections":
+		return runAppsConnections(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "builds":
 		return runAppsBuilds(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "moves":
@@ -159,6 +173,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsEgress(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "health":
 		return runAppsHealth(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "health-score":
+		return runAppsHealthScore(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "volumes":
+		return runAppsVolumes(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "integrations":
 		return runAppsIntegrations(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	default:
@@ -185,6 +203,7 @@ func appsUsage(prog string) string {
   %[1]s apps schedule set|get|history <name> [flags]   recurring redeploy of a branch's latest commit on a cron schedule
   %[1]s apps cancel-superseded enable|disable|status <name> [flags]   let a newer queued deploy replace older queued ones of the same branch
   %[1]s apps auto-rollback enable|disable|status <name> [flags]   opt an app into (or out of) automatic rollback when a crashloop alert fires
+  %[1]s apps auto-rollback-slo-burn set|status <name> [mode] [flags]   how an app reacts when an SLO burn-rate alert fires: off, auto, dry_run, pause_for_human
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
   %[1]s apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [flags]   promote name's image onto a sibling app in another environment
@@ -192,6 +211,9 @@ func appsUsage(prog string) string {
   %[1]s apps timeline <name> [--limit N] [flags]   what happened to an app: deploys, restarts, env, secret and config changes
   %[1]s apps apply <name> [flags]       restart an app so saved env, secret and config changes take effect
   %[1]s apps domains list|add|remove <name> [domain...] [flags]   show or change an app's domains
+  %[1]s apps streams list <name> [flags]                                                    list an app's raw TCP port forwards
+  %[1]s apps streams create <name> --host-port N --container-port N [--protocol tcp] [flags]   forward a host port to one container port
+  %[1]s apps streams delete <name> <id> [flags]                                              remove a stream
   %[1]s apps stop <name> [flags]        stop an app's running container
   %[1]s apps start <name> [flags]       start an app previously stopped
   %[1]s apps delete <name> [flags]      remove an app's desired state
@@ -199,6 +221,7 @@ func appsUsage(prog string) string {
   %[1]s apps diagnose <name> [--deploy ID] [--apply-fix N] [flags]   explain a failed deploy or crashloop, optionally apply a fix
   %[1]s apps preflight <name> [--require-env A,B] [flags]   run pre-deploy checks (DNS, ports, disk, image, env)
   %[1]s apps resource-recommendation <name> [flags]   suggest memory/CPU limits from historical usage
+  %[1]s apps cost <name> [flags]   estimate what this app's CPU/memory would cost under reference providers (not a real bill)
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps logs <name> [flags]     search an app's stored log entries, or --follow to stream live
   %[1]s apps metrics <name> --metric NAME [flags]   query an app's metric time series
@@ -229,9 +252,13 @@ func appsUsage(prog string) string {
   %[1]s apps git-source <verb> [flags]   connect a repo for auto-deploy-on-push
   %[1]s apps webhook-deliveries <verb> [flags]   inspect and replay recent inbound git webhook requests
   %[1]s apps clone <name> <new-name> [flags]   duplicate an app's desired state under a new name
+  %[1]s apps save-as-template <name> [flags]   save an app's current desired state as a reusable one-click template
   %[1]s apps images <name> [flags]   list locally-present image tags under an app's current image repo
   %[1]s apps storage <verb> [flags]   attach/detach a connected bucket as this app's object storage
   %[1]s apps database <verb> [flags]   attach/detach a managed database as this app's connection-env-var source
+  %[1]s apps connect <app> <database> [--field FIELD] [--env-var NAME] [flags]   connect <app> to a managed database (multiple connections allowed, unlike "apps database")
+  %[1]s apps disconnect <app> <env-var> [flags]                                  remove one connection by its env var name
+  %[1]s apps connections list|suggest <app> [flags]                              list current connections, or managed databases <app> could connect to
   %[1]s apps builds trigger <name> --repo URL --ref REF [flags]   build and deploy an image from a git source
   %[1]s apps moves <verb> [flags]      inspect "apps set-node --with-volumes" move-with-volumes history
   %[1]s apps vault-env <verb> [flags]   declare/remove an env var resolved live from an external Vault instance
@@ -241,6 +268,8 @@ func appsUsage(prog string) string {
   %[1]s apps untag <name> <tag> [flags]   detach a tag (by name) from an app
   %[1]s apps egress <verb> [flags]        get/set/clear an app's outbound network allowlist
   %[1]s apps health <verb> [flags]        get/set/clear an app's readiness and liveness probes
+  %[1]s apps health-score <name> [flags]  pass/warn/fail readiness verdict: deploy, security, resilience, observability
+  %[1]s apps volumes <verb> [flags]       get/attach/detach a named Docker volume outside a redeploy
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.
 `, prog)

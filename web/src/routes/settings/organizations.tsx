@@ -7,6 +7,7 @@ import {
 import { OrganizationTable } from '../../components/OrganizationTable'
 import { CreateOrganizationDialog } from '../../components/CreateOrganizationDialog'
 import { TableSkeleton } from '../../components/ui/table-skeleton'
+import { PageHeader } from '../../components/shell/PageHeader'
 
 // Account-level, mirroring routes/settings/notification-channels.tsx:
 // an organization groups projects, assigned from a project's own detail
@@ -24,22 +25,17 @@ function OrganizationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <BuildingsIcon className="size-4" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">
-              Organizations
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Group related projects under an organization. File a project into
-              one from the project&apos;s own detail page.
-            </p>
-          </div>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <BuildingsIcon className="size-4" />
         </div>
-        <CreateOrganizationDialog />
+        <div className="min-w-0 flex-1">
+          <PageHeader
+            title="Organizations"
+            description="Group related projects under an organization. File a project into one from the project's own detail page."
+            actions={<CreateOrganizationDialog />}
+          />
+        </div>
       </div>
       <OrganizationTable
         organizations={organizations}

@@ -24,7 +24,7 @@ cd "$(git rev-parse --show-toplevel)"
 
 small_max="${CI_SMALL_LANE_MAX:-8}"
 api_pkg="github.com/GLINCKER/levelrail/internal/api"
-api_shards=3
+api_shards=4
 flaky_file=.github/flaky-tests.txt
 
 scope=some
@@ -94,12 +94,18 @@ if [ "${#api[@]}" -gt 0 ]; then
 fi
 
 other=$((${#docker[@]} + ${#rest[@]}))
+# Docker-backed packages run real container lifecycles, not unit logic;
+# timeout-minutes: 32 on the job already budgets for this, -timeout just
+# needs to use more of it. test/e2e's fixed ~16-template fleet plus a
+# growing set of per-batch catalog live tests run sequentially in one
+# binary (no t.Parallel; see docs/ci.md), so its floor keeps rising as
+# the catalog grows, independent of this PR's own diff size.
 if [ "$scope" != all ] && [ "$other" -gt 0 ] && [ "$other" -le "$small_max" ]; then
-	lane rest "$(join "${docker[@]}" "${rest[@]}")" "" "-short -p 2 -timeout=12m" rest false
+	lane rest "$(join "${docker[@]}" "${rest[@]}")" "" "-short -p 2 -timeout=27m" rest false
 	rest_checks+=("Test (rest)")
 else
 	if [ "${#docker[@]}" -gt 0 ]; then
-		lane docker "$(join "${docker[@]}")" "" "-short -p 2 -timeout=12m" docker true
+		lane docker "$(join "${docker[@]}")" "" "-short -p 2 -timeout=27m" docker true
 		rest_checks+=("Test (docker)")
 	fi
 	if [ "${#rest[@]}" -gt 0 ]; then

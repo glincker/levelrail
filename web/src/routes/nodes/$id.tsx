@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useState } from 'react'
 import { formatAge } from '../../lib/format'
 import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -7,14 +8,16 @@ import {
   nodeListQueryOptions,
   useNode,
   useNodeHealth,
+  useSetNodeRegion,
   useSetNodeWorkloads,
 } from '../../queries/nodes'
-import type { NodeStatus } from '../../types/nodeDetail'
+import type { NodeResource, NodeStatus } from '../../types/nodeDetail'
 import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { CordonNodeDialog } from '../../components/CordonNodeDialog'
 import { DrainNodeDialog } from '../../components/DrainNodeDialog'
 import { NodeAgentCard } from '../../components/NodeAgentCard'
 import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
+import { NodeCapacityForecastCard } from '../../components/NodeCapacityForecastCard'
 import { NodeGpuCard } from '../../components/NodeGpuCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
@@ -23,12 +26,15 @@ import { NodeEventsCard } from '../../components/NodeEventsCard'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { InfoTip } from '../../components/kit/InfoTip'
+import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
-import { PageSpinner } from '@/components/ui/page-spinner'
+import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/shell/PageHeader'
 import type { VariantProps } from 'class-variance-authority'
 
 // Node detail route, mirroring routes/databases/$name.tsx's shape: three
@@ -62,7 +68,7 @@ export const Route = createFileRoute('/nodes/$id')({
       queryClient.ensureQueryData(nodeListQueryOptions()),
     ]),
   component: NodeDetailPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: NodeDetailSkeleton,
   errorComponent: NodeDetailError,
 })
 
@@ -104,32 +110,34 @@ function NodeDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link
-          to="/nodes"
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeftIcon className="size-3" />
-          Nodes
-        </Link>
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-lg font-semibold text-foreground">
-              {node.name}
-            </h1>
+      <PageHeader
+        breadcrumb={
+          <Link
+            to="/nodes"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeftIcon className="size-3" />
+            Nodes
+          </Link>
+        }
+        title={node.name}
+        status={
+          <>
             <Badge variant={STATUS_BADGE_VARIANT[node.status]}>
               {STATUS_LABEL[node.status]}
             </Badge>
             {node.schedulable ? null : (
               <Badge variant="warning">Cordoned</Badge>
             )}
-          </div>
-          <div className="flex items-center gap-2">
+          </>
+        }
+        actions={
+          <>
             <CordonNodeDialog node={node} />
             <DrainNodeDialog node={node} />
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -167,6 +175,8 @@ function NodeDetailPage() {
           </dl>
         </CardContent>
       </Card>
+
+      <NodeRegionCard key={node.id} node={node} />
 
       <NodeAgentCard node={node} />
 
@@ -253,9 +263,9 @@ function NodeDetailPage() {
           </FieldDescription>
 
           {setWorkloads.isError ? (
-            <p className="text-sm text-destructive">
-              {setWorkloads.error.message}
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>{setWorkloads.error.message}</AlertDescription>
+            </Alert>
           ) : null}
         </CardContent>
       </Card>
@@ -268,11 +278,140 @@ function NodeDetailPage() {
 
       <NodePatchStatusCard nodeId={id} />
       <NodeEventsCard nodeId={id} />
+      <NodeCapacityForecastCard nodeId={id} />
 
       <NodeMetricsDashboard nodeId={id} />
 
       <ConditionsPanel conditions={conditions} />
     </div>
+  )
+}
+
+// Mirrors NodeDetailPage's own card stack (Overview, Location, Agent,
+// Workload capabilities, Alert status, GPU, Mesh, Patch status, Events,
+// Capacity forecast, Metrics, Conditions) so the loader's pending phase
+// renders the same outline that fills in once node/health/node-list
+// resolve. The skeleton's own card count below is a fixed round number
+// for the generic placeholder shape, not a literal match to this list.
+function NodeDetailSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <div>
+        <Skeleton className="h-3 w-14" />
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Skeleton className="h-6 w-36" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-20 rounded-md" />
+            <Skeleton className="h-9 w-20 rounded-md" />
+          </div>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <Skeleton className="h-4 w-20" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {Array.from({ length: 3 }, (_, i) => (
+              <div key={i} className="space-y-1">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {Array.from({ length: 8 }, (_, i) => (
+        <Card key={i}>
+          <CardHeader>
+            <CardTitle>
+              <Skeleton className="h-4 w-28" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+// Rendered with key={node.id} by its caller so switching to a different
+// node's detail page remounts this component instead of needing an
+// effect to resync local draft state with the new node's region.
+function NodeRegionCard({ node }: { node: NodeResource }) {
+  const setRegion = useSetNodeRegion()
+  const [regionDraft, setRegionDraft] = useState(node.region ?? '')
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Location</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Field>
+          <FieldLabel
+            htmlFor="node-region"
+            className="flex items-center gap-1.5"
+          >
+            Region
+            <InfoTip label="What region does">
+              A free-text label such as "hetzner-fsn1" or "home-lab", used to
+              group this node into a zone on the network topology page. Display
+              only: it does not affect routing or access control.
+            </InfoTip>
+          </FieldLabel>
+          <div className="flex items-center gap-2">
+            <Input
+              id="node-region"
+              value={regionDraft}
+              placeholder="e.g. hetzner-fsn1"
+              disabled={setRegion.isPending}
+              onChange={(e) => setRegionDraft(e.target.value)}
+              className="max-w-xs"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={
+                setRegion.isPending || regionDraft === (node.region ?? '')
+              }
+              onClick={() => {
+                setRegion.mutate(
+                  { id: node.id, region: regionDraft.trim() },
+                  {
+                    onSuccess: () => {
+                      toast.add({ title: 'Region updated.', type: 'success' })
+                    },
+                  },
+                )
+              }}
+            >
+              Save
+            </Button>
+          </div>
+        </Field>
+        <FieldDescription>
+          Grouping metadata for the network topology view. Nodes with no region
+          set are grouped by node name instead.
+        </FieldDescription>
+        {setRegion.isError ? (
+          <Alert variant="destructive">
+            <AlertDescription>{setRegion.error.message}</AlertDescription>
+          </Alert>
+        ) : null}
+      </CardContent>
+    </Card>
   )
 }
 

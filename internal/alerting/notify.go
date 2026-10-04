@@ -75,6 +75,11 @@ type Event struct {
 	// overdue summary, from EvaluateBackupMissing. Empty for every other
 	// rule kind and for resolved events.
 	BackupMissingNotice string
+	// VersionSkewNotice is populated only for a firing (not resolved)
+	// version_skew event: the running version vs. the configured
+	// channel's latest, from EvaluateVersionSkew. Empty for every other
+	// rule kind and for resolved events.
+	VersionSkewNotice string
 
 	// SLONotice is set only for a firing slo_burn event: which burn-rate tier
 	// tripped and how much error budget is left.
@@ -114,17 +119,31 @@ func (n httpNotifier) Notify(ctx context.Context, ev Event) error {
 	return n.build(ctx, n.client, n.url, ev)
 }
 
+// PushSender sends one browser push notification to every subscription
+// registered on this control plane. Narrow, consumer-defined interface
+// mirroring email.Sender exactly; *webpush.Sender satisfies it
+// structurally (internal/alerting has no import on internal/webpush, the
+// same "consumer defines the interface it needs" shape as every other
+// Secrets-flavored interface in this codebase).
+type PushSender interface {
+	Send(ctx context.Context, title, body string) error
+}
+
 // NewNotifier builds the right Notifier for r.NotifyKind. An unknown or
 // empty NotifyKind falls back to NotifyGeneric rather than erroring, so a
 // typo'd notify_kind still notifies someone, diagnosable from the
 // payload shape. sender may be nil, in which case an email-kind rule
-// fails with a clear "not configured" error.
-func NewNotifier(client *http.Client, sender email.Sender, r Rule) Notifier {
+// fails with a clear "not configured" error; pushSender may be nil with
+// the identical failure shape for a webpush-kind rule.
+func NewNotifier(client *http.Client, sender email.Sender, pushSender PushSender, r Rule) Notifier {
 	if client == nil {
 		client = netguard.NewClient()
 	}
 	if r.NotifyKind == NotifyEmail {
 		return emailNotifier{sender: sender, to: r.NotifyURL}
+	}
+	if r.NotifyKind == NotifyWebpush {
+		return webpushNotifier{sender: pushSender}
 	}
 
 	build := notifyGeneric
@@ -186,6 +205,7 @@ type genericPayload struct {
 	TaskFailureNotice    string     `json:"task_failure_notice,omitempty"`
 	DomainHealthNotices  []string   `json:"domain_health_notices,omitempty"`
 	BackupMissingNotice  string     `json:"backup_missing_notice,omitempty"`
+	VersionSkewNotice    string     `json:"version_skew_notice,omitempty"`
 	Headline             string     `json:"headline,omitempty"`
 	GroupNotices         []string   `json:"group_notices,omitempty"`
 	GroupCount           int        `json:"group_count,omitempty"`
@@ -208,6 +228,7 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		TaskFailureNotice:    ev.TaskFailureNotice,
 		DomainHealthNotices:  ev.DomainHealthNotices,
 		BackupMissingNotice:  ev.BackupMissingNotice,
+		VersionSkewNotice:    ev.VersionSkewNotice,
 		Headline:             ev.Headline,
 		GroupNotices:         ev.GroupNotices,
 		GroupCount:           ev.GroupCount,
@@ -732,6 +753,9 @@ func summaryBody(ev Event) string {
 	if ev.BackupMissingNotice != "" {
 		fmt.Fprintf(&b, "\nBackup: %s", ev.BackupMissingNotice)
 	}
+	if ev.VersionSkewNotice != "" {
+		fmt.Fprintf(&b, "\nVersion: %s", ev.VersionSkewNotice)
+	}
 	if ev.SLONotice != "" {
 		fmt.Fprintf(&b, "\n%s", ev.SLONotice)
 	}
@@ -871,6 +895,32 @@ func (n emailNotifier) Notify(ctx context.Context, ev Event) error {
 		subject = fmt.Sprintf("[Levelrail][RESOLVED] %s", ev.Rule.Name)
 	}
 	if err := sendEmailWithRetry(ctx, n.sender, n.to, subject, summaryText(ev)); err != nil {
+		return fmt.Errorf("alerting: notify: %w", err)
+	}
+	return nil
+}
+
+// webpushNotifier sends one Event as a browser push notification via a
+// PushSender. Unlike every other Notifier here, its destination isn't
+// r.NotifyURL at all: every registered browser subscription receives it,
+// so like emailNotifier it implements Notifier directly rather than
+// fitting httpNotifier's notifyFunc shape.
+type webpushNotifier struct {
+	sender PushSender // nil means "no browser push capability configured"
+}
+
+func (n webpushNotifier) Notify(ctx context.Context, ev Event) error {
+	if n.sender == nil {
+		return fmt.Errorf("alerting: notify: browser push is not configured on this control plane")
+	}
+	title := fmt.Sprintf("[FIRING] %s", ev.Rule.Name)
+	if ev.Resolved {
+		title = fmt.Sprintf("[RESOLVED] %s", ev.Rule.Name)
+	}
+	if ev.Headline != "" {
+		title = ev.Headline
+	}
+	if err := n.sender.Send(ctx, title, summaryText(ev)); err != nil {
 		return fmt.Errorf("alerting: notify: %w", err)
 	}
 	return nil

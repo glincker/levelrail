@@ -6,6 +6,19 @@ description: How Levelrail handles secrets, sessions, TLS, and access control, a
 
 This page is a map, not a duplicate. Each topic below has its own detailed page; this one explains how the pieces fit together and links out.
 
+```mermaid
+flowchart TD
+  MK["Master key<br/>(in memory only, never written to disk)"]
+  MK -->|wraps| D1["App A's DEK"]
+  MK -->|wraps| D2["App B's DEK"]
+  MK -->|wraps| D3["Backup target's DEK"]
+  D1 -->|encrypts, AES-256-GCM| V1["secret: true env vars,<br/>bound to (app, key) slot"]
+  D2 -->|encrypts, AES-256-GCM| V2["secret: true env vars,<br/>bound to (app, key) slot"]
+  D3 -->|encrypts, AES-256-GCM| V3["storage credentials,<br/>bound to their slot"]
+  V1 -.->|decrypted only| CT["container create time"]
+  V2 -.->|decrypted only| CT
+```
+
 ## Secrets: envelope encryption
 
 Every owner of secrets (an app, a backup target, the email settings, and so on) gets its own random data encryption key (DEK), and each of its values (an app env var marked `secret: true`, email credentials, API tokens) is encrypted under that DEK with AES-256-GCM. Every DEK is wrapped under one master key held in memory by the control plane, never written to disk in plaintext.
@@ -97,6 +110,22 @@ What `enforce` sets:
 
 `APP_CONTAINER_HARDENING_CAP_ADD` (comma separated, for example `SYS_CHROOT,NET_RAW`) adds capabilities for every container on that host, for images that need more than the minimal set (SSH or FTP servers, tools using `ping`). It applies host-wide because a per-app override would need a new field carried to remote agents; a per-app `security` block in `app.yaml` is future work. Read-only root filesystems and privileged containers are never set by these defaults. The setting is read by the process that creates the container, so it applies to remote nodes when set on the agent, and the doctor reports the control plane's own value.
 
+## Rootless and Podman
+
+`GET /api/v1/system/doctor`'s `container_runtime` check (`levelrail doctor`) reports which container engine and privilege mode the control plane is talking to: Docker or Podman, rootful or rootless, and which setting decided the socket (`APP_CONTAINER_RUNTIME_SOCKET`, then the standard `DOCKER_HOST`, then a well-known rootless or Podman socket path, then the rootful default `/var/run/docker.sock`).
+
+Podman exposes a Docker-compatible Engine API socket, so the existing Docker Engine API client talks to it unchanged, no CLI shelling and no new client library, consistent with the root `CLAUDE.md`'s orchestration rules. `APP_CONTAINER_RUNTIME_SOCKET` pins the connection to a specific socket (for example `unix:///run/user/1000/podman/podman.sock`) ahead of `DOCKER_HOST`, for operators who would rather not export `DOCKER_HOST` into the whole process environment.
+
+Container hardening (above) adjusts automatically under detected rootless: `PidsLimit` is disabled by default, because rootless Docker without a delegated cgroup v2 controller rejects a pids-limit `HostConfig` at container-create time. Set `APP_CONTAINER_PIDS_LIMIT` explicitly to override this. `CapDrop`, `CapAdd` and `no-new-privileges` are unaffected: those apply inside the container's own user namespace regardless of rootless mode, so nothing needed to come off the minimal capability list.
+
+**What is not verified:** this detection and the hardening adjustment above were tested against a fake Docker client, not a real rootless Docker or Podman installation. Known gaps to check before relying on this in production:
+
+- **Bind-mount ownership.** A bind mount's files keep the UID/GID they have on the host; under rootless Docker/Podman that UID sits inside a remapped user namespace, so a container process expecting to own a bind-mounted path can see a permission mismatch that doesn't happen under rootful Docker. Named volumes (Levelrail's default for managed databases) aren't affected the same way.
+- **Low host ports.** Rootless port publishing goes through a userspace proxy (`rootlesskit`/`slirp4netns`), which by default can't bind host ports below 1024 regardless of the container's own capabilities. The embedded ingress runs on the host directly, not in a rootless container, so this only affects an app that needs to publish a low host port itself.
+- **cgroup limits beyond PidsLimit.** Memory and CPU limits also need a delegated cgroup v2 controller under rootless; unlike PidsLimit, this isn't currently detected or adjusted for `Resources.MemoryBytes`/`NanoCPUs`.
+
+Treat single-container rootless or Podman hosts as best-effort, not fully verified, until tested against a real installation.
+
 ## Reporting a vulnerability
 
 Levelrail does not yet have a dedicated security disclosure address. Until one exists, open a private security advisory on the [GitHub repository](https://github.com/glincker/levelrail/security/advisories/new) rather than a public issue. The repository's [SECURITY.md](../SECURITY.md) has the full policy, including what to expect after reporting.
@@ -105,7 +134,8 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 
 - No SSO/SAML, only local password auth and OAuth sign-in.
 - No secret scanning of an app's own source repository.
-- Container hardening is opt-in (`APP_CONTAINER_HARDENING=enforce`) and has no per-app override yet; rootless Docker and Podman support are open questions (see the root `CLAUDE.md`'s open decisions).
+- Container hardening is opt-in (`APP_CONTAINER_HARDENING=enforce`) and has no per-app override yet.
+- Rootless Docker and Podman detection and hardening adjustment ([above](#rootless-and-podman)) exist but are not verified against a real installation; bind-mount ownership and cgroup resource limits beyond `PidsLimit` are known gaps.
 
 ## See also
 

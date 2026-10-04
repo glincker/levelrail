@@ -6,9 +6,10 @@ import {
   useAiAssistantSettings,
 } from '../queries/aiAssistantSettings'
 import { AiChatPanel } from '../components/AiChatPanel'
-import { PageSpinner } from '../components/ui/page-spinner'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 export const Route = createFileRoute('/ai-assistant')({
   beforeLoad: ({ context: { queryClient } }) =>
@@ -16,7 +17,7 @@ export const Route = createFileRoute('/ai-assistant')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(aiAssistantSettingsQueryOptions()),
   component: AiAssistantPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: AiAssistantSkeleton,
 })
 
 function AiAssistantPage() {
@@ -24,13 +25,10 @@ function AiAssistantPage() {
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col gap-4">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Reads logs, metrics, and deploy history automatically. Always asks
-          before deploying, rolling back, or restarting anything.
-        </p>
-      </div>
+      <PageHeader
+        title="AI Assistant"
+        description="Reads logs, metrics, and deploy history automatically. Always asks before deploying, rolling back, or restarting anything."
+      />
 
       {settings.configured ? (
         <AiChatPanel />
@@ -48,6 +46,24 @@ function AiAssistantPage() {
           className="flex-1"
         />
       )}
+    </div>
+  )
+}
+
+// The chat transcript itself isn't worth faking message-by-message, so
+// this mirrors just the outer chrome: header, a flex-1 body, composer bar.
+function AiAssistantSkeleton() {
+  return (
+    <div
+      className="flex h-[calc(100vh-8rem)] flex-col gap-4"
+      aria-hidden="true"
+    >
+      <div className="space-y-2">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-4 w-80" />
+      </div>
+      <div className="flex-1 rounded-lg border border-border" />
+      <Skeleton className="h-16 w-full rounded-md" />
     </div>
   )
 }

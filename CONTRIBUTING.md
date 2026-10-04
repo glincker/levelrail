@@ -19,8 +19,11 @@ forum on the [GLINR Discord](https://discord.gg/Ar5pcaZB99).
 - Branch names: `type/short-description`, e.g. `fix/rollback-image-gc`
   or `feat/agent-reconnect-backoff`.
 - Commit messages follow conventional commits: `type: description`, for
-  example `fix: prevent image gc from pruning rollback targets`. Common
-  types are `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `chore`.
+  example `fix: prevent image gc from pruning rollback targets`. The
+  commit-msg hook enforces the allowed types: `feat`, `fix`, `perf`,
+  `refactor`, `docs`, `test`, `chore`, `ci`, `security`. Use `security`
+  for a fix whose primary purpose is closing a vulnerability, so it gets
+  its own changelog section instead of blending into Bug Fixes.
 - No em dashes or en dashes in commit messages or code comments. Use
   commas, periods, or parentheses instead.
 - Keep each PR to one logical change. Do not mix a refactor with a
@@ -114,6 +117,11 @@ the overall number still passes.
 Frontend tests live alongside components in `web/`; see `web/README.md`
 for how to run them.
 
+To find which tests in a package are actually slow, run
+`scripts/go-test-slowest.sh <package>...` (`-t <threshold>` to change the
+cutoff, default `500ms`). It wraps gotestsum's `--jsonfile` plus
+`tool slowest` so that two-step doesn't need hand-assembling every time.
+
 ## Flaky tests
 
 CI reruns a failed Go test at most twice (`scripts/ci-go-test.sh`, via
@@ -184,6 +192,67 @@ it separately if you think the set should change.
 - On the frontend: no data fetching inside component bodies, route
   loaders prime the query cache and components read from it. Any list
   that can exceed 50 items is virtualized.
+
+## Adding a service template
+
+The service catalog (`internal/catalog`, served by
+`GET /api/v1/service-templates`) has two sources, merged into one list
+everywhere it's used:
+
+- `internal/catalog/templates_*.go`: the existing, hand-written Go
+  entries. Don't touch these to add a new template.
+- `internal/catalog/contrib/*.yaml`: one YAML file per template. This is
+  the path for contributing a new template without touching Go source or
+  running the Go toolchain.
+
+To add one, create `internal/catalog/contrib/<your-id>.yaml`:
+
+```yaml
+id: your-app
+name: Your App
+slogan: One sentence describing what it does and why it's worth running.
+category: Developer Tools
+documentation_url: https://example.com/docs
+recommended_memory_bytes: 268435456
+compose: |
+  services:
+    your-app:
+      image: ghcr.io/you/your-app:1.2.3
+      ports: ["8080:8080"]
+      volumes:
+        - your_app_data:/data
+      healthcheck:
+        test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
+        interval: 30s
+        timeout: 5s
+        retries: 3
+```
+
+Notes on the fields:
+
+- `id` must be unique across the whole catalog (Go entries included).
+  `go test ./internal/catalog/...` fails the build on a duplicate.
+- `compose` is a real `compose.yaml` body, pasted in as a YAML block
+  scalar (the `|` above), not escaped or quoted. It must parse against
+  this platform's supported Compose subset (`internal/compose`): one
+  container per service, no bind-mount file injection, no
+  `depends_on: service_healthy` ordering. Use an image tag, not `latest`.
+  At least one service needs a `healthcheck:` block.
+- `recommended_memory_bytes` is a pre-deploy advisory shown in the UI,
+  not enforced against any node's real memory.
+- Pin a real, specific image tag you've verified exists.
+
+Review model: a human reviews every template PR the same way as any
+other PR. There is no automated pipeline that pulls or boots the image,
+and there will not be: an orchestrator platform isn't the place to
+bulk-verify every vendor's image. Please say in your PR description that
+you pulled the image and ran it locally with the volumes mounted (not
+just `docker build`), since that's the one thing a review can't see for
+itself, but this isn't mechanically checked.
+
+See "Branches and commits" and "Code style" above for comment and commit
+conventions; they apply the same way inside a `contrib/*.yaml` file's
+`compose` body as anywhere else.
 
 ## Architecture decision records
 

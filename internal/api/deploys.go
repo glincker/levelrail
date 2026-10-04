@@ -105,6 +105,18 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		note = strings.TrimSpace(note + " RollbackTo: " + rollbackTo)
 	}
 
+	// Observed live: a rollback issued while a manual build was still
+	// running wrote its own desired state immediately, then the build's
+	// own deploy finished moments later and silently clobbered it, with
+	// no sign to the operator that the rollback never stuck. Same guard
+	// handleTriggerBuild already applies against itself (builds.go), now
+	// also checked here so a plain image deploy or rollback can't race a
+	// build the same way.
+	if rt.hasRunningDeployAttempt(r.Context(), name) {
+		writeError(w, http.StatusConflict, "a deploy for this app is already running")
+		return
+	}
+
 	env, protected, ok := rt.checkEnvironmentProtection(r.Context(), w, existing.EnvironmentID, req.Confirm)
 	if !ok {
 		return
@@ -237,6 +249,83 @@ func (rt *Router) handleSetAutoRollback(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, autoRollbackSettingResource(req))
 }
 
+// validSLOBurnAutoRollbackModes is every store.AutoRollbackSLOBurn* value
+// handleSetAutoRollbackSLOBurn accepts.
+var validSLOBurnAutoRollbackModes = map[string]bool{
+	store.AutoRollbackSLOBurnOff:           true,
+	store.AutoRollbackSLOBurnAuto:          true,
+	store.AutoRollbackSLOBurnDryRun:        true,
+	store.AutoRollbackSLOBurnPauseForHuman: true,
+}
+
+// setAutoRollbackSLOBurnRequest is PUT
+// /api/v1/apps/{name}/auto-rollback-slo-burn's body.
+type setAutoRollbackSLOBurnRequest struct {
+	Mode string `json:"mode"`
+}
+
+// autoRollbackSLOBurnSettingResource is both GET and PUT
+// /api/v1/apps/{name}/auto-rollback-slo-burn's response.
+type autoRollbackSLOBurnSettingResource struct {
+	Mode string `json:"mode"`
+}
+
+// handleGetAutoRollbackSLOBurn handles GET
+// /api/v1/apps/{name}/auto-rollback-slo-burn: the current value of
+// store.DesiredService.AutoRollbackOnSLOBurn, mirroring
+// handleGetAutoRollback's own shape for the crashloop toggle.
+func (rt *Router) handleGetAutoRollbackSLOBurn(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	}
+	if err != nil {
+		rt.logger.Error("api: get auto-rollback-slo-burn: load app failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	mode := svc.AutoRollbackOnSLOBurn
+	if mode == "" {
+		mode = store.AutoRollbackSLOBurnOff
+	}
+	writeJSON(w, http.StatusOK, autoRollbackSLOBurnSettingResource{Mode: mode})
+}
+
+// handleSetAutoRollbackSLOBurn handles PUT
+// /api/v1/apps/{name}/auto-rollback-slo-burn: sets name's mode for
+// automatic rollback on an SLO burn-rate alert, the per-app switch
+// internal/alerting.MaybeAutoRollbackOnSLOBurn checks before acting on a
+// firing KindSLOBurn rule's app. "off" by default
+// (migrations/0251_service_auto_rollback_on_slo_burn.sql), matching
+// AutoRollbackOnCrashloop's own opt-in-by-default shape.
+func (rt *Router) handleSetAutoRollbackSLOBurn(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	var req setAutoRollbackSLOBurnRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if !validSLOBurnAutoRollbackModes[req.Mode] {
+		writeError(w, http.StatusBadRequest, "mode must be one of: off, auto, dry_run, pause_for_human")
+		return
+	}
+
+	if err := rt.apps.SetServiceAutoRollbackOnSLOBurn(r.Context(), name, req.Mode); err != nil {
+		if errors.Is(err, store.ErrServiceNotFound) {
+			writeError(w, http.StatusNotFound, "app not found")
+			return
+		}
+		rt.logger.Error("api: set auto-rollback-slo-burn failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, autoRollbackSLOBurnSettingResource(req))
+}
+
 // setDesiredImage points existing's image at image and saves it: the
 // same mutation handleTriggerDeploy and handlePromoteApp (promote.go)
 // both drive, clearing EnvDirty the same way RestartService already
@@ -339,7 +428,7 @@ func describeResolution(res deploy.ImageResolution) (digestReason, reason string
 func (rt *Router) handleDeployHistory(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
-	_, err := rt.apps.GetDesiredService(r.Context(), name)
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -355,6 +444,12 @@ func (rt *Router) handleDeployHistory(w http.ResponseWriter, r *http.Request) {
 		rt.logger.Error("api: deploy history failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
+	}
+	// This app's own controller never sees CrossNodeIngress, reported
+	// under the ingress controller's own singleton name: see
+	// crossNodeIngressAppCondition's doc comment.
+	if cond := rt.crossNodeIngressAppCondition(*svc); cond != nil {
+		conditions = append(conditions, *cond)
 	}
 	writeJSON(w, http.StatusOK, conditions)
 }

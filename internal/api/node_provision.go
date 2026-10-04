@@ -474,12 +474,9 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, "name must start with a lowercase letter and contain only lowercase letters, digits and hyphens")
 		return
 	}
-	role := req.Role
-	if role == "" {
-		role = "general"
-	}
-	if role != "general" && role != "build" {
-		writeError(w, http.StatusBadRequest, "role must be general or build")
+	role, msg := normalizeNodeRole(req.Role)
+	if msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
 
@@ -573,20 +570,35 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusCreated, toNodeProvisionResource(rec))
 }
 
-// nodeNameTaken reports whether name is already used by an enrolled node
-// or by another provision that has not yet failed: refreshNodeProvision
-// matches an enrolling provision to a real node purely by Name, so a
+// normalizeNodeRole validates and normalizes a node provision's role
+// field ("" defaults to "general"), shared by handleCreateNodeProvision
+// and handleCreateSSHNodeProvision (node_ssh_provision.go) so the same
+// general/build vocabulary and error wording can't drift between the
+// cloud and SSH provisioning paths. msg is non-empty (and role unused)
+// when role fails validation.
+func normalizeNodeRole(role string) (normalized, msg string) {
+	if role == "" {
+		role = "general"
+	}
+	if role != "general" && role != "build" {
+		return "", "role must be general or build"
+	}
+	return role, ""
+}
+
+// nodeNameTaken reports whether name is already used by an enrolled
+// node, or by another cloud or SSH provision that has not yet failed:
+// refreshNodeProvision/refreshSSHNodeProvision (node_ssh_provision.go)
+// each match an enrolling provision to a real node purely by Name, so a
 // second provision (or a pre-existing node) reusing that name would let
-// it report false readiness against an unrelated VM.
+// it report false readiness against an unrelated machine.
 func (rt *Router) nodeNameTaken(ctx context.Context, name string) (bool, error) {
 	nodes, err := rt.nodes.ListNodes(ctx)
 	if err != nil {
 		return false, fmt.Errorf("list nodes: %w", err)
 	}
-	for _, n := range nodes {
-		if n.Name == name {
-			return true, nil
-		}
+	if _, ok := findNodeByName(nodes, name); ok {
+		return true, nil
 	}
 	provisions, err := rt.nodeProvisions.ListNodeProvisions(ctx)
 	if err != nil {
@@ -594,6 +606,15 @@ func (rt *Router) nodeNameTaken(ctx context.Context, name string) (bool, error) 
 	}
 	for _, p := range provisions {
 		if p.Name == name && p.Status != store.NodeProvisionStatusFailed {
+			return true, nil
+		}
+	}
+	sshProvisions, err := rt.sshProvisions.ListSSHNodeProvisions(ctx)
+	if err != nil {
+		return false, fmt.Errorf("list ssh node provisions: %w", err)
+	}
+	for _, p := range sshProvisions {
+		if p.Name == name && p.Status != store.SSHNodeProvisionStatusFailed {
 			return true, nil
 		}
 	}
@@ -653,19 +674,17 @@ func (rt *Router) handleGetNodeProvision(w http.ResponseWriter, r *http.Request)
 // just be retried on the next poll.
 func (rt *Router) refreshNodeProvision(ctx context.Context, p store.NodeProvision) store.NodeProvision {
 	if nodes, err := rt.nodes.ListNodes(ctx); err == nil {
-		for _, n := range nodes {
-			if n.Name == p.Name {
-				// Enrollment (internal/agent/server.go, frozen) always sets
-				// AcceptsAppWorkloads true and leaves AcceptsBuildWorkloads
-				// false, with no way to carry the operator's chosen Role
-				// through the join-token exchange itself: apply it here,
-				// the first point after enrollment this handler controls.
-				acceptsApp, acceptsBuild := p.Role != "build", p.Role == "build"
-				if werr := rt.nodes.UpdateNodeWorkloads(ctx, n.ID, acceptsApp, acceptsBuild); werr != nil {
-					rt.logger.Error("api: node provision: apply role to node failed", slog.String("provision_id", p.ID), slog.String("node_id", n.ID), slog.String("error", werr.Error()))
-				}
-				return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusReady, p.IPAddress, n.ID, "")
+		if n, ok := findNodeByName(nodes, p.Name); ok {
+			// Enrollment (internal/agent/server.go, frozen) always sets
+			// AcceptsAppWorkloads true and leaves AcceptsBuildWorkloads
+			// false, with no way to carry the operator's chosen Role
+			// through the join-token exchange itself: apply it here,
+			// the first point after enrollment this handler controls.
+			acceptsApp, acceptsBuild := p.Role != "build", p.Role == "build"
+			if werr := rt.nodes.UpdateNodeWorkloads(ctx, n.ID, acceptsApp, acceptsBuild); werr != nil {
+				rt.logger.Error("api: node provision: apply role to node failed", slog.String("provision_id", p.ID), slog.String("node_id", n.ID), slog.String("error", werr.Error()))
 			}
+			return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusReady, p.IPAddress, n.ID, "")
 		}
 	} else {
 		rt.logger.Warn("api: node provision: list nodes failed", slog.String("provision_id", p.ID), slog.String("error", err.Error()))

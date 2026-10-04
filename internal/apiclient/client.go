@@ -342,6 +342,39 @@ func (c *Client) ClearAppDatabaseAttachment(ctx context.Context, name string) er
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/database", nil, nil)
 }
 
+// CreateAppConnection calls POST /api/v1/apps/{name}/connections: adds
+// (or replaces) one entry in name's DatabaseEnv map, the multi-
+// connection sibling of SetAppDatabaseAttachment above.
+func (c *Client) CreateAppConnection(ctx context.Context, name string, req CreateAppConnectionRequest) (AppConnectionResource, error) {
+	var out AppConnectionResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/connections", req, &out)
+	return out, err
+}
+
+// DeleteAppConnection calls DELETE /api/v1/apps/{name}/connections/{env_var}.
+func (c *Client) DeleteAppConnection(ctx context.Context, name, envVar string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/connections/"+PathEscape(envVar), nil, nil)
+}
+
+// ListAppConnections calls GET /api/v1/apps/{name}/connections: every
+// DatabaseEnv entry, each resolved against its database's real
+// placement so the response says whether it's cross-node-capable today.
+func (c *Client) ListAppConnections(ctx context.Context, name string) ([]AppConnectionResource, error) {
+	var out []AppConnectionResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/connections", nil, &out)
+	return out, err
+}
+
+// ListConnectableDatabases calls GET
+// /api/v1/apps/{name}/connectable-databases: every managed database name
+// could connect to, marked with whether it's already connected and
+// whether it's on a different node.
+func (c *Client) ListConnectableDatabases(ctx context.Context, name string) ([]ConnectableDatabaseResource, error) {
+	var out []ConnectableDatabaseResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/connectable-databases", nil, &out)
+	return out, err
+}
+
 // SetAppVaultEnv calls PUT /api/v1/apps/{name}/vault-env/{key}: declares
 // (or replaces) one env var as resolving live from the platform's
 // configured external Vault instance, for an app that already exists.
@@ -377,6 +410,15 @@ func (c *Client) SetAppEgressPolicy(ctx context.Context, name string, req SetApp
 // opting name back out to unrestricted egress.
 func (c *Client) ClearAppEgressPolicy(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/egress-policy", nil, nil)
+}
+
+// SetAppVolumes calls PUT /api/v1/apps/{name}/volumes: attaches (or
+// removes) a named Docker volume outside a redeploy, replacing name's
+// whole desired volume list with req.Volumes.
+func (c *Client) SetAppVolumes(ctx context.Context, name string, req SetAppVolumesRequest) (SetAppVolumesResponse, error) {
+	var out SetAppVolumesResponse
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/volumes", req, &out)
+	return out, err
 }
 
 // CreateTag calls POST /api/v1/tags.
@@ -574,6 +616,16 @@ func (c *Client) GetAppResourceRecommendation(ctx context.Context, name string) 
 func (c *Client) GetDatabaseResourceRecommendation(ctx context.Context, name string) (ResourceRecommendationResource, error) {
 	var out ResourceRecommendationResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/resource-recommendation", nil, &out)
+	return out, err
+}
+
+// GetAppCostEstimate calls GET /api/v1/apps/{name}/cost-estimate
+// (internal/api/cost_estimate.go's handleAppCostEstimate): a read-only,
+// deterministic "what this would cost elsewhere" estimate derived from
+// the app's declared or observed CPU/memory. Not a real bill.
+func (c *Client) GetAppCostEstimate(ctx context.Context, name string) (CostEstimateResource, error) {
+	var out CostEstimateResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/cost-estimate", nil, &out)
 	return out, err
 }
 
@@ -1009,6 +1061,17 @@ func (c *Client) ClearDomainTLSCert(ctx context.Context, name, domain string) (D
 	return out, err
 }
 
+// RenewDomainCertificate calls POST
+// /api/v1/apps/{name}/domains/{domain}/cert/renew: forces re-issuance of
+// domain's automatically-managed certificate (ACME or internal; not valid
+// for a domain with a BYO certificate uploaded, see
+// handleRenewDomainCertificate's own doc comment).
+func (c *Client) RenewDomainCertificate(ctx context.Context, name, domain string) (RenewCertificateResource, error) {
+	var out RenewCertificateResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/domains/"+PathEscape(domain)+"/cert/renew", nil, &out)
+	return out, err
+}
+
 // domainWAFPath builds /api/v1/apps/{name}/domains/{domain}/waf, shared
 // by all three domain WAF/rate-limit methods below, mirroring
 // domainAuthPath's identical shape for a different per-domain toggle.
@@ -1038,6 +1101,47 @@ func (c *Client) SetDomainWAF(ctx context.Context, name, domain string, req SetD
 func (c *Client) ClearDomainWAF(ctx context.Context, name, domain string) (DomainWAFResource, error) {
 	var out DomainWAFResource
 	err := c.do(ctx, http.MethodDelete, domainWAFPath(name, domain), nil, &out)
+	return out, err
+}
+
+// dnsRecordsPath builds /api/v1/apps/{name}/domains/{domain}/dns-records,
+// shared by all four DNS record methods below, mirroring domainWAFPath's
+// identical shape for a different per-domain resource.
+func dnsRecordsPath(name, domain string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/domains/" + PathEscape(domain) + "/dns-records"
+}
+
+// ListDNSRecords calls GET /api/v1/apps/{name}/domains/{domain}/dns-records:
+// every record in domain's best-effort zone, from whichever ACME DNS-01
+// provider is configured, each with a live resolution status.
+func (c *Client) ListDNSRecords(ctx context.Context, name, domain string) (DNSRecordsResponse, error) {
+	var out DNSRecordsResponse
+	err := c.do(ctx, http.MethodGet, dnsRecordsPath(name, domain), nil, &out)
+	return out, err
+}
+
+// CreateDNSRecord calls POST .../dns-records: appends a new record to
+// domain's zone, leaving any existing record with the same name and
+// type untouched.
+func (c *Client) CreateDNSRecord(ctx context.Context, name, domain string, record DNSRecordResource) (DNSRecordsResponse, error) {
+	var out DNSRecordsResponse
+	err := c.do(ctx, http.MethodPost, dnsRecordsPath(name, domain), record, &out)
+	return out, err
+}
+
+// UpdateDNSRecord calls PUT .../dns-records: replaces one exact record
+// (req.Original) with a new value (req.Record).
+func (c *Client) UpdateDNSRecord(ctx context.Context, name, domain string, req UpdateDNSRecordRequest) (DNSRecordsResponse, error) {
+	var out DNSRecordsResponse
+	err := c.do(ctx, http.MethodPut, dnsRecordsPath(name, domain), req, &out)
+	return out, err
+}
+
+// DeleteDNSRecord calls DELETE .../dns-records: removes one exact
+// record (name, type, and value must all match). Idempotent.
+func (c *Client) DeleteDNSRecord(ctx context.Context, name, domain string, record DNSRecordResource) (DNSRecordsResponse, error) {
+	var out DNSRecordsResponse
+	err := c.do(ctx, http.MethodDelete, dnsRecordsPath(name, domain), record, &out)
 	return out, err
 }
 
@@ -1423,6 +1527,18 @@ func (c *Client) GetSession(ctx context.Context) (SessionInfoResource, error) {
 	return out, err
 }
 
+// MintSessionLink calls POST /api/v1/auth/session-links using this
+// Client's bearer token, which must hold AbilityRoot: minting a session
+// link is root-equivalent since redeeming it establishes a session with
+// the minting caller's own abilities. The returned token is a one-time
+// secret, the same contract CreateNodeJoinToken's own doc comment
+// describes.
+func (c *Client) MintSessionLink(ctx context.Context) (SessionLinkResource, error) {
+	var out SessionLinkResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/auth/session-links", nil, &out)
+	return out, err
+}
+
 // SetSecret calls PUT /api/v1/apps/{name}/secrets/{key}. No response
 // body beyond the status (internal/api/secrets.go's handleSetSecret
 // returns 204 on success), matching that handler's own doc comment on
@@ -1536,6 +1652,17 @@ func (c *Client) DeleteGitSource(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/git-source", nil, nil)
 }
 
+// RotateGitSourceWebhookSecret calls POST
+// /api/v1/apps/{name}/git-source/rotate-webhook-secret: mints a fresh
+// webhook secret without touching repo_url/branch/build config. The
+// returned resource's WebhookSecret is populated this one time, the
+// caller's only chance to see it.
+func (c *Client) RotateGitSourceWebhookSecret(ctx context.Context, name string) (GitSourceResource, error) {
+	var out GitSourceResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/git-source/rotate-webhook-secret", nil, &out)
+	return out, err
+}
+
 // ListWebhookDeliveries calls GET /api/v1/apps/{name}/webhook-deliveries:
 // recent inbound git-provider webhook requests for name, newest first.
 func (c *Client) ListWebhookDeliveries(ctx context.Context, name string, opts ListWebhookDeliveriesOptions) ([]WebhookDeliveryResource, error) {
@@ -1618,11 +1745,42 @@ func (c *Client) ListServiceTemplates(ctx context.Context) ([]ServiceTemplateLis
 }
 
 // GetServiceTemplate calls GET /api/v1/service-templates/{id}: one
-// catalog entry, including its full compose.yaml body.
+// catalog entry, including its full compose.yaml body. Also resolves an
+// operator-defined custom template id (resolveTemplate,
+// internal/api/service_templates.go), so this is the same call whether
+// id came from ListServiceTemplates or ListCustomTemplates below.
 func (c *Client) GetServiceTemplate(ctx context.Context, id string) (ServiceTemplateDetail, error) {
 	var out ServiceTemplateDetail
 	err := c.do(ctx, http.MethodGet, "/api/v1/service-templates/"+PathEscape(id), nil, &out)
 	return out, err
+}
+
+// SaveAppAsTemplate calls POST /api/v1/apps/{name}/save-as-template
+// (internal/api/service_templates_custom.go): derives a compose.yaml
+// from name's current desired state and saves it as a reusable,
+// operator-defined template. No secret, database, or vault-backed env
+// value is ever captured, only the key name (see compose.
+// FromDesiredServices' own doc comment); result.RequiredEnvKeys lists
+// exactly which keys will need a real value before this template can
+// deploy.
+func (c *Client) SaveAppAsTemplate(ctx context.Context, name string, req SaveAppAsTemplateRequest) (CustomTemplateDetail, error) {
+	var out CustomTemplateDetail
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/save-as-template", req, &out)
+	return out, err
+}
+
+// ListCustomTemplates calls GET /api/v1/templates/custom: every
+// operator-defined template, without each one's compose body (see
+// GetServiceTemplate for the full body).
+func (c *Client) ListCustomTemplates(ctx context.Context) ([]CustomTemplateListItem, error) {
+	var out []CustomTemplateListItem
+	err := c.do(ctx, http.MethodGet, "/api/v1/templates/custom", nil, &out)
+	return out, err
+}
+
+// DeleteCustomTemplate calls DELETE /api/v1/templates/custom/{id}.
+func (c *Client) DeleteCustomTemplate(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/templates/custom/"+PathEscape(id), nil, nil)
 }
 
 // backupTargetsCollectionPath builds /api/v1/backup-targets, and
@@ -1678,6 +1836,64 @@ func (c *Client) DeleteBackupTarget(ctx context.Context, id string) error {
 // uploading or deleting anything.
 func (c *Client) TestBackupTarget(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodPost, backupTargetPath(id)+"/test", nil, nil)
+}
+
+// firewallRulesCollectionPath builds /api/v1/firewall-rules, and
+// firewallRulePath builds that same path plus /{id}.
+func firewallRulesCollectionPath() string {
+	return "/api/v1/firewall-rules"
+}
+
+func firewallRulePath(id string) string {
+	return firewallRulesCollectionPath() + "/" + PathEscape(id)
+}
+
+// CreateFirewallRule calls POST /api/v1/firewall-rules.
+func (c *Client) CreateFirewallRule(ctx context.Context, req CreateFirewallRuleRequest) (FirewallRuleResource, error) {
+	var out FirewallRuleResource
+	err := c.do(ctx, http.MethodPost, firewallRulesCollectionPath(), req, &out)
+	return out, err
+}
+
+// ListFirewallRules calls GET /api/v1/firewall-rules.
+func (c *Client) ListFirewallRules(ctx context.Context) ([]FirewallRuleResource, error) {
+	var out []FirewallRuleResource
+	err := c.do(ctx, http.MethodGet, firewallRulesCollectionPath(), nil, &out)
+	return out, err
+}
+
+// DeleteFirewallRule calls DELETE /api/v1/firewall-rules/{id}.
+func (c *Client) DeleteFirewallRule(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, firewallRulePath(id), nil, nil)
+}
+
+// appStreamsCollectionPath builds /api/v1/apps/{name}/streams, and
+// appStreamPath builds that same path plus /{id}.
+func appStreamsCollectionPath(name string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/streams"
+}
+
+func appStreamPath(name, id string) string {
+	return appStreamsCollectionPath(name) + "/" + PathEscape(id)
+}
+
+// ListAppStreams calls GET /api/v1/apps/{name}/streams.
+func (c *Client) ListAppStreams(ctx context.Context, name string) ([]AppStreamResource, error) {
+	var out []AppStreamResource
+	err := c.do(ctx, http.MethodGet, appStreamsCollectionPath(name), nil, &out)
+	return out, err
+}
+
+// CreateAppStream calls POST /api/v1/apps/{name}/streams.
+func (c *Client) CreateAppStream(ctx context.Context, name string, req CreateAppStreamRequest) (AppStreamResource, error) {
+	var out AppStreamResource
+	err := c.do(ctx, http.MethodPost, appStreamsCollectionPath(name), req, &out)
+	return out, err
+}
+
+// DeleteAppStream calls DELETE /api/v1/apps/{name}/streams/{id}.
+func (c *Client) DeleteAppStream(ctx context.Context, name, id string) error {
+	return c.do(ctx, http.MethodDelete, appStreamPath(name, id), nil, nil)
 }
 
 // registryCredentialsCollectionPath builds /api/v1/registry-credentials,
@@ -1811,6 +2027,22 @@ func (c *Client) ListNotificationDeliveries(ctx context.Context, id string, limi
 	var out []NotificationDeliveryResource
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
+}
+
+// ListPushSubscriptions calls GET /api/v1/settings/push-subscriptions:
+// every browser the caller's own account has registered for the
+// "webpush" notification-channel kind.
+func (c *Client) ListPushSubscriptions(ctx context.Context) ([]PushSubscriptionResource, error) {
+	var out []PushSubscriptionResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/push-subscriptions", nil, &out)
+	return out, err
+}
+
+// DeletePushSubscription calls DELETE
+// /api/v1/settings/push-subscriptions/{id}: revokes one registered
+// browser.
+func (c *Client) DeletePushSubscription(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/settings/push-subscriptions/"+PathEscape(id), nil, nil)
 }
 
 // GetLogDrain calls GET /api/v1/apps/{name}/log-drain: the app's
@@ -2114,6 +2346,22 @@ func (c *Client) ListEnvironments(ctx context.Context, projectID string) ([]Envi
 	return out, err
 }
 
+// CompareEnvironmentEnv calls GET
+// /api/v1/projects/{id}/environments/compare?a=...&b=...: each of
+// environment a and b's resolved effective env vars, secret values
+// always redacted, plus the keys that differ between them.
+func (c *Client) CompareEnvironmentEnv(ctx context.Context, projectID, a, b string) (EnvironmentCompareResource, error) {
+	path := environmentsCollectionPath(projectID) + "/compare"
+	q := url.Values{}
+	q.Set("a", a)
+	q.Set("b", b)
+	path += "?" + q.Encode()
+
+	var out EnvironmentCompareResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
 // PreviewEnvironmentClone calls GET /api/v1/environments/{id}/clone/preview:
 // what cloning id into a new environment named newEnvironmentName would
 // most likely create, without applying it or reserving any name.
@@ -2205,6 +2453,25 @@ func (c *Client) GetAutoRollback(ctx context.Context, appName string) (AutoRollb
 func (c *Client) SetAutoRollback(ctx context.Context, appName string, enabled bool) (AutoRollbackSettingResource, error) {
 	var out AutoRollbackSettingResource
 	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/auto-rollback", SetAutoRollbackRequest{Enabled: enabled}, &out)
+	return out, err
+}
+
+// GetAutoRollbackSLOBurn calls GET /api/v1/apps/{name}/auto-rollback-slo-burn:
+// which mode appName reacts in the next time a kind=slo_burn alert rule
+// fires for it.
+func (c *Client) GetAutoRollbackSLOBurn(ctx context.Context, appName string) (AutoRollbackSLOBurnSettingResource, error) {
+	var out AutoRollbackSLOBurnSettingResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/auto-rollback-slo-burn", nil, &out)
+	return out, err
+}
+
+// SetAutoRollbackSLOBurn calls PUT
+// /api/v1/apps/{name}/auto-rollback-slo-burn, setting appName's mode for
+// automatic rollback on an SLO burn-rate alert. mode is one of "off",
+// "auto", "dry_run", "pause_for_human"; "off" by default.
+func (c *Client) SetAutoRollbackSLOBurn(ctx context.Context, appName, mode string) (AutoRollbackSLOBurnSettingResource, error) {
+	var out AutoRollbackSLOBurnSettingResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/auto-rollback-slo-burn", SetAutoRollbackSLOBurnRequest{Mode: mode}, &out)
 	return out, err
 }
 
@@ -2527,6 +2794,19 @@ func (c *Client) GetNodePatchStatus(ctx context.Context, id string) (NodePatchSt
 	return out, err
 }
 
+// GetNodeCapacityForecast calls GET /api/v1/nodes/{id}/capacity-forecast
+// (internal/api/node_capacity_forecast.go's
+// handleNodeCapacityForecast): a rough "days until full at the current
+// trend" projection for id's disk and memory, derived from a
+// deterministic linear-trend fit over recent usage history, never from
+// an external model. Disk/Memory come back nil when the fitted trend is
+// flat or improving, or there isn't enough history yet.
+func (c *Client) GetNodeCapacityForecast(ctx context.Context, id string) (NodeCapacityForecastResource, error) {
+	var out NodeCapacityForecastResource
+	err := c.do(ctx, http.MethodGet, nodePath(id)+"/capacity-forecast", nil, &out)
+	return out, err
+}
+
 // ListNodeEvents calls GET /api/v1/nodes/{id}/events: the node's recent
 // status transitions, newest first. limit <= 0 uses the server default.
 func (c *Client) ListNodeEvents(ctx context.Context, id string, limit int) ([]NodeStatusEventResource, error) {
@@ -2551,12 +2831,23 @@ func (c *Client) GetMeshStatus(ctx context.Context) (MeshStatusResource, error) 
 
 // RotateNodeMeshKey calls POST /api/v1/nodes/{id}/mesh/rotate-key:
 // generates a fresh WireGuard keypair for id and makes it live
-// immediately. Only actually succeeds for the node running the target
-// control plane itself today; see internal/api/mesh.go's own doc
-// comment for why remote-node rotation isn't possible yet.
+// immediately. Works for any node currently connected to the target
+// control plane, local or remote (internal/api/mesh.go's own doc
+// comment).
 func (c *Client) RotateNodeMeshKey(ctx context.Context, id string) (RotateKeyResponse, error) {
 	var out RotateKeyResponse
 	err := c.do(ctx, http.MethodPost, nodePath(id)+"/mesh/rotate-key", nil, &out)
+	return out, err
+}
+
+// RejoinNodeMesh calls POST /api/v1/nodes/{id}/mesh/rejoin: forces an
+// immediate fleet-wide mesh reconcile pass instead of waiting for the
+// next scheduled resync. See internal/api/mesh.go's own doc comment: id
+// is only used to validate the node exists, the resync itself always
+// covers the whole fleet.
+func (c *Client) RejoinNodeMesh(ctx context.Context, id string) (RejoinMeshResponse, error) {
+	var out RejoinMeshResponse
+	err := c.do(ctx, http.MethodPost, nodePath(id)+"/mesh/rejoin", nil, &out)
 	return out, err
 }
 
@@ -2582,6 +2873,14 @@ func (c *Client) GetOnboardingState(ctx context.Context) (OnboardingStateResourc
 func (c *Client) GetSystemDoctor(ctx context.Context) (SystemDoctorResource, error) {
 	var out SystemDoctorResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/system/doctor", nil, &out)
+	return out, err
+}
+
+// GetOpenAPISpec calls GET /api/v1/openapi.json: the route metadata
+// behind "levelrail-cli api-docs" and the web dashboard's API explorer.
+func (c *Client) GetOpenAPISpec(ctx context.Context) (OpenAPISpecResource, error) {
+	var out OpenAPISpecResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/openapi.json", nil, &out)
 	return out, err
 }
 
@@ -2648,6 +2947,19 @@ func (c *Client) CleanupOrphanedVolumes(ctx context.Context, names []string) (Cl
 func (c *Client) GetUpdates(ctx context.Context) (UpdatesResource, error) {
 	var out UpdatesResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/updates", nil, &out)
+	return out, err
+}
+
+// GetChangelog calls GET /api/v1/changelog: the most recent release
+// notes parsed from the control plane's own CHANGELOG.md. limit <= 0
+// uses the API's own default page size.
+func (c *Client) GetChangelog(ctx context.Context, limit int) (ChangelogResource, error) {
+	path := "/api/v1/changelog"
+	if limit > 0 {
+		path += "?limit=" + strconv.Itoa(limit)
+	}
+	var out ChangelogResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
 
@@ -2834,16 +3146,32 @@ func (c *Client) StreamDeployLog(ctx context.Context, name, deployID string, onE
 // meant to run indefinitely until the caller's own context is canceled
 // (e.g. Ctrl+C).
 func (c *Client) streamLogEvents(ctx context.Context, path string, onEntry func(LogStreamEntry) error) error {
-	return streamSSE(ctx, c, path, onEntry)
+	return streamSSE(ctx, c, http.MethodGet, path, nil, onEntry)
 }
 
 // streamSSE is the shared SSE scanner: it decodes each "data: " line as a T
 // and calls onEvent in arrival order. Lines that do not decode are skipped.
-func streamSSE[T any](ctx context.Context, c *Client, path string, onEvent func(T) error) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
+// body is JSON-encoded and sent with the request when non-nil (the AI
+// chat message/confirmation routes are POST with a body; the log tail
+// above is a bodyless GET), matching do()'s own body-encoding rule.
+func streamSSE[T any](ctx context.Context, c *Client, method, path string, body any, onEvent func(T) error) error {
+	var reqBody io.Reader
+	if body != nil {
+		b, err := json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("encode request body: %w", err)
+		}
+		reqBody = bytes.NewReader(b)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reqBody) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	req.Header.Set("Accept", "text/event-stream")
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
@@ -2854,7 +3182,7 @@ func streamSSE[T any](ctx context.Context, c *Client, path string, onEvent func(
 	streamClient := &http.Client{Transport: c.hc.Transport}
 	resp, err := streamClient.Do(req) //nolint:gosec // same target as above
 	if err != nil {
-		return fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+		return fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -3142,6 +3470,20 @@ func (c *Client) UpdateIngressSettings(ctx context.Context, req IngressSettingsR
 	return out, err
 }
 
+// GetUpdateSettings calls GET /api/v1/updates/settings.
+func (c *Client) GetUpdateSettings(ctx context.Context) (UpdateSettingsResource, error) {
+	var out UpdateSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/updates/settings", nil, &out)
+	return out, err
+}
+
+// SetUpdateSettings calls PUT /api/v1/updates/settings.
+func (c *Client) SetUpdateSettings(ctx context.Context, req UpdateSettingsResource) (UpdateSettingsResource, error) {
+	var out UpdateSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/updates/settings", req, &out)
+	return out, err
+}
+
 // GetDashboardURL calls GET /api/v1/settings/dashboard-url.
 func (c *Client) GetDashboardURL(ctx context.Context) (DashboardURLResource, error) {
 	var out DashboardURLResource
@@ -3185,6 +3527,52 @@ func (c *Client) DeleteAIAssistantSettings(ctx context.Context) (AIAssistantSett
 	return out, err
 }
 
+// CreateAIChatSession calls POST /api/v1/ai/sessions.
+func (c *Client) CreateAIChatSession(ctx context.Context) (AIChatSessionCreatedResource, error) {
+	var out AIChatSessionCreatedResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/ai/sessions", nil, &out)
+	return out, err
+}
+
+// ListAIChatSessions calls GET /api/v1/ai/sessions.
+func (c *Client) ListAIChatSessions(ctx context.Context) ([]AIChatSessionSummaryResource, error) {
+	var out []AIChatSessionSummaryResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/ai/sessions", nil, &out)
+	return out, err
+}
+
+// GetAIChatSession calls GET /api/v1/ai/sessions/{id}: the full transcript.
+func (c *Client) GetAIChatSession(ctx context.Context, id string) (AIChatSessionResource, error) {
+	var out AIChatSessionResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/ai/sessions/"+PathEscape(id), nil, &out)
+	return out, err
+}
+
+// DeleteAIChatSession calls DELETE /api/v1/ai/sessions/{id}.
+func (c *Client) DeleteAIChatSession(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/ai/sessions/"+PathEscape(id), nil, nil)
+}
+
+// SendAIChatMessage calls POST /api/v1/ai/sessions/{id}/messages: sends
+// content as a new user message and streams the assistant's turn,
+// calling onEvent for every SSE event in arrival order (see
+// AIChatSSEEvent's own doc comment for the four shapes). Returns once
+// the server sends "done" or the connection ends, matching
+// streamLogEvents' own contract.
+func (c *Client) SendAIChatMessage(ctx context.Context, sessionID, content string, onEvent func(AIChatSSEEvent) error) error {
+	path := "/api/v1/ai/sessions/" + PathEscape(sessionID) + "/messages"
+	return streamSSE(ctx, c, http.MethodPost, path, CreateAIChatMessageRequest{Content: content}, onEvent)
+}
+
+// ResolveAIChatConfirmation calls POST
+// /api/v1/ai/sessions/{id}/confirmations/{confirmationID}: approves or
+// rejects a pending mutating tool call, streaming the turn's
+// continuation the same way SendAIChatMessage does.
+func (c *Client) ResolveAIChatConfirmation(ctx context.Context, sessionID, confirmationID string, approve bool, onEvent func(AIChatSSEEvent) error) error {
+	path := "/api/v1/ai/sessions/" + PathEscape(sessionID) + "/confirmations/" + PathEscape(confirmationID)
+	return streamSSE(ctx, c, http.MethodPost, path, ResolveAIChatConfirmationRequest{Approve: approve}, onEvent)
+}
+
 // SetAppStorage calls PUT /api/v1/apps/{name}/storage: attaches an
 // already-connected backup target to name as its object-storage
 // credential source.
@@ -3226,11 +3614,30 @@ func (c *Client) DisconnectGitHubApp(ctx context.Context) error {
 }
 
 // ListGitHubAppRepos calls GET /api/v1/github-app/repos: every
-// repository the connected GitHub App installation can access.
-func (c *Client) ListGitHubAppRepos(ctx context.Context) ([]GitHubAppRepoResource, error) {
-	var out []GitHubAppRepoResource
+// repository every connected installation can access, plus one error
+// per installation that failed to list (migrations/0282 made
+// installations one-to-many).
+func (c *Client) ListGitHubAppRepos(ctx context.Context) (GitHubAppRepoListResource, error) {
+	var out GitHubAppRepoListResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/github-app/repos", nil, &out)
 	return out, err
+}
+
+// ListGitHubAppInstallations calls GET
+// /api/v1/github-app/installations: every connected GitHub account/org,
+// plus the URL to connect another one.
+func (c *Client) ListGitHubAppInstallations(ctx context.Context) (GitHubAppInstallationListResource, error) {
+	var out GitHubAppInstallationListResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/github-app/installations", nil, &out)
+	return out, err
+}
+
+// DeleteGitHubAppInstallation calls DELETE
+// /api/v1/github-app/installations/{id}: disconnects one account/org.
+// Refused with a 409 (surfaced as *APIError) while a git source still
+// points at a repo under that account.
+func (c *Client) DeleteGitHubAppInstallation(ctx context.Context, id int64) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/github-app/installations/"+strconv.FormatInt(id, 10), nil, nil)
 }
 
 // ListGitHubAppBranches calls GET

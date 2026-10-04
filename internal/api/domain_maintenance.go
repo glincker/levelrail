@@ -14,6 +14,11 @@ type DomainMaintenanceStore interface {
 	GetDomainMaintenance(ctx context.Context, domain string) (bool, error)
 	SetDomainMaintenance(ctx context.Context, domain string) error
 	DeleteDomainMaintenance(ctx context.Context, domain string) error
+	// ListDomainMaintenance backs GET /api/v1/domains's
+	// maintenance_enabled flag: one bulk read instead of a per-domain
+	// GetDomainMaintenance call, avoiding an N+1 query over the domain
+	// list.
+	ListDomainMaintenance(ctx context.Context) ([]string, error)
 }
 
 // domainMaintenanceResource is the wire shape for GET/PUT/DELETE

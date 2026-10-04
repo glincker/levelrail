@@ -14,10 +14,11 @@ export const emailSettingsKeys = {
 }
 
 // EmailSettings mirrors emailSettingsResource exactly. smtp_password/
-// ses_secret_access_key are write-only: only ever sent, never present in
-// a GET response (the *_set flags report presence instead).
+// ses_secret_access_key/resend_api_key are write-only: only ever sent,
+// never present in a GET response (the *_set flags report presence
+// instead).
 export interface EmailSettings {
-  backend: '' | 'smtp' | 'ses'
+  backend: '' | 'smtp' | 'ses' | 'resend'
   smtp_host?: string
   smtp_port?: number
   smtp_username?: string
@@ -29,6 +30,9 @@ export interface EmailSettings {
   ses_from?: string
   ses_secret_access_key?: string
   ses_secret_access_key_set?: boolean
+  resend_from?: string
+  resend_api_key?: string
+  resend_api_key_set?: boolean
 }
 
 export async function fetchEmailSettings(): Promise<EmailSettings> {

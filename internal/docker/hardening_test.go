@@ -95,6 +95,7 @@ func TestHardeningFromEnv(t *testing.T) {
 		mode    string
 		pids    string
 		caps    string
+		runtime RuntimeInfo
 		want    HardeningConfig
 		wantErr bool
 	}{
@@ -104,13 +105,17 @@ func TestHardeningFromEnv(t *testing.T) {
 		{name: "off", mode: "off", want: HardeningConfig{Mode: HardeningOff, PidsLimit: DefaultPidsLimit}},
 		{name: "bad mode falls back to warn", mode: "strict", wantErr: true, want: HardeningConfig{Mode: HardeningWarn, PidsLimit: DefaultPidsLimit}},
 		{name: "bad pids keeps default", mode: "enforce", pids: "lots", wantErr: true, want: HardeningConfig{Mode: HardeningEnforce, PidsLimit: DefaultPidsLimit}},
+		{name: "rootless auto-disables pids limit", mode: "enforce", runtime: RuntimeInfo{Rootless: true},
+			want: HardeningConfig{Mode: HardeningEnforce, PidsLimit: 0}},
+		{name: "rootless with explicit pids limit keeps it", mode: "enforce", pids: "50", runtime: RuntimeInfo{Rootless: true},
+			want: HardeningConfig{Mode: HardeningEnforce, PidsLimit: 50}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv(envHardening, tt.mode)
 			t.Setenv(envHardeningPids, tt.pids)
 			t.Setenv(envHardeningCaps, tt.caps)
-			got, err := HardeningFromEnv()
+			got, err := HardeningFromEnv(tt.runtime)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
 			}

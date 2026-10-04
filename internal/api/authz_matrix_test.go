@@ -31,45 +31,55 @@ var (
 // with something other than 401. Adding a route here needs a reason a
 // reviewer can challenge.
 var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credentials
-	"GET /healthz":                               "liveness probe for systemd and load balancers",
-	"GET /readyz":                                "readiness probe, no data beyond ready/not ready",
-	"GET /api/v1/brand":                          "login screen needs branding before a session exists",
-	"GET /api/v1/dev-mode":                       "login screen banner, boolean only",
-	"POST /api/v1/auth/login":                    "credential exchange, rate limited",
-	"POST /api/v1/auth/register":                 "first-run setup, refuses once an admin exists",
-	"GET /api/v1/auth/setup-status":              "tells the SPA whether to show first-run setup",
-	"POST /api/v1/auth/2fa/verify":               "step two of login, gated by an MFA pending token and rate limit",
-	"POST /api/v1/invites/accept":                "authenticated by the single-use invite token in the body",
-	"POST /api/v1/auth/device/start":             "CLI device login start, rate limited",
-	"POST /api/v1/auth/device/token":             "CLI device login poll, authenticated by the device code",
-	"GET /api/v1/auth/oauth/providers":           "login screen lists enabled providers",
-	"GET /api/v1/auth/oauth/{provider}/start":    "OAuth sign-in redirect",
-	"GET /api/v1/auth/oauth/{provider}/callback": "OAuth sign-in callback, authenticated by state and code",
-	"POST /api/v1/auth/forgot-password":          "always generic response, rate limited",
-	"POST /api/v1/auth/reset-password":           "authenticated by the single-use reset token",
-	"POST /api/v1/webhooks/github/{name}":        "authenticated by the HMAC signature of the app's webhook secret",
-	"GET /public/status":                         "opt-in public status page, serves only operator-chosen names and statuses, rate limited and cacheable",
-	"GET /public/status.json":                    "JSON form of the opt-in public status page, same whitelisted view",
-	"GET /public/status.rss":                     "RSS feed of operator-authored incidents on the opt-in public status page",
-	"GET /.well-known/jwks.json":                 "pipeline OIDC verification key set, meant to be fetched by AWS/GCP/Vault with no session; answers 404 rather than 401 when OIDC is unconfigured (router.go's oidcJWKS is nil), which leaks nothing either",
+	"GET /healthz":                                   "liveness probe for systemd and load balancers",
+	"GET /readyz":                                    "readiness probe, no data beyond ready/not ready",
+	"GET /api/v1/brand":                              "login screen needs branding before a session exists",
+	"GET /api/v1/dev-mode":                           "login screen banner, boolean only",
+	"POST /api/v1/auth/login":                        "credential exchange, rate limited",
+	"POST /api/v1/auth/register":                     "first-run setup, refuses once an admin exists",
+	"GET /api/v1/auth/setup-status":                  "tells the SPA whether to show first-run setup",
+	"POST /api/v1/auth/2fa/verify":                   "step two of login, gated by an MFA pending token and rate limit",
+	"POST /api/v1/auth/passkey-login/begin":          "passkey sign-in ceremony start, rate limited, same shape as /auth/login",
+	"POST /api/v1/auth/passkey-login/finish":         "passkey sign-in ceremony finish, authenticated by the signed WebAuthn assertion",
+	"POST /api/v1/invites/accept":                    "authenticated by the single-use invite token in the body",
+	"POST /api/v1/auth/device/start":                 "CLI device login start, rate limited",
+	"POST /api/v1/auth/device/token":                 "CLI device login poll, authenticated by the device code",
+	"GET /api/v1/auth/oauth/providers":               "login screen lists enabled providers",
+	"GET /api/v1/auth/oauth/{provider}/start":        "OAuth sign-in redirect",
+	"GET /api/v1/auth/oauth/{provider}/callback":     "OAuth sign-in callback, authenticated by state and code",
+	"POST /api/v1/auth/forgot-password":              "always generic response, rate limited",
+	"POST /api/v1/auth/reset-password":               "authenticated by the single-use reset token",
+	"GET /api/v1/auth/session-links/{token}/consume": "authenticated by the single-use session-link token, rate limited",
+	"GET /.well-known/jwks.json":                     "pipeline OIDC verification key set, meant to be fetched by AWS/GCP/Vault with no session; answers 404 rather than 401 when OIDC is unconfigured (router.go's oidcJWKS is nil), which leaks nothing either",
+	"POST /api/v1/webhooks/github/{name}":            "authenticated by the HMAC signature of the app's webhook secret",
+	"POST /api/v1/webhooks/slack/interactions":       "authenticated by the X-Slack-Signature HMAC of the channel's own interactive secret",
+	"POST /api/v1/webhooks/discord/interactions":     "authenticated by the Ed25519 signature of the channel's own Discord application public key",
+	"GET /public/status":                             "opt-in public status page, serves only operator-chosen names and statuses, rate limited and cacheable",
+	"GET /public/status.json":                        "JSON form of the opt-in public status page, same whitelisted view",
+	"GET /public/status.rss":                         "RSS feed of operator-authored incidents on the opt-in public status page",
+	"GET /api/v1/apps/{name}/badge.svg":              "opt-in per-app deploy status badge for READMEs, serves only status and timestamp, 404s like an unknown route when the app's own badge flag is off",
 }
 
 // readOnlyMayMutate lists mutating routes a read-only token may call:
 // public routes (not token-gated at all) and pure computations that
 // change no state.
 var readOnlyMayMutate = map[string]string{
-	"POST /api/v1/pipelines/validate":    "validates YAML, persists nothing",
-	"POST /api/v1/pipelines/filters":     "rewrites submitted YAML with path filters, persists nothing",
-	"POST /api/v1/apps/{name}/preflight": "read-only probes of the stored app config, persists nothing",
-	"POST /api/v1/models/preflight":      "queries the public Hugging Face Hub with a caller-supplied token, persists nothing",
-	"POST /api/v1/models/fit":            "estimates VRAM fit from submitted specs and node facts, persists nothing",
-	"POST /api/v1/apply/plan":            "computes a plan from live reads, persists nothing",
-	"POST /api/v1/prometheus/read":       "Prometheus remote read is a POST but only queries, gated by AbilityRead",
+	"POST /api/v1/pipelines/validate":        "validates YAML, persists nothing",
+	"POST /api/v1/pipelines/filters":         "rewrites submitted YAML with path filters, persists nothing",
+	"POST /api/v1/apps/{name}/preflight":     "read-only probes of the stored app config, persists nothing",
+	"POST /api/v1/models/preflight":          "queries the public Hugging Face Hub with a caller-supplied token, persists nothing",
+	"POST /api/v1/models/fit":                "estimates VRAM fit from submitted specs and node facts, persists nothing",
+	"POST /api/v1/apply/plan":                "computes a plan from live reads, persists nothing",
+	"POST /api/v1/prometheus/read":           "Prometheus remote read is a POST but only queries, gated by AbilityRead",
+	"POST /api/v1/apps/{name}/validate-spec": "validates submitted app.yaml, persists nothing",
+	"POST /api/v1/network-shares/{id}/test":  "reachability dial only, gated by AbilityRead, persists nothing",
 }
 
 // denyExempt lists /apps/{name}/... routes that legitimately do not
 // honour a per-app IAM Deny, with the reason.
-var denyExempt = map[string]string{}
+var denyExempt = map[string]string{
+	"GET /api/v1/apps/{name}/badge.svg": "deliberately unauthenticated (see publicRoutes); a per-app IAM Deny has no principal to apply to here, the badge_enabled flag is the only gate",
+}
 
 func loadMatrixRoutes(t *testing.T) []matrixRoute {
 	t.Helper()

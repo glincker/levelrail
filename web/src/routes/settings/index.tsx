@@ -1,35 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import type { ComponentType } from 'react'
 import { useExperimentalFeatures } from '../../hooks/useExperimental'
-import {
-  filterByFeature,
-  type ExperimentalFeature,
-} from '../../lib/experimental'
-import {
-  UserIcon,
-  ShieldIcon,
-  KeyIcon,
-  LockKeyIcon,
-  UsersIcon,
-  GithubLogoIcon,
-  GitlabLogoIcon,
-  GitBranchIcon,
-  TeaBagIcon,
-  WebhooksLogoIcon,
-  CloudArrowUpIcon,
-  CloudCheckIcon,
-  EnvelopeIcon,
-  GearIcon,
-  GlobeIcon,
-  ArrowCircleUpIcon,
-  ClockCounterClockwiseIcon,
-  PackageIcon,
-  DownloadSimpleIcon,
-  VaultIcon,
-  RobotIcon,
-  PlugsConnectedIcon,
-  SparkleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { visibleSettingsSections } from '../../lib/settingsNav'
+import { PageHeader } from '../../components/shell/PageHeader'
 import {
   Card,
   CardHeader,
@@ -41,214 +13,30 @@ export const Route = createFileRoute('/settings/')({
   component: SettingsHubPage,
 })
 
-interface SettingsCardDef {
-  to: string
-  icon: ComponentType<{ className?: string }>
-  title: string
-  description: string
-  feature?: ExperimentalFeature
-}
-
-interface SettingsSection {
-  heading: string
-  cards: SettingsCardDef[]
-}
-
-const sections: SettingsSection[] = [
-  {
-    heading: 'Account',
-    cards: [
-      {
-        to: '/settings/account',
-        icon: UserIcon,
-        title: 'Account',
-        description: 'Profile and password.',
-      },
-      {
-        to: '/settings/security',
-        icon: ShieldIcon,
-        title: 'Security',
-        description: 'Sessions and login protection.',
-      },
-      {
-        to: '/settings/tokens',
-        icon: KeyIcon,
-        title: 'API tokens',
-        description: 'Scoped, revocable credentials for the CLI, CI, and MCP.',
-      },
-      {
-        to: '/settings/agents',
-        icon: PlugsConnectedIcon,
-        title: 'Agents',
-        description: 'Connect an AI agent over MCP and manage its tokens.',
-      },
-    ],
-  },
-  {
-    heading: 'Team',
-    cards: [
-      {
-        to: '/settings/users',
-        icon: UsersIcon,
-        title: 'Users',
-        description: 'Everyone with access to this platform.',
-      },
-      {
-        to: '/settings/oauth',
-        icon: LockKeyIcon,
-        title: 'OAuth sign-in',
-        description: 'Let people sign in with Google or GitHub.',
-      },
-    ],
-  },
-  {
-    heading: 'Integrations',
-    cards: [
-      {
-        to: '/settings/github-app',
-        icon: GithubLogoIcon,
-        title: 'GitHub App',
-        description: 'Private-repository access for git-based deploys.',
-      },
-      {
-        to: '/settings/gitlab-app',
-        icon: GitlabLogoIcon,
-        title: 'GitLab App',
-        description:
-          'gitlab.com or self-hosted project access for git-based deploys.',
-      },
-      {
-        to: '/settings/bitbucket-app',
-        icon: GitBranchIcon,
-        title: 'Bitbucket App',
-        description: 'Bitbucket Cloud repository access for git-based deploys.',
-      },
-      {
-        to: '/settings/gitea-app',
-        icon: TeaBagIcon,
-        title: 'Gitea App',
-        description:
-          'Self-hosted Gitea repository access for git-based deploys.',
-      },
-      {
-        to: '/settings/notification-channels',
-        icon: WebhooksLogoIcon,
-        title: 'Notification channels',
-        description: 'Slack, Discord, Telegram, webhook, and email alerts.',
-      },
-      {
-        to: '/settings/backup-targets',
-        icon: CloudArrowUpIcon,
-        title: 'Backup targets',
-        description: 'S3-compatible buckets for managed database backups.',
-      },
-      {
-        to: '/settings/registry-credentials',
-        icon: PackageIcon,
-        title: 'Registry credentials',
-        description: 'Pull private images with build.type: image.',
-      },
-      {
-        to: '/settings/import-platform',
-        icon: DownloadSimpleIcon,
-        title: 'Import from another platform',
-        description: 'Bring apps over from Coolify, Dokploy or CapRover.',
-      },
-      {
-        to: '/settings/email',
-        icon: EnvelopeIcon,
-        title: 'Email',
-        description: 'Outbound SMTP for alerts and password resets.',
-      },
-      {
-        to: '/settings/cloudflare-tunnel',
-        icon: CloudCheckIcon,
-        title: 'Cloudflare Tunnel',
-        description:
-          'Expose this control plane without opening an inbound port.',
-        feature: 'cloudflare-tunnel',
-      },
-      {
-        to: '/settings/vault',
-        icon: VaultIcon,
-        title: 'Vault',
-        description:
-          'Resolve app secrets live from an external HashiCorp Vault instance.',
-      },
-      {
-        to: '/settings/ai-assistant',
-        icon: RobotIcon,
-        title: 'AI Assistant',
-        description:
-          'Bring your own LLM API key for the platform chat assistant.',
-        feature: 'ai-chat',
-      },
-    ],
-  },
-  {
-    heading: 'Platform',
-    cards: [
-      {
-        to: '/settings/setup-wizard',
-        icon: SparkleIcon,
-        title: 'Setup wizard',
-        description: 'Server checks, dashboard domain, git, and a first app.',
-      },
-      {
-        to: '/settings/general',
-        icon: GearIcon,
-        title: 'General',
-        description: 'System status and configuration.',
-      },
-      {
-        to: '/domains',
-        icon: GlobeIcon,
-        title: 'Domains',
-        description:
-          'Platform ingress: dashboard domain and ACME certificates.',
-      },
-      {
-        to: '/settings/updates',
-        icon: ArrowCircleUpIcon,
-        title: 'Updates',
-        description: 'Current version and available releases.',
-      },
-      {
-        to: '/settings/audit-log',
-        icon: ClockCounterClockwiseIcon,
-        title: 'Audit log',
-        description: 'Who changed what, across every session and API token.',
-      },
-    ],
-  },
-]
-
 function SettingsHubPage() {
   const experimental = useExperimentalFeatures()
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Account, team, and platform configuration.
-        </p>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Account, team, and platform configuration."
+      />
 
-      {sections.map((section) => (
+      {visibleSettingsSections(experimental).map((section) => (
         <div key={section.heading} className="space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground">
             {section.heading}
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filterByFeature(section.cards, experimental).map((card) => (
-              <Link key={card.to} to={card.to} className="block">
-                <Card className="h-full transition-colors hover:ring-foreground/20">
+            {section.items.map((item) => (
+              <Link key={item.to} to={item.to} className="block">
+                <Card className="h-full rounded-[var(--glinui-radius-lg)] transition-colors hover:ring-foreground/20">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <card.icon className="size-4" />
-                      {card.title}
+                      <item.icon className="size-4" />
+                      {item.title}
                     </CardTitle>
-                    <CardDescription>{card.description}</CardDescription>
+                    <CardDescription>{item.description}</CardDescription>
                   </CardHeader>
                 </Card>
               </Link>

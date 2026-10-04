@@ -6,7 +6,11 @@ import { toast } from '@/components/ui/toast'
 import { BitbucketAppConnectionCard } from '../../components/BitbucketAppConnectionCard'
 import { BitbucketAppReposCard } from '../../components/BitbucketAppReposCard'
 import { bitbucketAppStatusQueryOptions } from '../../queries/bitbucketApp'
-import { PageSpinner } from '@/components/ui/page-spinner'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '@/components/settings/SettingsSkeletons'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Account-level, mirroring routes/settings/gitlab-app.tsx's own
 // structure and placement.
@@ -14,8 +18,18 @@ export const Route = createFileRoute('/settings/bitbucket-app')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(bitbucketAppStatusQueryOptions()),
   component: BitbucketAppSettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: BitbucketAppSettingsSkeleton,
 })
+
+function BitbucketAppSettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton icon />
+      <SettingsCardSkeleton rows={1} rowVariant="status" />
+      <SettingsCardSkeleton headerIcon rows={3} rowVariant="list" />
+    </div>
+  )
+}
 
 function BitbucketAppSettingsPage() {
   useSuspenseQuery(bitbucketAppStatusQueryOptions())
@@ -43,13 +57,10 @@ function BitbucketAppSettingsPage() {
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <GitBranchIcon className="size-4" />
         </div>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Bitbucket App</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Connect a Bitbucket Cloud OAuth consumer for repository browsing
-            and webhook-driven deploys.
-          </p>
-        </div>
+        <PageHeader
+          title="Bitbucket App"
+          description="Connect a Bitbucket Cloud OAuth consumer for repository browsing and webhook-driven deploys."
+        />
       </div>
       <BitbucketAppConnectionCard />
       <BitbucketAppReposCard />

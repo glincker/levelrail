@@ -38,6 +38,7 @@ type ingressSettingsResource struct {
 	ACMEEnabled      bool   `json:"acme_enabled"`
 	ACMEEmail        string `json:"acme_email,omitempty"`
 	ACMEDirectoryURL string `json:"acme_directory_url,omitempty"`
+	HSTSEnabled      bool   `json:"hsts_enabled"`
 }
 
 func toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource {
@@ -46,6 +47,7 @@ func toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource 
 		ACMEEnabled:      s.ACMEEnabled,
 		ACMEEmail:        s.ACMEEmail,
 		ACMEDirectoryURL: s.ACMEDirectoryURL,
+		HSTSEnabled:      s.HSTSEnabled,
 	}
 }
 
@@ -98,6 +100,9 @@ var (
 // malformed directory URL is Caddy's own problem to surface, at apply
 // time, the same way a malformed domain would surface as a routing
 // failure rather than a settings-save failure.
+//
+// PrimaryDomain's domain-conflict check lives in handleUpdateIngressSettings
+// instead, which has the store access this pure function doesn't.
 func validateIngressSettingsRequest(req ingressSettingsResource) error {
 	if !req.ACMEEnabled {
 		return nil
@@ -142,18 +147,73 @@ func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	primaryDomain := strings.TrimSpace(req.PrimaryDomain)
+	if primaryDomain != "" {
+		owner, err := rt.primaryDomainOwner(r.Context(), primaryDomain)
+		if err != nil {
+			rt.internalError(w, "api: update ingress settings: check domain conflict", err)
+			return
+		}
+		if owner != "" {
+			taken := &store.ErrDomainTaken{Domain: primaryDomain, Owner: owner}
+			writeError(w, http.StatusConflict, taken.Error())
+			return
+		}
+	}
+
 	settings := store.IngressSettings{
-		PrimaryDomain:    strings.TrimSpace(req.PrimaryDomain),
+		PrimaryDomain:    primaryDomain,
 		ACMEEnabled:      req.ACMEEnabled,
 		ACMEEmail:        strings.TrimSpace(req.ACMEEmail),
 		ACMEDirectoryURL: strings.TrimSpace(req.ACMEDirectoryURL),
+		HSTSEnabled:      req.HSTSEnabled,
 	}
 	if err := rt.ingressSettings.UpdateIngressSettings(r.Context(), settings); err != nil {
 		rt.logger.Error("api: update ingress settings failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rt.hstsDBEnabled.Store(settings.HSTSEnabled)
 	writeJSON(w, http.StatusOK, toIngressSettingsResource(settings))
+}
+
+// primaryDomainOwner reports the service name already claiming domain
+// in service_domains, or "" if no app owns it. Case-insensitive: domains
+// reach service_domains however the creating app.yaml or dashboard form
+// spelled them (DesiredService domains aren't lowercased at the store
+// layer, unlike app_domains.go's own normalizeDomainList path), so an
+// exact-match comparison here would miss a same-domain, different-case
+// collision that still produces two Caddy routes for the same Host
+// header once lowercased by the browser and by Caddy's own matcher.
+func (rt *Router) primaryDomainOwner(ctx context.Context, domain string) (string, error) {
+	domains, err := rt.domains.ListServiceDomains(ctx)
+	if err != nil {
+		return "", err
+	}
+	want := strings.ToLower(domain)
+	for _, d := range domains {
+		if strings.ToLower(d.Domain) == want {
+			return d.ServiceName, nil
+		}
+	}
+	return "", nil
+}
+
+// hstsEnabledFromDB reports ingress_settings.hsts_enabled, Router.hstsDBEnabled's
+// own cached value. The first call in the process's lifetime loads it from
+// the database (hstsDBLoaded); handleUpdateIngressSettings keeps it fresh
+// after that, so this never blocks a request on a database read past the
+// very first one.
+func (rt *Router) hstsEnabledFromDB(ctx context.Context) bool {
+	rt.hstsDBLoaded.Do(func() {
+		settings, err := rt.ingressSettings.GetIngressSettings(ctx)
+		if err != nil {
+			rt.logger.Error("api: load initial hsts setting failed", slog.String("error", err.Error()))
+			return
+		}
+		rt.hstsDBEnabled.Store(settings.HSTSEnabled)
+	})
+	return rt.hstsDBEnabled.Load()
 }
 
 // ingressDomainCheckResponse is GET /api/v1/settings/ingress/check's wire
@@ -202,10 +262,18 @@ type DomainStore interface {
 	ListServiceDomains(ctx context.Context) ([]store.ServiceDomain, error)
 }
 
-// domainResource is one row of GET /api/v1/domains.
+// domainResource is one row of GET /api/v1/domains. The four status
+// flags are read-only visibility into per-domain settings that are
+// otherwise only configurable from the owning app's own Domains tab
+// (DomainEditor.tsx): this page stays deliberately read-only, see
+// DomainRow.tsx's own doc comment for why.
 type domainResource struct {
-	Domain      string `json:"domain"`
-	ServiceName string `json:"service_name"`
+	Domain             string `json:"domain"`
+	ServiceName        string `json:"service_name"`
+	WAFEnabled         bool   `json:"waf_enabled"`
+	HasRedirect        bool   `json:"has_redirect"`
+	MaintenanceEnabled bool   `json:"maintenance_enabled"`
+	HasBasicAuth       bool   `json:"has_basic_auth"`
 }
 
 // handleListDomains handles GET /api/v1/domains: every service_domains
@@ -214,6 +282,11 @@ type domainResource struct {
 // AbilityRead, same as GET /api/v1/apps: no new ability tier, this is a
 // plain read of data every app-domain edit through DomainEditor already
 // exposes per-app, just aggregated across every app in one call.
+//
+// The four status flags are populated from the same List* bulk reads
+// the ingress reconciler already uses (internal/reconcile/ingress),
+// each one queried once here rather than per domain, so this stays a
+// fixed number of queries regardless of how many domains exist.
 func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 	domains, err := rt.domains.ListServiceDomains(r.Context())
 	if err != nil {
@@ -227,12 +300,75 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: list domains: visibility", err)
 		return
 	}
+
+	wafEnabled, ok := fetchDomainStatusSet(w, rt, r, "waf", rt.domainWAF.ListDomainWAF,
+		func(d store.DomainWAF) string {
+			if d.WAFEnabled {
+				return d.Domain
+			}
+			return ""
+		})
+	if !ok {
+		return
+	}
+	hasRedirect, ok := fetchDomainStatusSet(w, rt, r, "redirects", rt.domainRedirect.ListDomainRedirects,
+		func(d store.DomainRedirect) string { return d.Domain })
+	if !ok {
+		return
+	}
+	inMaintenance, ok := fetchDomainStatusSet(w, rt, r, "maintenance", rt.domainMaintenance.ListDomainMaintenance,
+		func(domain string) string { return domain })
+	if !ok {
+		return
+	}
+	hasBasicAuth, ok := fetchDomainStatusSet(w, rt, r, "basic auth", rt.domainBasicAuth.ListDomainBasicAuth,
+		func(d store.DomainBasicAuth) string { return d.Domain })
+	if !ok {
+		return
+	}
+
 	out := make([]domainResource, 0, len(domains))
 	for _, d := range domains {
 		if !canSee(d.ServiceName) {
 			continue
 		}
-		out = append(out, domainResource{Domain: d.Domain, ServiceName: d.ServiceName})
+		out = append(out, domainResource{
+			Domain:             d.Domain,
+			ServiceName:        d.ServiceName,
+			WAFEnabled:         wafEnabled[d.Domain],
+			HasRedirect:        hasRedirect[d.Domain],
+			MaintenanceEnabled: inMaintenance[d.Domain],
+			HasBasicAuth:       hasBasicAuth[d.Domain],
+		})
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// fetchDomainStatusSet fetches a per-domain status list and reduces it
+// to a set of domain names, so handleListDomains's four status flags
+// share one fetch-error-handle-reduce path instead of four near-identical
+// copies. domainOf returns "" for a row that shouldn't count (e.g. a WAF
+// row present but not actually enabled), which the empty-key check below
+// skips. ok is false only after an error response has already been
+// written, so every caller's own handling is just `if !ok { return }`.
+func fetchDomainStatusSet[T any](
+	w http.ResponseWriter,
+	rt *Router,
+	r *http.Request,
+	label string,
+	fetch func(context.Context) ([]T, error),
+	domainOf func(T) string,
+) (set map[string]bool, ok bool) {
+	items, err := fetch(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: list domains: "+label, err)
+		return nil, false
+	}
+	set = make(map[string]bool, len(items))
+	for _, item := range items {
+		if domain := domainOf(item); domain != "" {
+			set[domain] = true
+		}
+	}
+	return set, true
 }

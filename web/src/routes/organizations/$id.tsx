@@ -19,6 +19,8 @@ import { OrganizationEnvEditor } from '../../components/OrganizationEnvEditor'
 import { SharedEnvSecretsCard } from '../../components/SharedEnvSecretsCard'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { EmptyState } from '../../components/ui/empty-state'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Organization detail route: the org's own name plus every project
 // currently filed under it, the sibling-navigation surface an operator
@@ -55,12 +57,10 @@ function OrganizationDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Breadcrumbs organizationId={id} />
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-lg font-semibold text-foreground">
-            {organization.name}
-          </h1>
+      <PageHeader
+        breadcrumb={<Breadcrumbs organizationId={id} />}
+        title={organization.name}
+        actions={
           <DeleteOrganizationDialog
             id={organization.id}
             name={organization.name}
@@ -68,33 +68,26 @@ function OrganizationDetailPage() {
               void navigate({ to: '/settings/organizations' })
             }}
           />
-        </div>
-      </div>
+        }
+      />
 
       <OrganizationEnvEditor organizationId={id} />
       <SharedEnvSecretsCard scope="organization" id={id} />
 
       {orgProjects.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
-          <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <FolderIcon className="size-5" aria-hidden="true" />
-          </span>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">
-              No projects filed under this organization yet
-            </p>
-            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-              File a project into this organization from the project&apos;s own
-              detail page.
-            </p>
+        <EmptyState
+          icon={<FolderIcon className="size-5" />}
+          title="No projects filed under this organization yet"
+          description="File a project into this organization from the project's own detail page."
+          action={
             <Link
               to="/projects"
               className="inline-block text-sm text-foreground underline"
             >
               Go to projects
             </Link>
-          </div>
-        </div>
+          }
+        />
       ) : (
         <div
           ref={parentRef}

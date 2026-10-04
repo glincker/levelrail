@@ -147,6 +147,26 @@ func securityHeadersMiddleware(hstsEnabled bool) func(http.Handler) http.Handler
 	}
 }
 
+// hstsDBOverrideMiddleware sets Strict-Transport-Security from
+// ingress_settings.hsts_enabled (rt.hstsEnabledFromDB). Handler only
+// installs this when rt.hstsEnabled (APP_ENABLE_HSTS) is false, since
+// that env var already sets the header unconditionally via
+// securityHeadersMiddleware when true; the two are OR'd, see
+// Router.hstsEnabled's own doc comment for why. Kept separate from
+// securityHeadersMiddleware so that function stays a pure, env-var-only,
+// database-free helper with unchanged tests.
+func hstsDBOverrideMiddleware(rt *Router) func(http.Handler) http.Handler {
+	hsts := fmt.Sprintf("max-age=%d; includeSubDomains", int(hstsMaxAge.Seconds()))
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if rt.hstsEnabledFromDB(r.Context()) {
+				w.Header().Set("Strict-Transport-Security", hsts)
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // handleHealthz handles GET /healthz: an unauthenticated liveness check
 // for systemd, a container orchestrator, or a load balancer, the one
 // documented exception to "every route needs auth." Deliberately just

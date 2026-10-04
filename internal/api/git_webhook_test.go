@@ -995,6 +995,27 @@ func TestHandleGitPushWebhook_PushMode_TagPush_Ignored(t *testing.T) {
 	}
 }
 
+// TestHandleGitPushWebhook_GitHubPing_Returns200 is the regression test
+// for a live bug: GitHub's own "ping" event, sent automatically right
+// after a webhook is created, has neither a push nor a release payload
+// shape. Before this fix it fell through to
+// webhook.ParsePushEventForProvider, which rejected it as a malformed
+// push, so every new git source's very first delivery showed a 400 in
+// GitHub's own webhook settings page even though nothing was wrong.
+func TestHandleGitPushWebhook_GitHubPing_Returns200(t *testing.T) {
+	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
+
+	fb := &fakeBuilder{tag: "web:v1.2.3"}
+	rt.builder = fb
+
+	body := []byte(`{"zen":"Non-blocking is better than blocking.","hook_id":1}`)
+	rec := postGitWebhook(t, rt, "X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body), body, map[string]string{"X-GitHub-Event": "ping"})
+	requireStatusOK(t, rec)
+	if fb.calls != 0 {
+		t.Errorf("builder called %d times, want 0: a ping event must never deploy", fb.calls)
+	}
+}
+
 // TestHandleGitPushWebhook_GitHubReleasePublished_TriggersDeploy proves
 // a github "release" event with action "published" deploys when trigger
 // mode is "release", checking out the tag's own ref (no commit SHA

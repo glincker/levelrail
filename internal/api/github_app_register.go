@@ -1,6 +1,8 @@
 package api
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -113,7 +115,14 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 		return
 	}
 
-	writeGitHubAppManifestForm(w, instanceURL, state, manifestJSON)
+	nonce, err := randomNonce()
+	if err != nil {
+		rt.logger.Error("api: generate csp nonce for github app manifest form failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	writeGitHubAppManifestForm(w, instanceURL, state, nonce, manifestJSON)
 }
 
 // githubAppManifestPreviewResource is the wire shape for
@@ -198,22 +207,28 @@ func (rt *Router) handleGetGitHubAppManifestPreview(w http.ResponseWriter, r *ht
 	})
 }
 
+// randomNonce generates a CSP script-src nonce, same crypto/rand +
+// base64 shape as randomToken (auth.go).
+func randomNonce() (string, error) {
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
 // writeGitHubAppManifestForm renders the auto-submitting form GitHub's
-// manifest flow expects: a hidden "manifest" field posted to
-// <instanceURL>/settings/apps/new?state=<state> (github.com itself, or
-// a GitHub Enterprise Server instance). No external CSS/JS, no
-// template engine dependency (there is no existing html/template use
-// anywhere in this codebase to extend, and this is exactly one page
-// with exactly two dynamic values), both dynamic values passed through
-// html.EscapeString before being placed inside a double-quoted HTML
-// attribute: state is crypto/rand base64url output (already
-// URL-and-HTML-safe alphabet) and manifestJSON is server-generated from
-// brand.Brand.Name plus the operator's own configured primary domain
-// (not attacker-controlled request input at this point), so there is no
-// real injection surface today, but both are still escaped as a matter
-// of course rather than trusted to stay that way.
-func writeGitHubAppManifestForm(w http.ResponseWriter, instanceURL, state string, manifestJSON []byte) {
+// manifest flow expects, posted to <instanceURL>/settings/apps/new.
+// Overrides the global CSP for this response only: script-src 'self'
+// and form-action 'self' silently block this page's inline auto-submit
+// and its cross-origin POST (confirmed live: hangs forever, no visible
+// error). nonce permits only this one script; form-action widens only
+// to instanceURL's own already-validated origin.
+func writeGitHubAppManifestForm(w http.ResponseWriter, instanceURL, state, nonce string, manifestJSON []byte) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Security-Policy", fmt.Sprintf(
+		"default-src 'self'; script-src 'nonce-%s'; style-src 'self'; form-action %s; base-uri 'self'; object-src 'none'; frame-ancestors 'none'",
+		nonce, instanceURL))
 	w.WriteHeader(http.StatusOK)
 	actionURL := instanceURL + "/settings/apps/new?state=" + url.QueryEscape(state)
 	_, err := fmt.Fprintf(w, `<!doctype html>
@@ -224,10 +239,10 @@ func writeGitHubAppManifestForm(w http.ResponseWriter, instanceURL, state string
 <input type="hidden" name="manifest" value="%s">
 </form>
 <p>Redirecting to GitHub to finish creating the App...</p>
-<script>document.getElementById('gh-app-manifest-form').submit();</script>
+<script nonce="%s">document.getElementById('gh-app-manifest-form').submit();</script>
 </body>
 </html>
-`, html.EscapeString(actionURL), html.EscapeString(string(manifestJSON)))
+`, html.EscapeString(actionURL), html.EscapeString(string(manifestJSON)), nonce)
 	if err != nil {
 		// The status line and headers are already flushed by this point
 		// (w.WriteHeader above), so there is nothing left to do but log;
@@ -306,6 +321,7 @@ func (rt *Router) handleGitHubAppCallback(w http.ResponseWriter, r *http.Request
 	if err := rt.githubApp.SaveGitHubAppConnection(ctx, store.GitHubAppConnection{
 		AppID:       creds.AppID,
 		ClientID:    creds.ClientID,
+		Slug:        &creds.Slug,
 		InstanceURL: instanceURL,
 		CreatedAt:   time.Now().UTC().Format(time.RFC3339),
 	}); err != nil {
@@ -406,8 +422,25 @@ func (rt *Router) handleGitHubAppInstalled(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Kept for anything still reading the legacy single-installation
+	// columns; UpsertGitHubAppInstallation below is the real multi-org
+	// record and is what repo listing and the installations UI read.
 	if err := rt.githubApp.UpdateGitHubAppInstallation(ctx, installationID, info.AccountLogin); err != nil {
 		rt.logger.Error("api: record github app installation failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	// GitHub's own API always sends "User" or "Organization" (lowercased
+	// by githubapp.GetInstallation), but github_app_installations.account_type
+	// has a NOT NULL CHECK constraint that an unexpected empty value would
+	// violate as a 500, not a client-side bug: default rather than trust
+	// an upstream API's response shape to never change.
+	accountType := info.AccountType
+	if accountType != "user" && accountType != "organization" {
+		accountType = "organization"
+	}
+	if err := rt.githubApp.UpsertGitHubAppInstallation(ctx, installationID, info.AccountLogin, accountType); err != nil {
+		rt.logger.Error("api: upsert github app installation failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

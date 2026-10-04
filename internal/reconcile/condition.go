@@ -15,6 +15,10 @@ const (
 	ConditionUnknown ConditionStatus = "Unknown"
 )
 
+// ConditionTypeReady is the one Condition.Type every controller in this
+// codebase reports and every consumer reads back.
+const ConditionTypeReady = "Ready"
+
 // Condition is a single named status a controller reports after each
 // reconcile, always with a machine-readable Reason: every reconcile
 // emits a status condition with a reason string.

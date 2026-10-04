@@ -151,7 +151,11 @@ func (f *fakePITRRuntime) EnsureVolume(context.Context, string) error { return n
 func (f *fakePITRRuntime) EnsureNetwork(context.Context, string) (string, error) {
 	return "", nil
 }
-func (f *fakePITRRuntime) RemoveNetwork(context.Context, string) error { return nil }
+func (f *fakePITRRuntime) RemoveNetwork(context.Context, string) error          { return nil }
+func (f *fakePITRRuntime) NetworkConnect(context.Context, string, string) error { return nil }
+func (f *fakePITRRuntime) NetworkDisconnect(context.Context, string, string, bool) error {
+	return nil
+}
 func (f *fakePITRRuntime) ListNetworksByPrefix(context.Context, string) ([]docker.NetworkInfo, error) {
 	return nil, nil
 }

@@ -1,12 +1,24 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   PencilSimpleIcon,
   PlusIcon,
   TreeStructureIcon,
   TrashIcon,
+  WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Switch } from '@/components/ui/switch'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
@@ -51,6 +63,78 @@ function EnabledSwitch({
   )
 }
 
+function DeletePipelineDialog({
+  appName,
+  pipeline,
+}: {
+  appName: string
+  pipeline: Pipeline
+}) {
+  const [open, setOpen] = useState(false)
+  const del = useDeletePipeline(appName)
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    if (!next) del.reset()
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger render={<Button variant="destructive" size="sm" />}>
+        <TrashIcon aria-hidden="true" />
+        Delete
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-1.5 text-destructive">
+            <WarningIcon className="size-4" aria-hidden="true" />
+            Delete &ldquo;{pipeline.name}&rdquo;?
+          </DialogTitle>
+          <DialogDescription>
+            This deletes the pipeline and its run history. This cannot be
+            undone.
+          </DialogDescription>
+        </DialogHeader>
+        {del.isError ? (
+          <Alert variant="destructive">
+            <WarningIcon />
+            <AlertDescription>{del.error.message}</AlertDescription>
+          </Alert>
+        ) : null}
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              handleOpenChange(false)
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={del.isPending}
+            onClick={() => {
+              del.mutate(pipeline.name, {
+                onSuccess: () => {
+                  setOpen(false)
+                  toast.add({
+                    title: `Pipeline "${pipeline.name}" deleted.`,
+                    type: 'success',
+                  })
+                },
+              })
+            }}
+          >
+            {del.isPending ? 'Deleting...' : 'Delete pipeline'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function PipelineRow({
   appName,
   pipeline,
@@ -58,7 +142,6 @@ function PipelineRow({
   appName: string
   pipeline: Pipeline
 }) {
-  const del = useDeletePipeline(appName)
   return (
     <li className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
       <div className="min-w-48 flex-1">
@@ -107,31 +190,13 @@ function PipelineRow({
         <PencilSimpleIcon aria-hidden="true" />
         Edit
       </Link>
-      <Button
-        variant="destructive"
-        size="sm"
-        disabled={del.isPending}
-        onClick={() => {
-          if (
-            window.confirm(
-              `Delete pipeline "${pipeline.name}" and its run history?`,
-            )
-          ) {
-            del.mutate(pipeline.name, {
-              onError: (e) => toast.add({ title: e.message, type: 'error' }),
-            })
-          }
-        }}
-      >
-        <TrashIcon aria-hidden="true" />
-        Delete
-      </Button>
+      <DeletePipelineDialog appName={appName} pipeline={pipeline} />
     </li>
   )
 }
 
 export function PipelinesPanel({ appName }: { appName: string }) {
-  const { data, isLoading, error } = usePipelines(appName)
+  const { data, isLoading, error, refetch } = usePipelines(appName)
   const pipelines = data ?? []
   const newLink = (
     <Link
@@ -167,7 +232,22 @@ export function PipelinesPanel({ appName }: { appName: string }) {
           {isLoading ? (
             <TableSkeleton columnCount={4} rowCount={2} />
           ) : error ? (
-            <p className="text-sm text-destructive">{error.message}</p>
+            <EmptyState
+              icon={<WarningIcon className="size-5" />}
+              title="Pipelines could not be loaded"
+              description={error.message}
+              action={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    void refetch()
+                  }}
+                >
+                  Retry
+                </Button>
+              }
+            />
           ) : pipelines.length === 0 ? (
             <EmptyState
               icon={<TreeStructureIcon className="size-5" />}

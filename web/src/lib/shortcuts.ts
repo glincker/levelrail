@@ -2,6 +2,10 @@ import { isFeatureVisible, type ExperimentalFeature } from './experimental'
 
 export const CHORD_TIMEOUT_MS = 1500
 
+// Hold threshold for the "l" stage-overlay gesture (useShortcuts.ts). Long
+// enough that a normal keypress or the g-then-l chord never trips it.
+export const LONG_PRESS_MS = 450
+
 export const GO_TARGETS: Record<
   string,
   { to: string; label: string; feature?: ExperimentalFeature }
@@ -26,30 +30,14 @@ export interface ShortcutDoc {
   description: string
 }
 
-const BASE_DOCS: ShortcutDoc[] = [
+// Shortcuts that aren't a "go to" tile, shown as a small reference strip
+// inside StageOverlay.tsx alongside the GO_TARGETS tiles.
+export const BASE_DOCS: ShortcutDoc[] = [
   { keys: ['Ctrl/Cmd', 'K'], description: 'Open the command palette' },
-  { keys: ['?'], description: 'Show keyboard shortcuts' },
+  { keys: ['Hold', 'L'], description: 'Open quick navigation' },
   { keys: ['/'], description: 'Focus the search field on this page' },
   { keys: ['Esc'], description: 'Close a dialog, or leave the search field' },
 ]
-
-// Shortcuts whose gated feature is off are left out.
-export function shortcutDocsFor(enabled: readonly string[]): ShortcutDoc[] {
-  return [
-    ...BASE_DOCS,
-    ...Object.entries(GO_TARGETS)
-      .filter(([, t]) => isFeatureVisible(t.feature, enabled))
-      .map(([key, t]) => ({
-        keys: ['g', key],
-        description: `Go to ${t.label}`,
-      })),
-  ]
-}
-
-export const SHORTCUT_DOCS: ShortcutDoc[] = shortcutDocsFor([
-  'load-balancer',
-  'ai-models',
-])
 
 export interface ChordState {
   pending: boolean
@@ -66,12 +54,18 @@ export interface KeyInput {
 }
 
 export type ShortcutAction =
-  | { type: 'go'; to: string }
-  | { type: 'help' }
-  | { type: 'focus-search' }
-  | null
+  { type: 'go'; to: string } | { type: 'focus-search' } | null
 
 export const INITIAL_CHORD: ChordState = { pending: false, startedAt: 0 }
+
+// Shared by stepChord below and the long-press stage-overlay trigger
+// (useShortcuts.ts): typing, an open dialog, or a modifier all suppress
+// every keyboard shortcut the same way.
+export function isShortcutInputSuppressed(input: KeyInput): boolean {
+  return (
+    input.typing || input.dialogOpen || input.ctrl || input.meta || input.alt
+  )
+}
 
 export function stepChord(
   state: ChordState,
@@ -79,13 +73,7 @@ export function stepChord(
   now: number,
   enabled: readonly string[] = [],
 ): { state: ChordState; action: ShortcutAction } {
-  if (
-    input.typing ||
-    input.dialogOpen ||
-    input.ctrl ||
-    input.meta ||
-    input.alt
-  ) {
+  if (isShortcutInputSuppressed(input)) {
     return { state: INITIAL_CHORD, action: null }
   }
   const live = state.pending && now - state.startedAt <= CHORD_TIMEOUT_MS
@@ -98,13 +86,21 @@ export function stepChord(
   if (input.key === 'g') {
     return { state: { pending: true, startedAt: now }, action: null }
   }
-  if (input.key === '?') {
-    return { state: INITIAL_CHORD, action: { type: 'help' } }
-  }
   if (input.key === '/') {
     return { state: INITIAL_CHORD, action: { type: 'focus-search' } }
   }
   return { state: INITIAL_CHORD, action: null }
+}
+
+// Base UI popups (dialog, menu, ...) keep their DOM node mounted with
+// role="dialog"/role="menu" during the closing exit animation, and stay
+// mounted indefinitely if that animation never resolves. `data-open` is
+// only present while a popup is genuinely open, so appending it to a role
+// selector is what tells "actually open" apart from "closed but mounted".
+export const OPEN_OVERLAY_ATTR = '[data-open]'
+
+export function isDialogOpen(root: ParentNode = document): boolean {
+  return root.querySelector(`[role="dialog"]${OPEN_OVERLAY_ATTR}`) !== null
 }
 
 export function isTypingTarget(el: EventTarget | null): boolean {

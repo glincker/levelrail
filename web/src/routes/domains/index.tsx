@@ -16,6 +16,9 @@ import {
   DomainRow,
   RowSkeleton,
 } from '../../components/DomainRow'
+import { DomainAttentionStrip } from '../../components/DomainAttentionStrip'
+import type { DomainAttentionEntry } from '../../components/DomainAttentionStrip'
+import { certAttentionRank, sortByCertAttention } from '../../lib/certStatus'
 import { CloudflareDnsCard } from '../../components/CloudflareDnsCard'
 import { Route53DnsCard } from '../../components/Route53DnsCard'
 import { IngressSettingsCard } from '../../components/IngressSettingsCard'
@@ -23,7 +26,7 @@ import { Button } from '../../components/ui/button'
 import { DashboardUrlCard } from '../../components/DashboardUrlCard'
 import { dashboardUrlQueryOptions } from '../../queries/dashboardUrl'
 import { EmptyState } from '../../components/ui/empty-state'
-import { HelpLink } from '../../components/HelpLink'
+import { PageHeader } from '../../components/shell/PageHeader'
 
 // Centralized domains page: every domain currently claimed by an app
 // (GET /api/v1/domains, service_domains) merged client-side with
@@ -57,6 +60,7 @@ function ListHeader() {
       <span aria-hidden="true" />
       <span>Domain</span>
       <span>App</span>
+      <span>Status</span>
       <span>Certificate</span>
       <span aria-hidden="true" />
     </div>
@@ -89,28 +93,45 @@ function DomainsPage() {
     return m
   }, [certificates])
 
+  // Domains with a stalled renewal or non-healthy cert sort first (soonest
+  // expiry first within that group), so they surface without scrolling on
+  // a platform with many domains. Sorted before useVirtualizer sees it, so
+  // virtualization measures the final row order.
+  const sortedDomains = useMemo(
+    () =>
+      sortByCertAttention(domains, (domain) => certByDomain.get(domain.domain)),
+    [domains, certByDomain],
+  )
+
+  const attentionEntries = useMemo(
+    () =>
+      sortedDomains.reduce<DomainAttentionEntry[]>((entries, domain) => {
+        const cert = certByDomain.get(domain.domain)
+        if (cert && certAttentionRank(cert) < 2) {
+          entries.push({ domain, cert })
+        }
+        return entries
+      }, []),
+    [sortedDomains, certByDomain],
+  )
+
+  // Taller than the 60px other list pages use: this row's certificate
+  // column can stack two badges (status + renewal-stalled), not just one.
   const virtualizer = useVirtualizer({
-    count: domains.length,
+    count: sortedDomains.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 60,
+    estimateSize: () => 76,
     overscan: 8,
   })
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Domains</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Every domain routed through this platform, and the ingress settings
-            that decide how their certificates are issued.
-          </p>
-        </div>
-        <HelpLink
-          path="/domains-and-ingress"
-          label="Domains and ingress guide"
-        />
-      </div>
+      <PageHeader
+        title="Domains"
+        description="Every domain routed through this platform, and the ingress settings that decide how their certificates are issued."
+        helpPath="/domains-and-ingress"
+        helpLabel="Domains and ingress guide"
+      />
 
       <IngressSettingsCard
         settings={settings}
@@ -126,6 +147,8 @@ function DomainsPage() {
       <CloudflareDnsCard settings={cloudflareDns} />
 
       <Route53DnsCard settings={route53Dns} />
+
+      <DomainAttentionStrip entries={attentionEntries} />
 
       <div>
         <div className="mb-3 flex items-center gap-2">
@@ -174,7 +197,7 @@ function DomainsPage() {
               }}
             >
               {virtualizer.getVirtualItems().map((row) => {
-                const domain = domains[row.index]
+                const domain = sortedDomains[row.index]
                 if (!domain) {
                   return null
                 }
@@ -213,9 +236,7 @@ function DomainsPage() {
 function DomainsPending() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Domains</h1>
-      </div>
+      <PageHeader title="Domains" />
       <div className="h-32 animate-pulse rounded-lg border border-border bg-card" />
       <div className="h-24 animate-pulse rounded-lg border border-border bg-card" />
       <div>

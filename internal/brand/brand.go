@@ -12,14 +12,22 @@ import (
 // Brand holds every user-visible identity string for the running binary.
 // Nothing outside this package should reference a product name directly.
 type Brand struct {
-	Name         string `yaml:"name"`
-	ShortName    string `yaml:"short_name"`
-	BinaryName   string `yaml:"binary_name"`
-	Domain       string `yaml:"domain"`
-	SupportURL   string `yaml:"support_url"`
+	Name       string `yaml:"name"`
+	ShortName  string `yaml:"short_name"`
+	BinaryName string `yaml:"binary_name"`
+	Domain     string `yaml:"domain"`
+	SupportURL string `yaml:"support_url"`
+	// SupportEmail is a direct contact address, distinct from SupportURL
+	// (typically a GitHub issue tracker). Optional, same "empty means
+	// don't render the link" rule as the other contact fields.
+	SupportEmail string `yaml:"support_email"`
 	PrimaryColor string `yaml:"primary_color"`
-	LogoSVG      string `yaml:"logo_svg"`
-	DocsURL      string `yaml:"docs_url"`
+	// PrimaryColorDark is the dark-mode variant of PrimaryColor. Optional:
+	// falls back to PrimaryColor itself when empty, same "empty means use
+	// the other value" pattern as the other optional fields here.
+	PrimaryColorDark string `yaml:"primary_color_dark"`
+	LogoSVG          string `yaml:"logo_svg"`
+	DocsURL          string `yaml:"docs_url"`
 	// DiscussionsURL is the "ask the community" destination (a GitHub
 	// Discussions board or equivalent). Optional, same "empty means
 	// don't render the link" rule as DocsURL and SupportURL.
@@ -54,6 +62,10 @@ func Load(path string) (*Brand, error) {
 
 	b.applyEnvOverrides()
 
+	if b.PrimaryColorDark == "" {
+		b.PrimaryColorDark = b.PrimaryColor
+	}
+
 	if err := b.validate(); err != nil {
 		return nil, fmt.Errorf("brand: %w", err)
 	}
@@ -67,7 +79,9 @@ func (b *Brand) applyEnvOverrides() {
 	override(&b.BinaryName, envPrefix+"BINARY_NAME")
 	override(&b.Domain, envPrefix+"DOMAIN")
 	override(&b.SupportURL, envPrefix+"SUPPORT_URL")
+	override(&b.SupportEmail, envPrefix+"SUPPORT_EMAIL")
 	override(&b.PrimaryColor, envPrefix+"PRIMARY_COLOR")
+	override(&b.PrimaryColorDark, envPrefix+"PRIMARY_COLOR_DARK")
 	override(&b.LogoSVG, envPrefix+"LOGO_SVG")
 	override(&b.DocsURL, envPrefix+"DOCS_URL")
 	override(&b.DiscussionsURL, envPrefix+"DISCUSSIONS_URL")

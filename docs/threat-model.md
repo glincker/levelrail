@@ -10,18 +10,26 @@ Levelrail is pre-1.0. Anything marked "planned" is not shipped.
 
 ## Trust boundaries
 
-```
-browser / CLI / MCP client
-        |  HTTPS (Caddy) or loopback HTTP
-        v
-   control plane API  ----  SQLite (secrets ciphertext, tokens, policies)
-        |  \
-        |   \---- Docker socket on the control plane node
-        |  mTLS gRPC, agent dials out
-        v
-   node agent  ---- Docker socket on that node ---- app containers
-                                                       |
-git providers (webhooks in, clones out)   container registry (pulls, pushes)
+```mermaid
+flowchart TD
+  Client["browser / CLI / MCP client"]
+  API["control plane API"]
+  DB["SQLite<br/>(secrets ciphertext, tokens, policies)"]
+  DockerCP["Docker socket<br/>on the control plane node"]
+  Agent["node agent"]
+  DockerNode["Docker socket<br/>on that node"]
+  Containers["app containers"]
+  Git["git providers<br/>(webhooks in, clones out)"]
+  Registry["container registry<br/>(pulls, pushes)"]
+
+  Client -->|"HTTPS (Caddy) or loopback HTTP"| API
+  API --> DB
+  API -->|local socket| DockerCP
+  API <-->|"mTLS gRPC, agent dials out"| Agent
+  Agent --> DockerNode
+  DockerNode --> Containers
+  Git -.-> API
+  Registry -.-> API
 ```
 
 | Boundary | What crosses it | Who is trusted on the far side |

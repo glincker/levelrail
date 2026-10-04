@@ -49,10 +49,14 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesMetrics(prog, rest, stdout, stderr, lookupEnv)
 	case "resource-usage":
 		return runNodesResourceUsage(prog, rest, stdout, stderr, lookupEnv)
+	case "capacity-forecast":
+		return runNodesCapacityForecast(prog, rest, stdout, stderr, lookupEnv)
 	case "mesh":
 		return runNodesMesh(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-key":
 		return runNodesRotateKey(prog, rest, stdout, stderr, lookupEnv)
+	case "rejoin-mesh":
+		return runNodesRejoinMesh(prog, rest, stdout, stderr, lookupEnv)
 	case "reenroll-token":
 		return runNodesReenrollToken(prog, rest, stdout, stderr, lookupEnv)
 	case "revoke-cert":
@@ -63,6 +67,10 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesProvision(prog, rest, stdout, stderr, lookupEnv)
 	case "provisions":
 		return runNodesProvisions(prog, rest, stdout, stderr, lookupEnv)
+	case "ssh-provision":
+		return runNodesSSHProvision(prog, rest, stdout, stderr, lookupEnv)
+	case "ssh-provisions":
+		return runNodesSSHProvisions(prog, rest, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown nodes subcommand %q\n\n", prog, sub)
 		_, _ = fmt.Fprint(stderr, nodesUsage(prog))
@@ -85,13 +93,17 @@ func nodesUsage(prog string) string {
   %[1]s nodes events <id> [--limit N] [flags]                        show a node's recent online/offline/cordon transitions
   %[1]s nodes metrics <id> --metric NAME [flags]                     query a node's metric time series
   %[1]s nodes resource-usage [flags]                                 show every node's latest CPU/memory/disk usage, plus a fleet rollup
+  %[1]s nodes capacity-forecast <id> [flags]                        project disk/memory usage forward, roughly how many days until full
   %[1]s nodes mesh [flags]                                           show this control plane's live WireGuard mesh state and peers
-  %[1]s nodes rotate-key <id> [flags]                                rotate a node's WireGuard key (only the local node today)
+  %[1]s nodes rotate-key <id> [flags]                                rotate a node's WireGuard key (local or remote)
+  %[1]s nodes rejoin-mesh <id> [flags]                               force an immediate mesh resync for a peer that looks stuck
   %[1]s nodes reenroll-token <id> [flags]                            mint a one-time token to re-issue a node's agent certificate, shown once
   %[1]s nodes revoke-cert <id> [flags]                               revoke a node's agent certificate and disconnect it
   %[1]s nodes providers list|set-credential [flags]                  manage cloud provider credentials (hetzner, digitalocean)
   %[1]s nodes provision --provider --region --size --name [flags]    create a server at a cloud provider and enroll it as a node
   %[1]s nodes provisions list|show <id> [flags]                      track a cloud node provision through to enrollment
+  %[1]s nodes ssh-provision --host --user (--key-file|--password) --name [flags]   adopt a machine you already have over SSH and enroll it as a node
+  %[1]s nodes ssh-provisions list|show <id> [flags]                  track an SSH node provision through to enrollment
 
 Run "%[1]s nodes <subcommand> -h" for a subcommand's own flags.
 `, prog)

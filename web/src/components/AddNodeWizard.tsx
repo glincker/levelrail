@@ -4,6 +4,7 @@ import {
   CloudIcon,
   HardDrivesIcon,
   PlusIcon,
+  TerminalIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -30,6 +31,7 @@ import {
 import { SkeletonList } from './kit/Skeleton'
 import { InfoTip } from './kit/InfoTip'
 import { ManualEnrollFields } from './AddNodeDialog'
+import { SSHEnrollFields } from './AddNodeWizardSSH'
 import { ProvisionProgress, StepShell } from './AddNodeWizardSteps'
 import {
   useCreateNodeProvision,
@@ -41,7 +43,14 @@ import {
 
 type ProviderId = 'hetzner' | 'digitalocean' | 'aws' | 'azure' | 'gcp'
 type Step =
-  'method' | 'region' | 'size' | 'details' | 'confirm' | 'progress' | 'manual'
+  | 'method'
+  | 'region'
+  | 'size'
+  | 'details'
+  | 'confirm'
+  | 'progress'
+  | 'manual'
+  | 'ssh'
 
 const PROVIDER_LABELS: Record<ProviderId, string> = {
   hetzner: 'Hetzner',
@@ -49,6 +58,17 @@ const PROVIDER_LABELS: Record<ProviderId, string> = {
   aws: 'AWS',
   azure: 'Azure',
   gcp: 'Google Cloud',
+}
+
+// Suggests a node name from the provider and region already picked by
+// this point in the wizard, e.g. "hetzner-fsn1". Always starts with the
+// provider id (a fixed lowercase word), so the result always satisfies
+// the name field's own ^[a-z][a-z0-9-]*$ pattern below.
+function nodeNameFrom(provider: ProviderId, region: string): string {
+  return `${provider}-${region}`
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
 // A wizard, not a single dialog, for this one flow only: creating a real
@@ -99,6 +119,10 @@ function WizardBody({ onClose }: { onClose: () => void }) {
     return (
       <ManualEnrollFields onDone={onClose} onBack={() => setStep('method')} />
     )
+  }
+
+  if (step === 'ssh') {
+    return <SSHEnrollFields onDone={onClose} onBack={() => setStep('method')} />
   }
 
   if (step === 'method') {
@@ -158,6 +182,22 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           })}
           <button
             type="button"
+            onClick={() => setStep('ssh')}
+            className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/50"
+          >
+            <TerminalIcon className="size-5 shrink-0 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium text-foreground">
+                Connect over SSH
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Adopt a machine you already have: a VPS, home server, or
+                Raspberry Pi.
+              </div>
+            </div>
+          </button>
+          <button
+            type="button"
             onClick={() => setStep('manual')}
             className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/50"
           >
@@ -178,6 +218,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
         onBack={() => setStep('method')}
         onContinue={() => setStep('size')}
         continueDisabled={!region}
+        continueReason="Select a region to continue."
       >
         {regions.isLoading ? (
           <SkeletonList rows={3} />
@@ -209,8 +250,14 @@ function WizardBody({ onClose }: { onClose: () => void }) {
       <StepShell
         title="Choose a size"
         onBack={() => setStep('region')}
-        onContinue={() => setStep('details')}
+        onContinue={() => {
+          if (!name && provider) {
+            setName(nodeNameFrom(provider, region))
+          }
+          setStep('details')
+        }}
         continueDisabled={!size}
+        continueReason="Select a size to continue."
       >
         {sizes.isLoading ? (
           <SkeletonList rows={3} />
@@ -264,6 +311,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
         onBack={() => setStep('size')}
         onContinue={() => setStep('confirm')}
         continueDisabled={!/^[a-z][a-z0-9-]*$/.test(name)}
+        continueReason="Name must start with a lowercase letter and use only lowercase letters, digits, and hyphens."
       >
         <Field>
           <FieldLabel htmlFor="node-provision-name">Name</FieldLabel>

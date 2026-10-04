@@ -33,6 +33,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/changelog"
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/deploy"
@@ -40,6 +41,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/GLINCKER/levelrail/internal/firewall"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
@@ -52,6 +54,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	firewallreconcile "github.com/GLINCKER/levelrail/internal/reconcile/firewall"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
@@ -64,9 +67,12 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/updatecheck"
+	"github.com/GLINCKER/levelrail/internal/upgrade"
 	"github.com/GLINCKER/levelrail/internal/vault"
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/internal/webhook"
+	"github.com/GLINCKER/levelrail/internal/webpush"
 	"github.com/GLINCKER/levelrail/web"
 )
 
@@ -80,6 +86,12 @@ const (
 	// defaultBrandFile is the same "relative default, env override"
 	// pattern as defaultDataDir.
 	defaultBrandFile = "./brand.yaml"
+	// defaultChangelogFile is the same "relative default, env override"
+	// pattern as defaultBrandFile, for the optional CHANGELOG.md the
+	// dashboard's "What's new" panel reads (GET /api/v1/changelog).
+	// Unlike brand.yaml, absence is not an error: loadChangelog logs a
+	// warning and the route just answers an empty entries list.
+	defaultChangelogFile = "./CHANGELOG.md"
 	// defaultGitHubAppManifestFile is the same "relative default, env
 	// override" pattern as defaultBrandFile, for the optional GitHub App
 	// manifest permissions/events file (internal/githubapp.ManifestConfig).
@@ -121,6 +133,14 @@ const (
 	agentServerCertValidity = 365 * 24 * time.Hour
 
 	httpShutdownTimeout = 10 * time.Second
+
+	// agentGRPCShutdownTimeout bounds GracefulStop: it waits for every
+	// open Session stream to close, which a live, well-behaved agent
+	// never does on its own since nothing tells it the server is
+	// restarting. Unbounded, that stalls process exit until systemd's
+	// own TimeoutStopSec (90s default) SIGKILLs it, holding the
+	// ingress ports bound by a process that already stopped serving.
+	agentGRPCShutdownTimeout = 5 * time.Second
 
 	// metricsCollectionInterval matches the observability design's "15s
 	// resolution" default. Not env-configurable like retention below:
@@ -238,6 +258,15 @@ const (
 	// legitimately fire every minute.
 	defaultPreviewSweepInterval = 1 * time.Hour
 
+	// defaultUpdateCheckInterval is how often
+	// internal/updatecheck.Scheduler checks the configured release
+	// channel's latest release, env-overridable via
+	// APP_UPDATE_CHECK_INTERVAL (updateCheckInterval below). An hour,
+	// the same order of magnitude as defaultOSPatchCheckInterval above:
+	// a GitHub release check is real outbound network cost with no
+	// benefit to polling faster than an operator could plausibly react.
+	defaultUpdateCheckInterval = 1 * time.Hour
+
 	// defaultAuditLogSweepInterval is how often api.Router.RunAuditLogSweeper
 	// checks for audit_log rows past the retention window
 	// (api.defaultAuditLogRetention, 90 days), env-overridable via
@@ -245,6 +274,14 @@ const (
 	// reasoning as defaultPreviewSweepInterval just above: a days-scale
 	// retention window needs no minute-granularity checks.
 	defaultAuditLogSweepInterval = 1 * time.Hour
+
+	// defaultWebhookDeliverySweepInterval is how often
+	// api.Router.RunWebhookDeliverySweeper checks for webhook_deliveries
+	// rows past the retention window (api.defaultWebhookDeliveryRetention,
+	// 30 days), env-overridable via APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL
+	// (webhookDeliverySweepInterval below). Same reasoning as
+	// defaultAuditLogSweepInterval just above.
+	defaultWebhookDeliverySweepInterval = 1 * time.Hour
 
 	// defaultDeployApprovalSweepInterval is how often
 	// api.Router.RunDeployApprovalExpirySweep checks pending deploy
@@ -526,7 +563,18 @@ func run(logger *slog.Logger) error {
 			logger.Error("agent grpc server stopped", slog.String("error", err.Error()))
 		}
 	}()
-	defer agentGRPCServer.GracefulStop()
+	// Fired as soon as ctx is cancelled (SIGTERM), overlapping with the
+	// rest of this function's own shutdown sequence (engine drain, HTTP
+	// server shutdown) rather than waiting for stopAgentGRPCServer's own
+	// defer to run: a well-behaved agent's GoAway round trip then has the
+	// whole rest of shutdown to complete in, so GracefulStop below
+	// usually finds nothing left to wait for instead of burning its full
+	// timeout.
+	go func() {
+		<-ctx.Done()
+		agentServer.NotifyShutdown()
+	}()
+	defer stopAgentGRPCServer(agentGRPCServer, logger, agentGRPCShutdownTimeout)
 
 	secretsManager, masterKeyFilePath, err := loadSecretsManager(db, agentDataDir, secretsManagerOptions(logger)...)
 	if err != nil {
@@ -548,7 +596,30 @@ func run(logger *slog.Logger) error {
 	// fresh on every send, deferring "not configured" to send time.
 	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv()))
 	notifyClient := netguard.NewClient()
-	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, emailSender, logger)
+
+	// pushSender backs the "webpush" notification-channel kind: nil
+	// until a master key exists, the same gate backupRunner below
+	// applies, since the VAPID private key can only ever be stored
+	// through secretsManager. pushVAPIDPublicKey is threaded into
+	// rootHandler below so the dashboard can fetch it without a second
+	// secretsManager dependency of its own.
+	var pushSender alerting.PushSender
+	var pushVAPIDPublicKey string
+	if secretsManager != nil {
+		publicKey, privateKey, err := webpush.EnsureVAPIDKeys(ctx, secretsManager)
+		if err != nil {
+			logger.Error("webpush: ensure vapid keys failed", slog.String("error", err.Error()))
+		} else {
+			pushVAPIDPublicKey = publicKey
+			subscriber := b.SupportEmail
+			if subscriber == "" {
+				subscriber = b.SupportURL
+			}
+			pushSender = webpush.NewSender(db, publicKey, privateKey, subscriber, notifyClient, logger)
+		}
+	}
+
+	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, emailSender, pushSender, logger)
 
 	// backupRunner is constructed once, here in run(), not inside
 	// rootHandler where it used to live: wave-2 roadmap item 6
@@ -579,8 +650,9 @@ func run(logger *slog.Logger) error {
 			// this identical value, one implementation serving both
 			// resource kinds through the same upload/history/scheduling
 			// pipeline.
-			VolumeArchiver: &backup.ContainerVolumeArchiver{Runtime: client},
-			Uploader:       backup.S3Uploader{},
+			VolumeArchiver:    &backup.ContainerVolumeArchiver{Runtime: client},
+			SqliteSnapshotter: &backup.ContainerSqliteSnapshotter{Runtime: client},
+			Uploader:          backup.S3Uploader{},
 		}
 		backupVerifyRunner = &backup.VerifyRunner{
 			Store:      db,
@@ -650,7 +722,7 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
-	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver)
+	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver, pushVAPIDPublicKey)
 	configureNodeCerts(apiRouter, agentServer)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
@@ -701,6 +773,9 @@ func run(logger *slog.Logger) error {
 	// shares the one lookup instead of each re-querying the Docker
 	// daemon on every tick.
 	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
+	if meshDNSAddr != "" && meshCfg != nil && meshCfg.resolver != nil {
+		apiRouter.SetMeshZone(meshCfg.resolver.Zone())
+	}
 
 	previewLocalNodeID := ""
 	if meshCfg != nil {
@@ -739,9 +814,10 @@ func run(logger *slog.Logger) error {
 		go models.NewEngineMetricsCollector(db, telemetryDB, nil, logger).Run(ctx, models.EngineMetricsInterval())
 	}
 
-	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
+	collector := telemetry.NewCollector(&multiNodeStatsSource{local: client, registry: agentRegistry}, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
-		if err := collector.Run(ctx, withModelTelemetryTargets(telemetryTargets(db, client), db, client, b.ShortName)); err != nil && !errors.Is(err, context.Canceled) {
+		targets := telemetryTargets(db, client, agentRegistry, meshCfg, logger)
+		if err := collector.Run(ctx, withModelTelemetryTargets(targets, db, client, b.ShortName)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("telemetry collector stopped", slog.String("error", err.Error()))
 		}
 	}()
@@ -816,7 +892,9 @@ func run(logger *slog.Logger) error {
 	}()
 
 	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
-	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier { return alerting.NewNotifier(notifyClient, emailSender, r) }
+	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier {
+		return alerting.NewNotifier(notifyClient, emailSender, pushSender, r)
+	}
 	// db (the same *store.DB every other cert-storage reader in this
 	// function uses) satisfies alerting.CertSource structurally, so a
 	// kind=cert_expiry rule reads the exact same certificate storage GET
@@ -841,6 +919,7 @@ func run(logger *slog.Logger) error {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
+	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers())
 	alertingEngine.SetChanges(changes.New(db, db, db, logger), alertDashboardLink())
 	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))
 	go func() {
@@ -860,6 +939,12 @@ func run(logger *slog.Logger) error {
 	// wiring this unconditionally does not change behavior for any app
 	// that hasn't turned it on.
 	alertingEngine.SetAutoRollback(db, engine)
+	// db also satisfies alerting.SLOAutoRollbackStore (AutoRollbackStore
+	// plus SaveDeployApproval); alertingDB satisfies
+	// alerting.SLOBurnHistoryRecorder via its own RecordHistory. Opt-in
+	// per app (store.DesiredService.AutoRollbackOnSLOBurn, off by
+	// default), same reasoning as SetAutoRollback above.
+	alertingEngine.SetSLOBurnAutoRollback(db, engine, alertingDB)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
@@ -916,6 +1001,17 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	// Update check: internal/updatecheck.Scheduler checks, on its own
+	// tick, the configured release channel (store.UpdateSettings,
+	// migrations/0258_update_settings.sql) for a newer release, only
+	// when an operator has opted into auto_update_enabled.
+	updateCheckScheduler := updatecheck.NewScheduler(db, logger)
+	go func() {
+		if err := updateCheckScheduler.Run(ctx, updateCheckInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("update check scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	if interval := controlPlaneBackupInterval(logger); interval > 0 {
 		cpBackups := cpbackup.NewManager(db, agentDataDir)
 		retain := controlPlaneBackupRetain(logger)
@@ -947,6 +1043,17 @@ func run(logger *slog.Logger) error {
 	go func() {
 		if err := apiRouter.RunAuditLogSweeper(ctx, auditLogSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("audit log sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	// Webhook delivery retention sweep (api.Router.RunWebhookDeliverySweeper,
+	// internal/api/webhook_delivery_retention.go): deletes
+	// webhook_deliveries rows past the retention window on its own tick,
+	// the same reasoning as the audit log sweeper just above applied to
+	// the one inbound-webhook history table that otherwise only ever grows.
+	go func() {
+		if err := apiRouter.RunWebhookDeliverySweeper(ctx, webhookDeliverySweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("webhook delivery sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
 
@@ -996,6 +1103,34 @@ func run(logger *slog.Logger) error {
 		return nil // Ctrl+C / SIGTERM is a clean shutdown, not a failure
 	}
 	return engineErr
+}
+
+// gracefulStopper is the subset of *grpc.Server stopAgentGRPCServer
+// needs, narrowed so a test can exercise the timeout/fallback path
+// without a real listener and a real stuck stream.
+type gracefulStopper interface {
+	GracefulStop()
+	Stop()
+}
+
+// stopAgentGRPCServer bounds GracefulStop with timeout and falls back
+// to the hard Stop, so a live agent Session stream can no longer stall
+// process exit until systemd SIGKILLs it (see agentGRPCShutdownTimeout's
+// own doc comment).
+func stopAgentGRPCServer(server gracefulStopper, logger *slog.Logger, timeout time.Duration) {
+	done := make(chan struct{})
+	go func() {
+		server.GracefulStop()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(timeout):
+		logger.Warn("agent grpc server did not drain in time, forcing stop",
+			slog.Duration("timeout", timeout))
+		server.Stop()
+		<-done
+	}
 }
 
 func openStore(ctx context.Context) (*store.DB, error) {
@@ -1106,6 +1241,18 @@ func emailConfigLoader(db *store.DB, secretsManager *secrets.Manager, envFallbac
 				SecretAccessKey: secret,
 				From:            settings.SESFrom,
 			}}, nil
+		case store.EmailBackendResend:
+			if secretsManager == nil {
+				return email.Config{}, fmt.Errorf("email settings: resend backend selected but no master key is configured")
+			}
+			apiKey, err := resolveEmailSecret(ctx, secretsManager, "resend_api_key")
+			if err != nil {
+				return email.Config{}, err
+			}
+			return email.Config{Backend: email.BackendResend, Resend: &email.ResendConfig{
+				APIKey: apiKey,
+				From:   settings.ResendFrom,
+			}}, nil
 		default:
 			if envFallback == nil {
 				return email.Config{}, nil // NewSender turns this into email.ErrNotConfigured
@@ -1211,7 +1358,11 @@ func agentAdvertiseHost() string {
 // keeping this package decoupled from that one's internals: a service
 // converged to steady state has exactly one running container under its
 // service-name prefix, per that package's own blue-green design.
-func telemetryTargets(db *store.DB, runtime docker.Runtime) func(context.Context) ([]telemetry.Target, error) {
+// Resolves each service's own node via resolveNodeTransport, so a
+// remote node's container is discovered (and later polled for stats by
+// multiNodeStatsSource below) through its own agent, not local's.
+func telemetryTargets(db *store.DB, local docker.Runtime, registry *agent.Registry, meshCfg *meshSetup, logger *slog.Logger) func(context.Context) ([]telemetry.Target, error) {
+	deps := dynamicSourceDeps{meshCfg: meshCfg}
 	return func(ctx context.Context) ([]telemetry.Target, error) {
 		services, err := db.ListDesiredServices(ctx)
 		if err != nil {
@@ -1220,9 +1371,23 @@ func telemetryTargets(db *store.DB, runtime docker.Runtime) func(context.Context
 
 		var targets []telemetry.Target
 		for _, svc := range services {
-			containers, err := runtime.ListByPrefix(ctx, svc.Name+"-")
+			nodeID := runtimeNodeID(deps, svc.NodeID)
+			nodeRuntime, err := resolveNodeTransport(local, registry, nodeID)
 			if err != nil {
-				return nil, fmt.Errorf("list containers for %s: %w", svc.Name, err)
+				// A disconnected node just means this tick skips its
+				// services, the same "one broken resource must not
+				// block others" resolveNodeTransport's own doc comment
+				// already establishes for reconcile; metrics pick back
+				// up automatically once the node reconnects.
+				logger.Warn("telemetry: service's node unreachable, skipping this tick",
+					slog.String("service", svc.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
+				continue
+			}
+			containers, err := nodeRuntime.ListByPrefix(ctx, svc.Name+"-")
+			if err != nil {
+				logger.Warn("telemetry: list containers failed, skipping this tick",
+					slog.String("service", svc.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
+				continue
 			}
 			for _, c := range containers {
 				if !c.Running {
@@ -1231,11 +1396,12 @@ func telemetryTargets(db *store.DB, runtime docker.Runtime) func(context.Context
 				targets = append(targets, telemetry.Target{
 					ResourceID:  "service:" + svc.Name,
 					ContainerID: c.ID,
+					NodeID:      nodeID,
 				})
 			}
 		}
 
-		dbTargets, err := databaseTelemetryTargets(ctx, db, runtime)
+		dbTargets, err := databaseTelemetryTargets(ctx, db, local, registry, meshCfg, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -1254,7 +1420,8 @@ func telemetryTargets(db *store.DB, runtime docker.Runtime) func(context.Context
 // deterministic "db-" + name with no suffix, so an exact lookup is both
 // correct and avoids ListByPrefix("db-foo") also matching a differently
 // named "db-foobar" container.
-func databaseTelemetryTargets(ctx context.Context, db *store.DB, runtime docker.Runtime) ([]telemetry.Target, error) {
+func databaseTelemetryTargets(ctx context.Context, db *store.DB, local docker.Runtime, registry *agent.Registry, meshCfg *meshSetup, logger *slog.Logger) ([]telemetry.Target, error) {
+	deps := dynamicSourceDeps{meshCfg: meshCfg}
 	databases, err := db.ListDesiredDatabases(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list desired databases: %w", err)
@@ -1262,9 +1429,18 @@ func databaseTelemetryTargets(ctx context.Context, db *store.DB, runtime docker.
 
 	var targets []telemetry.Target
 	for _, d := range databases {
-		cs, err := runtime.InspectByName(ctx, "db-"+d.Name)
+		nodeID := runtimeNodeID(deps, d.NodeID)
+		nodeRuntime, err := resolveNodeTransport(local, registry, nodeID)
 		if err != nil {
-			return nil, fmt.Errorf("inspect container for database %s: %w", d.Name, err)
+			logger.Warn("telemetry: database's node unreachable, skipping this tick",
+				slog.String("database", d.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
+			continue
+		}
+		cs, err := nodeRuntime.InspectByName(ctx, "db-"+d.Name)
+		if err != nil {
+			logger.Warn("telemetry: inspect database container failed, skipping this tick",
+				slog.String("database", d.Name), slog.String("node_id", nodeID), slog.String("error", err.Error()))
+			continue
 		}
 		if cs == nil || !cs.Running {
 			continue
@@ -1272,9 +1448,31 @@ func databaseTelemetryTargets(ctx context.Context, db *store.DB, runtime docker.
 		targets = append(targets, telemetry.Target{
 			ResourceID:  "database:" + d.Name,
 			ContainerID: cs.ID,
+			NodeID:      nodeID,
 		})
 	}
 	return targets, nil
+}
+
+// multiNodeStatsSource implements telemetry.StatsSource, routing each
+// poll through resolveNodeTransport (local client, or a remote agent's
+// Transport). Samples land centrally rather than per-node, a narrower
+// scope than ADR 008's ideal; see docs-local/agent-metrics-findings-2026-10-04.md.
+type multiNodeStatsSource struct {
+	local    docker.Runtime
+	registry *agent.Registry
+}
+
+func (s *multiNodeStatsSource) Stats(ctx context.Context, nodeID, containerID string) (docker.ContainerStats, error) {
+	nodeRuntime, err := resolveNodeTransport(s.local, s.registry, nodeID)
+	if err != nil {
+		return docker.ContainerStats{}, err
+	}
+	inspector, ok := nodeRuntime.(docker.StatsInspector)
+	if !ok {
+		return docker.ContainerStats{}, fmt.Errorf("telemetry: node %q's runtime cannot report container stats", nodeID)
+	}
+	return inspector.Stats(ctx, containerID)
 }
 
 // logTargets lists every desired service's currently running container(s)
@@ -1516,6 +1714,24 @@ func loadBrand() (*brand.Brand, error) {
 		return nil, fmt.Errorf("%w (running via install.sh sets this up automatically; running the binary directly needs either a brand.yaml file at %q or APP_BRAND_FILE pointing at one)", err, path)
 	}
 	return b, err
+}
+
+// loadChangelog resolves CHANGELOG.md the same default-plus-env-override
+// shape as loadBrand, but a missing file is never fatal here: a bare,
+// non-Docker install that hasn't shipped CHANGELOG.md next to the binary
+// yet just gets an empty "what's new" panel (api.WithChangelog's own doc
+// comment).
+func loadChangelog(logger *slog.Logger) []changelog.Entry {
+	path := os.Getenv("APP_CHANGELOG_FILE")
+	content, found, err := changelog.ReadFile(path, defaultChangelogFile)
+	if err != nil {
+		logger.Warn("read changelog file failed", slog.String("error", err.Error()))
+		return nil
+	}
+	if !found {
+		return nil
+	}
+	return changelog.Parse(content)
 }
 
 func loadGitHubAppManifestConfig() (githubapp.ManifestConfig, error) {
@@ -1958,7 +2174,7 @@ func buildNodeSource(db *store.DB, agentRegistry *agent.Registry) build.NodeSour
 // calling rootHandler): api.WithIngressPortOwner wires it in
 // unconditionally so GET /system/doctor can tell this control plane's
 // own ingress apart from an unrelated process on ports 80/443.
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, agentCAFingerprint string, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner, engine *reconcile.Engine, ingressDriver *ingressdriver.Driver) (http.Handler, *api.Router) {
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, agentCAFingerprint string, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner, engine *reconcile.Engine, ingressDriver *ingressdriver.Driver, pushVAPIDPublicKey string) (http.Handler, *api.Router) {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1976,7 +2192,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithNotificationChannels(alertingDB),
 		api.WithNotificationChannelTester(deployDispatcher),
 		api.WithNotificationDeliveries(alertingDB),
+		api.WithApprovalChatNotifier(deployDispatcher),
+		api.WithFirewallRequiredPorts(platformRequiredPorts()),
 		api.WithSessionTTL(sessionTTL(logger)),
+		api.WithRequestLogThresholds(slowRequestThreshold(logger), criticalRequestThreshold(logger)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
 		api.WithHSTS(hstsEnabled(logger)),
 		api.WithAllowInsecureLogin(allowInsecureLogin(logger)),
@@ -1992,6 +2211,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDockerDiskUsager(client),
 		api.WithDockerPruner(client),
 		api.WithOrphanedVolumeManager(client),
+		api.WithOrphanedContainerManager(client),
 		api.WithRegistryAuthTester(client),
 		api.WithDBPinger(db),
 		api.WithAgentCAFingerprint(agentCAFingerprint),
@@ -2022,11 +2242,13 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			nodeCPUThreshold(logger), nodeMemoryThreshold(logger),
 		),
 		api.WithResourceRecommendationLookback(resourceRecommendationLookback(logger)),
+		api.WithCapacityForecastLookback(capacityForecastLookback(logger)),
 		api.WithPreviewTTL(previewTTL(logger)),
 		api.WithPreviewLimits(previewLimits(logger)),
 		api.WithPreviewStuckAfter(previewStuckAfter(logger)),
 		api.WithInviteTTL(inviteTTL(logger)),
 		api.WithAuditLogRetention(auditLogRetention(logger)),
+		api.WithWebhookDeliveryRetention(webhookDeliveryRetention(logger)),
 		api.WithDeployApprovalTTL(deployApprovalTTL(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithDeployLogQuerier(telemetryDB),
@@ -2038,6 +2260,11 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// forgot-password always exists, it just fails clearly at send
 		// time when nothing is actually configured.
 		api.WithEmailSender(emailSender),
+		// pushVAPIDPublicKey is "" whenever secretsManager is nil (set
+		// just above, in run()): WithPushVAPIDPublicKey's own doc comment
+		// covers the resulting 501, so this is applied unconditionally
+		// like WithEmailSender above.
+		api.WithPushVAPIDPublicKey(pushVAPIDPublicKey),
 	}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
@@ -2064,6 +2291,11 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// DNS-01 provider from Cloudflare DNS-01 above) goes through the
 		// same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithRoute53DNSSecrets(secretsManager))
+		// DNS records management reads back the same two credentials
+		// above (it needs the plaintext value, not just presence), still
+		// through secretsManager.
+		opts = append(opts, api.WithCloudflareDNSTokenResolver(secretsManager))
+		opts = append(opts, api.WithRoute53DNSCredentialResolver(secretsManager))
 		// A cloud node provider's API token (Hetzner, DigitalOcean) goes
 		// through the same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithNodeProviderSecrets(secretsManager))
@@ -2151,6 +2383,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// registryCredential field): same secretsManager, same
 			// nil-interface hazard as everything else in this block.
 			api.WithRegistryCredentialSecrets(secretsManager),
+			// Network shares (CIFS password only; NFS shares write no
+			// secret): same secretsManager, same nil-interface hazard.
+			api.WithNetworkShareSecrets(secretsManager),
 			api.WithBackupRunner(backupRunner),
 			// App service volume backups (internal/backup's own volume
 			// archiver/restorer, wired above): the same backupRunner/
@@ -2281,6 +2516,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	} else {
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
+	opts = append(opts, api.WithChangelog(loadChangelog(logger)))
 
 	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
 	wireModelPreflight(modelSvc, client, b.ShortName, logger)
@@ -2425,6 +2661,23 @@ func ingressPortFromAddr(addr string) int {
 	return port
 }
 
+// platformRequiredPorts is this instance's actually configured
+// management API, agent gRPC, and ingress ports, passed to both
+// api.WithFirewallRequiredPorts and firewallreconcile.WithRequiredPorts
+// so a firewall rule can never close one of them, whatever these were
+// moved to via APP_HTTP_ADDR/APP_AGENT_ADDR/APP_INGRESS_HTTP_ADDR/
+// APP_INGRESS_HTTPS_ADDR. ingressPortFromAddr's own "0 on unparseable"
+// degrade is harmless here: Validate's port-match loop simply never
+// matches 0.
+func platformRequiredPorts() []int {
+	return []int{
+		ingressPortFromAddr(httpAddr()),
+		ingressPortFromAddr(agentAddr()),
+		ingressPortFromAddr(ingressHTTPAddr()),
+		ingressPortFromAddr(ingressHTTPSAddr()),
+	}
+}
+
 // dashboardDialAddr normalizes httpAddr's listen address (e.g. ":8080",
 // the normal "listen on every interface" shorthand a *http.Server.Addr
 // takes) into a loopback dial address (e.g. "127.0.0.1:8080") the
@@ -2465,6 +2718,41 @@ func sessionTTL(logger *slog.Logger) time.Duration {
 	d, err := time.ParseDuration(raw)
 	if err != nil {
 		logger.Warn("invalid APP_SESSION_TTL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// slowRequestThreshold reads APP_SLOW_REQUEST_THRESHOLD as a Go
+// duration string (e.g. "500ms"), the value
+// api.WithRequestLogThresholds's first argument configures: the request
+// logging middleware logs a request at Warn at or above this duration.
+// Returns 0 (api's own signal to fall back to its internal default)
+// when unset or unparseable, logging a warning in the latter case so a
+// typo'd env var is visible rather than silently ignored.
+func slowRequestThreshold(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_SLOW_REQUEST_THRESHOLD")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_SLOW_REQUEST_THRESHOLD, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// criticalRequestThreshold reads APP_CRITICAL_REQUEST_THRESHOLD, the
+// same shape as slowRequestThreshold but for the Error band.
+func criticalRequestThreshold(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_CRITICAL_REQUEST_THRESHOLD")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_CRITICAL_REQUEST_THRESHOLD, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
 	}
 	return d
@@ -2723,6 +3011,22 @@ func inviteTTL(logger *slog.Logger) time.Duration {
 	return d
 }
 
+// updateCheckInterval reads APP_UPDATE_CHECK_INTERVAL as a Go duration
+// string, the same env-var-with-default shape backupSchedulerInterval
+// already uses.
+func updateCheckInterval(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_UPDATE_CHECK_INTERVAL")
+	if raw == "" {
+		return defaultUpdateCheckInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_UPDATE_CHECK_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return defaultUpdateCheckInterval
+	}
+	return d
+}
+
 // previewSweepInterval reads APP_PREVIEW_SWEEP_INTERVAL as a Go duration
 // string, the same env-var-with-default shape backupSchedulerInterval
 // already uses: unlike previewTTL above, api.Router.RunPreviewSweeper
@@ -2758,6 +3062,43 @@ func auditLogRetention(logger *slog.Logger) time.Duration {
 		return 0
 	}
 	return time.Duration(days) * 24 * time.Hour
+}
+
+// webhookDeliveryRetention reads APP_WEBHOOK_DELIVERY_RETENTION_DAYS, the
+// same env-var-with-default shape auditLogRetention above uses for
+// api.WithAuditLogRetention, applied here to
+// api.WithWebhookDeliveryRetention. Returns 0 (api's own signal to fall
+// back to its internal default, api.defaultWebhookDeliveryRetention, 30
+// days) when unset or unparseable.
+func webhookDeliveryRetention(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_WEBHOOK_DELIVERY_RETENTION_DAYS")
+	if raw == "" {
+		return 0
+	}
+	days, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		logger.Warn("invalid APP_WEBHOOK_DELIVERY_RETENTION_DAYS, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return time.Duration(days) * 24 * time.Hour
+}
+
+// webhookDeliverySweepInterval reads APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL
+// as a Go duration string, the same env-var-with-default shape
+// auditLogSweepInterval above uses: api.Router.RunWebhookDeliverySweeper
+// takes its interval directly with no built-in fallback of its own, so
+// this resolves the real value once, here.
+func webhookDeliverySweepInterval(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL")
+	if raw == "" {
+		return defaultWebhookDeliverySweepInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return defaultWebhookDeliverySweepInterval
+	}
+	return d
 }
 
 // secretRotationWarnAge reads APP_SECRET_ROTATION_WARN_DAYS, the same
@@ -2864,6 +3205,25 @@ func resourceRecommendationLookback(logger *slog.Logger) time.Duration {
 	d, err := time.ParseDuration(raw)
 	if err != nil {
 		logger.Warn("invalid APP_RESOURCE_RECOMMENDATION_LOOKBACK, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// capacityForecastLookback reads APP_CAPACITY_FORECAST_LOOKBACK as a Go
+// duration string, the same env-var-with-default shape
+// resourceRecommendationLookback above already uses for its own
+// duration-typed option. Returns 0 (api's own signal to fall back to
+// its internal default, api.defaultCapacityForecastLookback) when unset
+// or unparseable, logging a warning in the latter case.
+func capacityForecastLookback(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_CAPACITY_FORECAST_LOOKBACK")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_CAPACITY_FORECAST_LOOKBACK, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
 	}
 	return d
@@ -3135,6 +3495,8 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithListenAddr(deps.ingressHTTPSAddr),
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
 			ingressreconcile.WithRequestStats(),
+			// Lets Reconcile flag a service placed on an unreachable node.
+			ingressreconcile.WithLocalNodeID(localNodeIDOf(deps)),
 		}
 		if experimental.Enabled(experimental.AIModels) {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
@@ -3211,6 +3573,13 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		}
 		controllers = append(controllers, registryreconcile.New(deps.db, registryCreds, deps.runtime, registryreconcile.WithContainerPrefix(deps.networkPrefix)))
 
+		// Firewall rules: same platform-wide-singleton,
+		// local-runtime-unconditional shape as the registry controller
+		// above. requiredPorts mirrors api.WithFirewallRequiredPorts so
+		// the write-time refusal and this reconcile-time, defense-in-depth
+		// skip never disagree about what counts as "required."
+		controllers = append(controllers, firewallreconcile.New(deps.db, firewall.New(), firewallreconcile.WithRequiredPorts(platformRequiredPorts()), firewallreconcile.WithLogger(deps.logger)))
+
 		if deps.meshCfg != nil {
 			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger)))
 		}
@@ -3261,10 +3630,13 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 	if deps.meshDNSAddr != "" {
 		appOpts = append(appOpts, application.WithMeshDNSAddr(deps.meshDNSAddr))
 	}
+	if deps.meshDNSAddr != "" && deps.meshCfg != nil && deps.meshCfg.resolver != nil {
+		appOpts = append(appOpts, application.WithMeshZone(deps.meshCfg.resolver.Zone()))
+	}
 
 	controllers := make([]reconcile.Controller, 0, len(services))
 	for _, svc := range services {
-		svcRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, svc.NodeID)
+		svcRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, svc.NodeID))
 		if err != nil {
 			deps.logger.Warn("skipping service for this reconcile pass: node transport unavailable",
 				slog.String("service", svc.Name), slog.String("node_id", svc.NodeID), slog.String("error", err.Error()))
@@ -3285,7 +3657,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databases []store.DesiredDatabase) []reconcile.Controller {
 	controllers := make([]reconcile.Controller, 0, len(databases))
 	for _, desired := range databases {
-		dbRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, desired.NodeID)
+		dbRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, desired.NodeID))
 		if err != nil {
 			deps.logger.Warn("skipping database for this reconcile pass: node transport unavailable",
 				slog.String("database", desired.Name), slog.String("node_id", desired.NodeID), slog.String("error", err.Error()))
@@ -3392,6 +3764,17 @@ func resolveNodeTransport(local docker.Runtime, registry *agent.Registry, nodeID
 		return local, nil
 	}
 	return registry.Get(nodeID)
+}
+
+// runtimeNodeID maps this process's own mesh node ID back to the local
+// sentinel (""), the same translation modelRuntimeNode already does for
+// model controllers (models_wiring.go): resolveNodeTransport only treats
+// "" as local.
+func runtimeNodeID(deps dynamicSourceDeps, nodeID string) string {
+	if nodeID == "" || nodeID == localNodeIDOf(deps) {
+		return ""
+	}
+	return nodeID
 }
 
 // bootstrapAdmin creates the first admin from APP_ADMIN_USERNAME and

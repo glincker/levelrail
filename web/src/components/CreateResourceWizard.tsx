@@ -149,11 +149,17 @@ export function CreateResourceWizard({
   trigger,
   scope,
   initialSelected,
+  initialTemplateId,
 }: {
   trigger: React.ReactElement
   scope?: 'applications' | 'databases'
   /** Opens straight to step 2 on this option instead of step 1's picker, e.g. "browse-templates" for a "Start from a template" entry point. */
   initialSelected?: FixedWizardOption
+  /** Paired with `initialSelected="browse-templates"`: skips that step's
+   *  own grid too and opens straight to this template's preview/
+   *  configure form, e.g. the /templates/$id detail page's "Configure and
+   *  deploy" button. Ignored otherwise. */
+  initialTemplateId?: string
 }) {
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<string | null>(
@@ -169,6 +175,12 @@ export function CreateResourceWizard({
   // available via the toggle for whoever prefers it once step 2's form
   // is showing.
   const [fullscreen, setFullscreen] = useState(true)
+  // Only meaningful while selected === 'browse-templates': the catalog
+  // grid wants the full fullscreen width to show multiple columns, but
+  // its own configure-form/results view should keep the same narrow
+  // reading width every other step 2 form uses. See BrowseTemplatesFields'
+  // onViewChange doc comment.
+  const [templateView, setTemplateView] = useState<'grid' | 'detail'>('grid')
   const [search, setSearch] = useState('')
   // Set once the import front door has produced a plan preview; shown in
   // place of the picker until the operator goes back or deploys.
@@ -234,6 +246,7 @@ export function CreateResourceWizard({
       // local form state off this same `open` prop.
       setSelected(initialSelected ?? null)
       setFullscreen(true)
+      setTemplateView('grid')
       setSearch('')
       setCategory('all')
       setImportState(null)
@@ -279,9 +292,8 @@ export function CreateResourceWizard({
         ? 'New database'
         : 'New resource'
 
-  const gridClassName = fullscreen
-    ? 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5'
-    : 'grid grid-cols-2 gap-3'
+  // Capped at md:grid-cols-4 to match the picker's own max-w-4xl below.
+  const gridClassName = 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4'
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -336,7 +348,15 @@ export function CreateResourceWizard({
             />
           </div>
         ) : selected === null ? (
-          <>
+          // Width-capped even in fullscreen: unconstrained, the search bar
+          // and 4-card grid stretched across the whole viewport.
+          <div
+            className={
+              fullscreen
+                ? 'mx-auto flex w-full max-w-4xl flex-col gap-3 py-2'
+                : 'contents'
+            }
+          >
             <DialogHeader>
               <DialogTitle className={fullscreen ? 'text-lg' : undefined}>
                 {pickerTitle}
@@ -416,15 +436,20 @@ export function CreateResourceWizard({
                 No resources match &ldquo;{search}&rdquo;.
               </p>
             ) : null}
-          </>
+          </div>
         ) : (
           // `display: contents` when compact makes this wrapper invisible
           // to layout. Full screen swaps it for a real flex column that
-          // caps line length to a sane reading width.
+          // caps line length to a sane reading width, except the template
+          // catalog's own grid view, which wants the fullscreen width to
+          // show multiple columns instead of being squeezed into a form's
+          // reading width (see BrowseTemplatesFields' onViewChange).
           <div
             className={
               fullscreen
-                ? 'mx-auto flex w-full max-w-2xl flex-col gap-4 py-4'
+                ? selected === 'browse-templates' && templateView === 'grid'
+                  ? 'mx-auto flex w-full max-w-6xl flex-col gap-4 py-4'
+                  : 'mx-auto flex w-full max-w-2xl flex-col gap-4 py-4'
                 : 'contents'
             }
           >
@@ -482,6 +507,8 @@ export function CreateResourceWizard({
                 key={selected}
                 open={open}
                 onCreated={handleCreated}
+                initialTemplateId={initialTemplateId}
+                onViewChange={setTemplateView}
               />
             ) : null}
             {!isFixedOption(selected) ? (

@@ -82,19 +82,13 @@ func (f *fakeIsolationRuntime) EnsureVolume(context.Context, string) error { ret
 func (f *fakeIsolationRuntime) EnsureNetwork(context.Context, string) (string, error) {
 	return "", nil
 }
-func (f *fakeIsolationRuntime) RemoveNetwork(context.Context, string) error { return nil }
+func (f *fakeIsolationRuntime) RemoveNetwork(context.Context, string) error          { return nil }
+func (f *fakeIsolationRuntime) NetworkConnect(context.Context, string, string) error { return nil }
+func (f *fakeIsolationRuntime) NetworkDisconnect(context.Context, string, string, bool) error {
+	return nil
+}
 func (f *fakeIsolationRuntime) ListNetworksByPrefix(context.Context, string) ([]docker.NetworkInfo, error) {
 	return nil, nil
-}
-
-// setUpPreviewAppWithDatabaseIsolation seeds app "web" with a git source
-// declaring an isolatedInPreviews database that points at an existing
-// managed database "main" (not one the preview itself owns), with a
-// real secrets.Manager and a fake runtime whose container for "main" is
-// already running.
-func setUpPreviewAppWithDatabaseIsolation(t *testing.T) (rt *Router, db *store.DB, secret string, runtime *fakeIsolationRuntime) {
-	t.Helper()
-	return setUpPreviewAppWithDatabaseIsolationEngine(t, store.EnginePostgres)
 }
 
 // setUpPreviewAppWithDatabaseIsolationEngine is
@@ -132,118 +126,135 @@ func setUpPreviewAppWithDatabaseIsolationEngine(t *testing.T, engine string) (rt
 	return rt, db, created.WebhookSecret, runtime
 }
 
-// TestDeployPreviewEnvironment_ProvisionsDatabaseIsolation_ByEngine below
-// covers this (Postgres) case table-driven alongside Redis.
+// The tests below cover both the Postgres role path and the Redis ACL
+// path, table-driven against the same fixture and assertions wherever
+// the two engines' behavior is identical (provision, idempotency,
+// teardown, half-succeeded teardown), so a regression in either
+// engine's exec dispatch shows up as a failure on its own row.
 
 func TestDeployPreviewEnvironment_Synchronize_DatabaseIsolationIsIdempotent(t *testing.T) {
-	rt, db, secret, runtime := setUpPreviewAppWithDatabaseIsolation(t)
+	for _, engine := range []string{store.EnginePostgres, store.EngineRedis} {
+		t.Run(engine, func(t *testing.T) {
+			rt, db, secret, runtime := setUpPreviewAppWithDatabaseIsolationEngine(t, engine)
 
-	sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
-	preview, err := db.GetPreviewEnvironmentByAppAndPR(context.Background(), "web", 42)
-	if err != nil {
-		t.Fatalf("GetPreviewEnvironmentByAppAndPR() error = %v", err)
-	}
-	first, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main")
-	if err != nil {
-		t.Fatalf("first GetPreviewDatabaseIsolationByPreviewAndKey() error = %v", err)
-	}
-	execCallsAfterFirst := len(runtime.execCalls)
+			sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
+			preview, err := db.GetPreviewEnvironmentByAppAndPR(context.Background(), "web", 42)
+			if err != nil {
+				t.Fatalf("GetPreviewEnvironmentByAppAndPR() error = %v", err)
+			}
+			first, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main")
+			if err != nil {
+				t.Fatalf("first GetPreviewDatabaseIsolationByPreviewAndKey() error = %v", err)
+			}
+			execCallsAfterFirst := len(runtime.execCalls)
 
-	rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("synchronize", 42, "sha2", "main"))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("synchronize status = %d, body = %s", rec.Code, rec.Body.String())
-	}
+			rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("synchronize", 42, "sha2", "main"))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("synchronize status = %d, body = %s", rec.Code, rec.Body.String())
+			}
 
-	second, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main")
-	if err != nil {
-		t.Fatalf("second GetPreviewDatabaseIsolationByPreviewAndKey() error = %v", err)
-	}
-	if second.ID != first.ID {
-		t.Errorf("ID changed across synchronize: first = %q, second = %q, want the same tracking row reused", first.ID, second.ID)
-	}
-	if len(runtime.execCalls) != execCallsAfterFirst {
-		t.Errorf("execCalls after synchronize = %d, want %d (no re-provision)", len(runtime.execCalls), execCallsAfterFirst)
+			second, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main")
+			if err != nil {
+				t.Fatalf("second GetPreviewDatabaseIsolationByPreviewAndKey() error = %v", err)
+			}
+			if second.ID != first.ID {
+				t.Errorf("ID changed across synchronize: first = %q, second = %q, want the same tracking row reused", first.ID, second.ID)
+			}
+			if len(runtime.execCalls) != execCallsAfterFirst {
+				t.Errorf("execCalls after synchronize = %d, want %d (no re-provision)", len(runtime.execCalls), execCallsAfterFirst)
+			}
+		})
 	}
 }
 
 func TestTeardownPreviewDatabaseIsolation_DropsRoleAndRows(t *testing.T) {
-	rt, db, secret, runtime := setUpPreviewAppWithDatabaseIsolation(t)
+	cases := []struct {
+		engine      string
+		wantExecSub string
+	}{
+		{store.EnginePostgres, "DROP ROLE"},
+		{store.EngineRedis, "ACL DELUSER"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.engine, func(t *testing.T) {
+			rt, db, secret, runtime := setUpPreviewAppWithDatabaseIsolationEngine(t, tc.engine)
 
-	sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
-	preview, err := db.GetPreviewEnvironmentByAppAndPR(context.Background(), "web", 42)
-	if err != nil {
-		t.Fatalf("GetPreviewEnvironmentByAppAndPR() error = %v", err)
-	}
-	if _, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main"); err != nil {
-		t.Fatalf("GetPreviewDatabaseIsolationByPreviewAndKey() error = %v", err)
-	}
+			sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
+			preview, err := db.GetPreviewEnvironmentByAppAndPR(context.Background(), "web", 42)
+			if err != nil {
+				t.Fatalf("GetPreviewEnvironmentByAppAndPR() error = %v", err)
+			}
+			if _, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main"); err != nil {
+				t.Fatalf("GetPreviewDatabaseIsolationByPreviewAndKey() error = %v", err)
+			}
 
-	rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("closed", 42, "sha1", "main"))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("closed status = %d, body = %s", rec.Code, rec.Body.String())
-	}
+			rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("closed", 42, "sha1", "main"))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("closed status = %d, body = %s", rec.Code, rec.Body.String())
+			}
 
-	if _, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main"); !errors.Is(err, store.ErrPreviewDatabaseIsolationNotFound) {
-		t.Errorf("GetPreviewDatabaseIsolationByPreviewAndKey() error = %v, want ErrPreviewDatabaseIsolationNotFound", err)
-	}
-	// The database itself must survive teardown: only the role is dropped.
-	if _, err := db.GetDesiredDatabase(context.Background(), "main"); err != nil {
-		t.Errorf("GetDesiredDatabase(main) error = %v, want it to still exist after teardown", err)
-	}
-	if len(runtime.execCalls) != 2 {
-		t.Fatalf("execCalls = %d, want 2 (create then drop)", len(runtime.execCalls))
-	}
-	if !strings.Contains(runtime.execCalls[1], "DROP ROLE") {
-		t.Errorf("teardown exec call = %q, want it to contain DROP ROLE", runtime.execCalls[1])
+			if _, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main"); !errors.Is(err, store.ErrPreviewDatabaseIsolationNotFound) {
+				t.Errorf("GetPreviewDatabaseIsolationByPreviewAndKey() error = %v, want ErrPreviewDatabaseIsolationNotFound", err)
+			}
+			// The database itself must survive teardown: only the role/user is dropped.
+			if _, err := db.GetDesiredDatabase(context.Background(), "main"); err != nil {
+				t.Errorf("GetDesiredDatabase(main) error = %v, want it to still exist after teardown", err)
+			}
+			if len(runtime.execCalls) != 2 {
+				t.Fatalf("execCalls = %d, want 2 (create then drop)", len(runtime.execCalls))
+			}
+			if !strings.Contains(runtime.execCalls[1], tc.wantExecSub) {
+				t.Errorf("teardown exec call = %q, want it to contain %q", runtime.execCalls[1], tc.wantExecSub)
+			}
+		})
 	}
 }
 
 // TestTeardownPreviewDatabaseIsolation_HalfSucceeded_ThenRetrySucceeds is
 // this feature's own half-succeeded reconciler test (CLAUDE.md section
-// 7): an exec failure while dropping the role must leave the tracking
-// row intact for a retry, not lose track of it, and a subsequent retry
-// with the failure cleared must fully converge.
+// 7): an exec failure while dropping the role/user must leave the
+// tracking row intact for a retry, not lose track of it, and a
+// subsequent retry with the failure cleared must fully converge. Runs
+// against both engines since each dispatches teardown differently.
 func TestTeardownPreviewDatabaseIsolation_HalfSucceeded_ThenRetrySucceeds(t *testing.T) {
-	rt, db, secret, runtime := setUpPreviewAppWithDatabaseIsolation(t)
+	for _, engine := range []string{store.EnginePostgres, store.EngineRedis} {
+		t.Run(engine, func(t *testing.T) {
+			rt, db, secret, runtime := setUpPreviewAppWithDatabaseIsolationEngine(t, engine)
 
-	sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
-	preview, err := db.GetPreviewEnvironmentByAppAndPR(context.Background(), "web", 42)
-	if err != nil {
-		t.Fatalf("GetPreviewEnvironmentByAppAndPR() error = %v", err)
-	}
-	if _, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main"); err != nil {
-		t.Fatalf("GetPreviewDatabaseIsolationByPreviewAndKey() error = %v", err)
-	}
+			sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
+			preview, err := db.GetPreviewEnvironmentByAppAndPR(context.Background(), "web", 42)
+			if err != nil {
+				t.Fatalf("GetPreviewEnvironmentByAppAndPR() error = %v", err)
+			}
+			if _, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main"); err != nil {
+				t.Fatalf("GetPreviewDatabaseIsolationByPreviewAndKey() error = %v", err)
+			}
 
-	runtime.execErr = errors.New("engine temporarily unavailable")
-	rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("closed", 42, "sha1", "main"))
-	if rec.Code != http.StatusMultiStatus {
-		t.Fatalf("closed (failing) status = %d, want %d, body = %s", rec.Code, http.StatusMultiStatus, rec.Body.String())
-	}
+			runtime.execErr = errors.New("engine temporarily unavailable")
+			rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("closed", 42, "sha1", "main"))
+			if rec.Code != http.StatusMultiStatus {
+				t.Fatalf("closed (failing) status = %d, want %d, body = %s", rec.Code, http.StatusMultiStatus, rec.Body.String())
+			}
 
-	failedTracked, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main")
-	if err != nil {
-		t.Fatalf("tracking row missing after failed teardown: %v", err)
-	}
-	if failedTracked.Status != store.PreviewDatabaseIsolationStatusTeardownFailed || failedTracked.StatusReason == "" {
-		t.Errorf("tracked = %+v, want status=teardown_failed with a reason", failedTracked)
-	}
+			failedTracked, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main")
+			if err != nil {
+				t.Fatalf("tracking row missing after failed teardown: %v", err)
+			}
+			if failedTracked.Status != store.PreviewDatabaseIsolationStatusTeardownFailed || failedTracked.StatusReason == "" {
+				t.Errorf("tracked = %+v, want status=teardown_failed with a reason", failedTracked)
+			}
 
-	runtime.execErr = nil
-	rec = sendPullRequestWebhook(rt, secret, githubPullRequestBody("closed", 42, "sha1", "main"))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("retried closed status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
-	if _, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main"); !errors.Is(err, store.ErrPreviewDatabaseIsolationNotFound) {
-		t.Errorf("GetPreviewDatabaseIsolationByPreviewAndKey() after retry error = %v, want ErrPreviewDatabaseIsolationNotFound", err)
+			runtime.execErr = nil
+			rec = sendPullRequestWebhook(rt, secret, githubPullRequestBody("closed", 42, "sha1", "main"))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("retried closed status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+			}
+			if _, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main"); !errors.Is(err, store.ErrPreviewDatabaseIsolationNotFound) {
+				t.Errorf("GetPreviewDatabaseIsolationByPreviewAndKey() after retry error = %v, want ErrPreviewDatabaseIsolationNotFound", err)
+			}
+		})
 	}
 }
-
-// The tests below cover the Redis ACL path, table-driven against the
-// same Postgres-role fixture and assertions above wherever the two
-// engines' behavior is identical (provision, idempotency, teardown,
-// half-succeeded teardown), so a regression in either engine's exec
-// dispatch shows up as a failure on its own row.
 
 func TestDeployPreviewEnvironment_ProvisionsDatabaseIsolation_ByEngine(t *testing.T) {
 	cases := []struct {
@@ -289,111 +300,6 @@ func TestDeployPreviewEnvironment_ProvisionsDatabaseIsolation_ByEngine(t *testin
 				t.Errorf("exec call = %q, want it to contain %q", runtime.execCalls[0], tc.wantExecSub)
 			}
 		})
-	}
-}
-
-func TestDeployPreviewEnvironment_Synchronize_RedisDatabaseIsolationIsIdempotent(t *testing.T) {
-	rt, db, secret, runtime := setUpPreviewAppWithDatabaseIsolationEngine(t, store.EngineRedis)
-
-	sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
-	preview, err := db.GetPreviewEnvironmentByAppAndPR(context.Background(), "web", 42)
-	if err != nil {
-		t.Fatalf("GetPreviewEnvironmentByAppAndPR() error = %v", err)
-	}
-	first, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main")
-	if err != nil {
-		t.Fatalf("first GetPreviewDatabaseIsolationByPreviewAndKey() error = %v", err)
-	}
-	execCallsAfterFirst := len(runtime.execCalls)
-
-	rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("synchronize", 42, "sha2", "main"))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("synchronize status = %d, body = %s", rec.Code, rec.Body.String())
-	}
-
-	second, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main")
-	if err != nil {
-		t.Fatalf("second GetPreviewDatabaseIsolationByPreviewAndKey() error = %v", err)
-	}
-	if second.ID != first.ID {
-		t.Errorf("ID changed across synchronize: first = %q, second = %q, want the same tracking row reused", first.ID, second.ID)
-	}
-	if len(runtime.execCalls) != execCallsAfterFirst {
-		t.Errorf("execCalls after synchronize = %d, want %d (no re-provision)", len(runtime.execCalls), execCallsAfterFirst)
-	}
-}
-
-func TestTeardownPreviewDatabaseIsolation_RedisDropsACLUserAndRows(t *testing.T) {
-	rt, db, secret, runtime := setUpPreviewAppWithDatabaseIsolationEngine(t, store.EngineRedis)
-
-	sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
-	preview, err := db.GetPreviewEnvironmentByAppAndPR(context.Background(), "web", 42)
-	if err != nil {
-		t.Fatalf("GetPreviewEnvironmentByAppAndPR() error = %v", err)
-	}
-	if _, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main"); err != nil {
-		t.Fatalf("GetPreviewDatabaseIsolationByPreviewAndKey() error = %v", err)
-	}
-
-	rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("closed", 42, "sha1", "main"))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("closed status = %d, body = %s", rec.Code, rec.Body.String())
-	}
-
-	if _, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main"); !errors.Is(err, store.ErrPreviewDatabaseIsolationNotFound) {
-		t.Errorf("GetPreviewDatabaseIsolationByPreviewAndKey() error = %v, want ErrPreviewDatabaseIsolationNotFound", err)
-	}
-	if _, err := db.GetDesiredDatabase(context.Background(), "main"); err != nil {
-		t.Errorf("GetDesiredDatabase(main) error = %v, want it to still exist after teardown", err)
-	}
-	if len(runtime.execCalls) != 2 {
-		t.Fatalf("execCalls = %d, want 2 (create then drop)", len(runtime.execCalls))
-	}
-	if !strings.Contains(runtime.execCalls[1], "ACL DELUSER") {
-		t.Errorf("teardown exec call = %q, want it to contain ACL DELUSER", runtime.execCalls[1])
-	}
-}
-
-// TestTeardownPreviewDatabaseIsolation_Redis_HalfSucceeded_ThenRetrySucceeds
-// is the Redis counterpart to
-// TestTeardownPreviewDatabaseIsolation_HalfSucceeded_ThenRetrySucceeds:
-// an ACL DELUSER failure (e.g. the container temporarily unreachable)
-// must leave the tracking row behind, with status teardown_failed, for
-// a retry to find, rather than losing track of an ACL user that never
-// actually got dropped.
-func TestTeardownPreviewDatabaseIsolation_Redis_HalfSucceeded_ThenRetrySucceeds(t *testing.T) {
-	rt, db, secret, runtime := setUpPreviewAppWithDatabaseIsolationEngine(t, store.EngineRedis)
-
-	sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
-	preview, err := db.GetPreviewEnvironmentByAppAndPR(context.Background(), "web", 42)
-	if err != nil {
-		t.Fatalf("GetPreviewEnvironmentByAppAndPR() error = %v", err)
-	}
-	if _, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main"); err != nil {
-		t.Fatalf("GetPreviewDatabaseIsolationByPreviewAndKey() error = %v", err)
-	}
-
-	runtime.execErr = errors.New("engine temporarily unavailable")
-	rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("closed", 42, "sha1", "main"))
-	if rec.Code != http.StatusMultiStatus {
-		t.Fatalf("closed (failing) status = %d, want %d, body = %s", rec.Code, http.StatusMultiStatus, rec.Body.String())
-	}
-
-	failedTracked, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main")
-	if err != nil {
-		t.Fatalf("tracking row missing after failed teardown: %v", err)
-	}
-	if failedTracked.Status != store.PreviewDatabaseIsolationStatusTeardownFailed || failedTracked.StatusReason == "" {
-		t.Errorf("tracked = %+v, want status=teardown_failed with a reason", failedTracked)
-	}
-
-	runtime.execErr = nil
-	rec = sendPullRequestWebhook(rt, secret, githubPullRequestBody("closed", 42, "sha1", "main"))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("retried closed status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
-	if _, err := db.GetPreviewDatabaseIsolationByPreviewAndKey(context.Background(), preview.ID, "main"); !errors.Is(err, store.ErrPreviewDatabaseIsolationNotFound) {
-		t.Errorf("GetPreviewDatabaseIsolationByPreviewAndKey() after retry error = %v, want ErrPreviewDatabaseIsolationNotFound", err)
 	}
 }
 

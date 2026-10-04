@@ -6,6 +6,15 @@ description: The structured failure object every failed or blocked deploy carrie
 
 A deploy that fails, is held, or does not become healthy carries one structured `failure` object. The same object comes back from the API, the CLI and the MCP tools, so a person and an agent read the same explanation.
 
+```mermaid
+flowchart TD
+  Sig["Raw signals:<br/>deploy status, reconcile condition reason,<br/>build/container logs, crashloop flag"] --> C{"Failure classifier"}
+  C -->|matches a known class| Code["Structured failure object<br/>(code, cause, failing_step,<br/>log_excerpt, suggested_fix, retryable)"]
+  C -->|no class matches| Diag["Runtime cause analysis<br/>(same path as apps diagnose)"]
+  Diag -->|matches| Code
+  Diag -->|still no match| Unknown["code: unknown<br/>(log excerpt still included)"]
+```
+
 ```json
 {
   "code": "dockerfile_error",

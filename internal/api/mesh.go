@@ -26,6 +26,14 @@ package api
 //     modeled as a status route here.
 //   - POST /api/v1/nodes/{id}/mesh/rotate-key now works for any
 //     currently-connected node in the fleet, local or remote.
+//   - POST /api/v1/nodes/{id}/mesh/rejoin forces an immediate mesh
+//     reconcile pass instead of waiting for the next scheduled resync, for
+//     an operator looking at a peer that appears stuck. It validates id
+//     exists and otherwise just nudges the same whole-fleet pass
+//     internal/reconcile/mesh's own Controller always runs: there is no
+//     coherent "reconcile one node's mesh" operation (that package's own
+//     doc comment), so this is honestly a fleet-wide resync, not a
+//     per-node rejoin under the hood.
 //
 // Both routes degrade to 501 entirely when mesh networking was never
 // enabled (APP_MESH_ENABLED unset), the same "not configured, not
@@ -313,4 +321,40 @@ func (rt *Router) handleRotateNodeMeshKey(w http.ResponseWriter, r *http.Request
 		OldPublicKey: result.OldPublicKey.String(),
 		NewPublicKey: result.NewPublicKey.String(),
 	})
+}
+
+// rejoinMeshResponse is POST .../mesh/rejoin's response body.
+type rejoinMeshResponse struct {
+	NodeID    string `json:"node_id"`
+	Requested bool   `json:"requested"`
+}
+
+// handleRejoinNodeMesh handles POST /api/v1/nodes/{id}/mesh/rejoin. See
+// this file's own header for exactly what "rejoin" means here: a
+// fleet-wide mesh resync nudged right now, not a per-node operation.
+// Requested is false when no reconcileNudger is configured, the same
+// "absence degrades, never errors" shape every other nudging handler in
+// this package already uses: the action still succeeds, the fleet just
+// converges on the next scheduled pass instead of immediately.
+func (rt *Router) handleRejoinNodeMesh(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	if rt.mesh == nil {
+		writeError(w, http.StatusNotImplemented, "mesh networking is not enabled on this control plane")
+		return
+	}
+	if _, err := rt.nodes.GetNode(r.Context(), id); errors.Is(err, store.ErrNodeNotFound) {
+		writeError(w, http.StatusNotFound, "node not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: rejoin node mesh: look up node failed", slog.String("error", err.Error()), slog.String("node_id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	requested := rt.reconcileNudger != nil
+	rt.nudgeReconciler()
+	rt.logger.Info("api: mesh rejoin requested", slog.String("node_id", id), slog.Bool("nudged", requested))
+
+	writeJSON(w, http.StatusAccepted, rejoinMeshResponse{NodeID: id, Requested: requested})
 }

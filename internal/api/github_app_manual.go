@@ -35,6 +35,11 @@ type manualGitHubAppRequest struct {
 	PrivateKeyPEM  string  `json:"private_key"`
 	InstallationID *int64  `json:"installation_id,omitempty"`
 	AccountLogin   *string `json:"account_login,omitempty"`
+	// Slug is the App's github.com/apps/<slug> segment, needed later to
+	// build an "install on another org" link (migrations/0282). Not
+	// knowable from the credentials alone, so the manual flow asks for
+	// it directly rather than leaving it permanently unset.
+	Slug *string `json:"slug,omitempty"`
 }
 
 // handleConnectGitHubAppManually handles PUT /api/v1/github-app/manual:
@@ -120,6 +125,7 @@ func (rt *Router) handleConnectGitHubAppManually(w http.ResponseWriter, r *http.
 	if err := rt.githubApp.SaveGitHubAppConnection(ctx, store.GitHubAppConnection{
 		AppID:          req.AppID,
 		ClientID:       req.ClientID,
+		Slug:           req.Slug,
 		InstanceURL:    instanceURL,
 		CreatedAt:      time.Now().UTC().Format(time.RFC3339),
 		InstallationID: req.InstallationID,
@@ -127,6 +133,15 @@ func (rt *Router) handleConnectGitHubAppManually(w http.ResponseWriter, r *http.
 	}); err != nil {
 		rt.internalError(w, "api: save github app connection failed", err, slog.Int64("app_id", req.AppID))
 		return
+	}
+	// A manual connection can already know its installation (pasted in
+	// alongside the credentials), unlike the manifest flow where
+	// installation always happens as a separate, later redirect.
+	if req.InstallationID != nil && req.AccountLogin != nil {
+		if err := rt.githubApp.UpsertGitHubAppInstallation(ctx, *req.InstallationID, *req.AccountLogin, "organization"); err != nil {
+			rt.internalError(w, "api: upsert github app installation failed", err, slog.Int64("installation_id", *req.InstallationID))
+			return
+		}
 	}
 
 	writeJSON(w, http.StatusOK, gitHubAppStatusResource{

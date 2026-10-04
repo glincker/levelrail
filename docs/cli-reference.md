@@ -12,6 +12,8 @@ Exhaustive reference of all Levelrail CLI commands, organized by command group a
 - [Feature Catalog](feature-catalog.md) - Complete feature overview
 - [App Spec Reference](app-spec-reference.md) - YAML configuration syntax
 
+<InlineToc default-open />
+
 ## Scripting: `--json` and exit codes
 
 Every command that returns data or a result supports `--json` (shorthand for `--output json`), and `--query` takes a JMESPath expression. With `--json`, stdout carries only the JSON result. The exceptions are `completion bash|zsh|fish` (a shell script) and `control-plane-backups help-dr` (a static runbook). A test walks the command tree and fails when a new command has no `--json` and is not on that exempt list.
@@ -81,6 +83,14 @@ levelrail apps auto-rollback status <app-name> [flags]
 ```
 
 ```
+levelrail apps auto-rollback-slo-burn set <app-name> off|auto|dry_run|pause_for_human [flags]
+```
+
+```
+levelrail apps auto-rollback-slo-burn status <app-name> [flags]
+```
+
+```
 levelrail apps health get <name> [flags]
 ```
 
@@ -91,6 +101,11 @@ levelrail apps health set <name> --probe readiness|liveness (--path PATH | --exe
 ```
 levelrail apps health clear <name> [--probe readiness|liveness] [flags]
 ```
+
+```
+levelrail apps health-score <name> [flags]
+```
+synthesized pass/warn/fail readiness verdict across deploy health, security, resilience, and observability
 
 ```
 levelrail apps builds trigger <name> --repo URL --ref REF [flags]
@@ -108,6 +123,26 @@ levelrail apps clear-project <name> [flags]
 ```
 levelrail apps clone <name> <new-name> [flags]
 ```
+
+```
+levelrail apps save-as-template <name> [--template-name NAME] [--description TEXT] [flags]
+```
+derives a compose.yaml from `<name>`'s current desired state and saves it as a reusable template; no secret, database, or vault-backed env value is ever captured, only the key name
+
+```
+levelrail apps connect <app> <database> [--field FIELD] [--env-var NAME] [flags]
+```
+connect `<app>` to a managed database, injecting its resolved connection value as an env var; unlike `apps database`, an app can have any number of these
+
+```
+levelrail apps connections list <app> [flags]
+```
+list `<app>`'s current database connections, including whether each resolves to a mesh DNS name (cross-node-capable) or a container name
+
+```
+levelrail apps connections suggest <app> [flags]
+```
+list managed databases `<app>` could connect to, marking which are already connected
 
 ```
 levelrail apps create --name NAME --image IMAGE --port PORT [flags]
@@ -131,6 +166,11 @@ detach the database `<name>` currently resolves its connection env var from
 ```
 levelrail apps delete <name> [flags]
 ```
+
+```
+levelrail apps disconnect <app> <env-var> [flags]
+```
+remove one database connection from `<app>` by its env var name
 
 ```
 levelrail apps deploy <name> --image IMAGE [flags]
@@ -1647,7 +1687,22 @@ forgets the stored connection locally; does not uninstall or delete the App on G
 ```
 levelrail github-app repos [flags]
 ```
-list repos the connected installation can access
+list repos every connected installation can access
+
+```
+levelrail github-app installations list [flags]
+```
+list every connected account/org
+
+```
+levelrail github-app installations add [flags]
+```
+print the URL to install the App on another account/org; does not open a browser or drive the install flow itself
+
+```
+levelrail github-app installations remove <id> [flags]
+```
+disconnect one account/org; refused (409) while a git source still points at a repo under it
 
 ### Gitlab App
 
@@ -1702,9 +1757,14 @@ list repos the connected account can access
 ## Templates
 
 ```
-levelrail templates list [flags]
+levelrail templates list [--custom] [flags]
 ```
-browse the curated service catalog
+browse the curated service catalog, or `--custom` for your own saved templates
+
+```
+levelrail templates delete <id> [flags]
+```
+deletes a custom template (see `apps save-as-template`); the built-in catalog is read-only
 
 ## Static Sites
 

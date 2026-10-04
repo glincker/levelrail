@@ -47,6 +47,10 @@ type fakeStore struct {
 	errorPagesErr      error
 	notReadyServices   map[string]bool
 	conditionsErr      error
+	streams            []store.AppStream
+	streamsErr         error
+	statusPage         store.StatusPageSettings
+	statusPageErr      error
 }
 
 // GetConditionsForControllers defaults every requested controller to
@@ -70,6 +74,16 @@ func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredServi
 		return nil, f.err
 	}
 	return f.services, nil
+}
+
+// ListAllAppStreams mirrors ListStaticSites' own "empty unless a test
+// opts in" convention: no streams unless f.streams is set, so tests
+// written before this method existed are unaffected.
+func (f *fakeStore) ListAllAppStreams(_ context.Context) ([]store.AppStream, error) {
+	if f.streamsErr != nil {
+		return nil, f.streamsErr
+	}
+	return f.streams, nil
 }
 
 func (f *fakeStore) ListStaticSites(_ context.Context) ([]store.StaticSite, error) {
@@ -153,6 +167,13 @@ func (f *fakeStore) GetRegistrySettings(_ context.Context) (store.RegistrySettin
 		return store.RegistrySettings{}, f.registryErr
 	}
 	return f.registry, nil
+}
+
+func (f *fakeStore) GetStatusPageSettings(_ context.Context) (store.StatusPageSettings, error) {
+	if f.statusPageErr != nil {
+		return store.StatusPageSettings{}, f.statusPageErr
+	}
+	return f.statusPage, nil
 }
 
 // ListDomainWAF mirrors ListDomainMaintenance's own "empty unless a test
@@ -274,7 +295,11 @@ func (f *fakeRuntime) EnsureVolume(_ context.Context, _ string) error { return n
 func (f *fakeRuntime) EnsureNetwork(_ context.Context, _ string) (string, error) {
 	return "", nil
 }
-func (f *fakeRuntime) RemoveNetwork(_ context.Context, _ string) error { return nil }
+func (f *fakeRuntime) RemoveNetwork(_ context.Context, _ string) error     { return nil }
+func (f *fakeRuntime) NetworkConnect(_ context.Context, _, _ string) error { return nil }
+func (f *fakeRuntime) NetworkDisconnect(_ context.Context, _, _ string, _ bool) error {
+	return nil
+}
 func (f *fakeRuntime) ListNetworksByPrefix(_ context.Context, _ string) ([]docker.NetworkInfo, error) {
 	return nil, nil
 }

@@ -10,11 +10,12 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// The two credential envKeys email settings are stored under in
+// The credential envKeys email settings are stored under in
 // internal/secrets, never as plaintext settings-table columns.
 const (
 	emailSecretsSMTPPasswordKey    = "smtp_password"         //nolint:gosec // an envKey name, not a credential value
 	emailSecretsSESSecretAccessKey = "ses_secret_access_key" //nolint:gosec // an envKey name, not a credential value
+	emailSecretsResendAPIKey       = "resend_api_key"        //nolint:gosec // an envKey name, not a credential value
 )
 
 // EmailSecretsStore is the surface the email settings handlers need from
@@ -41,9 +42,12 @@ type emailSettingsResource struct {
 	SESFrom               string `json:"ses_from,omitempty"`
 	SESSecretAccessKey    string `json:"ses_secret_access_key,omitempty"`
 	SESSecretAccessKeySet bool   `json:"ses_secret_access_key_set,omitempty"`
+	ResendFrom            string `json:"resend_from,omitempty"`
+	ResendAPIKey          string `json:"resend_api_key,omitempty"`
+	ResendAPIKeySet       bool   `json:"resend_api_key_set,omitempty"`
 }
 
-func toEmailSettingsResource(s store.EmailSettings, smtpPasswordSet, sesSecretSet bool) emailSettingsResource {
+func toEmailSettingsResource(s store.EmailSettings, smtpPasswordSet, sesSecretSet, resendKeySet bool) emailSettingsResource {
 	return emailSettingsResource{
 		Backend:               s.Backend,
 		SMTPHost:              s.SMTPHost,
@@ -55,6 +59,8 @@ func toEmailSettingsResource(s store.EmailSettings, smtpPasswordSet, sesSecretSe
 		SESAccessKeyID:        s.SESAccessKeyID,
 		SESFrom:               s.SESFrom,
 		SESSecretAccessKeySet: sesSecretSet,
+		ResendFrom:            s.ResendFrom,
+		ResendAPIKeySet:       resendKeySet,
 	}
 }
 
@@ -69,7 +75,7 @@ func (rt *Router) handleGetEmailSettings(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var smtpPasswordSet, sesSecretSet bool
+	var smtpPasswordSet, sesSecretSet, resendKeySet bool
 	if rt.emailSecrets != nil {
 		key := store.EmailSettingsSecretsKey()
 		smtpPasswordSet, err = rt.emailSecrets.Exists(r.Context(), key, emailSecretsSMTPPasswordKey)
@@ -84,19 +90,26 @@ func (rt *Router) handleGetEmailSettings(w http.ResponseWriter, r *http.Request)
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
+		resendKeySet, err = rt.emailSecrets.Exists(r.Context(), key, emailSecretsResendAPIKey)
+		if err != nil {
+			rt.logger.Error("api: get email settings: check resend api key failed", slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
 	}
 
-	writeJSON(w, http.StatusOK, toEmailSettingsResource(settings, smtpPasswordSet, sesSecretSet))
+	writeJSON(w, http.StatusOK, toEmailSettingsResource(settings, smtpPasswordSet, sesSecretSet, resendKeySet))
 }
 
 var (
-	errEmailBackendInvalid  = errors.New("backend must be one of \"\", \"smtp\", \"ses\"")
+	errEmailBackendInvalid  = errors.New("backend must be one of \"\", \"smtp\", \"ses\", \"resend\"")
 	errSMTPHostRequired     = errors.New("smtp_host is required when backend is smtp")
 	errSMTPFromRequired     = errors.New("smtp_from is required when backend is smtp")
 	errSMTPPortRequired     = errors.New("smtp_port is required when backend is smtp")
 	errSESRegionRequired    = errors.New("ses_region is required when backend is ses")
 	errSESFromRequired      = errors.New("ses_from is required when backend is ses")
 	errSESAccessKeyRequired = errors.New("ses_access_key_id is required when backend is ses")
+	errResendFromRequired   = errors.New("resend_from is required when backend is resend")
 )
 
 // validateEmailSettingsRequest enforces the structural fields a chosen
@@ -104,7 +117,7 @@ var (
 // internal/email.NewSender surfaces a clear error at send time instead.
 func validateEmailSettingsRequest(req emailSettingsResource) error {
 	switch req.Backend {
-	case "", store.EmailBackendSMTP, store.EmailBackendSES:
+	case "", store.EmailBackendSMTP, store.EmailBackendSES, store.EmailBackendResend:
 	default:
 		return errEmailBackendInvalid
 	}
@@ -129,6 +142,9 @@ func validateEmailSettingsRequest(req emailSettingsResource) error {
 		if req.SESAccessKeyID == "" {
 			return errSESAccessKeyRequired
 		}
+	}
+	if req.Backend == store.EmailBackendResend && req.ResendFrom == "" {
+		return errResendFromRequired
 	}
 	return nil
 }
@@ -168,6 +184,13 @@ func (rt *Router) handleUpdateEmailSettings(w http.ResponseWriter, r *http.Reque
 			return
 		}
 	}
+	if req.ResendAPIKey != "" {
+		if err := rt.emailSecrets.SetValue(r.Context(), key, emailSecretsResendAPIKey, req.ResendAPIKey); err != nil {
+			rt.logger.Error("api: update email settings: set resend api key failed", slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
 
 	settings := store.EmailSettings{
 		Backend:        req.Backend,
@@ -178,6 +201,7 @@ func (rt *Router) handleUpdateEmailSettings(w http.ResponseWriter, r *http.Reque
 		SESRegion:      req.SESRegion,
 		SESAccessKeyID: req.SESAccessKeyID,
 		SESFrom:        req.SESFrom,
+		ResendFrom:     req.ResendFrom,
 	}
 	if err := rt.emailSettings.UpdateEmailSettings(r.Context(), settings); err != nil {
 		rt.logger.Error("api: update email settings failed", slog.String("error", err.Error()))
@@ -197,5 +221,11 @@ func (rt *Router) handleUpdateEmailSettings(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, toEmailSettingsResource(settings, smtpPasswordSet, sesSecretSet))
+	resendKeySet, err := rt.emailSecrets.Exists(r.Context(), key, emailSecretsResendAPIKey)
+	if err != nil {
+		rt.logger.Error("api: update email settings: check resend api key failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toEmailSettingsResource(settings, smtpPasswordSet, sesSecretSet, resendKeySet))
 }

@@ -76,6 +76,20 @@ const maxPayloadBytes = 25 << 20
 // picking its own number.
 const MaxPayloadBytes = maxPayloadBytes
 
+// Provider webhook header names, exported so internal/api's multi-app
+// route (git_webhook.go) reads the identical header names this package
+// uses to route and verify a delivery, rather than a second hardcoded
+// copy that could drift out of sync.
+const (
+	HeaderGitHubEvent       = "X-GitHub-Event"
+	HeaderGitLabEvent       = "X-Gitlab-Event"
+	HeaderGiteaEventType    = "X-Gitea-Event-Type"
+	HeaderBitbucketEventKey = "X-Event-Key"
+	HeaderGitLabToken       = "X-Gitlab-Token" //nolint:gosec // header name, not a credential value
+	HeaderHubSignature256   = "X-Hub-Signature-256"
+	HeaderHubSignature      = "X-Hub-Signature"
+)
+
 const (
 	errWriteResponseBody = "webhook: failed to write response body"
 	errDeployFailed      = "deploy failed"
@@ -488,7 +502,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !h.verifySignature(body, r.Header.Get("X-Hub-Signature-256")) {
+	if !h.verifySignature(body, r.Header.Get(HeaderHubSignature256)) {
 		h.log.Warn("webhook: signature verification failed", "remote_addr", r.RemoteAddr)
 		http.Error(w, "invalid signature", http.StatusUnauthorized)
 		return

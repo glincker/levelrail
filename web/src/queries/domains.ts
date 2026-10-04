@@ -24,10 +24,15 @@ export const domainKeys = {
 }
 
 // Domain mirrors internal/api/ingress_settings.go's domainResource wire
-// shape exactly.
+// shape exactly. The four flags are read-only status visibility: this
+// page never writes them, see DomainRow.tsx's own doc comment for why.
 export interface Domain {
   domain: string
   service_name: string
+  waf_enabled: boolean
+  has_redirect: boolean
+  maintenance_enabled: boolean
+  has_basic_auth: boolean
 }
 
 export async function fetchDomains(): Promise<Domain[]> {
@@ -67,6 +72,7 @@ export interface IngressSettings {
   acme_enabled: boolean
   acme_email?: string
   acme_directory_url?: string
+  hsts_enabled: boolean
 }
 
 export async function fetchIngressSettings(): Promise<IngressSettings> {
@@ -74,7 +80,10 @@ export async function fetchIngressSettings(): Promise<IngressSettings> {
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch ingress settings failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch ingress settings failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as IngressSettings
@@ -108,7 +117,10 @@ export async function updateIngressSettings(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `update ingress settings failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `update ingress settings failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as IngressSettings

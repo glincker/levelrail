@@ -394,6 +394,33 @@ func TestPlanFromFlags(t *testing.T) {
 			},
 		},
 		{
+			name:  "file mode image build type forwards volumes",
+			flags: createFlags{file: "app.yaml", port: 3000},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildImage, Image: "registry.example.com/org/web:v1"}, Port: 3000, Volumes: []spec.Volume{{Name: "data", Path: "/data"}}},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				want := []spec.Volume{{Name: "data", Path: "/data"}}
+				if !reflect.DeepEqual(p.Volumes, want) {
+					t.Errorf("Volumes = %+v, want %+v: app.yaml's volumes: must carry through for a post-create attach, not be silently dropped", p.Volumes, want)
+				}
+			},
+		},
+		{
+			name:  "file mode dockerfile build type forwards volumes",
+			flags: createFlags{file: "app.yaml", port: 3000, imageRepo: "levelrail/web"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildDockerfile}, Port: 3000, Volumes: []spec.Volume{{Name: "data", Path: "/data"}}},
+			}},
+			detected: detectedGit{RepoURL: "https://example.com/x.git"},
+			wantPlan: func(t *testing.T, p createPlan) {
+				want := []spec.Volume{{Name: "data", Path: "/data"}}
+				if !reflect.DeepEqual(p.Volumes, want) {
+					t.Errorf("Volumes = %+v, want %+v: app.yaml's volumes: must carry through for a post-create attach, not be silently dropped", p.Volumes, want)
+				}
+			},
+		},
+		{
 			name:  "file mode image build type missing build.image rejected",
 			flags: createFlags{file: "app.yaml"},
 			fileSpec: &spec.Spec{Services: map[string]spec.Service{
@@ -1103,5 +1130,57 @@ func TestTriggerCreatePlanBuild_NilBuildIsNoop(t *testing.T) {
 	}
 	if called {
 		t.Error("triggerCreatePlanBuild() made an HTTP call for a nil Build plan")
+	}
+}
+
+// TestAttachPlanVolumes covers runAppsCreate's post-create volume wiring:
+// app.yaml's volumes: block used to be silently dropped by "apps create
+// --file" (appResource.Volumes is response-only on POST /apps), so this
+// exercises the follow-up PUT .../volumes call directly.
+func TestAttachPlanVolumes(t *testing.T) {
+	var gotReq setAppVolumesRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, "/volumes") {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		_ = json.NewDecoder(r.Body).Decode(&gotReq)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(setAppVolumesResponse{Volumes: gotReq.Volumes})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "")
+	volumes := []spec.Volume{{Name: "data", Path: "/data"}, {Name: "cache", Path: "/cache", ReadOnly: true}}
+	var stderr strings.Builder
+	if err := attachPlanVolumes(context.Background(), client, "web", volumes, &stderr, false); err != nil {
+		t.Fatalf("attachPlanVolumes() error = %v", err)
+	}
+	want := []appVolumeResource{{Name: "data", ContainerPath: "/data"}, {Name: "cache", ContainerPath: "/cache"}}
+	if !reflect.DeepEqual(gotReq.Volumes, want) {
+		t.Errorf("sent volumes = %+v, want %+v", gotReq.Volumes, want)
+	}
+}
+
+// TestAttachPlanVolumes_HostPathRejected covers a hostPath bind mount:
+// PUT .../volumes has no field for one (name+path only), so it must be
+// rejected with a clear error rather than silently dropped or sent
+// mangled, and no HTTP call should be made at all.
+func TestAttachPlanVolumes_HostPathRejected(t *testing.T) {
+	called := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "")
+	volumes := []spec.Volume{{Name: "data", Path: "/data", HostPath: "/srv/data"}}
+	var stderr strings.Builder
+	err := attachPlanVolumes(context.Background(), client, "web", volumes, &stderr, false)
+	if err == nil || !strings.Contains(err.Error(), "hostPath") {
+		t.Fatalf("attachPlanVolumes() error = %v, want a hostPath-related error", err)
+	}
+	if called {
+		t.Error("attachPlanVolumes() made an HTTP call for a rejected hostPath volume")
 	}
 }

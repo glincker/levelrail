@@ -3,7 +3,12 @@
 // page's own data source: running version vs. GitHub's latest published
 // release.
 
-import { queryOptions } from '@tanstack/react-query'
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export interface UpdateStatus {
@@ -56,6 +61,70 @@ export interface UpdatePreflight {
   blocked: boolean
   upgrade_command: string
   rollback_command: string
+}
+
+// UpdateChannel mirrors internal/upgrade's Channel constants.
+export type UpdateChannel = 'stable' | 'beta' | 'edge'
+
+// UpdateSettings mirrors internal/api's updateSettingsResource
+// (GET/PUT /api/v1/updates/settings).
+export interface UpdateSettings {
+  channel: UpdateChannel
+  auto_update_enabled: boolean
+}
+
+export function updateSettingsQueryOptions() {
+  return queryOptions({
+    queryKey: [...updatesKeys.all, 'settings'] as const,
+    queryFn: async (): Promise<UpdateSettings> => {
+      const res = await fetch('/api/v1/updates/settings')
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(
+            res,
+            `fetch update settings failed: ${res.status}`,
+          ),
+        )
+      }
+      return (await res.json()) as UpdateSettings
+    },
+  })
+}
+
+export function useUpdateSettings() {
+  return useSuspenseQuery(updateSettingsQueryOptions())
+}
+
+async function putUpdateSettings(
+  settings: UpdateSettings,
+): Promise<UpdateSettings> {
+  const res = await fetch('/api/v1/updates/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `update update settings failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as UpdateSettings
+}
+
+export function useSetUpdateSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: putUpdateSettings,
+    onSuccess: (updated) => {
+      queryClient.setQueryData([...updatesKeys.all, 'settings'], updated)
+      void queryClient.invalidateQueries({ queryKey: updatesKeys.status() })
+    },
+  })
 }
 
 export function preflightQueryOptions() {

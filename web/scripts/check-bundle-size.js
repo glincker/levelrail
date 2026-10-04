@@ -5,10 +5,13 @@ import path from 'node:path'
 const distDir = path.resolve(import.meta.dirname, '..', 'dist')
 const distAssets = path.join(distDir, 'assets')
 
-// Locks in the current main chunk size (~556.5 kB as of 2026-08-31) as a
-// ceiling with headroom, not a target: fulfills the per-chunk assertion
-// vite.config.ts's visualizer comment calls deferred.
-const DEFAULT_BUDGET_BYTES = 600_000
+// Locks in the current main chunk size (~657.8 kB as of 2026-10-04, up
+// from ~600.0 kB on 2026-09-29 after an overnight batch of real,
+// properly route-split feature work: session-link login, the Traffic
+// page, ingress-aware placement) as a ceiling with headroom, not a
+// target: fulfills the per-chunk assertion vite.config.ts's visualizer
+// comment calls deferred.
+const DEFAULT_BUDGET_BYTES = 690_000
 const budgetBytes = Number(process.env.BUNDLE_SIZE_BUDGET_BYTES) || DEFAULT_BUDGET_BYTES
 
 function toKb(bytes) {

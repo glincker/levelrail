@@ -77,6 +77,22 @@ dig +short app.example.com
 
 Run this from a machine outside your own network. Once it resolves and the app is deployed, Caddy automatically starts routing and issuing certificates (depending on your TLS configuration below). No manual reload needed.
 
+### Managing DNS records from the dashboard
+
+If you've connected Cloudflare DNS or Route53 DNS (see [Wildcard domains](#wildcard-domains-dns-01-providers) below for how to enable either one), a domain's own Domains tab also gets a **DNS records** panel: the actual A/AAAA/CNAME/TXT/MX/SRV/CAA records in that domain's zone, listed, added, edited, and deleted without leaving the dashboard, each with a live resolved/pending/mismatch check against its configured value. This reuses the same provider credentials entered for wildcard ACME, no separate API token needed. NS and SOA records are read-only (provider-managed) and never appear in this view.
+
+The zone shown is a best-effort guess, a domain's last two labels (`app.example.com` -> `example.com`), which is wrong for multi-label public suffixes like `.co.uk`; the panel always echoes the exact zone it queried so you can tell at a glance.
+
+The CLI covers the same three operations:
+
+```
+levelrail-cli domains dns list <app> <domain>
+levelrail-cli domains dns add <app> <domain> --type A --name www --value 203.0.113.10
+levelrail-cli domains dns remove <app> <domain> --type A --name www --value 203.0.113.10
+```
+
+Editing a record in place is dashboard-only: it's a delete-then-add under the hood, and the CLI exposes those two primitives directly rather than a third verb that just composes them.
+
 ### Changing domains after deploy
 
 Add or change a domain either by:
@@ -84,11 +100,19 @@ Add or change a domain either by:
 - Editing `domains:` in `app.yaml` and redeploying, or
 - Using the dashboard's per-app **Domains** tab to add a domain inline and view DNS and certificate status
 
+The dashboard's cross-app **Domains** page lists every domain across every app with its certificate status, plus read-only badges for WAF, redirect, maintenance mode, and basic auth when configured; editing those settings still happens on the owning app's own Domains tab.
+
 List all domains currently routed:
 
 ```
 levelrail-cli domains list
 ```
+
+### The dashboard's own domain
+
+**Settings > Domains** sets the control plane's own `primary_domain`, the one the dashboard itself is reachable at, separate from any app's `domains:` in `app.yaml`. Give it its own dedicated subdomain rather than reusing one an app already serves, the same convention CapRover uses for its panel (`captain.<domain>`): something like `console.example.com` or `panel.example.com`.
+
+Setting the primary domain to a domain an app already owns is rejected with a `409` naming the conflicting app, so this is a real guardrail, not just a convention. Pick a domain no app uses from the start and there's nothing to collide with later.
 
 ## Zero-config URL: no domain, no DNS record, still HTTPS
 
@@ -136,7 +160,9 @@ This feature is built and unit-tested, but NOT verified issuing a real certifica
 
 ### HSTS (HTTP Strict Transport Security)
 
-Set `APP_ENABLE_HSTS=true` on the control plane to send `Strict-Transport-Security` on every response. HSTS defaults to off on purpose.
+Turn on **Enable HSTS** under **Settings > Domains** to send `Strict-Transport-Security` on every response, no restart required. HSTS defaults to off on purpose.
+
+Setting the `APP_ENABLE_HSTS=true` environment variable still works the same way it always has, for anyone who already relies on it. The two are additive: HSTS is sent if either the dashboard toggle or the environment variable is on, so upgrading never turns HSTS off for a deployment that already had it on.
 
 ::: warning
 HSTS tells browsers to refuse plain HTTP and refuse certificate warnings on this host for 180 days. Enabling it before ACME is working (while still on self-signed certificates) can lock you out of your own dashboard. Only enable it once real, browser-trusted certificates are issuing.
@@ -372,6 +398,52 @@ APP_INGRESS_HTTP_ADDR=:8080 \
 - `APP_INGRESS_HTTP_ADDR` (default `:80`): kept off port 80 only when real ACME (not the default self-signed issuer) is enabled for a non-wildcard domain, since that's the one path that can otherwise reach for a literal port 80 for its HTTP-01 challenge.
 
 `GET /api/v1/system/doctor`'s port checks follow whatever you set here, so a second instance running on `:8443`/`:8080` reports those ports as owned and available, not `:443`/`:80`.
+
+## Raw TCP streams: forwarding a non-HTTP port
+
+Domains and WAF/redirects/error pages above are all for HTTP(S). Some
+services aren't HTTP at all: a Postgres instance, an SSH server, a game
+server, anything that speaks its own protocol over raw TCP. A **stream**
+forwards a host port straight to one of an app's container ports, byte
+for byte, with no Host-header routing and no protocol awareness on
+Levelrail's side.
+
+```bash
+levelrail apps streams create my-postgres --host-port 15432 --container-port 5432
+levelrail apps streams list my-postgres
+levelrail apps streams delete my-postgres <id>
+```
+
+Or from the dashboard: an app's **Streams** tab lists its forwards and
+lets you add or remove one. The same thing is available via
+`GET`/`POST`/`DELETE /api/v1/apps/{name}/streams`.
+
+Under the hood this uses the same embedded Caddy instance as every HTTP
+route above, via its `layer4` app
+([`github.com/mholt/caddy-l4`](https://github.com/mholt/caddy-l4)), not a
+second proxy process. A stream added to an already-running app takes
+effect on that app's next restart (triggered automatically when you
+create or delete one), the same way an env var change does, since Docker
+has no way to add a published port to a running container.
+
+**v1 scope, deliberately:** TCP only, one stream per forward, no access
+lists, no TLS termination on the stream itself (if the backend speaks
+TLS, that's between the client and the backend, Levelrail just carries
+the bytes), and no multi-app or load-balanced streams yet.
+
+## Traffic: routing status for every domain at a glance
+
+**Infrastructure > Traffic** in the dashboard (`GET /api/v1/network/proxy`, `read` ability, so any signed-in user can check it) is a flat, one-row-per-domain table: which app a domain routes to, which node that app actually runs on, whether this control plane's own embedded ingress can reach it, its port, and TLS status and issuer.
+
+It exists for one specific, otherwise-invisible failure: the embedded Caddy ingress above only ever routes containers on **its own node**. If an app gets placed on a different node, its container can be perfectly healthy while its domain silently never routes, because there's no mesh path to it yet. See [Multi-node: WireGuard mesh and internal DNS](multi-node.md#wireguard-mesh-and-internal-dns) for why that gap exists today.
+
+This is the fastest way to spot it. A domain in that state shows an **Unreachable** badge (with a banner at the top of the page when any exist) instead of only turning up as a line in `GET /api/v1/doctor`'s report. Each unreachable row carries a **Move** button straight to the same move-with-volumes flow described in [Moving an app with its volumes](multi-node.md#moving-an-app-with-its-volumes), or run the fix directly:
+
+```bash
+levelrail-cli apps set-node <app-name> <this control plane's own node id>
+# or, to let auto-placement choose again:
+levelrail-cli apps clear-node <app-name>
+```
 
 ## Walkthrough: your first domain, from install to HTTPS
 

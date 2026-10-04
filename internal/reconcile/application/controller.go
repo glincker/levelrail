@@ -50,6 +50,11 @@ import (
 // *store.DB satisfies this.
 type ServiceStore interface {
 	GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
+	// ListAppStreamsForService returns every raw TCP stream
+	// (migrations/0279_app_streams.sql) targeting this service, read
+	// fresh on every container creation: createAndStart publishes one
+	// extra container port per entry, alongside desired.Port.
+	ListAppStreamsForService(ctx context.Context, serviceName string) ([]store.AppStream, error)
 }
 
 // SecretResolver is the narrow surface this controller needs from
@@ -216,6 +221,7 @@ type Controller struct {
 	secretResolver  SecretResolver          // nil is valid: a service with no secret-backed env vars never needs one
 	deployRecorder  DeployRecorder          // nil is valid: deploy frequency just isn't recorded
 	meshDNSAddr     string                  // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	meshZone        string                  // empty is valid: resolveDatabaseField falls back to the database's container name, see WithMeshZone
 	nodeGPU         NodeGPUChecker          // nil is valid: no GPU placement check, see WithNodeGPU
 	storageTargets  StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
 	projectEnv      ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
@@ -301,6 +307,20 @@ func WithDeployRecorder(r DeployRecorder) Option {
 // not validate it.
 func WithMeshDNSAddr(addr string) Option {
 	return func(ctrl *Controller) { ctrl.meshDNSAddr = addr }
+}
+
+// WithMeshZone makes resolveDatabaseField resolve a database env var's
+// host to that database's mesh DNS name (<dbName>.<zone>, the same name
+// internal/reconcile/mesh's own refreshDNS already publishes for every
+// database Placement) instead of its Docker container name. Without one
+// configured (the default, empty string), host resolution is unchanged:
+// the container name, reachable only via Docker's own embedded DNS on
+// the database's own node. A zone with no matching WithMeshDNSAddr is
+// still valid (the container's resolv.conf just wouldn't query it), but
+// cmd/levelrail always wires both together from the same live mesh
+// setup, never one without the other.
+func WithMeshZone(zone string) Option {
+	return func(ctrl *Controller) { ctrl.meshZone = zone }
 }
 
 // WithStorageTargets enables container creation to resolve
@@ -584,7 +604,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 func isReady(r reconcile.Result) bool {
 	for _, cond := range r.Conditions {
-		if cond.Type == "Ready" {
+		if cond.Type == reconcile.ConditionTypeReady {
 			return cond.Status == reconcile.ConditionTrue
 		}
 	}
@@ -635,7 +655,7 @@ func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, d
 		// incomplete, and the error still surfaces (and this step
 		// retries, safely, on the next reconcile).
 		return reconcile.Result{Conditions: []reconcile.Condition{{
-			Type: "Ready", Status: reconcile.ConditionTrue,
+			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue,
 			Reason: "RunningStaleCleanupFailed", Message: err.Error(),
 		}}}, fmt.Errorf("application/%s: cleanup stale containers: %w", c.serviceName, err)
 	}
@@ -741,7 +761,15 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 			// With a hold configured the last old container stays as the
 			// held previous release.
 			if len(stale) > 1 || (len(stale) == 1 && c.previousReleaseHold <= 0) {
-				sort.SliceStable(stale, func(i, j int) bool { return stale[i].Created.Before(stale[j].Created) })
+				// Created is often tied at test/fake-clock resolution, so
+				// break ties on name to keep this deterministic rather
+				// than following ListByPrefix's map-iteration order.
+				sort.SliceStable(stale, func(i, j int) bool {
+					if !stale[i].Created.Equal(stale[j].Created) {
+						return stale[i].Created.Before(stale[j].Created)
+					}
+					return stale[i].Name < stale[j].Name
+				})
 				_ = c.removeContainers(ctx, stale[:1])
 			}
 		}
@@ -749,7 +777,7 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 
 	if err := c.removeStaleAfterHold(ctx, targets); err != nil {
 		return reconcile.Result{Conditions: []reconcile.Condition{{
-			Type: "Ready", Status: reconcile.ConditionTrue,
+			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue,
 			Reason: "RunningStaleCleanupFailed", Message: err.Error(),
 		}}}, fmt.Errorf("application/%s: cleanup stale containers: %w", c.serviceName, err)
 	}
@@ -782,7 +810,7 @@ func (c *Controller) finishReconcile(ctx context.Context, targets []string, desi
 	// succeeded: see runPostDeployHookIfConfigured's own doc comment.
 	if err := c.runPostDeployHookIfConfigured(ctx, targets, desired); err != nil {
 		return reconcile.Result{Conditions: []reconcile.Condition{{
-			Type: "Ready", Status: reconcile.ConditionTrue,
+			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue,
 			Reason: "PostDeployHookFailed", Message: err.Error(),
 		}}}, fmt.Errorf("application/%s: post-deploy hook: %w", c.serviceName, err)
 	}
@@ -797,7 +825,7 @@ func (c *Controller) finishReconcile(ctx context.Context, targets []string, desi
 	if c.deployRecorder != nil {
 		if err := c.deployRecorder.RecordDeploy(ctx, c.serviceName, time.Now()); err != nil {
 			return reconcile.Result{Conditions: []reconcile.Condition{{
-				Type: "Ready", Status: reconcile.ConditionTrue,
+				Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue,
 				Reason: "DeployedMetricRecordFailed", Message: err.Error(),
 			}}}, fmt.Errorf("application/%s: record deploy metric: %w", c.serviceName, err)
 		}
@@ -880,6 +908,16 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	if !justDeployed {
 		if err := c.verifyRunningReady(ctx, state, desired); err != nil {
 			return replicaOutcome{reason: readinessReason(err, "RunningNotReady")}, err
+		}
+		// Re-ensured every steady-state pass, not just at create/restart:
+		// a referenced database can start existing (or come back after
+		// `docker network disconnect`) after this container already
+		// converged, and there is no event that would otherwise trigger
+		// a reconcile here.
+		if desired.AppID != "" {
+			if err := c.connectReferencedDatabases(ctx, desired, NetworkName(c.networkPrefix, desired.AppID)); err != nil {
+				return replicaOutcome{reason: "DatabaseNetworkConnectFailed"}, err
+			}
 		}
 		return c.confirmedOutcome(ctx, target, state, desired, false)
 	}
@@ -964,6 +1002,40 @@ func readinessReason(err error, fallback string) string {
 	return fallback
 }
 
+// connectReferencedDatabases bridges every database desired references
+// onto networkName, since a database container otherwise sits on
+// Docker's default bridge with no route to this service's own network.
+// Skipped once a mesh zone is configured (routed DNS instead, see
+// DatabaseHost) and for a database whose container doesn't exist yet
+// (next reconcile pass retries); safe to call every pass since
+// NetworkConnect is idempotent.
+func (c *Controller) connectReferencedDatabases(ctx context.Context, desired *store.DesiredService, networkName string) error {
+	if c.meshZone != "" {
+		return nil
+	}
+	names := make(map[string]bool, len(desired.DatabaseEnv)+1)
+	for _, ref := range desired.DatabaseEnv {
+		names[ref.Database] = true
+	}
+	if att := desired.DatabaseAttachment; att != nil {
+		names[att.DatabaseName] = true
+	}
+	for dbName := range names {
+		containerName := database.ContainerName(dbName)
+		state, err := c.runtime.InspectByName(ctx, containerName)
+		if err != nil {
+			return fmt.Errorf("inspect database %q before network connect: %w", dbName, err)
+		}
+		if state == nil {
+			continue
+		}
+		if err := c.runtime.NetworkConnect(ctx, networkName, containerName); err != nil {
+			return fmt.Errorf("connect database %q to network %q: %w", dbName, networkName, err)
+		}
+	}
+	return nil
+}
+
 // ensureAppNetwork makes sure desired.AppID's per-app Docker network
 // exists, a no-op for a service with no AppID. Called from both
 // createAndStart and ensureReplicaRunning's restart path: EnsureNetwork
@@ -996,6 +1068,11 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if err != nil {
 		return fmt.Errorf("container spec: %w", err)
 	}
+	streamPorts, err := c.streamPortBindings(ctx, desired.Name)
+	if err != nil {
+		return fmt.Errorf("app streams: %w", err)
+	}
+	spec.Ports = append(spec.Ports, streamPorts...)
 	spec.Env = env
 	if c.instanceID != "" {
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
@@ -1015,6 +1092,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	}
 	if desired.AppID != "" {
 		spec.Network = &docker.NetworkAttachment{Name: NetworkName(c.networkPrefix, desired.AppID), Alias: serviceAlias(desired)}
+		if err := c.connectReferencedDatabases(ctx, desired, NetworkName(c.networkPrefix, desired.AppID)); err != nil {
+			return err
+		}
 	}
 
 	id, err := c.runtime.Create(ctx, spec)
@@ -1026,6 +1106,32 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		return fmt.Errorf("start %q after create: %w", name, err)
 	}
 	return nil
+}
+
+// streamPortBindings returns one extra docker.PortBinding per raw TCP
+// stream (store.AppStream) targeting serviceName, for createAndStart to
+// append to the container spec's main Ports entry. HostPort is left 0
+// (an ephemeral port): s.HostPort is what Caddy's own layer4 listener
+// binds instead (internal/reconcile/ingress's dialForStreamPort), so
+// publishing straight to it here would race Caddy for the same port.
+// HostIP is pinned to loopback, reachable only from this same host.
+func (c *Controller) streamPortBindings(ctx context.Context, serviceName string) ([]docker.PortBinding, error) {
+	streams, err := c.store.ListAppStreamsForService(ctx, serviceName)
+	if err != nil {
+		return nil, fmt.Errorf("list app streams for %q: %w", serviceName, err)
+	}
+	if len(streams) == 0 {
+		return nil, nil
+	}
+	bindings := make([]docker.PortBinding, 0, len(streams))
+	for _, s := range streams {
+		bindings = append(bindings, docker.PortBinding{
+			ContainerPort: s.ContainerPort,
+			HostIP:        "127.0.0.1",
+			Protocol:      s.Protocol,
+		})
+	}
+	return bindings, nil
 }
 
 // resolveEnv merges desired.Env's literal values with each of
@@ -1334,14 +1440,33 @@ func (c *Controller) resolveDatabaseEnv(ctx context.Context, desired *store.Desi
 	return env, nil
 }
 
+// DatabaseHost returns the host name resolveDatabaseField resolves
+// dbName to: its mesh DNS name (<dbName>.<zone>) when zone is non-empty,
+// otherwise its Docker container name (database.ContainerName).
+// Exported so internal/api can preview a connection's resolved host
+// (GET /api/v1/apps/{name}/connections) without duplicating this
+// package's own host-selection logic, the single source of truth
+// resolveDatabaseField itself defers to.
+func DatabaseHost(dbName, zone string) string {
+	if zone != "" {
+		return strings.ToLower(dbName) + "." + zone
+	}
+	return database.ContainerName(dbName)
+}
+
 // resolveDatabaseField resolves one (database, field) pair to its real
-// value. host is always the referenced database's own container name
-// (database.ContainerName, the same deterministic name
-// internal/reconcile/database's own controller creates); port is the
-// engine's standard port (database.ContainerPort); username is the
-// database's own name, mirroring Postgres/MySQL/MongoDB's own
-// "role/user equals database name" convention this platform's
-// credential generators already establish (cmd/levelrail's
+// value. host is the referenced database's mesh DNS name
+// (<dbName>.<zone>, see WithMeshZone) when mesh networking is
+// configured, so a database on another node stays reachable exactly as
+// CLAUDE.md section 4.6 requires ("Apps get stable internal DNS names
+// that resolve across machines"); otherwise it falls back to the
+// database's own container name (database.ContainerName, the same
+// deterministic name internal/reconcile/database's own controller
+// creates), reachable only via Docker's embedded DNS on that database's
+// own node. port is the engine's standard port (database.ContainerPort);
+// username is the database's own name, mirroring Postgres/MySQL/
+// MongoDB's own "role/user equals database name" convention this
+// platform's credential generators already establish (cmd/levelrail's
 // postgresCredentialsFor and its siblings); password comes from the same
 // internal/secrets storage those generators already write to
 // (database.PasswordSecretKey).
@@ -1357,7 +1482,7 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, dbName, field str
 		return "", fmt.Errorf("field %q is not supported for %s databases", field, desiredDB.Engine)
 	}
 
-	host := database.ContainerName(dbName)
+	host := DatabaseHost(dbName, c.meshZone)
 	port, _ := database.ContainerPort(desiredDB.Engine) // ok already confirmed by SupportsField above
 
 	tlsEnabled, err := c.databaseTLSEnabled(ctx, dbName, desiredDB.Engine)
@@ -2195,7 +2320,7 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 
 func ready(reason string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionTrue, Reason: reason,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue, Reason: reason,
 	}}}
 }
 
@@ -2207,7 +2332,7 @@ func readyWithDetail(reason string, err error) reconcile.Result {
 		msg = err.Error()
 	}
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionTrue, Reason: reason, Message: msg,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue, Reason: reason, Message: msg,
 	}}}
 }
 
@@ -2217,12 +2342,12 @@ func notReady(reason string, err error) reconcile.Result {
 		msg = err.Error()
 	}
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
 	}}}
 }
 
 func unknownResult(reason string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionUnknown, Reason: reason,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: reason,
 	}}}
 }

@@ -4,12 +4,14 @@ description: Authentication, authorization, roles, IAM policies, and audit loggi
 
 # Identity and access: users, roles, and IAM policies
 
-Who can sign in, what they can do once they're in, and a record of what
-they actually did. Packages: `internal/api/{auth,users,roles,abilities,
-iam,iam_handlers,invites,tokens,twofactor,oauth,oauth_settings,
-device_auth,audit,audit_retention}.go`, `cmd/levelrail-cli/{users,iam,
-invites,tokens,auth}*.go`, `web/src/routes/settings/{users,iam-policies,
-security,tokens,oauth,cli-access,audit-log}.tsx`.
+Create a teammate with a curated role, scope a CI token down to one app, turn on two-factor auth, or review who changed what: this page covers who can sign in, what they can do once they're in, and a record of what they actually did.
+
+::: details For contributors: where this lives in the source
+- Backend: `internal/api/{auth,users,roles,abilities,iam,iam_handlers,invites,tokens,twofactor,oauth,oauth_settings,device_auth,audit,audit_retention}.go`
+- CLI: `cmd/levelrail-cli/{users,iam,invites,tokens,auth}*.go`
+- Dashboard: `web/src/routes/settings/{users,iam-policies,security,tokens,oauth,cli-access,audit-log}.tsx`
+- OAuth sign-in decision logic: `completeOAuthSignin` in `internal/api/oauth.go`
+:::
 
 ## Why two permission models instead of one
 
@@ -123,6 +125,8 @@ Details:
 
 A policy attaches to a `user` or a `token` (`principal_type`), by that principal's id. A malformed stored document can never grant or deny anything; it's treated as if it simply doesn't mention the pair being checked.
 
+Proven end to end, not just at the handler level: `test/e2e/iam_policy_enforcement_test.go` drives a real admin session through the real HTTP API to mint a second user and a token, attach Deny and Allow policies through the real IAM endpoints, and confirm the resulting 403/200s correspond to real state changes (or their absence).
+
 ### Bootstrap: exactly one path to the first admin
 
 On startup, `BootstrapAdmin` creates a user from `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` only if zero users exist. It is a no-op on later restarts, so a password change doesn't get silently reverted.
@@ -182,13 +186,23 @@ Regenerating recovery codes invalidates the entire previous set.
 
 Both the login-time verify step and every setup/confirm/disable call are rate limited (exponential backoff with a handful of free failures). This is separate from the password rate limiter.
 
+### Passkeys (WebAuthn)
+
+Sign in with Touch ID, Windows Hello, or a security key instead of a password. No master key required: a credential's public key is ordinary key material, not a secret, so it never goes through `internal/secrets`.
+
+**Registering a passkey** (`POST /api/v1/auth/passkeys/register/begin` then `.../register/finish`) requires an existing session: it adds a credential to the account you're already signed in as. `GET /api/v1/auth/passkeys` lists an account's own credentials; `DELETE /api/v1/auth/passkeys/{id}` revokes one.
+
+**Signing in with a passkey** (`POST /api/v1/auth/passkey-login/begin` then `.../finish`) is username-first, not usernameless: the operator types their username, the server looks up that account's own credentials, and the browser's passkey prompt proves possession. A successful passkey sign-in completes the session the same way a password does, without an additional TOTP prompt even if the account has 2FA enabled, the same shape OAuth sign-in already has.
+
+Every registration and login challenge is single-use and expires in 5 minutes; the relying party ID and origin are derived from the request's own `Host` header, since there is no single fixed domain to configure on a self-hosted platform.
+
 ### OAuth sign-in
 
-Three providers are supported: `google`, `github`, `oidc` (generic OpenID Connect, requires an issuer URL).
+Four providers are supported: `google`, `github`, `microsoft` (Azure AD, common multi-tenant endpoint), `oidc` (generic OpenID Connect, requires an issuer URL).
 
 Settings are per-provider rows (`GET`/`PUT /api/v1/settings/oauth[/{provider}]`), gated at `AbilityRoot` to change. Enabling a provider requires a client ID and a client secret (OIDC also requires an issuer URL). The secret is write-only over the API; `GET` only reveals `has_client_secret`.
 
-**Sign-in behavior** (`completeOAuthSignin`, `internal/api/oauth.go`)
+**Sign-in behavior**
 
 ```mermaid
 flowchart TD
@@ -251,6 +265,37 @@ The device-code flow (`POST /api/v1/auth/device/start` and `/token`, `levelrail-
 - An operator approves it from the dashboard's CLI Access page (`/settings/cli-access`) using their already-established session.
 - The resulting token inherits exactly that operator's abilities.
 - The CLI never picks the permissions.
+
+### Session links
+
+A session link is a one-time login URL rather than a credential you type. Mint one from an already-authenticated context and hand the URL to whatever needs to sign in next: CI, an AI agent driving the dashboard through browser automation, or a fresh incognito window you don't want to type a password into. Opening it signs that browser in immediately, no username or password prompt.
+
+`POST /api/v1/auth/session-links` mints one. Gated `root`, because the link it produces is root-equivalent: anyone who gets hold of the token before it's used can sign in as whoever minted it.
+
+```bash
+curl -s -X POST https://your-control-plane/api/v1/auth/session-links \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```json
+{ "token": "st_...", "url": "https://your-control-plane/login?session_link=st_..." }
+```
+
+Open the `url` in a browser. `/login?session_link=<token>` consumes the token automatically on page load (`GET /api/v1/auth/session-links/{token}/consume`, public, gated by possession of the token itself) and establishes a session, the same way a normal login does. No form, no click-through.
+
+**CLI shortcut**
+
+```bash
+levelrail-cli auth session-link
+# prints the ready-to-open URL and nothing else
+```
+
+**Security model**
+
+- **Short-lived.** The token expires 2 minutes after minting, whether or not it's used.
+- **Single-use.** Consuming it is an atomic claim; if two requests race on the same token, at most one succeeds and the other gets the same "invalid or expired" error a stale token would.
+- **Can't escalate.** The resulting session carries exactly the minting identity's own abilities, snapshotted at mint time, never more. Minting one already requires `root`; it's a convenience for an identity that could already do anything, not a way to grant new access.
+- **Minting a link on behalf of an API token** (rather than a logged-in user) produces a session pinned to that token's ability snapshot, since there's no user row to attach an ordinary session to. Revoking the underlying token afterward doesn't retroactively end a session already established from it, the same way revoking a token never ends sessions a user already has open.
 
 ### Audit log
 
@@ -390,6 +435,17 @@ Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automati
 | `POST` | `/api/v1/auth/2fa/recovery-codes/regenerate` | session |
 | `POST` | `/api/v1/auth/2fa/verify` | public (mfa_token required) |
 
+**Passkeys**
+
+| Method | Path | Ability |
+| --- | --- | --- |
+| `GET` | `/api/v1/auth/passkeys` | session |
+| `POST` | `/api/v1/auth/passkeys/register/begin` | session |
+| `POST` | `/api/v1/auth/passkeys/register/finish` | session |
+| `DELETE` | `/api/v1/auth/passkeys/{id}` | session |
+| `POST` | `/api/v1/auth/passkey-login/begin` | public |
+| `POST` | `/api/v1/auth/passkey-login/finish` | public |
+
 **OAuth sign-in**
 
 | Method | Path | Ability |
@@ -428,6 +484,13 @@ Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automati
 | `POST` | `/api/v1/auth/tokens` | session |
 | `GET` | `/api/v1/auth/tokens` | session |
 | `DELETE` | `/api/v1/auth/tokens/{id}` | session |
+
+**Session links**
+
+| Method | Path | Ability |
+| --- | --- | --- |
+| `POST` | `/api/v1/auth/session-links` | `root` |
+| `GET` | `/api/v1/auth/session-links/{token}/consume` | public (token required) |
 
 **Invites**
 
@@ -491,6 +554,7 @@ levelrail-cli tokens revoke <id>
 # Auth: login, identity check, two-factor
 levelrail-cli auth login [--device] [--token-name NAME] [--abilities LIST] [--expires-in-days N]
 levelrail-cli auth whoami
+levelrail-cli auth session-link
 levelrail-cli auth 2fa status
 levelrail-cli auth 2fa setup
 levelrail-cli auth 2fa enable --code CODE
@@ -515,7 +579,7 @@ levelrail-cli audit-purge
   IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. There is no organization- or project-level grouping in the permission model. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.
 
 - **No SSO/SAML and no SCIM provisioning**
-  OAuth covers Google, GitHub, and generic OIDC. Nothing beyond that today.
+  OAuth covers Google, GitHub, Microsoft, and generic OIDC. Nothing beyond that today.
 
 - **No policy dry-run or simulation**
   A newly attached Deny statement takes effect on the very next request. The only way to check its effect is to make that request and see what happens.

@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { CaretDownIcon, RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
-import { EmptyState } from '@/components/kit'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import type { AppListEntry } from '../../types/appDetail'
 import { useCompleteOnboarding } from '../../queries/onboarding'
@@ -17,6 +17,7 @@ import { FleetTiles } from './FleetTiles'
 import { NeedsAttention } from './NeedsAttention'
 import { RecentActivity } from './RecentActivity'
 import { QuickStart } from './QuickStart'
+import { PlatformCapabilities } from './PlatformCapabilities'
 
 const RecentAlertsCard = lazy(() =>
   import('../RecentAlertsCard').then((m) => ({ default: m.RecentAlertsCard })),
@@ -84,11 +85,16 @@ export function DashboardHome({
           description="Deploy your first app in under a minute."
           action={
             <CreateResourceWizard
-              trigger={<Button size="lg">Deploy your first app</Button>}
+              trigger={
+                <Button size="lg" variant="glinui">
+                  Deploy your first app
+                </Button>
+              }
             />
           }
         />
         <QuickStart hasApps={false} />
+        <PlatformCapabilities />
       </div>
     )
   }

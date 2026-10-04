@@ -1,12 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Input } from '@/components/ui/input'
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import {
   ClockCounterClockwiseIcon,
   DownloadSimpleIcon,
+  WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '../../components/ui/button'
 import {
   Select,
@@ -29,6 +32,9 @@ import { AuditLogTable } from '../../components/AuditLogTable'
 import { AgentFilterChips } from '../../components/AgentFilterChips'
 import { collectAgentNames } from '../../lib/agentNames'
 import { tokenListQueryOptions } from '../../queries/tokens'
+import { domainsQueryOptions } from '../../queries/domains'
+import { EmptyState } from '../../components/ui/empty-state'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // ALL_CLIENT_KINDS is the filter dropdown's "no filter" sentinel: Base
 // UI's Select cannot use an empty string as an item value (it reads as
@@ -80,6 +86,7 @@ function ExportAuditLogLink({
 }
 
 function AuditLogSettingsPage() {
+  const { t } = useTranslation('auditLog')
   const { data: initial } = useSuspenseQuery(auditLogQueryOptions())
   const [entries, setEntries] = useState<AuditLogEntry[]>(initial)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -93,6 +100,15 @@ function AuditLogSettingsPage() {
     ...tokenListQueryOptions(),
     retry: false,
   })
+  // Resolves a certificate audit row's domain tag to its owning app for
+  // AuditLogTable's link; best-effort like tokens above, so a domains
+  // fetch failure degrades to plain unlinked domain text, not a broken
+  // page.
+  const { data: domains = [] } = useQuery({
+    ...domainsQueryOptions(),
+    retry: false,
+  })
+  const domainApp = new Map(domains.map((d) => [d.domain, d.service_name]))
   // A page shorter than the default limit means the store had no more
   // rows to return, the same "short page means done" signal offset-free
   // cursor pagination always relies on.
@@ -178,13 +194,7 @@ function AuditLogSettingsPage() {
           <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <ClockCounterClockwiseIcon className="size-4" />
           </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">Audit log</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Who changed what: every write, deploy, or root-tier request,
-              newest first. Read-only requests aren't recorded here.
-            </p>
-          </div>
+          <PageHeader title="Audit log" description={t('page.description')} />
         </div>
         <div className="flex items-center gap-2">
           <Select
@@ -250,22 +260,24 @@ function AuditLogSettingsPage() {
       {filterLoading ? (
         <TableSkeleton columnCount={8} rowCount={8} />
       ) : entries.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
-          <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <ClockCounterClockwiseIcon className="size-5" />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {filtersActive
+        <EmptyState
+          icon={<ClockCounterClockwiseIcon className="size-5" />}
+          title="No entries found"
+          description={
+            filtersActive
               ? 'No entries match these filters.'
-              : 'No audited requests recorded yet.'}
-          </p>
-        </div>
+              : 'No audited requests recorded yet.'
+          }
+        />
       ) : (
-        <AuditLogTable entries={entries} />
+        <AuditLogTable entries={entries} domainApp={domainApp} />
       )}
 
       {loadMoreError ? (
-        <p className="text-sm text-destructive">{loadMoreError}</p>
+        <Alert variant="destructive">
+          <WarningIcon />
+          <AlertDescription>{loadMoreError}</AlertDescription>
+        </Alert>
       ) : null}
 
       {!exhausted && entries.length > 0 ? (
@@ -290,7 +302,7 @@ function AuditLogSettingsPage() {
 function AuditLogSettingsPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">Audit log</h1>
+      <PageHeader title="Audit log" />
       <TableSkeleton columnCount={8} rowCount={8} />
     </div>
   )

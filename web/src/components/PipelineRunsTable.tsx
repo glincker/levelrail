@@ -1,4 +1,6 @@
 import { Link } from '@tanstack/react-router'
+import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Table,
   TableBody,
@@ -25,7 +27,12 @@ export function PipelineRunsTable({
     return <TableSkeleton columnCount={7} rowCount={4} />
   }
   if (error) {
-    return <p className="text-sm text-destructive">{error.message}</p>
+    return (
+      <Alert variant="destructive">
+        <WarningIcon />
+        <AlertDescription>{error.message}</AlertDescription>
+      </Alert>
+    )
   }
   const runs = data ?? []
   if (runs.length === 0) {

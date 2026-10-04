@@ -8,6 +8,22 @@ Everything on this page is optional. A fresh install runs entirely on the contro
 
 A second node is something you add when one box runs out of room, when you want to isolate builds from production containers, or when you want a dedicated database host - not something the platform makes you think about on day one.
 
+::: danger Ingress only listens on the control-plane node
+The embedded Caddy ingress ([Domains and ingress](domains-and-ingress.md)) runs in the control plane's own process. A worker node has **no public listener at all**: nothing is bound to 80/443 there, by design.
+
+If you move or place an app on a worker node without also moving its domain's routing, the control plane still builds a Caddy route for that domain, but the route points at a backend the control plane's own ingress cannot reach. What an operator actually sees is **not** a clean "app unreachable" error: a browser gets a TLS handshake failure or connection reset against the domain, while the app itself reports healthy in the dashboard. That gap between "looks healthy" and "not reachable" is the trap.
+
+**Fix:** keep that app on the control-plane node, or point it back there:
+
+```bash
+levelrail-cli apps clear-node <name>
+# or, equivalently:
+levelrail-cli apps set-node <name> <the control plane's own node id>
+```
+
+**You don't have to catch this by eyeballing placements yourself.** `GET /api/v1/system/doctor` (`levelrail-cli doctor`) runs a `cross_node_ingress` check that flags exactly this app/domain/node combination with the fix command above, so this is a backstop, not the only line of defense, but don't rely on it as the first one: avoid placing a domain-routed app off the control-plane node until the [WireGuard mesh](#wireguard-mesh-and-internal-dns) spans nodes.
+:::
+
 ## Why a second node is optional, not assumed
 
 The platform is designed single-node-first. You add a second node when you need it, not on day one.
@@ -90,6 +106,37 @@ Once connected, it is a normal placement target:
 - Let auto-placement send new resources there.
 
 **Build workloads:** A node accepts app workloads by default but not build workloads. Explicitly enable `accepts_build_workloads` to dispatch builds there.
+
+## Enrolling over SSH instead of by hand
+
+Steps 1 and 2 above can be automated: instead of minting a token and running the agent command yourself on the new machine, the control plane can SSH into it and do both for you.
+
+::: code-group
+```bash [CLI]
+levelrail-cli nodes ssh-provision \
+  --host 192.0.2.10 --user root --key-file ~/.ssh/id_ed25519 \
+  --name home-server --control-plane-addr controlplane.example.com:9443
+```
+
+```text [Dashboard]
+Nodes page -> "Add node" -> "Connect over SSH"
+```
+:::
+
+`POST /api/v1/nodes/ssh-provision` accepts a host, port (default 22), username, and either a private key (optionally passphrase-protected) or a password. It mints a join token the same way step 1 does, then in the background:
+
+1. Connects over SSH and detects the OS, kernel architecture, and whether Docker and systemd are already present. Only Linux with systemd is supported (the same requirement `install.sh` has); an unsupported host fails here with a clear reason before anything is changed.
+2. Installs Docker via `get.docker.com` if it's missing.
+3. Writes the agent's environment file and a systemd unit, then enables and starts it, the same shell steps cloud-init runs on a freshly created VM (see `docs/node-provisioning.md`), just executed directly over the SSH session instead of embedded in a cloud-init document.
+4. Confirms the service actually stays active, surfacing the last `journalctl` lines as the failure reason if it doesn't.
+
+The SSH credential (key or password) is held only in memory for this one call and is never written to the database or logged; the join token itself is written to a root-only (`0600`) environment file on the target host, the same handling `docs/node-provisioning.md`'s cloud-init path already uses and documents.
+
+Poll progress with `GET /api/v1/ssh-node-provisions/{id}` (CLI: `nodes ssh-provisions show <id>`), which also carries the accumulated install log and the detected OS/architecture. Status moves through `connecting` -> `detecting` -> `installing` -> `enrolling` -> `ready`, or `failed` with a reason. The dashboard wizard's SSH step shows the same stages plus a live log tail.
+
+### Known limitation: no host key verification
+
+There is no `known_hosts` store or trust-on-first-use pinning for an operator's own arbitrary machine yet: the client accepts whatever host key the target presents. This is a real gap versus a properly pinned SSH client, not an oversight; the mitigation is the same one this feature's own credential handling relies on, that the operator is connecting to a machine they already control, over a network path they already trust enough to type a password or paste a key into.
 
 ## Node health and heartbeat
 
@@ -358,6 +405,8 @@ An app's database connection string is baked into container environment at creat
 
 Solution: Use DNS names from the start. The name resolves to wherever the service currently lives. `internal/reconcile/mesh` keeps that mapping current: every pass it reads node and placement data, distributes WireGuard configuration, and rebuilds the internal DNS zone (`<brand-short-name>.internal`, e.g., `levelrail.internal`).
 
+When mesh is enabled, database env vars (like `DATABASE_URL` or any field from an app.yaml `{ from: postgres.main.url }` reference) automatically resolve to the database's mesh DNS name, allowing an app on one node to connect to a database on another node. Without mesh, they resolve to the database container's Docker name, reachable only within that node's own Docker network. This happens automatically: no app-side changes needed when mesh is enabled.
+
 ### What works today
 
 Enable with `APP_MESH_ENABLED=1` (default: off). Non-fatal to misconfigure, the control plane still starts if mesh setup fails.
@@ -437,6 +486,8 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 **What's scoped:** One new agent request/response message, plus a case in `internal/agent.Execute` calling `Mesh.Apply`. It's defined work, not built.
 
+This is the same gap the `::: danger` callout near the top of this page describes: until mesh spans nodes, a domain-routed app placed off the control-plane node is unreachable via its domain, and `levelrail-cli doctor`'s `cross_node_ingress` check exists to catch it. See [Domains and ingress: Traffic](domains-and-ingress.md#traffic-routing-status-for-every-domain-at-a-glance) for the dashboard page that surfaces exactly this, per domain, with a one-click fix.
+
 ## API reference
 
 | Method | Path | Ability |
@@ -446,6 +497,9 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 | `DELETE` | `/api/v1/nodes/{id}` | `root` |
 | `PUT` | `/api/v1/nodes/{id}/workloads` | `root` |
 | `POST` | `/api/v1/nodes/join-tokens` | `root` |
+| `POST` | `/api/v1/nodes/ssh-provision` | `root` |
+| `GET` | `/api/v1/ssh-node-provisions` | `root` |
+| `GET` | `/api/v1/ssh-node-provisions/{id}` | `root` |
 | `GET` | `/api/v1/nodes/{id}/health` | `root` |
 | `POST` | `/api/v1/nodes/{id}/cordon` | `root` |
 | `POST` | `/api/v1/nodes/{id}/uncordon` | `root` |
@@ -479,6 +533,8 @@ levelrail-cli nodes list [flags]
 levelrail-cli nodes get <id> [flags]
 levelrail-cli nodes delete <id> [flags]
 levelrail-cli nodes join-token [flags]
+levelrail-cli nodes ssh-provision --host ADDR --user NAME (--key-file PATH | --password) --name NAME [flags]
+levelrail-cli nodes ssh-provisions list|show <id> [flags]
 levelrail-cli nodes cordon <id> [flags]
 levelrail-cli nodes uncordon <id> [flags]
 levelrail-cli nodes drain <id> [--target <node-id>] [flags]

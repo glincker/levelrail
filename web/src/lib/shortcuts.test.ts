@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import {
   CHORD_TIMEOUT_MS,
   INITIAL_CHORD,
+  isDialogOpen,
+  isShortcutInputSuppressed,
   stepChord,
   type ChordState,
   type KeyInput,
@@ -69,8 +71,8 @@ const cases: { name: string; steps: Step[] }[] = [
     ],
   },
   {
-    name: 'question mark opens help',
-    steps: [{ input: { key: '?' }, at: 0, action: { type: 'help' } }],
+    name: 'question mark does nothing (replaced by the long-press l overlay)',
+    steps: [{ input: { key: '?' }, at: 0, action: null }],
   },
   {
     name: 'slash focuses search',
@@ -98,7 +100,7 @@ const cases: { name: string; steps: Step[] }[] = [
   },
   {
     name: 'open dialog disables shortcuts',
-    steps: [{ input: { key: '?', dialogOpen: true }, at: 0, action: null }],
+    steps: [{ input: { key: '/', dialogOpen: true }, at: 0, action: null }],
   },
 ]
 
@@ -110,6 +112,35 @@ describe('stepChord', () => {
       expect(res.action).toEqual(step.action)
       state = res.state
     }
+  })
+})
+
+describe('isDialogOpen', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('is false when no dialog is mounted', () => {
+    expect(isDialogOpen()).toBe(false)
+  })
+
+  it('is true for a dialog that is actually open', () => {
+    const dialog = document.createElement('div')
+    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('data-open', '')
+    document.body.appendChild(dialog)
+    expect(isDialogOpen()).toBe(true)
+  })
+
+  // Base UI dialogs stay mounted with data-closed (not removed) during and
+  // after their exit animation. A dialog in that state must not permanently
+  // disable every shortcut, which is exactly what happened before this fix.
+  it('is false for a closed dialog that stays mounted for its exit animation', () => {
+    const dialog = document.createElement('div')
+    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('data-closed', '')
+    document.body.appendChild(dialog)
+    expect(isDialogOpen()).toBe(false)
   })
 })
 
@@ -126,5 +157,21 @@ describe('stepChord experimental gate', () => {
     ['a', [], { type: 'go', to: '/apps' }],
   ])('g %s with %j', (key, enabled, want) => {
     expect(chord(key, enabled)).toEqual(want)
+  })
+})
+
+describe('isShortcutInputSuppressed', () => {
+  it('is false for a plain key with no modifier, not typing, no dialog', () => {
+    expect(isShortcutInputSuppressed(base)).toBe(false)
+  })
+
+  it.each([
+    ['typing', { typing: true }],
+    ['dialogOpen', { dialogOpen: true }],
+    ['ctrl', { ctrl: true }],
+    ['meta', { meta: true }],
+    ['alt', { alt: true }],
+  ])('is true when %s', (_name, override) => {
+    expect(isShortcutInputSuppressed({ ...base, ...override })).toBe(true)
   })
 })

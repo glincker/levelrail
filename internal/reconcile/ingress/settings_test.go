@@ -195,6 +195,94 @@ func TestController_Reconcile_PlatformDomainRoute_ConflictsWithService_Skipped(t
 	}
 }
 
+// TestController_Reconcile_StatusPageRoute table-drives the four
+// scenarios TestController_Reconcile_PlatformDomainRoute_* cover
+// separately above: added, disabled, no dial wired, and a conflicting
+// app route winning. One body avoids restating the same Reconcile/
+// assert shape four times for what's really one case varied four ways.
+func TestController_Reconcile_StatusPageRoute(t *testing.T) {
+	conflictApp := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"status.example.com"}}
+
+	tests := []struct {
+		name          string
+		statusPage    store.StatusPageSettings
+		withDashboard bool
+		conflictApp   *store.DesiredService
+		wantReason    string
+		wantRoutes    int
+		wantDial      string // "" means don't check Dial (no route, or it's the conflicting app's)
+	}{
+		{
+			name:          "added",
+			statusPage:    store.StatusPageSettings{Enabled: true, CustomDomain: "status.example.com"},
+			withDashboard: true,
+			wantReason:    "Routed1Services",
+			wantRoutes:    1,
+			wantDial:      "127.0.0.1:8080",
+		},
+		{
+			name:          "disabled",
+			statusPage:    store.StatusPageSettings{Enabled: false, CustomDomain: "status.example.com"},
+			withDashboard: true,
+			wantReason:    "Routed0Services",
+		},
+		{
+			name:          "no dashboard dial wired",
+			statusPage:    store.StatusPageSettings{Enabled: true, CustomDomain: "status.example.com"},
+			withDashboard: false,
+			wantReason:    "Routed0Services",
+		},
+		{
+			name:          "conflicts with an app, app wins",
+			statusPage:    store.StatusPageSettings{Enabled: true, CustomDomain: "status.example.com"},
+			withDashboard: true,
+			conflictApp:   &conflictApp,
+			wantReason:    "Routed1Services",
+			wantRoutes:    1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime()
+			st := &fakeStore{statusPage: tt.statusPage}
+			if tt.conflictApp != nil {
+				target := application.ContainerName(tt.conflictApp.Name, tt.conflictApp.Image, "")
+				rt.seedRunning(target, 34567)
+				st.services = []store.DesiredService{*tt.conflictApp}
+			}
+			applier := &fakeApplier{}
+			opts := []Option{WithLogger(discardLogger())}
+			if tt.withDashboard {
+				opts = append(opts, WithDashboardDial("127.0.0.1:8080"))
+			}
+			c := New(st, rt, applier, opts...)
+
+			result, err := c.Reconcile(context.Background())
+			if err != nil {
+				t.Fatalf("Reconcile() error = %v", err)
+			}
+			if cond := conditionOf(t, result); cond.Reason != tt.wantReason {
+				t.Errorf("condition.Reason = %q, want %q", cond.Reason, tt.wantReason)
+			}
+			routes := applier.routes(t)
+			if len(routes) != tt.wantRoutes {
+				t.Fatalf("routes = %+v, want %d", routes, tt.wantRoutes)
+			}
+			if tt.wantDial == "" {
+				return
+			}
+			handler, ok := routes[0].Handle[0].(ingress.ReverseProxyHandler)
+			if !ok {
+				t.Fatalf("Handle[0] = %T, want ingress.ReverseProxyHandler", routes[0].Handle[0])
+			}
+			if handler.Upstreams[0].Dial != tt.wantDial {
+				t.Errorf("route dial = %q, want %q", handler.Upstreams[0].Dial, tt.wantDial)
+			}
+		})
+	}
+}
+
 // TestController_Reconcile_GetIngressSettingsError is the partial-
 // failure case every reconciler test must cover (a test for the case
 // where the operation half-succeeded): ListDesiredServices and

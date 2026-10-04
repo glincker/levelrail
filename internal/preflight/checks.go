@@ -66,6 +66,23 @@ func checkDomains(ctx context.Context, req Request, env Env) []Check {
 	return out
 }
 
+// checkCrossNodeIngress warns when a domain is assigned to an app placed
+// off the control plane's own node: this node's ingress has no mesh path
+// to reach it (see docs/multi-node.md's cross-node ingress callout), a
+// gap the DNS-only checkDomains above never catches since it only
+// verifies the domain resolves to this server, not that this server can
+// actually route to the app's node.
+func checkCrossNodeIngress(req Request) []Check {
+	if len(req.Domains) == 0 || req.IsLocalNode {
+		return nil
+	}
+	return []Check{warn(
+		"cross_node_ingress", "Ingress reachability",
+		"this app is placed on a different node than the control plane; its domain(s) can never be reached until the WireGuard mesh spans nodes, even though the app itself runs fine",
+		"levelrail-cli apps clear-node "+req.Name+"   # or: apps set-node "+req.Name+" <control plane's own node id>",
+	)}
+}
+
 func checkDomain(ctx context.Context, domain, serverIP string, env Env) Check {
 	id, name := "dns:"+domain, "DNS for "+domain
 	host := strings.TrimPrefix(domain, "*.")

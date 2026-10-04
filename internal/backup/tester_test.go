@@ -22,8 +22,11 @@ func TestS3Tester_Test_Success(t *testing.T) {
 	if rec.method != http.MethodHead {
 		t.Errorf("method = %q, want %q", rec.method, http.MethodHead)
 	}
-	if rec.path != "/levelrail-backups" {
-		t.Errorf("path = %q, want /levelrail-backups", rec.path)
+	// aws-sdk-go-v2/service/s3 v1.113.4 started sending HeadBucket's
+	// path with a trailing slash; S3 and compatible providers treat
+	// /bucket and /bucket/ identically at the bucket root.
+	if rec.path != "/levelrail-backups" && rec.path != "/levelrail-backups/" {
+		t.Errorf("path = %q, want /levelrail-backups or /levelrail-backups/", rec.path)
 	}
 }
 

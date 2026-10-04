@@ -9,7 +9,8 @@ import {
   PackageIcon,
   PlusIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { EmptyState } from '@/components/kit'
+import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { appListQueryOptions } from '../../queries/apps'
 import { staticSitesQueryOptions } from '../../queries/staticSites'
 import { RowSkeleton } from '../../components/AppRow'
@@ -105,51 +106,55 @@ function AppListPage() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold text-foreground">Apps</h1>
-        <div className="flex flex-wrap items-center gap-3">
-          {apps.length > 0 ? (
-            <span className="text-sm text-muted-foreground tabular-nums">
-              {filteredApps.length}
-              {narrowed ? ` of ${apps.length}` : ''}{' '}
-              {apps.length === 1 ? 'app' : 'apps'}
-            </span>
-          ) : null}
-          {filteredApps.length > 0 ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setSelected(
-                  allVisibleSelected ? [] : filteredApps.map((a) => a.name),
-                )
-              }}
-            >
-              {allVisibleSelected ? 'Deselect all' : 'Select all'}
-            </Button>
-          ) : null}
-          {apps.length > 0 ? (
-            <ViewToggle mode={mode} onChange={changeMode} />
-          ) : null}
-          <Button
-            size="sm"
-            variant="outline"
-            render={<Link to="/databases" />}
-            nativeButton={false}
-          >
-            <DatabaseIcon />
-            New database
-          </Button>
-          <CreateResourceWizard
-            scope="applications"
-            trigger={
-              <Button size="sm">
-                <PlusIcon />
-                New app
+      <div className="mb-4">
+        <PageHeader
+          title="Apps"
+          actions={
+            <>
+              {apps.length > 0 ? (
+                <span className="text-sm text-muted-foreground tabular-nums">
+                  {filteredApps.length}
+                  {narrowed ? ` of ${apps.length}` : ''}{' '}
+                  {apps.length === 1 ? 'app' : 'apps'}
+                </span>
+              ) : null}
+              {filteredApps.length > 0 ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSelected(
+                      allVisibleSelected ? [] : filteredApps.map((a) => a.name),
+                    )
+                  }}
+                >
+                  {allVisibleSelected ? 'Deselect all' : 'Select all'}
+                </Button>
+              ) : null}
+              {apps.length > 0 ? (
+                <ViewToggle mode={mode} onChange={changeMode} />
+              ) : null}
+              <Button
+                size="sm"
+                variant="outline"
+                render={<Link to="/databases" />}
+                nativeButton={false}
+              >
+                <DatabaseIcon />
+                New database
               </Button>
-            }
-          />
-        </div>
+              <CreateResourceWizard
+                scope="applications"
+                trigger={
+                  <Button size="sm">
+                    <PlusIcon />
+                    New app
+                  </Button>
+                }
+              />
+            </>
+          }
+        />
       </div>
       {apps.length > 0 ? (
         <div className="mb-3 space-y-3">
@@ -176,7 +181,7 @@ function AppListPage() {
               <CreateResourceWizard
                 scope="applications"
                 trigger={
-                  <Button>
+                  <Button variant="glinui">
                     <PlusIcon />
                     New app
                   </Button>
@@ -242,8 +247,8 @@ function AppListPage() {
 function AppListPending() {
   return (
     <div>
-      <div className="mb-4 flex items-baseline justify-between">
-        <h1 className="text-lg font-semibold text-foreground">Apps</h1>
+      <div className="mb-4">
+        <PageHeader title="Apps" />
       </div>
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
         <ListHeader />

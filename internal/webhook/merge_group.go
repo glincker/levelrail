@@ -29,7 +29,7 @@ func (e MergeGroupEvent) ChecksRequested() bool { return e.Action == "checks_req
 
 // IsMergeGroupEvent reports whether header names GitHub's merge_group event.
 func IsMergeGroupEvent(header http.Header) bool {
-	return header.Get("X-GitHub-Event") == "merge_group"
+	return header.Get(HeaderGitHubEvent) == "merge_group"
 }
 
 // ParseMergeGroupEvent decodes a GitHub merge_group payload.

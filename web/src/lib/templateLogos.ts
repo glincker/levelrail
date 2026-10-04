@@ -188,4 +188,13 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   backblaze: () => import('@thesvg/react/backblaze'),
   wasabi: () => import('@thesvg/react/wasabi-badge'),
   'google-cloud-storage': () => import('@thesvg/react/google-cloud-storage'),
+  changedetection: () => import('@thesvg/react/change-detection'),
+  'code-server': () => import('@thesvg/react/coder'),
+  grist: () => import('@thesvg/react/grist-badge'),
+  tolgee: () => import('@thesvg/react/tolgee-badge'),
+  affine: () => import('@thesvg/react/affine'),
+  karakeep: () => import('@thesvg/react/karakeep'),
+  netbox: () => import('@thesvg/react/netbox'),
+  postiz: () => import('@thesvg/react/postiz'),
+  zabbix: () => import('@thesvg/react/zabbix'),
 }

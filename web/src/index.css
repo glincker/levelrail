@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+@import './styles/glinui-tokens.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -11,6 +12,14 @@
 
 :root {
   color-scheme: light dark;
+  /* Overwritten by BrandProvider from the live /api/v1/brand response
+     (adr/024); these are just the pre-hydration/test fallback, matching
+     brand.yaml's own default values. Deliberately not wired into
+     --primary/--accent below: that's a separate, larger migration this
+     pass doesn't take on, see the --font-sans comment further down for
+     why an index.css-wide reflow is handled as its own task. */
+  --brand-accent: #107292;
+  --brand-accent-dark: #2fb3dc;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -164,10 +173,10 @@ body {
   --tone-info-soft: oklch(0.965 0.025 240);
   --tone-info-border: oklch(0.90 0.06 240);
   --tone-info-solid: oklch(0.62 0.15 240);
-  --tone-accent-fg: oklch(0.46 0.19 285);
-  --tone-accent-soft: oklch(0.965 0.025 285);
-  --tone-accent-border: oklch(0.90 0.06 285);
-  --tone-accent-solid: oklch(0.58 0.21 285);
+  --tone-accent-fg: oklch(0.46 0.19 227);
+  --tone-accent-soft: oklch(0.965 0.025 227);
+  --tone-accent-border: oklch(0.90 0.06 227);
+  --tone-accent-solid: oklch(0.58 0.21 227);
   --elev-1: 0 1px 2px oklch(0.2 0.01 260 / 6%), 0 1px 1px oklch(0.2 0.01 260 / 4%);
   --elev-2: 0 8px 24px oklch(0.2 0.01 260 / 10%), 0 2px 6px oklch(0.2 0.01 260 / 6%);
   --motion-fast: 150ms;
@@ -197,10 +206,10 @@ body {
   --tone-info-soft: oklch(0.26 0.05 240);
   --tone-info-border: oklch(0.38 0.09 240);
   --tone-info-solid: oklch(0.72 0.13 240);
-  --tone-accent-fg: oklch(0.82 0.11 285);
-  --tone-accent-soft: oklch(0.27 0.07 285);
-  --tone-accent-border: oklch(0.40 0.13 285);
-  --tone-accent-solid: oklch(0.70 0.17 285);
+  --tone-accent-fg: oklch(0.82 0.11 227);
+  --tone-accent-soft: oklch(0.27 0.07 227);
+  --tone-accent-border: oklch(0.40 0.13 227);
+  --tone-accent-solid: oklch(0.70 0.17 227);
   --elev-1: 0 1px 2px oklch(0 0 0 / 40%);
   --elev-2: 0 8px 24px oklch(0 0 0 / 50%), 0 0 0 1px oklch(1 0 0 / 6%);
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
 import { GitBranchIcon, RocketIcon } from '@phosphor-icons/react/dist/ssr'
@@ -32,7 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toast } from '@/components/ui/toast'
+import { toast, toastAction } from '@/components/ui/toast'
 
 const triggerSchema = z.object({
   image: z.string().trim().min(1, 'Image tag is required'),
@@ -51,6 +52,8 @@ type TriggerFormValues = z.infer<typeof triggerSchema>
 // "deploying..." state beyond the mutation's own pending flag: any of
 // those would imply a live process this endpoint doesn't actually drive.
 function DeployExistingImageForm({ appName }: { appName: string }) {
+  const { t } = useTranslation('common')
+  const navigate = useNavigate()
   const { data: app } = useApp(appName)
   const triggerDeploy = useTriggerDeploy(appName)
   const protectedEnv = useProtectedEnvironment(app)
@@ -99,6 +102,12 @@ function DeployExistingImageForm({ appName }: { appName: string }) {
             title: 'Deploy triggered.',
             description: 'Check the Overview tab for the outcome.',
             type: 'success',
+            actionProps: toastAction(t('actions.viewOverview'), () => {
+              void navigate({
+                to: '/apps/$name/overview',
+                params: { name: appName },
+              })
+            }),
           })
         },
       },

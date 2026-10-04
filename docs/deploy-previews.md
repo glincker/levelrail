@@ -6,6 +6,22 @@ description: Thumbnails of each deploy in three tiers, from free (page metadata,
 
 When a deploy goes live, the control plane can save a small thumbnail of the running app and show it in the app's deploy history. There are three modes per app, and the default costs about nothing.
 
+```mermaid
+flowchart TD
+  Deploy["Deploy goes live"] --> Mode{"Preview mode?"}
+  Mode -->|off| None["No preview"]
+  Mode -->|"metadata (default)"| Meta["One request to the app:<br/>read title + og:image/twitter:image"]
+  Mode -->|screenshot| Shot["Short-lived browser container:<br/>load page, take screenshot"]
+  Meta --> HasImg{"Usable image found?"}
+  HasImg -->|yes| SiteImg["Thumbnail: Site image"]
+  HasImg -->|no| Card["Thumbnail: Card<br/>(title, description, theme color)"]
+  Shot --> ShotOk{"Capture succeeded?"}
+  ShotOk -->|yes| Screenshot["Thumbnail: Screenshot<br/>(640px JPEG)"]
+  ShotOk -->|no, e.g. auth_wall, timeout| Skipped["No preview, reason recorded"]
+```
+
+
+
 | Mode | What it does | Cost |
 | --- | --- | --- |
 | `off` | No preview. | None. |

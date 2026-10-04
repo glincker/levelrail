@@ -20,6 +20,8 @@ type (
 	serviceProbe                     = apiclient.ServiceProbe
 	serviceHealth                    = apiclient.ServiceHealth
 	appHealthResource                = apiclient.AppHealthResource
+	appHealthScoreResource           = apiclient.AppHealthScoreResource
+	appHealthScoreCategory           = apiclient.AppHealthScoreCategory
 	serviceHooks                     = apiclient.ServiceHooks
 	buildTriggerRequest              = apiclient.BuildTriggerRequest
 	buildTriggerRequestBuild         = apiclient.BuildTriggerRequestBuild
@@ -76,6 +78,7 @@ type (
 	backupVerificationResource       = apiclient.BackupVerificationResource
 	restoreHistoryResource           = apiclient.RestoreHistoryResource
 	sessionInfoResource              = apiclient.SessionInfoResource
+	sessionLinkResource              = apiclient.SessionLinkResource
 	databaseResource                 = apiclient.DatabaseResource
 	databaseEngineResource           = apiclient.DatabaseEngineResource
 	setDatabaseResourcesRequest      = apiclient.SetDatabaseResourcesRequest
@@ -95,6 +98,8 @@ type (
 	pitrRestoreHistoryResource       = apiclient.PITRRestoreHistoryResource
 	triggerPITRRestoreRequest        = apiclient.TriggerPITRRestoreRequest
 	appVolumeResource                = apiclient.AppVolumeResource
+	setAppVolumesRequest             = apiclient.SetAppVolumesRequest
+	setAppVolumesResponse            = apiclient.SetAppVolumesResponse
 	appVolumeMoveResource            = apiclient.AppVolumeMoveResource
 	appVolumeMoveStepResource        = apiclient.AppVolumeMoveStepResource
 	appBindMountResource             = apiclient.AppBindMountResource
@@ -106,6 +111,9 @@ type (
 	triggerVolumeCloneRestoreRequest = apiclient.TriggerVolumeCloneRestoreRequest
 	setAppDatabaseRequest            = apiclient.SetAppDatabaseRequest
 	appDatabaseResource              = apiclient.AppDatabaseResource
+	createAppConnectionRequest       = apiclient.CreateAppConnectionRequest
+	appConnectionResource            = apiclient.AppConnectionResource
+	connectableDatabaseResource      = apiclient.ConnectableDatabaseResource
 	appStatusSummary                 = apiclient.AppStatusSummary
 	appGroupResource                 = apiclient.AppGroupResource
 	hookRunResource                  = apiclient.HookRunResource
@@ -121,6 +129,8 @@ type (
 	diagnosisSignal                  = apiclient.DiagnosisSignal
 	resourceRecommendationResource   = apiclient.ResourceRecommendationResource
 	dimensionRecommendationResource  = apiclient.DimensionRecommendationResource
+	costEstimateResource             = apiclient.CostEstimateResource
+	costEstimateProviderResource     = apiclient.CostEstimateProviderResource
 
 	backupTargetResource            = apiclient.BackupTargetResource
 	createBackupTargetRequest       = apiclient.CreateBackupTargetRequest
@@ -128,12 +138,17 @@ type (
 	registryCredentialResource      = apiclient.RegistryCredentialResource
 	createRegistryCredentialRequest = apiclient.CreateRegistryCredentialRequest
 	updateRegistryCredentialRequest = apiclient.UpdateRegistryCredentialRequest
+	firewallRuleResource            = apiclient.FirewallRuleResource
+	createFirewallRuleRequest       = apiclient.CreateFirewallRuleRequest
+	appStreamResource               = apiclient.AppStreamResource
+	createAppStreamRequest          = apiclient.CreateAppStreamRequest
 
 	notificationChannelResource      = apiclient.NotificationChannelResource
 	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest
 	updateNotificationChannelRequest = apiclient.UpdateNotificationChannelRequest
 	testNotificationChannelRequest   = apiclient.TestNotificationChannelRequest
 	notificationDeliveryResource     = apiclient.NotificationDeliveryResource
+	pushSubscriptionResource         = apiclient.PushSubscriptionResource
 	logDrainResource                 = apiclient.LogDrainResource
 	setLogDrainRequest               = apiclient.SetLogDrainRequest
 
@@ -154,10 +169,14 @@ type (
 	systemStatusResource        = apiclient.SystemStatusResource
 	doctorCheckResource         = apiclient.DoctorCheckResource
 	systemDoctorResource        = apiclient.SystemDoctorResource
+	openAPISpecResource         = apiclient.OpenAPISpecResource
+	openAPIRouteResource        = apiclient.OpenAPIRouteResource
 	containerResource           = apiclient.ContainerResource
 	containerPortResource       = apiclient.ContainerPortResource
 	updatesResource             = apiclient.UpdatesResource
 	updatePreflight             = apiclient.UpdatePreflight
+	changelogResource           = apiclient.ChangelogResource
+	changelogEntryResource      = apiclient.ChangelogEntryResource
 	nodeResource                = apiclient.NodeResource
 	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest
 	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse
@@ -169,6 +188,7 @@ type (
 	meshPeerResource            = apiclient.MeshPeerResource
 	meshRotationResource        = apiclient.MeshRotationResource
 	rotateKeyResponse           = apiclient.RotateKeyResponse
+	rejoinMeshResponse          = apiclient.RejoinMeshResponse
 
 	nodeProviderResource             = apiclient.NodeProviderResource
 	nodeProviderRegionResource       = apiclient.NodeProviderRegionResource
@@ -176,6 +196,10 @@ type (
 	nodeProvisionResource            = apiclient.NodeProvisionResource
 	setNodeProviderCredentialRequest = apiclient.SetNodeProviderCredentialRequest
 	createNodeProvisionRequest       = apiclient.CreateNodeProvisionRequest
+
+	sshNodeProvisionResource          = apiclient.SSHNodeProvisionResource
+	createSSHNodeProvisionAuthRequest = apiclient.SSHNodeProvisionAuthRequest
+	createSSHNodeProvisionRequest     = apiclient.CreateSSHNodeProvisionRequest
 
 	organizationResource             = apiclient.OrganizationResource
 	createOrganizationRequest        = apiclient.CreateOrganizationRequest
@@ -197,6 +221,10 @@ type (
 	environmentCloneRequest          = apiclient.EnvironmentCloneRequest
 	environmentCloneAppInput         = apiclient.EnvironmentCloneAppInput
 	environmentCloneResultResource   = apiclient.EnvironmentCloneResultResource
+	environmentEnvEntryResource      = apiclient.EnvironmentEnvEntryResource
+	environmentEnvDiffEntry          = apiclient.EnvironmentEnvDiffEntry
+	environmentCompareSide           = apiclient.EnvironmentCompareSide
+	environmentCompareResource       = apiclient.EnvironmentCompareResource
 	previewEnvironmentResource       = apiclient.PreviewEnvironmentResource
 	previewEphemeralDatabaseResource = apiclient.PreviewEphemeralDatabaseResource
 	previewDatabaseIsolationResource = apiclient.PreviewDatabaseIsolationResource
@@ -260,15 +288,21 @@ type (
 	emailSettingsResource              = apiclient.EmailSettingsResource
 	ingressSettingsResource            = apiclient.IngressSettingsResource
 	dashboardURLResource               = apiclient.DashboardURLResource
+	updateSettingsResource             = apiclient.UpdateSettingsResource
 	aiAssistantSettingsResource        = apiclient.AIAssistantSettingsResource
 	updateAIAssistantSettingsRequest   = apiclient.UpdateAIAssistantSettingsRequest
 	appStorageResource                 = apiclient.AppStorageResource
 	certificateResource                = apiclient.CertificateResource
+	renewCertificateResource           = apiclient.RenewCertificateResource
 	gitProviderResource                = apiclient.GitProviderResource
 	gitHubAppStatusResource            = apiclient.GitHubAppStatusResource
 	gitLabAppStatusResource            = apiclient.GitLabAppStatusResource
 	bitbucketAppStatusResource         = apiclient.BitbucketAppStatusResource
 	gitHubAppRepoResource              = apiclient.GitHubAppRepoResource
+	gitHubAppRepoListResource          = apiclient.GitHubAppRepoListResource
+	gitHubAppRepoListErrResource       = apiclient.GitHubAppRepoListErrResource
+	gitHubAppInstallationResource      = apiclient.GitHubAppInstallationResource
+	gitHubAppInstallationListResource  = apiclient.GitHubAppInstallationListResource
 	gitAppBranchResource               = apiclient.GitAppBranchResource
 	useRepoAsSourceRequest             = apiclient.UseRepoAsSourceRequest
 	useGitHubRepoAsSourceResponse      = apiclient.UseGitHubRepoAsSourceResponse
@@ -278,6 +312,7 @@ type (
 	giteaAppRepoResource               = apiclient.GiteaAppRepoResource
 	serviceTemplateListItem            = apiclient.ServiceTemplateListItem
 	serviceTemplateDetail              = apiclient.ServiceTemplateDetail
+	customTemplateListItem             = apiclient.CustomTemplateListItem
 	staticSiteResource                 = apiclient.StaticSiteResource
 
 	tagResource         = apiclient.TagResource
@@ -288,6 +323,9 @@ type (
 	nodeResourceUsageResource  = apiclient.NodeResourceUsageResource
 	fleetResourceUsageRollup   = apiclient.FleetResourceUsageRollup
 	fleetResourceUsageResource = apiclient.FleetResourceUsageResource
+
+	capacityForecastMetric       = apiclient.CapacityForecastMetric
+	nodeCapacityForecastResource = apiclient.NodeCapacityForecastResource
 )
 
 // NewClient builds a Client, identifying every request as this CLI's own

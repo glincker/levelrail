@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -106,6 +107,40 @@ func TestSaveWebhookDelivery_TruncatesOversizedPayload(t *testing.T) {
 	}
 }
 
+func TestDeleteWebhookDeliveriesOlderThan(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	old := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	recent := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	seed := func(id string, receivedAt time.Time) {
+		if err := db.SaveWebhookDelivery(ctx, WebhookDelivery{
+			ID: id, ServiceName: "web", Provider: "github", EventType: "push",
+			ReceivedAt: receivedAt,
+		}); err != nil {
+			t.Fatalf("SaveWebhookDelivery(%q) error = %v", id, err)
+		}
+	}
+	seed("whd_old", old)
+	seed("whd_recent", recent)
+
+	cutoff := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+	n, err := db.DeleteWebhookDeliveriesOlderThan(ctx, cutoff)
+	if err != nil {
+		t.Fatalf("DeleteWebhookDeliveriesOlderThan() error = %v", err)
+	}
+	if n != 1 {
+		t.Fatalf("deleted = %d, want 1", n)
+	}
+
+	if _, err := db.GetWebhookDelivery(ctx, "whd_old"); !errors.Is(err, ErrWebhookDeliveryNotFound) {
+		t.Errorf("GetWebhookDelivery(whd_old) error = %v, want ErrWebhookDeliveryNotFound", err)
+	}
+	if _, err := db.GetWebhookDelivery(ctx, "whd_recent"); err != nil {
+		t.Errorf("GetWebhookDelivery(whd_recent) error = %v, want nil (should survive the purge)", err)
+	}
+}
+
 func TestListWebhookDeliveries_NewestFirstAndScoped(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
@@ -150,5 +185,45 @@ func TestListWebhookDeliveries_NewestFirstAndScoped(t *testing.T) {
 	}
 	if len(paged) != 2 || paged[0].ID != "whd_web_2" || paged[1].ID != "whd_web_1" {
 		t.Errorf("ListWebhookDeliveries(before) = %+v, want [whd_web_2, whd_web_1]", paged)
+	}
+}
+
+// TestListWebhookDeliveries_UsesCoveringIndex proves migrations/0283's
+// composite index lets ListWebhookDeliveries' WHERE+ORDER BY query plan
+// skip a sort step (migrations/0068 only indexed service_name alone,
+// which can't cover the received_at DESC ordering and forces a temp
+// b-tree sort as the table grows).
+func TestListWebhookDeliveries_UsesCoveringIndex(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	rows, err := db.QueryContext(ctx, `
+		EXPLAIN QUERY PLAN
+		SELECT id, service_name, received_at FROM webhook_deliveries
+		WHERE service_name = ? ORDER BY received_at DESC LIMIT ?
+	`, "web", 20)
+	if err != nil {
+		t.Fatalf("EXPLAIN QUERY PLAN: %v", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var plan string
+	for rows.Next() {
+		var id, parent, notUsed int
+		var detail string
+		if err := rows.Scan(&id, &parent, &notUsed, &detail); err != nil {
+			t.Fatalf("scan query plan row: %v", err)
+		}
+		plan += detail + "\n"
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("iterate query plan rows: %v", err)
+	}
+
+	if strings.Contains(plan, "TEMP B-TREE") {
+		t.Errorf("query plan uses a temp b-tree sort, want the composite index to cover the ORDER BY:\n%s", plan)
+	}
+	if !strings.Contains(plan, "idx_webhook_deliveries_service_received") {
+		t.Errorf("query plan doesn't use idx_webhook_deliveries_service_received:\n%s", plan)
 	}
 }

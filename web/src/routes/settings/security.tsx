@@ -23,6 +23,8 @@ import {
   useSetupTwoFactor,
   useTwoFactorStatus,
 } from '../../queries/twoFactor'
+import { passkeysQueryOptions } from '../../queries/passkeys'
+import { PasskeysCard } from '../../components/PasskeysCard'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import {
   Card,
@@ -44,7 +46,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { PageSpinner } from '@/components/ui/page-spinner'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '@/components/settings/SettingsSkeletons'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Loader-primed the same way routes/settings/tokens.tsx primes
 // tokenListQueryOptions: the component below only ever reads that warm
@@ -55,10 +61,28 @@ export const Route = createFileRoute('/settings/security')({
     Promise.all([
       queryClient.ensureQueryData(sessionQueryOptions()),
       queryClient.ensureQueryData(twoFactorStatusQueryOptions()),
+      queryClient.ensureQueryData(passkeysQueryOptions()),
     ]),
   component: SecuritySettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: SecuritySettingsSkeleton,
 })
+
+// Mirrors this page's own five cards (current session, other sessions,
+// two-factor, passkeys, login protection): each renders mostly text and
+// a button rather than form fields, so every card uses the 'line' row
+// variant.
+function SecuritySettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton />
+      <SettingsCardSkeleton rows={2} rowVariant="line" />
+      <SettingsCardSkeleton rows={1} rowVariant="line" />
+      <SettingsCardSkeleton rows={1} rowVariant="line" />
+      <SettingsCardSkeleton rows={1} rowVariant="line" />
+      <SettingsCardSkeleton description={false} rows={1} rowVariant="line" />
+    </div>
+  )
+}
 
 // Matches TokenTable.tsx's own formatDate convention: toLocaleString(),
 // no separate date-formatting library, same as every other date already
@@ -72,12 +96,10 @@ function SecuritySettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Security</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Sessions and login protection.
-        </p>
-      </div>
+      <PageHeader
+        title="Security"
+        description="Sessions and login protection."
+      />
 
       <Card>
         <CardHeader>
@@ -105,6 +127,8 @@ function SecuritySettingsPage() {
       <OtherSessionsCard />
 
       <TwoFactorCard />
+
+      <PasskeysCard />
 
       <Card>
         <CardHeader>

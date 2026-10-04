@@ -12,8 +12,8 @@
     "preview": "vitepress preview ."
   },
   "devDependencies": {
-    "@fontsource-variable/inter": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
+    "gsap": "^3.13.0",
     "mermaid": "^11.17.2",
     "vitepress": "^1.6.4",
     "vitepress-plugin-mermaid": "^2.0.17"
@@ -21,5 +21,11 @@
   "overrides": {
     "vite": "^6.4.3",
     "esbuild": "^0.25.0"
+  },
+  "dependencies": {
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "@fontsource/lora": "^5.3.0",
+    "@phosphor-icons/vue": "^2.2.1",
+    "thesvg": "^3.3.9"
   }
 }

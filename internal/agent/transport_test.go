@@ -46,6 +46,10 @@ func (f *fakeRuntime) UpdateResources(context.Context, string, docker.Resources)
 func (f *fakeRuntime) EnsureVolume(context.Context, string) error            { return nil }
 func (f *fakeRuntime) EnsureNetwork(context.Context, string) (string, error) { return "", nil }
 func (f *fakeRuntime) RemoveNetwork(context.Context, string) error           { return nil }
+func (f *fakeRuntime) NetworkConnect(context.Context, string, string) error  { return nil }
+func (f *fakeRuntime) NetworkDisconnect(context.Context, string, string, bool) error {
+	return nil
+}
 func (f *fakeRuntime) ListNetworksByPrefix(context.Context, string) ([]docker.NetworkInfo, error) {
 	return nil, nil
 }

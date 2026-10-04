@@ -6,7 +6,8 @@ import {
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
-import { EmptyState, StatusPill } from '@/components/kit'
+import { StatusPill } from '@/components/kit'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useNowTick } from '../../hooks/useNowTick'
 import { useDeploymentActions } from '../../hooks/useDeploymentActions'
 import { useDeploymentsKeyboard } from '../../hooks/useDeploymentsKeyboard'

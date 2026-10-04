@@ -52,6 +52,63 @@ func TestRun_SettingsIngress_Set(t *testing.T) {
 	}
 }
 
+// TestRun_SettingsIngress_Set_PreservesUnsetFields proves the fix for a
+// real bug found live: PUT replaces the whole resource, so setting only
+// --primary-domain used to silently clear an already-configured
+// acme_enabled/acme_email. set now fetches current settings first and
+// merges in only the flags actually given.
+func TestRun_SettingsIngress_Set_PreservesUnsetFields(t *testing.T) {
+	current := ingressSettingsResource{PrimaryDomain: "old.example.com", ACMEEnabled: true, ACMEEmail: "ops@example.com"}
+	var gotPut ingressSettingsResource
+	sawGet := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			sawGet = true
+			_ = json.NewEncoder(w).Encode(current)
+			return
+		}
+		_ = json.NewDecoder(r.Body).Decode(&gotPut)
+		_ = json.NewEncoder(w).Encode(gotPut)
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{
+		"settings", "ingress", "set", "--primary-domain", "new.example.com", "--api-url", srv.URL,
+	})
+
+	if !sawGet {
+		t.Fatal("set never fetched current settings before PUT")
+	}
+	if gotPut.PrimaryDomain != "new.example.com" {
+		t.Errorf("PrimaryDomain = %q, want new.example.com", gotPut.PrimaryDomain)
+	}
+	if !gotPut.ACMEEnabled || gotPut.ACMEEmail != "ops@example.com" {
+		t.Errorf("ACMEEnabled/ACMEEmail = %v/%q, want true/ops@example.com (unset flags must preserve current values)", gotPut.ACMEEnabled, gotPut.ACMEEmail)
+	}
+}
+
+func TestRun_SettingsIngress_Set_HSTSEnabled(t *testing.T) {
+	var gotBody ingressSettingsResource
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gotBody)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{
+		"settings", "ingress", "set", "--hsts-enabled", "--api-url", srv.URL,
+	})
+
+	if !gotBody.HSTSEnabled {
+		t.Errorf("request body HSTSEnabled = false, want true")
+	}
+	if !strings.Contains(stdout, "hsts_enabled:       true") {
+		t.Errorf("stdout = %q, want hsts_enabled line", stdout)
+	}
+}
+
 func TestRun_SettingsIngress_Set_APIError(t *testing.T) {
 	srv := newJSONErrorServer(t, http.StatusBadRequest, `{"error":"acme_email is required when acme_enabled is true"}`)
 

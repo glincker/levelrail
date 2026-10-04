@@ -23,14 +23,8 @@ import {
   FieldError,
   FieldLabel,
 } from '@/components/ui/field'
+import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { useGitBranches } from '../queries/gitBranches'
@@ -147,30 +141,20 @@ export function GitBuildSourceFields({
           {branches.length > 0 ? (
             <Field>
               <FieldLabel htmlFor="git-app-branch-picker">Branch</FieldLabel>
-              <Select
+              <Combobox
+                id="git-app-branch-picker"
                 value=""
-                onValueChange={(branch: string | null) => {
-                  if (!branch) return
+                options={branches.map((b) => ({ value: b, label: b }))}
+                placeholder="Pick a branch..."
+                searchPlaceholder="Search branches..."
+                triggerClassName="font-mono"
+                onValueChange={(branch) => {
                   setValue('ref', branch, {
                     shouldValidate: true,
                     shouldDirty: true,
                   })
                 }}
-              >
-                <SelectTrigger
-                  id="git-app-branch-picker"
-                  className="w-full font-mono"
-                >
-                  <SelectValue placeholder="Pick a branch..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {branches.map((b) => (
-                    <SelectItem key={b} value={b} className="font-mono">
-                      {b}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </Field>
           ) : null}
 

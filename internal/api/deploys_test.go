@@ -6,10 +6,47 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// TestHandleTriggerDeploy_RunningAttemptRejected is the regression test
+// for a live race: a rollback issued while a build was still running
+// used to write desired state immediately, then get silently clobbered
+// when the build finished. handleTriggerBuild already guards against
+// this for itself; this proves applyDeploy now does too.
+func TestHandleTriggerDeploy_RunningAttemptRejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	running := store.DeployAttempt{
+		ID: "att_running", ServiceName: "web", Image: "web:building", Source: store.DeployAttemptSourceManual,
+		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
+	}
+	if err := db.SaveDeployAttempt(ctx, running); err != nil {
+		t.Fatalf("SaveDeployAttempt() error = %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"levelrail/web:2"}`))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService: %v", err)
+	}
+	if svc.Image != "levelrail/web:1" {
+		t.Errorf("Image = %q, want %q: a rejected deploy must never change desired state", svc.Image, "levelrail/web:1")
+	}
+}
 
 func TestHandleTriggerDeploy(t *testing.T) {
 	rt, db := newTestRouter(t)
@@ -241,6 +278,64 @@ func TestHandleDeployHistory(t *testing.T) {
 	}
 }
 
+// A domain-bearing app placed off the control plane's own node is
+// unreachable (no mesh path yet), but its own reconcile controller never
+// reports that: the ingress controller does, under its own singleton
+// name. handleDeployHistory must inject the synthetic condition itself
+// so the app's status stops reading "Healthy" for an app nobody outside
+// the control plane's own node can reach.
+func TestHandleDeployHistory_CrossNodeDomainApp_AddsUnreachableCondition(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveNode(ctx, store.Node{ID: "node-2", Name: "worker-1", Status: store.NodeStatusOnline, Schedulable: true}); err != nil {
+		t.Fatalf("SaveNode() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, store.DesiredService{
+		Name: "static-test", Image: "nginx:1.27-alpine", Port: 80,
+		Domains: []string{"levelrail-test-2.levelrail.com"},
+	}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "static-test", "node-2"); err != nil {
+		t.Fatalf("UpdateServiceNode() error = %v", err)
+	}
+	if err := db.UpsertConditions(ctx, applicationControllerName("static-test"), []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Created"},
+	}); err != nil {
+		t.Fatalf("seed conditions: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/static-test/deploys", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var got []reconcile.Condition
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("len(conditions) = %d, want 2 (Ready + synthetic CrossNodeIngress), got %+v", len(got), got)
+	}
+	if summarizeAppConditions(got).Label != "Attention needed" {
+		t.Errorf("summarizeAppConditions(got).Label = %q, want %q", summarizeAppConditions(got).Label, "Attention needed")
+	}
+	found := false
+	for _, c := range got {
+		if c.Type == "CrossNodeIngress" {
+			found = true
+			if c.Status != reconcile.ConditionFalse {
+				t.Errorf("CrossNodeIngress.Status = %q, want %q", c.Status, reconcile.ConditionFalse)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("conditions %+v, want a CrossNodeIngress condition", got)
+	}
+}
+
 func TestHandleAutoRollback_GetDefaultOffAndSetToggles(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -289,6 +384,55 @@ func TestHandleAutoRollback_GetDefaultOffAndSetToggles(t *testing.T) {
 
 	recMissing := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(recMissing, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/ghost/auto-rollback", `{"enabled":true}`))
+	if recMissing.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", recMissing.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleAutoRollbackSLOBurn_GetDefaultOffAndSetModes(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	recGet := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recGet, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/auto-rollback-slo-burn", ""))
+	if recGet.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recGet.Code, http.StatusOK)
+	}
+	var got autoRollbackSLOBurnSettingResource
+	if err := json.Unmarshal(recGet.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Mode != store.AutoRollbackSLOBurnOff {
+		t.Errorf("Mode = %q, want %q (off by default)", got.Mode, store.AutoRollbackSLOBurnOff)
+	}
+
+	recSet := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recSet, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/auto-rollback-slo-burn", `{"mode":"pause_for_human"}`))
+	if recSet.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", recSet.Code, http.StatusOK, recSet.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService: %v", err)
+	}
+	if svc.AutoRollbackOnSLOBurn != store.AutoRollbackSLOBurnPauseForHuman {
+		t.Errorf("AutoRollbackOnSLOBurn = %q, want %q", svc.AutoRollbackOnSLOBurn, store.AutoRollbackSLOBurnPauseForHuman)
+	}
+
+	recBadMode := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recBadMode, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/auto-rollback-slo-burn", `{"mode":"nonsense"}`))
+	if recBadMode.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d for an invalid mode", recBadMode.Code, http.StatusBadRequest)
+	}
+
+	recMissing := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recMissing, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/ghost/auto-rollback-slo-burn", `{"mode":"auto"}`))
 	if recMissing.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", recMissing.Code, http.StatusNotFound)
 	}

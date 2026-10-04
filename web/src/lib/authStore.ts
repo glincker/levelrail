@@ -23,6 +23,12 @@
 
 const STORAGE_KEY = 'app-auth-username'
 
+// Separate from STORAGE_KEY above: that key means "is there a live
+// session," and clearStoredUsername (called on logout/401) wipes it.
+// This one survives logout on purpose, so a returning operator's
+// username is already filled in on the next visit instead of retyped.
+const LAST_USERNAME_STORAGE_KEY = 'app-last-username'
+
 type Listener = () => void
 
 const listeners = new Set<Listener>()
@@ -68,7 +74,21 @@ export function getStoredUsername(): string | null {
 export function setStoredUsername(username: string): void {
   cachedUsername = username
   writeToStorage(username)
+  try {
+    window.localStorage.setItem(LAST_USERNAME_STORAGE_KEY, username)
+  } catch {
+    // See writeToStorage: just won't prefill next time.
+  }
   emit()
+}
+
+// Outlives a logout, unlike getStoredUsername: a prefill convenience, not a session signal.
+export function getLastUsername(): string {
+  try {
+    return window.localStorage.getItem(LAST_USERNAME_STORAGE_KEY) ?? ''
+  } catch {
+    return ''
+  }
 }
 
 export function clearStoredUsername(): void {

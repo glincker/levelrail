@@ -24,7 +24,7 @@ export function AppCard({
 }) {
   const metrics = useAppRowMetrics(app.name)
   return (
-    <div className="group/row relative flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 transition-colors duration-150 hover:border-primary/40">
+    <div className="group/row relative flex flex-col gap-3 rounded-[var(--glinui-radius-lg)] border border-border bg-card p-4 transition-colors duration-150 hover:border-primary/40">
       <div className="flex items-start gap-3">
         <AppLogo image={app.image} />
         <div className="min-w-0 flex-1 space-y-1">

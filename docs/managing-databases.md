@@ -4,12 +4,14 @@ description: Create, manage, back up, and restore managed databases across multi
 
 # Managing databases
 
-A managed database is a Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB,
-Dragonfly, or ClickHouse container the reconciler runs, backs up, and
-tracks the same way it tracks an app, except there is no build step and no
-domain to route. Packages: `internal/api/databases.go`,
-`internal/reconcile/database`, `internal/backup`, `internal/store` (the
-`database_engines.yaml` registry and the desired-state schema).
+Create a Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, or ClickHouse database with one API call or `levelrail-cli databases create`, and Levelrail runs it, generates its credentials, and backs it up on a schedule, the same way it manages an app, minus the build step and domain routing a database doesn't need.
+
+::: details For contributors: where this lives in the source
+- `internal/api/databases.go` - API handlers
+- `internal/reconcile/database` - the database controller
+- `internal/backup` - backup, restore, and verification
+- `internal/store` - the `database_engines.yaml` registry and the desired-state schema
+:::
 
 ## Why a database is not "just an app"
 
@@ -56,7 +58,7 @@ Omit `node_id` at creation to let simple spread scheduling pick a node. Pass `no
 
 ## TLS: on by default, for two engines, with no toggle
 
-Postgres and Redis get TLS enabled automatically at creation time with a self-signed certificate generated once and persisted through the secrets mechanism. There is no operator toggle: `databaseResource.TLSEnabled` is read-only, true when a TLS certificate has been generated.
+Postgres and Redis get TLS enabled automatically at creation time with a self-signed certificate generated once and persisted through the secrets mechanism. There is no operator toggle: TLS shows as on the moment a certificate exists for the database, and off otherwise, it's not a setting you flip.
 
 **Why only Postgres and Redis**
 
@@ -73,7 +75,7 @@ The certificate is self-signed and never distributed to a party that verifies it
 
 **In apps**
 
-When an app attaches to a TLS-enabled database, it automatically gets the TLS-flavored connection string. `resolveDatabaseURL` in `internal/reconcile/application` appends `?sslmode=require` for Postgres or switches to `rediss://` (and the TLS-only port) for Redis. Nothing in `app.yaml` opts into this; it reflects the database's state.
+When an app attaches to a TLS-enabled database, it automatically gets the TLS-flavored connection string: `?sslmode=require` appended for Postgres, or switched to `rediss://` on the TLS-only port for Redis. Nothing in `app.yaml` opts into this; it reflects the database's state.
 
 ## Resource limits
 
@@ -133,6 +135,8 @@ The dashboard gates the toggle behind an explicit "I understand this database ha
 Attach an already-created database to an app using `PUT /api/v1/apps/{name}/database`. The reconciler injects the resolved value as an env var the next time the app's container is created.
 
 You don't need to deploy from an `app.yaml` with a `{ from: "<database>.<field>" }` env var to do this.
+
+This flow attaches at most one database per app. If an app needs more than one, or you want to see cross-node reachability before connecting, use [Connecting apps to databases](connecting-apps-to-databases.md) instead, a newer, separate mechanism that allows arbitrarily many connections per app.
 
 **Fields**
 

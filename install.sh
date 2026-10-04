@@ -1,5 +1,5 @@
 #!/bin/sh
-# curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
+# curl -fsSL https://levelrail.com/install.sh | sudo sh
 #
 # Installs the levelrail control plane binary, a systemd unit, and Docker
 # (if missing) on a single Linux host.
@@ -40,6 +40,16 @@
 #   LEVELRAIL_HEALTH_WAIT    seconds to wait for the service (default: 60)
 #   LEVELRAIL_CONFIGURE_UFW  set to 1 to allow SSH, 80/tcp, and 443/tcp in
 #                            ufw and enable it if inactive. Off by default.
+#   LEVELRAIL_DASHBOARD_PORT dashboard/API port (default: 8080). If taken and
+#                            left at its default, the installer picks the
+#                            next free port automatically; set this to pin one.
+#   LEVELRAIL_HTTP_PORT      ingress HTTP port (default: 80)
+#   LEVELRAIL_HTTPS_PORT     ingress HTTPS port (default: 443). Moving either
+#                            ingress port off 80/443 disables automatic ACME
+#                            TLS (Let's Encrypt only validates those two), so
+#                            the installer never does this on its own; it
+#                            fails preflight instead and tells you to set
+#                            these explicitly once you've accepted that trade.
 
 set -eu
 
@@ -50,7 +60,11 @@ INSTALL_DIR="${LEVELRAIL_INSTALL_DIR:-/usr/local/bin}"
 DATA_DIR="${LEVELRAIL_DATA_DIR:-/var/lib/levelrail-data}"
 UNIT_PATH="/etc/systemd/system/${SERVICE_NAME}.service"
 BIN_PATH="${INSTALL_DIR}/${BINARY_NAME}"
-DASHBOARD_PORT=8080
+DASHBOARD_PORT="${LEVELRAIL_DASHBOARD_PORT:-8080}"
+DASHBOARD_PORT_PINNED=0
+[ -z "${LEVELRAIL_DASHBOARD_PORT:-}" ] || DASHBOARD_PORT_PINNED=1
+HTTP_PORT="${LEVELRAIL_HTTP_PORT:-80}"
+HTTPS_PORT="${LEVELRAIL_HTTPS_PORT:-443}"
 # The dashboard is plain HTTP until the operator configures a domain with TLS.
 DASHBOARD_SCHEME="http"
 HTTPS_ONLY="=https"
@@ -198,6 +212,22 @@ service_active() {
 	systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null
 }
 
+# find_free_port scans start..start+19 and prints the first port
+# port_listening reports free, or nothing if all 20 are taken.
+find_free_port() {
+	start="$1"
+	i=0
+	while [ "$i" -lt 20 ]; do
+		candidate=$((start + i))
+		if ! port_listening "$candidate"; then
+			printf '%s' "$candidate"
+			return 0
+		fi
+		i=$((i + 1))
+	done
+	return 1
+}
+
 PREFLIGHT_FAILS=0
 row() {
 	printf '  %-10s %-5s %s\n' "$1" "$2" "$3"
@@ -256,15 +286,26 @@ preflight() {
 	free_gb=$((${free_kb:-0} / 1024 / 1024))
 	if [ "$free_gb" -ge "$MIN_DISK_GB" ]; then row disk ok "${free_gb} GB free on ${disk_dir}"; else row disk FAIL "${free_gb} GB free on ${disk_dir}, need ${MIN_DISK_GB} GB"; fi
 
-	for port in 80 443 "$DASHBOARD_PORT"; do
+	for port in "$HTTP_PORT" "$HTTPS_PORT"; do
 		if ! port_listening "$port"; then
 			row "port $port" ok "free"
 		elif service_active; then
 			row "port $port" ok "in use, presumably by ${SERVICE_NAME} (reinstall)"
 		else
-			row "port $port" FAIL "already in use by another process"
+			row "port $port" FAIL "already in use by another process (automatic TLS needs 80/443; set LEVELRAIL_HTTP_PORT/LEVELRAIL_HTTPS_PORT to run on alternate ports instead, accepting that automatic ACME certs won't work)"
 		fi
 	done
+
+	if ! port_listening "$DASHBOARD_PORT"; then
+		row "port $DASHBOARD_PORT" ok "free"
+	elif service_active; then
+		row "port $DASHBOARD_PORT" ok "in use, presumably by ${SERVICE_NAME} (reinstall)"
+	elif [ "$DASHBOARD_PORT_PINNED" -eq 0 ] && free_port="$(find_free_port "$DASHBOARD_PORT")"; then
+		row "port $DASHBOARD_PORT" ok "taken, using $free_port instead"
+		DASHBOARD_PORT="$free_port"
+	else
+		row "port $DASHBOARD_PORT" FAIL "already in use by another process"
+	fi
 
 	if [ "$PREFLIGHT_FAILS" -gt 0 ]; then
 		[ "$FORCE" -eq 1 ] || fatal "${PREFLIGHT_FAILS} preflight check(s) failed. Fix them, or re-run with --force to continue anyway."
@@ -402,6 +443,9 @@ Wants=network-online.target
 ExecStart=${BIN_PATH}
 WorkingDirectory=${DATA_DIR}
 Environment=APP_DATA_DIR=${DATA_DIR}
+Environment=APP_HTTP_ADDR=:${DASHBOARD_PORT}
+Environment=APP_INGRESS_HTTP_ADDR=:${HTTP_PORT}
+Environment=APP_INGRESS_HTTPS_ADDR=:${HTTPS_PORT}
 Restart=on-failure
 RestartSec=5
 
@@ -422,13 +466,13 @@ configure_ufw() {
 	was_active=0
 	ufw status 2>/dev/null | grep -q "^Status: active" && was_active=1
 	ufw allow OpenSSH >/dev/null 2>&1 || ufw allow 22/tcp >/dev/null 2>&1
-	ufw allow 80/tcp >/dev/null 2>&1
-	ufw allow 443/tcp >/dev/null 2>&1
+	ufw allow "${HTTP_PORT}/tcp" >/dev/null 2>&1
+	ufw allow "${HTTPS_PORT}/tcp" >/dev/null 2>&1
 	if [ "$was_active" -eq 1 ]; then
 		log "ufw was already active, added rules without re-enabling."
 	else
 		ufw --force enable >/dev/null 2>&1
-		log "ufw enabled: SSH, 80/tcp, and 443/tcp are allowed, everything else denied by default."
+		log "ufw enabled: SSH, ${HTTP_PORT}/tcp, and ${HTTPS_PORT}/tcp are allowed, everything else denied by default."
 	fi
 }
 
@@ -488,13 +532,17 @@ stop_temp_listener() {
 # anything else, TLS errors included, proves the TCP port is reachable.
 reachability_test() {
 	[ "${LEVELRAIL_SKIP_REACHABILITY:-0}" != "1" ] || return 0
+	if [ "$HTTP_PORT" != "80" ] || [ "$HTTPS_PORT" != "443" ]; then
+		log "Ingress is on ${HTTP_PORT}/${HTTPS_PORT}, not 80/443, so automatic ACME TLS is already off; skipping the reachability test."
+		return 0
+	fi
 	if [ -z "$PUBLIC_IP" ]; then
 		warn "could not determine this server's public IP, skipping the port 80/443 reachability test"
 		return 0
 	fi
 	log "Checking that ports 80 and 443 are reachable at ${PUBLIC_IP}..."
 	blocked=""
-	for port in 80 443; do
+	for port in "$HTTP_PORT" "$HTTPS_PORT"; do
 		scheme="http"
 		[ "$port" != "443" ] || scheme="https"
 		if ! port_listening "$port" && ! start_temp_listener "$port"; then

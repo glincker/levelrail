@@ -18,7 +18,7 @@ import (
 // fields already establish in this package.
 type AuditEntry struct {
 	ID         string
-	ActorType  string // "session" or "token"
+	ActorType  string // "session", "token", or "system" (internal/ingress's SQLiteStorage, no request behind it)
 	ActorID    string
 	ActorName  string
 	Ability    string
@@ -27,7 +27,7 @@ type AuditEntry struct {
 	StatusCode int
 	RemoteAddr string
 	CreatedAt  string
-	ClientKind string // "cli", "dashboard", "mcp", or "api" (migrations/0077), derived from User-Agent
+	ClientKind string // "cli", "dashboard", "mcp", "api" (migrations/0077, derived from User-Agent), or "system"
 	// AgentName is the agent label of the token that made the request, empty
 	// for a session or an unlabeled token. AgentClient is the self-reported
 	// MCP client name and version.

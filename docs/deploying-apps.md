@@ -4,13 +4,16 @@ description: Creating, deploying, rolling back, and managing app lifecycle, heal
 
 # Deploying and managing apps
 
-An app is one `store.DesiredService` row: an image, a port, and everything the application controller needs to converge a running container to it.
+Push an image or a git repo at the API, CLI, or dashboard wizard, and Levelrail turns it into a running container with health checks, rollback, and a full deploy history, no separate deploy tool needed. This page covers everything you do to an app after that first deploy: rolling back, promoting between environments, restarting, setting resource limits, and running one-off commands or scheduled tasks against it.
 
-**Relevant packages and files:**
+![Levelrail app overview page with health status, setup checklist, and recent activity](assets/screenshots/app-overview-page.png)
 
+::: details For contributors: where this lives in the source
 - Backend: `internal/api/apps.go`, `apps_multi.go`, `apps_compose.go`, `deploys.go`, `promote.go`, `exec.go`, `resources_live_apply.go`, `scheduled_tasks.go`
 - CLI: `cmd/levelrail-cli/apps*.go`
 - Dashboard: `web/src/routes/apps/$name/*.tsx`
+- An app is one `store.DesiredService` row: an image, a port, and everything the application controller needs to converge a running container to it.
+:::
 
 ## Scope
 
@@ -81,18 +84,22 @@ Fields managed separately (`node_id`, `project_id`, `environment_id`, `storage_t
 
 Every state-changing action funnels through these:
 
-| Action | Function | Behavior |
+| Action | What happens | Function |
 | --- | --- | --- |
-| Redeploy | `setDesiredImage` | Overwrites `Image`, clears `EnvDirty`, saves. Deploy, rollback, and promote all use this. |
-| Suspend/resume | `UpdateServiceSuspended` | Flips `Suspended`. The reconciler stops or restarts the container on its next pass. |
-| Restart | `RestartService` | Mints a fresh `restart_nonce` (folded into the container name hash). Makes "same image, new nonce" look like an image change to the cutover logic. This is the only way to force recreation without changing the image. |
-| Delete | `DeleteDesiredService` | Removes the desired-state row. The handler tears down the app's current containers in a background goroutine and deletes the `store.App` row if this was its last service. |
+| Redeploy | Points the app at the new image and clears any pending "restart needed" flag. Deploy, rollback, and promote all work this way. | `setDesiredImage` |
+| Suspend/resume | Stops or restarts the container on the reconciler's next pass. | `UpdateServiceSuspended` |
+| Restart | Your app restarts with a fresh container, same image, no config change needed. This is the only way to force recreation without changing the image. | `RestartService` |
+| Delete | Removes the app from desired state; its containers are torn down in the background. | `DeleteDesiredService` |
 
 ### Environment drift tracking
 
-`EnvDirty` tracks when env vars change without an image change. Saving new env vars sets this flag, and it stays set until a redeploy or restart lands.
+Changing env vars without redeploying leaves your running container out of sync with what's saved. Levelrail tracks this and stays flagged until a redeploy or restart actually lands.
 
 The dashboard shows this as an amber "Environment changes pending restart" banner at the top of the app's Overview page with a one-click restart action.
+
+::: details For contributors: internal names
+Restart mints a fresh `restart_nonce` (folded into the container name hash), making "same image, new nonce" look like an image change to the cutover logic. The pending-restart flag is `EnvDirty` on the desired-state row.
+:::
 
 ### Pending changes
 
@@ -119,7 +126,7 @@ POST /api/v1/apps
 ```
 with `image`, `port`.
 
-**Dashboard:** "Docker image" wizard card (`CreateAppFields.tsx`)
+**Dashboard:** "Docker image" wizard card (`CreateAppFields.tsx`). The image field is backed by a picker (`RegistryImagePicker.tsx`) that browses the built-in registry, a connected registry credential, or searches public Docker Hub (`GET /api/v1/dockerhub/search`, `GET /api/v1/dockerhub/repositories/{namespace}/{repo}/tags`) for a well-known public image, so a reference does not have to be typed by hand. The plain text field alongside it always works regardless.
 
 **CLI:**
 ```bash
@@ -512,7 +519,7 @@ Cloning is config-focused, not data-focused. For each app tagged with the source
 - Volumes and bind mounts
 - Labels, command/entrypoint, pull policy
 - Scheduled tasks (each gets a fresh run history)
-- Registry credentials, auto-rollback, exec-enabled, and log drain settings
+- Registry credentials, auto-rollback (crashloop and SLO burn), exec-enabled, and log drain settings
 - Egress allowlist policy
 - Hooks (pre-start, post-start, pre-stop, post-stop)
 - Service replicas and deployment strategy
@@ -909,6 +916,7 @@ levelrail-cli apps get <name> [flags]
 levelrail-cli apps deploy <name> --image IMAGE [--confirm] [flags]
 levelrail-cli apps rollback <name> --image IMAGE [--confirm] [flags]
 levelrail-cli apps auto-rollback enable|disable|status <name> [flags]   # opt-in automatic rollback on crashloop, see Observability
+levelrail-cli apps auto-rollback-slo-burn set|status <name> [mode] [flags]   # off/auto/dry_run/pause_for_human on an SLO burn alert, see Observability
 levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [--confirm] [flags]
 levelrail-cli apps restart <name> [flags]
 levelrail-cli apps stop <name> [flags]

@@ -97,6 +97,14 @@ type Node struct {
 	AgentArch       string
 	AgentReportedAt *time.Time
 
+	// Region is an optional, free-text operator-facing location label
+	// (migration 0252, e.g. "hetzner-fsn1", "home-lab"): display and
+	// grouping metadata for the network topology view only, never a
+	// routing or access-control input. "" means unset. Like
+	// AcceptsAppWorkloads, SaveNode never writes this; only
+	// UpdateNodeRegion does.
+	Region string
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -298,6 +306,28 @@ func (db *DB) ListNodeStatusEvents(ctx context.Context, nodeID string, limit int
 	return events, nil
 }
 
+// UpdateNodeRegion sets a node's operator-facing location label. Its own
+// narrow updater rather than a SaveNode field, matching
+// UpdateNodeWorkloads: SaveNode is insert-only and this changes on its own
+// schedule. Returns ErrNodeNotFound if no such node exists, same rigor as
+// UpdateNodeWorkloads.
+func (db *DB) UpdateNodeRegion(ctx context.Context, id, region string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE nodes SET region = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
+	`, region, id)
+	if err != nil {
+		return fmt.Errorf("store: set region for node %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set region for node %q: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrNodeNotFound
+	}
+	return nil
+}
+
 // UpdateNodeWorkloads sets a node's workload capability flags.
 // Returns ErrNodeNotFound if no such node exists, the
 // same "distinguish real failure from a no-op" rigor UpdateNodeStatus
@@ -418,7 +448,7 @@ const nodeSelectColumns = `
 	SELECT id, name, address, status, cert_fingerprint, joined_at, last_seen_at, schedulable, accepts_app_workloads, accepts_build_workloads, mesh_public_key, mesh_address,
 		cert_not_after, cert_serial, cert_renewed_at, cert_generation, cert_key_origin, prev_cert_fingerprint, prev_cert_valid_until, cert_revoked_at,
 		agent_version, agent_commit, agent_os, agent_arch, agent_reported_at,
-		created_at, updated_at`
+		region, created_at, updated_at`
 
 func scanNode(scan func(dest ...any) error) (*Node, error) {
 	var (
@@ -436,7 +466,7 @@ func scanNode(scan func(dest ...any) error) (*Node, error) {
 		&n.MeshPublicKey, &n.MeshAddress,
 		&certTimes[0], &n.CertSerial, &certTimes[1], &n.CertGeneration, &n.CertKeyOrigin, &n.PrevCertFingerprint, &certTimes[2], &certTimes[3],
 		&n.AgentVersion, &n.AgentCommit, &n.AgentOS, &n.AgentArch, &certTimes[4],
-		&createdAt, &updatedAt); err != nil {
+		&n.Region, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
 	if err := parseNodeCertTimes(&n, certTimes); err != nil {

@@ -130,6 +130,23 @@ export async function register(
   return (await res.json()) as AuthUser
 }
 
+// consumeSessionLink calls GET
+// /api/v1/auth/session-links/{token}/consume (internal/api/session_links.go's
+// handleConsumeSessionLink): a single-use, ~2-minute-TTL token minted by
+// POST /api/v1/auth/session-links, exchanged here for a real session the
+// same way login() does, no password involved. Same response shape as
+// login/register, so LoginScreen reuses setStoredUsername/goAfterLogin
+// on success.
+export async function consumeSessionLink(token: string): Promise<AuthUser> {
+  const res = await fetch(
+    `/api/v1/auth/session-links/${encodeURIComponent(token)}/consume`,
+  )
+  if (!res.ok) {
+    await throwAuthError(res, `session link consume failed: ${res.status}`)
+  }
+  return (await res.json()) as AuthUser
+}
+
 // Deliberately ignores the response status: the UI's goal state (no
 // local session) is reached either way, whether the cookie was still
 // valid (204, internal/api/auth.go's handleLogout) or had already
@@ -186,7 +203,9 @@ export function setupStatusQueryOptions() {
 // second-step UI, this hook has no navigation to do until that second
 // step succeeds too.
 // Returns to the path a 401 bounced the user from (?redirect=), else home.
-function goAfterLogin(
+// Exported for queries/passkeys.ts's own useLoginWithPasskey, which
+// reaches the same "signed in" end state through a different mutation.
+export function goAfterLogin(
   navigate: ReturnType<typeof useNavigate>,
   router: ReturnType<typeof useRouter>,
 ): void {
@@ -210,6 +229,22 @@ export function useLogin() {
         return
       }
       setStoredUsername(result.username)
+      goAfterLogin(navigate, router)
+    },
+  })
+}
+
+// useConsumeSessionLink mirrors useLogin's own onSuccess shape exactly
+// (record the username, go to wherever ?redirect= or home points), the
+// resulting session is a normal login as far as the SPA's own client
+// state is concerned.
+export function useConsumeSessionLink() {
+  const navigate = useNavigate()
+  const router = useRouter()
+  return useMutation<AuthUser, ApiError, string>({
+    mutationFn: consumeSessionLink,
+    onSuccess: (user) => {
+      setStoredUsername(user.username)
       goAfterLogin(navigate, router)
     },
   })

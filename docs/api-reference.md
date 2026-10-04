@@ -47,10 +47,15 @@ System endpoints for:
 | POST | /api/v1/system/control-plane-dr/escrow | AbilityRoot | handleControlPlaneDREscrow |
 | POST | /api/v1/system/control-plane-dr/escrow/ack | AbilityWriteSensitive | handleAckControlPlaneDREscrow |
 | GET | /api/v1/updates/preflight | AbilityRead | handleUpdatePreflight |
+| POST | /api/v1/system/containers/{name}/stop | AbilityRoot | handleStopOrphanedContainer |
+| POST | /api/v1/system/containers/{name}/remove | AbilityRoot | handleRemoveOrphanedContainer |
+| POST | /api/v1/system/containers/{name}/claim | AbilityWrite | handleClaimOrphanedContainer |
+| GET | /api/v1/updates/settings | AbilityRoot | handleGetUpdateSettings |
+| PUT | /api/v1/updates/settings | AbilityRoot | handleUpdateSettings |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 51 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 63 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -113,13 +118,24 @@ Endpoints for:
 | DELETE | /api/v1/settings/ai-assistant | AbilityRoot | handleDeleteAIAssistantSettings |
 | GET | /api/v1/settings/deploy-freeze | AbilityRead | handleGetGlobalDeployFreeze |
 | PUT | /api/v1/settings/deploy-freeze | AbilityRoot | handlePutGlobalDeployFreeze |
+| GET | /api/v1/auth/passkeys | Session | handleListPasskeys |
+| POST | /api/v1/auth/passkeys/register/begin | Session | handleBeginPasskeyRegistration |
+| POST | /api/v1/auth/passkeys/register/finish | Session | handleFinishPasskeyRegistration |
+| DELETE | /api/v1/auth/passkeys/{id} | Session | handleDeletePasskey |
+| POST | /api/v1/auth/passkey-login/begin | Public | handleBeginPasskeyLogin |
+| POST | /api/v1/auth/passkey-login/finish | Public | handleFinishPasskeyLogin |
+| GET | /api/v1/settings/push-subscriptions/vapid-public-key | Session | handleGetPushVAPIDPublicKey |
+| GET | /api/v1/settings/push-subscriptions | Session | handleListPushSubscriptions |
+| POST | /api/v1/settings/push-subscriptions | Session | handleCreatePushSubscription |
+| DELETE | /api/v1/settings/push-subscriptions/{id} | Session | handleDeletePushSubscription |
+| POST | /api/v1/auth/session-links | AbilityRoot | handleMintSessionLink |
+| GET | /api/v1/auth/session-links/{token}/consume | Public | handleConsumeSessionLink |
 
 :::
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 114 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 114 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 132 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -172,6 +188,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/moves/{id} | AbilityRead | handleGetAppVolumeMove |
 | GET | /api/v1/apps/{name}/auto-rollback | AbilityRead | handleGetAutoRollback |
 | PUT | /api/v1/apps/{name}/auto-rollback | AbilityDeploy | handleSetAutoRollback |
+| GET | /api/v1/apps/{name}/auto-rollback-slo-burn | AbilityRead | handleGetAutoRollbackSLOBurn |
+| PUT | /api/v1/apps/{name}/auto-rollback-slo-burn | AbilityDeploy | handleSetAutoRollbackSLOBurn |
 | GET | /api/v1/apps/{name}/exec-access | AbilityRead | handleGetExecAccess |
 | PUT | /api/v1/apps/{name}/exec-access | AbilityRoot | handleSetExecAccess |
 | GET | /api/v1/apps/{name}/deploys/{deployId}/steps | AbilityRead | handleDeployStepStream |
@@ -245,6 +263,22 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/schedule | AbilityRead | handleGetAppSchedule |
 | PUT | /api/v1/apps/{name}/schedule | AbilityWriteSensitive | handleSetAppSchedule |
 | GET | /api/v1/apps/{name}/schedule/history | AbilityRead | handleListAppScheduleHistory |
+| POST | /api/v1/service-templates/{id}/deploy | AbilityDeploy | handleDeployServiceTemplateNow |
+| GET | /api/v1/apps/{name}/connections | AbilityRead | handleListAppConnections |
+| POST | /api/v1/apps/{name}/connections | AbilityWrite | handleCreateAppConnection |
+| DELETE | /api/v1/apps/{name}/connections/{env_var} | AbilityWrite | handleDeleteAppConnection |
+| GET | /api/v1/apps/{name}/connectable-databases | AbilityRead | handleListConnectableDatabases |
+| POST | /api/v1/apps/{name}/validate-spec | AbilityRead | handleValidateSpec |
+| GET | /api/v1/apps/{name}/health-score | AbilityRead | handleGetAppHealthScore |
+| POST | /api/v1/apps/{name}/save-as-template | AbilityWrite | handleSaveAppAsTemplate |
+| GET | /api/v1/apps/{name}/cost-estimate | AbilityRead | handleAppCostEstimate |
+| GET | /api/v1/apps/{name}/badge | AbilityRead | handleGetBadgeSettings |
+| PUT | /api/v1/apps/{name}/badge | AbilityRoot | handleSetBadgeSettings |
+| GET | /api/v1/apps/{name}/badge.svg | Public | handlePublicAppBadge |
+| GET | /api/v1/apps/git-sources | AbilityRead | handleListGitSources |
+| GET | /api/v1/apps/{name}/streams | AbilityRead | handleListAppStreams |
+| POST | /api/v1/apps/{name}/streams | AbilityWriteSensitive | handleCreateAppStream |
+| DELETE | /api/v1/apps/{name}/streams/{id} | AbilityWriteSensitive | handleDeleteAppStream |
 
 :::
 
@@ -277,6 +311,9 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/git-source/deploy-settings | AbilityWriteSensitive | handleSetGitDeploySettings |
 | GET | /api/v1/previews | AbilityRead | handleListAllPreviews |
 | POST | /api/v1/apps/{name}/previews/{number}/approve | AbilityWriteSensitive | handleApprovePreviewEnvironment |
+| POST | /api/v1/apps/{name}/git-source/rotate-webhook-secret | AbilityWriteSensitive | handleRotateGitSourceWebhookSecret |
+| POST | /api/v1/webhooks/slack/interactions | Public | handleSlackInteraction |
+| POST | /api/v1/webhooks/discord/interactions | Public | handleDiscordInteraction |
 
 ## Telemetry
 
@@ -411,6 +448,8 @@ Endpoints for:
 | GET | /api/v1/projects/{id}/env/secrets | AbilityRead | handleListProjectEnvSecretKeys |
 | PUT | /api/v1/projects/{id}/env/secrets/{key} | AbilityWrite | handleSetProjectEnvSecret |
 | DELETE | /api/v1/projects/{id}/env/secrets/{key} | AbilityWrite | handleDeleteProjectEnvSecret |
+| GET | /api/v1/projects/{id}/environments/compare | AbilityRead | handleCompareEnvironmentEnv |
+| GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
 
 ## Nodes
 
@@ -436,15 +475,19 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/metrics | AbilityRoot | handleQueryNodeMetrics |
 | GET | /api/v1/nodes/{id}/patch-status | AbilityRoot | handleGetNodePatchStatus |
 | GET | /api/v1/nodes/{id}/events | AbilityRoot | handleListNodeEvents |
+| GET | /api/v1/nodes/{id}/capacity-forecast | AbilityRoot | handleNodeCapacityForecast |
 | POST | /api/v1/nodes/{id}/reenroll-token | AbilityRoot | handleCreateNodeReenrollToken |
 | POST | /api/v1/nodes/{id}/revoke-cert | AbilityRoot | handleRevokeNodeCert |
 | POST | /api/v1/nodes/{id}/mesh/rotate-key | AbilityRoot | handleRotateNodeMeshKey |
 | GET | /api/v1/nodes/resource-usage | AbilityRoot | handleFleetResourceUsage |
 | POST | /api/v1/nodes/provision | AbilityRoot | handleCreateNodeProvision |
+| PUT | /api/v1/nodes/{id}/region | AbilityRoot | handleSetNodeRegion |
+| POST | /api/v1/nodes/ssh-provision | AbilityRoot | handleCreateSSHNodeProvision |
+| POST | /api/v1/nodes/{id}/mesh/rejoin | AbilityRoot | handleRejoinNodeMesh |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 47 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+::: details 52 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -504,6 +547,11 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/branch-env | AbilityWriteSensitive | handleSetAppBranchEnv |
 | DELETE | /api/v1/apps/{name}/branch-env/{id} | AbilityWrite | handleDeleteAppBranchEnv |
 | PATCH | /api/v1/apps/{name}/domains | AbilityWrite | handleEditAppDomains |
+| POST | /api/v1/apps/{name}/domains/{domain}/cert/renew | AbilityRoot | handleRenewDomainCertificate |
+| GET | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRead | handleListDNSRecords |
+| POST | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleCreateDNSRecord |
+| PUT | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleUpdateDNSRecord |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleDeleteDNSRecord |
 
 :::
 
@@ -547,6 +595,8 @@ Endpoints for:
 | DELETE | /api/v1/settings/registry | AbilityRoot | handleDisableRegistry |
 | GET | /api/v1/registry/repositories | AbilityRead | handleListRegistryRepositories |
 | GET | /api/v1/registry/tags | AbilityRead | handleListRegistryTags |
+| GET | /api/v1/dockerhub/search | AbilityRead | handleDockerHubSearch |
+| GET | /api/v1/dockerhub/repositories/{namespace}/{repo}/tags | AbilityRead | handleDockerHubTags |
 
 ## Git Provider Apps
 
@@ -585,6 +635,8 @@ Endpoints for:
 | GET | /api/v1/bitbucket-app/repos | AbilityReadSensitive | handleListBitbucketAppRepos |
 | GET | /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/branches | AbilityReadSensitive | handleListBitbucketAppBranches |
 | POST | /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source | AbilityWriteSensitive | handleUseBitbucketRepoAsSource |
+| GET | /api/v1/github-app/installations | AbilityRoot | handleListGitHubAppInstallations |
+| DELETE | /api/v1/github-app/installations/{id} | AbilityRoot | handleDeleteGitHubAppInstallation |
 
 ## Database Backups / Restore / Clone Restore
 
@@ -636,6 +688,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/volumes/{volume}/restore-as-new | AbilityWriteSensitive | handleVolumeCloneRestore |
 | GET | /api/v1/apps/{name}/volumes/{volume}/clone-restores | AbilityRead | handleListVolumeCloneRestores |
 | DELETE | /api/v1/apps/{name}/volumes/{volume}/backups/{historyId} | AbilityWriteSensitive | handleDeleteVolumeBackup |
+| PUT | /api/v1/apps/{name}/volumes | AbilityWrite | handleSetAppVolumes |
 
 ## App Storage / Database Attach
 
@@ -725,7 +778,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/gitea-app/repos/{owner}/{repo}/branches | AbilityReadSensitive | handleListGiteaAppBranches |
 | POST | /api/v1/gitea-app/repos/{owner}/{repo}/use-as-source | AbilityWriteSensitive | handleUseGiteaRepoAsSource |
 | POST | /api/v1/ai/sessions | AbilityRoot | handleCreateAIChatSession |
+| GET | /api/v1/ai/sessions | AbilityRoot | handleListAIChatSessions |
 | GET | /api/v1/ai/sessions/{id} | AbilityRoot | handleGetAIChatSession |
+| DELETE | /api/v1/ai/sessions/{id} | AbilityRoot | handleDeleteAIChatSession |
 | POST | /api/v1/ai/sessions/{id}/messages | AbilityRoot | handleCreateAIChatMessage |
 | POST | /api/v1/ai/sessions/{id}/confirmations/{confirmation_id} | AbilityRoot | handleResolveAIChatConfirmation |
 | GET | /api/v1/storage/providers | AbilityRead | handleListStorageProviders |
@@ -797,6 +852,23 @@ Routes that do not fit an existing group.
 | GET | /.well-known/jwks.json | Public | handleOIDCJWKS |
 | GET | /api/v1/pipelines/oidc | AbilityRead | handleGetPipelineOIDCInfo |
 | POST | /api/v1/pipelines/oidc/rotate-key | AbilityRoot | handleRotatePipelineOIDCKey |
+| GET | /api/v1/network/topology | AbilityRead | handleGetNetworkTopology |
+| GET | /api/v1/ssh-node-provisions | AbilityRoot | handleListSSHNodeProvisions |
+| GET | /api/v1/ssh-node-provisions/{id} | AbilityRoot | handleGetSSHNodeProvision |
+| GET | /api/v1/network-shares | AbilityRead | handleListNetworkShares |
+| POST | /api/v1/network-shares | AbilityWriteSensitive | handleCreateNetworkShare |
+| GET | /api/v1/network-shares/{id} | AbilityRead | handleGetNetworkShare |
+| PUT | /api/v1/network-shares/{id} | AbilityWriteSensitive | handleUpdateNetworkShare |
+| DELETE | /api/v1/network-shares/{id} | AbilityWriteSensitive | handleDeleteNetworkShare |
+| POST | /api/v1/network-shares/{id}/test | AbilityRead | handleTestNetworkShare |
+| GET | /api/v1/firewall-rules | AbilityRead | handleListFirewallRules |
+| POST | /api/v1/firewall-rules | AbilityWriteSensitive | handleCreateFirewallRule |
+| DELETE | /api/v1/firewall-rules/{id} | AbilityWriteSensitive | handleDeleteFirewallRule |
+| GET | /api/v1/openapi.json | AbilityRead | handleOpenAPISpec |
+| GET | /api/v1/changelog | AbilityRead | handleGetChangelog |
+| GET | /api/v1/templates/custom | AbilityRead | handleListCustomTemplates |
+| DELETE | /api/v1/templates/custom/{id} | AbilityWrite | handleDeleteCustomTemplate |
+| GET | /api/v1/network/proxy | AbilityRead | handleGetNetworkProxy |
 
 ## See also
 

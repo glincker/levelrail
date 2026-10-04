@@ -28,7 +28,9 @@ type Template struct {
 }
 
 // Templates is the full catalog, served by GET /api/v1/service-templates
-// and GET /api/v1/service-templates/{id}.
+// and GET /api/v1/service-templates/{id}. contribTemplates (contrib.go)
+// are contributor-submitted YAML entries, merged in last so they're
+// indistinguishable from the hand-written Go ones to every consumer.
 var Templates = concat(
 	starterKitsTemplates,
 	automationTemplates,
@@ -55,8 +57,26 @@ var Templates = concat(
 	selfhosted1Templates,
 	selfhosted2Templates,
 	selfhosted3Templates,
+	selfhosted4Templates,
 	aiTemplates,
+	devtoolsBatchTemplates,
+	productivityBatchTemplates,
+	automationBatchTemplates,
+	catalogBatch4Templates,
+	catalogBatch5Templates,
+	contribTemplates,
 )
+
+// TemplateByID returns the Templates entry with this ID, or false if
+// none matches.
+func TemplateByID(id string) (Template, bool) {
+	for _, tpl := range Templates {
+		if tpl.ID == id {
+			return tpl, true
+		}
+	}
+	return Template{}, false
+}
 
 func concat(groups ...[]Template) []Template {
 	var n int

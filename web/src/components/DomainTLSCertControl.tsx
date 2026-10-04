@@ -1,8 +1,22 @@
 import { useState } from 'react'
-import { CertificateIcon, LockKeyIcon, ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  CertificateIcon,
+  LockKeyIcon,
+  ShieldCheckIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
@@ -34,6 +48,7 @@ export function DomainTLSCertControl({
   const [certPEM, setCertPEM] = useState('')
   const [keyPEM, setKeyPEM] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+  const [confirmingRevert, setConfirmingRevert] = useState(false)
   const setCert = useSetDomainTLSCert(appName, domain)
   const clearCert = useClearDomainTLSCert(appName, domain)
 
@@ -65,7 +80,10 @@ export function DomainTLSCertControl({
         onSuccess: () => {
           setCertPEM('')
           setKeyPEM('')
-          toast.add({ title: `Certificate uploaded for ${domain}.`, type: 'success' })
+          toast.add({
+            title: `Certificate uploaded for ${domain}.`,
+            type: 'success',
+          })
         },
         onError: (error) => {
           // error.message is the backend's own validation reason
@@ -75,7 +93,11 @@ export function DomainTLSCertControl({
           // and so on. Surfaced verbatim rather than a generic message,
           // since that's the actionable part an operator needs to fix a
           // rejected upload.
-          toast.add({ title: 'Certificate upload failed.', description: error.message, type: 'error' })
+          toast.add({
+            title: 'Certificate upload failed.',
+            description: error.message,
+            type: 'error',
+          })
         },
       },
     )
@@ -87,16 +109,17 @@ export function DomainTLSCertControl({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
           className="flex items-center gap-1.5 text-left"
         >
           {uploaded ? (
             <Badge variant="success" className="shrink-0">
-              <ShieldCheckIcon className="size-3" />
+              <ShieldCheckIcon className="size-3" aria-hidden="true" />
               BYO certificate
             </Badge>
           ) : (
             <Badge variant="muted" className="shrink-0">
-              <LockKeyIcon className="size-3" />
+              <LockKeyIcon className="size-3" aria-hidden="true" />
               Automatic TLS
             </Badge>
           )}
@@ -106,8 +129,14 @@ export function DomainTLSCertControl({
             </span>
           ) : null}
         </button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen((v) => !v)}>
-          <CertificateIcon className="size-3.5" />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <CertificateIcon className="size-3.5" aria-hidden="true" />
           {open ? 'Hide' : uploaded ? 'Manage' : 'Upload certificate'}
         </Button>
       </div>
@@ -120,7 +149,9 @@ export function DomainTLSCertControl({
           className="mt-3 space-y-3"
         >
           <Field>
-            <FieldLabel htmlFor={`tls-cert-pem-${domain}`}>Certificate (PEM)</FieldLabel>
+            <FieldLabel htmlFor={`tls-cert-pem-${domain}`}>
+              Certificate (PEM)
+            </FieldLabel>
             <Textarea
               id={`tls-cert-pem-${domain}`}
               value={certPEM}
@@ -132,7 +163,9 @@ export function DomainTLSCertControl({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor={`tls-key-pem-${domain}`}>Private key (PEM)</FieldLabel>
+            <FieldLabel htmlFor={`tls-key-pem-${domain}`}>
+              Private key (PEM)
+            </FieldLabel>
             <Textarea
               id={`tls-key-pem-${domain}`}
               value={keyPEM}
@@ -170,24 +203,70 @@ export function DomainTLSCertControl({
               {setCert.isPending ? 'Uploading...' : 'Upload'}
             </Button>
             {uploaded ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={pending}
-                onClick={() => {
-                  clearCert.mutate(undefined, {
-                    onSuccess: () => {
-                      toast.add({ title: `Reverted ${domain} to automatic TLS.`, type: 'success' })
-                    },
-                    onError: (error) => {
-                      toast.add({ title: 'Could not revert to automatic TLS.', description: error.message, type: 'error' })
-                    },
-                  })
-                }}
+              <Dialog
+                open={confirmingRevert}
+                onOpenChange={setConfirmingRevert}
               >
-                {clearCert.isPending ? 'Reverting...' : 'Revert to automatic TLS'}
-              </Button>
+                <DialogTrigger
+                  render={
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={pending}
+                    />
+                  }
+                >
+                  Revert to automatic TLS
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-1.5 text-destructive">
+                      <WarningIcon className="size-4" aria-hidden="true" />
+                      Revert {domain} to automatic TLS?
+                    </DialogTitle>
+                    <DialogDescription>
+                      The uploaded certificate is discarded immediately. If ACME
+                      or internal issuance cannot reach this domain, HTTPS will
+                      break until a new certificate is uploaded or issued.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setConfirmingRevert(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={clearCert.isPending}
+                      onClick={() => {
+                        clearCert.mutate(undefined, {
+                          onSuccess: () => {
+                            setConfirmingRevert(false)
+                            toast.add({
+                              title: `Reverted ${domain} to automatic TLS.`,
+                              type: 'success',
+                            })
+                          },
+                          onError: (error) => {
+                            toast.add({
+                              title: 'Could not revert to automatic TLS.',
+                              description: error.message,
+                              type: 'error',
+                            })
+                          },
+                        })
+                      }}
+                    >
+                      {clearCert.isPending ? 'Reverting...' : 'Revert'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             ) : null}
           </div>
         </form>

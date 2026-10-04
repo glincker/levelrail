@@ -1,0 +1,1 @@
+ALTER TABLE ingress_settings ADD COLUMN hsts_enabled INTEGER NOT NULL DEFAULT 0;

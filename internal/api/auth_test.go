@@ -183,6 +183,39 @@ func TestHandleLogin_Failures(t *testing.T) {
 	}
 }
 
+// TestHandleLogin_PasswordlessAccount_Unauthorized proves an OAuth-only
+// account (no PasswordHash) is rejected like a wrong password rather than
+// a 500, and burns a bcrypt comparison on that path too (burnBcryptCompare),
+// closing the timing oracle for which accounts have no password set.
+func TestHandleLogin_PasswordlessAccount_Unauthorized(t *testing.T) {
+	rt, db := newTestRouter(t)
+	enableOAuthProviderForTest(t, rt, "")
+	rt.oauthClientFactory = func(string, store.OAuthProviderSettings, string, string) (oauthProviderClient, error) {
+		return &fakeOAuthClient{userInfo: oauthUserInfo{ProviderUserID: "google-sub-nopass", Email: "nopass@example.com", DisplayName: "No Pass"}}, nil
+	}
+	state := startOAuthFlow(t, rt, "/api/v1/auth/oauth/google/start", nil)
+	provisionRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(provisionRec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback?state="+state+"&code=abc", nil))
+	if provisionRec.Code != http.StatusFound {
+		t.Fatalf("oauth provisioning status = %d, want %d, body = %s", provisionRec.Code, http.StatusFound, provisionRec.Body.String())
+	}
+	if user, err := db.GetUserByEmail(context.Background(), "nopass@example.com"); err != nil || user.PasswordHash != nil {
+		t.Fatalf("precondition failed: user = %+v, err = %v, want an OAuth-only user with no password", user, err)
+	}
+
+	body := `{"username":"nopass@example.com","password":"whatever"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(body)))
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusUnauthorized, rec.Body.String())
+	}
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == sessionCookieName && c.Value != "" {
+			t.Error("expected no session cookie for a passwordless-account login attempt")
+		}
+	}
+}
+
 func TestHandleLogout_RevokesSession(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

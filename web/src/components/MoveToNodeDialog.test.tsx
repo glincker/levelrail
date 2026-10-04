@@ -54,13 +54,18 @@ const nodeOne: NodeResource = {
   is_local: false,
 }
 
-function renderDialog(volumeCount: number) {
+function renderDialog(volumeCount: number, currentNodeId?: string) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   render(
     <QueryClientProvider client={queryClient}>
-      <MoveToNodeDialog kind="app" name="web" volumeCount={volumeCount} />
+      <MoveToNodeDialog
+        kind="app"
+        name="web"
+        volumeCount={volumeCount}
+        currentNodeId={currentNodeId}
+      />
     </QueryClientProvider>,
   )
 }
@@ -101,6 +106,30 @@ describe('MoveToNodeDialog', () => {
     fireEvent.click(screen.getByText('Move'))
     await screen.findByText('Move to')
     expect(screen.queryByText(/Take .* with it/)).not.toBeInTheDocument()
+  })
+
+  it('still offers "move to local" in a two-node fleet where the app is on the only other node', async () => {
+    // nodes list never includes the local control-plane node itself, so
+    // a bare otherNodes.length check undercounts by one in exactly this
+    // case: nodeOne is the only registered node and it's also the app's
+    // current placement, but "this control plane (local)" is still a
+    // real, available move target.
+    mockFetchRoutes({ 'GET /api/v1/nodes': jsonRoute([nodeOne]) })
+    renderDialog(0, 'node-1')
+    fireEvent.click(screen.getByText('Move'))
+    await screen.findByText('Move to')
+    expect(
+      screen.queryByText('No other nodes available to move to.'),
+    ).not.toBeInTheDocument()
+    // The trigger pre-selects the app's current placement (worker-1), not
+    // local, so confirm the local option by opening the listbox rather
+    // than checking the closed trigger's own displayed value.
+    fireEvent.click(document.querySelector('#move-target-node') as Element)
+    expect(
+      Array.from(
+        document.body.querySelectorAll('[data-slot="select-item"]'),
+      ).some((el) => el.textContent?.includes('This control plane (local)')),
+    ).toBe(true)
   })
 
   it('offers "take its volumes with it" when the app has named volumes', async () => {

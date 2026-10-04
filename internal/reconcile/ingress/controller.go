@@ -163,6 +163,16 @@ type ServiceStore interface {
 	ListAllDomainErrorPages(ctx context.Context) ([]store.DomainErrorPage, error)
 	// Batched application-controller readiness lookup, used by dialForService.
 	GetConditionsForControllers(ctx context.Context, controllerNames []string) (map[string][]reconcile.Condition, error)
+	// ListAllAppStreams returns every raw TCP stream
+	// (migrations/0279_app_streams.sql) across every service, read
+	// fresh every Reconcile like everything else on this interface: an
+	// operator adding or removing a stream through POST/DELETE
+	// /api/v1/apps/{name}/streams (internal/api) must take effect on
+	// this controller's very next pass.
+	ListAllAppStreams(ctx context.Context) ([]store.AppStream, error)
+	// GetStatusPageSettings returns the status page's single settings
+	// row, read fresh every Reconcile like GetRegistrySettings.
+	GetStatusPageSettings(ctx context.Context) (store.StatusPageSettings, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -243,6 +253,9 @@ const (
 	// registryRouteOwner is dashboardRouteOwner's exact counterpart for
 	// the built-in registry's route.
 	registryRouteOwner = "builtin registry"
+
+	// statusPageRouteOwner: same process as the dashboard, shares its dial.
+	statusPageRouteOwner = "public status page"
 )
 
 // Controller converges Caddy's config to match every service in
@@ -285,6 +298,14 @@ type Controller struct {
 	// "storageDir/file storage instead" (see WithCertStore).
 	certStore   ingress.CertStore
 	certStorage any
+
+	// auditRecorder, if set via WithAuditRecorder, is attached to the
+	// same SQLiteStorage certStore builds, so a certificate issuance or
+	// renewal that storage detects gets a system-actor audit_log row
+	// (see ingress.SQLiteStorage.Store). Nil means no such row is ever
+	// written, unchanged from this controller's behavior before this
+	// field existed.
+	auditRecorder ingress.AuditRecorder
 
 	// dnsTokens, if set via WithCloudflareDNSTokens, is resolved fresh
 	// every Reconcile pass whenever store.CloudflareDNSSettings.Enabled
@@ -331,6 +352,14 @@ type Controller struct {
 	lbSource      LoadBalancerSource // nil disables load balancing
 	lbRegistry    *loadbalancer.Registry
 	nodeUpstreams NodeUpstreamResolver
+
+	// localNodeID is this control plane's own node ID (see WithLocalNodeID).
+	localNodeID string
+}
+
+// isLocalNode mirrors internal/api's Router.isLocalNode: "" is always local.
+func (c *Controller) isLocalNode(nodeID string) bool {
+	return nodeID == "" || nodeID == c.localNodeID
 }
 
 // Option configures optional Controller behavior.
@@ -392,6 +421,17 @@ func WithStorageDir(dir string) Option {
 // ingress.SetActiveCertStorage exactly once, not on every Reconcile.
 func WithCertStore(certStore ingress.CertStore) Option {
 	return func(c *Controller) { c.certStore = certStore }
+}
+
+// WithAuditRecorder records a system-actor audit_log row for every
+// certificate issuance or renewal the SQLiteStorage built from
+// WithCertStore detects (ingress.SQLiteStorage.Store), the only way a
+// background Caddy-driven renewal, with no request behind it, ever shows
+// up in GET /api/v1/audit-log. Has no effect unless WithCertStore is also
+// set: there is no SQLiteStorage to attach it to otherwise. ar is
+// typically the same *store.DB already passed as certStore.
+func WithAuditRecorder(ar ingress.AuditRecorder) Option {
+	return func(c *Controller) { c.auditRecorder = ar }
 }
 
 // WithDashboardDial enables routing the control plane's own dashboard
@@ -475,6 +515,12 @@ func WithDomainTLSCertSecrets(resolver DomainTLSCertPEMResolver) Option {
 	return func(c *Controller) { c.tlsCertSecrets = resolver }
 }
 
+// WithLocalNodeID sets this control plane's own node ID, letting Reconcile
+// tell a locally-placed service apart from one on an unreachable node.
+func WithLocalNodeID(id string) Option {
+	return func(c *Controller) { c.localNodeID = id }
+}
+
 // WithPublicHost sets APP_PUBLIC_HOST for the zero-config fallback
 // domain feature (see the Controller.publicHost field's own doc
 // comment and ingress.FallbackDomain). Passing a hostname instead of an
@@ -512,6 +558,9 @@ func New(svcStore ServiceStore, runtime docker.Runtime, driver Applier, opts ...
 		// itself, so the SQLiteStorage's logger reflects a later
 		// WithLogger call regardless of Option ordering.
 		storage := ingress.NewSQLiteStorage(c.certStore, c.logger)
+		if c.auditRecorder != nil {
+			storage = storage.WithAuditRecorder(c.auditRecorder)
+		}
 		ingress.SetActiveCertStorage(storage)
 		c.certStorage = ingress.NewSQLiteStorageRef()
 	}
@@ -573,6 +622,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	registrySettings, err := c.store.GetRegistrySettings(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: get registry settings: %w", err)
+	}
+	statusPageSettings, err := c.store.GetStatusPageSettings(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: get status page settings: %w", err)
 	}
 	wafByDomain, err := c.domainWAFByDomain(ctx)
 	if err != nil {
@@ -777,11 +830,33 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		}
 	}
 
+	// Status page custom domain: dials the dashboard backend, since
+	// StatusHostHandler disambiguates by Host within this same process.
+	if statusPageSettings.Enabled && statusPageSettings.CustomDomain != "" && c.dashboardDial != "" {
+		if owner, host, dup := firstDuplicateHost(statusPageRouteOwner, []string{statusPageSettings.CustomDomain}, claimedHosts); dup {
+			c.logger.WarnContext(ctx, "ingress: status page custom domain is already routed to a service or static site, skipping the status page route",
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
+		} else {
+			claimedHosts[statusPageSettings.CustomDomain] = statusPageRouteOwner
+			routes = append(routes, ingress.ProxyRoute{
+				Hosts:       []string{statusPageSettings.CustomDomain},
+				BackendDial: c.dashboardDial,
+			})
+		}
+	}
+
 	modelRoutes, err := c.modelRoutes(ctx, claimedHosts)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list model hosts: %w", err)
 	}
 	routes = append(routes, modelRoutes...)
+
+	streamRoutes, err := c.streamRoutes(ctx, services)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list app streams: %w", err)
+	}
 
 	cfg, err := ingress.BuildRoutesConfig(ingress.RoutesOptions{
 		ServerName:        c.serverName,
@@ -801,6 +876,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		DNSProvider:       c.resolveDNSProvider(ctx),
 		TLSCertificates:   tlsCertOverrides,
 		RequestStats:      c.requestStats,
+		Streams:           streamRoutes,
 	})
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
@@ -816,12 +892,15 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	total := len(routes) + len(staticRoutes) + len(maintenanceRoutes) + len(redirectRoutes)
 	reason := fmt.Sprintf("Routed%dServices", total)
 	conditions := []reconcile.Condition{{
-		Type:    "Ready",
+		Type:    reconcile.ConditionTypeReady,
 		Status:  reconcile.ConditionTrue,
 		Reason:  reason,
 		Message: fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly, %d in maintenance mode, %d redirected)", total, len(routes), len(staticRoutes), len(maintenanceRoutes), len(redirectRoutes)),
 	}}
 	if cond := lbCondition(lbPlans); cond != nil {
+		conditions = append(conditions, *cond)
+	}
+	if cond := crossNodeIngressCondition(services, c.isLocalNode); cond != nil {
 		conditions = append(conditions, *cond)
 	}
 	return reconcile.Result{Conditions: conditions}, nil
@@ -970,6 +1049,68 @@ func (c *Controller) dialForService(ctx context.Context, svc store.DesiredServic
 	return "", false
 }
 
+// streamRoutes builds one ingress.StreamRoute per app stream
+// (store.AppStream) whose owning service currently has a running
+// container publishing the stream's container port. A stream with no
+// such backend yet (mid-deploy, never deployed, or the owning service
+// was deleted without its streams being cleaned up) is left out of this
+// pass, not a reconcile failure, mirroring dialForService's own "skip,
+// pick it up on a later pass" shape for HTTP routes.
+func (c *Controller) streamRoutes(ctx context.Context, services []store.DesiredService) ([]ingress.StreamRoute, error) {
+	streams, err := c.store.ListAllAppStreams(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(streams) == 0 {
+		return nil, nil
+	}
+	byName := make(map[string]*store.DesiredService, len(services))
+	for i := range services {
+		byName[services[i].Name] = &services[i]
+	}
+	var routes []ingress.StreamRoute
+	for _, s := range streams {
+		svc, ok := byName[s.ServiceName]
+		if !ok {
+			c.logger.WarnContext(ctx, "ingress: app stream targets a service that no longer exists, skipping",
+				slog.String("stream_id", s.ID), slog.String("service", s.ServiceName))
+			continue
+		}
+		dial, ok := c.dialForStreamPort(ctx, svc, s.ContainerPort)
+		if !ok {
+			continue
+		}
+		routes = append(routes, ingress.StreamRoute{
+			ListenAddr:  ":" + strconv.Itoa(s.HostPort),
+			BackendDial: dial,
+		})
+	}
+	return routes, nil
+}
+
+// dialForStreamPort resolves svc's currently running container's
+// published host port for containerPort specifically, unlike
+// dialForService, which only ever reads the service's main (first)
+// published port.
+func (c *Controller) dialForStreamPort(ctx context.Context, svc *store.DesiredService, containerPort int) (string, bool) {
+	target := application.ContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce)
+	state, err := c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: inspecting service container for a stream failed, skipping for this pass",
+			slog.String("service", svc.Name), slog.String("container", target), slog.String("error", err.Error()))
+		return "", false
+	}
+	if state == nil || !state.Running {
+		return "", false
+	}
+	for _, p := range state.Ports {
+		if p.ContainerPort == containerPort {
+			return "127.0.0.1:" + strconv.Itoa(p.HostPort), true
+		}
+	}
+	return "", false
+}
+
 func dialAddr(state *docker.ContainerState) (string, bool) {
 	if state == nil || !state.Running || len(state.Ports) == 0 {
 		return "", false
@@ -1016,7 +1157,7 @@ func (c *Controller) applicationReadyByService(ctx context.Context, services []s
 	ready := make(map[string]bool, len(services))
 	for _, svc := range services {
 		for _, cond := range conditions[application.ControllerName(svc.Name)] {
-			if cond.Type == "Ready" && cond.Status == reconcile.ConditionTrue {
+			if cond.Type == reconcile.ConditionTypeReady && cond.Status == reconcile.ConditionTrue {
 				ready[svc.Name] = true
 				break
 			}
@@ -1274,6 +1415,6 @@ func notReady(reason string, err error) reconcile.Result {
 		msg = err.Error()
 	}
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
 	}}}
 }

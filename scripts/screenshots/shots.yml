@@ -33,3 +33,21 @@
   width: 1280
   height: 700
   wait: 2000
+
+- output: docs/assets/screenshots/app-overview-page.png
+  url: __BASE_URL__/apps/marketing-site/overview
+  width: 1280
+  height: 900
+  wait: 2000
+
+- output: docs/assets/screenshots/load-balancer.png
+  url: __BASE_URL__/apps/marketing-site/loadbalancer
+  width: 1280
+  height: 900
+  wait: 2000
+
+- output: docs/assets/screenshots/network-topology.png
+  url: __BASE_URL__/network/
+  width: 1280
+  height: 800
+  wait: 2000

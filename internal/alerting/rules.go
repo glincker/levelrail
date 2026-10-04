@@ -50,6 +50,11 @@ const (
 
 	// KindLogArchiveStale is platform-wide: it fires when a log archive policy fails or stops succeeding.
 	KindLogArchiveStale Kind = "log_archive_stale"
+
+	// KindVersionSkew is platform-wide: it fires while the running build
+	// is behind the configured update channel's latest release
+	// (update_settings.channel, migrations/0258_update_settings.sql).
+	KindVersionSkew Kind = "version_skew"
 )
 
 // Comparator is how a threshold Rule compares the latest sample value
@@ -67,7 +72,7 @@ const (
 // NotifyKind selects the notification payload shape (notify.go).
 type NotifyKind string
 
-// The seventeen payload shapes NewNotifier knows how to build; an unknown
+// The eighteen payload shapes NewNotifier knows how to build; an unknown
 // or empty NotifyKind falls back to NotifyGeneric. NotifyEmail is the one
 // exception to "NotifyURL is a webhook URL": see emailNotifier's doc
 // comment in notify.go. NotifyPagerDuty is another: NotifyURL there
@@ -78,6 +83,9 @@ type NotifyKind string
 // its own two credentials; see parseResendCreds in notify.go.
 // NotifyOpsgenie is a fourth: it needs only an API key, packed the same
 // way against its own fixed endpoint; see parseOpsgenieCreds in notify.go.
+// NotifyWebpush is a fifth: NotifyURL is unused entirely, the destination
+// is every browser subscription this control plane holds, not something
+// a single channel row can name; see webpushNotifier in notify.go.
 const (
 	NotifyGeneric    NotifyKind = "generic"
 	NotifySlack      NotifyKind = "slack"
@@ -96,6 +104,7 @@ const (
 	NotifyOpsgenie   NotifyKind = "opsgenie"
 	NotifyWebex      NotifyKind = "webex"
 	NotifyGoogleChat NotifyKind = "googlechat"
+	NotifyWebpush    NotifyKind = "webpush"
 )
 
 // Rule is one alert rule: either a threshold check (Kind ==

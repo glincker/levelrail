@@ -71,7 +71,7 @@ func (rt *Router) toCloudflareTunnelResource(ctx context.Context, s store.Cloudf
 // conditions recorded yet, or Unknown: disabled/never configured).
 func cloudflareTunnelStatus(conditions []reconcile.Condition) (status, message string) {
 	for _, c := range conditions {
-		if c.Type != "Ready" {
+		if c.Type != reconcile.ConditionTypeReady {
 			continue
 		}
 		switch c.Status {

@@ -9,6 +9,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"log/slog"
 	"math/big"
 	"net/http"
@@ -416,5 +417,115 @@ func TestDomainTLSCertRoutes_RequireAuth(t *testing.T) {
 		{http.MethodGet, "/api/v1/apps/web/domains/app.example.com/tls-cert"},
 		{http.MethodPut, "/api/v1/apps/web/domains/app.example.com/tls-cert"},
 		{http.MethodDelete, "/api/v1/apps/web/domains/app.example.com/tls-cert"},
+	})
+}
+
+func TestHandleRenewDomainCertificate_Success(t *testing.T) {
+	rt, db := newTestRouter(t)
+	seedAppWithDomain(t, db)
+	cookie := loginTestSession(t, rt, db)
+	now := time.Now()
+
+	seedCert(t, db, "app.example.com", now.Add(-24*time.Hour), now.Add(60*24*time.Hour))
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/domains/app.example.com/cert/renew", ""))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+
+	var got renewCertificateResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.HadStoredCertificate {
+		t.Error("had_stored_certificate = false, want true: a certificate was seeded")
+	}
+
+	key := "certificates/internal/app.example.com/app.example.com.crt"
+	if _, err := db.GetCertStorageValue(context.Background(), key); !errors.Is(err, store.ErrCertStorageKeyNotFound) {
+		t.Errorf("GetCertStorageValue(%q) error = %v, want ErrCertStorageKeyNotFound after renewal", key, err)
+	}
+}
+
+func TestHandleRenewDomainCertificate_NoStoredCertificateStillAccepted(t *testing.T) {
+	rt, db := newTestRouter(t)
+	seedAppWithDomain(t, db)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/domains/app.example.com/cert/renew", ""))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+
+	var got renewCertificateResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.HadStoredCertificate {
+		t.Error("had_stored_certificate = true, want false: no certificate was ever issued")
+	}
+}
+
+func TestHandleRenewDomainCertificate_ConflictWithCustomCert(t *testing.T) {
+	s := newFakeDomainTLSCertSecrets()
+	rt, db := newTestRouterWithDomainTLSCertSecrets(t, s)
+	seedAppWithDomain(t, db)
+	cookie := loginTestSession(t, rt, db)
+
+	certPEM, keyPEM := genCertKeyPEM(t, time.Now().Add(-time.Hour), time.Now().AddDate(1, 0, 0))
+	body, err := json.Marshal(map[string]string{"cert": certPEM, "key": keyPEM})
+	if err != nil {
+		t.Fatalf("marshal body: %v", err)
+	}
+	rt.Handler().ServeHTTP(httptest.NewRecorder(), authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/domains/app.example.com/tls-cert", string(body)))
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/domains/app.example.com/cert/renew", ""))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d for a domain with a custom certificate, body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+}
+
+func TestHandleRenewDomainCertificate_DomainNotOwnedByApp(t *testing.T) {
+	rt, db := newTestRouter(t)
+	seedAppWithDomain(t, db)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/domains/other.example.com/cert/renew", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d for a domain the app does not own", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestRenewDomainCertificateRoute_PlainWriteToken_Forbidden(t *testing.T) {
+	rt, db := newTestRouter(t)
+	seedAppWithDomain(t, db)
+	ctx := context.Background()
+
+	const plaintext = "write-scoped-token-renew" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_write_renew", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/domains/app.example.com/cert/renew", nil)
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: a plain write token must not reach the certificate renew action", rec.Code, http.StatusForbidden)
+	}
+}
+
+func TestRenewDomainCertificateRoute_RequireAuth(t *testing.T) {
+	rt, db := newTestRouter(t)
+	seedAppWithDomain(t, db)
+
+	assertRoutesRequireAuth(t, rt, []routeCase{
+		{http.MethodPost, "/api/v1/apps/web/domains/app.example.com/cert/renew"},
 	})
 }

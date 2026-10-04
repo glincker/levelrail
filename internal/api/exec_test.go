@@ -96,7 +96,11 @@ func (f *fakeExecAppRuntime) EnsureVolume(context.Context, string) error { retur
 func (f *fakeExecAppRuntime) EnsureNetwork(context.Context, string) (string, error) {
 	return "", nil
 }
-func (f *fakeExecAppRuntime) RemoveNetwork(context.Context, string) error { return nil }
+func (f *fakeExecAppRuntime) RemoveNetwork(context.Context, string) error          { return nil }
+func (f *fakeExecAppRuntime) NetworkConnect(context.Context, string, string) error { return nil }
+func (f *fakeExecAppRuntime) NetworkDisconnect(context.Context, string, string, bool) error {
+	return nil
+}
 func (f *fakeExecAppRuntime) ListNetworksByPrefix(context.Context, string) ([]docker.NetworkInfo, error) {
 	return nil, nil
 }

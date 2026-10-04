@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"path"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -158,6 +159,69 @@ func certDomain(cert *x509.Certificate, key string) string {
 		return cert.Subject.CommonName
 	}
 	return path.Base(path.Dir(key))
+}
+
+// certMatchesDomain reports whether domain is cert's CommonName or one of
+// its SANs, case-insensitively.
+func certMatchesDomain(cert *x509.Certificate, domain string) bool {
+	if strings.EqualFold(cert.Subject.CommonName, domain) {
+		return true
+	}
+	for _, san := range cert.DNSNames {
+		if strings.EqualFold(san, domain) {
+			return true
+		}
+	}
+	return false
+}
+
+// CertDeleter is the narrow storage surface DeleteCertificateForDomain
+// needs beyond CertSource's two read methods: *store.DB satisfies this
+// structurally, same as CertSource.
+type CertDeleter interface {
+	DeleteCertStorageValue(ctx context.Context, key string) error
+}
+
+// DeleteCertificateForDomain removes every stored certmagic entry
+// matching domain (by CommonName or SAN), so the next reconcile pass
+// finds none and re-issues a fresh one. found is false, nil when nothing
+// matched: a safe no-op, not an error, since reconcile re-attempts
+// issuance for every configured subject regardless.
+func DeleteCertificateForDomain(ctx context.Context, source CertSource, deleter CertDeleter, domain string) (found bool, err error) {
+	domain = strings.ToLower(strings.TrimSpace(domain))
+	if domain == "" {
+		return false, fmt.Errorf("alerting: delete certificate for domain: domain is required")
+	}
+
+	keys, err := source.ListCertStorageKeys(ctx, certStorageCertsPrefix, true)
+	if err != nil {
+		return false, fmt.Errorf("alerting: delete certificate for domain %q: list cert storage keys: %w", domain, err)
+	}
+
+	dirs := map[string]bool{}
+	for _, key := range keys {
+		if path.Ext(key) != ".crt" {
+			continue
+		}
+		v, err := source.GetCertStorageValue(ctx, key)
+		if err != nil {
+			continue
+		}
+		cert, err := parseLeafCertificate(v.Value)
+		if err != nil {
+			continue
+		}
+		if certMatchesDomain(cert, domain) {
+			dirs[path.Dir(key)] = true
+		}
+	}
+
+	for dir := range dirs {
+		if err := deleter.DeleteCertStorageValue(ctx, dir); err != nil {
+			return false, fmt.Errorf("alerting: delete certificate for domain %q: delete storage dir %q: %w", domain, dir, err)
+		}
+	}
+	return len(dirs) > 0, nil
 }
 
 // CertExpiryObservationStore is the narrow store surface

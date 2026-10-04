@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/upgrade"
 )
 
@@ -67,5 +68,43 @@ func TestHandleUpdatePreflight(t *testing.T) {
 				t.Errorf("upgrade command = %q, want containing %q", got.UpgradeCommand, tc.wantCommand)
 			}
 		})
+	}
+}
+
+// TestHandleUpdatePreflight_RespectsConfiguredChannel is the regression
+// test for the bug found live: an operator on beta/edge saw
+// GET /api/v1/updates report an upgrade available while this endpoint
+// still reported "latest release could not be fetched", because it
+// always checked the stable release list regardless of the configured
+// channel.
+func TestHandleUpdatePreflight_RespectsConfiguredChannel(t *testing.T) {
+	setVersion(t, "v1.0.0")
+	rt, db := newTestRouterWithFetchLatestRelease(t, func(context.Context) (*githubRelease, error) {
+		return nil, errors.New("stable channel should not be queried when the configured channel is beta")
+	})
+	if err := db.UpdateUpdateSettings(context.Background(), store.UpdateSettings{Channel: upgrade.ChannelBeta}); err != nil {
+		t.Fatalf("UpdateUpdateSettings: %v", err)
+	}
+	rt.upgradeFetchers = upgrade.Fetchers{
+		Beta: func(context.Context) (*upgrade.Release, error) {
+			return &upgrade.Release{Tag: "v1.1.0-beta.1", URL: "https://example.test/beta", Body: "beta notes"}, nil
+		},
+	}
+
+	cookie := loginTestSession(t, rt, db)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/updates/preflight", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var got updatePreflightResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.LatestVersion == nil || *got.LatestVersion != "v1.1.0-beta.1" {
+		t.Errorf("LatestVersion = %v, want v1.1.0-beta.1", got.LatestVersion)
+	}
+	if !got.UpdateAvailable {
+		t.Error("UpdateAvailable = false, want true for a newer beta release")
 	}
 }

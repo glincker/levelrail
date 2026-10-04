@@ -31,7 +31,11 @@ func (rt *Router) Handler() http.Handler {
 	var h http.Handler = mux
 	h = experimentalGateMiddleware(h)
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
+	if !rt.hstsEnabled {
+		h = hstsDBOverrideMiddleware(rt)(h)
+	}
 	h = panicRecoveryMiddleware(rt.logger)(h)
+	h = requestLoggingMiddleware(rt.logger, rt.requestLogThresholds)(h)
 	h = requestIDMiddleware(h)
 	return h
 }
@@ -41,6 +45,10 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// on the login screen itself).
 	mux.HandleFunc("GET /api/v1/brand", rt.handleBrand)
 	mux.HandleFunc("GET /api/v1/dev-mode", rt.handleDevMode)
+	// Route metadata for the in-app API explorer (web/src/routes/settings/api-explorer.tsx):
+	// AbilityRead, same tier as system/status, since this is the API
+	// surface's own shape, not resource data.
+	mux.HandleFunc("GET /api/v1/openapi.json", rt.requireAbility(AbilityRead, rt.handleOpenAPISpec))
 
 	// System status (General settings page): configured/not-configured
 	// signals plus disk usage, AbilityRead like everything else an
@@ -52,9 +60,20 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// AbilityRead like system/status above.
 	mux.HandleFunc("GET /api/v1/system/doctor", rt.requireAbility(AbilityRead, rt.handleSystemDoctor))
 	// Every container on this node, Levelrail-managed or not (containers.go's
-	// own doc comment on why this is read-only, no stop/restart action
-	// here), AbilityRead like system/status above.
+	// own doc comment on why a Managed one stays read-only here),
+	// AbilityRead like system/status above.
 	mux.HandleFunc("GET /api/v1/system/containers", rt.requireAbility(AbilityRead, rt.handleListContainers))
+	// Orphaned containers only (containers_orphaned.go's
+	// requireOrphanedContainer re-confirms this server-side on every
+	// call, never trusting the client). Stop/remove are raw docker-level
+	// mutations fleet-wide, not scoped to one app's own desired state:
+	// AbilityRoot, the same tier system/prune and orphaned volume
+	// cleanup already sit behind. Claim creates an ordinary app through
+	// the same path POST /api/v1/apps itself uses, so it stays
+	// AbilityWrite, that route's own tier.
+	mux.HandleFunc("POST /api/v1/system/containers/{name}/stop", rt.requireAbility(AbilityRoot, rt.handleStopOrphanedContainer))
+	mux.HandleFunc("POST /api/v1/system/containers/{name}/remove", rt.requireAbility(AbilityRoot, rt.handleRemoveOrphanedContainer))
+	mux.HandleFunc("POST /api/v1/system/containers/{name}/claim", rt.requireAbility(AbilityWrite, rt.handleClaimOrphanedContainer))
 	// POST /system/prune deletes real Docker resources (stopped
 	// containers, dangling images, anonymous volumes, unused build
 	// cache) fleet-wide, not scoped to one app: AbilityRoot, the same
@@ -103,6 +122,14 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// latest published release, AbilityRead like system/status above.
 	mux.HandleFunc("GET /api/v1/updates", rt.requireAbility(AbilityRead, rt.handleGetUpdates))
 	mux.HandleFunc("GET /api/v1/updates/preflight", rt.requireAbility(AbilityRead, rt.handleUpdatePreflight))
+	// Channel/auto-update settings are AbilityRoot on both verbs: see
+	// handleGetUpdateSettings' own doc comment (updates_settings.go).
+	mux.HandleFunc("GET /api/v1/updates/settings", rt.requireAbility(AbilityRoot, rt.handleGetUpdateSettings))
+	mux.HandleFunc("PUT /api/v1/updates/settings", rt.requireAbility(AbilityRoot, rt.handleUpdateSettings))
+
+	// "What's new" dashboard panel: recent entries parsed from the
+	// repo's own CHANGELOG.md, AbilityRead like updates above.
+	mux.HandleFunc("GET /api/v1/changelog", rt.requireAbility(AbilityRead, rt.handleGetChangelog))
 
 	// Auth. Login and first-run registration are necessarily public;
 	// everything else requires an existing session.
@@ -113,6 +140,15 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/auth/password", rt.requireAuth(rt.handleChangePassword))
 	mux.HandleFunc("GET /api/v1/auth/session", rt.requireAuth(rt.handleGetSession))
 	mux.HandleFunc("POST /api/v1/auth/sessions/revoke-others", rt.requireAuth(rt.handleRevokeOtherSessions))
+
+	// Session links (session_links.go): a short-lived, single-use,
+	// URL-embeddable token for browser automation to skip manual login.
+	// Minting is root-equivalent since the resulting session inherits
+	// the minting caller's own abilities; consuming is necessarily
+	// unauthenticated, gated by possession of the token itself, same
+	// shape as reset-password below.
+	mux.HandleFunc("POST /api/v1/auth/session-links", rt.requireAbility(AbilityRoot, rt.handleMintSessionLink))
+	mux.HandleFunc("GET /api/v1/auth/session-links/{token}/consume", rt.handleConsumeSessionLink)
 
 	// Two-factor auth (twofactor.go). /2fa/verify is necessarily public
 	// (it's step two of login, before a session exists), rate-limited by
@@ -125,6 +161,26 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/2fa/disable", rt.requireAuth(rt.handleDisableTwoFactor))
 	mux.HandleFunc("POST /api/v1/auth/2fa/recovery-codes/regenerate", rt.requireAuth(rt.handleRegenerateRecoveryCodes))
 	mux.HandleFunc("POST /api/v1/auth/2fa/verify", rt.handleVerifyTwoFactor)
+
+	// Passkeys (WebAuthn, passkeys.go). Registration acts on the
+	// caller's own account, so requireAuth like the 2FA routes above.
+	// /passkey-login/... is the sign-in ceremony, necessarily public,
+	// same shape as /2fa/verify.
+	mux.HandleFunc("GET /api/v1/auth/passkeys", rt.requireAuth(rt.handleListPasskeys))
+	mux.HandleFunc("POST /api/v1/auth/passkeys/register/begin", rt.requireAuth(rt.handleBeginPasskeyRegistration))
+	mux.HandleFunc("POST /api/v1/auth/passkeys/register/finish", rt.requireAuth(rt.handleFinishPasskeyRegistration))
+	mux.HandleFunc("DELETE /api/v1/auth/passkeys/{id}", rt.requireAuth(rt.handleDeletePasskey))
+	mux.HandleFunc("POST /api/v1/auth/passkey-login/begin", rt.handleBeginPasskeyLogin)
+	mux.HandleFunc("POST /api/v1/auth/passkey-login/finish", rt.handleFinishPasskeyLogin)
+
+	// Browser push notification subscriptions (push_subscriptions.go):
+	// one admin account's registered browsers, the delivery target for
+	// the "webpush" notification-channel kind. Self-service like
+	// passkeys above, so requireAuth not requireAbility.
+	mux.HandleFunc("GET /api/v1/settings/push-subscriptions/vapid-public-key", rt.requireAuth(rt.handleGetPushVAPIDPublicKey))
+	mux.HandleFunc("GET /api/v1/settings/push-subscriptions", rt.requireAuth(rt.handleListPushSubscriptions))
+	mux.HandleFunc("POST /api/v1/settings/push-subscriptions", rt.requireAuth(rt.handleCreatePushSubscription))
+	mux.HandleFunc("DELETE /api/v1/settings/push-subscriptions/{id}", rt.requireAuth(rt.handleDeletePushSubscription))
 
 	// Multi-user: creating another local-password user (see
 	// handleRegister's own doc comment) is AbilityRoot, not merely
@@ -227,6 +283,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps", rt.requireAbility(AbilityRead, rt.handleListApps))
 	mux.HandleFunc("POST /api/v1/apps/bulk", rt.requireAbility(AbilityWrite, rt.handleBulkApps))
 	mux.HandleFunc("GET /api/v1/apps-summary", rt.requireAbility(AbilityRead, rt.handleAppsSummary))
+	mux.HandleFunc("GET /api/v1/apps/git-sources", rt.requireAbility(AbilityRead, rt.handleListGitSources))
 	mux.HandleFunc("POST /api/v1/apps", rt.requireAbility(AbilityWrite, rt.handleCreateApp))
 	// Resource-scoped (iam.go): a policy can Deny or narrowly Allow
 	// write/delete on one specific app by name, e.g. a token whose flat
@@ -263,6 +320,21 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/service-templates", rt.requireAbility(AbilityRead, rt.handleListServiceTemplates))
 	mux.HandleFunc("GET /api/v1/service-templates/{id}", rt.requireAbility(AbilityRead, rt.handleGetServiceTemplate))
 
+	// One-click template deploy (handleDeployServiceTemplateNow): not
+	// scoped to an existing app (the app doesn't exist until this
+	// request creates it), same "no resource to scope to yet" shape as
+	// POST /api/v1/git/branches and POST /api/v1/build/detect below.
+	// AbilityDeploy, matching POST /api/v1/apps/{name}/compose above,
+	// since deployComposeBody is the same create-and-deploy core.
+	mux.HandleFunc("POST /api/v1/service-templates/{id}/deploy", rt.requireAbility(AbilityDeploy, rt.handleDeployServiceTemplateNow))
+
+	// Custom templates (service_templates_custom.go): operator-defined
+	// templates captured from a running app. Deploy reuses the
+	// service-templates/{id}/deploy route above, no second deploy path.
+	mux.HandleFunc("GET /api/v1/templates/custom", rt.requireAbility(AbilityRead, rt.handleListCustomTemplates))
+	mux.HandleFunc("DELETE /api/v1/templates/custom/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteCustomTemplate))
+	mux.HandleFunc("POST /api/v1/apps/{name}/save-as-template", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSaveAppAsTemplate))
+
 	// Clone: duplicates an app's desired state under a new name.
 	// AbilityWrite, the same gate POST /api/v1/apps itself uses, since a
 	// clone is a creation shaped as "copy {name}" rather than "start
@@ -298,6 +370,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/cancel-superseded", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetCancelSuperseded))
 	mux.HandleFunc("GET /api/v1/apps/{name}/auto-rollback", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAutoRollback))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/auto-rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAutoRollback))
+	mux.HandleFunc("GET /api/v1/apps/{name}/auto-rollback-slo-burn", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAutoRollbackSLOBurn))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/auto-rollback-slo-burn", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAutoRollbackSLOBurn))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-freeze", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppDeployFreeze))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/deploy-freeze", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutAppDeployFreeze))
 
@@ -308,6 +382,15 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/pending-changes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePendingChanges))
 	mux.HandleFunc("POST /api/v1/apps/{name}/apply-pending", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleApplyPending))
 	mux.HandleFunc("PATCH /api/v1/apps/{name}/domains", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleEditAppDomains))
+
+	// Streams (app_streams.go): raw TCP port forwards, host port to one
+	// container port, proxied by Caddy's layer4 app
+	// (internal/reconcile/ingress). AbilityWriteSensitive for create/
+	// delete, the same tier as a firewall rule: a stream opens a new
+	// host port to raw TCP traffic. List is ordinary AbilityRead.
+	mux.HandleFunc("GET /api/v1/apps/{name}/streams", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppStreams))
+	mux.HandleFunc("POST /api/v1/apps/{name}/streams", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleCreateAppStream))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/streams/{id}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteAppStream))
 
 	// Restart (handleRestartApp's own doc comment): AbilityDeploy, the
 	// same boundary as the deploy trigger above, since forcing a
@@ -350,6 +433,17 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// auditable, two-step action even for an already-root token.
 	mux.HandleFunc("GET /api/v1/apps/{name}/exec-access", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetExecAccess))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/exec-access", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetExecAccess))
+
+	// Deploy status badge opt-in (app_badge.go): same GET-is-AbilityRead,
+	// PUT-is-AbilityRoot split as exec-access just above, since enabling
+	// it hands out an unauthenticated public view of this app's deploy
+	// status. GET .../badge.svg itself is registered unauthenticated on
+	// purpose (see publicRoutes in authz_matrix_test.go); it 404s on its
+	// own when the per-app flag is off, so it never needs this file's own
+	// IAM wrapper.
+	mux.HandleFunc("GET /api/v1/apps/{name}/badge", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetBadgeSettings))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/badge", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetBadgeSettings))
+	mux.HandleFunc("GET /api/v1/apps/{name}/badge.svg", rt.handlePublicAppBadge)
 
 	// Real deploy-attempt history (deploy_attempts.go): a row per
 	// trigger call across all three real trigger paths, additional to
@@ -411,6 +505,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/preflight", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePreflightApp))
 	mux.HandleFunc("POST /api/v1/preflight", rt.requireAbility(AbilityWrite, rt.handlePreflightNew))
 
+	// Live app.yaml validation (apps_validate_spec.go): read-only, same
+	// AbilityRead/POST shape as preflight above. Never saves or deploys
+	// anything, only runs the submitted body through internal/spec's own
+	// Parse-time checks for an editor's earlier, friendlier feedback.
+	mux.HandleFunc("POST /api/v1/apps/{name}/validate-spec", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleValidateSpec))
+
 	// Read-only resource right-sizing suggestion
 	// (resource_recommendation.go): synthesizes the app's historical
 	// CPU/memory usage and current limits into a deterministic
@@ -418,6 +518,13 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// sensitivity as diagnose above; never writes anything, never applied
 	// automatically.
 	mux.HandleFunc("GET /api/v1/apps/{name}/resource-recommendation", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppResourceRecommendation))
+
+	// Read-only "what this would cost elsewhere" estimate
+	// (cost_estimate.go): compares the app's declared or observed
+	// CPU/memory against illustrative reference pricing. AbilityRead,
+	// same sensitivity as resource-recommendation above; never writes
+	// anything.
+	mux.HandleFunc("GET /api/v1/apps/{name}/cost-estimate", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppCostEstimate))
 
 	// Manual build trigger (see Builder/WithBuilder above and
 	// handleTriggerBuild's own doc comment): builds an image from a git

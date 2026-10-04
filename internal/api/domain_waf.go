@@ -18,6 +18,10 @@ type DomainWAFStore interface {
 	GetDomainWAF(ctx context.Context, domain string) (store.DomainWAF, bool, error)
 	SetDomainWAF(ctx context.Context, domain string, wafEnabled bool, mode string, rateLimitRPS, rateLimitBurst int) error
 	DeleteDomainWAF(ctx context.Context, domain string) error
+	// ListDomainWAF backs GET /api/v1/domains's waf_enabled flag: one
+	// bulk read instead of a per-domain GetDomainWAF call, avoiding an
+	// N+1 query over the domain list.
+	ListDomainWAF(ctx context.Context) ([]store.DomainWAF, error)
 }
 
 // domainWAFResource is the wire shape for GET/PUT/DELETE

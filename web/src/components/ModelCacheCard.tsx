@@ -2,17 +2,12 @@ import { useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { BroomIcon, HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useIsRoot } from '../hooks/useIsRoot'
 import { formatBytes } from '../lib/modelPreflight'
 import { useModelCache } from '../queries/modelPreflight'
 import type { CacheEntry, CacheNode } from '../types/modelPreflight'
-import {
-  EmptyState,
-  InfoTip,
-  RelativeTime,
-  SkeletonList,
-  StatusPill,
-} from './kit'
+import { InfoTip, RelativeTime, SkeletonList, StatusPill } from './kit'
 import { PruneModelCacheDialog } from './PruneModelCacheDialog'
 
 const ROW_HEIGHT = 60

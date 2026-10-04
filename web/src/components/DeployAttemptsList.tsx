@@ -1,5 +1,6 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ScrollIcon,
   ArrowCounterClockwiseIcon,
@@ -13,7 +14,7 @@ import type { ReconcileCondition } from '../types/deploy'
 import type { EnvironmentResource } from '../types/environment'
 import { useApp } from '../queries/apps'
 import { isPendingApproval, useTriggerDeploy } from '../queries/deploys'
-import { useCancelDeploy, useRollbackToDeploy } from '../queries/deployControl'
+import { useRollbackToDeploy } from '../queries/deployControl'
 import { useProtectedEnvironment } from '../queries/environments'
 import { formatDeployDuration } from '../lib/deployDuration'
 import { computeDeployStages } from '../lib/deployStages'
@@ -23,6 +24,7 @@ import {
   DEPLOY_ATTEMPT_STATUS_TONE,
 } from '../lib/deployAttemptPresentation'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
+import { CancelDeployDialog } from './CancelDeployDialog'
 import { ActionMenu, InfoTip, StatusPill } from './kit'
 import { DigestChip, RolloutChip } from './DeployDigestChips'
 import { DeployPreviewThumb } from './DeployPreviewThumb'
@@ -33,7 +35,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { EmptyState } from '@/components/ui/empty-state'
-import { toast } from '@/components/ui/toast'
+import { toast, toastAction } from '@/components/ui/toast'
 
 // Scrolls to the "Trigger a deploy" card pinned above this list on the
 // same route (see routes/apps/$name.tsx's showDeployTrigger) rather than
@@ -215,9 +217,11 @@ function DeployAttemptRow({
   protectedEnv: EnvironmentResource | undefined
   ackProtected: boolean
 }) {
+  const { t } = useTranslation('common')
+  const navigate = useNavigate()
   const triggerDeploy = useTriggerDeploy(appName)
   const rollbackTo = useRollbackToDeploy(appName)
-  const cancelDeploy = useCancelDeploy(appName)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const isCancelable =
     attempt.status === 'queued' ||
     attempt.status === 'running' ||
@@ -241,12 +245,21 @@ function DeployAttemptRow({
     (protectedEnv?.protected && !ackProtected)
 
   const notifyRollback = (result: Parameters<typeof isPendingApproval>[0]) => {
+    const pending = isPendingApproval(result)
     toast.add({
-      title: isPendingApproval(result)
+      title: pending
         ? 'Rollback is waiting for approval.'
         : 'Rollback triggered.',
       description: `Redeploying ${unpinnedImage(attempt.image)}.`,
       type: 'success',
+      actionProps: pending
+        ? undefined
+        : toastAction(t('actions.viewOverview'), () => {
+            void navigate({
+              to: '/apps/$name/overview',
+              params: { name: appName },
+            })
+          }),
     })
   }
 
@@ -270,19 +283,6 @@ function DeployAttemptRow({
       { image: attempt.image, confirm: ackProtected },
       { onSuccess: notifyRollback },
     )
-  }
-
-  const handleCancel = () => {
-    cancelDeploy.mutate(attempt.id, {
-      onSuccess: () =>
-        toast.add({ title: 'Deploy canceled.', type: 'success' }),
-      onError: (error) =>
-        toast.add({
-          title: 'Could not cancel the deploy.',
-          description: error.message,
-          type: 'error',
-        }),
-    })
   }
 
   const menuItems = [
@@ -311,8 +311,9 @@ function DeployAttemptRow({
                 : 'Removes it from the queue',
             icon: <ProhibitIcon className="size-4" />,
             tone: 'danger' as const,
-            disabled: cancelDeploy.isPending,
-            onSelect: handleCancel,
+            onSelect: () => {
+              setCancelDialogOpen(true)
+            },
           },
         ]
       : []),
@@ -449,6 +450,16 @@ function DeployAttemptRow({
           />
         ) : null}
       </div>
+
+      {isCancelable ? (
+        <CancelDeployDialog
+          appName={appName}
+          deployId={attempt.id}
+          running={attempt.status === 'running'}
+          open={cancelDialogOpen}
+          onOpenChange={setCancelDialogOpen}
+        />
+      ) : null}
     </li>
   )
 }

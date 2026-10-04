@@ -16,7 +16,6 @@ export {
   type SuggestionListProps,
   type SuggestionItem,
 } from './SuggestionList'
-export { EmptyState, type EmptyStateProps } from './EmptyState'
 export { SkeletonLine, SkeletonTile, SkeletonList } from './Skeleton'
 export { Kbd, type KbdProps } from './Kbd'
 export {
@@ -27,3 +26,7 @@ export {
 export { Timeline, type TimelineProps, type TimelineItem } from './Timeline'
 export { RelativeTime, type RelativeTimeProps } from './RelativeTime'
 export { useReducedMotion } from './useReducedMotion'
+export {
+  WizardStepFooter,
+  type WizardStepFooterProps,
+} from './WizardStepFooter'

@@ -61,6 +61,7 @@ export function DomainStep({ onContinue, onSkip, pending }: StepProps) {
         acme_enabled: true,
         acme_email: emailValue.trim(),
         acme_directory_url: settings?.acme_directory_url,
+        hsts_enabled: settings?.hsts_enabled ?? false,
       },
       {
         onSuccess: () => {

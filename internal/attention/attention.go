@@ -38,12 +38,13 @@ type Item struct {
 // Input is everything Build reads; any field may be zero when its
 // endpoint was unavailable.
 type Input struct {
-	Apps   []apiclient.AppStatusEntry
-	Nodes  []apiclient.NodeResource
-	Certs  []apiclient.CertificateResource
-	Doctor apiclient.SystemDoctorResource
-	Failed []apiclient.FailedDeployResource
-	Status apiclient.SystemStatusResource
+	Apps    []apiclient.AppStatusEntry
+	Nodes   []apiclient.NodeResource
+	Certs   []apiclient.CertificateResource
+	Doctor  apiclient.SystemDoctorResource
+	Failed  []apiclient.FailedDeployResource
+	Status  apiclient.SystemStatusResource
+	Updates apiclient.UpdatesResource
 }
 
 func diskItem(s apiclient.SystemStatusResource) (Item, bool) {
@@ -137,6 +138,13 @@ func Build(in Input) []Item {
 			items = append(items, Item{Warning, "doctor", c.Name, c.Message, false})
 		}
 	}
+	if in.Updates.UpdateAvailable {
+		latest := "a newer release"
+		if in.Updates.LatestVersion != nil {
+			latest = *in.Updates.LatestVersion
+		}
+		items = append(items, Item{Warning, "update", "control plane", latest + " is available (running " + in.Updates.CurrentVersion + ")", false})
+	}
 	sort.SliceStable(items, func(i, j int) bool {
 		return items[i].Severity == Critical && items[j].Severity != Critical
 	})
@@ -165,7 +173,8 @@ func Collect(ctx context.Context, client *apiclient.Client) ([]Item, error) {
 	}
 	failed, _ := client.ListFailedDeploys(ctx, "24h")
 	status, _ := client.GetSystemStatus(ctx)
-	items := Build(Input{Apps: apps, Nodes: nodes, Certs: certs, Doctor: doctor, Failed: failed, Status: status})
+	updates, _ := client.GetUpdates(ctx)
+	items := Build(Input{Apps: apps, Nodes: nodes, Certs: certs, Doctor: doctor, Failed: failed, Status: status, Updates: updates})
 	markFixable(ctx, client, items)
 	return items, nil
 }

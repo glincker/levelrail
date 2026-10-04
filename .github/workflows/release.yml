@@ -1,9 +1,9 @@
 name: Release
 
 on:
+  # Tag push only: fires once per real release, not once per PR merge.
+  # Dispatch manually against main for an ad hoc :edge build.
   push:
-    branches:
-      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -47,7 +47,7 @@ jobs:
 
       - name: Build
         working-directory: web
-        run: npm run build
+        run: npm run build && test -s dist/index.html
 
       - name: Upload dist
         uses: actions/upload-artifact@v7
@@ -207,11 +207,9 @@ jobs:
       tags: ${{ steps.resolve.outputs.tags }}
       primary_tag: ${{ steps.resolve.outputs.primary_tag }}
     steps:
-      # One place decides which tags a build gets, shared by both
-      # merge-image-* jobs below: a main push only ever gets :edge, a
-      # prerelease tag (a hyphen in the SemVer sense, e.g.
-      # v1.2.3-beta.1) gets :beta, and a stable tag gets its own
-      # :vX.Y.Z (unchanged), plus :vX.Y and :latest.
+      # Shared by both merge-image-* jobs: dispatching against main gets
+      # :edge, a prerelease tag gets :beta, a stable tag gets :vX.Y.Z,
+      # :vX.Y, and :latest.
       - name: Resolve
         id: resolve
         env:
@@ -230,6 +228,7 @@ jobs:
 
   build-image-levelrail:
     name: Build levelrail image (${{ matrix.platform }})
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     permissions:
@@ -299,6 +298,7 @@ jobs:
     name: Merge and tag levelrail image
     runs-on: ubuntu-latest
     needs: [build-image-levelrail, image-channel]
+    if: needs.build-image-levelrail.result == 'success'
     timeout-minutes: 10
     permissions:
       contents: read
@@ -329,6 +329,7 @@ jobs:
           for t in ${{ needs.image-channel.outputs.tags }}; do
             tag_args+=(-t "ghcr.io/glincker/levelrail:$t")
           done
+          # shellcheck disable=SC2046 # deliberate: each digest file becomes its own argument
           docker buildx imagetools create "${tag_args[@]}" \
             $(printf 'ghcr.io/glincker/levelrail@sha256:%s ' *)
 
@@ -349,6 +350,7 @@ jobs:
 
   build-image-levelrail-agent:
     name: Build levelrail-agent image (${{ matrix.platform }})
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     permissions:
@@ -411,6 +413,7 @@ jobs:
     name: Merge and tag levelrail-agent image
     runs-on: ubuntu-latest
     needs: [build-image-levelrail-agent, image-channel]
+    if: needs.build-image-levelrail-agent.result == 'success'
     timeout-minutes: 10
     permissions:
       contents: read
@@ -441,6 +444,7 @@ jobs:
           for t in ${{ needs.image-channel.outputs.tags }}; do
             tag_args+=(-t "ghcr.io/glincker/levelrail-agent:$t")
           done
+          # shellcheck disable=SC2046 # deliberate: each digest file becomes its own argument
           docker buildx imagetools create "${tag_args[@]}" \
             $(printf 'ghcr.io/glincker/levelrail-agent@sha256:%s ' *)
 

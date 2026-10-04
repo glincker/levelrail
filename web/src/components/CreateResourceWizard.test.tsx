@@ -10,7 +10,23 @@ import { CreateResourceWizard } from './CreateResourceWizard'
 // step routing (which option opens which form, and whether
 // `initialSelected` skips step 1 entirely).
 vi.mock('./BrowseTemplatesFields', () => ({
-  BrowseTemplatesFields: () => <div>browse-templates-fields-stub</div>,
+  BrowseTemplatesFields: ({
+    onViewChange,
+  }: {
+    onViewChange?: (view: 'grid' | 'detail') => void
+  }) => (
+    <div>
+      browse-templates-fields-stub
+      <button
+        type="button"
+        onClick={() => {
+          onViewChange?.('detail')
+        }}
+      >
+        stub-pick-template
+      </button>
+    </div>
+  ),
 }))
 vi.mock('./CreateAppFields', () => ({
   CreateAppFields: () => <div>create-app-fields-stub</div>,
@@ -96,6 +112,28 @@ describe('CreateResourceWizard', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('browse-templates-fields-stub')).toBeInTheDocument()
     expect(screen.queryByText('Pick a starting point.')).not.toBeInTheDocument()
+  })
+
+  it('widens for the template catalog grid, narrows once a template is picked', async () => {
+    const user = userEvent.setup()
+    render(
+      <CreateResourceWizard
+        scope="applications"
+        initialSelected="browse-templates"
+        trigger={<Button>Start from a template</Button>}
+      />,
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Start from a template' }),
+    )
+    // Dialog content renders into a portal appended to document.body, not
+    // under the local render container, hence document.querySelector here.
+    expect(document.querySelector('.max-w-6xl')).toBeInTheDocument()
+    expect(document.querySelector('.max-w-2xl')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'stub-pick-template' }))
+    expect(document.querySelector('.max-w-2xl')).toBeInTheDocument()
+    expect(document.querySelector('.max-w-6xl')).not.toBeInTheDocument()
   })
 
   it('re-opens back to the template step after closing, not step 1', async () => {

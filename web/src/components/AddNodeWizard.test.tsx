@@ -16,6 +16,7 @@ import type {
   NodeProviderSizeResource,
   NodeProvisionResource,
 } from '../types/nodeProvision'
+import type { SSHNodeProvisionResource } from '../types/nodeSSHProvision'
 
 const navigateMock = vi.fn()
 vi.mock('@tanstack/react-router', async (importOriginal) => {
@@ -110,6 +111,17 @@ vi.mock('../queries/nodeProvision', () => ({
   useNodeProvision: () => ({ data: undefined }),
 }))
 
+const createSSHNodeProvisionMutate = vi.fn()
+let sshProvisionData: SSHNodeProvisionResource | undefined
+vi.mock('../queries/nodeSSHProvision', () => ({
+  useCreateSSHNodeProvision: () => ({
+    mutate: createSSHNodeProvisionMutate,
+    isPending: false,
+    isError: false,
+  }),
+  useSSHNodeProvision: () => ({ data: sshProvisionData }),
+}))
+
 function selectOptionByText(text: string): Element {
   const items = Array.from(
     document.body.querySelectorAll('[data-slot="select-item"]'),
@@ -136,6 +148,8 @@ describe('AddNodeWizard', () => {
   afterEach(() => {
     cleanup()
     createNodeProvisionMutate.mockReset()
+    createSSHNodeProvisionMutate.mockReset()
+    sshProvisionData = undefined
     navigateMock.mockReset()
   })
 
@@ -290,5 +304,89 @@ describe('AddNodeWizard', () => {
       expect.objectContaining({ provider: 'aws', allow_ssh_inbound: true }),
       expect.anything(),
     )
+  })
+
+  it('walks the SSH path through to creating a provision', () => {
+    const created: SSHNodeProvisionResource = {
+      id: 'sshp_1',
+      name: 'home-server',
+      role: 'general',
+      status: 'connecting',
+      created_at: '2026-09-27T00:00:00Z',
+      updated_at: '2026-09-27T00:00:00Z',
+    }
+    createSSHNodeProvisionMutate.mockImplementation(
+      (
+        _input: unknown,
+        opts: { onSuccess: (r: SSHNodeProvisionResource) => void },
+      ) => {
+        sshProvisionData = created
+        opts.onSuccess(created)
+      },
+    )
+
+    render(<AddNodeWizard />)
+    fireEvent.click(screen.getByRole('button', { name: /Add node/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Connect over SSH/ }))
+
+    expect(screen.getByText('Connect over SSH')).toBeVisible()
+    fireEvent.change(screen.getByLabelText('Host'), {
+      target: { value: '192.0.2.10' },
+    })
+    fireEvent.change(screen.getByLabelText('Username'), {
+      target: { value: 'root' },
+    })
+    fireEvent.change(screen.getByLabelText('Private key'), {
+      target: { value: 'fake-key-material-for-test' },
+    })
+    fireEvent.change(screen.getByLabelText('Name'), {
+      target: { value: 'home-server' },
+    })
+
+    const connectButton = screen.getByRole('button', { name: 'Connect' })
+    expect(connectButton).toBeEnabled()
+    fireEvent.click(connectButton)
+
+    expect(createSSHNodeProvisionMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        host: '192.0.2.10',
+        username: 'root',
+        name: 'home-server',
+        role: 'general',
+        auth: {
+          type: 'key',
+          private_key: 'fake-key-material-for-test',
+        },
+      }),
+      expect.anything(),
+    )
+    expect(screen.getByText('Connecting over SSH')).toBeVisible()
+  })
+
+  it('requires a name and a credential before the SSH Connect button enables', () => {
+    render(<AddNodeWizard />)
+    fireEvent.click(screen.getByRole('button', { name: /Add node/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Connect over SSH/ }))
+
+    fireEvent.change(screen.getByLabelText('Host'), {
+      target: { value: '192.0.2.10' },
+    })
+    fireEvent.change(screen.getByLabelText('Username'), {
+      target: { value: 'root' },
+    })
+    expect(screen.getByRole('button', { name: 'Connect' })).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('Name'), {
+      target: { value: 'Not-Valid-Name' },
+    })
+    fireEvent.change(screen.getByLabelText('Private key'), {
+      target: { value: 'key-content' },
+    })
+    expect(screen.getByRole('button', { name: 'Connect' })).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('Name'), {
+      target: { value: 'valid-name' },
+    })
+    expect(screen.getByRole('button', { name: 'Connect' })).toBeEnabled()
   })
 })

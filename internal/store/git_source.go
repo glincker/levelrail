@@ -183,6 +183,40 @@ func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource,
 	return g, nil
 }
 
+// GitSourceSummary is the trimmed-down row ListGitSources returns: just
+// enough for a caller to map a repo back to the app deploying it, without
+// paying for every JSON column GetGitSource scans.
+type GitSourceSummary struct {
+	ServiceName string
+	RepoURL     string
+	Branch      string
+}
+
+// ListGitSources returns every connected git source's service name, repo
+// URL and branch, for callers that need to map a repo back to the app
+// deploying it (e.g. a "this repo is already in use" check) without
+// fetching each one's full GitSource individually.
+func (db *DB) ListGitSources(ctx context.Context) ([]GitSourceSummary, error) {
+	rows, err := db.QueryContext(ctx, `SELECT service_name, repo_url, branch FROM service_git_sources`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list git sources: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []GitSourceSummary
+	for rows.Next() {
+		var s GitSourceSummary
+		if err := rows.Scan(&s.ServiceName, &s.RepoURL, &s.Branch); err != nil {
+			return nil, fmt.Errorf("store: list git sources: scan: %w", err)
+		}
+		out = append(out, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: list git sources: %w", err)
+	}
+	return out, nil
+}
+
 // marshalGitSourceAdditionalServices serializes m for storage, defaulting
 // a nil/empty map to "{}" so the column never holds SQL NULL or an empty
 // string, either of which would fail scanGitSource's own json.Unmarshal.

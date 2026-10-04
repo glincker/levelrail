@@ -13,44 +13,90 @@ Apache 2.0 licensed. Source at https://github.com/glincker/levelrail.
 
 ## Tutorials
 
-- [Getting started](https://levelrail.glinr.com/getting-started): install Levelrail and deploy your first app end to end.
+- [Getting started](https://levelrail.com/getting-started): install Levelrail and deploy your first app end to end.
 
 ## How-to guides
 
-- [Installing](https://levelrail.glinr.com/installing): install the control plane and node agent on a Linux server.
-- [Troubleshooting](https://levelrail.glinr.com/troubleshooting): fixes for the most common deploy, login, and node problems.
-- [Docker](https://levelrail.glinr.com/docker): how Levelrail talks to the Docker Engine API directly.
-- [Domains and ingress](https://levelrail.glinr.com/domains-and-ingress): custom domains, TLS, maintenance mode, redirects, WAF, and the embedded Caddy ingress.
-- [ACME verification runbook](https://levelrail.glinr.com/acme-verification-runbook): diagnose and fix failed TLS certificate issuance.
-- [Feature flags](https://levelrail.glinr.com/feature-flags): enable half-built or experimental features safely.
-- [Master key rotation](https://levelrail.glinr.com/master-key-rotation): rotate the envelope-encryption master key used for secrets.
-- [Migrating from Coolify, Dokploy, or CapRover](https://levelrail.glinr.com/migrating-from-coolify-dokploy-and-caprover): move an existing deployment to Levelrail.
-- [Deploying from GitHub Actions](https://levelrail.glinr.com/github-actions): trigger Levelrail deploys from CI.
-- [Deploying apps](https://levelrail.glinr.com/deploying-apps): app.yaml, build strategies, rolling/blue-green/recreate deploys, and rollback.
-- [Managing databases](https://levelrail.glinr.com/managing-databases): managed Postgres, Redis, MySQL, MongoDB, and other engines.
-- [Observability](https://levelrail.glinr.com/observability): metrics, log search, alerting, and deploy markers.
-- [Multi-node](https://levelrail.glinr.com/multi-node): add servers, the WireGuard mesh, and node placement.
-- [Projects and organizations](https://levelrail.glinr.com/projects-and-organizations): grouping apps and databases, environments.
-- [Identity and access](https://levelrail.glinr.com/identity-and-access): users, IAM policies, API tokens, and audit logs.
-- [Git integrations](https://levelrail.glinr.com/git-integrations): GitHub/GitLab/Bitbucket app installs and webhook deploys.
-- [Backups and storage](https://levelrail.glinr.com/backups-and-storage): scheduled backups, restore, and S3-compatible storage targets.
-- [Templates and registry](https://levelrail.glinr.com/templates-and-registry): the curated one-click service catalog.
-- [Screenshots](https://levelrail.glinr.com/screenshots): a visual tour of the dashboard.
+- [Installing](https://levelrail.com/installing): install the control plane and node agent on a Linux server.
+- [Troubleshooting](https://levelrail.com/troubleshooting): fixes for the most common deploy, login, and node problems.
+- [Importing apps](https://levelrail.com/importing-apps): import a repo URL, docker run command, image, compose file, or Dockerfile with a deployment plan preview.
+- [Deploying apps](https://levelrail.com/deploying-apps): app.yaml, build strategies, rolling/blue-green/recreate deploys, and rollback.
+- [Deploy safety](https://levelrail.com/deploy-safety): digest-truthful deploys, stale-deploy guards, freeze windows, and the post-cutover hold on the previous release.
+- [Deploy failures](https://levelrail.com/deploy-failures): the structured failure object every failed or blocked deploy carries, and what each code means.
+- [Scheduled deploys](https://levelrail.com/scheduled-deploys): redeploy the latest commit on a branch on a recurring cron schedule.
+- [Deployments page](https://levelrail.com/deployments-page): the cross-app live deploy list, with filters, a details drawer, and redeploy/rollback actions.
+- [Deploy previews](https://levelrail.com/deploy-previews): thumbnail generation for each deploy, from free page metadata to a real browser screenshot.
+- [Screenshots](https://levelrail.com/screenshots): a visual tour of the dashboard.
+- [Docker](https://levelrail.com/docker): how Levelrail talks to the Docker Engine API directly.
+- [Command palette](https://levelrail.com/command-palette): keyboard-first navigation and quick app actions in the dashboard.
+- [Domains and ingress](https://levelrail.com/domains-and-ingress): custom domains, TLS, maintenance mode, redirects, WAF, and the embedded Caddy ingress.
+- [Load balancing](https://levelrail.com/load-balancing): balance traffic across an app's replicas with health checks, retries, and sticky sessions.
+- [ACME verification runbook](https://levelrail.com/acme-verification-runbook): diagnose and fix failed TLS certificate issuance.
+- [Multi-node](https://levelrail.com/multi-node): add servers, the WireGuard mesh, and node placement.
+- [Multi-node quickstart](https://levelrail.com/multi-node-quickstart): the short path to a second server and today's known multi-node gaps.
+- [Node provisioning](https://levelrail.com/node-provisioning): automate creating a server at a cloud provider and enrolling it as a node.
+- [Multi-cloud provisioning quickstart](https://levelrail.com/multi-cloud-provisioning): pick a cloud provider and add a provisioned node in a few commands.
+- [Network topology](https://levelrail.com/network-topology): the whole-mesh view of nodes, apps, databases, and how they connect.
+- [Build node routing](https://levelrail.com/build-node-routing): which node a deploy's build runs on, and how to dedicate build-only nodes.
+- [Managing databases](https://levelrail.com/managing-databases): managed Postgres, Redis, MySQL, MongoDB, and other engines.
+- [Connecting apps to databases](https://levelrail.com/connecting-apps-to-databases): connect an app to one or more managed databases and read its reachability badges.
+- [Backups and storage](https://levelrail.com/backups-and-storage): backup targets, registry credentials, and app volume and database backups.
+- [Object storage](https://levelrail.com/object-storage): connect an S3-compatible bucket for log archives and backups.
+- [Control plane backup](https://levelrail.com/control-plane-backup): back up and restore the control plane's own database.
+- [Disaster recovery](https://levelrail.com/disaster-recovery): encrypted off-box backups, master key escrow, and scheduled restore drills.
+- [Deploying from GitHub Actions](https://levelrail.com/github-actions): trigger Levelrail deploys from CI.
+- [Pipelines](https://levelrail.com/pipelines): define CI/CD pipelines as YAML with triggers, jobs, matrix builds, and approvals.
+- [Pipelines: OIDC federation](https://levelrail.com/pipelines-oidc): mint short-lived OIDC tokens for pipeline jobs instead of long-lived cloud credentials.
+- [Platform as code](https://levelrail.com/platform-as-code): describe projects, environments, apps, domains, and databases as YAML and apply the plan.
+- [Git integrations](https://levelrail.com/git-integrations): GitHub/GitLab/Bitbucket/Gitea app installs, webhook deploys, and preview environments.
+- [Feature flags](https://levelrail.com/feature-flags): toggle app behavior at runtime without a redeploy.
+- [Master key rotation](https://levelrail.com/master-key-rotation): rotate the envelope-encryption master key used for secrets.
+- [Identity and access](https://levelrail.com/identity-and-access): users, roles, IAM policies, API tokens, and audit logs.
+- [Projects and organizations](https://levelrail.com/projects-and-organizations): grouping apps and databases into projects, organizations, and environments.
+- [Supply chain visibility](https://levelrail.com/supply-chain): a software bill of materials, optional vulnerability scanning, and a release gate.
+- [Managing apps at scale](https://levelrail.com/managing-apps-at-scale): filter, tag, bulk-act on, clone, and promote apps when you run dozens of them.
+- [Tags: organizing apps](https://levelrail.com/tags): label and organize apps with arbitrary tags for filtering and grouping.
+- [Resilience](https://levelrail.com/resilience): what actually survives a control plane crash, measured against a real SIGKILL.
+- [Resilience, in short](https://levelrail.com/resilience-summary): a one-paragraph summary of the resilience page's findings.
+- [Observability](https://levelrail.com/observability): metrics, log search, alerting, and deploy markers.
+- [Public status page](https://levelrail.com/status-page): an opt-in public status page with uptime bars, incidents, and an RSS feed.
+- [AI models](https://levelrail.com/ai-models): run Ollama, vLLM, or llama.cpp models on GPU nodes as a first-class resource.
+- [AI assistant integration: levelrail-mcp](https://levelrail.com/ai-assistant): run the MCP server over stdio or the network for an AI assistant, and scope its API token.
+- [Working with AI agents](https://levelrail.com/agents): connect an AI coding agent to your instance and scope its token safely.
+- [Integrations](https://levelrail.com/integrations): attach curated third-party tools like PostHog, Sentry, and Datadog to an app.
+- [Templates and registry](https://levelrail.com/templates-and-registry): the curated one-click service catalog, searchable by name or category.
+- [Starter kit templates](https://levelrail.com/templates): curated starter-kit templates for real multi-service Compose patterns.
+- [Migrating from Coolify, Dokploy, or CapRover](https://levelrail.com/migrating-from-coolify-dokploy-and-caprover): move an existing deployment to Levelrail.
+- [Migrating from Vercel](https://levelrail.com/migrating-from-vercel): a runbook for moving a Vercel-hosted Next.js app to Levelrail.
 
 ## Reference
 
-- [App spec reference](https://levelrail.glinr.com/app-spec-reference): the full app.yaml schema.
-- [Feature catalog](https://levelrail.glinr.com/feature-catalog): every shipped feature, one line each.
-- [CLI reference](https://levelrail.glinr.com/cli-reference): every `levelrail-cli` command and flag.
-- [API reference](https://levelrail.glinr.com/api-reference): the HTTP API the dashboard, CLI, and MCP server all run on.
+- [App spec reference](https://levelrail.com/app-spec-reference): the full app.yaml schema.
+- [Feature catalog](https://levelrail.com/feature-catalog): every shipped dashboard route, API endpoint, and CLI command, one line each.
+- [CLI reference](https://levelrail.com/cli-reference): every `levelrail-cli` command and flag.
+- [API reference](https://levelrail.com/api-reference): the HTTP API the dashboard, CLI, and MCP server all run on.
+- [MCP tool surface](https://levelrail.com/mcp-tool-surface): estimated model context cost of the MCP tool list, by toolset.
+- [Agent tooling audit](https://levelrail.com/agent-tooling-audit): size, overlap, and token budget audit of the levelrail-mcp tool surface.
 
 ## Explanation
 
-- [Architecture](https://levelrail.glinr.com/architecture): the reconciler pattern, agent transport, and why each major dependency was chosen.
-- [Security overview](https://levelrail.glinr.com/security): secrets, sessions, TLS, and access control, with links to the detailed page for each.
-- [Comparison](https://levelrail.glinr.com/comparison): how Levelrail differs from Coolify, Dokploy, CapRover, and Dokku.
+- [Architecture](https://levelrail.com/architecture): the reconciler pattern, agent transport, and why each major dependency was chosen.
+- [Security overview](https://levelrail.com/security): secrets, sessions, TLS, and access control, with links to the detailed page for each.
+- [Threat model](https://levelrail.com/threat-model): trust boundaries, assets, attackers, and today's mitigations and known gaps.
+- [Security alert verdicts](https://levelrail.com/security-alert-verdicts): verdict, evidence, and dismissal command for each open code scanning alert.
+- [Comparison](https://levelrail.com/comparison): how Levelrail differs from Coolify, Dokploy, CapRover, Dokku, and Kamal.
 
 ## Optional
 
-- [Roadmap](https://levelrail.glinr.com/roadmap): phased build plan and current status.
-- [Git provider integrations design proposal](https://levelrail.glinr.com/design/git-provider-integrations): a design document, not yet shipped behavior.
+- [Roadmap](https://levelrail.com/roadmap): phased build plan and current status.
+- [Feature status](https://levelrail.com/feature-status): per-feature maturity labels with the evidence behind each one.
+- [Experimental features](https://levelrail.com/experimental-features): features hidden at launch and the switch that turns them on.
+- [Performance](https://levelrail.com/performance): measured idle footprint of the control plane at 0, 100, and 500 apps.
+- [CI](https://levelrail.com/ci): how pull request checks are chosen and which ones branch protection relies on.
+- [Changelog](https://levelrail.com/changelog/): every Levelrail release with highlights, fixes, and upgrade notes.
+- [VPS smoke test](https://levelrail.com/vps-smoke): checks a real install end to end on a VPS you already have.
+- [Git provider integrations design proposal](https://levelrail.com/design/git-provider-integrations): a design document, not yet shipped behavior.
+
+The full text of every page above (except Changelog, which changes too
+often to be worth inlining) is concatenated at
+https://levelrail.com/llms-full.txt.

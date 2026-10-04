@@ -5,7 +5,11 @@ import {
   useVaultSettings,
 } from '../../queries/vault'
 import { VaultSettingsCard } from '../../components/VaultSettingsCard'
-import { PageSpinner } from '../../components/ui/page-spinner'
+import { PageHeader } from '../../components/shell/PageHeader'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '../../components/settings/SettingsSkeletons'
 
 // Instance-level, not scoped to one app: lives under routes/settings/
 // next to cloudflare-tunnel.tsx and registry.tsx, the same reasoning
@@ -19,8 +23,17 @@ export const Route = createFileRoute('/settings/vault')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(vaultSettingsQueryOptions()),
   component: VaultSettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: VaultSettingsSkeleton,
 })
+
+function VaultSettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton icon />
+      <SettingsCardSkeleton rows={3} />
+    </div>
+  )
+}
 
 function VaultSettingsPage() {
   const { data: settings } = useVaultSettings()
@@ -31,12 +44,10 @@ function VaultSettingsPage() {
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <VaultIcon className="size-4" />
         </div>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Vault</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Resolve app secrets live from an external HashiCorp Vault instance.
-          </p>
-        </div>
+        <PageHeader
+          title="Vault"
+          description="Resolve app secrets live from an external HashiCorp Vault instance."
+        />
       </div>
 
       <VaultSettingsCard settings={settings} />

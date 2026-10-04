@@ -85,6 +85,7 @@ const fakeGitHubRepo = {
   private: false,
   default_branch: 'main',
   clone_url: 'https://github.com/acme/app.git',
+  account_type: 'organization' as const,
 }
 
 const fakeGiteaRepo = {
@@ -178,6 +179,34 @@ async function pickOption(
   }
 }
 
+// pickComboboxOption is pickOption's twin for the branch Combobox
+// specifically: a repo card's own default-branch chip (GitRepoCard, e.g.
+// "main") can share text with the real branch option once the combobox
+// opens, so getByText alone is ambiguous there. Scoping to role="option"
+// (the Combobox's own option buttons, not the chip's plain span) resolves
+// it without needing distinct fixture branch names.
+async function pickComboboxOption(
+  container: HTMLElement,
+  triggerId: string,
+  optionText: string,
+  settled: () => void,
+) {
+  const trigger = container.querySelector(`#${triggerId}`)
+  if (!trigger) throw new Error(`no trigger with id ${triggerId}`)
+  const maxAttempts = 5
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    fireEvent.click(trigger)
+    try {
+      fireEvent.click(screen.getByRole('option', { name: optionText }))
+      settled()
+      return
+    } catch (err) {
+      if (attempt === maxAttempts) throw err
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    }
+  }
+}
+
 describe('GitRepoSourcePicker', () => {
   let fetchMock: ReturnType<typeof vi.fn>
   let providers: GitProviderStatus[]
@@ -206,23 +235,41 @@ describe('GitRepoSourcePicker', () => {
     document.body.style.pointerEvents = ''
   })
 
-  it('shows a Connect link for every provider when none are connected, and no repo pickers', async () => {
+  it("defaults to the GitHub tab with a Connect prompt when no provider is connected, and switching tabs shows each provider's own Connect prompt", async () => {
     renderPicker()
 
-    expect(await screen.findAllByText('Connect')).toHaveLength(4)
+    // GitHub is the first tab, so it's the fallback active tab when
+    // nothing is connected: its own Connect prompt shows by default, the
+    // other three providers' prompts aren't in the active panel yet.
+    expect(
+      await screen.findByText('Connect GitHub to pick a repository.'),
+    ).toBeInTheDocument()
     expect(screen.queryByText('Repository')).not.toBeInTheDocument()
     expect(screen.queryByText('Project')).not.toBeInTheDocument()
-
-    const links = screen.getAllByText('Connect')
-    const hrefs = links.map((link) => link.getAttribute('href'))
-    expect(hrefs).toEqual(
-      expect.arrayContaining([
-        '/settings/github-app',
-        '/settings/gitlab-app',
-        '/settings/bitbucket-app',
-        '/settings/gitea-app',
-      ]),
+    expect(screen.getByRole('link', { name: 'Connect' })).toHaveAttribute(
+      'href',
+      '/settings/github-app',
     )
+
+    fireEvent.click(screen.getByRole('tab', { name: /GitLab/i }))
+    expect(
+      await screen.findByText('Connect GitLab to pick a repository.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Connect' })).toHaveAttribute(
+      'href',
+      '/settings/gitlab-app',
+    )
+
+    fireEvent.click(screen.getByRole('tab', { name: /Bitbucket/i }))
+    expect(
+      await screen.findByText('Connect Bitbucket to pick a repository.'),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: /Gitea/i }))
+    expect(
+      await screen.findByText('Connect Gitea to pick a repository.'),
+    ).toBeInTheDocument()
+
     // One aggregated call, not three per-provider status calls.
     const statusCalls = fetchMock.mock.calls.filter(
       ([input]) =>
@@ -231,7 +278,7 @@ describe('GitRepoSourcePicker', () => {
     expect(statusCalls).toHaveLength(1)
   })
 
-  it('shows the repository picker once GitHub is connected', async () => {
+  it('shows the repository picker once GitHub is connected, and defaults the tab strip to it', async () => {
     providers = [
       {
         provider: 'github',
@@ -246,14 +293,21 @@ describe('GitRepoSourcePicker', () => {
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
-      'GET /api/v1/github-app/repos': jsonRoute([fakeGitHubRepo]),
+      'GET /api/v1/github-app/repos': jsonRoute({ repos: [fakeGitHubRepo] }),
     })
 
     renderPicker()
 
+    // Connected provider wins the default-active tab over the first tab
+    // in list order, even though both happen to be GitHub here.
     expect(await screen.findByText('Repository')).toBeInTheDocument()
-    // GitLab, Bitbucket, and Gitea stay collapsed to their "Not connected" CTA.
-    expect(screen.getAllByText('Connect')).toHaveLength(3)
+    expect(screen.queryByText('Connect GitHub')).not.toBeInTheDocument()
+
+    // GitLab stays collapsed to its own Connect prompt until its tab is picked.
+    fireEvent.click(screen.getByRole('tab', { name: /GitLab/i }))
+    expect(
+      await screen.findByText('Connect GitLab to pick a repository.'),
+    ).toBeInTheDocument()
   })
 
   it('emits a github providerRef once a repo and branch are picked', async () => {
@@ -271,7 +325,7 @@ describe('GitRepoSourcePicker', () => {
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
-      'GET /api/v1/github-app/repos': jsonRoute([fakeGitHubRepo]),
+      'GET /api/v1/github-app/repos': jsonRoute({ repos: [fakeGitHubRepo] }),
       'GET /api/v1/github-app/repos/acme/app/branches': jsonRoute([
         { name: 'main', commit_sha: 'abc123' },
       ]),
@@ -290,9 +344,14 @@ describe('GitRepoSourcePicker', () => {
     await pickOption(container, 'git-picker-github-repo', 'acme/app', () => {
       expect(container.querySelector('#git-picker-github-branch')).toBeTruthy()
     })
-    await pickOption(container, 'git-picker-github-branch', 'main', () => {
-      expect(onSelect).toHaveBeenCalled()
-    })
+    await pickComboboxOption(
+      container,
+      'git-picker-github-branch',
+      'main',
+      () => {
+        expect(onSelect).toHaveBeenCalled()
+      },
+    )
 
     expect(onSelect).toHaveBeenLastCalledWith({
       provider: 'github',
@@ -300,6 +359,70 @@ describe('GitRepoSourcePicker', () => {
       branch: 'main',
       providerRef: { kind: 'github', owner: 'acme', repo: 'app' },
     })
+  })
+
+  it('groups GitHub repos by connected account and filters the grid via chips, without hiding another account on a listing error', async () => {
+    providers = [
+      {
+        provider: 'github',
+        connected: true,
+        can_list_branches: true,
+        can_register_webhook: true,
+        can_auth_clone: true,
+      },
+      disconnected('gitlab'),
+      disconnected('bitbucket'),
+      disconnected('gitea'),
+    ]
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': jsonRoute(providers),
+      'GET /api/v1/github-app/repos': jsonRoute({
+        repos: [
+          fakeGitHubRepo,
+          {
+            full_name: 'acme-person/dotfiles',
+            name: 'dotfiles',
+            owner_login: 'acme-person',
+            private: true,
+            default_branch: 'main',
+            clone_url: 'https://github.com/acme-person/dotfiles.git',
+            account_type: 'user',
+          },
+        ],
+        errors: [
+          { account_login: 'suspended-org', error: 'installation suspended' },
+        ],
+      }),
+    })
+
+    renderPicker()
+    await screen.findByText('Repository')
+
+    // Three accounts (two with repos, one suspended): the "All" chip
+    // plus one per account, not the single ungrouped grid a lone
+    // account would get. Chips only mount once the repos fetch itself
+    // resolves, so this waits rather than asserting immediately.
+    expect(
+      await screen.findByRole('button', { name: 'All' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'acme' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Personal (acme-person)' }),
+    ).toBeInTheDocument()
+    // "suspended-org" appears twice (its filter chip and its own group
+    // header), so this checks presence via getAllByText rather than the
+    // single-match getByText the other two account names use above.
+    expect(screen.getAllByText('suspended-org').length).toBeGreaterThan(0)
+    expect(screen.getByText('installation suspended')).toBeInTheDocument()
+
+    // All accounts' repos show at once by default.
+    expect(screen.getByText('acme/app')).toBeInTheDocument()
+    expect(screen.getByText('acme-person/dotfiles')).toBeInTheDocument()
+
+    // Picking the "acme" chip narrows the grid to that account alone.
+    fireEvent.click(screen.getByRole('button', { name: 'acme' }))
+    expect(screen.getByText('acme/app')).toBeInTheDocument()
+    expect(screen.queryByText('acme-person/dotfiles')).not.toBeInTheDocument()
   })
 
   it('shows a real branch select for a connected GitLab project, not the old free-text fallback', async () => {
@@ -392,7 +515,8 @@ describe('GitRepoSourcePicker', () => {
     const user = userEvent.setup()
     const { onSelect } = renderPicker()
 
-    await screen.findAllByText('Connect')
+    await screen.findByText('Connect GitHub to pick a repository.')
+    fireEvent.click(screen.getByRole('tab', { name: /URL/i }))
 
     await user.type(
       screen.getByLabelText('Paste a repository URL'),
@@ -414,7 +538,8 @@ describe('GitRepoSourcePicker', () => {
     const user = userEvent.setup()
     const { onSelect } = renderPicker()
 
-    await screen.findAllByText('Connect')
+    await screen.findByText('Connect GitHub to pick a repository.')
+    fireEvent.click(screen.getByRole('tab', { name: /URL/i }))
 
     await user.type(
       screen.getByLabelText('Paste a repository URL'),
@@ -461,9 +586,14 @@ describe('GitRepoSourcePicker', () => {
     await pickOption(container, 'git-picker-gitea-repo', 'acme/app', () => {
       expect(container.querySelector('#git-picker-gitea-branch')).toBeTruthy()
     })
-    await pickOption(container, 'git-picker-gitea-branch', 'main', () => {
-      expect(onSelect).toHaveBeenCalled()
-    })
+    await pickComboboxOption(
+      container,
+      'git-picker-gitea-branch',
+      'main',
+      () => {
+        expect(onSelect).toHaveBeenCalled()
+      },
+    )
 
     expect(onSelect).toHaveBeenLastCalledWith({
       provider: 'gitea',

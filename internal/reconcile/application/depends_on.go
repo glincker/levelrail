@@ -27,7 +27,7 @@ func (c *Controller) dependencyBlock(ctx context.Context, desired *store.Desired
 		}
 		if !started {
 			res := reconcile.Result{Conditions: []reconcile.Condition{{
-				Type: "Ready", Status: reconcile.ConditionUnknown, Reason: "WaitingForDependency",
+				Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: "WaitingForDependency",
 				Message: fmt.Sprintf("waiting for dependency %q (%s) to start", dep, depName),
 			}}}
 			return &res

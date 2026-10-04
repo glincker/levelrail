@@ -23,6 +23,7 @@ export const CHANNEL_KIND_LABEL: Record<NotificationChannelKind, string> = {
   opsgenie: 'Opsgenie',
   webex: 'Webex',
   googlechat: 'Google Chat',
+  webpush: 'Browser push',
 }
 
 // Only the brand-mark kinds map to a BrandIconName; generic/email/pushover/

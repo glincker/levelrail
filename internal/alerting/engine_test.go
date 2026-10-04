@@ -350,6 +350,78 @@ func TestEngine_Tick_CrashloopFires_AutoRollbackNotConfigured_NoOp(t *testing.T)
 	}
 }
 
+// heavyBurnFake returns an sloFake with an hour of samples burning error
+// budget heavily enough to page immediately, not through the shared
+// addMinutes (slo_escalation_test.go): that helper's own from parameter
+// is a fixed 0 at every one of its call sites, so a new one here would
+// trip golangci-lint's unparam check on a file this PR doesn't otherwise
+// touch.
+func heavyBurnFake() *sloFake {
+	f := &sloFake{}
+	now := time.Now()
+	for i := 0; i < 60; i++ {
+		at := now.Add(-time.Duration(i) * time.Minute).Add(-time.Second)
+		f.add("web", telemetry.MetricHTTPRequests, at, 1000)
+		f.add("web", telemetry.MetricHTTPResponses5xx, at, 50)
+	}
+	return f
+}
+
+// TestEngine_Tick_SLOBurnFires_AutoRollback_FiresOncePerBadDeploy mirrors
+// TestEngine_Tick_CrashloopFires_AutoRollback_FiresOncePerBadDeploy for
+// KindSLOBurn: a becameFiring transition triggers one rollback, a second
+// tick that's merely stillFiring (same incident, desired image unchanged)
+// must not trigger a second one.
+func TestEngine_Tick_SLOBurnFires_AutoRollback_FiresOncePerBadDeploy(t *testing.T) {
+	rule := Rule{ID: "slo1", Name: "web slo", Kind: KindSLOBurn, ResourceID: "service:web", Enabled: true,
+		SLO: &SLOConfig{Objective: SLOAvailability, Target: 99.9}}
+	f := heavyBurnFake()
+
+	spy := &spyNotifier{}
+	engine := newTestEngine(newFakeRuleStore(rule), f, nil, nil, spy)
+	engine.slo.EvalEvery = 0
+	rollbackStore := &fakeSLOAutoRollbackStore{fakeAutoRollbackStore: fakeAutoRollbackStore{
+		svc: store.DesiredService{Name: "web", Image: "web:v2", AutoRollbackOnSLOBurn: store.AutoRollbackSLOBurnAuto},
+		attempts: []store.DeployAttempt{
+			{Image: "web:v2", Status: store.DeployAttemptStatusSucceeded},
+			{Image: "web:v1", Status: store.DeployAttemptStatusSucceeded},
+		},
+	}}
+	nudger := &fakeAutoRollbackNudger{}
+	engine.SetSLOBurnAutoRollback(rollbackStore, nudger, nil)
+
+	if err := engine.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() 1 error = %v", err)
+	}
+	if err := engine.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() 2 error = %v", err)
+	}
+
+	if len(rollbackStore.savedServices) != 1 {
+		t.Fatalf("savedServices = %+v, want exactly one rollback across two ticks of the same firing episode", rollbackStore.savedServices)
+	}
+	if rollbackStore.savedServices[0].Image != "web:v1" {
+		t.Errorf("rolled back to image %q, want web:v1", rollbackStore.savedServices[0].Image)
+	}
+}
+
+func TestEngine_Tick_SLOBurnFires_AutoRollbackNotConfigured_NoOp(t *testing.T) {
+	rule := Rule{ID: "slo1", Name: "web slo", Kind: KindSLOBurn, ResourceID: "service:web", Enabled: true,
+		SLO: &SLOConfig{Objective: SLOAvailability, Target: 99.9}}
+	f := heavyBurnFake()
+
+	spy := &spyNotifier{}
+	engine := newTestEngine(newFakeRuleStore(rule), f, nil, nil, spy)
+	engine.slo.EvalEvery = 0 // SetSLOBurnAutoRollback never called
+
+	if err := engine.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+	if calls := spy.calls(); len(calls) != 1 {
+		t.Fatalf("Notify called %d times, want 1 (SLO burn notification still fires independent of auto-rollback)", len(calls))
+	}
+}
+
 func TestEngine_Tick_CrashloopResolved_NoLogLines(t *testing.T) {
 	firingSince := time.Now().Add(-time.Hour)
 	r := Rule{ID: "cl1", Kind: KindCrashloop, ResourceID: "service:web",

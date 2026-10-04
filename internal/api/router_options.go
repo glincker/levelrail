@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/changelog"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
@@ -18,6 +19,16 @@ type Option func(*Router)
 // deploys over the cap wait as queued. Zero or less means unlimited.
 func WithDeployMaxConcurrent(n int) Option {
 	return func(rt *Router) { rt.deployMaxConcurrent = n }
+}
+
+// WithChangelog supplies the entries GET /api/v1/changelog serves,
+// parsed once at startup from the repo's own CHANGELOG.md (see
+// cmd/levelrail's loadChangelog). Without one configured (the default,
+// nil), that route answers an empty entries list rather than failing: a
+// bare, non-Docker install that hasn't shipped CHANGELOG.md next to the
+// binary yet just sees an empty "what's new" panel, not a broken one.
+func WithChangelog(entries []changelog.Entry) Option {
+	return func(rt *Router) { rt.changelogEntries = entries }
 }
 
 // WithSecretSetter enables PUT /api/v1/apps/{name}/secrets/{key}.
@@ -43,6 +54,24 @@ func WithBackupSecrets(s BackupSecretsSetter) Option {
 // DELETE work regardless, the same shape WithBackupSecrets establishes.
 func WithRegistryCredentialSecrets(s RegistryCredentialSecretsSetter) Option {
 	return func(rt *Router) { rt.registryCredentialSecrets = s }
+}
+
+// WithNetworkShareSecrets enables POST/PUT /api/v1/network-shares for a
+// cifs share. Without one configured (the default), those return 501;
+// GET, DELETE, and an nfs share's create/update work regardless, the
+// same shape WithRegistryCredentialSecrets establishes.
+func WithNetworkShareSecrets(s NetworkShareSecretsSetter) Option {
+	return func(rt *Router) { rt.networkShareSecrets = s }
+}
+
+// WithFirewallRequiredPorts overrides the ports POST
+// /api/v1/firewall-rules refuses to deny or CIDR-restrict, defaulting to
+// firewall.DefaultRequiredPorts. Pass this instance's actually
+// configured management API, agent gRPC, and ingress ports whenever any
+// of them were moved off their default address: a lockout check against
+// the wrong port number is no check at all.
+func WithFirewallRequiredPorts(ports []int) Option {
+	return func(rt *Router) { rt.firewallRequiredPorts = ports }
 }
 
 // WithEmailSecrets enables PUT /api/v1/settings/email. Without one
@@ -89,6 +118,22 @@ func WithCloudflareDNSSecrets(s CloudflareDNSSecrets) Option {
 // its own, independent ACME DNS-01 provider.
 func WithRoute53DNSSecrets(s Route53DNSSecrets) Option {
 	return func(rt *Router) { rt.route53DNSSecrets = s }
+}
+
+// WithCloudflareDNSTokenResolver enables
+// GET/POST/PUT/DELETE .../dns-records whenever Cloudflare DNS is the
+// configured provider: without one set (the default), those routes
+// return 501 unless Route53 DNS is configured instead. Distinct from
+// WithCloudflareDNSSecrets, which can only check whether a token is
+// stored, not read it back.
+func WithCloudflareDNSTokenResolver(r CloudflareDNSTokenResolver) Option {
+	return func(rt *Router) { rt.cloudflareDNSTokenResolver = r }
+}
+
+// WithRoute53DNSCredentialResolver is the same shape as
+// WithCloudflareDNSTokenResolver for the Route53 access key pair.
+func WithRoute53DNSCredentialResolver(r Route53DNSCredentialResolver) Option {
+	return func(rt *Router) { rt.route53DNSCredentialResolver = r }
 }
 
 // WithRegistrySecrets enables PUT/DELETE /api/v1/settings/registry.
@@ -335,6 +380,18 @@ func WithSessionTTL(d time.Duration) Option {
 	return func(rt *Router) { rt.sessionTTL = d }
 }
 
+// WithRequestLogThresholds sets requestLoggingMiddleware's Warn/Error
+// duration bands. Either argument <= 0 keeps that band's own default.
+// cmd/levelrail/main.go resolves APP_SLOW_REQUEST_THRESHOLD/
+// APP_CRITICAL_REQUEST_THRESHOLD and calls this unconditionally, the
+// same "no hardcoded thresholds" convention WithSessionTTL's own doc
+// comment establishes.
+func WithRequestLogThresholds(slow, critical time.Duration) Option {
+	return func(rt *Router) {
+		rt.requestLogThresholds = requestLogThresholds{slow: slow, critical: critical}
+	}
+}
+
 // WithAutoPlacement overrides whether handleCreateApp/handleCreateDatabase
 // auto-place a create request that omits node_id onto the least-loaded
 // registered node (scheduling.go's autoPlaceNode), instead of leaving it
@@ -443,6 +500,25 @@ func WithNotificationDeliveries(d NotificationDeliveryStore) Option {
 	return func(rt *Router) { rt.notificationDeliveries = d }
 }
 
+// WithPushVAPIDPublicKey enables browser push notifications: GET
+// .../push-subscriptions/vapid-public-key returns publicKey, and POST
+// .../push-subscriptions accepts new registrations. Without one
+// configured (the default, no master key set), both return 501: the
+// VAPID private key half can only ever be stored through secretsManager.
+func WithPushVAPIDPublicKey(publicKey string) Option {
+	return func(rt *Router) { rt.pushVAPIDPublicKey = publicKey }
+}
+
+// WithApprovalChatNotifier enables posting an interactive Approve/Deny
+// message (deploy_approval_chat_notify.go) when a deploy approval is
+// requested, to every notification channel that opted into
+// InteractiveApprovals. Without one, requestDeployApproval simply
+// doesn't post anything, the same "optional signal" shape as
+// WithDeployNotifier.
+func WithApprovalChatNotifier(n ApprovalChatNotifier) Option {
+	return func(rt *Router) { rt.approvalChatNotifier = n }
+}
+
 // WithDataDir enables disk-usage reporting on GET /api/v1/system/status.
 // path should be the same APP_DATA_DIR the control plane itself was
 // started with. Without one configured (the default), the status
@@ -464,6 +540,15 @@ func (rt *Router) SetLocalNodeID(id string) {
 	if rt.models != nil {
 		rt.models.SetLocalNodeID(id)
 	}
+}
+
+// SetMeshZone mirrors SetLocalNodeID's own late-setter shape, for the
+// identical reason: cmd/levelrail's mesh setup (the only source of this
+// value, application.WithMeshZone's own call site) runs after NewRouter
+// is called. Empty means mesh DNS resolution is off, the same "not
+// configured, not broken" default application.Controller itself uses.
+func (rt *Router) SetMeshZone(zone string) {
+	rt.meshZone = zone
 }
 
 // SetMesh wires GET /api/v1/mesh and POST /api/v1/nodes/{id}/mesh/rotate-key
@@ -583,6 +668,21 @@ func WithNodeProvisionerFactory(f NodeProvisionerFactory) Option {
 	return func(rt *Router) { rt.nodeProvisionerFactory = f }
 }
 
+// WithSSHNodeProvisions overrides the SSH node provision store NewRouter
+// otherwise wires to s (the *store.DB passed to NewRouter, which
+// satisfies SSHNodeProvisionStore structurally), the same "seam for a
+// failing fake" shape WithNodeProvisions establishes for the cloud path.
+func WithSSHNodeProvisions(s SSHNodeProvisionStore) Option {
+	return func(rt *Router) { rt.sshProvisions = s }
+}
+
+// WithSSHProvisioner overrides the SSH provisioner NewRouter otherwise
+// defaults to (sshprovision.New()), for this package's own tests: a fake
+// that never dials a real network.
+func WithSSHProvisioner(p SSHProvisioner) Option {
+	return func(rt *Router) { rt.sshProvisioner = p }
+}
+
 // WithIngressPortOwner lets GET /api/v1/system/doctor's port_<n>
 // checks recognize a bind failure caused by this control plane's own
 // embedded ingress (internal/ingress.Driver) as expected rather than a
@@ -686,6 +786,14 @@ func WithDockerPruner(p DockerPruner) Option {
 // "not configured" shape WithDockerPruner's absence produces.
 func WithOrphanedVolumeManager(m OrphanedVolumeManager) Option {
 	return func(rt *Router) { rt.orphanedVolumes = m }
+}
+
+// WithOrphanedContainerManager enables POST
+// /api/v1/system/containers/{name}/stop and .../remove. Without one
+// configured (the default), both routes return 501, the same
+// "not configured" shape WithOrphanedVolumeManager's absence produces.
+func WithOrphanedContainerManager(m OrphanedContainerManager) Option {
+	return func(rt *Router) { rt.orphanedContainers = m }
 }
 
 // WithExecRuntime enables POST /apps/{name}/exec (exec.go's
@@ -795,6 +903,17 @@ func WithAuditLogRetention(d time.Duration) Option {
 	return func(rt *Router) { rt.auditLogRetention = d }
 }
 
+// WithWebhookDeliveryRetention overrides how long a webhook_deliveries
+// row survives before PurgeOldWebhookDeliveries removes it. Without one
+// configured (or passed as 0), defaultWebhookDeliveryRetention (30 days)
+// applies. Same "no hardcoded thresholds, use env vars" shape as
+// WithAuditLogRetention: this package never reads the environment
+// directly, cmd/levelrail/main.go reads APP_WEBHOOK_DELIVERY_RETENTION_DAYS
+// and passes the parsed duration here.
+func WithWebhookDeliveryRetention(d time.Duration) Option {
+	return func(rt *Router) { rt.webhookDeliveryRetention = d }
+}
+
 // WithSecretRotationWarnAge overrides how old a secret's last-set value
 // can get before it is flagged as due for rotation (GET
 // /apps/{name}/secrets, GET .../env/all, and the doctor's stale_secrets
@@ -836,6 +955,18 @@ func WithDeployApprovalTTL(d time.Duration) Option {
 // and passes the parsed duration here.
 func WithResourceRecommendationLookback(d time.Duration) Option {
 	return func(rt *Router) { rt.resourceRecommendationLookback = d }
+}
+
+// WithCapacityForecastLookback overrides how far back GET
+// /api/v1/nodes/{id}/capacity-forecast looks for disk/memory history
+// (handleNodeCapacityForecast). Without one configured (or passed as
+// 0), defaultCapacityForecastLookback (14 days) applies. Same "no
+// hardcoded thresholds, use env vars" shape as
+// WithResourceRecommendationLookback: this package never reads the
+// environment directly, cmd/levelrail/main.go reads
+// APP_CAPACITY_FORECAST_LOOKBACK and passes the parsed duration here.
+func WithCapacityForecastLookback(d time.Duration) Option {
+	return func(rt *Router) { rt.capacityForecastLookback = d }
 }
 
 // WithPublicHost sets the IP or hostname GET

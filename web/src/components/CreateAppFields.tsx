@@ -70,6 +70,19 @@ import { RegistryImagePicker } from './RegistryImagePicker'
 // through to store.DefaultDeployStrategy").
 const STRATEGY_DEFAULT_VALUE = '__default__'
 
+// Suggests an app name from a picked `host/repository:tag` image
+// reference, e.g. "ghcr.io/you/marketing-site:latest" -> "marketing-site".
+// Mirrors CreateAppFromGitFields.tsx's repoSlugFrom: only ever used to
+// prefill Name while it's still blank, never to overwrite a typed value.
+function imageSlugFrom(imageRef: string): string {
+  const lastSegment = imageRef.trim().split('/').filter(Boolean).pop() ?? ''
+  const withoutTag = (lastSegment.split('@')[0] ?? '').replace(/:[^:]*$/, '')
+  return withoutTag
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 const createAppSchema = z
   .object({
     name: z.string().trim().min(1, 'Name is required'),
@@ -191,11 +204,19 @@ export function CreateAppFields({
   // entirely when the dialog closes (see CreateResourceWizard.tsx), so a
   // fresh open already gets a fresh useState(false) here.
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const { control, register, handleSubmit, formState, reset, watch, setValue } =
-    useForm<CreateAppFormInput, unknown, CreateAppFormOutput>({
-      resolver: zodResolver(createAppSchema),
-      defaultValues: DEFAULT_VALUES,
-    })
+  const {
+    control,
+    register,
+    handleSubmit,
+    formState,
+    reset,
+    watch,
+    setValue,
+    getValues,
+  } = useForm<CreateAppFormInput, unknown, CreateAppFormOutput>({
+    resolver: zodResolver(createAppSchema),
+    defaultValues: DEFAULT_VALUES,
+  })
 
   useEffect(() => {
     if (!open) {
@@ -287,6 +308,15 @@ export function CreateAppFields({
               shouldValidate: true,
               shouldDirty: true,
             })
+            if (!getValues('name').trim()) {
+              const slug = imageSlugFrom(imageRef)
+              if (slug) {
+                setValue('name', slug, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                })
+              }
+            }
           }}
         />
 

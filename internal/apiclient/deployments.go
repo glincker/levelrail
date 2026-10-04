@@ -161,5 +161,5 @@ func (c *Client) GetDeploymentsSummary(ctx context.Context, window string) (Depl
 // StreamDeployments calls GET /api/v1/deployments/stream and invokes onEvent
 // for each change until onEvent errors or ctx is canceled.
 func (c *Client) StreamDeployments(ctx context.Context, onEvent func(DeploymentEvent) error) error {
-	return streamSSE(ctx, c, "/api/v1/deployments/stream", onEvent)
+	return streamSSE(ctx, c, http.MethodGet, "/api/v1/deployments/stream", nil, onEvent)
 }

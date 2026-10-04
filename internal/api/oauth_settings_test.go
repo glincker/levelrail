@@ -218,3 +218,38 @@ func TestHandleUpdateOAuthProviderSettings_EmptySecretKeepsExisting(t *testing.T
 		t.Errorf("secret = %q, want the original unchanged %q", secret, "original-secret")
 	}
 }
+
+// TestHandleUpdateOAuthProviderSettings_MicrosoftRoundTrip proves the
+// third provider (added alongside Google/GitHub) reaches the settings
+// CRUD path with no special-casing needed beyond isValidOAuthProvider,
+// the same generic round trip TestHandleUpdateOAuthProviderSettings_RoundTrip
+// already proves for Google.
+func TestHandleUpdateOAuthProviderSettings_MicrosoftRoundTrip(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rt.oauthSecrets = newFakeOAuthSecrets()
+
+	body := `{"enabled":true,"client_id":"ms-client-id","client_secret":"ms-secret","allowed_email_domain":"example.com"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/oauth/microsoft", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	got, err := db.GetOAuthProviderSettings(context.Background(), store.OAuthProviderMicrosoft)
+	if err != nil {
+		t.Fatalf("GetOAuthProviderSettings() error = %v", err)
+	}
+	if !got.Enabled || got.ClientID != "ms-client-id" || got.AllowedEmailDomain != "example.com" {
+		t.Errorf("got %+v, want enabled with the submitted client_id/domain", got)
+	}
+
+	settingsRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(settingsRec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/providers", nil))
+	if settingsRec.Code != http.StatusOK {
+		t.Fatalf("list public providers: status = %d, body = %s", settingsRec.Code, settingsRec.Body.String())
+	}
+	if !strings.Contains(settingsRec.Body.String(), `"provider":"microsoft"`) {
+		t.Errorf("public providers list missing microsoft: %s", settingsRec.Body.String())
+	}
+}

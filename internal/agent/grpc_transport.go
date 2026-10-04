@@ -40,6 +40,7 @@ var (
 	_ Transport                 = (*GRPCTransport)(nil)
 	_ docker.TTYRuntime         = (*GRPCTransport)(nil)
 	_ docker.ExitStateInspector = (*GRPCTransport)(nil)
+	_ docker.StatsInspector     = (*GRPCTransport)(nil)
 	_ docker.ExecSession        = (*execTTYStream)(nil)
 )
 
@@ -155,6 +156,23 @@ func (t *GRPCTransport) ListByPrefix(ctx context.Context, prefix string) ([]dock
 		return nil, err
 	}
 	return containerStatesFromPB(resp.GetListByPrefix().GetContainers()), nil
+}
+
+// Stats implements docker.StatsInspector over the wire: the remote-node
+// half of the control plane's own telemetry.Collector, which otherwise
+// only ever sees this process's own local Docker socket. An agent too
+// old to know this op answers with ErrStatsUnsupported's own string,
+// which the collector's caller treats as "skip this target, try again
+// next tick," the same degrade InspectExitState's doc comment
+// describes for an old agent.
+func (t *GRPCTransport) Stats(ctx context.Context, containerID string) (docker.ContainerStats, error) {
+	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{
+		Op: &agentpb.AgentRequest_Stats{Stats: &agentpb.StatsRequest{ContainerId: containerID}},
+	})
+	if err != nil {
+		return docker.ContainerStats{}, err
+	}
+	return containerStatsFromPB(resp.GetStats().GetStats()), nil
 }
 
 // Exec implements Transport (docker.Runtime). The initial round trip is
@@ -475,6 +493,22 @@ func (t *GRPCTransport) EnsureNetwork(ctx context.Context, name string) (string,
 func (t *GRPCTransport) RemoveNetwork(ctx context.Context, name string) error {
 	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{
 		Op: &agentpb.AgentRequest_RemoveNetwork{RemoveNetwork: &agentpb.RemoveNetworkRequest{Name: name}},
+	})
+	return err
+}
+
+// NetworkConnect implements Transport (docker.Runtime).
+func (t *GRPCTransport) NetworkConnect(ctx context.Context, network, containerID string) error {
+	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{
+		Op: &agentpb.AgentRequest_NetworkConnect{NetworkConnect: &agentpb.NetworkConnectRequest{Network: network, ContainerId: containerID}},
+	})
+	return err
+}
+
+// NetworkDisconnect implements Transport (docker.Runtime).
+func (t *GRPCTransport) NetworkDisconnect(ctx context.Context, network, containerID string, force bool) error {
+	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{
+		Op: &agentpb.AgentRequest_NetworkDisconnect{NetworkDisconnect: &agentpb.NetworkDisconnectRequest{Network: network, ContainerId: containerID, Force: force}},
 	})
 	return err
 }

@@ -121,9 +121,13 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	for _, s := range svcs {
 		resource := toAppResource(s)
 		resource.Tags = tagNamesFromStoreTags(tagsByApp[s.Name])
+		conditions := conditionsByController[applicationControllerName(s.Name)]
+		if cond := rt.crossNodeIngressAppCondition(s); cond != nil {
+			conditions = append(conditions, *cond)
+		}
 		out = append(out, appListResource{
 			appResource:     resource,
-			Status:          summarizeAppConditions(conditionsByController[applicationControllerName(s.Name)]),
+			Status:          summarizeAppConditions(conditions),
 			EnvironmentName: envNames[s.EnvironmentID],
 		})
 	}
@@ -142,21 +146,26 @@ func pageSlice(in []store.DesiredService, limit, offset int) []store.DesiredServ
 	return in
 }
 
-// environmentNames maps environment IDs used by svcs to their names.
+// environmentNames maps environment IDs used by svcs to their names,
+// via one batched GetEnvironmentsByIDs call instead of a GetEnvironment
+// call per distinct environment (the N+1 handleListApps used to make).
 func (rt *Router) environmentNames(ctx context.Context, svcs []store.DesiredService) map[string]string {
-	out := map[string]string{}
+	seen := map[string]bool{}
+	ids := make([]string, 0, len(svcs))
 	for _, s := range svcs {
-		if s.EnvironmentID == "" {
+		if s.EnvironmentID == "" || seen[s.EnvironmentID] {
 			continue
 		}
-		if _, done := out[s.EnvironmentID]; done {
-			continue
-		}
-		env, err := rt.environments.GetEnvironment(ctx, s.EnvironmentID)
-		if err != nil {
-			continue
-		}
-		out[s.EnvironmentID] = env.Name
+		seen[s.EnvironmentID] = true
+		ids = append(ids, s.EnvironmentID)
+	}
+	envs, err := rt.environments.GetEnvironmentsByIDs(ctx, ids)
+	if err != nil {
+		return map[string]string{}
+	}
+	out := make(map[string]string, len(envs))
+	for id, env := range envs {
+		out[id] = env.Name
 	}
 	return out
 }
@@ -171,8 +180,8 @@ type appsSummaryResource struct {
 }
 
 // handleAppsSummary handles GET /api/v1/apps-summary: status counts over
-// the same filters as the list, from names plus one batched conditions
-// query, never loading service graphs.
+// the same filters as the list, needing NodeID/Domains per app (to detect
+// crossNodeIngressAppCondition) plus one batched conditions query.
 func (rt *Router) handleAppsSummary(w http.ResponseWriter, r *http.Request) {
 	fs, ok := rt.apps.(appFilterStore)
 	if !ok {
@@ -186,17 +195,17 @@ func (rt *Router) handleAppsSummary(w http.ResponseWriter, r *http.Request) {
 	}
 	f := parseAppListFilter(r)
 	f.Limit, f.Offset = 0, 0
-	names, err := fs.ListAppNamesFiltered(r.Context(), f)
+	svcs, _, err := fs.ListDesiredServicesFiltered(r.Context(), f)
 	if err != nil {
 		rt.internalError(w, "api: apps summary failed", err)
 		return
 	}
-	controllers := make([]string, 0, len(names))
-	visible := names[:0:0]
-	for _, n := range names {
-		if canRead(n) {
-			visible = append(visible, n)
-			controllers = append(controllers, applicationControllerName(n))
+	controllers := make([]string, 0, len(svcs))
+	visible := svcs[:0:0]
+	for _, s := range svcs {
+		if canRead(s.Name) {
+			visible = append(visible, s)
+			controllers = append(controllers, applicationControllerName(s.Name))
 		}
 	}
 	conds, err := rt.deploys.GetConditionsForControllers(r.Context(), controllers)
@@ -205,8 +214,12 @@ func (rt *Router) handleAppsSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sum := appsSummaryResource{Total: len(visible)}
-	for _, n := range visible {
-		switch summarizeAppConditions(conds[applicationControllerName(n)]).Label {
+	for _, s := range visible {
+		conditions := conds[applicationControllerName(s.Name)]
+		if cond := rt.crossNodeIngressAppCondition(s); cond != nil {
+			conditions = append(conditions, *cond)
+		}
+		switch summarizeAppConditions(conditions).Label {
 		case "Healthy":
 			sum.Running++
 		case "Attention needed":

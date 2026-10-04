@@ -206,6 +206,54 @@ func exitStateFromPB(s *agentpb.ExitState) *docker.ExitState {
 	}
 }
 
+func containerStatsToPB(s docker.ContainerStats) *agentpb.ContainerStats {
+	return &agentpb.ContainerStats{
+		CpuPercent:       s.CPUPercent,
+		CpuRaw:           cpuStatsRawToPB(s.CPURaw),
+		MemoryUsageBytes: s.MemoryUsageBytes,
+		MemoryLimitBytes: s.MemoryLimitBytes,
+		NetworkRxBytes:   s.NetworkRxBytes,
+		NetworkTxBytes:   s.NetworkTxBytes,
+		DiskReadBytes:    s.DiskReadBytes,
+		DiskWriteBytes:   s.DiskWriteBytes,
+	}
+}
+
+func containerStatsFromPB(s *agentpb.ContainerStats) docker.ContainerStats {
+	if s == nil {
+		return docker.ContainerStats{}
+	}
+	return docker.ContainerStats{
+		CPUPercent:       s.GetCpuPercent(),
+		CPURaw:           cpuStatsRawFromPB(s.GetCpuRaw()),
+		MemoryUsageBytes: s.GetMemoryUsageBytes(),
+		MemoryLimitBytes: s.GetMemoryLimitBytes(),
+		NetworkRxBytes:   s.GetNetworkRxBytes(),
+		NetworkTxBytes:   s.GetNetworkTxBytes(),
+		DiskReadBytes:    s.GetDiskReadBytes(),
+		DiskWriteBytes:   s.GetDiskWriteBytes(),
+	}
+}
+
+func cpuStatsRawToPB(r docker.CPUStatsRaw) *agentpb.CPUStatsRaw {
+	return &agentpb.CPUStatsRaw{
+		TotalUsageNanos:  r.TotalUsageNanos,
+		SystemUsageNanos: r.SystemUsageNanos,
+		OnlineCpus:       r.OnlineCPUs,
+	}
+}
+
+func cpuStatsRawFromPB(r *agentpb.CPUStatsRaw) docker.CPUStatsRaw {
+	if r == nil {
+		return docker.CPUStatsRaw{}
+	}
+	return docker.CPUStatsRaw{
+		TotalUsageNanos:  r.GetTotalUsageNanos(),
+		SystemUsageNanos: r.GetSystemUsageNanos(),
+		OnlineCPUs:       r.GetOnlineCpus(),
+	}
+}
+
 func containerStatesFromPB(ss []*agentpb.ContainerState) []docker.ContainerState {
 	if ss == nil {
 		return nil

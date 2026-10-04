@@ -20,6 +20,10 @@ const (
 	PipelineStatusSkipped         = "skipped"
 )
 
+// PipelineFilterHeld is PipelineRunFilter.Status's virtual "held" value
+// (a run awaiting a hold decision), not a real stored run status.
+const PipelineFilterHeld = "held"
+
 // IsPipelineTerminal reports whether status is a final state.
 func IsPipelineTerminal(status string) bool {
 	switch status {

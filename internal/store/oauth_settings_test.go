@@ -61,10 +61,10 @@ func TestListOAuthProviderSettings_AllProvidersSeeded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListOAuthProviderSettings() error = %v", err)
 	}
-	if len(got) != 3 {
-		t.Fatalf("len(ListOAuthProviderSettings()) = %d, want 3", len(got))
+	if len(got) != 4 {
+		t.Fatalf("len(ListOAuthProviderSettings()) = %d, want 4", len(got))
 	}
-	want := []string{OAuthProviderGitHub, OAuthProviderGoogle, OAuthProviderOIDC}
+	want := []string{OAuthProviderGitHub, OAuthProviderGoogle, OAuthProviderMicrosoft, OAuthProviderOIDC}
 	for i, w := range want {
 		if got[i].Provider != w {
 			t.Errorf("ListOAuthProviderSettings()[%d].Provider = %q, want %q", i, got[i].Provider, w)

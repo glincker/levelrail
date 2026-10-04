@@ -69,6 +69,23 @@ func (f *fakeSecretSetter) Exists(_ context.Context, serviceName, envKey string)
 	return f.existsValues[serviceName+"/"+envKey], nil
 }
 
+// ExistsForServices mirrors Exists over existsValues, batched: the fake
+// stays stateful rather than a plain call counter, same as the rest of
+// this type, so databases_test.go's TLSEnabled coverage didn't need
+// rewriting when databaseTLSStatuses switched to the batched call.
+func (f *fakeSecretSetter) ExistsForServices(_ context.Context, serviceNames []string, envKey string) (map[string]bool, error) {
+	if f.existsErr != nil {
+		return nil, f.existsErr
+	}
+	out := map[string]bool{}
+	for _, name := range serviceNames {
+		if f.existsValues[name+"/"+envKey] {
+			out[name] = true
+		}
+	}
+	return out, nil
+}
+
 func (f *fakeSecretSetter) SetValueGuarded(_ context.Context, serviceName, envKey, plaintext string, overwriteLocked bool) error {
 	f.calls++
 	f.lastService = serviceName

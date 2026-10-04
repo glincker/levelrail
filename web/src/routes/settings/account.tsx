@@ -10,7 +10,11 @@ import {
   CardHeader,
   CardTitle,
 } from '../../components/ui/card'
-import { PageSpinner } from '../../components/ui/page-spinner'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '../../components/settings/SettingsSkeletons'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Two independent cards: profile (read-only) and change-password
 // (ChangePasswordCard.tsx, split out so TanStack Router's
@@ -21,18 +25,23 @@ export const Route = createFileRoute('/settings/account')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(sessionQueryOptions()),
   component: AccountSettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: AccountSettingsSkeleton,
 })
+
+function AccountSettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton />
+      <SettingsCardSkeleton rows={2} />
+      <SettingsCardSkeleton rows={3} />
+    </div>
+  )
+}
 
 function AccountSettingsPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Account</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Profile and password.
-        </p>
-      </div>
+      <PageHeader title="Account" description="Profile and password." />
 
       <ProfileCard />
       <ChangePasswordCard />
