@@ -10,7 +10,7 @@
 // two independent images, both land under the same store.App, both become
 // real running containers, and both are independently reachable over
 // HTTPS, not just independently deployed.
-package e2e
+package reconcile
 
 import (
 	"context"
@@ -125,7 +125,7 @@ func deployMultiService(ctx context.Context, t *testing.T, pipeline *deploy.Pipe
 				Health:  &spec.Health{Readiness: &spec.Probe{Path: "/"}},
 			},
 		},
-		SourceDir:     "../fixtures/multi-service-e2e",
+		SourceDir:     "../../fixtures/multi-service-e2e",
 		CommitSHA:     sha,
 		ImageRepoBase: imageRepoBase,
 	}, nil)

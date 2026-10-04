@@ -563,6 +563,17 @@ func run(logger *slog.Logger) error {
 			logger.Error("agent grpc server stopped", slog.String("error", err.Error()))
 		}
 	}()
+	// Fired as soon as ctx is cancelled (SIGTERM), overlapping with the
+	// rest of this function's own shutdown sequence (engine drain, HTTP
+	// server shutdown) rather than waiting for stopAgentGRPCServer's own
+	// defer to run: a well-behaved agent's GoAway round trip then has the
+	// whole rest of shutdown to complete in, so GracefulStop below
+	// usually finds nothing left to wait for instead of burning its full
+	// timeout.
+	go func() {
+		<-ctx.Done()
+		agentServer.NotifyShutdown()
+	}()
 	defer stopAgentGRPCServer(agentGRPCServer, logger, agentGRPCShutdownTimeout)
 
 	secretsManager, masterKeyFilePath, err := loadSecretsManager(db, agentDataDir, secretsManagerOptions(logger)...)

@@ -191,8 +191,17 @@ message ControlMessage {
     // plane has consumed that many BuildOutput frames.
     BuildCredit build_credit = 7;
     ExecResize exec_resize = 8;
+    // GoAway tells the agent the control plane is shutting down this
+    // process and will not answer further requests on this stream: the
+    // agent should close its end now rather than wait to be cut off by
+    // the control plane's own bounded GracefulStop timeout.
+    GoAway go_away = 9;
   }
 }
+
+// GoAway carries no data of its own, the same "presence is the message"
+// shape Heartbeat already uses in the opposite direction.
+message GoAway {}
 
 // AgentRequest is one control-plane-issued operation, tagged with
 // request_id so out-of-order AgentResponse frames on the same stream

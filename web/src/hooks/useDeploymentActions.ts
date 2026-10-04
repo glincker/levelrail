@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { toast } from '@/components/ui/toast'
+import { useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
+import { toast, toastAction } from '@/components/ui/toast'
 import type { Deployment } from '../types/deployment'
 import {
   canCancel,
@@ -37,8 +39,15 @@ export interface DeploymentActions {
 export function useDeploymentActions(
   onViewApproval?: () => void,
 ): DeploymentActions {
+  const { t } = useTranslation('common')
+  const navigate = useNavigate()
   const [pending, setPending] = useState<PendingAction | null>(null)
   const { deployImage, cancel, rollback } = useDeploymentMutations()
+
+  const viewAppAction = (appName: string) =>
+    toastAction(t('actions.viewApp'), () => {
+      void navigate({ to: '/apps/$name/overview', params: { name: appName } })
+    })
 
   const request = (kind: DeploymentActionKind, d: Deployment) => {
     if (actionAllowed(kind, d)) setPending({ kind, deployment: d })
@@ -81,7 +90,11 @@ export function useDeploymentActions(
                 : undefined,
             })
           } else {
-            toast.add({ title: `Rolling back "${d.app}".`, type: 'success' })
+            toast.add({
+              title: `Rolling back "${d.app}".`,
+              type: 'success',
+              actionProps: viewAppAction(d.app),
+            })
           }
           done()
         },
@@ -93,11 +106,13 @@ export function useDeploymentActions(
       { app: d.app, image: rollbackImage(d) },
       {
         onSuccess: (result) => {
+          const awaitingApproval = isPendingApproval(result)
           toast.add({
-            title: isPendingApproval(result)
+            title: awaitingApproval
               ? `Redeploying "${d.app}" is waiting for approval.`
               : `Redeploying "${d.app}".`,
             type: 'success',
+            actionProps: awaitingApproval ? undefined : viewAppAction(d.app),
           })
           done()
         },

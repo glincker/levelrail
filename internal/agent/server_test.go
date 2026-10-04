@@ -352,6 +352,69 @@ func TestServer_Session_Success(t *testing.T) {
 	}
 }
 
+// TestServer_NotifyShutdown_SendsGoAway is the regression test for the
+// remaining gap docs-local/upgrade-downtime-findings-2026-10-04.md
+// flagged: NotifyShutdown must reach every live session's stream so an
+// agent can close its own end instead of waiting out the control
+// plane's bounded GracefulStop timeout.
+func TestServer_NotifyShutdown_SendsGoAway(t *testing.T) {
+	ca, _ := GenerateCA()
+	st := newFakeEnrollStore()
+	certPEM, _, err := ca.IssueClientCert("node-1", time.Hour)
+	if err != nil {
+		t.Fatalf("IssueClientCert() error = %v", err)
+	}
+	fp, err := certFingerprintFromPEM(certPEM)
+	if err != nil {
+		t.Fatalf("certFingerprintFromPEM() error = %v", err)
+	}
+	now := time.Now()
+	st.nodes["node-1"] = &store.Node{ID: "node-1", Name: "worker-1", CertFingerprint: fp, CreatedAt: now, UpdatedAt: now}
+
+	registry := NewRegistry()
+	srv := NewServer(ca, st, registry, nil)
+
+	stream := &fakeAgentSessionServer{
+		ctx:  ctxWithPeerCert(certPEM),
+		recv: make(chan *agentpb.AgentMessage),
+		sent: make(chan *agentpb.ControlMessage, 4),
+	}
+
+	sessionDone := make(chan error, 1)
+	go func() { sessionDone <- srv.Session(stream) }()
+
+	deadline := time.After(2 * time.Second)
+	for {
+		if _, err := registry.Get("node-1"); err == nil {
+			break
+		}
+		select {
+		case <-deadline:
+			t.Fatal("timed out waiting for the transport to be registered")
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+
+	srv.NotifyShutdown()
+
+	select {
+	case msg := <-stream.sent:
+		if msg.GetGoAway() == nil {
+			t.Errorf("sent message = %+v, want a GoAway payload", msg)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the GoAway frame")
+	}
+
+	stream.recvErr = errors.New("connection reset")
+	close(stream.recv)
+	select {
+	case <-sessionDone:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for Session() to return")
+	}
+}
+
 // heartbeatFrame builds the AgentMessage a real agent sends to signal
 // liveness, the same frame client.go's own heartbeatLoop emits.
 func heartbeatFrame() *agentpb.AgentMessage {

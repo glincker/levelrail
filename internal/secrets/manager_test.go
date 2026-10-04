@@ -86,6 +86,16 @@ func (f *fakeStore) HasSecretValue(ctx context.Context, serviceName, envKey stri
 	return true, nil
 }
 
+func (f *fakeStore) HasSecretValueForServices(ctx context.Context, serviceNames []string, envKey string) (map[string]bool, error) {
+	out := map[string]bool{}
+	for _, name := range serviceNames {
+		if ok, _ := f.HasSecretValue(ctx, name, envKey); ok {
+			out[name] = true
+		}
+	}
+	return out, nil
+}
+
 func (f *fakeStore) DeleteServiceSecrets(_ context.Context, serviceName string) error {
 	delete(f.deks, serviceName)
 	delete(f.values, serviceName)
@@ -394,6 +404,32 @@ func TestManager_Exists(t *testing.T) {
 	}
 	if !exists {
 		t.Error("Exists() = false after SetValue, want true")
+	}
+}
+
+// TestManager_ExistsForServices covers the batch form of Exists:
+// databaseTLSStatuses (internal/api) uses this instead of calling Exists
+// once per TLS-capable database.
+func TestManager_ExistsForServices(t *testing.T) {
+	m, _ := testManager(t)
+	ctx := context.Background()
+
+	if err := m.SetValue(ctx, "pg-a", "tls_cert", "cert-a"); err != nil {
+		t.Fatalf("SetValue(pg-a) error = %v", err)
+	}
+	if err := m.SetValue(ctx, "pg-b", "tls_cert", "cert-b"); err != nil {
+		t.Fatalf("SetValue(pg-b) error = %v", err)
+	}
+
+	got, err := m.ExistsForServices(ctx, []string{"pg-a", "pg-b", "pg-c"}, "tls_cert")
+	if err != nil {
+		t.Fatalf("ExistsForServices() error = %v", err)
+	}
+	if len(got) != 2 || !got["pg-a"] || !got["pg-b"] {
+		t.Errorf("got %+v, want exactly pg-a and pg-b true", got)
+	}
+	if got["pg-c"] {
+		t.Errorf("got[pg-c] = true, want false (no value set)")
 	}
 }
 

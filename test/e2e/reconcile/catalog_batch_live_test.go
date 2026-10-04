@@ -3,7 +3,7 @@
 // real compose resolve/translate plus a real application.Controller
 // reconcile per service. Static tests only prove the Compose parses;
 // this is the one check that proves the pinned image tag is real.
-package e2e
+package reconcile
 
 import (
 	"context"

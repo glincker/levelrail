@@ -64,6 +64,7 @@ type Server struct {
 
 type liveSession struct {
 	kick chan struct{}
+	m    *mux
 }
 
 // Option configures optional Server behavior.
@@ -285,7 +286,7 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 		},
 	})
 	s.registry.Register(nodeID, newGRPCTransport(m))
-	live := s.trackSession(nodeID)
+	live := s.trackSession(nodeID, m)
 	s.logger.Info("agent: node connected", slog.String("node_id", nodeID))
 
 	heartbeatDone := make(chan struct{})
@@ -348,12 +349,34 @@ func (s *Server) Disconnect(nodeID string) {
 	}
 }
 
-func (s *Server) trackSession(nodeID string) *liveSession {
-	live := &liveSession{kick: make(chan struct{})}
+func (s *Server) trackSession(nodeID string, m *mux) *liveSession {
+	live := &liveSession{kick: make(chan struct{}), m: m}
 	s.sessionsMu.Lock()
 	defer s.sessionsMu.Unlock()
 	s.sessions[nodeID] = live
 	return live
+}
+
+// NotifyShutdown sends a GoAway frame to every connected agent, telling
+// each to close its own end of the Session stream now rather than wait
+// to be cut off by the control plane's own bounded GracefulStop timeout
+// (cmd/levelrail's stopAgentGRPCServer). Best-effort: a send failure here
+// just means that agent falls back to the timeout, same as before this
+// existed.
+func (s *Server) NotifyShutdown() {
+	s.sessionsMu.Lock()
+	muxes := make([]*mux, 0, len(s.sessions))
+	for _, live := range s.sessions {
+		muxes = append(muxes, live.m)
+	}
+	s.sessionsMu.Unlock()
+
+	goAway := &agentpb.ControlMessage{Payload: &agentpb.ControlMessage_GoAway{GoAway: &agentpb.GoAway{}}}
+	for _, m := range muxes {
+		if err := m.sendFrame(goAway); err != nil {
+			s.logger.Warn("agent: notify shutdown: send go-away failed", slog.String("error", err.Error()))
+		}
+	}
 }
 
 func (s *Server) untrackSession(nodeID string, live *liveSession) {

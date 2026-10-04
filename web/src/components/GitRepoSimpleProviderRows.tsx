@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Combobox } from '@/components/ui/combobox'
 import { Field, FieldLabel } from '@/components/ui/field'
-import { RepoPickerGrid } from './GitRepoPickerGrid'
+import { cn } from '@/lib/utils'
+import { GroupedRepoPickerGrid, RepoPickerGrid } from './GitRepoPickerGrid'
 import {
   fromBitbucketRepo,
   fromGitHubRepo,
   fromGiteaRepo,
+  groupGitHubRepos,
   type NormalizedRepoOption,
 } from '../lib/gitRepoOptions'
 import { useGitHubAppBranches, useGitHubAppRepos } from '../queries/githubApp'
@@ -141,20 +143,164 @@ function ConnectedProviderRow<TRepo>({
   )
 }
 
-export function GitHubProviderRow(props: ProviderRowProps) {
+// AccountFilterChip is one entry of GitHubProviderRow's filter strip:
+// "All" plus one per connected account/org. Plain buttons, not the
+// Tabs primitive GitRepoSourcePicker uses one level up: these filter
+// client-side over an already-fetched list, they don't switch panels.
+function AccountFilterChip({
+  label,
+  active,
+  hasError,
+  onClick,
+}: Readonly<{
+  label: string
+  active: boolean
+  hasError?: boolean
+  onClick: () => void
+}>) {
   return (
-    <ConnectedProviderRow
-      {...props}
-      providerKey="github"
-      displayName="GitHub"
-      settingsPath="/settings/github-app"
-      useRepos={useGitHubAppRepos}
-      fromRepo={fromGitHubRepo}
-      useBranches={useGitHubAppBranches}
-      branchArgsFrom={(ref) =>
-        ref.kind === 'github' ? [ref.owner, ref.repo] : ['', '']
-      }
-    />
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+        active
+          ? 'border-primary/50 bg-primary/10 text-primary'
+          : 'border-border text-muted-foreground hover:bg-muted',
+        hasError &&
+          !active &&
+          'border-amber-500/40 text-amber-700 dark:text-amber-400',
+      )}
+    >
+      {label}
+    </button>
+  )
+}
+
+// GitHub is the one provider whose App can be installed on more than one
+// account/org (migrations/0282), so it gets its own row instead of
+// ConnectedProviderRow's single-fetch shape: the repo fetch itself
+// returns {repos, errors} grouped by account, and a filter strip lets an
+// operator narrow the grid to one account without a re-fetch.
+export function GitHubProviderRow({
+  provider,
+  disabled,
+  onSelect,
+  runningRepoByUrl,
+}: ProviderRowProps) {
+  const enabled = provider.connected
+  const repos = useGitHubAppRepos(enabled)
+  const [selectedRepoKey, setSelectedRepoKey] = useState('')
+  const [selectedBranch, setSelectedBranch] = useState('')
+  const [accountFilter, setAccountFilter] = useState('all')
+
+  const allOptions = useMemo(
+    () => (repos.data?.repos ?? []).map(fromGitHubRepo),
+    [repos.data],
+  )
+  const groups = useMemo(
+    () => groupGitHubRepos(allOptions, repos.data?.errors ?? []),
+    [allOptions, repos.data],
+  )
+  const visibleGroups = useMemo(
+    () =>
+      accountFilter === 'all'
+        ? groups
+        : groups.filter((g) => g.key === accountFilter),
+    [groups, accountFilter],
+  )
+
+  const selected = allOptions.find((option) => option.key === selectedRepoKey)
+  const providerRef = selected?.providerRef
+  const [branchOwner, branchRepo] =
+    providerRef?.kind === 'github'
+      ? [providerRef.owner, providerRef.repo]
+      : ['', '']
+  const branches = useGitHubAppBranches(
+    branchOwner,
+    branchRepo,
+    selected !== undefined,
+  )
+  const branchOptions = useMemo(
+    () => (branches.data ?? []).map((b) => ({ value: b.name, label: b.name })),
+    [branches.data],
+  )
+
+  if (!enabled) {
+    return (
+      <NotConnectedPrompt name="GitHub" settingsPath="/settings/github-app" />
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <Field>
+        <FieldLabel htmlFor="git-picker-github-repo">Repository</FieldLabel>
+        {groups.length > 1 ? (
+          <div className="flex flex-wrap gap-1.5">
+            <AccountFilterChip
+              label="All"
+              active={accountFilter === 'all'}
+              onClick={() => setAccountFilter('all')}
+            />
+            {groups.map((group) => (
+              <AccountFilterChip
+                key={group.key || 'unknown'}
+                label={group.label}
+                active={accountFilter === group.key}
+                hasError={Boolean(group.error)}
+                onClick={() => setAccountFilter(group.key)}
+              />
+            ))}
+          </div>
+        ) : null}
+        <GroupedRepoPickerGrid
+          searchInputId="git-picker-github-repo"
+          groups={visibleGroups}
+          showHeaders={groups.length > 1}
+          isLoading={repos.isLoading}
+          isError={repos.isError}
+          errorMessage={repos.error?.message}
+          selectedKey={selectedRepoKey}
+          disabled={disabled}
+          runningRepoByUrl={runningRepoByUrl}
+          onSelect={(option) => {
+            setSelectedRepoKey(option.key)
+            setSelectedBranch('')
+          }}
+        />
+      </Field>
+
+      {selected ? (
+        <Field>
+          <FieldLabel htmlFor="git-picker-github-branch">Branch</FieldLabel>
+          <Combobox
+            id="git-picker-github-branch"
+            options={branchOptions}
+            value={selectedBranch}
+            isLoading={branches.isLoading}
+            disabled={disabled}
+            placeholder="Select a branch"
+            searchPlaceholder="Search branches..."
+            onValueChange={(branch) => {
+              setSelectedBranch(branch)
+              onSelect({
+                provider: 'github',
+                repoUrl: selected.cloneUrl,
+                branch,
+                providerRef: selected.providerRef,
+              })
+            }}
+          />
+          {branches.isError ? (
+            <p className="text-sm text-destructive">
+              {branches.error?.message}
+            </p>
+          ) : null}
+        </Field>
+      ) : null}
+    </div>
   )
 }
 

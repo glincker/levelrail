@@ -122,7 +122,9 @@ func TestClient_ListGitHubAppRepos(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode([]GitHubAppRepoResource{{FullName: "acme/widgets", DefaultBranch: "main"}})
+		_ = json.NewEncoder(w).Encode(GitHubAppRepoListResource{
+			Repos: []GitHubAppRepoResource{{FullName: "acme/widgets", DefaultBranch: "main", AccountType: "organization"}},
+		})
 	}))
 	defer srv.Close()
 
@@ -134,8 +136,52 @@ func TestClient_ListGitHubAppRepos(t *testing.T) {
 	if gotPath != "/api/v1/github-app/repos" {
 		t.Errorf("path = %s, want /api/v1/github-app/repos", gotPath)
 	}
-	if len(got) != 1 || got[0].FullName != "acme/widgets" {
+	if len(got.Repos) != 1 || got.Repos[0].FullName != "acme/widgets" {
 		t.Errorf("ListGitHubAppRepos() = %+v, want one acme/widgets entry", got)
+	}
+}
+
+func TestClient_ListGitHubAppInstallations(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(GitHubAppInstallationListResource{
+			Installations: []GitHubAppInstallationResource{
+				{ID: 1, InstallationID: 42, AccountLogin: "acme", AccountType: "organization", ConnectedAt: "2026-01-01T00:00:00Z"},
+			},
+			AddOrgURL: "https://github.com/apps/levelrail/installations/new",
+		})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListGitHubAppInstallations(context.Background())
+	if err != nil {
+		t.Fatalf("ListGitHubAppInstallations() error = %v", err)
+	}
+	if gotPath != "/api/v1/github-app/installations" {
+		t.Errorf("path = %s, want /api/v1/github-app/installations", gotPath)
+	}
+	if len(got.Installations) != 1 || got.Installations[0].AccountLogin != "acme" || got.AddOrgURL == "" {
+		t.Errorf("ListGitHubAppInstallations() = %+v, want one acme entry with an AddOrgURL", got)
+	}
+}
+
+func TestClient_DeleteGitHubAppInstallation(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	if err := client.DeleteGitHubAppInstallation(context.Background(), 7); err != nil {
+		t.Fatalf("DeleteGitHubAppInstallation() error = %v", err)
+	}
+	if gotMethod != http.MethodDelete || gotPath != "/api/v1/github-app/installations/7" {
+		t.Errorf("method/path = %s %s, want DELETE /api/v1/github-app/installations/7", gotMethod, gotPath)
 	}
 }
 
