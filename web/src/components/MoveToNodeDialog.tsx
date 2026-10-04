@@ -175,7 +175,11 @@ export function MoveToNodeDialog({
 
   const resolvedTarget = targetNodeId === LOCAL_NODE_VALUE ? '' : targetNodeId
   const isNoop = (currentNodeId ?? '') === resolvedTarget
-  const hasNoOtherNodes = otherNodes.length === 0
+  // "This control plane (local)" is always a real option whenever the
+  // resource isn't already there, even with zero other registered
+  // nodes: nodes list never includes the local node itself, so
+  // otherNodes.length alone undercounts by one in exactly that case.
+  const hasNoOtherNodes = otherNodes.length === 0 && !currentNodeId
   // A move-with-volumes attempt is "in flight" from the moment the
   // trigger request is sent until GetAppVolumeMove reports it's no
   // longer running: the synchronous no-volumes/same-node shortcut on the
