@@ -3606,6 +3606,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 	appOpts := []application.Option{
 		application.WithDeployRecorder(deps.telemetryDB),
 		application.WithHookRunRecorder(deps.db),
+		application.WithProbeAttemptRecorder(deps.db),
 		application.WithStorageTargets(deps.db),
 		application.WithDatabaseAttachments(deps.db),
 		application.WithVaultSettings(deps.db),

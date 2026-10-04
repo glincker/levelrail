@@ -8,6 +8,8 @@ import './resources'
 export const NAMESPACES = [
   'common',
   'deploys',
+  'settings',
+  'dashboard',
   'auditLog',
   'streams',
   'networkProxy',

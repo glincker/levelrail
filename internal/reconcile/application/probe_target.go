@@ -16,8 +16,11 @@ func WithProbeLimits(l probe.Limits) Option {
 	return func(ctrl *Controller) { ctrl.probeLimits = l }
 }
 
-func (c *Controller) prober() *probe.Prober {
-	return probe.New(c.httpClient, runtimeExecutor{runtime: c.runtime, outputCap: c.probeLimits.ExecOutputBytes}, c.probeLimits)
+// prober builds the Prober every readiness/liveness check uses. opts is
+// almost always empty; deployProber is the one caller that passes
+// probe.WithOnAttempt, scoped to deploy-time readiness probing alone.
+func (c *Controller) prober(opts ...probe.Option) *probe.Prober {
+	return probe.New(c.httpClient, runtimeExecutor{runtime: c.runtime, outputCap: c.probeLimits.ExecOutputBytes}, c.probeLimits, opts...)
 }
 
 func readinessProbeFor(desired *store.DesiredService) *store.ServiceProbe {
@@ -47,7 +50,7 @@ func probeTarget(state *docker.ContainerState, p store.ServiceProbe) (probe.Targ
 	if !p.NeedsPort() {
 		return probe.Target{ContainerID: state.ID}, nil
 	}
-	addr, err := primaryAddr(state)
+	addr, err := PrimaryAddr(state)
 	if err != nil {
 		return probe.Target{}, err
 	}

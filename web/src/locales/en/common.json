@@ -2,9 +2,21 @@
   "actions": {
     "copy": "Copy",
     "copied": "Copied",
+    "retry": "Retry",
+    "backToApps": "Back to apps",
     "viewOverview": "View overview",
     "viewApp": "View app",
     "viewDatabase": "View database"
+  },
+  "healthScore": {
+    "title": "Health & readiness",
+    "notFound": "\"{{appName}}\" couldn't be found. It may have been deleted, or belong to a different instance than the one you're signed into.",
+    "loadFailed": "Couldn't load health & readiness. {{message}}",
+    "status": {
+      "pass": "Pass",
+      "warn": "Warn",
+      "fail": "Fail"
+    }
   },
   "logs": {
     "previousContainerEnded": "Previous container instance ended"

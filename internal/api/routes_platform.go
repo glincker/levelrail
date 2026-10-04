@@ -580,6 +580,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
 	mux.HandleFunc("PUT /api/v1/settings/email", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailSettings))
+	// AbilityWrite, not AbilityRoot: same tier notification-channel
+	// testing uses, since sending a test doesn't change stored config.
+	mux.HandleFunc("POST /api/v1/settings/email/test", rt.requireAbility(AbilityWrite, rt.handleTestEmail))
+
+	// Observability settings: the external Grafana/dashboard link,
+	// same precedent as email settings just above. GET is AbilityRead;
+	// PUT is AbilityRoot, matching every other instance-level config row.
+	mux.HandleFunc("GET /api/v1/settings/observability", rt.requireAbility(AbilityRead, rt.handleGetObservabilitySettings))
+	mux.HandleFunc("PUT /api/v1/settings/observability", rt.requireAbility(AbilityRoot, rt.handleUpdateObservabilitySettings))
 
 	// Cloudflare Tunnel (instance-level, one connection per control
 	// plane): GET is AbilityRead; PUT/DELETE are AbilityRoot, matching
@@ -998,6 +1007,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppHealth))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppHealth))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleClearAppHealth))
+	// Health check auto-detect (apps_health_discover.go): AbilityRead, the
+	// same tier GET .../diagnose already uses for an active probe against
+	// a running container (routes.go), since this changes nothing and
+	// only reads what the container's own HTTP port already exposes.
+	mux.HandleFunc("POST /api/v1/apps/{name}/health/discover", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDiscoverAppHealth))
 	// Attach/detach a named Docker volume outside a redeploy
 	// (apps_volumes_attach.go): AbilityWrite, the same tier health above
 	// uses, since this is an ordinary declarative resource, not a secret

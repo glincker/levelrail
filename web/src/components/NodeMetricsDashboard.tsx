@@ -3,6 +3,7 @@ import { PulseIcon, InfoIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 import { MetricChartCard } from './MetricChartCard'
 import { TimeRangeControls } from './TimeRangeControls'
+import { ViewInGrafanaLink } from './ViewInGrafanaLink'
 import { useNodeMetricSeries } from '../queries/nodeMetrics'
 import type { NodeMetricName } from '../types/nodeMetrics'
 import { type ChartUnit, useMergedChartQuery } from '../lib/metricChart'
@@ -247,13 +248,16 @@ export function NodeMetricsDashboard({ nodeId }: { nodeId: string }) {
             and host memory are real host readings.
           </p>
         </div>
-        <TimeRangeControls
-          rangeKey={rangeKey}
-          onRangeChange={setRangeKey}
-          onRefresh={() => {
-            setRefreshNonce((n) => n + 1)
-          }}
-        />
+        <div className="flex items-center gap-2">
+          <ViewInGrafanaLink />
+          <TimeRangeControls
+            rangeKey={rangeKey}
+            onRangeChange={setRangeKey}
+            onRefresh={() => {
+              setRefreshNonce((n) => n + 1)
+            }}
+          />
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
