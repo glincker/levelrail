@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -184,5 +185,45 @@ func TestListWebhookDeliveries_NewestFirstAndScoped(t *testing.T) {
 	}
 	if len(paged) != 2 || paged[0].ID != "whd_web_2" || paged[1].ID != "whd_web_1" {
 		t.Errorf("ListWebhookDeliveries(before) = %+v, want [whd_web_2, whd_web_1]", paged)
+	}
+}
+
+// TestListWebhookDeliveries_UsesCoveringIndex proves migrations/0282's
+// composite index lets ListWebhookDeliveries' WHERE+ORDER BY query plan
+// skip a sort step (migrations/0068 only indexed service_name alone,
+// which can't cover the received_at DESC ordering and forces a temp
+// b-tree sort as the table grows).
+func TestListWebhookDeliveries_UsesCoveringIndex(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	rows, err := db.QueryContext(ctx, `
+		EXPLAIN QUERY PLAN
+		SELECT id, service_name, received_at FROM webhook_deliveries
+		WHERE service_name = ? ORDER BY received_at DESC LIMIT ?
+	`, "web", 20)
+	if err != nil {
+		t.Fatalf("EXPLAIN QUERY PLAN: %v", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var plan string
+	for rows.Next() {
+		var id, parent, notUsed int
+		var detail string
+		if err := rows.Scan(&id, &parent, &notUsed, &detail); err != nil {
+			t.Fatalf("scan query plan row: %v", err)
+		}
+		plan += detail + "\n"
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("iterate query plan rows: %v", err)
+	}
+
+	if strings.Contains(plan, "TEMP B-TREE") {
+		t.Errorf("query plan uses a temp b-tree sort, want the composite index to cover the ORDER BY:\n%s", plan)
+	}
+	if !strings.Contains(plan, "idx_webhook_deliveries_service_received") {
+		t.Errorf("query plan doesn't use idx_webhook_deliveries_service_received:\n%s", plan)
 	}
 }
