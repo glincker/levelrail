@@ -1,0 +1,32 @@
+{
+  "page": {
+    "title": "Traffic",
+    "description": "Every domain routed through this control plane's embedded ingress, which node actually serves it, and whether it can be reached."
+  },
+  "table": {
+    "domain": "Domain",
+    "app": "App",
+    "node": "Node",
+    "reachable": "Reachable",
+    "port": "Port",
+    "tls": "TLS"
+  },
+  "reachable": {
+    "yes": "Reachable",
+    "no": "Unreachable"
+  },
+  "unreachableBanner_one": "1 domain is unreachable: its app runs on a different node than this control plane's own ingress, with no mesh path to reach it yet.",
+  "unreachableBanner_other": "{{count}} domains are unreachable: their apps run on a different node than this control plane's own ingress, with no mesh path to reach them yet.",
+  "fix": {
+    "explanation": "This control plane's embedded ingress only ever routes containers on its own node. Move the app back here, or wait for mesh networking (ADR 006).",
+    "moveHere": "Move to this node"
+  },
+  "tlsSource": {
+    "acme": "ACME",
+    "custom": "Custom"
+  },
+  "empty": {
+    "title": "No domains routed yet",
+    "description": "Connect a domain from an app's Domains tab to see its traffic path here."
+  }
+}
