@@ -100,6 +100,13 @@ type createPlan struct {
 	CreateBody appResource
 	Build      *buildTriggerRequest
 	DeploySpec *deploySpecCreatePlan
+	// Volumes is app.yaml's own volumes: block, carried separately from
+	// CreateBody since appResource.Volumes is response-only (POST /apps
+	// never accepts it, see that field's doc comment in
+	// internal/apiclient/types.go): runAppsCreate wires these on with a
+	// follow-up PUT .../volumes after create, the same post-create
+	// pattern --attach-database already uses.
+	Volumes []spec.Volume
 }
 
 // deploySpecCreatePlan is planFromFileStatic's output: a single-service
@@ -340,6 +347,7 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 			ImageRepo: f.imageRepo,
 			Build:     buildInput,
 		},
+		Volumes: svc.Volumes,
 	}, nil
 }
 
@@ -396,6 +404,7 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 			Health:      health,
 			Command:     svc.Command,
 		},
+		Volumes: svc.Volumes,
 	}, nil
 }
 
@@ -782,7 +791,36 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		}
 	}
 
+	if len(plan.Volumes) > 0 {
+		if volErr := attachPlanVolumes(ctx, client, created.Name, plan.Volumes, stderr, f.jsonOut); volErr != nil {
+			return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("app %q was created but attaching its volumes failed: %w", created.Name, volErr))
+		}
+	}
+
 	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, of)
+}
+
+// attachPlanVolumes wires app.yaml's volumes: block onto name with a
+// follow-up PUT .../volumes, the same post-create step --attach-database
+// already takes (POST /apps itself never accepts volumes, see
+// createPlan.Volumes' own doc comment). A volume with hostPath set names a
+// bind mount, which PUT .../volumes has no field for (appVolumeResource is
+// name+path only, the same shape "apps volumes attach" is limited to), so
+// it is rejected here rather than silently dropped the way it was before
+// this existed.
+func attachPlanVolumes(ctx context.Context, client *Client, name string, volumes []spec.Volume, stderr io.Writer, jsonOut bool) error {
+	resources := make([]appVolumeResource, 0, len(volumes))
+	for _, v := range volumes {
+		if v.HostPath != "" {
+			return newValidationError("volume %q: hostPath bind mounts are not supported by \"apps create --file\", attach a named volume instead", v.Name)
+		}
+		resources = append(resources, appVolumeResource{Name: v.Name, ContainerPath: v.Path})
+	}
+	if !jsonOut {
+		_, _ = fmt.Fprintf(stderr, "attaching %d volume(s)...\n", len(resources))
+	}
+	_, err := client.SetAppVolumes(ctx, name, setAppVolumesRequest{Volumes: resources})
+	return err
 }
 
 // triggerCreatePlanBuild triggers plan's build (a no-op returning nil
