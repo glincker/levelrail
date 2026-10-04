@@ -275,3 +275,13 @@ scripts/ci-go-plan.sh <sha>^ <sha>
 - To force the full suite on a PR, change `.github/workflows/ci.yml` or one
   of the pipeline scripts, or run the nightly workflow on the branch with
   `workflow_dispatch`.
+- The docker/rest lane's `go test -timeout` (27m, job `timeout-minutes: 32`)
+  has headroom above `test/e2e`'s own measured cost, not a tight fit:
+  `test/e2e` runs a fixed ~16-template fleet plus a growing set of
+  per-batch catalog live tests sequentially in one binary (no
+  `t.Parallel()`), so its floor rises independent of any one PR's diff
+  size. #925 and #912 both hit the old 18m/22m budget this way, not from
+  a real hang. Raising the ceiling again later means the floor has grown
+  further; parallelizing those subtests (independent Docker networks per
+  template, should be safe) is the real fix but is a bigger, unverified
+  change not made here.

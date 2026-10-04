@@ -170,7 +170,9 @@ jobs:
       github.event_name != 'push' && needs.build-vet.result == 'success'
       && needs.build-vet.outputs.has_tests == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 22
+    # 5 min above the docker/rest lanes' own -timeout=27m (scripts/ci-go-plan.sh):
+    # enough slack for checkout/setup/teardown/upload around go test's own budget.
+    timeout-minutes: 32
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.build-vet.outputs.matrix) }}
