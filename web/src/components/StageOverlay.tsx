@@ -1,18 +1,7 @@
 import * as React from 'react'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { useNavigate } from '@tanstack/react-router'
-import {
-  ArrowsSplitIcon,
-  CloudArrowUpIcon,
-  CpuIcon,
-  GearIcon,
-  GlobeIcon,
-  HardDrivesIcon,
-  HeartbeatIcon,
-  StackIcon,
-  TreeStructureIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { XIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   DialogPortal,
   DialogTitle,
@@ -26,37 +15,14 @@ import { filterByFeature } from '@/lib/experimental'
 import { BASE_DOCS, GO_TARGETS } from '@/lib/shortcuts'
 import { cn } from '@/lib/utils'
 
-// One icon per GO_TARGETS key, matching the same choices navModel.tsx and
-// commandPaletteData.tsx already use for these routes.
-const TILE_ICONS: Record<string, React.ReactNode> = {
-  a: <StackIcon />,
-  n: <HardDrivesIcon />,
-  s: <HeartbeatIcon />,
-  d: <GlobeIcon />,
-  b: <CloudArrowUpIcon />,
-  l: <ArrowsSplitIcon />,
-  p: <TreeStructureIcon />,
-  m: <CpuIcon />,
-  t: <GearIcon />,
-}
-
-// Decorative cascade (Stage Manager's stacked-thumbnail look). Purely a
-// visual offset: it never changes DOM order, so tab/arrow-key order stays
-// the plain reading order.
-const CASCADE_TRANSFORM = [
-  'sm:-translate-y-1.5 sm:-rotate-1',
-  'sm:translate-y-1 sm:rotate-1',
-  'sm:-translate-y-0.5 sm:rotate-0.5',
-  'sm:translate-y-1.5 sm:-rotate-0.5',
-]
-
 interface Tile {
   key: string
   to: string
   label: string
 }
 
-// Roving-tabindex grid nav: arrows move/wrap, Home/End jump to an edge.
+// Roving-tabindex row nav: left/right move/wrap, Home/End jump to an edge.
+// Up/down mirror left/right so an accidental vertical arrow still moves.
 function nextTileIndex(
   key: string,
   index: number,
@@ -144,83 +110,83 @@ export function StageOverlay({
         <DialogPrimitive.Backdrop
           data-slot="stage-overlay-backdrop"
           className={cn(
-            'fixed inset-0 z-50 bg-black/50 [backdrop-filter:var(--glinui-blur-modal)] [-webkit-backdrop-filter:var(--glinui-blur-modal)]',
+            'fixed inset-0 z-50 bg-black/30 [backdrop-filter:var(--glinui-blur-modal)] [-webkit-backdrop-filter:var(--glinui-blur-modal)]',
             animate &&
               'duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0',
           )}
         />
+        {/* Bottom-anchored strip, not a full-screen dialog: a quick "go to"
+            glance, not a destination of its own. */}
         <DialogPrimitive.Popup
           data-slot="stage-overlay-popup"
           aria-label="Quick navigation"
           className={cn(
-            'glinui-glass-surface fixed inset-4 z-50 flex flex-col overflow-y-auto p-6 outline-none sm:inset-8 sm:p-10 md:inset-16',
+            'glinui-glass-surface fixed bottom-6 left-1/2 z-50 flex w-[calc(100vw-2rem)] max-w-3xl -translate-x-1/2 flex-col gap-2 p-3 outline-none',
             animate &&
-              'duration-200 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+              'duration-200 data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom-4 data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom-4',
           )}
         >
-          <DialogPrimitive.Close
-            data-slot="stage-overlay-close"
-            render={
-              <Button
-                variant="ghost"
-                className="absolute top-4 right-4"
-                size="icon-sm"
-              />
-            }
-          >
-            <XIcon />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
+          <DialogTitle className="sr-only">Quick navigation</DialogTitle>
+          <DialogDescription className="sr-only">
+            Hold L any time to summon this. Pick a destination, or move between
+            them with the arrow keys. Press Escape to close.
+          </DialogDescription>
 
-          <div className="mx-auto max-w-xl text-center">
-            <DialogTitle className="text-2xl font-semibold tracking-tight text-foreground">
-              Quick navigation
-            </DialogTitle>
-            <DialogDescription className="mt-2 text-sm">
-              Hold <Kbd>L</Kbd> any time to summon this. Pick a tile, or move
-              between them with the arrow keys.
-            </DialogDescription>
+          <div className="flex items-center gap-2">
+            <span className="flex shrink-0 items-center gap-1.5 pl-1 text-xs font-medium text-muted-foreground">
+              <Kbd>L</Kbd>
+              <span>Go to</span>
+            </span>
+
+            <div
+              role="group"
+              aria-label="Go to"
+              className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-0.5"
+            >
+              {tiles.map((tile, index) => (
+                <button
+                  key={tile.key}
+                  ref={(el) => {
+                    tileRefs.current[index] = el
+                  }}
+                  type="button"
+                  tabIndex={index === activeTile ? 0 : -1}
+                  aria-label={`Go to ${tile.label}`}
+                  onClick={() => select(tile.to)}
+                  onFocus={() => setActiveTile(index)}
+                  onKeyDown={(e) => onTileKeyDown(e, index)}
+                  className={cn(
+                    'flex shrink-0 items-center gap-1.5 rounded-[var(--glinui-radius-sm)] border px-2.5 py-1.5 outline-none transition-colors',
+                    'border-[var(--glinui-glass-border)] bg-white/5 hover:bg-white/10',
+                    'focus-visible:ring-2 focus-visible:ring-[var(--glinui-accent)]',
+                  )}
+                >
+                  <span
+                    className="flex items-center gap-0.5"
+                    aria-hidden="true"
+                  >
+                    <Kbd>g</Kbd>
+                    <Kbd>{tile.key}</Kbd>
+                  </span>
+                  <span className="text-xs font-medium whitespace-nowrap text-foreground">
+                    {tile.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <DialogPrimitive.Close
+              data-slot="stage-overlay-close"
+              render={
+                <Button variant="ghost" className="shrink-0" size="icon-sm" />
+              }
+            >
+              <XIcon />
+              <span className="sr-only">Close</span>
+            </DialogPrimitive.Close>
           </div>
 
-          <div
-            role="group"
-            aria-label="Go to"
-            className="mx-auto mt-10 grid w-full max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"
-          >
-            {tiles.map((tile, index) => (
-              <button
-                key={tile.key}
-                ref={(el) => {
-                  tileRefs.current[index] = el
-                }}
-                type="button"
-                tabIndex={index === activeTile ? 0 : -1}
-                aria-label={`Go to ${tile.label}`}
-                onClick={() => select(tile.to)}
-                onFocus={() => setActiveTile(index)}
-                onKeyDown={(e) => onTileKeyDown(e, index)}
-                className={cn(
-                  'flex flex-col items-start gap-2 rounded-[var(--glinui-radius-md)] border p-4 text-left outline-none transition-colors',
-                  'border-[var(--glinui-glass-border)] bg-white/5 hover:bg-white/10',
-                  'focus-visible:ring-2 focus-visible:ring-[var(--glinui-accent)]',
-                  CASCADE_TRANSFORM[index % CASCADE_TRANSFORM.length],
-                )}
-              >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--glinui-radius-sm)] bg-[var(--glinui-accent-active-bg)] text-[var(--glinui-accent)] [&_svg]:size-5">
-                  {TILE_ICONS[tile.key]}
-                </span>
-                <span className="text-sm font-medium text-foreground">
-                  {tile.label}
-                </span>
-                <span className="flex items-center gap-1" aria-hidden="true">
-                  <Kbd>g</Kbd>
-                  <Kbd>{tile.key}</Kbd>
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="mx-auto mt-auto flex flex-wrap items-center justify-center gap-4 pt-10 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-3 border-t border-[var(--glinui-glass-border)] pt-2 pl-1 text-[10px] text-muted-foreground">
             {BASE_DOCS.map((doc) => (
               <span key={doc.description} className="flex items-center gap-1.5">
                 <span className="flex items-center gap-0.5">

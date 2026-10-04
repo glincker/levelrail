@@ -103,6 +103,17 @@ func (l Local) InspectImageID(ctx context.Context, ref string) (string, error) {
 	return id, nil
 }
 
+// Stats implements docker.StatsInspector by forwarding to the wrapped
+// runtime, the same forwarding InspectExitState above already does for
+// a different optional capability.
+func (l Local) Stats(ctx context.Context, containerID string) (docker.ContainerStats, error) {
+	inspector, ok := l.Runtime.(docker.StatsInspector)
+	if !ok {
+		return docker.ContainerStats{}, ErrStatsUnsupported
+	}
+	return inspector.Stats(ctx, containerID)
+}
+
 // ErrNodeNotRegistered is Registry.Get's failure mode for an unknown
 // node ID.
 var ErrNodeNotRegistered = errors.New("agent: node not registered in this transport registry")

@@ -17,7 +17,11 @@ const maxDrainBytes = 64 * 1024
 
 var errTooManyRedirects = errors.New("too many redirects")
 
-func (p *Prober) httpAttempt(ctx context.Context, addr string, cfg Config, timeout time.Duration) error {
+func (p *Prober) httpAttempt(ctx context.Context, addr string, cfg Config, timeout time.Duration) (err error) {
+	start := time.Now()
+	var statusCode int
+	defer func() { p.report(start, addr, statusCode, 0, err) }()
+
 	scheme := cfg.Scheme
 	if scheme == "" {
 		scheme = SchemeHTTP
@@ -51,6 +55,7 @@ func (p *Prober) httpAttempt(ctx context.Context, addr string, cfg Config, timeo
 		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, maxDrainBytes))
 		_ = resp.Body.Close()
 	}()
+	statusCode = resp.StatusCode
 
 	if want.Contains(resp.StatusCode) {
 		return nil

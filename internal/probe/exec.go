@@ -8,7 +8,11 @@ import (
 	"time"
 )
 
-func (p *Prober) execAttempt(ctx context.Context, containerID string, cmd []string, timeout time.Duration) error {
+func (p *Prober) execAttempt(ctx context.Context, containerID string, cmd []string, timeout time.Duration) (err error) {
+	start := time.Now()
+	var exitCode int
+	defer func() { p.report(start, containerID, 0, exitCode, err) }()
+
 	desc := "exec " + DescribeCommand(cmd)
 	if p.exec == nil || containerID == "" {
 		return &Failure{Kind: FailureExecNotReady, Reason: desc + ": exec probes are not available for this container"}
@@ -18,6 +22,7 @@ func (p *Prober) execAttempt(ctx context.Context, containerID string, cmd []stri
 	defer cancel()
 
 	code, output, err := p.exec.ExecProbe(attemptCtx, containerID, cmd)
+	exitCode = code
 	switch {
 	case errors.Is(attemptCtx.Err(), context.DeadlineExceeded):
 		return &Failure{Kind: FailureTimeout, Reason: fmt.Sprintf("%s timed out after %s", desc, timeout), Err: attemptCtx.Err()}

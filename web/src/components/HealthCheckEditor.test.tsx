@@ -70,10 +70,12 @@ describe('HealthCheckEditor', () => {
     const user = userEvent.setup()
 
     await user.click(screen.getByRole('switch', { name: 'Readiness probe' }))
+    await user.click(screen.getByRole('button', { name: 'Custom path' }))
     await user.type(
       screen.getByLabelText('Path', { selector: '#readiness-path' }),
       '/health',
     )
+    await user.click(screen.getByRole('button', { name: 'Advanced' }))
     await user.click(screen.getByRole('switch', { name: 'HTTPS' }))
     await user.click(
       screen.getByRole('switch', { name: /Skip TLS verification/ }),
@@ -94,6 +96,10 @@ describe('HealthCheckEditor', () => {
         tls_skip_verify: true,
         follow_redirects: false,
         expected_status: '200-399',
+        // Custom-path mode prefills the readiness timing defaults since
+        // the field started blank (see healthCheckDefaults.ts).
+        interval: 5_000_000_000,
+        timeout: 2_000_000_000,
       })
     })
   })
@@ -122,10 +128,12 @@ describe('HealthCheckEditor', () => {
     const user = userEvent.setup()
 
     await user.click(screen.getByRole('switch', { name: 'Readiness probe' }))
+    await user.click(screen.getByRole('button', { name: 'Custom path' }))
     await user.type(
       screen.getByLabelText('Path', { selector: '#readiness-path' }),
       '/',
     )
+    await user.click(screen.getByRole('button', { name: 'Advanced' }))
     await user.type(
       screen.getByLabelText('Expected status', {
         selector: '#readiness-expected-status',
@@ -166,6 +174,64 @@ describe('HealthCheckEditor', () => {
         failures: 3,
       })
       expect(body.health?.ready_timeout).toBe(90_000_000_000)
+    })
+  })
+
+  it('a one-click preset fills path, interval, timeout and failures', async () => {
+    const fetchMock = renderEditor(fakeApp())
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('switch', { name: 'Readiness probe' }))
+    await user.click(screen.getByRole('button', { name: '/healthz' }))
+    await user.click(screen.getByRole('button', { name: 'Save health checks' }))
+
+    await waitFor(() => {
+      expect(sentBody(fetchMock).health?.readiness).toEqual({
+        path: '/healthz',
+        follow_redirects: true,
+        interval: 5_000_000_000,
+        timeout: 2_000_000_000,
+      })
+    })
+  })
+
+  it('"No health check" in the preset picker disables the probe', async () => {
+    const fetchMock = renderEditor(fakeApp())
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('switch', { name: 'Readiness probe' }))
+    await user.click(screen.getByRole('button', { name: '/healthz' }))
+    await user.click(screen.getByRole('button', { name: 'No health check' }))
+    await user.click(screen.getByRole('button', { name: 'Save health checks' }))
+
+    await waitFor(() => {
+      expect(sentBody(fetchMock).health?.readiness).toBeNull()
+    })
+  })
+
+  it('"Same as readiness" copies the readiness probe onto liveness', async () => {
+    const fetchMock = renderEditor(fakeApp())
+    const user = userEvent.setup()
+
+    const copyButton = screen.getByRole('button', { name: 'Same as readiness' })
+    expect(copyButton).toBeDisabled()
+
+    await user.click(screen.getByRole('switch', { name: 'Readiness probe' }))
+    await user.click(screen.getByRole('button', { name: '/api/health' }))
+    expect(copyButton).toBeEnabled()
+    await user.click(copyButton)
+    await user.click(screen.getByRole('button', { name: 'Save health checks' }))
+
+    await waitFor(() => {
+      const body = sentBody(fetchMock)
+      expect(body.health?.readiness?.path).toBe('/api/health')
+      expect(body.health?.liveness).toMatchObject({
+        path: '/api/health',
+        follow_redirects: true,
+      })
+      // liveness keeps its own timing defaults, not readiness's.
+      expect(body.health?.liveness?.interval).toBe(30_000_000_000)
+      expect(body.health?.liveness?.failures).toBe(3)
     })
   })
 })

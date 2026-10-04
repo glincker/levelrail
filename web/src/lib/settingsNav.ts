@@ -31,6 +31,7 @@ import {
   PlugsConnectedIcon,
   SparkleIcon,
   FileCodeIcon,
+  ChartLineIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { filterByFeature, type ExperimentalFeature } from './experimental'
 
@@ -242,6 +243,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'Vault',
         description:
           'Resolve app secrets live from an external HashiCorp Vault instance.',
+      },
+      {
+        to: '/settings/observability',
+        icon: ChartLineIcon,
+        title: 'Observability',
+        description:
+          'Remote-read connection info and a link out to your own Grafana.',
       },
       {
         to: '/settings/ai-assistant',
