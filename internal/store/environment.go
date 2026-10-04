@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 )
@@ -54,6 +55,45 @@ func (db *DB) GetEnvironment(ctx context.Context, id string) (Environment, error
 		return Environment{}, fmt.Errorf("store: get environment %q: %w", id, err)
 	}
 	return e, nil
+}
+
+// GetEnvironmentsByIDs returns every environment in ids, keyed by ID, in
+// one query (json_each, matching GetConditionsForControllers' pattern)
+// instead of a GetEnvironment call per ID. An ID with no matching row is
+// simply absent from the map. Built for GET /api/v1/apps (internal/api's
+// environmentNames), which previously called GetEnvironment once per
+// distinct environment on the page.
+func (db *DB) GetEnvironmentsByIDs(ctx context.Context, ids []string) (map[string]Environment, error) {
+	result := make(map[string]Environment, len(ids))
+	if len(ids) == 0 {
+		return result, nil
+	}
+	idsJSON, err := json.Marshal(ids)
+	if err != nil {
+		return nil, fmt.Errorf("store: marshal batched environment ids: %w", err)
+	}
+	rows, err := db.QueryContext(ctx, `
+		SELECT id, project_id, name, protected, created_at
+		FROM environments
+		WHERE id IN (SELECT value FROM json_each(?))
+	`, string(idsJSON))
+	if err != nil {
+		return nil, fmt.Errorf("store: get environments for %d ids: %w", len(ids), err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+	for rows.Next() {
+		var e Environment
+		if err := rows.Scan(&e.ID, &e.ProjectID, &e.Name, &e.Protected, &e.CreatedAt); err != nil {
+			return nil, fmt.Errorf("store: scan batched environment row: %w", err)
+		}
+		result[e.ID] = e
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate batched environment rows: %w", err)
+	}
+	return result, nil
 }
 
 // ListEnvironmentsByProject returns every environment for one project,
