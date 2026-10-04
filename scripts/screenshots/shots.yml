@@ -51,3 +51,27 @@
   width: 1280
   height: 800
   wait: 2000
+
+- output: docs/assets/screenshots/databases-list.png
+  url: __BASE_URL__/databases/
+  width: 1280
+  height: 700
+  wait: 2000
+
+- output: docs/assets/screenshots/database-overview.png
+  url: __BASE_URL__/databases/docs-sample-db/overview
+  width: 1280
+  height: 900
+  wait: 2000
+
+- output: docs/assets/screenshots/domains-list.png
+  url: __BASE_URL__/domains/
+  width: 1280
+  height: 700
+  wait: 2000
+
+- output: docs/assets/screenshots/app-environment.png
+  url: __BASE_URL__/apps/marketing-site/environment
+  width: 1280
+  height: 800
+  wait: 2000

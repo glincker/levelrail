@@ -102,6 +102,8 @@ Add or change a domain either by:
 
 The dashboard's cross-app **Domains** page lists every domain across every app with its certificate status, plus read-only badges for WAF, redirect, maintenance mode, and basic auth when configured; editing those settings still happens on the owning app's own Domains tab.
 
+![Levelrail domains page listing every routed domain with its certificate status](assets/screenshots/domains-list.png)
+
 List all domains currently routed:
 
 ```
