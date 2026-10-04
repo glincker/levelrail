@@ -37,14 +37,14 @@ func selectLeastLoadedNode(candidates []nodePlacementLoad) string {
 }
 
 // autoPlaceNode picks a placement target for a new app or database whose
-// create request omitted node_id entirely: the least-loaded registered
-// node that is schedulable (not cordoned) and online, or "" (the local
-// node) when auto-placement is disabled (WithAutoPlacement), no other
-// node is registered, or none is eligible. This is the "simple spread
-// scheduling" half of Phase 3 placement (see CLAUDE.md section 6);
-// manual assignment (an explicit node_id, or PUT .../node) already
-// covers the other half and always takes priority over this.
-func (rt *Router) autoPlaceNode(ctx context.Context) (string, error) {
+// create request omitted node_id entirely: the least-loaded, schedulable,
+// online registered node, or "" (local) when disabled or none eligible
+// (CLAUDE.md section 6's "simple spread scheduling"); an explicit node_id
+// (at create time, or PUT .../node) always overrides this.
+// preferLocalIngress instead picks the control plane's own node, since
+// ingress has no mesh path to a worker node yet (CrossNodeIngress); a
+// no-op when the local node isn't itself a live candidate.
+func (rt *Router) autoPlaceNode(ctx context.Context, preferLocalIngress bool) (string, error) {
 	if !rt.autoPlacementEnabled {
 		return "", nil
 	}
@@ -73,11 +73,18 @@ func (rt *Router) autoPlaceNode(ctx context.Context) (string, error) {
 	}
 
 	candidates := make([]nodePlacementLoad, 0, len(nodes))
+	localEligible := false
 	for _, n := range nodes {
 		if !n.Schedulable || n.Status != store.NodeStatusOnline {
 			continue
 		}
 		candidates = append(candidates, nodePlacementLoad{NodeID: n.ID, Count: counts[n.ID]})
+		if preferLocalIngress && rt.localNodeID != "" && n.ID == rt.localNodeID {
+			localEligible = true
+		}
+	}
+	if localEligible {
+		return rt.localNodeID, nil
 	}
 	return selectLeastLoadedNode(candidates), nil
 }
@@ -122,11 +129,14 @@ func nodeIDKeyPresent(body []byte) bool {
 // shared node_id resolution: an explicit node_id in the body (even "")
 // is validated as a placement override and left untouched in *nodeID/
 // *autoPlaced; node_id omitted entirely lets autoPlaceNode pick one via
-// simple spread scheduling, writing its result into both. logContext
-// names the calling handler ("api: create app"/"api: create database")
-// for its own error log lines. ok is false once it has already written
-// the full HTTP response itself; the caller should return immediately.
-func (rt *Router) resolveCreateNodePlacement(w http.ResponseWriter, r *http.Request, body []byte, nodeID *string, autoPlaced *bool, logContext string) (ok bool) {
+// simple spread scheduling, writing its result into both. hasDomains
+// forwards to autoPlaceNode's preferLocalIngress (callers pass
+// len(req.Domains) > 0; databases, which have none, always pass false).
+// logContext names the calling handler ("api: create app"/"api: create
+// database") for its own error log lines. ok is false once it has
+// already written the full HTTP response itself; the caller should
+// return immediately.
+func (rt *Router) resolveCreateNodePlacement(w http.ResponseWriter, r *http.Request, body []byte, nodeID *string, autoPlaced *bool, hasDomains bool, logContext string) (ok bool) {
 	if nodeIDKeyPresent(body) {
 		if err := rt.validatePlacementTarget(r.Context(), *nodeID); err != nil {
 			rt.respondPlacementValidationError(w, err, *nodeID, logContext+": validate node failed")
@@ -135,7 +145,7 @@ func (rt *Router) resolveCreateNodePlacement(w http.ResponseWriter, r *http.Requ
 		return true
 	}
 
-	placed, err := rt.autoPlaceNode(r.Context())
+	placed, err := rt.autoPlaceNode(r.Context(), hasDomains)
 	if err != nil {
 		rt.logger.Error(logContext+": auto-place node failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")

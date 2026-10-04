@@ -78,6 +78,8 @@ sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
 
 The dashboard shows a "connection is not encrypted" banner until you point a domain at the server (Domains page, primary domain plus ACME) and set an `https://` **dashboard URL**. After that, sign-in over plain HTTP is refused. To recover if the https URL breaks, add `APP_ALLOW_INSECURE_LOGIN=true` with `sudo systemctl edit levelrail` (`[Service]` then `Environment=APP_ALLOW_INSECURE_LOGIN=true`) and restart.
 
+**Pick a dashboard-only subdomain, not an app's own domain.** Use something like `console.example.com` or `panel.example.com` for the primary domain, the same convention CapRover uses for its own panel (`captain.<domain>`). Reusing a domain an app already serves breaks whichever one loses the conflict, silently, with no warning. See [Domains and ingress](domains-and-ingress.md#the-dashboards-own-domain) for why this matters.
+
 To skip the setup token and create the admin non-interactively, set `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` in the unit (again via `systemctl edit levelrail`) before the first start.
 
 AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel are hidden until you opt in with `APP_EXPERIMENTAL`, see [experimental features](experimental-features.md).

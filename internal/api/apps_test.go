@@ -476,6 +476,58 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 		}
 	})
 
+	// A domain-bearing app must not spread onto a worker node: ingress
+	// (Caddy) only ever routes locally, no mesh path exists yet
+	// (CrossNodeIngress, internal/reconcile/ingress/cross_node.go).
+	t.Run("domain set, node_id omitted: placed on the control-plane node despite more load", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.localNodeID = "node_local"
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_local", "control-plane", true)
+		seedOnlineNode(t, db, "node_worker", "worker", true)
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "existing", Image: "img:1", Port: 80}); err != nil {
+			t.Fatalf("seed existing service: %v", err)
+		}
+		if err := db.UpdateServiceNode(ctx, "existing", "node_local"); err != nil {
+			t.Fatalf("place existing service: %v", err)
+		}
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"domains":["web.example.com"]}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_local", true)
+	})
+
+	// No domains: ordinary spread scheduling applies, the same as before
+	// ingress-aware placement existed.
+	t.Run("no domain, node_id omitted: ordinary spread still applies", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.localNodeID = "node_local"
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_local", "control-plane", true)
+		seedOnlineNode(t, db, "node_worker", "worker", true)
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "existing", Image: "img:1", Port: 80}); err != nil {
+			t.Fatalf("seed existing service: %v", err)
+		}
+		if err := db.UpdateServiceNode(ctx, "existing", "node_local"); err != nil {
+			t.Fatalf("place existing service: %v", err)
+		}
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_worker", true)
+	})
+
+	// An explicit node_id is the operator's call; ingress preference is a
+	// default, never a forced override.
+	t.Run("domain set but node_id explicit: the explicit worker is respected", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.localNodeID = "node_local"
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_local", "control-plane", true)
+		seedOnlineNode(t, db, "node_worker", "worker", true)
+
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"domains":["web.example.com"],"node_id":"node_worker"}`, http.StatusCreated)
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_worker", false)
+	})
+
 	t.Run("explicit node_id overrides auto-placement", func(t *testing.T) {
 		rt, db := newTestRouter(t)
 		cookie := loginTestSession(t, rt, db)

@@ -254,6 +254,82 @@ func TestHSTSDBOverride_TogglesHeader(t *testing.T) {
 	}
 }
 
+// TestHandleUpdateIngressSettings_PrimaryDomainConflict covers the
+// collision this endpoint didn't check before: setting PrimaryDomain to
+// a domain an app already owns must be rejected with 409, naming the
+// conflicting app, the same shape apps domains add's own
+// store.ErrDomainTaken already gives a per-app domain conflict.
+func TestHandleUpdateIngressSettings_PrimaryDomainConflict(t *testing.T) {
+	tests := []struct {
+		name          string
+		seedDomain    string
+		primaryDomain string
+		wantConflict  bool
+	}{
+		{
+			name:          "exact match conflicts",
+			seedDomain:    "app.example.com",
+			primaryDomain: "app.example.com",
+			wantConflict:  true,
+		},
+		{
+			name:          "case-insensitive match conflicts",
+			seedDomain:    "App.Example.com",
+			primaryDomain: "app.example.com",
+			wantConflict:  true,
+		},
+		{
+			name:          "different domain does not conflict",
+			seedDomain:    "app.example.com",
+			primaryDomain: "dashboard.example.com",
+			wantConflict:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+
+			if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+				Name: "web", Image: "img:v1", Port: 80,
+				Domains: []string{tt.seedDomain},
+			}); err != nil {
+				t.Fatalf("seed service: %v", err)
+			}
+
+			body := `{"primary_domain":"` + tt.primaryDomain + `"}`
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/ingress", body))
+
+			if tt.wantConflict {
+				if rec.Code != http.StatusConflict {
+					t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+				}
+				if !strings.Contains(rec.Body.String(), "web") {
+					t.Errorf("conflict body = %q, want it to name the owning app %q", rec.Body.String(), "web")
+				}
+
+				// The row must be untouched by a rejected request.
+				getRec := httptest.NewRecorder()
+				rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress", ""))
+				var got ingressSettingsResource
+				if err := json.Unmarshal(getRec.Body.Bytes(), &got); err != nil {
+					t.Fatalf("decode: %v", err)
+				}
+				if got.PrimaryDomain != "" {
+					t.Errorf("PrimaryDomain = %q after a rejected update, want left unchanged", got.PrimaryDomain)
+				}
+				return
+			}
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+			}
+		})
+	}
+}
+
 func TestHandleUpdateIngressSettings_CanDisableAndClear(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

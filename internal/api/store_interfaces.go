@@ -457,6 +457,15 @@ type PasswordResetTokenStore interface {
 	ClaimPasswordResetToken(ctx context.Context, id string) error
 }
 
+// SessionLinkTokenStore is the store surface the session-link flow
+// needs: always set, part of the core Store interface, same shape as
+// PasswordResetTokenStore above.
+type SessionLinkTokenStore interface {
+	SaveSessionLinkToken(ctx context.Context, t store.SessionLinkToken) error
+	GetSessionLinkTokenByHash(ctx context.Context, hash string) (*store.SessionLinkToken, error)
+	ClaimSessionLinkToken(ctx context.Context, id string) error
+}
+
 // InviteStore is the store surface the team-invite flow needs: always
 // set, part of the core Store interface, same shape as
 // PasswordResetTokenStore above.
@@ -580,6 +589,7 @@ type Store interface {
 	SSHNodeProvisionStore
 	VaultSettingsStore
 	PasswordResetTokenStore
+	SessionLinkTokenStore
 	InviteStore
 	RecoveryCodeStore
 	PasskeyStore

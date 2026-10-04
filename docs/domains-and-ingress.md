@@ -108,6 +108,12 @@ List all domains currently routed:
 levelrail-cli domains list
 ```
 
+### The dashboard's own domain
+
+**Settings > Domains** sets the control plane's own `primary_domain`, the one the dashboard itself is reachable at, separate from any app's `domains:` in `app.yaml`. Give it its own dedicated subdomain rather than reusing one an app already serves, the same convention CapRover uses for its panel (`captain.<domain>`): something like `console.example.com` or `panel.example.com`.
+
+Setting the primary domain to a domain an app already owns is rejected with a `409` naming the conflicting app, so this is a real guardrail, not just a convention. Pick a domain no app uses from the start and there's nothing to collide with later.
+
 ## Zero-config URL: no domain, no DNS record, still HTTPS
 
 Deploying an app without `domains:` doesn't leave it reachable only at `host:port`. When `APP_PUBLIC_HOST` is set to your server's real, publicly routable IP address (not a private/LAN address), every app with no domain gets an automatic [sslip.io](https://sslip.io) hostname:
@@ -424,6 +430,20 @@ has no way to add a published port to a running container.
 lists, no TLS termination on the stream itself (if the backend speaks
 TLS, that's between the client and the backend, Levelrail just carries
 the bytes), and no multi-app or load-balanced streams yet.
+
+## Traffic: routing status for every domain at a glance
+
+**Infrastructure > Traffic** in the dashboard (`GET /api/v1/network/proxy`, `read` ability, so any signed-in user can check it) is a flat, one-row-per-domain table: which app a domain routes to, which node that app actually runs on, whether this control plane's own embedded ingress can reach it, its port, and TLS status and issuer.
+
+It exists for one specific, otherwise-invisible failure: the embedded Caddy ingress above only ever routes containers on **its own node**. If an app gets placed on a different node, its container can be perfectly healthy while its domain silently never routes, because there's no mesh path to it yet. See [Multi-node: WireGuard mesh and internal DNS](multi-node.md#wireguard-mesh-and-internal-dns) for why that gap exists today.
+
+This is the fastest way to spot it. A domain in that state shows an **Unreachable** badge (with a banner at the top of the page when any exist) instead of only turning up as a line in `GET /api/v1/doctor`'s report. Each unreachable row carries a **Move** button straight to the same move-with-volumes flow described in [Moving an app with its volumes](multi-node.md#moving-an-app-with-its-volumes), or run the fix directly:
+
+```bash
+levelrail-cli apps set-node <app-name> <this control plane's own node id>
+# or, to let auto-placement choose again:
+levelrail-cli apps clear-node <app-name>
+```
 
 ## Walkthrough: your first domain, from install to HTTPS
 

@@ -1185,6 +1185,14 @@ type SessionInfoResource struct {
 	ExpiresAt string `json:"expires_at"`
 }
 
+// SessionLinkResource mirrors internal/api's mintSessionLinkResponse
+// (internal/api/session_links.go): Token is a one-time secret, URL is
+// the same token already embedded in a ready-to-open login link.
+type SessionLinkResource struct {
+	Token string `json:"token"`
+	URL   string `json:"url"`
+}
+
 // DatabaseResource mirrors internal/api's databaseResource
 // (internal/api/databases.go). NodeID is response-only on update, but
 // settable at create time as an explicit placement override, the same

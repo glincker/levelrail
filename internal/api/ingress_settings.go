@@ -100,6 +100,9 @@ var (
 // malformed directory URL is Caddy's own problem to surface, at apply
 // time, the same way a malformed domain would surface as a routing
 // failure rather than a settings-save failure.
+//
+// PrimaryDomain's domain-conflict check lives in handleUpdateIngressSettings
+// instead, which has the store access this pure function doesn't.
 func validateIngressSettingsRequest(req ingressSettingsResource) error {
 	if !req.ACMEEnabled {
 		return nil
@@ -144,8 +147,22 @@ func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	primaryDomain := strings.TrimSpace(req.PrimaryDomain)
+	if primaryDomain != "" {
+		owner, err := rt.primaryDomainOwner(r.Context(), primaryDomain)
+		if err != nil {
+			rt.internalError(w, "api: update ingress settings: check domain conflict", err)
+			return
+		}
+		if owner != "" {
+			taken := &store.ErrDomainTaken{Domain: primaryDomain, Owner: owner}
+			writeError(w, http.StatusConflict, taken.Error())
+			return
+		}
+	}
+
 	settings := store.IngressSettings{
-		PrimaryDomain:    strings.TrimSpace(req.PrimaryDomain),
+		PrimaryDomain:    primaryDomain,
 		ACMEEnabled:      req.ACMEEnabled,
 		ACMEEmail:        strings.TrimSpace(req.ACMEEmail),
 		ACMEDirectoryURL: strings.TrimSpace(req.ACMEDirectoryURL),
@@ -158,6 +175,28 @@ func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Req
 	}
 	rt.hstsDBEnabled.Store(settings.HSTSEnabled)
 	writeJSON(w, http.StatusOK, toIngressSettingsResource(settings))
+}
+
+// primaryDomainOwner reports the service name already claiming domain
+// in service_domains, or "" if no app owns it. Case-insensitive: domains
+// reach service_domains however the creating app.yaml or dashboard form
+// spelled them (DesiredService domains aren't lowercased at the store
+// layer, unlike app_domains.go's own normalizeDomainList path), so an
+// exact-match comparison here would miss a same-domain, different-case
+// collision that still produces two Caddy routes for the same Host
+// header once lowercased by the browser and by Caddy's own matcher.
+func (rt *Router) primaryDomainOwner(ctx context.Context, domain string) (string, error) {
+	domains, err := rt.domains.ListServiceDomains(ctx)
+	if err != nil {
+		return "", err
+	}
+	want := strings.ToLower(domain)
+	for _, d := range domains {
+		if strings.ToLower(d.Domain) == want {
+			return d.ServiceName, nil
+		}
+	}
+	return "", nil
 }
 
 // hstsEnabledFromDB reports ingress_settings.hsts_enabled, Router.hstsDBEnabled's

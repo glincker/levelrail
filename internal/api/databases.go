@@ -338,7 +338,9 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, "api: create database") {
+	// Databases carry no domains, so placement never prefers the local
+	// node for ingress reasons here.
+	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, false, "api: create database") {
 		return
 	}
 
