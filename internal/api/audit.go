@@ -27,6 +27,11 @@ type statusRecorder struct {
 	http.ResponseWriter
 	status      int
 	wroteHeader bool
+	// hijacked is set by Hijack: a WebSocket upgrade (the terminal
+	// route) bypasses WriteHeader/Write entirely, so requestLoggingMiddleware
+	// (request_logging.go) checks this to avoid grading an interactive
+	// session's lifetime as request latency.
+	hijacked bool
 }
 
 func (s *statusRecorder) WriteHeader(status int) {
@@ -59,6 +64,7 @@ func (s *statusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if !ok {
 		return nil, nil, http.ErrNotSupported
 	}
+	s.hijacked = true
 	return h.Hijack()
 }
 
@@ -213,7 +219,9 @@ func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, befo
 }
 
 // handleListAuditLog handles GET /api/v1/audit-log: every recorded
-// write/deploy/root-tier request, newest first, cursor-paginated by
+// write/deploy/root-tier request, plus a certificate issuance/renewal
+// internal/ingress's SQLiteStorage detected (actor_type "system", no
+// request behind it), newest first, cursor-paginated by
 // ?before (an RFC3339 timestamp) so a large table never needs offset
 // pagination. ?limit defaults to defaultAuditLogLimit, capped at
 // maxAuditLogLimit. ?path and ?method narrow to one resource's own

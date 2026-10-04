@@ -5,7 +5,7 @@ import { lazyBackend } from './lazyBackend'
 import './resources'
 
 // New namespace: add here only. lazyBackend loads it on first useTranslation(ns) call.
-export const NAMESPACES = ['common', 'deploys'] as const
+export const NAMESPACES = ['common', 'deploys', 'auditLog', 'streams'] as const
 
 void i18n
   .use(lazyBackend)

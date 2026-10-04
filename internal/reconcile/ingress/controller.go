@@ -293,6 +293,14 @@ type Controller struct {
 	certStore   ingress.CertStore
 	certStorage any
 
+	// auditRecorder, if set via WithAuditRecorder, is attached to the
+	// same SQLiteStorage certStore builds, so a certificate issuance or
+	// renewal that storage detects gets a system-actor audit_log row
+	// (see ingress.SQLiteStorage.Store). Nil means no such row is ever
+	// written, unchanged from this controller's behavior before this
+	// field existed.
+	auditRecorder ingress.AuditRecorder
+
 	// dnsTokens, if set via WithCloudflareDNSTokens, is resolved fresh
 	// every Reconcile pass whenever store.CloudflareDNSSettings.Enabled
 	// is true, and threaded through to
@@ -399,6 +407,17 @@ func WithStorageDir(dir string) Option {
 // ingress.SetActiveCertStorage exactly once, not on every Reconcile.
 func WithCertStore(certStore ingress.CertStore) Option {
 	return func(c *Controller) { c.certStore = certStore }
+}
+
+// WithAuditRecorder records a system-actor audit_log row for every
+// certificate issuance or renewal the SQLiteStorage built from
+// WithCertStore detects (ingress.SQLiteStorage.Store), the only way a
+// background Caddy-driven renewal, with no request behind it, ever shows
+// up in GET /api/v1/audit-log. Has no effect unless WithCertStore is also
+// set: there is no SQLiteStorage to attach it to otherwise. ar is
+// typically the same *store.DB already passed as certStore.
+func WithAuditRecorder(ar ingress.AuditRecorder) Option {
+	return func(c *Controller) { c.auditRecorder = ar }
 }
 
 // WithDashboardDial enables routing the control plane's own dashboard
@@ -519,6 +538,9 @@ func New(svcStore ServiceStore, runtime docker.Runtime, driver Applier, opts ...
 		// itself, so the SQLiteStorage's logger reflects a later
 		// WithLogger call regardless of Option ordering.
 		storage := ingress.NewSQLiteStorage(c.certStore, c.logger)
+		if c.auditRecorder != nil {
+			storage = storage.WithAuditRecorder(c.auditRecorder)
+		}
 		ingress.SetActiveCertStorage(storage)
 		c.certStorage = ingress.NewSQLiteStorageRef()
 	}
