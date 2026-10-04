@@ -2,17 +2,8 @@ import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { KeyIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -26,6 +17,8 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { AbilitiesField } from './AbilitiesField'
 import { TokenCreatedView } from './TokenCreatedView'
 import { InfoTip } from './kit'
+import { CreateFlowShell } from './CreateFlowKit'
+import { TOKEN_STEPS } from './tokenCreateSteps'
 import { useCreateToken } from '../queries/tokens'
 import type { CreateTokenResponse } from '../types/token'
 
@@ -122,103 +115,84 @@ export function CreateTokenDialog() {
             }}
           />
         ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <KeyIcon className="size-4 text-muted-foreground" />
-                Create token
-              </DialogTitle>
-              <DialogDescription>
-                A scoped, revocable credential for the CLI, CI, or an MCP
-                integration.
-              </DialogDescription>
-            </DialogHeader>
-            <form
-              onSubmit={(e) => {
-                void onSubmit(e)
-              }}
-              className="space-y-4"
-            >
-              <Field>
-                <FieldLabel htmlFor="token-name">Name</FieldLabel>
-                <Input
-                  id="token-name"
-                  placeholder="e.g. ci-deploy"
-                  {...register('name')}
-                />
-                <FieldError errors={[formState.errors.name]} />
-              </Field>
+          <CreateFlowShell
+            icon={<KeyIcon className="size-4 text-muted-foreground" />}
+            title="Create token"
+            description="A scoped, revocable credential for the CLI, CI, or an MCP integration."
+            steps={TOKEN_STEPS}
+            currentStepIndex={0}
+            onSubmit={(e) => {
+              void onSubmit(e)
+            }}
+            error={createToken.isError ? createToken.error.message : null}
+            submitLabel="Create token"
+            submitPendingLabel="Creating..."
+            pending={createToken.isPending}
+          >
+            <Field>
+              <FieldLabel htmlFor="token-name">Name</FieldLabel>
+              <Input
+                id="token-name"
+                placeholder="e.g. ci-deploy"
+                {...register('name')}
+              />
+              <FieldError errors={[formState.errors.name]} />
+            </Field>
 
-              <Field>
-                <FieldLabel htmlFor="token-expiration">Expiration</FieldLabel>
-                <Controller
-                  control={control}
-                  name="expiration"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger id="token-expiration" className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {EXPIRATION_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </Field>
-
-              <Field>
-                <div className="flex items-center gap-1">
-                  <FieldLabel htmlFor="token-agent">
-                    Agent name (optional)
-                  </FieldLabel>
-                  <InfoTip label="About agent names">
-                    Label the token as issued to an AI agent, for example
-                    &ldquo;Claude Code&rdquo;. The name is shown here and on
-                    every audit log entry the token makes, so you can tell agent
-                    changes from human ones.
-                  </InfoTip>
-                </div>
-                <Input
-                  id="token-agent"
-                  placeholder="e.g. Claude Code"
-                  {...register('agentName')}
-                />
-                <FieldError errors={[formState.errors.agentName]} />
-              </Field>
-
+            <Field>
+              <FieldLabel htmlFor="token-expiration">Expiration</FieldLabel>
               <Controller
                 control={control}
-                name="abilities"
+                name="expiration"
                 render={({ field }) => (
-                  <AbilitiesField
-                    value={field.value}
-                    onChange={field.onChange}
-                    error={formState.errors.abilities}
-                  />
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="token-expiration" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXPIRATION_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
               />
+            </Field>
 
-              {createToken.isError ? (
-                <Alert variant="destructive">
-                  <WarningIcon />
-                  <AlertDescription>
-                    {createToken.error.message}
-                  </AlertDescription>
-                </Alert>
-              ) : null}
+            <Field>
+              <div className="flex items-center gap-1">
+                <FieldLabel htmlFor="token-agent">
+                  Agent name (optional)
+                </FieldLabel>
+                <InfoTip label="About agent names">
+                  Label the token as issued to an AI agent, for example
+                  &ldquo;Claude Code&rdquo;. The name is shown here and on every
+                  audit log entry the token makes, so you can tell agent changes
+                  from human ones.
+                </InfoTip>
+              </div>
+              <Input
+                id="token-agent"
+                placeholder="e.g. Claude Code"
+                {...register('agentName')}
+              />
+              <FieldError errors={[formState.errors.agentName]} />
+            </Field>
 
-              <DialogFooter>
-                <Button type="submit" disabled={createToken.isPending}>
-                  {createToken.isPending ? 'Creating...' : 'Create token'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </>
+            <Controller
+              control={control}
+              name="abilities"
+              render={({ field }) => (
+                <AbilitiesField
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={formState.errors.abilities}
+                />
+              )}
+            />
+          </CreateFlowShell>
         )}
       </DialogContent>
     </Dialog>

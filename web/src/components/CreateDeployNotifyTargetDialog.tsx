@@ -3,10 +3,7 @@ import { PlusCircleIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -20,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
+import { CreateFlowHeader, CreateFlowShell } from './CreateFlowKit'
 import { useCreateDeployNotifyTarget } from '../queries/deployNotify'
 import { useNotificationChannelsOptional } from '../queries/notificationChannels'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
@@ -47,7 +45,8 @@ export function CreateDeployNotifyTargetDialog({
     }
   }
 
-  function handleSubmit() {
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
     if (!channelId) {
       return
     }
@@ -66,23 +65,18 @@ export function CreateDeployNotifyTargetDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button size="sm" />}>Add target</DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-1.5">
-            <PlusCircleIcon
-              className="size-4 text-muted-foreground"
-              aria-hidden="true"
-            />
-            Add deploy notify target
-          </DialogTitle>
-          <DialogDescription>
-            Notified once per deploy attempt reaching a terminal state
-            (succeeded or failed), separate from this app&apos;s threshold and
-            crashloop alert rules above.
-          </DialogDescription>
-        </DialogHeader>
-
         {channels.length === 0 ? (
           <>
+            <CreateFlowHeader
+              icon={
+                <PlusCircleIcon
+                  className="size-4 text-muted-foreground"
+                  aria-hidden="true"
+                />
+              }
+              title="Add deploy notify target"
+              description="Notified once per deploy attempt reaching a terminal state (succeeded or failed), separate from this app's threshold and crashloop alert rules above."
+            />
             <p className="text-sm text-muted-foreground">
               No channels connected yet. Connect one from Settings &rarr;
               Notification channels first.
@@ -100,7 +94,28 @@ export function CreateDeployNotifyTargetDialog({
             </DialogFooter>
           </>
         ) : (
-          <div className="space-y-4">
+          <CreateFlowShell
+            icon={
+              <PlusCircleIcon
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
+            }
+            title="Add deploy notify target"
+            description={
+              <>
+                Notified once per deploy attempt reaching a terminal state
+                (succeeded or failed), separate from this app&apos;s threshold
+                and crashloop alert rules above.
+              </>
+            }
+            onSubmit={handleSubmit}
+            error={createTarget.isError ? createTarget.error.message : null}
+            submitLabel="Add target"
+            submitPendingLabel="Adding..."
+            pending={createTarget.isPending}
+            submitDisabled={!channelId}
+          >
             <Field>
               <FieldLabel htmlFor="deploy-notify-channel">Channel</FieldLabel>
               <Select
@@ -136,23 +151,7 @@ export function CreateDeployNotifyTargetDialog({
               />
               <FieldLabel htmlFor="deploy-notify-enabled">Enabled</FieldLabel>
             </Field>
-
-            {createTarget.isError ? (
-              <p className="text-sm text-destructive">
-                {createTarget.error.message}
-              </p>
-            ) : null}
-
-            <DialogFooter>
-              <Button
-                type="button"
-                disabled={createTarget.isPending || !channelId}
-                onClick={handleSubmit}
-              >
-                {createTarget.isPending ? 'Adding...' : 'Add target'}
-              </Button>
-            </DialogFooter>
-          </div>
+          </CreateFlowShell>
         )}
       </DialogContent>
     </Dialog>
