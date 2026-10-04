@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 642 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 644 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -253,6 +253,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/register", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRegister", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/reset-password", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleResetPassword", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/session", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetSession", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/session-links", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMintSessionLink", Description: "Session links (session_links.go): a short-lived, single-use, URL-embeddable token for browser automation to skip manual login. Minting is root-equivalent since the resulting session inherits the minting caller's own abilities; consuming is necessarily unauthenticated, gated by possession of the token itself, same shape as reset-password below."},
+	{Method: "GET", Path: "/api/v1/auth/session-links/{token}/consume", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleConsumeSessionLink", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/sessions/revoke-others", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeOtherSessions", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/setup-status", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetupStatus", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/tokens", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListTokens", Description: ""},

@@ -443,6 +443,7 @@ type Router struct {
 	dockerHubClient              DockerHubClient                  // always set (NewRouter defaults it to a real *dockerhub.Client, unauthenticated so no secrets wiring needed), overridable in this package's own tests the same way registryCatalog is
 	emailSender                  email.Sender                     // nil is valid: forgot-password still returns its generic success response
 	passwordResetTokens          PasswordResetTokenStore          // always set, same shape as backupTargets above
+	sessionLinkTokens            SessionLinkTokenStore            // always set, same shape as passwordResetTokens above
 	forgotPasswordByIP           *loginLimiter                    // per-IP forgot-password budget, distinct from logins above
 	forgotPasswordByEmail        *loginLimiter                    // per-(IP,email) forgot-password budget; both this and forgotPasswordByIP must allow a request
 	auditLog                     AuditStore                       // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
@@ -638,6 +639,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		registryCatalog:             registrycatalog.NewClient(),
 		dockerHubClient:             dockerhub.NewClient(),
 		passwordResetTokens:         s,
+		sessionLinkTokens:           s,
 		forgotPasswordByIP:          newLoginLimiter(),
 		forgotPasswordByEmail:       newLoginLimiter(),
 		deviceAuth:                  s,

@@ -55,7 +55,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 61 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 63 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -128,6 +128,8 @@ Endpoints for:
 | GET | /api/v1/settings/push-subscriptions | Session | handleListPushSubscriptions |
 | POST | /api/v1/settings/push-subscriptions | Session | handleCreatePushSubscription |
 | DELETE | /api/v1/settings/push-subscriptions/{id} | Session | handleDeletePushSubscription |
+| POST | /api/v1/auth/session-links | AbilityRoot | handleMintSessionLink |
+| GET | /api/v1/auth/session-links/{token}/consume | Public | handleConsumeSessionLink |
 
 :::
 
