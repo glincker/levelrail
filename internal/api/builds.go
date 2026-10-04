@@ -263,7 +263,15 @@ func (rt *Router) tokenForRepo(ctx context.Context, name, repoURL string, allowP
 		return ""
 	}
 
-	_, token, err := rt.mintGitHubAppInstallationToken(ctx)
+	connInstanceURL := conn.InstanceURL
+	if connInstanceURL == "" {
+		connInstanceURL = "https://github.com"
+	}
+	owner, _, ok := githubOwnerRepoFromURL(repoURL, connInstanceURL)
+	if !ok {
+		return ""
+	}
+	_, token, err := rt.mintGitHubAppInstallationTokenForOwner(ctx, owner)
 	if err != nil {
 		if !errors.Is(err, errGitHubAppNotConnected) && !errors.Is(err, errGitHubAppNotInstalled) {
 			rt.logger.Error("api: mint github app installation token failed, falling back to an unauthenticated clone that will likely fail for a private repo",

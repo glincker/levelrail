@@ -62,8 +62,10 @@ func TestRun_GitHubApp_Disconnect_APIError(t *testing.T) {
 
 func TestRun_GitHubApp_Repos(t *testing.T) {
 	var gotPath string
-	srv := newListEchoServer(t, &gotPath, []gitHubAppRepoResource{
-		{FullName: "acme/widgets", DefaultBranch: "main"},
+	srv := newListEchoServer(t, &gotPath, gitHubAppRepoListResource{
+		Repos: []gitHubAppRepoResource{
+			{FullName: "acme/widgets", DefaultBranch: "main", AccountType: "organization"},
+		},
 	})
 	defer srv.Close()
 
@@ -78,12 +80,30 @@ func TestRun_GitHubApp_Repos(t *testing.T) {
 }
 
 func TestRun_GitHubApp_Repos_Empty(t *testing.T) {
-	srv := newListEchoServer(t, nil, []gitHubAppRepoResource{})
+	srv := newListEchoServer(t, nil, gitHubAppRepoListResource{})
 	defer srv.Close()
 
 	stdout, _ := runCLIExpectOK(t, []string{"github-app", "repos", "--api-url", srv.URL})
 	if !strings.Contains(stdout, "no repositories") {
 		t.Errorf("stdout = %q, want the empty-set message", stdout)
+	}
+}
+
+func TestRun_GitHubApp_Repos_PartialErrors(t *testing.T) {
+	srv := newListEchoServer(t, nil, gitHubAppRepoListResource{
+		Repos: []gitHubAppRepoResource{{FullName: "acme/widgets", DefaultBranch: "main", AccountType: "organization"}},
+		Errors: []gitHubAppRepoListErrResource{
+			{AccountLogin: "suspended-org", Error: "installation suspended"},
+		},
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"github-app", "repos", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "acme/widgets") {
+		t.Errorf("stdout = %q, want acme/widgets listed", stdout)
+	}
+	if !strings.Contains(stdout, "suspended-org") || !strings.Contains(stdout, "installation suspended") {
+		t.Errorf("stdout = %q, want the suspended-org warning", stdout)
 	}
 }
 
@@ -174,6 +194,110 @@ func TestRun_GitHubApp_UnknownSubcommand(t *testing.T) {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}
 	if !strings.Contains(stderr.String(), "unknown github-app subcommand") {
+		t.Errorf("stderr = %q, want an unknown-subcommand error", stderr.String())
+	}
+}
+
+func TestRun_GitHubApp_Installations_List(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, gitHubAppInstallationListResource{
+		Installations: []gitHubAppInstallationResource{
+			{ID: 1, InstallationID: 42, AccountLogin: "acme", AccountType: "organization", ConnectedAt: "2026-01-01T00:00:00Z"},
+		},
+		AddOrgURL: "https://github.com/apps/levelrail/installations/new",
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"github-app", "installations", "list", "--api-url", srv.URL})
+
+	if gotPath != "/api/v1/github-app/installations" {
+		t.Errorf("path = %s, want /api/v1/github-app/installations", gotPath)
+	}
+	if !strings.Contains(stdout, "acme") || !strings.Contains(stdout, "organization") {
+		t.Errorf("stdout = %q, want the acme installation listed", stdout)
+	}
+}
+
+func TestRun_GitHubApp_Installations_List_Empty(t *testing.T) {
+	srv := newListEchoServer(t, nil, gitHubAppInstallationListResource{})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"github-app", "installations", "list", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "no connected accounts") {
+		t.Errorf("stdout = %q, want the empty-set message", stdout)
+	}
+}
+
+func TestRun_GitHubApp_Installations_Add(t *testing.T) {
+	srv := newListEchoServer(t, nil, gitHubAppInstallationListResource{
+		AddOrgURL: "https://github.com/apps/levelrail/installations/new",
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"github-app", "installations", "add", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "https://github.com/apps/levelrail/installations/new") {
+		t.Errorf("stdout = %q, want the add-org URL", stdout)
+	}
+}
+
+func TestRun_GitHubApp_Installations_Add_NoURL(t *testing.T) {
+	srv := newListEchoServer(t, nil, gitHubAppInstallationListResource{})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"github-app", "installations", "add", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "reconnect the GitHub App") {
+		t.Errorf("stdout = %q, want the reconnect-first explanation", stdout)
+	}
+}
+
+func TestRun_GitHubApp_Installations_Remove(t *testing.T) {
+	srv, gotPath, gotMethod := newNoContentEchoServer(t)
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"github-app", "installations", "remove", "7", "--api-url", srv.URL})
+
+	if *gotMethod != http.MethodDelete || *gotPath != "/api/v1/github-app/installations/7" {
+		t.Errorf("method/path = %s %s, want DELETE /api/v1/github-app/installations/7", *gotMethod, *gotPath)
+	}
+	if !strings.Contains(stdout, `"removed": true`) && !strings.Contains(stdout, "installation 7 removed") {
+		t.Errorf("stdout = %q, want a removal confirmation", stdout)
+	}
+}
+
+func TestRun_GitHubApp_Installations_Remove_APIError(t *testing.T) {
+	srv := newJSONErrorServer(t, http.StatusConflict, `{"error":"still in use by: web; disconnect or move those git sources first"}`)
+
+	stderr := runCLIExpectAPIError(t, []string{"github-app", "installations", "remove", "7", "--api-url", srv.URL})
+	if !strings.Contains(stderr, "still in use by: web") {
+		t.Errorf("stderr = %q, want the server's error verbatim", stderr)
+	}
+}
+
+func TestRun_GitHubApp_Installations_Remove_InvalidID(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"github-app", "installations", "remove", "not-a-number", "--api-url", "http://unused"}, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d", got, exitUsage)
+	}
+	if !strings.Contains(stderr.String(), "not a valid id") {
+		t.Errorf("stderr = %q, want an invalid-id usage error", stderr.String())
+	}
+}
+
+func TestRun_GitHubApp_Installations_Help(t *testing.T) {
+	stdout, _ := runCLIExpectOK(t, []string{"github-app", "installations", "-h"})
+	if !strings.Contains(stdout, "github-app installations list") {
+		t.Errorf("stdout = %q, want usage text", stdout)
+	}
+}
+
+func TestRun_GitHubApp_Installations_UnknownSubcommand(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"github-app", "installations", "bogus"}, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d", got, exitUsage)
+	}
+	if !strings.Contains(stderr.String(), "unknown github-app installations subcommand") {
 		t.Errorf("stderr = %q, want an unknown-subcommand error", stderr.String())
 	}
 }

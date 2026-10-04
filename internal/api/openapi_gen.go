@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 644 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 646 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -343,6 +343,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/github-app", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleDisconnectGitHubApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/github-app", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleGetGitHubAppStatus", Description: "GitHub App connection: the manifest-based registration flow, installation, and repo/branch browsing through it (internal/api/github_app.go, github_app_register.go, github_app_repos.go). Every route that reads or mutates the connection itself (status, register/start, callback, installed, disconnect) is AbilityRoot, matching PUT /api/v1/settings/ingress's own precedent above rather than the plain AbilityRead most other GET routes use: this is platform-wide configuration with a real external-account relationship behind it (an installed GitHub App can read a private repository's contents), the same \"real infrastructure, high blast radius\" class ingress settings and node placement already reserve this tier for, not an ordinary per-app read. register/start, callback, and installed are all real, full-page browser navigations (GitHub's manifest flow is inherently that, not a fetch call), not XHR/fetch calls: a session cookie is implicitly AbilityRoot (requireAbility's own doc comment), so the operator's own logged-in browser satisfies this gate the same way it satisfies every other AbilityRoot route.  Repo and branch listing are the one exception, at AbilityReadSensitive: see handleListGitHubAppRepos's own doc comment for why reading already-connected repo/branch names is a materially different (lower) risk class than changing the connection itself. use-as-source is AbilityWriteSensitive, matching PUT .../git-source's own tier and GitLab/Bitbucket's own use-as-source routes below: it performs that exact action."},
 	{Method: "GET", Path: "/api/v1/github-app/callback", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleGitHubAppCallback", Description: ""},
+	{Method: "GET", Path: "/api/v1/github-app/installations", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleListGitHubAppInstallations", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/github-app/installations/{id}", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleDeleteGitHubAppInstallation", Description: ""},
 	{Method: "GET", Path: "/api/v1/github-app/installed", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleGitHubAppInstalled", Description: ""},
 	{Method: "PUT", Path: "/api/v1/github-app/manual", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleConnectGitHubAppManually", Description: ""},
 	{Method: "GET", Path: "/api/v1/github-app/register/preview", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleGetGitHubAppManifestPreview", Description: ""},

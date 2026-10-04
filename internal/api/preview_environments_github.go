@@ -29,16 +29,26 @@ func (rt *Router) previewGitHubTarget(ctx context.Context, appName string, gs st
 	if !gs.PostPRComments || rt.githubAppSecrets == nil {
 		return "", "", "", "", false
 	}
-	instanceURL, token, err := rt.mintGitHubAppInstallationToken(ctx)
+	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
 	if err != nil {
-		rt.logger.Info("api: preview github notification skipped: no usable github app installation",
+		rt.logger.Info("api: preview github notification skipped: no github app connection",
 			slog.String("app_name", appName), slog.String("error", err.Error()))
 		return "", "", "", "", false
 	}
-	owner, repo, ok = githubOwnerRepoFromURL(gs.RepoURL, instanceURL)
+	connInstanceURL := conn.InstanceURL
+	if connInstanceURL == "" {
+		connInstanceURL = "https://github.com"
+	}
+	owner, repo, ok = githubOwnerRepoFromURL(gs.RepoURL, connInstanceURL)
 	if !ok {
 		rt.logger.Info("api: preview github notification skipped: repo_url is not on the connected github instance",
 			slog.String("app_name", appName), slog.String("repo_url", redactURLCredentials(gs.RepoURL)))
+		return "", "", "", "", false
+	}
+	instanceURL, token, err = rt.mintGitHubAppInstallationTokenForOwner(ctx, owner)
+	if err != nil {
+		rt.logger.Info("api: preview github notification skipped: no usable github app installation",
+			slog.String("app_name", appName), slog.String("error", err.Error()))
 		return "", "", "", "", false
 	}
 	return instanceURL, token, owner, repo, true

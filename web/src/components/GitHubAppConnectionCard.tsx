@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import {
   CheckCircleIcon,
   GithubLogoIcon,
+  PlusIcon,
   WarningIcon,
   XCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -12,12 +13,20 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
-import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { formatDate } from '../lib/format'
 import { useIngressSettings } from '../queries/domains'
 import {
   useConnectGitHubAppManually,
+  useDeleteGitHubAppInstallation,
   useDisconnectGitHubApp,
+  useGitHubAppInstallations,
   useGitHubAppManifestPreview,
   useGitHubAppStatus,
 } from '../queries/githubApp'
@@ -29,7 +38,7 @@ import {
   mutationToastCallbacks,
   ResettableDialog,
 } from './ConnectionCard'
-import type { GitHubAppStatus } from '@/types/githubApp'
+import type { GitHubAppInstallation, GitHubAppStatus } from '@/types/githubApp'
 
 // Status card for the GitHub App connection: not connected / connected
 // as <account> but not yet installed / connected and installed on
@@ -120,9 +129,9 @@ export function GitHubAppConnectionCard() {
               description={
                 <>
                   This stops this control plane from using the App to list
-                  repositories or branches. It does not delete or uninstall
-                  the App on GitHub itself; remove it from
-                  github.com/settings/apps if you want it gone entirely.
+                  repositories or branches. It does not delete or uninstall the
+                  App on GitHub itself; remove it from github.com/settings/apps
+                  if you want it gone entirely.
                 </>
               }
               pending={disconnect.isPending}
@@ -161,10 +170,126 @@ export function GitHubAppConnectionCard() {
             </div>
           )}
         </div>
+        {status.connected ? <GitHubAppInstallationsSection /> : null}
       </CardContent>
       <ManualConnectDialog open={manualOpen} onOpenChange={setManualOpen} />
       <ManifestPreviewDialog open={previewOpen} onOpenChange={setPreviewOpen} />
     </Card>
+  )
+}
+
+// GitHubAppInstallationsSection lists every connected account/org
+// (migrations/0282 made the App installable on more than one), each
+// with its own disconnect button, plus the link to install on another
+// one. Separate from the single legacy "installed as <account>" status
+// above: that status reads github_app_connections' own single-row
+// columns (kept for anything still reading them), this reads the real
+// one-to-many table.
+function GitHubAppInstallationsSection() {
+  const { data, isLoading, isError, error } = useGitHubAppInstallations(true)
+
+  return (
+    <div className="space-y-2 border-t border-border pt-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-foreground">
+          Connected accounts
+        </p>
+        {data?.add_org_url ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            render={
+              <a href={data.add_org_url} target="_blank" rel="noreferrer" />
+            }
+          >
+            <PlusIcon className="size-4" />
+            Add organization
+          </Button>
+        ) : null}
+      </div>
+      {!isLoading && !isError && !data?.add_org_url ? (
+        <p className="text-xs text-muted-foreground">
+          This connection was registered before Levelrail could remember the
+          App&apos;s install-on-another-org link. Reconnect the App above (or
+          use manual setup) to enable &quot;Add organization&quot; here.
+        </p>
+      ) : null}
+      {isLoading ? (
+        <div className="space-y-1.5" aria-hidden="true">
+          <Skeleton className="h-11 w-full" />
+        </div>
+      ) : null}
+      {isError ? (
+        <p className="text-sm text-destructive">
+          {error instanceof Error
+            ? error.message
+            : 'Could not load connected accounts.'}
+        </p>
+      ) : null}
+      {!isLoading && !isError && data ? (
+        data.installations.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No accounts connected yet.
+          </p>
+        ) : (
+          <ul className="space-y-1.5">
+            {data.installations.map((installation) => (
+              <GitHubAppInstallationRow
+                key={installation.id}
+                installation={installation}
+              />
+            ))}
+          </ul>
+        )
+      ) : null}
+    </div>
+  )
+}
+
+function GitHubAppInstallationRow({
+  installation,
+}: Readonly<{ installation: GitHubAppInstallation }>) {
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const remove = useDeleteGitHubAppInstallation()
+
+  return (
+    <li className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+      <div className="space-y-0.5">
+        <p className="text-sm font-medium text-foreground">
+          {installation.account_login}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {installation.account_type === 'user'
+            ? 'Personal account'
+            : 'Organization'}
+          , connected {formatDate(installation.connected_at, 'unknown')}
+        </p>
+      </div>
+      <DisconnectConnectionDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Disconnect ${installation.account_login}?`}
+        description={
+          <>
+            This stops this control plane from browsing or deploying from
+            repositories under {installation.account_login}. Refused while a git
+            source still points at one of its repos.
+          </>
+        }
+        pending={remove.isPending}
+        onConfirm={() => {
+          remove.mutate(
+            installation.id,
+            mutationToastCallbacks(
+              `Disconnected ${installation.account_login}.`,
+              `Could not disconnect ${installation.account_login}.`,
+              () => setConfirmOpen(false),
+            ),
+          )
+        }}
+      />
+    </li>
   )
 }
 
@@ -191,31 +316,32 @@ function InstallationBadge({ status }: Readonly<{ status: GitHubAppStatus }>) {
 // InstallationStatusMessage is InstallationBadge's explanatory sibling:
 // the badge alone doesn't say what to do about a suspended or missing
 // installation.
-function InstallationStatusMessage({ status }: Readonly<{ status: GitHubAppStatus }>) {
+function InstallationStatusMessage({
+  status,
+}: Readonly<{ status: GitHubAppStatus }>) {
   if (status.installation_status === 'suspended') {
     return (
       <p className="text-sm text-muted-foreground">
-        GitHub reports this installation as suspended. Builds and repo
-        browsing will fail until an admin un-suspends it from the App&apos;s
-        page on GitHub.
+        GitHub reports this installation as suspended. Builds and repo browsing
+        will fail until an admin un-suspends it from the App&apos;s page on
+        GitHub.
       </p>
     )
   }
   if (status.installation_status === 'not_found') {
     return (
       <p className="text-sm text-muted-foreground">
-        GitHub no longer has this installation on record, most likely
-        because it was uninstalled there. Disconnect and reinstall the App
-        to restore private-repository access.
+        GitHub no longer has this installation on record, most likely because it
+        was uninstalled there. Disconnect and reinstall the App to restore
+        private-repository access.
       </p>
     )
   }
   if (!status.installed) {
     return (
       <p className="text-sm text-muted-foreground">
-        The App was created but hasn&apos;t been installed on an account
-        or organization yet. Finish installing it on GitHub to pick
-        repositories.
+        The App was created but hasn&apos;t been installed on an account or
+        organization yet. Finish installing it on GitHub to pick repositories.
       </p>
     )
   }
@@ -240,10 +366,12 @@ function ManifestPreviewDialog({
 }>) {
   const [instanceURL, setInstanceURL] = useState('')
   const trimmedInstanceURL = instanceURL.trim()
-  const { data: preview, isLoading, isError, error } = useGitHubAppManifestPreview(
-    trimmedInstanceURL,
-    open,
-  )
+  const {
+    data: preview,
+    isLoading,
+    isError,
+    error,
+  } = useGitHubAppManifestPreview(trimmedInstanceURL, open)
   const [name, setName] = useState('')
   // Empty means "untouched": falls back to the fetched default rather
   // than syncing it into state via an effect (React's own guidance
@@ -316,8 +444,8 @@ function ManifestPreviewDialog({
             placeholder="https://github.com"
           />
           <FieldDescription>
-            Leave blank for github.com. Self-hosted GitHub Enterprise
-            Server instances work too, e.g. https://github.example.com.
+            Leave blank for github.com. Self-hosted GitHub Enterprise Server
+            instances work too, e.g. https://github.example.com.
           </FieldDescription>
         </Field>
         <Field>
@@ -330,8 +458,8 @@ function ManifestPreviewDialog({
             }}
           />
           <FieldDescription>
-            The one field GitHub itself lets you change on its own
-            confirmation page too.
+            The one field GitHub itself lets you change on its own confirmation
+            page too.
           </FieldDescription>
         </Field>
         <div className="space-y-1.5 text-sm">
@@ -341,11 +469,15 @@ function ManifestPreviewDialog({
           <UrlRow
             label="Webhook"
             value={preview.webhook_url}
-            note={preview.webhook_active ? undefined : 'declared, not yet active'}
+            note={
+              preview.webhook_active ? undefined : 'declared, not yet active'
+            }
           />
         </div>
         <div className="space-y-1.5">
-          <p className="text-sm font-medium text-foreground">Permissions requested</p>
+          <p className="text-sm font-medium text-foreground">
+            Permissions requested
+          </p>
           <ul className="space-y-1 text-sm text-muted-foreground">
             {Object.entries(preview.permissions).map(([key, level]) => (
               <li key={key} className="font-mono text-xs">
@@ -359,14 +491,17 @@ function ManifestPreviewDialog({
   }
 
   return (
-    <ResettableDialog open={open} onOpenChange={onOpenChange} onReset={resetForm}>
+    <ResettableDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      onReset={resetForm}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Review before connecting to GitHub</DialogTitle>
           <DialogDescription>
             GitHub&apos;s own confirmation page only lets you rename the App;
-            everything else below is fixed before your browser leaves this
-            page.
+            everything else below is fixed before your browser leaves this page.
           </DialogDescription>
         </DialogHeader>
         {renderPreviewBody()}
@@ -383,13 +518,25 @@ function ManifestPreviewDialog({
   )
 }
 
-function UrlRow({ label, value, note }: { label: string; value: string; note?: string }) {
+function UrlRow({
+  label,
+  value,
+  note,
+}: {
+  label: string
+  value: string
+  note?: string
+}) {
   return (
     <div className="flex items-baseline justify-between gap-3">
       <span className="text-muted-foreground">{label}</span>
       <span className="truncate text-right font-mono text-xs">
         {value}
-        {note ? <span className="ml-1.5 text-amber-700 dark:text-amber-400">({note})</span> : null}
+        {note ? (
+          <span className="ml-1.5 text-amber-700 dark:text-amber-400">
+            ({note})
+          </span>
+        ) : null}
       </span>
     </div>
   )
@@ -470,7 +617,11 @@ function ManualConnectDialog({
   }
 
   return (
-    <ResettableDialog open={open} onOpenChange={onOpenChange} onReset={resetForm}>
+    <ResettableDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      onReset={resetForm}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Connect a GitHub App manually</DialogTitle>
@@ -485,9 +636,9 @@ function ManualConnectDialog({
               github.com/settings/apps/new
             </a>{' '}
             (or your GitHub Enterprise Server instance&apos;s own
-            /settings/apps/new), then paste the resulting credentials here.
-            No primary domain required to save these: only automated setup
-            needs one.
+            /settings/apps/new), then paste the resulting credentials here. No
+            primary domain required to save these: only automated setup needs
+            one.
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
@@ -507,8 +658,8 @@ function ManualConnectDialog({
               placeholder="https://github.com"
             />
             <FieldDescription>
-              Leave blank for github.com. Self-hosted instances work too,
-              e.g. https://github.example.com.
+              Leave blank for github.com. Self-hosted instances work too, e.g.
+              https://github.example.com.
             </FieldDescription>
           </Field>
           <Field>

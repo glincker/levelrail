@@ -89,9 +89,19 @@ func (rt *Router) resolveForge(ctx context.Context, repoURL string) (*forge, err
 		return nil, errNoForge
 	}
 	if c, ok := rt.githubAppClient.(githubForgeClient); ok && rt.githubApp != nil && rt.githubAppSecrets != nil {
-		if instanceURL, token, err := rt.mintGitHubAppInstallationToken(ctx); err == nil {
-			if owner, name, ok := githubOwnerRepoFromURL(repoURL, instanceURL); ok {
-				return &forge{kind: forgeGitHub, instanceURL: instanceURL, token: token, repo: owner + "/" + name, github: c}, nil
+		// InstanceURL is a property of the App registration, shared by
+		// every installation, so it's known before minting a token:
+		// owner (needed to pick which installation covers this repo)
+		// comes from repoURL itself, not from minting first.
+		if conn, connErr := rt.githubApp.GetGitHubAppConnection(ctx); connErr == nil {
+			connInstanceURL := conn.InstanceURL
+			if connInstanceURL == "" {
+				connInstanceURL = "https://github.com"
+			}
+			if owner, name, ok := githubOwnerRepoFromURL(repoURL, connInstanceURL); ok {
+				if instanceURL, token, err := rt.mintGitHubAppInstallationTokenForOwner(ctx, owner); err == nil {
+					return &forge{kind: forgeGitHub, instanceURL: instanceURL, token: token, repo: owner + "/" + name, github: c}, nil
+				}
 			}
 		}
 	}
