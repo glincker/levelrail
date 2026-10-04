@@ -233,6 +233,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"dashboard-url": {subs: map[string]*cmdNode{"get": nil, "set": nil}},
 		"ai-assistant":  {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"updates":       {subs: map[string]*cmdNode{"get": nil, "set": nil}},
+		"deploy-freeze": {subs: map[string]*cmdNode{"show": nil, "set": nil, "clear": nil}},
 	}},
 	"git-providers":    nil,
 	"github-app":       {subs: map[string]*cmdNode{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil}},

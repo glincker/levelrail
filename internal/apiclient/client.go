@@ -282,6 +282,24 @@ func (c *Client) SetDeployFreeze(ctx context.Context, name string, windows []Fre
 	return out, err
 }
 
+// GetGlobalDeployFreeze calls GET /api/v1/settings/deploy-freeze.
+func (c *Client) GetGlobalDeployFreeze(ctx context.Context) (DeployFreezeResource, error) {
+	var out DeployFreezeResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/deploy-freeze", nil, &out)
+	return out, err
+}
+
+// SetGlobalDeployFreeze calls PUT /api/v1/settings/deploy-freeze, replacing
+// the fleet-wide windows; an empty list clears them.
+func (c *Client) SetGlobalDeployFreeze(ctx context.Context, windows []FreezeWindowResource) (DeployFreezeResource, error) {
+	var out DeployFreezeResource
+	if windows == nil {
+		windows = []FreezeWindowResource{}
+	}
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/deploy-freeze", PutDeployFreezeRequest{Windows: windows}, &out)
+	return out, err
+}
+
 // ListDeployApprovals calls GET /api/v1/deploy-approvals: status
 // defaults server-side to "pending" when empty; pass "all" to include
 // decided requests too. service filters to one app, empty means every
