@@ -4,9 +4,6 @@ description: Measured idle footprint of the control plane at 0, 100, and 500 app
 
 # Performance
 
-Measured idle footprint of the control plane at 0, 100, and 500 apps, and how
-to reproduce it.
-
 ## Method
 
 `scripts/bench-idle.sh` builds the control plane, boots it in dev mode in a

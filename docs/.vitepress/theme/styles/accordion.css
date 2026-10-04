@@ -1,0 +1,107 @@
+/* Accordion.vue / AccordionGroup.vue: generic collapsible content for any
+   doc page (unlike FaqSection.vue, which is hardcoded to the landing
+   page's single faqData.ts list). Visual language matches faq.css. */
+
+.vp-accordion-group {
+  margin: 24px 0;
+  border: 1px solid var(--glinui-glass-border-strong);
+  border-radius: var(--glinui-radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 60%);
+  overflow: hidden;
+}
+
+.vp-accordion + .vp-accordion {
+  border-top: 1px solid var(--glinui-glass-border);
+}
+
+.vp-accordion__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 16px 20px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-family: var(--glinui-font-sans);
+  color: inherit;
+  cursor: pointer;
+}
+
+.vp-accordion__title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--vp-c-text-1);
+}
+
+.vp-accordion--open .vp-accordion__title {
+  color: var(--glinui-accent);
+}
+
+.vp-accordion__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.vp-accordion__copy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  border-radius: var(--glinui-radius-xs);
+  color: var(--vp-c-text-3);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.vp-accordion__header:hover .vp-accordion__copy,
+.vp-accordion__header:focus-visible .vp-accordion__copy {
+  opacity: 1;
+}
+
+.vp-accordion__copy:hover {
+  color: var(--glinui-accent);
+  background: var(--glinui-accent-active-bg);
+}
+
+.vp-accordion__caret {
+  flex-shrink: 0;
+  color: var(--vp-c-text-3);
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), color 0.25s ease;
+}
+
+.vp-accordion--open .vp-accordion__caret {
+  color: var(--glinui-accent);
+  transform: rotate(180deg);
+}
+
+.vp-accordion__panel {
+  padding: 0 20px 18px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--vp-c-text-2);
+}
+
+.vp-accordion__panel > :first-child {
+  margin-top: 0;
+}
+
+.vp-accordion__panel > :last-child {
+  margin-bottom: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vp-accordion__caret,
+  .vp-accordion__copy {
+    transition: none;
+  }
+}

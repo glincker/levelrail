@@ -1,0 +1,54 @@
+/* Tabs.vue / Tab.vue: generic tabbed content for any doc page (OS/platform/
+   language variants), unlike FeatureTabsSection.vue, which is hardcoded
+   landing-page marketing content. */
+
+.vp-tabs {
+  margin: 20px 0;
+}
+
+.vp-tabs__list {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--glinui-glass-border-strong);
+  overflow-x: auto;
+}
+
+.vp-tabs__tab {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-family: var(--glinui-font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.vp-tabs__tab:hover {
+  color: var(--vp-c-text-1);
+}
+
+.vp-tabs__tab--active {
+  color: var(--glinui-accent);
+  border-bottom-color: var(--glinui-accent);
+}
+
+.vp-tabs__panel {
+  padding: 16px 2px 0;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--vp-c-text-2);
+}
+
+.vp-tabs__panel > :first-child {
+  margin-top: 0;
+}
+
+.vp-tabs__panel > :last-child {
+  margin-bottom: 0;
+}

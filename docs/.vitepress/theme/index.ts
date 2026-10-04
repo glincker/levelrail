@@ -22,12 +22,23 @@ import './styles/doc-chrome.css'
 import './styles/nav.css'
 import './styles/sidebar.css'
 import './styles/feature-tabs.css'
+import './styles/accordion.css'
+import './styles/steps.css'
+import './styles/tabs.css'
+import './styles/inline-toc.css'
 import Layout from './Layout.vue'
 import Card from './Card.vue'
 import CardGroup from './CardGroup.vue'
 import LatestReleasesSection from './LatestReleasesSection.vue'
 import FaqSection from './FaqSection.vue'
 import FeatureTabsSection from './FeatureTabsSection.vue'
+import Accordion from './Accordion.vue'
+import AccordionGroup from './AccordionGroup.vue'
+import Steps from './Steps.vue'
+import Step from './Step.vue'
+import Tabs from './Tabs.vue'
+import Tab from './Tab.vue'
+import InlineToc from './InlineToc.vue'
 
 export default {
   ...DefaultTheme,
@@ -38,5 +49,12 @@ export default {
     app.component('LatestReleasesSection', LatestReleasesSection)
     app.component('FaqSection', FaqSection)
     app.component('FeatureTabsSection', FeatureTabsSection)
+    app.component('Accordion', Accordion)
+    app.component('AccordionGroup', AccordionGroup)
+    app.component('Steps', Steps)
+    app.component('Step', Step)
+    app.component('Tabs', Tabs)
+    app.component('Tab', Tab)
+    app.component('InlineToc', InlineToc)
   },
 } satisfies Theme
