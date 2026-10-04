@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -1284,6 +1285,49 @@ func TestGitCheckout_ResolvesBranchToCommit(t *testing.T) {
 	}
 	if commit2 == commit {
 		t.Errorf("both builds of branch %q resolved to %q: two different commits must never share an image tag", branch, commit)
+	}
+}
+
+// TestGitCheckout_ResolvesNonDefaultBranchFromRemoteTrackingRef is the
+// regression test for a manual build on a non-default branch: a plain
+// clone only creates refs/heads/* for the remote's default branch, so a
+// bare branch name for any other branch resolved only against
+// refs/remotes/origin/* used to fail with "reference not found".
+func TestGitCheckout_ResolvesNonDefaultBranchFromRemoteTrackingRef(t *testing.T) {
+	dir, _, _ := initTestGitRepo(t)
+	repo, err := git.PlainOpen(dir)
+	if err != nil {
+		t.Fatalf("PlainOpen: %v", err)
+	}
+	head, err := repo.Head()
+	if err != nil {
+		t.Fatalf("Head: %v", err)
+	}
+
+	const branch = "feature"
+	branchRef := plumbing.NewBranchReferenceName(branch)
+	if err := repo.Storer.SetReference(plumbing.NewHashReference(branchRef, head.Hash())); err != nil {
+		t.Fatalf("SetReference: %v", err)
+	}
+	wt, err := repo.Worktree()
+	if err != nil {
+		t.Fatalf("Worktree: %v", err)
+	}
+	if err := wt.Checkout(&git.CheckoutOptions{Branch: branchRef}); err != nil {
+		t.Fatalf("Checkout %q: %v", branch, err)
+	}
+	want := commitTestFile(t, repo, dir, "on feature branch")
+	if err := wt.Checkout(&git.CheckoutOptions{Branch: head.Name()}); err != nil {
+		t.Fatalf("Checkout back to %q: %v", head.Name(), err)
+	}
+
+	_, commit, cleanup, err := gitCheckout(context.Background(), dir, branch, "")
+	if err != nil {
+		t.Fatalf("gitCheckout: %v", err)
+	}
+	cleanup()
+	if commit != want {
+		t.Fatalf("commit = %q, want %q", commit, want)
 	}
 }
 
