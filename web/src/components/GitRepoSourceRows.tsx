@@ -45,13 +45,13 @@ export function NotConnectedPrompt({
 }
 
 export interface ProviderRowProps {
-  provider: GitProviderStatus
-  disabled?: boolean
-  onSelect: (value: GitRepoSourceValue) => void
+  readonly provider: GitProviderStatus
+  readonly disabled?: boolean
+  readonly onSelect: (value: GitRepoSourceValue) => void
   /** Normalized clone URL -> service name, for the "already running as X"
    *  badge. Computed once in GitRepoSourcePicker.tsx and shared across all
    *  four rows, rather than each row fetching it separately. */
-  runningRepoByUrl: Map<string, string>
+  readonly runningRepoByUrl: Map<string, string>
 }
 
 export function GitLabProviderRow({
