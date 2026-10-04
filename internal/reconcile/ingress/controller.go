@@ -346,6 +346,14 @@ type Controller struct {
 	lbSource      LoadBalancerSource // nil disables load balancing
 	lbRegistry    *loadbalancer.Registry
 	nodeUpstreams NodeUpstreamResolver
+
+	// localNodeID is this control plane's own node ID (see WithLocalNodeID).
+	localNodeID string
+}
+
+// isLocalNode mirrors internal/api's Router.isLocalNode: "" is always local.
+func (c *Controller) isLocalNode(nodeID string) bool {
+	return nodeID == "" || nodeID == c.localNodeID
 }
 
 // Option configures optional Controller behavior.
@@ -499,6 +507,12 @@ func WithDomainBasicAuthSecrets(resolver DomainBasicAuthPasswordResolver) Option
 // control to fail closed on the way an unresolvable password is.
 func WithDomainTLSCertSecrets(resolver DomainTLSCertPEMResolver) Option {
 	return func(c *Controller) { c.tlsCertSecrets = resolver }
+}
+
+// WithLocalNodeID sets this control plane's own node ID, letting Reconcile
+// tell a locally-placed service apart from one on an unreachable node.
+func WithLocalNodeID(id string) Option {
+	return func(c *Controller) { c.localNodeID = id }
 }
 
 // WithPublicHost sets APP_PUBLIC_HOST for the zero-config fallback
@@ -857,6 +871,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		Message: fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly, %d in maintenance mode, %d redirected)", total, len(routes), len(staticRoutes), len(maintenanceRoutes), len(redirectRoutes)),
 	}}
 	if cond := lbCondition(lbPlans); cond != nil {
+		conditions = append(conditions, *cond)
+	}
+	if cond := crossNodeIngressCondition(services, c.isLocalNode); cond != nil {
 		conditions = append(conditions, *cond)
 	}
 	return reconcile.Result{Conditions: conditions}, nil

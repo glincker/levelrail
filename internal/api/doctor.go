@@ -119,6 +119,7 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 	checks = append(checks, rt.doctorCheckGPUs(ctx)...)
 	checks = append(checks, rt.doctorCheckGPUPlacement(ctx)...)
 	checks = append(checks, rt.doctorCheckNASClientTools(ctx)...)
+	checks = append(checks, rt.doctorCheckCrossNodeIngress(ctx)...)
 
 	ok := true
 	for _, c := range checks {
