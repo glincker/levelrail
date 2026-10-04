@@ -193,10 +193,7 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 	// authorize minting a live GitHub App installation token, the same
 	// reasoning handleTriggerBuild's own doc comment gives for the
 	// identical check there.
-	var token string
-	if rt.callerHasAbility(r, AbilityReadSensitive) {
-		token = rt.tokenForRepo(r.Context(), req.RepoURL)
-	}
+	token := rt.tokenForRepo(r.Context(), name, req.RepoURL, rt.callerHasAbility(r, AbilityReadSensitive))
 
 	sourceDir, commit, cleanup, err := rt.fetch(r.Context(), req.RepoURL, req.Ref, token)
 	if err != nil {
