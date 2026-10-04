@@ -69,6 +69,47 @@ func TestSaveAndGetGitSource_Databases(t *testing.T) {
 	}
 }
 
+func TestListGitSources(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	got, err := db.ListGitSources(ctx)
+	if err != nil {
+		t.Fatalf("ListGitSources() on empty table error = %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("ListGitSources() on empty table = %+v, want empty", got)
+	}
+
+	sources := []GitSource{
+		{ServiceName: "web", RepoURL: "https://github.com/org/web.git", Branch: "main", BuildType: "dockerfile"},
+		{ServiceName: "worker", RepoURL: "https://gitlab.com/org/worker.git", Branch: ""},
+	}
+	for _, s := range sources {
+		if err := db.SaveGitSource(ctx, s); err != nil {
+			t.Fatalf("SaveGitSource(%q) error = %v", s.ServiceName, err)
+		}
+	}
+
+	got, err = db.ListGitSources(ctx)
+	if err != nil {
+		t.Fatalf("ListGitSources() error = %v", err)
+	}
+	if len(got) != len(sources) {
+		t.Fatalf("ListGitSources() = %+v, want %d rows", got, len(sources))
+	}
+	byName := map[string]GitSourceSummary{}
+	for _, s := range got {
+		byName[s.ServiceName] = s
+	}
+	if byName["web"].RepoURL != "https://github.com/org/web.git" || byName["web"].Branch != "main" {
+		t.Errorf("ListGitSources()[web] = %+v, want matching repo_url/branch", byName["web"])
+	}
+	if byName["worker"].RepoURL != "https://gitlab.com/org/worker.git" || byName["worker"].Branch != "" {
+		t.Errorf("ListGitSources()[worker] = %+v, want empty branch", byName["worker"])
+	}
+}
+
 // TestGetGitSource_Databases_EmptyDefaultsToNil covers a git source
 // saved with no Databases at all (every one saved before this field
 // existed): reading it back must not error, and must not confuse an

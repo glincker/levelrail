@@ -13,13 +13,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 import { toast } from '@/components/ui/toast'
 import { useSetAppProject } from '../queries/apps'
 import { useSetDatabaseProject } from '../queries/databases'
@@ -121,29 +115,23 @@ export function MoveToProjectDialog({
             >
               Move to
             </label>
-            <Select
+            <Combobox
+              id="move-target-project"
               value={targetProjectId}
+              options={[
+                {
+                  value: NO_PROJECT_VALUE,
+                  label: `No project${currentProjectId ? '' : ' (current)'}`,
+                },
+                ...projects.map((p) => ({ value: p.id, label: p.name })),
+              ]}
+              searchPlaceholder="Search projects..."
               onValueChange={(value) => {
                 if (value) {
                   setTargetProjectId(value)
                 }
               }}
-            >
-              <SelectTrigger id="move-target-project" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_PROJECT_VALUE}>
-                  No project
-                  {currentProjectId ? '' : ' (current)'}
-                </SelectItem>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           </div>
         )}
 

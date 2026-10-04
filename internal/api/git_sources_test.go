@@ -504,6 +504,68 @@ func TestHandleSetGitSource_Update_DoesNotReturnOrRotateSecret(t *testing.T) {
 	}
 }
 
+func TestHandleListGitSources_Empty(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/git-sources", ""))
+	var res []gitSourceSummaryResource
+	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &res) != nil {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	if len(res) != 0 {
+		t.Fatalf("res = %+v, want empty", res)
+	}
+}
+
+func TestHandleListGitSources_ReturnsAll(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveGitSource(ctx, store.GitSource{ServiceName: "web", RepoURL: "https://github.com/org/web.git", Branch: "main"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveGitSource(ctx, store.GitSource{ServiceName: "worker", RepoURL: "https://gitlab.com/org/worker.git", Branch: "dev"}); err != nil {
+		t.Fatal(err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/git-sources", ""))
+	var res []gitSourceSummaryResource
+	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &res) != nil {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	if len(res) != 2 {
+		t.Fatalf("res = %+v, want 2 entries", res)
+	}
+}
+
+func TestHandleListGitSources_RespectsIAMDeny(t *testing.T) {
+	rt, db := newTestRouter(t)
+	bootstrapTestAdmin(t, db)
+	ctx := context.Background()
+	if err := db.SaveGitSource(ctx, store.GitSource{ServiceName: "prod-web", RepoURL: "https://github.com/org/prod-web.git", Branch: "main"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveGitSource(ctx, store.GitSource{ServiceName: "staging-web", RepoURL: "https://github.com/org/staging-web.git", Branch: "main"}); err != nil {
+		t.Fatal(err)
+	}
+	reader := storeUserWithAbilitiesForTest(t, db, "reader@example.com", []string{AbilityRead})
+	attachTestPolicy(t, db, "deny-prod-read", "Deny", AbilityRead, "app:prod-web", store.PrincipalTypeUser, reader.ID)
+	cookie := sessionCookieForTest(t, rt, reader.ID)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/git-sources", ""))
+	var res []gitSourceSummaryResource
+	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &res) != nil {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	if len(res) != 1 || res[0].ServiceName != "staging-web" {
+		t.Fatalf("res = %+v, want only staging-web", res)
+	}
+}
+
 func TestHandleGetGitSource_NotFound(t *testing.T) {
 	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
 	cookie := loginTestSession(t, rt, db)

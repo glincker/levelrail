@@ -170,6 +170,9 @@ type ServiceStore interface {
 	// /api/v1/apps/{name}/streams (internal/api) must take effect on
 	// this controller's very next pass.
 	ListAllAppStreams(ctx context.Context) ([]store.AppStream, error)
+	// GetStatusPageSettings returns the status page's single settings
+	// row, read fresh every Reconcile like GetRegistrySettings.
+	GetStatusPageSettings(ctx context.Context) (store.StatusPageSettings, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -250,6 +253,9 @@ const (
 	// registryRouteOwner is dashboardRouteOwner's exact counterpart for
 	// the built-in registry's route.
 	registryRouteOwner = "builtin registry"
+
+	// statusPageRouteOwner: same process as the dashboard, shares its dial.
+	statusPageRouteOwner = "public status page"
 )
 
 // Controller converges Caddy's config to match every service in
@@ -346,6 +352,14 @@ type Controller struct {
 	lbSource      LoadBalancerSource // nil disables load balancing
 	lbRegistry    *loadbalancer.Registry
 	nodeUpstreams NodeUpstreamResolver
+
+	// localNodeID is this control plane's own node ID (see WithLocalNodeID).
+	localNodeID string
+}
+
+// isLocalNode mirrors internal/api's Router.isLocalNode: "" is always local.
+func (c *Controller) isLocalNode(nodeID string) bool {
+	return nodeID == "" || nodeID == c.localNodeID
 }
 
 // Option configures optional Controller behavior.
@@ -501,6 +515,12 @@ func WithDomainTLSCertSecrets(resolver DomainTLSCertPEMResolver) Option {
 	return func(c *Controller) { c.tlsCertSecrets = resolver }
 }
 
+// WithLocalNodeID sets this control plane's own node ID, letting Reconcile
+// tell a locally-placed service apart from one on an unreachable node.
+func WithLocalNodeID(id string) Option {
+	return func(c *Controller) { c.localNodeID = id }
+}
+
 // WithPublicHost sets APP_PUBLIC_HOST for the zero-config fallback
 // domain feature (see the Controller.publicHost field's own doc
 // comment and ingress.FallbackDomain). Passing a hostname instead of an
@@ -602,6 +622,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	registrySettings, err := c.store.GetRegistrySettings(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: get registry settings: %w", err)
+	}
+	statusPageSettings, err := c.store.GetStatusPageSettings(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: get status page settings: %w", err)
 	}
 	wafByDomain, err := c.domainWAFByDomain(ctx)
 	if err != nil {
@@ -806,6 +830,23 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		}
 	}
 
+	// Status page custom domain: dials the dashboard backend, since
+	// StatusHostHandler disambiguates by Host within this same process.
+	if statusPageSettings.Enabled && statusPageSettings.CustomDomain != "" && c.dashboardDial != "" {
+		if owner, host, dup := firstDuplicateHost(statusPageRouteOwner, []string{statusPageSettings.CustomDomain}, claimedHosts); dup {
+			c.logger.WarnContext(ctx, "ingress: status page custom domain is already routed to a service or static site, skipping the status page route",
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
+		} else {
+			claimedHosts[statusPageSettings.CustomDomain] = statusPageRouteOwner
+			routes = append(routes, ingress.ProxyRoute{
+				Hosts:       []string{statusPageSettings.CustomDomain},
+				BackendDial: c.dashboardDial,
+			})
+		}
+	}
+
 	modelRoutes, err := c.modelRoutes(ctx, claimedHosts)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list model hosts: %w", err)
@@ -857,6 +898,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		Message: fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly, %d in maintenance mode, %d redirected)", total, len(routes), len(staticRoutes), len(maintenanceRoutes), len(redirectRoutes)),
 	}}
 	if cond := lbCondition(lbPlans); cond != nil {
+		conditions = append(conditions, *cond)
+	}
+	if cond := crossNodeIngressCondition(services, c.isLocalNode); cond != nil {
 		conditions = append(conditions, *cond)
 	}
 	return reconcile.Result{Conditions: conditions}, nil

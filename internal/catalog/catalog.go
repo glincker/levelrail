@@ -28,7 +28,9 @@ type Template struct {
 }
 
 // Templates is the full catalog, served by GET /api/v1/service-templates
-// and GET /api/v1/service-templates/{id}.
+// and GET /api/v1/service-templates/{id}. contribTemplates (contrib.go)
+// are contributor-submitted YAML entries, merged in last so they're
+// indistinguishable from the hand-written Go ones to every consumer.
 var Templates = concat(
 	starterKitsTemplates,
 	automationTemplates,
@@ -61,6 +63,7 @@ var Templates = concat(
 	productivityBatchTemplates,
 	automationBatchTemplates,
 	catalogBatch2Templates,
+	contribTemplates,
 )
 
 // TemplateByID returns the Templates entry with this ID, or false if

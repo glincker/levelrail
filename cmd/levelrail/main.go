@@ -3396,6 +3396,8 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithListenAddr(deps.ingressHTTPSAddr),
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
 			ingressreconcile.WithRequestStats(),
+			// Lets Reconcile flag a service placed on an unreachable node.
+			ingressreconcile.WithLocalNodeID(localNodeIDOf(deps)),
 		}
 		if experimental.Enabled(experimental.AIModels) {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))

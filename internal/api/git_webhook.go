@@ -252,6 +252,10 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return rt.processGitHubReleaseWebhookEvent(ctx, name, gs, body)
 	}
 
+	if isGitHubPingEvent(header) {
+		return http.StatusOK, "ping event acknowledged\n"
+	}
+
 	ev, err := webhook.ParsePushEventForProvider(body, header.Get(webhook.HeaderBitbucketEventKey))
 	if err != nil {
 		rt.logger.Warn("api: git push webhook: malformed payload", slog.String("error", err.Error()), slog.String("name", name))
@@ -291,6 +295,18 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 // tag push covers spec.TriggerModeRelease for them instead.
 func isGitHubReleaseEvent(header http.Header) bool {
 	return header.Get(webhook.HeaderGitHubEvent) == "release"
+}
+
+// isGitHubPingEvent reports whether header names GitHub's own "ping"
+// event, sent once right after a webhook is created (and on a manual
+// "Redeliver"/"Test" from the repo's Settings > Webhooks page) to let
+// the receiver confirm it's reachable. Its payload has neither a push
+// nor a release shape, so it must be routed before
+// webhook.ParsePushEventForProvider ever sees the body, or it is
+// rejected as a malformed push and every new git source's first
+// delivery shows a scary 400 in GitHub's own UI.
+func isGitHubPingEvent(header http.Header) bool {
+	return header.Get(webhook.HeaderGitHubEvent) == "ping"
 }
 
 // gitSourceTriggerMatchesPush decides whether a push event's ref should

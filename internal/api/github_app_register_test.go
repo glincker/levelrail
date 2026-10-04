@@ -134,6 +134,51 @@ func TestHandleStartGitHubAppRegistration_Success(t *testing.T) {
 	}
 }
 
+// TestHandleStartGitHubAppRegistration_CSPAllowsAutoSubmit proves a real
+// bug found live is fixed: the global CSP's script-src 'self' and
+// form-action 'self' silently blocked this page's inline auto-submit
+// script and its cross-origin POST to github.com, leaving the browser
+// stuck on "Redirecting..." forever with no visible error. This
+// response must override both just for itself.
+func TestHandleStartGitHubAppRegistration_CSPAllowsAutoSubmit(t *testing.T) {
+	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
+	cookie := loginTestSession(t, rt, db)
+	setPrimaryDomain(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app/register/start", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
+	}
+
+	csp := rec.Header().Get("Content-Security-Policy")
+	if strings.Contains(csp, "script-src 'self'") {
+		t.Errorf("CSP = %q, the global script-src 'self' would block this page's inline auto-submit script", csp)
+	}
+	if strings.Contains(csp, "form-action 'self'") {
+		t.Errorf("CSP = %q, the global form-action 'self' would block this page's POST to github.com", csp)
+	}
+	if !strings.Contains(csp, "form-action https://github.com") {
+		t.Errorf("CSP = %q, want form-action to explicitly allow github.com", csp)
+	}
+
+	const marker = "nonce-"
+	i := strings.Index(csp, marker)
+	if i < 0 {
+		t.Fatalf("CSP = %q, want a script-src nonce", csp)
+	}
+	nonce := csp[i+len(marker):]
+	if j := strings.IndexAny(nonce, "' ;"); j >= 0 {
+		nonce = nonce[:j]
+	}
+	if nonce == "" {
+		t.Fatal("extracted an empty nonce from the CSP header")
+	}
+	if !strings.Contains(rec.Body.String(), `nonce="`+nonce+`"`) {
+		t.Errorf("script tag does not carry the same nonce %q the CSP header allows: %s", nonce, rec.Body.String())
+	}
+}
+
 func TestHandleStartGitHubAppRegistration_NameOverride(t *testing.T) {
 	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
 	cookie := loginTestSession(t, rt, db)
