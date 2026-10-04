@@ -70,7 +70,7 @@ Requires `curl`, `systemd`, and root access.
 
 ### First sign-in
 
-Open one of the printed `http://<ip>:8080/login?setup=<token>` links. The login page switches to "Set up the admin account" on its own and the token is pre-filled. Lost the summary? Print the token again on the server:
+Open one of the printed `http://<ip>:8080/login?setup=<token>` links from the install summary. **8080 is the default, not a guarantee**: if that port was already taken on the server, `install.sh` picks the next free one automatically (`LEVELRAIL_DASHBOARD_PORT`) and prints the real one it used, so always use the port from your own install's output, not the number in this doc. Lost the summary? Print the token again on the server (the dashboard port is also in the unit file, `systemctl cat levelrail | grep APP_HTTP_ADDR`):
 
 ```bash
 sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
