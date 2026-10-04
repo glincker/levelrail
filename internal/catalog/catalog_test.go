@@ -148,6 +148,8 @@ var tcpOnlyTemplates = map[string]bool{
 	"grimmory":       true, // nightly image with no documented endpoint
 	"databasus":      true, // no documented health endpoint
 	"statusnook":     true, // no documented health endpoint
+	"supertokens":    true, // no curl/wget in the image, GET /hello via raw /dev/tcp is the documented check
+	"nodebb":         true, // no curl/wget in the image, a raw /dev/tcp connect is the documented check
 }
 
 func TestTemplates_HealthchecksBecomeActiveProbes(t *testing.T) {
