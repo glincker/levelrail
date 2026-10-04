@@ -34,6 +34,8 @@ import { DeployMetaCard } from '../../../../../components/DeployMetaCard'
 import { DeployQuickLinks } from '../../../../../components/DeployQuickLinks'
 import { DeployStageTimeline } from '../../../../../components/DeployStageTimeline'
 import { ConditionsPanel } from '../../../../../components/ConditionsPanel'
+import { ProbeAttemptsPanel } from '../../../../../components/ProbeAttemptsPanel'
+import { useProbeAttempts } from '../../../../../queries/probeAttempts'
 import { SupplyChainSection } from '../../../../../components/SupplyChainSection'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shell/PageHeader'
@@ -78,6 +80,11 @@ function DeployLogsPage() {
   // steady state, not an exceptional one (see queries/gitSources.ts).
   const { data: gitSource } = useGitSource(name)
   const attempt = attempts.find((a) => a.id === deployId)
+  const { data: probeAttempts } = useProbeAttempts(
+    name,
+    deployId,
+    attempt?.status === 'running',
+  )
   const noBuildStep = attempt?.source === 'image'
   const isLatestAttempt = attempts[0]?.id === deployId
   const stages = attempt
@@ -209,6 +216,9 @@ function DeployLogsPage() {
                     <DeployStageTimeline stages={rolloutSubStages} />
                   ) : null}
                   <ConditionsPanel conditions={conditions} />
+                  {probeAttempts && probeAttempts.length > 0 ? (
+                    <ProbeAttemptsPanel attempts={probeAttempts} />
+                  ) : null}
                 </div>
               </DeploySection>
             </div>

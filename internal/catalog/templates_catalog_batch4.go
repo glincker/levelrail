@@ -202,7 +202,7 @@ var catalogBatch4Templates = []Template{
 		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   pairdrop:
-    image: lscr.io/linuxserver/pairdrop:1.19.0-ls94
+    image: lscr.io/linuxserver/pairdrop:1.11.2
     ports: ["3000:3000"]
     environment:
       PUID: "1000"

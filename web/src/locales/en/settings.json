@@ -1,0 +1,50 @@
+{
+  "email": {
+    "title": "Email",
+    "description": "The backend alert notifications and password-reset emails are sent through. Off by default; a control plane started with APP_SMTP_* env vars still works until this is saved.",
+    "helpLabel": "Email notifications help",
+    "backendLabel": "Backend",
+    "backendNotConfigured": "Not configured",
+    "smtp": {
+      "label": "SMTP",
+      "presetsLabel": "Quick fill for a known provider",
+      "host": "Host",
+      "port": "Port",
+      "username": "Username",
+      "from": "From address",
+      "password": "Password",
+      "passwordSet": "A password is already configured. Leave blank to keep it.",
+      "passwordUnset": "No password set yet."
+    },
+    "ses": {
+      "label": "AWS SES",
+      "region": "Region",
+      "accessKeyId": "Access key ID",
+      "from": "From address",
+      "secretAccessKey": "Secret access key",
+      "secretSet": "A secret key is already configured. Leave blank to keep it.",
+      "secretUnset": "No secret key set yet."
+    },
+    "resend": {
+      "label": "Resend",
+      "from": "From address",
+      "apiKey": "API key",
+      "apiKeySet": "An API key is already configured. Leave blank to keep it.",
+      "apiKeyUnset": "No API key set yet."
+    },
+    "save": "Save",
+    "saving": "Saving...",
+    "saveSuccess": "Email settings saved.",
+    "test": {
+      "title": "Send a test email",
+      "description": "Sends one real email through the saved backend above, the same path alert notifications and password resets use.",
+      "placeholder": "you@example.com",
+      "send": "Send test email",
+      "sending": "Sending...",
+      "success": "Test email sent to {{to}}."
+    },
+    "comingSoon": "More notification options are coming here: custom email templates, send-rate limiting, and per-alert frequency controls.",
+    "channelsCta": "Looking for Slack, Discord, or webhook notifications instead?",
+    "channelsLink": "Notification channels"
+  }
+}

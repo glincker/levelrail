@@ -4,11 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
+	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// emailTestTimeout bounds the synchronous test-send below, the same
+// reasoning notificationChannelTestTimeout documents for notification
+// channels: an unresponsive-but-connectable backend can't hang the
+// request goroutine indefinitely.
+const emailTestTimeout = 10 * time.Second
 
 // The credential envKeys email settings are stored under in
 // internal/secrets, never as plaintext settings-table columns.
@@ -228,4 +237,40 @@ func (rt *Router) handleUpdateEmailSettings(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	writeJSON(w, http.StatusOK, toEmailSettingsResource(settings, smtpPasswordSet, sesSecretSet, resendKeySet))
+}
+
+type testEmailRequest struct {
+	To string `json:"to"`
+}
+
+// handleTestEmail handles POST /api/v1/settings/email/test: sends one
+// real email through rt.emailSender, the exact same DynamicSender
+// alert notifications and password resets already use, so a successful
+// test proves the real send path works, not a separate one that could
+// drift from it.
+func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
+	if rt.emailSender == nil {
+		writeError(w, http.StatusNotImplemented, "email is not configured on this control plane")
+		return
+	}
+
+	var req testEmailRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if err := email.ValidateAddress(req.To); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), emailTestTimeout)
+	defer cancel()
+	subject := "Test email from Levelrail"
+	body := "This is a test email from your Levelrail control plane. If you received this, your email settings are working."
+	if err := rt.emailSender.Send(ctx, req.To, subject, body); err != nil {
+		writeError(w, http.StatusBadGateway, fmt.Sprintf("test email failed: %s", err.Error()))
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

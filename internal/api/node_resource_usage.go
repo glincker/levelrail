@@ -20,11 +20,11 @@ var nodeResourceUsagePlacedMetrics = []string{
 // nodeResourceUsageHostMetrics are the real host-level readings
 // (nodeHostMetrics in node_metrics.go, minus the OS-patch counters,
 // which don't belong in a utilization view) this endpoint reads
-// directly under nodeResourceID(id) rather than summing. Today only the
-// control plane's own host (HostDiskCollector/HostMemoryCollector) ever
-// writes these, so a remote node's fields stay nil; a future per-node
-// agent writing the identical resource_id format would show up here
-// automatically with no change to this handler.
+// directly under nodeResourceID(id) rather than summing.
+// HostDiskCollector/HostMemoryCollector still only run for this
+// process's own host, so (unlike nodeResourceUsagePlacedMetrics below)
+// a remote node's fields here still stay nil; see
+// docs-local/agent-metrics-findings-2026-10-04.md.
 var nodeResourceUsageHostMetrics = []string{
 	telemetry.MetricMemoryTotalBytes,
 	telemetry.MetricDiskUsedBytes,
@@ -37,11 +37,12 @@ var nodeResourceUsageHostMetrics = []string{
 // MemoryUsageBytes are the sum of every placed service's latest sample,
 // the same "sum of containers, not a true host read" contract
 // handleQueryNodeMetrics' own doc comment establishes for the time-series
-// version of this same number. MemoryTotalBytes/DiskUsedBytes/
-// DiskTotalBytes are real host reads, but (today) only ever populated
-// for the node running the control plane itself: a field stays nil
-// rather than reporting a number that would be silently wrong for a
-// node with no host-metrics collector.
+// version of this same number, now collected for a remote node too (see
+// nodeResourceUsagePlacedMetrics). MemoryTotalBytes/DiskUsedBytes/
+// DiskTotalBytes are real host reads, still only populated for the node
+// running the control plane itself (nodeResourceUsageHostMetrics): a
+// field stays nil rather than reporting a number that would be silently
+// wrong for a node with no host-metrics collector.
 type nodeResourceUsageResource struct {
 	NodeID           string   `json:"node_id"`
 	Name             string   `json:"name"`

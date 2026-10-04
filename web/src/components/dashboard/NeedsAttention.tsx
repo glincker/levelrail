@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   BroomIcon,
   WarningCircleIcon,
@@ -9,6 +10,8 @@ import { SkeletonList, SuggestionList } from '@/components/kit'
 import { useAttentionItems } from '../../queries/attention'
 import { attentionToSuggestions } from '../../lib/fleetSuggestions'
 import type { SuggestionSpec } from '../../lib/fleetSuggestions'
+import { useExperimentalFeatures } from '../../hooks/useExperimental'
+import { isFeatureVisible } from '../../lib/experimental'
 import { useSuggestionRunner } from './useSuggestionRunner'
 
 const MAX_SHOWN = 4
@@ -22,6 +25,7 @@ export function NeedsAttentionView({
   loading: boolean
   onRun: (spec: SuggestionSpec['actions'][number]['spec']) => void
 }) {
+  const { t } = useTranslation('dashboard')
   const [pending, setPending] = useState<string | null>(null)
   if (loading) return <SkeletonList rows={2} />
   if (specs.length === 0) return null
@@ -53,17 +57,17 @@ export function NeedsAttentionView({
     })),
   }))
   return (
-    <section aria-label="Needs attention" className="space-y-3">
+    <section aria-label={t('needsAttention.title')} className="space-y-3">
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-semibold text-foreground">
-          Needs attention
+          {t('needsAttention.title')}
         </h2>
         {specs.length > MAX_SHOWN ? (
           <Link
             to="/status"
             className="text-xs text-muted-foreground hover:text-foreground"
           >
-            See all {specs.length}
+            {t('needsAttention.seeAll', { count: specs.length })}
           </Link>
         ) : null}
       </div>
@@ -73,13 +77,18 @@ export function NeedsAttentionView({
 }
 
 export function NeedsAttention() {
+  const { t } = useTranslation('dashboard')
   const { items, isLoading } = useAttentionItems()
   const run = useSuggestionRunner()
-  return (
-    <NeedsAttentionView
-      specs={attentionToSuggestions(items)}
-      loading={isLoading}
-      onRun={run}
-    />
+  const features = useExperimentalFeatures()
+  const aiChatEnabled = isFeatureVisible('ai-chat', features)
+  const specs = attentionToSuggestions(items, t).map((spec) =>
+    aiChatEnabled
+      ? spec
+      : {
+          ...spec,
+          actions: spec.actions.filter((a) => a.spec.kind !== 'ask-ai'),
+        },
   )
+  return <NeedsAttentionView specs={specs} loading={isLoading} onRun={run} />
 }

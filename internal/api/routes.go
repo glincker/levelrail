@@ -486,6 +486,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// Same AbilityRead boundary as the log stream above.
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/steps", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.withStreamReauth(appResourceFromPath, rt.handleDeployStepStream)))
 
+	// Deploy-attempt readiness-probe attempts (deploy_probes.go): plain
+	// polling JSON, not SSE, the individual probe attempts
+	// (internal/probe.WithOnAttempt) one deploy's cutover made. Same
+	// AbilityRead boundary as the step/log streams above.
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/probes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListProbeAttempts))
+
 	// Deploy-attempt log download (deploy_log_download.go): the same
 	// attempt's full log as a plain-text attachment instead of an SSE
 	// stream, mirroring /apps/{name}/logs/download for runtime logs.

@@ -93,8 +93,10 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 		req.Header.Set(AgentClientHeader, agent)
 	}
 
+	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
+		TraceRequest(method, c.baseURL+path, "", time.Since(start), err)
 		// A transport-level failure (connection refused, DNS, TLS,
 		// timeout): deliberately not wrapped in *APIError, so callers
 		// can tell "never reached the server" apart from "the server
@@ -103,6 +105,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 		return fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(method, c.baseURL+path, resp.Status, time.Since(start), nil)
 
 	return decodeResponse(resp, out)
 }
@@ -182,6 +185,72 @@ func (c *Client) ListApps(ctx context.Context) ([]AppResource, error) {
 	var out []AppResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/apps", nil, &out)
 	return out, err
+}
+
+// ListAppsOptions pages GET /api/v1/apps, matching the limit/offset
+// query params internal/api/apps_list.go's own parseAppListFilter
+// already accepts. Both zero means every matching app in one response,
+// ListApps's own unpaged behavior.
+type ListAppsOptions struct {
+	Limit, Offset int
+}
+
+// AppsPage is one page of GET /api/v1/apps, returned by ListAppsPage.
+// NextOffset is 0 when there is no further page; TotalCount is the
+// server's own X-Total-Count header, the full match count before paging.
+type AppsPage struct {
+	Items      []AppResource
+	NextOffset int
+	TotalCount int
+}
+
+// ListAppsPage calls GET /api/v1/apps with opts.Limit/opts.Offset as
+// query params. Built as its own request rather than through do(): it
+// needs the server's X-Total-Count response header to compute
+// NextOffset, which do() discards once it decodes the JSON body.
+func (c *Client) ListAppsPage(ctx context.Context, opts ListAppsOptions) (AppsPage, error) {
+	path := "/api/v1/apps"
+	q := url.Values{}
+	if opts.Limit > 0 {
+		q.Set("limit", strconv.Itoa(opts.Limit))
+	}
+	if opts.Offset > 0 {
+		q.Set("offset", strconv.Itoa(opts.Offset))
+	}
+	if enc := q.Encode(); enc != "" {
+		path += "?" + enc
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
+	if err != nil {
+		return AppsPage{}, fmt.Errorf("build request: %w", err)
+	}
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+
+	start := time.Now()
+	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
+	if err != nil {
+		TraceRequest(http.MethodGet, c.baseURL+path, "", time.Since(start), err)
+		return AppsPage{}, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
+
+	var items []AppResource
+	if err := decodeResponse(resp, &items); err != nil {
+		return AppsPage{}, err
+	}
+	total, _ := strconv.Atoi(resp.Header.Get("X-Total-Count"))
+	page := AppsPage{Items: items, TotalCount: total}
+	if opts.Limit > 0 && total > opts.Offset+len(items) {
+		page.NextOffset = opts.Offset + len(items)
+	}
+	return page, nil
 }
 
 // ListAppStatuses calls GET /api/v1/apps and keeps only each app's name
@@ -547,11 +616,14 @@ func (c *Client) DeployCompose(ctx context.Context, name string, composeYAML []b
 		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
 
+	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as do()
 	if err != nil {
+		TraceRequest(http.MethodPost, req.URL.String(), "", time.Since(start), err)
 		return out, fmt.Errorf("request %s %s: %w", http.MethodPost, req.URL.String(), err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(http.MethodPost, req.URL.String(), resp.Status, time.Since(start), nil)
 
 	err = decodeResponse(resp, &out)
 	return out, err
@@ -3198,11 +3270,16 @@ func streamSSE[T any](ctx context.Context, c *Client, method, path string, body 
 	}
 
 	streamClient := &http.Client{Transport: c.hc.Transport}
+	start := time.Now()
 	resp, err := streamClient.Do(req) //nolint:gosec // same target as above
 	if err != nil {
+		TraceRequest(method, c.baseURL+path, "", time.Since(start), err)
 		return fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	// Traced at headers-received, not stream-end: a tail runs until the
+	// caller's context is canceled, so "elapsed" here is connect latency.
+	TraceRequest(method, c.baseURL+path, resp.Status, time.Since(start), nil)
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return decodeResponse(resp, nil)
@@ -3296,11 +3373,14 @@ func (c *Client) DownloadAuditLogCSV(ctx context.Context, opts ListAuditLogOptio
 		req.Header.Set("User-Agent", c.userAgent)
 	}
 
+	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
+		TraceRequest(http.MethodGet, c.baseURL+path, "", time.Since(start), err)
 		return nil, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -3358,11 +3438,14 @@ func (c *Client) DownloadDeployLog(ctx context.Context, name, deployID string) (
 		req.Header.Set("User-Agent", c.userAgent)
 	}
 
+	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
+		TraceRequest(http.MethodGet, c.baseURL+path, "", time.Since(start), err)
 		return nil, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -3391,11 +3474,14 @@ func (c *Client) downloadRaw(ctx context.Context, path string) ([]byte, error) {
 		req.Header.Set("User-Agent", c.userAgent)
 	}
 
+	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
+		TraceRequest(http.MethodGet, c.baseURL+path, "", time.Since(start), err)
 		return nil, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {

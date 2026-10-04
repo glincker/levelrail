@@ -1,11 +1,23 @@
+import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { EnvelopeIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  EnvelopeIcon,
+  PaperPlaneTiltIcon,
+  SparkleIcon,
+  WebhooksLogoIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import { BrandLogoBadge } from './BrandLogoBadge'
 import type { EmailSettings } from '../queries/emailSettings'
-import { useUpdateEmailSettings } from '../queries/emailSettings'
+import {
+  useSendTestEmail,
+  useUpdateEmailSettings,
+} from '../queries/emailSettings'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -21,19 +33,57 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
+import { HelpLink } from '@/components/HelpLink'
+import { cn } from '@/lib/utils'
 
-// Sentinel for the Select's "no backend chosen" option: an empty-string
-// SelectItem value is unreliable across select implementations, so this
-// maps to/from backend === '' at the Controller boundary instead.
-const BACKEND_UNSET = 'unset'
+// Brand mark per backend, lazy-loaded via the same templateLogos.ts
+// registry the catalog's own TemplateLogo uses (one dynamic import per
+// logo, kept out of the initial bundle). SMTP keeps the generic
+// EnvelopeIcon: it's a protocol, not a company, so no logo fits it.
+function BackendIcon({ logoId }: { logoId?: string }) {
+  return (
+    <BrandLogoBadge
+      logoId={logoId}
+      className="size-6 p-0.5"
+      fallback={<EnvelopeIcon className="size-4 text-muted-foreground" />}
+    />
+  )
+}
+
+const BACKEND_LOGO_ID: Record<string, string | undefined> = {
+  smtp: undefined,
+  ses: 'aws-ses',
+  resend: 'resend',
+}
+
+const BACKEND_VALUES = ['smtp', 'ses', 'resend'] as const
+
+// Well-known SMTP providers, prefilled on click so a user doesn't have
+// to look up host/port by hand. All take the same generic SMTP relay
+// this app already speaks; no separate native integration needed.
+const SMTP_PRESETS = [
+  { name: 'Gmail', logoId: 'gmail', host: 'smtp.gmail.com', port: 587 },
+  { name: 'Mailgun', logoId: 'mailgun', host: 'smtp.mailgun.org', port: 587 },
+  {
+    name: 'Postmark',
+    logoId: 'postmark',
+    host: 'smtp.postmarkapp.com',
+    port: 587,
+  },
+  {
+    name: 'Brevo',
+    logoId: 'brevo',
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+  },
+  {
+    name: 'Mailtrap',
+    logoId: 'mailtrap',
+    host: 'live.smtp.mailtrap.io',
+    port: 587,
+  },
+] as const
 
 // Mirrors validateEmailSettingsRequest (internal/api/email_settings.go):
 // structural fields required per backend, credentials always optional
@@ -154,8 +204,11 @@ function toEmailSettings(v: EmailSettingsFormOutput): EmailSettings {
 // /api/v1/settings/email. Used by both internal/alerting's
 // notifications and the forgot-password flow.
 export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
+  const { t } = useTranslation('settings')
   const updateSettings = useUpdateEmailSettings()
-  const { control, register, handleSubmit, formState } = useForm<
+  const sendTestEmail = useSendTestEmail()
+  const [testTo, setTestTo] = useState('')
+  const { control, register, handleSubmit, formState, setValue } = useForm<
     EmailSettingsFormInput,
     unknown,
     EmailSettingsFormOutput
@@ -165,205 +218,366 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
     resetOptions: { keepDirtyValues: true },
   })
 
+  // All options rendered up front, not hidden behind a dropdown: a
+  // dropdown hides that SES/Resend are options at all until opened.
+  const backendOptions = BACKEND_VALUES.map((value) => ({
+    value,
+    label: t(`email.${value}.label`),
+  }))
+
   const onSubmit = handleSubmit((values) => {
     updateSettings.mutate(toEmailSettings(values), {
       onSuccess: () => {
-        toast.add({ title: 'Email settings saved.', type: 'success' })
+        toast.add({ title: t('email.saveSuccess'), type: 'success' })
       },
     })
   })
 
+  function onSendTest() {
+    sendTestEmail.mutate(testTo, {
+      onSuccess: () => {
+        toast.add({
+          title: t('email.test.success', { to: testTo }),
+          type: 'success',
+        })
+      },
+      onError: (error) => {
+        toast.add({ title: error.message, type: 'error' })
+      },
+    })
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <EnvelopeIcon className="size-4" />
-          Email
-        </CardTitle>
-        <CardDescription>
-          The backend alert notifications and password-reset emails are sent
-          through. Off by default; a control plane started with APP_SMTP_* env
-          vars still works until this is saved.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form
-          onSubmit={(e) => {
-            void onSubmit(e)
-          }}
-          className="space-y-5"
-        >
-          <Field>
-            <FieldLabel htmlFor="email-backend">Backend</FieldLabel>
+    <div className="space-y-3">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <EnvelopeIcon className="size-4" />
+              {t('email.title')}
+            </span>
+            <HelpLink
+              path="/email-notifications"
+              label={t('email.helpLabel')}
+            />
+          </CardTitle>
+          <CardDescription>{t('email.description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            onSubmit={(e) => {
+              void onSubmit(e)
+            }}
+            className="space-y-5"
+          >
+            <Field>
+              <FieldLabel htmlFor="email-backend">
+                {t('email.backendLabel')}
+              </FieldLabel>
+              <Controller
+                control={control}
+                name="backend"
+                render={({ field }) => (
+                  <div
+                    id="email-backend"
+                    role="radiogroup"
+                    aria-label={t('email.backendLabel')}
+                    className="grid grid-cols-1 gap-2 sm:grid-cols-3"
+                  >
+                    {backendOptions.map((opt) => {
+                      const selected = field.value === opt.value
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => field.onChange(opt.value)}
+                          className={cn(
+                            'flex items-center gap-2 rounded-md border p-3 text-left text-sm font-medium transition-colors',
+                            selected
+                              ? 'border-primary bg-primary/5 text-foreground'
+                              : 'border-border text-muted-foreground hover:bg-muted/50',
+                          )}
+                        >
+                          <BackendIcon logoId={BACKEND_LOGO_ID[opt.value]} />
+                          {opt.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              />
+            </Field>
+
             <Controller
               control={control}
               name="backend"
-              render={({ field }) => (
-                <Select
-                  value={field.value || BACKEND_UNSET}
-                  onValueChange={(v) =>
-                    field.onChange(v === BACKEND_UNSET ? '' : v)
-                  }
-                >
-                  <SelectTrigger id="email-backend" className="w-full sm:w-64">
-                    <SelectValue placeholder="Not configured" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={BACKEND_UNSET}>
-                      Not configured
-                    </SelectItem>
-                    <SelectItem value="smtp">SMTP</SelectItem>
-                    <SelectItem value="ses">AWS SES</SelectItem>
-                    <SelectItem value="resend">Resend</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+              render={({ field }) =>
+                field.value === 'smtp' ? (
+                  <FieldGroup className="gap-4 rounded-md border border-border p-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <BackendIcon logoId={BACKEND_LOGO_ID.smtp} />
+                      {t('email.smtp.label')}
+                    </div>
+                    <div>
+                      <FieldDescription className="mb-1.5">
+                        {t('email.smtp.presetsLabel')}
+                      </FieldDescription>
+                      <div className="flex flex-wrap gap-1.5">
+                        {SMTP_PRESETS.map((preset) => (
+                          <button
+                            key={preset.name}
+                            type="button"
+                            onClick={() => {
+                              setValue('smtpHost', preset.host, {
+                                shouldDirty: true,
+                              })
+                              setValue('smtpPort', preset.port, {
+                                shouldDirty: true,
+                              })
+                            }}
+                            className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+                          >
+                            <BackendIcon logoId={preset.logoId} />
+                            {preset.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <Field>
+                        <FieldLabel htmlFor="smtp-host">
+                          {t('email.smtp.host')}
+                        </FieldLabel>
+                        <Input
+                          id="smtp-host"
+                          {...register('smtpHost')}
+                          placeholder="smtp.example.com"
+                        />
+                        <FieldError errors={[formState.errors.smtpHost]} />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="smtp-port">
+                          {t('email.smtp.port')}
+                        </FieldLabel>
+                        <Input
+                          id="smtp-port"
+                          type="number"
+                          {...register('smtpPort')}
+                          placeholder="587"
+                        />
+                        <FieldError errors={[formState.errors.smtpPort]} />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="smtp-username">
+                          {t('email.smtp.username')}
+                        </FieldLabel>
+                        <Input
+                          id="smtp-username"
+                          {...register('smtpUsername')}
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="smtp-from">
+                          {t('email.smtp.from')}
+                        </FieldLabel>
+                        <Input
+                          id="smtp-from"
+                          {...register('smtpFrom')}
+                          placeholder="no-reply@example.com"
+                        />
+                        <FieldError errors={[formState.errors.smtpFrom]} />
+                      </Field>
+                    </div>
+                    <Field>
+                      <FieldLabel htmlFor="smtp-password">
+                        {t('email.smtp.password')}
+                      </FieldLabel>
+                      <Input
+                        id="smtp-password"
+                        type="password"
+                        {...register('smtpPassword')}
+                      />
+                      <FieldDescription>
+                        {settings.smtp_password_set
+                          ? t('email.smtp.passwordSet')
+                          : t('email.smtp.passwordUnset')}
+                      </FieldDescription>
+                    </Field>
+                  </FieldGroup>
+                ) : field.value === 'ses' ? (
+                  <FieldGroup className="gap-4 rounded-md border border-border p-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <BackendIcon logoId={BACKEND_LOGO_ID.ses} />
+                      {t('email.ses.label')}
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <Field>
+                        <FieldLabel htmlFor="ses-region">
+                          {t('email.ses.region')}
+                        </FieldLabel>
+                        <Input
+                          id="ses-region"
+                          {...register('sesRegion')}
+                          placeholder="us-east-1"
+                        />
+                        <FieldError errors={[formState.errors.sesRegion]} />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="ses-access-key-id">
+                          {t('email.ses.accessKeyId')}
+                        </FieldLabel>
+                        <Input
+                          id="ses-access-key-id"
+                          {...register('sesAccessKeyId')}
+                        />
+                        <FieldError
+                          errors={[formState.errors.sesAccessKeyId]}
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="ses-from">
+                          {t('email.ses.from')}
+                        </FieldLabel>
+                        <Input
+                          id="ses-from"
+                          {...register('sesFrom')}
+                          placeholder="no-reply@example.com"
+                        />
+                        <FieldError errors={[formState.errors.sesFrom]} />
+                      </Field>
+                    </div>
+                    <Field>
+                      <FieldLabel htmlFor="ses-secret-access-key">
+                        {t('email.ses.secretAccessKey')}
+                      </FieldLabel>
+                      <Input
+                        id="ses-secret-access-key"
+                        type="password"
+                        {...register('sesSecretAccessKey')}
+                      />
+                      <FieldDescription>
+                        {settings.ses_secret_access_key_set
+                          ? t('email.ses.secretSet')
+                          : t('email.ses.secretUnset')}
+                      </FieldDescription>
+                    </Field>
+                  </FieldGroup>
+                ) : field.value === 'resend' ? (
+                  <FieldGroup className="gap-4 rounded-md border border-border p-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <BackendIcon logoId={BACKEND_LOGO_ID.resend} />
+                      {t('email.resend.label')}
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <Field>
+                        <FieldLabel htmlFor="resend-from">
+                          {t('email.resend.from')}
+                        </FieldLabel>
+                        <Input
+                          id="resend-from"
+                          {...register('resendFrom')}
+                          placeholder="no-reply@example.com"
+                        />
+                        <FieldError errors={[formState.errors.resendFrom]} />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="resend-api-key">
+                          {t('email.resend.apiKey')}
+                        </FieldLabel>
+                        <Input
+                          id="resend-api-key"
+                          type="password"
+                          {...register('resendApiKey')}
+                        />
+                        <FieldDescription>
+                          {settings.resend_api_key_set
+                            ? t('email.resend.apiKeySet')
+                            : t('email.resend.apiKeyUnset')}
+                        </FieldDescription>
+                      </Field>
+                    </div>
+                  </FieldGroup>
+                ) : (
+                  <></>
+                )
+              }
             />
-          </Field>
 
-          <Controller
-            control={control}
-            name="backend"
-            render={({ field }) =>
-              field.value === 'smtp' ? (
-                <FieldGroup className="gap-3 rounded-md border border-border p-3">
-                  <Field>
-                    <FieldLabel htmlFor="smtp-host">Host</FieldLabel>
-                    <Input
-                      id="smtp-host"
-                      {...register('smtpHost')}
-                      placeholder="smtp.example.com"
-                    />
-                    <FieldError errors={[formState.errors.smtpHost]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="smtp-port">Port</FieldLabel>
-                    <Input
-                      id="smtp-port"
-                      type="number"
-                      {...register('smtpPort')}
-                      placeholder="587"
-                    />
-                    <FieldError errors={[formState.errors.smtpPort]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="smtp-username">Username</FieldLabel>
-                    <Input id="smtp-username" {...register('smtpUsername')} />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="smtp-from">From address</FieldLabel>
-                    <Input
-                      id="smtp-from"
-                      {...register('smtpFrom')}
-                      placeholder="no-reply@example.com"
-                    />
-                    <FieldError errors={[formState.errors.smtpFrom]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="smtp-password">Password</FieldLabel>
-                    <Input
-                      id="smtp-password"
-                      type="password"
-                      {...register('smtpPassword')}
-                    />
-                    <FieldDescription>
-                      {settings.smtp_password_set
-                        ? 'A password is already configured. Leave blank to keep it.'
-                        : 'No password set yet.'}
-                    </FieldDescription>
-                  </Field>
-                </FieldGroup>
-              ) : field.value === 'ses' ? (
-                <FieldGroup className="gap-3 rounded-md border border-border p-3">
-                  <Field>
-                    <FieldLabel htmlFor="ses-region">Region</FieldLabel>
-                    <Input
-                      id="ses-region"
-                      {...register('sesRegion')}
-                      placeholder="us-east-1"
-                    />
-                    <FieldError errors={[formState.errors.sesRegion]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="ses-access-key-id">
-                      Access key ID
-                    </FieldLabel>
-                    <Input
-                      id="ses-access-key-id"
-                      {...register('sesAccessKeyId')}
-                    />
-                    <FieldError errors={[formState.errors.sesAccessKeyId]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="ses-from">From address</FieldLabel>
-                    <Input
-                      id="ses-from"
-                      {...register('sesFrom')}
-                      placeholder="no-reply@example.com"
-                    />
-                    <FieldError errors={[formState.errors.sesFrom]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="ses-secret-access-key">
-                      Secret access key
-                    </FieldLabel>
-                    <Input
-                      id="ses-secret-access-key"
-                      type="password"
-                      {...register('sesSecretAccessKey')}
-                    />
-                    <FieldDescription>
-                      {settings.ses_secret_access_key_set
-                        ? 'A secret key is already configured. Leave blank to keep it.'
-                        : 'No secret key set yet.'}
-                    </FieldDescription>
-                  </Field>
-                </FieldGroup>
-              ) : field.value === 'resend' ? (
-                <FieldGroup className="gap-3 rounded-md border border-border p-3">
-                  <Field>
-                    <FieldLabel htmlFor="resend-from">From address</FieldLabel>
-                    <Input
-                      id="resend-from"
-                      {...register('resendFrom')}
-                      placeholder="no-reply@example.com"
-                    />
-                    <FieldError errors={[formState.errors.resendFrom]} />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="resend-api-key">API key</FieldLabel>
-                    <Input
-                      id="resend-api-key"
-                      type="password"
-                      {...register('resendApiKey')}
-                    />
-                    <FieldDescription>
-                      {settings.resend_api_key_set
-                        ? 'An API key is already configured. Leave blank to keep it.'
-                        : 'No API key set yet.'}
-                    </FieldDescription>
-                  </Field>
-                </FieldGroup>
-              ) : (
-                <></>
-              )
-            }
-          />
+            <div className="flex items-center gap-2">
+              <Button
+                type="submit"
+                size="sm"
+                disabled={updateSettings.isPending}
+              >
+                {updateSettings.isPending ? t('email.saving') : t('email.save')}
+              </Button>
+            </div>
+            {updateSettings.isError ? (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  {updateSettings.error.message}
+                </AlertDescription>
+              </Alert>
+            ) : null}
+          </form>
 
-          <div className="flex items-center gap-2">
-            <Button type="submit" size="sm" disabled={updateSettings.isPending}>
-              {updateSettings.isPending ? 'Saving...' : 'Save'}
-            </Button>
-          </div>
-          {updateSettings.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>
-                {updateSettings.error.message}
-              </AlertDescription>
-            </Alert>
+          {settings.backend ? (
+            <FieldGroup className="mt-5 gap-2 rounded-md border border-border p-3">
+              <FieldLabel htmlFor="test-email-to">
+                {t('email.test.title')}
+              </FieldLabel>
+              <FieldDescription>{t('email.test.description')}</FieldDescription>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  id="test-email-to"
+                  type="email"
+                  value={testTo}
+                  onChange={(e) => setTestTo(e.target.value)}
+                  placeholder={t('email.test.placeholder')}
+                  className="sm:max-w-xs"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={!testTo || sendTestEmail.isPending}
+                  onClick={onSendTest}
+                >
+                  <PaperPlaneTiltIcon className="size-3.5" />
+                  {sendTestEmail.isPending
+                    ? t('email.test.sending')
+                    : t('email.test.send')}
+                </Button>
+              </div>
+            </FieldGroup>
           ) : null}
-        </form>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
+        <SparkleIcon className="size-4 shrink-0" aria-hidden="true" />
+        <span>{t('email.comingSoon')}</span>
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-2 text-sm">
+          <WebhooksLogoIcon
+            className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <span className="text-muted-foreground">
+            {t('email.channelsCta')}
+          </span>
+        </div>
+        <Link
+          to="/settings/notification-channels"
+          className={buttonVariants({ variant: 'outline', size: 'sm' })}
+        >
+          {t('email.channelsLink')}
+        </Link>
+      </div>
+    </div>
   )
 }

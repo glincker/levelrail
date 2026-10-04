@@ -387,6 +387,7 @@ type Router struct {
 	appVolumeMoves               AppVolumeMoveStore               // always set, same "core Store interface" shape as backupHistory above
 	volumeCloneRestoreRunner     VolumeCloneRestoreRunner         // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new returns 501, same shape as cloneRestoreRunner above
 	deployAttempts               DeployAttemptStore               // always set, same "core Store interface" shape as certs/staticSites above
+	probeAttempts                ProbeAttemptStore                // always set, same "core Store interface" shape as deployAttempts above
 	buildStartMu                 sync.Mutex                       // serializes the running-attempt check and row insert in handleTriggerBuild
 	cancels                      *deploy.CancelRegistry           // always set by NewRouter: in-flight deploys an operator can cancel
 	startingDeploys              map[string]int                   // guarded by buildStartMu: apps whose webhook deploy is fetching before its attempt row exists
@@ -424,6 +425,7 @@ type Router struct {
 	oauthClientFactory           oauthClientFactory               // defaulted to defaultOAuthClientFactory in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches/gitSourceFetch above already use
 	emailSettings                EmailSettingsStore               // always set, same shape as ingressSettings above
 	emailSecrets                 EmailSecretsStore                // nil is valid: PUT /api/v1/settings/email returns 501
+	observability                ObservabilityStore               // always set, same shape as emailSettings above
 	cloudflareTunnel             CloudflareTunnelStore            // always set, same shape as emailSettings above
 	cloudflareTunnelSecrets      CloudflareTunnelSecrets          // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-tunnel return 501, same shape as emailSecrets above
 	cloudflareDNS                CloudflareDNSStore               // always set, same shape as cloudflareTunnel above
@@ -562,6 +564,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		customTemplates:             s,
 		deploys:                     s,
 		deployAttempts:              s,
+		probeAttempts:               s,
 		databases:                   s,
 		auth:                        s,
 		tokens:                      s,
@@ -627,6 +630,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		oauthState:                  newOAuthStateStore(),
 		oauthClientFactory:          defaultOAuthClientFactory,
 		emailSettings:               s,
+		observability:               s,
 		cloudflareTunnel:            s,
 		cloudflareDNS:               s,
 		route53DNS:                  s,
