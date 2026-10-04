@@ -69,6 +69,9 @@ func TestServiceTemplates_Live_Batch2Boots(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.templateID, func(t *testing.T) {
+			if tt.templateID == "matrix-synapse-postgres" && testing.Short() {
+				t.Skip("too slow for the PR fast lane's 18m budget, covered by the nightly full suite")
+			}
 			deployCtx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 			defer cancel()
 
