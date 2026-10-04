@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CheckIcon,
   CopyIcon,
@@ -16,6 +17,7 @@ import { useBadgeSetting, useSetBadgeSetting } from '../queries/badge'
 // row); kept local for the same "no other page shows this exact shape"
 // reason cli-access.tsx's own CopyCommand gives.
 function CopySnippet({ text }: { text: string }) {
+  const { t } = useTranslation('common')
   const [copied, setCopied] = useState(false)
   return (
     <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
@@ -40,7 +42,7 @@ function CopySnippet({ text }: { text: string }) {
         ) : (
           <CopyIcon aria-hidden="true" />
         )}
-        {copied ? 'Copied' : 'Copy'}
+        {copied ? t('actions.copied') : t('actions.copy')}
       </Button>
     </div>
   )
@@ -54,6 +56,7 @@ function CopySnippet({ text }: { text: string }) {
 // index page alongside AutoRollbackCard/AutoRollbackSLOBurnCard, the
 // other opt-in per-app deploy settings.
 export function BadgeSettingsCard({ appName }: { appName: string }) {
+  const { t } = useTranslation('deploys')
   const setting = useBadgeSetting(appName)
   const setBadge = useSetBadgeSetting(appName)
   const badgeUrl = `${window.location.origin}/api/v1/apps/${encodeURIComponent(appName)}/badge.svg`
@@ -63,14 +66,14 @@ export function BadgeSettingsCard({ appName }: { appName: string }) {
       onSuccess: () => {
         toast.add({
           title: next
-            ? 'Deploy status badge enabled.'
-            : 'Deploy status badge disabled.',
+            ? t('badgeSettings.toast.enabled')
+            : t('badgeSettings.toast.disabled'),
           type: 'success',
         })
       },
       onError: (error) => {
         toast.add({
-          title: 'Could not update the deploy status badge.',
+          title: t('badgeSettings.toast.errorTitle'),
           description: error.message,
           type: 'error',
         })
@@ -83,31 +86,29 @@ export function BadgeSettingsCard({ appName }: { appName: string }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <SealCheckIcon className="size-4 text-muted-foreground" />
-          Deploy status badge
-          <InfoTip label="About the deploy status badge">
-            Serves a small public SVG showing this app&apos;s latest deploy
-            status and when it happened, no authentication required. Leave this
-            off for an app whose deploy status shouldn&apos;t be public.
+          {t('badgeSettings.title')}
+          <InfoTip label={t('badgeSettings.infoTipLabel')}>
+            {t('badgeSettings.description')}
           </InfoTip>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm font-medium text-foreground">
-            Public README badge
+            {t('badgeSettings.enabledLabel')}
           </p>
           <Switch
             checked={setting.data.enabled}
             onCheckedChange={toggle}
             disabled={setBadge.isPending}
-            aria-label="Deploy status badge enabled"
+            aria-label={t('badgeSettings.switchAriaLabel')}
           />
         </div>
 
         {setting.data.enabled && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-foreground">
-              Embed in your README
+              {t('badgeSettings.embedLabel')}
             </p>
             <CopySnippet text={`![deploy status](${badgeUrl})`} />
           </div>

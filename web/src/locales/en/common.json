@@ -1,0 +1,9 @@
+{
+  "actions": {
+    "copy": "Copy",
+    "copied": "Copied"
+  },
+  "logs": {
+    "previousContainerEnded": "Previous container instance ended"
+  }
+}

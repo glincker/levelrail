@@ -76,6 +76,13 @@ const (
 // from the store.
 type LogEntry struct {
 	ResourceID string
+	// ContainerID is the container this line actually came from. Empty
+	// for rows written before migrations/0005_log_entries_container_id.sql
+	// existed; never empty for a line written by this version onward (see
+	// toLogEntry). This is what lets a live view tell a dying old
+	// container's lines apart from the new, current one's during a
+	// blue-green overlap, see LogCollector.Run's own doc comment.
+	ContainerID string
 	// Stream is "stdout" or "stderr".
 	Stream    string
 	Timestamp time.Time
@@ -122,6 +129,7 @@ func (db *DB) WriteLogBatch(ctx context.Context, entries []LogEntry) error {
 
 	type jsonEntry struct {
 		R  string  `json:"r"`
+		C  string  `json:"c"`
 		S  string  `json:"s"`
 		T  int64   `json:"t"`
 		M  string  `json:"m"`
@@ -140,6 +148,7 @@ func (db *DB) WriteLogBatch(ctx context.Context, entries []LogEntry) error {
 		}
 		je[i] = jsonEntry{
 			R:  e.ResourceID,
+			C:  e.ContainerID,
 			S:  e.Stream,
 			T:  e.Timestamp.UnixNano(),
 			M:  e.Message,
@@ -154,9 +163,10 @@ func (db *DB) WriteLogBatch(ctx context.Context, entries []LogEntry) error {
 	}
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO log_entries (resource_id, stream, ts, message, structured, fields_json)
+		INSERT INTO log_entries (resource_id, container_id, stream, ts, message, structured, fields_json)
 		SELECT
 			json_extract(value, '$.r'),
+			json_extract(value, '$.c'),
 			json_extract(value, '$.s'),
 			json_extract(value, '$.t'),
 			json_extract(value, '$.m'),
@@ -195,14 +205,14 @@ func (db *DB) QueryLogs(ctx context.Context, resourceID string, from, to time.Ti
 
 	if query == "" {
 		rows, err = db.QueryContext(ctx, `
-			SELECT resource_id, stream, ts, message, structured, fields_json
+			SELECT resource_id, container_id, stream, ts, message, structured, fields_json
 			FROM log_entries
 			WHERE resource_id = ? AND ts BETWEEN ? AND ?
 			ORDER BY ts ASC
 		`, resourceID, from.UnixNano(), to.UnixNano())
 	} else {
 		rows, err = db.QueryContext(ctx, `
-			SELECT l.resource_id, l.stream, l.ts, l.message, l.structured, l.fields_json
+			SELECT l.resource_id, l.container_id, l.stream, l.ts, l.message, l.structured, l.fields_json
 			FROM log_entries l
 			JOIN log_entries_fts f ON f.rowid = l.id
 			WHERE l.resource_id = ? AND l.ts BETWEEN ? AND ? AND log_entries_fts MATCH ?
@@ -222,7 +232,7 @@ func (db *DB) QueryLogs(ctx context.Context, resourceID string, from, to time.Ti
 			structured int
 			fieldsJSON sql.NullString
 		)
-		if err := rows.Scan(&e.ResourceID, &e.Stream, &tsNano, &e.Message, &structured, &fieldsJSON); err != nil {
+		if err := rows.Scan(&e.ResourceID, &e.ContainerID, &e.Stream, &tsNano, &e.Message, &structured, &fieldsJSON); err != nil {
 			return nil, fmt.Errorf("telemetry: scan log row: %w", err)
 		}
 		e.Timestamp = time.Unix(0, tsNano).UTC()
@@ -376,7 +386,7 @@ func (lc *LogCollector) StreamOne(ctx context.Context, target LogTarget) error {
 				flush(ctx)
 				return nil // the stream ended on its own, e.g. the container stopped
 			}
-			entry := toLogEntry(target.ResourceID, line)
+			entry := toLogEntry(target.ResourceID, target.ContainerID, line)
 			// Published before it's ever added to the batch below: a
 			// live subscriber must see this line the instant it arrives,
 			// not delayed behind logBatchMaxLines/logBatchMaxWait, which
@@ -404,19 +414,20 @@ func (lc *LogCollector) StreamOne(ctx context.Context, target LogTarget) error {
 // falling back to the local clock for Timestamp when Docker's own
 // timestamp didn't parse (docker.LogLine.Timestamp's own doc comment
 // covers when that happens).
-func toLogEntry(resourceID string, line docker.LogLine) LogEntry {
+func toLogEntry(resourceID, containerID string, line docker.LogLine) LogEntry {
 	ts := line.Timestamp
 	if ts.IsZero() {
 		ts = time.Now()
 	}
 	structured, fieldsJSON := classifyLine(line.Message)
 	return LogEntry{
-		ResourceID: resourceID,
-		Stream:     line.Stream,
-		Timestamp:  ts,
-		Message:    line.Message,
-		Structured: structured,
-		FieldsJSON: fieldsJSON,
+		ResourceID:  resourceID,
+		ContainerID: containerID,
+		Stream:      line.Stream,
+		Timestamp:   ts,
+		Message:     line.Message,
+		Structured:  structured,
+		FieldsJSON:  fieldsJSON,
 	}
 }
 

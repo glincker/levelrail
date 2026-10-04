@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -1080,6 +1081,45 @@ func TestHandleTriggerBuild_PrivateRepoAuth_DeployOnlyTokenNeverMintsToken(t *te
 	}
 }
 
+// TestHandleTriggerBuild_StoredGitSourceToken_UsedByDeployOnlyToken proves
+// a manual trigger reuses the app's own connected git-source PAT even for
+// a deploy-only caller, no GitHub App mint needed: repoURL matches an
+// already-configured git-source, not an arbitrary caller-controlled one.
+func TestHandleTriggerBuild_StoredGitSourceToken_UsedByDeployOnlyToken(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
+	gitSourceSecrets := newFakeGitSourceSecrets()
+	rt, db := newPrivateRepoAuthRouter(t, fb, fetch, fakeClient)
+	rt.gitSourceSecrets = gitSourceSecrets
+	seedWebApp(t, db)
+	cookie := loginTestSession(t, rt, db)
+
+	setRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(setRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/acme/widgets.git","token":"ghp_stored"}`))
+	if setRec.Code != http.StatusCreated {
+		t.Fatalf("set git-source status = %d, body = %s", setRec.Code, setRec.Body.String())
+	}
+
+	const plaintext = "deploy-scoped-token-2" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
+		ID: "tok_deploy2", Name: "deployer2", TokenHash: hashToken(plaintext), Abilities: []string{AbilityDeploy}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	postTriggerBuildBearerAccepted(t, rt, plaintext, `{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`)
+
+	fc := fetch.awaitCall(t)
+	if fc.token != "ghp_stored" {
+		t.Errorf("fetch token = %q, want the app's own stored git-source token %q", fc.token, "ghp_stored")
+	}
+	if fakeClient.gotInstallID != 0 {
+		t.Errorf("MintInstallationToken called with installationID = %d, want 0: the stored token should satisfy this without a mint", fakeClient.gotInstallID)
+	}
+}
+
 // TestHandleTriggerBuild_PrivateRepoAuth_ReadSensitiveTokenMintsToken
 // proves the fix isn't overly restrictive: a bearer token explicitly
 // scoped with AbilityReadSensitive (not just a session) still gets a
@@ -1245,6 +1285,49 @@ func TestGitCheckout_ResolvesBranchToCommit(t *testing.T) {
 	}
 	if commit2 == commit {
 		t.Errorf("both builds of branch %q resolved to %q: two different commits must never share an image tag", branch, commit)
+	}
+}
+
+// TestGitCheckout_ResolvesNonDefaultBranchFromRemoteTrackingRef is the
+// regression test for a manual build on a non-default branch: a plain
+// clone only creates refs/heads/* for the remote's default branch, so a
+// bare branch name for any other branch resolved only against
+// refs/remotes/origin/* used to fail with "reference not found".
+func TestGitCheckout_ResolvesNonDefaultBranchFromRemoteTrackingRef(t *testing.T) {
+	dir, _, _ := initTestGitRepo(t)
+	repo, err := git.PlainOpen(dir)
+	if err != nil {
+		t.Fatalf("PlainOpen: %v", err)
+	}
+	head, err := repo.Head()
+	if err != nil {
+		t.Fatalf("Head: %v", err)
+	}
+
+	const branch = "feature"
+	branchRef := plumbing.NewBranchReferenceName(branch)
+	if err := repo.Storer.SetReference(plumbing.NewHashReference(branchRef, head.Hash())); err != nil {
+		t.Fatalf("SetReference: %v", err)
+	}
+	wt, err := repo.Worktree()
+	if err != nil {
+		t.Fatalf("Worktree: %v", err)
+	}
+	if err := wt.Checkout(&git.CheckoutOptions{Branch: branchRef}); err != nil {
+		t.Fatalf("Checkout %q: %v", branch, err)
+	}
+	want := commitTestFile(t, repo, dir, "on feature branch")
+	if err := wt.Checkout(&git.CheckoutOptions{Branch: head.Name()}); err != nil {
+		t.Fatalf("Checkout back to %q: %v", head.Name(), err)
+	}
+
+	_, commit, cleanup, err := gitCheckout(context.Background(), dir, branch, "")
+	if err != nil {
+		t.Fatalf("gitCheckout: %v", err)
+	}
+	cleanup()
+	if commit != want {
+		t.Fatalf("commit = %q, want %q", commit, want)
 	}
 }
 

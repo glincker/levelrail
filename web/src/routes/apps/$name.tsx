@@ -21,7 +21,6 @@ import { RedeployAppButton } from '../../components/RedeployAppButton'
 import { RestartAppButton } from '../../components/RestartAppButton'
 import { StopStartAppButton } from '../../components/StopStartAppButton'
 import { ConvergenceIndicator } from '../../components/ConvergenceIndicator'
-import { TagsControl } from '../../components/TagsControl'
 import { TrialAppBanner } from '../../components/TrialAppBanner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -155,8 +154,6 @@ function AppDetailLayout() {
               </>
             }
           />
-
-          <TagsControl appName={app.name} tags={app.tags} />
         </>
       )}
 
@@ -173,9 +170,9 @@ function AppDetailLayout() {
   )
 }
 
-// Mirrors the layout's own header (breadcrumb, name/badge/actions, tags)
-// plus a generic content block, since which section route is loading
-// underneath isn't known yet.
+// Mirrors the layout's own header (breadcrumb, name/badge/actions) plus a
+// generic content block, since which section route is loading underneath
+// isn't known yet.
 function AppDetailLayoutSkeleton() {
   return (
     <div className="space-y-6" aria-hidden="true">
@@ -192,8 +189,6 @@ function AppDetailLayoutSkeleton() {
           ))}
         </div>
       </div>
-
-      <Skeleton className="h-6 w-48 rounded-md" />
 
       <div className="space-y-3 rounded-lg border border-border p-4">
         <Skeleton className="h-4 w-32" />

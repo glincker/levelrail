@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -42,6 +43,12 @@ type Collector struct {
 	store    *DB
 	interval time.Duration
 	logger   *slog.Logger
+
+	// prevCPU replaces a one-shot stats response's own PreCPUStats (see
+	// docker.ContainerStats.CPUPercent): a container's first sample
+	// reads 0 and self-corrects next tick.
+	cpuMu   sync.Mutex
+	prevCPU map[string]docker.CPUStatsRaw
 }
 
 // NewCollector builds a Collector. logger defaults to slog.Default() if
@@ -50,7 +57,13 @@ func NewCollector(source StatsSource, store *DB, interval time.Duration, logger 
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Collector{source: source, store: store, interval: interval, logger: logger}
+	return &Collector{
+		source:   source,
+		store:    store,
+		interval: interval,
+		logger:   logger,
+		prevCPU:  make(map[string]docker.CPUStatsRaw),
+	}
 }
 
 // CollectOnce polls every target once and writes whatever succeeded.
@@ -73,6 +86,7 @@ func (c *Collector) CollectOnce(ctx context.Context, targets []Target) error {
 			errs = append(errs, fmt.Errorf("collect %s: %w", target.ResourceID, err))
 			continue
 		}
+		stats.CPUPercent = c.cpuPercent(target.ContainerID, stats.CPURaw)
 		samples = append(samples, sampleValues(target.ResourceID, now, stats)...)
 	}
 
@@ -80,7 +94,35 @@ func (c *Collector) CollectOnce(ctx context.Context, targets []Target) error {
 		errs = append(errs, fmt.Errorf("write samples: %w", err))
 	}
 
+	c.pruneCPUCache(targets)
 	return errors.Join(errs...)
+}
+
+func (c *Collector) cpuPercent(containerID string, raw docker.CPUStatsRaw) float64 {
+	c.cpuMu.Lock()
+	defer c.cpuMu.Unlock()
+	prev, ok := c.prevCPU[containerID]
+	c.prevCPU[containerID] = raw
+	if !ok {
+		return 0
+	}
+	return docker.CPUPercent(raw, prev)
+}
+
+// pruneCPUCache keeps a long-running control plane's cache from growing
+// across every redeploy and removal it has ever seen.
+func (c *Collector) pruneCPUCache(targets []Target) {
+	live := make(map[string]struct{}, len(targets))
+	for _, t := range targets {
+		live[t.ContainerID] = struct{}{}
+	}
+	c.cpuMu.Lock()
+	defer c.cpuMu.Unlock()
+	for id := range c.prevCPU {
+		if _, ok := live[id]; !ok {
+			delete(c.prevCPU, id)
+		}
+	}
 }
 
 // Run calls CollectOnce every interval until ctx is done. targetsFunc is

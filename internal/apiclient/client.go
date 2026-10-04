@@ -1855,6 +1855,35 @@ func (c *Client) DeleteFirewallRule(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, firewallRulePath(id), nil, nil)
 }
 
+// appStreamsCollectionPath builds /api/v1/apps/{name}/streams, and
+// appStreamPath builds that same path plus /{id}.
+func appStreamsCollectionPath(name string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/streams"
+}
+
+func appStreamPath(name, id string) string {
+	return appStreamsCollectionPath(name) + "/" + PathEscape(id)
+}
+
+// ListAppStreams calls GET /api/v1/apps/{name}/streams.
+func (c *Client) ListAppStreams(ctx context.Context, name string) ([]AppStreamResource, error) {
+	var out []AppStreamResource
+	err := c.do(ctx, http.MethodGet, appStreamsCollectionPath(name), nil, &out)
+	return out, err
+}
+
+// CreateAppStream calls POST /api/v1/apps/{name}/streams.
+func (c *Client) CreateAppStream(ctx context.Context, name string, req CreateAppStreamRequest) (AppStreamResource, error) {
+	var out AppStreamResource
+	err := c.do(ctx, http.MethodPost, appStreamsCollectionPath(name), req, &out)
+	return out, err
+}
+
+// DeleteAppStream calls DELETE /api/v1/apps/{name}/streams/{id}.
+func (c *Client) DeleteAppStream(ctx context.Context, name, id string) error {
+	return c.do(ctx, http.MethodDelete, appStreamPath(name, id), nil, nil)
+}
+
 // registryCredentialsCollectionPath builds /api/v1/registry-credentials,
 // and registryCredentialPath builds that same path plus /{id}.
 func registryCredentialsCollectionPath() string {

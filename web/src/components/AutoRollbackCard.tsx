@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { InfoTip } from '@/components/kit'
@@ -13,6 +14,7 @@ import { useAutoRollback, useSetAutoRollback } from '../queries/autoRollback'
 // on the Deploys route, since this setting only makes sense next to real
 // deploy history.
 export function AutoRollbackCard({ appName }: { appName: string }) {
+  const { t } = useTranslation('deploys')
   const setting = useAutoRollback(appName)
   const setAutoRollback = useSetAutoRollback(appName)
 
@@ -21,14 +23,14 @@ export function AutoRollbackCard({ appName }: { appName: string }) {
       onSuccess: () => {
         toast.add({
           title: next
-            ? 'Auto-rollback on crashloop enabled.'
-            : 'Auto-rollback on crashloop disabled.',
+            ? t('autoRollback.toast.enabled')
+            : t('autoRollback.toast.disabled'),
           type: 'success',
         })
       },
       onError: (error) => {
         toast.add({
-          title: 'Could not update auto-rollback.',
+          title: t('autoRollback.toast.errorTitle'),
           description: error.message,
           type: 'error',
         })
@@ -41,29 +43,26 @@ export function AutoRollbackCard({ appName }: { appName: string }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ArrowCounterClockwiseIcon className="size-4 text-muted-foreground" />
-          Auto-rollback on crashloop
+          {t('autoRollback.title')}
           <InfoTip
-            label="About auto-rollback on crashloop"
+            label={t('autoRollback.infoTipLabel')}
             helpPath="/observability#alert-rules"
-            helpLabel="Auto-rollback guide"
+            helpLabel={t('autoRollback.helpLabel')}
           >
-            When a crashloop alert fires for this app, automatically redeploy
-            the most recent successful image older than the one that&apos;s
-            crashlooping. Fires at most once per episode; with no older image to
-            fall back to, the app is left to the alert alone.
+            {t('autoRollback.description')}
           </InfoTip>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm font-medium text-foreground">
-            Redeploy the last working image automatically
+            {t('autoRollback.enabledLabel')}
           </p>
           <Switch
             checked={setting.data.enabled}
             onCheckedChange={toggle}
             disabled={setAutoRollback.isPending}
-            aria-label="Auto-rollback on crashloop enabled"
+            aria-label={t('autoRollback.switchAriaLabel')}
           />
         </div>
       </CardContent>

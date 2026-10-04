@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   MutationCache,
@@ -103,10 +103,18 @@ if (!rootElement) {
   throw new Error('root element not found')
 }
 
-createRoot(rootElement).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  </StrictMode>,
-)
+// Dynamic import keeps i18next out of the main entry chunk's bundle-size budget.
+void import('./i18n').then(() => {
+  createRoot(rootElement).render(
+    <StrictMode>
+      {/* The common namespace (defaultNS) loads via lazyBackend on this
+          first render; every other namespace suspends the same way the
+          first time a route under it calls useTranslation. */}
+      <Suspense fallback={<PageSpinner />}>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </Suspense>
+    </StrictMode>,
+  )
+})

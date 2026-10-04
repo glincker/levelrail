@@ -70,7 +70,7 @@ Requires `curl`, `systemd`, and root access.
 
 ### First sign-in
 
-Open one of the printed `http://<ip>:8080/login?setup=<token>` links. The login page switches to "Set up the admin account" on its own and the token is pre-filled. Lost the summary? Print the token again on the server:
+Open one of the printed `http://<ip>:8080/login?setup=<token>` links from the install summary. **8080 is the default, not a guarantee**: if that port was already taken on the server, `install.sh` picks the next free one automatically (`LEVELRAIL_DASHBOARD_PORT`) and prints the real one it used, so always use the port from your own install's output, not the number in this doc. Lost the summary? Print the token again on the server (the dashboard port is also in the unit file, `systemctl cat levelrail | grep APP_HTTP_ADDR`):
 
 ```bash
 sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
@@ -98,6 +98,8 @@ AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel ar
 | `LEVELRAIL_MIN_RAM_MB` / `LEVELRAIL_MIN_DISK_GB` / `LEVELRAIL_MIN_DOCKER_MAJOR` | `1024` / `10` / `24` | Preflight thresholds |
 | `LEVELRAIL_HEALTH_WAIT` | `60` | Seconds to wait for the service to become healthy |
 | `LEVELRAIL_CONFIGURE_UFW` | unset (off) | Set to `1` to allow SSH, then 80/443, then enable `ufw` if it wasn't already active. The script never touches your firewall otherwise. |
+| `LEVELRAIL_DASHBOARD_PORT` | `8080` | Dashboard/API port. If this default is taken, the installer picks the next free port on its own (no action needed); set this to pin a specific one instead |
+| `LEVELRAIL_HTTP_PORT` / `LEVELRAIL_HTTPS_PORT` | `80` / `443` | Ingress ports. Unlike the dashboard port, the installer never moves these on its own: Let's Encrypt's HTTP-01 challenge only ever talks to 80/443, so if either is already taken (an existing reverse proxy, another Coolify/Dokploy instance, etc.) preflight fails with the fix spelled out. Set both explicitly once you've accepted that moving off 80/443 means no automatic ACME TLS |
 
 :::
 

@@ -119,8 +119,8 @@ func FetchLatestStable(ctx context.Context) (*Release, error) {
 }
 
 // FetchLatestBeta fetches the newest prerelease from GitHub's releases
-// list (already sorted newest-first), skipping drafts. nil, nil means no
-// prerelease has ever been published.
+// list, skipping drafts. nil, nil means no prerelease has ever been
+// published.
 func FetchLatestBeta(ctx context.Context) (*Release, error) {
 	var rrs []rawRelease
 	status, err := githubGet(ctx, "https://api.github.com/repos/"+githubRepo+"/releases?per_page=20", &rrs)
@@ -130,12 +130,34 @@ func FetchLatestBeta(ctx context.Context) (*Release, error) {
 	if status == http.StatusNotFound {
 		return nil, nil
 	}
-	for _, rr := range rrs {
-		if rr.Prerelease && !rr.Draft {
-			return rr.toRelease(), nil
+	return pickLatestPrerelease(rrs), nil
+}
+
+// pickLatestPrerelease returns the prerelease, non-draft entry in rrs
+// with the newest published_at. GitHub's /releases list is ordered by
+// internal release id, not publish time: observed live, v0.2.0-beta.9
+// listed ahead of the actually-newer v0.2.0-beta.14, so taking the first
+// match silently reported a nine-release-old "latest".
+func pickLatestPrerelease(rrs []rawRelease) *Release {
+	var latest *rawRelease
+	var latestAt time.Time
+	for i := range rrs {
+		rr := rrs[i]
+		if !rr.Prerelease || rr.Draft {
+			continue
+		}
+		at, err := time.Parse(time.RFC3339, rr.PublishedAt)
+		if err != nil {
+			continue
+		}
+		if latest == nil || at.After(latestAt) {
+			latest, latestAt = &rr, at
 		}
 	}
-	return nil, nil
+	if latest == nil {
+		return nil
+	}
+	return latest.toRelease()
 }
 
 type commitResource struct {

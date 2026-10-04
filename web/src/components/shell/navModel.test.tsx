@@ -43,6 +43,7 @@ const EXPECTED_APP = [
   'pipelines',
   'domains',
   'loadbalancer',
+  'streams',
   'network',
   'environment',
   'services',
