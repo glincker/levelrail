@@ -146,21 +146,26 @@ func pageSlice(in []store.DesiredService, limit, offset int) []store.DesiredServ
 	return in
 }
 
-// environmentNames maps environment IDs used by svcs to their names.
+// environmentNames maps environment IDs used by svcs to their names,
+// via one batched GetEnvironmentsByIDs call instead of a GetEnvironment
+// call per distinct environment (the N+1 handleListApps used to make).
 func (rt *Router) environmentNames(ctx context.Context, svcs []store.DesiredService) map[string]string {
-	out := map[string]string{}
+	seen := map[string]bool{}
+	ids := make([]string, 0, len(svcs))
 	for _, s := range svcs {
-		if s.EnvironmentID == "" {
+		if s.EnvironmentID == "" || seen[s.EnvironmentID] {
 			continue
 		}
-		if _, done := out[s.EnvironmentID]; done {
-			continue
-		}
-		env, err := rt.environments.GetEnvironment(ctx, s.EnvironmentID)
-		if err != nil {
-			continue
-		}
-		out[s.EnvironmentID] = env.Name
+		seen[s.EnvironmentID] = true
+		ids = append(ids, s.EnvironmentID)
+	}
+	envs, err := rt.environments.GetEnvironmentsByIDs(ctx, ids)
+	if err != nil {
+		return map[string]string{}
+	}
+	out := make(map[string]string, len(envs))
+	for id, env := range envs {
+		out[id] = env.Name
 	}
 	return out
 }

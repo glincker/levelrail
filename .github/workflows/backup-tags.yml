@@ -1,0 +1,42 @@
+name: Backup tags
+
+# Rolling rollback checkpoints: main is already append-only (branch
+# protection blocks force-push and deletion) and release-please tags every
+# shipped version, but the release PR can sit unmerged for days while
+# commits keep landing, so a known-name target saves hunting for a SHA by
+# hand during an actual incident. Tags, not branches: they stay out of the
+# branch list the repo's cleanup automation is trying to shrink.
+on:
+  schedule:
+    - cron: "7 0 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  move:
+    name: Move backup tags to main's tip
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Move daily and (weekly) backup tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse HEAD)"
+          move() {
+            if ! gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$1" -f "sha=$sha" -F force=true >/dev/null 2>&1; then
+              gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" -f "ref=refs/tags/$1" -f "sha=$sha" >/dev/null
+            fi
+            echo "moved $1 -> $sha"
+          }
+          move backup/daily
+          # Monday, matching branch-cleanup.yml's weekly sweep cadence.
+          if [ "$(date -u +%u)" = 1 ] || [ "${{ github.event_name }}" = workflow_dispatch ]; then
+            move backup/weekly
+          fi

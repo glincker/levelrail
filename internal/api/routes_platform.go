@@ -748,6 +748,8 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/github-app/register/start", rt.requireAbility(AbilityRoot, rt.handleStartGitHubAppRegistration))
 	mux.HandleFunc("GET /api/v1/github-app/callback", rt.requireAbility(AbilityRoot, rt.handleGitHubAppCallback))
 	mux.HandleFunc("GET /api/v1/github-app/installed", rt.requireAbility(AbilityRoot, rt.handleGitHubAppInstalled))
+	mux.HandleFunc("GET /api/v1/github-app/installations", rt.requireAbility(AbilityRoot, rt.handleListGitHubAppInstallations))
+	mux.HandleFunc("DELETE /api/v1/github-app/installations/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteGitHubAppInstallation))
 	mux.HandleFunc("GET /api/v1/github-app/repos", rt.requireAbility(AbilityReadSensitive, rt.handleListGitHubAppRepos))
 	mux.HandleFunc("GET /api/v1/github-app/repos/{owner}/{repo}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListGitHubAppBranches))
 	mux.HandleFunc("POST /api/v1/github-app/repos/{owner}/{repo}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseGitHubRepoAsSource))

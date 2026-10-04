@@ -75,6 +75,11 @@ type Identity struct {
 // plane's CA does not match the pinned fingerprint.
 var ErrCAFingerprintMismatch = errors.New("agent: control plane CA does not match the pinned fingerprint")
 
+// errControlPlaneGoAway ends serveSession when a GoAway frame arrives, so
+// a restarting control plane's bounded GracefulStop wait does not have to
+// burn its own timeout on a stream the agent is willing to close itself.
+var errControlPlaneGoAway = errors.New("agent: session: control plane is shutting down")
+
 // EnrollOption configures DialEnroll.
 type EnrollOption func(*enrollConfig)
 
@@ -480,6 +485,8 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 			builds.Cancel(p.BuildCancel.GetBuildId())
 		case *agentpb.ControlMessage_BuildCredit:
 			builds.Credit(p.BuildCredit)
+		case *agentpb.ControlMessage_GoAway:
+			return errControlPlaneGoAway
 		}
 	}
 }

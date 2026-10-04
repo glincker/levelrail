@@ -640,6 +640,8 @@ Endpoints for:
 | GET | /api/v1/bitbucket-app/repos | AbilityReadSensitive | handleListBitbucketAppRepos |
 | GET | /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/branches | AbilityReadSensitive | handleListBitbucketAppBranches |
 | POST | /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source | AbilityWriteSensitive | handleUseBitbucketRepoAsSource |
+| GET | /api/v1/github-app/installations | AbilityRoot | handleListGitHubAppInstallations |
+| DELETE | /api/v1/github-app/installations/{id} | AbilityRoot | handleDeleteGitHubAppInstallation |
 
 ## Database Backups / Restore / Clone Restore
 

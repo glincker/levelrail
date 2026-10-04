@@ -116,6 +116,18 @@ stable if jobs are later split or renamed.
 | `dependabot-auto-merge.yml` | Dependabot PRs only (listed as skipped elsewhere) | |
 | SonarCloud, Greptile | Every PR | GitHub Apps, not Actions: they run on the vendor's infrastructure and use no Actions minutes |
 
+## Scheduled, not PR-triggered
+
+- `branch-cleanup.yml`: deletes a merged PR's head branch immediately, plus a
+  weekly sweep (Monday) for anything left over from before branch deletion
+  on merge was enabled.
+- `backup-tags.yml`: moves `backup/daily` to `main`'s tip every day, and
+  `backup/weekly` on Mondays, as a known-name emergency rollback target.
+  Tags, not branches, so they never show up in the list the cleanup above
+  is shrinking. Every commit on `main` is already a valid, permanent
+  rollback point on its own (no force-push, no deletion); these tags exist
+  only so finding one doesn't mean hunting for a SHA by hand first.
+
 ## Caching
 
 - Go: `~/.cache/go-build` and `~/go/pkg/mod`, one cache per job kind (build,

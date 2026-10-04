@@ -40,6 +40,46 @@ func TestGetEnvironment_NotFound(t *testing.T) {
 	}
 }
 
+// TestGetEnvironmentsByIDs covers the batch lookup handleListApps uses
+// instead of a GetEnvironment call per distinct environment: a mix of
+// real and unknown IDs, plus the empty-input case.
+func TestGetEnvironmentsByIDs(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	seedTestProject(t, db)
+
+	envA := Environment{ID: "env_a", ProjectID: "proj_1", Name: "staging", CreatedAt: "2026-08-20T00:00:00Z"}
+	envB := Environment{ID: "env_b", ProjectID: "proj_1", Name: "production", CreatedAt: "2026-08-20T00:00:00Z"}
+	if err := db.SaveEnvironment(ctx, envA); err != nil {
+		t.Fatalf("seed env_a: %v", err)
+	}
+	if err := db.SaveEnvironment(ctx, envB); err != nil {
+		t.Fatalf("seed env_b: %v", err)
+	}
+
+	got, err := db.GetEnvironmentsByIDs(ctx, []string{"env_a", "env_b", "env_missing"})
+	if err != nil {
+		t.Fatalf("GetEnvironmentsByIDs() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("got %d environments, want 2 (env_missing should be absent, not erroring)", len(got))
+	}
+	if got["env_a"] != envA {
+		t.Errorf("got[env_a] = %+v, want %+v", got["env_a"], envA)
+	}
+	if got["env_b"] != envB {
+		t.Errorf("got[env_b] = %+v, want %+v", got["env_b"], envB)
+	}
+
+	empty, err := db.GetEnvironmentsByIDs(ctx, nil)
+	if err != nil {
+		t.Fatalf("GetEnvironmentsByIDs(nil) error = %v", err)
+	}
+	if len(empty) != 0 {
+		t.Errorf("GetEnvironmentsByIDs(nil) = %+v, want empty map", empty)
+	}
+}
+
 func TestListEnvironmentsByProject(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

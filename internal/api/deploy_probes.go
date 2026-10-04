@@ -40,7 +40,7 @@ func toProbeAttemptResource(a store.ProbeAttempt) probeAttemptResource {
 // handleListProbeAttempts handles GET
 // /api/v1/apps/{name}/deploys/{deployId}/probes: the individual
 // readiness-probe attempts (internal/probe.WithOnAttempt,
-// migrations/0282_probe_attempts.sql) this deploy's cutover made, the
+// migrations/0284_probe_attempts.sql) this deploy's cutover made, the
 // per-attempt detail (status code, latency) GET .../deploys/{deployId}'s
 // own reconcile-condition summary never captures. Plain polling JSON,
 // not SSE: a bounded, already-terminal-by-replay list the same way GET

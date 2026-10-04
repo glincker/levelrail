@@ -258,7 +258,7 @@ type DeployAttemptStore interface {
 
 // ProbeAttemptStore is the store surface GET
 // /api/v1/apps/{name}/deploys/{deployId}/probes needs: the individual
-// readiness-probe attempts (migrations/0282_probe_attempts.sql,
+// readiness-probe attempts (migrations/0284_probe_attempts.sql,
 // internal/probe.WithOnAttempt) one deploy attempt's cutover made.
 // *store.DB satisfies this structurally.
 type ProbeAttemptStore interface {
@@ -641,6 +641,10 @@ type SecretSetter interface {
 	ListKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
 	SetLocked(ctx context.Context, serviceName, envKey string, locked bool) error
 	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
+	// ExistsForServices is Exists batched over many service names in one
+	// call, used by databases.go's handleListDatabases to show every
+	// row's TLS status without an Exists call per database.
+	ExistsForServices(ctx context.Context, serviceNames []string, envKey string) (map[string]bool, error)
 	// Resolve decrypts and returns one secret's plaintext value, the same
 	// read internal/reconcile/application already does immediately before
 	// container creation. environment_clone.go's own explicit,

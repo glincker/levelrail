@@ -14,6 +14,69 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// countingSecretSetter wraps a fixed TLS-cert-present set and counts
+// calls to Exists, the per-row lookup databaseTLSEnabled used to make
+// once per TLS-capable database before databaseTLSStatuses switched to
+// ExistsForServices.
+type countingSecretSetter struct {
+	SecretSetter
+	present          map[string]bool
+	existsCalls      int
+	existsForSvcCall int
+}
+
+func (f *countingSecretSetter) Exists(_ context.Context, serviceName, _ string) (bool, error) {
+	f.existsCalls++
+	return f.present[serviceName], nil
+}
+
+func (f *countingSecretSetter) ExistsForServices(_ context.Context, serviceNames []string, _ string) (map[string]bool, error) {
+	f.existsForSvcCall++
+	out := map[string]bool{}
+	for _, name := range serviceNames {
+		if f.present[name] {
+			out[name] = true
+		}
+	}
+	return out, nil
+}
+
+// TestDatabaseTLSStatuses_BatchesInsteadOfPerRow proves databaseTLSStatuses
+// makes exactly one ExistsForServices call regardless of how many
+// TLS-capable databases are listed, skips engines that never support TLS
+// (mysql), and never calls the per-row Exists at all: the N+1
+// handleListDatabases used to make (one Exists call per TLS-capable
+// database on the page, not deduped).
+func TestDatabaseTLSStatuses_BatchesInsteadOfPerRow(t *testing.T) {
+	fake := &countingSecretSetter{present: map[string]bool{"pg-a": true, "pg-b": true}}
+	rt := &Router{secrets: fake}
+
+	dbs := []store.DesiredDatabase{
+		{Name: "pg-a", Engine: store.EnginePostgres},
+		{Name: "pg-b", Engine: store.EnginePostgres},
+		{Name: "pg-c", Engine: store.EnginePostgres},
+		{Name: "my-a", Engine: "mysql"},
+	}
+
+	statuses := rt.databaseTLSStatuses(context.Background(), dbs)
+
+	if fake.existsForSvcCall != 1 {
+		t.Errorf("ExistsForServices calls = %d, want 1 (one batched call regardless of row count)", fake.existsForSvcCall)
+	}
+	if fake.existsCalls != 0 {
+		t.Errorf("Exists calls = %d, want 0 (per-row lookup should never run)", fake.existsCalls)
+	}
+	if !statuses["pg-a"] || !statuses["pg-b"] {
+		t.Errorf("statuses = %+v, want pg-a and pg-b true", statuses)
+	}
+	if statuses["pg-c"] {
+		t.Errorf("statuses[pg-c] = true, want false (no cert on record)")
+	}
+	if _, ok := statuses["my-a"]; ok {
+		t.Errorf("statuses unexpectedly contains mysql database, which never supports TLS")
+	}
+}
+
 // mustCreateDatabase POSTs body to /api/v1/databases and requires a 201.
 func mustCreateDatabase(t *testing.T, rt *Router, cookie *http.Cookie, body string) {
 	t.Helper()

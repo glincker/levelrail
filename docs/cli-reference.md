@@ -1706,7 +1706,22 @@ forgets the stored connection locally; does not uninstall or delete the App on G
 ```
 levelrail github-app repos [flags]
 ```
-list repos the connected installation can access
+list repos every connected installation can access
+
+```
+levelrail github-app installations list [flags]
+```
+list every connected account/org
+
+```
+levelrail github-app installations add [flags]
+```
+print the URL to install the App on another account/org; does not open a browser or drive the install flow itself
+
+```
+levelrail github-app installations remove <id> [flags]
+```
+disconnect one account/org; refused (409) while a git source still points at a repo under it
 
 ### Gitlab App
 

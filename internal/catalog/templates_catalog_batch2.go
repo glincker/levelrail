@@ -263,48 +263,6 @@ var catalogBatch2Templates = []Template{
       start_period: 30s
 `,
 	},
-	{ //nolint:gosec // MYSQL_ROOT_PASSWORD/GLPI_DB_PASSWORD below are compose magic-var tokens, not real credentials
-		ID:                     "glpi",
-		Name:                   "GLPI",
-		Slogan:                 "An IT asset and service-desk management suite: inventory, tickets, and a CMDB in one app.",
-		Category:               "Infrastructure",
-		DocumentationURL:       "https://glpi-project.org/documentation/",
-		RecommendedMemoryBytes: 536870912, // 512Mi
-		Compose: `services:
-  glpi:
-    image: glpi/glpi:11
-    ports: ["8080:80"]
-    environment:
-      GLPI_DB_HOST: db
-      GLPI_DB_PORT: "3306"
-      GLPI_DB_NAME: glpi
-      GLPI_DB_USER: glpi
-      GLPI_DB_PASSWORD: $SERVICE_PASSWORD_DB
-    volumes:
-      - glpi_data:/var/glpi
-    depends_on: [db]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1/"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-      start_period: 30s
-  db:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_ROOT
-      MYSQL_DATABASE: glpi
-      MYSQL_USER: glpi
-      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
-    volumes:
-      - glpi_db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
-      interval: 5s
-      timeout: 10s
-      retries: 10
-`,
-	},
 	{ //nolint:gosec // MARIADB_ROOT_PASSWORD/ADMIN_PASS below are compose magic-var tokens, not real credentials
 		ID:                     "freescout",
 		Name:                   "FreeScout",
@@ -395,65 +353,6 @@ var catalogBatch2Templates = []Template{
       interval: 5s
       timeout: 10s
       retries: 10
-`,
-	},
-	{ //nolint:gosec // MYSQL_ROOT_PASSWORD/DB_PASSWORD below are compose magic-var tokens, not real credentials
-		ID:                     "easyappointments",
-		Name:                   "Easy!Appointments",
-		Slogan:                 "A self-hosted appointment scheduling app with a public booking page, working hours, and reminders.",
-		Category:               "Productivity",
-		DocumentationURL:       "https://easyappointments.org/docs.html",
-		RecommendedMemoryBytes: 536870912, // 512Mi
-		Compose: `services:
-  easyappointments:
-    image: alextselegidis/easyappointments:latest
-    ports: ["8080:80"]
-    environment:
-      BASE_URL: ${SERVICE_FQDN_EASYAPPOINTMENTS:-http://localhost:8080}
-      DB_HOST: mysql
-      DB_NAME: easyappointments
-      DB_USERNAME: root
-      DB_PASSWORD: $SERVICE_PASSWORD_DB
-    depends_on: [mysql]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1/"]
-      interval: 10s
-      timeout: 10s
-      retries: 20
-      start_period: 15s
-  mysql:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_DB
-      MYSQL_DATABASE: easyappointments
-    volumes:
-      - easyappointments_mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
-      interval: 5s
-      timeout: 10s
-      retries: 10
-`,
-	},
-	{ //nolint:gosec // TOKEN below is a compose magic-var token, not a real credential
-		ID:                     "browserless",
-		Name:                   "Browserless",
-		Slogan:                 "A headless Chromium-as-a-service for scraping, PDF generation, and screenshot automation over a REST API.",
-		Category:               "Developer Tools",
-		DocumentationURL:       "https://docs.browserless.io/",
-		RecommendedMemoryBytes: 536870912, // 512Mi
-		Compose: `services:
-  browserless:
-    image: ghcr.io/browserless/chromium:latest
-    ports: ["3000:3000"]
-    environment:
-      TOKEN: $SERVICE_PASSWORD_BROWSERLESS
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000/docs"]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 15s
 `,
 	},
 	{ //nolint:gosec // ADMIN_KEY below is a compose magic-var token, not a real credential

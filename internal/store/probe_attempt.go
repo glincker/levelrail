@@ -7,7 +7,7 @@ import (
 )
 
 // ProbeAttempt is one individual readiness-probe attempt made during a
-// deploy's cutover (migrations/0282_probe_attempts.sql), reported by
+// deploy's cutover (migrations/0284_probe_attempts.sql), reported by
 // internal/probe.WithOnAttempt via internal/reconcile/application's
 // waitReady. ServiceName and Image are used only by RecordProbeAttempt,
 // to resolve DeployAttemptID the same way RecordRollout/
