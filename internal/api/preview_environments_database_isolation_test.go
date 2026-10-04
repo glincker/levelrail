@@ -91,13 +91,10 @@ func (f *fakeIsolationRuntime) ListNetworksByPrefix(context.Context, string) ([]
 	return nil, nil
 }
 
-// setUpPreviewAppWithDatabaseIsolationEngine seeds app "web" with a git
-// source declaring an isolatedInPreviews database on engine that points
-// at an existing managed database "main" (not one the preview itself
-// owns), with a real secrets.Manager and a fake runtime whose container
-// for "main" is already running. Parameterized on engine so the same
-// fixture covers both the Postgres role path and the Redis ACL user
-// path.
+// setUpPreviewAppWithDatabaseIsolationEngine is
+// setUpPreviewAppWithDatabaseIsolation parameterized on engine, so the
+// same fixture covers both the Postgres role path and the Redis ACL
+// user path.
 func setUpPreviewAppWithDatabaseIsolationEngine(t *testing.T, engine string) (rt *Router, db *store.DB, secret string, runtime *fakeIsolationRuntime) {
 	t.Helper()
 	db = openTestDB(t)
