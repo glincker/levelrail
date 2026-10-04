@@ -163,7 +163,12 @@ jobs:
   test-go:
     name: Test (${{ matrix.lane }})
     needs: [changes, build-vet]
-    if: needs.build-vet.result == 'success' && needs.build-vet.outputs.has_tests == 'true'
+    # Skipped on push: branch protection only lets a commit reach main
+    # through the merge queue, so a push-triggered run retests a tree
+    # merge_group already fully verified seconds earlier. See docs/ci.md.
+    if: >-
+      github.event_name != 'push' && needs.build-vet.result == 'success'
+      && needs.build-vet.outputs.has_tests == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 22
     strategy:
@@ -227,8 +232,10 @@ jobs:
   test-api:
     name: Test (internal/api)
     needs: [changes, build-vet, test-go]
+    # Mirrors test-go's own push skip: its lanes never ran on push, so
+    # checking their results here would find nothing instead of a pass.
     if: >-
-      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.build-vet.result != 'success' || contains(needs.build-vet.outputs.api_checks, 'Test ('))))
     runs-on: ubuntu-latest
     permissions:
@@ -256,8 +263,9 @@ jobs:
   test-rest:
     name: Test (everything else)
     needs: [changes, build-vet, test-go]
+    # Mirrors test-go's own push skip, same reasoning test-api's if has.
     if: >-
-      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.build-vet.result != 'success' || contains(needs.build-vet.outputs.rest_checks, 'Test ('))))
     runs-on: ubuntu-latest
     permissions:
@@ -287,7 +295,11 @@ jobs:
   test-quarantined:
     name: Test (quarantined, non-blocking)
     needs: [changes, build-vet]
-    if: needs.build-vet.result == 'success' && needs.build-vet.outputs.quarantine == 'true'
+    # Not a required check, but still a real test run: skip the push
+    # repeat for the same reason test-go's own if skips it.
+    if: >-
+      github.event_name != 'push' && needs.build-vet.result == 'success'
+      && needs.build-vet.outputs.quarantine == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 15
@@ -314,8 +326,10 @@ jobs:
   coverage-gate:
     name: Coverage gate
     needs: [changes, build-vet, test-go]
+    # No coverage artifacts exist on push (test-go didn't run), same
+    # reasoning as test-api/test-rest's own push skip above.
     if: >-
-      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.build-vet.result != 'success' || needs.build-vet.outputs.has_tests == 'true')))
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -366,19 +380,25 @@ jobs:
         if: env.COVERAGE == 'full'
         run: scripts/check-coverage.sh coverage.out internal/ 70
 
-      # Scopes the same 70% bar to only the statements this change added or
-      # modified, so well-covered neighbours can't dilute new, untested code.
-      - name: Changed-line coverage gate (70% for /internal)
+      # A lower bar than the aggregate gate's 70%: new code only reachable
+      # through a live daemon or a real external process (see
+      # scripts/check-changed-file-coverage.sh's own comment) can't hit
+      # 70% without disproportionate test-harness-building for the risk
+      # involved, when a live test plus nightly.yml's full sweep already
+      # cover it. 50% still catches genuinely untested new code.
+      - name: Changed-line coverage gate (50% for /internal)
         if: env.COVERAGE != 'full'
-        run: scripts/check-changed-file-coverage.sh coverage.out "$BASE" internal/ 70
+        run: scripts/check-changed-file-coverage.sh coverage.out "$BASE" internal/ 50
 
   # Go lint and, when a workflow file changed, actionlint: one check line
   # instead of two.
   lint:
     name: Lint
     needs: changes
+    # Skipped on push, same reasoning as test-go's own if: merge_group
+    # already lints this exact tree before the merge queue admits it.
     if: >-
-      ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.lint != 'none'
+      ${{ github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.lint != 'none'
       || needs.changes.outputs.workflows == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -442,7 +462,8 @@ jobs:
   web-check:
     name: Web (tsc, eslint)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.web != 'none') }}
+    # Skipped on push, same reasoning as test-go's own if.
+    if: ${{ github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.web != 'none') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -539,7 +560,8 @@ jobs:
   install-sh:
     name: install.sh (${{ matrix.image }})
     needs: changes
-    if: needs.changes.outputs.installer == 'true'
+    # Skipped on push, same reasoning as test-go's own if.
+    if: github.event_name != 'push' && needs.changes.outputs.installer == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:

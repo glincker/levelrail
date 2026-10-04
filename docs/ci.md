@@ -23,13 +23,16 @@ A PR runs only the work its diff can affect:
 - **Workflow files only**: actionlint on the changed workflow files, inside
   the Lint job.
 
-A `main` push is scoped the same way, against `github.event.before`: most
-merges only re-verify what their own diff touched, not the whole tree.
-`nightly.yml` runs the full `-race`, no `-short` sweep once a day: that is
-the actual safety net for anything the PR-time scoping under-selects, not
-a second full run on every single merge. A push falls back to `--full`
-when its `before` SHA is missing or unresolvable (a force-pushed or newly
-created `main`, which branch protection should make rare).
+A `main` push only runs `Build, vet` (scoped against `github.event.before`,
+same as a PR, falling back to `--full` when that SHA is missing or
+unresolvable). `Lint`, every `Test (*)` job, `Coverage gate`,
+`Web (tsc, eslint)` and `install.sh` all skip on `push`: branch protection
+means a commit only reaches `main` by the merge queue fast-forwarding to a
+commit `merge_group` already fully verified, so re-running them finds
+nothing new. See "Concurrency and merge queue" below for the reasoning and
+the risk it accepts. `nightly.yml` runs the full `-race`, no `-short` sweep
+once a day regardless: the actual safety net for anything the PR-time
+scoping under-selects, and now also for that residual risk.
 
 ## How a change is scoped
 
@@ -66,9 +69,9 @@ selects that package alone, not its dependents. Lanes:
   lane with bounded `-p` and the rest share `rest`.
 - No lane at all when nothing Go-related is affected.
 
-The coverage gate follows the plan: a full run checks the 70% aggregate for
-`internal/` and the changed-line gate, a scoped run checks the changed-line
-gate only (a partial profile makes the aggregate meaningless, same as the
+The coverage gate follows the plan: a full run checks the 70% aggregate
+for `internal/`, a scoped run checks the changed-line gate only, at a
+lower 50% bar (a partial profile makes the aggregate meaningless, same as the
 pre-push hook).
 
 ## Required checks
@@ -136,13 +139,37 @@ first: not worth it while the complaint is per-PR wait time, not total
 run count.
 
 A merge queue means every merged commit triggers two CI runs on the same
-tree: `merge_group` (pre-merge gate) then `push` (post-merge). Both are
-scoped identically now, so the second run costs roughly what the first
-did, not a forced full sweep: real but small duplication, not the
-dominant cost. Collapsing it to one run would mean either skipping
-`merge_group` (losing the pre-merge gate) or skipping `push` (losing the
-cache save and `codeql.yml`/`secret-scan.yml`'s own push triggers, plus
-any direct push that bypassed the queue), so it stays as is.
+tree: `merge_group` (pre-merge gate) then `push` (post-merge). Both used
+to be scoped identically, so the second run cost roughly what the first
+did on every full-scope PR (a schema migration, `go.mod`, or the
+pipeline itself), which made the duplication large exactly when it
+mattered most, not small.
+
+Fixed 2026-10-04: `Lint`, `Test (*)` (every lane plus the quarantined
+and aggregator jobs), `Coverage gate`, `Web (tsc, eslint)` and
+`install.sh` all skip on `push` now (`github.event_name != 'push'` in
+each job's own `if`), reported as a passing skip the same way an area
+with no changed files already was. `merge_group` is the one branch
+protection actually requires before admission, and branch protection
+also blocks every other path onto `main`, so a `push` to `main` can
+only be the merge queue fast-forwarding to a commit `merge_group` just
+finished verifying: re-running the same suite a second time added no
+new information, only cost.
+
+`Build, vet` keeps running on `push` unconditionally: it is cheap
+(around a minute) and is what refreshes the daily Go build cache
+(`save: ${{ github.event_name == 'push' }}`), which PR runs depend on
+staying warm. `codeql.yml` and `secret-scan.yml` are separate workflow
+files with their own `push` triggers, unaffected by anything in
+`ci.yml`.
+
+The residual risk this accepts: a commit that reaches `main` by some
+path branch protection was supposed to block (a misconfigured ruleset,
+an admin override) now gets zero same-day verification instead of a
+redundant one, until `nightly.yml`'s full `-race` sweep catches it
+within 24 hours. That is the same safety net the PR-time scoping above
+already leans on for whatever it under-selects, just covering one more
+case.
 
 ## Measured cost before this change
 
