@@ -82,7 +82,11 @@ func (f *fakeIsolationRuntime) EnsureVolume(context.Context, string) error { ret
 func (f *fakeIsolationRuntime) EnsureNetwork(context.Context, string) (string, error) {
 	return "", nil
 }
-func (f *fakeIsolationRuntime) RemoveNetwork(context.Context, string) error { return nil }
+func (f *fakeIsolationRuntime) RemoveNetwork(context.Context, string) error          { return nil }
+func (f *fakeIsolationRuntime) NetworkConnect(context.Context, string, string) error { return nil }
+func (f *fakeIsolationRuntime) NetworkDisconnect(context.Context, string, string, bool) error {
+	return nil
+}
 func (f *fakeIsolationRuntime) ListNetworksByPrefix(context.Context, string) ([]docker.NetworkInfo, error) {
 	return nil, nil
 }

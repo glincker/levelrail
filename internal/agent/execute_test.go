@@ -114,6 +114,10 @@ func (f *execRuntime) RemoveNetwork(_ context.Context, name string) error {
 	return f.removeNetworkErr
 }
 
+func (f *execRuntime) NetworkConnect(context.Context, string, string) error { return nil }
+
+func (f *execRuntime) NetworkDisconnect(context.Context, string, string, bool) error { return nil }
+
 func (f *execRuntime) ListNetworksByPrefix(_ context.Context, prefix string) ([]docker.NetworkInfo, error) {
 	f.networksPrefix = prefix
 	return f.networks, f.networksErr

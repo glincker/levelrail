@@ -385,6 +385,110 @@ func TestController_Reconcile_DatabaseAttachment_Injected(t *testing.T) {
 	reconcileAndAssertEnv(t, c, rt, map[string]string{"DATABASE_URL": want})
 }
 
+// TestController_Reconcile_DatabaseEnv_ConnectsDatabaseToAppNetwork locks
+// in the same-host database connectivity fix: a service with an AppID
+// (so it gets a per-app network) and a DatabaseEnv reference must get
+// that database's container connected onto its own network, or the
+// resolved hostname (db-main) is unreachable from inside the container
+// regardless of what connectReferencedDatabases is for.
+func TestController_Reconcile_DatabaseEnv_ConnectsDatabaseToAppNetwork(t *testing.T) {
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"main": {Name: "main", Engine: store.EnginePostgres},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", AppID: "app-1", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"DATABASE_URL": {Database: "main", Field: "url"},
+		},
+	}
+	c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{
+		"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
+	})
+	rt.seed(database.ContainerName("main"), true)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	wantNetwork := NetworkName(defaultNetworkPrefix, "app-1")
+	wantConn := wantNetwork + ":" + database.ContainerName("main")
+	found := false
+	for _, conn := range rt.connections {
+		if conn == wantConn {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("connections = %v, want it to contain %q", rt.connections, wantConn)
+	}
+}
+
+// TestController_Reconcile_DatabaseEnv_WithMeshZone_DoesNotConnectNetwork
+// proves the same-host bridging in connectReferencedDatabases is skipped
+// once a mesh zone is configured: resolveDatabaseField already resolves
+// to the mesh DNS name in that case (TestController_Reconcile_
+// DatabaseEnv_WithMeshZone_UsesMeshDNSName above), a routed address this
+// same-host network-connect hack would be redundant with.
+func TestController_Reconcile_DatabaseEnv_WithMeshZone_DoesNotConnectNetwork(t *testing.T) {
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"main": {Name: "main", Engine: store.EnginePostgres},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", AppID: "app-1", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"DATABASE_URL": {Database: "main", Field: "url"},
+		},
+	}
+	rt := newFakeRuntime(0)
+	rt.seed(database.ContainerName("main"), true)
+	c := New("web", &fakeStore{svc: desired}, rt,
+		WithDatabaseAttachments(dbStore),
+		WithSecretResolver(newFakeSecretResolver(map[string]string{"main/" + database.PostgresPasswordEnvKey: "s3cr3t"})),
+		WithMeshZone("mesh.internal"),
+	)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if len(rt.connections) != 0 {
+		t.Errorf("connections = %v, want none (mesh zone configured)", rt.connections)
+	}
+}
+
+// TestController_Reconcile_DatabaseEnv_DatabaseContainerNotYetRunning_SkipsConnect
+// proves a database that has not been reconciled into a real container
+// yet does not fail the app's own reconcile: connectReferencedDatabases
+// must skip it quietly and let a later pass (once the database
+// controller catches up) pick it up, the same level-triggered retry
+// shape every other "depends on something else's state" check in this
+// controller already uses.
+func TestController_Reconcile_DatabaseEnv_DatabaseContainerNotYetRunning_SkipsConnect(t *testing.T) {
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"main": {Name: "main", Engine: store.EnginePostgres},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", AppID: "app-1", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"DATABASE_URL": {Database: "main", Field: "url"},
+		},
+	}
+	c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{
+		"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
+	})
+	// Deliberately not seeded: the database container does not exist yet.
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if conditionOf(t, result).Status != reconcile.ConditionTrue {
+		t.Errorf("condition status = %v, want True", conditionOf(t, result).Status)
+	}
+	if len(rt.connections) != 0 {
+		t.Errorf("connections = %v, want none (database container does not exist yet)", rt.connections)
+	}
+}
+
 // TestDatabaseHost locks in DatabaseHost as resolveDatabaseField's own
 // exported single source of truth for host selection: internal/api's
 // GET /api/v1/apps/{name}/connections calls this directly to preview a

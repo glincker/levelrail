@@ -407,6 +407,18 @@ type Runtime interface {
 	// NetworkCleanupController).
 	ListNetworksByPrefix(ctx context.Context, prefix string) ([]NetworkInfo, error)
 
+	// NetworkConnect attaches containerID to network by name. Idempotent:
+	// already being attached is not an error, since a reconciler calls
+	// this on every pass, not just once.
+	NetworkConnect(ctx context.Context, network, containerID string) error
+
+	// NetworkDisconnect detaches containerID from network by name. Not
+	// being attached is not an error, for the same level-triggered
+	// reason RemoveNetwork's own doc comment gives. force matches the
+	// Engine API's own NetworkDisconnect force flag: detach even if the
+	// container believes it's still using that network.
+	NetworkDisconnect(ctx context.Context, network, containerID string, force bool) error
+
 	// Exec runs cmd inside the already-running container containerID and
 	// returns its stdout as a stream, using the Engine API's exec
 	// facility (ContainerExecCreate then ContainerExecAttach), the same

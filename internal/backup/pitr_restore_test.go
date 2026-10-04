@@ -82,7 +82,11 @@ func (f *recordingHelperRuntime) EnsureVolume(context.Context, string) error { r
 func (f *recordingHelperRuntime) EnsureNetwork(context.Context, string) (string, error) {
 	return "", nil
 }
-func (f *recordingHelperRuntime) RemoveNetwork(context.Context, string) error { return nil }
+func (f *recordingHelperRuntime) RemoveNetwork(context.Context, string) error          { return nil }
+func (f *recordingHelperRuntime) NetworkConnect(context.Context, string, string) error { return nil }
+func (f *recordingHelperRuntime) NetworkDisconnect(context.Context, string, string, bool) error {
+	return nil
+}
 func (f *recordingHelperRuntime) ListNetworksByPrefix(context.Context, string) ([]docker.NetworkInfo, error) {
 	return nil, nil
 }

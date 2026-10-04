@@ -390,13 +390,85 @@ func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error)
 	return resp.ID, nil
 }
 
-// RemoveNetwork implements Runtime.
+// RemoveNetwork implements Runtime. Force-disconnects every still-attached
+// container first: the Engine API refuses to remove a network with live
+// endpoints, and a database container this codebase itself connected
+// (internal/reconcile/application's connectReferencedDatabases) has no
+// other path to get detached once the app that referenced it is gone.
 func (c *Client) RemoveNetwork(ctx context.Context, name string) error {
+	inspect, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
+	if err == nil {
+		for containerID := range inspect.Containers {
+			if dErr := c.cli.NetworkDisconnect(ctx, name, containerID, true); dErr != nil && !cerrdefs.IsNotFound(dErr) {
+				return fmt.Errorf("docker: disconnect %q before removing network %q: %w", containerID, name, dErr)
+			}
+		}
+	} else if !cerrdefs.IsNotFound(err) {
+		return fmt.Errorf("docker: inspect network %q before remove: %w", name, err)
+	}
+
 	if err := c.cli.NetworkRemove(ctx, name); err != nil {
 		if cerrdefs.IsNotFound(err) {
 			return nil
 		}
 		return fmt.Errorf("docker: remove network %q: %w", name, err)
+	}
+	return nil
+}
+
+// NetworkConnect implements Runtime. Inspects first (the same
+// idempotency shape EnsureNetwork already uses) so a container already
+// attached is a no-op, not an error from Docker's own "endpoint already
+// exists" response. inspect.Containers is keyed by container ID
+// regardless of what identifier the caller passed in (connectReferencedDatabases
+// passes a name), so the membership check matches on both the map key
+// and each entry's own Name field, confirmed live: a name-keyed-only
+// check let a real "already exists" error through on the second call.
+func (c *Client) NetworkConnect(ctx context.Context, name, containerID string) error {
+	inspect, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
+	if err != nil {
+		return fmt.Errorf("docker: inspect network %q before connect: %w", name, err)
+	}
+	if alreadyConnected(inspect.Containers, containerID) {
+		return nil
+	}
+	if err := c.cli.NetworkConnect(ctx, name, containerID, nil); err != nil {
+		if cerrdefs.IsConflict(err) || cerrdefs.IsAlreadyExists(err) || strings.Contains(err.Error(), "already exists in network") {
+			return nil
+		}
+		return fmt.Errorf("docker: connect %q to network %q: %w", containerID, name, err)
+	}
+	return nil
+}
+
+// alreadyConnected reports whether id (a container ID or name) appears
+// as either the map key or the Name field of any entry in containers,
+// NetworkInspect's own Containers map.
+func alreadyConnected(containers map[string]dockernetwork.EndpointResource, id string) bool {
+	if _, ok := containers[id]; ok {
+		return true
+	}
+	for containerID, ep := range containers {
+		if containerID == id || ep.Name == id {
+			return true
+		}
+	}
+	return false
+}
+
+// NetworkDisconnect implements Runtime. Not being attached is not an
+// error, the same level-triggered reasoning RemoveNetwork's own doc
+// comment gives. Confirmed live that the daemon's actual "not connected"
+// response isn't classified as cerrdefs.IsNotFound (it comes back as a
+// 403, the same status the "already exists" case on the connect side
+// uses), so this also falls back to a substring match on its exact
+// wording, the same defensive shape NetworkConnect's own fallback uses.
+func (c *Client) NetworkDisconnect(ctx context.Context, name, containerID string, force bool) error {
+	if err := c.cli.NetworkDisconnect(ctx, name, containerID, force); err != nil {
+		if cerrdefs.IsNotFound(err) || strings.Contains(err.Error(), "is not connected to network") {
+			return nil
+		}
+		return fmt.Errorf("docker: disconnect %q from network %q: %w", containerID, name, err)
 	}
 	return nil
 }
