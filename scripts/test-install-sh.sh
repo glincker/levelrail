@@ -58,6 +58,46 @@ perms="$(in_ct 'stat -c %a /var/lib/levelrail-data/setup-token')"
 in_ct 'APP_DATA_DIR=/var/lib/levelrail-data /usr/local/bin/levelrail setup-token' | grep -qF -- "$(in_ct 'cat /var/lib/levelrail-data/setup-token')" ||
 	{ echo "setup-token subcommand did not print the token file's token"; exit 1; }
 
+echo "== uninstall before port-conflict tests"
+in_ct 'sh /root/install.sh uninstall --purge' >/dev/null
+
+echo "== dashboard port auto-picks the next free port when 8080 is taken"
+in_ct 'nohup python3 -m http.server 8080 --bind 127.0.0.1 >/dev/null 2>&1 & echo $! > /tmp/blocker.pid'
+out="$(docker exec "$name" timeout "$wait_secs" env \
+	LEVELRAIL_BINARY_FILE=/root/levelrail LEVELRAIL_PUBLIC_IP=127.0.0.1 LEVELRAIL_MIN_DISK_GB=1 \
+	sh /root/install.sh)"
+echo "$out" | grep -q "taken, using 8081 instead" || { echo "did not auto-pick 8081: $out"; exit 1; }
+in_ct 'curl -fsS --max-time 5 http://127.0.0.1:8081/healthz' >/dev/null ||
+	{ echo "control plane did not come up on the auto-picked port 8081"; exit 1; }
+# shellcheck disable=SC2016 # runs inside the container, expands there
+in_ct 'kill "$(cat /tmp/blocker.pid)"' >/dev/null 2>&1 || true
+in_ct 'sh /root/install.sh uninstall --purge' >/dev/null
+
+echo "== ingress port conflict fails preflight, with a next-action message"
+in_ct 'nohup python3 -m http.server 80 --bind 127.0.0.1 >/dev/null 2>&1 & echo $! > /tmp/blocker.pid'
+rc=0
+out="$(docker exec "$name" env \
+	LEVELRAIL_BINARY_FILE=/root/levelrail LEVELRAIL_PUBLIC_IP=127.0.0.1 LEVELRAIL_MIN_DISK_GB=1 \
+	sh /root/install.sh 2>&1)" || rc=$?
+[ "$rc" -ne 0 ] || { echo "install should have failed with port 80 taken"; exit 1; }
+echo "$out" | grep -q "LEVELRAIL_HTTP_PORT/LEVELRAIL_HTTPS_PORT" || { echo "fail message did not mention the override vars: $out"; exit 1; }
+
+echo "== explicit alternate ingress ports work around the same conflict"
+docker exec "$name" timeout "$wait_secs" env \
+	LEVELRAIL_BINARY_FILE=/root/levelrail LEVELRAIL_PUBLIC_IP=127.0.0.1 LEVELRAIL_MIN_DISK_GB=1 \
+	LEVELRAIL_HTTP_PORT=8880 LEVELRAIL_HTTPS_PORT=8443 \
+	sh /root/install.sh >/dev/null
+in_ct 'curl -fsS --max-time 5 http://127.0.0.1:8080/healthz' >/dev/null ||
+	{ echo "control plane did not come up with alternate ingress ports"; exit 1; }
+# shellcheck disable=SC2016 # runs inside the container, expands there
+in_ct 'kill "$(cat /tmp/blocker.pid)"' >/dev/null 2>&1 || true
+in_ct 'sh /root/install.sh uninstall --purge' >/dev/null
+
+echo "== reinstall for the remaining tests"
+docker exec "$name" timeout "$wait_secs" env \
+	LEVELRAIL_BINARY_FILE=/root/levelrail LEVELRAIL_PUBLIC_IP=127.0.0.1 LEVELRAIL_MIN_DISK_GB=1 \
+	sh /root/install.sh >/dev/null
+
 echo "== re-run install is idempotent"
 docker exec "$name" timeout "$wait_secs" env \
 	LEVELRAIL_BINARY_FILE=/root/levelrail LEVELRAIL_SKIP_REACHABILITY=1 LEVELRAIL_MIN_DISK_GB=1 \
