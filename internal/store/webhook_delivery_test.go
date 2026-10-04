@@ -188,7 +188,7 @@ func TestListWebhookDeliveries_NewestFirstAndScoped(t *testing.T) {
 	}
 }
 
-// TestListWebhookDeliveries_UsesCoveringIndex proves migrations/0282's
+// TestListWebhookDeliveries_UsesCoveringIndex proves migrations/0283's
 // composite index lets ListWebhookDeliveries' WHERE+ORDER BY query plan
 // skip a sort step (migrations/0068 only indexed service_name alone,
 // which can't cover the received_at DESC ordering and forces a temp
