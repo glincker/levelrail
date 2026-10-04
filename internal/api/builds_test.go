@@ -1331,6 +1331,71 @@ func TestGitCheckout_ResolvesNonDefaultBranchFromRemoteTrackingRef(t *testing.T)
 	}
 }
 
+// TestGitCheckout_ResolveRefTable covers every ref shape gitCheckout
+// accepts (and the one it must reject) in a single table, so the
+// refs/remotes/origin/* fallback above stays additive to every case
+// that already worked rather than a silent behavior change.
+func TestGitCheckout_ResolveRefTable(t *testing.T) {
+	dir, defaultBranch, defaultCommit := initTestGitRepo(t)
+	repo, err := git.PlainOpen(dir)
+	if err != nil {
+		t.Fatalf("PlainOpen: %v", err)
+	}
+	head, err := repo.Head()
+	if err != nil {
+		t.Fatalf("Head: %v", err)
+	}
+
+	const branch = "feature"
+	branchRef := plumbing.NewBranchReferenceName(branch)
+	if err := repo.Storer.SetReference(plumbing.NewHashReference(branchRef, head.Hash())); err != nil {
+		t.Fatalf("SetReference: %v", err)
+	}
+	wt, err := repo.Worktree()
+	if err != nil {
+		t.Fatalf("Worktree: %v", err)
+	}
+	if err := wt.Checkout(&git.CheckoutOptions{Branch: branchRef}); err != nil {
+		t.Fatalf("Checkout %q: %v", branch, err)
+	}
+	featureCommit := commitTestFile(t, repo, dir, "on feature branch")
+	if err := wt.Checkout(&git.CheckoutOptions{Branch: head.Name()}); err != nil {
+		t.Fatalf("Checkout back to %q: %v", head.Name(), err)
+	}
+
+	tests := []struct {
+		name       string
+		ref        string
+		wantCommit string
+		wantErr    bool
+	}{
+		{name: "default branch", ref: defaultBranch, wantCommit: defaultCommit},
+		{name: "full commit SHA", ref: defaultCommit, wantCommit: defaultCommit},
+		{name: "non-default branch via remote-tracking ref", ref: branch, wantCommit: featureCommit},
+		{name: "ref that does not exist anywhere", ref: "no-such-ref", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, commit, cleanup, err := gitCheckout(context.Background(), dir, tt.ref, "")
+			if tt.wantErr {
+				if err == nil {
+					cleanup()
+					t.Fatalf("gitCheckout(%q): want error, got commit %q", tt.ref, commit)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("gitCheckout(%q): %v", tt.ref, err)
+			}
+			cleanup()
+			if commit != tt.wantCommit {
+				t.Fatalf("gitCheckout(%q) commit = %q, want %q", tt.ref, commit, tt.wantCommit)
+			}
+		})
+	}
+}
+
 // TestHandleTriggerBuild_TagsByResolvedCommitNotRef is the regression
 // test for a manual build tagging its image with the raw ref: with
 // ref "main", both builds produced "<repo>:main", so the second one
