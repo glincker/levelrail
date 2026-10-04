@@ -4,10 +4,7 @@ description: Which node a deploy's build runs on, how to mark a node build-only,
 
 # Build node routing
 
-On a single node, every build already runs where it always has: locally,
-alongside the control plane and every running app. Nothing here changes
-that default, and nothing on this page needs deciding until you add a
-second node.
+On a single node, every build already runs locally, alongside the control plane and every running app. Nothing on this page needs deciding until you add a second node.
 
 ## What `accepts_build_workloads` does
 
