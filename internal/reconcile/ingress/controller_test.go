@@ -49,6 +49,8 @@ type fakeStore struct {
 	conditionsErr      error
 	streams            []store.AppStream
 	streamsErr         error
+	statusPage         store.StatusPageSettings
+	statusPageErr      error
 }
 
 // GetConditionsForControllers defaults every requested controller to
@@ -165,6 +167,13 @@ func (f *fakeStore) GetRegistrySettings(_ context.Context) (store.RegistrySettin
 		return store.RegistrySettings{}, f.registryErr
 	}
 	return f.registry, nil
+}
+
+func (f *fakeStore) GetStatusPageSettings(_ context.Context) (store.StatusPageSettings, error) {
+	if f.statusPageErr != nil {
+		return store.StatusPageSettings{}, f.statusPageErr
+	}
+	return f.statusPage, nil
 }
 
 // ListDomainWAF mirrors ListDomainMaintenance's own "empty unless a test
