@@ -7,15 +7,19 @@ import { LoginScreen } from '../components/LoginScreen'
 interface LoginSearch {
   setup?: string
   redirect?: string
+  session_link?: string
 }
 
 // Plain function rather than zod so validateSearch stays out of the eagerly loaded bundle.
 function validateLoginSearch(search: Record<string, unknown>): LoginSearch {
-  const { setup } = search
+  const { setup, session_link: sessionLink } = search
   const redirectTo = safeReturnPath(search.redirect)
   return {
     ...(typeof setup === 'string' && setup !== '' ? { setup } : {}),
     ...(redirectTo ? { redirect: redirectTo } : {}),
+    ...(typeof sessionLink === 'string' && sessionLink !== ''
+      ? { session_link: sessionLink }
+      : {}),
   }
 }
 
@@ -33,6 +37,6 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
-  const { setup } = Route.useSearch()
-  return <LoginScreen setup={setup} />
+  const { setup, session_link: sessionLink } = Route.useSearch()
+  return <LoginScreen setup={setup} sessionLink={sessionLink} />
 }

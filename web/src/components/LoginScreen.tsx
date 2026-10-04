@@ -1,9 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { FlaskIcon } from '@phosphor-icons/react/dist/ssr'
+import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
+import { FlaskIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { devModeQueryOptions } from '../queries/devMode'
 import { useBrand } from '../hooks/useBrand'
-import { setupStatusQueryOptions, useLogin } from '../queries/auth'
+import {
+  setupStatusQueryOptions,
+  useConsumeSessionLink,
+  useLogin,
+} from '../queries/auth'
 import { getLastUsername } from '../lib/authStore'
 import {
   Card,
@@ -14,6 +20,7 @@ import {
 } from './ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Button } from './ui/button'
+import { Alert, AlertDescription } from './ui/alert'
 import { RegisterForm } from './RegisterForm'
 import { OAuthButtons } from './OAuthButtons'
 import { OAuthErrorBanner } from './OAuthErrorBanner'
@@ -30,10 +37,29 @@ type LoginTab = 'sign-in' | 'register'
 
 // The login screen for returning operators and first run alike. The setup
 // tab is picked automatically while the instance has no admin, or when the
-// installer's ?setup=<token> link was opened.
-export function LoginScreen({ setup }: { setup?: string }) {
+// installer's ?setup=<token> link was opened. sessionLink, when present
+// (a ?session_link=<token> link from "levelrail-cli auth session-link"
+// or POST /api/v1/auth/session-links), is consumed automatically on
+// mount instead of showing the normal sign-in form at all.
+export function LoginScreen({
+  setup,
+  sessionLink,
+}: {
+  setup?: string
+  sessionLink?: string
+}) {
   const brand = useBrand()
+  const { t } = useTranslation('common')
   const setupStatus = useQuery(setupStatusQueryOptions())
+  const consumeSessionLink = useConsumeSessionLink()
+  const sessionLinkStarted = useRef(false)
+  useEffect(() => {
+    if (!sessionLink || sessionLinkStarted.current) {
+      return
+    }
+    sessionLinkStarted.current = true
+    consumeSessionLink.mutate(sessionLink)
+  }, [sessionLink, consumeSessionLink])
   const [chosenTab, setTab] = useState<LoginTab | null>(
     setup ? 'register' : null,
   )
@@ -59,6 +85,48 @@ export function LoginScreen({ setup }: { setup?: string }) {
   const signInContent = (
     <SignInFlow username={username} onUsernameChange={setUsername} />
   )
+
+  if (sessionLink) {
+    return (
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6 px-4">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <div
+            aria-hidden="true"
+            className="flex size-10 items-center justify-center rounded-lg text-base font-semibold shadow-[0_0_0_4px_rgb(245_158_11_/_0.12)]"
+          >
+            <BrandMarkGlyph />
+          </div>
+          <span className="text-sm font-medium text-foreground">
+            {brandLabel}
+          </span>
+        </div>
+        <Card className="w-full max-w-sm shadow-sm">
+          <CardContent className="space-y-4 pt-6">
+            {consumeSessionLink.isError ? (
+              <>
+                <Alert variant="destructive">
+                  <WarningIcon />
+                  <AlertDescription>
+                    {t('sessionLink.invalid')}
+                  </AlertDescription>
+                </Alert>
+                <Link
+                  to="/login"
+                  className="block text-center text-sm text-muted-foreground hover:text-foreground"
+                >
+                  {t('sessionLink.backToSignIn')}
+                </Link>
+              </>
+            ) : (
+              <p className="text-center text-sm text-muted-foreground">
+                {t('sessionLink.signingIn')}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="relative flex min-h-[70vh] flex-col items-center justify-center gap-6 overflow-hidden px-4">
