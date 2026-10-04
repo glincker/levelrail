@@ -479,6 +479,22 @@ func (t *GRPCTransport) RemoveNetwork(ctx context.Context, name string) error {
 	return err
 }
 
+// NetworkConnect implements Transport (docker.Runtime).
+func (t *GRPCTransport) NetworkConnect(ctx context.Context, network, containerID string) error {
+	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{
+		Op: &agentpb.AgentRequest_NetworkConnect{NetworkConnect: &agentpb.NetworkConnectRequest{Network: network, ContainerId: containerID}},
+	})
+	return err
+}
+
+// NetworkDisconnect implements Transport (docker.Runtime).
+func (t *GRPCTransport) NetworkDisconnect(ctx context.Context, network, containerID string, force bool) error {
+	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{
+		Op: &agentpb.AgentRequest_NetworkDisconnect{NetworkDisconnect: &agentpb.NetworkDisconnectRequest{Network: network, ContainerId: containerID, Force: force}},
+	})
+	return err
+}
+
 // ListNetworksByPrefix implements Transport (docker.Runtime).
 func (t *GRPCTransport) ListNetworksByPrefix(ctx context.Context, prefix string) ([]docker.NetworkInfo, error) {
 	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{

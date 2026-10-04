@@ -306,6 +306,10 @@ func (f *wireRuntime) RemoveNetwork(_ context.Context, name string) error {
 	return nil
 }
 
+func (f *wireRuntime) NetworkConnect(context.Context, string, string) error { return nil }
+
+func (f *wireRuntime) NetworkDisconnect(context.Context, string, string, bool) error { return nil }
+
 func (f *wireRuntime) ListNetworksByPrefix(_ context.Context, prefix string) ([]docker.NetworkInfo, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()

@@ -87,7 +87,11 @@ func (f *fakePreviewDBRuntime) EnsureVolume(context.Context, string) error { ret
 func (f *fakePreviewDBRuntime) EnsureNetwork(context.Context, string) (string, error) {
 	return "", nil
 }
-func (f *fakePreviewDBRuntime) RemoveNetwork(context.Context, string) error { return nil }
+func (f *fakePreviewDBRuntime) RemoveNetwork(context.Context, string) error          { return nil }
+func (f *fakePreviewDBRuntime) NetworkConnect(context.Context, string, string) error { return nil }
+func (f *fakePreviewDBRuntime) NetworkDisconnect(context.Context, string, string, bool) error {
+	return nil
+}
 func (f *fakePreviewDBRuntime) ListNetworksByPrefix(context.Context, string) ([]docker.NetworkInfo, error) {
 	return nil, nil
 }

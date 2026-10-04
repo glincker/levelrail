@@ -137,6 +137,14 @@ func (f *fakeRuntime) RemoveNetwork(_ context.Context, _ string) error {
 	return nil
 }
 
+func (f *fakeRuntime) NetworkConnect(_ context.Context, _, _ string) error {
+	return nil
+}
+
+func (f *fakeRuntime) NetworkDisconnect(_ context.Context, _, _ string, _ bool) error {
+	return nil
+}
+
 func (f *fakeRuntime) ListNetworksByPrefix(_ context.Context, _ string) ([]docker.NetworkInfo, error) {
 	return nil, nil
 }

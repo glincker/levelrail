@@ -153,6 +153,20 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		}
 		resp.Result = emptyResult()
 
+	case *agentpb.AgentRequest_NetworkConnect:
+		if err := rt.NetworkConnect(ctx, op.NetworkConnect.GetNetwork(), op.NetworkConnect.GetContainerId()); err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = emptyResult()
+
+	case *agentpb.AgentRequest_NetworkDisconnect:
+		if err := rt.NetworkDisconnect(ctx, op.NetworkDisconnect.GetNetwork(), op.NetworkDisconnect.GetContainerId(), op.NetworkDisconnect.GetForce()); err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = emptyResult()
+
 	case *agentpb.AgentRequest_ListNetworksByPrefix:
 		networks, err := rt.ListNetworksByPrefix(ctx, op.ListNetworksByPrefix.GetPrefix())
 		if err != nil {
