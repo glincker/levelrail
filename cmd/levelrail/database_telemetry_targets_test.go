@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"io"
+	"log/slog"
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -93,7 +95,7 @@ func TestDatabaseTelemetryTargets_OnlyRunningContainersIncluded(t *testing.T) {
 		// documented (nil, nil) "no such container" contract.
 	}}
 
-	targets, err := databaseTelemetryTargets(ctx, db, runtime)
+	targets, err := databaseTelemetryTargets(ctx, db, runtime, agent.NewRegistry(), nil, slog.Default())
 	if err != nil {
 		t.Fatalf("databaseTelemetryTargets() error = %v", err)
 	}
