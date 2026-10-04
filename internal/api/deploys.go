@@ -105,6 +105,18 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		note = strings.TrimSpace(note + " RollbackTo: " + rollbackTo)
 	}
 
+	// Observed live: a rollback issued while a manual build was still
+	// running wrote its own desired state immediately, then the build's
+	// own deploy finished moments later and silently clobbered it, with
+	// no sign to the operator that the rollback never stuck. Same guard
+	// handleTriggerBuild already applies against itself (builds.go), now
+	// also checked here so a plain image deploy or rollback can't race a
+	// build the same way.
+	if rt.hasRunningDeployAttempt(r.Context(), name) {
+		writeError(w, http.StatusConflict, "a deploy for this app is already running")
+		return
+	}
+
 	env, protected, ok := rt.checkEnvironmentProtection(r.Context(), w, existing.EnvironmentID, req.Confirm)
 	if !ok {
 		return

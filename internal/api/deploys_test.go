@@ -6,10 +6,47 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// TestHandleTriggerDeploy_RunningAttemptRejected is the regression test
+// for a live race: a rollback issued while a build was still running
+// used to write desired state immediately, then get silently clobbered
+// when the build finished. handleTriggerBuild already guards against
+// this for itself; this proves applyDeploy now does too.
+func TestHandleTriggerDeploy_RunningAttemptRejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	running := store.DeployAttempt{
+		ID: "att_running", ServiceName: "web", Image: "web:building", Source: store.DeployAttemptSourceManual,
+		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
+	}
+	if err := db.SaveDeployAttempt(ctx, running); err != nil {
+		t.Fatalf("SaveDeployAttempt() error = %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"levelrail/web:2"}`))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService: %v", err)
+	}
+	if svc.Image != "levelrail/web:1" {
+		t.Errorf("Image = %q, want %q: a rejected deploy must never change desired state", svc.Image, "levelrail/web:1")
+	}
+}
 
 func TestHandleTriggerDeploy(t *testing.T) {
 	rt, db := newTestRouter(t)
