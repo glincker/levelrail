@@ -1,7 +1,10 @@
 {
   "actions": {
     "copy": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "viewOverview": "View overview",
+    "viewApp": "View app",
+    "viewDatabase": "View database"
   },
   "logs": {
     "previousContainerEnded": "Previous container instance ended"
