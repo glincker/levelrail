@@ -94,6 +94,46 @@ func TestUpdateAvailable(t *testing.T) {
 	}
 }
 
+// TestPickLatestPrerelease_OutOfOrderList is the regression test for a
+// live bug: GitHub's /releases list is ordered by internal release id,
+// not publish time, so the raw order on glincker/levelrail's real repo
+// put v0.2.0-beta.9 ahead of the actually-newer v0.2.0-beta.14. Taking
+// the first prerelease match reported a nine-release-old "latest".
+func TestPickLatestPrerelease_OutOfOrderList(t *testing.T) {
+	rrs := []rawRelease{
+		{TagName: "v0.2.0-beta.9", Prerelease: true, PublishedAt: "2026-09-23T04:27:56Z"},
+		{TagName: "v0.2.0-beta.8", Prerelease: true, PublishedAt: "2026-09-23T04:15:35Z"},
+		{TagName: "v0.2.0-beta.14", Prerelease: true, PublishedAt: "2026-09-23T22:12:59Z"},
+		{TagName: "v0.2.0-beta.13", Prerelease: true, PublishedAt: "2026-09-23T20:50:05Z"},
+		{TagName: "v0.2.0-beta.5", Prerelease: true, PublishedAt: "2026-09-21T19:16:56Z"},
+	}
+
+	got := pickLatestPrerelease(rrs)
+	if got == nil || got.Tag != "v0.2.0-beta.14" {
+		t.Fatalf("pickLatestPrerelease() = %+v, want tag v0.2.0-beta.14", got)
+	}
+}
+
+func TestPickLatestPrerelease_SkipsDraftsAndStable(t *testing.T) {
+	rrs := []rawRelease{
+		{TagName: "v0.3.0", Prerelease: false, PublishedAt: "2026-09-24T00:00:00Z"},
+		{TagName: "v0.3.0-beta.2", Prerelease: true, Draft: true, PublishedAt: "2026-09-25T00:00:00Z"},
+		{TagName: "v0.3.0-beta.1", Prerelease: true, PublishedAt: "2026-09-23T00:00:00Z"},
+	}
+
+	got := pickLatestPrerelease(rrs)
+	if got == nil || got.Tag != "v0.3.0-beta.1" {
+		t.Fatalf("pickLatestPrerelease() = %+v, want tag v0.3.0-beta.1", got)
+	}
+}
+
+func TestPickLatestPrerelease_NoneMatch(t *testing.T) {
+	rrs := []rawRelease{{TagName: "v0.3.0", Prerelease: false, PublishedAt: "2026-09-24T00:00:00Z"}}
+	if got := pickLatestPrerelease(rrs); got != nil {
+		t.Fatalf("pickLatestPrerelease() = %+v, want nil", got)
+	}
+}
+
 func TestCache_FreshStaleSet(t *testing.T) {
 	c := NewCache()
 
