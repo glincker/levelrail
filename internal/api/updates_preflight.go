@@ -40,17 +40,19 @@ func (rt *Router) handleUpdatePreflight(w http.ResponseWriter, r *http.Request) 
 		UpgradeCommand:  upgradeCommand(""),
 		RollbackCommand: "levelrail restore-snapshot --list",
 	}
-	release, known := rt.latestRelease(r.Context())
+	release, channel, known := rt.latestReleaseForCurrentChannel(r.Context())
 	var assets []string
 	if known && release != nil {
-		tag, url := release.TagName, release.HTMLURL
+		tag, url := release.Tag, release.URL
 		out.LatestVersion, out.ReleaseURL = &tag, &url
-		out.UpdateAvailable = version.Version != "dev" && tag != version.Version
+		if channel == upgrade.ChannelStable {
+			out.UpdateAvailable = version.Version != "dev" && tag != version.Version
+		} else {
+			out.UpdateAvailable = upgrade.UpdateAvailable(version.Version, release)
+		}
 		out.ReleaseNotes = truncateRunes(strings.TrimSpace(release.Body), releaseNotesMaxRunes)
 		out.UpgradeCommand = upgradeCommand(tag)
-		for _, a := range release.Assets {
-			assets = append(assets, a.Name)
-		}
+		assets = release.AssetNames
 	}
 	out.Checks = upgrade.Run(r.Context(), upgrade.Inputs{
 		Lookup:        os.LookupEnv,
@@ -75,6 +77,42 @@ func (rt *Router) latestRelease(ctx context.Context) (*githubRelease, bool) {
 	}
 	rt.updatesCache.set(fetched)
 	return fetched, true
+}
+
+// latestReleaseForCurrentChannel mirrors handleGetUpdates' channel branch
+// (internal/api/updates.go) so preflight checks match whatever channel the
+// operator configured instead of always checking stable: before this, an
+// operator on beta/edge saw the version card report an upgrade available
+// while the preflight card below it said "latest release could not be
+// fetched", because it never looked past the stable release list.
+func (rt *Router) latestReleaseForCurrentChannel(ctx context.Context) (*upgrade.Release, string, bool) {
+	channel := rt.currentUpdateChannel(ctx)
+	if channel == upgrade.ChannelStable {
+		release, ok := rt.latestRelease(ctx)
+		if !ok || release == nil {
+			return nil, channel, false
+		}
+		names := make([]string, 0, len(release.Assets))
+		for _, a := range release.Assets {
+			names = append(names, a.Name)
+		}
+		return &upgrade.Release{Tag: release.TagName, URL: release.HTMLURL, PublishedAt: release.PublishedAt, Body: release.Body, AssetNames: names}, channel, true
+	}
+
+	release, ok := rt.channelUpdatesCache.Fresh(updatesCacheTTL, channel)
+	if !ok {
+		fetched, err := rt.upgradeFetchers.LatestForChannel(ctx, channel)
+		if err != nil {
+			release, ok = rt.channelUpdatesCache.Stale(channel)
+		} else {
+			rt.channelUpdatesCache.Set(channel, fetched)
+			release, ok = fetched, true
+		}
+	}
+	if !ok || release == nil {
+		return nil, channel, false
+	}
+	return release, channel, true
 }
 
 func (rt *Router) dockerEngineVersion() func(context.Context) (string, error) {
