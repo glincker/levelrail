@@ -145,7 +145,7 @@ notice.
 Maturity is uneven. Per [docs/feature-status.md](docs/feature-status.md),
 only deploy approvals, database backups with point-in-time recovery, and
 GitHub previews are labeled stable (each has a live end-to-end test).
-Most other areas, including IAM, multi-node and WireGuard, the 17
+Most other areas, including IAM, multi-node and WireGuard, the 18
 notification channels, and the MCP server, are beta, and the in-app AI
 chat, GPU models, load balancer, platform as code, and Cloudflare tunnel
 are hidden behind flags, off by default via
