@@ -8,6 +8,22 @@ Everything on this page is optional. A fresh install runs entirely on the contro
 
 A second node is something you add when one box runs out of room, when you want to isolate builds from production containers, or when you want a dedicated database host - not something the platform makes you think about on day one.
 
+::: danger Ingress only listens on the control-plane node
+The embedded Caddy ingress ([Domains and ingress](domains-and-ingress.md)) runs in the control plane's own process. A worker node has **no public listener at all**: nothing is bound to 80/443 there, by design.
+
+If you move or place an app on a worker node without also moving its domain's routing, the control plane still builds a Caddy route for that domain, but the route points at a backend the control plane's own ingress cannot reach. What an operator actually sees is **not** a clean "app unreachable" error: a browser gets a TLS handshake failure or connection reset against the domain, while the app itself reports healthy in the dashboard. That gap between "looks healthy" and "not reachable" is the trap.
+
+**Fix:** keep that app on the control-plane node, or point it back there:
+
+```bash
+levelrail-cli apps clear-node <name>
+# or, equivalently:
+levelrail-cli apps set-node <name> <the control plane's own node id>
+```
+
+**You don't have to catch this by eyeballing placements yourself.** `GET /api/v1/system/doctor` (`levelrail-cli doctor`) runs a `cross_node_ingress` check that flags exactly this app/domain/node combination with the fix command above, so this is a backstop, not the only line of defense, but don't rely on it as the first one: avoid placing a domain-routed app off the control-plane node until the [WireGuard mesh](#wireguard-mesh-and-internal-dns) spans nodes.
+:::
+
 ## Why a second node is optional, not assumed
 
 The platform is designed single-node-first. You add a second node when you need it, not on day one.
@@ -469,6 +485,8 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 **Result:** Enabling `APP_MESH_ENABLED` on a control plane with a second enrolled node does not mesh that node in. The control plane has its own device and can rotate its own key (both documented above), but there's no agent message to deliver config to remote nodes, and no agent-side code to apply it.
 
 **What's scoped:** One new agent request/response message, plus a case in `internal/agent.Execute` calling `Mesh.Apply`. It's defined work, not built.
+
+This is the same gap the `::: danger` callout near the top of this page describes: until mesh spans nodes, a domain-routed app placed off the control-plane node is unreachable via its domain, and `levelrail-cli doctor`'s `cross_node_ingress` check exists to catch it. See [Domains and ingress: Traffic](domains-and-ingress.md#traffic-routing-status-for-every-domain-at-a-glance) for the dashboard page that surfaces exactly this, per domain, with a one-click fix.
 
 ## API reference
 

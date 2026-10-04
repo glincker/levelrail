@@ -40,12 +40,16 @@ type Report struct {
 // Request describes the app being checked. Zero fields skip the checks
 // that depend on them.
 type Request struct {
-	Name        string
-	NodeID      string
-	Image       string
-	Port        int
-	HostPort    int
-	Domains     []string
+	Name     string
+	NodeID   string
+	Image    string
+	Port     int
+	HostPort int
+	Domains  []string
+	// IsLocalNode is the caller-resolved placement fact (NodeID == "" or
+	// the control plane's own node id): this package has no node store of
+	// its own, so it can't resolve NodeID itself, only react to it.
+	IsLocalNode bool
 	MemoryBytes int64
 	RequiredEnv []string
 	EnvKeys     []string
@@ -149,6 +153,7 @@ func Run(ctx context.Context, req Request, env Env) Report {
 	env.Limits = lim
 	fns := []checkFunc{
 		func(c context.Context) []Check { return checkDomains(c, req, env) },
+		func(_ context.Context) []Check { return checkCrossNodeIngress(req) },
 		func(c context.Context) []Check { return checkHostPort(c, req, env) },
 		func(c context.Context) []Check { return checkImageAndDisk(c, req, env) },
 		func(c context.Context) []Check { return checkMemory(c, req, env) },

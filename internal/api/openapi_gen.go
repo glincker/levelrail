@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 646 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 649 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -255,6 +255,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/register", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRegister", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/reset-password", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleResetPassword", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/session", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetSession", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/session-links", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMintSessionLink", Description: "Session links (session_links.go): a short-lived, single-use, URL-embeddable token for browser automation to skip manual login. Minting is root-equivalent since the resulting session inherits the minting caller's own abilities; consuming is necessarily unauthenticated, gated by possession of the token itself, same shape as reset-password below."},
+	{Method: "GET", Path: "/api/v1/auth/session-links/{token}/consume", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleConsumeSessionLink", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/sessions/revoke-others", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeOtherSessions", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/setup-status", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetupStatus", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/tokens", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListTokens", Description: ""},
@@ -501,6 +503,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/network-shares/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetNetworkShare", Description: ""},
 	{Method: "PUT", Path: "/api/v1/network-shares/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleUpdateNetworkShare", Description: ""},
 	{Method: "POST", Path: "/api/v1/network-shares/{id}/test", Ability: "AbilityRead", Group: "Other", Handler: "handleTestNetworkShare", Description: ""},
+	{Method: "GET", Path: "/api/v1/network/proxy", Ability: "AbilityRead", Group: "Other", Handler: "handleGetNetworkProxy", Description: "Proxy/traffic: per-domain reachability (CrossNodeIngress, see doctor_cross_node_ingress.go) plus TLS status, joined for the Traffic/Proxy dashboard page. Same AbilityRead boundary as topology above, same reasoning: read-only, no key material."},
 	{Method: "GET", Path: "/api/v1/network/topology", Ability: "AbilityRead", Group: "Other", Handler: "handleGetNetworkTopology", Description: "Network topology: a read-only, whole-mesh summary (nodes, apps, databases, load balancers, app-to-database connections). Unlike every other node/mesh route above, AbilityRead rather than AbilityRoot: it exposes no key material, no join tokens, and no mutation, just the same placement/DNS-name facts already visible piecemeal across GET /apps, /databases and /nodes."},
 	{Method: "GET", Path: "/api/v1/node-providers", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeProviders", Description: "Cloud node provisioning: same AbilityRoot boundary as every other node route above, a provider credential and the ability to spin up a VM are at least as sensitive as a join token."},
 	{Method: "POST", Path: "/api/v1/node-providers", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetNodeProviderCredential", Description: ""},

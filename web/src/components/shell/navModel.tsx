@@ -36,6 +36,7 @@ import {
   TreeStructureIcon,
   ClockCounterClockwiseIcon,
   EyeIcon,
+  TrafficSignalIcon,
   WrenchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { GO_TARGETS } from '@/lib/shortcuts'
@@ -51,6 +52,7 @@ export type GlobalTo =
   | '/backups'
   | '/nodes'
   | '/network'
+  | '/network/proxy'
   | '/domains'
   | '/loadbalancers'
   | '/models'
@@ -152,6 +154,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Network',
         to: '/network',
         icon: <ShareNetworkIcon />,
+      },
+      {
+        id: 'traffic',
+        label: 'Traffic',
+        to: '/network/proxy',
+        icon: <TrafficSignalIcon />,
       },
       { id: 'domains', label: 'Domains', to: '/domains', icon: <GlobeIcon /> },
       {

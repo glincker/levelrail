@@ -258,7 +258,7 @@ type DeployAttemptStore interface {
 
 // ProbeAttemptStore is the store surface GET
 // /api/v1/apps/{name}/deploys/{deployId}/probes needs: the individual
-// readiness-probe attempts (migrations/0280_probe_attempts.sql,
+// readiness-probe attempts (migrations/0282_probe_attempts.sql,
 // internal/probe.WithOnAttempt) one deploy attempt's cutover made.
 // *store.DB satisfies this structurally.
 type ProbeAttemptStore interface {
@@ -474,6 +474,15 @@ type PasswordResetTokenStore interface {
 	ClaimPasswordResetToken(ctx context.Context, id string) error
 }
 
+// SessionLinkTokenStore is the store surface the session-link flow
+// needs: always set, part of the core Store interface, same shape as
+// PasswordResetTokenStore above.
+type SessionLinkTokenStore interface {
+	SaveSessionLinkToken(ctx context.Context, t store.SessionLinkToken) error
+	GetSessionLinkTokenByHash(ctx context.Context, hash string) (*store.SessionLinkToken, error)
+	ClaimSessionLinkToken(ctx context.Context, id string) error
+}
+
 // InviteStore is the store surface the team-invite flow needs: always
 // set, part of the core Store interface, same shape as
 // PasswordResetTokenStore above.
@@ -599,6 +608,7 @@ type Store interface {
 	SSHNodeProvisionStore
 	VaultSettingsStore
 	PasswordResetTokenStore
+	SessionLinkTokenStore
 	InviteStore
 	RecoveryCodeStore
 	PasskeyStore

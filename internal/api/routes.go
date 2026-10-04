@@ -141,6 +141,15 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/auth/session", rt.requireAuth(rt.handleGetSession))
 	mux.HandleFunc("POST /api/v1/auth/sessions/revoke-others", rt.requireAuth(rt.handleRevokeOtherSessions))
 
+	// Session links (session_links.go): a short-lived, single-use,
+	// URL-embeddable token for browser automation to skip manual login.
+	// Minting is root-equivalent since the resulting session inherits
+	// the minting caller's own abilities; consuming is necessarily
+	// unauthenticated, gated by possession of the token itself, same
+	// shape as reset-password below.
+	mux.HandleFunc("POST /api/v1/auth/session-links", rt.requireAbility(AbilityRoot, rt.handleMintSessionLink))
+	mux.HandleFunc("GET /api/v1/auth/session-links/{token}/consume", rt.handleConsumeSessionLink)
+
 	// Two-factor auth (twofactor.go). /2fa/verify is necessarily public
 	// (it's step two of login, before a session exists), rate-limited by
 	// rt.mfaVerify instead of a session/ability check. Every other route

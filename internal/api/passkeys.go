@@ -121,16 +121,18 @@ func (rt *Router) passkeyWebAuthnUser(r *http.Request, user store.User) (passkey
 
 func toStorePasskeyCredential(c passkey.Credential) store.PasskeyCredential {
 	return store.PasskeyCredential{
-		ID:           c.ID,
-		UserID:       c.UserID,
-		CredentialID: base64.RawURLEncoding.EncodeToString(c.CredentialID),
-		PublicKey:    c.PublicKey,
-		SignCount:    c.SignCount,
-		AAGUID:       base64.RawURLEncoding.EncodeToString(c.AAGUID),
-		Transports:   c.Transports,
-		Label:        c.Label,
-		CreatedAt:    c.CreatedAt,
-		LastUsedAt:   c.LastUsedAt,
+		ID:             c.ID,
+		UserID:         c.UserID,
+		CredentialID:   base64.RawURLEncoding.EncodeToString(c.CredentialID),
+		PublicKey:      c.PublicKey,
+		SignCount:      c.SignCount,
+		AAGUID:         base64.RawURLEncoding.EncodeToString(c.AAGUID),
+		Transports:     c.Transports,
+		Label:          c.Label,
+		BackupEligible: c.BackupEligible,
+		BackupState:    c.BackupState,
+		CreatedAt:      c.CreatedAt,
+		LastUsedAt:     c.LastUsedAt,
 	}
 }
 
@@ -147,16 +149,18 @@ func fromStorePasskeyCredential(c store.PasskeyCredential) (passkey.Credential, 
 		}
 	}
 	return passkey.Credential{
-		ID:           c.ID,
-		UserID:       c.UserID,
-		CredentialID: credID,
-		PublicKey:    c.PublicKey,
-		SignCount:    c.SignCount,
-		AAGUID:       aaguid,
-		Transports:   c.Transports,
-		Label:        c.Label,
-		CreatedAt:    c.CreatedAt,
-		LastUsedAt:   c.LastUsedAt,
+		ID:             c.ID,
+		UserID:         c.UserID,
+		CredentialID:   credID,
+		PublicKey:      c.PublicKey,
+		SignCount:      c.SignCount,
+		AAGUID:         aaguid,
+		Transports:     c.Transports,
+		Label:          c.Label,
+		BackupEligible: c.BackupEligible,
+		BackupState:    c.BackupState,
+		CreatedAt:      c.CreatedAt,
+		LastUsedAt:     c.LastUsedAt,
 	}, nil
 }
 

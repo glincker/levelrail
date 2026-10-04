@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	dockernetwork "github.com/docker/docker/api/types/network"
 
 	"github.com/GLINCKER/levelrail/internal/dockertest"
 )
@@ -292,6 +293,118 @@ func TestClient_EnsureVolume_Live_IdempotentAndMounted(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("expected a mount of volume %q at /data in raw container mounts, got %+v", volName, raw.Mounts)
+	}
+}
+
+// TestClient_NetworkConnect_Live_IdempotentAndReachable proves the
+// same-host database-connectivity fix end to end against a real daemon:
+// a container on one network can reach a container on another only
+// after NetworkConnect bridges them, and a second NetworkConnect call
+// for the same pair stays a no-op rather than erroring.
+func TestClient_NetworkConnect_Live_IdempotentAndReachable(t *testing.T) {
+	c := liveClient(t)
+	ctx := context.Background()
+
+	netA := "levelrail-test-net-a"
+	netB := "levelrail-test-net-b"
+	containerName := "levelrail-test-network-connect"
+
+	removeIfExists(ctx, t, c, containerName)
+	t.Cleanup(func() { removeIfExists(context.Background(), t, c, containerName) })
+	t.Cleanup(func() { _ = c.RemoveNetwork(context.Background(), netA) })
+	t.Cleanup(func() { _ = c.RemoveNetwork(context.Background(), netB) })
+
+	if _, err := c.EnsureNetwork(ctx, netA); err != nil {
+		t.Fatalf("EnsureNetwork(netA) error = %v", err)
+	}
+	if _, err := c.EnsureNetwork(ctx, netB); err != nil {
+		t.Fatalf("EnsureNetwork(netB) error = %v", err)
+	}
+
+	id, err := c.Create(ctx, ContainerSpec{
+		Name:    containerName,
+		Image:   "nginx:alpine",
+		Network: &NetworkAttachment{Name: netA},
+	})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if err := c.Start(ctx, id); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	if err := c.NetworkConnect(ctx, netB, containerName); err != nil {
+		t.Fatalf("NetworkConnect() first call error = %v", err)
+	}
+	// Idempotent: already attached must not error.
+	if err := c.NetworkConnect(ctx, netB, containerName); err != nil {
+		t.Fatalf("NetworkConnect() second call error = %v, want nil (idempotent)", err)
+	}
+
+	raw, err := c.cli.ContainerInspect(ctx, id)
+	if err != nil {
+		t.Fatalf("raw ContainerInspect() error = %v", err)
+	}
+	if _, ok := raw.NetworkSettings.Networks[netA]; !ok {
+		t.Errorf("container not attached to %q (original network), networks = %+v", netA, raw.NetworkSettings.Networks)
+	}
+	if _, ok := raw.NetworkSettings.Networks[netB]; !ok {
+		t.Errorf("container not attached to %q (connected network), networks = %+v", netB, raw.NetworkSettings.Networks)
+	}
+
+	if err := c.NetworkDisconnect(ctx, netB, containerName, false); err != nil {
+		t.Fatalf("NetworkDisconnect() error = %v", err)
+	}
+	// Not being attached must not error either.
+	if err := c.NetworkDisconnect(ctx, netB, containerName, false); err != nil {
+		t.Fatalf("NetworkDisconnect() second call error = %v, want nil (already detached)", err)
+	}
+
+	raw, err = c.cli.ContainerInspect(ctx, id)
+	if err != nil {
+		t.Fatalf("raw ContainerInspect() after disconnect error = %v", err)
+	}
+	if _, ok := raw.NetworkSettings.Networks[netB]; ok {
+		t.Errorf("container still attached to %q after NetworkDisconnect", netB)
+	}
+}
+
+// TestClient_RemoveNetwork_Live_DisconnectsAttachedContainersFirst proves
+// RemoveNetwork succeeds (and actually removes the network) even with a
+// container still attached, the exact scenario an app's network hits
+// once its referenced database was connected onto it and the app is
+// then deleted: the Engine API refuses a plain NetworkRemove with live
+// endpoints, so this only passes if the disconnect-first fix is real.
+func TestClient_RemoveNetwork_Live_DisconnectsAttachedContainersFirst(t *testing.T) {
+	c := liveClient(t)
+	ctx := context.Background()
+
+	netName := "levelrail-test-net-remove-with-endpoint"
+	containerName := "levelrail-test-network-remove-endpoint"
+
+	removeIfExists(ctx, t, c, containerName)
+	t.Cleanup(func() { removeIfExists(context.Background(), t, c, containerName) })
+	t.Cleanup(func() { _ = c.RemoveNetwork(context.Background(), netName) })
+
+	if _, err := c.EnsureNetwork(ctx, netName); err != nil {
+		t.Fatalf("EnsureNetwork() error = %v", err)
+	}
+	id, err := c.Create(ctx, ContainerSpec{Name: containerName, Image: "nginx:alpine"})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if err := c.Start(ctx, id); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if err := c.NetworkConnect(ctx, netName, containerName); err != nil {
+		t.Fatalf("NetworkConnect() error = %v", err)
+	}
+
+	if err := c.RemoveNetwork(ctx, netName); err != nil {
+		t.Fatalf("RemoveNetwork() with a still-attached container error = %v, want nil", err)
+	}
+	if _, err := c.cli.NetworkInspect(ctx, netName, dockernetwork.InspectOptions{}); err == nil {
+		t.Error("network still exists after RemoveNetwork")
 	}
 }
 

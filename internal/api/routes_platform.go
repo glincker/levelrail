@@ -387,6 +387,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// mutation, just the same placement/DNS-name facts already visible
 	// piecemeal across GET /apps, /databases and /nodes.
 	mux.HandleFunc("GET /api/v1/network/topology", rt.requireAbility(AbilityRead, rt.handleGetNetworkTopology))
+	// Proxy/traffic: per-domain reachability (CrossNodeIngress, see
+	// doctor_cross_node_ingress.go) plus TLS status, joined for the
+	// Traffic/Proxy dashboard page. Same AbilityRead boundary as
+	// topology above, same reasoning: read-only, no key material.
+	mux.HandleFunc("GET /api/v1/network/proxy", rt.requireAbility(AbilityRead, rt.handleGetNetworkProxy))
 	// Cloud node provisioning: same AbilityRoot boundary as every other
 	// node route above, a provider credential and the ability to spin up
 	// a VM are at least as sensitive as a join token.

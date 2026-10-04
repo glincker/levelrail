@@ -55,7 +55,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 63 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 65 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -130,6 +130,8 @@ Endpoints for:
 | DELETE | /api/v1/settings/push-subscriptions/{id} | Session | handleDeletePushSubscription |
 | GET | /api/v1/settings/observability | AbilityRead | handleGetObservabilitySettings |
 | PUT | /api/v1/settings/observability | AbilityRoot | handleUpdateObservabilitySettings |
+| POST | /api/v1/auth/session-links | AbilityRoot | handleMintSessionLink |
+| GET | /api/v1/auth/session-links/{token}/consume | Public | handleConsumeSessionLink |
 
 :::
 
@@ -869,6 +871,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/changelog | AbilityRead | handleGetChangelog |
 | GET | /api/v1/templates/custom | AbilityRead | handleListCustomTemplates |
 | DELETE | /api/v1/templates/custom/{id} | AbilityWrite | handleDeleteCustomTemplate |
+| GET | /api/v1/network/proxy | AbilityRead | handleGetNetworkProxy |
 
 ## See also
 

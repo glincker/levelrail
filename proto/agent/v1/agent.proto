@@ -229,6 +229,8 @@ message AgentRequest {
     // the way down, and there is no field for one on the way back).
     ApplyMeshRequest apply_mesh = 18;
     RotateMeshKeyRequest rotate_mesh_key = 19;
+    NetworkConnectRequest network_connect = 20;
+    NetworkDisconnectRequest network_disconnect = 21;
   }
 }
 
@@ -440,6 +442,17 @@ message EnsureNetworkResponse {
 
 message RemoveNetworkRequest {
   string name = 1;
+}
+
+message NetworkConnectRequest {
+  string network = 1;
+  string container_id = 2;
+}
+
+message NetworkDisconnectRequest {
+  string network = 1;
+  string container_id = 2;
+  bool force = 3;
 }
 
 message ListNetworksByPrefixRequest {

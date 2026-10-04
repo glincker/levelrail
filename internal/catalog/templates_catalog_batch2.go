@@ -10,108 +10,6 @@ package catalog
 // subset models).
 var catalogBatch2Templates = []Template{
 	{
-		ID:                     "phpmyadmin",
-		Name:                   "phpMyAdmin",
-		Slogan:                 "A web-based admin UI for MySQL and MariaDB: browse, query, import, and export databases.",
-		Category:               "Database Tools",
-		DocumentationURL:       "https://docs.phpmyadmin.net/",
-		RecommendedMemoryBytes: 268435456, // 256Mi
-		// Only published under a rolling :latest tag upstream; this
-		// platform has no fixed host to pre-fill, so PMA_ARBITRARY lets an
-		// operator point it at any reachable MySQL/MariaDB server from the
-		// login screen instead of baking one connection in.
-		Compose: `services:
-  phpmyadmin:
-    image: lscr.io/linuxserver/phpmyadmin:latest
-    ports: ["8080:80"]
-    environment:
-      PUID: "1000"
-      PGID: "1000"
-      PMA_ARBITRARY: "1"
-    volumes:
-      - phpmyadmin_config:/config
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:80"]
-      interval: 10s
-      timeout: 5s
-      retries: 15
-      start_period: 15s
-`,
-	},
-	{ //nolint:gosec // MOSQUITTO_USERNAME/PASSWORD below are compose magic-var tokens, not real credentials
-		ID:                     "mosquitto",
-		Name:                   "Eclipse Mosquitto",
-		Slogan:                 "An MQTT broker for IoT and home-automation messaging, with password auth generated at first boot.",
-		Category:               "IoT",
-		DocumentationURL:       "https://mosquitto.org/documentation/",
-		RecommendedMemoryBytes: 134217728, // 128Mi
-		// Upstream's own template bind-mounts ./mosquitto/config and
-		// writes mosquitto.conf there from a command: string; this uses a
-		// named volume instead and generates the same conf and a
-		// password file inside it at container start, the same pattern
-		// templates_devtools_batch.go's docker-registry-auth entry uses
-		// for its htpasswd file.
-		Compose: `services:
-  mosquitto:
-    image: eclipse-mosquitto:2.0.18
-    ports: ["1883:1883"]
-    environment:
-      MOSQUITTO_USERNAME: $SERVICE_USER_MOSQUITTO
-      MOSQUITTO_PASSWORD: $SERVICE_PASSWORD_MOSQUITTO
-    volumes:
-      - mosquitto_config:/mosquitto/config
-      - mosquitto_data:/mosquitto/data
-    command: ["/bin/sh", "-c", "mkdir -p /mosquitto/config && printf 'listener 1883\nallow_anonymous false\npassword_file /mosquitto/config/passwords\n' > /mosquitto/config/mosquitto.conf && touch /mosquitto/config/passwords && mosquitto_passwd -b /mosquitto/config/passwords \"$MOSQUITTO_USERNAME\" \"$MOSQUITTO_PASSWORD\" && exec mosquitto -c /mosquitto/config/mosquitto.conf"]
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 1883 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-`,
-	},
-	{
-		ID:                     "whoogle",
-		Name:                   "Whoogle Search",
-		Slogan:                 "A privacy-respecting search frontend for Google results, with no tracking, ads, or JavaScript required.",
-		Category:               "Applications",
-		DocumentationURL:       "https://github.com/benbusby/whoogle-search",
-		RecommendedMemoryBytes: 268435456, // 256Mi
-		Compose: `services:
-  whoogle:
-    image: benbusby/whoogle-search:latest
-    ports: ["5000:5000"]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:5000"]
-      interval: 10s
-      timeout: 5s
-      retries: 15
-      start_period: 15s
-`,
-	},
-	{
-		ID:                     "pairdrop",
-		Name:                   "PairDrop",
-		Slogan:                 "A browser-based, cross-platform AirDrop alternative for sending files between devices on the same network.",
-		Category:               "Productivity",
-		DocumentationURL:       "https://github.com/schlagmichdoch/PairDrop",
-		RecommendedMemoryBytes: 134217728, // 128Mi
-		Compose: `services:
-  pairdrop:
-    image: lscr.io/linuxserver/pairdrop:latest
-    ports: ["3000:3000"]
-    environment:
-      PUID: "1000"
-      PGID: "1000"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000"]
-      interval: 10s
-      timeout: 5s
-      retries: 15
-      start_period: 15s
-`,
-	},
-	{
 		ID:                     "babybuddy",
 		Name:                   "Baby Buddy",
 		Slogan:                 "Track sleep, feeding, diaper changes, and growth for a baby or toddler, with charts and timers.",
@@ -535,29 +433,6 @@ var catalogBatch2Templates = []Template{
       interval: 5s
       timeout: 10s
       retries: 10
-`,
-	},
-	{
-		ID:                     "cockpit-cms",
-		Name:                   "Cockpit",
-		Slogan:                 "A lightweight headless content management platform with a flexible content modeler and a REST/GraphQL API.",
-		Category:               "Developer Tools",
-		DocumentationURL:       "https://getcockpit.com/documentation",
-		RecommendedMemoryBytes: 268435456, // 256Mi
-		Compose: `services:
-  cockpit:
-    image: cockpithq/cockpit:core-latest
-    ports: ["8080:80"]
-    volumes:
-      - cockpit_config:/var/www/html/config
-      - cockpit_spaces:/var/www/html/.spaces
-      - cockpit_storage:/var/www/html/storage
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/api/system/healthcheck"]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 20s
 `,
 	},
 	{ //nolint:gosec // TOKEN below is a compose magic-var token, not a real credential

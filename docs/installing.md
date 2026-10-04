@@ -78,6 +78,8 @@ sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
 
 The dashboard shows a "connection is not encrypted" banner until you point a domain at the server (Domains page, primary domain plus ACME) and set an `https://` **dashboard URL**. After that, sign-in over plain HTTP is refused. To recover if the https URL breaks, add `APP_ALLOW_INSECURE_LOGIN=true` with `sudo systemctl edit levelrail` (`[Service]` then `Environment=APP_ALLOW_INSECURE_LOGIN=true`) and restart.
 
+**Pick a dashboard-only subdomain, not an app's own domain.** Use something like `console.example.com` or `panel.example.com` for the primary domain, the same convention CapRover uses for its own panel (`captain.<domain>`). Reusing a domain an app already serves breaks whichever one loses the conflict, silently, with no warning. See [Domains and ingress](domains-and-ingress.md#the-dashboards-own-domain) for why this matters.
+
 To skip the setup token and create the admin non-interactively, set `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` in the unit (again via `systemctl edit levelrail`) before the first start.
 
 AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel are hidden until you opt in with `APP_EXPERIMENTAL`, see [experimental features](experimental-features.md).
@@ -169,9 +171,9 @@ Both are published for `linux/amd64` and `linux/arm64`, multi-arch, under three 
 | --- | --- | --- |
 | `:latest`, `:vX.Y`, `:vX.Y.Z` | a non-prerelease tag (`v1.2.3`) | stable release |
 | `:beta` | a prerelease tag (`v1.2.3-beta.1`, `-rc.1`, etc.) | prerelease |
-| `:edge` | every push to `main` | unreleased, use for testing only |
+| `:edge` | manual dispatch of the Release workflow against `main` | unreleased, use for testing only |
 
-`:latest` and `:vX.Y` only ever move on a stable tag; `:beta` and `:edge` move continuously, so pin an exact `:vX.Y.Z` tag for anything you care about staying still.
+`:latest` and `:vX.Y` only ever move on a stable tag; `:beta` moves on every prerelease tag. `:edge` only moves when someone manually triggers a build against `main`, not on every push, so it stays still between those. Pin an exact `:vX.Y.Z` tag for anything you care about staying still regardless.
 
 ::: warning No stable release yet
 No non-prerelease tag has shipped as of this writing, so `:latest` currently

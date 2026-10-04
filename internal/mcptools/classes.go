@@ -111,6 +111,7 @@ var toolTable = map[string]Meta{
 	"deploy_app":                            {clsM, "deploys", outb},
 	"deploy_compose":                        {clsM, "deploys", outb},
 	"rollback_app":                          {clsD, "deploys", 0},
+	"rollback_app_to_deploy":                {clsD, "deploys", 0},
 	"cancel_deploy":                         {clsD, "deploys", 0},
 	"restart_app":                           {clsM, "apps", 0},
 	"clone_app":                             {clsM, "apps", 0},

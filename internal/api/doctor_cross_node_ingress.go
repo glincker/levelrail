@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // doctorCheckCrossNodeIngress flags every app whose domain(s) can never be
@@ -50,6 +53,29 @@ func (rt *Router) doctorCheckCrossNodeIngress(ctx context.Context) []doctorCheck
 		})
 	}
 	return out
+}
+
+// crossNodeIngressAppCondition is doctorCheckCrossNodeIngress's gap,
+// surfaced on the app's own status instead of only the system-wide
+// doctor report: the ingress controller reports CrossNodeIngress under
+// its own singleton controller name (internal/reconcile/ingress/
+// cross_node.go), never under this app's own controller, so
+// summarizeAppConditions never sees it and shows "Healthy" for an app
+// whose domain is provably unreachable. Returns nil when the app has no
+// domain or is on the local node.
+func (rt *Router) crossNodeIngressAppCondition(svc store.DesiredService) *reconcile.Condition {
+	if len(svc.Domains) == 0 || rt.isLocalNode(svc.NodeID) {
+		return nil
+	}
+	return &reconcile.Condition{
+		Type:   "CrossNodeIngress",
+		Status: reconcile.ConditionFalse,
+		Reason: "NoMeshIngressPath",
+		Message: fmt.Sprintf(
+			"domain(s) %s cannot receive traffic: this control plane's ingress only routes to its own node, and %q is placed on a different node with no mesh path to it yet. See docs/multi-node.md#wireguard-mesh-and-internal-dns.",
+			strings.Join(svc.Domains, ", "), svc.Name,
+		),
+	}
 }
 
 // doctorNodeNames maps node ID to display name; a lookup failure degrades

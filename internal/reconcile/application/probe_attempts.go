@@ -8,7 +8,7 @@ import (
 )
 
 // ProbeAttemptRecorder persists individual readiness-probe attempts made
-// during a deploy's cutover (migrations/0280_probe_attempts.sql), the
+// during a deploy's cutover (migrations/0282_probe_attempts.sql), the
 // per-attempt detail (status code, latency) a reconcile condition's own
 // single Reason/Message summary never captures. *store.DB satisfies
 // this structurally.

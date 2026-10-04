@@ -1599,6 +1599,18 @@ func (c *Client) GetSession(ctx context.Context) (SessionInfoResource, error) {
 	return out, err
 }
 
+// MintSessionLink calls POST /api/v1/auth/session-links using this
+// Client's bearer token, which must hold AbilityRoot: minting a session
+// link is root-equivalent since redeeming it establishes a session with
+// the minting caller's own abilities. The returned token is a one-time
+// secret, the same contract CreateNodeJoinToken's own doc comment
+// describes.
+func (c *Client) MintSessionLink(ctx context.Context) (SessionLinkResource, error) {
+	var out SessionLinkResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/auth/session-links", nil, &out)
+	return out, err
+}
+
 // SetSecret calls PUT /api/v1/apps/{name}/secrets/{key}. No response
 // body beyond the status (internal/api/secrets.go's handleSetSecret
 // returns 204 on success), matching that handler's own doc comment on

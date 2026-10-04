@@ -10,11 +10,13 @@ import (
 
 func TestToWebAuthnCredential_RoundTrip(t *testing.T) {
 	c := Credential{
-		CredentialID: []byte("cred-id"),
-		PublicKey:    []byte("public-key-bytes"),
-		SignCount:    42,
-		AAGUID:       []byte("aaguid-bytes"),
-		Transports:   []string{"usb", "internal"},
+		CredentialID:   []byte("cred-id"),
+		PublicKey:      []byte("public-key-bytes"),
+		SignCount:      42,
+		AAGUID:         []byte("aaguid-bytes"),
+		Transports:     []string{"usb", "internal"},
+		BackupEligible: true,
+		BackupState:    true,
 	}
 	wc := ToWebAuthnCredential(c)
 	if string(wc.ID) != string(c.CredentialID) {
@@ -29,6 +31,21 @@ func TestToWebAuthnCredential_RoundTrip(t *testing.T) {
 	if len(wc.Transport) != 2 || wc.Transport[0] != protocol.AuthenticatorTransport("usb") {
 		t.Errorf("Transport = %v, want [usb internal]", wc.Transport)
 	}
+	// This is the login bug's exact regression: FinishLogin hard-rejects
+	// a login whose BE flag disagrees with the stored credential's, so a
+	// synced/hybrid passkey (BE true) must round-trip as true, not the
+	// zero-value false a lost flag would silently fall back to.
+	if !wc.Flags.BackupEligible || !wc.Flags.BackupState {
+		t.Errorf("Flags = %+v, want BackupEligible and BackupState both true", wc.Flags)
+	}
+}
+
+func TestToWebAuthnCredential_BackupEligibleFalse(t *testing.T) {
+	c := Credential{CredentialID: []byte("cred-id"), BackupEligible: false, BackupState: false}
+	wc := ToWebAuthnCredential(c)
+	if wc.Flags.BackupEligible || wc.Flags.BackupState {
+		t.Errorf("Flags = %+v, want BackupEligible and BackupState both false", wc.Flags)
+	}
 }
 
 func TestFromWebAuthnCredential_RoundTrip(t *testing.T) {
@@ -37,6 +54,7 @@ func TestFromWebAuthnCredential_RoundTrip(t *testing.T) {
 		ID:        []byte("cred-id"),
 		PublicKey: []byte("public-key-bytes"),
 		Transport: []protocol.AuthenticatorTransport{protocol.USB, protocol.Internal},
+		Flags:     webauthn.CredentialFlags{BackupEligible: true, BackupState: true},
 		Authenticator: webauthn.Authenticator{
 			AAGUID:    []byte("aaguid-bytes"),
 			SignCount: 9,
@@ -57,6 +75,12 @@ func TestFromWebAuthnCredential_RoundTrip(t *testing.T) {
 	}
 	if !c.CreatedAt.Equal(now) {
 		t.Errorf("CreatedAt = %v, want %v", c.CreatedAt, now)
+	}
+	// The registration ceremony's own BE/BS flags must survive into the
+	// row that gets persisted: this is what FinishLogin's consistency
+	// check compares against on every subsequent sign-in.
+	if !c.BackupEligible || !c.BackupState {
+		t.Errorf("c.BackupEligible/BackupState = %v/%v, want true/true", c.BackupEligible, c.BackupState)
 	}
 }
 

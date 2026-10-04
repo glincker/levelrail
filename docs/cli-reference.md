@@ -12,6 +12,8 @@ Exhaustive reference of all Levelrail CLI commands, organized by command group a
 - [Feature Catalog](feature-catalog.md) - Complete feature overview
 - [App Spec Reference](app-spec-reference.md) - YAML configuration syntax
 
+<InlineToc default-open />
+
 ## Scripting: `--json` and exit codes
 
 Every command that returns data or a result supports `--json` (shorthand for `--output json`), and `--query` takes a JMESPath expression. With `--json`, stdout carries only the JSON result. The exceptions are `completion bash|zsh|fish` (a shell script) and `control-plane-backups help-dr` (a static runbook). A test walks the command tree and fails when a new command has no `--json` and is not on that exempt list.

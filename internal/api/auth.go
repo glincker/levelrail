@@ -36,9 +36,20 @@ const defaultSessionTTL = 24 * time.Hour
 // session is one logged-in session, identified by the real user it
 // belongs to. Multiple distinct users can each hold any number of live
 // sessions; every session grants the same access (see requireAbility).
+//
+// principalType, pinnedAbilities and pinnedDisplayName exist only for a
+// session minted from an API token via a session link (createPinned):
+// an API token has no users row to attach a session to, so its
+// abilities/display name are snapshotted at mint time instead of
+// resolved live the way a normal user session's are. Left zero-valued
+// (principalType == "") for every ordinary login session, which keeps
+// create/lookup/get's existing behavior unchanged.
 type session struct {
-	userID    string
-	expiresAt time.Time
+	userID            string
+	expiresAt         time.Time
+	principalType     string
+	pinnedAbilities   []string
+	pinnedDisplayName string
 }
 
 // sessionStore is a server-side, in-memory session table: the cookie
@@ -71,6 +82,35 @@ func (s *sessionStore) create(userID string) (string, error) {
 	return token, nil
 }
 
+// createPinned is create's counterpart for a session minted from an API
+// token (consumeSessionLink's token-principal branch): principalID
+// names the originating token, not a users row, so abilities/displayName
+// are carried on the session itself rather than resolved from a user
+// record on every request.
+func (s *sessionStore) createPinned(principalID string, abilities []string, displayName string) (string, error) {
+	token, err := randomToken()
+	if err != nil {
+		return "", fmt.Errorf("api: generate session token: %w", err)
+	}
+	s.mu.Lock()
+	s.sessions[token] = session{
+		userID:            principalID,
+		principalType:     store.PrincipalTypeToken,
+		pinnedAbilities:   abilities,
+		pinnedDisplayName: displayName,
+		expiresAt:         time.Now().Add(s.ttl),
+	}
+	s.mu.Unlock()
+	return token, nil
+}
+
+// lookup resolves token to the real user ID it authenticates as. Only
+// ever true for an ordinary user session: a pinned session (see
+// createPinned) has no real user row, so every caller built on lookup
+// (requireAuth, currentSessionUserID, and everything downstream of
+// those) correctly treats it as "not signed in" rather than passing
+// along a userID that doesn't resolve to anything. requireAbilityDecided
+// recognizes a pinned session through getPinned instead.
 func (s *sessionStore) lookup(token string) (string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -82,12 +122,16 @@ func (s *sessionStore) lookup(token string) (string, bool) {
 		delete(s.sessions, token)
 		return "", false
 	}
+	if sess.principalType == store.PrincipalTypeToken {
+		return "", false
+	}
 	return sess.userID, true
 }
 
 // get returns the full session record for token, used where a caller
 // needs more than lookup's user ID (e.g. handleGetSession also wants
-// expiresAt). Same liveness/expiry handling as lookup.
+// expiresAt). Same liveness/expiry handling as lookup, and the same
+// "a pinned session isn't a real user session" filtering.
 func (s *sessionStore) get(token string) (session, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -97,6 +141,31 @@ func (s *sessionStore) get(token string) (session, bool) {
 	}
 	if time.Now().After(sess.expiresAt) {
 		delete(s.sessions, token)
+		return session{}, false
+	}
+	if sess.principalType == store.PrincipalTypeToken {
+		return session{}, false
+	}
+	return sess, true
+}
+
+// getPinned is lookup/get's counterpart for a session minted from an API
+// token (createPinned): returns ok only for that kind of session, the
+// mirror image of lookup/get's own filtering, so requireAbilityDecided
+// can resolve either kind from the same cookie without the two paths
+// overlapping.
+func (s *sessionStore) getPinned(token string) (session, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	sess, ok := s.sessions[token]
+	if !ok {
+		return session{}, false
+	}
+	if time.Now().After(sess.expiresAt) {
+		delete(s.sessions, token)
+		return session{}, false
+	}
+	if sess.principalType != store.PrincipalTypeToken {
 		return session{}, false
 	}
 	return sess, true
@@ -372,6 +441,35 @@ func (rt *Router) requireAbilityForResource(required string, resourceFn func(*ht
 // ability check below) the same as it records any other status.
 func (rt *Router) requireAbilityDecided(required string, decide authzDecision, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if pinned, ok := rt.currentPinnedSession(r); ok {
+			if rt.apiRateLimit != nil {
+				if allowed, retryAfter := rt.apiRateLimit.allow(required, "session:"+pinned.userID); !allowed {
+					writeRateLimited(w, retryAfter)
+					return
+				}
+			}
+			gated := func(w http.ResponseWriter, r *http.Request) {
+				allowed, err := decide(r.Context(), store.PrincipalTypeToken, pinned.userID, pinned.pinnedAbilities)
+				if err != nil {
+					rt.logger.Error("api: pinned session ability decision failed", slog.String("error", err.Error()))
+					writeError(w, http.StatusInternalServerError, "internal error")
+					return
+				}
+				if !allowed {
+					writeError(w, http.StatusForbidden, "this session link lacks the required ability")
+					return
+				}
+				next(w, r)
+			}
+			// actorType "token", not "session": a pinned session's real
+			// identity is the API token it was minted from, and
+			// auditActorName only trusts the passed-in name for that
+			// actorType, using pinnedDisplayName instead of re-resolving a
+			// (nonexistent) user record.
+			rt.callAudited(w, r, required, "token", pinned.userID, pinned.pinnedDisplayName, gated)
+			return
+		}
+
 		if userID, ok := rt.currentSessionUserID(r); ok {
 			if rt.apiRateLimit != nil {
 				if allowed, retryAfter := rt.apiRateLimit.allow(required, "session:"+userID); !allowed {
@@ -498,6 +596,9 @@ func (rt *Router) callAudited(w http.ResponseWriter, r *http.Request, required, 
 // session user lacking ability, all resolve to false: this gates
 // something tighter than the route itself, so it must never fail open.
 func (rt *Router) callerHasAbility(r *http.Request, ability string) bool {
+	if pinned, ok := rt.currentPinnedSession(r); ok {
+		return hasAbility(pinned.pinnedAbilities, ability)
+	}
 	if userID, ok := rt.currentSessionUserID(r); ok {
 		user, err := rt.auth.GetUserByID(r.Context(), userID)
 		if err != nil {
@@ -522,6 +623,9 @@ func (rt *Router) callerHasAbility(r *http.Request, ability string) bool {
 // callerPrincipal resolves the requesting principal's type, ID and abilities
 // for IAM policy filtering inside a list handler.
 func (rt *Router) callerPrincipal(r *http.Request) (principalType, principalID string, abilities []string, err error) {
+	if pinned, ok := rt.currentPinnedSession(r); ok {
+		return store.PrincipalTypeToken, pinned.userID, pinned.pinnedAbilities, nil
+	}
 	if userID, ok := rt.currentSessionUserID(r); ok {
 		user, err := rt.auth.GetUserByID(r.Context(), userID)
 		if err != nil {
@@ -561,6 +665,19 @@ func (rt *Router) currentSessionUserID(r *http.Request) (userID string, ok bool)
 	return userID, ok
 }
 
+// currentPinnedSession resolves r's session cookie to a pinned
+// (token-principal) session, if any, the requireAbilityDecided
+// counterpart to currentSessionUserID: the two never both return ok for
+// the same cookie, since sessionStore.lookup and sessionStore.getPinned
+// filter for opposite principalType values.
+func (rt *Router) currentPinnedSession(r *http.Request) (session, bool) {
+	c, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return session{}, false
+	}
+	return rt.sessions.getPinned(c.Value)
+}
+
 // callerAbilities resolves the requesting principal's own resolved
 // abilities: a session's user.Abilities, or a bearer token's stored
 // abilities. Handlers that hand out access to someone else (e.g.
@@ -568,6 +685,9 @@ func (rt *Router) currentSessionUserID(r *http.Request) (userID string, ok bool)
 // hold themselves. Only meaningful behind requireAbility, which already
 // verified the request is authenticated one way or the other.
 func (rt *Router) callerAbilities(r *http.Request) ([]string, error) {
+	if pinned, ok := rt.currentPinnedSession(r); ok {
+		return pinned.pinnedAbilities, nil
+	}
 	if userID, ok := rt.currentSessionUserID(r); ok {
 		user, err := rt.auth.GetUserByID(r.Context(), userID)
 		if err != nil {

@@ -18,7 +18,7 @@
 # or changed count toward the percentage.
 #
 # Usage: scripts/check-changed-file-coverage.sh <profile> <base-ref> <path-prefix> <threshold-percent>
-# Example: scripts/check-changed-file-coverage.sh coverage.out origin/main internal/ 70
+# Example: scripts/check-changed-file-coverage.sh coverage.out origin/main internal/ 50
 #
 # base-ref must already be fetched (a plain ref/SHA, not a remote name
 # to fetch); the caller is responsible for `git fetch` before invoking

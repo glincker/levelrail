@@ -55,6 +55,42 @@ func TestSavePasskeyCredential_ThenListForUser(t *testing.T) {
 	}
 }
 
+// TestSavePasskeyCredential_BackupFlagsRoundTrip guards the actual
+// login bug: a lost BackupEligible flag silently fell back to false,
+// and webauthn.WebAuthn.FinishLogin hard-rejects any login whose BE
+// flag disagrees with the stored value, so every synced/hybrid passkey
+// failed to sign in.
+func TestSavePasskeyCredential_BackupFlagsRoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	userID := seedUserForPasskeys(t, db, "user_1", "a@example.com")
+
+	c := PasskeyCredential{
+		ID:             "pk_1",
+		UserID:         userID,
+		CredentialID:   "cred-id-1",
+		PublicKey:      []byte{1},
+		Label:          "Synced passkey",
+		BackupEligible: true,
+		BackupState:    true,
+		CreatedAt:      time.Now().UTC(),
+	}
+	if err := db.SavePasskeyCredential(ctx, c); err != nil {
+		t.Fatalf("SavePasskeyCredential() error = %v", err)
+	}
+
+	rows, err := db.ListPasskeyCredentialsForUser(ctx, userID)
+	if err != nil {
+		t.Fatalf("ListPasskeyCredentialsForUser() error = %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("len(rows) = %d, want 1", len(rows))
+	}
+	if !rows[0].BackupEligible || !rows[0].BackupState {
+		t.Errorf("BackupEligible/BackupState = %v/%v, want true/true", rows[0].BackupEligible, rows[0].BackupState)
+	}
+}
+
 func TestSavePasskeyCredential_DuplicateCredentialIDRejected(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

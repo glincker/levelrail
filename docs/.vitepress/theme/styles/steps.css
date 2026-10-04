@@ -1,0 +1,60 @@
+/* Steps.vue / Step.vue: numbered flow for ordered procedures, replacing
+   plain "1. 2. 3." prose. Ported from fumadocs' .fd-steps/.fd-step CSS
+   counter pattern (packages/radix-ui/css/lib/base.css), onto glinui tokens. */
+
+.vp-steps {
+  counter-reset: vp-step;
+  margin: 24px 0;
+  padding-left: 40px;
+  border-left: 2px solid var(--glinui-glass-border-strong);
+}
+
+.vp-step {
+  position: relative;
+  counter-increment: vp-step;
+  padding-bottom: 28px;
+}
+
+.vp-step:last-child {
+  padding-bottom: 0;
+}
+
+.vp-step::before {
+  content: counter(vp-step);
+  position: absolute;
+  left: -54px;
+  top: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--glinui-radius-full);
+  background: var(--glinui-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--glinui-font-sans);
+}
+
+.vp-step__title {
+  margin: 0 0 6px;
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--vp-c-text-1);
+}
+
+.vp-step__body {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--vp-c-text-2);
+}
+
+.vp-step__body > :first-child {
+  margin-top: 0;
+}
+
+.vp-step__body > :last-child {
+  margin-bottom: 0;
+}

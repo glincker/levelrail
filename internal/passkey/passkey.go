@@ -30,8 +30,14 @@ type Credential struct {
 	AAGUID       []byte
 	Transports   []string
 	Label        string
-	CreatedAt    time.Time
-	LastUsedAt   *time.Time
+	// BackupEligible and BackupState are the authenticator's BE/BS flags
+	// at registration. webauthn.WebAuthn.FinishLogin hard-rejects a login
+	// whose BE flag disagrees with the stored credential's, so these
+	// must round-trip through storage rather than default to false.
+	BackupEligible bool
+	BackupState    bool
+	CreatedAt      time.Time
+	LastUsedAt     *time.Time
 }
 
 // User adapts an account and its stored credentials to webauthn.User.
@@ -76,6 +82,10 @@ func ToWebAuthnCredential(c Credential) webauthn.Credential {
 		ID:        c.CredentialID,
 		PublicKey: c.PublicKey,
 		Transport: transports,
+		Flags: webauthn.CredentialFlags{
+			BackupEligible: c.BackupEligible,
+			BackupState:    c.BackupState,
+		},
 		Authenticator: webauthn.Authenticator{
 			AAGUID:    c.AAGUID,
 			SignCount: c.SignCount,
@@ -93,15 +103,17 @@ func FromWebAuthnCredential(id, userID, label string, wc *webauthn.Credential, n
 		transports[i] = string(t)
 	}
 	return Credential{
-		ID:           id,
-		UserID:       userID,
-		CredentialID: wc.ID,
-		PublicKey:    wc.PublicKey,
-		SignCount:    wc.Authenticator.SignCount,
-		AAGUID:       wc.Authenticator.AAGUID,
-		Transports:   transports,
-		Label:        label,
-		CreatedAt:    now,
+		ID:             id,
+		UserID:         userID,
+		CredentialID:   wc.ID,
+		PublicKey:      wc.PublicKey,
+		SignCount:      wc.Authenticator.SignCount,
+		AAGUID:         wc.Authenticator.AAGUID,
+		Transports:     transports,
+		Label:          label,
+		BackupEligible: wc.Flags.BackupEligible,
+		BackupState:    wc.Flags.BackupState,
+		CreatedAt:      now,
 	}
 }
 

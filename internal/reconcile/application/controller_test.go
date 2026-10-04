@@ -115,6 +115,11 @@ type fakeRuntime struct {
 	removeNetworkErr   error
 	removedNetworks    []string
 	callOrder          []string
+	// connections tracks NetworkConnect calls as "<network>:<containerID>"
+	// strings, for the database-network-bridging tests to assert against
+	// without needing a full map[string][]string shape.
+	connections       []string
+	networkConnectErr error
 	// networkLabels, keyed the same as networks, backs
 	// ListNetworksByPrefix's own NetworkInfo.Labels: absent means no
 	// labels at all (a network this fake never explicitly labeled), the
@@ -393,6 +398,29 @@ func (f *fakeRuntime) RemoveNetwork(_ context.Context, name string) error {
 	}
 	delete(f.networks, name)
 	f.removedNetworks = append(f.removedNetworks, name)
+	return nil
+}
+
+func (f *fakeRuntime) NetworkConnect(_ context.Context, network, containerID string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.networkConnectErr != nil {
+		return f.networkConnectErr
+	}
+	f.connections = append(f.connections, network+":"+containerID)
+	return nil
+}
+
+func (f *fakeRuntime) NetworkDisconnect(_ context.Context, network, containerID string, _ bool) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	want := network + ":" + containerID
+	for i, c := range f.connections {
+		if c == want {
+			f.connections = append(f.connections[:i], f.connections[i+1:]...)
+			break
+		}
+	}
 	return nil
 }
 

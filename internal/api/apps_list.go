@@ -121,9 +121,13 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	for _, s := range svcs {
 		resource := toAppResource(s)
 		resource.Tags = tagNamesFromStoreTags(tagsByApp[s.Name])
+		conditions := conditionsByController[applicationControllerName(s.Name)]
+		if cond := rt.crossNodeIngressAppCondition(s); cond != nil {
+			conditions = append(conditions, *cond)
+		}
 		out = append(out, appListResource{
 			appResource:     resource,
-			Status:          summarizeAppConditions(conditionsByController[applicationControllerName(s.Name)]),
+			Status:          summarizeAppConditions(conditions),
 			EnvironmentName: envNames[s.EnvironmentID],
 		})
 	}
@@ -171,8 +175,8 @@ type appsSummaryResource struct {
 }
 
 // handleAppsSummary handles GET /api/v1/apps-summary: status counts over
-// the same filters as the list, from names plus one batched conditions
-// query, never loading service graphs.
+// the same filters as the list, needing NodeID/Domains per app (to detect
+// crossNodeIngressAppCondition) plus one batched conditions query.
 func (rt *Router) handleAppsSummary(w http.ResponseWriter, r *http.Request) {
 	fs, ok := rt.apps.(appFilterStore)
 	if !ok {
@@ -186,17 +190,17 @@ func (rt *Router) handleAppsSummary(w http.ResponseWriter, r *http.Request) {
 	}
 	f := parseAppListFilter(r)
 	f.Limit, f.Offset = 0, 0
-	names, err := fs.ListAppNamesFiltered(r.Context(), f)
+	svcs, _, err := fs.ListDesiredServicesFiltered(r.Context(), f)
 	if err != nil {
 		rt.internalError(w, "api: apps summary failed", err)
 		return
 	}
-	controllers := make([]string, 0, len(names))
-	visible := names[:0:0]
-	for _, n := range names {
-		if canRead(n) {
-			visible = append(visible, n)
-			controllers = append(controllers, applicationControllerName(n))
+	controllers := make([]string, 0, len(svcs))
+	visible := svcs[:0:0]
+	for _, s := range svcs {
+		if canRead(s.Name) {
+			visible = append(visible, s)
+			controllers = append(controllers, applicationControllerName(s.Name))
 		}
 	}
 	conds, err := rt.deploys.GetConditionsForControllers(r.Context(), controllers)
@@ -205,8 +209,12 @@ func (rt *Router) handleAppsSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sum := appsSummaryResource{Total: len(visible)}
-	for _, n := range visible {
-		switch summarizeAppConditions(conds[applicationControllerName(n)]).Label {
+	for _, s := range visible {
+		conditions := conds[applicationControllerName(s.Name)]
+		if cond := rt.crossNodeIngressAppCondition(s); cond != nil {
+			conditions = append(conditions, *cond)
+		}
+		switch summarizeAppConditions(conditions).Label {
 		case "Healthy":
 			sum.Running++
 		case "Attention needed":

@@ -910,6 +910,16 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		if err := c.verifyRunningReady(ctx, state, desired); err != nil {
 			return replicaOutcome{reason: readinessReason(err, "RunningNotReady")}, err
 		}
+		// Re-ensured every steady-state pass, not just at create/restart:
+		// a referenced database can start existing (or come back after
+		// `docker network disconnect`) after this container already
+		// converged, and there is no event that would otherwise trigger
+		// a reconcile here.
+		if desired.AppID != "" {
+			if err := c.connectReferencedDatabases(ctx, desired, NetworkName(c.networkPrefix, desired.AppID)); err != nil {
+				return replicaOutcome{reason: "DatabaseNetworkConnectFailed"}, err
+			}
+		}
 		return c.confirmedOutcome(ctx, target, state, desired, false)
 	}
 
@@ -993,6 +1003,40 @@ func readinessReason(err error, fallback string) string {
 	return fallback
 }
 
+// connectReferencedDatabases bridges every database desired references
+// onto networkName, since a database container otherwise sits on
+// Docker's default bridge with no route to this service's own network.
+// Skipped once a mesh zone is configured (routed DNS instead, see
+// DatabaseHost) and for a database whose container doesn't exist yet
+// (next reconcile pass retries); safe to call every pass since
+// NetworkConnect is idempotent.
+func (c *Controller) connectReferencedDatabases(ctx context.Context, desired *store.DesiredService, networkName string) error {
+	if c.meshZone != "" {
+		return nil
+	}
+	names := make(map[string]bool, len(desired.DatabaseEnv)+1)
+	for _, ref := range desired.DatabaseEnv {
+		names[ref.Database] = true
+	}
+	if att := desired.DatabaseAttachment; att != nil {
+		names[att.DatabaseName] = true
+	}
+	for dbName := range names {
+		containerName := database.ContainerName(dbName)
+		state, err := c.runtime.InspectByName(ctx, containerName)
+		if err != nil {
+			return fmt.Errorf("inspect database %q before network connect: %w", dbName, err)
+		}
+		if state == nil {
+			continue
+		}
+		if err := c.runtime.NetworkConnect(ctx, networkName, containerName); err != nil {
+			return fmt.Errorf("connect database %q to network %q: %w", dbName, networkName, err)
+		}
+	}
+	return nil
+}
+
 // ensureAppNetwork makes sure desired.AppID's per-app Docker network
 // exists, a no-op for a service with no AppID. Called from both
 // createAndStart and ensureReplicaRunning's restart path: EnsureNetwork
@@ -1049,6 +1093,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	}
 	if desired.AppID != "" {
 		spec.Network = &docker.NetworkAttachment{Name: NetworkName(c.networkPrefix, desired.AppID), Alias: serviceAlias(desired)}
+		if err := c.connectReferencedDatabases(ctx, desired, NetworkName(c.networkPrefix, desired.AppID)); err != nil {
+			return err
+		}
 	}
 
 	id, err := c.runtime.Create(ctx, spec)

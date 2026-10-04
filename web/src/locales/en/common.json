@@ -17,5 +17,10 @@
   },
   "logs": {
     "previousContainerEnded": "Previous container instance ended"
+  },
+  "sessionLink": {
+    "signingIn": "Signing you in...",
+    "invalid": "This sign-in link is invalid or has expired. Request a new one.",
+    "backToSignIn": "Back to sign in"
   }
 }
