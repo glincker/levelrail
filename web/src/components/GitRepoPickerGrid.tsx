@@ -18,12 +18,12 @@ function GitRepoCard({
   selected,
   runningAs,
   onSelect,
-}: {
+}: Readonly<{
   option: NormalizedRepoOption
   selected: boolean
   runningAs?: string
   onSelect: () => void
-}) {
+}>) {
   return (
     <button
       type="button"
@@ -73,7 +73,7 @@ export function RepoPickerGrid({
   searchPlaceholder = 'Search repositories...',
   emptyMessage = 'No repositories found.',
   disabled,
-}: {
+}: Readonly<{
   options: NormalizedRepoOption[]
   isLoading: boolean
   isError: boolean
@@ -85,7 +85,7 @@ export function RepoPickerGrid({
   searchPlaceholder?: string
   emptyMessage?: string
   disabled?: boolean
-}) {
+}>) {
   const [search, setSearch] = useState('')
 
   const sorted = useMemo(() => {
@@ -105,6 +105,39 @@ export function RepoPickerGrid({
     : sorted
   const visible = filtered.slice(0, GRID_RESULT_CAP)
 
+  let body: React.ReactNode
+  if (isLoading) {
+    body = (
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="h-16 w-full" />
+        ))}
+      </div>
+    )
+  } else if (isError) {
+    body = <p className="text-sm text-destructive">{errorMessage}</p>
+  } else if (visible.length === 0) {
+    body = (
+      <p className="py-4 text-center text-xs text-muted-foreground">
+        {search ? `No repositories match "${search}".` : emptyMessage}
+      </p>
+    )
+  } else {
+    body = (
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {visible.map((option) => (
+          <GitRepoCard
+            key={option.key}
+            option={option}
+            selected={option.key === selectedKey}
+            runningAs={runningRepoByUrl.get(normalizeRepoUrl(option.cloneUrl))}
+            onSelect={() => onSelect(option)}
+          />
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-2">
       <div className="relative">
@@ -122,33 +155,7 @@ export function RepoPickerGrid({
           className="h-8 pl-8 text-sm"
         />
       </div>
-      {isLoading ? (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-16 w-full" />
-          ))}
-        </div>
-      ) : isError ? (
-        <p className="text-sm text-destructive">{errorMessage}</p>
-      ) : visible.length === 0 ? (
-        <p className="py-4 text-center text-xs text-muted-foreground">
-          {search ? `No repositories match "${search}".` : emptyMessage}
-        </p>
-      ) : (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {visible.map((option) => (
-            <GitRepoCard
-              key={option.key}
-              option={option}
-              selected={option.key === selectedKey}
-              runningAs={runningRepoByUrl.get(
-                normalizeRepoUrl(option.cloneUrl),
-              )}
-              onSelect={() => onSelect(option)}
-            />
-          ))}
-        </div>
-      )}
+      {body}
       {filtered.length > GRID_RESULT_CAP ? (
         <p className="text-xs text-muted-foreground">
           Showing the first {GRID_RESULT_CAP} of {filtered.length} matches.

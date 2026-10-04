@@ -33,7 +33,7 @@ function SimpleProviderRepoBody({
   runningRepoByUrl,
   onRepoSelect,
   onBranchSelect,
-}: {
+}: Readonly<{
   idPrefix: string
   options: NormalizedRepoOption[]
   repoState: { isLoading: boolean; isError: boolean; error: Error | null }
@@ -49,8 +49,8 @@ function SimpleProviderRepoBody({
   runningRepoByUrl: Map<string, string>
   onRepoSelect: (option: NormalizedRepoOption) => void
   onBranchSelect: (branch: string) => void
-}) {
-  const selected = options.find((option) => option.key === selectedRepoKey)
+}>) {
+  const hasSelected = options.some((option) => option.key === selectedRepoKey)
   const branchOptions = useMemo(
     () =>
       (branchState.data ?? []).map((b) => ({ value: b.name, label: b.name })),
@@ -74,7 +74,7 @@ function SimpleProviderRepoBody({
         />
       </Field>
 
-      {selected ? (
+      {hasSelected ? (
         <Field>
           <FieldLabel htmlFor={`${idPrefix}-branch`}>Branch</FieldLabel>
           <Combobox
@@ -137,13 +137,13 @@ function GitHubRepoBranchFields({
   disabled,
   onSelect,
   runningRepoByUrl,
-}: {
+}: Readonly<{
   options: NormalizedRepoOption[]
   repos: { isLoading: boolean; isError: boolean; error: Error | null }
   disabled?: boolean
   onSelect: (value: GitRepoSourceValue) => void
   runningRepoByUrl: Map<string, string>
-}) {
+}>) {
   const [selectedRepoKey, setSelectedRepoKey] = useState('')
   const [selectedBranch, setSelectedBranch] = useState('')
   const selected = options.find((option) => option.key === selectedRepoKey)
@@ -220,13 +220,13 @@ function BitbucketRepoBranchFields({
   disabled,
   onSelect,
   runningRepoByUrl,
-}: {
+}: Readonly<{
   options: NormalizedRepoOption[]
   repos: { isLoading: boolean; isError: boolean; error: Error | null }
   disabled?: boolean
   onSelect: (value: GitRepoSourceValue) => void
   runningRepoByUrl: Map<string, string>
-}) {
+}>) {
   const [selectedRepoKey, setSelectedRepoKey] = useState('')
   const [selectedBranch, setSelectedBranch] = useState('')
   const selected = options.find((option) => option.key === selectedRepoKey)
@@ -304,13 +304,13 @@ function GiteaRepoBranchFields({
   disabled,
   onSelect,
   runningRepoByUrl,
-}: {
+}: Readonly<{
   options: NormalizedRepoOption[]
   repos: { isLoading: boolean; isError: boolean; error: Error | null }
   disabled?: boolean
   onSelect: (value: GitRepoSourceValue) => void
   runningRepoByUrl: Map<string, string>
-}) {
+}>) {
   const [selectedRepoKey, setSelectedRepoKey] = useState('')
   const [selectedBranch, setSelectedBranch] = useState('')
   const selected = options.find((option) => option.key === selectedRepoKey)

@@ -25,10 +25,10 @@ import type { GitRepoSourceValue } from './GitRepoSourcePicker'
 export function NotConnectedPrompt({
   name,
   settingsPath,
-}: {
+}: Readonly<{
   name: string
   settingsPath: string
-}) {
+}>) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-border px-3 py-2.5 text-sm">
       <span className="text-muted-foreground">

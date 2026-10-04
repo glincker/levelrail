@@ -35,7 +35,7 @@ export function Combobox({
   isLoading,
   id,
   triggerClassName,
-}: {
+}: Readonly<{
   options: ComboboxOption[]
   value: string
   onValueChange: (value: string) => void
@@ -46,7 +46,7 @@ export function Combobox({
   isLoading?: boolean
   id?: string
   triggerClassName?: string
-}) {
+}>) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [highlighted, setHighlighted] = useState(0)
@@ -62,6 +62,12 @@ export function Combobox({
   }, [options, search])
 
   const selected = options.find((option) => option.value === value)
+  let triggerLabel = placeholder
+  if (isLoading) {
+    triggerLabel = 'Loading...'
+  } else if (selected) {
+    triggerLabel = selected.label
+  }
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -111,7 +117,7 @@ export function Combobox({
             !selected && 'text-muted-foreground',
           )}
         >
-          {isLoading ? 'Loading...' : selected ? selected.label : placeholder}
+          {triggerLabel}
         </span>
         <CaretDownIcon
           className="size-3.5 shrink-0 text-muted-foreground"
