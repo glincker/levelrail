@@ -51,7 +51,7 @@ func TestMaintenanceMode_Live_TogglesResponseWithoutStoppingContainer(t *testing
 	buildCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	res, err := env.BuildClient.Build(buildCtx, build.Request{ContextDir: "../fixtures/hello-e2e", Tag: tag}, nil)
+	res, err := env.BuildClient.Build(buildCtx, build.Request{ContextDir: "../../fixtures/hello-e2e", Tag: tag}, nil)
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}

@@ -100,7 +100,7 @@ func TestPortMapping_Live_NonDefaultPortRouting(t *testing.T) {
 
 	// Step 1: a real build via internal/build, of the alt-port fixture.
 	res, err := buildClient.Build(buildCtx, build.Request{
-		ContextDir: "../fixtures/hello-e2e-altport",
+		ContextDir: "../../fixtures/hello-e2e-altport",
 		Tag:        tag,
 	}, nil)
 	if err != nil {

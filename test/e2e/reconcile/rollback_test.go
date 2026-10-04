@@ -78,7 +78,7 @@ func TestRollback_Live_ImageSwapBothDirections(t *testing.T) {
 
 	// Step 1: build image A, the same fixture deploy_test.go uses.
 	resA, err := buildClient.Build(ctx, build.Request{
-		ContextDir: "../fixtures/hello-e2e",
+		ContextDir: "../../fixtures/hello-e2e",
 		Tag:        tagA,
 	}, nil)
 	if err != nil {
@@ -94,7 +94,7 @@ func TestRollback_Live_ImageSwapBothDirections(t *testing.T) {
 	// package-level comment above for why a second fixture directory
 	// would not add coverage here.
 	resB, err := buildClient.Build(ctx, build.Request{
-		ContextDir: "../fixtures/hello-e2e",
+		ContextDir: "../../fixtures/hello-e2e",
 		Tag:        tagB,
 	}, nil)
 	if err != nil {

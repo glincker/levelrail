@@ -47,7 +47,7 @@ func TestDeployHooks_Live_PreAndPostDeployHooksRunInsideRealContainer(t *testing
 	defer cancel()
 
 	res, err := buildClient.Build(buildCtx, build.Request{
-		ContextDir: "../fixtures/hello-e2e",
+		ContextDir: "../../fixtures/hello-e2e",
 		Tag:        tag,
 	}, nil)
 	if err != nil {

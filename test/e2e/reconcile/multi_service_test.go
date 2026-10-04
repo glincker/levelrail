@@ -125,7 +125,7 @@ func deployMultiService(ctx context.Context, t *testing.T, pipeline *deploy.Pipe
 				Health:  &spec.Health{Readiness: &spec.Probe{Path: "/"}},
 			},
 		},
-		SourceDir:     "../fixtures/multi-service-e2e",
+		SourceDir:     "../../fixtures/multi-service-e2e",
 		CommitSHA:     sha,
 		ImageRepoBase: imageRepoBase,
 	}, nil)

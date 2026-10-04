@@ -186,7 +186,7 @@ func TestNodePlacement_Live_EachControllerUsesItsOwnRuntime(t *testing.T) {
 	defer cancel()
 
 	res, err := buildClient.Build(buildCtx, build.Request{
-		ContextDir: "../fixtures/hello-e2e",
+		ContextDir: "../../fixtures/hello-e2e",
 		Tag:        tag,
 	}, nil)
 	if err != nil {

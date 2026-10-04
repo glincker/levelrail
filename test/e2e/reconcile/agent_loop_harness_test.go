@@ -54,7 +54,7 @@ func newAgentLoopEnv(t *testing.T, apps ...string) *agentLoopEnv {
 	}
 	cleanupDocker(t, live, apps...)
 
-	repoRoot, err := filepath.Abs("../..")
+	repoRoot, err := filepath.Abs("../../..")
 	if err != nil {
 		t.Fatalf("resolve repo root: %v", err)
 	}
@@ -265,7 +265,7 @@ func serveGit(t *testing.T, gitBin, root string) string {
 func (e *agentLoopEnv) fixtureRepo(t *testing.T, fixture, name string) (dir, url, sha string) {
 	t.Helper()
 	dir = filepath.Join(e.gitRoot, name)
-	src := filepath.Join("..", "fixtures", fixture)
+	src := filepath.Join("..", "..", "fixtures", fixture)
 	if err := os.CopyFS(dir, os.DirFS(src)); err != nil {
 		t.Fatalf("copy fixture %s: %v", fixture, err)
 	}

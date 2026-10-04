@@ -76,7 +76,7 @@ func TestEnv_Live_PlainAndSecretResolveInContainer(t *testing.T) {
 	// Step 1: a real build via internal/build, the same fixture and call
 	// shape deploy_test.go already uses.
 	res, err := buildClient.Build(buildCtx, build.Request{
-		ContextDir: "../fixtures/hello-e2e",
+		ContextDir: "../../fixtures/hello-e2e",
 		Tag:        tag,
 	}, nil)
 	if err != nil {

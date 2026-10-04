@@ -88,7 +88,7 @@ func TestDeploy_Live_BuildToHTTPS(t *testing.T) {
 	// flow through spec.Service.Domains today, but this test's fixture
 	// has no app.yaml, just a raw build).
 	res, err := buildClient.Build(buildCtx, build.Request{
-		ContextDir: "../fixtures/hello-e2e",
+		ContextDir: "../../fixtures/hello-e2e",
 		Tag:        tag,
 	}, nil)
 	if err != nil {
