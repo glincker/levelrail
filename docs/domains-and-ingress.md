@@ -108,6 +108,12 @@ List all domains currently routed:
 levelrail-cli domains list
 ```
 
+### The dashboard's own domain
+
+**Settings > Domains** sets the control plane's own `primary_domain`, the one the dashboard itself is reachable at, separate from any app's `domains:` in `app.yaml`. Give it its own dedicated subdomain rather than reusing one an app already serves, the same convention CapRover uses for its panel (`captain.<domain>`): something like `console.example.com` or `panel.example.com`.
+
+Setting the primary domain to a domain an app already owns is rejected with a `409` naming the conflicting app, so this is a real guardrail, not just a convention. Pick a domain no app uses from the start and there's nothing to collide with later.
+
 ## Zero-config URL: no domain, no DNS record, still HTTPS
 
 Deploying an app without `domains:` doesn't leave it reachable only at `host:port`. When `APP_PUBLIC_HOST` is set to your server's real, publicly routable IP address (not a private/LAN address), every app with no domain gets an automatic [sslip.io](https://sslip.io) hostname:
