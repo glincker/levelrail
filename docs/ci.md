@@ -69,6 +69,16 @@ selects that package alone, not its dependents. Lanes:
   lane with bounded `-p` and the rest share `rest`.
 - No lane at all when nothing Go-related is affected.
 
+`test/e2e` is split from `test/e2e/reconcile` along the one dependency that
+mattered: only the former constructs a live `api.Router`. Since
+`internal/api` is the package most PRs touch, a one-file fix there used to
+select the whole 36-file suite through the test-import walk; now it selects
+only the ~18 files that actually exercise the HTTP API, and
+`test/e2e/reconcile`'s ~18 reconciler/Docker-only tests run only when a PR's
+diff genuinely reaches something they import (see
+`test/e2e/testenv`'s doc comment for the shared, `internal/api`-free
+helpers both packages use).
+
 The coverage gate follows the plan: a full run checks the 70% aggregate
 for `internal/`, a scoped run checks the changed-line gate only, at a
 lower 50% bar (a partial profile makes the aggregate meaningless, same as the

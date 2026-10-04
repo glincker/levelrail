@@ -11,7 +11,7 @@
 // never serves the declared health path. This is exactly the failure
 // mode this project treats as its main risk: a health check that
 // silently stops being enforced.
-package e2e
+package reconcile
 
 import (
 	"context"
@@ -51,7 +51,7 @@ func TestComposeHealthcheck_Live_GatesDeploySuccess(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	res, err := buildClient.Build(ctx, build.Request{ContextDir: "../fixtures/hello-e2e", Tag: tag}, nil)
+	res, err := buildClient.Build(ctx, build.Request{ContextDir: "../../fixtures/hello-e2e", Tag: tag}, nil)
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}

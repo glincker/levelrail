@@ -108,7 +108,7 @@ jobs:
     continue-on-error: true
     timeout-minutes: 75
     env:
-      FLAKE_SWEEP_PACKAGES: ./internal/agent/ ./internal/backup/ ./test/e2e/
+      FLAKE_SWEEP_PACKAGES: ./internal/agent/ ./internal/backup/ ./test/e2e/ ./test/e2e/reconcile/
     steps:
       - name: Checkout
         uses: actions/checkout@v7

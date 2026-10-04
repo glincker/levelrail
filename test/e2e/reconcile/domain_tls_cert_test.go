@@ -7,7 +7,7 @@
 // certificate configured is served that exact certificate over TLS,
 // instead of one from Caddy's own automatic internal issuer, on the
 // very next ingress reconcile pass.
-package e2e
+package reconcile
 
 import (
 	"context"
@@ -103,7 +103,7 @@ func TestDomainTLSCert_Live_ServesUploadedCertificateInsteadOfACME(t *testing.T)
 	buildCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	res, err := env.BuildClient.Build(buildCtx, build.Request{ContextDir: "../fixtures/hello-e2e", Tag: tag}, nil)
+	res, err := env.BuildClient.Build(buildCtx, build.Request{ContextDir: "../../fixtures/hello-e2e", Tag: tag}, nil)
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}

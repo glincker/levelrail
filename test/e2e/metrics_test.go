@@ -61,7 +61,7 @@ const (
 // GET /api/v1/apps/{name}/metrics, and asserts the response body carries
 // the container's genuine, non-zero memory usage. Skips cleanly (not a
 // failure) if Docker isn't reachable, the pattern every live test in this
-// repo already uses (see test/e2e/deploy_test.go,
+// repo already uses (see test/e2e/reconcile/deploy_test.go,
 // internal/telemetry/collector_live_test.go).
 func TestMetrics_Live_ContainerToHTTP(t *testing.T) {
 	dockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
