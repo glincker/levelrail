@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -111,6 +112,45 @@ func (db *DB) HasSecretValue(ctx context.Context, serviceName, envKey string) (b
 		return false, fmt.Errorf("store: check secret value for %q/%q: %w", serviceName, envKey, err)
 	}
 	return true, nil
+}
+
+// HasSecretValueForServices reports, for every name in serviceNames,
+// whether envKey has a value set, in one query (json_each, matching
+// GetConditionsForControllers' pattern) instead of a HasSecretValue call
+// per service. A name with no value is simply absent from the map,
+// mirroring HasSecretValue's own false-on-no-rows meaning. Built for GET
+// /api/v1/databases (internal/api's databaseTLSEnabled), which previously
+// called Exists once per TLS-capable database on the page.
+func (db *DB) HasSecretValueForServices(ctx context.Context, serviceNames []string, envKey string) (map[string]bool, error) {
+	result := make(map[string]bool, len(serviceNames))
+	if len(serviceNames) == 0 {
+		return result, nil
+	}
+	namesJSON, err := json.Marshal(serviceNames)
+	if err != nil {
+		return nil, fmt.Errorf("store: marshal batched secret service names: %w", err)
+	}
+	rows, err := db.QueryContext(ctx, `
+		SELECT service_name FROM service_secret_values
+		WHERE env_key = ? AND service_name IN (SELECT value FROM json_each(?))
+	`, envKey, string(namesJSON))
+	if err != nil {
+		return nil, fmt.Errorf("store: check secret value for %d services/%q: %w", len(serviceNames), envKey, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+	for rows.Next() {
+		var serviceName string
+		if err := rows.Scan(&serviceName); err != nil {
+			return nil, fmt.Errorf("store: scan batched secret value row: %w", err)
+		}
+		result[serviceName] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate batched secret value rows: %w", err)
+	}
+	return result, nil
 }
 
 // SecretKeyInfo is one secret key known for a service, with its locked
