@@ -79,8 +79,9 @@ function SettingsForm({ initial }: { initial: StatusPageSettings }) {
           }}
         />
         <FieldDescription>
-          Optional. Point the domain at this control plane through your ingress;
-          on that host only the status page is served.
+          Optional. Routed once its DNS record points here, with a TLS
+          certificate issued automatically; on that host only the status page is
+          served.
         </FieldDescription>
       </Field>
       {save.isError ? (

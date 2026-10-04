@@ -62,7 +62,7 @@ levelrail-cli status-page incidents create --kind maintenance --title "Database 
 
 ## Custom domain
 
-Set a custom domain (`status-page set --domain status.example.com`) to serve the page at the root of that host. Route the domain to the control plane through your ingress and DNS first; this setting only makes the control plane answer for that Host. On that host only `/`, `/status.json` and `/status.rss` (and the `/public/status*` paths) are served, and every other path, including the dashboard and the API, returns 404.
+Set a custom domain (`status-page set --domain status.example.com`) to serve the page at the root of that host. Point its DNS record at this control plane; the domain is routed and its TLS certificate issued automatically, the same as an app domain. On that host only `/`, `/status.json` and `/status.rss` (and the `/public/status*` paths) are served, and every other path, including the dashboard and the API, returns 404.
 
 ## Operating it
 
