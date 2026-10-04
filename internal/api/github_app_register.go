@@ -321,6 +321,7 @@ func (rt *Router) handleGitHubAppCallback(w http.ResponseWriter, r *http.Request
 	if err := rt.githubApp.SaveGitHubAppConnection(ctx, store.GitHubAppConnection{
 		AppID:       creds.AppID,
 		ClientID:    creds.ClientID,
+		Slug:        &creds.Slug,
 		InstanceURL: instanceURL,
 		CreatedAt:   time.Now().UTC().Format(time.RFC3339),
 	}); err != nil {
@@ -421,8 +422,25 @@ func (rt *Router) handleGitHubAppInstalled(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Kept for anything still reading the legacy single-installation
+	// columns; UpsertGitHubAppInstallation below is the real multi-org
+	// record and is what repo listing and the installations UI read.
 	if err := rt.githubApp.UpdateGitHubAppInstallation(ctx, installationID, info.AccountLogin); err != nil {
 		rt.logger.Error("api: record github app installation failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	// GitHub's own API always sends "User" or "Organization" (lowercased
+	// by githubapp.GetInstallation), but github_app_installations.account_type
+	// has a NOT NULL CHECK constraint that an unexpected empty value would
+	// violate as a 500, not a client-side bug: default rather than trust
+	// an upstream API's response shape to never change.
+	accountType := info.AccountType
+	if accountType != "user" && accountType != "organization" {
+		accountType = "organization"
+	}
+	if err := rt.githubApp.UpsertGitHubAppInstallation(ctx, installationID, info.AccountLogin, accountType); err != nil {
+		rt.logger.Error("api: upsert github app installation failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
