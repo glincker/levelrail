@@ -170,6 +170,9 @@ type ServiceStore interface {
 	// /api/v1/apps/{name}/streams (internal/api) must take effect on
 	// this controller's very next pass.
 	ListAllAppStreams(ctx context.Context) ([]store.AppStream, error)
+	// GetStatusPageSettings returns the status page's single settings
+	// row, read fresh every Reconcile like GetRegistrySettings.
+	GetStatusPageSettings(ctx context.Context) (store.StatusPageSettings, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -250,6 +253,9 @@ const (
 	// registryRouteOwner is dashboardRouteOwner's exact counterpart for
 	// the built-in registry's route.
 	registryRouteOwner = "builtin registry"
+
+	// statusPageRouteOwner: same process as the dashboard, shares its dial.
+	statusPageRouteOwner = "public status page"
 )
 
 // Controller converges Caddy's config to match every service in
@@ -603,6 +609,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: get registry settings: %w", err)
 	}
+	statusPageSettings, err := c.store.GetStatusPageSettings(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: get status page settings: %w", err)
+	}
 	wafByDomain, err := c.domainWAFByDomain(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain waf: %w", err)
@@ -802,6 +812,23 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			routes = append(routes, ingress.ProxyRoute{
 				Hosts:       []string{registrySettings.Host},
 				BackendDial: c.registryDial,
+			})
+		}
+	}
+
+	// Status page custom domain: dials the dashboard backend, since
+	// StatusHostHandler disambiguates by Host within this same process.
+	if statusPageSettings.Enabled && statusPageSettings.CustomDomain != "" && c.dashboardDial != "" {
+		if owner, host, dup := firstDuplicateHost(statusPageRouteOwner, []string{statusPageSettings.CustomDomain}, claimedHosts); dup {
+			c.logger.WarnContext(ctx, "ingress: status page custom domain is already routed to a service or static site, skipping the status page route",
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
+		} else {
+			claimedHosts[statusPageSettings.CustomDomain] = statusPageRouteOwner
+			routes = append(routes, ingress.ProxyRoute{
+				Hosts:       []string{statusPageSettings.CustomDomain},
+				BackendDial: c.dashboardDial,
 			})
 		}
 	}

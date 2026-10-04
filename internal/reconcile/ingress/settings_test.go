@@ -195,6 +195,113 @@ func TestController_Reconcile_PlatformDomainRoute_ConflictsWithService_Skipped(t
 	}
 }
 
+// TestController_Reconcile_StatusPageRoute_Added mirrors
+// TestController_Reconcile_PlatformDomainRoute_Added: the status page's
+// CustomDomain gets a route dialing the same dashboard target, since
+// StatusHostHandler disambiguates by Host within one process.
+func TestController_Reconcile_StatusPageRoute_Added(t *testing.T) {
+	st := &fakeStore{statusPage: store.StatusPageSettings{Enabled: true, CustomDomain: "status.example.com"}}
+	rt := newFakeRuntime()
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()), WithDashboardDial("127.0.0.1:8080"))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Reason != "Routed1Services" {
+		t.Errorf("condition.Reason = %q, want Routed1Services (the status page route counts)", cond.Reason)
+	}
+
+	routes := applier.routes(t)
+	if len(routes) != 1 {
+		t.Fatalf("routes = %+v, want exactly one", routes)
+	}
+	if len(routes[0].Match) != 1 || len(routes[0].Match[0].Host) != 1 || routes[0].Match[0].Host[0] != "status.example.com" {
+		t.Errorf("route match = %+v, want Host=[status.example.com]", routes[0].Match)
+	}
+	handler, ok := routes[0].Handle[0].(ingress.ReverseProxyHandler)
+	if !ok {
+		t.Fatalf("Handle[0] = %T, want ingress.ReverseProxyHandler", routes[0].Handle[0])
+	}
+	if handler.Upstreams[0].Dial != "127.0.0.1:8080" {
+		t.Errorf("route dial = %q, want the dashboard dial (127.0.0.1:8080): the status page shares it, not a dial of its own", handler.Upstreams[0].Dial)
+	}
+}
+
+// TestController_Reconcile_StatusPageRoute_Disabled_Skipped proves a
+// CustomDomain set while Enabled is false builds no route: a disabled
+// status page should not silently keep answering for its old domain.
+func TestController_Reconcile_StatusPageRoute_Disabled_Skipped(t *testing.T) {
+	st := &fakeStore{statusPage: store.StatusPageSettings{Enabled: false, CustomDomain: "status.example.com"}}
+	rt := newFakeRuntime()
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()), WithDashboardDial("127.0.0.1:8080"))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Reason != "Routed0Services" {
+		t.Errorf("condition.Reason = %q, want Routed0Services", cond.Reason)
+	}
+}
+
+// TestController_Reconcile_StatusPageRoute_NoDashboardDial_Skipped
+// mirrors TestController_Reconcile_PlatformDomainRoute_NoDashboardDial_Skipped:
+// the wiring prerequisite being absent fails closed, not an error.
+func TestController_Reconcile_StatusPageRoute_NoDashboardDial_Skipped(t *testing.T) {
+	st := &fakeStore{statusPage: store.StatusPageSettings{Enabled: true, CustomDomain: "status.example.com"}}
+	rt := newFakeRuntime()
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger())) // no WithDashboardDial
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Reason != "Routed0Services" {
+		t.Errorf("condition.Reason = %q, want Routed0Services", cond.Reason)
+	}
+}
+
+// TestController_Reconcile_StatusPageRoute_ConflictsWithService_Skipped
+// mirrors TestController_Reconcile_PlatformDomainRoute_ConflictsWithService_Skipped:
+// an app's route to the same host wins, the status page route is dropped.
+func TestController_Reconcile_StatusPageRoute_ConflictsWithService_Skipped(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"status.example.com"}}
+	target := application.ContainerName(desired.Name, desired.Image, "")
+
+	rt := newFakeRuntime()
+	rt.seedRunning(target, 34567)
+
+	st := &fakeStore{
+		services:   []store.DesiredService{desired},
+		statusPage: store.StatusPageSettings{Enabled: true, CustomDomain: "status.example.com"},
+	}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()), WithDashboardDial("127.0.0.1:8080"))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Reason != "Routed1Services" {
+		t.Errorf("condition.Reason = %q, want Routed1Services (only the app's route, not a second one for the status page)", cond.Reason)
+	}
+	routes := applier.routes(t)
+	if len(routes) != 1 {
+		t.Fatalf("routes = %+v, want exactly one (the app's, not the status page's)", routes)
+	}
+	handler, ok := routes[0].Handle[0].(ingress.ReverseProxyHandler)
+	if !ok {
+		t.Fatalf("Handle[0] = %T, want ingress.ReverseProxyHandler", routes[0].Handle[0])
+	}
+	if handler.Upstreams[0].Dial == "127.0.0.1:8080" {
+		t.Errorf("route dials the dashboard target (127.0.0.1:8080), want the app's container dial: the app's route must win the conflict, not the status page's")
+	}
+}
+
 // TestController_Reconcile_GetIngressSettingsError is the partial-
 // failure case every reconciler test must cover (a test for the case
 // where the operation half-succeeded): ListDesiredServices and
