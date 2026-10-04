@@ -622,6 +622,10 @@ type SecretSetter interface {
 	ListKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
 	SetLocked(ctx context.Context, serviceName, envKey string, locked bool) error
 	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
+	// ExistsForServices is Exists batched over many service names in one
+	// call, used by databases.go's handleListDatabases to show every
+	// row's TLS status without an Exists call per database.
+	ExistsForServices(ctx context.Context, serviceNames []string, envKey string) (map[string]bool, error)
 	// Resolve decrypts and returns one secret's plaintext value, the same
 	// read internal/reconcile/application already does immediately before
 	// container creation. environment_clone.go's own explicit,
