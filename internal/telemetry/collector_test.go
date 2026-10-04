@@ -13,10 +13,15 @@ type fakeStatsSource struct {
 	stats  map[string]docker.ContainerStats
 	errFor map[string]error
 	calls  []string
+	// nodeCalls records nodeID alongside containerID, for tests that
+	// care which node a poll was routed to (multiNodeStatsSource's own
+	// job in production, cmd/levelrail/main.go).
+	nodeCalls []string
 }
 
-func (f *fakeStatsSource) Stats(_ context.Context, containerID string) (docker.ContainerStats, error) {
+func (f *fakeStatsSource) Stats(_ context.Context, nodeID, containerID string) (docker.ContainerStats, error) {
 	f.calls = append(f.calls, containerID)
+	f.nodeCalls = append(f.nodeCalls, nodeID+"/"+containerID)
 	if err, ok := f.errFor[containerID]; ok {
 		return docker.ContainerStats{}, err
 	}
@@ -124,7 +129,7 @@ func TestCollectOnce_CPUPercent_UsesOwnPreviousSample(t *testing.T) {
 	if err := c.CollectOnce(context.Background(), targets); err != nil {
 		t.Fatalf("CollectOnce() error = %v", err)
 	}
-	if _, ok := c.prevCPU["c1"]; !ok {
+	if _, ok := c.prevCPU[cpuCacheKey("", "c1")]; !ok {
 		t.Fatal("prevCPU[c1] not cached after the first poll")
 	}
 
@@ -139,6 +144,45 @@ func TestCollectOnce_CPUPercent_UsesOwnPreviousSample(t *testing.T) {
 	want := (500.0 / 5000.0) * 1 * 100.0 // (1500-1000)/(6000-1000) * 1 core * 100
 	if len(got) != 1 || got[0].Value != want {
 		t.Errorf("service:web cpu_percent = %+v, want one sample with value %v", got, want)
+	}
+}
+
+// TestCollectOnce_RoutesByNodeID proves a Target's NodeID actually
+// reaches StatsSource.Stats (what multiNodeStatsSource routes on in
+// production) and that two different nodes' identically-named container
+// IDs get independent CPU-delta caches instead of clobbering each
+// other's previous sample.
+func TestCollectOnce_RoutesByNodeID(t *testing.T) {
+	db := newTestDB(t)
+	source := &fakeStatsSource{
+		stats: map[string]docker.ContainerStats{
+			"c1": {CPURaw: docker.CPUStatsRaw{TotalUsageNanos: 10, SystemUsageNanos: 10, OnlineCPUs: 1}},
+		},
+	}
+	c := NewCollector(source, db, time.Second, nil)
+	targets := []Target{
+		{ResourceID: "service:local-web", ContainerID: "c1", NodeID: ""},
+		{ResourceID: "service:remote-web", ContainerID: "c1", NodeID: "node-2"},
+	}
+
+	if err := c.CollectOnce(context.Background(), targets); err != nil {
+		t.Fatalf("CollectOnce() error = %v", err)
+	}
+
+	wantCalls := map[string]bool{"/c1": false, "node-2/c1": false}
+	for _, call := range source.nodeCalls {
+		if _, ok := wantCalls[call]; ok {
+			wantCalls[call] = true
+		}
+	}
+	for call, seen := range wantCalls {
+		if !seen {
+			t.Errorf("Stats() was never called with %q; nodeCalls = %+v", call, source.nodeCalls)
+		}
+	}
+
+	if len(c.prevCPU) != 2 {
+		t.Fatalf("prevCPU = %+v, want one entry per (node, container) pair, not one shared by container ID alone", c.prevCPU)
 	}
 }
 

@@ -136,7 +136,7 @@ func TestMetrics_Live_ContainerToHTTP(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = telemetryDB.Close() })
 
-	collector := telemetry.NewCollector(runtime, telemetryDB, time.Second, nil)
+	collector := telemetry.NewCollector(telemetry.LocalStatsSource{StatsInspector: runtime}, telemetryDB, time.Second, nil)
 	if err := collector.CollectOnce(ctx, []telemetry.Target{
 		{ResourceID: resourceID, ContainerID: id},
 	}); err != nil {
