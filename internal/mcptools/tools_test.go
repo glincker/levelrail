@@ -471,6 +471,34 @@ func TestRollbackApp(t *testing.T) {
 	}
 }
 
+func TestRollbackAppToDeploy(t *testing.T) {
+	var gotBody map[string]any
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/apps/web/deploys/dep_1/rollback" {
+			t.Errorf("request = %s %s, want POST /api/v1/apps/web/deploys/dep_1/rollback", r.Method, r.URL.Path)
+		}
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.AppResource{Name: "web", Image: "nginx:1@sha256:abc", Port: 80})
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "rollback_app_to_deploy",
+		Arguments: map[string]any{"name": "web", "deploy_id": "dep_1", "override_freeze": true, "override_reason": "known-good rollback"},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(rollback_app_to_deploy) error = %v", err)
+	}
+	var app apiclient.AppResource
+	decodeStructured(t, result, &app)
+	if app.Image != "nginx:1@sha256:abc" {
+		t.Errorf("app.Image = %q, want %q", app.Image, "nginx:1@sha256:abc")
+	}
+	if gotBody["override_freeze"] != true || gotBody["override_reason"] != "known-good rollback" {
+		t.Errorf("request body = %+v, want override_freeze=true and override_reason set", gotBody)
+	}
+}
+
 func TestListNodes(t *testing.T) {
 	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/nodes" {
@@ -721,6 +749,7 @@ func assertToolsSurface403(t *testing.T, cases []toolCase) {
 func TestNewTools_Surface403(t *testing.T) {
 	assertToolsSurface403(t, []toolCase{
 		{"rollback_app", map[string]any{"name": "web", "image": "nginx:1"}},
+		{"rollback_app_to_deploy", map[string]any{"name": "web", "deploy_id": "dep_1"}},
 		{"list_nodes", map[string]any{}},
 		{"get_node", map[string]any{"id": "n1"}},
 		{"get_node_health", map[string]any{"id": "n1"}},

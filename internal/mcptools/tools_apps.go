@@ -70,11 +70,26 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "rollback_app",
-		Description: "Point an app back at an older, already-built image tag. Same request and protected-environment approval gate as deploy_app. Asynchronous: use get_app_status to watch it converge.",
+		Description: "Point an app back at an older, already-built image tag. Same request and protected-environment approval gate as deploy_app. Asynchronous: use get_app_status to watch it converge. This does not verify the tag's content is unchanged; prefer rollback_app_to_deploy when a deploy_id is known.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
 		result, err := client.DeployApp(ctx, in.Name, in.Image, in.Confirm)
 		if err != nil {
 			return nil, apiclient.DeployTriggerResult{}, fmt.Errorf("roll back app %q to image %q: %w", in.Name, in.Image, err)
+		}
+		return nil, result, nil
+	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "rollback_app_to_deploy",
+		Description: "Roll back to a past succeeded deploy attempt (from list_deploy_attempts), pinned by the exact image digest it recorded. Fails closed if that image was garbage collected or its tag now points at different content, the two rollback failure modes rollback_app cannot detect. Same freeze and protected-environment approval gate as deploy_app. Asynchronous: use get_app_status to watch it converge.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in rollbackToDeployInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
+		result, err := client.RollbackToDeploy(ctx, in.Name, in.DeployID, apiclient.RollbackToRequest{
+			Confirm:        in.Confirm,
+			OverrideFreeze: in.OverrideFreeze,
+			OverrideReason: in.OverrideReason,
+		})
+		if err != nil {
+			return nil, apiclient.DeployTriggerResult{}, fmt.Errorf("roll back app %q to deploy %q: %w", in.Name, in.DeployID, err)
 		}
 		return nil, result, nil
 	})
@@ -272,6 +287,14 @@ type deployAppInput struct {
 	Name    string `json:"name" jsonschema:"the app's name"`
 	Image   string `json:"image" jsonschema:"image reference to deploy, e.g. registry.example.com/org/app:tag"`
 	Confirm bool   `json:"confirm,omitempty" jsonschema:"required true to deploy into an app tagged with a protected environment; omit or false fails with a 409 naming the environment if it's protected"`
+}
+
+type rollbackToDeployInput struct {
+	Name           string `json:"name" jsonschema:"the app's name"`
+	DeployID       string `json:"deploy_id" jsonschema:"the target deploy attempt's id, from list_deploy_attempts"`
+	Confirm        bool   `json:"confirm,omitempty" jsonschema:"required true to roll back an app tagged with a protected environment; omit or false fails with a 409 naming the environment if it's protected"`
+	OverrideFreeze bool   `json:"override_freeze,omitempty" jsonschema:"roll back even though a deploy freeze window is active; requires override_reason"`
+	OverrideReason string `json:"override_reason,omitempty" jsonschema:"why this rollback overrides an active freeze, recorded on the deploy"`
 }
 
 type deployComposeInput struct {
