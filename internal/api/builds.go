@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -202,20 +203,46 @@ func isGitHubHTTPSRepoURL(repoURL, instanceHost string) bool {
 	return err == nil && u.Scheme == "https" && u.Host == instanceHost
 }
 
-// tokenForRepo mints a GitHub App installation token for repoURL when
-// possible, falling back to an empty (unauthenticated) token for any
-// other host or a minting failure: the plain public-repo clone path must
-// keep working regardless. Checks the connected instance's own host
-// (GHE or github.com) rather than assuming github.com, so a private
-// repo on a GitHub Enterprise Server installation authenticates too.
-//
-// A minting failure past the two expected sentinels (not connected / not
-// installed, e.g. the App got suspended on GitHub's side) is logged at
-// Error, not Warn: repoURL matched the connected instance's own host, so
-// this is very likely a private repo about to fail an unauthenticated
-// clone anyway, and that later clone error alone won't say why.
-func (rt *Router) tokenForRepo(ctx context.Context, repoURL string) string {
-	if rt.githubAppSecrets == nil {
+// sameRepoURL ignores a trailing slash or ".git" suffix.
+func sameRepoURL(a, b string) bool {
+	norm := func(s string) string {
+		return strings.ToLower(strings.TrimSuffix(strings.TrimSuffix(s, "/"), ".git"))
+	}
+	return norm(a) == norm(b)
+}
+
+// storedGitSourceToken returns name's connected git-source PAT when its
+// stored repo URL matches repoURL, empty otherwise (never an error: a
+// miss here just falls through to tokenForRepo's GitHub App path).
+func (rt *Router) storedGitSourceToken(ctx context.Context, name, repoURL string) string {
+	if rt.gitSources == nil || rt.gitSourceSecrets == nil {
+		return ""
+	}
+	gs, err := rt.gitSources.GetGitSource(ctx, name)
+	if err != nil || gs == nil || !sameRepoURL(gs.RepoURL, repoURL) {
+		return ""
+	}
+	secretsKey := store.GitSourceSecretsKey(name)
+	exists, err := rt.gitSourceSecrets.Exists(ctx, secretsKey, gitSourceTokenKey)
+	if err != nil || !exists {
+		return ""
+	}
+	token, err := rt.gitSourceSecrets.Resolve(ctx, secretsKey, gitSourceTokenKey)
+	if err != nil {
+		return ""
+	}
+	return token
+}
+
+// tokenForRepo resolves a token for repoURL: name's own stored
+// git-source PAT first (scoped to that one app and repo already, so no
+// extra permission check needed), else a minted GitHub App installation
+// token when allowPrivateRepoAuth and possible, else empty.
+func (rt *Router) tokenForRepo(ctx context.Context, name, repoURL string, allowPrivateRepoAuth bool) string {
+	if token := rt.storedGitSourceToken(ctx, name, repoURL); token != "" {
+		return token
+	}
+	if !allowPrivateRepoAuth || rt.githubAppSecrets == nil {
 		return ""
 	}
 	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
