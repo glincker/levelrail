@@ -51,7 +51,7 @@ Positioning, not a ranking. Coolify, Dokploy, CapRover, Dokku and Kamal are all 
 
 Levelrail has one edition. It is Apache 2.0 licensed, there is no license key, no enterprise tier and no feature gated behind a plan. Everything below ships in the same binary for everyone:
 
-- **Sign-in.** Email and password, TOTP two-factor authentication, and OAuth sign-in with Google, GitHub or any generic OpenID Connect provider. See [Identity and access](identity-and-access.md).
+- **Sign-in.** Email and password, TOTP two-factor authentication, passkeys, and OAuth sign-in with Google, GitHub, Microsoft or any generic OpenID Connect provider. See [Identity and access](identity-and-access.md).
 - **IAM.** AWS-style Allow and Deny policies scoped to `app:name`, `database:name` or `*`, attachable to users and API tokens, on top of three role presets (admin, operator, viewer). API tokens carry fine-grained abilities.
 - **Audit log.** Every mutating and sensitive request is recorded with actor, ability, method, path, status, remote address and caller surface (CLI, dashboard, MCP or API). It is queryable and exportable as CSV with configurable retention.
 - **Backups.** Scheduled database and volume backups with retention, automatic verification after each run, restore, and restore into a new resource. The control plane database gets automatic snapshots, a pre-migration snapshot, encrypted off-box backups and restore drills. See [Backups and storage](backups-and-storage.md) and [Control plane backup](control-plane-backup.md).
@@ -62,7 +62,7 @@ Some other platforms in this list reserve features such as SSO, audit logging or
 ## What Levelrail does not do yet
 
 - **SAML and SCIM.** OAuth and OIDC are supported; SAML single sign-on and SCIM provisioning are not.
-- **A large template catalog.** Levelrail ships a curated set of one-click templates rather than hundreds. Other projects, Coolify in particular, offer far more.
+- **The largest template catalog.** Levelrail ships 311 one-click templates, each a Compose file the platform deploys and manages. Coolify's catalog is larger, and the end-to-end suite live-deploys a sample of 16 of Levelrail's templates, not all of them. See [Templates and registry](templates-and-registry.md).
 - **Track record.** Fewer real-world deployments and less community knowledge than projects that have existed for years.
 - **Public ACME issuance is not yet proven against every environment.** TLS defaults to an internal issuer and a public ACME issuer is built, with less field verification than the rest of the ingress. See the [roadmap](roadmap.md) for current status.
 - **No Windows or non-Linux nodes, and no Kubernetes compatibility layer.** These are deliberate non-goals.
