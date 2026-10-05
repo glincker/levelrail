@@ -31,6 +31,7 @@ func authEngineOptions(ctx context.Context, logger *slog.Logger, b *brand.Brand,
 		Directory:      authengine.NewDirectory(db),
 		DeviceTokenTTL: api.DeviceTokenTTL(),
 		DeviceCodeTTL:  api.DeviceCodeTTL(),
+		Sessions:       authSessionsHooks(db, logger),
 	}
 	if dial := dashboardDialAddr(httpAddr()); dial != "" {
 		cfg.BaseURL = "http://" + dial
@@ -53,7 +54,7 @@ func authEngineOptions(ctx context.Context, logger *slog.Logger, b *brand.Brand,
 		return []api.Option{api.WithAuthEngineShadow(eng, authengine.ShadowConfigFromEnv())}
 	}
 	logger.Info("auth engine: library routes mounted", slog.String("prefix", eng.Prefix()))
-	return []api.Option{api.WithAuthEngine(eng.Prefix(), eng.Handler()), api.WithAuthEngineLibrary(eng)}
+	return append([]api.Option{api.WithAuthEngine(eng.Prefix(), eng.Handler()), api.WithAuthEngineLibrary(eng)}, authSessionsOptions(eng)...)
 }
 
 // runAuthBackfill implements `<binary> auth-backfill [--dry-run]`.

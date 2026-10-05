@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -59,6 +60,7 @@ type sessionStore struct {
 	mu       sync.Mutex
 	sessions map[string]session
 	ttl      time.Duration
+	lib      *authengine.Sessions // set when the sessions area is served by the library
 }
 
 // newSessionStore builds a sessionStore. ttl <= 0 falls back to
@@ -112,6 +114,10 @@ func (s *sessionStore) createPinned(principalID string, abilities []string, disp
 // along a userID that doesn't resolve to anything. requireAbilityDecided
 // recognizes a pinned session through getPinned instead.
 func (s *sessionStore) lookup(token string) (string, bool) {
+	if s.lib != nil {
+		info, ok := s.lib.Lookup(context.Background(), token)
+		return info.LegacyUserID, ok
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	sess, ok := s.sessions[token]
@@ -133,6 +139,10 @@ func (s *sessionStore) lookup(token string) (string, bool) {
 // expiresAt). Same liveness/expiry handling as lookup, and the same
 // "a pinned session isn't a real user session" filtering.
 func (s *sessionStore) get(token string) (session, bool) {
+	if s.lib != nil {
+		info, ok := s.lib.Lookup(context.Background(), token)
+		return session{userID: info.LegacyUserID, expiresAt: info.ExpiresAt}, ok
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	sess, ok := s.sessions[token]
@@ -172,6 +182,9 @@ func (s *sessionStore) getPinned(token string) (session, bool) {
 }
 
 func (s *sessionStore) revoke(token string) {
+	if s.lib != nil {
+		s.lib.Revoke(context.Background(), token)
+	}
 	s.mu.Lock()
 	delete(s.sessions, token)
 	s.mu.Unlock()
@@ -181,6 +194,9 @@ func (s *sessionStore) revoke(token string) {
 // keepToken, scoped strictly to that one user: revoking their sessions
 // must never touch another user's.
 func (s *sessionStore) revokeAllExcept(userID, keepToken string) {
+	if s.lib != nil {
+		_ = s.lib.RevokeAllExcept(context.Background(), userID, keepToken)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for token, sess := range s.sessions {
@@ -193,6 +209,9 @@ func (s *sessionStore) revokeAllExcept(userID, keepToken string) {
 // revokeAll deletes every session belonging to userID, unlike
 // revokeAllExcept which always spares one token.
 func (s *sessionStore) revokeAll(userID string) {
+	if s.lib != nil {
+		_ = s.lib.RevokeAll(context.Background(), userID)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for token, sess := range s.sessions {
@@ -246,6 +265,10 @@ type loginResponse struct {
 // email or wrong password.
 func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if rt.refuseInsecureLogin(w, r) {
+		return
+	}
+	if rt.libSessions != nil {
+		rt.handleLibLogin(w, r)
 		return
 	}
 	var req loginRequest
@@ -337,6 +360,9 @@ func burnBcryptCompare(password string) {
 // callback handlers all funnel through this, so every sign-in path
 // shares identical session properties by construction.
 func (rt *Router) establishSession(w http.ResponseWriter, r *http.Request, user store.User) error {
+	if rt.libSessions != nil {
+		return rt.establishLibSession(w, r, user)
+	}
 	token, err := rt.sessions.create(user.ID)
 	if err != nil {
 		return fmt.Errorf("create session: %w", err)
@@ -821,6 +847,10 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(req.Password) < minPasswordLength {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+		return
+	}
+	if rt.libSessions != nil {
+		rt.libRegister(w, r, req)
 		return
 	}
 

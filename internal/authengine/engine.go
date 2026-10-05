@@ -78,6 +78,7 @@ type Config struct {
 	DeviceVerifyURL string
 	DeviceTokenTTL  time.Duration
 	DeviceCodeTTL   time.Duration
+	Sessions        SessionsHooks
 }
 
 // ConfigFromEnv applies the env overrides on top of base and fills defaults.
@@ -123,6 +124,7 @@ type Engine struct {
 	db          *sql.DB
 	dir         *Directory
 	tokenPrefix string
+	sessions    *Sessions
 }
 
 // New builds the engine over db. The library tables must exist already: they
@@ -180,11 +182,17 @@ func New(db *sql.DB, cfg Config) (*Engine, error) {
 		tcfg.EncryptionKey = cfg.EncryptionKey
 		tcfg.TOTP = &theauth.TOTPConfig{Issuer: cfg.TOTPIssuer}
 	}
+	var sess *Sessions
+	if AreaActive(AreaSessions) {
+		sess = newSessions(db, cfg.Sessions)
+		applySessionsConfig(&tcfg, sess, store.ThrottleStore())
+	}
 	a, err := theauth.New(tcfg)
 	if err != nil {
 		return nil, fmt.Errorf("authengine: init: %w", err)
 	}
-	return &Engine{auth: a, prefix: cfg.PathPrefix, store: store, db: db, dir: cfg.Directory, tokenPrefix: tcfg.APITokens.Prefix}, nil
+	bindSessions(sess, a, cfg.PathPrefix)
+	return &Engine{auth: a, prefix: cfg.PathPrefix, store: store, db: db, dir: cfg.Directory, tokenPrefix: tcfg.APITokens.Prefix, sessions: sess}, nil
 }
 
 // Prefix is the route prefix Handler serves under.
@@ -197,7 +205,12 @@ func (e *Engine) Handler() http.Handler { return e.auth.Handler() }
 func (e *Engine) Auth() *theauth.TheAuth { return e.auth }
 
 // Close stops the library's background work. It does not close the database.
-func (e *Engine) Close() { e.auth.Close() }
+func (e *Engine) Close() {
+	if e.sessions != nil {
+		e.sessions.close()
+	}
+	e.auth.Close()
+}
 
 const libraryDefaultTokenPrefix = "tk"
 

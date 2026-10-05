@@ -94,14 +94,6 @@ func (d *Directory) EnsureEngineUser(ctx context.Context, legacyID string) (stri
 	return engineID, nil
 }
 
-func parseULID(s string) (ulid.ULID, error) {
-	u, err := ulid.Parse(s)
-	if err != nil {
-		return ulid.ULID{}, fmt.Errorf("authengine: parse id %q: %w", s, err)
-	}
-	return u, nil
-}
-
 func containsString(list []string, v string) bool {
 	for _, x := range list {
 		if x == v {
