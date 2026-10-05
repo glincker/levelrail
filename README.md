@@ -4,6 +4,8 @@
 
 <p><strong>Push to git, get a running app with TLS, logs, metrics, and rollback, on your own Linux boxes.</strong></p>
 
+<img src="docs/assets/brand/typing.svg" alt="Push to git. Get a running app. TLS, logs, metrics, and rollback built in. No SSH, no Grafana, no Kubernetes. Self-hosted on your own Linux boxes." width="560" height="40">
+
 <p>
   <a href="https://levelrail.com">Docs</a> ·
   <a href="#quickstart">Quickstart</a> ·
@@ -30,6 +32,26 @@
 <img src="docs/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="900">
 
 </div>
+
+<details>
+<summary><b>Table of contents</b></summary>
+
+- [What is Levelrail?](#what-is-levelrail)
+- [Quickstart](#quickstart)
+- [Features](#features)
+- [Status](#status)
+- [Why not Coolify or Dokploy](#why-not-coolify-or-dokploy-self-hosted-herokuvercel-alternative)
+- [Architecture at a glance](#architecture-at-a-glance)
+- [How it compares](#how-it-compares)
+- [A tour of the dashboard](#a-tour-of-the-dashboard)
+- [Building and running locally](#building-and-running-locally)
+- [Contributing](#contributing)
+- [Docs and community](#docs-and-community)
+- [Founding partners](#founding-partners)
+- [Meet the founder](#meet-the-founder)
+- [License](#license)
+
+</details>
 
 ## What is Levelrail?
 
@@ -492,6 +514,7 @@ commit conventions, and how to run tests and the linter locally.
 
 - [levelrail.com](https://levelrail.com) -- the hosted docs site: getting started, architecture, app spec reference, roadmap, full index
 - [docs/](docs/README.md) -- the same content as plain Markdown, for browsing directly on GitHub
+- [Roadmap](docs/roadmap.md) -- what is shipped, in progress, and next
 - [GitHub Discussions](https://github.com/glincker/levelrail/discussions) -- questions, ideas, show and tell
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99) -- live chat with maintainers and other users, with a dedicated `#levelrail` forum channel for questions and support
 - [support@levelrail.com](mailto:support@levelrail.com) -- direct email support
