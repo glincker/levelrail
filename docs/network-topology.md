@@ -38,7 +38,7 @@ A zone panel's header also shows the node's status (`online`, `offline`, `pendin
 
 A dashed line connects an app to a database whenever the app has a connection to it, from either the [connections feature](connecting-apps-to-databases.md) or the older single-attachment flow. Both are unioned here, so this view reflects every app-to-database link regardless of which mechanism created it.
 
-An app or database with no mesh address shows the legend's "No mesh address (unreachable)" warning icon: it exists in the desired state but the mesh reconciler hasn't given it an address yet, so any cross-node connection to or from it will not resolve until that changes.
+An app or database with no mesh address shows the legend's "No mesh address (unreachable)" warning icon: it exists in the desired state but the mesh reconciler hasn't given it an address yet, so any cross-node connection to or from it will not resolve until that changes. A remote app also needs a healthy mesh path before the control plane's ingress can serve its domains: see [Routing to apps on remote nodes](multi-node.md#routing-to-apps-on-remote-nodes).
 
 ## Legend
 

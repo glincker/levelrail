@@ -776,6 +776,7 @@ func run(logger *slog.Logger) error {
 		agentRegistry.SetLocal(meshCfg.localNodeID, agent.NewLocal(client))
 		apiRouter.SetMesh(meshCfg.device, meshCfg.coordinator)
 	}
+	apiRouter.SetMeshPaths(newMeshPathResolver(meshCfg, db))
 	// Resolved once at startup, not per reconcile pass: the bridge
 	// gateway IP a container-reachable mesh DNS address depends on
 	// (containerDNSAddr's own doc comment) does not change while this
@@ -3520,6 +3521,8 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithRequestStats(),
 			// Lets Reconcile flag a service placed on an unreachable node.
 			ingressreconcile.WithLocalNodeID(localNodeIDOf(deps)),
+			// Routes remote apps to their node's mesh address.
+			ingressreconcile.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
 		}
 		if experimental.Enabled(experimental.AIModels) {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
@@ -3649,6 +3652,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithPinnedPortRetry(pinnedPortRetry(deps.logger)),
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
 		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
+		application.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
 	}
 	if deps.secretsManager != nil {
 		appOpts = append(appOpts, application.WithSecretResolver(deps.secretsManager))

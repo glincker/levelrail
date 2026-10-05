@@ -50,6 +50,11 @@ type Request struct {
 	// the control plane's own node id): this package has no node store of
 	// its own, so it can't resolve NodeID itself, only react to it.
 	IsLocalNode bool
+	// MeshUsable and MeshReason describe the WireGuard path from the control
+	// plane to a remote node, caller-resolved like IsLocalNode: a usable path
+	// lets the control plane's ingress route to the app.
+	MeshUsable  bool
+	MeshReason  string
 	MemoryBytes int64
 	RequiredEnv []string
 	EnvKeys     []string

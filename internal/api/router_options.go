@@ -9,6 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -562,6 +563,12 @@ func (rt *Router) SetMeshZone(zone string) {
 func (rt *Router) SetMesh(mesh MeshStatusProvider, rotator MeshKeyRotator) {
 	rt.mesh = mesh
 	rt.meshRotator = rotator
+}
+
+// SetMeshPaths sets the resolver the doctor and app status use to tell
+// whether a remote node's app can be routed over the WireGuard mesh.
+func (rt *Router) SetMeshPaths(r meshpath.Resolver) {
+	rt.meshPaths = r
 }
 
 // WithMasterKeyRotation enables POST
