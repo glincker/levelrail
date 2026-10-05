@@ -31,6 +31,8 @@ type PITRMaintainer struct {
 	Store   PITRMaintenanceStore
 	Resolve func(ctx context.Context, targetID string) (Destination, error)
 	Deleter Deleter
+	// Lister enables pruning the shipped WAL copy in the bucket too.
+	Lister  Lister
 	Runtime Runtime
 	// Keep overrides the env default when positive.
 	Keep   int
@@ -89,7 +91,24 @@ func (m *PITRMaintainer) Prune(ctx context.Context, databaseName, containerName 
 	if err := PruneWALArchive(ctx, m.Runtime, containerName, oldestKept.LSN); err != nil {
 		return fmt.Errorf("prune wal archive for %q: %w", databaseName, err)
 	}
+	m.pruneRemoteWAL(ctx, databaseName, oldestKept)
 	return nil
+}
+
+// pruneRemoteWAL is best effort: a leftover remote segment costs bucket space,
+// never a restore, so a failure is logged and retried on the next base backup.
+func (m *PITRMaintainer) pruneRemoteWAL(ctx context.Context, databaseName string, oldestKept store.BaseBackupHistory) {
+	if m.Lister == nil || m.Deleter == nil || m.Resolve == nil {
+		return
+	}
+	dest, err := m.Resolve(ctx, oldestKept.TargetID)
+	if err != nil {
+		m.log().Warn("backup: remote wal prune skipped", slog.String("database", databaseName), slog.String("error", err.Error()))
+		return
+	}
+	if _, err := PruneRemoteWAL(ctx, dest, m.Lister, m.Deleter, databaseName, oldestKept.LSN); err != nil {
+		m.log().Warn("backup: remote wal prune failed", slog.String("database", databaseName), slog.String("error", err.Error()))
+	}
 }
 
 // deleteBaseBackup removes the row first: a foreign key from restore history
@@ -134,9 +153,10 @@ func PruneWALArchive(ctx context.Context, rt Runtime, containerName, startLSN st
 	script := `cut=$(psql --no-password -U "$POSTGRES_USER" -Atq -c "SELECT pg_walfile_name('` + startLSN + `')") || exit 1
 cut=${cut#????????}
 [ ${#cut} -eq 16 ] || exit 1
-for f in ` + postgresWALArchivePath + `/????????????????????????; do
+for f in ` + postgresWALArchivePath + `/????????????????????????  ` + postgresWALArchivePath + `/????????????????????????.????????.backup; do
   [ -f "$f" ] || continue
   seg=${f##*/}
+  seg=${seg%%.*}
   case $seg in *[!0-9A-F]*) continue;; esac
   seg=${seg#????????}
   if expr "$seg" "<" "$cut" >/dev/null; then rm -f "$f"; fi

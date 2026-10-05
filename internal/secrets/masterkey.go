@@ -57,7 +57,7 @@ func GenerateMasterKey() (*MasterKey, error) {
 // internal/brand.Load's own "load from a path the caller resolved"
 // shape rather than this package reaching into the environment itself.
 func LoadMasterKey(serialized string) (*MasterKey, error) {
-	id, err := age.ParseHybridIdentity(serialized)
+	id, err := age.ParseHybridIdentity(strings.TrimSpace(serialized))
 	if err != nil {
 		if strings.HasPrefix(strings.TrimSpace(serialized), "AGE-SECRET-KEY-1") {
 			return nil, fmt.Errorf("secrets: parse master key: a classic age identity is not accepted, generate one with \"secrets generate-master-key\": %w", err)

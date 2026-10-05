@@ -38,6 +38,9 @@ type BaseBackupRunner struct {
 	// successful base backup. Failures are logged, never returned: the new
 	// backup already succeeded.
 	Maintainer BaseBackupMaintainer
+	// WAL, when set, ships the local WAL archive to the target right after a
+	// successful base backup, so the bucket holds what a restore replays.
+	WAL WALShipping
 	// WorkDir/Now match Runner's own identically-named fields exactly
 	// (runner.go's own doc comments for each apply here unchanged).
 	WorkDir string
@@ -94,6 +97,11 @@ func (r *BaseBackupRunner) RunBaseBackup(ctx context.Context, historyID, databas
 	if err := r.Store.FinishBaseBackupHistory(ctx, historyID, status, size, lsn, errMsg, finishedAt); err != nil {
 		return fmt.Errorf("backup: finish base backup history %q: %w", historyID, err)
 	}
+	if runErr == nil && r.WAL != nil && r.Runtime != nil {
+		if err := r.shipWAL(ctx, databaseName, containerName, targetID); err != nil {
+			slog.Warn("backup: wal shipping after base backup failed", slog.String("database", databaseName), slog.String("error", err.Error()))
+		}
+	}
 	if runErr == nil && r.Maintainer != nil {
 		if err := r.Maintainer.Prune(ctx, databaseName, containerName); err != nil {
 			slog.Warn("backup: base backup maintenance failed", slog.String("database", databaseName), slog.String("error", err.Error()))
@@ -126,4 +134,24 @@ func (r *BaseBackupRunner) runBaseBackupAndUpload(ctx context.Context, container
 		return counted.n, fmt.Errorf("upload base backup for container %q to target %q: %w", containerName, targetID, err)
 	}
 	return counted.n, nil
+}
+
+// WALShipping is the WALShipper surface BaseBackupRunner and the ship
+// scheduler need.
+type WALShipping interface {
+	Ship(ctx context.Context, dest Destination, databaseName, containerName string) (int, error)
+}
+
+// shipWAL forces the current segment into the archive first: the base backup
+// is only restorable once the WAL written during it is archived too.
+func (r *BaseBackupRunner) shipWAL(ctx context.Context, databaseName, containerName, targetID string) error {
+	if _, err := RecoverableWindowEnd(ctx, r.Runtime, containerName); err != nil {
+		return err
+	}
+	dest, err := resolveTargetDestination(ctx, r.Store, r.Secrets, targetID)
+	if err != nil {
+		return err
+	}
+	_, err = r.WAL.Ship(ctx, dest, databaseName, containerName)
+	return err
 }

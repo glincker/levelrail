@@ -16,7 +16,12 @@ import type {
   ServiceResources,
 } from '../types/databaseDetail'
 import type { ReconcileCondition } from '../types/deploy'
-import { ApiError, readErrorMessage } from '../lib/apiError'
+import {
+  ApiError,
+  ExistingVolumeError,
+  type ExistingVolumeInfo,
+  readErrorMessage,
+} from '../lib/apiError'
 
 export const databaseKeys = {
   all: ['databases'] as const,
@@ -147,6 +152,7 @@ export interface CreateDatabaseRequest {
   version: string
   project_id?: string
   node_id?: string
+  existing_volume?: 'reuse' | 'discard'
 }
 
 // POST /api/v1/databases. Rejects a name that already exists with a 409
@@ -162,9 +168,17 @@ export async function createDatabase(
     body: JSON.stringify(req),
   })
   if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as {
+      error?: string
+      code?: string
+      volumes?: ExistingVolumeInfo[]
+    } | null
+    if (res.status === 409 && body?.code === 'existing_volume') {
+      throw new ExistingVolumeError(body.error ?? '', body.volumes ?? [])
+    }
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `create database failed: ${res.status}`),
+      body?.error ?? `create database failed: ${res.status}`,
     )
   }
   return (await res.json()) as DatabaseResource

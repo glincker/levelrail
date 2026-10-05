@@ -109,11 +109,14 @@ var dragonflyDumpCmd = []string{"sh", "-c", "redis-cli SAVE RDB dump.rdb > /dev/
 
 // clickhouseDumpCmd dumps each table's DDL plus rows as INSERT
 // statements rather than native BACKUP/RESTORE, which needs a
-// server-side named backup disk this controller never provisions.
+// server-side named backup disk this controller never provisions. The DDL's
+// own database qualifier is stripped so a restore into a database with a
+// different name (restore-as-new) lands in that database.
 var clickhouseDumpCmd = []string{"sh", "-c",
 	"set -e\n" +
 		"for t in $(clickhouse-client --user \"$CLICKHOUSE_USER\" --password \"$CLICKHOUSE_PASSWORD\" --query \"SHOW TABLES FROM " + shBacktick + "$CLICKHOUSE_DB" + shBacktick + "\"); do\n" +
-		"  clickhouse-client --user \"$CLICKHOUSE_USER\" --password \"$CLICKHOUSE_PASSWORD\" --query \"SHOW CREATE TABLE " + shBacktick + "$CLICKHOUSE_DB" + shBacktick + "." + shBacktick + "$t" + shBacktick + "\" --format TSVRaw\n" +
+		"  ddl=$(clickhouse-client --user \"$CLICKHOUSE_USER\" --password \"$CLICKHOUSE_PASSWORD\" --query \"SHOW CREATE TABLE " + shBacktick + "$CLICKHOUSE_DB" + shBacktick + "." + shBacktick + "$t" + shBacktick + "\" --format TSVRaw)\n" +
+		"  printf '%s\\n' \"$ddl\" | sed -E \"s/(^|[^A-Za-z0-9_])" + shBacktick + "?$CLICKHOUSE_DB" + shBacktick + "?\\\\./\\\\1/g\"\n" +
 		"  printf ';\\n'\n" +
 		"  clickhouse-client --user \"$CLICKHOUSE_USER\" --password \"$CLICKHOUSE_PASSWORD\" --query \"SELECT * FROM " + shBacktick + "$CLICKHOUSE_DB" + shBacktick + "." + shBacktick + "$t" + shBacktick + " SETTINGS output_format_sql_insert_table_name = '$t' FORMAT SQLInsert\"\n" +
 		"done",

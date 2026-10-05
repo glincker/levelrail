@@ -256,13 +256,21 @@ Exercised end to end against a real S3 compatible endpoint (SeaweedFS) and real 
 | Restore from that corrupted object | Refused before the database is touched |
 | Restore-as-new into a database whose name contains a hyphen | Works (identifiers are quoted) |
 | Postgres point-in-time restore to a timestamp | Returns exactly the data from before that moment |
+| Postgres point-in-time restore after deleting both the data volume and the WAL archive volume | Works from the copy shipped to the bucket |
+| Postgres restore of a dump with a failing statement | Fails and leaves the existing data untouched (single transaction) |
+| Backup, verify and restore-as-new for ClickHouse, KeyDB and Dragonfly (hyphenated names) | Rows and keys match the source |
+| App volume backup and restore-as-new of a volume holding a directory owned by uid 1234:5678, mode 750, a 640 file with an old mtime and a symlink | Owners, modes, mtimes and the symlink are identical in the restored volume |
+| Create a database with the name of a deleted one | Refused until you choose to reuse or discard the old data |
+| Every backup and the major upgrade with the free-space floor set absurdly high | Manual triggers return `507`; a major upgrade fails in its first phase with the same message and the database is never stopped |
 | New named volume on an image that runs as a non-root user | Writable on first start (the volume is chowned to the image user once, while empty) |
 
 Limits you should know about:
 
 - A backup is a logical dump (`pg_dump`, `mysqldump`, `mongodump`, an RDB snapshot). It is consistent per database but is not a physical copy; for Postgres use point-in-time restore when you need to recover to an exact second.
 - Verification catches a damaged or truncated object. It does not prove the dump restores cleanly; a periodic restore-as-new into a scratch database is the only proof, and is cheap to do.
-- Deleting a database keeps its data volume and your backups. Recreating a database with the same name reuses that volume.
+- Deleting a database keeps its data volume and your backups. Recreating a database with the same name is refused until you pick `reuse` or `discard` for the old volume (see [managing databases](managing-databases.md)); a volume left on a remote node is not checked.
+- Disk-full protection is a free-space floor (`APP_MIN_BACKUP_DISK_MB`) on the control plane's data directory, checked before manual and scheduled backups, base backups and major upgrades. It was exercised by raising the floor, not by filling a real disk. Nothing watches the Docker host's own disk for a snapshot copy; a copy that runs out of space fails the upgrade before it changes anything.
+- Postgres WAL for point-in-time restore is shipped to the backup target and verified, but only for databases on the control plane's own node. See the point-in-time section of [managing databases](managing-databases.md).
 - The storage endpoint must resolve to a public address unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` is set, which is needed for a MinIO on the same private network.
 - A manual backup is refused with `507` when the control plane's own data directory is nearly full.
 

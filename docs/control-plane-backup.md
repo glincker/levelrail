@@ -136,3 +136,19 @@ Restoring is an offline operation on the server, because the database cannot be 
 `restore-db` first checks the file: `integrity_check` must pass and its schema version must not be newer than the binary. It then moves the current database aside as `levelrail.db.before-restore-<timestamp>` and puts the backup in place. Nothing is deleted, so a mistaken restore can be undone by moving that copy back.
 
 Anything that changed after the snapshot was taken (new apps, tokens, deploys) is gone after a restore. Running containers are not touched, and the reconciler converges them toward the restored desired state on startup.
+
+### Rolling back to a local snapshot
+
+`levelrail restore-snapshot` is the friendlier form of the same offline restore for snapshots in the data directory, such as the one taken automatically before a migration:
+
+```
+APP_DATA_DIR=/var/lib/levelrail-data levelrail restore-snapshot --list
+APP_DATA_DIR=/var/lib/levelrail-data levelrail restore-snapshot --dry-run latest
+APP_DATA_DIR=/var/lib/levelrail-data levelrail restore-snapshot --yes latest
+```
+
+`--list` shows snapshots newest first, `--dry-run` verifies one and changes nothing, and the real run keeps the current database as a `.before-restore` copy. Verified on a copy of a real data directory: the listing, the dry run and the restore all behaved as described, and the restored database is the snapshot's (schema version included).
+
+### Restoring on a new machine
+
+A local snapshot is on the dead machine's disk, so it is of no use there. For a machine that is gone you need the encrypted off-box backup and the escrow bundle: follow the [step by step runbook](/disaster-recovery#runbook-the-control-plane-machine-is-gone), which was run end to end against a real S3 server. The master key must come with you (escrow bundle or `APP_MASTER_KEY`); a trailing newline in a recovered `master.key` is accepted.

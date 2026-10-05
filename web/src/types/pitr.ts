@@ -22,6 +22,16 @@ export interface PITRStatus {
   // container isn't running), independent of enabled/has_base_backup
   // still being real, useful information on their own.
   window_error?: string
+  // wal_ship is absent until a shipping pass has run for this database.
+  wal_ship?: WalShipStatus
+}
+
+export interface WalShipStatus {
+  last_attempt_at?: string
+  last_success_at?: string
+  last_error?: string
+  shipped: number
+  target_id?: string
 }
 
 export interface BaseBackupHistoryRecord {

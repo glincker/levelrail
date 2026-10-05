@@ -4120,3 +4120,29 @@ func (c *Client) ReapOrphans(ctx context.Context, dryRun bool) (OrphanReport, er
 	err := c.do(ctx, http.MethodPost, path, nil, &out)
 	return out, err
 }
+
+// StartMajorUpgrade calls POST /api/v1/databases/{name}/major-upgrade.
+func (c *Client) StartMajorUpgrade(ctx context.Context, name, version string) (MajorUpgradeResource, error) {
+	var out MajorUpgradeResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/major-upgrade", map[string]string{"version": version, "confirm": name}, &out)
+	return out, err
+}
+
+// ListMajorUpgrades calls GET /api/v1/databases/{name}/major-upgrades.
+func (c *Client) ListMajorUpgrades(ctx context.Context, name string) ([]MajorUpgradeResource, error) {
+	var out []MajorUpgradeResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/major-upgrades", nil, &out)
+	return out, err
+}
+
+// RollbackMajorUpgrade calls POST .../major-upgrades/{id}/rollback.
+func (c *Client) RollbackMajorUpgrade(ctx context.Context, name, id string) (MajorUpgradeResource, error) {
+	var out MajorUpgradeResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/major-upgrades/"+PathEscape(id)+"/rollback", map[string]string{"confirm": name}, &out)
+	return out, err
+}
+
+// DiscardMajorUpgradeSnapshot calls DELETE .../major-upgrades/{id}/snapshot.
+func (c *Client) DiscardMajorUpgradeSnapshot(ctx context.Context, name, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/major-upgrades/"+PathEscape(id)+"/snapshot", nil, nil)
+}

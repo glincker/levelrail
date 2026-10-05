@@ -43,6 +43,11 @@ type PITRRunner struct {
 	Secrets    SecretsResolver
 	Downloader Downloader
 	Restorer   PITRRestorer
+	// WAL and WALVolume, when set, pull the WAL shipped to the target into the
+	// database's archive volume before the destructive phase, so a restore works
+	// after the local archive is lost. WALVolume maps a database name to it.
+	WAL       WALFetching
+	WALVolume func(databaseName string) string
 	// Runtime backs the teardown/startup/promotion polls: Suspended and
 	// Nudge only ever request a change, this verifies it happened.
 	Runtime docker.Runtime
@@ -148,6 +153,12 @@ func (r *PITRRunner) run(ctx context.Context, databaseName, containerName, dataV
 	dest, err := resolveTargetDestination(ctx, r.Store, r.Secrets, bh.TargetID)
 	if err != nil {
 		return err
+	}
+
+	if r.WAL != nil && r.WALVolume != nil {
+		if _, err := r.WAL.Fetch(ctx, dest, databaseName, r.WALVolume(databaseName), bh.LSN); err != nil {
+			return fmt.Errorf("fetch shipped wal for %q: %w", databaseName, err)
+		}
 	}
 
 	tar, err := r.Downloader.Download(ctx, dest, bh.ObjectKey)
@@ -327,4 +338,9 @@ func (r *PITRRunner) waitContainerGone(ctx context.Context, containerName string
 		case <-time.After(r.pollInterval()):
 		}
 	}
+}
+
+// WALFetching is the WALFetcher surface PITRRunner needs.
+type WALFetching interface {
+	Fetch(ctx context.Context, dest Destination, databaseName, walVolume, sinceLSN string) (int, error)
 }
