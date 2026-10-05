@@ -99,6 +99,8 @@ import (
 
 // Router wires every internal/api handler onto one http.Handler.
 type Router struct {
+	doctorEdge *DoctorIngressEdge // set via SetDoctorIngressEdge
+
 	logger                 *slog.Logger
 	brand                  *brand.Brand
 	changelogEntries       []changelog.Entry // nil is valid: GET /api/v1/changelog answers an empty list, see WithChangelog

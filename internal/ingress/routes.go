@@ -438,6 +438,14 @@ type RoutesOptions struct {
 	// RequestStats, if true, wraps every proxy and static route in the
 	// request_stats handler (per-app request rate, errors, latency).
 	RequestStats bool
+	// Hardening, if non-nil, applies server limits, failover defaults and the
+	// friendly 503 page. Nil keeps the legacy bare config.
+	Hardening *Hardening
+	// Inherited, when active, replaces the listen addresses with systemd
+	// passed sockets and serves the HTTP to HTTPS redirect from its own server.
+	Inherited *InheritedSockets
+	// HoldRoutes answer 503 for hosts whose backend is momentarily absent.
+	HoldRoutes []HoldRoute
 	// Streams is every raw TCP port forward to proxy, each on its own
 	// dedicated listener (apps.layer4.servers), applied in this same
 	// Config/caddy.Load call: see layer4.go's package doc comment for
@@ -464,7 +472,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 	if opts.ServerName == "" {
 		return nil, fmt.Errorf("ingress: build routes config: server name is required")
 	}
-	if opts.ListenAddr == "" {
+	if opts.ListenAddr == "" && !opts.Inherited.Active() {
 		return nil, fmt.Errorf("ingress: build routes config: listen address is required")
 	}
 
@@ -495,6 +503,15 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			handle = []any{NewLBReverseProxyHandler(r.LB)}
 			if r.LB.RateLimitRPS > 0 {
 				handle = append([]any{NewRateLimitHandler("lb-"+strings.Join(r.Hosts, "+"), r.LB.RateLimitRPS, r.LB.RateLimitBurst)}, handle...)
+			}
+		}
+		if opts.Hardening != nil {
+			if rp, ok := handle[len(handle)-1].(ReverseProxyHandler); ok {
+				opts.Hardening.applyProxy(&rp)
+				handle[len(handle)-1] = rp
+			}
+			if limit := opts.Hardening.bodyLimit(); limit != nil {
+				handle = append([]any{limit}, handle...)
 			}
 		}
 		if r.BasicAuth != nil {
@@ -570,9 +587,33 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		allHosts = append(allHosts, r.Hosts...)
 	}
 
+	for i, r := range opts.HoldRoutes {
+		if len(r.Hosts) == 0 {
+			return nil, fmt.Errorf("ingress: build routes config: hold route %d has no hosts", i)
+		}
+		hold := DefaultHardening()
+		if opts.Hardening != nil {
+			hold = *opts.Hardening
+		}
+		routes = append(routes, Route{
+			Match:  []Matcher{{Host: r.Hosts}},
+			Handle: []any{hold.UnavailableResponse("Updating", "This site is being updated and will be back in a moment. This page will retry on its own.")},
+		})
+		allHosts = append(allHosts, r.Hosts...)
+	}
+
 	server := &Server{
 		Listen: []string{opts.ListenAddr},
 		Routes: routes,
+	}
+	if opts.Inherited.Active() {
+		server.Listen = opts.Inherited.listenAddrs()
+	}
+	if opts.Hardening != nil {
+		opts.Hardening.applyServer(server)
+		if opts.Inherited.Active() {
+			server.Protocols = withoutProtocol(server.Protocols, "h3")
+		}
 	}
 
 	cfg := &Config{
@@ -603,6 +644,17 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		cfg.Apps.Layer4 = &Layer4App{Servers: servers}
 	}
 
+	if opts.Inherited.Active() {
+		if opts.Inherited.HTTP != 0 {
+			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = opts.Inherited.redirectServer(opts.HTTPRedirect)
+		}
+		cfg.ownedPorts = []int{opts.Inherited.HTTPSPort, opts.Inherited.HTTPPort}
+	}
+
+	if opts.Hardening != nil && opts.Hardening.GracePeriod > 0 {
+		cfg.Apps.HTTP.GracePeriod = opts.Hardening.GracePeriod.String()
+	}
+
 	cfg.Admin = newAdminConfig(opts.AdminListen)
 	switch {
 	case opts.CertStorage != nil:
@@ -615,7 +667,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		// See Server.AutomaticHTTPS: skip the HTTP->HTTPS redirect,
 		// which would otherwise try to bind Caddy's default HTTP port
 		// (80) and needs root.
-		if !opts.HTTPRedirect {
+		if !opts.HTTPRedirect || opts.Inherited.Active() {
 			server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
 		}
 		wildcardHosts, regularHosts := splitWildcardHosts(allHosts)
@@ -642,6 +694,10 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		default:
 			cfg.Apps.TLS = internalIssuerTLSApp(allHosts)
 			cfg.Apps.PKI = newInternalPKIApp()
+		}
+
+		if opts.Inherited.Active() {
+			disableHTTPChallenge(cfg.Apps.TLS)
 		}
 
 		if len(opts.TLSCertificates) > 0 {

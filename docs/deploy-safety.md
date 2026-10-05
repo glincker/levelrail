@@ -151,6 +151,10 @@ anything, since it stops the old release before starting the new one.
 `GET /api/v1/apps/{name}` reports `previous_release_held_until` (RFC3339)
 while a release is held, and `levelrail apps status <name>` prints it.
 
+## What visitors see during a deploy
+
+The ingress never serves a bare `502` or a TLS error for a domain that was recently routed. When a deploy leaves a domain without a ready container (a `recreate` deploy, a crash, a restart), the domain keeps its route and its certificate for `APP_INGRESS_HOLD_WINDOW` (default `10m`) and answers a styled `503` with `Retry-After` and a page that reloads itself. A request whose container refuses the connection is retried for `APP_INGRESS_RETRY_WINDOW` (default `2s`) first, and with two or more replicas it moves to another replica immediately. The windows that remain, with measured numbers, are listed in [resilience](resilience.md#ingress-availability-windows-measured), and every knob is in [Edge limits, client IPs and failover](domains-and-ingress.md#edge-limits-client-ips-and-failover).
+
 ## Pinned host ports
 
 An app with a pinned host port (`--host-port`) cannot run two releases at once, because the port can only be bound once. For these apps blue-green and rolling deploys stop the serving release, start the new one, and wait for readiness. This is a short outage (the new container's start plus its readiness time), not a zero-downtime cutover. If the new release fails to start or never becomes ready, the new container is removed and the previous release is started again on the same port, and the next attempt is delayed by `APP_DEPLOY_PINNED_PORT_RETRY` (default `5m`) so a broken image does not repeat the outage every reconcile pass. The condition reason is `PinnedPortHandoffBackoff` while waiting. Apps without a pinned port keep the full overlap and are unaffected. A container that Docker starts without publishing the pinned port is removed and recreated (`PinnedPortNotPublished`) instead of being reported as healthy.

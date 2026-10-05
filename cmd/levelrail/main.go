@@ -790,8 +790,15 @@ func run(logger *slog.Logger) error {
 	apiRouter.SetPreview(previewManager)
 	apiRouter.SetSupplyChain(supplyChainSvc)
 
+	edge, err := loadIngressEdge(logger)
+	if err != nil {
+		return fmt.Errorf("ingress edge settings: %w", err)
+	}
+	apiRouter.SetDoctorIngressEdge(edge.doctorInfo())
+
 	engine.SetStore(db)
 	engine.SetSource(dynamicSource(dynamicSourceDeps{
+		ingressEdge:                  edge,
 		db:                           db,
 		runtime:                      client,
 		driver:                       ingressDriver,
@@ -810,7 +817,7 @@ func run(logger *slog.Logger) error {
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),
 		ingressHTTPAddr:              ingressHTTPAddr(),
-		httpRedirect:                 httpRedirectEnabled(ingressHTTPAddr(), logger),
+		httpRedirect:                 httpRedirectEnabled(ingressHTTPAddr(), edge.inherited, logger),
 		models:                       newModelDeps(),
 		lbRegistry:                   lbRegistry,
 		previewNotifier:              previewManager,
@@ -3473,6 +3480,7 @@ type dynamicSourceDeps struct {
 	// httpRedirect is httpRedirectEnabled: Caddy serves port 80 and redirects to https.
 	httpRedirect bool
 	models       *modelDeps
+	ingressEdge  ingressEdge
 	// lbRegistry is shared with the API so it can report live upstream status.
 	lbRegistry *loadbalancer.Registry
 }
@@ -3516,6 +3524,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			// Lets Reconcile flag a service placed on an unreachable node.
 			ingressreconcile.WithLocalNodeID(localNodeIDOf(deps)),
 		}
+		ingressOpts = append(ingressOpts, deps.ingressEdge.options()...)
 		if experimental.Enabled(experimental.AIModels) {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
 		}
@@ -3821,12 +3830,15 @@ func publicHostSource() string {
 // httpRedirectEnabled reads APP_INGRESS_HTTP_REDIRECT (true, false, or auto,
 // the default). Auto enables the redirect only when the HTTP address can be
 // bound right now, so a non-root dev run keeps working without port 80.
-func httpRedirectEnabled(addr string, logger *slog.Logger) bool {
+func httpRedirectEnabled(addr string, inherited *ingressdriver.InheritedSockets, logger *slog.Logger) bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv("APP_INGRESS_HTTP_REDIRECT"))) {
 	case "1", "true", "on", "yes":
 		return true
 	case "0", "false", "off", "no":
 		return false
+	}
+	if inherited.Active() && inherited.HTTP != 0 {
+		return true
 	}
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
