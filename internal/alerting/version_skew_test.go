@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/upgrade"
+	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
 type fakeVersionSkewSettings struct {

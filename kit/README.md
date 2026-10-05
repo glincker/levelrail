@@ -27,6 +27,7 @@ Requires Go 1.24 or newer. Import a single package, for example `github.com/GLIN
 | `stackdetect` | Detects a project's framework and build method from its files. |
 | `firewall` | Reconciles prefix-tagged ufw rules against a desired set, with lockout-safety checks. |
 | `semver` | Compares release version strings by semantic-versioning precedence. |
+| `upgrade` | Fetches the latest release for stable, beta and edge channels from a GitHub repo and compares versions. |
 
 ## Stability
 

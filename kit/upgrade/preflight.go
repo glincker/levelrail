@@ -1,4 +1,5 @@
-// Package upgrade runs the read-only checks that gate a platform self-upgrade.
+// Package upgrade fetches the latest release for stable, beta and edge channels from a
+// GitHub repo, compares versions, and runs the read-only checks that gate a self-upgrade.
 package upgrade
 
 import (

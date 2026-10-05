@@ -90,6 +90,9 @@ func TestUpdateAvailable(t *testing.T) {
 		{"beta older than its stable", "v0.2.0-beta.15", &Release{Tag: "v0.2.0"}, true},
 		{"stable not downgraded to beta", "v0.2.0", &Release{Tag: "v0.2.0-beta.15"}, false},
 		{"edge sha falls back to inequality", "main-aaaaaaa", &Release{Tag: "main-bbbbbbb"}, true},
+		{"edge same sha is up to date", "main-aaaaaaa", &Release{Tag: "main-aaaaaaa"}, false},
+		{"release build vs edge sha falls back", "v1.0.0", &Release{Tag: "main-bbbbbbb"}, true},
+		{"dev never updates to edge sha", "dev", &Release{Tag: "main-bbbbbbb"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -102,7 +105,7 @@ func TestUpdateAvailable(t *testing.T) {
 
 // TestPickLatestPrerelease_OutOfOrderList is the regression test for a
 // live bug: GitHub's /releases list is ordered by internal release id,
-// not publish time, so the raw order on glincker/levelrail's real repo
+// not publish time, so the raw order on a real repo
 // put v0.2.0-beta.9 ahead of the actually-newer v0.2.0-beta.14. Taking
 // the first prerelease match reported a nine-release-old "latest".
 func TestPickLatestPrerelease_OutOfOrderList(t *testing.T) {

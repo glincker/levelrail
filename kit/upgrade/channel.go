@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Masterminds/semver/v3"
+	"github.com/GLINCKER/levelrail/kit/semver"
 )
 
 // Update channels a running build can compare itself against.
@@ -32,8 +32,6 @@ func ValidChannel(c string) bool {
 		return false
 	}
 }
-
-const githubRepo = "glincker/levelrail"
 
 // DefaultCacheTTL is how long a Cache entry stays fresh before a caller
 // should fetch again: shared by GET /api/v1/updates, updatecheck.Scheduler,
@@ -110,14 +108,14 @@ func githubGet(ctx context.Context, url string, out any) (status int, err error)
 // non-prerelease, non-draft release. With no stable release it falls back
 // to the newest pre-release (install.sh's rule). nil, nil means nothing
 // has been published at all.
-func FetchLatestStable(ctx context.Context) (*Release, error) {
+func FetchLatestStable(ctx context.Context, repo string) (*Release, error) {
 	var rr rawRelease
-	status, err := githubGet(ctx, "https://api.github.com/repos/"+githubRepo+"/releases/latest", &rr)
+	status, err := githubGet(ctx, "https://api.github.com/repos/"+repo+"/releases/latest", &rr)
 	if err != nil {
 		return nil, err
 	}
 	if status == http.StatusNotFound {
-		return FetchLatestBeta(ctx)
+		return FetchLatestBeta(ctx, repo)
 	}
 	return rr.toRelease(), nil
 }
@@ -125,9 +123,9 @@ func FetchLatestStable(ctx context.Context) (*Release, error) {
 // FetchLatestBeta fetches the newest prerelease from GitHub's releases
 // list, skipping drafts. nil, nil means no prerelease has ever been
 // published.
-func FetchLatestBeta(ctx context.Context) (*Release, error) {
+func FetchLatestBeta(ctx context.Context, repo string) (*Release, error) {
 	var rrs []rawRelease
-	status, err := githubGet(ctx, "https://api.github.com/repos/"+githubRepo+"/releases?per_page=20", &rrs)
+	status, err := githubGet(ctx, "https://api.github.com/repos/"+repo+"/releases?per_page=20", &rrs)
 	if err != nil {
 		return nil, err
 	}
@@ -184,9 +182,9 @@ const mainCommitShortSHALen = 7
 // image-channel job scheme for what a main push's Docker image tag is
 // (IMAGE_VERSION: main-<sha>). nil, nil means the lookup found nothing
 // (an empty or inaccessible repo).
-func FetchLatestEdge(ctx context.Context) (*Release, error) {
+func FetchLatestEdge(ctx context.Context, repo string) (*Release, error) {
 	var c commitResource
-	status, err := githubGet(ctx, "https://api.github.com/repos/"+githubRepo+"/commits/main", &c)
+	status, err := githubGet(ctx, "https://api.github.com/repos/"+repo+"/commits/main", &c)
 	if err != nil {
 		return nil, err
 	}
@@ -209,9 +207,13 @@ type Fetchers struct {
 	Edge   func(context.Context) (*Release, error)
 }
 
-// DefaultFetchers wires the three real GitHub lookups above.
-func DefaultFetchers() Fetchers {
-	return Fetchers{Stable: FetchLatestStable, Beta: FetchLatestBeta, Edge: FetchLatestEdge}
+// DefaultFetchers wires the three real GitHub lookups above for repo ("owner/name").
+func DefaultFetchers(repo string) Fetchers {
+	return Fetchers{
+		Stable: func(ctx context.Context) (*Release, error) { return FetchLatestStable(ctx, repo) },
+		Beta:   func(ctx context.Context) (*Release, error) { return FetchLatestBeta(ctx, repo) },
+		Edge:   func(ctx context.Context) (*Release, error) { return FetchLatestEdge(ctx, repo) },
+	}
 }
 
 // LatestForChannel dispatches to the fetcher for channel, defaulting to
@@ -236,12 +238,11 @@ func UpdateAvailable(currentVersion string, latest *Release) bool {
 	if latest == nil || currentVersion == "dev" {
 		return false
 	}
-	cur, curErr := semver.NewVersion(currentVersion)
-	lat, latErr := semver.NewVersion(latest.Tag)
-	if curErr != nil || latErr != nil {
+	cmp, ok := semver.Compare(currentVersion, latest.Tag)
+	if !ok {
 		return latest.Tag != currentVersion
 	}
-	return lat.GreaterThan(cur)
+	return cmp < 0
 }
 
 // Cache holds the last successful channel lookup, so GET /api/v1/updates

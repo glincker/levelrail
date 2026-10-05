@@ -12,8 +12,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/internal/upgrade"
 	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
 // LogsSource is the narrow surface Engine needs to attach log lines to
@@ -232,7 +232,7 @@ func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
 
 // SetVersionSkew enables kind=version_skew rules: settings supplies the
 // configured update channel, fetchers is the shared GitHub lookup
-// (internal/upgrade), the same one GET /api/v1/updates and
+// (kit/upgrade), the same one GET /api/v1/updates and
 // internal/updatecheck.Scheduler both use.
 func (e *Engine) SetVersionSkew(settings VersionSkewSettingsSource, fetchers upgrade.Fetchers) {
 	e.versionSkewSettings = settings

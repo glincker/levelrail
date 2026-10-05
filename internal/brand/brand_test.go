@@ -152,3 +152,28 @@ func TestRuleCommentPrefixMatchesLegacyDefault(t *testing.T) {
 		t.Fatalf("RuleCommentPrefix() = %q, want %q", got, want)
 	}
 }
+
+func TestAgentNameMatchesLegacyDefault(t *testing.T) {
+	b, err := Load("../../brand.yaml")
+	if err != nil {
+		t.Fatalf("load default brand: %v", err)
+	}
+	if got, want := b.AgentName(), "level"+"rail-agent"; got != want {
+		t.Fatalf("AgentName() = %q, want %q", got, want)
+	}
+}
+
+func TestRepoSlugMatchesLegacyDefault(t *testing.T) {
+	b, err := Load("../../brand.yaml")
+	if err != nil {
+		t.Fatalf("load default brand: %v", err)
+	}
+	if got, want := b.RepoSlug(), "glincker/"+"level"+"rail"; got != want {
+		t.Fatalf("RepoSlug() = %q, want %q", got, want)
+	}
+	for _, url := range []string{"", "https://example.com", "https://example.com/owner"} {
+		if got := (&Brand{RepoURL: url}).RepoSlug(); got != "" {
+			t.Errorf("RepoSlug(%q) = %q, want empty", url, got)
+		}
+	}
+}

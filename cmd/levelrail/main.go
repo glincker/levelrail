@@ -67,7 +67,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/updatecheck"
-	"github.com/GLINCKER/levelrail/internal/upgrade"
 	"github.com/GLINCKER/levelrail/internal/vault"
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/internal/webhook"
@@ -75,6 +74,7 @@ import (
 	"github.com/GLINCKER/levelrail/kit/firewall"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 	"github.com/GLINCKER/levelrail/kit/probe"
+	"github.com/GLINCKER/levelrail/kit/upgrade"
 	"github.com/GLINCKER/levelrail/web"
 )
 
@@ -953,7 +953,7 @@ func run(logger *slog.Logger) error {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
-	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers())
+	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetChanges(changes.New(db, db, db, logger), alertDashboardLink())
 	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))
 	go func() {
@@ -1049,7 +1049,7 @@ func run(logger *slog.Logger) error {
 	// tick, the configured release channel (store.UpdateSettings,
 	// migrations/0258_update_settings.sql) for a newer release, only
 	// when an operator has opted into auto_update_enabled.
-	updateCheckScheduler := updatecheck.NewScheduler(db, logger)
+	updateCheckScheduler := updatecheck.NewScheduler(db, logger, b.RepoSlug())
 	go func() {
 		if err := updateCheckScheduler.Run(ctx, updateCheckInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("update check scheduler stopped", slog.String("error", err.Error()))

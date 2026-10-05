@@ -90,8 +90,11 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 		&& printf '%s\n' "$scope" | grep -qxF github.com/GLINCKER/levelrail/internal/api; then
 		seed_dirs="$(printf '%s\n' "$changed_files" | scripts/affected-go-packages.sh --stdin --seeds 2>/dev/null || true)"
 		if [ -n "$seed_dirs" ]; then
-			mapfile -t seed_dirs_arr <<<"$seed_dirs"
-			mapfile -t seed_pkgs < <(go list -e -f '{{.ImportPath}}' "${seed_dirs_arr[@]}" 2>/dev/null | grep -vxF "github.com/GLINCKER/levelrail/internal/api" || true)
+			# Plain read loops: this hook runs under macOS's bash 3.2, which has no mapfile.
+			seed_dirs_arr=()
+			while IFS= read -r line; do [ -n "$line" ] && seed_dirs_arr+=("$line"); done <<<"$seed_dirs"
+			seed_pkgs=()
+			while IFS= read -r line; do [ -n "$line" ] && seed_pkgs+=("$line"); done < <(go list -e -f '{{.ImportPath}}' "${seed_dirs_arr[@]}" 2>/dev/null | grep -vxF "github.com/GLINCKER/levelrail/internal/api" || true)
 			if [ "${#seed_pkgs[@]}" -gt 0 ]; then
 				narrowed="$(scripts/affected-api-tests.sh "${seed_pkgs[@]}" 2>/dev/null || echo ALL)"
 				[ "$narrowed" != ALL ] && api_tests="$narrowed"

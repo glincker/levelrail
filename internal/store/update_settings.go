@@ -12,7 +12,7 @@ import (
 // There is always exactly one of these (id = 1), seeded by the
 // migration, so GetUpdateSettings never returns a not-found error.
 type UpdateSettings struct {
-	// Channel is one of "stable", "beta", or "edge" (internal/upgrade's
+	// Channel is one of "stable", "beta", or "edge" (kit/upgrade's
 	// Channel constants). Defaults to "stable": GET /api/v1/updates
 	// compares against GitHub's latest non-prerelease release, unchanged
 	// from this table's own pre-existing behavior.

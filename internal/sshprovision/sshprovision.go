@@ -159,10 +159,16 @@ type Provisioner struct {
 	// DialTimeout bounds the initial TCP+SSH handshake. Zero uses
 	// defaultDialTimeout.
 	DialTimeout time.Duration
+	// AgentName is the brand-derived stem for the unit, container and paths (brand.AgentName()).
+	AgentName string
+	// DisplayName is the brand's human name used in the unit description (brand.Name).
+	DisplayName string
 }
 
-// New returns a Provisioner with default settings.
-func New() *Provisioner { return &Provisioner{} }
+// New returns a Provisioner that installs the agent under agentName, described as displayName.
+func New(agentName, displayName string) *Provisioner {
+	return &Provisioner{AgentName: agentName, DisplayName: displayName}
+}
 
 // Provision connects to creds, detects the remote host, and installs the
 // node agent there so it enrolls with params.ControlPlaneAddr using
