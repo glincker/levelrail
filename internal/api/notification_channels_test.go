@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/netguard"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // newTestRouterWithNotificationChannels wires a real (not faked) tester:

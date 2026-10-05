@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/probe"
+	"github.com/GLINCKER/levelrail/kit/probe"
 	"gopkg.in/yaml.v3"
 )
 

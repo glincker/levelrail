@@ -16,8 +16,8 @@ import (
 
 	webpushgo "github.com/SherClockHolmes/webpush-go"
 
-	"github.com/GLINCKER/levelrail/internal/netguard"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // secretsServiceName and the two env keys below are the internal/secrets

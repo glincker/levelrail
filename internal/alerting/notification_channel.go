@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/netguard"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // NotificationChannel is a global, connect-once notify destination

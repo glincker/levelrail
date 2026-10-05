@@ -9,7 +9,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/diagnose"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/untrusted"
+	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
 
 // Env vars that bound the log excerpt.

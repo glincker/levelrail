@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/dockerhub"
+	"github.com/GLINCKER/levelrail/kit/dockerhub"
 )
 
 // dockerHubPageSize bounds both endpoints below to a single page: the

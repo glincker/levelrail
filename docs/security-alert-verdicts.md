@@ -26,7 +26,7 @@ Verdicts use three labels: **fixed** (a real problem, changed in code), **false 
 
 Each of these sends an HTTP request to a URL the operator supplies (an image reference, a git repository URL, an import source, an alert webhook). That is the feature, so the URL is user-controlled by design. What matters is that the client cannot reach an internal address.
 
-The guard is `netguard.NewClient()` (`internal/netguard/netguard.go`). It installs a `net.Dialer.Control` hook that runs after DNS resolution on every connection, redirects included, and refuses loopback, link-local (cloud metadata), private and unspecified addresses, including IPv4-mapped IPv6 forms. It also disables proxies, since a proxy would dial on our behalf. Operators who deliberately target internal hosts can opt in with `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true`.
+The guard is `netguard.NewClient()` (`kit/netguard/netguard.go`). It installs a `net.Dialer.Control` hook that runs after DNS resolution on every connection, redirects included, and refuses loopback, link-local (cloud metadata), private and unspecified addresses, including IPv4-mapped IPv6 forms. It also disables proxies, since a proxy would dial on our behalf. Operators who deliberately target internal hosts can opt in with `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true`.
 
 This is a dial-time check, not a URL-string sanitizer, so CodeQL's request-forgery query does not see it as a barrier. A string check on the URL would be weaker (DNS rebinding, redirects), so the code is intentionally left as is.
 
@@ -34,7 +34,7 @@ This is a dial-time check, not a URL-string sanitizer, so CodeQL's request-forge
 | --- | --- | --- |
 | 36 | `internal/api/preflight.go` builds `RegistryInspector{Client: netguard.NewClient()}` | `TestGuardedClientsRefuseInternalAddresses` (`internal/preflight/netguard_test.go`), image cases |
 | 35 | `internal/api/preflight.go` builds `SmartHTTPChecker{Client: netguard.NewClient()}` | same test, git cases |
-| 34 | `NewHTTPFiles` in `internal/importplan/files.go` starts from `netguard.NewClient()` | `internal/netguard/netguard_test.go` (`TestNewClient_RefusesLoopbackAndMetadata`) |
+| 34 | `NewHTTPFiles` in `internal/importplan/files.go` starts from `netguard.NewClient()` | `kit/netguard/netguard_test.go` (`TestNewClient_RefusesLoopbackAndMetadata`) |
 | 2 | `NewNotifier` in `internal/alerting/notify.go` defaults a nil client to `netguard.NewClient()` | `TestNewNotifier_DefaultClient_BlocksInternal` (`internal/alerting/notify_test.go`) |
 
 Caveat for 2: a caller that passes its own non-nil client to `NewNotifier` bypasses the default. Production callers pass nil or a guarded client; tests pass plain clients to reach `httptest` servers.

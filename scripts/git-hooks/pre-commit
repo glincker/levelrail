@@ -58,6 +58,30 @@ else
 	echo "golangci-lint not installed, skipping (CI still enforces this)"
 fi
 
+# kit/ is a nested module, invisible to the ./... commands above.
+echo "pre-commit: kit (vet, lint, build, brand strings)"
+staged_kit_files=$(git diff --cached --name-only --diff-filter=ACM -- 'kit/')
+if [ -n "$staged_kit_files" ]; then
+	if ! go -C kit vet ./... 2>&1; then
+		fail=1
+	fi
+	if ! go -C kit build ./... 2>&1; then
+		fail=1
+	fi
+	if command -v golangci-lint >/dev/null; then
+		if ! (cd kit && GOLANGCI_LINT_CACHE="$(git rev-parse --absolute-git-dir)/golangci-lint-cache" golangci-lint run ./...); then
+			fail=1
+		fi
+	fi
+	staged_kit_go=$(echo "$staged_kit_files" | grep '\.go$' || true)
+	if [ -n "$staged_kit_go" ]; then
+		# shellcheck disable=SC2086
+		if ! scripts/check-brand-strings.sh $staged_kit_go; then
+			fail=1
+		fi
+	fi
+fi
+
 # This script itself is excluded from the sweep below: the search
 # pattern has to contain the literal em/en dash characters it's looking
 # for, which would otherwise flag itself.

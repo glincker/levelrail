@@ -301,6 +301,8 @@ This is positioning, not a ranking. All of them are worth using. The one area wh
 
 Details: [Architecture](docs/architecture.md).
 
+**Shared kit:** generic, stdlib-only Go packages (SSRF-safe HTTP client, cron parsing, health probes, and more) live in a separate module, [`kit/`](kit/README.md), usable without the platform.
+
 ## Build from source
 
 Needs Go 1.26 or newer and Docker.

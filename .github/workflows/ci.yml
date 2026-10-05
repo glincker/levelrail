@@ -42,6 +42,7 @@ jobs:
       lint: ${{ steps.detect.outputs.lint }}
       lint_dirs: ${{ steps.detect.outputs.lint_dirs }}
       tools: ${{ steps.detect.outputs.tools }}
+      kit: ${{ steps.detect.outputs.kit }}
       web: ${{ steps.detect.outputs.web }}
       vitest: ${{ steps.detect.outputs.vitest }}
       installer: ${{ steps.detect.outputs.installer }}
@@ -453,6 +454,59 @@ jobs:
           args: ${{ env.LINT == 'changed' && format('--new-from-rev={0} {1}', needs.changes.outputs.base, needs.changes.outputs.lint_dirs) || '' }}
           skip-save-cache: ${{ github.event_name != 'push' }}
 
+  # kit/ is its own module, so none of the root package lists reach it.
+  # Root packages that import a changed kit package are re-tested through
+  # scripts/affected-go-packages.sh, not here.
+  kit:
+    name: Kit (vet, lint, test)
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.kit == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE: ${{ needs.changes.outputs.base }}
+    steps:
+      - name: Change detection passed
+        if: needs.changes.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}"
+          exit 1
+
+      # Full history: the changed-line gate needs a real merge-base.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
+        with:
+          cache-prefix: go-kit
+          save: ${{ github.event_name == 'push' }}
+
+      - name: No product name in kit source
+        run: scripts/check-brand-strings.sh
+
+      - name: go vet
+        run: go -C kit vet ./...
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.12
+          working-directory: kit
+          skip-save-cache: ${{ github.event_name != 'push' }}
+
+      - name: go test
+        run: go -C kit test -short -timeout=5m -coverprofile="$GITHUB_WORKSPACE/kit-coverage.out" ./...
+
+      - name: Coverage gate (70% for kit/)
+        run: scripts/check-coverage.sh kit-coverage.out kit/ 70
+
+      - name: Changed-line coverage gate (50% for kit/)
+        if: env.BASE != '' && env.BASE != '0000000000000000000000000000000000000000'
+        run: scripts/check-changed-file-coverage.sh kit-coverage.out "$BASE" kit/ 50
+
   web-check:
     name: Web (tsc, eslint)
     needs: changes
@@ -589,7 +643,7 @@ jobs:
   # failed or was cancelled. A skipped job had no work for this change.
   ci-required:
     name: CI required
-    needs: [changes, build-vet, lint, test-go, test-api, test-rest, coverage-gate, web-check, install-sh]
+    needs: [changes, build-vet, lint, kit, test-go, test-api, test-rest, coverage-gate, web-check, install-sh]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 3

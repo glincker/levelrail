@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/netguard"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // This file is global, connect-once notification channels (Settings ->

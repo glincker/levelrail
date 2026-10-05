@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"slices"
 
-	"github.com/GLINCKER/levelrail/internal/pathfilter"
+	"github.com/GLINCKER/levelrail/kit/pathfilter"
 )
 
 // Pull request actions a `types` filter may name.

@@ -3,8 +3,8 @@ package application
 import (
 	"context"
 
-	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/probe"
 )
 
 // ProbeAttemptRecorder persists individual readiness-probe attempts made

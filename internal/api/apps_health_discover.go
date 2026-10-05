@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/kit/probe"
 )
 
 // This file implements POST /api/v1/apps/{name}/health/discover: every

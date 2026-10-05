@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/untrusted"
+	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
 
 // recordingProvider replays scripted turns and keeps every request, so a

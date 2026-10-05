@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/probe"
+	"github.com/GLINCKER/levelrail/kit/probe"
 )
 
 // ServiceResources caps a service's memory and CPU, in the same units

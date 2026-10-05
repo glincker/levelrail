@@ -42,16 +42,13 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/firewall"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/models"
-	"github.com/GLINCKER/levelrail/internal/netguard"
 	"github.com/GLINCKER/levelrail/internal/objectstore"
 	"github.com/GLINCKER/levelrail/internal/orphans"
-	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
@@ -75,6 +72,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 	"github.com/GLINCKER/levelrail/internal/webpush"
+	"github.com/GLINCKER/levelrail/kit/firewall"
+	"github.com/GLINCKER/levelrail/kit/netguard"
+	"github.com/GLINCKER/levelrail/kit/probe"
 	"github.com/GLINCKER/levelrail/web"
 )
 
@@ -824,6 +824,7 @@ func run(logger *slog.Logger) error {
 		databaseSlowQueryThresholdMs: databaseSlowQueryThresholdMs(logger),
 		dashboardDial:                dashboardDialAddr(httpAddr()),
 		networkPrefix:                b.ShortName,
+		firewallRulePrefix:           b.RuleCommentPrefix(),
 		instanceID:                   instanceID,
 		livenessTracker:              application.NewLivenessTracker(),
 		restartBackoff:               newRestartBackoff(logger),
@@ -3465,19 +3466,20 @@ func resolvedPublicHost() (host, source string) {
 // field here is fixed for the process lifetime, only the store contents
 // dynamicSource reads change between reconcile passes.
 type dynamicSourceDeps struct {
-	previewNotifier  previewNotifier
-	db               *store.DB
-	runtime          docker.Runtime
-	driver           *ingressdriver.Driver
-	logger           *slog.Logger
-	telemetryDB      *telemetry.DB
-	secretsManager   *secrets.Manager
-	agentRegistry    *agent.Registry
-	heartbeatTimeout time.Duration
-	meshCfg          *meshSetup
-	meshDNSAddr      string
-	dashboardDial    string
-	networkPrefix    string
+	previewNotifier    previewNotifier
+	db                 *store.DB
+	runtime            docker.Runtime
+	driver             *ingressdriver.Driver
+	logger             *slog.Logger
+	telemetryDB        *telemetry.DB
+	secretsManager     *secrets.Manager
+	agentRegistry      *agent.Registry
+	heartbeatTimeout   time.Duration
+	meshCfg            *meshSetup
+	meshDNSAddr        string
+	dashboardDial      string
+	networkPrefix      string
+	firewallRulePrefix string
 	// databaseSlowQueryThresholdMs is 0 (databaseSlowQueryThresholdMs's own
 	// "use the default" signal) unless APP_DATABASE_SLOW_QUERY_THRESHOLD_MS
 	// is set; see database.WithSlowQueryThreshold.
@@ -3649,7 +3651,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// above. requiredPorts mirrors api.WithFirewallRequiredPorts so
 		// the write-time refusal and this reconcile-time, defense-in-depth
 		// skip never disagree about what counts as "required."
-		controllers = append(controllers, firewallreconcile.New(deps.db, firewall.New(), firewallreconcile.WithRequiredPorts(platformRequiredPorts()), firewallreconcile.WithLogger(deps.logger)))
+		controllers = append(controllers, firewallreconcile.New(deps.db, firewall.New(deps.firewallRulePrefix), firewallreconcile.WithRequiredPorts(platformRequiredPorts()), firewallreconcile.WithLogger(deps.logger)))
 
 		if deps.meshCfg != nil {
 			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger)))

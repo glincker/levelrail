@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/ticker"
 	"github.com/GLINCKER/levelrail/internal/upgrade"
 	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/GLINCKER/levelrail/kit/ticker"
 )
 
 // Store is the narrow store surface Scheduler needs. *store.DB satisfies

@@ -12,6 +12,7 @@
 #   lint        none | changed | all
 #   lint_dirs   package dirs for lint=changed
 #   tools       the separate tools/ module changed
+#   kit         the separate kit/ module changed (its own vet, lint, test lane)
 #   web         none | docs (docs/ feeds the web build's help manifest) | full
 #   vitest      none | changed | full
 #   installer   install.sh end-to-end job
@@ -20,7 +21,7 @@ set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-full=false go=false go_full=false lint=none tools=false
+full=false go=false go_full=false lint=none tools=false kit=false
 web=none vitest=none installer=false workflows=false
 declare -A lint_dirs=()
 reasons=()
@@ -43,15 +44,23 @@ for f in "${files[@]}"; do
 	case "$f" in
 	.github/workflows/ci.yml | scripts/ci-*.sh | scripts/affected-go-packages.sh | scripts/go-test-groups.sh | \
 		scripts/check-lane-results.sh | scripts/check-coverage.sh | scripts/check-changed-file-coverage.sh | \
-		scripts/merge-coverprofiles.sh | scripts/check-migration-versions.sh | scripts/check-flaky-tests.sh)
+		scripts/merge-coverprofiles.sh | scripts/check-brand-strings.sh | scripts/check-migration-versions.sh | scripts/check-flaky-tests.sh)
 		set_full "CI pipeline changed: $f"
 		;;
 	go.mod | go.sum | internal/store/migrations/*.sql)
 		go=true go_full=true lint=all
 		reasons+=("import graph can't scope: $f")
 		;;
+	kit/go.mod | kit/go.sum)
+		go=true go_full=true kit=true
+		reasons+=("import graph can't scope: $f")
+		;;
+	kit/*.md) ;;
+	kit/*)
+		go=true kit=true
+		;;
 	.golangci.yml)
-		lint=all
+		lint=all kit=true
 		;;
 	.github/flaky-tests.txt)
 		go=true
@@ -80,7 +89,7 @@ for f in "${files[@]}"; do
 	esac
 	case "$f" in
 	*.go)
-		case "$f" in tools/*) continue ;; esac
+		case "$f" in tools/* | kit/*) continue ;; esac
 		dir="$(dirname "$f")"
 		[ -d "$dir" ] && lint_dirs["./$dir/"]=1
 		;;
@@ -97,7 +106,7 @@ if [ "$full" = false ] && [ "${#files[@]}" -gt 0 ]; then
 fi
 
 if [ "$full" = true ]; then
-	go=true go_full=true lint=all tools=true web=full vitest=full installer=true workflows=true
+	go=true go_full=true lint=all tools=true kit=true web=full vitest=full installer=true workflows=true
 fi
 
 if [ "$lint" = none ] && [ "${#lint_dirs[@]}" -gt 0 ]; then
@@ -115,6 +124,7 @@ go_full=$go_full
 lint=$lint
 lint_dirs=$lint_list
 tools=$tools
+kit=$kit
 web=$web
 vitest=$vitest
 installer=$installer
@@ -124,5 +134,5 @@ EOF
 {
 	echo "changed files: ${#files[@]}"
 	for r in "${reasons[@]}"; do echo "  $r"; done
-	echo "go=$go go_full=$go_full lint=$lint tools=$tools web=$web vitest=$vitest installer=$installer workflows=$workflows"
+	echo "go=$go go_full=$go_full lint=$lint tools=$tools kit=$kit web=$web vitest=$vitest installer=$installer workflows=$workflows"
 } >&2

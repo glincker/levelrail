@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/dockerhub"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/dockerhub"
 )
 
 // fakeDockerHubClient is a hand-written fake for DockerHubClient, the

@@ -142,3 +142,13 @@ func TestLoad_MissingFile(t *testing.T) {
 		t.Fatal("expected error for missing file, got nil")
 	}
 }
+
+func TestRuleCommentPrefixMatchesLegacyDefault(t *testing.T) {
+	b, err := Load("../../brand.yaml")
+	if err != nil {
+		t.Fatalf("load default brand: %v", err)
+	}
+	if got, want := b.RuleCommentPrefix(), "level"+"rail:"; got != want {
+		t.Fatalf("RuleCommentPrefix() = %q, want %q", got, want)
+	}
+}
