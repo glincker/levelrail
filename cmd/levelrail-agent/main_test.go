@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"log/slog"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -123,5 +125,24 @@ func TestFloatFromEnv(t *testing.T) {
 		if got := floatFromEnv("APP_AGENT_CERT_RENEW_FRACTION"); got != tt.want {
 			t.Errorf("floatFromEnv(%q) = %v, want %v", tt.raw, got, tt.want)
 		}
+	}
+}
+
+func TestLoadOrEnroll_UnwritableIdentityDirFailsBeforeJoin(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root ignores directory permissions")
+	}
+	dir := t.TempDir()
+	if err := os.Chmod(dir, 0o500); err != nil { //nolint:gosec // read-only dir needs the x bit
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) }) //nolint:gosec // restore so TempDir can clean up
+	t.Setenv("APP_JOIN_TOKEN", "tok")
+	t.Setenv("APP_NODE_NAME", "n1")
+
+	// The address is unreachable: reaching the dial would mean the token was spent.
+	_, err := loadOrEnroll(context.Background(), "127.0.0.1:1", filepath.Join(dir, "identity.json"), testLogger())
+	if err == nil || !strings.Contains(err.Error(), "join token was not used") {
+		t.Fatalf("loadOrEnroll() error = %v, want the preflight error", err)
 	}
 }

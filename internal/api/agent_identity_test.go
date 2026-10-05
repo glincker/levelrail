@@ -11,7 +11,7 @@ import (
 
 func mintAgent(t *testing.T, rt *Router, name string, abilities []string, agent agentIdentity) string {
 	t.Helper()
-	plain, _, err := MintAgentAPIToken(context.Background(), rt.tokens, name, abilities, nil, agent)
+	plain, _, err := MintAgentAPIToken(context.Background(), rt.tokens, name, abilities, nil, agent, "")
 	if err != nil {
 		t.Fatalf("mint %s: %v", name, err)
 	}

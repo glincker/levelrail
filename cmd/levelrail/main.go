@@ -3553,12 +3553,12 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// registry being enabled with a Host set (WithRegistryDial's own
 		// doc comment).
 		ingressOpts = append(ingressOpts, ingressreconcile.WithRegistryDial(registryDialAddr()))
+		ingressOpts = append(ingressOpts,
+			ingressreconcile.WithImplicitLoadBalancing(implicitLoadBalancing(deps.logger)),
+			ingressreconcile.WithNodeUpstreams(lbNodeUpstreams{db: deps.db, local: deps.runtime, registry: deps.agentRegistry, localNodeID: localNodeIDOf(deps)}),
+		)
 		if experimental.Enabled(experimental.LoadBalancer) {
-			ingressOpts = append(ingressOpts,
-				ingressreconcile.WithLoadBalancers(deps.db, deps.lbRegistry),
-				ingressreconcile.WithImplicitLoadBalancing(implicitLoadBalancing(deps.logger)),
-				ingressreconcile.WithNodeUpstreams(lbNodeUpstreams{db: deps.db, local: deps.runtime, registry: deps.agentRegistry}),
-			)
+			ingressOpts = append(ingressOpts, ingressreconcile.WithLoadBalancers(deps.db, deps.lbRegistry))
 		}
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 

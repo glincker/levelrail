@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/network"
 )
 
@@ -99,7 +100,7 @@ func setupAgentMesh(ctx context.Context, nodeID string, logger *slog.Logger) (*m
 		linkOpt = network.WithLinkConfigurator(link)
 	}
 
-	opts := []network.DeviceOption{network.WithLogger(logger)}
+	opts := []network.DeviceOption{network.WithLogger(logger), network.WithShortName(meshBrandShortName())}
 	if linkOpt != nil {
 		opts = append(opts, linkOpt)
 	}
@@ -142,4 +143,18 @@ func agentLinkConfigurator() network.LinkConfigurator {
 	default:
 		return nil
 	}
+}
+
+// meshBrandShortName resolves the brand short name the control plane
+// also derives its interface name from: brand.yaml (APP_BRAND_FILE or
+// ./brand.yaml) with APP_BRAND_* overrides, else the bare override.
+func meshBrandShortName() string {
+	path := os.Getenv("APP_BRAND_FILE")
+	if path == "" {
+		path = "./brand.yaml"
+	}
+	if b, err := brand.Load(path); err == nil {
+		return b.ShortName
+	}
+	return os.Getenv("APP_BRAND_SHORT_NAME")
 }

@@ -14,6 +14,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// auditActorSession is the audit actor type for a cookie-session caller.
+const auditActorSession = "session"
+
 // tokenResource is the wire shape for a token in list responses: never
 // the token secret itself (that's returned exactly once, by
 // handleCreateToken's response, and never again), only enough for an
@@ -112,12 +115,14 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	plaintext, rec, err := MintAgentAPIToken(r.Context(), rt.tokens, req.Name, req.Abilities, expiresAt, agent)
+	ownerID, _ := rt.currentSessionUserID(r)
+	plaintext, rec, err := MintAgentAPIToken(r.Context(), rt.tokens, req.Name, req.Abilities, expiresAt, agent, ownerID)
 	if err != nil {
 		rt.logger.Error("api: create token failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rt.recordAudit(r.Context(), r, AbilityWrite, auditActorSession, ownerID, "", http.StatusCreated)
 
 	writeJSON(w, http.StatusCreated, createTokenResponse{
 		tokenResource: toTokenResource(rec),
@@ -135,8 +140,13 @@ func (rt *Router) handleListTokens(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	callerID, _ := rt.currentSessionUserID(r)
+	admin := rt.callerIsAdmin(r)
 	out := make([]tokenResource, 0, len(recs))
 	for _, t := range recs {
+		if !admin && t.OwnerUserID != callerID {
+			continue
+		}
 		out = append(out, toTokenResource(t))
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -147,6 +157,22 @@ func (rt *Router) handleListTokens(w http.ResponseWriter, r *http.Request) {
 // that never existed at all, not one already revoked.
 func (rt *Router) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	callerID, _ := rt.currentSessionUserID(r)
+	if !rt.callerIsAdmin(r) {
+		owned, oerr := rt.tokens.GetAPITokenByID(r.Context(), id)
+		if oerr == nil && owned.OwnerUserID != callerID {
+			oerr = store.ErrAPITokenNotFound
+		}
+		if errors.Is(oerr, store.ErrAPITokenNotFound) {
+			writeError(w, http.StatusNotFound, "token not found")
+			return
+		}
+		if oerr != nil {
+			rt.logger.Error("api: revoke token: load failed", slog.String("error", oerr.Error()), slog.String("token_id", id))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
 	err := rt.tokens.RevokeAPIToken(r.Context(), id)
 	if errors.Is(err, store.ErrAPITokenNotFound) {
 		writeError(w, http.StatusNotFound, "token not found")
@@ -157,7 +183,14 @@ func (rt *Router) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rt.recordAudit(r.Context(), r, AbilityWrite, auditActorSession, callerID, "", http.StatusNoContent)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// callerIsAdmin reports whether the session caller holds root.
+func (rt *Router) callerIsAdmin(r *http.Request) bool {
+	abilities, err := rt.callerAbilities(r)
+	return err == nil && hasAbility(abilities, AbilityRoot)
 }
 
 // MintAPIToken generates, hashes, and persists a new API token,
@@ -167,11 +200,11 @@ func (rt *Router) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 // human through this handler) can mint through the identical path
 // instead of duplicating it.
 func MintAPIToken(ctx context.Context, tokens TokenStore, name string, abilities []string, expiresAt *time.Time) (string, store.APIToken, error) {
-	return MintAgentAPIToken(ctx, tokens, name, abilities, expiresAt, agentIdentity{})
+	return MintAgentAPIToken(ctx, tokens, name, abilities, expiresAt, agentIdentity{}, "")
 }
 
-// MintAgentAPIToken is MintAPIToken for a token labeled with an agent identity.
-func MintAgentAPIToken(ctx context.Context, tokens TokenStore, name string, abilities []string, expiresAt *time.Time, agent agentIdentity) (string, store.APIToken, error) {
+// MintAgentAPIToken is MintAPIToken with an agent label and an owning user (empty for system tokens).
+func MintAgentAPIToken(ctx context.Context, tokens TokenStore, name string, abilities []string, expiresAt *time.Time, agent agentIdentity, ownerUserID string) (string, store.APIToken, error) {
 	plaintext, err := randomToken()
 	if err != nil {
 		return "", store.APIToken{}, fmt.Errorf("api: mint token: generate token: %w", err)
@@ -189,6 +222,7 @@ func MintAgentAPIToken(ctx context.Context, tokens TokenStore, name string, abil
 		ExpiresAt: expiresAt,
 
 		AgentName: agent.Name, AgentDescription: agent.Description,
+		OwnerUserID: ownerUserID,
 	}
 	if err := tokens.SaveAPIToken(ctx, rec); err != nil {
 		return "", store.APIToken{}, fmt.Errorf("api: mint token: save: %w", err)

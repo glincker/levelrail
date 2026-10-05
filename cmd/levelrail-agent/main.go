@@ -245,6 +245,9 @@ func runReenroll(ctx context.Context, addr, path string, logger *slog.Logger) er
 		return fmt.Errorf("APP_REENROLL_TOKEN must be set to a re-enroll token generated for this node")
 	}
 	file := agent.NewIdentityFile(path)
+	if err := file.CheckWritable(); err != nil {
+		return err
+	}
 	var nodeID string
 	var opts []agent.EnrollOption
 	if fp := os.Getenv("APP_CA_FINGERPRINT"); fp != "" {
@@ -296,6 +299,10 @@ func loadOrEnroll(ctx context.Context, addr, path string, logger *slog.Logger) (
 			return nil, fmt.Errorf("APP_NODE_NAME is not set and the local hostname is unavailable: %w", hostErr)
 		}
 		nodeName = h
+	}
+
+	if err := file.CheckWritable(); err != nil {
+		return nil, err
 	}
 
 	var enrollOpts []agent.EnrollOption

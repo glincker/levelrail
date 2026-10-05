@@ -34,9 +34,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/netip"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -343,6 +345,13 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 	sink := network.NewMultiSink(localNodeID, localSink, agent.NewGRPCSink(agentRegistry))
 	coordinator := network.NewCoordinator(sink, network.PlanOptions{MeshCIDR: meshCIDR(logger)},
 		network.WithCoordinatorLogger(logger))
+	if hub := meshHubEndpoint(agentAdvertiseHost(), network.DefaultListenPort); hub != "" {
+		if err := coordinator.SetObservedEndpoint(localNodeID, hub); err != nil {
+			logger.Warn("mesh hub endpoint not recorded", slog.String("endpoint", hub), slog.String("error", err.Error()))
+		}
+	} else {
+		logger.Warn("mesh hub endpoint unknown: set APP_AGENT_ADVERTISE_HOST to this server's public host so agents can reach it on UDP " + strconv.Itoa(network.DefaultListenPort))
+	}
 
 	// Lowercased explicitly: Resolver.Authoritative compares a normalized
 	// (lowercased) query name against this zone verbatim, so a
@@ -458,4 +467,20 @@ func containerDNSAddr(ctx context.Context, client *docker.Client, meshCfg *meshS
 	}
 
 	return gateway
+}
+
+// meshHubEndpoint is the control plane's own WireGuard endpoint as agents
+// must dial it: the advertise host plus the mesh UDP port. Empty for a
+// loopback or blank host, which no remote agent can reach.
+func meshHubEndpoint(host string, port int) string {
+	if host == "" {
+		return ""
+	}
+	if ip, err := netip.ParseAddr(host); err == nil && ip.IsLoopback() {
+		return ""
+	}
+	if host == "localhost" {
+		return ""
+	}
+	return net.JoinHostPort(host, strconv.Itoa(port))
 }

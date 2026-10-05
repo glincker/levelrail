@@ -5,6 +5,7 @@ import type { NodeResource, NodeStatus } from '../types/nodeDetail'
 import type { NodeResourceUsage } from '../types/fleetResourceUsage'
 import { DeleteNodeDialog } from './DeleteNodeDialog'
 import { AgentOutdatedBadge, NodeCertBadge } from './NodeCertBadge'
+import { NodeNeverConnectedBadge } from './NodeNeverConnected'
 import {
   NodeCPUCell,
   NodeDiskCell,
@@ -109,6 +110,7 @@ export function NodeRow({
             GPU {node.gpu.free_gpus}/{node.gpu.gpu_count} free
           </Badge>
         ) : null}
+        <NodeNeverConnectedBadge node={node} />
         <NodeCertBadge cert={node.cert} />
         <AgentOutdatedBadge agent={node.agent} />
       </span>

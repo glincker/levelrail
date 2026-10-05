@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"golang.org/x/oauth2"
 )
 
 // OAuthSettingsStore is the store surface the OAuth settings and sign-in
@@ -54,6 +56,26 @@ var (
 	errEmailBelongsToExistingAccount = errors.New("api: oauth email belongs to an existing account")
 	errEmailDomainNotAllowed         = errors.New("api: oauth email domain not allowed")
 )
+
+// oauthBindingCookieName ties an OAuth state to the browser that started
+// the flow, defeating login CSRF with an attacker-initiated state.
+const oauthBindingCookieName = "oauth_binding"
+
+func setOAuthBindingCookie(w http.ResponseWriter, r *http.Request, nonce string, ttl time.Duration) {
+	c := &http.Cookie{ //nolint:gosec // Secure follows the transport, see requestIsHTTPS
+		Name:     oauthBindingCookieName,
+		Value:    nonce,
+		Path:     "/api/v1/auth/oauth",
+		HttpOnly: true,
+		Secure:   requestIsHTTPS(r),
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int(ttl.Seconds()),
+	}
+	if nonce == "" {
+		c.MaxAge = -1
+	}
+	http.SetCookie(w, c) // NOSONAR: Secure is set whenever the client connection is HTTPS, see requestIsHTTPS
+}
 
 // handleListPublicOAuthProviders handles GET /api/v1/auth/oauth/providers:
 // public, unauthenticated. Reveals only (provider, enabled), never a
@@ -134,14 +156,22 @@ func (rt *Router) beginOAuthFlow(w http.ResponseWriter, r *http.Request, purpose
 		return
 	}
 
-	state, err := rt.oauthState.create(provider, purpose, linkUserID)
+	nonce, err := randomToken()
+	if err != nil {
+		rt.logger.Error("api: oauth start: generate nonce failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	verifier := oauth2.GenerateVerifier()
+	state, err := rt.oauthState.create(provider, purpose, linkUserID, nonce, verifier)
 	if err != nil {
 		rt.logger.Error("api: oauth start: generate state failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	http.Redirect(w, r, client.AuthCodeURL(state), http.StatusFound)
+	setOAuthBindingCookie(w, r, nonce, oauthStateTTL)
+	http.Redirect(w, r, client.AuthCodeURL(state, oauth2.S256ChallengeOption(verifier)), http.StatusFound)
 }
 
 // handleOAuthCallback handles GET /api/v1/auth/oauth/{provider}/callback,
@@ -176,6 +206,12 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		redirectOAuthError(w, r, "invalid_state")
 		return
 	}
+	cookie, cerr := r.Cookie(oauthBindingCookieName)
+	setOAuthBindingCookie(w, r, "", 0)
+	if cerr != nil || subtle.ConstantTimeCompare([]byte(cookie.Value), []byte(st.nonce)) != 1 {
+		redirectOAuthError(w, r, "invalid_state")
+		return
+	}
 
 	settings, err := rt.oauthSettings.GetOAuthProviderSettings(r.Context(), provider)
 	if err != nil {
@@ -202,7 +238,7 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := client.Exchange(r.Context(), code)
+	token, err := client.Exchange(r.Context(), code, oauth2.VerifierOption(st.verifier))
 	if err != nil {
 		rt.logger.Warn("api: oauth code exchange failed", slog.String("provider", provider), slog.String("error", err.Error()))
 		redirectOAuthError(w, r, "exchange_failed")

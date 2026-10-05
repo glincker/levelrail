@@ -500,6 +500,7 @@ type InviteStore interface {
 type TokenStore interface {
 	SaveAPIToken(ctx context.Context, t store.APIToken) error
 	GetAPITokenByHash(ctx context.Context, hash string) (*store.APIToken, error)
+	GetAPITokenByID(ctx context.Context, id string) (*store.APIToken, error)
 	ListAPITokens(ctx context.Context) ([]store.APIToken, error)
 	RevokeAPIToken(ctx context.Context, id string) error
 	TouchAPITokenLastUsed(ctx context.Context, id string) error

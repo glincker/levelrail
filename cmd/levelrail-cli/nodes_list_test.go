@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -92,5 +93,31 @@ func TestRun_NodesList_Help(t *testing.T) {
 	_, stderr := runCLIExpectOK(t, []string{"nodes", "list", "-h"})
 	if !strings.Contains(stderr, "nodes list") {
 		t.Errorf("stderr = %q, want usage text", stderr)
+	}
+}
+
+func TestPrintNodesTable_NeverConnectedHint(t *testing.T) {
+	tests := []struct {
+		name     string
+		node     nodeResource
+		wantCol  string
+		wantHint bool
+	}{
+		{"healthy", nodeResource{ID: "a", Name: "n1", Status: "online"}, "online", false},
+		{"plain pending", nodeResource{ID: "b", Name: "n2", Status: "pending"}, "pending", false},
+		{"stuck pending", nodeResource{ID: "c", Name: "n3", Status: "pending", StatusReason: "enrolled_never_connected"}, "pending (never connected)", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			printNodesTable(&buf, []nodeResource{tt.node})
+			out := buf.String()
+			if !strings.Contains(out, tt.wantCol) {
+				t.Errorf("table missing %q:\n%s", tt.wantCol, out)
+			}
+			if got := strings.Contains(out, "nodes delete "+tt.node.ID); got != tt.wantHint {
+				t.Errorf("hint present = %v, want %v:\n%s", got, tt.wantHint, out)
+			}
+		})
 	}
 }
