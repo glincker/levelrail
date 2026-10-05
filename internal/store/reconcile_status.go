@@ -15,6 +15,31 @@ import (
 // reconcile.Engine itself only ever held results in memory, lost on
 // restart.
 func (db *DB) UpsertConditions(ctx context.Context, controllerName string, conditions []reconcile.Condition) error {
+	if len(conditions) == 0 {
+		return nil
+	}
+
+	type conditionRow struct {
+		Type    string `json:"t"`
+		Status  string `json:"s"`
+		Reason  string `json:"r"`
+		Message string `json:"m"`
+	}
+	rows := make([]conditionRow, len(conditions))
+	for i, c := range conditions {
+		rows[i] = conditionRow{
+			Type:    c.Type,
+			Status:  string(c.Status),
+			Reason:  c.Reason,
+			Message: c.Message,
+		}
+	}
+
+	data, err := json.Marshal(rows)
+	if err != nil {
+		return fmt.Errorf("store: marshal conditions: %w", err)
+	}
+
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: upsert conditions: begin: %w", err)
@@ -23,18 +48,17 @@ func (db *DB) UpsertConditions(ctx context.Context, controllerName string, condi
 		_ = tx.Rollback() // no-op if Commit already succeeded
 	}()
 
-	for _, c := range conditions {
-		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO reconcile_status (controller_name, condition_type, status, reason, message, updated_at)
-			VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-			ON CONFLICT (controller_name, condition_type) DO UPDATE SET
-				status = excluded.status,
-				reason = excluded.reason,
-				message = excluded.message,
-				updated_at = excluded.updated_at
-		`, controllerName, c.Type, string(c.Status), c.Reason, c.Message); err != nil {
-			return fmt.Errorf("store: upsert condition %s/%s: %w", controllerName, c.Type, err)
-		}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO reconcile_status (controller_name, condition_type, status, reason, message, updated_at)
+		SELECT ?, json_extract(value, '$.t'), json_extract(value, '$.s'), json_extract(value, '$.r'), json_extract(value, '$.m'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		FROM json_each(?) WHERE 1
+		ON CONFLICT (controller_name, condition_type) DO UPDATE SET
+			status = excluded.status,
+			reason = excluded.reason,
+			message = excluded.message,
+			updated_at = excluded.updated_at
+	`, controllerName, string(data)); err != nil {
+		return fmt.Errorf("store: upsert conditions: execute batch: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
