@@ -195,7 +195,7 @@ func TestHandleLogin_PasswordlessAccount_Unauthorized(t *testing.T) {
 	}
 	state := startOAuthFlow(t, rt, "/api/v1/auth/oauth/google/start", nil)
 	provisionRec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(provisionRec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback?state="+state+"&code=abc", nil))
+	rt.Handler().ServeHTTP(provisionRec, oauthCallbackRequest(state))
 	if provisionRec.Code != http.StatusFound {
 		t.Fatalf("oauth provisioning status = %d, want %d, body = %s", provisionRec.Code, http.StatusFound, provisionRec.Body.String())
 	}
