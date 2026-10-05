@@ -97,9 +97,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/internal/upgrade"
 	"github.com/GLINCKER/levelrail/kit/dockerhub"
 	"github.com/GLINCKER/levelrail/kit/firewall"
+	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
 // Router wires every internal/api handler onto one http.Handler.
@@ -294,7 +294,7 @@ type Router struct {
 	// always set, same "core Store interface" shape as ingressSettings above.
 	updateSettings UpdateSettingsStore
 	// upgradeFetchers is the beta/edge channel lookup, defaulted to
-	// upgrade.DefaultFetchers() in NewRouter, overridable in tests the
+	// upgrade.DefaultFetchers in NewRouter, overridable in tests the
 	// same way fetchLatestRelease is above.
 	upgradeFetchers upgrade.Fetchers
 	// channelUpdatesCache caches upgradeFetchers' result for whichever
@@ -683,7 +683,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		fetchLatestRelease:          defaultFetchLatestRelease,
 		updatesCache:                newUpdatesCache(),
 		updateSettings:              s,
-		upgradeFetchers:             upgrade.DefaultFetchers(),
+		upgradeFetchers:             upgrade.DefaultFetchers(b.RepoSlug()),
 		channelUpdatesCache:         upgrade.NewCache(),
 		auditLog:                    s,
 		scheduledTasks:              s,

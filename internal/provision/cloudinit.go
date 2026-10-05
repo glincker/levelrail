@@ -5,14 +5,8 @@ import (
 	"strings"
 )
 
-// defaultAgentImageRepo is the published, cosign-signed image
-// (.github/workflows/release.yml's merge-image-levelrail-agent job) the
-// agent ships as. There is no raw agent binary release asset to check a
-// sha256sum against the way install.sh verifies the control plane binary,
-// so cloud-init pulls this image instead. Matches internal/api/updates.go's
-// own githubRepo constant: a concrete upstream location, not user-facing
-// branding, so the project's brand-indirection rule does not apply here.
-const defaultAgentImageRepo = "ghcr.io/glincker/levelrail-agent"
+// agentImageOwner is the registry namespace the agent image is published under, a concrete upstream location rather than branding.
+const agentImageOwner = "ghcr.io/glincker/"
 
 // CloudInitParams is everything RenderCloudInit needs to produce a
 // first-boot script for a freshly created server.
@@ -21,7 +15,11 @@ type CloudInitParams struct {
 	JoinToken        string
 	CAFingerprint    string
 	NodeName         string
-	// AgentImage overrides defaultAgentImageRepo:tag, for an operator who
+	// AgentName is the brand-derived agent identifier (Brand.AgentName()), used for the unit, env file, data dir and default image.
+	AgentName string
+	// DisplayName is the product name shown in the unit description (Brand.Name).
+	DisplayName string
+	// AgentImage overrides the default repo:tag, for an operator who
 	// mirrors the image elsewhere. Empty uses the default repo at
 	// AgentVersion.
 	AgentImage   string
@@ -45,7 +43,7 @@ func (p CloudInitParams) agentImage() string {
 	if tag == "" || tag == "dev" {
 		tag = "edge"
 	}
-	return defaultAgentImageRepo + ":" + tag
+	return agentImageOwner + p.AgentName + ":" + tag
 }
 
 // RenderCloudInit renders the user-data cloud-init runs on first boot: it
@@ -58,10 +56,10 @@ func (p CloudInitParams) agentImage() string {
 // (--user 0:0, it needs docker.sock and NET_ADMIN), so the bind-mounted
 // identity directory is created root-owned with mode 0700.
 func RenderCloudInit(p CloudInitParams) (string, error) {
-	if p.ControlPlaneAddr == "" || p.JoinToken == "" || p.NodeName == "" {
-		return "", fmt.Errorf("provision: render cloud-init: control plane address, join token and node name are required")
+	if p.ControlPlaneAddr == "" || p.JoinToken == "" || p.NodeName == "" || p.AgentName == "" || p.DisplayName == "" {
+		return "", fmt.Errorf("provision: render cloud-init: control plane address, join token, node name, agent name and display name are required")
 	}
-	for _, v := range []string{p.ControlPlaneAddr, p.JoinToken, p.CAFingerprint, p.NodeName} {
+	for _, v := range []string{p.ControlPlaneAddr, p.JoinToken, p.CAFingerprint, p.NodeName, p.AgentName, p.DisplayName} {
 		if strings.ContainsAny(v, "\n\r") {
 			return "", fmt.Errorf("provision: render cloud-init: value contains a newline")
 		}
@@ -74,28 +72,28 @@ func RenderCloudInit(p CloudInitParams) (string, error) {
 	if p.CAFingerprint != "" {
 		fmt.Fprintf(&envLines, "APP_CA_FINGERPRINT=%s\n", p.CAFingerprint)
 	}
-	fmt.Fprintf(&envLines, "APP_AGENT_IDENTITY_FILE=/var/lib/levelrail-agent-data/identity.json\n")
+	fmt.Fprintf(&envLines, "APP_AGENT_IDENTITY_FILE=/var/lib/%s-data/identity.json\n", p.AgentName)
 	meshFlags := ""
 	if p.MeshEnabled {
 		envLines.WriteString("APP_MESH_ENABLED=1\n")
 		meshFlags = " -e APP_MESH_ENABLED --cap-add NET_ADMIN --device /dev/net/tun"
 	}
 
-	unit := fmt.Sprintf(agentUnit, p.agentImage(), meshFlags)
-	return fmt.Sprintf(cloudInitTemplate, indentBlock(envLines.String()), indentBlock(unit)), nil
+	unit := fmt.Sprintf(agentUnit, p.agentImage(), meshFlags, p.AgentName, p.DisplayName)
+	return fmt.Sprintf(cloudInitTemplate, indentBlock(envLines.String()), indentBlock(unit), p.AgentName), nil
 }
 
 const agentUnit = `[Unit]
-Description=Levelrail node agent
+Description=%[4]s node agent
 After=network-online.target docker.service
 Requires=docker.service
 Wants=network-online.target
 
 [Service]
-EnvironmentFile=/etc/levelrail-agent.env
-ExecStartPre=-/usr/bin/docker rm -f levelrail-agent
+EnvironmentFile=/etc/%[3]s.env
+ExecStartPre=-/usr/bin/docker rm -f %[3]s
 ExecStartPre=/usr/bin/docker pull %[1]s
-ExecStart=/usr/bin/docker run --rm --name levelrail-agent --user 0:0 --network host -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/levelrail-agent-data:/var/lib/levelrail-agent-data -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE%[2]s %[1]s
+ExecStart=/usr/bin/docker run --rm --name %[3]s --user 0:0 --network host -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/%[3]s-data:/var/lib/%[3]s-data -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE%[2]s %[1]s
 Restart=on-failure
 RestartSec=5
 
@@ -105,22 +103,22 @@ WantedBy=multi-user.target
 
 const cloudInitTemplate = `#cloud-init
 write_files:
-  - path: /etc/levelrail-agent.env
+  - path: /etc/%[3]s.env
     permissions: '0600'
     content: |
-%s
-  - path: /etc/systemd/system/levelrail-agent.service
+%[1]s
+  - path: /etc/systemd/system/%[3]s.service
     permissions: '0644'
     content: |
-%s
+%[2]s
 runcmd:
   - command -v docker >/dev/null 2>&1 || (curl -fsSL https://get.docker.com | sh)
   - systemctl enable --now docker
-  - mkdir -p /var/lib/levelrail-agent-data
-  - chown root:root /var/lib/levelrail-agent-data
-  - chmod 700 /var/lib/levelrail-agent-data
+  - mkdir -p /var/lib/%[3]s-data
+  - chown root:root /var/lib/%[3]s-data
+  - chmod 700 /var/lib/%[3]s-data
   - systemctl daemon-reload
-  - systemctl enable --now levelrail-agent
+  - systemctl enable --now %[3]s
 `
 
 // indentBlock indents every line of s by 6 spaces, matching

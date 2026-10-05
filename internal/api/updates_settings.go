@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/upgrade"
+	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
 // UpdateSettingsStore is the store surface the update settings handlers

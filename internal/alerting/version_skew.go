@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/upgrade"
+	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
 // VersionSkewSettingsSource is the narrow store surface

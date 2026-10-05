@@ -96,23 +96,23 @@ func (h *fakeHost) handle(s gliderssh.Session) {
 		_ = s.Exit(0)
 	case cmd == "systemctl enable --now docker":
 		_ = s.Exit(0)
-	case strings.HasPrefix(cmd, "mkdir -p /var/lib/levelrail-agent-data"):
+	case strings.HasPrefix(cmd, "mkdir -p /var/lib/acme-agent-data"):
 		_ = s.Exit(0)
-	case strings.HasPrefix(cmd, "install -m 600 /dev/stdin "+agentEnvPath):
+	case strings.HasPrefix(cmd, "install -m 600 /dev/stdin "+testNames.envPath()):
 		content, _ := io.ReadAll(s)
 		h.mu.Lock()
 		h.envFile = string(content)
 		h.mu.Unlock()
 		_ = s.Exit(0)
-	case strings.HasPrefix(cmd, "install -m 644 /dev/stdin "+agentUnitPath):
+	case strings.HasPrefix(cmd, "install -m 644 /dev/stdin "+testNames.unitPath()):
 		content, _ := io.ReadAll(s)
 		h.mu.Lock()
 		h.unitFile = string(content)
 		h.mu.Unlock()
 		_ = s.Exit(0)
-	case cmd == "systemctl daemon-reload && systemctl enable --now levelrail-agent":
+	case cmd == "systemctl daemon-reload && systemctl enable --now acme-agent":
 		_ = s.Exit(0)
-	case strings.HasPrefix(cmd, "sleep 2 && systemctl is-active levelrail-agent"):
+	case strings.HasPrefix(cmd, "sleep 2 && systemctl is-active acme-agent"):
 		if h.failInstall {
 			_, _ = io.WriteString(s, "failed\n")
 			_ = s.Exit(3)
@@ -120,7 +120,7 @@ func (h *fakeHost) handle(s gliderssh.Session) {
 		}
 		_, _ = io.WriteString(s, "active\n")
 		_ = s.Exit(0)
-	case strings.HasPrefix(cmd, "journalctl -u levelrail-agent"):
+	case strings.HasPrefix(cmd, "journalctl -u acme-agent"):
 		_, _ = io.WriteString(s, "-- no useful diagnostic in test --\n")
 		_ = s.Exit(0)
 	default:
@@ -193,7 +193,7 @@ func TestProvisionPasswordAuthDockerAlreadyPresent(t *testing.T) {
 	h, p := hostPort(t, addr)
 
 	var events []Event
-	det, err := New().Provision(context.Background(), Credentials{
+	det, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "s3cret",
 	}, testParams(), func(e Event) { events = append(events, e) })
 	if err != nil {
@@ -215,7 +215,7 @@ func TestProvisionPasswordAuthDockerAlreadyPresent(t *testing.T) {
 	if !strings.Contains(host.envFileContent(), "APP_CONTROL_PLANE_ADDR=control-plane.example:9443") {
 		t.Fatalf("env file missing control plane addr: %q", host.envFileContent())
 	}
-	if !strings.Contains(host.unitFileContent(), "ghcr.io/glincker/levelrail-agent") {
+	if !strings.Contains(host.unitFileContent(), "ghcr.io/glincker/acme-agent") {
 		t.Fatalf("unit file missing agent image: %q", host.unitFileContent())
 	}
 
@@ -241,7 +241,7 @@ func TestProvisionKeyAuthInstallsDocker(t *testing.T) {
 	host.dockerPresent = false
 	h, p := hostPort(t, addr)
 
-	det, err := New().Provision(context.Background(), Credentials{
+	det, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthKey, PrivateKey: string(keyPEM),
 	}, testParams(), nil)
 	if err != nil {
@@ -260,7 +260,7 @@ func TestProvisionRejectsUnsupportedOS(t *testing.T) {
 	host.unsupportedOS = true
 	h, p := hostPort(t, addr)
 
-	_, err := New().Provision(context.Background(), Credentials{
+	_, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "s3cret",
 	}, testParams(), nil)
 	if err == nil || !strings.Contains(err.Error(), "unsupported OS") {
@@ -273,7 +273,7 @@ func TestProvisionRejectsUnsupportedArch(t *testing.T) {
 	host.unsupportedArc = true
 	h, p := hostPort(t, addr)
 
-	_, err := New().Provision(context.Background(), Credentials{
+	_, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "s3cret",
 	}, testParams(), nil)
 	if err == nil || !strings.Contains(err.Error(), "unsupported CPU architecture") {
@@ -286,7 +286,7 @@ func TestProvisionRejectsNoSystemd(t *testing.T) {
 	host.systemdPresent = false
 	h, p := hostPort(t, addr)
 
-	_, err := New().Provision(context.Background(), Credentials{
+	_, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "s3cret",
 	}, testParams(), nil)
 	if err == nil || !strings.Contains(err.Error(), "no systemd") {
@@ -298,7 +298,7 @@ func TestProvisionFailsOnWrongPassword(t *testing.T) {
 	addr, _ := newFakeHost(t, "s3cret", nil)
 	h, p := hostPort(t, addr)
 
-	_, err := New().Provision(context.Background(), Credentials{
+	_, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "wrong",
 	}, testParams(), nil)
 	if err == nil || !strings.Contains(err.Error(), "authenticate") {
@@ -311,7 +311,7 @@ func TestProvisionFailsWhenAgentServiceDoesNotStayActive(t *testing.T) {
 	host.failInstall = true
 	h, p := hostPort(t, addr)
 
-	_, err := New().Provision(context.Background(), Credentials{
+	_, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "s3cret",
 	}, testParams(), nil)
 	if err == nil || !strings.Contains(err.Error(), "did not stay active") {
@@ -323,7 +323,7 @@ func TestProvisionRequiresParams(t *testing.T) {
 	addr, _ := newFakeHost(t, "s3cret", nil)
 	h, p := hostPort(t, addr)
 
-	_, err := New().Provision(context.Background(), Credentials{
+	_, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "s3cret",
 	}, InstallParams{}, nil)
 	if err == nil {

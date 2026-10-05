@@ -509,6 +509,8 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		JoinToken:        token.plaintext,
 		CAFingerprint:    rt.agentCAFingerprint,
 		NodeName:         req.Name,
+		AgentName:        rt.brand.AgentName(),
+		DisplayName:      rt.brand.Name,
 		AgentVersion:     version.Version,
 		MeshEnabled:      rt.mesh != nil,
 	})

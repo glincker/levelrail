@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/upgrade"
 	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
 // githubLatestReleaseURL is the public, unauthenticated GitHub Releases
@@ -41,7 +41,7 @@ type githubRelease struct {
 // latestPrereleaseFallback covers a project with no stable release yet:
 // report the newest pre-release instead of "none published".
 func latestPrereleaseFallback(ctx context.Context) (*githubRelease, error) {
-	pre, err := upgrade.FetchLatestBeta(ctx)
+	pre, err := upgrade.FetchLatestBeta(ctx, githubRepo)
 	if err != nil {
 		return nil, fmt.Errorf("api: github pre-release fallback: %w", err)
 	}
