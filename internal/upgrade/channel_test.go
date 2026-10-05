@@ -84,6 +84,12 @@ func TestUpdateAvailable(t *testing.T) {
 		{"no release known", "v1.0.0", nil, false},
 		{"already on latest", "v1.1.0", &Release{Tag: "v1.1.0"}, false},
 		{"newer available", "v1.0.0", &Release{Tag: "v1.1.0"}, true},
+		{"beta.9 older than beta.15", "v0.2.0-beta.15", &Release{Tag: "v0.2.0-beta.9"}, false},
+		{"beta.14 to beta.15", "v0.2.0-beta.14", &Release{Tag: "v0.2.0-beta.15"}, true},
+		{"beta.15 up to date", "v0.2.0-beta.15", &Release{Tag: "v0.2.0-beta.15"}, false},
+		{"beta older than its stable", "v0.2.0-beta.15", &Release{Tag: "v0.2.0"}, true},
+		{"stable not downgraded to beta", "v0.2.0", &Release{Tag: "v0.2.0-beta.15"}, false},
+		{"edge sha falls back to inequality", "main-aaaaaaa", &Release{Tag: "main-bbbbbbb"}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
