@@ -831,8 +831,12 @@ func (c *Client) StartDatabase(ctx context.Context, name string) (DatabaseResour
 }
 
 // DeleteDatabase calls DELETE /api/v1/databases/{name}.
-func (c *Client) DeleteDatabase(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name), nil, nil)
+func (c *Client) DeleteDatabase(ctx context.Context, name string, force bool) error {
+	path := "/api/v1/databases/" + PathEscape(name)
+	if force {
+		path += "?force=true"
+	}
+	return c.do(ctx, http.MethodDelete, path, nil, nil)
 }
 
 // ListDatabaseEngines calls GET /api/v1/database-engines: every engine

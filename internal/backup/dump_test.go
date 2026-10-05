@@ -167,7 +167,7 @@ func TestContainerDumper_Dump(t *testing.T) {
 			engine:      store.EngineRedis,
 			containerID: "db-cache",
 			content:     "rdb-bytes",
-			wantCmd:     []string{"redis-cli", "--rdb", "-"},
+			wantCmd:     redisDumpCmd,
 		},
 		{
 			name:        "MariaDB",

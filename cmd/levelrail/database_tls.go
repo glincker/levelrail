@@ -29,6 +29,13 @@ func tlsMaterialFor(ctx context.Context, mgr *secrets.Manager, dbName string) (*
 	if err != nil {
 		return nil, fmt.Errorf("check existing tls material for %q: %w", dbName, err)
 	}
+	if exists {
+		current, err := mgr.Resolve(ctx, dbName, database.TLSCertEnvKey)
+		if err != nil {
+			return nil, fmt.Errorf("resolve tls certificate for %q: %w", dbName, err)
+		}
+		exists = !database.IsLegacyTLSCert([]byte(current))
+	}
 	if !exists {
 		certPEM, keyPEM, err := database.GenerateSelfSignedCert(database.ContainerName(dbName))
 		if err != nil {

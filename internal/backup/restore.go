@@ -87,7 +87,7 @@ const (
 // SIGTERM shutdown snapshot doesn't overwrite the restored RDB file a
 // moment before the process exits.
 var (
-	redisDisableAutoSaveCmd = []string{redisCLIBin, "CONFIG", "SET", "save", ""}
+	redisDisableAutoSaveCmd = []string{"sh", "-c", redisTLSProbe + ` exec redis-cli $RTLS CONFIG SET save ""`}
 	keydbDisableAutoSaveCmd = []string{keydbCLIBin, "CONFIG", "SET", "save", ""}
 )
 

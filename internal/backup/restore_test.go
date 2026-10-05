@@ -111,7 +111,7 @@ func TestContainerRestorer_Restore_Redis(t *testing.T) {
 	if !reflect.DeepEqual(rt.callOrder, wantOrder) {
 		t.Errorf("call order = %v, want %v", rt.callOrder, wantOrder)
 	}
-	wantDisableSaveCmd := []string{"redis-cli", "CONFIG", "SET", "save", ""}
+	wantDisableSaveCmd := redisDisableAutoSaveCmd
 	if !reflect.DeepEqual(rt.gotCmd, wantDisableSaveCmd) {
 		t.Errorf("Exec cmd = %v, want %v", rt.gotCmd, wantDisableSaveCmd)
 	}

@@ -73,7 +73,14 @@ var mysqlDumpCmd = []string{"sh", "-c", `exec mysqldump -uroot -p"$MYSQL_ROOT_PA
 // own progress text to stderr, never stdout, so piping stdout yields only
 // the raw RDB bytes. No auth flag: this controller never configures a
 // Redis password.
-var redisDumpCmd = []string{"redis-cli", "--rdb", "-"}
+//
+// With TLS on, the server has no plaintext port, so the shell switches to
+// the TLS port when the certs volume is mounted (loopback, issuer unchecked).
+var redisDumpCmd = []string{"sh", "-c", redisTLSProbe + ` exec redis-cli $RTLS --rdb -`}
+
+// redisTLSProbe sets RTLS to the redis-cli flags for the TLS-only port
+// (6380) when the controller mounted its certs, empty otherwise.
+const redisTLSProbe = `RTLS=""; [ -f /certs/tls.crt ] && RTLS="--tls --insecure -p 6380";`
 
 // mongoDumpCmd authenticates as the root user the official image's
 // entrypoint creates from $MONGO_INITDB_ROOT_USERNAME/PASSWORD.

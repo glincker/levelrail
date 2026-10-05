@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -53,5 +54,19 @@ func TestRun_DatabasesDelete_Help(t *testing.T) {
 	_, stderr := runCLIExpectOK(t, []string{"databases", "delete", "-h"})
 	if !strings.Contains(stderr, "databases delete") {
 		t.Errorf("stderr = %q, want usage text", stderr)
+	}
+}
+
+func TestRun_DatabasesDelete_Force(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"databases", "delete", "main", "--force", "--api-url", srv.URL})
+	if gotQuery != "force=true" {
+		t.Errorf("query = %q, want force=true", gotQuery)
 	}
 }

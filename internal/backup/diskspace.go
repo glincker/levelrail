@@ -71,3 +71,10 @@ func resolveWorkDir(explicit string) string {
 	}
 	return os.Getenv("APP_DATA_DIR")
 }
+
+// CheckWorkDirSpace runs the same free-space preflight RunBackup does, so
+// an API handler can refuse a manual backup with a visible error instead of
+// accepting it and having the detached run fail without a history row.
+func CheckWorkDirSpace() error {
+	return checkDiskSpace(resolveWorkDir(""))
+}

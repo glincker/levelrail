@@ -510,3 +510,24 @@ func TestHandleListBackupHistory_InvalidBefore(t *testing.T) {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
 	}
 }
+
+func TestHandleTriggerBackup_DiskFullIsRejectedVisibly(t *testing.T) {
+	t.Setenv("APP_DATA_DIR", t.TempDir())
+	t.Setenv("APP_MIN_BACKUP_DISK_MB", "999999999")
+	runner := newFakeBackupRunner()
+	rt, db := newTestRouterWithBackupRunner(t, runner)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	seedBackupTargetForAPI(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases/main/backups", `{"target_id":"bkt_test1"}`))
+	if rec.Code != http.StatusInsufficientStorage {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusInsufficientStorage, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "insufficient disk space") {
+		t.Errorf("body = %s, want the disk space reason", rec.Body.String())
+	}
+}
