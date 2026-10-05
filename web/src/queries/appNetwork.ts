@@ -19,6 +19,10 @@ export interface AppNetwork {
   // Absent (not just empty) when the app has a real domain or no
   // fallback is available.
   fallback_url?: string
+  // fallback_enabled is the platform-wide automatic hostname toggle.
+  fallback_enabled?: boolean
+  // public_host is the server address the fallback hostname is built from.
+  public_host?: string
 }
 
 export const appNetworkKeys = {

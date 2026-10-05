@@ -122,6 +122,12 @@ own logs confirming a real certificate was obtained
 handshake succeeds. Both tests hit real ephemeral ports with a real
 `net/http` client against a real `httptest` backend.
 
+Update 2026-10-05: real Let's Encrypt issuance (HTTP-01, over
+`<dashed-ip>.sslip.io`) was run on a public VPS and is recorded in
+`docs/acme-verification-runbook.md`. That run also showed this ADR's database
+certificate storage was not wired into the control plane until then; it is
+now. Renewal and DNS-01 remain unexercised live.
+
 What is explicitly not proven, per the spike doc's own caution: real ACME
 issuance against a public domain. The `internal` issuer path is verified;
 Let's Encrypt/ZeroSSL issuance, DNS-01/HTTP-01 challenge mechanics, rate

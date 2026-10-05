@@ -168,17 +168,21 @@ flowchart LR
   and in `apps previews list`'s own output.
 - Embedded Caddy ingress with automatic TLS and domain routing. TLS
   defaults to an internal, self-signed issuer. A public ACME issuer exists
-  and is toggleable but unverified against a live domain (see In progress).
+  and is toggleable and was verified against Let's Encrypt on a live
+  public VPS on 2026-10-05 (see In progress for what is still open).
   
   Ingress HTTP and HTTPS listen ports are configurable via
   `APP_INGRESS_HTTP_PORT` and `APP_INGRESS_HTTPS_PORT`, wired into
   Settings > Ingress for dashboard control.
   
   A service with no configured domain gets a zero-config, publicly
-  resolvable fallback URL (`<app>.<public-ip-dash-encoded>.sslip.io`,
-  real HTTPS via Caddy, no DNS setup) whenever `APP_PUBLIC_HOST` is a
-  genuine public IP. Surfaced in the dashboard's Network tab and `apps
-  network` in the CLI.
+  resolvable hostname (`<app>.<public-ip-dash-encoded>.sslip.io`, real
+  HTTPS via Caddy, no DNS setup). The server finds its own public IP at
+  startup (`APP_PUBLIC_HOST` overrides, `APP_PUBLIC_IP_DETECT=off`
+  disables), the hostnames can be turned off in Settings > Domains, and
+  they show in the Network tab, `apps network` and `domains list`. The
+  dashboard gets the same treatment with a one-click Enable HTTPS card
+  and `settings ingress https enable` in the CLI.
   
   Per-domain BYO (bring your own) certificate upload lets an operator
   supply certificate/key pairs for domains ACME cannot reach (internal-only
@@ -732,15 +736,14 @@ flowchart LR
 
 - **Database backup-schedule UI.** Shipped (`BackupScheduleForm`,
   see Done); kept as a pointer in case a gap surfaces on real use.
-- **Real public ACME.** The Caddy ACME issuer type, settings toggle,
-  and form validation are built and wired end to end (Settings >
-  Domains).
-
-  ::: warning Not yet verified against a live domain
-  Unit-tested against the config shape only, not spot-checked against
-  a real domain issuing a real certificate. This is the exact gap
-  ADR 005 named at Phase 0.
-  :::
+- **Real public ACME: first live run done, renewal and wildcards open.**
+  Let's Encrypt issued real certificates for `<dashed-ip>.sslip.io` hosts
+  on a public VPS, with a trusted handshake and an HTTP to HTTPS
+  redirect (recorded in `docs/acme-verification-runbook.md`). The run
+  also found and fixed certificates not being stored in the database,
+  a closed port 80, a CA switch that never re-issued, and missing HSTS
+  on the dashboard page. Not yet exercised live: renewal close to expiry,
+  DNS-01 wildcards, and a deliberate failure against the production CA.
 
 ## Not started
 

@@ -45,6 +45,10 @@ type IngressSettings struct {
 	// so existing deployments that already export it keep behaving
 	// exactly as before (see cmd/levelrail/main.go's hstsEnabled).
 	HSTSEnabled bool
+	// FallbackDomainsDisabled turns off the automatic
+	// <app>.<dashed-ip>.sslip.io hostname apps without a domain get
+	// (migrations/0290). Default false: the hostname is on.
+	FallbackDomainsDisabled bool
 }
 
 // GetIngressSettings returns the single ingress_settings row. Always
@@ -59,12 +63,13 @@ func (db *DB) GetIngressSettings(ctx context.Context) (IngressSettings, error) {
 		acmeEmail        sql.NullString
 		acmeDirectoryURL sql.NullString
 		hstsEnabled      int
+		fallbackDisabled int
 	)
 	err := db.QueryRowContext(ctx, `
-		SELECT primary_domain, acme_enabled, acme_email, acme_directory_url, hsts_enabled
+		SELECT primary_domain, acme_enabled, acme_email, acme_directory_url, hsts_enabled, fallback_domains_disabled
 		FROM ingress_settings
 		WHERE id = 1
-	`).Scan(&primaryDomain, &acmeEnabled, &acmeEmail, &acmeDirectoryURL, &hstsEnabled)
+	`).Scan(&primaryDomain, &acmeEnabled, &acmeEmail, &acmeDirectoryURL, &hstsEnabled, &fallbackDisabled)
 	if err != nil {
 		return IngressSettings{}, fmt.Errorf("store: get ingress settings: %w", err)
 	}
@@ -74,6 +79,7 @@ func (db *DB) GetIngressSettings(ctx context.Context) (IngressSettings, error) {
 	s.ACMEEmail = acmeEmail.String
 	s.ACMEDirectoryURL = acmeDirectoryURL.String
 	s.HSTSEnabled = hstsEnabled != 0
+	s.FallbackDomainsDisabled = fallbackDisabled != 0
 	return s, nil
 }
 
@@ -100,9 +106,14 @@ func (db *DB) UpdateIngressSettings(ctx context.Context, s IngressSettings) erro
 		hstsEnabled = 1
 	}
 
+	fallbackDisabled := 0
+	if s.FallbackDomainsDisabled {
+		fallbackDisabled = 1
+	}
+
 	_, err := db.ExecContext(ctx, `
 		UPDATE ingress_settings
-		SET primary_domain = ?, acme_enabled = ?, acme_email = ?, acme_directory_url = ?, hsts_enabled = ?
+		SET primary_domain = ?, acme_enabled = ?, acme_email = ?, acme_directory_url = ?, hsts_enabled = ?, fallback_domains_disabled = ?
 		WHERE id = 1
 	`,
 		sql.NullString{String: s.PrimaryDomain, Valid: s.PrimaryDomain != ""},
@@ -110,6 +121,7 @@ func (db *DB) UpdateIngressSettings(ctx context.Context, s IngressSettings) erro
 		sql.NullString{String: s.ACMEEmail, Valid: s.ACMEEmail != ""},
 		sql.NullString{String: s.ACMEDirectoryURL, Valid: s.ACMEDirectoryURL != ""},
 		hstsEnabled,
+		fallbackDisabled,
 	)
 	if err != nil {
 		return fmt.Errorf("store: update ingress settings: %w", err)

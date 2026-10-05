@@ -882,3 +882,39 @@ func decodeRoutesByHost(t *testing.T, cfg *Config) map[string][]any {
 	}
 	return out
 }
+
+func TestBuildRoutesConfig_HTTPRedirectAndACMEEvents(t *testing.T) {
+	base := RoutesOptions{
+		ServerName: "ingress", ListenAddr: ":443", TLS: true,
+		Routes: []ProxyRoute{{Hosts: []string{"app.example.com"}, BackendDial: "127.0.0.1:9090"}},
+	}
+	tests := []struct {
+		name          string
+		redirect      bool
+		acme          bool
+		wantDisabled  bool
+		wantEventsApp bool
+	}{
+		{"redirect off keeps port 80 closed", false, false, true, false},
+		{"redirect on lets caddy bind it", true, false, false, false},
+		{"acme tracks cert events", true, true, false, true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := base
+			opts.HTTPRedirect, opts.ACMEEnabled, opts.ACMEEmail = tc.redirect, tc.acme, "a@example.com"
+			cfg, err := BuildRoutesConfig(opts)
+			if err != nil {
+				t.Fatal(err)
+			}
+			srv := cfg.Apps.HTTP.Servers["ingress"]
+			disabled := srv.AutomaticHTTPS != nil && srv.AutomaticHTTPS.DisableRedir
+			if disabled != tc.wantDisabled {
+				t.Errorf("redirects disabled = %v, want %v", disabled, tc.wantDisabled)
+			}
+			if (cfg.Apps.Events != nil) != tc.wantEventsApp {
+				t.Errorf("events app present = %v, want %v", cfg.Apps.Events != nil, tc.wantEventsApp)
+			}
+		})
+	}
+}

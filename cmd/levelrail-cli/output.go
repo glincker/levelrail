@@ -319,6 +319,9 @@ func printAppHuman(out io.Writer, a appResource) {
 	if len(a.Domains) > 0 {
 		_, _ = fmt.Fprintf(out, "domains:  %v\n", a.Domains)
 	}
+	if a.FallbackURL != "" {
+		_, _ = fmt.Fprintf(out, "auto url: %s\n", a.FallbackURL)
+	}
 	if a.NodeID != "" {
 		_, _ = fmt.Fprintf(out, "node:     %s\n", a.NodeID)
 	}
@@ -536,8 +539,13 @@ func printAppNetworkHuman(out io.Writer, n networkResource) {
 		_, _ = fmt.Fprintln(out, "host port:       (not running)")
 	}
 	_, _ = fmt.Fprintf(out, "running:         %t\n", n.Running)
-	if n.FallbackURL != "" {
+	switch {
+	case n.FallbackURL != "":
 		_, _ = fmt.Fprintf(out, "fallback url:    %s\n", n.FallbackURL)
+	case !n.FallbackEnabled:
+		_, _ = fmt.Fprintln(out, "fallback url:    (automatic hostnames are off: settings ingress set --fallback-domains)")
+	case n.PublicHost == "":
+		_, _ = fmt.Fprintln(out, "fallback url:    (no public IP known: set APP_PUBLIC_HOST on the server)")
 	}
 }
 

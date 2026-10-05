@@ -572,25 +572,55 @@ reachability_test() {
 EOF
 }
 
+# local_ips lists this host's global addresses, skipping container bridges
+# and virtual interfaces, which are unreachable from anywhere useful.
+local_ips() {
+	if command -v ip >/dev/null 2>&1; then
+		ip -o addr show scope global 2>/dev/null | while read -r _ ifname fam addr _; do
+			case "$ifname" in docker* | br-* | veth* | cni* | flannel* | virbr* | lo) continue ;; esac
+			case "$fam" in inet) printf '%s\n' "${addr%%/*}" ;; esac
+		done
+		return 0
+	fi
+	for ip in $(hostname -I 2>/dev/null || true); do
+		case "$ip" in *:* | 172.1[6-9].* | 172.2[0-9].* | 172.3[01].*) continue ;; esac
+		printf '%s\n' "$ip"
+	done
+}
+
+dashboard_link() {
+	case "$1" in *:*) host="[$1]" ;; *) host="$1" ;; esac
+	if [ -n "$token" ]; then
+		printf '%s://%s:%s/login?setup=%s' "$DASHBOARD_SCHEME" "$host" "$DASHBOARD_PORT" "$token"
+	else
+		printf '%s://%s:%s' "$DASHBOARD_SCHEME" "$host" "$DASHBOARD_PORT"
+	fi
+}
+
 print_summary() {
 	token=""
 	[ ! -r "$DATA_DIR/setup-token" ] || token="$(tr -d '[:space:]' <"$DATA_DIR/setup-token")"
-	ips="$(hostname -I 2>/dev/null || true)"
-	[ -z "$PUBLIC_IP" ] || case " $ips " in *" $PUBLIC_IP "*) ;; *) ips="$PUBLIC_IP $ips" ;; esac
 
 	log ""
 	log "Levelrail ${VERSION} installed and running."
 	log ""
-	log "Dashboard:"
-	for ip in $ips; do
-		case "$ip" in *:*) host="[$ip]" ;; *) host="$ip" ;; esac
-		if [ -n "$token" ]; then
-			log "  ${DASHBOARD_SCHEME}://${host}:${DASHBOARD_PORT}/login?setup=${token}"
-		else
-			log "  ${DASHBOARD_SCHEME}://${host}:${DASHBOARD_PORT}"
+	log "Open the dashboard:"
+	if [ -n "$PUBLIC_IP" ]; then
+		log "  $(dashboard_link "$PUBLIC_IP")"
+		others="$(local_ips | grep -vxF "$PUBLIC_IP" || true)"
+		if [ -n "$others" ]; then
+			log ""
+			log "Private network address (only reachable from inside that network):"
+			for ip in $others; do log "  $(dashboard_link "$ip")"; done
 		fi
-	done
-	[ -n "$ips" ] || log "  ${DASHBOARD_SCHEME}://<server-ip>:${DASHBOARD_PORT}"
+	else
+		found=0
+		for ip in $(local_ips); do
+			log "  $(dashboard_link "$ip")"
+			found=1
+		done
+		[ "$found" -eq 1 ] || log "  ${DASHBOARD_SCHEME}://<server-ip>:${DASHBOARD_PORT}"
+	fi
 	log ""
 	if [ -n "$token" ]; then
 		cat <<EOF
@@ -605,8 +635,11 @@ EOF
 IMPORTANT: back up ${DATA_DIR}/master.key somewhere safe. Every stored
 secret is encrypted with it, and it cannot be recovered if lost.
 
-The dashboard is served over plain HTTP until you point a domain at this
-server and set an https dashboard URL on the Domains page.
+The dashboard is served over plain HTTP until you enable HTTPS.
+
+EOF
+	sslip_hint
+	cat <<EOF
 
 Manage it from your own machine with the CLI (no root needed there):
   curl -fsSL https://levelrail.com/install-cli.sh | sh
@@ -619,6 +652,19 @@ Manage it from your own machine with the CLI (no root needed there):
   Upgrade:        curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | sudo sh -s upgrade
   Uninstall:      curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | sudo sh -s uninstall
   Locked out:     sudo APP_DATA_DIR=${DATA_DIR} ${BIN_PATH} recover-admin --username admin
+EOF
+}
+
+# sslip_hint explains the zero-DNS HTTPS path when the public address is a
+# plain IPv4: <dashed-ip>.sslip.io already resolves to it.
+sslip_hint() {
+	case "$PUBLIC_IP" in "" | *[!0-9.]*) return 0 ;; esac
+	dashed="$(printf '%s' "$PUBLIC_IP" | tr '.' '-')"
+	cat <<EOF
+Free HTTPS with no DNS setup: https://${dashed}.sslip.io already points at
+this server. In the dashboard, open Domains and click "Enable HTTPS" to get
+a real Let's Encrypt certificate for it (ports 80 and 443 must be open), or:
+  levelrail-cli settings ingress https enable --email you@example.com
 EOF
 }
 

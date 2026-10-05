@@ -3700,6 +3700,20 @@ func (c *Client) UpdateIngressSettings(ctx context.Context, req IngressSettingsR
 	return out, err
 }
 
+// GetHTTPSStatus calls GET /api/v1/settings/ingress/https.
+func (c *Client) GetHTTPSStatus(ctx context.Context) (HTTPSStatusResource, error) {
+	var out HTTPSStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ingress/https", nil, &out)
+	return out, err
+}
+
+// EnableHTTPS calls POST /api/v1/settings/ingress/https.
+func (c *Client) EnableHTTPS(ctx context.Context, req EnableHTTPSRequest) (HTTPSStatusResource, error) {
+	var out HTTPSStatusResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/settings/ingress/https", req, &out)
+	return out, err
+}
+
 // GetUpdateSettings calls GET /api/v1/updates/settings.
 func (c *Client) GetUpdateSettings(ctx context.Context) (UpdateSettingsResource, error) {
 	var out UpdateSettingsResource

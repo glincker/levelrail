@@ -8,7 +8,7 @@ The Caddy ACME issuer, settings toggle, and form validation are all built, wired
 
 What those tests cannot prove from a sandbox is real issuance against a real public ACME directory (Let's Encrypt or otherwise), over a real domain, with real DNS and real port 80/443 reachability from the internet. ADR 005's "Verified" section names this explicitly.
 
-This runbook is for that verification step. It assumes you have Levelrail installed and running.
+This runbook is for that verification step. It assumes you have Levelrail installed and running. A first run has been recorded at the bottom of this page; you do not need to repeat it before trusting the feature, but repeating it on your own host is the fastest way to confirm your firewall is right. For a zero-DNS version of the same thing, use the **Enable HTTPS** card (see [domains-and-ingress.md](domains-and-ingress.md#zero-dns-setup-sslipio-hostnames-and-one-click-https)).
 
 ## Prerequisites
 
@@ -126,19 +126,38 @@ This is why step 4 recommends staging for your first run. Staging has much more 
 
 The dashboard's form validation catches this before it reaches the API (`ingressSettingsSchema` in `IngressSettingsCard.tsx`). You shouldn't be able to save without one. If you bypass it via raw API call, the backend's `validateIngressSettingsRequest` rejects it the same way.
 
-**Pre-existing certificate from internal issuer**
+**Pre-existing certificate from the internal issuer or staging**
 
-If the domain already has a self-signed certificate when you enable ACME, expect a brief window where the old cert stays served until Caddy's automatic-HTTPS reconciliation replaces it. If replacement doesn't happen within a few minutes, check logs for the issuance sequence. If nothing is being attempted, confirm the domain is actually routed to something. ACME issuance only applies to domains actively in use by a route, not those merely typed into a form.
+Enabling ACME, or switching the directory URL (for example staging to production), now drops the stored certificates of the previous issuer when you save, so they are re-issued by the new CA. Before this was fixed, Caddy kept serving the old still-valid certificate indefinitely and never asked the new CA. If a domain still shows the wrong issuer, confirm the domain is actually routed by an app: ACME only applies to domains in active use by a route.
+
+## Recorded run (2026-10-05)
+
+Host: a 4 GB DigitalOcean droplet running the control plane from the public `install.sh`, ports 80 and 443 open to the internet, no DNS records created. Hostname: `<dashed-ip>.sslip.io` for the dashboard and for every app without a domain.
+
+What was done and seen:
+
+- Staging first: `POST /api/v1/settings/ingress/https` with `staging: true`. HTTP-01 validated, certificate issued by `(STAGING) ...`, shown by `GET /api/v1/certificates`.
+- Production: Let's Encrypt (`acme-v02`) issued `<dashed-ip>.sslip.io` and the generated hostnames of three apps in one batch. Checked from a second server, with its normal system trust store and no `-k`: `curl` verify result `0`, issuer `Let's Encrypt` (`YE2`), `not_after` 90 days out, SAN equal to the hostname.
+- `http://<host>/` answered `308` to `https://<host>/`.
+- HSTS was enabled and disabled from the settings toggle.
+
+What the run found and fixed:
+
+1. Certificates were stored on disk, not in the database as this page and ADR 005 describe, so `GET /api/v1/certificates`, the certificate expiry alert rules and the issuance audit trail all saw nothing. Storage is now the database, and existing on-disk certificates are imported on first start.
+2. Port 80 was closed outside ACME challenges, so any plain `http://` request was refused instead of redirected.
+3. Changing the CA never took effect on a live reload, because certmagic reuses a valid certificate from any issuer. Saving now drops the other issuers' certificates.
+4. `Strict-Transport-Security` was not sent on the dashboard's HTML page, only on API responses.
+5. A failed issuance was invisible: only a log line. The CA's error is now captured from Caddy's certificate events and returned with a hint code.
+
+Not covered by this run: the live capture of a CA error (item 5 is covered by unit tests only), renewal (certificates are 90 days old at best, so the renewal path ran only in tests and the `got renewal info` log lines), wildcard certificates through DNS-01, and a deliberately failing issuance against the production CA.
 
 ## Once this succeeds: closing the gap
 
-This runbook successfully run against a real domain closes the gap this project has carried since ADR 005's Phase 0 spike.
+A successful run against a real domain closed the gap this project carried since ADR 005's Phase 0 spike (see the recorded run above). The steps below stay as the checklist for your own host.
 
 When you've confirmed a real, browser-trusted (production, not staging) certificate is healthy and auto-renewal is credible (logs show the expected sequence, `not_after` is roughly 90 days), update `docs/roadmap.md`.
 
-Move the "Real public ACME" bullet from the "In progress" section to "Done", with a short note of what was verified and when. The domain itself doesn't need to be named if it's private or internal. What matters is that it was a real public domain with real DNS and real port reachability.
-
-This bullet is the only remaining item blocking Phase 1 completion.
+For your own records, note the issuer, `not_after` and the date. The domain itself doesn't need to be named if it's private or internal. What matters is that it was a real public domain with real DNS and real port reachability.
 
 ## See also
 

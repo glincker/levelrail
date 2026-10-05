@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   CheckIcon,
   CopyIcon,
@@ -128,6 +129,7 @@ export function DomainRow({
   cert?: CertificateStatus
 }) {
   const { copied, copy } = useCopyToClipboard()
+  const { t } = useTranslation('https')
   return (
     <Link
       to="/apps/$name/domains"
@@ -162,8 +164,11 @@ export function DomainRow({
         </Button>
       </span>
 
-      <span className="min-w-0 truncate text-xs text-muted-foreground">
-        {domain.service_name}
+      <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+        <span className="truncate">{domain.service_name}</span>
+        {domain.automatic ? (
+          <Badge variant="outline">{t('domain.automatic')}</Badge>
+        ) : null}
       </span>
 
       <DomainStatusFlags domain={domain} />
