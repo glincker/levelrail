@@ -92,11 +92,18 @@ func (rt *Router) authLibOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		redirectOAuthError(w, r, out.ErrorCode)
 		return
 	}
-	if _, err := rt.authLibOAuth.ResolveOAuthUser(r.Context(), out.Provider, out.ProviderUserID); err != nil {
+	userID, err := rt.authLibOAuth.ResolveOAuthUser(r.Context(), out.Provider, out.ProviderUserID)
+	if err != nil {
 		rt.logger.Error("api: oauth callback: resolve user failed", slog.String("provider", provider), slog.String("error", err.Error()))
 		redirectOAuthError(w, r, "internal_error")
 		return
 	}
-	http.SetCookie(w, out.SessionCookie) // NOSONAR: attributes come from the library session cookie
+	user, err := rt.auth.GetUserByID(r.Context(), userID)
+	if err != nil {
+		rt.logger.Error("api: oauth callback: load user failed", slog.String("user_id", userID), slog.String("error", err.Error()))
+		redirectOAuthError(w, r, "internal_error")
+		return
+	}
+	rt.finishLibSession(w, r, *user, out.SessionCookie.Value)
 	http.Redirect(w, r, "/oauth/complete", http.StatusFound)
 }

@@ -27,9 +27,10 @@ func (rt *Router) attachAuthEngine(s Store) {
 	}
 	if rt.authEngine == nil {
 		eng, err := authengine.New(db.DB, authengine.Config{
-			BaseURL:   "http://localhost",
-			Directory: authengine.NewDirectory(db.DB),
-			Sessions:  authengine.SessionsHooks{Mail: &authengine.MailRelay{}},
+			BaseURL:        "http://localhost",
+			Directory:      authengine.NewDirectory(db.DB),
+			DeviceTokenTTL: DeviceTokenTTL(), DeviceCodeTTL: DeviceCodeTTL(),
+			Sessions: authengine.SessionsHooks{Mail: &authengine.MailRelay{}},
 		})
 		if err != nil {
 			panic(fmt.Sprintf("api: build auth engine: %v", err))

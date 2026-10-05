@@ -16,6 +16,7 @@ import (
 // A failure is fatal to the caller: there is no other sign-in path.
 func authEngineOptions(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *sql.DB, mgr *secrets.Manager) ([]api.Option, error) {
 	cfg := authengine.Config{
+		BaseURL:        "http://localhost",
 		TokenPrefix:    b.ShortName,
 		TOTPIssuer:     b.Name,
 		Directory:      authengine.NewDirectory(db),

@@ -77,6 +77,9 @@ func TestOAuthLibraryLinksVerifiedEmailsOnly(t *testing.T) {
 			h := newOAuthHarness(t, modeLibrary)
 			h.enable(tc.provider, "")
 			owner := storeUserForTest(t, h.db, "owner@example.test")
+			if _, err := h.rt.libSessions.SyncUser(context.Background(), toLibUser(owner)); err != nil {
+				t.Fatal(err)
+			}
 			rec := h.signIn(tc.provider, tc.id)
 			if got := oauthResult(rec); got != tc.want {
 				t.Fatalf("location = %q, want %q", got, tc.want)
@@ -104,6 +107,12 @@ func TestOAuthExistingIdentitySignsIn(t *testing.T) {
 			ctx := context.Background()
 			owner := storeUserForTest(t, h.db, "linked@example.test")
 			if err := h.db.SaveOAuthIdentity(ctx, store.OAuthIdentity{ID: "oid_seed", UserID: owner.ID, Provider: "oidc", ProviderUserID: "sub-existing"}); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := h.rt.libSessions.SyncUser(ctx, toLibUser(owner)); err != nil {
+				t.Fatal(err)
+			}
+			if err := h.eng.LinkOAuthIdentity(ctx, owner.ID, "oidc", "sub-existing"); err != nil {
 				t.Fatal(err)
 			}
 			before := countUsers(t, h)

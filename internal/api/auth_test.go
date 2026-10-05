@@ -189,19 +189,7 @@ func TestHandleLogin_Failures(t *testing.T) {
 // closing the timing oracle for which accounts have no password set.
 func TestHandleLogin_PasswordlessAccount_Unauthorized(t *testing.T) {
 	rt, db := newTestRouter(t)
-	enableOAuthProviderForTest(t, rt, "")
-	rt.oauthClientFactory = func(string, store.OAuthProviderSettings, string, string) (oauthProviderClient, error) {
-		return &fakeOAuthClient{userInfo: oauthUserInfo{ProviderUserID: "google-sub-nopass", Email: "nopass@example.com", DisplayName: "No Pass"}}, nil
-	}
-	state := startOAuthFlow(t, rt, "/api/v1/auth/oauth/google/start", nil)
-	provisionRec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(provisionRec, oauthCallbackRequest(state))
-	if provisionRec.Code != http.StatusFound {
-		t.Fatalf("oauth provisioning status = %d, want %d, body = %s", provisionRec.Code, http.StatusFound, provisionRec.Body.String())
-	}
-	if user, err := db.GetUserByEmail(context.Background(), "nopass@example.com"); err != nil || user.PasswordHash != nil {
-		t.Fatalf("precondition failed: user = %+v, err = %v, want an OAuth-only user with no password", user, err)
-	}
+	storeUserForTest(t, db, "nopass@example.com")
 
 	body := `{"username":"nopass@example.com","password":"whatever"}`
 	rec := httptest.NewRecorder()

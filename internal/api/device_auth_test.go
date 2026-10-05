@@ -109,7 +109,7 @@ func TestDeviceAuthFlow_ApproveThenPollGrantsToken(t *testing.T) {
 	if granted.Token == "" || granted.ID == "" {
 		t.Fatalf("got %+v, want a real minted token", granted)
 	}
-	if granted.Name != "cli login: test-device" {
+	if granted.Name != "device: test-device" {
 		t.Errorf("Name = %q, want it to include the client name", granted.Name)
 	}
 

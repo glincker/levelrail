@@ -191,12 +191,12 @@ func TestDeviceAuth_ConcurrentPollsMintExactlyOneToken(t *testing.T) {
 	}
 	cli := 0
 	for _, tk := range toks {
-		if strings.HasPrefix(tk.Name, "cli login") {
+		if strings.HasPrefix(tk.Name, "device:") {
 			cli++
 		}
 	}
 	if cli != 1 {
-		t.Fatalf("%d cli login tokens persisted, want 1", cli)
+		t.Fatalf("%d device login tokens persisted, want 1", cli)
 	}
 }
 
