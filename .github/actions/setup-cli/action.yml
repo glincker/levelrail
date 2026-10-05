@@ -1,0 +1,33 @@
+name: 'Levelrail Setup CLI'
+description: 'Install levelrail-cli (checksum verified) and add it to PATH'
+branding:
+  icon: 'download'
+  color: 'blue'
+
+inputs:
+  version:
+    description: 'levelrail-cli release tag to install, e.g. v0.3.0. Defaults to the newest release, including pre-releases while no stable release exists.'
+    required: false
+    default: 'latest'
+
+runs:
+  using: composite
+  steps:
+    # Runs the install-cli.sh from the same ref as this action, so the
+    # installer and the action can never drift apart.
+    - name: Install levelrail-cli
+      shell: bash
+      env:
+        REQUESTED_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        install_dir="${RUNNER_TEMP:-/tmp}/levelrail-cli-bin"
+        if [ "$REQUESTED_VERSION" != "latest" ]; then
+          export LEVELRAIL_VERSION="$REQUESTED_VERSION"
+        fi
+        LEVELRAIL_CLI_INSTALL_DIR="$install_dir" sh "${GITHUB_ACTION_PATH}/../../../install-cli.sh"
+        echo "$install_dir" >> "$GITHUB_PATH"
+
+    - name: Verify levelrail-cli
+      shell: bash
+      run: levelrail-cli help > /dev/null
