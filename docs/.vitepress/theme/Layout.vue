@@ -39,8 +39,8 @@ const { hasSidebar } = useSidebar()
     <template #home-hero-image>
       <HeroField />
       <HeroShowcase
-        src="/assets/screenshots/app-overview.png"
-        alt="A Levelrail app overview with live CPU, memory and network charts and deploy markers"
+        mock="overview"
+        alt="Illustrative rendering of a Levelrail app overview with live CPU, memory and network charts and deploy markers"
         url="levelrail.local"
       />
     </template>
