@@ -14,6 +14,17 @@
         "List the apps running on my Levelrail instance",
         "Roll back the web app on my Levelrail instance"
       ]
+    },
+    {
+      "identifier": "urn:levelrail:api:openapi",
+      "displayName": "Levelrail control plane API (OpenAPI 3.1, self-hosted instances)",
+      "mediaType": "application/vnd.oai.openapi+json",
+      "type": "application/vnd.oai.openapi+json",
+      "url": "https://levelrail.com/openapi.json",
+      "representativeQueries": [
+        "Which API routes does a Levelrail control plane expose?",
+        "What ability does a token need to deploy an app?"
+      ]
     }
   ]
 }

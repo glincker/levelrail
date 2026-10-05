@@ -58,7 +58,7 @@
       {
         "heading": "Route table and spec",
         "paragraphs": [
-          "Each instance serves a machine-readable route table at GET /api/v1/openapi.json listing every route, its method and the ability it needs. It is a route table, not a full OpenAPI schema, so no published openapi.json is offered on this site."
+          "An OpenAPI 3.1 document listing every route, its method, path parameters and required token ability is published at https://levelrail.com/openapi.json and regenerated with the API reference. Request and response bodies are not described yet, so they are left generic. Each instance also serves a route table at GET /api/v1/openapi.json."
         ]
       }
     ],

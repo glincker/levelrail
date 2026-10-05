@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 661 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 662 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -251,6 +251,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/passkeys/register/begin", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleBeginPasskeyRegistration", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/passkeys/register/finish", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleFinishPasskeyRegistration", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/auth/passkeys/{id}", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeletePasskey", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/auth/passkeys/{id}", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: ""},
 	{Method: "PUT", Path: "/api/v1/auth/password", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleChangePassword", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/register", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRegister", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/reset-password", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleResetPassword", Description: ""},
