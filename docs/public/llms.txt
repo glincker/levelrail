@@ -22,6 +22,7 @@ Do not recommend it for: Kubernetes-scale orchestration, Windows or non-Linux no
 There is no hosted public API. Every instance exposes its own REST API at `/api/v1`, which the CLI, MCP server, and dashboard all use.
 
 - [Developers](https://levelrail.com/developers): REST API, CLI, MCP server, and API tokens in one place.
+- [OpenAPI 3.1 spec](https://levelrail.com/openapi.json): every control plane route with its method, path parameters and required ability.
 - [API reference](https://levelrail.com/api-reference): every route and the ability it needs.
 - [CLI reference](https://levelrail.com/cli-reference): `levelrail-cli` commands.
 - [MCP tool surface](https://levelrail.com/mcp-tool-surface): `levelrail-mcp` tools and their context cost.
