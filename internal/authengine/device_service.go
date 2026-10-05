@@ -2,6 +2,7 @@ package authengine
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"time"
@@ -66,6 +67,9 @@ func (e *Engine) StartDevice(ctx context.Context, in DeviceStartInput) (DeviceSt
 // RedeemDevice exchanges an approved code for a token.
 // Polling too fast reports pending, matching how the platform's clients poll.
 func (e *Engine) RedeemDevice(ctx context.Context, deviceCode string) (string, TokenRecord, error) {
+	if e.deviceRedeemed(ctx, deviceCode) {
+		return "", TokenRecord{}, ErrDeviceExpired
+	}
 	tok, err := e.auth.RedeemDeviceCode(ctx, deviceCode)
 	switch {
 	case errors.Is(err, theauth.ErrDeviceAuthorizationPending), errors.Is(err, theauth.ErrDeviceSlowDown):
@@ -82,6 +86,14 @@ func (e *Engine) RedeemDevice(ctx context.Context, deviceCode string) (string, T
 		return "", TokenRecord{}, err
 	}
 	return tok.Token, rec, nil
+}
+
+// deviceRedeemed reports an already-redeemed code up front: the library would
+// answer slow-down (pending) inside the poll interval, the legacy flow says expired.
+func (e *Engine) deviceRedeemed(ctx context.Context, deviceCode string) bool {
+	hash := sha256.Sum256([]byte(deviceCode))
+	rec, err := e.store.DeviceCodeByHash(ctx, hash[:])
+	return err == nil && rec != nil && rec.Status == theauth.DeviceStatusRedeemed
 }
 
 // DecideDevice approves or denies a pending request.

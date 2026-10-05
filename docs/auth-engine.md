@@ -53,7 +53,7 @@ Things to know:
 - Linked OAuth identities are copied too, see [OAuth and OIDC sign-in](#oauth-and-oidc-sign-in)
 - Recovery codes are not converted. Users with two-factor enabled must regenerate them.
 - API tokens with no owner (created by the system itself) are not copied.
-- Emails that differ only by letter case count as duplicates in the library. The backfill stops and tells you how many collide so you can rename them first.
+- Emails that differ only by letter case count as duplicates in the library. The backfill stops, exits non-zero and lists each colliding group (ids and emails) so you can rename them first.
 - A token's effective abilities are limited to what its owner currently holds, so a token can never exceed its owner.
 
 ## Sessions and login
@@ -101,10 +101,6 @@ Things to know:
 - Multi-factor sign-in and passkeys are separate areas. While `mfa` is not served by the library, a user with two-factor enabled still gets the usual second step.
 
 Roll back by removing `sessions` from `APP_AUTH_ENGINE_AREAS`, or by unsetting `APP_AUTH_ENGINE`, and restarting. Built-in sessions start empty, so everyone signs in once more. Passwords keep working because Levelrail's own copy is kept up to date.
-
-## Roll back
-
-Unset `APP_AUTH_ENGINE` (or set it to `legacy`) and restart. The built-in engine never stopped being authoritative, so there is nothing to undo. The copied rows can stay; they are inert.
 
 ## Shadow mode and token cutover
 
@@ -175,7 +171,7 @@ What moves:
 
 Things to know:
 
-- **Recovery codes need regenerating.** Legacy codes cannot be converted, so after the cutover every user with two-factor on has none. The first time they open the dashboard a notice asks them to generate a new set (Settings, Security). Their authenticator app keeps working in the meantime. The 2FA status response carries `recovery_codes_need_regeneration` while this applies.
+- **Recovery codes need regenerating.** Legacy codes cannot be converted, so after the cutover every user with two-factor on has none. The first time they open the dashboard a notice asks them to generate a new set (Settings, Security). Their authenticator app keeps working in the meantime. The 2FA status response carries `recovery_codes_need_regeneration` while this applies. Newly issued codes use the same `XXXX-XXXX-XXXX-XXXX` format as the built-in engine, and are accepted with or without hyphens and in any case.
 - **Passkey relying party comes from configuration, not the request.** The library fixes the relying party ID at startup. It is derived from the dashboard URL (Settings, Ingress) when the control plane starts, so changing that URL needs a restart. An IP address cannot be a relying party ID: set the dashboard URL to a domain, or set `APP_AUTH_ENGINE_WEBAUTHN_RP_ID`. Without one, passkey routes answer 501.
 - **Passkeys registered before the cutover keep working.** Their authenticators hold the built-in user handle, so Levelrail maps it to the backfilled library user and the library checks it against the credential's owner. Run `levelrail auth-backfill` first: a passkey whose user was not copied cannot sign in. No re-registration is needed.
 - **Code reuse and lockout.** A TOTP code can be used once: a second use inside its 30 second window is refused (the built-in engine already did this on sign-in and disable; the library applies it to regeneration too). The library also locks a user out after repeated wrong codes (default 5 wrong codes, 15 minutes), counted per user across every device, on top of the existing per-address limit. A lockout answers 429 with `Retry-After`.
@@ -273,3 +269,18 @@ The first run shows exact counts and what would be refused. The second applies i
 - A live API token and a revoked one behave correctly through the library on the copy.
 - You have a recent backup of the real data directory and you know the rollback: unset `APP_AUTH_ENGINE`, or narrow `APP_AUTH_ENGINE_AREAS`, and restart.
 - You have told two-factor users they must regenerate recovery codes.
+
+## Go/no-go checklist
+
+Before switching an area on in production:
+
+1. Rehearsal passed on a copy of production data (section above), and the third backfill run reported zero copied.
+2. `levelrail auth-backfill --dry-run` on the live host exits cleanly. If it lists case-duplicate email groups, rename one account in each group and re-run.
+3. A database backup taken in the last hour.
+4. One area at a time, in this order: `tokens`, `device`, `sessions`, `mfa`, `oauth`. Watch `levelrail auth-engine status` for a day before the next one.
+5. You know the rollback: remove the area from `APP_AUTH_ENGINE_AREAS` (or set `APP_AUTH_ENGINE=legacy`) and restart.
+6. Passkeys: backfilled passkeys cannot sign in through the library until the library's user handle resolver is wired in. Keep `mfa` off for users who rely on passkeys, or have them re-enrol.
+
+## Roll back
+
+Unset `APP_AUTH_ENGINE` (or set it to `legacy`) and restart. The built-in engine never stopped being authoritative, so there is nothing to undo. The copied rows can stay; they are inert.
