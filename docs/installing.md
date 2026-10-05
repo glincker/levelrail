@@ -259,6 +259,7 @@ for a system-wide install.
 
 | Method | Command |
 | --- | --- |
+| Homebrew (macOS and Linux) | `brew install glincker/tap/levelrail-cli` |
 | Go | `go install github.com/GLINCKER/levelrail/cmd/levelrail-cli@latest` |
 | Direct download | Pick `levelrail-cli-<os>-<arch>` (`linux`, `darwin`, or `windows`; `amd64` or `arm64`) from the [releases page](https://github.com/glincker/levelrail/releases). Windows files end in `.exe`. |
 

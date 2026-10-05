@@ -24,6 +24,8 @@ type oauthState struct {
 	provider   string
 	purpose    string
 	linkUserID string
+	nonce      string
+	verifier   string
 	expiresAt  time.Time
 }
 
@@ -36,7 +38,7 @@ func newOAuthStateStore() *oauthStateStore {
 	return &oauthStateStore{states: make(map[string]oauthState)}
 }
 
-func (s *oauthStateStore) create(provider, purpose, linkUserID string) (string, error) {
+func (s *oauthStateStore) create(provider, purpose, linkUserID, nonce, verifier string) (string, error) {
 	token, err := randomToken()
 	if err != nil {
 		return "", err
@@ -46,6 +48,8 @@ func (s *oauthStateStore) create(provider, purpose, linkUserID string) (string, 
 		provider:   provider,
 		purpose:    purpose,
 		linkUserID: linkUserID,
+		nonce:      nonce,
+		verifier:   verifier,
 		expiresAt:  time.Now().Add(oauthStateTTL),
 	}
 	s.mu.Unlock()

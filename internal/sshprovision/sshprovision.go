@@ -97,6 +97,9 @@ type InstallParams struct {
 	// same way provision.CloudInitParams.agentImage does (internal/api
 	// wires this from internal/version.Version).
 	AgentImage string
+	// MeshEnabled gives the agent container the TUN device and NET_ADMIN
+	// its WireGuard device needs; off keeps the original unprivileged run.
+	MeshEnabled bool
 }
 
 // DetectedHost is what Provision learns about the remote machine before

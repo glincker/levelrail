@@ -158,6 +158,12 @@ The `disk_io_latency` check writes and fsyncs a 1MiB file to the data directory 
 
 The `agent_advertise_reachability` check confirms `APP_AGENT_ADVERTISE_HOST`, the address a remote agent dials to reach this control plane, is actually reachable. It fails when that address is still the loopback default (`127.0.0.1`) while one or more nodes are enrolled, since a remote agent can never dial its own machine's loopback address to reach a different host. It warns when the configured address doesn't accept a connection from this host itself. Set `APP_AGENT_ADVERTISE_HOST` to this control plane's real, reachable hostname or IP before enrolling a second node, restart, then re-enroll or re-issue certificates for any node that joined before the fix.
 
+The `mesh_hub_endpoint` check applies when `APP_MESH_ENABLED=1`: agents send WireGuard handshakes to `APP_AGENT_ADVERTISE_HOST` on UDP 51820. It fails when that host is loopback while nodes are enrolled (agents log `no known endpoint for peer`), and otherwise reminds you to allow inbound UDP 51820 on the control plane's firewall and cloud security group, which cannot be probed from the host itself.
+
+### Node stuck pending: "join token already used"
+
+An agent that logs `join token already used` is retrying with a spent token. The node row stays `pending` and the dashboard and `levelrail-cli nodes list` flag it "Never connected" after five minutes. The token cannot be reused: delete the node, fix the cause the agent logged (an unwritable identity directory is the usual one; current agents check this before sending the token), and enrol again with a new join token. See [Multi-node](multi-node.md#step-3-confirm-it-registered).
+
 ### Registry reachability failed
 
 The `registry_reachability_<host>` checks probe outbound HTTPS connectivity to every registry this control plane actually pulls or pushes against: each external registry credential's host, the built-in registry when enabled, and Docker Hub (`registry-1.docker.io`) when neither is configured. A warning here means builds and deploys against that specific registry will fail with a pull or push error until the connection is fixed (egress firewall rules, `HTTP(S)_PROXY` settings, or the registry itself being down).

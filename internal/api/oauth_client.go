@@ -29,8 +29,8 @@ type oauthUserInfo struct {
 // substitute a hand-written fake (the same convention GitHubAppClient
 // uses).
 type oauthProviderClient interface {
-	AuthCodeURL(state string) string
-	Exchange(ctx context.Context, code string) (*oauth2.Token, error)
+	AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string
+	Exchange(ctx context.Context, code string, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error)
 	FetchUserInfo(ctx context.Context, token *oauth2.Token) (oauthUserInfo, error)
 }
 
@@ -79,12 +79,12 @@ type googleOAuthClient struct {
 	cfg oauth2.Config
 }
 
-func (c *googleOAuthClient) AuthCodeURL(state string) string {
-	return c.cfg.AuthCodeURL(state)
+func (c *googleOAuthClient) AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string {
+	return c.cfg.AuthCodeURL(state, opts...)
 }
 
-func (c *googleOAuthClient) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
-	return c.cfg.Exchange(ctx, code)
+func (c *googleOAuthClient) Exchange(ctx context.Context, code string, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error) {
+	return c.cfg.Exchange(ctx, code, opts...)
 }
 
 // FetchUserInfo calls Google's OIDC userinfo endpoint. email_verified is
@@ -115,12 +115,12 @@ type githubOAuthClient struct {
 	cfg oauth2.Config
 }
 
-func (c *githubOAuthClient) AuthCodeURL(state string) string {
-	return c.cfg.AuthCodeURL(state)
+func (c *githubOAuthClient) AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string {
+	return c.cfg.AuthCodeURL(state, opts...)
 }
 
-func (c *githubOAuthClient) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
-	return c.cfg.Exchange(ctx, code)
+func (c *githubOAuthClient) Exchange(ctx context.Context, code string, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error) {
+	return c.cfg.Exchange(ctx, code, opts...)
 }
 
 // FetchUserInfo calls GitHub's /user endpoint, then /user/emails as a
@@ -176,12 +176,12 @@ type microsoftOAuthClient struct {
 	cfg oauth2.Config
 }
 
-func (c *microsoftOAuthClient) AuthCodeURL(state string) string {
-	return c.cfg.AuthCodeURL(state)
+func (c *microsoftOAuthClient) AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string {
+	return c.cfg.AuthCodeURL(state, opts...)
 }
 
-func (c *microsoftOAuthClient) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
-	return c.cfg.Exchange(ctx, code)
+func (c *microsoftOAuthClient) Exchange(ctx context.Context, code string, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error) {
+	return c.cfg.Exchange(ctx, code, opts...)
 }
 
 // FetchUserInfo calls Microsoft Graph's /v1.0/me. mail is preferred;
@@ -244,12 +244,12 @@ func newOIDCOAuthClient(settings store.OAuthProviderSettings, clientSecret, redi
 	}, nil
 }
 
-func (c *oidcOAuthClient) AuthCodeURL(state string) string {
-	return c.cfg.AuthCodeURL(state)
+func (c *oidcOAuthClient) AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string {
+	return c.cfg.AuthCodeURL(state, opts...)
 }
 
-func (c *oidcOAuthClient) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
-	return c.cfg.Exchange(ctx, code)
+func (c *oidcOAuthClient) Exchange(ctx context.Context, code string, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error) {
+	return c.cfg.Exchange(ctx, code, opts...)
 }
 
 // FetchUserInfo verifies the token response's id_token (signature, issuer,

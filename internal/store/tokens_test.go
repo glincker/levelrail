@@ -44,6 +44,24 @@ func TestSaveAndGetAPITokenByHash(t *testing.T) {
 	}
 }
 
+func TestAPIToken_OwnerRoundTripAndGetByID(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	tok := testToken("tok_owned", "hash-owned")
+	tok.OwnerUserID = "user_1"
+	if err := db.SaveAPIToken(ctx, tok); err != nil {
+		t.Fatalf("SaveAPIToken() error = %v", err)
+	}
+	got, err := db.GetAPITokenByID(ctx, "tok_owned")
+	if err != nil || got.OwnerUserID != "user_1" {
+		t.Fatalf("GetAPITokenByID() = %+v, %v, want owner user_1", got, err)
+	}
+	if _, err := db.GetAPITokenByID(ctx, "missing"); !errors.Is(err, ErrAPITokenNotFound) {
+		t.Errorf("GetAPITokenByID(missing) error = %v, want ErrAPITokenNotFound", err)
+	}
+}
+
 func TestGetAPITokenByHash_NotFound(t *testing.T) {
 	db := openTestDB(t)
 	if _, err := db.GetAPITokenByHash(context.Background(), "nonexistent"); !errors.Is(err, ErrAPITokenNotFound) {

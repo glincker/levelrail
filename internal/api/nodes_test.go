@@ -1200,3 +1200,25 @@ func (f *fakeDrainAppStore) DeleteServiceBranchEnvOverride(context.Context, stri
 func (f *fakeDrainAppStore) ListServiceBranchEnvOverrides(context.Context, string) ([]store.ServiceBranchEnvOverride, error) {
 	return nil, nil
 }
+
+func TestNodeStatusReason(t *testing.T) {
+	now := time.Date(2026, 10, 4, 12, 0, 0, 0, time.UTC)
+	seen := now.Add(-time.Minute)
+	tests := []struct {
+		name string
+		node store.Node
+		want string
+	}{
+		{"old pending never seen", store.Node{Status: store.NodeStatusPending, CreatedAt: now.Add(-time.Hour)}, nodeReasonEnrolledNeverConnected},
+		{"fresh pending", store.Node{Status: store.NodeStatusPending, CreatedAt: now.Add(-time.Minute)}, ""},
+		{"pending but seen", store.Node{Status: store.NodeStatusPending, CreatedAt: now.Add(-time.Hour), LastSeenAt: &seen}, ""},
+		{"online", store.Node{Status: store.NodeStatusOnline, CreatedAt: now.Add(-time.Hour)}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := nodeStatusReason(tt.node, now, 5*time.Minute); got != tt.want {
+				t.Errorf("nodeStatusReason() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

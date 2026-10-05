@@ -24,7 +24,7 @@ None of the five providers have been exercised against a real cloud account; see
 
 ## 2. Enroll it
 
-[Multi-node](/multi-node) has the full enrollment flow: mint a join token, run the agent with it, watch the node go from `pending` to `online`.
+[Multi-node](/multi-node#enrolling-a-second-node) has the full enrollment flow: mint a join token, run the agent with it (as root, with a host directory it can write the identity file into), watch the node go from `pending` to `online`. A node left `pending` after its token was spent shows as "Never connected"; delete it and enrol again with a new token.
 
 The one gap most likely to bite on a first attempt: set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP the remote agent will actually dial, before enrolling. It defaults to `127.0.0.1`. With a mismatch, enrollment itself still succeeds, but the node's persistent session then fails TLS hostname verification on every connection attempt and stays stuck at `pending` forever instead of flipping to `online`. See [multi-node's enrollment section](/multi-node#enrolling-a-second-node) for the exact mechanism.
 
@@ -35,7 +35,7 @@ The join flow (enrollment, cordon, drain) has a real, documented verification be
 What that run did not cover, and what remains open:
 
 - **No real WAN or second physical host.** Both daemons ran locally; cross-datacenter latency and NAT traversal are untested.
-- **The WireGuard mesh itself is unchanged.** `internal/network/device_test.go` still runs against fakes, because real encryption needs two real hosts and root. The mesh's remote arm (`internal/network.ConfigSink`) does not span nodes yet: enabling `APP_MESH_ENABLED` only wires up the control plane's own node today. See [multi-node's "Not built yet" section](/multi-node#not-built-yet-deliberate-follow-ups).
+- **The WireGuard mesh itself is unchanged.** `internal/network/device_test.go` still runs against fakes, because real encryption needs two real hosts and root. The mesh's remote arm (`internal/network.ConfigSink`) does not span nodes yet: agents apply their mesh config when started with `APP_MESH_ENABLED=1`, but this has not been proven between two real hosts. Open inbound UDP 51820 on the control plane; see [multi-node's mesh requirements](/multi-node#multi-node-mesh-requirements).
 - **Cross-host remote transport is otherwise unverified** beyond the join flow itself: exec, volume migration, and remote builds are built (see [roadmap.md](/roadmap)) but were not part of this run.
 
 ## 4. What survives if the control plane dies

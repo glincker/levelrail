@@ -13,12 +13,31 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    env:
+      # With a personal token, the release PR runs CI and the tag push
+      # triggers release.yml by itself. Without one, the built-in token is
+      # used and the dispatch step below chains the release.
+      HAS_RP_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN != '' }}
     steps:
       - id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # Off unless the AUTO_RELEASE repo variable is "true". The PR then
+      # merges itself once CI passes, which tags and publishes the release.
+      # Every merge to main updates the PR, so this releases on every
+      # merge; leave the variable unset to merge release PRs by hand.
+      - name: Auto-merge the release PR
+        if: ${{ env.HAS_RP_TOKEN == 'true' && vars.AUTO_RELEASE == 'true' && steps.release.outputs.pr != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          PR_JSON: ${{ steps.release.outputs.pr }}
+        run: |
+          number="$(printf '%s' "$PR_JSON" | jq -r '.number')"
+          gh pr merge "$number" --repo "${{ github.repository }}" --auto --squash
 
       # A tag pushed by this action's own GITHUB_TOKEN does not trigger
       # release.yml's "on: push: tags" event (GitHub blocks a token from
@@ -30,7 +49,7 @@ jobs:
       # declares that trigger; the tag input tells release.yml which
       # version to actually check out and build.
       - name: Trigger release build
-        if: ${{ steps.release.outputs.release_created == 'true' }}
+        if: ${{ steps.release.outputs.release_created == 'true' && env.HAS_RP_TOKEN != 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

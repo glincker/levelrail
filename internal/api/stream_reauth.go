@@ -61,6 +61,11 @@ func (rt *Router) resolveCaller(ctx context.Context, r *http.Request) (principal
 	if rec.RevokedAt != nil || (rec.ExpiresAt != nil && time.Now().After(*rec.ExpiresAt)) {
 		return "", "", nil, errCallerGone
 	}
+	if gone, oerr := rt.tokenOwnerGone(ctx, rec); oerr != nil {
+		return "", "", nil, fmt.Errorf("check token owner: %w", oerr)
+	} else if gone {
+		return "", "", nil, errCallerGone
+	}
 	return store.PrincipalTypeToken, rec.ID, rec.Abilities, nil
 }
 

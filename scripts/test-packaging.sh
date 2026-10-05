@@ -24,6 +24,7 @@ echo "== homebrew formula"
 grep -q '@' "$work/levelrail-cli.rb" && fail "unreplaced placeholder in formula"
 grep -q 'version "9.9.9-test.1"' "$work/levelrail-cli.rb" || fail "formula version"
 grep -q "download/$tag/levelrail-cli-darwin-arm64" "$work/levelrail-cli.rb" || fail "formula url"
+grep -q 'chmod 0555, bin/"levelrail-cli"' "$work/levelrail-cli.rb" || fail "formula must chmod the raw download executable"
 want="$(awk '$2 == "levelrail-cli-linux-amd64" { print $1 }' "$work/dist/checksums.txt")"
 grep -q "$want" "$work/levelrail-cli.rb" || fail "formula checksum"
 if command -v ruby >/dev/null; then ruby -c "$work/levelrail-cli.rb" >/dev/null || fail "formula is not valid ruby"; fi

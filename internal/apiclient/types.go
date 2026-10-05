@@ -2412,6 +2412,9 @@ type NodeResource struct {
 	// IsLocal is true for the one node running the control plane process
 	// itself, the only node with real disk/memory host metrics.
 	IsLocal bool `json:"is_local"`
+	// StatusReason is a machine-readable code for a status needing
+	// operator action, e.g. "enrolled_never_connected".
+	StatusReason string `json:"status_reason,omitempty"`
 	// GPU is set when the node reported an NVIDIA GPU.
 	GPU *NodeGPUResource `json:"gpu,omitempty"`
 	// Cert and Agent mirror the node's agent certificate lifecycle and the

@@ -187,3 +187,40 @@ func TestDoctorCheckOneRegistry(t *testing.T) {
 		t.Errorf("code = %q, want %q", c.Code, "registry_reachability_ghcr.io")
 	}
 }
+
+func TestDoctorCheckMeshHubEndpoint(t *testing.T) {
+	tests := []struct {
+		name       string
+		mesh       bool
+		host       string
+		withNode   bool
+		wantStatus string
+		wantFix    bool
+	}{
+		{"mesh off", false, "127.0.0.1", true, doctorStatusOK, false},
+		{"loopback, no nodes", true, "127.0.0.1", false, doctorStatusOK, false},
+		{"loopback with nodes fails", true, "127.0.0.1", true, doctorStatusFail, true},
+		{"real host reminds about udp", true, "cp.example.com", true, doctorStatusOK, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db := newDoctorTestRouter(t)
+			rt.doctorAgentAdvertiseHost = tt.host
+			if tt.mesh {
+				rt.mesh = &fakeMeshStatus{}
+			}
+			if tt.withNode {
+				if err := db.SaveNode(context.Background(), store.Node{ID: "n1", Name: "w1", Address: "10.0.0.5", Status: store.NodeStatusOnline}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			c := rt.doctorCheckMeshHubEndpoint(context.Background())
+			if c.Status != tt.wantStatus {
+				t.Errorf("status = %q, want %q", c.Status, tt.wantStatus)
+			}
+			if (c.Fix != "") != tt.wantFix {
+				t.Errorf("Fix = %q, wantFix %v", c.Fix, tt.wantFix)
+			}
+		})
+	}
+}

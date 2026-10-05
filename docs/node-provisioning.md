@@ -302,9 +302,10 @@ eventually marks it `failed` on its own either way.
 ### The agent image, not a downloaded binary
 
 Unlike the control plane binary `install.sh` installs (verified against a
-published `checksums.txt`), there is currently no raw `levelrail-agent`
-binary release to download and check a checksum against: the agent ships
-only as a container image (`ghcr.io/glincker/levelrail-agent`, one tag per
+published `checksums.txt`), there is no raw `levelrail-agent`
+binary in `v0.2.0-beta.15` and earlier to check a checksum against (later
+releases attach one, see [Docker](docker.md#without-a-container)); the
+provisioning flows use the container image (`ghcr.io/glincker/levelrail-agent`, one tag per
 release, cosign-signed by the release pipeline). Cloud-init therefore pulls
 and runs that image rather than curling a binary. The pull itself is a
 plain `docker pull` over the registry's own TLS; cloud-init does not
