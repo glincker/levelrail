@@ -37,6 +37,8 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsDeploysFailed(prog, args[1:], stdout, stderr, lookupEnv)
 	case "steps":
 		return runAppsDeploysSteps(prog, args[1:], stdout, stderr, lookupEnv)
+	case "probes":
+		return runAppsDeploysProbes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cancel":
 		return runAppsDeploysCancel(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback-to":
@@ -57,6 +59,7 @@ func appsDeploysUsage(prog string) string {
   %[1]s apps deploys logs <name> <deploy-id> [flags]              one deploy attempt's full build/log output
   %[1]s apps deploys failed [--since 24h] [flags]                 every app's latest failed deploy in the window, fleet-wide
   %[1]s apps deploys steps <name> <deploy-id> [flags]             one deploy attempt's pipeline steps, live until it ends
+  %[1]s apps deploys probes <name> <deploy-id> [flags]            readiness-probe attempts a deploy's cutover made
   %[1]s apps deploys cancel <name> <deploy-id> [flags]            cancel a queued or in-progress deploy before it cuts traffic
   %[1]s apps deploys rollback-to <name> <deploy-id> [flags]       redeploy a past succeeded deploy's exact image, pinned by digest
 
