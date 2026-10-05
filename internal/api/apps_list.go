@@ -122,7 +122,7 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		resource := toAppResource(s)
 		resource.Tags = tagNamesFromStoreTags(tagsByApp[s.Name])
 		conditions := conditionsByController[applicationControllerName(s.Name)]
-		if cond := rt.crossNodeIngressAppCondition(s); cond != nil {
+		if cond := rt.crossNodeIngressAppCondition(r.Context(), s); cond != nil {
 			conditions = append(conditions, *cond)
 		}
 		out = append(out, appListResource{
@@ -216,7 +216,7 @@ func (rt *Router) handleAppsSummary(w http.ResponseWriter, r *http.Request) {
 	sum := appsSummaryResource{Total: len(visible)}
 	for _, s := range visible {
 		conditions := conds[applicationControllerName(s.Name)]
-		if cond := rt.crossNodeIngressAppCondition(s); cond != nil {
+		if cond := rt.crossNodeIngressAppCondition(r.Context(), s); cond != nil {
 			conditions = append(conditions, *cond)
 		}
 		switch summarizeAppConditions(conditions).Label {

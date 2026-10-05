@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -10,66 +11,20 @@ import (
 )
 
 func TestCrossNodeIngressCondition(t *testing.T) {
-	isLocal := func(nodeID string) bool { return nodeID == "" || nodeID == "node-1" }
-
-	tests := []struct {
-		name     string
-		services []store.DesiredService
-		wantNil  bool
-	}{
-		{
-			name:    "no services",
-			wantNil: true,
-		},
-		{
-			name: "local node, no domains",
-			services: []store.DesiredService{
-				{Name: "worker", NodeID: ""},
-			},
-			wantNil: true,
-		},
-		{
-			name: "local node, with domains",
-			services: []store.DesiredService{
-				{Name: "web", NodeID: "node-1", Domains: []string{"web.example.com"}},
-			},
-			wantNil: true,
-		},
-		{
-			name: "remote node, no domains configured",
-			services: []store.DesiredService{
-				{Name: "worker", NodeID: "node-2"},
-			},
-			wantNil: true,
-		},
-		{
-			name: "remote node, with a domain: unreachable",
-			services: []store.DesiredService{
-				{Name: "static-test", NodeID: "node-2", Domains: []string{"levelrail-test-2.levelrail.com"}},
-			},
-			wantNil: false,
-		},
+	if got := crossNodeIngressCondition(nil); got != nil {
+		t.Fatalf("crossNodeIngressCondition(nil) = %+v, want nil", got)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := crossNodeIngressCondition(tt.services, isLocal)
-			if tt.wantNil {
-				if got != nil {
-					t.Fatalf("crossNodeIngressCondition() = %+v, want nil", got)
-				}
-				return
-			}
-			if got == nil {
-				t.Fatal("crossNodeIngressCondition() = nil, want a condition")
-			}
-			if got.Type != "CrossNodeIngress" || got.Status != reconcile.ConditionFalse || got.Reason != "NoMeshIngressPath" {
-				t.Errorf("condition = %+v, want Type=CrossNodeIngress Status=False Reason=NoMeshIngressPath", got)
-			}
-			if got.Message == "" {
-				t.Error("condition.Message is empty, want the affected service/domain named")
-			}
-		})
+	got := crossNodeIngressCondition([]remoteBlock{{Service: "static-test", NodeID: "node-2", Hosts: []string{"a.example.com"}, Why: "no handshake"}})
+	if got == nil {
+		t.Fatal("crossNodeIngressCondition() = nil, want a condition")
+	}
+	if got.Type != "CrossNodeIngress" || got.Status != reconcile.ConditionFalse || got.Reason != "NoMeshIngressPath" {
+		t.Errorf("condition = %+v, want Type=CrossNodeIngress Status=False Reason=NoMeshIngressPath", got)
+	}
+	for _, want := range []string{"static-test", "node-2", "a.example.com", "no handshake"} {
+		if !strings.Contains(got.Message, want) {
+			t.Errorf("Message = %q, want it to mention %q", got.Message, want)
+		}
 	}
 }
 
