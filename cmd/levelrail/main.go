@@ -599,6 +599,7 @@ func run(logger *slog.Logger) error {
 	// resolves email_settings (falling back to APP_SMTP_* env vars)
 	// fresh on every send, deferring "not configured" to send time.
 	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv()))
+	installGitNetguard()
 	notifyClient := netguard.NewClient()
 
 	// pushSender backs the "webpush" notification-channel kind: nil
@@ -3881,7 +3882,7 @@ func purgeStaleIssuerCerts(ctx context.Context, db *store.DB, logger *slog.Logge
 	if err != nil || !settings.ACMEEnabled {
 		return
 	}
-	n, err := ingressdriver.PurgeCertsFromOtherIssuers(ctx, db, settings.ACMEDirectoryURL)
+	n, err := ingressdriver.PurgeCertsFromOtherIssuersOnce(ctx, db, settings.ACMEDirectoryURL)
 	if err != nil {
 		logger.Warn("purging certificates from other issuers failed", slog.String("error", err.Error()))
 		return

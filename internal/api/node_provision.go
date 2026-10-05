@@ -37,6 +37,8 @@ func unknownNodeProviderMessage() string {
 // APP_NODE_NAME.
 var nodeProvisionNameRe = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
+var controlPlaneAddrRe = regexp.MustCompile(`^[A-Za-z0-9.\-]+:[0-9]{1,5}$|^\[[0-9A-Fa-f:]+\]:[0-9]{1,5}$`)
+
 // nodeProvisionCatalogTTL bounds how long a provider's region/size list
 // is cached before the next request re-fetches it live: a technical
 // cache lifetime for a slow-changing third-party catalog, not an
@@ -466,8 +468,8 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, "region and size are required")
 		return
 	}
-	if req.ControlPlaneAddr == "" {
-		writeError(w, http.StatusBadRequest, "control_plane_addr is required")
+	if !controlPlaneAddrRe.MatchString(req.ControlPlaneAddr) {
+		writeError(w, http.StatusBadRequest, "control_plane_addr must be host:port")
 		return
 	}
 	if !nodeProvisionNameRe.MatchString(req.Name) {
