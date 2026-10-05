@@ -139,6 +139,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/logout", rt.requireAuth(rt.handleLogout))
 	mux.HandleFunc("PUT /api/v1/auth/password", rt.requireAuth(rt.handleChangePassword))
 	mux.HandleFunc("GET /api/v1/auth/session", rt.requireAuth(rt.handleGetSession))
+	mux.HandleFunc("GET /api/v1/auth/whoami", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleWhoami))
 	mux.HandleFunc("POST /api/v1/auth/sessions/revoke-others", rt.requireAuth(rt.handleRevokeOtherSessions))
 
 	// Session links (session_links.go): a short-lived, single-use,
@@ -485,6 +486,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// rather than raw log lines, for a checklist-style progress view.
 	// Same AbilityRead boundary as the log stream above.
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/steps", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.withStreamReauth(appResourceFromPath, rt.handleDeployStepStream)))
+
+	// Deploy-attempt readiness-probe attempts (deploy_probes.go): plain
+	// polling JSON, not SSE, the individual probe attempts
+	// (internal/probe.WithOnAttempt) one deploy's cutover made. Same
+	// AbilityRead boundary as the step/log streams above.
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/probes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListProbeAttempts))
 
 	// Deploy-attempt log download (deploy_log_download.go): the same
 	// attempt's full log as a plain-text attachment instead of an SSE

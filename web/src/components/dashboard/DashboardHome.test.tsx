@@ -2,12 +2,31 @@ import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import i18next from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { DashboardHome } from './DashboardHome'
 import { NeedsAttentionView } from './NeedsAttention'
 import { platformPill } from '../../lib/fleetStatus'
 import type { AppListEntry } from '../../types/appDetail'
 import type { AttentionItem } from '../../lib/attention'
-import { attentionToSuggestions } from '../../lib/fleetSuggestions'
+import {
+  attentionToSuggestions,
+  type ActionSpec,
+} from '../../lib/fleetSuggestions'
+import dashboardEn from '../../locales/en/dashboard.json'
+
+// A dedicated instance with the real dashboard.json resources loaded
+// synchronously, same reasoning as AutoRollbackCard.test.tsx's own.
+const testI18n = i18next.createInstance()
+void testI18n.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  ns: ['dashboard'],
+  defaultNS: 'dashboard',
+  resources: { en: { dashboard: dashboardEn } },
+  interpolation: { escapeValue: false },
+})
+const dashboardT = testI18n.getFixedT('en', 'dashboard')
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()
@@ -78,9 +97,11 @@ function routeFetch(handlers: Record<string, unknown>) {
 function renderHome(apps: AppListEntry[]) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
-    <QueryClientProvider client={qc}>
-      <DashboardHome apps={apps} onboarding={ONBOARDING} />
-    </QueryClientProvider>,
+    <I18nextProvider i18n={testI18n}>
+      <QueryClientProvider client={qc}>
+        <DashboardHome apps={apps} onboarding={ONBOARDING} />
+      </QueryClientProvider>
+    </I18nextProvider>,
   )
 }
 
@@ -174,33 +195,56 @@ describe('NeedsAttentionView', () => {
     target: { kind: 'app', name: `a${i}` },
   }))
 
-  it('renders a skeleton while loading', () => {
-    const { container } = render(
-      <NeedsAttentionView specs={[]} loading onRun={vi.fn()} />,
+  function renderView(props: {
+    specs: ReturnType<typeof attentionToSuggestions>
+    loading: boolean
+    onRun: (spec: ActionSpec) => void
+  }) {
+    return render(
+      <I18nextProvider i18n={testI18n}>
+        <NeedsAttentionView {...props} />
+      </I18nextProvider>,
     )
+  }
+
+  it('renders a skeleton while loading', () => {
+    const { container } = renderView({
+      specs: [],
+      loading: true,
+      onRun: vi.fn(),
+    })
     expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull()
   })
 
   it('renders nothing when there is nothing to fix', () => {
-    const { container } = render(
-      <NeedsAttentionView specs={[]} loading={false} onRun={vi.fn()} />,
-    )
+    const { container } = renderView({
+      specs: [],
+      loading: false,
+      onRun: vi.fn(),
+    })
     expect(container).toBeEmptyDOMElement()
   })
 
   it('caps at four items and links to see all', () => {
-    render(
-      <NeedsAttentionView
-        specs={attentionToSuggestions(items)}
-        loading={false}
-        onRun={vi.fn()}
-      />,
-    )
+    renderView({
+      specs: attentionToSuggestions(items, dashboardT),
+      loading: false,
+      onRun: vi.fn(),
+    })
     expect(screen.getAllByRole('button', { name: 'Restart' })).toHaveLength(4)
     expect(screen.getByRole('link', { name: 'See all 6' })).toHaveAttribute(
       'href',
       '/status',
     )
+  })
+
+  it('shows an Ask AI action alongside the canned fix for every item', () => {
+    renderView({
+      specs: attentionToSuggestions(items, dashboardT),
+      loading: false,
+      onRun: vi.fn(),
+    })
+    expect(screen.getAllByRole('button', { name: 'Ask AI' })).toHaveLength(4)
   })
 })
 

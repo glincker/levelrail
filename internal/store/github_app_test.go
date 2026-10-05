@@ -182,3 +182,94 @@ func containsSlash(s string) bool {
 	}
 	return false
 }
+
+func TestUpsertGitHubAppInstallation_NewIDsInsertRepeatIDsUpdate(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.UpsertGitHubAppInstallation(ctx, 111, "acme-corp", "organization"); err != nil {
+		t.Fatalf("UpsertGitHubAppInstallation(111) error = %v", err)
+	}
+	if err := db.UpsertGitHubAppInstallation(ctx, 222, "octocat", "user"); err != nil {
+		t.Fatalf("UpsertGitHubAppInstallation(222) error = %v", err)
+	}
+
+	got, err := db.ListGitHubAppInstallations(ctx)
+	if err != nil {
+		t.Fatalf("ListGitHubAppInstallations() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("ListGitHubAppInstallations() returned %d rows, want 2: %+v", len(got), got)
+	}
+	if got[0].InstallationID != 111 || got[0].AccountLogin != "acme-corp" || got[0].AccountType != "organization" {
+		t.Errorf("row 0 = %+v, want installation_id=111 account_login=acme-corp account_type=organization", got[0])
+	}
+	if got[1].InstallationID != 222 || got[1].AccountLogin != "octocat" || got[1].AccountType != "user" {
+		t.Errorf("row 1 = %+v, want installation_id=222 account_login=octocat account_type=user", got[1])
+	}
+
+	// Re-authorizing the same installation (e.g. an account rename on
+	// GitHub's side) updates in place, it never creates a second row for
+	// the same installation_id.
+	if err := db.UpsertGitHubAppInstallation(ctx, 111, "acme-corp-renamed", "organization"); err != nil {
+		t.Fatalf("UpsertGitHubAppInstallation(111, renamed) error = %v", err)
+	}
+	got, err = db.ListGitHubAppInstallations(ctx)
+	if err != nil {
+		t.Fatalf("ListGitHubAppInstallations() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("after re-upsert, ListGitHubAppInstallations() returned %d rows, want 2 (no duplicate): %+v", len(got), got)
+	}
+	if got[0].AccountLogin != "acme-corp-renamed" {
+		t.Errorf("after re-upsert, row 0 AccountLogin = %q, want %q", got[0].AccountLogin, "acme-corp-renamed")
+	}
+}
+
+func TestDeleteGitHubAppInstallation(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.UpsertGitHubAppInstallation(ctx, 111, "acme-corp", "organization"); err != nil {
+		t.Fatalf("UpsertGitHubAppInstallation() error = %v", err)
+	}
+	got, err := db.ListGitHubAppInstallations(ctx)
+	if err != nil || len(got) != 1 {
+		t.Fatalf("ListGitHubAppInstallations() = %+v, %v, want exactly 1 row", got, err)
+	}
+
+	if err := db.DeleteGitHubAppInstallation(ctx, got[0].ID); err != nil {
+		t.Fatalf("DeleteGitHubAppInstallation() error = %v", err)
+	}
+	got, err = db.ListGitHubAppInstallations(ctx)
+	if err != nil {
+		t.Fatalf("ListGitHubAppInstallations() after delete error = %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("ListGitHubAppInstallations() after delete = %+v, want empty", got)
+	}
+
+	if err := db.DeleteGitHubAppInstallation(ctx, 99999); !errors.Is(err, ErrGitHubAppInstallationNotFound) {
+		t.Errorf("DeleteGitHubAppInstallation(99999) error = %v, want ErrGitHubAppInstallationNotFound", err)
+	}
+}
+
+func TestSaveGitHubAppConnection_PersistsSlug(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	conn := newTestGitHubAppConnection()
+	slug := "my-test-app"
+	conn.Slug = &slug
+	if err := db.SaveGitHubAppConnection(ctx, conn); err != nil {
+		t.Fatalf("SaveGitHubAppConnection() error = %v", err)
+	}
+
+	got, err := db.GetGitHubAppConnection(ctx)
+	if err != nil {
+		t.Fatalf("GetGitHubAppConnection() error = %v", err)
+	}
+	if got.Slug == nil || *got.Slug != slug {
+		t.Errorf("GetGitHubAppConnection().Slug = %v, want %q", got.Slug, slug)
+	}
+}

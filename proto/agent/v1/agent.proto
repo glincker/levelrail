@@ -240,6 +240,12 @@ message AgentRequest {
     RotateMeshKeyRequest rotate_mesh_key = 19;
     NetworkConnectRequest network_connect = 20;
     NetworkDisconnectRequest network_disconnect = 21;
+    // Stats asks for one point-in-time resource-usage snapshot
+    // (internal/docker.Client.Stats), the remote-node half of ADR 008's
+    // federated query: the control plane polls this on an interval per
+    // placed container, the same way it already polls its own local
+    // Docker socket, instead of the agent keeping its own store.
+    StatsRequest stats = 22;
   }
 }
 
@@ -266,6 +272,7 @@ message AgentResponse {
     InspectExitStateResponse inspect_exit_state = 10;
     ApplyMeshResponse apply_mesh = 11;
     RotateMeshKeyResponse rotate_mesh_key = 12;
+    StatsResponse stats = 13;
   }
 }
 
@@ -469,6 +476,36 @@ message ListNetworksByPrefixRequest {
 }
 message ListNetworksByPrefixResponse {
   repeated NetworkInfo networks = 1;
+}
+
+// CPUStatsRaw mirrors internal/docker.CPUStatsRaw: the raw counters the
+// control plane's own Collector diffs against its previous sample to
+// compute cpu_percent, rather than trusting this one-shot response's own
+// (sometimes-empty, see docker.ContainerStats' own doc comment)
+// pre-computed CPUPercent.
+message CPUStatsRaw {
+  uint64 total_usage_nanos = 1;
+  uint64 system_usage_nanos = 2;
+  uint32 online_cpus = 3;
+}
+
+// ContainerStats mirrors internal/docker.ContainerStats field for field.
+message ContainerStats {
+  double cpu_percent = 1;
+  CPUStatsRaw cpu_raw = 2;
+  uint64 memory_usage_bytes = 3;
+  uint64 memory_limit_bytes = 4;
+  uint64 network_rx_bytes = 5;
+  uint64 network_tx_bytes = 6;
+  uint64 disk_read_bytes = 7;
+  uint64 disk_write_bytes = 8;
+}
+
+message StatsRequest {
+  string container_id = 1;
+}
+message StatsResponse {
+  ContainerStats stats = 1;
 }
 
 // ExecRequest runs cmd inside an already-running container and streams

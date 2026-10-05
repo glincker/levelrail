@@ -154,11 +154,14 @@ func (c *Client) DownloadSBOM(ctx context.Context, name, id string) ([]byte, err
 	if c.userAgent != "" {
 		req.Header.Set("User-Agent", c.userAgent)
 	}
+	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
+		TraceRequest(http.MethodGet, c.baseURL+path, "", time.Since(start), err)
 		return nil, fmt.Errorf("request GET %s: %w", path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		data, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<16))
 		return nil, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}

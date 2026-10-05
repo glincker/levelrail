@@ -40,6 +40,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 func main() {
@@ -53,6 +55,16 @@ func main() {
 // flag-parsing logic can be exercised by table-driven tests without
 // forking a subprocess.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	args, debug := extractDebugFlag(args)
+	if debug {
+		apiclient.SetDebugTrace(stderr)
+	} else {
+		// Always set, never left as whatever a previous run() call in
+		// this process left behind (a test binary calls run() many
+		// times, e.g. completion_test.go's dispatch table).
+		apiclient.SetDebugTrace(nil)
+	}
+
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, rootUsage(prog))
 		return exitUsage
@@ -116,6 +128,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runBackupTargets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "registry-credentials":
 		return runRegistryCredentials(prog, args[1:], stdout, stderr, lookupEnv)
+	case "network-shares":
+		return runNetworkShares(prog, args[1:], stdout, stderr, lookupEnv)
 	case "firewall":
 		return runFirewall(prog, args[1:], stdout, stderr, lookupEnv)
 	case "flags":
@@ -248,6 +262,7 @@ Usage:
   %[1]s storage providers|list|add|test|delete [flags]   manage S3-compatible storage destinations (AWS S3, R2, B2, MinIO, Wasabi, custom)
   %[1]s logs archive set|status|remove, logs dump|ls|fetch [flags]   archive node-local logs to a storage destination
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
+  %[1]s network-shares list|get|create|update|delete|test [flags]    manage NFS/CIFS network share mounts
   %[1]s firewall list|allow|deny|delete [flags]                 manage declarative host firewall rules
   %[1]s registry status|enable|disable [flags]                 manage Levelrail's own built-in container registry
   %[1]s flags create|list|get|set|delete [flags]              manage feature flags, read live by a running app via GET /api/v1/flags/evaluate/{key}
@@ -308,6 +323,9 @@ Usage:
   %[1]s app-volume-backups restores <app> <volume> [flags]   volume restore attempt history
 
 Auth and target:
+  --debug                 trace every outgoing request's method, URL, and
+                          response status/timing to stderr (never stdout);
+                          Authorization and any token are always redacted
   --token, %[2]s          API token
   --api-url, %[3]s      control plane base URL (default %[4]s)
   --profile, %[5]s        named credentials profile to use (default "%[6]s")

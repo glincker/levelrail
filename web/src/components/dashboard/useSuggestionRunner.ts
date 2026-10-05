@@ -1,5 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import { usePaletteAppActions } from '../../hooks/usePaletteAppActions'
+import { setAiChatSeed } from '../../lib/aiChatSeed'
 import type { ActionSpec } from '../../lib/fleetSuggestions'
 
 export function useSuggestionRunner(): (spec: ActionSpec) => void {
@@ -30,6 +31,10 @@ export function useSuggestionRunner(): (spec: ActionSpec) => void {
         return
       case 'system':
         void navigate({ to: '/settings/system-status' })
+        return
+      case 'ask-ai':
+        setAiChatSeed(spec.message)
+        void navigate({ to: '/ai-assistant' })
         return
     }
   }

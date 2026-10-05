@@ -1185,6 +1185,14 @@ type SessionInfoResource struct {
 	ExpiresAt string `json:"expires_at"`
 }
 
+// WhoamiResource mirrors internal/api's whoamiResponse (internal/api/whoami.go).
+type WhoamiResource struct {
+	Kind      string   `json:"kind"`
+	Name      string   `json:"name"`
+	Abilities []string `json:"abilities"`
+	ExpiresAt string   `json:"expires_at"`
+}
+
 // SessionLinkResource mirrors internal/api's mintSessionLinkResponse
 // (internal/api/session_links.go): Token is a one-time secret, URL is
 // the same token already embedded in a ready-to-open login link.
@@ -1805,6 +1813,155 @@ type UpdateRegistryCredentialRequest struct {
 	Username     string     `json:"username"`
 	Password     string     `json:"password,omitempty"`
 	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
+}
+
+// NetworkShareResource mirrors internal/api's networkShareResource.
+// Deliberately no password field: never echoed back by the API.
+type NetworkShareResource struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Protocol     string `json:"protocol"`
+	Host         string `json:"host"`
+	RemotePath   string `json:"remote_path"`
+	MountOptions string `json:"mount_options,omitempty"`
+	Username     string `json:"username,omitempty"`
+	CreatedAt    string `json:"created_at"`
+}
+
+// CreateNetworkShareRequest mirrors internal/api's
+// createNetworkShareRequest. Password is required for a cifs share,
+// ignored for nfs.
+type CreateNetworkShareRequest struct {
+	Name         string `json:"name"`
+	Protocol     string `json:"protocol"`
+	Host         string `json:"host"`
+	RemotePath   string `json:"remote_path"`
+	MountOptions string `json:"mount_options,omitempty"`
+	Username     string `json:"username,omitempty"`
+	Password     string `json:"password,omitempty"`
+}
+
+// UpdateNetworkShareRequest mirrors internal/api's
+// updateNetworkShareRequest. A blank Password keeps the share's
+// existing stored password; a non-blank one rotates it.
+type UpdateNetworkShareRequest struct {
+	Name         string `json:"name"`
+	Protocol     string `json:"protocol"`
+	Host         string `json:"host"`
+	RemotePath   string `json:"remote_path"`
+	MountOptions string `json:"mount_options,omitempty"`
+	Username     string `json:"username,omitempty"`
+	Password     string `json:"password,omitempty"`
+}
+
+// NetworkTopologyNodeResource mirrors internal/api's
+// networkTopologyNodeResource.
+type NetworkTopologyNodeResource struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Region      string `json:"region,omitempty"`
+	Status      string `json:"status"`
+	Schedulable bool   `json:"schedulable"`
+	MeshAddress string `json:"mesh_address,omitempty"`
+	IsLocal     bool   `json:"is_local"`
+}
+
+// NetworkTopologyAppResource mirrors internal/api's
+// networkTopologyAppResource.
+type NetworkTopologyAppResource struct {
+	Name        string   `json:"name"`
+	NodeID      string   `json:"node_id"`
+	Domains     []string `json:"domains,omitempty"`
+	DNSName     string   `json:"dns_name,omitempty"`
+	MeshAddress string   `json:"mesh_address,omitempty"`
+}
+
+// NetworkTopologyDatabaseResource mirrors internal/api's
+// networkTopologyDatabaseResource.
+type NetworkTopologyDatabaseResource struct {
+	Name        string `json:"name"`
+	Engine      string `json:"engine"`
+	NodeID      string `json:"node_id"`
+	DNSName     string `json:"dns_name,omitempty"`
+	MeshAddress string `json:"mesh_address,omitempty"`
+}
+
+// NetworkTopologyLoadBalancerResource mirrors internal/api's
+// networkTopologyLoadBalancerResource.
+type NetworkTopologyLoadBalancerResource struct {
+	Service   string `json:"service"`
+	Algorithm string `json:"algorithm"`
+}
+
+// NetworkTopologyConnectionResource mirrors internal/api's
+// networkTopologyConnectionResource.
+type NetworkTopologyConnectionResource struct {
+	App      string `json:"app"`
+	Database string `json:"database"`
+	EnvVar   string `json:"env_var,omitempty"`
+}
+
+// NetworkTopologyResource mirrors internal/api's networkTopologyResponse,
+// GET /api/v1/network/topology's response body.
+type NetworkTopologyResource struct {
+	Zone          string                                `json:"zone"`
+	MeshEnabled   bool                                  `json:"mesh_enabled"`
+	Nodes         []NetworkTopologyNodeResource         `json:"nodes"`
+	Apps          []NetworkTopologyAppResource          `json:"apps"`
+	Databases     []NetworkTopologyDatabaseResource     `json:"databases"`
+	LoadBalancers []NetworkTopologyLoadBalancerResource `json:"load_balancers"`
+	Connections   []NetworkTopologyConnectionResource   `json:"connections"`
+}
+
+// NetworkProxyDomainResource mirrors internal/api's
+// networkProxyDomainResource: one domain's reachability and TLS status
+// row on the Traffic dashboard page.
+type NetworkProxyDomainResource struct {
+	Domain      string `json:"domain"`
+	App         string `json:"app"`
+	NodeID      string `json:"node_id"`
+	NodeName    string `json:"node_name,omitempty"`
+	IsLocalNode bool   `json:"is_local_node"`
+	Port        int    `json:"port"`
+	Reachable   bool   `json:"reachable"`
+	FixCommand  string `json:"fix_command,omitempty"`
+	TLSStatus   string `json:"tls_status,omitempty"`
+	TLSIssuer   string `json:"tls_issuer,omitempty"`
+	TLSSource   string `json:"tls_source,omitempty"`
+}
+
+// NetworkProxyResource mirrors internal/api's networkProxyResponse,
+// GET /api/v1/network/proxy's response body.
+type NetworkProxyResource struct {
+	Domains []NetworkProxyDomainResource `json:"domains"`
+}
+
+// ProjectTopologyNodeResource mirrors internal/api's topologyNode.
+type ProjectTopologyNodeResource struct {
+	ID     string                     `json:"id"`
+	Kind   string                     `json:"kind"`
+	Label  string                     `json:"label"`
+	Status *ProjectTopologyNodeStatus `json:"status,omitempty"`
+}
+
+// ProjectTopologyNodeStatus mirrors internal/api's appStatusSummary.
+type ProjectTopologyNodeStatus struct {
+	Label   string `json:"label"`
+	Variant string `json:"variant"`
+}
+
+// ProjectTopologyEdgeResource mirrors internal/api's topologyEdge.
+type ProjectTopologyEdgeResource struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+	Kind string `json:"kind"`
+}
+
+// ProjectTopologyResource mirrors internal/api's topologyGraph,
+// GET /api/v1/projects/{id}/topology's response body.
+type ProjectTopologyResource struct {
+	Nodes []ProjectTopologyNodeResource `json:"nodes"`
+	Edges []ProjectTopologyEdgeResource `json:"edges"`
 }
 
 // OrganizationResource mirrors internal/api's organizationResource
@@ -3256,6 +3413,46 @@ type GitHubAppRepoResource struct {
 	Private       bool   `json:"private"`
 	DefaultBranch string `json:"default_branch"`
 	CloneURL      string `json:"clone_url"`
+	// AccountType is "user" or "organization" (migrations/0282): which
+	// connected installation this repo came from.
+	AccountType string `json:"account_type"`
+}
+
+// GitHubAppRepoListResource mirrors internal/api's
+// gitHubAppRepoListResource: GET /api/v1/github-app/repos's response,
+// repos from every connected installation plus one error per
+// installation that failed to list.
+type GitHubAppRepoListResource struct {
+	Repos  []GitHubAppRepoResource        `json:"repos"`
+	Errors []GitHubAppRepoListErrResource `json:"errors,omitempty"`
+}
+
+// GitHubAppRepoListErrResource is one entry of
+// GitHubAppRepoListResource.Errors.
+type GitHubAppRepoListErrResource struct {
+	AccountLogin string `json:"account_login"`
+	Error        string `json:"error"`
+}
+
+// GitHubAppInstallationResource mirrors internal/api's
+// gitHubAppInstallationResource: one entry of
+// GET /api/v1/github-app/installations.
+type GitHubAppInstallationResource struct {
+	ID             int64  `json:"id"`
+	InstallationID int64  `json:"installation_id"`
+	AccountLogin   string `json:"account_login"`
+	AccountType    string `json:"account_type"`
+	ConnectedAt    string `json:"connected_at"`
+}
+
+// GitHubAppInstallationListResource mirrors internal/api's
+// gitHubAppInstallationListResource: GET
+// /api/v1/github-app/installations's response. AddOrgURL is empty when
+// the connection predates migrations/0282's slug column and hasn't been
+// re-registered since.
+type GitHubAppInstallationListResource struct {
+	Installations []GitHubAppInstallationResource `json:"installations"`
+	AddOrgURL     string                          `json:"add_org_url,omitempty"`
 }
 
 // GitAppBranchResource mirrors the identical branch wire shape every git

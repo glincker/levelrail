@@ -19,6 +19,7 @@ type Store interface {
 	GetSecretValue(ctx context.Context, serviceName, envKey string) ([]byte, error)
 	SaveSecretValue(ctx context.Context, serviceName, envKey string, ciphertext []byte) error
 	HasSecretValue(ctx context.Context, serviceName, envKey string) (bool, error)
+	HasSecretValueForServices(ctx context.Context, serviceNames []string, envKey string) (map[string]bool, error)
 	DeleteServiceSecrets(ctx context.Context, serviceName string) error
 	ListSecretKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
 	GetSecretKeyLocked(ctx context.Context, serviceName, envKey string) (exists, locked bool, err error)
@@ -204,6 +205,17 @@ func (m *Manager) Exists(ctx context.Context, serviceName, envKey string) (bool,
 		return false, fmt.Errorf("secrets: check value for %q/%q: %w", serviceName, envKey, err)
 	}
 	return ok, nil
+}
+
+// ExistsForServices reports, for every name in serviceNames, whether a
+// value has been set for (name, envKey), without decrypting it, via one
+// batched store call instead of an Exists call per service.
+func (m *Manager) ExistsForServices(ctx context.Context, serviceNames []string, envKey string) (map[string]bool, error) {
+	out, err := m.store.HasSecretValueForServices(ctx, serviceNames, envKey)
+	if err != nil {
+		return nil, fmt.Errorf("secrets: check value for %d services/%q: %w", len(serviceNames), envKey, err)
+	}
+	return out, nil
 }
 
 // DeleteAll permanently removes every value and the wrapped DEK for

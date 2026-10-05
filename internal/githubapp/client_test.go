@@ -134,7 +134,8 @@ func TestGetInstallation_UsesBearerAppJWT(t *testing.T) {
 			AppID: 42,
 			Account: struct {
 				Login string `json:"login"`
-			}{Login: "octocat"},
+				Type  string `json:"type"`
+			}{Login: "octocat", Type: "Organization"},
 		})
 	})
 
@@ -148,7 +149,7 @@ func TestGetInstallation_UsesBearerAppJWT(t *testing.T) {
 	if gotAuth != "Bearer the-app-jwt" {
 		t.Errorf("Authorization = %q, want %q", gotAuth, "Bearer the-app-jwt")
 	}
-	if info.ID != 99 || info.AppID != 42 || info.AccountLogin != "octocat" {
+	if info.ID != 99 || info.AppID != 42 || info.AccountLogin != "octocat" || info.AccountType != "organization" {
 		t.Errorf("GetInstallation() = %+v, unexpected", info)
 	}
 }
@@ -161,7 +162,8 @@ func TestGetInstallation_SuspendedInstallationReportsSuspendedAt(t *testing.T) {
 			AppID: 42,
 			Account: struct {
 				Login string `json:"login"`
-			}{Login: "octocat"},
+				Type  string `json:"type"`
+			}{Login: "octocat", Type: "Organization"},
 			SuspendedAt: &suspendedAt,
 		})
 	})

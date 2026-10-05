@@ -1,24 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import {
-  FolderIcon,
-  PlusIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { FolderIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
+import { CreateFlowShell } from './CreateFlowKit'
 import { useCreateProject } from '../queries/projects'
 
 // A single name field, nothing else: a project is purely a label
@@ -69,17 +57,17 @@ export function CreateProjectDialog() {
         New project
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm" glass>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FolderIcon className="size-4 text-muted-foreground" />
-            New project
-          </DialogTitle>
-          <DialogDescription>
-            A name to group related apps and databases under. Purely
-            organizational, nothing about how they run changes.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <CreateFlowShell
+          icon={<FolderIcon className="size-4 text-muted-foreground" />}
+          title="New project"
+          description="A name to group related apps and databases under. Purely organizational, nothing about how they run changes."
+          onSubmit={handleSubmit}
+          error={createProject.isError ? createProject.error.message : null}
+          submitLabel="Create project"
+          submitPendingLabel="Creating..."
+          pending={createProject.isPending}
+          submitDisabled={name.trim() === ''}
+        >
           <Field>
             <FieldLabel htmlFor="project-name">Name</FieldLabel>
             <Input
@@ -92,23 +80,7 @@ export function CreateProjectDialog() {
               autoFocus
             />
           </Field>
-
-          {createProject.isError ? (
-            <Alert variant="destructive">
-              <WarningIcon />
-              <AlertDescription>{createProject.error.message}</AlertDescription>
-            </Alert>
-          ) : null}
-
-          <DialogFooter>
-            <Button
-              type="submit"
-              disabled={createProject.isPending || name.trim() === ''}
-            >
-              {createProject.isPending ? 'Creating...' : 'Create project'}
-            </Button>
-          </DialogFooter>
-        </form>
+        </CreateFlowShell>
       </DialogContent>
     </Dialog>
   )

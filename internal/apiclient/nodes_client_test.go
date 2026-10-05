@@ -32,6 +32,54 @@ func TestClient_ListNodes(t *testing.T) {
 	}
 }
 
+func TestClient_ListNodesFiltered(t *testing.T) {
+	var gotMethod, gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath, gotQuery = r.Method, r.URL.Path, r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Total-Count", "42")
+		_ = json.NewEncoder(w).Encode([]NodeResource{{ID: "nd_1", Name: "web-1", Status: "ready"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, total, err := client.ListNodesFiltered(context.Background(), ListNodesOptions{Query: "web", Limit: 10, Offset: 5})
+	if err != nil {
+		t.Fatalf("ListNodesFiltered() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/nodes" {
+		t.Errorf("request = %s %s, want GET /api/v1/nodes", gotMethod, gotPath)
+	}
+	if gotQuery != "limit=10&offset=5&q=web" {
+		t.Errorf("query = %q, want limit, offset and q forwarded", gotQuery)
+	}
+	if len(got) != 1 || got[0].ID != "nd_1" {
+		t.Errorf("ListNodesFiltered() nodes = %+v, want one node nd_1", got)
+	}
+	if total != 42 {
+		t.Errorf("ListNodesFiltered() total = %d, want 42 (from X-Total-Count)", total)
+	}
+}
+
+func TestClient_ListNodesFiltered_NoOptionsOmitsQueryString(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Total-Count", "0")
+		_ = json.NewEncoder(w).Encode([]NodeResource{})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	if _, _, err := client.ListNodesFiltered(context.Background(), ListNodesOptions{}); err != nil {
+		t.Fatalf("ListNodesFiltered() error = %v", err)
+	}
+	if gotQuery != "" {
+		t.Errorf("query = %q, want empty when no options are set", gotQuery)
+	}
+}
+
 func TestClient_GetNode_NotFound(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

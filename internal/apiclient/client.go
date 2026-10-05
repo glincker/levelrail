@@ -67,18 +67,26 @@ func NewClient(baseURL, token string, opts ...Option) *Client {
 }
 
 func (c *Client) do(ctx context.Context, method, path string, body, out any) error {
+	_, err := c.doHeaders(ctx, method, path, body, out)
+	return err
+}
+
+// doHeaders is do plus the response header set, for a caller
+// (ListNodesFiltered) that needs a response header such as
+// X-Total-Count alongside the decoded body.
+func (c *Client) doHeaders(ctx context.Context, method, path string, body, out any) (http.Header, error) {
 	var reqBody io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("encode request body: %w", err)
+			return nil, fmt.Errorf("encode request body: %w", err)
 		}
 		reqBody = bytes.NewReader(b)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reqBody) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
 	if err != nil {
-		return fmt.Errorf("build request: %w", err)
+		return nil, fmt.Errorf("build request: %w", err)
 	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
@@ -93,18 +101,21 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 		req.Header.Set(AgentClientHeader, agent)
 	}
 
+	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
+		TraceRequest(method, c.baseURL+path, "", time.Since(start), err)
 		// A transport-level failure (connection refused, DNS, TLS,
 		// timeout): deliberately not wrapped in *APIError, so callers
 		// can tell "never reached the server" apart from "the server
 		// answered with an error" via errors.As, and pick a different
 		// exit code / tool-error shape for each.
-		return fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
+		return nil, fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(method, c.baseURL+path, resp.Status, time.Since(start), nil)
 
-	return decodeResponse(resp, out)
+	return resp.Header, decodeResponse(resp, out)
 }
 
 // decodeResponse reads resp's body, mapping a non-2xx status to
@@ -182,6 +193,72 @@ func (c *Client) ListApps(ctx context.Context) ([]AppResource, error) {
 	var out []AppResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/apps", nil, &out)
 	return out, err
+}
+
+// ListAppsOptions pages GET /api/v1/apps, matching the limit/offset
+// query params internal/api/apps_list.go's own parseAppListFilter
+// already accepts. Both zero means every matching app in one response,
+// ListApps's own unpaged behavior.
+type ListAppsOptions struct {
+	Limit, Offset int
+}
+
+// AppsPage is one page of GET /api/v1/apps, returned by ListAppsPage.
+// NextOffset is 0 when there is no further page; TotalCount is the
+// server's own X-Total-Count header, the full match count before paging.
+type AppsPage struct {
+	Items      []AppResource
+	NextOffset int
+	TotalCount int
+}
+
+// ListAppsPage calls GET /api/v1/apps with opts.Limit/opts.Offset as
+// query params. Built as its own request rather than through do(): it
+// needs the server's X-Total-Count response header to compute
+// NextOffset, which do() discards once it decodes the JSON body.
+func (c *Client) ListAppsPage(ctx context.Context, opts ListAppsOptions) (AppsPage, error) {
+	path := "/api/v1/apps"
+	q := url.Values{}
+	if opts.Limit > 0 {
+		q.Set("limit", strconv.Itoa(opts.Limit))
+	}
+	if opts.Offset > 0 {
+		q.Set("offset", strconv.Itoa(opts.Offset))
+	}
+	if enc := q.Encode(); enc != "" {
+		path += "?" + enc
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
+	if err != nil {
+		return AppsPage{}, fmt.Errorf("build request: %w", err)
+	}
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+
+	start := time.Now()
+	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
+	if err != nil {
+		TraceRequest(http.MethodGet, c.baseURL+path, "", time.Since(start), err)
+		return AppsPage{}, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
+
+	var items []AppResource
+	if err := decodeResponse(resp, &items); err != nil {
+		return AppsPage{}, err
+	}
+	total, _ := strconv.Atoi(resp.Header.Get("X-Total-Count"))
+	page := AppsPage{Items: items, TotalCount: total}
+	if opts.Limit > 0 && total > opts.Offset+len(items) {
+		page.NextOffset = opts.Offset + len(items)
+	}
+	return page, nil
 }
 
 // ListAppStatuses calls GET /api/v1/apps and keeps only each app's name
@@ -279,6 +356,24 @@ func (c *Client) SetDeployFreeze(ctx context.Context, name string, windows []Fre
 		windows = []FreezeWindowResource{}
 	}
 	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/deploy-freeze", PutDeployFreezeRequest{Windows: windows}, &out)
+	return out, err
+}
+
+// GetGlobalDeployFreeze calls GET /api/v1/settings/deploy-freeze.
+func (c *Client) GetGlobalDeployFreeze(ctx context.Context) (DeployFreezeResource, error) {
+	var out DeployFreezeResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/deploy-freeze", nil, &out)
+	return out, err
+}
+
+// SetGlobalDeployFreeze calls PUT /api/v1/settings/deploy-freeze, replacing
+// the fleet-wide windows; an empty list clears them.
+func (c *Client) SetGlobalDeployFreeze(ctx context.Context, windows []FreezeWindowResource) (DeployFreezeResource, error) {
+	var out DeployFreezeResource
+	if windows == nil {
+		windows = []FreezeWindowResource{}
+	}
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/deploy-freeze", PutDeployFreezeRequest{Windows: windows}, &out)
 	return out, err
 }
 
@@ -529,11 +624,14 @@ func (c *Client) DeployCompose(ctx context.Context, name string, composeYAML []b
 		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
 
+	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as do()
 	if err != nil {
+		TraceRequest(http.MethodPost, req.URL.String(), "", time.Since(start), err)
 		return out, fmt.Errorf("request %s %s: %w", http.MethodPost, req.URL.String(), err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(http.MethodPost, req.URL.String(), resp.Status, time.Since(start), nil)
 
 	err = decodeResponse(resp, &out)
 	return out, err
@@ -1527,6 +1625,14 @@ func (c *Client) GetSession(ctx context.Context) (SessionInfoResource, error) {
 	return out, err
 }
 
+// Whoami calls GET /api/v1/auth/whoami, which accepts a bearer token as
+// well as a session cookie.
+func (c *Client) Whoami(ctx context.Context) (WhoamiResource, error) {
+	var out WhoamiResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/auth/whoami", nil, &out)
+	return out, err
+}
+
 // MintSessionLink calls POST /api/v1/auth/session-links using this
 // Client's bearer token, which must hold AbilityRoot: minting a session
 // link is root-equivalent since redeeming it establishes a session with
@@ -1969,6 +2075,87 @@ func (c *Client) ListRegistryCredentialTags(ctx context.Context, id, repository 
 	q.Set("repository", repository)
 	var out RegistryTagsResource
 	err := c.do(ctx, http.MethodGet, registryCredentialPath(id)+"/tags?"+q.Encode(), nil, &out)
+	return out, err
+}
+
+// networkSharesCollectionPath builds /api/v1/network-shares, and
+// networkSharePath builds that same path plus /{id}.
+func networkSharesCollectionPath() string {
+	return "/api/v1/network-shares"
+}
+
+func networkSharePath(id string) string {
+	return networkSharesCollectionPath() + "/" + PathEscape(id)
+}
+
+// CreateNetworkShare calls POST /api/v1/network-shares.
+func (c *Client) CreateNetworkShare(ctx context.Context, req CreateNetworkShareRequest) (NetworkShareResource, error) {
+	var out NetworkShareResource
+	err := c.do(ctx, http.MethodPost, networkSharesCollectionPath(), req, &out)
+	return out, err
+}
+
+// ListNetworkShares calls GET /api/v1/network-shares.
+func (c *Client) ListNetworkShares(ctx context.Context) ([]NetworkShareResource, error) {
+	var out []NetworkShareResource
+	err := c.do(ctx, http.MethodGet, networkSharesCollectionPath(), nil, &out)
+	return out, err
+}
+
+// GetNetworkShare calls GET /api/v1/network-shares/{id}.
+func (c *Client) GetNetworkShare(ctx context.Context, id string) (NetworkShareResource, error) {
+	var out NetworkShareResource
+	err := c.do(ctx, http.MethodGet, networkSharePath(id), nil, &out)
+	return out, err
+}
+
+// UpdateNetworkShare calls PUT /api/v1/network-shares/{id}: a full
+// replace of name/protocol/host/remote_path/mount_options/username. A
+// blank Password in req keeps the share's existing stored password.
+func (c *Client) UpdateNetworkShare(ctx context.Context, id string, req UpdateNetworkShareRequest) (NetworkShareResource, error) {
+	var out NetworkShareResource
+	err := c.do(ctx, http.MethodPut, networkSharePath(id), req, &out)
+	return out, err
+}
+
+// DeleteNetworkShare calls DELETE /api/v1/network-shares/{id}.
+func (c *Client) DeleteNetworkShare(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, networkSharePath(id), nil, nil)
+}
+
+// TestNetworkShare calls POST /api/v1/network-shares/{id}/test: dials
+// the share's host on its protocol's standard port to confirm it's
+// reachable. This is a reachability check only, never an authentication
+// check.
+func (c *Client) TestNetworkShare(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodPost, networkSharePath(id)+"/test", nil, nil)
+}
+
+// GetNetworkTopology calls GET /api/v1/network/topology: a read-only,
+// whole-mesh summary of nodes, apps, databases, load balancers, and
+// app-to-database connections.
+func (c *Client) GetNetworkTopology(ctx context.Context) (NetworkTopologyResource, error) {
+	var out NetworkTopologyResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/network/topology", nil, &out)
+	return out, err
+}
+
+// GetNetworkProxyStatus calls GET /api/v1/network/proxy: per-domain
+// reachability (does this control plane's own ingress reach the app
+// behind it) plus certificate status, the Traffic dashboard page's own
+// data source.
+func (c *Client) GetNetworkProxyStatus(ctx context.Context) (NetworkProxyResource, error) {
+	var out NetworkProxyResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/network/proxy", nil, &out)
+	return out, err
+}
+
+// GetProjectTopology calls GET /api/v1/projects/{id}/topology: a
+// diagram-ready graph of one project's apps, databases, and shared
+// volumes.
+func (c *Client) GetProjectTopology(ctx context.Context, id string) (ProjectTopologyResource, error) {
+	var out ProjectTopologyResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/projects/"+PathEscape(id)+"/topology", nil, &out)
 	return out, err
 }
 
@@ -2923,6 +3110,35 @@ func (c *Client) PruneSystem(ctx context.Context) (SystemPruneResult, error) {
 	return out, err
 }
 
+// StopOrphanedContainer calls POST /api/v1/system/containers/{name}/stop.
+// Server-side re-confirms the container isn't Levelrail-managed (409 if
+// it is); use "apps stop" for a managed app instead.
+func (c *Client) StopOrphanedContainer(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/system/containers/"+PathEscape(name)+"/stop", nil, nil)
+}
+
+// RemoveOrphanedContainer calls POST /api/v1/system/containers/{name}/remove.
+func (c *Client) RemoveOrphanedContainer(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/system/containers/"+PathEscape(name)+"/remove", nil, nil)
+}
+
+// ClaimOrphanedContainerRequest is POST
+// /api/v1/system/containers/{name}/claim's optional request body. A
+// blank Name lets the server derive one from the container's own name.
+type ClaimOrphanedContainerRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// ClaimOrphanedContainer calls POST
+// /api/v1/system/containers/{name}/claim: creates a real app
+// (build.type: image) from the container's own image, same path POST
+// /api/v1/apps itself uses. Returns the created app.
+func (c *Client) ClaimOrphanedContainer(ctx context.Context, name string, req ClaimOrphanedContainerRequest) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/system/containers/"+PathEscape(name)+"/claim", req, &out)
+	return out, err
+}
+
 // ListOrphanedVolumes calls GET /api/v1/system/volumes/orphaned: every
 // named Docker volume this instance created that current desired state
 // no longer references.
@@ -3180,11 +3396,16 @@ func streamSSE[T any](ctx context.Context, c *Client, method, path string, body 
 	}
 
 	streamClient := &http.Client{Transport: c.hc.Transport}
+	start := time.Now()
 	resp, err := streamClient.Do(req) //nolint:gosec // same target as above
 	if err != nil {
+		TraceRequest(method, c.baseURL+path, "", time.Since(start), err)
 		return fmt.Errorf("request %s %s: %w", method, c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	// Traced at headers-received, not stream-end: a tail runs until the
+	// caller's context is canceled, so "elapsed" here is connect latency.
+	TraceRequest(method, c.baseURL+path, resp.Status, time.Since(start), nil)
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return decodeResponse(resp, nil)
@@ -3278,11 +3499,14 @@ func (c *Client) DownloadAuditLogCSV(ctx context.Context, opts ListAuditLogOptio
 		req.Header.Set("User-Agent", c.userAgent)
 	}
 
+	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
+		TraceRequest(http.MethodGet, c.baseURL+path, "", time.Since(start), err)
 		return nil, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -3340,11 +3564,14 @@ func (c *Client) DownloadDeployLog(ctx context.Context, name, deployID string) (
 		req.Header.Set("User-Agent", c.userAgent)
 	}
 
+	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
+		TraceRequest(http.MethodGet, c.baseURL+path, "", time.Since(start), err)
 		return nil, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -3373,11 +3600,14 @@ func (c *Client) downloadRaw(ctx context.Context, path string) ([]byte, error) {
 		req.Header.Set("User-Agent", c.userAgent)
 	}
 
+	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
+		TraceRequest(http.MethodGet, c.baseURL+path, "", time.Since(start), err)
 		return nil, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -3614,11 +3844,30 @@ func (c *Client) DisconnectGitHubApp(ctx context.Context) error {
 }
 
 // ListGitHubAppRepos calls GET /api/v1/github-app/repos: every
-// repository the connected GitHub App installation can access.
-func (c *Client) ListGitHubAppRepos(ctx context.Context) ([]GitHubAppRepoResource, error) {
-	var out []GitHubAppRepoResource
+// repository every connected installation can access, plus one error
+// per installation that failed to list (migrations/0282 made
+// installations one-to-many).
+func (c *Client) ListGitHubAppRepos(ctx context.Context) (GitHubAppRepoListResource, error) {
+	var out GitHubAppRepoListResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/github-app/repos", nil, &out)
 	return out, err
+}
+
+// ListGitHubAppInstallations calls GET
+// /api/v1/github-app/installations: every connected GitHub account/org,
+// plus the URL to connect another one.
+func (c *Client) ListGitHubAppInstallations(ctx context.Context) (GitHubAppInstallationListResource, error) {
+	var out GitHubAppInstallationListResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/github-app/installations", nil, &out)
+	return out, err
+}
+
+// DeleteGitHubAppInstallation calls DELETE
+// /api/v1/github-app/installations/{id}: disconnects one account/org.
+// Refused with a 409 (surfaced as *APIError) while a git source still
+// points at a repo under that account.
+func (c *Client) DeleteGitHubAppInstallation(ctx context.Context, id int64) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/github-app/installations/"+strconv.FormatInt(id, 10), nil, nil)
 }
 
 // ListGitHubAppBranches calls GET

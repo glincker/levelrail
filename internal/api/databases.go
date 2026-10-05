@@ -145,6 +145,26 @@ func (rt *Router) databaseTLSEnabled(ctx context.Context, d store.DesiredDatabas
 	return exists
 }
 
+// databaseTLSStatuses is databaseTLSEnabled batched over every
+// TLS-capable database in dbs, via one ExistsForServices call instead of
+// an Exists call per database (the N+1 handleListDatabases used to make).
+func (rt *Router) databaseTLSStatuses(ctx context.Context, dbs []store.DesiredDatabase) map[string]bool {
+	if rt.secrets == nil {
+		return nil
+	}
+	names := make([]string, 0, len(dbs))
+	for _, d := range dbs {
+		if database.SupportsTLS(d.Engine) {
+			names = append(names, d.Name)
+		}
+	}
+	statuses, err := rt.secrets.ExistsForServices(ctx, names, database.TLSCertEnvKey)
+	if err != nil {
+		return nil
+	}
+	return statuses
+}
+
 func (d databaseResource) toDesiredDatabase() store.DesiredDatabase {
 	return store.DesiredDatabase{
 		Name:    d.Name,
@@ -193,7 +213,7 @@ func validateDatabaseResource(d databaseResource) error {
 // handleListDatabases handles GET /api/v1/databases. Status is computed
 // from one batched conditions query (store.GetConditionsForControllers),
 // the same shape handleListApps uses, not a GetConditions call per
-// database.
+// database; TLSEnabled is computed the same way via databaseTLSStatuses.
 func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 	dbs, err := rt.databases.ListDesiredDatabases(r.Context())
 	if err != nil {
@@ -226,10 +246,14 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tlsStatuses := rt.databaseTLSStatuses(r.Context(), dbs)
+
 	out := make([]databaseListResource, 0, len(dbs))
 	for _, d := range dbs {
+		res := toDatabaseResource(d)
+		res.TLSEnabled = tlsStatuses[d.Name]
 		out = append(out, databaseListResource{
-			databaseResource: rt.toDatabaseResourceWithStatus(r.Context(), d),
+			databaseResource: res,
 			Status:           summarizeAppConditions(conditionsByController[databaseControllerName(d.Name)]),
 		})
 	}
