@@ -1758,20 +1758,47 @@ func TestHandleDeleteApp_TeardownDispatchesContainerRemoval(t *testing.T) {
 	}
 }
 
-// TestHandleDeleteApp_TeardownResolveFailure_StillDeletes proves a node
-// runtime that can't be resolved (e.g. an offline agent) doesn't block or
-// fail the delete itself: desired state is already gone by then, and the
-// failure is only logged.
-func TestHandleDeleteApp_TeardownResolveFailure_StillDeletes(t *testing.T) {
+// TestHandleDeleteApp_TeardownResolveFailure_ReturnsPendingAndTombstones
+// proves a node runtime that can't be resolved (e.g. an offline agent)
+// deletes desired state but is not reported as a clean success: the
+// response is 202 and a tombstone keeps the teardown retryable.
+func TestHandleDeleteApp_TeardownResolveFailure_ReturnsPendingAndTombstones(t *testing.T) {
 	db := openTestDB(t)
-	resolveErr := errors.New("node offline")
-	resolver := func(string) (docker.Runtime, error) { return nil, resolveErr }
+	resolver := func(string) (docker.Runtime, error) { return nil, errors.New("node offline") }
 	rt := NewRouter(discardLogger(), testBrand(), db, WithExecRuntime(resolver))
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/web", ""))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "teardown_pending") || !strings.Contains(rec.Body.String(), "node offline") {
+		t.Errorf("body = %s, want teardown_pending with the cause", rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("expected app to be gone from the store even when its node runtime can't be resolved")
+	}
+	pending, err := db.ListPendingTeardowns(context.Background())
+	if err != nil || len(pending) != 1 || pending[0].Name != "web" {
+		t.Errorf("pending teardowns = %v (err %v), want a tombstone for web", pending, err)
+	}
+}
+
+// TestHandleDeleteApp_TeardownSuccess_ClearsTombstone is the happy path: 204
+// and no tombstone left behind.
+func TestHandleDeleteApp_TeardownSuccess_ClearsTombstone(t *testing.T) {
+	fake := &fakeExecAppRuntime{listByPrefixCalls: make(chan struct{}, 4)}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
 	seedAndDeleteApp(t, rt, db, cookie)
 
-	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
-		t.Error("expected app to be gone from the store even when its node runtime can't be resolved")
+	pending, err := db.ListPendingTeardowns(context.Background())
+	if err != nil || len(pending) != 0 {
+		t.Errorf("pending teardowns = %v (err %v), want none after a clean delete", pending, err)
 	}
 }
 

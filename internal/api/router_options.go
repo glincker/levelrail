@@ -10,6 +10,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -1095,3 +1096,19 @@ func WithTokenRedeemRateLimit(perMinute int) Option {
 func WithAllowInsecureLogin(allow bool) Option {
 	return func(rt *Router) { rt.allowInsecureLogin = allow }
 }
+
+// WithAppTeardownOptions sets the application options (instance ID, network
+// prefix) used to match containers when an app is deleted, so delete never
+// touches containers another control plane created on a shared daemon.
+func WithAppTeardownOptions(opts ...application.Option) Option {
+	return func(rt *Router) { rt.teardownOpts = opts }
+}
+
+// WithDeleteTeardownTimeout bounds how long DELETE /apps/{name} waits for containers to stop.
+func WithDeleteTeardownTimeout(d time.Duration) Option {
+	return func(rt *Router) { rt.deleteTimeout = d }
+}
+
+// SetAppTeardownOptions is WithAppTeardownOptions for callers that learn
+// the instance ID only after the router is built.
+func (rt *Router) SetAppTeardownOptions(opts ...application.Option) { rt.teardownOpts = opts }

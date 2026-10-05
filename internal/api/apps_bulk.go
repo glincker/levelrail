@@ -286,7 +286,7 @@ func (rt *Router) runBulkAction(ctx context.Context, req bulkAppsRequest, svc st
 	case bulkActionMoveToProject:
 		return rt.bulkMoveToProject(ctx, req.Value, svc)
 	case bulkActionDelete:
-		if err := rt.deleteApp(ctx, svc.Name); err != nil {
+		if _, err := rt.deleteApp(ctx, svc.Name); err != nil {
 			return fail("delete", err)
 		}
 	}

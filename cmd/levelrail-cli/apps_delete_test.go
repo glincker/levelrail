@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -53,5 +54,18 @@ func TestRun_AppsDelete_Help(t *testing.T) {
 	_, stderr := runCLIExpectOK(t, []string{"apps", "delete", "-h"})
 	if !strings.Contains(stderr, "apps delete") {
 		t.Errorf("stderr = %q, want usage text", stderr)
+	}
+}
+
+func TestRun_AppsDelete_TeardownPending(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = w.Write([]byte(`{"status":"teardown_pending","message":"m","error":"node offline"}`))
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "delete", "web", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "not removed yet") || !strings.Contains(stdout, "node offline") {
+		t.Errorf("stdout = %q, want a pending-teardown message with the cause", stdout)
 	}
 }

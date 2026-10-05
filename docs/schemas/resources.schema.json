@@ -673,6 +673,18 @@
     },
     "service": {
       "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "build"
+          ]
+        },
+        {
+          "required": [
+            "image"
+          ]
+        }
+      ],
       "properties": {
         "bind_address": {
           "minLength": 1,
@@ -723,6 +735,10 @@
           "minimum": 1,
           "type": "integer"
         },
+        "image": {
+          "minLength": 1,
+          "type": "string"
+        },
         "labels": {
           "additionalProperties": {
             "type": "string"
@@ -758,9 +774,6 @@
           "type": "array"
         }
       },
-      "required": [
-        "build"
-      ],
       "type": "object"
     },
     "statusCode": {
