@@ -24,7 +24,17 @@ const faviconVersion = 2
 const sidebarGroups = [
   {
     text: 'Tutorials',
-    items: [{ text: 'Getting started', link: '/getting-started' }],
+    items: [
+      { text: 'Getting started', link: '/getting-started' },
+      { text: 'All tutorials', link: '/tutorials/' },
+      { text: 'Deploy a Docker app', link: '/tutorials/deploy-a-docker-app' },
+      { text: 'Zero-downtime deploys', link: '/tutorials/zero-downtime-deploys-with-health-checks' },
+      { text: 'Deploy from GitHub Actions', link: '/tutorials/deploy-from-github-actions' },
+      { text: 'Connect an app to Postgres', link: '/tutorials/connect-an-app-to-postgres' },
+      { text: 'Back up Postgres to S3', link: '/tutorials/back-up-postgres-to-s3' },
+      { text: 'Self-host Vaultwarden', link: '/tutorials/self-host-vaultwarden' },
+      { text: 'Debug with logs and metrics', link: '/tutorials/debug-an-app-with-logs-and-metrics' },
+    ],
   },
   {
     text: 'How-to guides',
