@@ -448,7 +448,7 @@ func (rt *Router) handleDeployHistory(w http.ResponseWriter, r *http.Request) {
 	// This app's own controller never sees CrossNodeIngress, reported
 	// under the ingress controller's own singleton name: see
 	// crossNodeIngressAppCondition's doc comment.
-	if cond := rt.crossNodeIngressAppCondition(*svc); cond != nil {
+	if cond := rt.crossNodeIngressAppCondition(r.Context(), *svc); cond != nil {
 		conditions = append(conditions, *cond)
 	}
 	writeJSON(w, http.StatusOK, conditions)

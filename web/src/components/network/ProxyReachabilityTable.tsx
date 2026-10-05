@@ -131,7 +131,7 @@ function ProxyDomainRow({ row }: { row: NetworkProxyDomain }) {
               volumeNames={app?.volumes?.map((v) => v.name) ?? []}
             />
             <span className="text-right text-[11px] text-muted-foreground">
-              {t('fix.explanation')}
+              {row.reason ?? t('fix.explanation')}
             </span>
           </div>
         ) : null}
