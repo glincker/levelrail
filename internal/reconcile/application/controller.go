@@ -257,6 +257,7 @@ type Controller struct {
 	unconfirmed         map[string]*store.AppliedConfig // created but not yet proven ready, by container name
 	pinnedPortRetry     time.Duration                   // see WithPinnedPortRetry
 	handoffFailed       map[string]time.Time            // target name to the time its next pinned-port handoff may run
+	restartBackoff      *RestartBackoff                 // nil disables crash restart backoff, see WithRestartBackoff
 	meshPaths           meshpath.Resolver               // nil is valid: remote ports stay on loopback, see WithMeshPaths
 }
 
@@ -464,6 +465,12 @@ func WithLivenessTracker(t *LivenessTracker) Option {
 			ctrl.liveness = t
 		}
 	}
+}
+
+// WithRestartBackoff shares one crash restart backoff across every
+// controller a caller builds, for the same reason as WithLivenessTracker.
+func WithRestartBackoff(b *RestartBackoff) Option {
+	return func(ctrl *Controller) { ctrl.restartBackoff = b }
 }
 
 // WithHookTimeout overrides how long a single pre/post-deploy hook
@@ -808,6 +815,7 @@ func (c *Controller) finishReconcile(ctx context.Context, targets []string, desi
 	// Every target was just (re)started and proven ready, so its
 	// liveness history belongs to an instance that no longer exists.
 	c.liveness.resetAll(c.serviceName, targets, time.Now())
+	c.restartBackoff.retain(c.serviceName, targets)
 
 	// Runs once per deploy (this codebase's own DeployRecorder below
 	// already treats "any target freshly (re)created this pass" as one
@@ -912,6 +920,10 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		justDeployed = true
 		created = true
 	case !state.Running:
+		if wait, restarts := c.restartBackoff.remaining(target, time.Now()); wait > 0 {
+			return replicaOutcome{reason: reasonCrashLoopBackOff}, fmt.Errorf("%q keeps exiting (%d restarts), next restart in %s", target, restarts, wait.Round(time.Second))
+		}
+		c.restartBackoff.recordRestart(target, time.Now())
 		// The container's own network can go missing between reconcile
 		// passes (an operator running docker network prune, or any other
 		// external interference this codebase can't prevent): re-ensure
@@ -942,6 +954,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	if !justDeployed {
+		c.restartBackoff.observeRunning(target, time.Now())
 		if err := c.verifyRunningReady(ctx, state, desired); err != nil {
 			return replicaOutcome{reason: readinessReason(err, "RunningNotReady")}, err
 		}

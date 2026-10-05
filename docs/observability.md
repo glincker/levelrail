@@ -156,6 +156,8 @@ When the database exceeds the size cap, the oldest tenth of the finest tier is d
 
 These are three different reads over the same underlying log store, not separate systems:
 
+Log collection resumes where it stopped. When the control plane restarts, or a container exits and its log stream reconnects, collection continues from the newest stored line for that container instead of re-reading Docker's whole buffer, so lines are not duplicated. Verified locally: a restart left an app's stored line count unchanged, where before every restart added another full copy of the container's output.
+
 **Live tail** (`GET /api/v1/apps/{name}/logs/stream`, SSE)
 - Opens with a short backfill (last 5 minutes, capped at 200 lines, oldest first).
 - Streams every new line as `LogCollector` receives it from Docker.
@@ -319,6 +321,8 @@ A firing `crashloop` rule attaches the last 200 lines of the crashlooping contai
 
 This is useful context for recipients, but there's no API endpoint that reconstructs those exact lines after the fact. `AlertRulesPanel` links to the app's live/historical log view instead of trying to retrieve them.
 
+**Restart backoff.** The reconciler does not restart a container that keeps exiting on every Docker event. The first restart is immediate. After it, each further restart of the same container waits twice as long as the last (`APP_RESTART_BACKOFF_BASE`, default `5s`, doubling up to `APP_RESTART_BACKOFF_MAX`, default `2m`), and the delay starts over once the container has stayed up for `APP_RESTART_BACKOFF_RESET` (default `10m`). While a container is waiting, the app's `Ready` condition is `False` with reason `CrashLoopBackOff` and a message such as `keeps exiting (2 restarts), next restart in 9s`, and `levelrail-cli apps status <name>` shows it. Set `APP_RESTART_BACKOFF_BASE=0` to restore the old restart-immediately behavior. The backoff is in memory, so a control plane restart clears it. Verified locally with a container that exits immediately: about 140 reconcile passes in two minutes before, 6 in 45 seconds after. The default maximum of 2 minutes keeps a crashlooping app above the usual crashloop rule threshold (3 restarts in 10 minutes), so the rule keeps firing instead of resolving between restarts.
+
 **Auto-rollback on crashloop**
 
 Crashloop detection alerts you; it doesn't fix anything by default. A failed deploy keeps retrying the same bad image forever until you intervene, which is correct (level-triggered, never edge-triggered) but has no escape hatch on its own.
@@ -458,6 +462,10 @@ Channels are global, connect-once destinations (Settings -> Notification channel
 `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`, `webpush`
 
 For most kinds, `notify_url` is a webhook URL. A few pack multiple credentials into that one field (e.g., Pushover's user key and app token; PagerDuty's routing key). `email` and `webpush` are exceptions: `email` sends through the control plane's SMTP sender (Settings -> Email, or env vars `APP_SMTP_HOST`/`APP_SMTP_PORT`/`APP_SMTP_USERNAME`/`APP_SMTP_PASSWORD`/`APP_SMTP_FROM`), and `webpush` ignores `notify_url` entirely (it has none): the destination is every browser subscription registered under Settings -> Notification channels -> Browser push, not a single URL a channel row can name. Both return a clear "not configured" error if the control plane has no master key set.
+
+**Destination checks at save time.** Creating or editing a channel whose `notify_url` is not an absolute `http` or `https` URL, or points at loopback, a private range, link-local or `localhost`, is refused with a `400` that names the cause. Every send goes through the same SSRF guard and would be rejected anyway, so the channel could never deliver. A self-hosted target on a private network (a Mattermost, a Gotify, an internal webhook receiver) needs `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` in the control plane's environment, set before the channel is created. A hostname is checked by resolving it when you save; one that does not resolve yet is accepted, and the guard still applies on every send. `email`, `pagerduty`, `opsgenie`, `resend` and `webpush` hold an address or key rather than a URL, so they are not checked this way.
+
+**Who sees the destination.** `notify_url` often is the credential (a Slack webhook URL, a Telegram bot token, a PagerDuty routing key). A caller without `read:sensitive` (the `viewer` role, or a plain `read` token) gets `https://host/(hidden)` or `(hidden)` instead of the value when listing channels, an app's deploy notification targets, an app's alert rules and an app's log drain. `email` addresses stay visible. `operator` and `admin` see the full value. Saving a channel with the hidden placeholder keeps the stored value. These values are stored as plain text in `alerting.db`, not envelope encrypted, so protect that file like `master.key`.
 
 **Browser push (`webpush`)**
 

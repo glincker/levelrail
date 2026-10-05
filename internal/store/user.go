@@ -190,6 +190,21 @@ func (db *DB) EnableUserTOTP(ctx context.Context, id string, confirmedAt time.Ti
 	return rowsAffectedOrNotFound(res, ErrUserNotFound, "enable user %q totp", id)
 }
 
+// ClaimUserTOTPStep records step as the newest accepted TOTP time step for
+// the user and reports whether it was newer than the last one. Atomic, so
+// two concurrent logins presenting the same code cannot both succeed.
+func (db *DB) ClaimUserTOTPStep(ctx context.Context, id string, step int64) (bool, error) {
+	res, err := db.ExecContext(ctx, `UPDATE users SET totp_last_step = ? WHERE id = ? AND totp_last_step < ?`, step, id, step)
+	if err != nil {
+		return false, fmt.Errorf("store: claim user %q totp step: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("store: claim user %q totp step: %w", id, err)
+	}
+	return n == 1, nil
+}
+
 // DisableUserTOTP clears a user's TOTP state. It does not touch the
 // user_recovery_codes table or the internal/secrets-held secret;
 // callers (internal/api's disable handler) delete those separately,
@@ -197,7 +212,7 @@ func (db *DB) EnableUserTOTP(ctx context.Context, id string, confirmedAt time.Ti
 // Returns ErrUserNotFound if id doesn't exist.
 func (db *DB) DisableUserTOTP(ctx context.Context, id string) error {
 	res, err := db.ExecContext(ctx, `
-		UPDATE users SET totp_enabled = 0, totp_confirmed_at = NULL WHERE id = ?
+		UPDATE users SET totp_enabled = 0, totp_confirmed_at = NULL, totp_last_step = 0 WHERE id = ?
 	`, id)
 	if err != nil {
 		return fmt.Errorf("store: disable user %q totp: %w", id, err)

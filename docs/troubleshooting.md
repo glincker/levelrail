@@ -56,6 +56,22 @@ If this keeps happening on every deploy of a given app, consider turning on "Aut
 </Steps>
 :::
 
+::: details An app shows `CrashLoopBackOff`
+The container keeps exiting. Levelrail restarts it immediately once, then waits 5s, 10s, 20s and so on up to 2 minutes between restarts instead of restarting on every exit, so the host and the control plane stay calm. Read the cause first: `levelrail-cli apps logs <name> --tail 50`, and `levelrail-cli apps status <name>` for the countdown to the next restart. Fix the image or its configuration and redeploy; a new deploy starts with a fresh delay. If you need the old restart-immediately behavior, set `APP_RESTART_BACKOFF_BASE=0`. A `crashloop` alert rule sends the last 200 log lines with its notification. See [observability](observability.md#alert-rules).
+:::
+
+::: details Creating a notification channel fails with "points at an internal address"
+The webhook URL is a loopback, private or link-local address (or `localhost`), which the outbound SSRF guard would refuse on every send. Use a public URL, or if the receiver is on your own network set `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` in the control plane's environment, restart it, and create the channel again. See [security](security.md#outbound-requests-to-user-supplied-urls).
+:::
+
+::: details Invite or password reset emails contain a link with no host
+The link is built from the primary domain or, failing that, the dashboard URL. Set the dashboard URL (the Domains page, or `levelrail-cli settings dashboard-url set --url https://deploy.example.com`) and send the invite again.
+:::
+
+::: details I upgraded and want to go back
+The control plane snapshots its database before applying new migrations. Start the older binary against the newer data and it refuses with `database schema is newer than this binary supports: database is at version N`; nothing is modified. Stop the service, then `levelrail restore-snapshot --list`, `--dry-run latest`, `latest`, and start the older binary. Verified locally across a migration (`0350`): the snapshot reported schema version 290, the older binary started on it, and the newer binary migrated it forward again. Anything written after the snapshot is lost, and `alerting.db` and `telemetry.db` are not rolled back by `restore-snapshot`. See [Installing](installing.md#rolling-back).
+:::
+
 ::: details A rollback target is missing
 Levelrail pins the previous N images specifically so garbage collection can't orphan a rollback target. If one is still missing, check `levelrail-cli apps deploys list <name>` for what's actually retained, then see [Deploying apps](deploying-apps.md#roll-back).
 :::

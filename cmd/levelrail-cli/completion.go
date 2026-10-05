@@ -224,7 +224,7 @@ var cliCommandTree = map[string]*cmdNode{
 			"attachments": nil,
 		}},
 	}},
-	"secrets":    {subs: map[string]*cmdNode{"rotate-master-key": nil, "binding-status": nil, "rebind": nil}},
+	"secrets":    {subs: map[string]*cmdNode{"generate-master-key": nil, "rotate-master-key": nil, "binding-status": nil, "rebind": nil}},
 	"migrate":    {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}},
 	"apply":      nil,
 	"diff":       nil,

@@ -194,12 +194,23 @@ func (rt *Router) sendInviteEmail(ctx context.Context, email, link string) {
 // response returns, the same "absolute against the primary domain when
 // set, bare path otherwise" shape passwordResetURL uses.
 func (rt *Router) inviteURL(ctx context.Context, token string) string {
-	const path = "/accept-invite?token="
+	return rt.emailLinkBase(ctx) + "/accept-invite?token=" + token
+}
+
+// emailLinkBase is the absolute origin an emailed link must start with: the
+// primary domain when set, else the configured dashboard URL, else "" (a
+// bare path, which only works if the reader pastes it onto the dashboard
+// origin). The request Host is deliberately never used: a caller could forge
+// it to point an invitee at a lookalike site.
+func (rt *Router) emailLinkBase(ctx context.Context) string {
 	settings, err := rt.ingressSettings.GetIngressSettings(ctx)
-	if err != nil || settings.PrimaryDomain == "" {
-		return path + token
+	if err == nil && settings.PrimaryDomain != "" {
+		return "https://" + settings.PrimaryDomain
 	}
-	return "https://" + settings.PrimaryDomain + path + token
+	if u, derr := rt.ingressSettings.GetDashboardURL(ctx); derr == nil {
+		return u
+	}
+	return ""
 }
 
 // handleListInvites handles GET /api/v1/invites: every invite not yet
