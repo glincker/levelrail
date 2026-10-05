@@ -30,7 +30,7 @@ const related = computed(() => {
     <LpHero :d="d" />
 
     <section v-if="d.shot" class="lp-shot">
-      <LpFrame :src="d.shot.src" :alt="d.shot.alt" eager />
+      <LpFrame :src="d.shot.src" :mock="d.shot.mock" :alt="d.shot.alt" eager />
     </section>
 
     <LpStats v-if="d.stats?.length" :stats="d.stats" />
