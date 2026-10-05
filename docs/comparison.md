@@ -78,6 +78,7 @@ To move an existing setup, see [Migrating from Coolify, Dokploy and CapRover](mi
 
 ## See also
 
+- [Coolify alternative](coolify-alternative.md), [Dokploy alternative](dokploy-alternative.md), [Vercel alternative](vercel-alternative.md), [Heroku alternative](heroku-alternative.md) and [Railway alternative](railway-alternative.md) - Focused guides for each switch
 - [Architecture](architecture.md) - How Levelrail is built internally
 - [Feature catalog](feature-catalog.md) - Complete inventory of routes, API, CLI
 - [Roadmap](roadmap.md) - Development status and what is coming next

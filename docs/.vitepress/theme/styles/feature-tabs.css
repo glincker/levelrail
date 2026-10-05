@@ -104,8 +104,7 @@
 }
 
 .code-editor__line {
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
 }
 
 .code-editor__body .tok-plain {

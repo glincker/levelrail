@@ -1,0 +1,40 @@
+/* Single source of design values for every landing page component.
+   Change a value here and it applies to all pages. */
+.lp,
+.lp-scope {
+  --lp-bg: #020202;
+  --lp-card: #0a0a0b;
+  --lp-card-top: #0d0d0f;
+  --lp-card-bottom: #070708;
+  --lp-line: #1d1d20;
+  --lp-line-strong: #3a3a40;
+  --lp-text: #ececec;
+  --lp-muted: #9a9aa2;
+  --lp-accent: var(--glinui-accent-soft-text, #58b1ce);
+  --lp-accent-glow: rgba(88, 177, 206, 0.25);
+  --lp-accent-tint: rgba(88, 177, 206, 0.08);
+  --lp-success: #6fcf97;
+  --lp-method-get: #6fcf97;
+  --lp-method-post: #6ab7ff;
+  --lp-method-put: #e8b04a;
+  --lp-method-delete: #ef7a7a;
+
+  --lp-radius-card: 28px;
+  --lp-radius-frame: 24px;
+  --lp-radius-inner: 12px;
+  --lp-radius-pill: 999px;
+  --lp-radius-cta: 28px;
+
+  --lp-btn-bg: #f4f4f5;
+  --lp-btn-bg-hover: #ffffff;
+  --lp-btn-fg: #09090b;
+  --lp-btn-pad: 12px 22px;
+  --lp-btn-font: 15px;
+
+  --lp-font-sans: var(--glinui-font-sans);
+  --lp-font-mono: var(--glinui-font-mono);
+  --lp-weight-heading: 560;
+  --lp-section-gap: 88px;
+  --lp-content-width: 1100px;
+  --lp-narrow-width: 780px;
+}
