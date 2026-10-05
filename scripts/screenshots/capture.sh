@@ -2,11 +2,11 @@
 #
 # capture.sh: end-to-end pipeline for docs/assets/screenshots/*.png (see
 # docs/screenshots.md). Builds fresh binaries, runs a real control plane
-# against a scratch data dir, deploys two real containers, logs in
-# through the actual /login form, and drives shot-scraper against the
-# real running dashboard. Safely re-runnable: everything lives under a
-# throwaway scratch dir and gets torn down on exit, including on error
-# (the EXIT trap runs regardless).
+# against a scratch data dir, deploys two real app containers plus a real
+# managed database, logs in through the actual /login form, and drives
+# shot-scraper against the real running dashboard. Safely re-runnable:
+# everything lives under a throwaway scratch dir and gets torn down on
+# exit, including on error (the EXIT trap runs regardless).
 #
 # Requires: Go, Node/npm (for web/dist), Docker, Python 3 with
 # playwright installed, and shot-scraper on PATH (pip install
@@ -18,6 +18,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 HERO_APP="marketing-site"
 SECOND_APP="edge-cache"
+SAMPLE_DB="docs-sample-db"
 
 SCRATCH_DIR="$(mktemp -d "${TMPDIR:-/tmp}/levelrail-screenshot.XXXXXX")"
 BIN="$SCRATCH_DIR/levelrail"
@@ -42,8 +43,9 @@ cleanup() {
     if [ -f "$CLI" ]; then
       "$CLI" apps delete "$HERO_APP" >/dev/null 2>&1
       "$CLI" apps delete "$SECOND_APP" >/dev/null 2>&1
+      "$CLI" databases delete "$SAMPLE_DB" >/dev/null 2>&1
       i=0
-      while docker ps --format '{{.Names}}' 2>/dev/null | grep -qE "^(${HERO_APP}|${SECOND_APP})-"; do
+      while docker ps --format '{{.Names}}' 2>/dev/null | grep -qE "^(${HERO_APP}|${SECOND_APP}|db-${SAMPLE_DB})"; do
         i=$((i + 1))
         [ "$i" -ge 15 ] && break
         sleep 2
@@ -55,13 +57,18 @@ cleanup() {
   if [ -n "$DEVICE_LOGIN_PID" ] && kill -0 "$DEVICE_LOGIN_PID" 2>/dev/null; then
     kill "$DEVICE_LOGIN_PID" 2>/dev/null
   fi
-  # Fallback: apps delete only tears a container down via the next
-  # reconcile pass, which needs the server alive; anything the loop
+  # Fallback: apps/databases delete only tears a container down via the
+  # next reconcile pass, which needs the server alive; anything the loop
   # above timed out on gets removed directly so a failed run never
   # leaks containers.
   for name in "$HERO_APP" "$SECOND_APP"; do
     docker ps -a --format '{{.Names}}' 2>/dev/null | grep -E "^${name}-" | xargs -r docker rm -f >/dev/null 2>&1
   done
+  docker rm -f "db-${SAMPLE_DB}" >/dev/null 2>&1
+  # docker.Runtime has no RemoveVolume (see dataVolumeName's own doc
+  # comment in internal/reconcile/database), so the data volume survives
+  # "databases delete" and needs its own cleanup here.
+  docker volume rm -f "db-${SAMPLE_DB}-data" >/dev/null 2>&1
   if [ "${KEEP_SCRATCH:-0}" != "1" ]; then
     rm -rf "$SCRATCH_DIR"
   else
@@ -233,13 +240,28 @@ send_traffic() {
   done
 }
 
+# Database containers use a fixed "db-<name>" name (no hash suffix, see
+# containerName in internal/reconcile/database/controller.go), so this
+# just checks for that exact name rather than a prefix match.
+wait_for_db_running() {
+  local db="$1" i=0
+  until docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "db-${db}"; do
+    i=$((i + 1))
+    [ "$i" -ge 30 ] && fail "$db database never reached running state"
+    sleep 2
+  done
+}
+
 log "creating $HERO_APP"
 "$CLI" apps create --name "$HERO_APP" --image nginx:alpine --port 80 || fail "create $HERO_APP failed"
 log "creating $SECOND_APP"
 "$CLI" apps create --name "$SECOND_APP" --image httpd:alpine --port 80 || fail "create $SECOND_APP failed"
+log "creating $SAMPLE_DB (for managing-databases.md's screenshots)"
+"$CLI" databases create --name "$SAMPLE_DB" --engine postgres --version 16 || fail "create $SAMPLE_DB failed"
 
 wait_for_running "$HERO_APP"
 wait_for_running "$SECOND_APP"
+wait_for_db_running "$SAMPLE_DB"
 send_traffic "$(host_port_for "$HERO_APP")"
 
 log "triggering second deploy on $HERO_APP"
@@ -273,6 +295,13 @@ wait_for_replica_count() {
 CRED_FILE="$FAKE_HOME/.config/levelrail-cli/credentials"
 API_TOKEN="$(awk -F= '/^APP_API_TOKEN=/{print $2}' "$CRED_FILE" 2>/dev/null | tr -d '[:space:]')"
 [ -n "$API_TOKEN" ] || fail "could not read CLI API token from $CRED_FILE"
+
+log "setting an example secret on $HERO_APP for the environment tab screenshot"
+secret_status="$(curl -s -o /dev/null -w '%{http_code}' -X PUT \
+  -H "Authorization: Bearer ${API_TOKEN}" -H "Content-Type: application/json" \
+  -d '{"value":"docs-example-secret-value"}' \
+  "$BASE_URL/api/v1/apps/${HERO_APP}/secrets/API_KEY")"
+[ "$secret_status" = "204" ] || fail "setting example secret on $HERO_APP returned $secret_status, expected 204"
 
 log "scaling $HERO_APP to 2 replicas for the load balancer screenshot"
 # domains is set here too: the ingress reconciler only ever calls

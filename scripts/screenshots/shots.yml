@@ -51,3 +51,99 @@
   width: 1280
   height: 800
   wait: 2000
+
+- output: docs/assets/screenshots/databases-list.png
+  url: __BASE_URL__/databases/
+  width: 1280
+  height: 700
+  wait: 2000
+
+- output: docs/assets/screenshots/database-overview.png
+  url: __BASE_URL__/databases/docs-sample-db/overview
+  width: 1280
+  height: 900
+  wait: 2000
+
+- output: docs/assets/screenshots/domains-list.png
+  url: __BASE_URL__/domains/
+  width: 1280
+  height: 700
+  wait: 2000
+
+- output: docs/assets/screenshots/app-environment.png
+  url: __BASE_URL__/apps/marketing-site/environment
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/templates-catalog.png
+  url: __BASE_URL__/templates/
+  width: 1280
+  height: 900
+  wait: 3000
+
+- output: docs/assets/screenshots/deployments-all.png
+  url: __BASE_URL__/deployments
+  width: 1500
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/pipelines.png
+  url: __BASE_URL__/pipelines/
+  width: 1280
+  height: 700
+  wait: 2000
+
+- output: docs/assets/screenshots/backups.png
+  url: __BASE_URL__/backups/
+  width: 1280
+  height: 700
+  wait: 2000
+
+- output: docs/assets/screenshots/node-providers.png
+  url: __BASE_URL__/settings/node-providers
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/dashboard-home.png
+  url: __BASE_URL__/
+  width: 1280
+  height: 900
+  wait: 3000
+
+- output: docs/assets/screenshots/setup-wizard.png
+  url: __BASE_URL__/settings/setup-wizard
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/cli-access.png
+  url: __BASE_URL__/settings/cli-access
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/app-source.png
+  url: __BASE_URL__/apps/marketing-site/source
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/app-deploy-settings.png
+  url: __BASE_URL__/apps/marketing-site/deploy-settings
+  width: 1280
+  height: 900
+  wait: 2000
+
+- output: docs/assets/screenshots/app-resources.png
+  url: __BASE_URL__/apps/marketing-site/resources
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/status-page-settings.png
+  url: __BASE_URL__/settings/status-page
+  width: 1280
+  height: 800
+  wait: 2000

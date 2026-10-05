@@ -35,6 +35,10 @@ sequenceDiagram
 
 ## Supported providers
 
+Provider credentials are stored under **Settings > Cloud node providers**. Each card stays "Not connected" until you save a token, and a saved token is never shown again.
+
+![Levelrail Cloud node providers settings with Hetzner, DigitalOcean, AWS, and Azure cards, all not connected](assets/screenshots/node-providers.png)
+
 - **Hetzner Cloud** (`https://docs.hetzner.cloud`)
 - **DigitalOcean** (`https://docs.digitalocean.com/reference/api/`)
 - **AWS EC2** (`https://docs.aws.amazon.com/ec2/`)

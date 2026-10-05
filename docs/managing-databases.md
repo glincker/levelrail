@@ -47,6 +47,10 @@ The eight engines today: `postgres`, `redis`, `mysql`, `mongodb`,
 
 Check status with `GET /api/v1/databases/{name}/status` or `databases get` to see if the database is actually running.
 
+Every database you create shows up alongside your apps on its own list page, with engine, version, and status at a glance:
+
+![Levelrail databases list showing engine, version, and running status](assets/screenshots/databases-list.png)
+
 **Placement**
 
 Omit `node_id` at creation to let simple spread scheduling pick a node. Pass `node_id` explicitly to override it. To move an already-created database to a different node, call `PUT /api/v1/databases/{name}/node` (gated at the root ability tier, since node placement is fleet-level infrastructure).
@@ -76,6 +80,10 @@ The certificate is self-signed and never distributed to a party that verifies it
 **In apps**
 
 When an app attaches to a TLS-enabled database, it automatically gets the TLS-flavored connection string: `?sslmode=require` appended for Postgres, or switched to `rediss://` on the TLS-only port for Redis. Nothing in `app.yaml` opts into this; it reflects the database's state.
+
+A database's own Overview tab shows its connection details, resource usage, and the public access and backup cards covered below:
+
+![Levelrail database overview page with connection info and resource usage](assets/screenshots/database-overview.png)
 
 ## Resource limits
 

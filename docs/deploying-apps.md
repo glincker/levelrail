@@ -48,6 +48,10 @@ The CLI's `apps rollback` and the dashboard's rollback button exist for convenie
 
 ### Deploy flow (rolling and blue-green)
 
+An app's **Deploy settings** tab sets the strategy and replica count described below:
+
+![Levelrail deploy settings with a blue-green strategy and two replicas](assets/screenshots/app-deploy-settings.png)
+
 Both strategies follow the same core sequence: start the new container, wait for readiness, cut ingress traffic to the old one, then drain and stop it.
 
 ```mermaid
@@ -134,6 +138,10 @@ levelrail-cli apps create --name NAME --image IMAGE --port PORT
 ```
 
 ### 2. Git-repo build
+
+![Levelrail Git source settings: provider tabs, build pack, and deploy trigger](assets/screenshots/app-source.png)
+
+In the dashboard, an app's **Source** tab connects a repository, picks the build pack, and sets the deploy trigger.
 
 Deploy from a git repository. BuildKit compiles a Dockerfile or Railpack.
 
@@ -364,6 +372,10 @@ levelrail-cli apps env export <name> --out backup.env             # or stdout wi
 ## Managing encrypted secrets
 
 Apps with `{ secret: true }` env vars store encrypted values locally. After an app is created, update secrets individually or in bulk.
+
+An app's Environment tab holds plain variables and write-only secrets, with each secret's age shown:
+
+![Levelrail app Environment tab with the variables editor and a locked secret showing how long ago it was set](assets/screenshots/app-environment.png)
 
 ### Single secret
 

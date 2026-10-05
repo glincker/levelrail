@@ -24,6 +24,8 @@ Incident and maintenance text is escaped. Only paragraphs, line breaks, `- ` lis
 
 ## Set it up
 
+![Levelrail status page settings with the page switched off, and a title and custom domain field](assets/screenshots/status-page-settings.png)
+
 In the dashboard open **Settings, Status page**, or use the CLI:
 
 ```bash

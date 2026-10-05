@@ -50,6 +50,8 @@ Open the printed setup link, choose a password, and you are the admin. The first
 4. **First app** deploys a sample, a template, or your own repository, and waits until it is healthy. A failure shows the automatic diagnosis and a link to the logs.
 5. **Done** links to alerts, backup targets, and inviting teammates.
 
+![Levelrail setup wizard with six steps from server check to done](assets/screenshots/setup-wizard.png)
+
 Progress is saved on the server, so you can close the tab and resume from any browser. Reopen the wizard any time from **Settings, Setup wizard**.
 
 Lost the setup token? On the server run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token`.
@@ -132,7 +134,11 @@ levelrail-cli auth login --device
 
 ## Finish setting up for real use
 
-The dashboard shows a **Get set up** card after your first sign-in, driven by live state:
+Once you are signed in, the dashboard home shows live stats, recent activity, and a **Needs attention** list built from the same server checks as the wizard:
+
+![Levelrail dashboard home with app, request, and deploy stats and a Needs attention list](assets/screenshots/dashboard-home.png)
+
+A **Get set up** card also walks you through a safe production setup, driven by live state:
 
 - connect a git provider
 - add a custom domain with a valid certificate
