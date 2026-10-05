@@ -127,6 +127,37 @@ stable if jobs are later split or renamed.
   rollback point on its own (no force-push, no deletion); these tags exist
   only so finding one doesn't mean hunting for a SHA by hand first.
 
+## Publishing the CLI to Homebrew and npm
+
+The release workflow builds every binary, attaches them to the GitHub Release, and then runs two independent jobs. A failure in one never blocks the other or the release itself.
+
+### Homebrew
+
+`publish-homebrew` renders `Formula/levelrail-cli.rb` from the release's `checksums.txt` and pushes it to `glincker/homebrew-tap` over SSH. It uses a deploy key that has write access to that one repo (the `HOMEBREW_TAP_DEPLOY_KEY` secret), and the step skips when the secret is missing. Users install with `brew install glincker/tap/levelrail-cli`. A personal tap has no popularity requirement; only `homebrew/core` does.
+
+One-time setup:
+
+```bash
+ssh-keygen -t ed25519 -N "" -C levelrail-release-tap -f ./tapkey
+gh repo deploy-key add ./tapkey.pub --repo glincker/homebrew-tap --title "levelrail release" --allow-write
+gh secret set HOMEBREW_TAP_DEPLOY_KEY --repo glincker/levelrail < ./tapkey
+rm ./tapkey ./tapkey.pub
+```
+
+The formula template is `packaging/homebrew/levelrail-cli.rb.tmpl`, and `scripts/test-packaging.sh` checks the rendered result. The binary is a raw download without the execute bit, so the template sets it with `chmod`; without that, `brew install` fails with `EACCES`.
+
+### npm
+
+`publish-npm` publishes `levelrail-cli` plus six platform packages (`levelrail-cli-<os>-<arch>`) using npm trusted publishing, so no npm token is involved. A prerelease goes out under the `beta` dist-tag, and a version already on the registry is skipped, so re-running a partly failed release finishes the rest. The job only runs when the `NPM_PUBLISH_ENABLED` repo variable is `true`.
+
+One-time setup, because npm configures a trusted publisher on a package that already exists:
+
+1. Publish each of the seven packages once by hand so it exists. Build them with `scripts/build-npm-packages.sh <tag> <dist-dir> <out-dir>`, then run `npm publish --access public --tag beta` inside each directory while logged in with two-factor authentication. Do the platform packages first and `levelrail-cli` last.
+2. On npmjs.com, open each package, then Settings, then Trusted publishing, and choose GitHub Actions with organization `glincker`, repository `levelrail`, workflow `release.yml`, and environment `npm-publish`.
+3. Turn the job on: `gh variable set NPM_PUBLISH_ENABLED --body true --repo glincker/levelrail`.
+
+An `NPM_TOKEN` secret, including one set at the organization level, is not used and can stay as it is for other repositories.
+
 ## Caching
 
 - Go: `~/.cache/go-build` and `~/go/pkg/mod`, one cache per job kind (build,
