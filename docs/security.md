@@ -34,6 +34,7 @@ Credentials for backup targets and registry integrations follow the same write-o
 ## Sessions and tokens
 
 - **Session cookies** are `HttpOnly`, `SameSite=Lax`, and `Secure` whenever the request arrived over HTTPS (directly or through the embedded Caddy ingress). Once an `https://` dashboard URL is set, sign-in over plain HTTP is refused (`APP_ALLOW_INSECURE_LOGIN=true` is the recovery escape hatch).
+- **Cross-origin guard**: a state-changing request (POST, PUT, PATCH, DELETE) that authenticates with the session cookie and carries an `Origin` header naming a different host than the one served is rejected with 403. Bearer-token and CLI requests, which send no cookie or no `Origin`, are unaffected.
 - **First admin** registration requires the one-time setup token from `<data dir>/setup-token`, so an exposed fresh install can't be claimed by a stranger.
 - **Token-redeeming routes are rate limited.** `POST /api/v1/auth/reset-password` and `POST /api/v1/invites/accept` are unauthenticated by design, so each gets a per-client-IP budget (`APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM`, default `10` per minute, `0` disables). Over budget returns `429` with `Retry-After`.
 - **API tokens** are minted per-user, scoped by ability (a user can only mint a token holding abilities they hold themselves), and can be issued through a device-code flow for headless environments.

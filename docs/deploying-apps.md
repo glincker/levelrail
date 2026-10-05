@@ -1,71 +1,156 @@
 ---
-description: Creating, deploying, rolling back, and managing app lifecycle, health checks, resources, and scheduled tasks.
+description: The life of an app on Levelrail, from creating it and deploying it to watching a rollout, rolling back, changing configuration, promoting between environments, and operating it day to day.
 ---
 
 # Deploying and managing apps
 
-Push an image or a git repo at the API, CLI, or dashboard wizard, and Levelrail turns it into a running container with health checks, rollback, and a full deploy history, no separate deploy tool needed. This page covers everything you do to an app after that first deploy: rolling back, promoting between environments, restarting, setting resource limits, and running one-off commands or scheduled tasks against it.
+An app is a container (or a set of them) that Levelrail keeps running for you. You describe it once, from the dashboard, the CLI, or an `app.yaml` in your repo. Levelrail builds it if needed, starts it, waits until it is actually healthy, switches traffic to it, and keeps every previous image available so you can go back.
+
+This page follows an app through its life: [create it](#create-an-app), [deploy and watch it](#deploy-and-watch-a-rollout), [roll it back](#roll-back), [change its configuration](#change-configuration), [promote it](#promote-between-environments), and [operate it](#operate-a-running-app). The [API and CLI quick reference](#api-and-cli-quick-reference) is at the end.
 
 ![Levelrail app overview page with health status, setup checklist, and recent activity](assets/screenshots/app-overview-page.png)
+
+Domains and TLS, managed databases, and git provider setup have their own pages: [Domains and ingress](domains-and-ingress.md), [Managing databases](managing-databases.md), and [Git integrations](git-integrations.md).
+
+<InlineToc default-open />
+
+## The model in one minute
+
+- **An app is desired state.** It is a record: an image, a port, and the settings around them. Saving it changes the record. A level-triggered reconciler then converges the running containers to match. Nothing is edge-triggered, so a missed event never leaves an app out of sync.
+- **One mutation changes the image.** `POST /api/v1/apps/{name}/deploys` points the app at a tag and returns immediately. A rollback is the same call with an older tag. `apps rollback`, the dashboard rollback button, and automatic rollback on a crashloop all use it, so there is no second code path that can drift.
+- **Traffic only moves once the new container is ready.** The readiness probe has to pass before the old container is drained. If it never passes, the old container keeps serving and the deploy fails with a reason.
 
 ::: details For contributors: where this lives in the source
 - Backend: `internal/api/apps.go`, `apps_multi.go`, `apps_compose.go`, `deploys.go`, `promote.go`, `exec.go`, `resources_live_apply.go`, `scheduled_tasks.go`
 - CLI: `cmd/levelrail-cli/apps*.go`
 - Dashboard: `web/src/routes/apps/$name/*.tsx`
-- An app is one `store.DesiredService` row: an image, a port, and everything the application controller needs to converge a running container to it.
+- An app is one or more `store.DesiredService` rows under one `store.App`. Redeploy goes through `setDesiredImage`, restart through `RestartService`, stop and start through `UpdateServiceSuspended`.
 :::
 
-## Scope
+## Create an app
 
-This doc covers an app's own lifecycle:
+There are four ways to create one. All four end in one or more `DesiredService` rows, and all four accept inline secret values (`--secret KEY=VALUE` on the CLI) that are encrypted as part of the same call. A `{ secret: true }` variable declared in the spec needs no follow-up call.
 
-- Creating, deploying, rolling back
-- Promoting between environments
-- Starting, stopping, restarting, deleting
-- Health checks and resource limits
-- One-off exec and scheduled cron tasks
+The dashboard's **New** wizard offers an existing image, a git repository, and Docker Compose as step-one cards, plus templates. The multi-service `app.yaml` route starts from an existing app's **Services** tab.
 
-Domains/TLS, managed databases, and CI/git-provider integrations each have their own doc; this one links out rather than duplicating.
+### From an existing Docker image
 
-## Why "deploy" has no separate "rollback" endpoint
+Skips the build step. Send `image` and `port` to `POST /api/v1/apps`, or:
 
-There is exactly one mutation that changes what image an app runs: `POST /api/v1/apps/{name}/deploys`.
+```bash
+levelrail-cli apps create --name NAME --image IMAGE --port PORT
+```
 
-This endpoint:
-- Points `desired.Image` at whatever tag you send
-- Returns immediately
-- Lets the application controller's next reconcile pass create the new container
+In the dashboard, the **Docker image** card has an image picker that browses the built-in registry, a connected registry credential, or public Docker Hub (`GET /api/v1/dockerhub/search` and `GET /api/v1/dockerhub/repositories/{namespace}/{repo}/tags`). The plain text field always works too.
 
-A rollback is the same call with an older tag, converging the same way.
+### From a git repository
 
-::: tip
-There's no API endpoint for a human to ask "what's the previous tag?" You must know which tag you're rolling back to yourself, either from `GET /api/v1/apps/{name}/deploy-attempts` (the dashboard lists this with one-click "Rollback" per deploy) or from your own build records. The one exception is automatic: auto-rollback on crashloop (see [Observability](./observability.md), "Auto-rollback on crashloop") computes the previous known-good tag internally, but only to redeploy it itself, not as a lookup you can call.
-:::
+![Levelrail Git source settings: provider tabs, build pack, and deploy trigger](assets/screenshots/app-source.png)
 
-The CLI's `apps rollback` and the dashboard's rollback button exist for convenience. Both are thin wrappers over the one deploy mechanism, not a second code path that could drift. Auto-rollback on crashloop reuses that identical mechanism too, just triggered automatically instead of by you.
+An app's **Source** tab connects a repository, picks the build pack, and sets the deploy trigger. BuildKit builds a Dockerfile, or Railpack builds it with no Dockerfile at all.
 
-## How it actually works
+```bash
+# Inside a git checkout, origin and the current branch are detected
+levelrail-cli apps create --name NAME --port PORT --repo URL --image-repo REPO
 
-### Deploy flow (rolling and blue-green)
+# Or take one service from an app.yaml
+levelrail-cli apps create --file app.yaml --service KEY
 
-An app's **Deploy settings** tab sets the strategy and replica count described below:
+# Or detect the stack and write app.yaml for you
+levelrail-cli init
+```
+
+Over the API this is `POST /api/v1/apps` with a `:pending` placeholder image, then `POST /api/v1/apps/{name}/builds`, which replaces the placeholder with the real tag when the build succeeds. `levelrail-cli apps builds trigger` does the second step.
+
+- **One build per app at a time.** A second `POST .../builds` while one runs returns `409 Conflict` ("a deploy for this app is already running"). If the control plane restarts mid-build, the orphaned attempt is marked failed on the next startup, so it never blocks new builds.
+- **Disk preflight.** Before BuildKit starts, the control plane checks free space on the build context directory (and the local cache directory when one is configured). Below the floor, the build fails fast with "N bytes free, need at least M bytes". The floor is 1 GiB by default, set with `APP_MIN_BUILD_DISK_MB`. A path that cannot be read counts as unknown, not as a failure.
+
+#### Railpack and framework detection
+
+When `build.type` is `railpack` (no Dockerfile), Railpack detects the framework from the repository. Levelrail builds only providers it has verified end to end:
+
+| Provider | Name shown |
+| --- | --- |
+| Node.js | `Node.js`, or `Next.js` when `package.json` depends on `next` |
+| Go | `Go` |
+| Java (Maven or Gradle, Spring Boot) | `Java (Spring Boot)` |
+| Python (Django) | `Python (Django)` |
+
+Anything else Railpack can detect (Ruby, PHP, Rust, Deno, .NET, and so on) is rejected with a clear error rather than attempted. A Django app needs nothing beyond what `django-admin startproject` generates plus a `requirements.txt` that lists Django and a production server such as gunicorn. Railpack runs `python manage.py migrate` on start and serves with gunicorn bound to `$PORT`, never the Django dev server.
+
+The **Deploy from git** wizard checks what would be detected before you pick a build type, without building anything:
+
+```bash
+POST /api/v1/build/detect
+{ "repo_url": "https://github.com/you/app.git", "ref": "main" }
+```
+
+The control plane makes a shallow single-branch clone (depth 1) into a temporary directory, with a 20 second timeout and a checkout size cap. It runs Railpack's provider detection, which only reads files such as `package.json`, `go.mod`, or `pom.xml`, then discards the checkout. No repository code is executed. A repository that matches none of the providers above, or cannot be cloned, answers `{"detected": false}` rather than an error, and the wizard falls back to its manual build-type tabs. `levelrail-cli build detect --repo-url URL` runs the same check.
+
+The detected name is stored on the deploy attempt (`detected_framework`). It appears on the deploy detail page, in a `FRAMEWORK` column of `levelrail-cli apps deploys list`, and in `--output json`. `apps create` on the git path and `apps builds trigger` run the same detection first.
+
+### From a Docker Compose file
+
+Each Compose service becomes its own `DesiredService` under one app, in one synchronous call. Each service gets its own deploy attempt.
+
+```bash
+levelrail-cli apps validate --file compose.yaml            # parse and validate locally, no API call
+levelrail-cli apps deploy-compose NAME --file compose.yaml # POST /api/v1/apps/{name}/compose
+```
+
+In the dashboard, use the **Docker Compose** card. A multi-service app lists every sibling service, with its `depends_on`, on the **Services** panel.
+
+How Compose is translated:
+
+- **Magic variables.** `SERVICE_<KIND>_<KEY>` variables that need generated secrets are resolved and stored automatically. A compose file that bind-mounts a host directory needs the `root` ability on top of `deploy`.
+- **Ports and volumes** accept the short form (`"8080:80"`, `web-data:/data`) and the long mapping form, so an upstream `docker-compose.yml` usually pastes in unchanged. Port ranges, UDP, and `tmpfs` or `npipe` mounts have no equivalent and are rejected.
+- **`depends_on`** (list or map form) enforces start order. A dependent container is not created until every service it names has a running container. This matches Compose's own default (`service_started`): it waits for the container to exist and run, not for its health check. A dependency must name a real sibling, and a cycle fails validation rather than deadlocking the reconciler.
+- **`pull_policy: always`** forces a fresh pull on every deploy, which suits mutable tags like `:latest`. The default is pull if absent.
+- **`restart:` and `networks:`** parse but have no effect, because the reconciler alone decides whether a container runs and every service in an app shares one network. They come back as non-blocking `notices`, as does anything else that cannot be translated, such as a health check with no readiness-probe equivalent.
+
+Validation fails, naming exactly what to remove, for:
+
+- `deploy:` subkeys other than `replicas` and `resources.reservations.devices` (GPU reservations). The rest of the Swarm-specific `deploy:` surface (`mode`, `placement`, `restart_policy`, `update_config`, and so on) has no meaning outside a Swarm cluster.
+- Top-level `secrets:` and `configs:`, and a service's own `secrets:` or `configs:` references. Move the value into the app's env vars or Levelrail secrets.
+
+### From a multi-service app.yaml
+
+```bash
+levelrail-cli apps deploy-spec NAME --file app.yaml --repo-url URL --ref REF
+```
+
+`POST /api/v1/apps/{name}/deploy-spec` builds and deploys each service in `services:` in key order, under one app. It is synchronous per service, and one service's build failure does not stop the others. The response is `207 Multi-Status` when at least one service failed. Unlike Compose, it records no per-service deploy attempt yet, so the response is the only record of what happened. The dashboard form is on an existing app's **Services** tab.
+
+Every field of the spec is in the [app.yaml reference](app-spec-reference.md).
+
+## Deploy and watch a rollout
+
+Trigger a deploy from the dashboard's pinned **Trigger a deploy** form, from the CLI, or from a git push when auto-deploy is on:
+
+```bash
+levelrail-cli apps deploy NAME --image IMAGE
+levelrail-cli apps wait NAME      # block until the attempt converges, exit code says how it went
+```
+
+`apps wait` exits 5 when the deploy failed and 6 when it timed out, which makes it a CI gate. See the [CLI reference](cli-reference.md#scripting-json-and-exit-codes) for every exit code.
+
+### What a rollout does
+
+An app's **Deploy settings** tab sets the strategy (`rolling`, `recreate`, or `blue-green`, with `blue-green` the default) and the replica count:
 
 ![Levelrail deploy settings with a blue-green strategy and two replicas](assets/screenshots/app-deploy-settings.png)
 
-Both strategies follow the same core sequence: start the new container, wait for readiness, cut ingress traffic to the old one, then drain and stop it.
+Rolling and blue-green follow the same core sequence: start the new container, wait for readiness, cut ingress to the new container, then drain and stop the old one.
 
 ```mermaid
 sequenceDiagram
     participant Control Plane
     participant Old Container
     participant New Container
-    participant Application
-    
+
     Control Plane->>New Container: start container
-    New Container->>New Container: initializing
-    Control Plane->>New Container: poll /healthz (readiness probe)
-    New Container-->>Control Plane: 503 Service Unavailable
-    New Container->>Application: ready
+    Control Plane->>New Container: poll readiness probe
+    New Container-->>Control Plane: 503 (still starting)
     New Container-->>Control Plane: 200 OK
     Control Plane->>Control Plane: readiness passed
     Control Plane->>Old Container: remove from ingress routing
@@ -74,140 +159,11 @@ sequenceDiagram
     Control Plane->>Control Plane: deploy complete
 ```
 
-The reconciler tracks both containers until the old one exits. If the new container fails readiness, the old one keeps serving and the deploy fails with a specific reason (`OOMKilledDuringReadiness`, `ExitedDuringReadiness`, or `ReadinessFailed`).
+The reconciler tracks both containers until the old one exits. If the new container never becomes ready, the old one keeps serving and the deploy fails with a specific reason: `OOMKilledDuringReadiness`, `ExitedDuringReadiness`, or `ReadinessFailed`. The first two are reported the moment the container dies, instead of after the full readiness budget has been spent probing a dead address. The budget is 60 seconds by default and `health.readyTimeout` in `app.yaml` overrides it per service. The reason shows in the deploy history and in `levelrail-cli apps deploys list`. Guarantees around stale deploys, freeze windows, and a short hold of the previous release are in [Deploy safety](deploy-safety.md).
 
-### Full replace semantics
+### Live deploy view
 
-`SaveDesiredService` via `PUT /api/v1/apps/{name}` is a full replace, not a patch. It overwrites every field with whatever the request body carries (same as an app.yaml apply).
-
-A save keeps the stored settings a request body cannot express (volumes, bind mounts, entrypoint, database env, registry credential, pull policy, pinned image ID). `secret_env` and `vault_env` are applied only when the body carries them: omit them to keep the stored set, send `[]` to clear. Secret values are never accepted here (a body with `secrets` is rejected): use `PUT /api/v1/apps/{name}/secrets/{key}`.
-
-Fields managed separately (`node_id`, `project_id`, `environment_id`, `storage_target_id`, `suspended`, `database_attachment`, `log_drain`) have their own dedicated endpoints. This ensures an ordinary edit can never silently move an app between nodes or projects.
-
-### Core primitives
-
-Every state-changing action funnels through these:
-
-| Action | What happens | Function |
-| --- | --- | --- |
-| Redeploy | Points the app at the new image and clears any pending "restart needed" flag. Deploy, rollback, and promote all work this way. | `setDesiredImage` |
-| Suspend/resume | Stops or restarts the container on the reconciler's next pass. | `UpdateServiceSuspended` |
-| Restart | Your app restarts with a fresh container, same image, no config change needed. This is the only way to force recreation without changing the image. | `RestartService` |
-| Delete | Removes the app from desired state; its containers are torn down in the background. | `DeleteDesiredService` |
-
-### Environment drift tracking
-
-Changing env vars without redeploying leaves your running container out of sync with what's saved. Levelrail tracks this and stays flagged until a redeploy or restart actually lands.
-
-The dashboard shows this as an amber "Environment changes pending restart" banner at the top of the app's Overview page with a one-click restart action.
-
-::: details For contributors: internal names
-Restart mints a fresh `restart_nonce` (folded into the container name hash), making "same image, new nonce" look like an image change to the cutover logic. The pending-restart flag is `EnvDirty` on the desired-state row.
-:::
-
-### Pending changes
-
-The reconciler records what each new container was created with (short hashes of the app's env and secret values, plus port, command, entrypoint and labels). `GET /api/v1/apps/{name}/pending-changes` compares that with the desired state and returns `{ pending, changes: [{ kind: env | secret | config, keys, since }], apply_action }`. Key names only, never values. Rotating a secret counts as a pending `secret` change; resources and health checks apply live and are not listed. `POST /api/v1/apps/{name}/apply-pending` restarts the app to apply them (202). For a container created before this tracking existed, only the `env_dirty` flag is known.
-
-CLI: `levelrail apps status <name>` prints a "pending changes" line, `apps env import` and `apps secrets set` print "N changes pending. Run: `levelrail apps apply <name>` (or pass --apply)", and `apps apply <name>` restarts. MCP: `get_app_pending_changes`.
-
-### App timeline
-
-`GET /api/v1/apps/{name}/timeline?limit=50&before=<cursor>` merges recorded events (`restart`, `env_change`, `secret_change`, `config_change`, `scale`, `suspend`, `resume`, `freeze_override`) with deploy attempts (`deploy`, `rollback`; an in-flight one is `in_progress`), newest first. Each item has `id`, `at`, `kind`, `status`, `actor` (a user, `token:<name>` or `system`), `title`, optional `detail` and, for deploys, `ref: { type: "deploy_attempt", id }`. Events carry env and secret key names and non-secret scalar from and to values only. Pass the previous page's `next_cursor` as `before`. CLI: `levelrail apps timeline <name>`. MCP: `get_app_timeline`.
-
-## The four ways to create an app
-
-All four end up as one or more `store.DesiredService` rows under one `store.App`.
-
-The dashboard's "New" wizard offers three as step-1 cards plus templates. The fourth (multi-service `app.yaml`) is reached from an existing app's Services tab, not the initial wizard.
-
-### 1. Existing Docker image
-
-Skip the build step entirely.
-
-```bash
-POST /api/v1/apps
-```
-with `image`, `port`.
-
-**Dashboard:** "Docker image" wizard card (`CreateAppFields.tsx`). The image field is backed by a picker (`RegistryImagePicker.tsx`) that browses the built-in registry, a connected registry credential, or searches public Docker Hub (`GET /api/v1/dockerhub/search`, `GET /api/v1/dockerhub/repositories/{namespace}/{repo}/tags`) for a well-known public image, so a reference does not have to be typed by hand. The plain text field alongside it always works regardless.
-
-**CLI:**
-```bash
-levelrail-cli apps create --name NAME --image IMAGE --port PORT
-```
-
-### 2. Git-repo build
-
-![Levelrail Git source settings: provider tabs, build pack, and deploy trigger](assets/screenshots/app-source.png)
-
-In the dashboard, an app's **Source** tab connects a repository, picks the build pack, and sets the deploy trigger.
-
-Deploy from a git repository. BuildKit compiles a Dockerfile or Railpack.
-
-```bash
-POST /api/v1/apps
-```
-with a `:pending` placeholder image, followed by:
-```bash
-POST /api/v1/apps/{name}/builds
-```
-which replaces the placeholder with the real tag once it succeeds.
-
-Only one manual build per app runs at a time: a second `POST .../builds` while one is still running returns `409 Conflict` ("a deploy for this app is already running") instead of starting a parallel build. If the control plane is restarted mid-build, the orphaned attempt is marked failed on the next startup, so it never blocks new builds.
-
-**Dashboard:** "Deploy from git" wizard card (`CreateAppFromGitFields.tsx`)
-
-**CLI:**
-```bash
-# Auto-detects origin and current branch when run inside a git checkout
-levelrail-cli apps create --name NAME --port PORT --repo URL --image-repo REPO
-
-# Or from a single service in app.yaml
-levelrail-cli apps create --file app.yaml --service KEY
-```
-
-**Railpack providers:** when `build.type` is `railpack` (no Dockerfile), Railpack detects the framework from the repo itself and Levelrail rejects anything it hasn't verified end to end. Supported today: Node.js, Go, Java (Spring Boot), and Python. Everything else Railpack itself can detect (Ruby, PHP, Rust, Deno, .NET, ...) is deliberately rejected with a clear error rather than silently attempted, until it's verified the same way.
-
-A minimal Python/Django app needs nothing beyond what `django-admin startproject` already generates, plus a `requirements.txt`:
-
-```
-requirements.txt:
-  django==5.1.6
-  gunicorn==23.0.0
-```
-
-Railpack detects `manage.py` plus a Django dependency, runs `python manage.py migrate` on container start, and serves with `gunicorn` bound to `$PORT`, the same pattern Vercel, Railway, and Render all converge on for buildpack-style Python deploys: no Dockerfile required, but the framework's own production server (never the Django dev server) fronts real traffic.
-
-**Disk-space preflight:** before BuildKit starts solving, the control plane checks free space on the build's context directory (and its local cache directory, when `WithCacheDir` is configured) and fails fast with a clear "N bytes free, need at least M bytes" error rather than letting the build run until it hits a raw out-of-space error mid-solve. The minimum is configurable via `APP_MIN_BUILD_DISK_MB` (default `1024`, i.e. 1GiB). An unreadable path (for example a filesystem that doesn't support the check) is treated as unknown, not a failure, and the build proceeds.
-
-#### Framework pre-flight detection
-
-Before you pick a build type, the "Deploy from git" wizard checks what Railpack would actually detect for the repository and branch you picked, without running a build:
-
-```bash
-POST /api/v1/build/detect
-{ "repo_url": "https://github.com/you/app.git", "ref": "main" }
-```
-
-The control plane shallow-clones (`depth: 1`, single branch) the repo into a temporary directory with a 20-second timeout and a checkout-size cap, runs Railpack's own provider detection against it, and discards the checkout. Nothing is built, nothing is pushed, and no code from the repository is ever executed: detection only reads files like `package.json`, `go.mod`, or `pom.xml` to decide a provider.
-
-Currently supported, matching the Railpack build path itself:
-
-| Provider | Framework name shown |
-| --- | --- |
-| Node.js | `Node.js` (`Next.js` when `package.json` depends on `next`, App Router or Pages Router alike) |
-| Go | `Go` |
-| Java (Maven/Gradle, Spring Boot) | `Java (Spring Boot)` |
-| Python (Django) | `Python (Django)` |
-
-A repository Railpack can't place into one of these (or can't clone at all, e.g. private/unreachable) responds `{"detected": false}`, never an error: the wizard falls back to its normal manual build-type tabs (Auto-detect/Dockerfile/Static site/Prebuilt image), which stay fully usable and overridable regardless of what detection found.
-
-The detected framework name, once known, is stored on the resulting `deploy_attempts` row (`detected_framework`) and shown back on the deploy detail page once the deploy finishes, as a one-line summary above the usual metadata grid, e.g. "Node.js app, built in 42s, image levelrail/web:a1b2c3d", built entirely from data already on that row (framework name, computed duration, image tag), not a new metrics collection. It's also visible in `levelrail-cli apps deploys list` (a `FRAMEWORK` column) and in `--output json` for either the deploy-attempts list or a single build's response. `apps create` (git-build path) and `apps builds trigger` run this same detection before triggering the build, so a CLI-triggered build gets a `FRAMEWORK` value too, not just one triggered from the web wizard.
-
-#### Live deploy view
-
-Once a build is triggered, the deploy detail page (`/apps/{name}/deploys/{deployId}/logs`) shows a checklist of named pipeline steps above the raw build log, rather than only a scrolling terminal:
+Once a build starts, the deploy detail page (`/apps/{name}/deploys/{deployId}/logs`) shows a checklist of named steps above the raw build log:
 
 ```
 ✓ Detecting framework
@@ -216,669 +172,308 @@ Once a build is triggered, the deploy detail page (`/apps/{name}/deploys/{deploy
 ○ Deploying
 ```
 
-Backed by an SSE stream:
+It is fed by a server-sent events stream, `GET /api/v1/apps/{name}/deploys/{deployId}/steps`. Each event is `{ "step": string, "status": "running" | "done" | "failed", "timestamp": string }`. The log underneath still shows every build line. Reconnects are handled by `EventSource`, and receiving a step event twice is harmless. The stream only reports on the build flow. It never feeds back into the reconciler.
+
+### When a deploy fails
+
+A failed attempt opens with a **What went wrong** card: the failing stage, the recorded error, a likely cause with a suggested fix, and three actions: **View full logs**, **Retry deploy**, and **Roll back to last good** (shown only when an earlier attempt succeeded).
+
+The cause is a heuristic match against a fixed rule table, not a diagnosis. It never changes the attempt's real status. The rules cover a missing environment variable, a port mismatch, a container killed for memory (OOMKilled or exit 137), registry auth, an image or tag that cannot be found, a health check timeout, a wrong Dockerfile path, a failed dependency install, and a few older npm, pip, heap, disk, and permission patterns. For the structured failure object that the API, CLI, and MCP tools return, see [Deploy failures](deploy-failures.md). `levelrail-cli apps diagnose NAME` explains a failed deploy or crashloop and can apply a fix.
+
+### Deploys across all apps
+
+![Levelrail deploy history view with one-click rollback](assets/screenshots/deploy-history.png)
+
+`GET /api/v1/deployments` lists deploy attempts across every app the caller can read, newest first. It is cursor paginated (`limit` defaults to 50, maximum 200, pass `next_cursor` back as `cursor`). An IAM Deny on `app:web` hides web's deployments from the list, the summary, and the stream. The dashboard page is described in [Deployments page](deployments-page.md).
+
+- **Filters:** `status` (building, ready, failed, canceled, rolled_back, superseded, held; comma separated or repeated), `app`, `branch`, `trigger` (git push, manual, rollback, api, preview), `environment` (name or ID), `since` and `until` (RFC3339 or a duration such as `24h`, `7d`), `q` (commit message, SHA prefix, app name), `live=true` (only the release currently serving each app), and `pr` (previews of one pull request). `queued`, `awaiting_approval`, `schedule`, and `pipeline` are accepted values that match nothing today.
+- **How fields are derived:** `rolled_back` is a succeeded deploy that a later rollback replaced (`rolled_back_by`). A rollback carries `rollback_of`, the attempt whose image it re-deployed. `held` is a deploy parked by a freeze window. `canceled` is a failed attempt whose error is a canceled context. `image_ref` pins the tag to a digest only when the digest is registry verified, and `digest_reason` says why when it is not. Commit message, author, and branch are recorded for git push deploys only. `steps` and the failing step are known only while an attempt runs, because step history is not persisted.
+- **Summary:** `GET /api/v1/deployments/summary?window=24h` returns counts by status (window up to 30 days), `in_progress`, `needs_attention` (held plus digest mismatch), `failure_rate_24h`, median and p95 `duration`, and `per_day` for 14 days.
+- **Stream:** `GET /api/v1/deployments/stream` is server-sent events of `{type: created|step|finished, step?, deployment}`. Only deploys that run through the build recorder emit events. A plain image redeploy appears in the list but not on the stream.
+
+From the CLI:
 
 ```bash
-GET /api/v1/apps/{name}/deploys/{deployId}/steps
-Accept: text/event-stream
+levelrail-cli deployments list --status failed --app web --since 24h --json
+levelrail-cli deployments summary
+levelrail-cli deployments watch
+levelrail-cli apps deploys list NAME
+levelrail-cli apps deploys compare NAME --from ID [--to ID]
 ```
 
-Each event is `{ "step": string, "status": "running" | "done" | "failed", "timestamp": string }`. The raw log terminal underneath is unchanged and still shows every build output line; the step list is a coarser, at-a-glance summary of where in the pipeline a build currently is, not a replacement for it. Reconnects (a dropped wifi connection, a laptop waking up) are handled the same way the log stream already is: `EventSource` reconnects on its own, and a step event is safe to receive twice since the UI keeps only the latest status per named step.
+The MCP tools `list_deployments` and `deployments_summary` are read-only.
 
-This stream is a pure observability layer: it reads the same build-trigger flow the control plane already runs and reports on it, and never feeds back into the reconciler, which stays level-triggered and unaware the stream exists.
+## Roll back
 
-#### "What went wrong" on a failed deploy
-
-When an attempt fails (a failed build, or a roll out that never became ready), the deploy detail page opens with a "What went wrong" card: the failing stage, the recorded error (trimmed, with Show more), a likely cause and suggested fix, and three actions: View full logs (jumps to the failing stage), Retry deploy, and Roll back to last good (only shown when an earlier attempt succeeded).
-
-The cause is a heuristic match, not a diagnosis. The error text and failing reconcile conditions are checked first, then the newest build log lines, against a fixed rule table covering: missing environment variable, port mismatch, container killed for memory (OOMKilled or exit 137), registry auth, image or tag not found, health check timeout, wrong Dockerfile path, dependency install failure, plus the older npm, pip, heap, disk and permission rules. It never changes the attempt's real status. Everything runs in the browser over data the page already loads.
-
-#### Deployments across all apps
-
-`GET /api/v1/deployments` lists deploy attempts across every app the caller can read, newest first, with cursor pagination (`limit` default 50, max 200; pass `next_cursor` back as `cursor`). Results are filtered to apps the caller may read: a token or user with an IAM Deny on `app:web` never sees web's deployments, in the list, the summary or the stream.
-
-Filters: `status` (building, ready, failed, canceled, rolled_back, superseded, held; comma separated or repeated), `app`, `branch`, `trigger` (git push, manual, rollback, api, preview), `environment` (name or id), `since` and `until` (RFC3339 or a duration ago such as `24h`, `7d`), `q` (commit message, sha prefix, app name), `live=true` (only the release currently serving each app) and `pr` (previews of one pull request). `queued`, `awaiting_approval`, `schedule` and `pipeline` are accepted values that match nothing today.
-
-Status and trigger are derived from what the deploy attempt already records: `rolled_back` is a succeeded deploy that a later rollback replaced (`rolled_back_by`), a rollback has `rollback_of` pointing at the attempt whose image it re-deployed, `held` is a deploy parked by a freeze window, and `canceled` is a failed attempt whose error is a canceled context. `image_ref` pins the tag to its digest only when the digest is registry verified; otherwise it is just the tag, and `digest_reason` says why. Commit message, author and branch are recorded for git push deploys from the push payload and are empty for other triggers and for attempts recorded before this feature. `steps` and the failing step are only known while an attempt is running, because step history is not persisted.
-
-`GET /api/v1/deployments/summary?window=24h` returns counts by status for the window (up to 30d), `in_progress`, `needs_attention` (held plus digest mismatch), `failure_rate_24h`, median and p95 `duration`, and `per_day` for 14 days. `GET /api/v1/deployments/stream` is server-sent events: each message is `{type: created|step|finished, step?, deployment}`, with the same item shape as the list. Only deploys that run through the build recorder emit events; a plain image redeploy shows up in the list but not on the stream.
-
-From the CLI: `levelrail deployments list [--status failed --app web --since 24h --json]`, `levelrail deployments summary`, and `levelrail deployments watch`. The MCP tools `list_deployments` and `deployments_summary` are read-only.
-
-### 3. Docker Compose
-
-Deploy from a `compose.yaml` file. Each compose service becomes its own `DesiredService` under one app in one synchronous call.
+Roll back from the dashboard's deploy history, or from the CLI by naming the tag you want:
 
 ```bash
-POST /api/v1/apps/{name}/compose
-```
-with raw `compose.yaml` body. Each service gets its own `deploy_attempts` row.
-
-**Compose magic vars** (`SERVICE_<KIND>_<KEY>`) that need generated secrets are resolved and persisted automatically. A compose file that bind-mounts a host directory requires the `root` ability on top of `deploy`.
-
-**Translation notes:**
-- Anything Levelrail can't translate (e.g., health check with no readiness-probe equivalent) comes back as a `notices` entry, not dropped silently.
-- `pull_policy: always` forces a fresh image pull on every deploy, even if the tag exists locally (useful for mutable tags like `:latest`). Default is pull-if-absent.
-- `ports:` and `volumes:` accept both Compose's short form (`"8080:80"`, `web-data:/data`) and long mapping form (`target`/`published`/`protocol`, `type`/`source`/`target`), so an upstream project's own `docker-compose.yml` usually pastes in unchanged. Port ranges, UDP, and `tmpfs`/`npipe` mounts have no Levelrail equivalent and are rejected.
-- `depends_on:` (list or map form; a map form's `condition:` is read only to confirm it was declared, not to distinguish `service_started` from `service_healthy`) is enforced as start order: a dependent service's container is not created until every service it names has at least one running container. This matches real Compose's own default `depends_on:` semantic (`service_started`), not `service_healthy`: it is not a wait for the dependency's own readiness or health check to pass, only for its container to exist and be running. A `depends_on:` entry must reference a real sibling service in the same file, and a cycle between services (`a` depends on `b` depends on `a`) fails validation rather than deadlocking the reconciler.
-- `restart:` and `networks:` parse but have no effect (Levelrail's reconciler is the sole authority on keeping a container running, and every service in an app already shares one flat network), surfaced as non-blocking `notices` rather than silently dropped.
-
-**Explicitly not supported** (validation fails with a clear message naming exactly what to remove, rather than a silent drop or a confusing runtime error):
-- `deploy:` subkeys other than `resources.reservations.devices` (GPU reservations) and `replicas` (mapped onto the same per-service replica count `app.yaml`'s own `replicas:` uses): `mode`, `placement`, `restart_policy`, `update_config`, and the rest of the Swarm-specific `deploy:` surface have no meaning outside a Swarm cluster.
-- Top-level `secrets:` and `configs:` blocks, and a service's own `secrets:`/`configs:` references: neither has a translation onto Levelrail's own model. Move the value into the app's env vars (or Levelrail secrets) instead.
-
-**Dashboard:** "Docker Compose" wizard card (`CreateComposeFields.tsx`); an app deployed from multiple services (Compose or `deploy-spec`) shows every sibling service, including its `depends_on:`, on the app's Services panel.
-
-**CLI:**
-```bash
-levelrail-cli apps deploy-compose <name> --file compose.yaml
-levelrail-cli apps validate --file compose.yaml   # parse and validate locally, no API call, no deploy
+levelrail-cli apps rollback NAME --image IMAGE:OLDER_TAG
 ```
 
-### 4. app.yaml deploy-spec (multi-service)
+Prior images are pinned, so garbage collection cannot remove a rollback target. Levelrail does not answer "what was the previous tag" on request. Take it from `GET /api/v1/apps/{name}/deploy-attempts`, which the dashboard lists with a one-click **Rollback** per row, or from your own build records.
 
-Deploy multiple services from a single spec file.
+Two related options:
 
-```bash
-POST /api/v1/apps/{name}/deploy-spec
-```
-with git repo/ref plus `services:` map. Builds and deploys each service in deterministic key order under one app.
+- **Auto-rollback on crashloop** is opt-in per app and computes the last known-good tag itself: `levelrail-cli apps auto-rollback enable NAME`. An SLO burn variant is `apps auto-rollback-slo-burn set`. Both are covered in [Observability](observability.md).
+- **Deploy freeze windows** hold automatic deploys on a cron schedule: `levelrail-cli apps freeze set|show|clear NAME`.
 
-**Sync semantics:** Synchronous per service. Unlike Compose, there's no per-service `deploy_attempts` row yet. One service's build failure doesn't block others. Response is `207 Multi-Status` when at least one service failed.
+## Change configuration
 
-**Dashboard:** Existing app's Services tab (`DeploySpecForm.tsx`)
+### Save semantics
 
-**CLI:**
-```bash
-levelrail-cli apps deploy-spec <name> --file app.yaml --repo-url URL --ref REF
-```
+`PUT /api/v1/apps/{name}` is a full replace, not a patch. It overwrites every field with what the request body carries, the same as applying an `app.yaml`. A save keeps the stored settings a body cannot express: volumes, bind mounts, entrypoint, database env, registry credential, pull policy, and the pinned image ID. `secret_env` and `vault_env` change only when the body carries them. Omit them to keep the stored set, send `[]` to clear. Secret values are never accepted here (a body with `secrets` is rejected). Use `PUT /api/v1/apps/{name}/secrets/{key}`.
 
-### Inline secrets (all four methods)
+Fields with their own endpoints cannot be moved by an ordinary edit: `node_id`, `project_id`, `environment_id`, `storage_target_id`, `suspended`, `database_attachment`, and `log_drain`. An edit can never silently move an app between nodes or projects.
 
-All four accept inline secret values:
+### Pending changes
+
+Changing env vars or secrets does not touch the running container. Levelrail records what each container was created with (short hashes of env and secret values, plus port, command, entrypoint, and labels) and flags the difference until a restart lands. The dashboard shows an amber **Environment changes pending restart** banner on the Overview page with a one-click restart.
+
+`GET /api/v1/apps/{name}/pending-changes` returns `{ pending, changes: [{ kind: env | secret | config, keys, since }], apply_action }`, with key names only and never values. Rotating a secret counts as a pending `secret` change. Resources and health checks apply live and are not listed. `POST /api/v1/apps/{name}/apply-pending` restarts the app and returns 202. For a container created before this tracking existed, only the `env_dirty` flag is known.
+
+From the CLI, `apps status NAME` prints a "pending changes" line, and `apps env import` and `apps secrets set` print "N changes pending". Apply them with `levelrail-cli apps apply NAME`, or pass `--apply` to the command that made the change. The MCP tool is `get_app_pending_changes`.
+
+### App timeline
+
+`GET /api/v1/apps/{name}/timeline?limit=50&before=<cursor>` merges recorded events (`restart`, `env_change`, `secret_change`, `config_change`, `scale`, `suspend`, `resume`, `freeze_override`) with deploy attempts (`deploy`, `rollback`, and `in_progress` for a running one), newest first. Each item has `id`, `at`, `kind`, `status`, `actor` (a user, `token:<name>`, or `system`), `title`, an optional `detail`, and for deploys `ref: { type: "deploy_attempt", id }`. Events carry env and secret key names and non-secret scalar from and to values only. Pass the previous page's `next_cursor` as `before`. CLI: `levelrail-cli apps timeline NAME`. MCP: `get_app_timeline`.
+
+### Environment variables and secrets
+
+![Levelrail app Environment tab with plain variables and secrets](assets/screenshots/app-environment.png)
+
+Plain variables can be bulk loaded from a `.env` file and exported again:
 
 ```bash
---secret KEY=VALUE  # CLI
+levelrail-cli apps env import NAME --file local.env --dry-run   # preview only
+levelrail-cli apps env import NAME --file local.env
+levelrail-cli apps env export NAME --out backup.env             # stdout without --out
 ```
 
-Secrets are envelope-encrypted and stored as part of the same create/deploy call. A `{ secret: true }` env var declared in the spec doesn't need a separate follow-up call.
+- The parser handles comments, an `export ` prefix, single and double quotes, multiline quoted values, inline ` # comments` on unquoted values, `=` inside values, empty values, and Windows line endings. When a key appears twice, the last one wins.
+- Import prints each key as new (`+`), changed (`~`), unchanged (`=`), or skipped (`!`). Keys already set as secrets are skipped. Pass `--keep-existing` to leave keys that already have a different value alone. Changes apply on the next restart, or now with `--apply`.
+- Export writes secret keys empty with a comment. Secret values are never exported.
 
-## External secrets: HashiCorp Vault
+Secrets are envelope encrypted, never returned in plaintext by the API, and injected into the container only when it is created:
 
-Store env vars inside Levelrail (encrypted at rest) with `{ secret: true }`, or resolve them live from Vault without storing the value locally.
+```bash
+levelrail-cli apps secrets set NAME DATABASE_PASSWORD "new-password"
+levelrail-cli apps secrets set NAME --env-file local.env     # one secret per KEY=value line
+levelrail-cli apps secrets list NAME
+levelrail-cli apps secrets delete NAME KEY [--force]
+levelrail-cli apps secrets lock NAME KEY --locked=true
+```
 
-### Vault syntax
+- **Setting** declares the key as secret-backed on the app (the list `secret_env` shows). Deleting undeclares it. The value reaches the container on its next creation, so run `apps apply NAME` or pass `--apply`. The API is `PUT` and `DELETE /api/v1/apps/{name}/secrets/{key}`, with `?force=true` for a locked key. There is no batch endpoint, so a bulk import makes one call per key.
+- **Locks** guard against accidental overwrites: a locked secret cannot be changed from the dashboard or CLI until unlocked (`POST /api/v1/apps/{name}/secrets/{key}/lock` with `{ "locked": true }`). A lock does not change how the value is stored.
+- **Age.** Every secret records when it was last set, and is flagged stale at 90 days by default. `APP_SECRET_ROTATION_WARN_DAYS` changes the threshold cluster-wide. The dashboard shows "Set N days ago" and a **Needs rotation** badge, `apps secrets list` has `AGE` and `STALE` columns, and `levelrail-cli shared-env list --scope project|organization|environment --id ID` shows the same for shared variables. `GET /api/v1/system/doctor` includes a `stale_secrets` check across all apps and scopes.
+
+#### External secrets from HashiCorp Vault
+
+A variable can resolve live from Vault instead of being stored in Levelrail:
 
 ```yaml
 env:
   API_KEY: { vault: { path: myapp/config, key: api_key } }
 ```
 
-- `path`: secret's path in Vault's KV v2 engine
-- `key`: field name inside that secret's data
+`path` is the secret's path in Vault's KV v2 engine and `key` is the field inside it. `vault` is mutually exclusive with `from` and `secret` on the same variable. The field table is in the [app.yaml reference](app-spec-reference.md#envvar-an-entry-under-env).
 
-See [`EnvVar`/`VaultRef` in the app.yaml reference](app-spec-reference.md#envvar-an-entry-under-env) for the full field table.
+Configure the connection once for the instance, under **Settings, Vault**, with `levelrail-cli vault set`, or with `PUT /api/v1/settings/vault`. You need the Vault address, an auth method (`token` or `approle`), and a token or a role ID plus secret ID. The credential is envelope encrypted, write-only over the API, and never logged.
 
-::: warning
-`vault` is mutually exclusive with both `from` and `secret` on the same env var.
-:::
+The reconciler reads the value from Vault immediately before it creates the container, with the same resolved-at-create, never-persisted trust model as `{ secret: true }`. If Vault is unreachable, not configured, or disabled, or the secret or field does not exist, the deploy fails with a clear error. The container never starts with the variable empty or missing.
 
-### Setup (instance-wide, once)
+An app created directly can add or remove a Vault variable at any time, from the **Environment** tab, with `levelrail-cli apps vault-env set NAME KEY --path PATH --key FIELD` (or `clear`), or with `PUT` and `DELETE /api/v1/apps/{name}/vault-env/{key}`. This touches no other field.
 
-Configure the connection under:
-- Dashboard: Settings → Vault
-- CLI: `levelrail-cli vault set`
-- API: `PUT /api/v1/settings/vault`
+### Health checks
 
-You'll need:
-- Vault address
-- Auth method: `token` or `approle`
-- Credential: Vault token, or AppRole role ID plus secret ID
-
-The credential is envelope-encrypted (write-only over the API), never logged, never written to disk in plaintext.
-
-### Resolution (at container-create time)
-
-The reconciler reads the value fresh from Vault immediately before creating the container, using the same "resolved at create time, never persisted" trust model as `{ secret: true }`.
-
-If Vault is unreachable, not configured, disabled, or the secret/field doesn't exist, the deploy fails with a clear error. The container is never started with the variable empty or omitted.
-
-### Declaring on an existing app
-
-Apps created directly (not from `app.yaml`) can add or remove a Vault-sourced env var at any time:
-
-- Dashboard: app Environment tab
-- CLI: `levelrail-cli apps vault-env set|clear <name> <key>`
-- API: `PUT`/`DELETE /api/v1/apps/{name}/vault-env/{key}`
-
-This never touches any other field on the app, unlike the general update endpoint.
-
-## Importing and exporting plain env vars
-
-Plain (non-secret) env vars can be bulk-loaded from a `.env` file and exported back out.
+An app has up to two probes, readiness and liveness. Readiness gates the cutover of a deploy. Liveness runs on every reconcile pass against a running container and restarts it after consecutive failures. A probe is an HTTP(S) request (`path`) or a command run in the container (`exec`). The full field table and the Compose `healthcheck:` translation are in the [app.yaml reference](app-spec-reference.md#health-checks).
 
 ```bash
-levelrail-cli apps env import <name> --file local.env --dry-run   # preview only
-levelrail-cli apps env import <name> --file local.env             # apply
-levelrail-cli apps env export <name> --out backup.env             # or stdout without --out
+levelrail-cli apps health get NAME
+levelrail-cli apps health set NAME --probe readiness --path /healthz --interval 5s
+levelrail-cli apps health set NAME --probe liveness --exec "pg_isready -U app"
+levelrail-cli apps health clear NAME [--probe readiness|liveness]
+levelrail-cli apps health discover NAME    # probe well-known paths and report what each one did
 ```
 
-- The parser handles comments, an `export ` prefix, single and double quotes, multiline quoted values, inline ` # comments` on unquoted values, `=` inside values, empty values and Windows line endings. When a key appears twice, the last one wins.
-- Import prints each key as new (`+`), changed (`~`), unchanged (`=`) or skipped (`!`). Pass `--keep-existing` to leave keys that already have a different value alone. Changes apply on the next restart.
-- A key that is already a secret is skipped on import: use `apps secrets set` for those.
-- Export never includes secret values. Secret keys are written empty, preceded by a `# secret, value not exported` comment.
-- Dashboard: app Environment tab. "Paste .env" (or dropping a file) shows a preview table of new, changed and unchanged keys with an overwrite or keep-existing choice before anything is staged. A summary of unsaved additions, changes and removals appears above "Save variables", and "Export .env" downloads the saved variables with the same secret-safe rule.
+Or edit the **Health** tab, or set `health:` in `app.yaml`. The dedicated endpoints are `GET`, `PUT`, and `DELETE /api/v1/apps/{name}/health`. On the wire, intervals and timeouts are `time.Duration` JSON (nanoseconds), and the dashboard converts to whole seconds. A probe is either absent or fully specified with a path or command, and the dashboard fills sensible defaults for blank fields.
 
-## Managing encrypted secrets
+### Resource limits
 
-Apps with `{ secret: true }` env vars store encrypted values locally. After an app is created, update secrets individually or in bulk.
-
-An app's Environment tab holds plain variables and write-only secrets, with each secret's age shown:
-
-![Levelrail app Environment tab with the variables editor and a locked secret showing how long ago it was set](assets/screenshots/app-environment.png)
-
-### Single secret
-
-Set or rotate one secret at a time:
-
-```bash
-levelrail-cli apps secrets set <name> DATABASE_PASSWORD --value "new-password"
-```
-
-- Dashboard: app Environment tab, edit the secret field
-- API: `PUT /api/v1/apps/{name}/secrets/<key>` with JSON `{ value: "..." }`; `DELETE /api/v1/apps/{name}/secrets/<key>` removes it (`?force=true` for a locked key)
-
-Setting a secret declares its key as secret-backed on the app (the same list `secret_env` shows), which is what makes the container receive it. Deleting the secret undeclares it. The value reaches the container the next time it is created: run `levelrail-cli apps apply <name>` or pass `--apply`.
-
-Secrets are never returned in plaintext, even from the API. The dashboard and CLI confirm receipt but don't echo the value back.
-
-### Bulk import from .env file
-
-Load a batch of secrets from a `.env`-format file:
-
-```bash
-levelrail-cli apps secrets set <name> --env-file local.env
-```
-
-Each line in the file becomes its own encrypted secret:
-
-```
-DATABASE_PASSWORD=secret-value
-API_TOKEN=token-value
-```
-
-This parses the same format as Docker and shell `.env` files: `KEY=value` pairs, one per line, with lines starting in `#` ignored as comments. This is useful for migrating from another deployment platform or bulk-updating multiple credentials at once.
-
-- Dashboard: app Environment tab, "Import .env file" button opens a file picker and drag-drop zone
-- CLI: `--env-file <path>` flag accepts both absolute and relative paths
-- API: Use individual `PUT /api/v1/apps/{name}/secrets/<key>` calls per secret (no batch endpoint yet)
-
-### Secret locks
-
-Prevent accidental overwrites of sensitive secrets by locking them:
-
-```bash
-levelrail-cli apps secrets lock <name> DATABASE_PASSWORD --locked=true
-```
-
-A locked secret cannot be changed by the dashboard or CLI without unlocking it first. This does not encrypt or protect the value differently; it only prevents accidental modifications.
-
-- Dashboard: app Environment tab, lock icon per secret
-- CLI: `levelrail-cli apps secrets lock <name> <key> --locked=true|false`
-- API: `POST /api/v1/apps/{name}/secrets/<key>/lock` with JSON `{ locked: true }`
-
-### Secret age tracking and rotation reminders
-
-Every secret stores when it was last set, and the platform flags it as stale once it reaches the rotation warning age threshold (90 days by default, configurable via `APP_SECRET_ROTATION_WARN_DAYS` env var).
-
-**Where to see secret age:**
-
-- Dashboard: app Environment tab shows "Set N days/months ago" next to each secret key. A "Needs rotation" badge appears once the secret crosses the threshold.
-- CLI: `levelrail-cli apps secrets list <name>` shows an `AGE` column (e.g., "123d" for days) and a `STALE` column (true/false).
-
-**Shared environment variables:**
-
-The same age tracking applies to secret-marked env vars at the project/organization/environment tier:
-
-- Dashboard: shared env var card shows age and staleness the same way
-- CLI: `levelrail-cli shared-env list --level project|org|env` shows `AGE` and `STALE` columns
-
-**System status check:**
-
-`GET /api/v1/system/doctor` includes a `stale_secrets` check that counts every stale secret across all apps and scopes (project/org/env). This appears on the System Status page in the dashboard with a CTA link to the Projects section where you can review and rotate stale secrets.
-
-**Configuring the threshold:**
-
-The default warning age is 90 days. Change it cluster-wide (not per-secret) via:
-
-```bash
-APP_SECRET_ROTATION_WARN_DAYS=180  # Change from 90 to 180 days
-```
-
-## Lifecycle actions
-
-| Action | What it does | Not to confuse with |
-| --- | --- | --- |
-| Deploy | Points `Image` at a new tag, saves, returns immediately | Restart (no image change) |
-| Rollback | Same call as deploy, given an older tag | A dedicated undo mechanism (doesn't exist) |
-| Promote | Points a sibling app in another environment at this app's current image | Deploy (different target app) |
-| Restart | Recreates the running container, same image | Deploy/rollback (both only act when the image actually changes) |
-| Stop | Sets `Suspended`; reconciler stops the container next pass | Delete (desired state still exists) |
-| Start | Clears `Suspended` | Create (app already exists) |
-| Delete | Removes the desired-state row; containers torn down in the background | Stop (state is gone, not just paused) |
-
-### Promote details
-
-`POST /api/v1/apps/{name}/promote` is scoped to one project. It finds a sibling app tagged with the destination environment ID in the same project as the source app.
-
-There is no declared 1:1 relationship between apps in different environments. Apps are independently named. The promote endpoint auto-discovers the target if there's only one, or requires `--target` when there's more than one.
-
-Preview before promoting:
-```bash
-GET .../promote/preview
-```
-
-This shows what would change. Only the image tag is compared. Env vars, ports, domains, and resource limits remain the target app's own settings and are never touched.
-
-### Protected environments
-
-Both deploy and promote respect protected environments. If the app (or promotion target) is tagged with one:
-- The request needs `confirm: true` in the body just to be accepted at all
-- Without it, the request fails with a 409
-- The CLI falls back to an interactive "yes" prompt on stdin when `--confirm` isn't given
-
-`confirm: true` does not deploy immediately. A protected environment requires a real, second-person approval before the change reaches reconcile:
-
-1. The requester sends `POST .../deploys` (or `.../promote`) with `confirm: true`. Instead of applying, this creates a pending approval and returns `202 Accepted` with `pending_approval` set (not `app`) in the response body.
-2. A different user, holding the `deploy` ability, must approve it: `POST /api/v1/deploy-approvals/{id}/approve`. The same user or API token that requested it cannot approve or reject its own request; the server rejects that with 403.
-3. Approving runs the deploy/promote through the exact same path an unprotected one uses (`executeConfirmedDeploy` for deploy/rollback, `setDesiredImage` + `recordInstantDeployAttempt` for promote): desired state changes, a deploy attempt is recorded, and the reconciler picks it up on its next pass.
-4. Rejecting (`POST .../reject`, optional `{"reason": "..."}`) leaves desired state untouched. A rejected or expired request never proceeds.
-5. A pending approval that's neither approved nor rejected expires after a TTL (24 hours by default, `APP_DEPLOY_APPROVAL_TTL` env var) and can no longer be decided once expired.
-
-**RBAC model:** Who can approve is governed by the platform's existing ability model, not a separate permission concept. Holding `deploy` (directly, or via the curated `operator`/`admin` roles) is what lets a user approve, the same ability tier that lets them trigger an unprotected deploy in the first place. There is no dedicated "approver" role; any sufficiently privileged user other than the requester can decide it.
-
-**Same-actor restriction:** The same user or API token that requested a deploy cannot approve or reject their own request. The system blocks this with a 403 error, comparing both the principal type (user vs token) and ID. This prevents unilateral control over production changes and ensures a genuine handoff between different principals. When using service accounts or CI/CD tokens, approval must come from a different authenticated principal (either a different token or a human user).
-
-**Expiry and TTL:** Pending approvals have a 24-hour default expiry (configurable via `APP_DEPLOY_APPROVAL_TTL` environment variable). After expiry, the approval moves to `expired` status and can no longer be decided. The system lazily expires stale approvals on read (so an expired request never actually proceeds through reconcile) and runs a background sweep to mark expired rows for UI visibility.
-
-**Endpoints:**
-- `GET /api/v1/deploy-approvals?status=pending&service=<name>`: list pending approvals (status defaults to `pending`; pass `status=all` to see approved, rejected, and expired requests)
-- `GET /api/v1/deploy-approvals/{id}`: retrieve one approval's full details
-- `POST /api/v1/deploy-approvals/{id}/approve`: approve and apply the deployment
-- `POST /api/v1/deploy-approvals/{id}/reject`: reject, with optional `{"reason": "..."}` body
-
-**CLI:**
-```bash
-levelrail-cli deploy-approvals list [--status pending|all|approved|rejected|expired] [--service NAME]
-levelrail-cli deploy-approvals get <id>
-levelrail-cli deploy-approvals approve <id>
-levelrail-cli deploy-approvals reject <id> [--reason "explain why"]
-```
-
-**Dashboard:** A pending request shows as a banner directly on the app's own detail page (with inline Approve/Reject), and the full cross-app queue lives at `/approvals` in the main sidebar, badged with the current pending count.
-
-## Environment cloning
-
-Clone an entire environment with all its apps, config, and settings into a new environment in the same project. This is useful for creating staging or preview environments, duplicating a production environment for testing, or onboarding new tenants with a pre-configured setup.
-
-### What gets copied
-
-Cloning is config-focused, not data-focused. For each app tagged with the source environment, the clone creates a new app with:
-- Image and port configuration
-- All environment variables (from both the app and the shared environment level)
-- Resource limits (CPU, memory)
-- Health checks (readiness and liveness probes)
-- Volumes and bind mounts
-- Labels, command/entrypoint, pull policy
-- Scheduled tasks (each gets a fresh run history)
-- Registry credentials, auto-rollback (crashloop and SLO burn), exec-enabled, and log drain settings
-- Egress allowlist policy
-- Hooks (pre-start, post-start, pre-stop, post-stop)
-- Service replicas and deployment strategy
-
-### What is regenerated
-
-- **App names:** Since app names are globally unique, cloned apps get an auto-suggested name combining the source app name with the new environment name. Customize with `--app-rename SOURCE=NEWNAME`.
-- **Docker volumes:** Volume names are regenerated to avoid pointing the clone at the source's data. Volumes start empty; no data is copied.
-
-### What is dropped
-
-These are deliberately not carried over:
-
-- **Domains:** A domain can only belong to one service. The clone starts with no domains unless you explicitly assign new ones with `--domain SOURCE=domain1,domain2`.
-- **Host port pins:** Pinned host ports create collision risk across environments. The clone uses dynamic port assignment.
-- **Database attachments:** Cloning copies services, not managed databases. Attach new or existing databases after the clone.
-- **Git sources:** The clone deploys the source app's current image. It doesn't inherit a git build source; you must manually connect a repo if needed.
-- **Node placement:** The clone uses the default placement logic. Reassign to specific nodes after cloning if needed.
-
-### Secret values (opt-in)
-
-All secret-backed env vars are declared on the clone (same keys as the source) but left with no value, the same as a brand-new app with a required secret. This is the safe default: secrets are sensitive and crossing a tier boundary unprompted (for example, dev to staging to production) should be deliberate.
-
-To also copy real secret values:
-```bash
-levelrail-cli apps environments clone <id> --new-name NAME --copy-secret-values
-```
-
-**Preview first:** Always preview before cloning:
-
-```bash
-levelrail-cli apps environments clone-preview <id> --new-name "staging"
-```
-
-This shows:
-- Which apps will be cloned and their suggested new names
-- What fields will be copied, dropped, or left with no value
-- A breakdown of env vars and secrets
-- The auto-suggested app names (override these with `--app-rename` if needed)
-
-### Common workflows
-
-**Clone a production environment for testing:**
-
-```bash
-# Preview what would be cloned
-levelrail-cli apps environments clone-preview prod-env-id --new-name "test-staging"
-
-# Create the clone (no domains, no secrets)
-levelrail-cli apps environments clone prod-env-id --new-name "test-staging"
-
-# Assign new domains to cloned apps
-levelrail-cli apps domains assign cloned-app-1 staging-app-1.example.com
-levelrail-cli apps domains assign cloned-app-2 staging-app-2.example.com
-
-# Set secrets for the cloned environment
-levelrail-cli apps secrets set cloned-app-1 DATABASE_PASSWORD --value "..."
-```
-
-**Clone with custom app names and domains:**
-
-```bash
-levelrail-cli apps environments clone prod-env-id \
-  --new-name "preview-pr-123" \
-  --app-rename web=web-pr-123 \
-  --app-rename api=api-pr-123 \
-  --domain web=web-pr-123.example.com \
-  --domain api=api-pr-123.example.com \
-  --copy-secret-values
-```
-
-**Clone and immediately apply new secrets:**
-
-```bash
-levelrail-cli apps environments clone prod-env-id --new-name "staging"
-
-# Then update secrets for each cloned app
-for app in cloned-web cloned-api cloned-db; do
-  levelrail-cli apps secrets set "$app" NEW_SECRET --value "..."
-done
-```
-
-### API endpoints
-
-- `GET /api/v1/environments/{id}/clone/preview?new_environment_name=<name>`: preview without applying
-- `POST /api/v1/environments/{id}/clone`: perform the clone
-
-Request body for POST:
-```json
-{
-  "new_environment_name": "staging",
-  "copy_secret_values": false,
-  "apps": [
-    { "source_app": "web", "new_name": "web-staging", "domains": ["web-staging.example.com"] },
-    { "source_app": "api", "new_name": "api-staging", "domains": ["api-staging.example.com"] }
-  ]
-}
-```
-
-The `apps` array is optional; omit it to use auto-suggested names and no domains for every app. Only override the apps you need to customize.
-
-### Workflow after cloning
-
-After a successful clone:
-1. Cloned apps start deploying immediately (via the normal reconcile path)
-2. Check deployment status: `levelrail-cli apps status <cloned-app>`
-3. Assign domains: `levelrail-cli apps domains assign <cloned-app> <domain>`
-4. Set or import secrets: `levelrail-cli apps secrets set <cloned-app> KEY --value VALUE`
-5. Attach databases if needed: `levelrail-cli apps database set <cloned-app> --database-name <db-name>`
-6. Adjust resources or other config if the clone's purpose differs from the source
-
-::: details Troubleshooting
-
-**Q: Clone failed partway through, some apps created but not all**
-A: The environment was created successfully; check which apps failed to create via `levelrail-cli apps list`. Either finish cloning manually or delete the partial environment and retry: `levelrail-cli apps environments delete <env-id>`.
-
-**Q: New domain assignments fail with "domain already taken"**
-A: The domain is already assigned to another app. Assign a different domain, or unassign the existing one first.
-
-**Q: Secrets show as "no value set" but I passed --copy-secret-values**
-A: Secrets are only copied if they had values in the source app. If a required secret wasn't set in the source, the clone has no value to copy. Set it manually on the clone.
-
-**Q: Cloned app is stuck in "pending" status**
-A: Check `levelrail-cli apps deploys <cloned-app>` for the deployment error. Common issues: resource limits too tight for the app, image pull failed, or readiness probe times out. Adjust and restart.
-
-:::
-
-### CLI commands
-
-```bash
-levelrail-cli apps environments clone-preview <id> --new-name NAME [flags]
-levelrail-cli apps environments clone <id> --new-name NAME [--app-rename SOURCE=NEWNAME ...] [--domain SOURCE=D1,D2 ...] [--copy-secret-values] [flags]
-```
-
-Additional flags:
-- `--new-name string` (required): name for the new environment
-- `--app-rename SOURCE=NEWNAME`: override an app's cloned name (repeatable)
-- `--domain SOURCE=D1,D2,...`: assign domains to a cloned app (repeatable)
-- `--copy-secret-values`: also copy real secret values; without this, all secrets are declared but left unset
-- `--token`, `--api-url`, `--profile`: standard authentication flags
-- `--json`, `--output`, `--query`: output formatting
-
-### Dashboard layout
-
-The per-app header (`routes/apps/$name.tsx`) puts:
-- Stop/start, restart, promote, clone, delete buttons next to the app name and status badge
-- A pinned "Trigger a deploy" form above the Overview and Deploys sections for deploy/rollback
-
-## Health checks
-
-Health checks are stored as up to two `ServiceProbe`s: `Readiness` and `Liveness`. Each has a path plus optional interval/timeout/failure-count.
-
-### Wire format
-
-Both are encoded as `time.Duration` JSON (nanoseconds), not seconds or a duration string.
-
-The dashboard's Health tab (`HealthCheckEditor.tsx`) converts to/from whole seconds for the input fields.
-
-A probe is either absent (`null`) or fully specified with at least a path. There's no partial "path only, defaults for the rest" on the wire, but the dashboard defaults interval/timeout/failures to sensible values when left blank.
-
-### Setting health checks
-
-Use the full-replace call:
-```bash
-PUT /api/v1/apps/{name}
-```
-(no dedicated health endpoint).
-
-From the CLI, pick them up directly from the spec:
-```bash
-levelrail-cli apps create --file app.yaml
-```
-
-### Readiness probe behavior
-
-A deploy waiting on readiness doesn't just retry HTTP requests against a dead container. It also watches the container's live state.
-
-If the container is OOM-killed or exits during the wait, the deploy fails immediately with a specific reason:
-- `OOMKilledDuringReadiness`
-- `ExitedDuringReadiness`
-
-These appear in the deploy's reconcile condition, visible in:
-- Dashboard: deploy history
-- CLI: `apps deploys`
-
-Without this, the deploy would only fail generically (`ReadinessFailed`) after the full readiness budget (60s by default, override per service with `health.readyTimeout` in `app.yaml`, see [app.yaml reference](app-spec-reference.md#health)) was spent retrying a dead address.
-
-## Resource limits and auto-recommendation
-
-### Dimensions
-
-`store.ServiceResources` covers four dimensions:
+Four optional dimensions, each independent. A dimension you leave off runs unbounded:
 
 | Field | Meaning | Format |
 | --- | --- | --- |
 | `memory_bytes` | Memory limit | Bytes |
 | `nano_cpus` | CPU limit | Billionths of a core |
-| `swap_memory_bytes` | Memory+swap combined (Docker's `MemorySwap`) | Bytes (must be >= memory limit when both set) |
-| `cpuset_cpus` | Pin to specific CPU cores (Docker's `cpuset-cpus`) | e.g., `"0-3"` or `"0,2"` |
+| `swap_memory_bytes` | Memory plus swap combined (Docker's `MemorySwap`) | Bytes, at least the memory limit when both are set |
+| `cpuset_cpus` | Pin to specific cores | `"0-3"` or `"0,2"` |
 
-All four are optional independently. Leaving one off runs that dimension unbounded.
+Set them on the **Resources** tab, in `app.yaml`, or with `PUT /api/v1/apps/{name}`. New limits are applied live: right after the save, they are pushed to every running replica through the Docker Engine API's `ContainerUpdate`, with no recreate. The response's `resources_applied_live` says whether the push reached at least one replica. With no container running, the values are saved and take effect on the next create, and the dashboard shows a "restart required" toast.
 
-Set through the full-replace call:
-```bash
-PUT /api/v1/apps/{name}
+![Levelrail app resources tab](assets/screenshots/app-resources.png)
+
+`GET /api/v1/apps/{name}/resource-recommendation` is a read-only, deterministic suggestion (`internal/rightsizing`, no LLM, never applied automatically). It looks at memory and CPU samples over a lookback window (7 days by default), computes p95 and p99 against the current limit, and checks recent logs for OOM-kill signatures. The result has a sample count, a `data_sufficient` and `confidence` pair, and a suggested limit with a plain-English reason. See it above the limits editor, or run `levelrail-cli apps resource-recommendation NAME`.
+
+### Outbound network allowlist
+
+By default an app has unrestricted outbound access. Opting a service into an allowlist restricts its container to the declared `host:port` pairs. A reconciled sidecar enforces it and re-resolves each host on an interval instead of pinning an IP at deploy time.
+
+```yaml
+egress:
+  mode: allowlist
+  allow:
+    - host: api.example.com
+      port: 443
 ```
 
-Dashboard: Resources tab (`ResourceLimitsEditor.tsx`)
+Or without editing the spec: `levelrail-cli apps egress set NAME --allow api.example.com:443`, then `apps egress get NAME`, and `apps egress clear NAME` to go back to unrestricted. The dashboard has an **Outbound network** card on the app's **Network** tab. DNS lookups and loopback traffic always stay open. After a deploy or restart there is a brief window before the sidecar finishes attaching where outbound traffic is unrestricted.
 
-### Live resource updates
+## Promote between environments
 
-New limits are applied **live** without waiting for a recreate. `applyResourcesLiveToReplicas` pushes them onto every running replica via Docker Engine API's `ContainerUpdate` immediately after the save.
+An environment is a label inside a project. Promote moves one app's current image onto a sibling app in another environment of the same project:
 
-The response's `resources_applied_live` field indicates whether the live push succeeded on at least one replica.
+```bash
+levelrail-cli apps promote NAME --to ENVIRONMENT_ID --preview   # show what would change
+levelrail-cli apps promote NAME --to ENVIRONMENT_ID [--target APP] [--confirm]
+```
 
-If no container is running yet, the values are still saved correctly and take effect at the next create. The dashboard shows a "restart required" toast in this case.
+`POST /api/v1/apps/{name}/promote` looks for an app tagged with the destination environment in the source app's project. There is no declared one-to-one link between apps in different environments, since apps are independently named. If exactly one candidate exists it is used. With more than one, pass `--target`. `GET .../promote/preview?to=ENV_ID[&target=NAME]` shows the diff first.
 
-### Auto-recommendation
+By default only the image changes. Env vars, ports, domains, volumes, node placement, and resource limits stay the target's own. `--include-env` also applies added and removed plain env keys (values of keys both apps have are never overwritten). `--force` promotes even when the source is unhealthy or its last deploy failed. `--override-freeze` with `--override-reason` promotes through an active freeze window.
 
-`GET /api/v1/apps/{name}/resource-recommendation` is a read-only, deterministic suggestion engine (`internal/rightsizing`). It is not an LLM and not applied automatically.
+### Protected environments
 
-**What it does:**
-- Looks at the app's memory/CPU usage samples over a lookback window (default 7 days)
-- Computes p95/p99 per dimension against the current limit
-- Checks recent log entries for OOM-kill signatures
+Deploying to or promoting into a protected environment needs a second person to approve it.
 
-**Result fields:**
-- Sample count
-- `data_sufficient`/`confidence` pair
-- Suggested limit with a plain-English reason
+1. The requester sends the deploy or promote with `confirm: true`. Without it the request fails with a 409. The CLI asks for an interactive "yes" when `--confirm` is missing. With it, nothing is applied yet: the call creates a pending approval and returns `202 Accepted` with `pending_approval` set instead of `app`.
+2. A different user or token holding the `deploy` ability approves it with `POST /api/v1/deploy-approvals/{id}/approve`. The requester cannot approve or reject its own request, and the server answers 403, comparing both the principal type (user or token) and its ID. A CI token's request must be approved by another token or a human.
+3. Approving runs the same path an unprotected deploy uses: desired state changes, an attempt is recorded, and the reconciler picks it up.
+4. Rejecting (`POST .../reject`, optional `{"reason": "..."}`) leaves desired state untouched.
+5. A request nobody decides expires after 24 hours (`APP_DEPLOY_APPROVAL_TTL`, a Go duration) and can no longer be decided. Expiry is applied lazily on read, and a background sweep marks expired rows for the UI.
 
-The endpoint is read-only. The operator decides whether to act on it. It never writes to the app.
+There is no dedicated approver role. The existing ability model decides, and `deploy`, directly or through the `operator` and `admin` roles, is enough.
 
-**Access:**
-- Dashboard: Resources tab (`ResourceRecommendationCard.tsx`), above the limits editor
-- CLI: `levelrail-cli apps resource-recommendation <name>`
+```bash
+levelrail-cli deploy-approvals list [--status pending|all|approved|rejected|expired] [--service NAME]
+levelrail-cli deploy-approvals get ID
+levelrail-cli deploy-approvals approve ID
+levelrail-cli deploy-approvals reject ID [--reason "why"]
+```
 
-## Outbound network: egress allowlist
+A pending request shows as a banner on the app's detail page with inline **Approve** and **Reject**, and the cross-app queue is at `/approvals` in the sidebar, badged with the pending count. The list endpoint defaults to `status=pending`, and `status=all` includes decided and expired requests. Approvals can also be decided from chat, see [Chat deploy approvals](chat-deploy-approvals.md).
 
-By default every app has unrestricted outbound network access, unchanged from before this feature existed. Opting a service into an allowlist restricts its container to only reach the declared `host:port` pairs, enforced by a reconciled sidecar that re-resolves each host on an interval rather than pinning to an IP at deploy time.
+### Clone an environment
 
-**Configure it either way:**
+Cloning copies a whole environment, with all its apps and their configuration, into a new environment in the same project. Use it for staging, per-pull-request copies, or onboarding a tenant. It copies configuration, not data.
 
-- In `app.yaml`:
-  ```yaml
-  egress:
-    mode: allowlist
-    allow:
-      - host: api.example.com
-        port: 443
-  ```
-- Or without touching the spec file:
-  ```bash
-  levelrail-cli apps egress set <name> --allow api.example.com:443
-  levelrail-cli apps egress get <name>
-  levelrail-cli apps egress clear <name>   # back to unrestricted
-  ```
-- Dashboard: the app's Network tab (Outbound network card).
+Preview first, then clone:
 
-DNS lookups and loopback traffic always stay open regardless of the list. After a deploy or restart there is a brief window before the egress sidecar finishes attaching where outbound traffic is temporarily unrestricted.
+```bash
+levelrail-cli apps environments clone-preview ENV_ID --new-name staging
+levelrail-cli apps environments clone ENV_ID --new-name staging \
+  --app-rename web=web-staging --domain web=web-staging.example.com
+```
 
-## One-off exec and the interactive terminal
+For each app in the source environment the clone creates a new app with the same image and port, env vars (app level and shared environment level), resources, health checks, volumes and bind mounts, labels, command and entrypoint, pull policy, scheduled tasks (with fresh run history), registry credential, auto-rollback, exec-enabled and log drain settings, egress policy, hooks, storage target, replicas, and strategy.
 
-### One-shot exec
+| Treatment | What |
+| --- | --- |
+| Regenerated | App names, because they are globally unique (auto-suggested from the source name and the new environment name, override with `--app-rename SOURCE=NEWNAME`). Docker volume names, so the clone never points at the source's data. Volumes start empty. |
+| Dropped | Domains (one domain belongs to one service, assign with `--domain SOURCE=d1,d2`), host port pins, database attachments, git build sources (the clone deploys the source's current image), and node placement. |
+| Declared, no value | Secrets. Every secret key is declared on the clone with no value, like a new required secret. Add `--copy-secret-values` to copy real values, both per-app and shared. |
 
-`POST /api/v1/apps/{name}/exec` runs a single command and returns the result.
+After the clone, the apps start deploying through the normal reconcile path. Check them with `levelrail-cli apps status NAME`, add domains with `apps domains add NAME DOMAIN`, set secrets with `apps secrets set NAME KEY VALUE`, and attach databases with `apps database set NAME --database-name DB`.
 
-**Input:**
-- `command`: required
-- `args`: optional, never shell-interpreted (raw `argv`)
-- `timeout_seconds`: optional, shortens but never extends the 30-second server-side ceiling
+The API is `GET /api/v1/environments/{id}/clone/preview?new_environment_name=NAME` and `POST /api/v1/environments/{id}/clone`:
 
-**Output:**
-- `stdout`, `stderr`, `exit_code`
-- Capped at 1 MiB (truncated: true past that)
-- Nonzero exit code returns HTTP 200: the exec mechanism worked, the command failed
+```json
+{
+  "new_environment_name": "staging",
+  "copy_secret_values": false,
+  "apps": [
+    { "source_app": "web", "new_name": "web-staging", "domains": ["web-staging.example.com"] }
+  ]
+}
+```
 
-**Permissions:** Gated at `root` ability, not `deploy`.
+The `apps` array is optional. Omit it for auto-suggested names and no domains, or list only the apps you want to customize.
 
-::: warning
-Secrets are injected as plaintext env vars at container-create time. Inside a shell, `env` reads them back. Exec sits at the same trust tier as node management, not deploy.
+::: details Troubleshooting a clone
+**Some apps were created and others were not.** The environment exists. Check `levelrail-cli apps list`, finish the rest by hand, or delete the partial environment with `levelrail-cli apps environments delete ENV_ID` and retry.
+
+**A domain assignment fails with "domain already taken".** Another app owns it. Pick a different domain or remove it from the other app first.
+
+**Secrets have no value even with `--copy-secret-values`.** Only secrets that had a value in the source are copied. Set the rest by hand on the clone.
+
+**A cloned app stays pending.** Read `levelrail-cli apps deploys list CLONE` for the error. Usual causes are limits that are too tight, a failed image pull, or a readiness probe that times out.
 :::
 
-**Access:**
-- CLI: `levelrail-cli apps exec <name> -- <command> [args...]`
-  - Exits with the remote command's real exit code, not a generic CLI code
+To duplicate a single app instead, use `levelrail-cli apps clone NAME NEW_NAME`.
 
-### Interactive terminal
+## Operate a running app
 
-For anything beyond a single scripted command, use the interactive terminal over WebSocket.
+### Lifecycle actions
 
-`GET /api/v1/apps/{name}/terminal`
+| Action | What it does | Not to be confused with |
+| --- | --- | --- |
+| Deploy | Points the app at a new tag and returns immediately | Restart, which changes no image |
+| Rollback | The same call as deploy, given an older tag | A separate undo mechanism, which does not exist |
+| Promote | Points a sibling app in another environment at this app's current image | Deploy, which targets this app |
+| Restart | Recreates the container from the same image. The only way to force a recreate without an image change | Deploy or rollback, which act only when the image changes |
+| Stop | Sets `Suspended`, and the reconciler stops the container on its next pass | Delete, which removes the desired state |
+| Start | Clears `Suspended` | Create |
+| Delete | Removes the app from desired state, and containers are torn down in the background | Stop, which keeps the app |
 
-**Features:**
-- Full PTY with resize events
-- Shell kept alive across requests
-- Arrow keys and Ctrl-C working
-- Same `root` gate as one-shot exec
+Restart gets a fresh `restart_nonce` folded into the container name hash, so "same image, new nonce" looks like a change to the cutover logic and the usual readiness-gated rollout applies.
 
-**Access:**
-- Dashboard: Exec tab (`AppTerminal.tsx`)
-- CLI: `levelrail-cli apps exec <name> --interactive [-- <shell>]`
+In the dashboard, each row of the Apps list has an actions menu with Restart, Stop or Start, Redeploy, View logs, View deploys, and Open domain (only when the app has a domain). Stop asks for confirmation. Redeploy re-triggers the current image tag, and lands in the approvals queue when the environment requires approval. The app header has the same Restart, Stop or Start, and Redeploy buttons, plus Promote, Clone, and Delete. The empty Apps list and the welcome screen offer **Create app**, **Browse templates**, and **Connect Git**.
 
-**Dashboard layout:** The Exec tab shows both, with interactive terminal above the one-shot runner (`ExecPanel.tsx`).
+### One-off commands and the terminal
 
-## Scheduled tasks
+`POST /api/v1/apps/{name}/exec` runs one command and returns its result.
 
-A scheduled task is an arbitrary `argv` command run inside an app's *currently running* container on a standard 5-field cron expression. No shell involved. This is the cron-inside-a-container feature.
+- **Input:** `command` is required. `args` is optional and never shell interpreted (raw argv). `timeout_seconds` may shorten but never extend the 30 second server ceiling.
+- **Output:** `stdout`, `stderr`, and `exit_code`, capped at 1 MiB (`truncated: true` past that). A nonzero exit code still returns HTTP 200, because the exec worked and the command failed.
+- **Permission:** the `root` ability, not `deploy`. Exec can be switched off per app (it is on by default) with `levelrail-cli apps exec-access disable NAME`, and a disabled app answers 403.
 
-### Task tracking
+::: warning
+Secrets are injected as plaintext env vars when the container is created, so `env` inside a shell reads them back. Exec sits at the same trust tier as node management, not deploy.
+:::
 
-Each task tracks:
-- `last_run_at`
-- `last_run_status`
-- `last_run_output`
-- `consecutive_failures` counter (for `scheduled_task_failure` alert rules)
+```bash
+levelrail-cli apps exec NAME -- ls -la /app          # exits with the command's real exit code
+levelrail-cli apps exec NAME --interactive [-- sh]   # a real terminal
+```
 
-### Run now
+The interactive terminal is `GET /api/v1/apps/{name}/terminal` over WebSocket: a full PTY with resize, a shell kept alive across requests, arrow keys and Ctrl-C working, behind the same `root` gate. In the dashboard, the **Exec** tab shows the terminal above the one-shot runner. The one-shot endpoint is deliberately not a shell. A remote command stuck on a container-side read is not guaranteed to stop the instant the timeout fires, only the HTTP handler is guaranteed to return on time.
 
-`POST .../scheduled-tasks/{id}/run` executes the identical code path a real cron tick uses (`ScheduledTaskRunner.Run`). There is exactly one implementation of "exec this task's command and record the outcome."
+### Scheduled tasks
 
-The request dispatches from a detached background goroutine and returns `202 Accepted` immediately, not once the command finishes.
+A scheduled task runs an argv command, with no shell, inside an app's currently running container on a standard 5-field cron expression. It is cron inside a container.
 
-### Updates (full replace)
+```bash
+levelrail-cli apps scheduled-tasks create NAME --schedule "0 3 * * *" [--concurrency-policy forbid] -- ./cleanup.sh
+levelrail-cli apps scheduled-tasks list NAME
+levelrail-cli apps scheduled-tasks run NAME ID
+```
 
-`PUT` requires resupplying `command`, `schedule`, and `concurrency_policy`, not just the field you're changing (like everything else in this doc).
+The dashboard's **Scheduled tasks** tab does the same. `update` is a full replace: resupply `command`, `schedule`, and `concurrency_policy`, not only the field you are changing.
 
-### Access
+Each task tracks `last_run_at`, `last_run_status`, `last_run_output`, and a `consecutive_failures` counter (the input for `scheduled_task_failure` alert rules). That is the whole run history: there is no log of every past run.
 
-- Dashboard: Scheduled tasks tab (`ScheduledTasksPanel.tsx`)
-- CLI: `levelrail-cli apps scheduled-tasks create|list|get|update|delete|run`
+`POST .../scheduled-tasks/{id}/run` (CLI `run`) uses the exact code path of a real cron tick. It dispatches from a background goroutine and returns `202 Accepted` right away, not when the command finishes.
 
-### Concurrency policy
-
-`concurrency_policy` governs what happens when a task's next due run finds a previous invocation still executing. Tracked in-memory per task ID (`internal/scheduledtask.Runner`).
+`concurrency_policy` decides what happens when a run is due while the previous one is still going:
 
 | Policy | Behavior |
 | --- | --- |
-| `allow` (default) | Starts the new run unconditionally. Default if you never set this field. |
-| `forbid` | Skips the new run and records a distinct `skipped_concurrency` history status instead of silently doing nothing. |
-| `replace` | Cancels the in-flight run (recorded as `replaced`) before starting the new one. Cancellation is a best-effort signal (closing the exec stream), not a hard kill, since Docker Engine API has no "kill this exec" call. |
+| `allow` (default) | Starts the new run regardless. |
+| `forbid` | Skips the new run and records a distinct `skipped_concurrency` status. |
+| `replace` | Cancels the in-flight run (recorded as `replaced`) and starts the new one. Cancellation is best effort: it closes the exec stream, and a command that ignores that keeps running, because the Docker Engine API has no "kill this exec" call. |
 
-## Quick actions from the dashboard
-
-Each row on the Apps list has an actions menu (the three dots at the right edge) with Restart, Stop or Start, Redeploy, View logs, View deploys, and Open domain (only when the app has a domain). Stop asks for confirmation first. Redeploy re-triggers a deploy of the app's current image tag, and if the environment requires approval it lands in the approvals queue instead. The app detail header exposes the same Restart, Stop or Start, and Redeploy buttons. The empty Apps list and the welcome screen offer Create app, Browse templates, and Connect Git.
-
-## API reference
+## API and CLI quick reference
 
 | Method | Path | Ability |
 | --- | --- | --- |
@@ -887,7 +482,7 @@ Each row on the Apps list has an actions menu (the three dots at the right edge)
 | `GET` | `/api/v1/apps/{name}` | `read` |
 | `PUT` | `/api/v1/apps/{name}` | `write` |
 | `DELETE` | `/api/v1/apps/{name}` | `write` |
-| `POST` | `/api/v1/apps/{name}/compose` | `deploy` (+ `root` if the compose file bind-mounts a host directory) |
+| `POST` | `/api/v1/apps/{name}/compose` | `deploy` (+ `root` if the file bind-mounts a host directory) |
 | `POST` | `/api/v1/apps/{name}/deploy-spec` | `deploy` (+ `root` if any service bind-mounts a host directory) |
 | `POST` | `/api/v1/apps/{name}/builds` | `deploy` |
 | `POST` | `/api/v1/build/detect` | `deploy` |
@@ -897,6 +492,10 @@ Each row on the Apps list has an actions menu (the three dots at the right edge)
 | `GET` | `/api/v1/apps/{name}/deploys/compare?from=ID[&to=ID]` | `read` |
 | `GET` | `/api/v1/apps/{name}/deploys/{deployId}/logs` | `read` |
 | `GET` | `/api/v1/apps/{name}/deploys/{deployId}/steps` | `read` |
+| `GET` | `/api/v1/apps/{name}/pending-changes` | `read` |
+| `POST` | `/api/v1/apps/{name}/apply-pending` | `deploy` |
+| `GET` | `/api/v1/apps/{name}/timeline` | `read` |
+| `GET` `PUT` `DELETE` | `/api/v1/apps/{name}/health` | `read`, `write`, `write` |
 | `GET` | `/api/v1/apps/{name}/promote/preview?to=ENV_ID[&target=NAME]` | `read` |
 | `POST` | `/api/v1/apps/{name}/promote` | `deploy` |
 | `POST` | `/api/v1/apps/{name}/restart` | `deploy` |
@@ -904,87 +503,43 @@ Each row on the Apps list has an actions menu (the three dots at the right edge)
 | `POST` | `/api/v1/apps/{name}/start` | `deploy` |
 | `PUT` | `/api/v1/apps/{name}/node` | `root` |
 | `POST` | `/api/v1/apps/{name}/exec` | `root` |
-| `GET` | `/api/v1/apps/{name}/terminal` (WebSocket upgrade) | `root` |
+| `GET` | `/api/v1/apps/{name}/terminal` (WebSocket) | `root` |
 | `GET` | `/api/v1/apps/{name}/resource-recommendation` | `read` |
-| `POST` | `/api/v1/apps/{name}/scheduled-tasks` | `write` |
-| `GET` | `/api/v1/apps/{name}/scheduled-tasks` | `read` |
-| `GET` | `/api/v1/apps/{name}/scheduled-tasks/{id}` | `read` |
-| `PUT` | `/api/v1/apps/{name}/scheduled-tasks/{id}` | `write` |
-| `DELETE` | `/api/v1/apps/{name}/scheduled-tasks/{id}` | `write` |
+| `POST` `GET` | `/api/v1/apps/{name}/scheduled-tasks` | `write`, `read` |
+| `GET` `PUT` `DELETE` | `/api/v1/apps/{name}/scheduled-tasks/{id}` | `read`, `write`, `write` |
 | `POST` | `/api/v1/apps/{name}/scheduled-tasks/{id}/run` | `deploy` |
-| `GET` | `/api/v1/deploy-approvals?status=<status>&service=<name>` | `read` |
-| `GET` | `/api/v1/deploy-approvals/{id}` | `read` |
-| `POST` | `/api/v1/deploy-approvals/{id}/approve` | `deploy` |
-| `POST` | `/api/v1/deploy-approvals/{id}/reject` | `deploy` |
-| `GET` | `/api/v1/environments/{id}/clone/preview?new_environment_name=<name>` | `read` |
+| `GET` | `/api/v1/deployments`, `/summary`, `/stream` | `read` |
+| `GET` | `/api/v1/deploy-approvals`, `/{id}` | `read` |
+| `POST` | `/api/v1/deploy-approvals/{id}/approve`, `/reject` | `deploy` |
+| `GET` | `/api/v1/environments/{id}/clone/preview?new_environment_name=NAME` | `read` |
 | `POST` | `/api/v1/environments/{id}/clone` | `deploy` |
 
-## CLI
+The CLI groups below cover an app's own lifecycle. Run `levelrail-cli apps SUBCOMMAND -h` for any command's flags, and see the [CLI reference](cli-reference.md) for the rest.
 
 ```bash
-levelrail-cli apps create [flags]              # existing image, git build, --file, or --interactive
-levelrail-cli apps list [flags]
-levelrail-cli apps get <name> [flags]
-levelrail-cli apps deploy <name> --image IMAGE [--confirm] [flags]
-levelrail-cli apps rollback <name> --image IMAGE [--confirm] [flags]
-levelrail-cli apps auto-rollback enable|disable|status <name> [flags]   # opt-in automatic rollback on crashloop, see Observability
-levelrail-cli apps auto-rollback-slo-burn set|status <name> [mode] [flags]   # off/auto/dry_run/pause_for_human on an SLO burn alert, see Observability
-levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [--confirm] [flags]
-levelrail-cli apps restart <name> [flags]
-levelrail-cli apps stop <name> [flags]
-levelrail-cli apps start <name> [flags]
-levelrail-cli apps delete <name> [flags]
-levelrail-cli apps deploy-compose <name> --file compose.yaml [flags]
-levelrail-cli apps deploy-spec <name> --file app.yaml --repo-url <url> --ref <ref> [--image-repo-base BASE] [--secret KEY=VALUE] [flags]
-levelrail-cli apps resource-recommendation <name> [flags]
-levelrail-cli apps exec <name> -- <command> [args...] [--timeout N] [flags]
-levelrail-cli apps exec <name> --interactive [-- <shell> [args...]]
-levelrail-cli apps scheduled-tasks create <app> --schedule CRON [--disabled] [--concurrency-policy allow|forbid|replace] -- <command> [args...]
-levelrail-cli apps scheduled-tasks list <app> [flags]
-levelrail-cli apps scheduled-tasks get <app> <id> [flags]
-levelrail-cli apps scheduled-tasks update <app> <id> --schedule CRON [--disabled] [--concurrency-policy allow|forbid|replace] -- <command> [args...]
-levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
-levelrail-cli apps scheduled-tasks run <app> <id> [flags]
-levelrail-cli deploy-approvals list [--status pending|all|approved|rejected|expired] [--service NAME] [flags]
-levelrail-cli deploy-approvals get <id> [flags]
-levelrail-cli deploy-approvals approve <id> [flags]
-levelrail-cli deploy-approvals reject <id> [--reason TEXT] [flags]
-levelrail-cli apps environments clone-preview <id> --new-name NAME [flags]
-levelrail-cli apps environments clone <id> --new-name NAME [--app-rename SOURCE=NEWNAME ...] [--domain SOURCE=D1,D2 ...] [--copy-secret-values] [flags]
+levelrail-cli apps create | list | get | delete | validate
+levelrail-cli apps deploy | rollback | wait | promote | restart | stop | start | apply
+levelrail-cli apps deploy-compose | deploy-spec | builds trigger
+levelrail-cli apps deploys list | compare          levelrail-cli deployments list | summary | watch
+levelrail-cli apps timeline | status | diagnose | resource-recommendation
+levelrail-cli apps health | egress | secrets | env | vault-env
+levelrail-cli apps exec | scheduled-tasks | auto-rollback | freeze
+levelrail-cli apps environments clone-preview | clone
+levelrail-cli deploy-approvals list | get | approve | reject
 ```
 
-Run `levelrail-cli <subcommand> -h` for any command's own flags.
-Domains/TLS live under `apps domains` (separate doc); databases under
-`apps <db-verb>`/`databases` (separate doc); git-provider connections
-under `apps git-source` (separate doc).
+## Known limits
 
-## Not built yet (deliberate follow-ups)
-
-### Image and deploy history
-
-- **No image-history lookup for a manual rollback.** Neither the API nor the CLI can tell you "the previous tag" on request. You supply the exact tag yourself, from the deploy-attempts list or your own records. (Auto-rollback on crashloop is the one automated exception: it computes the previous known-good tag internally to redeploy it, but doesn't expose that lookup for you to query.)
-
-- **No per-service deploy history for `deploy-spec`.** Unlike Compose, a multi-service `app.yaml` fan-out doesn't write a `deploy_attempts` row per service. Only the synchronous response tells you what happened. A real per-service attempt log is a known, deliberately deferred store-schema change.
-
-- **`GET /apps/{name}/deploys` is current reconcile status, not a deploy log.** It stores only the latest condition per controller/type pair, no history. `GET .../deploy-attempts` is the real append-only history endpoint on purpose.
-
-### Exec and terminal
-
-- **One-shot exec has no interactive follow-up beyond the terminal route.** The `/exec` endpoint is intentionally not a shell: no PTY, no resize, no kept-alive session. Use `/terminal` for that. A genuinely hung remote command (blocked on a container-side read) isn't guaranteed to stop the instant the client's timeout fires. Only the HTTP handler's goroutine is guaranteed to return on time.
-
-### Multi-service deploys
-
-- **Deploy-spec and Compose are both synchronous, blocking calls.** Neither streams build progress over SSE like the single-service build trigger does. A large multi-service spec is a genuinely slow HTTP request, not fire-and-forget.
-
-### Scheduled tasks
-
-- **Scheduled task history is last-run-only.** There's no run log beyond `last_run_at`/`last_run_status`/`last_run_output` and a consecutive-failure counter. No historical list of every past run.
-
-- **`concurrency_policy: replace`'s cancellation is best effort.** It closes the previous run's exec stream (the same signal the run's timeout uses), not a guaranteed kill. A command that ignores stream closing (blocked on a container-side read) keeps running inside the container even though Runner moved on and recorded `replaced`. Docker Engine API doesn't expose a "kill this exec" call.
+- **No previous-tag lookup.** A manual rollback needs the tag from you. Only auto-rollback computes it, and it does not expose the lookup.
+- **No per-service history for `deploy-spec`.** It writes no deploy attempt per service, only the synchronous response. A per-service log is a known, deferred schema change.
+- **`GET /apps/{name}/deploys` is current reconcile status, not a log.** It keeps only the latest condition per controller and type. `GET .../deploy-attempts` is the append-only history.
+- **Compose and `deploy-spec` are synchronous.** Neither streams build progress the way a single-service build does, so a large multi-service spec is a slow HTTP request.
+- **Scheduled task history is last run only**, and `replace` cancellation is best effort.
 
 ## See also
 
-- [Git integrations](git-integrations.md) - Connecting GitHub, GitLab, or Bitbucket to trigger deploys automatically from git push and pull requests
-- [Domains and ingress](domains-and-ingress.md) - Configuring custom domains and HTTPS certificates for apps
-- [Managing databases](managing-databases.md) - Attaching PostgreSQL, MySQL, Redis, and other services to your apps
-- [app.yaml reference](app-spec-reference.md) - Full schema and field documentation for the deployment spec file
+- [Git integrations](git-integrations.md): trigger deploys from git push and pull requests
+- [Domains and ingress](domains-and-ingress.md): custom domains and HTTPS certificates
+- [Managing databases](managing-databases.md): attach Postgres, MySQL, Redis, and others
+- [app.yaml reference](app-spec-reference.md): every field of the deployment spec
+- [Deploy safety](deploy-safety.md) and [Deploy failures](deploy-failures.md): what protects a rollout and how failures are explained

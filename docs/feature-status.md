@@ -4,7 +4,7 @@ description: Per-feature maturity labels (stable, beta, hide-behind-flag) with t
 
 # Feature status
 
-This page labels every major feature by how much evidence backs it today. It is built from the repository as of 2026-09-26 (main at `13a50c33`). Every claim cites a path. Where evidence is absent, the page says so instead of guessing.
+This page labels every major feature by how much evidence backs it today. The evidence was gathered on 2026-09-26. Counts and the template and MCP rows were re-verified against main at `2622220e` on 2026-10-04. Every claim cites a path. Where evidence is absent, the page says so instead of guessing.
 
 ## How to read the labels
 
@@ -31,16 +31,16 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | PITR and database backups | stable | Live e2e restores before a marker row through the real API with MinIO (`test/e2e/pitr_test.go`), plus live Docker dump and restore tests. |
 | Previews | stable (GitHub), beta (GitLab, Bitbucket) | Lifecycle e2e exists for all three (`test/e2e/preview_environments_*_test.go`), but they replay synthetic webhooks, not a real forge. Kept beta for the two forges with less usage. |
 | IAM | beta | Broadest unit coverage in the repo, but the only e2e is the auth session lifecycle, not policy enforcement. |
-| Notification channels (17) | beta | All 17 kinds have unit tests against `httptest`, none against a real vendor. |
+| Notification channels (18) | beta | All 18 kinds have unit tests against `httptest`, none against a real vendor. |
 | Pipelines | beta | Live Docker test exists (`internal/pipeline/live_test.go`), no e2e. |
 | Deploy freeze | beta | Unit, API and CLI tests, documented in `docs/deploy-safety.md`, no e2e. |
 | Feature flags | beta | Unit, API, CLI, MCP tests and a doc page, no e2e. |
-| Templates | beta | 311 catalog entries, the unit tests check shape and a floor of 180, none is deployed in any test. |
+| Templates | beta | 311 catalog entries. Unit tests check shape and a floor of 180, and a live e2e deploys a sample of 16, not the whole catalog. |
 | Log archive | beta | Unit and e2e tests (`test/e2e/log_archive_test.go`), dedicated doc page (`docs/log-archive.md`). |
 | Supply chain | beta | Off by default (`docs/supply-chain.md`), unit tests, no e2e. |
 | Status page | beta | Off by default, one internal package test file plus API tests, no e2e. |
 | Multi-node and WireGuard | beta | Join flow verified locally across two real Docker daemons (enrollment, cordon, drain with real container relocation); the WireGuard mesh itself and cross-host remote transport are still unverified. |
-| AI assistant (MCP server) | beta | 153 tools in full mode (144 in the default standard mode), 31 test files in `internal/mcptools`, no e2e. |
+| AI assistant (MCP server) | beta | 156 tools in full mode (146 in the default standard mode, 118 read-only), 31 test files in `internal/mcptools`, no e2e. |
 | AI assistant (in-app chat) | hide-behind-flag | Tested against fake Anthropic responses only (unit, plus a real-HTTP e2e session lifecycle test with a fake provider); `docs/ai-assistant-chat.md` now documents it. |
 | AI models (GPU) | hide-behind-flag | Needs NVIDIA hardware, every test uses fakes, docs state v1 scope is NVIDIA on Linux only. |
 | Load balancer | hide-behind-flag | No e2e, no live test, outside the 3 to 50 services story in the project plan. |
@@ -88,7 +88,7 @@ Test counts are `*_test.go` files in the named directory. "CLI" and "web" list t
 
 Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat, webpush. That is 18, matching the README and comparison count. `webpush` (browser push, `internal/webpush/`) is the newest and the only kind whose destination isn't an operator-supplied URL: it fans out to every registered browser subscription instead.
 
-- Unit: `internal/alerting/` (28 files). Payload tests live in `notify_test.go` (`TestNotifyTelegram_PostsChatIDAndText`, `TestNotifyResend_PostsAuthHeaderAndPayload`, `TestNotifyOpsgenie_PostsAuthHeaderAndPayload`) and `TestNewNotifier_AllValidKinds_Recognized` (`notify_test.go:1095`). That table test lists 13 kinds, so email, resend, ntfy and opsgenie rely on their own tests. Files that mention each kind by name: telegram 2, pushover 1, pagerduty 1, teams 1, the rest 3 to 7. Thin coverage for pushover, pagerduty and teams.
+- Unit: `internal/alerting/` (28 files). Payload tests live in `notify_test.go` (`TestNotifyTelegram_PostsChatIDAndText`, `TestNotifyResend_PostsAuthHeaderAndPayload`, `TestNotifyOpsgenie_PostsAuthHeaderAndPayload`) and `TestNewNotifier_AllValidKinds_Recognized` (`notify_test.go:1095`). That table test covers a subset of the kinds, so the rest rely on their own payload tests, and coverage is thinnest for pushover, pagerduty and teams.
 - API `notification_channels_test.go`; CLI: no dedicated channel test file found; email retry tests at `notify_test.go:569-629`.
 - E2E: none. Every test posts to an `httptest` server.
 - Docs: covered in `docs/integrations.md` and `docs/observability.md`. `docs/integrations.md` is 45 lines.
@@ -172,9 +172,9 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 ### Templates
 
 - Unit: `internal/catalog/catalog_test.go` (asserts at least 180 templates, unique IDs) and `catalog_extra_test.go`; API `service_templates_test.go`; CLI `templates_test.go`; web `BrowseTemplatesFields.test.tsx`; `internal/registrycatalog/client_test.go`.
-- E2E: none. `test/e2e/compose_healthcheck_test.go` covers Compose readiness generally, not any template.
+- E2E: `test/e2e/template_fleet_test.go` (`TestTemplateFleet_Live_DeploysAndTearsDownCleanly`) deploys a diverse sample of 16 templates through the real one-click route and a real application controller, then tears them down and checks nothing leaks. The other 295 are not deployed by any test. `test/e2e/compose_healthcheck_test.go` covers Compose readiness generally.
 - Docs: `docs/templates-and-registry.md` (209 lines).
-- Real infra: none found. No template is deployed in any test, so "works" is unverified per entry. `docs/templates-and-registry.md` also notes GPU passthrough is not translated for GPU templates.
+- Real infra: none found. Only the 16 sampled templates have deploy evidence, so "works" is unverified for the rest. `docs/templates-and-registry.md` also notes GPU passthrough is not translated for GPU templates.
 - Count: 311 `ID:` entries across `internal/catalog/templates_*.go`. The roadmap and ADR 015 cite a 339-template goal, which is not yet the shipped catalog.
 - Label: **beta**.
 
@@ -202,32 +202,17 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - Real infra: none found.
 - Label: **beta**.
 
-## README and roadmap claims contradicted by the code
+## Numbers quoted across the docs
 
-| Claim | Where | What the code shows |
+These counts appear in the README, the landing page, and several guides. Re-check them against the code before changing any of those pages.
+
+| Number | Value | Source |
 | --- | --- | --- |
-| "over 70 MCP tools" | `README.md:222`, `docs/index.md:33` | 153 tools are registered in full mode and 144 in the default standard mode (`go test -run TestToolListTokenBudget -v ./internal/mcptools`). The claim is stale, not wrong in direction. |
-| "82 tools" and "roughly 45" for Coolify | `docs/comparison.md:159`, `docs/comparison.md:168` | 82 is stale (153 in full mode now). The Coolify figure is a competitor claim not re-verifiable from this repo. |
-| "alerting across nine rule kinds" | `README.md` Status section, `docs/comparison.md:157` | `internal/alerting/rules.go:33-52` defines 13 kinds: the nine listed plus `control_plane_backup_stale`, `node_offline`, `node_cert_expiring`, `log_archive_stale`. |
-| "There is no stable release yet and the project is not ready for production workloads" | `README.md` Status section | Accurate today and must stay until v0.2.0 stable ships. It sits in tension with the feature-depth marketing below it. The latest tag at the time of writing is `v0.2.0-beta.14`. |
-| "Single-node and multi-node both run today" | `README.md` Status section | Overstated. `docs/roadmap.md` says the e2e suite does not exercise a full multi-node mesh, and mesh device tests use fakes (`internal/network/device_test.go:3-11`). |
-| "Low idle footprint" | `README.md` "Why not Coolify" | Measured only on an Apple M4 Max dev build: 58 to 96 MB RSS from 0 to 500 apps (`docs/performance.md`). No Linux production-build number. |
-| "Notification channels: 17 kinds against Dokploy's 12" | `README.md` | The 17 is correct (`internal/alerting/rules.go:82-98`). The Dokploy 12 is not checkable here. |
-| "eight managed database engines with backup/restore/verification" | `README.md` Status section | Eight engines are defined (`internal/store/database.go:16-23`). Live restore evidence exists for Postgres via PITR e2e, and the only database e2e is Redis reconcile. |
-| Template catalog size | `docs/roadmap.md`, ADR 015 (339-template goal) | 311 catalog entries shipped. The test only enforces a floor of 180 (`internal/catalog/catalog_test.go:67`). |
-| "Real public ACME" toggleable | `docs/roadmap.md` "In progress" | Correctly flagged as unverified. Keep the warning until `docs/acme-verification-runbook.md` has a recorded run. |
+| MCP tools | 156 in full mode, 146 in the default standard mode, 118 in read-only mode | `go test ./internal/mcptools -run TestToolListTokenBudget -v`, and the generated [MCP tool surface](mcp-tool-surface.md) |
+| Notification channel kinds | 18 | `NotifyKind` constants in `internal/alerting/rules.go` |
+| Alert rule kinds | 14 | `Kind` constants in `internal/alerting/rules.go` |
+| Managed database engines | 8 | `internal/store/database.go` |
+| Service templates | 311 | `len(catalog.Templates)`, listed in [Template catalog](template-catalog.md) |
+| Latest release | 0.2.0-beta.15, so there is no stable release yet | `.release-please-manifest.json` |
 
-## Proposed README and docs edits (not applied)
-
-These are proposals only. `README.md` is not edited in this change.
-
-1. `README.md:222` and `docs/index.md:33`: replace "over 70 MCP tools" with "153 MCP tools". Better, remove the number and link to the generated tool list so it cannot drift again.
-2. `docs/comparison.md:159` and `:168`: replace "82 tools" with 153, keep the Coolify figure but mark it as "as of" a date.
-3. `README.md` Status section and `docs/comparison.md:157`: change "nine rule kinds" to "thirteen rule kinds", or drop the count.
-4. `README.md` Status section: keep the "not ready for production workloads" paragraph until v0.2.0 stable ships, then replace it with a link to this page. Add a sentence: "Feature maturity is listed in docs/feature-status.md."
-5. `README.md` Status section: change "Single-node and multi-node both run today" to "Single node is the supported path. Multi-node and the WireGuard mesh are beta."
-6. `README.md` "Low idle footprint": add the measured numbers with their conditions, or link `docs/performance.md`. Re-measure on a Linux release build before quoting them as a headline.
-7. `README.md` feature list and `docs/index.md`: mark load balancer, platform as code, AI models, in-app AI chat and Cloudflare tunnel as beta or experimental, matching the labels above once a hiding mechanism exists.
-8. `README.md` "Where the feature depth shows": add "17 channel kinds, unit-tested against mock endpoints" or similar, so the claim matches the evidence tier.
-9. `docs/roadmap.md` e2e note: add the templates gap (no template is deployed in tests) and the 311 versus 339 template counts.
-10. Add a docs sidebar entry for this page.
+Two caveats that still hold. Idle footprint is measured only on an Apple M4 Max dev build (58 to 96 MB RSS from 0 to 500 apps, see [Performance](performance.md)), with no Linux release-build number yet. Real public ACME issuance is built but has no recorded run of [the verification runbook](acme-verification-runbook.md).

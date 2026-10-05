@@ -20,20 +20,22 @@ hero:
 
 features:
   - title: Zero-downtime deploys
-    details: 'Rolling, recreate, or blue-green strategy, gated on real readiness and liveness probes, with rollback to pinned prior images always available.<span class="feature-proof feature-proof--chips"><span class="feature-chip">rolling</span><span class="feature-chip">recreate</span><span class="feature-chip">blue-green</span></span>'
+    details: 'Blue-green (the default) and rolling deploys move traffic only after the new container passes its readiness probe, and prior images stay pinned so rollback is always one click away. Recreate is there when a short gap is fine.<span class="feature-proof feature-proof--chips"><span class="feature-chip">rolling</span><span class="feature-chip">recreate</span><span class="feature-chip">blue-green</span></span>'
   - title: Observability built in
-    details: 'Node-local metrics at 15s resolution and full-text log search, no separate Grafana or Loki install. Deploy markers overlay directly on metric charts.<span class="feature-proof feature-proof--stat"><span class="feature-stat-value">15s</span><span class="feature-stat-label">metric resolution</span></span>'
+    details: 'Node-local metrics at 15s resolution and full-text log search, with 15 days of retention by default and no separate Grafana or Loki install. Deploy markers overlay directly on metric charts.<span class="feature-proof feature-proof--stat"><span class="feature-stat-value">15s</span><span class="feature-stat-label">metric resolution</span></span>'
   - title: Eight managed database engines
     details: 'Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse, with scheduled backups, restore, and automatic post-backup verification.<span class="feature-proof feature-proof--chips feature-proof--chips-wrap"><span class="feature-chip feature-chip--mono">postgres</span><span class="feature-chip feature-chip--mono">redis</span><span class="feature-chip feature-chip--mono">mysql</span><span class="feature-chip feature-chip--mono">mongodb</span><span class="feature-chip feature-chip--mono">mariadb</span><span class="feature-chip feature-chip--mono">keydb</span><span class="feature-chip feature-chip--mono">dragonfly</span><span class="feature-chip feature-chip--mono">clickhouse</span></span>'
-  - title: Multi-node from day one
+  - title: Multi-node, no inbound ports
     icon: '<svg width="64" height="36" viewBox="0 0 64 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><line x1="8" y1="9" x2="32" y2="28" stroke="currentColor" stroke-width="1.5" opacity="0.45"/><line x1="32" y1="28" x2="56" y2="9" stroke="currentColor" stroke-width="1.5" opacity="0.45"/><line x1="8" y1="9" x2="56" y2="9" stroke="currentColor" stroke-width="1.5" opacity="0.3"/><line x1="32" y1="28" x2="32" y2="7" stroke="currentColor" stroke-width="1.5" opacity="0.3" stroke-dasharray="2 3"/><circle cx="8" cy="9" r="3.5" fill="currentColor"/><circle cx="56" cy="9" r="3.5" fill="currentColor"/><circle cx="32" cy="28" r="3.5" fill="currentColor"/><circle cx="32" cy="7" r="2.5" fill="currentColor" opacity="0.55"/></svg>'
-    details: WireGuard mesh, internal DNS across nodes, cordon and drain, no inbound ports required on any managed server.
+    details: Add servers with a one-time join token. Every agent dials out over mTLS, so managed servers open no inbound ports, and you can cordon, drain, and pin apps to nodes. The WireGuard mesh is beta.
   - title: Know what needs attention
-    details: 'A Status page and an attention CLI command list failing apps, offline nodes, expiring certificates, and doctor findings, with a disk pressure banner and stalled certificate renewal detection.<span class="feature-proof feature-proof--status"><span class="feature-status"><span class="feature-dot feature-dot--bad"></span>app failing</span><span class="feature-status"><span class="feature-dot feature-dot--warn"></span>cert expiring</span><span class="feature-status"><span class="feature-dot feature-dot--off"></span>node offline</span></span>'
+    details: 'A Status page and the `attention` CLI command list failing apps, offline nodes, expiring certificates, and doctor findings, with a disk pressure banner and stalled certificate renewal detection. Alerts reach you through 18 notification channel kinds, including Slack, Discord, email, Telegram, PagerDuty, and ntfy.<span class="feature-proof feature-proof--status"><span class="feature-status"><span class="feature-dot feature-dot--bad"></span>app failing</span><span class="feature-status"><span class="feature-dot feature-dot--warn"></span>cert expiring</span><span class="feature-status"><span class="feature-dot feature-dot--off"></span>node offline</span></span>'
   - title: Resource-scoped IAM
     details: 'AWS-IAM-shaped Allow/Deny policies scoped to a specific app or database, with a full audit log and CSV export, in the free Apache 2.0 core.<span class="feature-proof feature-proof--code"><code class="feature-code-line">allow: app:web:deploy</code></span>'
+  - title: 311 one-click templates
+    details: 'Self-hosted services such as n8n, Gitea, Uptime Kuma, and Vaultwarden, each a Compose file that Levelrail deploys and manages like any other app.<span class="feature-proof feature-proof--chips"><span class="feature-chip feature-chip--mono">n8n</span><span class="feature-chip feature-chip--mono">gitea</span><span class="feature-chip feature-chip--mono">uptime-kuma</span><span class="feature-chip feature-chip--mono">vaultwarden</span></span>'
   - title: AI-ready API
-    details: 'MCP tools (beta) backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a crashloop directly. Current count by toolset: <a href="/mcp-tool-surface">docs/mcp-tool-surface.md</a>.<span class="feature-proof feature-proof--code"><code class="feature-code-line">mcp.call("get_logs", app="web")</code></span>'
+    details: '156 MCP tools (beta) backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a failed deploy directly. The count by toolset is in the <a href="/mcp-tool-surface">MCP tool surface</a>.<span class="feature-proof feature-proof--code"><code class="feature-code-line">mcp.call("get_app_logs", name="web")</code></span>'
 ---
 
 <script setup lang="ts">
@@ -52,7 +54,7 @@ import { PhCheck, PhX } from '@phosphor-icons/vue'
   <TerminalDemo />
 </div>
 
-That install script checks the host, installs Docker if it's missing, and starts the control plane as a systemd service. `deploy` builds from `app.yaml` and only cuts traffic to the new container once its readiness probe passes. The full walkthrough, including the setup wizard and database attachment, is in [Getting started](/getting-started).
+The install script checks the host, installs Docker if it is missing, and starts the control plane as a systemd service. `levelrail-cli deploy` points an app at an image and cuts traffic over only once the new container's readiness probe passes. To build from a git repository instead, connect it from the dashboard or run `levelrail-cli import <repo-url> --deploy`. The full walkthrough, including the setup wizard, is in [Getting started](/getting-started).
 
 </section>
 
@@ -78,7 +80,7 @@ Four steps, the same ones the reconciler itself runs on every deploy. Click a st
 
 ## How it compares
 
-Most self-hosted PaaS tools in this category drive remote servers by SSHing in and shelling out `docker` CLI commands, then parsing text output. That's the source of most of the flakiness and the idle CPU burn, because it forces polling loops. Levelrail doesn't do that.
+Many self-hosted platforms in this category manage servers by SSHing in and running `docker` CLI commands, then parsing the text output. That tends to force polling loops, which is a common source of flakiness and idle CPU use. Levelrail takes a different route.
 
 <div class="compare-table">
 
@@ -90,26 +92,26 @@ Most self-hosted PaaS tools in this category drive remote servers by SSHing in a
 
 <div class="compare-table__row">
 <span class="compare-table__cell compare-table__cell--label">Server management</span>
-<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">SSHes into every node and shells out <code>docker</code> CLI commands, then parses text output.</span></span>
+<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">SSHes into every node and runs <code>docker</code> CLI commands, then parses the text output.</span></span>
 <span class="compare-table__cell compare-table__cell--after"><PhCheck class="compare-table__icon compare-table__icon--after" weight="bold" /><span class="compare-table__cell-text">The agent dials out over mTLS and talks to the Docker Engine API directly. Nothing shells out to the <code>docker</code> CLI.</span></span>
 </div>
 
 <div class="compare-table__row">
 <span class="compare-table__cell compare-table__cell--label">Orchestration</span>
-<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">Ad hoc polling loops, with no recorded reason for why a resource is in its current state.</span></span>
+<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">Polling loops that often leave no recorded reason for why a resource is in its current state.</span></span>
 <span class="compare-table__cell compare-table__cell--after"><PhCheck class="compare-table__icon compare-table__icon--after" weight="bold" /><span class="compare-table__cell-text">A level-triggered reconciler diffs desired against observed state and writes a status condition with a reason after every pass.</span></span>
 </div>
 
 <div class="compare-table__row">
 <span class="compare-table__cell compare-table__cell--label">Observability</span>
-<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">Bolted on: install Grafana or Loki yourself, then wire them up to get metrics and logs.</span></span>
+<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">Often an add-on: install Grafana or Loki yourself, then wire them up for metrics and logs.</span></span>
 <span class="compare-table__cell compare-table__cell--after"><PhCheck class="compare-table__icon compare-table__icon--after" weight="bold" /><span class="compare-table__cell-text">Node-local metrics at 15 second resolution and full-text log search are built in, no separate install.</span></span>
 </div>
 
 <div class="compare-table__row">
 <span class="compare-table__cell compare-table__cell--label">Footprint</span>
-<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">A stack of separate services: reverse proxy, metrics store, log store, dashboard.</span></span>
-<span class="compare-table__cell compare-table__cell--after"><PhCheck class="compare-table__icon compare-table__icon--after" weight="bold" /><span class="compare-table__cell-text">SQLite in WAL mode, an embedded Caddy ingress, and an embedded dashboard: one binary on one node.</span></span>
+<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">Often a stack of separate services: reverse proxy, metrics store, log store, dashboard.</span></span>
+<span class="compare-table__cell compare-table__cell--after"><PhCheck class="compare-table__icon compare-table__icon--after" weight="bold" /><span class="compare-table__cell-text">SQLite in WAL mode, an embedded Caddy ingress, and an embedded dashboard: one control plane binary on one node. See <a href="/performance">measured idle footprint</a>.</span></span>
 </div>
 
 </div>
@@ -124,7 +126,7 @@ Most self-hosted PaaS tools in this category drive remote servers by SSHing in a
 
 <p class="statement-text">Not a Kubernetes competitor.<br>Not a Vercel competitor.</p>
 
-<p class="statement-context">The target user runs between 3 and 50 services on between 1 and 10 machines, and doesn't want to learn Kubernetes.</p>
+<p class="statement-context">It is built for running 3 to 50 services on 1 to 10 machines without learning Kubernetes.</p>
 
 </div>
 
