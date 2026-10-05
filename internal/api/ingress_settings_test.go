@@ -95,7 +95,7 @@ func TestHandleGetIngressSettings_Default(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	want := ingressSettingsResource{}
+	want := ingressSettingsResource{FallbackDomainsEnabled: true}
 	if got != want {
 		t.Errorf("GET /settings/ingress = %+v, want the seeded default %+v", got, want)
 	}
@@ -146,6 +146,8 @@ func TestHandleUpdateIngressSettings_AcceptsValidConfig(t *testing.T) {
 		ACMEEnabled:      true,
 		ACMEEmail:        "ops@example.com",
 		ACMEDirectoryURL: "https://acme-staging-v02.api.letsencrypt.org/directory",
+
+		FallbackDomainsEnabled: true,
 	}
 	var got ingressSettingsResource
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
@@ -351,7 +353,7 @@ func TestHandleUpdateIngressSettings_CanDisableAndClear(t *testing.T) {
 	if err := json.Unmarshal(disableRec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if got != (ingressSettingsResource{}) {
+	if got != (ingressSettingsResource{FallbackDomainsEnabled: true}) {
 		t.Errorf("after disable = %+v, want zero value", got)
 	}
 }

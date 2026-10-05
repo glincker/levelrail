@@ -116,29 +116,78 @@ levelrail-cli domains list
 
 Setting the primary domain to a domain an app already owns is rejected with a `409` naming the conflicting app, so this is a real guardrail, not just a convention. Pick a domain no app uses from the start and there's nothing to collide with later.
 
-## Zero-config URL: no domain, no DNS record, still HTTPS
+## Zero DNS setup: sslip.io hostnames and one-click HTTPS
 
-Deploying an app without `domains:` doesn't leave it reachable only at `host:port`. When `APP_PUBLIC_HOST` is set to your server's real, publicly routable IP address (not a private/LAN address), every app with no domain gets an automatic [sslip.io](https://sslip.io) hostname:
+[sslip.io](https://sslip.io) is a public DNS service that resolves any dash-encoded IP straight to that IP, so `134-209-118-96.sslip.io` is `134.209.118.96` with no record to create and nothing to wait for. Levelrail builds on it so a fresh install gets working HTTPS URLs with no DNS setup at all.
+
+### The server's public address
+
+At first start the control plane works out its own public IP, in this order:
+
+1. `APP_PUBLIC_HOST`, if set (an IP, or a hostname if you only need it for DNS checks). This always wins.
+2. Otherwise it asks public what-is-my-IP services (`api.ipify.org`, `icanhazip.com`, `ifconfig.me`) and takes the first public answer. Private, loopback and link-local answers are ignored.
+
+Settings > Domains shows the address and how it was found (`from APP_PUBLIC_HOST`, `detected`, `detection disabled`, `not found`), and `levelrail-cli settings ingress get` prints it as `public_host`.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `APP_PUBLIC_HOST` | unset | Override the public address. |
+| `APP_PUBLIC_IP_DETECT` | on | Set to `off` to never call the outside services (air-gapped or privacy sensitive installs). |
+| `APP_PUBLIC_IP_PROBE_URLS` | the three above | Comma separated list of URLs that return the caller's IP as plain text. |
+| `APP_PUBLIC_IP_PROBE_TIMEOUT` | `4s` | Overall budget for detection at startup. |
+
+If the server is behind NAT or a load balancer, detection finds the wrong address. Set `APP_PUBLIC_HOST` to the address that actually reaches ports 80 and 443 on this box.
+
+### One-click HTTPS for the dashboard
+
+Settings > Domains opens with an **Enable HTTPS** card (the setup wizard's domain step shows the same card first). Enter a contact email and click the button. The control plane:
+
+1. sets the dashboard's primary domain to `<dashed-ip>.sslip.io`,
+2. turns on real ACME issuance and asks Let's Encrypt for a certificate over the HTTP-01 challenge,
+3. shows `pending`, then `issued` with the issuer and expiry, and
+4. once you are looking at the dashboard on that https address, saves it as the dashboard URL (sign-in over plain HTTP is then refused, as documented under [Dashboard URL](#the-dashboards-own-domain)).
+
+From the CLI:
 
 ```
-<app-name>.<ip-with-dots-as-dashes>.sslip.io
+levelrail-cli settings ingress https enable --email you@example.com --wait 2m
+levelrail-cli settings ingress https status
 ```
 
-sslip.io is a public DNS service that resolves any dash-encoded IP straight to that IP. No DNS record to create, nothing to wait for.
+The API is `GET` and `POST /api/v1/settings/ingress/https`.
 
-This gets the same TLS treatment as any other domain (see below): Caddy's internal issuer by default, or a real Let's Encrypt certificate once ACME is enabled. There's no separate toggle, and the security surface is no larger than `host:port` already exposed.
+Ports 80 and 443 must be reachable from the internet. If issuance fails, the card shows the certificate authority's own error and a localized hint:
 
-### Finding and using the zero-config URL
+| Hint | Meaning |
+|---|---|
+| `unreachable` | Let's Encrypt could not connect to port 80. Open 80 and 443 in the host firewall (`ufw allow 80,443/tcp`) and in your cloud provider's security group. |
+| `rate_limited` | Let's Encrypt is throttling the hostname. Wait, and use staging while debugging. |
+| `dns` | The hostname did not resolve to this server. Check the detected public address. |
+| `caa` | A CAA record forbids Let's Encrypt from issuing for the hostname. |
 
-View your app's fallback URL on the **Network** tab or via:
+**Staging and rate limits.** Tick "Test with Let's Encrypt staging first" (or pass `--staging`) to use the staging CA: certificates are not browser trusted, but there are no meaningful limits. Production enable attempts are capped at 5 per hour per control plane (`APP_ACME_MAX_ATTEMPTS_PER_HOUR`) so a misconfiguration cannot burn Let's Encrypt's failed-validation limit; staging is never capped. `APP_ACME_STAGING=true` makes staging the default CA, and `APP_ACME_DIRECTORY_URL` points at any other RFC 8555 CA. A request that never settles is reported as failed after `APP_ACME_PENDING_TIMEOUT` (default 2 minutes).
+
+Switching CA (staging to production, or from the internal issuer to ACME) drops the certificates stored for the previous issuer so they are re-issued. Without this, Caddy keeps serving the old still-valid certificate and never asks the new CA.
+
+### Automatic hostnames for apps
+
+Deploying an app without `domains:` does not leave it reachable only at `host:port`. Every app with no domain gets:
 
 ```
-levelrail-cli apps network <name>
+https://<app-name>.<dashed-ip>.sslip.io
 ```
 
-It disappears the moment you add a real domain. A configured domain is always preferred over the synthetic one.
+It is routed by the same ingress and gets the same TLS treatment as any other domain: a Let's Encrypt certificate once ACME is enabled (the Enable HTTPS card above turns it on for every host), Caddy's internal issuer before that.
 
-If `APP_PUBLIC_HOST` is not set, is a private IP, or is a hostname rather than a public IP literal, this feature is skipped entirely.
+- It appears on the app's **Network** tab, in `levelrail-cli apps network <name>`, and in `levelrail-cli domains list` (source `automatic`) and `GET /api/v1/domains` (`"automatic": true`).
+- It disappears the moment you add a real domain. A configured domain always wins.
+- It is generated each pass and never stored on the app, so per-domain features (basic auth, WAF, BYO certificate, maintenance mode) do not apply to it. Add a real domain for those.
+- **Toggle:** Settings > Domains > Automatic app hostnames, or `levelrail-cli settings ingress set --fallback-domains=false`. It is off-able per server, not per app.
+- It needs a public IPv4 address (detected or `APP_PUBLIC_HOST`). With a private address, a hostname, or detection turned off there is nothing to build, and the Network tab says so.
+
+### HTTP redirects to HTTPS
+
+When the control plane can bind the HTTP ingress port (port 80 as root, the installer's default), every routed host answers plain HTTP with a `308` redirect to the same URL over HTTPS, and Let's Encrypt's HTTP-01 challenge is served on the same listener. A non-root development run that cannot bind port 80 skips the redirect and logs why. `APP_INGRESS_HTTP_REDIRECT=true|false` forces the choice instead of auto detecting.
 
 ## TLS: what's actually shipped today
 
@@ -156,13 +205,13 @@ The tradeoff: browsers and HTTP clients show a trust warning until you accept th
 
 A Caddy ACME issuer is built and wired end-to-end. Enable it under **Settings > Domains** (`ACMEEnabled`, backed by `GET/PUT /api/v1/settings/ingress`). Form validation for account email and optional directory URL are included.
 
-::: warning
-This feature is built and unit-tested, but NOT verified issuing a real certificate against a real domain over the public internet yet. If you want real public certificates now or are willing to be the first to verify this, follow [docs/acme-verification-runbook.md](acme-verification-runbook.md) step by step. Don't assume "toggle exists" means "proven at internet scale" until confirmed.
+::: tip Verified against a live domain
+Real Let's Encrypt issuance, HTTP to HTTPS redirect and trusted-chain handshakes were run on a public VPS (`<dashed-ip>.sslip.io`, ports 80 and 443 open). The recorded run, including what failed before it worked, is in [docs/acme-verification-runbook.md](acme-verification-runbook.md#recorded-run-2026-10-05).
 :::
 
 ### HSTS (HTTP Strict Transport Security)
 
-Turn on **Enable HSTS** under **Settings > Domains** to send `Strict-Transport-Security` on every response, no restart required. HSTS defaults to off on purpose.
+Turn on **Enable HSTS** under **Settings > Domains** to send `Strict-Transport-Security` on every https response, including the dashboard's HTML page, no restart required. It is never sent over plain HTTP. HSTS defaults to off on purpose.
 
 Setting the `APP_ENABLE_HSTS=true` environment variable still works the same way it always has, for anyone who already relies on it. The two are additive: HSTS is sent if either the dashboard toggle or the environment variable is on, so upgrading never turns HSTS off for a deployment that already had it on.
 

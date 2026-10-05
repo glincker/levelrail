@@ -19,7 +19,7 @@ Evidence tiers used below, weakest to strongest:
 1. **Unit**: `*_test.go` against fakes or `httptest` servers.
 2. **Live Docker**: tests named `*_Live_*` or `*_live_test.go` that skip when no Docker daemon is reachable and run against a real local daemon (for example `internal/pipeline/live_test.go`, `internal/backup/pitr_live_test.go`). `nightly.yml` has a `docker` lane, but `test/e2e` itself is only named in the flake sweep (`.github/workflows/nightly.yml:111`).
 3. **E2E**: `test/e2e/*_test.go`, which drive the real HTTP API and a real reconciler against real containers on one machine.
-4. **Real infrastructure**: a fresh VPS, a real public domain, real vendor endpoints. **Almost no feature has this evidence in the repository**; multi-node enrollment is the one documented exception so far, verified locally across two real Docker daemons (see its own section below), not against a real VPS or a real WAN. `docs/roadmap.md` ("In progress") states real public ACME was never verified against a live domain, and its e2e note says the suite "does not yet exercise a full multi-node mesh or real ACME against a live domain". `docs/acme-verification-runbook.md` exists but has no recorded run.
+4. **Real infrastructure**: a fresh VPS, a real public domain, real vendor endpoints. **Almost no feature has this evidence in the repository**; multi-node enrollment is the one documented exception so far, verified locally across two real Docker daemons (see its own section below), not against a real VPS or a real WAN. Real public ACME now has one recorded run against a live public VPS (`docs/acme-verification-runbook.md`, 2026-10-05); the e2e suite itself still "does not yet exercise a full multi-node mesh or real ACME against a live domain".
 
 Because tier 4 is empty for almost every row, the "real infra" column below reads "none found" outside multi-node. The distinction that matters is tier 3 versus tiers 1 and 2.
 
@@ -215,4 +215,4 @@ These counts appear in the README, the landing page, and several guides. Re-chec
 | Service templates | 311 | `len(catalog.Templates)`, listed in [Template catalog](template-catalog.md) |
 | Latest release | 0.2.0-beta.15, so there is no stable release yet | `.release-please-manifest.json` |
 
-Two caveats that still hold. Idle footprint is measured only on an Apple M4 Max dev build (58 to 96 MB RSS from 0 to 500 apps, see [Performance](performance.md)), with no Linux release-build number yet. Real public ACME issuance is built but has no recorded run of [the verification runbook](acme-verification-runbook.md).
+Two caveats that still hold. Idle footprint is measured only on an Apple M4 Max dev build (58 to 96 MB RSS from 0 to 500 apps, see [Performance](performance.md)), with no Linux release-build number yet. Real public ACME issuance has one recorded live run ([the verification runbook](acme-verification-runbook.md), 2026-10-05); renewal and DNS-01 wildcards are still unproven.

@@ -64,7 +64,7 @@ This is the same script linked from the root [README](../README.md). It:
 - Downloads the newest release for `linux/amd64` or `linux/arm64` and verifies its SHA-256 checksum (a missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECKSUM=1`). While no stable release exists yet, it installs the newest pre-release; pick explicitly with `LEVELRAIL_CHANNEL=stable|beta`. A release that ships no binary for your architecture is skipped with a warning
 - Writes a `levelrail.service` systemd unit and starts it, then waits for `GET /healthz`
 - Checks that ports 80 and 443 answer on the server's public IP, and prints the `ufw`/`firewalld` commands to open them if not (some providers never route a server's own public IP back to itself, so treat a failure there as a hint, not proof)
-- Prints every dashboard URL, the one-time **setup token** for creating the first admin, and a reminder to back up `<data dir>/master.key`
+- Prints the dashboard URL on the server's public address first (private network addresses follow; container bridge addresses are hidden), the one-time **setup token** for creating the first admin, and a reminder to back up `<data dir>/master.key`
 
 Requires `curl`, `systemd`, and root access.
 
@@ -80,7 +80,7 @@ Open one of the printed `http://<ip>:8080/login?setup=<token>` links from the in
 sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
 ```
 
-The dashboard shows a "connection is not encrypted" banner until you point a domain at the server (Domains page, primary domain plus ACME) and set an `https://` **dashboard URL**. After that, sign-in over plain HTTP is refused. To recover if the https URL breaks, add `APP_ALLOW_INSECURE_LOGIN=true` with `sudo systemctl edit levelrail` (`[Service]` then `Environment=APP_ALLOW_INSECURE_LOGIN=true`) and restart.
+The dashboard shows a "connection is not encrypted" banner until you enable HTTPS. The quickest way needs no DNS: open the Domains page and click **Enable HTTPS** (or run `levelrail-cli settings ingress https enable --email you@example.com`), which issues a real Let's Encrypt certificate for `<dashed-ip>.sslip.io` (see [Domains and ingress](domains-and-ingress.md#zero-dns-setup-sslipio-hostnames-and-one-click-https)). Using your own domain works too: set a primary domain plus ACME on the same page. Either way the result is an `https://` **dashboard URL**. After that, sign-in over plain HTTP is refused. To recover if the https URL breaks, add `APP_ALLOW_INSECURE_LOGIN=true` with `sudo systemctl edit levelrail` (`[Service]` then `Environment=APP_ALLOW_INSECURE_LOGIN=true`) and restart.
 
 **Pick a dashboard-only subdomain, not an app's own domain.** Use something like `console.example.com` or `panel.example.com` for the primary domain, the same convention CapRover uses for its own panel (`captain.<domain>`). Reusing a domain an app already serves breaks whichever one loses the conflict, silently, with no warning. See [Domains and ingress](domains-and-ingress.md#the-dashboards-own-domain) for why this matters.
 
@@ -253,8 +253,16 @@ Detects your OS and architecture, verifies the release checksum (and its
 cosign signature, if `cosign` is installed) the same way `install.sh`
 does, and installs to `~/.local/bin`, no root needed. Set
 `LEVELRAIL_CLI_INSTALL_DIR=/usr/local/bin` and run with `sudo` instead
-for a system-wide install. macOS and Linux only today (no Windows build
-yet, run the command above from WSL).
+for a system-wide install.
+
+### Other ways to install the CLI
+
+| Method | Command |
+| --- | --- |
+| Go | `go install github.com/GLINCKER/levelrail/cmd/levelrail-cli@latest` |
+| Direct download | Pick `levelrail-cli-<os>-<arch>` (`linux`, `darwin`, or `windows`; `amd64` or `arm64`) from the [releases page](https://github.com/glincker/levelrail/releases). Windows files end in `.exe`. |
+
+Every release asset is listed in `checksums.txt`, which is signed with cosign and has a build provenance attestation. Windows binaries are published from the release after `v0.2.0-beta.15`; before that, run the install script from WSL.
 
 Then point it at your instance and log in:
 

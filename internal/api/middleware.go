@@ -178,3 +178,17 @@ func hstsDBOverrideMiddleware(rt *Router) func(http.Handler) http.Handler {
 func (rt *Router) handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
+
+// WithHSTS wraps the embedded dashboard handler, which the API's own header
+// middleware never sees, so the HTML document also carries
+// Strict-Transport-Security when it is enabled (env or settings) and the
+// request really arrived over https.
+func (rt *Router) WithHSTS(next http.Handler) http.Handler {
+	hsts := fmt.Sprintf("max-age=%d; includeSubDomains", int(hstsMaxAge.Seconds()))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if requestIsHTTPS(r) && (rt.hstsEnabled || rt.hstsEnabledFromDB(r.Context())) {
+			w.Header().Set("Strict-Transport-Security", hsts)
+		}
+		next.ServeHTTP(w, r)
+	})
+}

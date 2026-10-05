@@ -1,0 +1,16 @@
+[Unit]
+Description=Levelrail node agent
+After=network-online.target docker.service
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=-/etc/levelrail-agent/agent.env
+Environment=APP_AGENT_IDENTITY_FILE=/var/lib/levelrail-agent/identity.json
+StateDirectory=levelrail-agent
+ExecStart=/usr/bin/levelrail-agent
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

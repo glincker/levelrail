@@ -145,11 +145,19 @@ older running releases are removed, so deploying five times in a minute
 leaves the current release plus one previous one, not five containers.
 During the window a rollback to the held release is instant (no pull, no
 cold start), and routes that still point at it keep working. Once the window
-passes, the next reconcile removes it. The `recreate` strategy never holds
+passes, the next reconcile removes it. Rolling deploys retire old replicas one at a time but keep the old release's first replica, the one ingress still dials, until the pass ends, so routing never points at a removed container. The `recreate` strategy never holds
 anything, since it stops the old release before starting the new one.
 
 `GET /api/v1/apps/{name}` reports `previous_release_held_until` (RFC3339)
 while a release is held, and `levelrail apps status <name>` prints it.
+
+## Pinned host ports
+
+An app with a pinned host port (`--host-port`) cannot run two releases at once, because the port can only be bound once. For these apps blue-green and rolling deploys stop the serving release, start the new one, and wait for readiness. This is a short outage (the new container's start plus its readiness time), not a zero-downtime cutover. If the new release fails to start or never becomes ready, the new container is removed and the previous release is started again on the same port, and the next attempt is delayed by `APP_DEPLOY_PINNED_PORT_RETRY` (default `5m`) so a broken image does not repeat the outage every reconcile pass. The condition reason is `PinnedPortHandoffBackoff` while waiting. Apps without a pinned port keep the full overlap and are unaffected. A container that Docker starts without publishing the pinned port is removed and recreated (`PinnedPortNotPublished`) instead of being reported as healthy.
+
+## Required secrets
+
+A secret declared `required: true` that has no value now fails the deploy with reason `RequiredSecretMissing` and leaves the serving release untouched. Previously only spec deploys checked this, so deleting the value and then deploying an image started a container silently missing it.
 
 ## Queue, cancel and rollback to a release
 

@@ -298,3 +298,44 @@ func TestController_LoadBalancer_WeightedSlowStartRamps(t *testing.T) {
 		t.Errorf("weights = %v, want the new replica ramping below 5", w)
 	}
 }
+
+func TestController_ImplicitLoadBalancing(t *testing.T) {
+	tests := []struct {
+		name         string
+		replicas     int
+		implicit     bool
+		explicit     string
+		wantUpstream int
+		wantRetries  bool
+	}{
+		{name: "multi-replica balanced by default", replicas: 3, implicit: true, wantUpstream: 3, wantRetries: true},
+		{name: "single replica keeps one dial", replicas: 1, implicit: true, wantUpstream: 1},
+		{name: "disabled keeps replica 0 only", replicas: 3, implicit: false, wantUpstream: 1},
+		{name: "explicit config wins", replicas: 3, implicit: true, explicit: `{"algorithm":"least_conn"}`, wantUpstream: 3},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := lbService(tt.replicas)
+			rt := newFakeRuntime()
+			for i := 0; i < tt.replicas; i++ {
+				rt.seedRunning(replicaName(svc, i), 30000+i)
+			}
+			applier := &fakeApplier{}
+			opts := []Option{WithLogger(discardLogger()), WithImplicitLoadBalancing(tt.implicit)}
+			if tt.explicit != "" {
+				opts = append(opts, WithLoadBalancers(fakeLBSource{configs: map[string]string{"web": tt.explicit}}, loadbalancer.NewRegistry()))
+			}
+			c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier, opts...)
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			rp := proxyHandler(t, applier)
+			if len(rp.Upstreams) != tt.wantUpstream {
+				t.Errorf("upstreams = %+v, want %d", rp.Upstreams, tt.wantUpstream)
+			}
+			if gotRetries := rp.LoadBalancing != nil && rp.LoadBalancing.Retries > 0; gotRetries != tt.wantRetries {
+				t.Errorf("retries enabled = %v, want %v (%+v)", gotRetries, tt.wantRetries, rp.LoadBalancing)
+			}
+		})
+	}
+}

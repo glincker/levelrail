@@ -484,6 +484,8 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// AbilityRoot, matching PUT /api/v1/settings/ingress just above: the
 	// result speaks directly to whether that endpoint's ACMEEnabled
 	// toggle can actually succeed.
+	mux.HandleFunc("GET /api/v1/settings/ingress/https", rt.requireAbility(AbilityRead, rt.handleGetHTTPSStatus))
+	mux.HandleFunc("POST /api/v1/settings/ingress/https", rt.requireAbility(AbilityRoot, rt.handleEnableHTTPS))
 	mux.HandleFunc("GET /api/v1/settings/ingress/check", rt.requireAbility(AbilityRoot, rt.handleCheckIngressDomain))
 
 	// Domain DNS check (domain_check.go): the guidance layer on top of

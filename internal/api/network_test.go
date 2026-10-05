@@ -265,3 +265,60 @@ func TestNetworkAppRoute_RequiresAuth(t *testing.T) {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
 }
+
+func TestHandleGetApp_FallbackURL(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithPublicHost("203.0.113.5"))
+	cookie := loginTestSession(t, rt, db)
+	seedExecApp(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web", ""))
+	var got struct {
+		FallbackURL string `json:"fallback_url"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if want := "https://web.203-0-113-5.sslip.io"; got.FallbackURL != want {
+		t.Errorf("fallback_url = %q, want %q", got.FallbackURL, want)
+	}
+
+	if err := db.UpdateIngressSettings(t.Context(), store.IngressSettings{FallbackDomainsDisabled: true}); err != nil {
+		t.Fatal(err)
+	}
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web", ""))
+	got.FallbackURL = ""
+	_ = json.Unmarshal(rec.Body.Bytes(), &got)
+	if got.FallbackURL != "" {
+		t.Errorf("fallback_url = %q with the toggle off, want empty", got.FallbackURL)
+	}
+}
+
+func TestHandleListDomains_AutomaticHostnames(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithPublicHost("203.0.113.5"))
+	cookie := loginTestSession(t, rt, db)
+	seedExecApp(t, db)
+
+	list := func() []domainResource {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/domains", ""))
+		var out []domainResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		return out
+	}
+	got := list()
+	if len(got) != 1 || got[0].Domain != "web.203-0-113-5.sslip.io" || !got[0].Automatic || got[0].ServiceName != "web" {
+		t.Fatalf("domains = %+v, want one automatic web hostname", got)
+	}
+	if err := db.UpdateIngressSettings(t.Context(), store.IngressSettings{FallbackDomainsDisabled: true}); err != nil {
+		t.Fatal(err)
+	}
+	if got = list(); len(got) != 0 {
+		t.Fatalf("domains = %+v with the toggle off, want none", got)
+	}
+}

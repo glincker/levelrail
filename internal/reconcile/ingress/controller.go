@@ -272,6 +272,7 @@ type Controller struct {
 	requestStats   bool
 	listenAddr     string
 	httpListenAddr string
+	httpRedirect   bool
 	adminListen    string
 	storageDir     string
 
@@ -350,6 +351,7 @@ type Controller struct {
 	publicHost string
 
 	lbSource      LoadBalancerSource // nil disables load balancing
+	implicitLB    bool               // see WithImplicitLoadBalancing
 	lbRegistry    *loadbalancer.Registry
 	nodeUpstreams NodeUpstreamResolver
 
@@ -382,6 +384,12 @@ func WithServerName(name string) Option {
 // listener binds. Defaults to ":443".
 func WithListenAddr(addr string) Option {
 	return func(c *Controller) { c.listenAddr = addr }
+}
+
+// WithHTTPRedirect makes Caddy serve the HTTP port and redirect every
+// routed host to https, instead of leaving the port closed.
+func WithHTTPRedirect(on bool) Option {
+	return func(c *Controller) { c.httpRedirect = on }
 }
 
 // WithHTTPListenAddr overrides this instance's HTTP/port-80 equivalent,
@@ -643,6 +651,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancers: %w", err)
 	}
+	lbConfigs = c.withImplicitBalancers(services, lbConfigs)
 	lbAdmin, err := c.lbAdminStates(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancer admin states: %w", err)
@@ -670,6 +679,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			// c.publicHost, and none of the domain-scoped features below
 			// (basic auth, WAF, BYO TLS, maintenance mode, the DNS-check
 			// endpoint) make sense for a hostname nobody configured.
+			if settings.FallbackDomainsDisabled {
+				continue
+			}
 			fallback, ok := ingress.FallbackDomain(c.publicHost, svc.Name)
 			if !ok {
 				continue
@@ -862,6 +874,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		ServerName:        c.serverName,
 		ListenAddr:        c.listenAddr,
 		HTTPPort:          httpPortFromAddr(c.httpListenAddr),
+		HTTPRedirect:      c.httpRedirect,
 		Routes:            routes,
 		StaticRoutes:      staticRoutes,
 		MaintenanceRoutes: maintenanceRoutes,

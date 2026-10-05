@@ -79,3 +79,24 @@ The restarted control plane's first reconcile pass (it runs one immediately on s
 - **Multiple control plane replicas or an external load balancer in front of the control plane itself.** There is exactly one control plane process today (single control plane, per the locked architecture); there is no failover between two control planes to measure, because there is nothing to fail over to yet.
 - **A crash during the brief window `caddy.Load` is applying a new config.** This page measures a crash of an already-converged, steady-state system, which is the common case; a crash mid-config-apply is a narrower race not covered by the tests above.
 - **Multi-replica app failover during the ingress outage window.** If an app has more than one replica, Caddy stops routing to all of them equally during the outage window described above; this page does not measure whether one replica coming back before another changes anything, because ingress is down for all of them regardless until the control plane restarts.
+
+## Deploys under live traffic
+
+Measured on a 2 vCPU droplet running a build of this branch's predecessor (v0.2.0-beta.15), with a load generator on a second droplet sending 50 requests per second over HTTPS through the ingress for the whole deploy. Request counts are real; the box was shared with other test workloads, so single-digit stray errors per run are not attributed to the deploy.
+
+| Scenario | Result |
+| --- | --- |
+| Blue-green, fast start app | 0 errors in about 2500 requests |
+| Blue-green, app that takes 10s to become ready | 0 errors in 3000 requests, cutover after readiness |
+| Rollback to the held previous release | 0 errors |
+| Recreate | about 2s of 502 responses (stop, start, ingress repoint) |
+| Rolling with 2 replicas | about 1s of 502 (old replica 0 removed before ingress moved) |
+| Deploy whose readiness never passes | old release served every request, deploy marked failed, reason shown in `apps status` and `attention` |
+| Deploy that is OOM-killed during readiness | old release kept serving, reason `OOMKilledDuringReadiness` |
+| `docker kill` of the serving container | about 1s of 502 until ingress moved to the held release |
+| Pinned host port, blue-green | broken: the second container could not bind, was left running without its port and reported Ready |
+| Control plane restart | ingress is down for about 4s (embedded Caddy), containers unaffected |
+
+Fixes shipped from these runs: pinned host port handoff with restore on failure, removal of half-started containers, a check that a pinned port is actually published, rolling deploys keeping the routed replica until cutover, required secrets enforced at reconcile time, default load balancing for multi-replica apps, and ingress config applies skipped when nothing changed. These fixes are covered by unit tests with a fake Docker client; they have not yet been re-measured on a real server.
+
+Not measured: Docker daemon restart mid-run and disk pressure (the shared test host could not be disturbed). Containers use restart policy `no`, so after a daemon restart recovery depends on the reconciler's next pass.

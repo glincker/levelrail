@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -716,6 +717,10 @@ func run(logger *slog.Logger) error {
 	}
 
 	ingressDriver := ingressdriver.New(logger)
+	if _, err := ingressdriver.ImportFileCerts(ctx, db, ingressdriver.LegacyStorageDir(), logger); err != nil {
+		logger.Warn("importing legacy certificate storage failed, domains may re-issue", slog.String("error", err.Error()))
+	}
+	purgeStaleIssuerCerts(ctx, db, logger)
 	defer func() {
 		if cerr := ingressDriver.Stop(context.Background()); cerr != nil {
 			logger.Error("stopping ingress driver", slog.String("error", cerr.Error()))
@@ -805,6 +810,7 @@ func run(logger *slog.Logger) error {
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),
 		ingressHTTPAddr:              ingressHTTPAddr(),
+		httpRedirect:                 httpRedirectEnabled(ingressHTTPAddr(), logger),
 		models:                       newModelDeps(),
 		lbRegistry:                   lbRegistry,
 		previewNotifier:              previewManager,
@@ -2252,6 +2258,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithWebhookDeliveryRetention(webhookDeliveryRetention(logger)),
 		api.WithDeployApprovalTTL(deployApprovalTTL(logger)),
 		api.WithPublicHost(publicHost()),
+		api.WithPublicHostSource(publicHostSource()),
+		api.WithHTTPSEnableLimits(apiRateLimitRPM(logger, "APP_ACME_MAX_ATTEMPTS_PER_HOUR", 0), acmePendingTimeout(logger)),
+		api.WithACMEDefaultDirectory(acmeDefaultDirectory()),
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
 		api.WithDeploySafety(db, client),
@@ -2526,7 +2535,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		}))
 	}
 	rt := api.NewRouter(logger, b, db, opts...)
-	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, web.Handler()))), rt
+	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, rt.WithHSTS(web.Handler())))), rt
 }
 
 // composeMux wires the three top-level handlers rootHandler serves
@@ -3388,19 +3397,28 @@ func apiRateLimitRPM(logger *slog.Logger, envVar string, fallback int) int {
 	return n
 }
 
-// publicHost reads APP_PUBLIC_HOST: the IP address or hostname operators
-// should point a DNS A record at to reach this control plane's embedded
-// ingress (internal/ingress), surfaced through GET
-// /api/v1/apps/{name}/domains/{domain}/check (api.WithPublicHost) so
-// DomainEditor can tell an operator what to actually type at their
-// registrar. No default: this control plane cannot reliably discover its
-// own public-facing address on its own (NAT, a container port mapping, a
-// cloud load balancer all break self-discovery), so an unset value is a
-// real "not configured, guessing from the request" state
-// (api.handleCheckDomain's own advertisedHost fallback), not a value to
-// invent one for here.
+// publicHost is the address apps are reachable at: APP_PUBLIC_HOST, else
+// the server's detected public IP (see ingressdriver.ResolvePublicHost).
+// Resolved once per process; "" when neither is available.
 func publicHost() string {
-	return strings.TrimSpace(os.Getenv("APP_PUBLIC_HOST"))
+	host, _ := resolvedPublicHost()
+	return host
+}
+
+var (
+	publicHostOnce   sync.Once
+	publicHostValue  string
+	publicHostOrigin string
+)
+
+func resolvedPublicHost() (host, source string) {
+	if v := strings.TrimSpace(os.Getenv("APP_PUBLIC_HOST")); v != "" {
+		return v, ingressdriver.PublicHostSourceEnv
+	}
+	publicHostOnce.Do(func() {
+		publicHostValue, publicHostOrigin = ingressdriver.ResolvePublicHost(context.Background())
+	})
+	return publicHostValue, publicHostOrigin
 }
 
 // dynamicSource builds a reconcile.Source that re-lists desired
@@ -3452,7 +3470,9 @@ type dynamicSourceDeps struct {
 	// host can run its ingress on non-default ports.
 	ingressHTTPSAddr string
 	ingressHTTPAddr  string
-	models           *modelDeps
+	// httpRedirect is httpRedirectEnabled: Caddy serves port 80 and redirects to https.
+	httpRedirect bool
+	models       *modelDeps
 	// lbRegistry is shared with the API so it can report live upstream status.
 	lbRegistry *loadbalancer.Registry
 }
@@ -3487,8 +3507,11 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		ingressOpts := []ingressreconcile.Option{
 			ingressreconcile.WithLogger(deps.logger),
 			ingressreconcile.WithPublicHost(deps.publicHost),
+			ingressreconcile.WithCertStore(deps.db),
+			ingressreconcile.WithAuditRecorder(deps.db),
 			ingressreconcile.WithListenAddr(deps.ingressHTTPSAddr),
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
+			ingressreconcile.WithHTTPRedirect(deps.httpRedirect),
 			ingressreconcile.WithRequestStats(),
 			// Lets Reconcile flag a service placed on an unreachable node.
 			ingressreconcile.WithLocalNodeID(localNodeIDOf(deps)),
@@ -3528,6 +3551,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		if experimental.Enabled(experimental.LoadBalancer) {
 			ingressOpts = append(ingressOpts,
 				ingressreconcile.WithLoadBalancers(deps.db, deps.lbRegistry),
+				ingressreconcile.WithImplicitLoadBalancing(implicitLoadBalancing(deps.logger)),
 				ingressreconcile.WithNodeUpstreams(lbNodeUpstreams{db: deps.db, local: deps.runtime, registry: deps.agentRegistry}),
 			)
 		}
@@ -3617,6 +3641,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithRolloutRecorder(rolloutRecorderFor(deps.db, deps.previewNotifier)),
 		application.WithAppliedConfigRecorder(deps.db),
 		application.WithPreviousReleaseHold(previousReleaseHold(deps.logger)),
+		application.WithPinnedPortRetry(pinnedPortRetry(deps.logger)),
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
 		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
 	}
@@ -3786,4 +3811,70 @@ func bootstrapAdmin(ctx context.Context, db *store.DB) error {
 		return nil
 	}
 	return api.BootstrapAdmin(ctx, db, username, password)
+}
+
+func publicHostSource() string {
+	_, source := resolvedPublicHost()
+	return source
+}
+
+// httpRedirectEnabled reads APP_INGRESS_HTTP_REDIRECT (true, false, or auto,
+// the default). Auto enables the redirect only when the HTTP address can be
+// bound right now, so a non-root dev run keeps working without port 80.
+func httpRedirectEnabled(addr string, logger *slog.Logger) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("APP_INGRESS_HTTP_REDIRECT"))) {
+	case "1", "true", "on", "yes":
+		return true
+	case "0", "false", "off", "no":
+		return false
+	}
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		logger.Warn("http to https redirect disabled: cannot bind the HTTP ingress address", slog.String("addr", addr), slog.String("error", err.Error()))
+		return false
+	}
+	_ = ln.Close()
+	return true
+}
+
+// acmeDefaultDirectory returns the CA directory enable-https uses: Let's
+// Encrypt staging when APP_ACME_STAGING is set, APP_ACME_DIRECTORY_URL when
+// given, else "" for Let's Encrypt production.
+func acmeDefaultDirectory() string {
+	if v, err := strconv.ParseBool(strings.TrimSpace(os.Getenv("APP_ACME_STAGING"))); err == nil && v {
+		return api.ACMEStagingDirectoryURL
+	}
+	return strings.TrimSpace(os.Getenv("APP_ACME_DIRECTORY_URL"))
+}
+
+// acmePendingTimeout reads APP_ACME_PENDING_TIMEOUT; 0 keeps the default.
+func acmePendingTimeout(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_ACME_PENDING_TIMEOUT")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_ACME_PENDING_TIMEOUT, using the default", slog.String("value", raw))
+		return 0
+	}
+	return d
+}
+
+// purgeStaleIssuerCerts drops stored certificates from any CA other than the
+// configured ACME one, so a leftover staging or internal certificate is never
+// reused in place of a real one. No-op while ACME is disabled.
+func purgeStaleIssuerCerts(ctx context.Context, db *store.DB, logger *slog.Logger) {
+	settings, err := db.GetIngressSettings(ctx)
+	if err != nil || !settings.ACMEEnabled {
+		return
+	}
+	n, err := ingressdriver.PurgeCertsFromOtherIssuers(ctx, db, settings.ACMEDirectoryURL)
+	if err != nil {
+		logger.Warn("purging certificates from other issuers failed", slog.String("error", err.Error()))
+		return
+	}
+	if n > 0 {
+		logger.Info("dropped certificates from other issuers so they re-issue", slog.Int("keys", n))
+	}
 }

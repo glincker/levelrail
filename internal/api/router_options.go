@@ -981,6 +981,12 @@ func WithPublicHost(host string) Option {
 	return func(rt *Router) { rt.publicHost = host }
 }
 
+// WithPublicHostSource records how the public host was found ("env",
+// "detected", "disabled" or "none"), shown on the ingress settings page.
+func WithPublicHostSource(source string) Option {
+	return func(rt *Router) { rt.publicHostSource = source }
+}
+
 // WithBuilder enables POST /api/v1/apps/{name}/builds: a manual build
 // trigger for an operator with no working git webhook configured (see
 // internal/webhook.Config's own doc comment on why that path is

@@ -24,6 +24,8 @@ import { Route53DnsCard } from '../../components/Route53DnsCard'
 import { IngressSettingsCard } from '../../components/IngressSettingsCard'
 import { Button } from '../../components/ui/button'
 import { DashboardUrlCard } from '../../components/DashboardUrlCard'
+import { EnableHttpsCard } from '../../components/EnableHttpsCard'
+import { FallbackDomainsCard } from '../../components/FallbackDomainsCard'
 import { dashboardUrlQueryOptions } from '../../queries/dashboardUrl'
 import { EmptyState } from '../../components/ui/empty-state'
 import { PageHeader } from '../../components/shell/PageHeader'
@@ -133,6 +135,11 @@ function DomainsPage() {
         helpLabel="Domains and ingress guide"
       />
 
+      {!settings.primary_domain ||
+      settings.primary_domain.endsWith('.sslip.io') ? (
+        <EnableHttpsCard />
+      ) : null}
+
       <IngressSettingsCard
         settings={settings}
         primaryCert={
@@ -143,6 +150,8 @@ function DomainsPage() {
       />
 
       <DashboardUrlCard />
+
+      <FallbackDomainsCard />
 
       <CloudflareDnsCard settings={cloudflareDns} />
 

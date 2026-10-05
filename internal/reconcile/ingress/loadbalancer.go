@@ -57,6 +57,47 @@ func WithNodeUpstreams(r NodeUpstreamResolver) Option {
 	return func(c *Controller) { c.nodeUpstreams = r }
 }
 
+// WithImplicitLoadBalancing balances every service with more than one
+// replica and no explicit load balancer across all its replicas, with
+// passive health checks and retries. Without it such a service routes to
+// replica 0 only and the other replicas sit idle.
+func WithImplicitLoadBalancing(on bool) Option {
+	return func(c *Controller) { c.implicitLB = on }
+}
+
+// implicitBalancerConfig is the pool a multi-replica service gets when no
+// balancer is configured: round robin, a replica that fails a request is
+// skipped for 30s, and a failed request is retried on another replica.
+func implicitBalancerConfig() loadbalancer.Config {
+	return loadbalancer.Config{
+		PassiveHealth: &loadbalancer.PassiveHealth{FailDuration: "30s", MaxFails: 1},
+		Retries:       &loadbalancer.Retries{Count: 2, TryDuration: "5s", TryInterval: "250ms"},
+	}
+}
+
+func (c *Controller) withImplicitBalancers(services []store.DesiredService, configured map[string]loadbalancer.Config) map[string]loadbalancer.Config {
+	if !c.implicitLB {
+		return configured
+	}
+	var out map[string]loadbalancer.Config
+	for _, svc := range services {
+		if _, ok := configured[svc.Name]; ok || svc.Replicas <= 1 {
+			continue
+		}
+		if out == nil {
+			out = make(map[string]loadbalancer.Config, len(configured)+1)
+			for k, v := range configured {
+				out[k] = v
+			}
+		}
+		out[svc.Name] = implicitBalancerConfig()
+	}
+	if out == nil {
+		return configured
+	}
+	return out
+}
+
 func (c *Controller) loadBalancerConfigs(ctx context.Context) (map[string]loadbalancer.Config, error) {
 	if c.lbSource == nil {
 		return nil, nil

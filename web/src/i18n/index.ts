@@ -14,6 +14,7 @@ export const NAMESPACES = [
   'streams',
   'networkProxy',
   'databases',
+  'https',
 ] as const
 
 void i18n
