@@ -175,7 +175,7 @@
   }
 }
 
-.vp-doc code:not([class]) {
+.vp-doc :not(pre) > code:not([class]) {
   padding: 2px 6px;
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.05);
@@ -183,7 +183,7 @@
   font-size: 0.9em;
 }
 
-.dark .vp-doc code:not([class]) {
+.dark .vp-doc :not(pre) > code:not([class]) {
   background: rgba(255, 255, 255, 0.1);
   color: var(--glinui-accent-soft-text);
 }
@@ -264,28 +264,46 @@
 }
 
 /* background-color, not `background` shorthand: the default theme's
-   copy icon is a background-image on this same property. */
+   copy icon is a background-image on this same property. Absolute in the
+   corner (a static button becomes a block that pushes the code down). */
 .vp-doc [class*='language-'] > button.copy {
-  position: static;
-  border-color: var(--vp-c-divider);
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
   background-color: var(--vp-c-bg-alt);
-  padding: 8px 12px;
-  gap: 6px;
-  font-size: 12px;
   opacity: 1;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 
-.vp-doc [class*='language-']:hover > button.copy {
-  border-color: var(--vp-c-brand-1);
-  color: var(--vp-c-brand-1);
-}
-
+.vp-doc [class*='language-']:hover > button.copy,
 .vp-doc [class*='language-'] > button.copy:hover,
 .vp-doc [class*='language-'] > button.copy:focus-visible {
   border-color: var(--vp-c-brand-1);
   background-color: var(--vp-c-brand-soft);
   color: var(--vp-c-brand-1);
+}
+
+/* Language tag sits left of the copy button and stays visible on hover. */
+.vp-doc [class*='language-'] > span.lang {
+  top: 18px;
+  right: 54px;
+  z-index: 2;
+  opacity: 1 !important;
+  color: var(--vp-c-text-3);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.vp-doc [class*='language-'] pre {
+  padding-top: 16px;
+  padding-bottom: 16px;
 }
 
 /* Per-type tint (unmint's callout.tsx). ::: details also renders as
