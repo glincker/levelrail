@@ -179,14 +179,15 @@ func TestPruneRemoteWAL(t *testing.T) {
 	objs := []RemoteObject{
 		{Key: "main/wal/" + seg1}, {Key: "main/wal/" + seg2}, {Key: "main/wal/" + seg3},
 		{Key: "main/wal/00000002.history"},
+		{Key: "main/wal/" + seg1 + ".00000028.backup"}, {Key: "main/wal/" + seg3 + ".00000028.backup"},
 	}
 	del := &fakeDeleter{}
 	n, err := PruneRemoteWAL(context.Background(), Destination{Bucket: "b"}, staticLister{objs: objs}, del, "main", "0/2000100")
 	if err != nil {
 		t.Fatalf("PruneRemoteWAL() error = %v", err)
 	}
-	if n != 1 || len(del.calls) != 1 || del.calls[0].key != "main/wal/"+seg1 {
-		t.Errorf("removed %d, calls %+v; want only %s", n, del.calls, seg1)
+	if n != 2 || len(del.calls) != 2 || del.calls[0].key != "main/wal/"+seg1 || del.calls[1].key != "main/wal/"+seg1+".00000028.backup" {
+		t.Errorf("removed %d, calls %+v; want the old segment and its label only", n, del.calls)
 	}
 	if _, err := PruneRemoteWAL(context.Background(), Destination{}, staticLister{}, del, "main", "bad"); err == nil {
 		t.Error("malformed LSN must error")

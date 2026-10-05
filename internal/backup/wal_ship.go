@@ -249,6 +249,12 @@ func (f *WALFetcher) fetchOne(ctx context.Context, dest Destination, helperID, k
 	return nil
 }
 
+// isPrunableWALName is a segment or a base backup label (both start with the
+// 24 hex digit segment name); timeline history files are kept forever.
+func isPrunableWALName(name string) bool {
+	return walSegmentRe.MatchString(name) || (walAuxRe.MatchString(name) && strings.HasSuffix(name, ".backup"))
+}
+
 // PruneRemoteWAL deletes shipped segments older than the segment holding
 // startLSN, mirroring PruneWALArchive for the copy in the backup target.
 func PruneRemoteWAL(ctx context.Context, dest Destination, lister Lister, deleter Deleter, databaseName, startLSN string) (int, error) {
@@ -263,7 +269,7 @@ func PruneRemoteWAL(ctx context.Context, dest Destination, lister Lister, delete
 	removed := 0
 	for _, o := range objs {
 		name := strings.TrimPrefix(o.Key, WALPrefix(databaseName))
-		if !walSegmentRe.MatchString(name) || name[8:] >= floor {
+		if !isPrunableWALName(name) || name[8:24] >= floor {
 			continue
 		}
 		if err := deleter.Delete(ctx, dest, o.Key); err != nil {
