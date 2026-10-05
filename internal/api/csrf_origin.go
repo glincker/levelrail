@@ -30,13 +30,23 @@ func csrfCrossOrigin(r *http.Request) bool {
 	if _, err := r.Cookie(sessionCookieName); err != nil {
 		return false
 	}
-	origin := r.Header.Get("Origin")
-	if origin == "" || origin == "null" {
-		return origin == "null"
+	if origin := r.Header.Get("Origin"); origin != "" {
+		return !sameHost(origin, r.Host)
 	}
-	u, err := url.Parse(origin)
-	if err != nil {
+	switch strings.ToLower(r.Header.Get("Sec-Fetch-Site")) {
+	case "cross-site", "same-site":
 		return true
 	}
-	return !strings.EqualFold(u.Host, r.Host)
+	if ref := r.Header.Get("Referer"); ref != "" {
+		return !sameHost(ref, r.Host)
+	}
+	return false
+}
+
+func sameHost(raw, host string) bool {
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return false
+	}
+	return strings.EqualFold(u.Host, host)
 }

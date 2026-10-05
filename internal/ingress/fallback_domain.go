@@ -56,12 +56,29 @@ func FallbackDomain(publicHost, serviceName string) (domain string, ok bool) {
 // address: not private (RFC 1918 / ULA), not loopback, not link-local,
 // not the unspecified address.
 func isPubliclyRoutable(ip net.IP) bool {
-	return !ip.IsPrivate() &&
-		!ip.IsLoopback() &&
-		!ip.IsLinkLocalUnicast() &&
-		!ip.IsLinkLocalMulticast() &&
-		!ip.IsUnspecified()
+	if !ip.IsGlobalUnicast() || ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
+		return false
+	}
+	for _, n := range nonPublicNets {
+		if n.Contains(ip) {
+			return false
+		}
+	}
+	return true
 }
+
+// nonPublicNets are globally-unicast-looking ranges that are not reachable
+// from the internet, so a certificate for them can never validate.
+var nonPublicNets = func() []*net.IPNet {
+	var out []*net.IPNet
+	for _, c := range []string{"100.64.0.0/10", "192.0.0.0/24", "198.18.0.0/15", "240.0.0.0/4", "64:ff9b::/96"} {
+		_, n, err := net.ParseCIDR(c)
+		if err == nil {
+			out = append(out, n)
+		}
+	}
+	return out
+}()
 
 // dashEncodeIP renders ip the way sslip.io expects to find one embedded
 // in a hostname label: dots replaced with dashes for IPv4
