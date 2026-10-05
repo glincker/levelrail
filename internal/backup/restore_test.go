@@ -49,7 +49,7 @@ func TestContainerRestorer_Restore_MySQL(t *testing.T) {
 	if rt.gotStdin != dump {
 		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
 	}
-	wantCmd := []string{"sh", "-c", `mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $MYSQL_DATABASE; CREATE DATABASE $MYSQL_DATABASE;" && exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"`}
+	wantCmd := []string{"sh", "-c", `mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS ` + shBacktick + `$MYSQL_DATABASE` + shBacktick + `; CREATE DATABASE ` + shBacktick + `$MYSQL_DATABASE` + shBacktick + `;" && exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"`}
 	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
 		t.Errorf("cmd = %v, want %v", rt.gotInputCmd, wantCmd)
 	}
@@ -133,7 +133,7 @@ func TestContainerRestorer_Restore_MariaDB(t *testing.T) {
 	if rt.gotStdin != dump {
 		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
 	}
-	wantCmd := []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $MARIADB_DATABASE; CREATE DATABASE $MARIADB_DATABASE;" && exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"`}
+	wantCmd := []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS ` + shBacktick + `$MARIADB_DATABASE` + shBacktick + `; CREATE DATABASE ` + shBacktick + `$MARIADB_DATABASE` + shBacktick + `;" && exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"`}
 	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
 		t.Errorf("cmd = %v, want %v", rt.gotInputCmd, wantCmd)
 	}
@@ -327,7 +327,7 @@ func TestContainerRestorer_Restore_ClickHouse(t *testing.T) {
 	if rt.gotStdin != dump {
 		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
 	}
-	wantCmd := []string{"sh", "-c", `clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --query "DROP DATABASE IF EXISTS $CLICKHOUSE_DB; CREATE DATABASE $CLICKHOUSE_DB" && exec clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB"`}
+	wantCmd := []string{"sh", "-c", `clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --query "DROP DATABASE IF EXISTS ` + shBacktick + `$CLICKHOUSE_DB` + shBacktick + `; CREATE DATABASE ` + shBacktick + `$CLICKHOUSE_DB` + shBacktick + `" && exec clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB"`}
 	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
 		t.Errorf("cmd = %v, want %v", rt.gotInputCmd, wantCmd)
 	}

@@ -239,8 +239,8 @@ func TestContainerDumper_Dump_ClickHouse(t *testing.T) {
 	}
 	script := rt.gotCmd[2]
 	for _, want := range []string{
-		`--query "SHOW TABLES FROM $CLICKHOUSE_DB"`,
-		`--query "SHOW CREATE TABLE $CLICKHOUSE_DB.$t" --format TSVRaw`,
+		`--query "SHOW TABLES FROM ` + shBacktick + `$CLICKHOUSE_DB` + shBacktick + `"`,
+		`--query "SHOW CREATE TABLE ` + shBacktick + `$CLICKHOUSE_DB` + shBacktick + `.` + shBacktick + `$t` + shBacktick + `" --format TSVRaw`,
 		`SETTINGS output_format_sql_insert_table_name = '$t' FORMAT SQLInsert`,
 	} {
 		if !strings.Contains(script, want) {

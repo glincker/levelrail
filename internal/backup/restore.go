@@ -43,9 +43,11 @@ const (
 // socket-only temporary server during first-boot init, so a socket probe
 // would pass just before the real server replaces it.
 var readyCmds = map[string][]string{
-	store.EnginePostgres: {"sh", "-c", `exec pg_isready -q -h 127.0.0.1 -U "$POSTGRES_USER"`},
-	store.EngineMySQL:    {"sh", "-c", `exec mysqladmin ping -h 127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD" --silent`},
-	store.EngineMariaDB:  {"sh", "-c", `exec mariadb-admin ping -h 127.0.0.1 -uroot -p"$MARIADB_ROOT_PASSWORD" --silent`},
+	store.EnginePostgres:   {"sh", "-c", `exec pg_isready -q -h 127.0.0.1 -U "$POSTGRES_USER"`},
+	store.EngineMySQL:      {"sh", "-c", `exec mysqladmin ping -h 127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD" --silent`},
+	store.EngineMariaDB:    {"sh", "-c", `exec mariadb-admin ping -h 127.0.0.1 -uroot -p"$MARIADB_ROOT_PASSWORD" --silent`},
+	store.EngineMongoDB:    {"sh", "-c", `exec mongosh --quiet --host 127.0.0.1 --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval 'db.adminCommand("ping")'`},
+	store.EngineClickHouse: {"sh", "-c", `exec clickhouse-client --host 127.0.0.1 --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --query "SELECT 1"`},
 }
 
 // waitEngineReady blocks until the database accepts TCP connections, so a
@@ -211,16 +213,20 @@ func (r *ContainerRestorer) drainExec(ctx context.Context, containerName string,
 // exec'd, so the shell survives to run the schema reset first.
 var postgresRestoreCmd = []string{"sh", "-c", `psql --no-password -U "$POSTGRES_USER" "$POSTGRES_USER" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" && exec psql --no-password -U "$POSTGRES_USER" "$POSTGRES_USER"`}
 
+// shBacktick is an escaped backtick for use inside a double-quoted sh
+// string: SQL identifiers are quoted so database names with hyphens work.
+const shBacktick = "\\`"
+
 // mysqlRestoreCmd drops and recreates $MYSQL_DATABASE up front rather
 // than relying on mysqldump's own per-table DROP TABLE IF EXISTS
 // statements, which don't cover a table created after the backup was
 // taken (a real gap TestContainerRestorer_Restore_MySQL_Live caught).
-var mysqlRestoreCmd = []string{"sh", "-c", `mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $MYSQL_DATABASE; CREATE DATABASE $MYSQL_DATABASE;" && exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"`}
+var mysqlRestoreCmd = []string{"sh", "-c", `mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS ` + shBacktick + `$MYSQL_DATABASE` + shBacktick + `; CREATE DATABASE ` + shBacktick + `$MYSQL_DATABASE` + shBacktick + `;" && exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"`}
 
 // mariadbRestoreCmd is mysqlRestoreCmd's MariaDB counterpart: the mariadb
 // client and MARIADB_* env vars, since MariaDB 11's image removes the
 // mysql client binary entirely.
-var mariadbRestoreCmd = []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $MARIADB_DATABASE; CREATE DATABASE $MARIADB_DATABASE;" && exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"`}
+var mariadbRestoreCmd = []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS ` + shBacktick + `$MARIADB_DATABASE` + shBacktick + `; CREATE DATABASE ` + shBacktick + `$MARIADB_DATABASE` + shBacktick + `;" && exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"`}
 
 // mongoRestoreCmd first drops every non-system database so a collection or
 // database created after the backup was taken does not survive restore,
@@ -240,4 +246,4 @@ var mongoRestoreCmd = []string{"sh", "-c", `mongosh --quiet --username "$MONGO_I
 // clickhouseRestoreCmd drops and recreates $CLICKHOUSE_DB (same
 // full-replace reasoning as mysqlRestoreCmd), then reconnects with it as
 // default so the dump's unqualified INSERT INTO statements resolve.
-var clickhouseRestoreCmd = []string{"sh", "-c", `clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --query "DROP DATABASE IF EXISTS $CLICKHOUSE_DB; CREATE DATABASE $CLICKHOUSE_DB" && exec clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB"`}
+var clickhouseRestoreCmd = []string{"sh", "-c", `clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --query "DROP DATABASE IF EXISTS ` + shBacktick + `$CLICKHOUSE_DB` + shBacktick + `; CREATE DATABASE ` + shBacktick + `$CLICKHOUSE_DB` + shBacktick + `" && exec clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB"`}
