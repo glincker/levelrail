@@ -856,6 +856,14 @@ func (c *Client) SetDatabaseResources(ctx context.Context, name string, resource
 	return out, err
 }
 
+// SetDatabaseVersion calls PUT /api/v1/databases/{name}/version: a minor or
+// patch image change over the same data volume.
+func (c *Client) SetDatabaseVersion(ctx context.Context, name, version string) (DatabaseResource, error) {
+	var out DatabaseResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/version", map[string]string{"version": version}, &out)
+	return out, err
+}
+
 // SetDatabasePublicAccess calls PUT /api/v1/databases/{name}/public-access:
 // exposes name on the host at port (0 requests auto-assignment) bound to
 // bindAddress ("" requests the server's own default, "private").

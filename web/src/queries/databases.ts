@@ -532,6 +532,41 @@ export function useSetDatabaseResources() {
   })
 }
 
+// PUT /api/v1/databases/{name}/version: minor or patch image change over the
+// same data volume; the API answers 409 with the reason for a major change.
+export async function setDatabaseVersion(
+  name: string,
+  version: string,
+): Promise<DatabaseResource> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/version`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ version }),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set database version failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DatabaseResource
+}
+
+export function useSetDatabaseVersion() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, version }: { name: string; version: string }) =>
+      setDatabaseVersion(name, version),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
+      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+    },
+  })
+}
+
 // BackupScheduleResource mirrors internal/api's backupScheduleResource
 // (internal/api/backups.go): PUT/DELETE only ever touch these three
 // fields, never the full database resource.

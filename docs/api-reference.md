@@ -402,6 +402,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/base-backups | AbilityRead | handleListBaseBackupHistory |
 | POST | /api/v1/databases/{name}/pitr-restore | AbilityRoot | handleTriggerPITRRestore |
 | GET | /api/v1/databases/{name}/pitr-restores | AbilityRead | handleListPITRRestoreHistory |
+| PUT | /api/v1/databases/{name}/version | AbilityWriteSensitive | handleSetDatabaseVersion |
 
 ## Projects / Organizations / Environments
 

@@ -354,6 +354,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// fleet-level placement.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/resources", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleSetDatabaseResources))
 
+	// Minor and patch image change for a database, same data volume.
+	// AbilityWriteSensitive: it restarts the database container.
+	mux.HandleFunc("PUT /api/v1/databases/{name}/version", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleSetDatabaseVersion))
+
 	// Nodes: fleet-level infrastructure, not scoped to any
 	// one app, so every route here requires AbilityRoot specifically
 	// rather than AbilityRead/AbilityWrite: minting a join token or

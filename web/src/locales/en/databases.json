@@ -10,5 +10,16 @@
     "confirmAnyway": "Delete anyway",
     "deleting": "Deleting...",
     "toast": "Database \"{{name}}\" deleted."
+  },
+  "version": {
+    "trigger": "Change",
+    "title": "Change version of \"{{name}}\"",
+    "description": "Minor and patch updates recreate the container over the same data. Major versions are refused: take a backup and restore it into a new database instead. Take a backup first.",
+    "label": "Version",
+    "placeholder": "16.4",
+    "cancel": "Cancel",
+    "submit": "Change version",
+    "submitting": "Changing...",
+    "toast": "Database \"{{name}}\" will be recreated on version {{version}}."
   }
 }

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 652 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 653 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -336,6 +336,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/resource-recommendation", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseResourceRecommendation", Description: "Resource right-sizing, the database counterpart to GET /apps/{name}/resource-recommendation above (database_resource_recommendation.go)."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/slow-queries", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleQueryDatabaseSlowQueries", Description: "Slow query log, Postgres/MySQL only (database_slow_queries.go's own doc comment explains why Redis and every other engine return 400): parses the same stored container log lines the routes above expose, rather than a new telemetry source."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/status", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseStatus", Description: ""},
+	{Method: "PUT", Path: "/api/v1/databases/{name}/version", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseVersion", Description: "Minor and patch image change for a database, same data volume. AbilityWriteSensitive: it restarts the database container."},
 	{Method: "DELETE", Path: "/api/v1/bitbucket-app", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleDisconnectBitbucketApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/bitbucket-app", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleGetBitbucketAppStatus", Description: "Bitbucket App: the OAuth-consumer counterpart of the GitLab App routes above, same ability tiers for the same reasons, same two-step \"configure, then authorize\" shape. Cloud only, no instance_url (docs/design/git-provider-integrations.md section 3)."},
 	{Method: "PUT", Path: "/api/v1/bitbucket-app", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleConnectBitbucketApp", Description: ""},
