@@ -94,7 +94,7 @@
         {
           "label": "Data location",
           "left": "With the vendor",
-          "right": "On your nodes: secrets, metrics and logs stay local"
+          "right": "On your nodes: secrets, metrics and logs are stored locally unless you configure an export"
         }
       ],
       "more": {
@@ -138,45 +138,7 @@
     "cta": {
       "heading": "Run your own Railway",
       "sub": "Start with one small server and see how little it asks of it."
-    },
-    "related": [
-      {
-        "text": "Coolify alternative",
-        "link": "/coolify-alternative"
-      },
-      {
-        "text": "Dokploy alternative",
-        "link": "/dokploy-alternative"
-      },
-      {
-        "text": "Vercel alternative",
-        "link": "/vercel-alternative"
-      },
-      {
-        "text": "Heroku alternative",
-        "link": "/heroku-alternative"
-      },
-      {
-        "text": "Pricing",
-        "link": "/pricing"
-      },
-      {
-        "text": "Privacy",
-        "link": "/privacy"
-      },
-      {
-        "text": "Demo",
-        "link": "/demo"
-      },
-      {
-        "text": "Case studies",
-        "link": "/case-studies"
-      },
-      {
-        "text": "Full comparison",
-        "link": "/comparison"
-      }
-    ]
+    }
   }
 }
 ---

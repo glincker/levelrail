@@ -12,10 +12,15 @@ import LpSteps from './landing/LpSteps.vue'
 import LpGallery from './landing/LpGallery.vue'
 import LpFaq from './landing/LpFaq.vue'
 import LpCta from './landing/LpCta.vue'
+import { landingRelatedLinks } from './landing/relatedLinks'
 import type { LandingData } from './landingTypes'
 
-const { frontmatter } = useData()
+const { frontmatter, page } = useData()
 const d = computed(() => frontmatter.value.landing as LandingData)
+const related = computed(() => {
+  const self = `/${page.value.relativePath.replace(/\.md$/, '')}`
+  return d.value.related ?? landingRelatedLinks.filter((r) => r.link !== self)
+})
 </script>
 
 <template>
@@ -25,7 +30,7 @@ const d = computed(() => frontmatter.value.landing as LandingData)
     <LpHero :d="d" />
 
     <section v-if="d.shot" class="lp-shot">
-      <LpFrame :src="d.shot.src" :alt="d.shot.alt" eager />
+      <LpFrame :src="d.shot.src" :mock="d.shot.mock" :alt="d.shot.alt" eager />
     </section>
 
     <LpStats v-if="d.stats?.length" :stats="d.stats" />
@@ -59,14 +64,14 @@ const d = computed(() => frontmatter.value.landing as LandingData)
       </template>
     </LpSection>
 
-    <LpSection v-if="d.faq?.length" heading="Frequently asked questions" narrow>
+    <LpSection v-if="d.faq?.length" heading="Frequently asked questions">
       <LpFaq :items="d.faq" />
     </LpSection>
 
     <LpCta :heading="d.cta.heading" :sub="d.cta.sub" :primary="d.primary" />
 
-    <nav v-if="d.related?.length" class="lp-related" aria-label="Related pages">
-      <a v-for="r in d.related" :key="r.link" :href="r.link">{{ r.text }}</a>
+    <nav v-if="related.length" class="lp-related" aria-label="Related pages">
+      <a v-for="r in related" :key="r.link" :href="r.link">{{ r.text }}</a>
     </nav>
   </main>
 </template>

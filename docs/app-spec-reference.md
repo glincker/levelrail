@@ -4,21 +4,11 @@ description: Complete reference for app.yaml - the declarative app spec for Leve
 
 # app.yaml reference
 
-The declarative spec Levelrail reads from your repo.
+`app.yaml` is the declarative spec Levelrail reads from your repo: services, their build and runtime settings, and the managed databases they use. Every field below is parsed and validated against the JSON Schema embedded in the control plane (`internal/spec/schema/app.schema.json`), and an unknown key is an error rather than being ignored.
 
-::: details Implementation details
-**Package**: `internal/spec` (see `internal/spec/spec.go`, `internal/spec/validate.go`, `internal/spec/schema/app.schema.json`).
-:::
+Levelrail looks for the file under these names, in order: `app.yaml`, `app.yml`, `deploy.yaml`, `deploy.yml`, then the product's own name with a `.yaml` or `.yml` extension. The generic names come first so a repo that already committed `app.yaml` keeps working.
 
-**Filenames**: Levelrail looks for this file under these candidate names, in order:
-
-- `app.yaml`
-- `app.yml`
-- `deploy.yaml`
-- `deploy.yml`
-- The current brand's own filename (see `internal/spec/discover.go`)
-
-Generic names are checked first so a future product rename doesn't break a repo that already committed `app.yaml`.
+<InlineToc default-open />
 
 ## Full example
 
@@ -27,8 +17,9 @@ version: 1
 services:
   web:
     build:
-      type: dockerfile        # dockerfile | compose | railpack | static
+      type: dockerfile        # dockerfile | compose | railpack | static | image
       path: ./Dockerfile
+      baseDirectory: apps/web # build context subdirectory, for monorepos
     domains:
       - app.example.com
     port: 3000
@@ -61,6 +52,11 @@ services:
       preDeploy: rails db:migrate
       postDeploy: curl -f https://hooks.example.com/deployed
     command: ["node", "server.js", "--port", "3000"]  # overrides the image's own CMD
+    egress:
+      mode: allowlist       # outbound traffic limited to the hosts below
+      allow:
+        - { host: api.stripe.com, port: 443 }
+    dependsOn: [worker]     # start order across sibling services
 databases:
   main:
     engine: postgres          # postgres | redis | mysql | mongodb | mariadb | keydb | clickhouse | dragonfly
@@ -69,13 +65,7 @@ databases:
     ephemeralInPreviews: true # opt in to a disposable per-pull-request instance, see below
 ```
 
-This example matches what `internal/spec` actually parses and validates today. The test fixture is at `internal/spec/testdata/valid_full.yaml` (minus the plain-string env entry shown here; the fixture already has its own `labels` block).
-
-Three additions beyond the project's planning doc, all implemented:
-
-- `labels` block on a service
-- `mysql` as a third supported database engine (alongside `postgres` and `redis`)
-- Plain-string shorthand for a literal env value (shown here as `LOG_LEVEL`)
+A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the service is shorthand for `build: { type: image, image: ... }`.
 
 ## Field reference
 
@@ -96,16 +86,17 @@ Three additions beyond the project's planning doc, all implemented:
 | `domains` | list of string | no | none | Public hostnames routed to this service. A domain can only be claimed by one service across the whole spec. |
 | `port` | integer | conditional | none | 1 to 65535. Required unless `build.type` is `static`; must be omitted when `build.type` is `static`, since a static site has no running container to route to. |
 | `host_port` | integer | no | auto-assigned | 1 to 65535. Pins the host-side port Docker binds `port` to. Omit to let Docker assign one. Must be omitted when `build.type` is `static`. |
-| `bind_address` | string | no | `private` | `private` (loopback only), `public` (every interface, an explicit opt-in), or a literal IP (a specific host interface, or a WireGuard mesh peer address once that lands). Picks which network interface `port` (and `host_port`, if pinned) publishes to; see [Bind addresses and exposure](#bind-addresses-and-exposure) below. Must be omitted when `build.type` is `static`. |
+| `bind_address` | string | no | `private` | `private` (loopback only), `public` (every interface, an explicit opt-in), or a literal IP (a specific host interface or a WireGuard mesh peer address). Picks which network interface `port` (and `host_port`, if pinned) publishes to; see [Bind addresses and exposure](#bind-addresses-and-exposure) below. Must be omitted when `build.type` is `static`. |
 | `health` | `Health` | no | none | Readiness and liveness probe configuration. |
 | `resources` | `Resources` | no | none | Memory and CPU limits. |
 | `env` | map of name to `EnvVar` | no | none | Environment variables. See the `EnvVar` shapes below. |
-| `replicas` | integer | no | `1` | Minimum 1 if set. `Service.EffectiveReplicas()` returns this value or the default. |
-| `strategy` | string | no | `blue-green` | One of `rolling`, `recreate`, `blue-green`. `Service.EffectiveStrategy()` returns this value or the default, chosen because blue-green is easier to get right than rolling with a single replica. |
+| `replicas` | integer | no | `1` | Minimum 1 if set. |
+| `strategy` | string | no | `blue-green` | One of `rolling`, `recreate`, `blue-green`. |
 | `labels` | map of string to string | no | none | Arbitrary operator-supplied Docker labels applied to the container at create time. See Validation below for the limits enforced on these. |
 | `volumes` | list of `Volume` | no | none | Named Docker volumes and host-directory bind mounts this service's container mounts. |
 | `hooks` | `Hooks` | no | none | Pre/post-deploy commands run inside the container. Not meaningful when `build.type` is `static` or `compose`. |
 | `command` | list of string | no | none | Overrides the image's own default `CMD`. A plain argv list, never shell-interpreted. |
+| `egress` | `Egress` | no | open egress | Limits outbound traffic to an allowlist of host and port pairs. See [`Egress`](#egress). |
 | `loadbalancer` | `LoadBalancer` | no | none | Balances traffic across the service's replicas. See [Load balancing](load-balancing.md). |
 | `dependsOn` | list of string | no | none | Sibling `services:` keys this service waits on: the reconciler does not create this service's container until every named dependency has at least one running container. Start order only, real Docker Compose's own default `depends_on:` semantic (`service_started`), not a wait for the dependency's own readiness or health check. Each entry must name a real sibling service with a single running container (not `static` or `compose`), and a cycle between services fails validation. |
 
@@ -113,9 +104,21 @@ Three additions beyond the project's planning doc, all implemented:
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `type` | string | yes | none | One of `dockerfile`, `compose`, `railpack`, `static`. |
-| `path` | string | conditional | none | Required when `type` is `compose`. Optional otherwise (for example, a non-default Dockerfile path). |
+| `type` | string | yes | none | One of `dockerfile`, `compose`, `railpack`, `static`, `image`. |
+| `path` | string | conditional | none | Required when `type` is `compose`. Optional for `dockerfile`, `railpack` and `static` (for example, a non-default Dockerfile path). Rejected for `image`. |
+| `baseDirectory` | string | no | repo root | Subdirectory used as the build context, for a monorepo (`apps/web`). Must be relative and stay inside the repo. Rejected for `image` and `compose` (a compose file's own `context:` already scopes each service). |
+| `image` | string | conditional | none | Full registry reference such as `ghcr.io/org/app:v1.2.3`. Required when `type` is `image`, rejected otherwise. Nothing is built; the image is deployed as is. |
+| `registryCredential` | string | no | none | Name of a registry credential saved in Levelrail, used to pull `image` from a private registry. Empty means an unauthenticated pull. |
 | `args` | map of string to string | no | none | Dockerfile build-time `ARG` values, passed through to BuildKit as `--build-arg` equivalents. Only meaningful when `type` is `dockerfile`. |
+
+### `Egress`
+
+Opt-in outbound allowlist for one service. Without it the service's outbound traffic is unrestricted. Not valid with `build.type` of `static` or `compose`.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `mode` | string | yes | Only `allowlist` is supported. |
+| `allow` | list of `{host, port}` | yes, at least one entry | `host` is a hostname or IPv4 address (re-resolved periodically, not pinned at deploy time). `port` is 1 to 65535. |
 
 ### `Volume` (an entry under `volumes`)
 
@@ -183,7 +186,7 @@ Every probe result lands in the app's `Ready` condition (reason `ReadinessFailed
 - `exec "redis-cli -p 6390 ping" exited 1: Could not connect to Redis at 127.0.0.1:6390: Connection refused`
 - `GET http://127.0.0.1:32768/healthz timed out after 2s`
 
-The same settings are editable in the dashboard (app, then Health), with `levelrail apps health set`, and through `PUT /api/v1/apps/{name}/health`.
+The same settings are editable in the dashboard (app, then Health), with `levelrail-cli apps health set`, and through `PUT /api/v1/apps/{name}/health`.
 
 A Compose file's `healthcheck:` is translated into a readiness probe: a `curl`/`wget` command becomes an HTTP(S) probe that keeps the tool's own semantics (`curl -L` follows redirects, `curl -f` accepts any status below 400, `-k`/`--no-check-certificate` skip TLS verification), `start_period` widens the readiness budget, and any other command (`pg_isready`, `redis-cli ping`, `mysqladmin ping`) becomes an exec probe. A bare `/dev/tcp` connect check is not translated.
 
@@ -219,8 +222,6 @@ All fields are optional. Durations are Go duration strings such as `500ms`, `5s`
 
 Shell commands the reconciler runs inside the service's own container via the Docker Engine API's exec facility (`sh -c <command>`), not by shelling out.
 
-See `internal/reconcile/application/controller.go`'s doc comments for the full timing and failure-handling contract.
-
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `preDeploy` | string | no | none | Runs once per deploy, before the new container's readiness probe and before any old container is removed. A nonzero exit blocks the deploy: the new container is rolled back and whatever was previously running keeps serving. |
@@ -235,15 +236,14 @@ See `internal/reconcile/application/controller.go`'s doc comments for the full t
 ### `EnvVar` (an entry under `env`)
 
 Each value under `env` is either a plain string scalar (a literal value) or
-an object with these fields. `internal/spec/envvar.go` implements the
-union via a custom `UnmarshalYAML`.
+an object with these fields. 
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `from` | string | no | none | References another resource's computed value, for example `postgres.main.url`. |
 | `secret` | boolean | no | `false` | The operator provides this value at deploy time through envelope-encrypted secret storage; it is never written to `app.yaml` or the git repo. |
 | `required` | boolean | no | `false` | Only meaningful alongside `secret: true`: fail the deploy if no value has been provided, rather than starting the container with the variable unset. |
-| `vault` | `VaultRef` | no | none | Resolves this value live from an external HashiCorp Vault instance instead of Levelrail's own envelope-encrypted storage. Mutually exclusive with `from` and `secret`. See [external secrets: HashiCorp Vault](deploying-apps.md#external-secrets-hashicorp-vault). |
+| `vault` | `VaultRef` | no | none | Resolves this value live from an external HashiCorp Vault instance instead of Levelrail's own envelope-encrypted storage. Mutually exclusive with `from` and `secret`. See [external secrets: HashiCorp Vault](deploying-apps.md#external-secrets-from-hashicorp-vault). |
 
 The object form must set at least one of `from`, `secret`, or `vault`.
 `vault` is mutually exclusive with both `from` and `secret`: a given env
@@ -274,7 +274,8 @@ If Vault is unreachable, not configured, or the secret/field doesn't exist, the 
 | `engine` | string | yes | none | One of `postgres`, `redis`, `mysql`, `mongodb`, `mariadb`, `keydb`, `clickhouse`, `dragonfly`. |
 | `version` | string | no | none | For example `"16"`. |
 | `backup` | `Backup` | no | none | Backup schedule. |
-| `ephemeralInPreviews` | boolean | no | `false` | Provision a full, disposable database of its own for every pull-request preview, destroyed with the preview and with no restore path. Only meaningful once this app.yaml's git source has preview environments enabled; see [preview environments](roadmap.md) for the full lifecycle and its automatic env-var wiring. |
+| `ephemeralInPreviews` | boolean | no | `false` | Provision a full, disposable database of its own for every pull-request preview, destroyed with the preview and with no restore path. Only meaningful once the app's git source has preview environments enabled; see [Git integrations](git-integrations.md) and [Deploy previews](deploy-previews.md). |
+| `isolatedInPreviews` | boolean | no | `false` | Give each preview its own credential on the existing database (a Postgres role or a Redis ACL user scoped to its own key prefix) instead of a new instance. Postgres and Redis only. Ignored when `ephemeralInPreviews` is also set. |
 
 ### `Backup`
 
@@ -295,19 +296,7 @@ Every published port (a service's `port`/`host_port`, and a managed database's p
 
 ### Default behavior
 
-`private` is the default for anything created after this field shipped.
-
-A service or database already publicly exposed before this field existed keeps that exposure across the upgrade. Both are backfilled to `public` via:
-
-- `migrations/0098_service_bind_address.sql`
-- `migrations/0099_database_public_bind_address.sql`
-
-The new `private` default applies only on the next explicit redeploy or public-access change that leaves `bind_address` unset.
-
-### Planned, not yet implemented
-
-None found. Every field in this project's original app-spec design is
-parsed and validated by `internal/spec` today.
+`private` is the default for anything created after this field shipped. A service or database that was already publicly exposed before the field existed was backfilled to `public` and keeps that exposure. The `private` default applies only when a redeploy or public-access change leaves `bind_address` unset on a newly created resource.
 
 ## Validation
 
@@ -340,6 +329,8 @@ Checked by `(*Spec).Validate` in `internal/spec/validate.go` for anything the sc
 **Build configuration**
 
 - `build.path` is required when `build.type` is `compose`.
+- `build.image` is required when `build.type` is `image` and rejected for any other type. `build.path` and `build.baseDirectory` are rejected for `image`, and `build.baseDirectory` is rejected for `compose`.
+- `build.baseDirectory` must be relative and must not escape the repository root.
 - `build.args` is only meaningful when `build.type` is `dockerfile`. Set with any other build type, it is rejected rather than silently ignored.
 
 **Port configuration**
@@ -366,6 +357,14 @@ Checked by `ValidateLabels` (`internal/spec/labels.go`):
 - `resources.swapMemory` requires `resources.memory` to also be set.
 - `resources.swapMemory` must be at least `resources.memory` (checked during deploy translation in `internal/deploy`, since both values need byte conversion). Docker's `MemorySwap` is the combined memory+swap ceiling, not swap on top of memory.
 
+**Egress**
+
+- `egress` is rejected when `build.type` is `static` or `compose`. `mode` must be `allowlist` with at least one `allow` entry, each a hostname or IPv4 address with a valid port.
+
+**Dependencies**
+
+- Each `dependsOn` entry must name another service in the file, not itself, and not a `static` or `compose` service. A cycle is rejected.
+
 **Hooks**
 
 - `hooks` is rejected when `build.type` is `static` (no container to run a command in) or `compose` (a wrapper that expands into N real services; one `hooks` block cannot unambiguously target any of them).
@@ -384,9 +383,27 @@ Checked by `ValidateLabels` (`internal/spec/labels.go`):
 `spec.Parse` also runs `yamlUnmarshalStrict` (YAML decode with `KnownFields(true)`) as an independent guard against struct tags and JSON Schema drifting apart. An unknown key becomes a decode error during development rather than a silently dropped field in production.
 :::
 
-## See also
+## Next steps
 
-- [getting-started.md](getting-started.md) - deploying your first app with app.yaml
-- [deploying-apps.md](deploying-apps.md) - secrets management and environment setup
-- [managing-databases.md](managing-databases.md) - database configuration reference
-- [git-integrations.md](git-integrations.md) - branch, deploy trigger mode (push vs. release), and webhook config for a connected git source; none of that lives in app.yaml itself
+<CardGroup :cols="2">
+<Card title="Getting started" href="/getting-started">
+
+Deploy your first app with an `app.yaml`.
+
+</Card>
+<Card title="Deploying apps" href="/deploying-apps">
+
+Secrets, environment setup, rollouts and rollbacks.
+
+</Card>
+<Card title="Managing databases" href="/managing-databases">
+
+Database configuration and backups.
+
+</Card>
+<Card title="Git integrations" href="/git-integrations">
+
+Branch, push versus release trigger, and webhooks. None of that lives in `app.yaml`.
+
+</Card>
+</CardGroup>

@@ -4,41 +4,61 @@ description: The in-app AI assistant chat, how to enable it behind the ai-chat e
 
 # In-app AI assistant chat
 
-A chat panel embedded in the dashboard, backed by the control plane's own `internal/ai` engine: it reads your apps, deploys, logs, metrics, and diagnostics through the same tool surface the MCP server exposes, and it can propose actions, but **every action that would change anything always pauses for an explicit confirmation click first**. This is the same AI non-goal the project plan states in [`CLAUDE.md`](../CLAUDE.md) section 2: "AI is a read-and-suggest layer on top of the API, nothing more." It is not a different implementation of that rule, it is the same engine and the same confirmation gate [`docs/ai-assistant.md`](ai-assistant.md) describes for `levelrail-mcp`, surfaced as a first-party dashboard panel and CLI command instead of (or alongside) an external MCP client.
+A chat panel in the dashboard, backed by the control plane's own `internal/ai` engine. It reads your apps, deploys, logs, metrics and diagnostics through the same tool surface the MCP server exposes, and it can propose actions, but **every action that would change anything pauses for an explicit confirmation click first**. AI in Levelrail is a read-and-suggest layer on top of the API: this is the same engine and the same confirmation gate described in [AI assistant integration](ai-assistant.md#untrusted-text-and-the-assistant-s-confirmation-gate), surfaced as a dashboard panel and a CLI command.
 
-This is a separate feature from `levelrail-mcp`. Read [`docs/ai-assistant.md`](ai-assistant.md) if you want to point an external MCP-compatible assistant (Claude Desktop, Claude Code, or your own) at this control plane instead of, or in addition to, the chat described here.
+This is separate from `levelrail-mcp`. To point an external MCP client (Claude Desktop, Claude Code, your own) at this control plane, read [AI assistant integration](ai-assistant.md) instead.
 
-**Relevant packages:** `internal/ai`, `internal/api/ai_chat.go`, `internal/api/ai_settings.go`, `web/src/components/AiChatPanel.tsx`, `cmd/levelrail-cli/ai.go`.
+Source: `internal/ai`, `internal/api/ai_chat.go`, `internal/api/ai_settings.go`, `web/src/components/AiChatPanel.tsx`, `cmd/levelrail-cli/ai.go`.
 
 ## Enabling it
 
-Two independent switches, both required:
+Two things are required.
 
-1. **The experimental flag.** The in-app chat is gated behind `ai-chat` (see [`docs/experimental-features.md`](experimental-features.md)):
+<Steps>
+<Step title="Turn on the experimental flag">
 
-   ```
-   APP_EXPERIMENTAL=ai-chat
-   ```
+The chat is gated behind `ai-chat` (see [Experimental features](experimental-features.md)). Set this on the control plane:
 
-   Off (the default), every route under `/api/v1/ai/sessions` and `/api/v1/settings/ai-assistant` answers `404`, the dashboard hides the **AI assistant** nav entry and the `/ai-assistant` page, and the CLI hides `ai chat`/`ai sessions` from `--help` and completion.
+```bash
+APP_EXPERIMENTAL=ai-chat
+```
 
-2. **A BYOK (bring your own key) provider, model, and API key.** The flag alone is not enough; nothing runs until a key is configured too:
+With the flag off (the default), every route under `/api/v1/ai/sessions` and `/api/v1/settings/ai-assistant` answers `404`, the dashboard hides the **AI assistant** nav entry and the `/ai-assistant` page, and the CLI hides `ai chat` and `ai sessions` from `--help` and completion.
 
-   ```bash
-   levelrail-cli settings ai-assistant set --model claude-sonnet-4-5 --api-key sk-ant-...
-   ```
+</Step>
+<Step title="Configure a provider key">
 
-   Only `anthropic` is supported server-side today (`store.AIProviderAnthropic`); the key is stored via the same envelope encryption every other secret in this platform uses (section 4.10 of `CLAUDE.md`) and is never returned or logged. `levelrail-cli settings ai-assistant get` reports only whether one is configured, never the key itself. The dashboard's **Settings → AI assistant** page does the same thing through a form.
+Nothing runs until you bring your own key. Only `anthropic` is supported today. The key is stored with the same envelope encryption as other secrets and is never returned or logged.
 
-With both set, the dashboard's **AI assistant** page (and command palette entry) appears, and `levelrail-cli ai chat` stops returning the experimental-disabled error.
+<Tabs :items="['CLI', 'Dashboard']">
+<Tab value="CLI">
+
+```bash
+levelrail-cli settings ai-assistant set --model claude-sonnet-4-5 --api-key sk-ant-...
+```
+
+`levelrail-cli settings ai-assistant get` reports only whether a key is configured.
+
+</Tab>
+<Tab value="Dashboard">
+
+Open **Settings → AI assistant** and fill in the form.
+
+</Tab>
+</Tabs>
+
+</Step>
+</Steps>
+
+With both set, the **AI assistant** page appears in the dashboard and `levelrail-cli ai chat` stops returning the experimental-disabled error.
 
 ## What it can do
 
-- **Read, always.** Logs, metrics, deploy history, node status, certificates, and crashloop diagnosis, through the same read-only MCP tool classification `docs/ai-assistant.md`'s "Modes and toolsets" section describes. These run automatically, with no confirmation, the moment the model asks for them.
+- **Read, always.** Logs, metrics, deploy history, node status, certificates, and crashloop diagnosis, through the read-only tool classification described under [Modes and toolsets](ai-assistant.md#modes-and-toolsets). These run automatically, with no confirmation, the moment the model asks for them.
 - **Propose, never execute directly.** A mutating tool call (deploy, rollback, restart, an env change, and so on) is recorded as a pending confirmation and streamed to the UI as a `tool_call_proposed` event. It does not run until a human clicks **Approve** (dashboard) or runs `levelrail-cli ai sessions resolve <session> <confirmation-id> --approve` (CLI). Rejecting it is just as explicit a path (`--reject`), and the model sees "User declined to run this action" as the result either way, so it can explain and move on rather than retry blindly.
-- **Never in the reconciliation path.** This bounds what the feature is allowed to become, not just what it does today: the assistant only ever calls the platform's own versioned REST API (`internal/apiclient`), the exact same path any external MCP client or the CLI already uses. It has no privileged internal entry point into the reconciler, the Docker client, or the database, matching the project plan's non-goal in section 2 ("No AI in the reconciliation path") and the architecture note in section 4.11.
+- **Never in the reconciliation path.** The assistant only calls the platform's own REST API (`internal/apiclient`), the same path any external MCP client or the CLI uses. It has no privileged entry point into the reconciler, the Docker client, or the database.
 
-Untrusted text handling (log content, deploy output, commit messages) and the confirmation gate's exact rules (what counts as "tainted," which annotations make a tool auto-run) are the same mechanism `docs/ai-assistant.md`'s "Untrusted text and the assistant's confirmation gate" section documents in detail; this page doesn't repeat it.
+Untrusted-text handling and the confirmation gate's exact rules (what counts as tainted, which annotations make a tool auto-run) are documented once, under [Untrusted text and the assistant's confirmation gate](ai-assistant.md#untrusted-text-and-the-assistant-s-confirmation-gate).
 
 ## Using it
 
@@ -74,8 +94,7 @@ levelrail-cli ai sessions delete aisess_abc123
 
 - **Single admin user, no per-user session isolation beyond the existing root-only gate.** Anyone who can authenticate as root can see and act on any session.
 - **One provider.** Anthropic only; no model routing or fallback.
-- **No reconciler access.** Worth repeating: this is architecturally the same constraint as the MCP server, not a weaker one. See "What it can do" above.
-- **Not yet covered by real-infrastructure testing.** `test/e2e/ai_chat_test.go` proves the full session lifecycle (create, send a message with an auto-executed read tool call, get, list, delete, and the flag-off 404) over real HTTP against a real router and a real `ai.Engine`, but with a scripted fake `ai.Provider`, never a live call to Anthropic's API. See [`docs/feature-status.md`](feature-status.md) for the current evidence tier.
+- **Not yet covered by real-infrastructure testing.** `test/e2e/ai_chat_test.go` proves the full session lifecycle (create, send a message with an auto-executed read tool call, get, list, delete, and the flag-off 404) over real HTTP against a real router and a real `ai.Engine`, but with a scripted fake `ai.Provider`, never a live call to Anthropic's API. See [Feature status](feature-status.md) for the current evidence tier.
 
 ## See also
 

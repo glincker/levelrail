@@ -1,54 +1,78 @@
 ---
-description: Quick reference for choosing a cloud provider and adding a provisioned node in a handful of commands. Full detail on auth modes, cost and known gaps lives on the node provisioning page this one points to.
+description: Pick a cloud provider and add a provisioned node in three commands, with the credential each provider needs. Auth modes, cost and known gaps are on the node provisioning page.
 ---
 
 # Multi-cloud provisioning quickstart
 
-[Node provisioning](/node-provisioning) covers how cloud provisioning works end to end: the join-token flow it drives, the cloud-init script, status polling, and the known gaps per provider. This page is the short version: what the five supported providers are, what credential each one needs, roughly what they cost, and the fastest path to a running node.
-
-```mermaid
-sequenceDiagram
-  participant Op as Operator (CLI)
-  participant CP as Control plane
-  participant Prov as Cloud provider
-
-  Op->>CP: nodes providers set-credential --provider hetzner
-  CP-->>Op: credential stored (encrypted)
-  Op->>CP: nodes provision --provider hetzner --region --size --name
-  CP->>Prov: create server (cloud-init carries a join token)
-  Prov-->>CP: server accepted
-  loop poll until ready
-    Op->>CP: nodes provisions show <id>
-    CP-->>Op: creating -> booting -> enrolling -> ready
-  end
-```
+[Node provisioning](/node-provisioning) explains how cloud provisioning works: the join-token flow it drives, the cloud-init script, status polling and the known gaps per provider. This page is the short version: which providers are supported, what credential each needs, and the fastest path to a running node.
 
 ## Providers at a glance
 
-| Provider | Auth mode | Setup before the first server |
+| Provider | Credential | Needed before the first server |
 | --- | --- | --- |
-| Hetzner Cloud | project API token | none, a token from the Hetzner console is enough |
-| DigitalOcean | personal access token | none |
-| AWS EC2 | access key and secret, an assumable role ARN, or the control plane's own ambient AWS credentials | a default VPC in the target region (present on every account created since December 2013) |
-| Azure | service principal JSON (tenant, client, secret, subscription, resource group), or workload identity federation | an existing resource group |
-| GCP | service account JSON key | a project with the default VPC network present (every new project has one) |
+| Hetzner Cloud | Project API token | Nothing else |
+| DigitalOcean | Personal access token | Nothing else |
+| AWS EC2 | Access key and secret, an assumable role ARN, or the control plane's own AWS identity | A default VPC in the target region |
+| Azure | Service principal JSON, or workload identity federation | An existing resource group |
+| GCP | Service account JSON key | A project with the `default` VPC network |
 
-Workload identity federation (OIDC) is supported for Azure. GCP's external-account credential format has no project id field and cannot be wired the same way; [node provisioning](/node-provisioning) explains why, and covers the three AWS auth modes in its "AWS credentials" section.
+GCP has no federation mode. The reason, and the three AWS credential modes, are in [node provisioning](/node-provisioning#provider-credentials).
 
-Every provider bills by the hour for however long the server exists, and none of them get deleted automatically when you stop using a node; see [node provisioning](/node-provisioning#cost-expectations) for the current per-provider cost range and the delete path. Hetzner and DigitalOcean are the simplest to start with because a single token is the whole setup; AWS, Azure and GCP need a VPC, resource group, or project prepared first.
+::: warning Servers are not deleted for you
+Every provider bills by the hour while the server exists. `levelrail-cli nodes delete` removes the node record, not the VM, so delete the server at the provider too. See [cost expectations](/node-provisioning#cost).
+:::
 
-## Add a node on Hetzner in 3 commands
+## Add a node
 
-```
+<Steps>
+<Step title="Store the provider credential">
+
+Once per provider. Paste or pipe the credential when prompted, so it stays out of shell history.
+
+```bash
 levelrail-cli nodes providers set-credential --provider hetzner
-# paste or pipe the project API token when prompted
-
-levelrail-cli nodes provision --provider hetzner --region fsn1 --size cx22 --name build-1
-
-levelrail-cli nodes provisions show <id>
-# repeat until status is "ready"; the id is printed by the provision command above
 ```
 
-The region and size ids above (`fsn1`, `cx22`) are illustrative Hetzner examples, not guaranteed to be the cheapest or currently available option on your account. Check `GET /api/v1/node-providers/hetzner/regions` and `.../sizes?region=<id>` (or the Nodes page's Add Node wizard, which lists both live) before provisioning for real.
+</Step>
+<Step title="Pick a region and size">
 
-The same three-command shape works for DigitalOcean, AWS, Azure and GCP: store the credential once with `nodes providers set-credential --provider <name>`, then `nodes provision --provider <name> --region <id> --size <id> --name <name>`. AWS, Azure and GCP additionally need account-specific detail (an access key or role ARN, a resource group, or service account details) folded into the credential itself, described on [node provisioning](/node-provisioning#required-token-scopes).
+List what your account offers rather than guessing. The ids in the next step (`fsn1`, `cx22`) are Hetzner examples only.
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://control-plane.example.com/api/v1/node-providers/hetzner/regions"
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://control-plane.example.com/api/v1/node-providers/hetzner/sizes?region=fsn1"
+```
+
+The dashboard's **Add node** wizard lists both live.
+
+</Step>
+<Step title="Provision and wait for ready">
+
+```bash
+levelrail-cli nodes provision --provider hetzner --region fsn1 --size cx22 --name build-1
+levelrail-cli nodes provisions show <id>
+```
+
+Repeat `show` until the status is `ready`. Status moves through `creating`, `booting` and `enrolling`. Add `--role build` to make it a build node.
+
+</Step>
+</Steps>
+
+The same shape works for DigitalOcean, AWS, Azure and GCP: store the credential with `--provider <name>`, then provision. AWS, Azure and GCP fold account detail (key and secret or role ARN, resource group, service account) into the credential itself. See [required token scopes](/node-provisioning#provider-credentials).
+
+## Next steps
+
+<CardGroup :cols="2">
+<Card title="Node provisioning" href="/node-provisioning">
+
+How it works, auth modes, cost and known gaps.
+
+</Card>
+<Card title="Multi-node" href="/multi-node">
+
+Placement, drain, certificates and the mesh once the node is online.
+
+</Card>
+</CardGroup>

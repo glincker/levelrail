@@ -10,6 +10,7 @@ import CopyCommand from './CopyCommand.vue'
 import HeroShowcase from './HeroShowcase.vue'
 import AnnouncementPill from './AnnouncementPill.vue'
 import HomeFeatures from './HomeFeatures.vue'
+import HomeProof from './HomeProof.vue'
 
 const INSTALL_COMMAND = 'curl -fsSL https://levelrail.com/install.sh | sudo sh'
 
@@ -38,8 +39,8 @@ const { hasSidebar } = useSidebar()
     <template #home-hero-image>
       <HeroField />
       <HeroShowcase
-        src="/assets/screenshots/dashboard-home.png"
-        alt="The Levelrail dashboard home: apps, nodes and recent deploys at a glance"
+        mock="overview"
+        alt="Illustrative rendering of a Levelrail app overview with live CPU, memory and network charts and deploy markers"
         url="levelrail.local"
       />
     </template>
@@ -59,6 +60,7 @@ const { hasSidebar } = useSidebar()
       </ul>
     </template>
     <template #home-hero-after>
+      <HomeProof />
       <HomeFeatures />
     </template>
     <template #layout-bottom>

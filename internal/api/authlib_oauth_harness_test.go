@@ -79,7 +79,7 @@ func (h *oauthHarness) startPath(provider string) string {
 }
 
 func (h *oauthHarness) callbackPath(provider string) string {
-	return h.eng.Prefix() + "/providers/" + provider + "/callback"
+	return authengine.OAuthCallbackPath(provider)
 }
 
 func (h *oauthHarness) get(target string, withJar bool) *httptest.ResponseRecorder {

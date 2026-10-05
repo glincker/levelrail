@@ -180,6 +180,10 @@ func (rt *Router) beginOAuthFlow(w http.ResponseWriter, r *http.Request, purpose
 // /login with a short error code, since this is reached via a real
 // browser navigation, not a fetch.
 func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
+	if rt.authLibOAuthActive() && !rt.oauthState.has(r.URL.Query().Get("state")) {
+		rt.authLibOAuthCallback(w, r)
+		return
+	}
 	provider := r.PathValue("provider")
 	if !isValidOAuthProvider(provider) {
 		redirectOAuthError(w, r, "invalid_provider")

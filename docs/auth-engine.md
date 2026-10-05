@@ -46,6 +46,7 @@ All optional.
 | `APP_AUTH_ENGINE_WEBAUTHN_CLONE_WARNING` | `reject` | `reject` refuses a sign-in whose counter went backwards, `flag` allows it and audits |
 | `APP_AUTH_ENGINE_MFA_MAX_FAILURES` | `5` | Wrong codes per user before a lockout |
 | `APP_AUTH_ENGINE_MFA_LOCKOUT` | `15m` | How long that lockout lasts |
+| `APP_AUTH_ENGINE_OAUTH_ALLOWED_HOSTS` | empty | Extra hosts allowed in an OAuth redirect URI once a dashboard URL is set |
 | `APP_AUTH_ENGINE_OAUTH_PROVIDER_TTL` | `30s` | How long a resolved OAuth provider is cached. Saving provider settings drops it at once |
 
 ## Things to know
@@ -54,6 +55,6 @@ All optional.
 - A TOTP code can be used once. Repeated wrong codes lock the user out, counted across devices, and answer 429 with `Retry-After`.
 - Recovery codes look like `XXXX-XXXX-XXXX-XXXX` and are accepted with or without hyphens and in any case.
 - Sign-in is case-insensitive on the username. Usernames that are not an email address (for example `admin`) are still accepted at first-run and by invites.
-- OAuth callback URL: register `https://<your-host>/api/v1/auth-lib/providers/<provider>/callback` at each identity provider. Linking a provider to your account from your profile still uses `/api/v1/auth/oauth/<provider>/callback`, so register that one too.
+- OAuth callback URL: register `https://<your-host>/api/v1/auth/oauth/<provider>/callback` at each identity provider. Sign-in and profile linking share it, and Levelrail tells them apart by the state value. Once a dashboard URL is set, redirect hosts are limited to it and the base URL host, plus any in `APP_AUTH_ENGINE_OAUTH_ALLOWED_HOSTS`.
 - An existing account is linked on OAuth sign-in only when the provider reports the email as verified. A provider's allowed email domain gates new accounts only.
 - `recover-admin` sets the password through the library, which also ends that account's sessions and clears its lockout. No restart is needed.

@@ -6,29 +6,15 @@ description: What actually survives when the control plane process crashes, what
 
 This page answers one question precisely: if the `levelrail` process dies outright (a panic, an OOM kill, `kill -9`, the host rebooting the process), what happens to your running apps, and what happens to node agents?
 
-The honest answer has two different halves, because the control plane is one process that owns two different things: the reconcile loop that manages containers, and an embedded Caddy instance that routes traffic to them (see [architecture.md](architecture.md) and ADR 005). Those two halves fail differently, and this page measures both rather than assuming either.
+The answer has two halves, because the control plane is one process that owns two different things: the reconcile loop that manages containers, and an embedded Caddy instance that routes traffic to them (see [architecture.md](architecture.md) and ADR 005). Those two halves fail differently, and this page measures both rather than assuming either.
 
-Everything below was verified live against a real control plane binary, real Docker containers, a real node agent process, and a real `SIGKILL`, not read off the architecture and assumed to be true.
+Everything below was measured against a real control plane binary, real Docker containers, a real node agent process, and a real `SIGKILL`.
 
 ::: details For contributors: the tests behind this page
 `test/e2e/reconcile/break_glass_control_plane_death_test.go` and `test/e2e/reconcile/break_glass_agent_reconnect_test.go`. Run them yourself with `go test -run TestBreakGlass -v ./test/e2e/...` (needs a local Docker daemon).
 :::
 
-### The crash-and-recovery timeline
-
-```mermaid
-graph LR
-    A["Control plane<br/>running"] -->|SIGKILL, panic,<br/>or OOM kill| B["Control plane<br/>process dies"]
-    B --> C["App containers<br/>keep running"]
-    B --> D["Domain routing<br/>stops"]
-    C --> E["New control plane<br/>starts"]
-    D --> E
-    E --> F["First reconcile<br/>pass"]
-    F --> G["Domain routing<br/>resumes"]
-    style B fill:#f99
-    style D fill:#f99
-    style G fill:#9f9
-```
+## The crash-and-recovery timeline
 
 ```mermaid
 flowchart TD
@@ -57,7 +43,7 @@ flowchart TD
 
 ## What does not survive
 
-**Caddy's routing dies in the same instant the control plane does, unless systemd holds the sockets.** (With `LEVELRAIL_SOCKET_ACTIVATION=1` the listening sockets outlive the process and connections queue instead of being refused, see [measured windows](#ingress-availability-windows-measured).) This is not a bug, it is the direct, unavoidable consequence of a locked architecture decision: Caddy runs embedded inside the control plane process, not as a sibling container with its own lifecycle. There is no separate proxy process to keep serving while the control plane is down.
+**Caddy's routing dies in the same instant the control plane does, unless systemd holds the sockets.** (With `LEVELRAIL_SOCKET_ACTIVATION=1` the listening sockets outlive the process and connections queue instead of being refused, see [measured windows](#ingress-availability-windows-measured).) This is a direct consequence of an architecture decision, not a bug: Caddy runs embedded inside the control plane process, not as a sibling container with its own lifecycle. There is no separate proxy process to keep serving while the control plane is down.
 
 Concretely: from the moment the control plane process exits to the moment a new one starts and reconciles ingress at least once, **domain-based HTTPS routing is down**. A request to your app's domain fails during that window even though the container behind it never stopped. A request straight to the container's published host port succeeds the whole time; a request through the domain does not.
 
@@ -115,9 +101,24 @@ Measured on a 2 vCPU droplet running a build of this branch's predecessor (v0.2.
 | Deploy whose readiness never passes | old release served every request, deploy marked failed, reason shown in `apps status` and `attention` |
 | Deploy that is OOM-killed during readiness | old release kept serving, reason `OOMKilledDuringReadiness` |
 | `docker kill` of the serving container | about 1s of 502 until ingress moved to the held release. Since this release a styled 503 for the same window |
-| Pinned host port, blue-green | broken: the second container could not bind, was left running without its port and reported Ready |
+| Pinned host port, blue-green | broken in this run: the second container could not bind, was left running without its port and reported Ready (fixed since, see below) |
 | Control plane restart | ingress is down for about 4s (embedded Caddy), containers unaffected. With `LEVELRAIL_SOCKET_ACTIVATION=1` connections queue instead of being refused, see [measured windows](#ingress-availability-windows-measured) |
 
 Fixes shipped from these runs: pinned host port handoff with restore on failure, removal of half-started containers, a check that a pinned port is actually published, rolling deploys keeping the routed replica until cutover, required secrets enforced at reconcile time, default load balancing for multi-replica apps, and ingress config applies skipped when nothing changed. These fixes are covered by unit tests with a fake Docker client; they have not yet been re-measured on a real server.
 
 Not measured: Docker daemon restart mid-run and disk pressure (the shared test host could not be disturbed). Containers use restart policy `no`, so after a daemon restart recovery depends on the reconciler's next pass.
+
+## Next steps
+
+<CardGroup :cols="2">
+<Card title="Disaster recovery" href="/disaster-recovery">
+
+What to do when the disk or the whole machine is lost.
+
+</Card>
+<Card title="Domains and ingress" href="/domains-and-ingress">
+
+Turn on socket activation so a restart queues connections.
+
+</Card>
+</CardGroup>

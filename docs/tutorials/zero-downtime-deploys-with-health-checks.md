@@ -11,7 +11,8 @@ A deploy that starts a container is not a deploy that works. In this tutorial yo
 - A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
 - An app that is already running. This tutorial reuses `hello` from [Deploy a Docker app](deploy-a-docker-app.md), which serves the stock `nginx` page.
 
-## 1. Add a readiness check
+<Steps>
+<Step title="Add a readiness check">
 
 A readiness probe gates a deploy: the new release only takes over once the probe passes. A liveness probe restarts a container that hangs later. Start with readiness, pointing at a path that does not exist yet:
 
@@ -26,7 +27,8 @@ liveness: not configured
 
 The probe is an HTTP request that must return a status from 200 to 299. You can also run a command inside the container with `--exec` instead of `--path`.
 
-## 2. Ship a release that fails it
+</Step>
+<Step title="Ship a release that fails it">
 
 The stock nginx page has no `/healthz`, so the probe will get a 404. Deploy a new version:
 
@@ -54,7 +56,8 @@ dep_NVoflejpBmz-  nginx:1.27-alpine  failed     failed   2026-10-05T02:30:13Z
 dep_JJyaXkXlvjmO  nginx:alpine       succeeded  serving  2026-10-05T02:15:57Z
 ```
 
-## 3. Read the failure
+</Step>
+<Step title="Read the failure">
 
 Every failed or blocked deploy carries a structured reason. Open it:
 
@@ -86,7 +89,8 @@ levelrail-cli apps status hello
 Ready  False  RunningNotReady  readiness recheck for "hello-44338b1e": GET .../healthz returned 404, expected 200-299
 ```
 
-## 4. Fix it, or roll back
+</Step>
+<Step title="Fix it, or roll back">
 
 Here the probe path was wrong, not the release. Point it at a path that exists and deploy again:
 
@@ -105,6 +109,9 @@ waiting for "hello" to converge... (succeeded)
 ```bash
 levelrail-cli apps deploys rollback-to hello dep_JJyaXkXlvjmO
 ```
+
+</Step>
+</Steps>
 
 ## What the platform guarantees
 

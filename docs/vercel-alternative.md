@@ -19,7 +19,7 @@
     },
     "install": "curl -fsSL https://levelrail.com/install.sh | sudo sh",
     "shot": {
-      "src": "/assets/screenshots/deploy-history.png",
+      "mock": "deploys",
       "alt": "Levelrail deploy history with one-click rollback"
     },
     "cardsHeading": "The parts of Vercel people miss when they leave",
@@ -88,13 +88,13 @@
         },
         {
           "label": "Observability",
-          "left": "Built-in plus paid add-ons",
+          "left": "See Vercel's own documentation",
           "right": "Metrics and log search built in, node-local"
         },
         {
           "label": "Data",
           "left": "Handled by the vendor",
-          "right": "Secrets, metrics and logs never leave your nodes"
+          "right": "Secrets, metrics and logs stay on your nodes unless you configure an export or drain"
         },
         {
           "label": "Edge network",
@@ -143,45 +143,7 @@
     "cta": {
       "heading": "Own your deploy pipeline",
       "sub": "Run a side project on it first. Open source, so you can read how every step works."
-    },
-    "related": [
-      {
-        "text": "Coolify alternative",
-        "link": "/coolify-alternative"
-      },
-      {
-        "text": "Dokploy alternative",
-        "link": "/dokploy-alternative"
-      },
-      {
-        "text": "Heroku alternative",
-        "link": "/heroku-alternative"
-      },
-      {
-        "text": "Railway alternative",
-        "link": "/railway-alternative"
-      },
-      {
-        "text": "Pricing",
-        "link": "/pricing"
-      },
-      {
-        "text": "Privacy",
-        "link": "/privacy"
-      },
-      {
-        "text": "Demo",
-        "link": "/demo"
-      },
-      {
-        "text": "Case studies",
-        "link": "/case-studies"
-      },
-      {
-        "text": "Full comparison",
-        "link": "/comparison"
-      }
-    ]
+    }
   }
 }
 ---

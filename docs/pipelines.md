@@ -6,7 +6,9 @@ description: Define CI/CD pipelines as YAML with triggers, jobs, matrix builds, 
 
 A pipeline is a YAML file that describes what should happen when code changes: run tests in a container, build an image, wait for a person to approve, then deploy. Pipelines sit on top of the build and deploy features that already exist. They call those primitives; they never touch the reconciler, and no AI is involved in running one.
 
-Each pipeline belongs to one app. Open **Pipelines** in an app's sidebar, use the CLI (`levelrail pipelines ...`), or the API under `/api/v1/apps/{name}/pipelines`.
+Each pipeline belongs to one app. Open **Pipelines** in an app's sidebar, use the CLI (`levelrail-cli pipelines ...`), or the API under `/api/v1/apps/{name}/pipelines`.
+
+<InlineToc default-open />
 
 ```mermaid
 flowchart LR
@@ -70,8 +72,8 @@ Open **Pipelines** in the main sidebar (or press the command palette and type "P
 The same view is available from the CLI and API:
 
 ```
-levelrail pipelines runs --all --status failed --app web --limit 20
-levelrail pipelines runs --all --json
+levelrail-cli pipelines runs --all --status failed --app web --limit 20
+levelrail-cli pipelines runs --all --json
 ```
 
 `GET /api/v1/pipeline-runs` takes `status` (`running`, `failed`, `succeeded`, `cancelled`, `waiting_approval`, `held`), `app`, `pipeline`, `trigger`, `limit`, and a `cursor` from the previous page's `next_cursor`. `GET /api/v1/pipelines/summary` returns the counts. Both only include apps the caller may read.
@@ -81,9 +83,9 @@ levelrail pipelines runs --all --json
 You can edit a pipeline in the dashboard, or keep it in your repository. A repository copy is synced automatically (see [Repository sync](#repository-sync)) and can also be loaded by hand with the CLI:
 
 ```
-levelrail pipelines validate .pipelines/release.yaml
-levelrail pipelines save my-app .pipelines/release.yaml
-levelrail pipelines save my-app .            # every file in the repo's pipeline directory
+levelrail-cli pipelines validate .pipelines/release.yaml
+levelrail-cli pipelines save my-app .pipelines/release.yaml
+levelrail-cli pipelines save my-app .            # every file in the repo's pipeline directory
 ```
 
 A repository's pipeline directory is found by trying `.pipelines/`, then `.ci/pipelines/`, then a directory named after the platform's brand (the CLI asks the control plane for it). `validate` runs locally with no API call, so it works in CI and pre-commit hooks. `save` copies the file into the control plane.
@@ -95,8 +97,8 @@ The JSON Schema behind validation is served at `GET /api/v1/pipelines/schema`, a
 When the app has a git repository connected, its pipeline directory is the source for its pipeline definitions. On every push to the app's tracked branch the control plane reads the directory at that commit (a shallow, in-memory clone with the app's deploy token) and saves each `*.yaml` and `*.yml` file. A pipeline is named by its `name:` field, or by the file name without its extension. The push's own pipelines start after the sync finishes, so a run uses the pipeline files of the commit that triggered it. A push to any other branch, and a tag push, does not sync.
 
 ```
-levelrail pipelines sync my-app
-levelrail pipelines sync my-app --repo-truth=true
+levelrail-cli pipelines sync my-app
+levelrail-cli pipelines sync my-app --repo-truth=true
 ```
 
 The Pipelines page shows a **synced from `<sha>`** badge, a **Sync now** button, and a per-app **Repository is source of truth** switch. Each pipeline synced from the repository carries a `repo <sha>` badge.
@@ -175,13 +177,13 @@ GitHub's merge queue sends a `merge_group` webhook when it wants checks on a que
 
 A run posts its state to the provider that hosts the app's repository as a commit status named after the brand short name and the pipeline (`<short name>/pipeline/<name>`): `pending` when it starts, then `success`, `failure`, or `error` (cancelled). The status links to the run page when a dashboard URL is set under Settings. Providers: GitHub commit statuses, GitLab commit statuses, Gitea statuses, and Bitbucket build statuses.
 
-Reporting is on by default when the app has a connected git source and provider credentials. Turn it off per pipeline with `report_status: false`, per app with `levelrail apps git-source settings my-app --report-status=false` (or the app's Source page), or for the whole server with `APP_GIT_STATUS_ENABLED=false`. A failed post (a rate limit, a revoked token) never fails or delays the run: the run records a warning and the runs list shows it in the **Forge status** column. Runs list the last status they posted as a link to the commit.
+Reporting is on by default when the app has a connected git source and provider credentials. Turn it off per pipeline with `report_status: false`, per app with `levelrail-cli apps git-source settings my-app --report-status=false` (or the app's Source page), or for the whole server with `APP_GIT_STATUS_ENABLED=false`. A failed post (a rate limit, a revoked token) never fails or delays the run: the run records a warning and the runs list shows it in the **Forge status** column. Runs list the last status they posted as a link to the commit.
 
 ```yaml
 report_status: true
 ```
 
-`levelrail pipelines save my-app ci.yaml --paths "src/**" --paths-ignore "**/*.md" --report-status=false` applies the same fields to the file before saving. The pipeline editor has the fields too.
+`levelrail-cli pipelines save my-app ci.yaml --paths "src/**" --paths-ignore "**/*.md" --report-status=false` applies the same fields to the file before saving. The pipeline editor has the fields too.
 
 ### Pull requests from forks
 
@@ -197,14 +199,14 @@ on:
 | `forks` | What happens to a pull request from a fork |
 | --- | --- |
 | `block` (default) | No run is created. The decision is recorded in the trigger log. |
-| `approve` | A run is created held for approval. No job starts, no container is created, and no secret is read until someone with the `deploy` ability approves it on the run page or with `levelrail pipelines approve`. A rejected run is cancelled. |
+| `approve` | A run is created held for approval. No job starts, no container is created, and no secret is read until someone with the `deploy` ability approves it on the run page or with `levelrail-cli pipelines approve`. A rejected run is cancelled. |
 | `allow` | The run starts as for any other pull request. |
 
 A pull request whose head repository cannot be determined from the webhook payload (for example a deleted fork) is treated as a fork. Held runs never delay other runs in the same concurrency group. GitHub, GitLab, Gitea, and Bitbucket are all checked.
 
 ### Why a push did not start a run
 
-The Pipelines page lists **Recent triggers**: for each recent push, tag, or pull request, whether a run started, was held, or was skipped, and why (a branch filter that did not match, a fork blocked by policy, an invalid definition, or no pipeline listening for that event). `levelrail pipelines triggers my-app` prints the same list, and the API serves it at `GET /api/v1/apps/{name}/pipeline-triggers`. The newest 200 decisions per app are kept.
+The Pipelines page lists **Recent triggers**: for each recent push, tag, or pull request, whether a run started, was held, or was skipped, and why (a branch filter that did not match, a fork blocked by policy, an invalid definition, or no pipeline listening for that event). `levelrail-cli pipelines triggers my-app` prints the same list, and the API serves it at `GET /api/v1/apps/{name}/pipeline-triggers`. The newest 200 decisions per app are kept.
 
 ## Jobs and steps
 
@@ -354,12 +356,12 @@ Runs that share a group run one at a time, oldest first. With `cancel_in_progres
 ## Running and watching
 
 ```
-levelrail pipelines run my-app release --ref refs/heads/main --input env=staging --follow
-levelrail pipelines runs my-app
-levelrail pipelines runs my-app <run-id>
-levelrail pipelines logs my-app <run-id> --job "test[go=1.23]" --follow
-levelrail pipelines approve my-app <run-id> --comment "ship it"
-levelrail pipelines cancel my-app <run-id>
+levelrail-cli pipelines run my-app release --ref refs/heads/main --input env=staging --follow
+levelrail-cli pipelines runs my-app
+levelrail-cli pipelines runs my-app <run-id>
+levelrail-cli pipelines logs my-app <run-id> --job "test[go=1.23]" --follow
+levelrail-cli pipelines approve my-app <run-id> --comment "ship it"
+levelrail-cli pipelines cancel my-app <run-id>
 ```
 
 The run page in the dashboard draws the jobs as a dependency graph: columns by depth, a curved edge from each job to the jobs that need it, one node per matrix job with a row per combination, and a status icon and duration on every job. Click a job, or move between jobs with the arrow keys and press Enter, to see its steps and output. Status animation stops when the system asks for reduced motion.
@@ -395,3 +397,28 @@ Environment variables tune the engine: `APP_PIPELINE_MAX_PARALLEL_JOBS` (default
 - `deploy`, `promote`, and `rollback` refuse services in a protected environment.
 - Re-running only the failed jobs of a run is not available. **Re-run** starts a new run from the beginning: approval decisions and artifacts are per run, so resuming inside a finished run would reuse stale approvals and lose its artifacts.
 - Sync reads the tracked branch only, and only over HTTPS (with the deploy token when one is set).
+
+## Next steps
+
+<CardGroup :cols="2">
+<Card title="OIDC federation" href="/pipelines-oidc">
+
+Short-lived cloud credentials for jobs, no stored keys.
+
+</Card>
+<Card title="Git integrations" href="/git-integrations">
+
+Connect the repository that triggers and feeds pipelines.
+
+</Card>
+<Card title="Platform as code" href="/platform-as-code">
+
+Manage pipelines as `Pipeline` documents alongside apps.
+
+</Card>
+<Card title="GitHub Actions" href="/github-actions">
+
+Deploy from an external CI instead.
+
+</Card>
+</CardGroup>

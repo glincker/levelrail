@@ -64,7 +64,7 @@
       },
       {
         "title": "Observability is core",
-        "body": "Metrics, full-text logs, crashloop detection with the last log lines, and alerts to seventeen channels all ship in the box, with no extra stack to install.",
+        "body": "Metrics, full-text logs, crashloop detection with the last log lines, and alerts to 18 notification channel kinds all ship in the box, with no extra stack to install.",
         "visual": [
           {
             "k": "cmd",
@@ -187,45 +187,7 @@
     "cta": {
       "heading": "See how a Swarm-free setup feels",
       "sub": "Install it on a spare server and import read-only. If it is not for you, nothing was changed."
-    },
-    "related": [
-      {
-        "text": "Coolify alternative",
-        "link": "/coolify-alternative"
-      },
-      {
-        "text": "Vercel alternative",
-        "link": "/vercel-alternative"
-      },
-      {
-        "text": "Heroku alternative",
-        "link": "/heroku-alternative"
-      },
-      {
-        "text": "Railway alternative",
-        "link": "/railway-alternative"
-      },
-      {
-        "text": "Pricing",
-        "link": "/pricing"
-      },
-      {
-        "text": "Privacy",
-        "link": "/privacy"
-      },
-      {
-        "text": "Demo",
-        "link": "/demo"
-      },
-      {
-        "text": "Case studies",
-        "link": "/case-studies"
-      },
-      {
-        "text": "Full comparison",
-        "link": "/comparison"
-      }
-    ]
+    }
   }
 }
 ---

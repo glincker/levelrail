@@ -26,7 +26,13 @@ Incident and maintenance text is escaped. Only paragraphs, line breaks, `- ` lis
 
 ![Levelrail status page settings with the page switched off, and a title and custom domain field](assets/screenshots/status-page-settings.png)
 
-In the dashboard open **Settings, Status page**, or use the CLI:
+<Tabs :items="['Dashboard', 'CLI']">
+<Tab value="Dashboard">
+
+Open **Settings, Status page**, switch the page on, set a title and description, and add components.
+
+</Tab>
+<Tab value="CLI">
 
 ```bash
 levelrail-cli status-page set --enable --title "Acme status" --description "Live service health"
@@ -35,6 +41,9 @@ levelrail-cli status-page components add --kind domain --target example.com --na
 levelrail-cli status-page components add --kind check --target https://api.example.com/health --name "API"
 levelrail-cli status-page preview
 ```
+
+</Tab>
+</Tabs>
 
 The page is then available at `/public/status` on the control plane host, with `/public/status.json` and `/public/status.rss` next to it.
 
@@ -95,3 +104,18 @@ The `get_status_page` and `list_status_incidents` MCP tools are read only. Publi
 - No subscriber notifications (email or webhook); the RSS feed is the push channel.
 - Uptime is measured from this control plane, not from several regions, and covers only the time the page has been enabled.
 - One page per control plane.
+
+## Related
+
+<CardGroup :cols="2">
+<Card title="Observability" href="/observability">
+
+Alerts and metrics that run alongside the status page.
+
+</Card>
+<Card title="Domains and ingress" href="/domains-and-ingress">
+
+How a custom status domain is routed and gets a certificate.
+
+</Card>
+</CardGroup>

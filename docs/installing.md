@@ -31,17 +31,19 @@ For contributors, unreleased commits, or trying Levelrail locally without a serv
 </Card>
 </CardGroup>
 
+<InlineToc default-open />
+
 ## Requirements
 
 Confirm these before you provision a server.
 
 **Supported OS**
 
-Linux, `amd64` or `arm64`, with systemd as the init system. `install.sh` runs a preflight table (root, architecture, OS, systemd, curl, Docker 24 or newer, RAM, free disk, ports 80/443/8080) and stops on a failed check unless you pass `--force`. It is tested in CI on Ubuntu 24.04 and Debian 12; other distros should work but aren't tested. Docker is installed automatically via `get.docker.com` if it's missing. Windows and non-Linux nodes aren't supported, by design (see the root `CLAUDE.md`'s non-goals).
+Linux, `amd64` or `arm64`, with systemd as the init system. `install.sh` runs a preflight table (root, architecture, OS, systemd, curl, Docker 24 or newer, RAM, free disk, ports 80/443/8080) and stops on a failed check unless you pass `--force`. It is tested in CI on Ubuntu 24.04 and Debian 12; other distros should work but aren't tested. Docker is installed automatically via `get.docker.com` if it's missing. Windows and non-Linux nodes are not supported.
 
 **RAM, CPU, and disk**
 
-`install.sh` warns below 1 GB of RAM (`LEVELRAIL_MIN_RAM_MB`) and fails below 10 GB of free disk on the data directory's filesystem (`LEVELRAIL_MIN_DISK_GB`); the control plane itself checks no minimum. `levelrail-cli doctor` (`GET /api/v1/system/doctor`) checks Docker reachability, free disk space (warns below 1 GiB by default), and data-directory writability, not a memory or CPU floor, and no official minimum has been benchmarked or published either; that measurement is Phase 5 work per the [roadmap](roadmap.md).
+`install.sh` warns below 1 GB of RAM (`LEVELRAIL_MIN_RAM_MB`) and fails below 10 GB of free disk on the data directory's filesystem (`LEVELRAIL_MIN_DISK_GB`); the control plane itself checks no minimum. `levelrail-cli doctor` (`GET /api/v1/system/doctor`) checks Docker reachability, free disk space (warns below 1 GiB by default), and data-directory writability, not a memory or CPU floor, and no official minimum has been benchmarked or published (see the [roadmap](roadmap.md)).
 
 As a practical starting point, not a hard requirement: 1 vCPU / 1 GB RAM / 10 GB disk is enough to boot Docker and the control plane on a small single-node instance. BuildKit builds and whatever apps you deploy need headroom of their own on top of that, so 2 vCPU / 2 GB RAM / 20 GB disk is more comfortable in practice. Scale up from there based on what you actually run.
 
@@ -57,7 +59,7 @@ As a practical starting point, not a hard requirement: 1 vCPU / 1 GB RAM / 10 GB
 curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
-This is the same script linked from the root [README](../README.md). It:
+It:
 
 - Runs the preflight table and stops on a failed check (`--force` continues anyway)
 - Installs Docker via `get.docker.com` if missing
@@ -80,9 +82,9 @@ Open one of the printed `http://<ip>:8080/login?setup=<token>` links from the in
 sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
 ```
 
-The dashboard shows a "connection is not encrypted" banner until you enable HTTPS. The quickest way needs no DNS: open the Domains page and click **Enable HTTPS** (or run `levelrail-cli settings ingress https enable --email you@example.com`), which issues a real Let's Encrypt certificate for `<dashed-ip>.sslip.io` (see [Domains and ingress](domains-and-ingress.md#zero-dns-setup-sslipio-hostnames-and-one-click-https)). Using your own domain works too: set a primary domain plus ACME on the same page. Either way the result is an `https://` **dashboard URL**. After that, sign-in over plain HTTP is refused. To recover if the https URL breaks, add `APP_ALLOW_INSECURE_LOGIN=true` with `sudo systemctl edit levelrail` (`[Service]` then `Environment=APP_ALLOW_INSECURE_LOGIN=true`) and restart.
+The dashboard shows a "connection is not encrypted" banner until you enable HTTPS. The quickest way needs no DNS: open the Domains page and click **Enable HTTPS** (or run `levelrail-cli settings ingress https enable --email you@example.com`), which issues a real Let's Encrypt certificate for `<dashed-ip>.sslip.io` (see [Domains and ingress](domains-and-ingress.md#zero-dns-setup-sslip-io-hostnames-and-one-click-https)). Using your own domain works too: set a primary domain plus ACME on the same page. Either way the result is an `https://` **dashboard URL**. After that, sign-in over plain HTTP is refused. To recover if the https URL breaks, add `APP_ALLOW_INSECURE_LOGIN=true` with `sudo systemctl edit levelrail` (`[Service]` then `Environment=APP_ALLOW_INSECURE_LOGIN=true`) and restart.
 
-**Pick a dashboard-only subdomain, not an app's own domain.** Use something like `console.example.com` or `panel.example.com` for the primary domain, the same convention CapRover uses for its own panel (`captain.<domain>`). Reusing a domain an app already serves breaks whichever one loses the conflict, silently, with no warning. See [Domains and ingress](domains-and-ingress.md#the-dashboards-own-domain) for why this matters.
+**Pick a dashboard-only subdomain, not an app's own domain.** Use something like `console.example.com` or `panel.example.com` for the primary domain, the same convention CapRover uses for its own panel (`captain.<domain>`). Reusing a domain an app already serves breaks whichever one loses the conflict, silently, with no warning. See [Domains and ingress](domains-and-ingress.md#the-dashboard-s-own-domain) for why this matters.
 
 To skip the setup token and create the admin non-interactively, set `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` in the unit (again via `systemctl edit levelrail`) before the first start.
 
@@ -164,7 +166,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 
 ## Option 2: Docker
 
-Already running everything else as containers? See [docs/docker.md](docker.md) for `docker run` and `docker-compose.yml` examples.
+Already running everything else as containers? See [Docker](docker.md) for `docker run` and `docker-compose.yml` examples.
 
 Images available:
 - `ghcr.io/glincker/levelrail` (control plane)
@@ -213,7 +215,7 @@ docker buildx imagetools inspect ghcr.io/glincker/levelrail:beta --format '{{ js
 
 ## Option 3: build from source
 
-The path for contributors, anyone running an unreleased commit, or trying Levelrail on a laptop without a server. See [CONTRIBUTING.md](../CONTRIBUTING.md) for branch and commit conventions and how to run the tests.
+The path for contributors, anyone running an unreleased commit, or trying Levelrail on a laptop without a server. See `CONTRIBUTING.md` in the repository for branch and commit conventions and how to run the tests.
 
 **Requirements:** Go 1.26 or newer, a running Docker daemon, and Node.js with npm only if you build the frontend yourself.
 
@@ -279,8 +281,7 @@ use. Approving a code requires an already-authenticated dashboard
 session, so it inherits whatever two-factor or passkey requirement that
 account already has, there is nothing extra to configure for this. See
 [CLI reference](cli-reference.md) for every command, or
-[Settings → CLI access](https://your-instance/settings/cli-access) in
-the dashboard itself for a copy-pasteable version of the steps above.
+**Settings, CLI access** in the dashboard for a copy-pasteable version of the steps above.
 
 Running from CI or a script instead of a person approving in a browser?
 Mint an [API token](getting-started.md#use-the-cli-from-your-laptop) instead,
@@ -308,7 +309,7 @@ journalctl -u levelrail -f
 
 **Authenticated checks (after initial setup):**
 
-Once you've created an admin account and minted an API token (see [docs/getting-started.md](getting-started.md#use-the-cli-from-your-laptop)), you can use `levelrail-cli` for deeper validation:
+Once you've created an admin account and minted an API token (see [Getting started](getting-started.md#use-the-cli-from-your-laptop)), you can use `levelrail-cli` for deeper validation:
 
 ```bash
 levelrail-cli version   # compare running vs. latest published release
@@ -324,23 +325,13 @@ Both commands talk to the control plane's API (`GET /api/v1/updates` and `GET /a
 `levelrail-cli upgrade` (or Settings > Updates in the dashboard) runs read-only preflight checks and never upgrades by itself:
 
 - the latest release publishes `checksums.txt` and its cosign signature (the installer verifies both);
-- the Docker Engine version is not on the known-bad list (`internal/upgrade/docker_known_bad.json`, replace it with your own file via `APP_DOCKER_KNOWN_BAD_FILE`);
+- the Docker Engine version is not on the known-bad list (`kit/upgrade/docker_known_bad.json`, replace it with your own file via `APP_DOCKER_KNOWN_BAD_FILE`);
 - free disk space is above `APP_UPGRADE_MIN_FREE_BYTES` (default 2 GiB);
 - a control plane backup exists and is newer than `APP_UPGRADE_MAX_BACKUP_AGE` (default 26h).
 
 The CLI also takes a fresh control plane backup unless you pass `--no-backup`, then prints the exact command to run. The API is `GET /api/v1/updates/preflight`.
 
-### Rolling back
-
-Before pending migrations run, the control plane snapshots its database as `levelrail-<timestamp>.db` under the data directory's backups folder. To go back after a bad upgrade, install the previous binary, stop the service, then:
-
-```bash
-levelrail restore-snapshot --list              # newest first
-levelrail restore-snapshot --dry-run latest    # verify only, change nothing
-levelrail restore-snapshot latest              # asks for confirmation (--yes to skip)
-```
-
-The live database is kept beside the restored one as `.before-restore-<timestamp>`. The master key is not part of a snapshot.
+### Run the upgrade
 
 **If you used install.sh:**
 
@@ -372,10 +363,22 @@ Or if using `docker run`:
 
 ```bash
 docker rm -f levelrail
-# Re-run the docker run command from docs/docker.md
+# Re-run the docker run command from the Docker page
 ```
 
 The named volume holding `/var/lib/levelrail-data` persists across recreation.
+
+### Rolling back
+
+Before pending migrations run, the control plane snapshots its database as `levelrail-<timestamp>.db` under the data directory's backups folder. To go back after a bad upgrade, install the previous binary, stop the service, then:
+
+```bash
+levelrail restore-snapshot --list              # newest first
+levelrail restore-snapshot --dry-run latest    # verify only, change nothing
+levelrail restore-snapshot latest              # asks for confirmation (--yes to skip)
+```
+
+The live database is kept beside the restored one as `.before-restore-<timestamp>`. The master key is not part of a snapshot.
 
 ## Uninstalling
 
@@ -408,8 +411,17 @@ docker volume rm levelrail-data
 - Bugs, questions, feature requests: open an issue on [GitHub](https://github.com/glincker/levelrail/issues).
 - Everything else: email [support@levelrail.com](mailto:support@levelrail.com).
 
-## See also
+## Next steps
 
-- [Docker installation](docker.md) - Running Levelrail as containers
-- [Getting started](getting-started.md) - Deploy your first app after installation
-- [Upgrading](installing.md#upgrading) - How to keep Levelrail up to date
+<CardGroup :cols="2">
+<Card title="Getting started" href="/getting-started">
+
+Sign in and deploy your first app.
+
+</Card>
+<Card title="Docker" href="/docker">
+
+Run the control plane and agent as containers.
+
+</Card>
+</CardGroup>

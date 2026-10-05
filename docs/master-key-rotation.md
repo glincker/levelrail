@@ -8,12 +8,8 @@ All secrets (app env vars marked `secret: true`, email credentials, tokens, etc.
 
 ## When to rotate
 
-- You suspect the master key (the `APP_MASTER_KEY` env var, or the
-  `master.key` file in your data directory) was exposed.
-- As routine hygiene. `levelrail-cli doctor` surfaces a `master_key_rotation`
-  check with how long it has been since the last rotation; this is a soft
-  nudge, not an error, and never fails the doctor's overall status.
-- Before moving to an external KMS-backed master key in a future release.
+- You suspect the master key (the `APP_MASTER_KEY` env var, or the `master.key` file in your data directory) was exposed.
+- As routine hygiene. `levelrail-cli doctor` has a `master_key_rotation` check that reports how long it has been since the last rotation. It is a soft nudge and never fails the doctor's overall status.
 
 ::: details What this does and does not require
 
@@ -34,32 +30,44 @@ Always read the CLI's output (or the JSON response's `warning`/`persistedToFile`
 
 ## How to rotate
 
-1. Generate a new master key on the machine you run the CLI from:
+<Steps>
+<Step title="Generate a new master key">
 
-   ```sh
-   levelrail-cli secrets generate-master-key --out /path/to/new.key
-   ```
+Run this on the machine you run the CLI from:
 
-   This writes the key with mode `600` and refuses to overwrite an existing file. The key must be a post-quantum hybrid age identity (it starts with `AGE-SECRET-KEY-PQ-`), which only this command, or a control plane's own `master.key`, produces. A key made with plain `age-keygen` (`AGE-SECRET-KEY-1...`) is rejected with a `400` pointing back at this command, and nothing is changed.
+```sh
+levelrail-cli secrets generate-master-key --out /path/to/new.key
+```
 
-2. Never paste the key on the command line, as it will leak into shell history and process listings. Keep it in the file.
-3. Run:
+This writes the key with mode `600` and refuses to overwrite an existing file. The key must be a post-quantum hybrid age identity (it starts with `AGE-SECRET-KEY-PQ-`), which only this command, or a control plane's own `master.key`, produces. A key made with plain `age-keygen` (`AGE-SECRET-KEY-1...`) is rejected with a `400` pointing back at this command, and nothing is changed.
 
-   ```sh
-   levelrail-cli secrets rotate-master-key --new-key-file /path/to/new.key
-   ```
+Never paste the key on the command line: it leaks into shell history and process listings. Keep it in the file.
 
-   Or pipe it through stdin instead of a file:
+</Step>
+<Step title="Rotate">
 
-   ```sh
-   cat /path/to/new.key | levelrail-cli secrets rotate-master-key --new-key-file -
-   ```
+```sh
+levelrail-cli secrets rotate-master-key --new-key-file /path/to/new.key
+```
 
-4. Read the output carefully. You will see `rotated_at` and `persisted_to_file` fields. If a `WARNING` line appears, act on it immediately. Update `APP_MASTER_KEY` in your systemd unit or Docker config before the next restart. A `rebound` line reports the slot-binding pass that runs right after the rotation (see [Binding secrets to their slot](#binding-secrets-to-their-slot)).
+Or pipe the key through stdin:
 
-   Verified locally on a file-sourced key: the command reported `persisted_to_file: true`, `master.key` was rewritten, the control plane was restarted, and an app with a secret env var was recreated and started with the secret intact. `binding-status` still reported every value bound.
+```sh
+cat /path/to/new.key | levelrail-cli secrets rotate-master-key --new-key-file -
+```
 
-5. Securely delete the temporary key file once you've confirmed the rotation succeeded (or keep it safe if you still need to update `APP_MASTER_KEY` manually).
+</Step>
+<Step title="Read the output">
+
+You will see `rotated_at` and `persisted_to_file` fields. If a `WARNING` line appears, act on it immediately: update `APP_MASTER_KEY` in your systemd unit or Docker config before the next restart. A `rebound` line reports the slot-binding pass that runs right after the rotation (see [Binding secrets to their slot](#binding-secrets-to-their-slot)).
+
+</Step>
+<Step title="Delete the temporary key file">
+
+Do this once you have confirmed the rotation succeeded. Keep it safe instead if you still need to update `APP_MASTER_KEY` by hand.
+
+</Step>
+</Steps>
 
 This command requires an API token or session with the `root` ability. It's gated the same way as other fleet-wide, irreversible actions like `system prune`, because narrower, per-app-scoped tokens should never reach such powerful operations.
 
@@ -108,9 +116,27 @@ Once `binding-status` reports `legacy: 0`, you can set `APP_SECRETS_REQUIRE_BOUN
 
 `POST /api/v1/system/secrets/rebind` requires the `root` ability, like rotation. `GET /api/v1/system/secrets/binding` only needs `read`. Neither ever returns a secret value.
 
-## See also
+## Next steps
 
-- [Identity and access](identity-and-access.md) for token abilities and admin access
-- [CLI reference](cli-reference.md) for the `secrets` command group
-- [Deploying apps](deploying-apps.md) for how app secrets work
-- [Installing](installing.md) for configuring `APP_MASTER_KEY` at install time
+<CardGroup :cols="2">
+<Card title="Disaster recovery" href="/disaster-recovery">
+
+Refresh your escrow bundle after rotating.
+
+</Card>
+<Card title="Identity and access" href="/identity-and-access">
+
+Token abilities and admin access.
+
+</Card>
+<Card title="CLI reference" href="/cli-reference">
+
+The full `secrets` command group.
+
+</Card>
+<Card title="Installing" href="/installing">
+
+Configure `APP_MASTER_KEY` at install time.
+
+</Card>
+</CardGroup>

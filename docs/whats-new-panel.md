@@ -8,14 +8,14 @@ A sparkle icon in the dashboard header, next to the notifications bell, opens a 
 
 ## Where the content comes from
 
-There is exactly one source of truth: the repository's root `CHANGELOG.md`, maintained automatically by release-please on every release. The control plane parses it once at startup (`internal/changelog`) and serves the most recent entries from `GET /api/v1/changelog`. Nothing is hand-curated a second time for this panel.
+The only source is the repository's root `CHANGELOG.md`, maintained automatically by release-please on every release. The control plane parses it once at startup and serves the most recent entries from `GET /api/v1/changelog`. Nothing is written a second time for this panel.
 
-A control plane running from the official Docker image always has this file available. A bare binary install that hasn't shipped `CHANGELOG.md` next to the binary yet (see `internal/changelog.ReadFile`'s default, `./CHANGELOG.md`, overridable with `APP_CHANGELOG_FILE`) just shows an empty panel rather than failing.
+The official Docker image always includes the file. A bare binary install without a `CHANGELOG.md` next to it shows an empty panel instead of failing. Point the control plane at a different file with `APP_CHANGELOG_FILE`.
 
 ## Unread indicator
 
-The badge counts how many releases are newer than the last one you opened the panel at. That "last seen version" is stored only in your browser (`localStorage`); opening the panel marks everything as read. It is a per-browser convenience, not account state, so a different browser or a cleared storage shows every entry as unread again.
+The badge counts how many releases are newer than the last one you saw when you opened the panel. That last-seen version is stored only in your browser (`localStorage`) and opening the panel marks everything as read. A different browser or cleared storage shows every entry as unread again.
 
 ## CLI
 
-`levelrail-cli changelog [--limit N]` prints the same entries from the terminal, as JSON with `--json` or human-readable otherwise.
+`levelrail-cli changelog [--limit N]` prints the same entries in the terminal, as JSON with `--json` or human-readable otherwise.

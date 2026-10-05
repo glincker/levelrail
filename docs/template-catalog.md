@@ -14,7 +14,7 @@ This is a browsing list, not a how-to. For the API/CLI/UI mechanics (how a templ
 
 - **Template** links to the project's own documentation (`DocumentationURL` in the source), when the catalog entry has one.
 - **ID** is what you pass to `levelrail-cli templates get <id>` / `templates deploy <id>`, and what `GET /api/v1/service-templates/{id}` expects.
-- **Notes** only flags something that changes how you'd deploy it. Today the only note in use is "Requires GPU": those entries ship CPU-safe Compose bodies that run, but aren't practical without an NVIDIA GPU passed through (and `internal/compose` doesn't support GPU passthrough yet, see [Templates and registry](/templates-and-registry#how-it-actually-works)).
+- **Notes** only flags something that changes how you'd deploy it. Today the only note in use is "Requires GPU": those entries ship CPU-safe Compose bodies that run, but aren't practical without an NVIDIA GPU passed through (the Compose layer reads GPU device reservations, `deploy.resources.reservations.devices`; see [Templates and registry](/templates-and-registry#how-templates-are-defined)).
 - This page has no popularity counts, deployment counts, or ratings. None of that is tracked anywhere in this codebase, so there's nothing honest to show.
 - Logos for many of these are already visible in the dashboard's own template picker (**Apps → New app → Browse templates**); the table below stays text-only to keep it simple and to keep the table generator (below) the only thing that can go stale, not an icon mapping too.
 

@@ -4,7 +4,7 @@ description: Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes as a first
 
 # AI models
 
-A model is a first-class resource: an inference engine running as a container on a GPU node, a persistent volume holding the downloaded weights, and an OpenAI-compatible endpoint protected by an API key. It is available from the dashboard (**AI models**), the CLI (`levelrail models`), the REST API (`/api/v1/models`) and the MCP server.
+A model is a first-class resource: an inference engine running as a container on a GPU node, a persistent volume holding the downloaded weights, and an OpenAI-compatible endpoint protected by an API key. It is available from the dashboard (**AI models**), the CLI (`levelrail-cli models`), the REST API (`/api/v1/models`) and the MCP server.
 
 Version 1 supports NVIDIA GPUs on Linux nodes (Ubuntu is the documented path). AMD, Intel and Apple GPUs are not supported.
 
@@ -12,7 +12,7 @@ Version 1 supports NVIDIA GPUs on Linux nodes (Ubuntu is the documented path). A
 
 Every node reports its NVIDIA GPUs to the control plane: driver version, per-GPU VRAM total and used, utilization, and whether Docker has the `nvidia` container runtime registered. Detection runs `nvidia-smi` on the host and asks the Docker Engine API for its runtimes. The control plane detects its own host every minute (`APP_GPU_COLLECT_INTERVAL`), agents report on connect and every minute after.
 
-The **AI models** page shows a card per GPU node with VRAM used and total. `levelrail models gpus` prints the same data.
+The **AI models** page shows a card per GPU node with VRAM used and total. `levelrail-cli models gpus` prints the same data.
 
 ### Prerequisites on the node (Ubuntu)
 
@@ -25,7 +25,7 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 ```
 
-When a node has a GPU but Docker has no `nvidia` runtime, the dashboard card shows "nvidia runtime missing" with this fix, `levelrail doctor` and the Status page raise a warning, and models placed there stay in the `GPURuntimeMissing` state until it is fixed. Run `levelrail models restart <name>` afterwards.
+When a node has a GPU but Docker has no `nvidia` runtime, the dashboard card shows "nvidia runtime missing" with this fix, `levelrail-cli doctor` and the Status page raise a warning, and models placed there stay in the `GPURuntimeMissing` state until it is fixed. Run `levelrail-cli models restart <name>` afterwards.
 
 If the agent runs inside a container, `nvidia-smi` must be reachable from it, or run the agent directly on the host.
 
@@ -43,13 +43,13 @@ docker info | grep -A3 "Discovered Devices"
 
 A request that CDI cannot serve exactly (for example more GPUs than the spec lists) falls back to the legacy runtime instead of failing. With a count, CDI attaches the first N GPUs by index. Set `APP_GPU_ATTACH=legacy` on a node to never use CDI (the default is `auto`). Regenerate the spec after a driver update or GPU change.
 
-`levelrail doctor` (and the Doctor page) checks the control plane host in detail: the driver, per-GPU memory (a warning above `APP_GPU_DOCTOR_VRAM_WARN_PERCENT`, default 90), the NVIDIA container toolkit version, whether a CDI spec exists and Docker lists its devices, whether the `nvidia` runtime is registered, and the resulting attach mode, with the exact fix command for each problem. Remote nodes report only driver, runtime or CDI availability and per-GPU memory; the toolkit and spec files of a remote node are not inspected. None of this was exercised against a real GPU: the detection and the CDI request are covered with fakes.
+`levelrail-cli doctor` (and the Doctor page) checks the control plane host in detail: the driver, per-GPU memory (a warning above `APP_GPU_DOCTOR_VRAM_WARN_PERCENT`, default 90), the NVIDIA container toolkit version, whether a CDI spec exists and Docker lists its devices, whether the `nvidia` runtime is registered, and the resulting attach mode, with the exact fix command for each problem. Remote nodes report only driver, runtime or CDI availability and per-GPU memory; the toolkit and spec files of a remote node are not inspected. None of this was exercised against a real GPU: the detection and the CDI request are covered with fakes.
 
 ## Deploying a model
 
 ```sh
-levelrail models deploy --name chat --engine ollama --model llama3.1:8b
-levelrail models deploy --name llama --engine vllm --model meta-llama/Llama-3.1-8B-Instruct \
+levelrail-cli models deploy --name chat --engine ollama --model llama3.1:8b
+levelrail-cli models deploy --name llama --engine vllm --model meta-llama/Llama-3.1-8B-Instruct \
   --gpus 2 --context 8192 --hf-token-from-env --node <node-id> --domain llm.example.com
 ```
 
@@ -75,8 +75,8 @@ The token is stored through the envelope-encryption path (`internal/secrets`) un
 Before deploying a Hugging Face repository, check it:
 
 ```sh
-levelrail models preflight bartowski/Llama-3.2-3B-Instruct-GGUF --engine llamacpp --node <node-id>
-HF_TOKEN=hf_... levelrail models preflight meta-llama/Llama-3.1-8B-Instruct --engine vllm --hf-token-from-env
+levelrail-cli models preflight bartowski/Llama-3.2-3B-Instruct-GGUF --engine llamacpp --node <node-id>
+HF_TOKEN=hf_... levelrail-cli models preflight meta-llama/Llama-3.1-8B-Instruct --engine vllm --hf-token-from-env
 ```
 
 The check queries the public Hub API (through the same outbound guard as webhooks, with a timeout and a response size cap) and reports:
@@ -122,7 +122,7 @@ Before you deploy, and on the model page, Levelrail estimates whether a model fi
 Nodes are ranked best first, with non-schedulable nodes last. The check is advisory: it never blocks a deploy. `APP_MODEL_FIT_KV_KIB_PER_TOKEN` overrides the KV heuristic if your model family differs.
 
 - **Dashboard.** The deploy dialog shows a verdict per node and highlights the selected one. The model page Overview shows the same for the deployed model, with its current node marked.
-- **CLI.** `levelrail models fit --engine ollama --model llama3.1:8b --context 8192`, or `levelrail models fit --name chat` for a deployed model.
+- **CLI.** `levelrail-cli models fit --engine ollama --model llama3.1:8b --context 8192`, or `levelrail-cli models fit --name chat` for a deployed model.
 - **API.** `POST /api/v1/models/fit` and `GET /api/v1/models/{name}/fit` (read ability).
 - **MCP.** `check_model_fit` (read-only).
 
@@ -133,9 +133,9 @@ No GPU was involved in testing this; the numbers come from the GPU facts nodes r
 Each model keeps its downloaded weights in its own Docker volume. Deleting a model keeps the volume, so those volumes are what accumulates.
 
 ```sh
-levelrail models cache list
-levelrail models cache prune --dry-run
-levelrail models cache prune
+levelrail-cli models cache list
+levelrail-cli models cache prune --dry-run
+levelrail-cli models cache prune
 ```
 
 The list shows each volume with its size, its owning model, when it was last used, and whether it is safe to prune. Last use comes from gateway traffic when the model has any, otherwise from the model's last change (or, for a volume no model owns, the volume's creation time). Two models that point at the same weights are flagged and counted once in the unique total.
@@ -151,7 +151,7 @@ A model has one `Ready` condition whose reason tells you where it is:
 | Reason | Meaning |
 | --- | --- |
 | `Starting` | The container is being created or started. |
-| `Downloading` | The weights are downloading. Ollama reports percent and bytes; vLLM and llama.cpp download on start, follow `levelrail models logs <name> --follow`. |
+| `Downloading` | The weights are downloading. Ollama reports percent and bytes; vLLM and llama.cpp download on start, follow `levelrail-cli models logs <name> --follow`. |
 | `Loading` | The model is being loaded into VRAM. |
 | `ModelLoaded` | The model is loaded and serving. This is the readiness signal. |
 | `Idle` | An on-demand model whose engine was stopped after its idle time. It starts on the first request (see On-demand residency). |
@@ -173,7 +173,7 @@ Each model has its own page at `/models/<name>` (click its name in the list). Ta
 - **Usage.** Requests, tokens, errors and first-byte latency per key.
 - **Logs.** The engine's live log tail.
 
-The tab is kept in the URL (`?tab=keys`), so a link opens straight to it. From the CLI, `levelrail models get <name>` prints the same overview facts.
+The tab is kept in the URL (`?tab=keys`), so a link opens straight to it. From the CLI, `levelrail-cli models get <name>` prints the same overview facts.
 
 ## Engine metrics
 
@@ -188,11 +188,11 @@ The Overview tab shows the inference engine's own metrics with a health summary.
 | Time to first token | yes | not available | not available |
 | VRAM in use, share running on CPU | not available | not available | yes (from `/api/ps`) |
 
-Rates (tokens per second, prefix hit rate, time to first token) are computed between two scrapes, so they appear one interval after the model starts and skip an engine restart. llama.cpp serves `/metrics` only when started with `--metrics`, which new containers now get; a model deployed earlier needs `levelrail models restart <name>`. Ollama exposes no Prometheus metrics, so the page says "Not available for ollama" instead of guessing; per-key tokens and first-byte latency are on the Usage tab.
+Rates (tokens per second, prefix hit rate, time to first token) are computed between two scrapes, so they appear one interval after the model starts and skip an engine restart. llama.cpp serves `/metrics` only when started with `--metrics`, which new containers now get; a model deployed earlier needs `levelrail-cli models restart <name>`. Ollama exposes no Prometheus metrics, so the page says "Not available for ollama" instead of guessing; per-key tokens and first-byte latency are on the Usage tab.
 
 The health pill warns when the KV cache is at or above `APP_MODEL_KV_WARN_PERCENT` (default 90), when more than `APP_MODEL_QUEUE_WARN` requests are queued (default 4), or when an Ollama model runs partly on CPU.
 
-- **CLI.** `levelrail models metrics <name> --since 6h`.
+- **CLI.** `levelrail-cli models metrics <name> --since 6h`.
 - **API.** `GET /api/v1/models/{name}/engine-metrics?since=1h` (read ability).
 - **MCP.** `get_model_engine_metrics` (read-only).
 
@@ -203,10 +203,10 @@ The scrape is done by the control plane, not by a node agent, so a remote node's
 By default a model is always loaded. On a shared GPU you can make it **on demand**: after an idle period the engine container is stopped, freeing its VRAM, and the first request starts it again.
 
 ```sh
-levelrail models deploy --name chat --engine ollama --model llama3.1:8b --residency on_demand --idle-ttl 20m
-levelrail models residency chat --mode on_demand --idle-ttl 30m
-levelrail models wake chat      # start now
-levelrail models sleep chat     # stop now
+levelrail-cli models deploy --name chat --engine ollama --model llama3.1:8b --residency on_demand --idle-ttl 20m
+levelrail-cli models residency chat --mode on_demand --idle-ttl 30m
+levelrail-cli models wake chat      # start now
+levelrail-cli models sleep chat     # stop now
 ```
 
 How it behaves:
@@ -230,7 +230,7 @@ curl https://llm.example.com/v1/chat/completions \
   -d '{"model": "llama3.1:8b", "messages": [{"role": "user", "content": "hello"}]}'
 ```
 
-- The key is generated at deploy time and shown once. Only its SHA-256 hash is stored. Lost it? `levelrail models rotate-key <name>` replaces the `default` key at once. For more than one key, see [Virtual keys](#virtual-keys-and-usage).
+- The key is generated at deploy time and shown once. Only its SHA-256 hash is stored. Lost it? `levelrail-cli models rotate-key <name>` replaces the `default` key at once. For more than one key, see [Virtual keys](#virtual-keys-and-usage).
 - Only an allowlist of OpenAI-compatible routes is served (see below). Engine admin APIs (Ollama's pull and delete, vLLM's runtime LoRA load and unload, llama.cpp's `/props` and `/lora-adapters`) are never exposed, even ones that live under `/v1/`.
 - The engine's port is published on loopback (local node) or the WireGuard mesh address (remote node), never on a public interface.
 
@@ -251,13 +251,13 @@ Not served on purpose: vLLM's `/v1/load_lora_adapter`, `/v1/unload_lora_adapter`
 
 ### Limits
 
-Limits are global (every model) and set with environment variables on the control plane. `0` or a negative value disables a limit. The current values show on `GET /api/v1/models/{name}` (`limits`) and in `levelrail models get`.
+Limits are global (every model) and set with environment variables on the control plane. `0` or a negative value disables a limit. The current values show on `GET /api/v1/models/{name}` (`limits`) and in `levelrail-cli models get`.
 
 | Variable | Default | Effect |
 | --- | --- | --- |
 | `APP_MODEL_GATEWAY_MAX_BODY_BYTES` | `33554432` (32 MiB) | Larger request bodies get `413`. |
 | `APP_MODEL_GATEWAY_MAX_N` | `16` | `n` or `best_of` above this gets `400`. |
-| `APP_MODEL_GATEWAY_MAX_GEN_LEN` | `32768` | `max_tokens`, `max_completion_tokens` or `max_output_tokens` above this, or negative (unlimited on llama.cpp), gets `400`. A request that sets none is passed through; the engine's context length bounds it. |
+| `APP_MODEL_GATEWAY_MAX_TOKENS` | `32768` | `max_tokens`, `max_completion_tokens` or `max_output_tokens` above this, or negative (unlimited on llama.cpp), gets `400`. A request that sets none is passed through; the engine's context length bounds it. |
 | `APP_MODEL_GATEWAY_MAX_INFLIGHT` | `32` | Concurrent requests per model; more get `429` with `Retry-After`. Streams hold a slot until they end. |
 | `APP_MODEL_GATEWAY_RETRY_AFTER` | `5s` | The `Retry-After` value. |
 | `APP_MODEL_GATEWAY_DIAL_TIMEOUT` | `5s` | Connecting to the engine. |
@@ -271,12 +271,12 @@ JSON bodies are read up to the size cap so `n` and the token limits can be check
 A model can have several named keys, so each client gets its own identity, limits and usage. The key made at deploy time is the key named `default`; existing models were migrated to it, and it keeps working unchanged.
 
 ```bash
-levelrail models keys create chat --name ci --rpm 60 --tpm 100000 --tpd 2000000 --max-parallel 4 \
+levelrail-cli models keys create chat --name ci --rpm 60 --tpm 100000 --tpd 2000000 --max-parallel 4 \
   --allow-paths /v1/chat/completions --expires-in 720h
-levelrail models keys list chat
-levelrail models keys rotate chat <key-id> --grace 30m
-levelrail models keys revoke chat <key-id>
-levelrail models usage chat --since 168h
+levelrail-cli models keys list chat
+levelrail-cli models keys rotate chat <key-id> --grace 30m
+levelrail-cli models keys revoke chat <key-id>
+levelrail-cli models usage chat --since 168h
 ```
 
 In the dashboard, the gauge button on a model row opens the keys panel (create, rotate, revoke, last used, limits) and the usage card (requests, tokens, errors and time to first byte over time, plus a per key table).
@@ -327,20 +327,20 @@ Where the ledger is consulted:
 
 - **Create.** A new GPU app without `node_id` is auto-placed on the least loaded node that fits (the local host is the fallback), or refused with `409` and a per-node reason. An explicit `node_id` is checked the same way once the node has reported.
 - **Move.** `PUT /api/v1/apps/{name}/node` rejects a target that lacks the runtime or the free GPUs.
-- **Drain.** Each GPU app is placed on a node that fits, and GPUs it takes are reserved for the apps after it in the same drain. An app no node can host stays put and is reported under `blocked` (dashboard drain dialog, `levelrail nodes drain`, API). Models are never moved, so they are always listed as blocked.
+- **Drain.** Each GPU app is placed on a node that fits, and GPUs it takes are reserved for the apps after it in the same drain. An app no node can host stays put and is reported under `blocked` (dashboard drain dialog, `levelrail-cli nodes drain`, API). Models are never moved, so they are always listed as blocked.
 
 Docker does not isolate GPUs by count: two containers can share a device, so the ledger is scheduling accounting, not enforcement. A running app is never stopped because the ledger says the node is oversubscribed.
 
 ### Seeing reservations
 
 - **API.** `GET /api/v1/gpus` adds `reserved_gpus`, `free_gpus` and `reservations` (`app:<name>`, `model:<name>`) per node. `GET /api/v1/nodes` and `GET /api/v1/nodes/{id}` carry a `gpu` summary.
-- **CLI.** `levelrail nodes list` has a GPU column (`free/total`), `levelrail nodes get` prints a GPU block, `levelrail models gpus` has a RESERVED column.
+- **CLI.** `levelrail-cli nodes list` has a GPU column (`free/total`), `levelrail-cli nodes get` prints a GPU block, `levelrail-cli models gpus` has a RESERVED column.
 - **Dashboard.** The AI models page GPU cards and the node detail GPU card show reserved vs total GPUs and VRAM used vs total; the node list shows a `GPU free/total` badge.
 - **MCP.** `list_gpu_nodes` returns the same fields.
 
 ### Attention and doctor
 
-When a GPU app or model cannot run on its own node and no eligible GPU node has enough free GPUs, `levelrail doctor` and the attention list (Status page, `levelrail attention`, MCP `get_attention`) raise a warning `GPU app <name> cannot be placed`. Fix it by freeing a GPU (stop or shrink another GPU workload), adding a GPU node, or installing the nvidia container toolkit on the node that has GPUs.
+When a GPU app or model cannot run on its own node and no eligible GPU node has enough free GPUs, `levelrail-cli doctor` and the attention list (Status page, `levelrail-cli attention`, MCP `get_attention`) raise a warning `GPU app <name> cannot be placed`. Fix it by freeing a GPU (stop or shrink another GPU workload), adding a GPU node, or installing the nvidia container toolkit on the node that has GPUs.
 
 ## Access control
 

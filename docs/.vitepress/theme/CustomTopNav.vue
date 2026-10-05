@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useData } from 'vitepress'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useData, useRoute } from 'vitepress'
 import { VPNavBarSearch, VPSocialLinks } from 'vitepress/theme'
+import { PhList, PhX } from '@phosphor-icons/vue'
+import NavDropdown from './nav/NavDropdown.vue'
+import NavMobileMenu from './nav/NavMobileMenu.vue'
+import { navEntries } from './nav/navItems'
 
 const { site, theme, isDark, frontmatter } = useData()
+const route = useRoute()
 
 function toggleDark() {
   isDark.value = !isDark.value
@@ -28,7 +33,6 @@ function toggleDark() {
 // page and doc pages. The scroll listener itself can just always be
 // attached -- it's a cheap no-op on pages where isHome is false, so it
 // doesn't need its own attach/detach lifecycle tied to route changes.
-const SECONDARY_LINKS = ['/troubleshooting', '/roadmap', '/changelog/']
 const scrolled = ref(false)
 const isHome = computed(() => frontmatter.value.layout === 'home')
 
@@ -36,13 +40,73 @@ function handleScroll() {
   scrolled.value = window.scrollY > 40
 }
 
+const COMPACT_QUERY = '(max-width: 1024px)'
+const SCROLL_LOCK_CLASS = 'nav-scroll-locked'
+
+const mounted = ref(false)
+const openGroup = ref<string | null>(null)
+const mobileOpen = ref(false)
+const hamburger = ref<HTMLButtonElement | null>(null)
+const mobileMenu = ref<InstanceType<typeof NavMobileMenu> | null>(null)
+let compactMq: MediaQueryList | undefined
+
+function closeAll() {
+  openGroup.value = null
+  mobileOpen.value = false
+}
+
+function toggleMobile() {
+  openGroup.value = null
+  mobileOpen.value = !mobileOpen.value
+}
+
+function onHamburgerKeydown(e: KeyboardEvent) {
+  if (e.key === 'Tab' && !e.shiftKey && mobileOpen.value) {
+    e.preventDefault()
+    mobileMenu.value?.focusFirst()
+  }
+}
+
+function onDocPointerDown(e: PointerEvent) {
+  if (!openGroup.value) return
+  if (!(e.target as Element | null)?.closest('.nav-dropdown')) openGroup.value = null
+}
+
+function onDocKeydown(e: KeyboardEvent) {
+  if (e.key !== 'Escape') return
+  if (mobileOpen.value) {
+    mobileOpen.value = false
+    hamburger.value?.focus()
+  }
+}
+
+function onCompactChange(e: MediaQueryListEvent) {
+  if (!e.matches) closeAll()
+}
+
+watch(mobileOpen, (isOpen) => {
+  document.documentElement.classList.toggle(SCROLL_LOCK_CLASS, isOpen)
+  if (isOpen) nextTick(() => mobileMenu.value?.focusFirst())
+})
+
+watch(() => route.path, closeAll)
+
 onMounted(() => {
+  mounted.value = true
   handleScroll()
   window.addEventListener('scroll', handleScroll, { passive: true })
+  document.addEventListener('pointerdown', onDocPointerDown)
+  document.addEventListener('keydown', onDocKeydown)
+  compactMq = window.matchMedia(COMPACT_QUERY)
+  compactMq.addEventListener('change', onCompactChange)
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
+  document.removeEventListener('pointerdown', onDocPointerDown)
+  document.removeEventListener('keydown', onDocKeydown)
+  compactMq?.removeEventListener('change', onCompactChange)
+  document.documentElement.classList.remove(SCROLL_LOCK_CLASS)
 })
 </script>
 
@@ -65,15 +129,21 @@ onUnmounted(() => {
       </a>
 
       <nav class="custom-nav__links" aria-label="Main">
-        <a
-          v-for="item in theme.nav ?? []"
-          :key="item.text"
-          class="custom-nav__link"
-          :class="{ 'custom-nav__link--secondary': SECONDARY_LINKS.includes(item.link) }"
-          :href="item.link"
-        >
-          {{ item.text }}
-        </a>
+        <template v-for="entry in navEntries" :key="entry.kind === 'group' ? entry.group.label : entry.link.link">
+          <NavDropdown
+            v-if="entry.kind === 'group'"
+            :id="`nav-${entry.group.label.toLowerCase()}`"
+            :group="entry.group"
+            :open="openGroup === entry.group.label"
+            :any-open="openGroup !== null"
+            @open="openGroup = entry.group.label"
+            @close="openGroup === entry.group.label && (openGroup = null)"
+          />
+          <a v-else class="custom-nav__link" :href="entry.link.link">
+            <span class="nav-dropdown__dot" aria-hidden="true" />
+            {{ entry.link.text }}
+          </a>
+        </template>
       </nav>
 
       <div class="custom-nav__spacer" />
@@ -128,6 +198,30 @@ onUnmounted(() => {
       </button>
 
       <VPSocialLinks v-if="theme.socialLinks?.length" class="custom-nav__socials" :links="theme.socialLinks" />
+
+      <button
+        ref="hamburger"
+        type="button"
+        class="custom-nav__icon-btn custom-nav__menu-btn"
+        :aria-label="mobileOpen ? 'Close navigation menu' : 'Open navigation menu'"
+        :aria-expanded="mobileOpen"
+        aria-controls="nav-mobile-sheet"
+        @click="toggleMobile"
+        @keydown="onHamburgerKeydown"
+      >
+        <PhX v-if="mobileOpen" :size="18" weight="bold" aria-hidden="true" />
+        <PhList v-else :size="18" weight="bold" aria-hidden="true" />
+      </button>
     </div>
+
+    <NavMobileMenu
+      v-if="mounted"
+      ref="mobileMenu"
+      :entries="navEntries"
+      :open="mobileOpen"
+      :path="route.path"
+      @close="mobileOpen = false"
+      @wrap="hamburger?.focus()"
+    />
   </header>
 </template>

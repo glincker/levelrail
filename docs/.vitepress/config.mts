@@ -4,6 +4,7 @@ import { buildEnd, changelogHead, changelogPageData } from './changelog.mts'
 import { buildLlmsFullTxt } from './llmsFull.mts'
 import { writeRawMarkdown } from './rawMarkdown.mts'
 import { faqItems } from './theme/faqData'
+import { flattenNav } from './theme/nav/navItems'
 
 const description =
   'A self-hosted deployment platform whose agent talks to Docker’s own Engine API directly, ' +
@@ -48,10 +49,14 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Deploying apps', link: '/deploying-apps' },
+          { text: 'Importing apps', link: '/importing-apps' },
           { text: 'Deploy safety', link: '/deploy-safety' },
           { text: 'Deploy failures', link: '/deploy-failures' },
           { text: 'Scheduled deploys', link: '/scheduled-deploys' },
           { text: 'Deployments page', link: '/deployments-page' },
+          { text: 'Deploy previews', link: '/deploy-previews' },
+          { text: 'Chat deploy approvals', link: '/chat-deploy-approvals' },
+          { text: 'Supply chain visibility', link: '/supply-chain' },
           { text: 'Deploy status badge', link: '/deploy-status-badge' },
           { text: 'Screenshots', link: '/screenshots' },
           { text: 'Docker', link: '/docker' },
@@ -72,6 +77,8 @@ const sidebarGroups = [
             link: '/multi-cloud-provisioning',
           },
           { text: 'Network topology', link: '/network-topology' },
+          { text: 'Project topology graph', link: '/service-topology-graph' },
+          { text: 'Build node routing', link: '/build-node-routing' },
         ],
       },
       {
@@ -85,6 +92,7 @@ const sidebarGroups = [
           },
           { text: 'Backups and storage', link: '/backups-and-storage' },
           { text: 'Object storage', link: '/object-storage' },
+          { text: 'Network shares', link: '/network-shares' },
           { text: 'Log archive', link: '/log-archive' },
           { text: 'Control plane backup', link: '/control-plane-backup' },
           { text: 'Disaster recovery', link: '/disaster-recovery' },
@@ -96,6 +104,7 @@ const sidebarGroups = [
         items: [
           { text: 'Deploying from GitHub Actions', link: '/github-actions' },
           { text: 'Pipelines', link: '/pipelines' },
+          { text: 'Pipelines: OIDC federation', link: '/pipelines-oidc' },
           { text: 'Platform as code', link: '/platform-as-code' },
           { text: 'Git integrations', link: '/git-integrations' },
         ],
@@ -106,6 +115,7 @@ const sidebarGroups = [
         items: [
           { text: 'Feature flags', link: '/feature-flags' },
           { text: 'Library auth engine', link: '/auth-engine' },
+          { text: 'Host firewall', link: '/host-firewall' },
           { text: 'Master key rotation', link: '/master-key-rotation' },
           { text: 'Identity and access', link: '/identity-and-access' },
           {
@@ -119,10 +129,25 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Managing apps at scale', link: '/managing-apps-at-scale' },
+          { text: 'Tags', link: '/tags' },
+          { text: 'Command palette', link: '/command-palette' },
+          { text: 'Cost estimate', link: '/cost-estimate' },
+          { text: 'Integrations', link: '/integrations' },
           { text: 'Resilience', link: '/resilience' },
+          { text: 'Resilience, in short', link: '/resilience-summary' },
           { text: 'Observability', link: '/observability' },
           { text: 'Public status page', link: '/status-page' },
+          { text: "What's new panel", link: '/whats-new-panel' },
+        ],
+      },
+      {
+        text: 'AI and agents',
+        collapsed: true,
+        items: [
           { text: 'AI models', link: '/ai-models' },
+          { text: 'Working with AI agents', link: '/agents' },
+          { text: 'AI assistant integration', link: '/ai-assistant' },
+          { text: 'In-app AI assistant chat', link: '/ai-assistant-chat' },
         ],
       },
       {
@@ -154,9 +179,12 @@ const sidebarGroups = [
       { text: 'App spec reference', link: '/app-spec-reference' },
       { text: 'Feature catalog', link: '/feature-catalog' },
       { text: 'CLI reference', link: '/cli-reference' },
+      { text: 'Environment variables', link: '/environment-variables' },
       { text: 'API reference', link: '/api-reference' },
       { text: 'API explorer', link: '/api-explorer' },
       { text: 'MCP tool surface', link: '/mcp-tool-surface' },
+      { text: 'Agent tooling audit', link: '/agent-tooling-audit' },
+      { text: 'Shared Go kit', link: '/kit' },
     ],
   },
   {
@@ -169,6 +197,7 @@ const sidebarGroups = [
       { text: 'Security alert verdicts', link: '/security-alert-verdicts' },
       { text: 'Comparison', link: '/comparison' },
       { text: 'Who Levelrail is for', link: '/use-cases' },
+      { text: 'White-labeling', link: '/white-labeling' },
     ],
   },
   {
@@ -189,7 +218,19 @@ const sidebarGroups = [
       { text: 'Experimental features', link: '/experimental-features' },
       { text: 'Performance', link: '/performance' },
       { text: 'CI', link: '/ci' },
+      { text: 'VPS smoke test', link: '/vps-smoke' },
+      { text: 'Internationalization', link: '/i18n' },
       { text: 'Changelog', link: '/changelog/' },
+    ],
+  },
+  {
+    text: 'Legal',
+    collapsed: true,
+    items: [
+      { text: 'Terms of use', link: '/terms' },
+      { text: 'Privacy policy', link: '/privacy-policy' },
+      { text: 'Cookie notice', link: '/cookies' },
+      { text: 'License and notices', link: '/license' },
     ],
   },
   {
@@ -236,6 +277,7 @@ const sectionPriority: Record<string, number> = {
   Status: 0.4,
   'Design proposals': 0.3,
   'Docs index': 0.3,
+  Legal: 0.3,
 }
 const landingSlugs = new Set([
   'coolify-alternative',
@@ -247,6 +289,17 @@ const landingSlugs = new Set([
   'privacy',
   'demo',
   'case-studies',
+  'caprover-alternative',
+  'dokku-alternative',
+  'kamal-alternative',
+  'self-hosted-paas',
+  'self-host-nextjs',
+  'zero-downtime-deploys',
+  'preview-environments',
+  'contribute',
+  'developers',
+  'about',
+  'contact',
 ])
 function sitemapPriority(url: string): number {
   if (url === '') return 1.0
@@ -273,7 +326,9 @@ export default withMermaid({
   sitemap: {
     hostname: siteUrl,
     transformItems: (items) =>
-      items.map((item) => ({ ...item, priority: sitemapPriority(item.url) })),
+      items
+        .filter((item) => !item.url.startsWith('mock-preview'))
+        .map((item) => ({ ...item, priority: sitemapPriority(item.url) })),
   },
 
   head: [
@@ -305,6 +360,36 @@ export default withMermaid({
         },
       }),
     ],
+    [
+      'script',
+      { type: 'application/ld+json' },
+      JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'GLINCKER',
+        url: 'https://glincker.com',
+        sameAs: [
+          'https://github.com/glincker',
+          'https://github.com/glincker/levelrail',
+          'https://discord.gg/Ar5pcaZB99',
+        ],
+        contactPoint: {
+          '@type': 'ContactPoint',
+          contactType: 'customer support',
+          email: 'support@levelrail.com',
+        },
+      }),
+    ],
+    [
+      'script',
+      { type: 'application/ld+json' },
+      JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'Levelrail',
+        url: `${siteUrl}/`,
+      }),
+    ],
   ],
 
   cleanUrls: true,
@@ -328,16 +413,7 @@ export default withMermaid({
   themeConfig: {
     logo: `/favicon.svg?v=${faviconVersion}`,
 
-    nav: [
-      { text: 'Guide', link: '/getting-started' },
-      { text: 'Reference', link: '/app-spec-reference' },
-      { text: 'Compare', link: '/comparison' },
-      { text: 'Demo', link: '/demo' },
-      { text: 'Pricing', link: '/pricing' },
-      { text: 'Troubleshooting', link: '/troubleshooting' },
-      { text: 'Roadmap', link: '/roadmap' },
-      { text: 'Changelog', link: '/changelog/' },
-    ],
+    nav: flattenNav(),
 
     sidebar: sidebarGroups,
 

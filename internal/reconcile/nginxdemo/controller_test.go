@@ -281,3 +281,24 @@ func TestWithMeshDNSAddr_NotConfigured_LeavesDNSNil(t *testing.T) {
 		t.Errorf("created ContainerSpec.DNS = %+v, want nil", got)
 	}
 }
+
+func TestController_Reconcile_StartAfterCreateFails_RetryRestartsWithoutRecreating(t *testing.T) {
+	rt := &fakeRuntime{startErr: errors.New("start failed")}
+	c := New(rt)
+	if _, err := c.Reconcile(context.Background()); err == nil {
+		t.Fatal("first pass error = nil, want the start failure")
+	}
+
+	rt.startErr = nil
+	rt.inspectResult = &docker.ContainerState{ID: "new-container-id", Name: ContainerName, Running: false}
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("retry error = %v", err)
+	}
+	if got := conditionReason(t, result); got != "Restarted" {
+		t.Errorf("retry reason = %q, want Restarted", got)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1: the retry must start the orphan, not create a second container", rt.createCalls)
+	}
+}

@@ -8,6 +8,12 @@ Write the state you want as YAML, run `levelrail-cli apply`, and the control pla
 
 Everything goes through the ordinary REST API with your own token. If a policy denies you an app, that one item is reported as denied and nothing else is touched by it. There is no separate write path.
 
+::: warning Experimental
+Platform as code is off by default. Set `APP_EXPERIMENTAL=iac` on the control plane, and in the shell where you run the CLI or the MCP server, to enable `apply`, `diff` and `export`. See [Experimental features](experimental-features.md).
+:::
+
+<InlineToc default-open />
+
 ## Quick start
 
 ```bash
@@ -234,9 +240,23 @@ levelrail-cli diff  -f dir        # the same as apply --dry-run --exit-code
 
 ### How it runs
 
-1. **Validate everything first.** Every document is checked against the schema and the semantic rules. If any document has an issue, nothing is planned and nothing is applied.
-2. **Plan.** Live state is read through the API with your permissions, and a plan is computed: create, update (with a field level diff), delete (only with `--prune`) or no change. Env values are never shown, only `(hidden)`. Items are ordered by dependency: project, environment, tag, database, app, domain, load balancer, pipeline, alert rule.
-3. **Apply.** Each item is executed through the existing endpoint. Apply is safe to repeat and to resume: a re-run recomputes the plan and only does what is still missing.
+<Steps>
+<Step title="Validate everything first">
+
+Every document is checked against the schema and the semantic rules. If any document has an issue, nothing is planned and nothing is applied.
+
+</Step>
+<Step title="Plan">
+
+Live state is read through the API with your permissions, and a plan is computed: create, update (with a field level diff), delete (only with `--prune`) or no change. Env values are never shown, only `(hidden)`. Items are ordered by dependency: project, environment, tag, database, app, domain, load balancer, pipeline, alert rule.
+
+</Step>
+<Step title="Apply">
+
+Each item is executed through the existing endpoint. Apply is safe to repeat and to resume: a re-run recomputes the plan and only does what is still missing.
+
+</Step>
+</Steps>
 
 Semantics worth knowing:
 
@@ -397,7 +417,7 @@ metadata: { name: www.shop.example.com }
 spec: { app: shop-web }
 ```
 
-### Migrating an existing project
+### Adopting an existing project
 
 ```bash
 levelrail-cli export --project shop -o infra/
@@ -411,9 +431,27 @@ From there, change files and let CI apply them. To let prune clean up later, run
 
 Git sync is a recipe, not an engine. Backup schedules, volumes, egress policies, node placement, registry credentials and vault or database env references are not expressible yet and are left as they are.
 
-## See also
+## Next steps
 
-- [App spec reference](app-spec-reference.md) for the service fields
-- [Pipelines](pipelines.md) for the pipeline definition format
-- [Identity and access](identity-and-access.md) for tokens and per resource policies
-- [Migrating from Coolify, Dokploy and CapRover](migrating-from-coolify-dokploy-and-caprover.md)
+<CardGroup :cols="2">
+<Card title="app.yaml reference" href="/app-spec-reference">
+
+The service fields an App document embeds.
+
+</Card>
+<Card title="Pipelines" href="/pipelines">
+
+The pipeline definition format.
+
+</Card>
+<Card title="Identity and access" href="/identity-and-access">
+
+Tokens and per resource policies.
+
+</Card>
+<Card title="Migrating from other platforms" href="/migrating-from-coolify-dokploy-and-caprover">
+
+Import from Coolify, Dokploy or CapRover.
+
+</Card>
+</CardGroup>

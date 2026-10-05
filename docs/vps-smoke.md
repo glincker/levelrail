@@ -8,12 +8,38 @@ description: scripts/vps-smoke.sh checks a real install end to end on a VPS you 
 
 ## What it does
 
-1. Runs this tree's `install.sh` over SSH at `SMOKE_FROM_TAG`.
-2. Reads the one-time setup token, creates the admin, and mints an API token.
-3. Pushes three fixtures (Next.js, Go API, static, under `test/fixtures/smoke`) to a scratch branch, connects the git source with a GitHub token, and deploys each on `<app>.<SMOKE_DOMAIN_BASE>`.
-4. Asserts each domain serves a verified TLS chain with at least 7 days before `notAfter`.
-5. Pushes a second commit, redeploys, rolls back to the previous succeeded deploy, and checks the served body marker returns to the first commit.
-6. Upgrades to `SMOKE_TO_TAG` while curling every `/healthz` about ten times a second, and fails on any non-2xx.
+<Steps>
+<Step title="Install">
+
+Runs this tree's `install.sh` over SSH at `SMOKE_FROM_TAG`.
+
+</Step>
+<Step title="Set up">
+
+Reads the one-time setup token, creates the admin, and mints an API token.
+
+</Step>
+<Step title="Deploy fixtures">
+
+Pushes three fixtures (Next.js, Go API, static, under `test/fixtures/smoke`) to a scratch branch, connects the git source with a GitHub token, and deploys each on `<app>.<SMOKE_DOMAIN_BASE>`.
+
+</Step>
+<Step title="Check TLS">
+
+Asserts each domain serves a verified TLS chain with at least 7 days before `notAfter`.
+
+</Step>
+<Step title="Redeploy and roll back">
+
+Pushes a second commit, redeploys, rolls back to the previous succeeded deploy, and checks the served body marker returns to the first commit.
+
+</Step>
+<Step title="Upgrade under load">
+
+Upgrades to `SMOKE_TO_TAG` while curling every `/healthz` about ten times a second, and fails on any non-2xx.
+
+</Step>
+</Steps>
 
 It prints a summary table and exits non-zero on any failure.
 
@@ -34,6 +60,14 @@ scripts/vps-smoke.sh
 ```
 
 `--dry-run` prints the planned steps without touching the network. Use a fresh VPS for each run, since install and admin creation are one-time.
+
+Optional environment variables:
+
+| Variable | Effect |
+| --- | --- |
+| `SMOKE_SSH_OPTS` | Extra options passed to `ssh`. |
+| `SMOKE_CLI` | Path to a `levelrail-cli` binary. Default: build one from this tree. |
+| `SMOKE_WAIT` | Timeout in seconds for each wait. Default `600`. |
 
 ## CI
 

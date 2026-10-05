@@ -314,7 +314,7 @@ var aiml1Templates = []Template{
     volumes:
       - langfuse_redis_data:/data
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    image: ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z
     command: ["sh", "-c", "mkdir -p /data/langfuse && minio server /data"]
     environment:
       MINIO_ROOT_USER: langfuse

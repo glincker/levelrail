@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -27,7 +28,7 @@ func TestOAuthGoldenStartParameters(t *testing.T) {
 			if q.Get("code_challenge_method") != "S256" || q.Get("code_challenge") == "" {
 				t.Errorf("PKCE S256 challenge missing: %v", q)
 			}
-			if want := testBaseURL + "/api/v1/auth-lib/providers/" + provider + "/callback"; q.Get("redirect_uri") != want {
+			if want := testBaseURL + authengine.OAuthCallbackPath(provider); q.Get("redirect_uri") != want {
 				t.Errorf("redirect_uri = %q, want %q", q.Get("redirect_uri"), want)
 			}
 			for _, c := range h.jar {
@@ -109,9 +110,6 @@ func TestOAuthGoldenCallbackErrors(t *testing.T) {
 				h := newOAuthHarness(t, mode)
 				h.enable("oidc", "")
 				target := tc.run(h)
-				if tc.want == "invalid_provider" {
-					target = h.eng.Prefix() + "/providers/bogus/callback?state=s&code=c"
-				}
 				rec := h.get(target, true)
 				wantLoc := "/login?oauth_error=" + tc.want
 				if rec.Code != http.StatusFound || rec.Header().Get("Location") != wantLoc {

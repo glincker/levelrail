@@ -40,18 +40,11 @@ func (rt *Router) authLibOAuthMirrorLink(ctx context.Context, userID, provider, 
 	}
 }
 
-func (rt *Router) registerAuthLibOAuthRoutes(mux *http.ServeMux) {
-	if rt.authLibOAuth == nil || !rt.authLibOAuthActive() {
-		return
-	}
-	mux.HandleFunc("GET "+rt.authLibOAuth.Prefix()+"/providers/{provider}/callback", rt.authLibOAuthCallback)
-}
-
 // forwardOAuthCookies relays the library's flow cookies scoped to this provider's callback
 // and Secure whenever the client connection is HTTPS, like the in-house binding cookie.
 func (rt *Router) forwardOAuthCookies(w http.ResponseWriter, r *http.Request, provider string, cookies []*http.Cookie) {
 	for _, c := range cookies {
-		c.Path = rt.authLibOAuth.Prefix() + "/providers/" + provider + "/callback"
+		c.Path = authengine.OAuthCallbackPath(provider)
 		c.Secure = requestIsHTTPS(r)
 		http.SetCookie(w, c) // NOSONAR: Secure follows the client transport, see requestIsHTTPS
 	}

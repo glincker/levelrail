@@ -15,7 +15,6 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /readyz", rt.handleReadyz)
 	mux.HandleFunc("GET /.well-known/jwks.json", rt.handleOIDCJWKS)
 	mux.Handle(rt.authEngine.Prefix()+"/", rt.authEngine.Handler())
-	rt.registerAuthLibOAuthRoutes(mux)
 	rt.registerCoreRoutes(mux)
 	rt.registerAuthEngineStatusRoute(mux)
 	rt.registerPlatformRoutes(mux)

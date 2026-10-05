@@ -14,7 +14,8 @@ By the end of this tutorial you will have a Docker image running on your own ser
 
 The examples deploy the public `nginx` image so you can follow along without any code of your own. Swap in any image you like.
 
-## 1. Create the app
+<Steps>
+<Step title="Create the app">
 
 ```bash
 levelrail-cli apps create --name hello --image nginx:alpine --port 80
@@ -41,7 +42,8 @@ waiting for "hello" to converge... (succeeded)
 
 The exit code tells a script whether it worked: `0` for success, non-zero for a failed or timed-out rollout.
 
-## 2. Check that it is healthy
+</Step>
+<Step title="Check that it is healthy">
 
 ```bash
 levelrail-cli apps status hello
@@ -55,7 +57,8 @@ Ready              True     AlreadyRunning           2026-10-05T02:15:40Z
 
 `Ready: True` is the line that matters. Every reconcile records a condition with a reason, so a failure always comes with an explanation instead of a blank status.
 
-## 3. Add a custom domain
+</Step>
+<Step title="Add a custom domain">
 
 ```bash
 levelrail-cli apps domains add hello hello.example.com
@@ -79,11 +82,12 @@ expected: 203.0.113.10
 
 Every routed domain gets a TLS certificate automatically. Out of the box it is self-signed, so browsers show a trust warning. That is fine for internal tools and first trials.
 
-Real Let's Encrypt certificates are built in and switched on under **Settings, Domains**. That path is not yet verified issuing against a real public domain, so read the [domains and ingress guide](../domains-and-ingress.md#real-public-acme-let-s-encrypt-or-rfc-8555-ca) and the [ACME verification runbook](../acme-verification-runbook.md) before relying on it for production traffic.
+Real Let's Encrypt certificates are switched on under **Settings, Domains**: enter an account email and enable ACME, with ports 80 and 443 open to the internet. See [Domains and ingress](../domains-and-ingress.md#real-public-acme-let-s-encrypt-or-rfc-8555-ca) and the [ACME verification runbook](../acme-verification-runbook.md) if issuance fails.
 
-If you have no domain at all, an app with none still gets a working hostname once `APP_PUBLIC_HOST` is set to your server's public IP; see [Zero-config URL](../domains-and-ingress.md#zero-config-url-no-domain-no-dns-record-still-https).
+If you have no domain at all, a hostname of the form `<dashed-ip>.sslip.io` works with no DNS record; see [Zero DNS setup](../domains-and-ingress.md#zero-dns-setup-sslip-io-hostnames-and-one-click-https).
 
-## 4. Ship a second version
+</Step>
+<Step title="Ship a second version">
 
 ```bash
 levelrail-cli apps deploy hello --image nginx:1.27-alpine
@@ -106,7 +110,8 @@ dep_FnrJJJnuh0Md  nginx:alpine       df221db836e1  image   succeeded  serving  2
 
 The same history is on the dashboard's **Deployments** page, across every app.
 
-## 5. Roll back
+</Step>
+<Step title="Roll back">
 
 Something wrong with version two? Roll back to the first deploy by its ID:
 
@@ -122,6 +127,9 @@ app "hello" now targets image "nginx:alpine@sha256:df221db836e1..."
 No rebuild happens. Levelrail keeps previous images pinned, so garbage collection cannot remove a rollback target, and the rollback is just another deploy of an image it already has.
 
 To roll back to a specific image tag instead of a past deploy, use `levelrail-cli apps rollback hello --image nginx:alpine`. The `--image` flag is required there.
+
+</Step>
+</Steps>
 
 ## Clean up
 

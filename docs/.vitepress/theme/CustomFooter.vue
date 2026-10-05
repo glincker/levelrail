@@ -147,11 +147,18 @@ onUnmounted(() => {
         <p class="custom-footer__heading">Product</p>
         <a href="/getting-started">Getting started</a>
         <a href="/comparison">Compare</a>
+        <a href="/demo">Demo</a>
         <a href="/coolify-alternative">Coolify alternative</a>
+        <a href="/dokploy-alternative">Dokploy alternative</a>
         <a href="/vercel-alternative">Vercel alternative</a>
         <a href="/heroku-alternative">Heroku alternative</a>
+        <a href="/railway-alternative">Railway alternative</a>
         <a href="/pricing">Pricing</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
         <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/cookies">Cookies</a>
         <a href="/roadmap">Roadmap</a>
         <a href="/troubleshooting">Troubleshooting</a>
       </div>
@@ -160,6 +167,7 @@ onUnmounted(() => {
         <a href="/app-spec-reference">App spec reference</a>
         <a href="/cli-reference">CLI reference</a>
         <a href="/api-reference">API reference</a>
+        <a href="/developers">Developers</a>
         <a href="/security">Security overview</a>
       </div>
       <div class="custom-footer__col custom-footer__reveal">

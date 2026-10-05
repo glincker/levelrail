@@ -18,22 +18,47 @@ Always start with a dry run. `--dry-run` (or the dashboard's Discover step) read
 
 ## Quick start
 
+<Steps>
+<Step title="Get a source credential">
+
+What the token is, per platform:
+
+<Tabs :items="['Coolify', 'Dokploy', 'CapRover']">
+<Tab value="Coolify">
+
+An API token (Keys and tokens). Use `read:sensitive` to get real env values. It is sent as `Authorization: Bearer`.
+
+</Tab>
+<Tab value="Dokploy">
+
+An API key, sent in the `x-api-key` header.
+
+</Tab>
+<Tab value="CapRover">
+
+The login password, exchanged for a session token via `POST /api/v2/login`.
+
+</Tab>
+</Tabs>
+
+</Step>
+<Step title="Dry run">
+
 ```bash
 # token from the environment, not the command line
 export APP_IMPORT_SOURCE_TOKEN=...            # or: --token-stdin
 levelrail-cli import platform coolify --url https://coolify.example.com --dry-run
+```
 
-# happy with the report? run it for real, optionally for a subset
+</Step>
+<Step title="Apply, optionally for a subset">
+
+```bash
 levelrail-cli import platform coolify --url https://coolify.example.com --only web,api
 ```
 
-What the token is, per platform:
-
-| Platform | Credential | How it is sent to the source |
-| --- | --- | --- |
-| Coolify | API token (Keys and tokens). Use `read:sensitive` to get real env values | `Authorization: Bearer` |
-| Dokploy | API key | `x-api-key` header |
-| CapRover | Login password | exchanged for a session token via `POST /api/v2/login` |
+</Step>
+</Steps>
 
 The token is sent to this control plane in the request body, used in memory for the duration of the request, and never stored, logged, written to the audit log, or returned in a response. Any error text is scrubbed of it. Prefer `APP_IMPORT_SOURCE_TOKEN` or `--token-stdin`: `--token` works but warns, because it lands in shell history and the process list.
 
@@ -152,7 +177,8 @@ Because nothing on the source changed, no source-side rollback is needed. Keep D
 
 ## See also
 
-- [getting-started.md](getting-started.md) - deploying your first app
-- [app-spec-reference.md](app-spec-reference.md) - full app.yaml schema
-- [backups-and-storage.md](backups-and-storage.md) - dump and restore tools for moving data
-- [comparison.md](comparison.md) - architectural differences between platforms
+- [Getting started](getting-started.md): deploying your first app
+- [App spec reference](app-spec-reference.md): full app.yaml schema
+- [Backups and storage](backups-and-storage.md): dump and restore tools for moving data
+- [Comparison](comparison.md): architectural differences between platforms
+- [Coolify alternative](coolify-alternative.md) and [Dokploy alternative](dokploy-alternative.md): why people switch

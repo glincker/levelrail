@@ -12,7 +12,8 @@ A backup you have never restored is a guess. In this tutorial you will connect a
 - A Postgres database. Create `main-db` as in [Connect an app to Postgres](connect-an-app-to-postgres.md), or use your own.
 - A bucket and an access key pair with read and write access. AWS S3, Cloudflare R2, Backblaze B2, and MinIO all work.
 
-## 1. Connect the bucket as a backup target
+<Steps>
+<Step title="Connect the bucket as a backup target">
 
 ```bash
 levelrail-cli backup-targets create \
@@ -43,7 +44,8 @@ backup target "bkt_Ra-kILVUyJaw" connected successfully
 
 ![The Backups page, which asks for a backup target on a fresh install](../assets/screenshots/backups.png)
 
-## 2. Take a first backup
+</Step>
+<Step title="Take a first backup">
 
 Put something in the database so you can tell whether a restore worked. The `docker exec` commands in this tutorial run on the server that hosts the database:
 
@@ -64,7 +66,8 @@ ID                TARGET            STATUS     SIZE  STARTED               FINIS
 bkh_4cyttV-ZZ3kp  bkt_Ra-kILVUyJaw  succeeded  1999  2026-10-05T02:23:29Z  2026-10-05T02:23:29Z
 ```
 
-## 3. Schedule the rest
+</Step>
+<Step title="Schedule the rest">
 
 ```bash
 levelrail-cli backups schedule set main-db \
@@ -75,7 +78,8 @@ levelrail-cli backups schedule set main-db \
 
 This takes a backup at 03:00 every day and keeps the newest seven. `--retain-days` prunes by age instead, and the two limits work independently. Setting a schedule replaces any earlier one for that database.
 
-## 4. Verify the backup
+</Step>
+<Step title="Verify the backup">
 
 ```bash
 levelrail-cli backups verify main-db --backup bkh_4cyttV-ZZ3kp
@@ -89,7 +93,8 @@ bkv_FY0ZygdKOLdV  passed  ok        ok    ok
 
 Verification downloads the object again, recomputes its checksum, and compares size and format against what was recorded when the backup was taken. It also runs automatically after every backup.
 
-## 5. Restore over the original
+</Step>
+<Step title="Restore over the original">
 
 Simulate a mistake:
 
@@ -115,7 +120,8 @@ docker exec db-main-db psql -U main-db -d main-db -tc "select count(*) from note
 
 The count is `2` again.
 
-## 6. Restore into a new database
+</Step>
+<Step title="Restore into a new database">
 
 Overwriting is the right call when you are recovering. To inspect old data without touching the live database, restore into a copy:
 
@@ -129,6 +135,9 @@ Wait for the status to read `succeeded`, then query `main-db-copy`. The live dat
 ::: tip Older releases
 Up to `v0.2.0-beta.15`, a restore into a new database could fail with `database "..." does not exist` because it started before the new Postgres had finished initializing. It is fixed in later releases. On an older one, delete the copy with `levelrail-cli databases delete main-db-copy` and run the restore again.
 :::
+
+</Step>
+</Steps>
 
 ## Clean up
 

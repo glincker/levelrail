@@ -1,24 +1,14 @@
 ---
-description: Complete inventory of Levelrail's dashboard routes, API endpoints, CLI commands, and known implementation gaps.
+description: Inventory of Levelrail's dashboard pages by area, with pointers to the generated API and CLI references.
 ---
 
 # Feature catalog
 
-What's actually built, as of this page's own last update, so new work
-checks here before re-discovering or rebuilding something that already
-exists. This is a snapshot, not a live-generated index: re-verify
-against the real route/API surface before relying on it for anything
-more than orientation, the same caveat `docs/roadmap.md` states for
-itself.
-
-Unlike `docs/roadmap.md` (a narrative status page), this is a flat
-reference: every dashboard page, every API resource group, every CLI
-command group, in one place. When in doubt about whether something has
-a UI, an API, or a CLI surface, check the corresponding row here first.
+A flat map of what the dashboard offers, so you can find the right page or check whether something already exists. This is a hand-written snapshot. The API and CLI surfaces change faster than this page can, so they live in generated or per-command references instead: [API reference](api-reference.md) (generated from the registered routes) and [CLI reference](cli-reference.md). For how mature each feature is, see [feature status](feature-status.md). For history, see the [roadmap](roadmap.md).
 
 ## Dashboard pages
 
-This section lists what you can see and do for each app, database, and system area. Descriptions focus on what the operator sees and controls, not the implementation.
+What you can see and do for each app, database, and system area.
 
 ### Apps (`/apps/$name/*`)
 
@@ -32,7 +22,7 @@ This section lists what you can see and do for each app, database, and system ar
 | Exec | Run one-off commands inside running containers without stopping the app |
 | Feature flags | Toggle app behavior at runtime without redeploying, and see which flag values are currently active |
 | Health | Set up readiness and liveness probes so the platform knows when your app is ready to serve traffic and when it has crashed |
-| Integrations | Send app logs to external log drains (Datadog, Papertrail, etc.) |
+| Integrations | Send app logs to external log drains |
 | Logs | Search and filter logs from running containers with full-text search, or tail live logs in real time |
 | Metrics | View CPU, memory, disk I/O, network I/O, request rate, response times, error rate, and container restart counts over time |
 | Network | See which node the app is running on and internal DNS names for communicating with other apps and databases |
@@ -41,7 +31,9 @@ This section lists what you can see and do for each app, database, and system ar
 | Services | Manage multi-service apps: a web frontend plus a background worker, both under the same app.yaml |
 | Source | Connect a git repository and configure branch-to-environment mapping, preview environments per pull request, and inspect webhook deliveries from your git provider |
 | Volumes | Back up app storage volumes to S3, restore from a backup, or browse backup history |
-| Alerts | Set up alerts that fire when metrics cross a threshold, and choose notification channels (email, Slack, Discord, Telegram) |
+| Alerts | Set up alerts that fire when metrics cross a threshold, and choose notification channels |
+| Load balancer | Multi-replica routing and health history (behind `APP_EXPERIMENTAL=load-balancer`) |
+| Pipelines | Build and test pipelines attached to the app, see [pipelines](pipelines.md) |
 
 ### Databases (`/databases/$name/*`)
 
@@ -49,16 +41,29 @@ This section lists what you can see and do for each app, database, and system ar
 | --- | --- |
 | Overview | Manage backups and restore points, expose the database outside the Docker network for external tools, attach it to apps, and check TLS certificate status |
 | Logs | View detailed activity logs from the database engine |
+| Slow queries | Long-running queries surfaced from the engine's slow query log (Postgres and MySQL) |
 | Metrics | Monitor resource usage over time: CPU, memory, network I/O, and disk I/O |
 | Resources | Set CPU and memory limits and see platform recommendations based on usage |
 
-### System and organization
+### Top-level pages
 
-- **Nodes** - List all managed servers, check their health status, drain workloads before maintenance, prevent scheduling new apps on a node, and view node metrics
-- **Cross-app domains** - Configure shared domain routing and TLS settings that apply to all apps using them
-- **Projects** - Group apps and databases by project for better organization; each project has a [Topology](service-topology-graph.md) page drawing its apps, databases, and shared volumes as a diagram
-- **Environments** - Create environment tiers (staging, production) and scope app settings and variables per environment
-- **Organizations** - Set up multi-tenant structure for teams or separate business units
+| Page | What you can do |
+| --- | --- |
+| Apps, Databases | List, search and create apps and databases, including from [templates](templates-and-registry.md) |
+| Deployments | Fleet-wide deploy history, see [deployments page](deployments-page.md) |
+| Approvals | Review pending deploy approvals, see [deploy safety](deploy-safety.md) |
+| Backups | Instance-wide backup list across databases and volumes, see [backups and storage](backups-and-storage.md) |
+| Alerts | Alert rules and their state |
+| Domains | Cross-app domain list with TLS status |
+| Network | Network view across nodes, see [network topology](network-topology.md) |
+| Nodes | List managed servers, check health, cordon, drain and view node metrics |
+| Projects | Group apps and databases by project. Each project has a [Topology](service-topology-graph.md) page drawing its apps, databases and shared volumes |
+| Organizations | Multi-tenant grouping for teams or business units |
+| Pipelines | Pipelines across apps |
+| Load balancers | Overview across apps (needs `load-balancer` enabled) |
+| Models | AI models on GPU nodes (needs `ai-models` enabled) |
+| AI assistant | In-app chat (needs `ai-chat` enabled), see [AI assistant chat](ai-assistant-chat.md) |
+| Status | Everything that needs attention: failing apps, offline nodes, certificates, doctor findings |
 
 ### Settings
 
@@ -75,132 +80,34 @@ This section lists what you can see and do for each app, database, and system ar
 | Backup targets | Configure S3 or S3-compatible storage for app and database backups |
 | Registry credentials | Store Docker registry credentials for private image pulls |
 | Container registry | Use the built-in container registry to host images |
-| Notification channels | Set up email, Slack, Discord, or Telegram for alert notifications |
+| Notification channels | Set up the 18 channel kinds for alert notifications, see [integrations](integrations.md) |
 | Organizations | Manage organization-level settings |
-| OAuth sign-in | Enable single sign-on via GitHub, Google, or other OAuth providers |
+| OAuth sign-in | Enable sign-in via Google, GitHub, Microsoft or a generic OpenID Connect provider |
 | Git provider apps | Connect GitHub Apps, GitLab integrations, and Bitbucket connections for automatic deployments |
 | Cloudflare Tunnel | Route traffic through Cloudflare instead of opening ports directly |
-| Vault | Connect external secret management (HashiCorp Vault) for credential storage |
+| Vault | Connect HashiCorp Vault for secret storage |
 | Email | Configure outgoing email for invites and notifications |
 | System status | Run the doctor diagnostic, view the status page, and check the attention panel for critical issues |
 | Containers | View all containers running on the control plane |
+| Firewall | View and sync host firewall rules |
+| Control plane backup | Snapshot, off-box backup and restore drills for the control plane, see [control-plane backup](control-plane-backup.md) |
+| Storage | Object storage destinations, see [object storage](object-storage.md) |
+| Network shares | Shared network storage definitions |
+| Node providers | Cloud provider credentials for provisioning nodes, see [node provisioning](node-provisioning.md) |
+| Observability | Retention and collection settings, see [observability](observability.md) |
+| Status page | Public status page settings, see [status page](status-page.md) |
+| Import platform | Import apps from another platform, see [importing apps](importing-apps.md) |
+| API explorer | Try API calls from the dashboard, see [API explorer](api-explorer.md) |
 | Updates | Check and install platform updates |
 
-## API resource groups (`internal/api/routes.go`, `routes_platform.go`)
+## API and CLI
 
-396 registered routes total (see [api-reference.md](api-reference.md) for
-the exact method/path/ability of every one), grouped by resource:
-
-| Resource | Routes | Representative paths |
-| --- | --- | --- |
-| System (status/doctor/containers/prune/orphaned-volumes/master-key/firewall/onboarding/updates) | 14 | `GET /system/status`, `POST /system/prune`, `GET /system/volumes/orphaned`, `POST /system/master-key/rotate` |
-| Auth/2FA/users/roles/IAM/device-auth/OAuth | 33 | `/auth/login`, `/auth/2fa/*`, `/iam/policies*`, `/auth/device/*` |
-| Apps CRUD/lifecycle/deploy | 31 | `/apps`, `/apps/{name}/deploys`, `/restart`, `/exec`, `/deploy-spec`, `/hook-runs` |
-| Apps at scale (filtered list, status summary, bulk actions, clone preview, promote diff) | 3 | `GET /apps?tag=&environment=&q=`, `GET /apps-summary`, `POST /apps/bulk`, `GET /apps/{name}/clone/preview` |
-| Secrets / git-source / webhooks / previews | 12 | `/apps/{name}/secrets*`, `/webhooks/github/{name}`, `/previews*` |
-| Telemetry (metrics/logs) | 10 | `/apps/{name}/metrics`, `/logs/stream`, `/logs/download` |
-| Alerts / scheduled tasks / feature flags / notify channels | 22 | `/apps/{name}/alerts`, `/flags/evaluate/{key}`, `/notification-channels*` |
-| Databases CRUD + engines + resources | 10 | `/database-engines`, `/databases/{name}/resource-recommendation` |
-| Projects / orgs / environments (+ shared env layers) | 22 | `/projects*`, `/organizations/{id}/env` |
-| Nodes | 11 | `/nodes`, `/{id}/cordon`, `/drain`, `/workloads` |
-| Ingress / certs / domains / email / Cloudflare | 19 | `/certificates`, `/settings/ingress*`, `/settings/cloudflare-tunnel*`, `/domains/{domain}/tls-cert` |
-| Static sites / backup targets / registry credentials | 15 | `/static-sites`, `/backup-targets*`, `/registry-credentials*` |
-| Built-in container registry | 5 | `/settings/registry`, `/registry/repositories`, `/registry/tags` |
-| Public Docker Hub search (docker-image deploy picker) | 2 | `/dockerhub/search`, `/dockerhub/repositories/{namespace}/{repo}/tags` |
-| Git provider apps (GitHub/GitLab/Bitbucket/Gitea) | 34 | `/github-app*`, `/gitlab-app*`, `/bitbucket-app*`, `/gitea-app*` |
-| DB backups/restore/clone-restore | 17 | `/databases/{name}/backups*`, `/restore-as-new`, `/backup-schedule`, `/backups` |
-| DB point-in-time restore (PITR, postgres only) | 7 | `/databases/{name}/pitr*`, `/base-backups*`, `/pitr-restore*` |
-| App volume backups/restore | 11 | `/apps/{name}/volumes/{volume}/backups*` |
-| Control plane self-backup (SQLite snapshots, scheduled and pre-upgrade; offline `restore-db`) | 4 | `/system/backups*` |
-| Control plane disaster recovery (age-encrypted off-box backups, key escrow, `restore`, scheduled restore drills) | 4 | `/system/control-plane-dr*` |
-| App storage/database attach | 5 | `/apps/{name}/storage`, `/apps/{name}/database` |
-| Audit log / log-drain | 5 | `/audit-log`, `/audit-log/purge` |
-
-## CLI command groups (`cmd/levelrail-cli/`)
-
-All command groups available:
-
-`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `pitr`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `attention`, `containers`, `system-prune`, `control-plane-backups`, `volumes-orphaned`, `volumes-orphaned-cleanup`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `gitea-app`, `templates`, `static-sites`, `tags`, `shared-env`.
-
-### Key command groups
-
-**apps**
-
-`create`, `list`, `get`, `deploy`, `deploy-compose`, `deploy-spec`, `validate` (local app.yaml/compose parse, no API call), `group`, `hook-runs`, `rollback`, `auto-rollback`, `auto-rollback-slo-burn`, `deploys`, `promote`, `restart`, `stop`, `start`, `delete`, `status`, `diagnose`, `resource-recommendation`, `network`, `logs` (with `--follow`/`-f` for live tail), `metrics`, `exec`, `log-drain`, `scheduled-tasks`, `alerts`, `organizations`, `projects`, `environments`, `previews`, `secrets`, `git-source`, `webhook-deliveries`, `storage`, `tag`, `untag`.
-
-**databases**
-
-`create`, `list`, `get`, `delete`, `resource-recommendation`, `metrics`.
-
-**nodes**
-
-`list`, `get`, `delete`, `join-token`, `cordon`, `uncordon`, `drain`, `workloads`, `health`, `patch-status`, `metrics`, `events` (connection history), `resource-usage`, `capacity-forecast`.
-
-**iam**
-
-`policies` with subcommands: `create`, `list`, `get`, `update`, `delete`, `attach`, `detach`.
-
-**backups** / **app-volume-backups**
-
-`list`, `list-all` (backups only; instance-wide across every database and app volume), `trigger`, `restore`, `restore-as-new`, `schedule`, `verify`, `verifications`.
-
-**pitr** (postgres only)
-
-`enable`, `disable`, `status`, `base-backups` (`list`, `trigger`), `restore`.
-
-**migrate**
-
-Support for migrating from `coolify`, `dokploy`, or `caprover`.
-
-**domains**
-
-`list`, `cloudflare-dns`, `route53-dns`, `basic-auth`, `maintenance`, `tls-cert`, `certificates` (with a RENEWAL column), `error-pages`.
-
-**settings**
-
-Headless first-run setup with no browser needed:
-- `oauth` (list/set) - instance-wide OAuth sign-in
-- `email` (get/set) - outbound email configuration
-- `ingress` (get/set) - ingress and ACME configuration
-
-**github-app** / **gitlab-app** / **bitbucket-app** / **gitea-app**
-
-`repos` (or `projects` for gitlab-app), `branches`, `use-as-source`. Connecting the App/OAuth integration itself stays dashboard-only (browser redirect through the provider's OAuth flow). These subcommands let you browse and use an already-connected integration's repos from the CLI.
-
-**templates**
-
-`list`, `get`, `deploy` (deploys a catalog entry's compose.yaml as an app, the same call `apps deploy-compose` makes).
-
-**static-sites**
-
-`list`.
-
-**tags**
-
-`list`, `create`, `delete`, `apps` (list apps with a tag).
-
-**shared-env**
-
-`list`, `set`, `delete` (all scoped to `--scope project|organization|environment --id ID`).
-
-## Known gaps (backend done, UI thin or missing)
-
-Verified by grepping `web/src` for a matching component/query; a real
-API/CLI capability with no dashboard surface counts as a gap here, not
-a documentation issue, unless `docs/roadmap.md` explicitly claims
-otherwise for that feature.
-
-| Capability | API / CLI | Status |
-| --- | --- | --- |
-| Master key rotation trigger | `POST /system/master-key/rotate`, `secrets rotate-master-key` | Closed: `RotateMasterKeyDialog` on Settings > General |
-| Container visibility | `GET /system/containers`, `containers` | Closed: Settings > Containers |
-| Firewall sync trigger | `POST /system/firewall/sync`, `firewall sync` | In progress on a separate branch |
-
-When closing a gap here, move its row into the relevant section above
-instead of leaving it listed as both done and gapped.
+- The [API reference](api-reference.md) lists every registered route with its method, path and required ability, grouped by resource. It is generated by `go run ./scripts/gen-api-reference` and a test fails if a route is missing.
+- The [CLI reference](cli-reference.md) lists every `levelrail-cli` command group with flags and examples. Run `levelrail-cli --help` for the groups your build and `APP_EXPERIMENTAL` setting expose.
+- Connecting a git provider App or OAuth integration stays in the dashboard (it needs a browser redirect through the provider). The CLI can browse and use an already-connected integration's repositories.
 
 ## See also
 
-- [API reference](api-reference.md) - Method/path/ability listing for the API routes (all 396 registered routes in `routes.go` and `routes_platform.go`, generated by `go run ./scripts/gen-api-reference`)
-- [Roadmap](roadmap.md) - Current status and what's in progress
-- [Getting started](getting-started.md) - Your first deploy walkthrough
+- [Feature status](feature-status.md): maturity labels and evidence.
+- [Roadmap](roadmap.md): what has shipped and what is open.
+- [Getting started](getting-started.md): your first deploy.

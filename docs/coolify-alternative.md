@@ -112,7 +112,7 @@
     },
     "compare": {
       "heading": "Coolify and Levelrail, side by side",
-      "intro": "Architecture and design choices, not a ranking. Coolify is a mature project with a very large template catalog.",
+      "intro": "Architecture and design choices, not a ranking. Coolify is a mature project with a wide template catalog.",
       "left": "Coolify",
       "right": "Levelrail",
       "rows": [
@@ -173,7 +173,7 @@
       },
       {
         "q": "Does Levelrail have Coolify's one-click service catalog?",
-        "a": "Levelrail ships a curated template catalog and is expanding it. Coolify has a larger catalog today, so check whether the services you need are covered before moving."
+        "a": "Levelrail ships a catalog of 311 one-click templates, a sample of which is deployed by its end-to-end tests. Check that the services you need are covered, in either catalog, before moving."
       },
       {
         "q": "Can I run Levelrail on more than one server?",
@@ -191,45 +191,7 @@
     "cta": {
       "heading": "Try it next to your current setup",
       "sub": "Import read-only, compare for a week, and keep what works. Open source, so you can read every line."
-    },
-    "related": [
-      {
-        "text": "Dokploy alternative",
-        "link": "/dokploy-alternative"
-      },
-      {
-        "text": "Vercel alternative",
-        "link": "/vercel-alternative"
-      },
-      {
-        "text": "Heroku alternative",
-        "link": "/heroku-alternative"
-      },
-      {
-        "text": "Railway alternative",
-        "link": "/railway-alternative"
-      },
-      {
-        "text": "Pricing",
-        "link": "/pricing"
-      },
-      {
-        "text": "Privacy",
-        "link": "/privacy"
-      },
-      {
-        "text": "Demo",
-        "link": "/demo"
-      },
-      {
-        "text": "Case studies",
-        "link": "/case-studies"
-      },
-      {
-        "text": "Full comparison",
-        "link": "/comparison"
-      }
-    ]
+    }
   }
 }
 ---

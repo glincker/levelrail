@@ -5,6 +5,7 @@
 .vp-doc table {
   border-collapse: separate;
   border-spacing: 0;
+  max-width: 100%;
 }
 
 .vp-doc table thead th {
@@ -12,6 +13,17 @@
   top: 0;
   background: var(--vp-c-bg-soft);
   z-index: 1;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--vp-c-text-1);
+}
+
+.vp-doc table td {
+  padding: 12px 14px;
+  font-size: 13.5px;
+  color: var(--vp-c-text-2);
 }
 
 .vp-doc table td:first-child,
@@ -27,12 +39,35 @@
   z-index: 3;
 }
 
+.vp-doc table tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.015);
+}
+
+.dark .vp-doc table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
 .vp-doc table tbody tr:hover td {
   background: var(--vp-c-brand-soft);
 }
 
 .vp-doc table tbody tr:hover td:first-child {
   background: var(--vp-c-brand-soft);
+}
+
+@media (max-width: 639px) {
+  .vp-doc table {
+    font-size: 13px;
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .vp-doc table td,
+  .vp-doc table th {
+    min-width: 132px;
+    padding: 10px 12px;
+  }
 }
 
 /* CustomFooter.vue: cinematic footer band for Layout.vue's layout-bottom
@@ -69,6 +104,43 @@
 .vp-doc h1 {
   letter-spacing: -0.02em;
   font-size: 34px;
+  margin-bottom: 24px;
+}
+
+.vp-doc h2 {
+  margin-top: 32px;
+  margin-bottom: 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--vp-c-divider);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.vp-doc h2:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 24px;
+}
+
+.vp-doc h3 {
+  margin-top: 24px;
+  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 639px) {
+  .vp-doc h2 {
+    margin-top: 24px;
+    font-size: 20px;
+  }
+
+  .vp-doc h3 {
+    margin-top: 18px;
+    font-size: 16px;
+  }
 }
 
 /* VitePress's own nav/sidebar are hidden on doc pages (CustomTopNav.vue /
@@ -103,8 +175,37 @@
   }
 }
 
+.vp-doc code:not([class]) {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--vp-c-brand-1);
+  font-size: 0.9em;
+}
+
+.dark .vp-doc code:not([class]) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--glinui-accent-soft-text);
+}
+
+.vp-doc blockquote {
+  padding-left: 20px;
+  border-left: 4px solid var(--vp-c-divider);
+  color: var(--vp-c-text-2);
+  margin: 16px 0;
+  font-style: italic;
+}
+
 .VPDocAsideOutline .outline-title {
   margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
+.VPDocAsideOutline .outline-link {
+  font-size: 13px;
+  transition: color 0.15s ease;
 }
 
 .VPDocAsideOutline .outline-link:hover {
@@ -147,26 +248,44 @@
 
 /* !important: default theme's own rule for this selector ties on specificity. */
 .vp-doc [class*='language-'] {
+  position: relative;
   border: 1px solid var(--vp-c-divider);
   border-radius: 14px !important;
   box-shadow: 0 2px 8px -4px rgba(15, 15, 15, 0.12);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 @media (max-width: 639px) {
   .vp-doc [class*='language-'] {
     border-radius: 10px !important;
+    font-size: 12.5px;
   }
 }
 
 /* background-color, not `background` shorthand: the default theme's
    copy icon is a background-image on this same property. */
 .vp-doc [class*='language-'] > button.copy {
+  position: static;
   border-color: var(--vp-c-divider);
   background-color: var(--vp-c-bg-alt);
+  padding: 8px 12px;
+  gap: 6px;
+  font-size: 12px;
+  opacity: 1;
+  transition: all 0.15s ease;
 }
 
-.vp-doc [class*='language-'] > button.copy:hover {
+.vp-doc [class*='language-']:hover > button.copy {
   border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+}
+
+.vp-doc [class*='language-'] > button.copy:hover,
+.vp-doc [class*='language-'] > button.copy:focus-visible {
+  border-color: var(--vp-c-brand-1);
+  background-color: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
 }
 
 /* Per-type tint (unmint's callout.tsx). ::: details also renders as
@@ -174,7 +293,8 @@
 .vp-doc .custom-block {
   border-radius: 14px !important;
   border: 1px solid var(--vp-c-divider);
-  border-left-width: 3px;
+  border-left-width: 4px;
+  padding: 16px 20px;
   background: var(--vp-c-bg-soft);
   box-shadow: 0 2px 8px -4px rgba(15, 15, 15, 0.1);
 }
@@ -182,47 +302,82 @@
 @media (max-width: 639px) {
   .vp-doc .custom-block {
     border-radius: 10px !important;
+    padding: 14px 16px;
   }
 }
 
 .vp-doc .custom-block-title {
   font-weight: 700;
+  font-size: 15px;
+  margin: 0 0 8px;
 }
 
 .vp-doc .custom-block.tip {
   border-left-color: #10b981;
-  background: rgba(16, 185, 129, 0.08);
+  background: rgba(16, 185, 129, 0.06);
 }
 
 .vp-doc .custom-block.tip .custom-block-title {
-  color: #059669;
+  color: #0b8a5f;
+}
+
+.dark .vp-doc .custom-block.tip {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.dark .vp-doc .custom-block.tip .custom-block-title {
+  color: #6ee7b7;
 }
 
 .vp-doc .custom-block.warning {
   border-left-color: #f59e0b;
-  background: rgba(245, 158, 11, 0.08);
+  background: rgba(245, 158, 11, 0.06);
 }
 
 .vp-doc .custom-block.warning .custom-block-title {
-  color: #b45309;
+  color: #a16207;
+}
+
+.dark .vp-doc .custom-block.warning {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.dark .vp-doc .custom-block.warning .custom-block-title {
+  color: #fbbf24;
 }
 
 .vp-doc .custom-block.danger {
   border-left-color: #ef4444;
-  background: rgba(239, 68, 68, 0.08);
+  background: rgba(239, 68, 68, 0.06);
 }
 
 .vp-doc .custom-block.danger .custom-block-title {
-  color: #dc2626;
+  color: #b91c1c;
+}
+
+.dark .vp-doc .custom-block.danger {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.dark .vp-doc .custom-block.danger .custom-block-title {
+  color: #fca5a5;
 }
 
 .vp-doc .custom-block.info {
   border-left-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.08);
+  background: rgba(59, 130, 246, 0.06);
 }
 
 .vp-doc .custom-block.info .custom-block-title {
-  color: #2563eb;
+  color: #1e40af;
+}
+
+.dark .vp-doc .custom-block.info {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.dark .vp-doc .custom-block.info .custom-block-title {
+  color: #93c5fd;
 }
 
 .vp-doc .custom-block.details summary {
@@ -305,6 +460,11 @@ a.vp-card:hover {
   border-color: var(--vp-c-brand-1);
   transform: translateY(-2px);
   box-shadow: 0 12px 28px -14px rgba(16, 114, 146, 0.35);
+}
+
+a.vp-card:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
 }
 
 .vp-card__icon {

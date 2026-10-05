@@ -1,17 +1,14 @@
 ---
-description: Automate creating a new server at a cloud provider and enrolling it as a node, instead of running the join flow on a box you provisioned by hand.
+description: Create a server at Hetzner, DigitalOcean, AWS, Azure or GCP and enroll it as a node, with the credential each provider needs, how status polling works, cost, and known gaps.
 ---
 
 # Node provisioning
 
-[Multi-node](/multi-node) covers enrolling a machine you already have. This
-page covers automating the part before that: creating the machine itself at
-a cloud provider.
+[Multi-node](/multi-node) covers enrolling a machine you already have. This page covers the step before that: having Levelrail create the machine at a cloud provider. For the short command sequence, see the [multi-cloud provisioning quickstart](/multi-cloud-provisioning).
 
-Everything here builds on the same join-token enrollment flow multi-node
-already uses. Provisioning does not replace it, it drives it: mint a token,
-hand it to a fresh cloud VM's first-boot script, and let the agent enroll
-the same way it always does.
+Provisioning drives the same join-token enrollment that multi-node uses. The control plane mints a token, hands it to the new VM's first-boot script, and the agent enrolls the way it always does.
+
+<InlineToc default-open />
 
 ```mermaid
 sequenceDiagram
@@ -33,91 +30,42 @@ sequenceDiagram
   CP-->>Op: creating -> booting -> enrolling -> ready (or failed)
 ```
 
-## Supported providers
+## Provider credentials
 
-Provider credentials are stored under **Settings > Cloud node providers**. Each card stays "Not connected" until you save a token, and a saved token is never shown again.
+Store a credential once under **Settings > Cloud node providers** (`/settings/node-providers`) or with `levelrail-cli nodes providers set-credential --provider <name>`. Each provider card reads "Not connected" until you save one, and a saved credential is never shown again. It is envelope-encrypted at rest like every other integration credential.
 
 ![Levelrail Cloud node providers settings with Hetzner, DigitalOcean, AWS, and Azure cards, all not connected](assets/screenshots/node-providers.png)
 
-- **Hetzner Cloud** (`https://docs.hetzner.cloud`)
-- **DigitalOcean** (`https://docs.digitalocean.com/reference/api/`)
-- **AWS EC2** (`https://docs.aws.amazon.com/ec2/`)
-- **Azure** (`https://learn.microsoft.com/en-us/rest/api/compute/`)
-- **GCP** (`https://cloud.google.com/compute/docs/reference/rest/v1`)
+`--provider-token` is accepted for scripting, but its value lands in shell history and the process list. Pipe the credential instead, or omit the flag for a no-echo prompt:
 
-Hetzner and DigitalOcean each have a small, single-token REST API. AWS,
-Azure and GCP need materially more setup (IAM credentials or a service
-principal/service account, a resource group or project or default VPC,
-network resources created alongside the VM) before a "paste a credential,
-get a server" flow works, covered under Required token scopes below.
+```bash
+echo "$TOKEN" | levelrail-cli nodes providers set-credential --provider hetzner
+```
 
-## Required token scopes
+<Tabs :items="['Hetzner', 'DigitalOcean', 'AWS', 'Azure', 'GCP']">
+<Tab value="Hetzner">
 
-- **Hetzner**: a project API token with **Read & Write** access. Hetzner
-  tokens are scoped to one project; provisioning creates servers in
-  whichever project the token belongs to.
-- **DigitalOcean**: a personal access token with **read and write** scope.
-- **AWS**: see "AWS credentials" below.
-- **Azure**: a service principal (Azure AD app registration) with
-  **Contributor** access on one resource group, entered as a single-line
-  JSON object: `{"tenant_id","client_id","client_secret","subscription_id","resource_group"}`.
-  The resource group must already exist; provisioning creates a VNet,
-  subnet, public IP, NIC and VM inside it, but never the group itself.
-  Region and VM-size lookup (`ListRegions`/`ListSizes`) call Azure's
-  subscription-scoped locations and `vmSizes` APIs, which a
-  resource-group-scoped role assignment alone does not authorize: also
-  grant the service principal a **Reader** role (or a custom role with
-  just `Microsoft.Resources/subscriptions/locations/read` and
-  `Microsoft.Compute/locations/vmSizes/read`) at the **subscription**
-  scope, in addition to Contributor on the one resource group. Without it,
-  the Add-node wizard's region and size pickers fail even though VM
-  creation itself still works.
-  A workload-identity-federation (OIDC) mode is also available, see
-  "Azure workload identity federation" below.
-- **GCP**: a service account JSON key with the **Compute Instance Admin**
-  role on the project, pasted as-is (minified to one line). The project ID
-  is read from the key's own `project_id` field; there is no separate
-  project setting. A default VPC network named `default` must already
-  exist in the project (every new GCP project has one unless it was
-  explicitly deleted).
+A project API token with **Read & Write** access. Tokens are scoped to one project, and servers are created in that project.
 
-Store the credential once, under Settings -> Cloud node providers
-(`/settings/node-providers`), or via `nodes providers set-credential`. It is
-encrypted at rest the same way every other integration credential in this
-platform is (envelope encryption, ADR 010) and never echoed back once saved.
+</Tab>
+<Tab value="DigitalOcean">
 
-The CLI's `--provider-token` flag is accepted for scripting, but its value
-ends up in shell history and the process list while the command runs.
-Prefer piping the credential instead (`echo "$TOKEN" | levelrail-cli nodes
-providers set-credential --provider hetzner`), or omit the flag entirely
-and run interactively for a no-echo prompt.
+A personal access token with **read and write** scope.
 
-## AWS credentials
+</Tab>
+<Tab value="AWS">
 
-EC2 has no single bearer token the way Hetzner and DigitalOcean do.
-`nodes providers set-credential --provider aws` (or the Settings page)
-takes one of two credential shapes, both stored under the same encrypted
-credential slot the other providers use:
+EC2 has no single bearer token, so `set-credential --provider aws` takes one of two shapes:
 
-- **Access key and secret** (`--provider-token` as the access key id,
-  `--secret-access-key` for the secret). Optional `--session-token` for
-  temporary credentials, `--region` to set the default region, and
-  `--role-arn` to assume an IAM role via STS before every call: with a
-  role set, the stored key only needs `sts:AssumeRole` on that one role,
-  not direct EC2 permissions.
-- **This control plane's own AWS identity** (`--use-ambient-credentials`):
-  resolves credentials from the environment, shared config, or an EC2
-  instance profile instead of a stored key. Only useful when the control
-  plane itself runs on AWS. Combine with `--role-arn` to still narrow the
-  effective permissions via STS.
+- **Access key and secret.** `--provider-token` is the access key id and `--secret-access-key` the secret. Optional: `--session-token` for temporary credentials, `--region` for the default region (default `us-east-1`), and `--role-arn` to assume an IAM role through STS before every call. With a role set, the stored key needs only `sts:AssumeRole` on that role.
+- **The control plane's own AWS identity.** `--use-ambient-credentials` resolves credentials from the environment, shared config or an EC2 instance profile. It is useful only when the control plane itself runs on AWS. Combine it with `--role-arn` to narrow permissions through STS.
 
-Full OIDC federation (`AssumeRoleWithWebIdentity`, the way GitHub Actions
-authenticates to AWS) is not implemented: it requires this control plane
-to be its own trusted OIDC token issuer, which does not exist yet. The
-role-ARN and ambient-credential paths above are the supported ways to
-avoid a long-lived key with direct EC2 permissions.
+Full OIDC federation (`AssumeRoleWithWebIdentity`) is not supported, because it would require the control plane to be its own OIDC token issuer.
 
-A minimal least-privilege IAM policy for the static-key path:
+The target region needs a **default VPC**, which every account created since December 2013 has unless it was deleted. There is no option yet to name a specific VPC or subnet.
+
+<AccordionGroup>
+<Accordion title="Minimal IAM policy for the static-key path">
 
 ```json
 {
@@ -139,238 +87,131 @@ A minimal least-privilege IAM policy for the static-key path:
 }
 ```
 
-`ec2:Describe*` covers the regions, instance types, images, VPCs, subnets
-and security groups provisioning looks up; a tighter policy can narrow it
-to the specific `Describe*` actions above if you'd rather enumerate them.
-`RunInstances`/`CreateSecurityGroup`/`CreateTags` need broader `Resource`
-scoping in AWS's own IAM model than a single ARN can express for a
-not-yet-created instance, so this policy is not resource-scoped further.
+`ec2:Describe*` covers the region, instance type, image, VPC, subnet and security group lookups. The policy is not resource-scoped further because IAM cannot express a single ARN for an instance that does not exist yet.
 
-AWS provisioning currently requires the target region to have a **default
-VPC** (true for every AWS account created since December 2013, unless it
-was explicitly deleted): CreateOpts, shared across every provider this
-platform supports, has no field yet to name a specific VPC or subnet.
-Every AWS-provisioned instance shares one security group per control
-plane by default (created on first use, reused after), with no inbound
-rules at all, matching this platform's "no inbound ports on managed
-servers" architecture. Reuse revokes any ingress rule found on that group
-(from drift, or from something else sharing the derived name) so it stays
-converged on that no-inbound invariant rather than trusting it as-is.
+</Accordion>
+<Accordion title="Security groups and SSH">
 
-Passing `--allow-ssh-inbound` (CLI) or the wizard's SSH toggle opts a
-single instance out of that shared group into its own dedicated one
-instead, with TCP 22 open to any source (there is no per-operator SSH
-key or source-IP input yet). The dedicated group is tagged at creation
-time so `DeleteServer` can safely remove it once the instance is
-terminated and no other instance still references it, without ever
-touching the shared, reused group. `DeleteServer` currently only runs
-from the orphaned-server rollback path (a provision that failed to
-persist after the server was already created); `nodes delete <id>`
-itself does not call it yet (see that command's own known gap below),
-so a dedicated group from a normally-deleted AWS node is not
-automatically cleaned up until that gap closes.
+Every AWS-provisioned instance shares one security group per control plane. It is created on first use and has no inbound rules, matching the "no inbound ports on managed servers" design. Reuse revokes any ingress rule found on the group, so it stays at zero inbound.
 
-`ListSizes` for AWS returns a small curated list of common `t3.*`
-instance types rather than EC2's full catalog, the same reasoning
-Hetzner/DigitalOcean's own short size lists already follow.
+`--allow-ssh-inbound` (or the wizard's SSH toggle) puts one instance in its own dedicated group with TCP 22 open to any source. There is no per-operator key or source-IP input yet. The dedicated group is tagged so it can be removed with its instance, but that cleanup runs only when a failed provision is rolled back. `nodes delete` does not remove the VM, so a dedicated group from a normally deleted node stays until you remove it.
 
-## Azure workload identity federation
+</Accordion>
+<Accordion title="Instance sizes">
 
-The default Azure credential is a service principal's client secret
-(`client_secret` in the JSON blob under Required token scopes above), an
-OAuth2 client-credentials flow. As an alternative, set
-`federated_token_file` instead of `client_secret` to use workload
-identity federation (OIDC): the path to a file holding a JWT signed by an
-external OIDC issuer this app registration trusts, exchanged for an
-Azure AD access token via the OAuth2 jwt-bearer client-assertion grant,
-the same mechanism Kubernetes and GitHub Actions use to avoid a
-long-lived secret. `client_secret` takes precedence if both are set.
+The size list is a short curated set of `t3.*` types (`t3.micro` through `t3.xlarge`), not the full EC2 catalog.
+
+</Accordion>
+</AccordionGroup>
+
+</Tab>
+<Tab value="Azure">
+
+A service principal (Azure AD app registration) with **Contributor** on one resource group, entered as a single-line JSON object:
+
+```json
+{"tenant_id":"...","client_id":"...","client_secret":"...","subscription_id":"...","resource_group":"..."}
+```
+
+The resource group must already exist. Provisioning creates a VNet, subnet, public IP, NIC and VM inside it, never the group itself.
+
+Region and size lookups call subscription-scoped Azure APIs that a resource-group role does not authorize. Also grant the service principal **Reader** at the **subscription** scope, or a custom role with `Microsoft.Resources/subscriptions/locations/read` and `Microsoft.Compute/locations/vmSizes/read`. Without it the wizard's pickers fail even though VM creation works.
+
+<AccordionGroup>
+<Accordion title="Workload identity federation (OIDC)">
+
+Instead of `client_secret`, set `federated_token_file` to the path of a file holding a JWT signed by an external OIDC issuer your app registration trusts. It is exchanged for an Azure AD token with the OAuth2 jwt-bearer client-assertion grant, the mechanism Kubernetes and GitHub Actions use to avoid a long-lived secret. `client_secret` wins if both are set.
 
 ```json
 {"tenant_id":"...","client_id":"...","federated_token_file":"/var/run/secrets/azure/tokens/token","subscription_id":"...","resource_group":"..."}
 ```
 
-Two things this control plane does not do: mint or sign the JWT itself
-(the token file's issuer, e.g. Kubernetes' projected service account
-tokens, is entirely external), and cache the file's content across
-requests longer than the resulting Azure AD access token stays valid
-(the file is re-read whenever a fresh access token is needed, so a
-rotated file is picked up automatically without a restart). Configuring
-the federated credential on the Azure AD app registration side (trusting
-that external issuer, subject and audience) is unchanged from Microsoft's
-own workload identity federation docs and outside this platform's scope.
+Levelrail does not mint the JWT. The file is re-read whenever a fresh access token is needed, so a rotated file is picked up without a restart. Trusting the issuer on the app registration is done in Azure, following Microsoft's workload identity federation docs.
 
-## GCP workload identity federation: known gap
+</Accordion>
+</AccordionGroup>
 
-GCP has no equivalent to `federated_token_file` above. Only the service
-account JSON key mode under Required token scopes is supported.
+</Tab>
+<Tab value="GCP">
 
-The reason this doesn't mirror Azure's pattern is a real difference in the
-two credential formats, not an oversight. Azure's credential blob is this
-platform's own JSON shape (`tenant_id`, `client_id`, ...), so adding
-`federated_token_file` alongside `client_secret` was a field on a format
-this package already controls. GCP's credential blob, by contrast, is
-Google's own service account key file pasted through as-is (`parseGCPProjectID`
-reads its `project_id` field directly), and Google's own workload identity
-federation format (an `external_account` credential JSON, per
-`golang.org/x/oauth2/google`) has no `project_id` field at all: the project
-is only reachable indirectly, via the `audience` field's workload identity
-pool resource path, which isn't a documented stable contract to parse a
-project ID out of. `google.CredentialsFromJSONWithType(ctx, json,
-google.ExternalAccount, ...)` would exchange the external token correctly,
-but still returns an empty `ProjectID` for that type, leaving no reliable
-source for the project ID `CreateServer`'s Compute API URL needs. The
-untyped auto-detecting `google.CredentialsFromJSON` helper is not a
-shortcut either: it is deprecated upstream specifically over the security
-risk of loading an unvalidated credential type.
+A service account JSON key with the **Compute Instance Admin** role on the project, pasted as-is (minified to one line). The project ID comes from the key's own `project_id` field, so there is no separate project setting. A VPC network named `default` must exist in the project, which every new project has unless it was deleted.
 
-Revisiting this would mean either accepting a second, GCP-specific field
-this platform adds on top of Google's own file format (breaking the
-"paste the key as-is" property the service-account mode has today), or
-parsing the project number out of `audience`, which is fragile. Neither is
-a small change, so it's deferred rather than forced in to match Azure's
-shape.
+GCP has no workload identity federation mode. Google's `external_account` credential format has no `project_id` field, so the project cannot be read reliably from it. Supporting it would mean adding a GCP-specific field next to Google's file format, which would end the "paste the key as-is" behavior.
 
-## Cost expectations
-
-Every provider bills by the hour (or fractions of one) for however long the
-server exists. Provisioning here never deletes a server on your behalf: if
-a provision fails partway through, or you decide not to use a node anymore,
-delete the server from the provider's own dashboard, or with
-`levelrail-cli nodes delete <id>` once it has enrolled (that removes the
-registry row, not the underlying VM; see that command's own known gap).
-The cheapest size on Hetzner or DigitalOcean (roughly 3-5 EUR/USD a month
-as of this writing) is enough for a `general` role node; AWS's cheapest
-curated size (`t3.micro`) is comparable. A `build` role node benefits from
-more CPU and memory since builds run there.
-
-Azure and GCP also bill for the small networking resources provisioning
-creates alongside the VM: a public IP on Azure, and on GCP an external
-IPv4 address, which GCP bills hourly whether or not it's attached to a
-running instance (its "free while in use" pricing ended in 2024). These
-are pennies a month, not a meaningful addition to the VM's own cost, but
-they are not free.
-
-The wizard's size picker shows a live `$X.XX/mo` estimate for Hetzner and
-DigitalOcean, since both return a size's price inline from their own API.
-AWS, Azure and GCP don't expose live pricing from their instance-list APIs
-without a separate pricing-catalog call this integration doesn't make; the
-picker shows "pricing varies, see provider console" for those three rather
-than a hardcoded, driftable price table.
+</Tab>
+</Tabs>
 
 ## How it works
 
-1. `POST /api/v1/nodes/provision` (or `nodes provision` / the Nodes page's
-   "Add node" wizard) mints a join token through the exact same code path
-   `POST /api/v1/nodes/join-tokens` uses, then calls the provider's API to
-   create a server with a cloud-init script as its user-data.
-2. The cloud-init script installs Docker if the image doesn't already have
-   it (the same `get.docker.com` convenience script `install.sh` uses),
-   then starts the node agent as a systemd-managed container, with the
-   join token and CA fingerprint passed through a root-only environment
-   file rather than the container's command line.
-3. `GET /api/v1/node-provisions/{id}` (or `nodes provisions show <id>`, or
-   the wizard's own progress view) recomputes status live on every call:
-   it asks the provider whether the server is up, and checks whether a
-   node with the expected name has enrolled yet. Status moves through
-   `creating` -> `booting` -> `enrolling` -> `ready`, or `failed` with a
-   reason.
-4. Once that node is found, its accepted workload kinds are set to match
-   the `role` the provision was created with (`general`:
-   `accepts_app_workloads=true`, `build`: `accepts_build_workloads=true`):
-   enrollment itself always starts a node as a plain app node, with no way
-   to carry an operator's chosen role through the join-token exchange, so
-   this is the first point after enrollment this feature controls.
+1. `POST /api/v1/nodes/provision` (or `nodes provision`, or the Nodes page's **Add node** wizard) mints a join token through the same code path as `POST /api/v1/nodes/join-tokens`, then asks the provider to create a server with a cloud-init script as user-data.
+2. The script installs Docker if the image lacks it (the same `get.docker.com` script `install.sh` uses) and starts the agent as a systemd-managed container. The join token and CA fingerprint go through a root-only environment file, not the container's command line.
+3. `GET /api/v1/node-provisions/{id}` (or `nodes provisions show <id>`, or the wizard's progress view) recomputes status on every call. It asks the provider whether the server is up and checks whether a node with the expected name has enrolled. Status moves through `creating`, `booting`, `enrolling` and `ready`, or `failed` with a reason.
+4. Once the node is found, its workload kinds are set from the provision's `role`: `general` accepts apps, `build` accepts builds (see [Build node routing](build-node-routing.md)). Enrollment itself always starts a node as a plain app node.
 
-A name already used by an enrolled node, or by another provision that
-hasn't failed, is rejected up front (409): the same name is how step 3
-recognizes which node belongs to which provision, and reusing one would
-let a provision report ready against an unrelated, pre-existing VM.
+A name already used by an enrolled node, or by another provision that has not failed, is rejected with `409`. The name is how step 3 matches a node to its provision.
 
-### Why there's no "installing" stage in practice
+::: tip Why there is no installing stage
+The status vocabulary includes `installing`, but nothing emits it: the control plane cannot see inside the VM while cloud-init runs. Everything between "booted" and "dialed home" reports as `enrolling`. If a provision sits there for a long time, read `/var/log/cloud-init-output.log` from the provider's console. `APP_NODE_PROVISION_TIMEOUT` (default 20 minutes) marks it `failed` on its own.
+:::
 
-The status vocabulary includes `installing` for a future, finer-grained
-signal, but nothing emits it today: this control plane has no way to see
-inside the VM while cloud-init runs. Once the provider reports the server
-as up, everything between "just booted" and "successfully dialed home" is
-reported as a single `enrolling` stage. If a provision sits at `enrolling`
-for an unusually long time, check the server's own console output at the
-provider (cloud-init logs to `/var/log/cloud-init-output.log`) before
-assuming it's stuck; `APP_NODE_PROVISION_TIMEOUT` (default 20 minutes)
-eventually marks it `failed` on its own either way.
+### The agent runs from an image
 
-### The agent image, not a downloaded binary
+The control plane binary that `install.sh` installs is checked against a published `checksums.txt`. The agent in provisioning is different: cloud-init pulls the container image `ghcr.io/glincker/levelrail-agent`, one tag per release and cosign-signed by the release pipeline. The pull is a plain `docker pull` over the registry's TLS, and cloud-init does not verify the cosign signature before running it. Treat this like any unverified script run on first boot. Later releases also attach a raw agent binary (see [Docker](docker.md#without-a-container)), but the provisioning script does not use it.
 
-Unlike the control plane binary `install.sh` installs (verified against a
-published `checksums.txt`), there is no raw `levelrail-agent`
-binary in `v0.2.0-beta.15` and earlier to check a checksum against (later
-releases attach one, see [Docker](docker.md#without-a-container)); the
-provisioning flows use the container image (`ghcr.io/glincker/levelrail-agent`, one tag per
-release, cosign-signed by the release pipeline). Cloud-init therefore pulls
-and runs that image rather than curling a binary. The pull itself is a
-plain `docker pull` over the registry's own TLS; cloud-init does not
-additionally verify the image's cosign signature before running it. That
-is a real, known gap in this specific automation path: treat it the same
-way you'd treat any other unverified script executed on first boot, until
-a raw binary release (or an automated signature check in the cloud-init
-script) closes it.
+### Token visibility on the node
 
-### The join token and CA fingerprint are visible on the node
+The join token and CA fingerprint are container environment variables, so `docker inspect levelrail-agent` on the node shows them while the container exists. Treat a provisioned node as trusted infrastructure, as you would a manually enrolled one.
 
-They're passed to the agent container as environment variables. `docker
-inspect levelrail-agent` on the node itself will show them for as long as
-the container exists. This is the same exposure any container's env vars
-have; it's not specific to provisioning. Treat a provisioned node as
-trusted infrastructure, the same way you would a manually enrolled one.
+## Cost
+
+Every provider bills by the hour for as long as the server exists. Provisioning never deletes a server for you. If a provision fails partway, or you stop using a node, delete the server at the provider. `levelrail-cli nodes delete <id>` removes the node record but not the VM.
+
+Azure and GCP also bill for the networking resources created next to the VM: a public IP on Azure, and an external IPv4 address on GCP. These are small but not free.
+
+The size picker shows a live monthly price for Hetzner and DigitalOcean, because both return it from their APIs. For AWS, Azure and GCP it shows "pricing varies, see provider console", since those catalogs need a separate pricing API that Levelrail does not call. A `build` role node benefits from more CPU and memory.
 
 ## Known limitations
 
-- **GCP has no workload identity federation mode.** Only the service
-  account JSON key mode is supported; see "GCP workload identity
-  federation: known gap" above for why this doesn't mirror Azure's
-  federation option.
-- **Closing the wizard's progress view stops the browser from tracking
-  that provision.** The server keeps provisioning either way (nothing
-  server-side is cancelled), and `nodes provisions show <id>` or `GET
-  /api/v1/node-provisions/{id}` still work; there is just no UI screen
-  yet to reopen and watch it from. Use the CLI or the API meanwhile.
-- **Azure VMs get no SSH access by default.** Azure's VM creation API
-  requires a password when no SSH public key is supplied, and there is no
-  credential input for one today; a random, unrecoverable throwaway
-  password is generated internally purely to satisfy that requirement,
-  then discarded. This is not a regression: the agent enrolls by dialing
-  out to the control plane, never over SSH, matching every other
-  provider's own "no inbound ports" default. An operator who wants SSH
-  access to an Azure-provisioned node has to configure it separately
-  through the Azure console.
-- **Azure's DeleteServer relies on cascading resource deletion.** The VM's
-  NIC, public IP and OS disk are all created with `deleteOption: "Delete"`,
-  which Azure documents as cascading their removal from a single VM delete
-  call. This was not verified against a real subscription (see below); if
-  it doesn't behave as documented, a deleted Azure node can leave a NIC and
-  public IP behind, billable until removed by hand from the Azure console.
-- **AWS, Azure and GCP catalogs have no pricing.** `ListSizes` returns an
-  empty `price_monthly` for all three: AWS's curated size list is static
-  (see AWS credentials above), and Azure's retail pricing and GCP's
-  billing catalog are both separate APIs this integration doesn't call,
-  unlike Hetzner and DigitalOcean, which return a size's price inline.
-  The size picker shows "pricing varies, see provider console" for these
-  three instead of a hardcoded, driftable price table.
+<AccordionGroup>
+<Accordion title="Closing the wizard stops the browser tracking a provision">
+
+The server keeps provisioning. Use `nodes provisions show <id>` or `GET /api/v1/node-provisions/{id}` to follow it. There is no screen yet to reopen the progress view.
+
+</Accordion>
+<Accordion title="Azure VMs get no SSH access">
+
+Azure requires a password when no SSH key is supplied, and there is no credential input for one, so a random throwaway password is generated and discarded. The agent enrolls by dialing out, so this does not block provisioning. To SSH into an Azure node, configure access in the Azure console.
+
+</Accordion>
+<Accordion title="Azure deletion relies on cascading">
+
+The VM's NIC, public IP and OS disk are created with `deleteOption: "Delete"`, which Azure documents as cascading on VM delete. This was not verified against a real subscription. If it does not behave as documented, a deleted node can leave a NIC and public IP behind.
+
+</Accordion>
+<Accordion title="GCP has no federation mode">
+
+Only the service account JSON key is supported. See the GCP tab above.
+
+</Accordion>
+</AccordionGroup>
 
 ## What was not tested
 
-This feature was built and reviewed without real cloud accounts available
-for any of the five providers: the provider clients (`internal/provision`)
-are tested against fake HTTP servers standing in for each API (Hetzner,
-DigitalOcean, Azure, GCP) or a hand-written fake implementing the same
-narrow interface the real EC2 SDK client does (AWS), not the real thing.
-Azure and GCP in particular were not exercised against a real subscription
-or project at all, so beyond the individual gaps called out above, the
-entire multi-step resource chain (resource group, VNet/subnet, public IP,
-NIC, VM for Azure; the OAuth2 JWT bearer token exchange and instance
-creation for GCP) is unverified end to end. AWS's default-VPC lookup, AMI
-resolution, security group creation/cleanup, and the STS-assume-role and
-ambient-credential paths are likewise only as correct as the fake
-responses they were tested against. Before relying on this in production,
-provision one real node per provider and confirm it reaches `ready` end
-to end.
+This feature was built without real cloud accounts. The provider clients in `internal/provision` are tested against fake HTTP servers for Hetzner, DigitalOcean, Azure and GCP, and against a hand-written fake of the narrow EC2 interface for AWS. Azure and GCP were never run against a real subscription or project, so their full resource chains are unverified end to end. AWS default-VPC lookup, image resolution, security group handling, and the STS and ambient-credential paths are only as correct as their fakes.
+
+Before relying on this in production, provision one real node per provider and confirm it reaches `ready`.
+
+## See also
+
+<CardGroup :cols="2">
+<Card title="Multi-cloud quickstart" href="/multi-cloud-provisioning">
+
+The three-command version.
+
+</Card>
+<Card title="Multi-node" href="/multi-node">
+
+Placement, drain, certificates and the mesh.
+
+</Card>
+</CardGroup>
