@@ -176,6 +176,15 @@ func loadOrGenerateLocalNodeID(dataDir string) (string, error) {
 	return id, nil
 }
 
+// readLocalNodeID returns the persisted local node ID, or "" before one exists.
+func readLocalNodeID(dataDir string) string {
+	raw, err := os.ReadFile(filepath.Join(dataDir, localNodeIDFilename)) //nolint:gosec // operator-controlled data directory path, not user input
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(raw))
+}
+
 // bootstrapLocalNode ensures id has a row in the nodes table, the same
 // idempotent "GetNode, SaveNode only if missing" shape bootstrapAdmin
 // uses for the admin account: safe to call on every start, a no-op once

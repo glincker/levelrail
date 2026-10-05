@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { DialogControl } from './dialogControl'
 import { useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -19,10 +20,9 @@ import { useDeleteApp } from '../queries/apps'
 // One app's delete action, split out of the detail route the same way
 // DeleteDatabaseDialog is split out of routes/databases/$name.tsx. DELETE
 // /api/v1/apps/{name} (internal/api/apps.go's handleDeleteApp) is
-// destructive and irreversible, there is no undo, so this is a confirm
-// dialog, not a bare one-click button, same reasoning
-// DeleteDatabaseDialog's own header comment gives. On success, navigates
-// back to /apps since the detail page's own resource no longer exists.
+// destructive and irreversible, so this is a confirm dialog. A 202 (app
+// deleted, container cleanup still retrying) shows a warning toast. On
+// success, navigates back to /apps.
 export function DeleteAppDialog({
   name,
   control,
@@ -37,6 +37,7 @@ export function DeleteAppDialog({
     control?.onOpenChange?.(next)
   }
   const navigate = useNavigate()
+  const { t } = useTranslation('common')
   const deleteApp = useDeleteApp()
 
   function handleOpenChange(next: boolean) {
@@ -51,19 +52,16 @@ export function DeleteAppDialog({
       {control?.hideTrigger ? null : (
         <DialogTrigger render={<Button variant="destructive" size="sm" />}>
           <TrashIcon className="size-3.5" aria-hidden="true" />
-          Delete
+          {t('deleteApp.trigger')}
         </DialogTrigger>
       )}
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <WarningIcon className="size-4" aria-hidden="true" />
-            Delete &ldquo;{name}&rdquo;?
+            {t('deleteApp.title', { name })}
           </DialogTitle>
-          <DialogDescription>
-            This removes the app&apos;s desired state. It does not stop or
-            remove an already-running container for it. This cannot be undone.
-          </DialogDescription>
+          <DialogDescription>{t('deleteApp.description')}</DialogDescription>
         </DialogHeader>
         {deleteApp.isError ? (
           <Alert variant="destructive">
@@ -79,7 +77,7 @@ export function DeleteAppDialog({
               handleOpenChange(false)
             }}
           >
-            Cancel
+            {t('deleteApp.cancel')}
           </Button>
           <Button
             type="button"
@@ -87,18 +85,30 @@ export function DeleteAppDialog({
             disabled={deleteApp.isPending}
             onClick={() => {
               deleteApp.mutate(name, {
-                onSuccess: () => {
+                onSuccess: (result) => {
                   setOpen(false)
-                  toast.add({
-                    title: `App "${name}" deleted.`,
-                    type: 'success',
-                  })
+                  toast.add(
+                    result.teardownPending
+                      ? {
+                          title: t('deleteApp.pendingTitle', { name }),
+                          description: t('deleteApp.pendingDescription', {
+                            reason: result.error,
+                          }),
+                          type: 'warning',
+                        }
+                      : {
+                          title: t('deleteApp.deleted', { name }),
+                          type: 'success',
+                        },
+                  )
                   void navigate({ to: '/apps' })
                 },
               })
             }}
           >
-            {deleteApp.isPending ? 'Deleting...' : 'Delete app'}
+            {deleteApp.isPending
+              ? t('deleteApp.deleting')
+              : t('deleteApp.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

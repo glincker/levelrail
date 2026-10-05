@@ -1125,3 +1125,32 @@ func TestIsPendingImage(t *testing.T) {
 		}
 	}
 }
+
+func TestParse_ImageShorthand(t *testing.T) {
+	tests := []struct {
+		name    string
+		svc     string
+		wantErr bool
+	}{
+		{"image with replicas and strategy", `{ image: "traefik/whoami:v1.10", port: 80, replicas: 2, strategy: rolling }`, false},
+		{"image plus matching build", `{ image: "a:1", build: { type: image, image: "a:1" }, port: 80 }`, false},
+		{"image conflicts with dockerfile build", `{ image: "a:1", build: { type: dockerfile }, port: 80 }`, true},
+		{"image conflicts with different build image", `{ image: "a:1", build: { type: image, image: "b:1" }, port: 80 }`, true},
+		{"neither build nor image", `{ port: 80 }`, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, err := Parse([]byte("version: 1\nservices:\n  web: " + tt.svc + "\n"))
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Parse() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err != nil {
+				return
+			}
+			web := s.Services["web"]
+			if web.Build.Type != BuildImage || web.Build.Image == "" || web.Image != "" {
+				t.Errorf("service = %+v, want image folded into Build", web)
+			}
+		})
+	}
+}
