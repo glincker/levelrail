@@ -82,7 +82,13 @@ func applyOAuth(tcfg *theauth.Config, cfg Config, db *sql.DB) *oauthRuntime {
 	rt.resolver = newProviderResolver(rt)
 	tcfg.ProviderResolver = rt.resolver
 	tcfg.ProviderResolverTTL = oauthProviderTTL()
-	tcfg.OAuth = &theauth.OAuthConfig{Signup: theauth.OAuthSignupOpen}
+	tcfg.OAuth = &theauth.OAuthConfig{
+		Signup:                  theauth.OAuthSignupOpen,
+		RedirectURI:             oauthRedirectURI,
+		RedirectURIAllowedHosts: oauthAllowedHosts(cfg),
+		// Fresh installs sign in over HTTP until an https dashboard URL is set, as the built-in flow allowed.
+		AllowInsecureRedirectURI: true,
+	}
 	return rt
 }
 

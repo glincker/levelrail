@@ -39,12 +39,11 @@ func TestOAuthGoldenStartParameters(t *testing.T) {
 				t.Errorf("PKCE S256 challenge missing: legacy %v, library %v", legacy, lib)
 			}
 			wantLegacyURI := testBaseURL + "/api/v1/auth/oauth/" + provider + "/callback"
-			wantLibraryURI := testBaseURL + "/api/v1/auth-lib/providers/" + provider + "/callback"
 			if legacy.Get("redirect_uri") != wantLegacyURI {
 				t.Errorf("legacy redirect_uri = %q, want %q", legacy.Get("redirect_uri"), wantLegacyURI)
 			}
-			if lib.Get("redirect_uri") != wantLibraryURI {
-				t.Errorf("library redirect_uri = %q, want %q", lib.Get("redirect_uri"), wantLibraryURI)
+			if lib.Get("redirect_uri") != wantLegacyURI {
+				t.Errorf("library redirect_uri = %q, want the unchanged built-in %q", lib.Get("redirect_uri"), wantLegacyURI)
 			}
 			for mode, c := range cookies {
 				if !c.HttpOnly || c.SameSite != http.SameSiteLaxMode || (c.MaxAge <= 0 && c.Expires.IsZero()) || c.Value == "" {
@@ -125,9 +124,6 @@ func TestOAuthGoldenCallbackErrors(t *testing.T) {
 				h := newOAuthHarness(t, mode)
 				h.enable("oidc", "")
 				target := tc.run(h)
-				if mode == modeLibrary && tc.want == "invalid_provider" {
-					target = h.eng.Prefix() + "/providers/bogus/callback?state=s&code=c"
-				}
 				rec := h.get(target, true)
 				wantLoc := "/login?oauth_error=" + tc.want
 				if rec.Code != http.StatusFound || rec.Header().Get("Location") != wantLoc {
