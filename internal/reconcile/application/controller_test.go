@@ -61,6 +61,16 @@ type fakeRuntime struct {
 	nextID     int
 	hostPort   int
 
+	// trackPorts makes Start publish the spec's host ports and fail with
+	// Docker's "port is already allocated" while another running container
+	// holds the same host port. specPorts remembers each created container's
+	// requested bindings by ID.
+	trackPorts bool
+	specPorts  map[string][]docker.PortBinding
+	// startNoPortsOnce makes the next Start succeed without publishing
+	// any port, the Docker quirk after a failed first start.
+	startNoPortsOnce bool
+
 	createErr  error
 	startErr   error
 	stopErr    error
@@ -276,6 +286,12 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 	f.nextID++
 	id := strconv.Itoa(f.nextID)
 	f.containers[spec.Name] = &docker.ContainerState{ID: id, Name: spec.Name, Image: spec.Image, Labels: spec.Labels}
+	if f.trackPorts {
+		if f.specPorts == nil {
+			f.specPorts = map[string][]docker.PortBinding{}
+		}
+		f.specPorts[id] = spec.Ports
+	}
 	return id, nil
 }
 
@@ -291,9 +307,31 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 		f.startErrOnce = nil
 		return err
 	}
+	if f.trackPorts {
+		for _, want := range f.specPorts[id] {
+			for _, other := range f.containers {
+				if other.ID == id || !other.Running {
+					continue
+				}
+				for _, held := range other.Ports {
+					if want.HostPort != 0 && held.HostPort == want.HostPort {
+						return errors.New("Bind for 0.0.0.0:" + strconv.Itoa(want.HostPort) + " failed: port is already allocated")
+					}
+				}
+			}
+		}
+	}
 	for _, cs := range f.containers {
 		if cs.ID == id {
 			cs.Running = true
+			if f.trackPorts {
+				if f.startNoPortsOnce {
+					f.startNoPortsOnce = false
+				} else {
+					cs.Ports = f.specPorts[id]
+				}
+				continue
+			}
 			if f.hostPort != 0 {
 				cs.Ports = []docker.PortBinding{{ContainerPort: 80, HostPort: f.hostPort}}
 			}
@@ -1561,9 +1599,9 @@ func TestController_Reconcile_CreateSucceedsStartFails_HalfSucceeded(t *testing.
 	// explicitly requires a test for: create succeeds (a container now
 	// exists) but start fails (it isn't running). This proves Reconcile
 	// reports that honestly as a
-	// failure, and that the next call recovers by restarting the
-	// existing container rather than erroring forever or blindly
-	// recreating it.
+	// failure, and that the next call recovers by recreating the
+	// container: Docker can restart a failed first start without its port
+	// bindings, so the half-created one is removed rather than reused.
 	rt := newFakeRuntime(0)
 	rt.startErr = errors.New("start failed")
 
@@ -1591,8 +1629,8 @@ func TestController_Reconcile_CreateSucceedsStartFails_HalfSucceeded(t *testing.
 	if cond2.Status != reconcile.ConditionTrue || cond2.Reason != "Deployed" {
 		t.Errorf("second reconcile condition = %+v, want Status=True Reason=Deployed (recovered from half-succeeded create)", cond2)
 	}
-	if rt.createCalls != 1 {
-		t.Errorf("createCalls after recovery = %d, want still 1: the half-created container must be restarted, not recreated", rt.createCalls)
+	if rt.createCalls != 2 {
+		t.Errorf("createCalls after recovery = %d, want 2: the half-created container must be recreated, not restarted", rt.createCalls)
 	}
 }
 
@@ -3697,7 +3735,7 @@ func TestController_Reconcile_NoVolumes_LeavesContainerSpecVolumesNil(t *testing
 // above: a non-nil DesiredService.HostPort must reach the created
 // container's own PortBinding.HostPort, not just its ContainerPort.
 func TestController_Reconcile_PinnedHostPort_PassedToContainerSpec(t *testing.T) {
-	rt := newFakeRuntime(0)
+	rt := newFakeRuntime(8080)
 	hostPort := 8080
 	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, HostPort: &hostPort}
 	c := New("web", &fakeStore{svc: desired}, rt)

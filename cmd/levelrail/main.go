@@ -3533,6 +3533,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		if experimental.Enabled(experimental.LoadBalancer) {
 			ingressOpts = append(ingressOpts,
 				ingressreconcile.WithLoadBalancers(deps.db, deps.lbRegistry),
+				ingressreconcile.WithImplicitLoadBalancing(implicitLoadBalancing(deps.logger)),
 				ingressreconcile.WithNodeUpstreams(lbNodeUpstreams{db: deps.db, local: deps.runtime, registry: deps.agentRegistry}),
 			)
 		}
@@ -3622,6 +3623,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithRolloutRecorder(rolloutRecorderFor(deps.db, deps.previewNotifier)),
 		application.WithAppliedConfigRecorder(deps.db),
 		application.WithPreviousReleaseHold(previousReleaseHold(deps.logger)),
+		application.WithPinnedPortRetry(pinnedPortRetry(deps.logger)),
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
 		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
 	}
