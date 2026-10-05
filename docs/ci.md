@@ -127,6 +127,21 @@ stable if jobs are later split or renamed.
   rollback point on its own (no force-push, no deletion); these tags exist
   only so finding one doesn't mean hunting for a SHA by hand first.
 
+## Versioning and releases
+
+Versions are automatic. [release-please](https://github.com/googleapis/release-please) reads the conventional commit messages on `main`, picks the next version (a `v0.2.0-beta.N` pre-release while no stable release exists), updates `CHANGELOG.md`, and keeps one open pull request titled `chore(main): release <version>`. Merging that PR tags the release, creates the GitHub Release, and dispatches `release.yml`, which builds every binary and publishes to Homebrew and npm.
+
+The one manual step is merging that PR. By default release-please uses the built-in `GITHUB_TOKEN`, and GitHub does not run CI on pull requests opened that way, so the required `CI required` check never reports and the PR stays blocked until someone reopens it or merges around the gate.
+
+To make releases hands-off, give release-please a real token. A fine-grained personal access token limited to this repository, with Contents and Pull requests set to read and write, is enough:
+
+```bash
+gh secret set RELEASE_PLEASE_TOKEN --repo glincker/levelrail    # paste the token at the prompt
+gh variable set AUTO_RELEASE --body true --repo glincker/levelrail
+```
+
+With the secret, the release PR runs CI like any other PR, and the tag push starts `release.yml` by itself. With the variable as well, release-please also arms auto-merge on the PR, so a change on `main` ships as a new beta once CI passes. Every merge to `main` updates the same PR, so this releases on every merge. Leave `AUTO_RELEASE` unset to keep merging release PRs by hand, with the token still doing its job of running CI on them.
+
 ## Publishing the CLI to Homebrew and npm
 
 The release workflow builds every binary, attaches them to the GitHub Release, and then runs two independent jobs. A failure in one never blocks the other or the release itself.
@@ -150,11 +165,16 @@ The formula template is `packaging/homebrew/levelrail-cli.rb.tmpl`, and `scripts
 
 `publish-npm` publishes `levelrail-cli` plus six platform packages (`levelrail-cli-<os>-<arch>`) using npm trusted publishing, so no npm token is involved. A prerelease goes out under the `beta` dist-tag, and a version already on the registry is skipped, so re-running a partly failed release finishes the rest. The job only runs when the `NPM_PUBLISH_ENABLED` repo variable is `true`.
 
-One-time setup, because npm configures a trusted publisher on a package that already exists:
+One-time setup. npm configures a trusted publisher on a package that already exists, so each package is published once by hand first. The script does the whole thing under your own npm login:
 
-1. Publish each of the seven packages once by hand so it exists. Build them with `scripts/build-npm-packages.sh <tag> <dist-dir> <out-dir>`, then run `npm publish --access public --tag beta` inside each directory while logged in with two-factor authentication. Do the platform packages first and `levelrail-cli` last.
-2. On npmjs.com, open each package, then Settings, then Trusted publishing, and choose GitHub Actions with organization `glincker`, repository `levelrail`, workflow `release.yml`, and environment `npm-publish`.
-3. Turn the job on: `gh variable set NPM_PUBLISH_ENABLED --body true --repo glincker/levelrail`.
+```bash
+scripts/npm-bootstrap.sh --dry-run    # builds the packages and shows every step, changes nothing
+scripts/npm-bootstrap.sh              # publishes, registers the trusted publisher, then enables the job
+```
+
+It downloads the newest release's binaries, builds the seven packages, publishes the platform packages first, runs `npm trust github` on each package for `glincker/levelrail`, workflow `release.yml`, environment `npm-publish`, and only then sets `NPM_PUBLISH_ENABLED`. It skips anything already done, so it is safe to re-run after a failure. Publishing and registering both ask for your npm two-factor code.
+
+After that, every release publishes with no token. If a publish fails, use "Re-run failed jobs" on the workflow run; versions already on the registry are skipped.
 
 An `NPM_TOKEN` secret, including one set at the organization level, is not used and can stay as it is for other repositories.
 
