@@ -19,7 +19,7 @@
     },
     "install": "curl -fsSL https://levelrail.com/install.sh | sudo sh",
     "shot": {
-      "src": "/assets/screenshots/deploy-history.png",
+      "mock": "deploys",
       "alt": "Levelrail deploy history with one-click rollback"
     },
     "cardsHeading": "The parts of Vercel people miss when they leave",

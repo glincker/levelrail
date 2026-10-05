@@ -19,7 +19,7 @@
     },
     "install": "curl -fsSL https://levelrail.com/install.sh | sudo sh",
     "shot": {
-      "src": "/assets/screenshots/app-overview.png",
+      "mock": "overview",
       "alt": "Levelrail app overview with live metrics and deploy history"
     },
     "cardsHeading": "What carries over from Heroku",
