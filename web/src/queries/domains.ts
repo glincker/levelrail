@@ -33,6 +33,8 @@ export interface Domain {
   has_redirect: boolean
   maintenance_enabled: boolean
   has_basic_auth: boolean
+  // automatic marks a generated <app>.<dashed-ip>.sslip.io hostname.
+  automatic?: boolean
 }
 
 export async function fetchDomains(): Promise<Domain[]> {
@@ -73,6 +75,11 @@ export interface IngressSettings {
   acme_email?: string
   acme_directory_url?: string
   hsts_enabled: boolean
+  // Toggle for automatic <app>.<dashed-ip>.sslip.io hostnames.
+  fallback_domains_enabled?: boolean
+  // Read-only: the server address apps are reachable at and how it was found.
+  public_host?: string
+  public_host_source?: 'env' | 'detected' | 'disabled' | 'none'
 }
 
 export async function fetchIngressSettings(): Promise<IngressSettings> {

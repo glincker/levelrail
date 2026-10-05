@@ -19,7 +19,7 @@ Evidence tiers used below, weakest to strongest:
 1. **Unit**: `*_test.go` against fakes or `httptest` servers.
 2. **Live Docker**: tests named `*_Live_*` or `*_live_test.go` that skip when no Docker daemon is reachable and run against a real local daemon (for example `internal/pipeline/live_test.go`, `internal/backup/pitr_live_test.go`). `nightly.yml` has a `docker` lane, but `test/e2e` itself is only named in the flake sweep (`.github/workflows/nightly.yml:111`).
 3. **E2E**: `test/e2e/*_test.go`, which drive the real HTTP API and a real reconciler against real containers on one machine.
-4. **Real infrastructure**: a fresh VPS, a real public domain, real vendor endpoints. **Almost no feature has this evidence in the repository**; multi-node enrollment is the one documented exception so far, verified locally across two real Docker daemons (see its own section below), not against a real VPS or a real WAN. `docs/roadmap.md` ("In progress") states real public ACME was never verified against a live domain, and its e2e note says the suite "does not yet exercise a full multi-node mesh or real ACME against a live domain". `docs/acme-verification-runbook.md` exists but has no recorded run.
+4. **Real infrastructure**: a fresh VPS, a real public domain, real vendor endpoints. **Almost no feature has this evidence in the repository**; multi-node enrollment is the one documented exception so far, verified locally across two real Docker daemons (see its own section below), not against a real VPS or a real WAN. Real public ACME now has one recorded run against a live public VPS (`docs/acme-verification-runbook.md`, 2026-10-05); the e2e suite itself still "does not yet exercise a full multi-node mesh or real ACME against a live domain".
 
 Because tier 4 is empty for almost every row, the "real infra" column below reads "none found" outside multi-node. The distinction that matters is tier 3 versus tiers 1 and 2.
 
@@ -215,7 +215,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 | "Notification channels: 17 kinds against Dokploy's 12" | `README.md` | The 17 is correct (`internal/alerting/rules.go:82-98`). The Dokploy 12 is not checkable here. |
 | "eight managed database engines with backup/restore/verification" | `README.md` Status section | Eight engines are defined (`internal/store/database.go:16-23`). Live restore evidence exists for Postgres via PITR e2e, and the only database e2e is Redis reconcile. |
 | Template catalog size | `docs/roadmap.md`, ADR 015 (339-template goal) | 311 catalog entries shipped. The test only enforces a floor of 180 (`internal/catalog/catalog_test.go:67`). |
-| "Real public ACME" toggleable | `docs/roadmap.md` "In progress" | Correctly flagged as unverified. Keep the warning until `docs/acme-verification-runbook.md` has a recorded run. |
+| "Real public ACME" toggleable | `docs/roadmap.md` "In progress" | Verified once on a live VPS (runbook, 2026-10-05). Renewal and DNS-01 wildcards remain unproven. |
 
 ## Proposed README and docs edits (not applied)
 

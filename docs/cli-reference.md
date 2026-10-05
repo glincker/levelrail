@@ -1652,6 +1652,22 @@ levelrail settings email get [flags]
 ```
 levelrail settings ingress get [flags]
 ```
+shows the primary domain, ACME settings, the automatic hostname toggle and the detected public address
+
+```
+levelrail settings ingress set [--fallback-domains=false] [--hsts-enabled] [flags]
+```
+changes them; flags you leave out keep their current value
+
+```
+levelrail settings ingress https status [flags]
+```
+shows whether the dashboard's free sslip.io HTTPS is off, pending, issued or failed
+
+```
+levelrail settings ingress https enable --email EMAIL [--staging] [--wait 2m] [flags]
+```
+points the dashboard at `<dashed-ip>.sslip.io` and issues a real Let's Encrypt certificate for it
 
 ```
 levelrail settings dashboard-url get [flags]

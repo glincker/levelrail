@@ -87,12 +87,18 @@ Package: `internal/ingress` (see `internal/ingress/driver.go`, `internal/ingress
 
 **Embedded Caddy:** Caddy (`github.com/caddyserver/caddy/v2`) is embedded as a library and driven in-process through its admin API, rather than run as a separate container with its own config surface. This provides automatic TLS and HTTP/3 without a second moving part to operate.
 
-**Certificate storage:** Certificates live in the database (`internal/ingress/certstorage.go` implements `certmagic.Storage` over `internal/store`), so certs are shared across nodes rather than pinned to whichever machine issued them.
+**Certificate storage:** Certificates and ACME account keys live in the database (`internal/ingress/certstorage.go` implements `certmagic.Storage` over `internal/store`), so certs are shared across nodes rather than pinned to whichever machine issued them. On first start after an upgrade, `internal/ingress/certimport.go` copies any certificates Caddy had written to its on-disk storage into the database, so nothing re-issues. Saving a different CA drops the other issuers' certificates (`internal/ingress/certpurge.go`), because certmagic reuses a valid certificate from any issuer.
+
+**Public address and zero-DNS hostnames:** `internal/ingress/publicip.go` resolves the server's public IP at startup (`APP_PUBLIC_HOST`, else a probe of public what-is-my-IP services). `<dashed-ip>.sslip.io` is built from it for the dashboard (one-click Enable HTTPS, `internal/api/ingress_https.go`) and `<app>.<dashed-ip>.sslip.io` for every app with no domain (`internal/ingress/fallback_domain.go`, toggle in `ingress_settings.fallback_domains_disabled`).
+
+**HTTP to HTTPS:** when the HTTP ingress port can be bound, Caddy's automatic redirect server owns it (`308` to https) and also serves HTTP-01 challenges; otherwise the port stays closed outside challenges.
+
+**Issuance visibility:** an `events` subscription (`internal/ingress/acme_events.go`) records certmagic's `cert_failed` events per hostname so the API can report the CA's own error and a hint (`GET /api/v1/settings/ingress/https`).
 
 **TLS issuance:**
 - Defaults to an internal, self-signed issuer
 - A real Caddy ACME issuer, settings toggle, and form validation are built and wired end to end
-- Open gap: issuance has only been unit-tested at the config level, not yet spot-checked against a real domain issuing a real cert
+- Verified: real Let's Encrypt issuance over `<dashed-ip>.sslip.io` on a public VPS (see [the recorded run](acme-verification-runbook.md#recorded-run-2026-10-05)). Renewal and DNS-01 wildcards are still not exercised live
 
 ## State
 
@@ -168,7 +174,7 @@ A few pieces described in the platform's design aren't finished yet. Worth namin
 
 **Public ACME certificate issuance (verified against a live domain)**
 
-Ingress defaults to an internal, self-signed issuer. A real Caddy ACME issuer, settings toggle, and form validation are all built and wired end to end. The missing piece: issuance has only been unit-tested at the config level so far, not spot-checked against a real domain issuing a real certificate.
+Ingress defaults to an internal, self-signed issuer. A real Caddy ACME issuer, settings toggle, and form validation are all built and wired end to end, and issuance has been run against Let's Encrypt on a real public VPS (see [the recorded run](acme-verification-runbook.md#recorded-run-2026-10-05)). Still unproven live: renewal near expiry, and wildcard certificates via DNS-01.
 
 :::
 

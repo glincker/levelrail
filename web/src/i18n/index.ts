@@ -13,6 +13,7 @@ export const NAMESPACES = [
   'auditLog',
   'streams',
   'networkProxy',
+  'https',
 ] as const
 
 void i18n

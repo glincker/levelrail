@@ -203,7 +203,15 @@ type Router struct {
 	// ingress. "" means "not configured", set via WithPublicHost;
 	// handleCheckDomain (domain_check.go) falls back to the request's own
 	// Host header in that case, see advertisedHost's own doc comment.
-	publicHost string
+	publicHost              string
+	httpsMu                 sync.Mutex
+	httpsAttempts           []time.Time
+	httpsStartedAt          time.Time
+	httpsMaxAttemptsPerHour int
+	httpsPendingTimeout     time.Duration
+	acmeDefaultDirectory    string
+	// publicHostSource is how publicHost was found; see WithPublicHostSource.
+	publicHostSource string
 	// hstsEnabled sends Strict-Transport-Security when true. Defaults to
 	// false: this control plane's own HTTP server never terminates TLS
 	// itself (the embedded Caddy ingress does, see WithDashboardDial in

@@ -232,7 +232,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"settings": {subs: map[string]*cmdNode{
 		"oauth":         {subs: map[string]*cmdNode{"list": nil, "set": nil}},
 		"email":         {subs: map[string]*cmdNode{"get": nil, "set": nil}},
-		"ingress":       {subs: map[string]*cmdNode{"get": nil, "set": nil}},
+		"ingress":       {subs: map[string]*cmdNode{"get": nil, "set": nil, "https": {subs: map[string]*cmdNode{"status": nil, "enable": nil}}}},
 		"dashboard-url": {subs: map[string]*cmdNode{"get": nil, "set": nil}},
 		"ai-assistant":  {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"updates":       {subs: map[string]*cmdNode{"get": nil, "set": nil}},

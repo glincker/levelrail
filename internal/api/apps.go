@@ -686,6 +686,7 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		appResource:              resource,
 		Requests:                 rt.requestSummaryFor(r, name),
 		PreviousReleaseHeldUntil: rt.previousReleaseHeldUntil(r.Context(), name),
+		FallbackURL:              rt.fallbackURLFor(r.Context(), *svc),
 	})
 }
 
@@ -712,6 +713,24 @@ type appWithRequests struct {
 	// PreviousReleaseHeldUntil is when the kept previous release, an instant
 	// rollback target, is removed. Omitted when none is held.
 	PreviousReleaseHeldUntil *time.Time `json:"previous_release_held_until,omitempty"`
+	// FallbackURL is the automatic sslip.io URL an app with no domain is
+	// routed under. Omitted when it has a domain or none can be built.
+	FallbackURL string `json:"fallback_url,omitempty"`
+}
+
+// fallbackURLFor returns the automatic https URL for svc, or "" when it has
+// a configured domain, the toggle is off, or no public IP is known.
+func (rt *Router) fallbackURLFor(ctx context.Context, svc store.DesiredService) string {
+	if len(svc.Domains) > 0 {
+		return ""
+	}
+	if s, err := rt.ingressSettings.GetIngressSettings(ctx); err != nil || s.FallbackDomainsDisabled {
+		return ""
+	}
+	if d, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
+		return "https://" + d
+	}
+	return ""
 }
 
 // handleUpdateApp handles PUT /api/v1/apps/{name}. Full replace, same as

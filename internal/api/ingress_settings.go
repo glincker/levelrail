@@ -9,6 +9,7 @@ import (
 	"net/mail"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -39,6 +40,20 @@ type ingressSettingsResource struct {
 	ACMEEmail        string `json:"acme_email,omitempty"`
 	ACMEDirectoryURL string `json:"acme_directory_url,omitempty"`
 	HSTSEnabled      bool   `json:"hsts_enabled"`
+	// FallbackDomainsEnabled is the automatic <app>.<dashed-ip>.sslip.io
+	// hostname toggle (see ingressSettingsUpdate for PUT semantics).
+	FallbackDomainsEnabled bool `json:"fallback_domains_enabled"`
+	// PublicHost and PublicHostSource are read-only: the address apps are
+	// reachable at and how it was found (env, detected, disabled, none).
+	PublicHost       string `json:"public_host,omitempty"`
+	PublicHostSource string `json:"public_host_source,omitempty"`
+}
+
+func (rt *Router) toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource {
+	res := toIngressSettingsResource(s)
+	res.PublicHost = rt.publicHost
+	res.PublicHostSource = rt.publicHostSource
+	return res
 }
 
 func toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource {
@@ -48,7 +63,16 @@ func toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource 
 		ACMEEmail:        s.ACMEEmail,
 		ACMEDirectoryURL: s.ACMEDirectoryURL,
 		HSTSEnabled:      s.HSTSEnabled,
+
+		FallbackDomainsEnabled: !s.FallbackDomainsDisabled,
 	}
+}
+
+// ingressSettingsUpdate is the PUT body: the resource plus a pointer shadow
+// of the toggle, so a client that omits it leaves the stored value alone.
+type ingressSettingsUpdate struct {
+	ingressSettingsResource
+	FallbackDomainsEnabled *bool `json:"fallback_domains_enabled"`
 }
 
 // handleGetIngressSettings handles GET /api/v1/settings/ingress: the
@@ -64,7 +88,7 @@ func (rt *Router) handleGetIngressSettings(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, toIngressSettingsResource(settings))
+	writeJSON(w, http.StatusOK, rt.toIngressSettingsResource(settings))
 }
 
 // errACMEEmailRequired and errACMEEmailInvalid are validateIngressSettingsRequest's
@@ -137,11 +161,12 @@ func validateIngressSettingsRequest(req ingressSettingsResource) error {
 // DomainEditor's frontend-side equivalent: a domain is shown in the UI
 // but never appears in a console.log).
 func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Request) {
-	var req ingressSettingsResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var upd ingressSettingsUpdate
+	if err := json.NewDecoder(r.Body).Decode(&upd); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	req := upd.ingressSettingsResource
 	if err := validateIngressSettingsRequest(req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -168,13 +193,23 @@ func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Req
 		ACMEDirectoryURL: strings.TrimSpace(req.ACMEDirectoryURL),
 		HSTSEnabled:      req.HSTSEnabled,
 	}
+	prev, prevErr := rt.ingressSettings.GetIngressSettings(r.Context())
+	if upd.FallbackDomainsEnabled != nil {
+		settings.FallbackDomainsDisabled = !*upd.FallbackDomainsEnabled
+	} else if prevErr == nil {
+		settings.FallbackDomainsDisabled = prev.FallbackDomainsDisabled
+	}
+	if prevErr == nil {
+		rt.purgeOnIssuerChange(r.Context(), prev, settings)
+	}
 	if err := rt.ingressSettings.UpdateIngressSettings(r.Context(), settings); err != nil {
 		rt.logger.Error("api: update ingress settings failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 	rt.hstsDBEnabled.Store(settings.HSTSEnabled)
-	writeJSON(w, http.StatusOK, toIngressSettingsResource(settings))
+	rt.nudgeReconciler()
+	writeJSON(w, http.StatusOK, rt.toIngressSettingsResource(settings))
 }
 
 // primaryDomainOwner reports the service name already claiming domain
@@ -274,6 +309,9 @@ type domainResource struct {
 	HasRedirect        bool   `json:"has_redirect"`
 	MaintenanceEnabled bool   `json:"maintenance_enabled"`
 	HasBasicAuth       bool   `json:"has_basic_auth"`
+	// Automatic marks a generated <app>.<dashed-ip>.sslip.io hostname: it
+	// is routed but not stored on the app, so no per-domain feature applies.
+	Automatic bool `json:"automatic,omitempty"`
 }
 
 // handleListDomains handles GET /api/v1/domains: every service_domains
@@ -341,7 +379,35 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 			HasBasicAuth:       hasBasicAuth[d.Domain],
 		})
 	}
+	out = append(out, rt.automaticDomains(r, canSee)...)
 	writeJSON(w, http.StatusOK, out)
+}
+
+// automaticDomains lists the generated sslip.io hostnames every app without
+// a domain is routed under. Best effort: a store error just omits them.
+func (rt *Router) automaticDomains(r *http.Request, canSee func(string) bool) []domainResource {
+	settings, err := rt.ingressSettings.GetIngressSettings(r.Context())
+	if err != nil || settings.FallbackDomainsDisabled {
+		return nil
+	}
+	if _, ok := ingress.SSLIPHost(rt.publicHost); !ok {
+		return nil
+	}
+	svcs, err := rt.apps.ListDesiredServices(r.Context())
+	if err != nil {
+		rt.logger.Warn("api: list domains: automatic hostnames skipped", slog.String("error", err.Error()))
+		return nil
+	}
+	var out []domainResource
+	for _, svc := range svcs {
+		if len(svc.Domains) > 0 || !canSee(svc.Name) {
+			continue
+		}
+		if d, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
+			out = append(out, domainResource{Domain: d, ServiceName: svc.Name, Automatic: true})
+		}
+	}
+	return out
 }
 
 // fetchDomainStatusSet fetches a per-domain status list and reduces it

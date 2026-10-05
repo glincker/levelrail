@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { HelpLink } from '../HelpLink'
+import { EnableHttpsCard } from '../EnableHttpsCard'
+import { httpsStatusQueryOptions } from '../../queries/httpsStatus'
 import {
   ingressSettingsQueryOptions,
   useUpdateIngressSettings,
@@ -12,6 +15,7 @@ import {
 import { systemDoctorQueryOptions } from '../../queries/systemDoctor'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
 import {
+  OPEN,
   domainGate,
   normalizeDomain,
   publicIpFromDoctor,
@@ -25,6 +29,8 @@ import type { StepProps } from './types'
 export function DomainStep({ onContinue, onSkip, pending }: StepProps) {
   const { data: settings } = useQuery(ingressSettingsQueryOptions())
   const { data: doctor } = useQuery(systemDoctorQueryOptions())
+  const { data: https } = useQuery(httpsStatusQueryOptions())
+  const { t } = useTranslation('https')
   const username = useAuthUsername()
   const update = useUpdateIngressSettings()
 
@@ -50,7 +56,8 @@ export function DomainStep({ onContinue, onSkip, pending }: StepProps) {
     startedAt,
     publicIp,
   )
-  const gate = domainGate(saved, progress)
+  const sslipReady = https?.state === 'issued' && !https.staging
+  const gate = sslipReady ? OPEN : domainGate(saved, progress)
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -81,6 +88,15 @@ export function DomainStep({ onContinue, onSkip, pending }: StepProps) {
 
   return (
     <div className="space-y-4">
+      <EnableHttpsCard />
+      {sslipReady ? (
+        <p className="text-xs text-muted-foreground">
+          {t('wizard.sslipReady')}
+        </p>
+      ) : null}
+      <h3 className="pt-2 text-sm font-semibold">
+        {t('wizard.ownDomainTitle')}
+      </h3>
       <p className="max-w-prose text-sm text-muted-foreground">
         Optional, but recommended: serve this dashboard at its own domain over
         HTTPS so your password never crosses the network in plain text. You need

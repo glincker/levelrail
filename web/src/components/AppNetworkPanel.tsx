@@ -10,6 +10,7 @@ import {
   WifiHighIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import type { Icon } from '@phosphor-icons/react'
 import type { AppDetail } from '../types/appDetail'
 import { useAppNetwork } from '../queries/appNetwork'
@@ -34,6 +35,7 @@ import {
 // DomainEditor already does, rather than a second implementation of the
 // same DNS-routing check.
 export function AppNetworkPanel({ app }: { app: AppDetail }) {
+  const { t } = useTranslation('https')
   const { data: network, isLoading } = useAppNetwork(app.name)
   const domains = app.domains ?? []
   const running = network?.running ?? false
@@ -110,10 +112,23 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
               {fallbackURL ? (
                 <FallbackURLRow url={fallbackURL} />
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  No domain configured. This app is only reachable on this
-                  server&apos;s host port directly.
-                </p>
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p>
+                    No domain configured. This app is only reachable on this
+                    server&apos;s host port directly.
+                  </p>
+                  {network && !network.fallback_enabled ? (
+                    <p>
+                      {t('network.off')}{' '}
+                      <Link to="/domains" className="underline">
+                        {t('network.offAction')}
+                      </Link>
+                    </p>
+                  ) : null}
+                  {network?.fallback_enabled && !network.public_host ? (
+                    <p>{t('network.noPublicHost')}</p>
+                  ) : null}
+                </div>
               )}
               <Link
                 to="/apps/$name/domains"
@@ -150,8 +165,7 @@ function FallbackURLRow({ url }: { url: string }) {
   return (
     <div className="space-y-1.5">
       <p className="text-sm text-muted-foreground">
-        No domain configured. Reachable at this zero-config URL in the
-        meantime:
+        No domain configured. Reachable at this zero-config URL in the meantime:
       </p>
       <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
         <a

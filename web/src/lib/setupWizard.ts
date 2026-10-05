@@ -35,7 +35,7 @@ export const SETUP_STEP_META: Record<
 export type StepGate =
   { canContinue: true } | { canContinue: false; reason: string }
 
-const OPEN: StepGate = { canContinue: true }
+export const OPEN: StepGate = { canContinue: true }
 
 function blocked(reason: string): StepGate {
   return { canContinue: false, reason }

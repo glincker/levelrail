@@ -322,6 +322,10 @@ type RoutesOptions struct {
 	// ingress on non-default ports never reaches for a literal port 80.
 	// 0 keeps Caddy's own default (80) in both places.
 	HTTPPort int
+	// HTTPRedirect, when true, lets Caddy bind the HTTP port and 308
+	// redirect every routed host to https. Off keeps the port unbound
+	// outside ACME challenges (non-root dev runs cannot bind port 80).
+	HTTPRedirect bool
 	// Routes is every reverse-proxy backend to route on this listener.
 	// Empty is valid: it produces a listener with no routes and no TLS
 	// automation policy, the normal shape for a reconcile pass over zero
@@ -611,7 +615,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		// See Server.AutomaticHTTPS: skip the HTTP->HTTPS redirect,
 		// which would otherwise try to bind Caddy's default HTTP port
 		// (80) and needs root.
-		server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
+		if !opts.HTTPRedirect {
+			server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
+		}
 		wildcardHosts, regularHosts := splitWildcardHosts(allHosts)
 		switch {
 		case opts.ACMEEnabled && opts.DNSProvider != nil && len(wildcardHosts) > 0:
@@ -629,8 +635,10 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			// for, unlike the internal issuer branch below: cfg.Apps.PKI
 			// is deliberately left nil here.
 			cfg.Apps.TLS = &TLSApp{Automation: &Automation{Policies: policies}}
+			cfg.Apps.Events = newACMEEventsApp()
 		case opts.ACMEEnabled:
 			cfg.Apps.TLS = acmeIssuerTLSApp(allHosts, opts.ACMEEmail, opts.ACMEDirectoryURL, opts.HTTPPort)
+			cfg.Apps.Events = newACMEEventsApp()
 		default:
 			cfg.Apps.TLS = internalIssuerTLSApp(allHosts)
 			cfg.Apps.PKI = newInternalPKIApp()

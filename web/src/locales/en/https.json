@@ -1,0 +1,57 @@
+{
+  "card": {
+    "title": "Free HTTPS, no DNS setup",
+    "description": "Serve this dashboard at {{domain}} over HTTPS with a real Let's Encrypt certificate. The hostname resolves to this server on its own, so there is nothing to configure at a registrar.",
+    "noPublicIp": "This server's public IP address is not known, so a zero-DNS hostname cannot be built. Set APP_PUBLIC_HOST to the IP on the control plane and restart it, or use your own domain below.",
+    "emailLabel": "Email for certificate notices",
+    "emailHelp": "Let's Encrypt contacts this address if a certificate has a problem.",
+    "stagingLabel": "Test with Let's Encrypt staging first",
+    "stagingHelp": "Staging certificates are not trusted by browsers, but it has no meaningful rate limits. Use it to prove ports 80 and 443 are reachable.",
+    "enable": "Enable HTTPS",
+    "enabling": "Requesting certificate",
+    "retry": "Try again",
+    "pending": "Requesting a certificate for {{domain}}. This usually takes under a minute.",
+    "issued": "HTTPS is on for {{domain}}.",
+    "issuedDetail": "Issued by {{issuer}}, expires {{date}}. Renewal is automatic.",
+    "stagingIssued": "This is a staging certificate, so browsers will show a warning. Turn staging off and run it again to get a trusted one.",
+    "openDashboard": "Open the dashboard over HTTPS",
+    "dashboardUrlSaved": "Dashboard URL set to {{url}}.",
+    "dashboardUrlFailed": "Could not save the dashboard URL.",
+    "failedTitle": "Could not get a certificate",
+    "enableFailed": "Could not enable HTTPS."
+  },
+  "hint": {
+    "unreachable": "Let's Encrypt could not reach this server on port 80. Open ports 80 and 443 in your firewall and your cloud provider's security group, then try again.",
+    "rate_limited": "Let's Encrypt is rate limiting this hostname. Wait before retrying, and use staging while you debug.",
+    "dns": "The hostname did not resolve to this server. Check that the detected public IP is correct.",
+    "caa": "A CAA DNS record forbids Let's Encrypt from issuing for this hostname.",
+    "unknown": "Let's Encrypt refused the request. The full response is below and in the control plane log."
+  },
+  "fallback": {
+    "title": "Automatic app hostnames",
+    "description": "Apps without a domain get https://<app>.<dashed-ip>.sslip.io with automatic TLS, so a fresh deploy is reachable with zero DNS.",
+    "toggleLabel": "Give apps without a domain an automatic hostname",
+    "publicHost": "Server address: {{host}} ({{source}})",
+    "noPublicHost": "No public address detected. Set APP_PUBLIC_HOST on the control plane to turn this on.",
+    "saved": "Automatic hostnames updated.",
+    "saveFailed": "Could not update automatic hostnames.",
+    "source": {
+      "env": "from APP_PUBLIC_HOST",
+      "detected": "detected",
+      "disabled": "detection disabled",
+      "none": "not found"
+    }
+  },
+  "domain": {
+    "automatic": "Automatic"
+  },
+  "network": {
+    "off": "Automatic hostnames are turned off for this server.",
+    "offAction": "Turn them on",
+    "noPublicHost": "No public IP is known for this server, so no automatic hostname can be built. Set APP_PUBLIC_HOST on the control plane."
+  },
+  "wizard": {
+    "ownDomainTitle": "Or use your own domain",
+    "sslipReady": "HTTPS is ready on the free hostname. You can continue, or set up your own domain too."
+  }
+}

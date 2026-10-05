@@ -40,6 +40,11 @@ type networkResource struct {
 	// fallback is available, so the frontend can render this field's
 	// mere presence as "show a copyable public URL."
 	FallbackURL string `json:"fallback_url,omitempty"`
+	// FallbackEnabled reports the platform-wide automatic hostname toggle,
+	// so the UI can offer to turn it back on when FallbackURL is absent.
+	FallbackEnabled bool `json:"fallback_enabled"`
+	// PublicHost is the server address the fallback hostname is built from.
+	PublicHost string `json:"public_host,omitempty"`
 }
 
 // handleGetAppNetwork handles GET /api/v1/apps/{name}/network. Host port
@@ -61,8 +66,11 @@ func (rt *Router) handleGetAppNetwork(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := networkResource{ContainerPort: svc.Port}
-	if len(svc.Domains) == 0 {
+	resp := networkResource{ContainerPort: svc.Port, PublicHost: rt.publicHost, FallbackEnabled: true}
+	if ing, ierr := rt.ingressSettings.GetIngressSettings(r.Context()); ierr == nil {
+		resp.FallbackEnabled = !ing.FallbackDomainsDisabled
+	}
+	if len(svc.Domains) == 0 && resp.FallbackEnabled {
 		if fallback, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
 			resp.FallbackURL = "https://" + fallback
 		}
