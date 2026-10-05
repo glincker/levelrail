@@ -254,7 +254,7 @@ jobs:
       contents: read
       id-token: write
     env:
-      HAS_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN != '' }}
+      HAS_TAP_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY != '' }}
       HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
     steps:
       - name: Checkout
@@ -267,15 +267,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release download "${{ env.RELEASE_TAG }}" --repo "${{ github.repository }}" --pattern 'levelrail-cli-*' --pattern checksums.txt --dir dist
 
-      # Skipped, not failed, until the owner adds the tap token: the
+      # Skipped, not failed, until the owner adds the deploy key: the
       # release itself must not depend on package-manager credentials.
+      # A deploy key is scoped to the tap repo alone, unlike a user token.
       - name: Update Homebrew tap
-        if: env.HAS_TAP_TOKEN == 'true'
+        if: env.HAS_TAP_KEY == 'true'
         env:
-          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
         run: |
           set -euo pipefail
-          git clone --depth 1 "https://x-access-token:${TAP_TOKEN}@github.com/glincker/homebrew-tap.git" tap
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$TAP_DEPLOY_KEY" > ~/.ssh/tap_key
+          chmod 600 ~/.ssh/tap_key
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/tap_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git clone --depth 1 git@github.com:glincker/homebrew-tap.git tap
           mkdir -p tap/Formula
           scripts/render-homebrew-formula.sh "${{ env.RELEASE_TAG }}" dist/checksums.txt > tap/Formula/levelrail-cli.rb
           cd tap
@@ -284,6 +289,7 @@ jobs:
           git add Formula/levelrail-cli.rb
           git diff --cached --quiet || git commit -m "levelrail-cli ${{ env.RELEASE_TAG }}"
           git push
+          rm -f ~/.ssh/tap_key
 
       - name: Set up Node
         if: env.HAS_NPM_TOKEN == 'true'
