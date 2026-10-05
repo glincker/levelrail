@@ -105,7 +105,7 @@
   min-width: 0;
   padding: 10px;
   border-radius: var(--glinui-radius-sm);
-  color: var(--vp-c-text-1);
+  color: var(--nav-panel-text);
   text-decoration: none !important;
   transition: background-color 0.15s ease;
 }
@@ -150,7 +150,7 @@
 .nav-item__desc {
   font-size: 12.5px;
   line-height: 1.4;
-  color: var(--vp-c-text-2);
+  color: var(--nav-panel-text-muted);
 }
 
 .nav-item__sr {
@@ -228,7 +228,7 @@
     font-family: inherit;
     font-size: 16px;
     font-weight: 600;
-    color: var(--vp-c-text-1);
+    color: var(--nav-panel-text);
     text-align: left;
     text-decoration: none !important;
     cursor: pointer;
