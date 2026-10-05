@@ -186,10 +186,18 @@ func downloadAndRestore(ctx context.Context, resolver backupResolver, secrets Se
 	}()
 
 	if err := restorer.Restore(ctx, engine, containerName, dump); err != nil {
-		return fmt.Errorf("restore database %q from backup %q: %w", databaseName, backupHistoryID, err)
+		return &restoreStepError{fmt.Errorf("restore database %q from backup %q: %w", databaseName, backupHistoryID, err)}
 	}
 	return nil
 }
+
+// restoreStepError marks a failure of the engine-side restore itself, as
+// opposed to resolving or downloading the backup, so a caller can retry
+// only the case where the engine may simply not be accepting work yet.
+type restoreStepError struct{ err error }
+
+func (e *restoreStepError) Error() string { return e.err.Error() }
+func (e *restoreStepError) Unwrap() error { return e.err }
 
 // RunVolumeRestore downloads the object recorded by backupHistoryID and
 // applies it to dockerVolumeName (serviceName's Docker volume backing
