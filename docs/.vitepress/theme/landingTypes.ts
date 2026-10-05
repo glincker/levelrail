@@ -8,6 +8,7 @@ export interface LandingCard {
   body: string
   icon?: string
   visual?: LandingLine[]
+  routes?: { method: 'GET' | 'POST' | 'PUT' | 'DELETE'; path: string }[]
   link?: { text: string; href: string }
 }
 

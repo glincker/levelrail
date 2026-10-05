@@ -13,8 +13,12 @@
   --lp-accent-glow: rgba(88, 177, 206, 0.25);
   --lp-accent-tint: rgba(88, 177, 206, 0.08);
   --lp-success: #6fcf97;
+  --lp-method-get: #6fcf97;
+  --lp-method-post: #6ab7ff;
+  --lp-method-put: #e8b04a;
+  --lp-method-delete: #ef7a7a;
 
-  --lp-radius-card: 24px;
+  --lp-radius-card: 28px;
   --lp-radius-frame: 24px;
   --lp-radius-inner: 12px;
   --lp-radius-pill: 999px;

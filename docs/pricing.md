@@ -45,7 +45,21 @@
           "text": "Identity and access",
           "href": "/identity-and-access"
         },
-        "icon": "key"
+        "icon": "key",
+        "visual": [
+          {
+            "k": "out",
+            "t": "sign-in  email, TOTP, OAuth, OIDC"
+          },
+          {
+            "k": "out",
+            "t": "policy   Allow  app:web"
+          },
+          {
+            "k": "ok",
+            "t": "policy   Deny   database:main"
+          }
+        ]
       },
       {
         "title": "Audit log and approvals",
@@ -54,7 +68,21 @@
           "text": "Deploy safety",
           "href": "/deploy-safety"
         },
-        "icon": "scroll"
+        "icon": "scroll",
+        "visual": [
+          {
+            "k": "out",
+            "t": "actor ada  POST /api/v1/apps  200"
+          },
+          {
+            "k": "out",
+            "t": "surface   cli"
+          },
+          {
+            "k": "ok",
+            "t": "export    audit.csv"
+          }
+        ]
       },
       {
         "title": "Backups that get verified",
@@ -63,7 +91,21 @@
           "text": "Backups and storage",
           "href": "/backups-and-storage"
         },
-        "icon": "database"
+        "icon": "database",
+        "visual": [
+          {
+            "k": "out",
+            "t": "postgres main  backup 03:00"
+          },
+          {
+            "k": "out",
+            "t": "re-download and hash"
+          },
+          {
+            "k": "ok",
+            "t": "verified, retention 7"
+          }
+        ]
       },
       {
         "title": "Observability and alerts",
@@ -72,7 +114,21 @@
           "text": "Observability",
           "href": "/observability"
         },
-        "icon": "chart"
+        "icon": "chart",
+        "visual": [
+          {
+            "k": "out",
+            "t": "crashloop detected: web"
+          },
+          {
+            "k": "out",
+            "t": "last 200 log lines attached"
+          },
+          {
+            "k": "ok",
+            "t": "alert sent to Slack"
+          }
+        ]
       },
       {
         "title": "Multi-server",
@@ -81,7 +137,21 @@
           "text": "Multi-node",
           "href": "/multi-node"
         },
-        "icon": "network"
+        "icon": "network",
+        "visual": [
+          {
+            "k": "cmd",
+            "t": "levelrail-cli nodes join-token"
+          },
+          {
+            "k": "out",
+            "t": "node2 enrolled, pending"
+          },
+          {
+            "k": "ok",
+            "t": "node2 online"
+          }
+        ]
       },
       {
         "title": "AI-ready API",
@@ -90,7 +160,37 @@
           "text": "MCP tool surface",
           "href": "/mcp-tool-surface"
         },
-        "icon": "robot"
+        "icon": "robot",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/api/v1/apps"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/system/status"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/deploys/failed"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/nodes/join-tokens"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/imports/platform/discover"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/certificates"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/system/doctor"
+          }
+        ]
       }
     ],
     "prose": [
