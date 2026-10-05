@@ -79,24 +79,37 @@ func TestPITRMaintainer_Prune(t *testing.T) {
 	}
 }
 
-func TestPITRMaintainer_ObjectDeleteFailureKeepsRowAndWAL(t *testing.T) {
-	st := &fakeMaintenanceStore{rows: newestFirst()}
+type refusingDeleteStore struct {
+	fakeMaintenanceStore
+	refuse string
+}
+
+func (f *refusingDeleteStore) DeleteBaseBackupHistory(ctx context.Context, id string) error {
+	if id == f.refuse {
+		return errors.New("FOREIGN KEY constraint failed")
+	}
+	return f.fakeMaintenanceStore.DeleteBaseBackupHistory(ctx, id)
+}
+
+func TestPITRMaintainer_ReferencedBackupKeepsObjectAndWAL(t *testing.T) {
+	st := &refusingDeleteStore{fakeMaintenanceStore: fakeMaintenanceStore{rows: newestFirst()}, refuse: "bb2"}
+	del := &fakeDeleter{}
 	rt := &fakeExecRuntime{}
 	m := &PITRMaintainer{
 		Store:   st,
 		Resolve: func(context.Context, string) (Destination, error) { return Destination{}, nil },
-		Deleter: &fakeDeleter{err: errors.New("bucket down")},
+		Deleter: del,
 		Runtime: rt,
 		Keep:    2,
 	}
 	if err := m.Prune(context.Background(), "main", "db-main"); err != nil {
 		t.Fatalf("Prune: %v", err)
 	}
-	if len(st.deleted) != 0 {
-		t.Errorf("rows deleted despite object delete failure: %v", st.deleted)
+	if len(del.calls) != 1 || del.calls[0].key != "k1" {
+		t.Errorf("deleted objects = %+v, want only k1: the referenced bb2 object must survive", del.calls)
 	}
-	if rt.execCalls != 0 {
-		t.Error("WAL must not be pruned while an older base backup still exists")
+	if !strings.Contains(strings.Join(rt.gotCmd, " "), "0/2000100") {
+		t.Errorf("WAL must be kept back to the oldest remaining backup bb2, cmd = %v", rt.gotCmd)
 	}
 }
 

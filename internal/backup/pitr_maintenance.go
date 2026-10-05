@@ -71,14 +71,18 @@ func (m *PITRMaintainer) Prune(ctx context.Context, databaseName, containerName 
 		return nil
 	}
 
-	for _, h := range succeeded[min(keep, len(succeeded)):] {
+	cut := min(keep, len(succeeded))
+	remaining := append([]store.BaseBackupHistory(nil), succeeded[:cut]...)
+	for _, h := range succeeded[cut:] {
 		if err := m.deleteBaseBackup(ctx, h); err != nil {
-			m.log().Warn("backup: base backup retention could not delete", slog.String("database", databaseName), slog.String("id", h.ID), slog.String("error", err.Error()))
-			return nil
+			// A base backup a PITR restore record still references cannot
+			// be deleted: it stays, and so does the WAL it needs.
+			m.log().Info("backup: base backup kept by retention", slog.String("database", databaseName), slog.String("id", h.ID), slog.String("reason", err.Error()))
+			remaining = append(remaining, h)
 		}
 	}
 
-	oldestKept := succeeded[min(keep, len(succeeded))-1]
+	oldestKept := remaining[len(remaining)-1]
 	if oldestKept.LSN == "" {
 		return nil
 	}
@@ -88,17 +92,23 @@ func (m *PITRMaintainer) Prune(ctx context.Context, databaseName, containerName 
 	return nil
 }
 
+// deleteBaseBackup removes the row first: a foreign key from restore history
+// can refuse it, and the bucket object must not be lost in that case.
 func (m *PITRMaintainer) deleteBaseBackup(ctx context.Context, h store.BaseBackupHistory) error {
+	if err := m.Store.DeleteBaseBackupHistory(ctx, h.ID); err != nil {
+		return err
+	}
 	if m.Deleter != nil && m.Resolve != nil {
 		dest, err := m.Resolve(ctx, h.TargetID)
 		if err != nil {
-			return fmt.Errorf("resolve target %q: %w", h.TargetID, err)
+			m.log().Warn("backup: base backup object left in bucket", slog.String("id", h.ID), slog.String("error", err.Error()))
+			return nil
 		}
 		if err := m.Deleter.Delete(ctx, dest, h.ObjectKey); err != nil {
-			return fmt.Errorf("delete object %q: %w", h.ObjectKey, err)
+			m.log().Warn("backup: base backup object left in bucket", slog.String("id", h.ID), slog.String("key", h.ObjectKey), slog.String("error", err.Error()))
 		}
 	}
-	return m.Store.DeleteBaseBackupHistory(ctx, h.ID)
+	return nil
 }
 
 func (m *PITRMaintainer) log() *slog.Logger {

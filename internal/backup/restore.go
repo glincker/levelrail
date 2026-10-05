@@ -29,6 +29,55 @@ type Restorer interface {
 // stdin stream.
 type ContainerRestorer struct {
 	Runtime docker.Runtime
+	// ReadyTimeout/ReadyInterval override the engine readiness wait defaults.
+	ReadyTimeout  time.Duration
+	ReadyInterval time.Duration
+}
+
+const (
+	defaultRestoreReadyTimeout  = 3 * time.Minute
+	defaultRestoreReadyInterval = 2 * time.Second
+)
+
+// readyCmds are TCP-level liveness probes: the official images run a
+// socket-only temporary server during first-boot init, so a socket probe
+// would pass just before the real server replaces it.
+var readyCmds = map[string][]string{
+	store.EnginePostgres: {"sh", "-c", `exec pg_isready -q -h 127.0.0.1 -U "$POSTGRES_USER"`},
+	store.EngineMySQL:    {"sh", "-c", `exec mysqladmin ping -h 127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD" --silent`},
+	store.EngineMariaDB:  {"sh", "-c", `exec mariadb-admin ping -h 127.0.0.1 -uroot -p"$MARIADB_ROOT_PASSWORD" --silent`},
+}
+
+// waitEngineReady blocks until the database accepts TCP connections, so a
+// restore into a container that was only just created does not race the
+// server's first-boot initialisation.
+func (r *ContainerRestorer) waitEngineReady(ctx context.Context, engine, containerName string) error {
+	cmd, ok := readyCmds[engine]
+	if !ok {
+		return nil
+	}
+	timeout, interval := r.ReadyTimeout, r.ReadyInterval
+	if timeout <= 0 {
+		timeout = defaultRestoreReadyTimeout
+	}
+	if interval <= 0 {
+		interval = defaultRestoreReadyInterval
+	}
+	deadline := time.Now().Add(timeout)
+	for {
+		err := r.drainExec(ctx, containerName, cmd)
+		if err == nil {
+			return nil
+		}
+		if !time.Now().Before(deadline) {
+			return fmt.Errorf("%s in %q not accepting connections after %s: %w", engine, containerName, timeout, err)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(interval):
+		}
+	}
 }
 
 // Restore implements Restorer.
@@ -56,6 +105,10 @@ func (r *ContainerRestorer) Restore(ctx context.Context, engine, containerName s
 		cmd = clickhouseRestoreCmd
 	default:
 		return fmt.Errorf("backup: restore: unrecognized engine %q", engine)
+	}
+
+	if err := r.waitEngineReady(ctx, engine, containerName); err != nil {
+		return fmt.Errorf("backup: restore %s container %q: %w", engine, containerName, err)
 	}
 
 	rc, err := r.Runtime.ExecWithInput(ctx, containerName, cmd, dump)
