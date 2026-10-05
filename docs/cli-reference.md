@@ -1846,3 +1846,9 @@ deletes a custom template (see `apps save-as-template`); the built-in catalog is
 levelrail-cli static-sites list [flags]
 ```
 
+## See also
+
+- [Getting started](getting-started.md) - First deployment walkthrough with CLI examples
+- [API reference](api-reference.md) - HTTP endpoints and response formats
+- [Deploying apps](deploying-apps.md) - Using the CLI to deploy and manage apps
+
