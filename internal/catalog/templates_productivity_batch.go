@@ -45,7 +45,7 @@ var productivityBatchTemplates = []Template{
       timeout: 5s
       retries: 5
   minio:
-    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    image: ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z
     environment:
       MINIO_ROOT_USER: appflowy
       MINIO_ROOT_PASSWORD: $SERVICE_PASSWORD_MINIO

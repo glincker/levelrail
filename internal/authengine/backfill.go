@@ -171,19 +171,36 @@ func loadLegacyUsers(ctx context.Context, db *sql.DB) ([]legacyUser, error) {
 }
 
 func checkEmailCollisions(users []legacyUser) error {
-	seen := make(map[string]struct{}, len(users))
+	groups := make(map[string][]legacyUser, len(users))
+	var order []string
 	dupes := 0
 	for _, u := range users {
 		k := strings.ToLower(u.email)
-		if _, ok := seen[k]; ok {
+		if len(groups[k]) == 0 {
+			order = append(order, k)
+		} else {
 			dupes++
 		}
-		seen[k] = struct{}{}
+		groups[k] = append(groups[k], u)
 	}
-	if dupes > 0 {
-		return fmt.Errorf("authengine: %d user emails collide when compared case-insensitively; merge or rename them first", dupes)
+	if dupes == 0 {
+		return nil
 	}
-	return nil
+	var b strings.Builder
+	for _, k := range order {
+		g := groups[k]
+		if len(g) < 2 {
+			continue
+		}
+		b.WriteString("\n  ")
+		for i, u := range g {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			fmt.Fprintf(&b, "%s (%s)", u.id, u.email)
+		}
+	}
+	return fmt.Errorf("authengine: %d user emails collide when compared case-insensitively; merge or rename them first:%s", dupes, b.String())
 }
 
 func resolveTOTP(ctx context.Context, users []legacyUser, opts BackfillOptions) (map[string][]byte, error) {

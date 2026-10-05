@@ -272,7 +272,7 @@ var catalogBatch2Templates = []Template{
 		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   freescout:
-    image: tiredofit/freescout:latest
+    image: ghcr.io/nfrastack/container-freescout:latest
     ports: ["8080:80"]
     environment:
       DB_HOST: mariadb

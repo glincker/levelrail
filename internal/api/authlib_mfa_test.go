@@ -2,9 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -362,4 +365,29 @@ func TestMFALibraryBackfilledPasskey(t *testing.T) {
 			t.Fatalf("status = %d, want 401 and no session: %s", rec.Code, rec.Body.String())
 		}
 	})
+}
+
+func TestMFARecoveryCodeFormatMatchesLegacy(t *testing.T) {
+	format := regexp.MustCompile(`^[A-Z2-7]{4}(-[A-Z2-7]{4}){3}$`)
+	for _, library := range []bool{false, true} {
+		h := newMFAHarness(t, library, nil)
+		h.enrollTOTP()
+		rec := h.do(http.MethodPost, "/api/v1/auth/2fa/recovery-codes/regenerate", `{"code":"`+h.code(30*time.Second)+`"}`)
+		var resp twoFactorRecoveryCodesResponse
+		if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &resp) != nil || len(resp.RecoveryCodes) != 10 {
+			t.Fatalf("library=%v regenerate: %d %s", library, rec.Code, rec.Body.String())
+		}
+		for _, c := range resp.RecoveryCodes {
+			if !format.MatchString(c) {
+				t.Fatalf("library=%v code %q is not XXXX-XXXX-XXXX-XXXX", library, c)
+			}
+		}
+		spellings := []string{resp.RecoveryCodes[0], strings.ToLower(strings.ReplaceAll(resp.RecoveryCodes[1], "-", ""))}
+		for _, code := range spellings {
+			body := fmt.Sprintf(`{"mfa_token":%q,"recovery_code":%q}`, h.mfaToken(h.passwordLogin()), code)
+			if rec := doJSON(t, h.rt, http.MethodPost, "/api/v1/auth/2fa/verify", body, nil); rec.Code != http.StatusOK {
+				t.Fatalf("library=%v recovery code %q: %d %s", library, code, rec.Code, rec.Body.String())
+			}
+		}
+	}
 }

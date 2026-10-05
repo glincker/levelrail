@@ -154,7 +154,7 @@ var selfhosted4Templates = []Template{
 		// magic-var token only fills in the random portion after it.
 		Compose: `services:
   snipeit:
-    image: snipe/snipe-it:v7.1.11
+    image: snipe/snipe-it:v7.1.16
     ports: ["8080:80"]
     environment:
       APP_KEY: base64:$SERVICE_BASE64_32_APPKEY
@@ -192,7 +192,7 @@ var selfhosted4Templates = []Template{
 		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   speedtest-tracker:
-    image: lscr.io/linuxserver/speedtest-tracker:1.14.1-ls151
+    image: lscr.io/linuxserver/speedtest-tracker:v1.15.0-ls174
     ports: ["8765:80"]
     environment:
       PUID: "1000"
