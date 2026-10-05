@@ -138,45 +138,7 @@
     "cta": {
       "heading": "Stop paying per dyno",
       "sub": "Try it on one small server and move a project across when it feels right."
-    },
-    "related": [
-      {
-        "text": "Coolify alternative",
-        "link": "/coolify-alternative"
-      },
-      {
-        "text": "Dokploy alternative",
-        "link": "/dokploy-alternative"
-      },
-      {
-        "text": "Vercel alternative",
-        "link": "/vercel-alternative"
-      },
-      {
-        "text": "Railway alternative",
-        "link": "/railway-alternative"
-      },
-      {
-        "text": "Pricing",
-        "link": "/pricing"
-      },
-      {
-        "text": "Privacy",
-        "link": "/privacy"
-      },
-      {
-        "text": "Demo",
-        "link": "/demo"
-      },
-      {
-        "text": "Case studies",
-        "link": "/case-studies"
-      },
-      {
-        "text": "Full comparison",
-        "link": "/comparison"
-      }
-    ]
+    }
   }
 }
 ---

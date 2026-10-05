@@ -123,45 +123,7 @@
     "cta": {
       "heading": "Run the demo on your own server",
       "sub": "Ten minutes, one small VPS, nothing to sign up for."
-    },
-    "related": [
-      {
-        "text": "Coolify alternative",
-        "link": "/coolify-alternative"
-      },
-      {
-        "text": "Dokploy alternative",
-        "link": "/dokploy-alternative"
-      },
-      {
-        "text": "Vercel alternative",
-        "link": "/vercel-alternative"
-      },
-      {
-        "text": "Heroku alternative",
-        "link": "/heroku-alternative"
-      },
-      {
-        "text": "Railway alternative",
-        "link": "/railway-alternative"
-      },
-      {
-        "text": "Pricing",
-        "link": "/pricing"
-      },
-      {
-        "text": "Privacy",
-        "link": "/privacy"
-      },
-      {
-        "text": "Case studies",
-        "link": "/case-studies"
-      },
-      {
-        "text": "Full comparison",
-        "link": "/comparison"
-      }
-    ]
+    }
   }
 }
 ---

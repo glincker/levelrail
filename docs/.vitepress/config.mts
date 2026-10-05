@@ -247,6 +247,14 @@ const landingSlugs = new Set([
   'privacy',
   'demo',
   'case-studies',
+  'caprover-alternative',
+  'dokku-alternative',
+  'kamal-alternative',
+  'self-hosted-paas',
+  'self-host-nextjs',
+  'zero-downtime-deploys',
+  'preview-environments',
+  'contribute',
 ])
 function sitemapPriority(url: string): number {
   if (url === '') return 1.0

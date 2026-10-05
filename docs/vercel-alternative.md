@@ -143,45 +143,7 @@
     "cta": {
       "heading": "Own your deploy pipeline",
       "sub": "Run a side project on it first. Open source, so you can read how every step works."
-    },
-    "related": [
-      {
-        "text": "Coolify alternative",
-        "link": "/coolify-alternative"
-      },
-      {
-        "text": "Dokploy alternative",
-        "link": "/dokploy-alternative"
-      },
-      {
-        "text": "Heroku alternative",
-        "link": "/heroku-alternative"
-      },
-      {
-        "text": "Railway alternative",
-        "link": "/railway-alternative"
-      },
-      {
-        "text": "Pricing",
-        "link": "/pricing"
-      },
-      {
-        "text": "Privacy",
-        "link": "/privacy"
-      },
-      {
-        "text": "Demo",
-        "link": "/demo"
-      },
-      {
-        "text": "Case studies",
-        "link": "/case-studies"
-      },
-      {
-        "text": "Full comparison",
-        "link": "/comparison"
-      }
-    ]
+    }
   }
 }
 ---
