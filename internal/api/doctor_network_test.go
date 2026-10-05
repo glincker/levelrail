@@ -223,10 +223,10 @@ func TestDoctorCheckClockSkew(t *testing.T) {
 	}
 }
 
-func TestDoctorRunNetworkChecks_ReturnsAllSixCodes(t *testing.T) {
+func TestDoctorRunNetworkChecks_ReturnsAllSevenCodes(t *testing.T) {
 	rt, _ := newDoctorTestRouter(t)
 	checks := rt.doctorRunNetworkChecks(context.Background(), 80, 443)
-	wantCodes := []string{"public_ip", "external_reachability_80", "external_reachability_443", "acme_reachability", "clock_skew", "agent_advertise_reachability"}
+	wantCodes := []string{"public_ip", "external_reachability_80", "external_reachability_443", "acme_reachability", "clock_skew", "agent_advertise_reachability", "mesh_hub_endpoint"}
 	if len(checks) != len(wantCodes) {
 		t.Fatalf("len(checks) = %d, want %d", len(checks), len(wantCodes))
 	}

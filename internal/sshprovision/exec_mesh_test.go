@@ -24,3 +24,26 @@ func TestRenderAgentEnvFile_MeshToggle(t *testing.T) {
 		})
 	}
 }
+
+func TestAgentUnitAndDataDir(t *testing.T) {
+	tests := []struct {
+		name string
+		got  string
+		want string
+	}{
+		{"runs as root", agentUnitTemplate, "--user 0:0"},
+		{"identity env", agentUnitTemplate, "-e APP_AGENT_IDENTITY_FILE"},
+		{"data dir exists", agentDataDirCmd, "mkdir -p /var/lib/levelrail-agent-data"},
+		{"data dir root owned", agentDataDirCmd, "chown root:root /var/lib/levelrail-agent-data"},
+		{"data dir private", agentDataDirCmd, "chmod 700 /var/lib/levelrail-agent-data"},
+		{"mesh needs tun", meshRunFlags(true), "--device /dev/net/tun"},
+		{"mesh needs net admin", meshRunFlags(true), "--cap-add NET_ADMIN"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !strings.Contains(tt.got, tt.want) {
+				t.Errorf("%q missing %q", tt.got, tt.want)
+			}
+		})
+	}
+}

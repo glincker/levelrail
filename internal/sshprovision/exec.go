@@ -203,7 +203,7 @@ func lastLines(s string, n int) string {
 // (bad image pull, a resource limit) is reported here rather than
 // silently left for the enrollment poll to eventually time out on.
 func (p *Provisioner) installAgent(ctx context.Context, client *ssh.Client, params InstallParams, onLine func(string)) error {
-	if _, err := p.run(ctx, client, "mkdir -p /var/lib/levelrail-agent-data && chown 65532:65532 /var/lib/levelrail-agent-data", onLine); err != nil {
+	if _, err := p.run(ctx, client, agentDataDirCmd, onLine); err != nil {
 		return fmt.Errorf("prepare agent data directory: %w", err)
 	}
 
@@ -257,6 +257,10 @@ func renderAgentEnvFile(p InstallParams) string {
 	return b.String()
 }
 
+// agentDataDirCmd creates the identity directory root-owned: the agent
+// container runs as root, so the bind mount needs no other owner.
+const agentDataDirCmd = "mkdir -p /var/lib/levelrail-agent-data && chown root:root /var/lib/levelrail-agent-data && chmod 700 /var/lib/levelrail-agent-data"
+
 const (
 	agentEnvPath  = "/etc/levelrail-agent.env"
 	agentUnitPath = "/etc/systemd/system/levelrail-agent.service"
@@ -281,7 +285,7 @@ Wants=network-online.target
 EnvironmentFile=/etc/levelrail-agent.env
 ExecStartPre=-/usr/bin/docker rm -f levelrail-agent
 ExecStartPre=/usr/bin/docker pull %[1]s
-ExecStart=/usr/bin/docker run --rm --name levelrail-agent --network host -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/levelrail-agent-data:/var/lib/levelrail-agent-data -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE%[2]s %[1]s
+ExecStart=/usr/bin/docker run --rm --name levelrail-agent --user 0:0 --network host -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/levelrail-agent-data:/var/lib/levelrail-agent-data -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE%[2]s %[1]s
 Restart=on-failure
 RestartSec=5
 

@@ -24,7 +24,9 @@ func TestRenderCloudInit(t *testing.T) {
 		"APP_NODE_NAME=web-1",
 		"ghcr.io/glincker/levelrail-agent:v1.2.3",
 		"levelrail-agent.service",
-		"chown 65532:65532 /var/lib/levelrail-agent-data",
+		"chown root:root /var/lib/levelrail-agent-data",
+		"chmod 700 /var/lib/levelrail-agent-data",
+		"--user 0:0",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("rendered cloud-init missing %q", want)

@@ -198,3 +198,21 @@ func syncDir(dir string) error {
 	}
 	return nil
 }
+
+// CheckWritable proves the identity file's directory accepts new files by
+// creating and removing a probe, so enrollment can fail before it spends
+// the one-time join token on an identity that could never be saved.
+func (f *IdentityFile) CheckWritable() error {
+	dir := filepath.Dir(f.Path)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return fmt.Errorf("agent: identity directory %s cannot be created: %w; make it writable by the user the agent runs as (for example: mkdir -p %s && chown <agent-user> %s) and retry, the join token was not used", dir, err, dir, dir)
+	}
+	probe, err := os.CreateTemp(dir, filepath.Base(f.Path)+identityTempInfix+"probe*")
+	if err != nil {
+		return fmt.Errorf("agent: identity directory %s is not writable by this process: %w; make it writable by the user the agent runs as (for example: chown <agent-user> %s) and retry, the join token was not used", dir, err, dir)
+	}
+	name := probe.Name()
+	_ = probe.Close()
+	_ = os.Remove(name)
+	return nil
+}

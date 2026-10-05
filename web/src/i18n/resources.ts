@@ -7,6 +7,7 @@ import type streams from '../locales/en/streams.json'
 import type networkProxy from '../locales/en/networkProxy.json'
 import type databases from '../locales/en/databases.json'
 import type https from '../locales/en/https.json'
+import type nodes from '../locales/en/nodes.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -22,6 +23,7 @@ declare module 'i18next' {
       networkProxy: typeof networkProxy
       databases: typeof databases
       https: typeof https
+      nodes: typeof nodes
     }
   }
 }

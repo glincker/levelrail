@@ -54,11 +54,9 @@ func (p CloudInitParams) agentImage() string {
 // control plane with a one-time token. The join token and CA fingerprint
 // go in a root-only env file, not container run args, so they don't show
 // up in `ps`; they remain visible via `docker inspect`, a known limitation
-// documented in docs/node-provisioning.md. The bind-mounted identity
-// directory is chowned to 65532 (Dockerfile.levelrail-agent's distroless
-// nonroot base image's fixed UID/GID): mkdir on a fresh host creates it
-// root-owned, which that nonroot container user could not otherwise write
-// its persisted identity file into.
+// documented in docs/node-provisioning.md. The agent runs as root
+// (--user 0:0, it needs docker.sock and NET_ADMIN), so the bind-mounted
+// identity directory is created root-owned with mode 0700.
 func RenderCloudInit(p CloudInitParams) (string, error) {
 	if p.ControlPlaneAddr == "" || p.JoinToken == "" || p.NodeName == "" {
 		return "", fmt.Errorf("provision: render cloud-init: control plane address, join token and node name are required")
@@ -97,7 +95,7 @@ Wants=network-online.target
 EnvironmentFile=/etc/levelrail-agent.env
 ExecStartPre=-/usr/bin/docker rm -f levelrail-agent
 ExecStartPre=/usr/bin/docker pull %[1]s
-ExecStart=/usr/bin/docker run --rm --name levelrail-agent --network host -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/levelrail-agent-data:/var/lib/levelrail-agent-data -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE%[2]s %[1]s
+ExecStart=/usr/bin/docker run --rm --name levelrail-agent --user 0:0 --network host -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/levelrail-agent-data:/var/lib/levelrail-agent-data -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE%[2]s %[1]s
 Restart=on-failure
 RestartSec=5
 
@@ -119,7 +117,8 @@ runcmd:
   - command -v docker >/dev/null 2>&1 || (curl -fsSL https://get.docker.com | sh)
   - systemctl enable --now docker
   - mkdir -p /var/lib/levelrail-agent-data
-  - chown 65532:65532 /var/lib/levelrail-agent-data
+  - chown root:root /var/lib/levelrail-agent-data
+  - chmod 700 /var/lib/levelrail-agent-data
   - systemctl daemon-reload
   - systemctl enable --now levelrail-agent
 `
