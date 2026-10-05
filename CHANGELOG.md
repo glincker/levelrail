@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.0-beta.18](https://github.com/glincker/levelrail/compare/v0.2.0-beta.17...v0.2.0-beta.18) (2026-10-05)
+
+
+### Features
+
+* harden ingress edge, hold pages, and systemd socket activation ([#999](https://github.com/glincker/levelrail/issues/999)) ([03c6d91](https://github.com/glincker/levelrail/commit/03c6d91b50c25dfbe38dd36b8330d420e49fd929))
+* orphan reaper, retried teardown paths, cascading project/env/org delete ([#1008](https://github.com/glincker/levelrail/issues/1008)) ([f87707f](https://github.com/glincker/levelrail/commit/f87707f60b1306b84609454cadc040df782c418c))
+
+
+### Bug Fixes
+
+* database data safety, remote WAL, guarded Postgres major upgrade, DR runbook ([#1009](https://github.com/glincker/levelrail/issues/1009)) ([0a7bdf1](https://github.com/glincker/levelrail/commit/0a7bdf16faf45c34c00a9567d4d9b044cbde8b38))
+* git private-network opt-in with its own env, unbreak e2e fixtures ([#1010](https://github.com/glincker/levelrail/issues/1010)) ([456ec9b](https://github.com/glincker/levelrail/commit/456ec9bd033b90018f5fb99b1c46eb9a91bb4379))
+* harden alerting, auth and day-2 paths ([#1007](https://github.com/glincker/levelrail/issues/1007)) ([b2e7897](https://github.com/glincker/levelrail/commit/b2e78971f51e1705b72edc223e0e341802725c27))
+* local-node replicas published on loopback are balanced, not dropped as remote ([#1003](https://github.com/glincker/levelrail/issues/1003)) ([4a4e140](https://github.com/glincker/levelrail/commit/4a4e140c477a54086c689aacdd4f59d7f0cac66b))
+* publish prerelease npm builds as latest until a stable release exists ([#1002](https://github.com/glincker/levelrail/issues/1002)) ([f4f4985](https://github.com/glincker/levelrail/commit/f4f49854e5b80d546d40616ebfa057631e349910))
+
 ## [0.2.0-beta.17](https://github.com/glincker/levelrail/compare/v0.2.0-beta.16...v0.2.0-beta.17) (2026-10-05)
 
 
