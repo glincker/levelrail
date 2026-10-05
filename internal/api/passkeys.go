@@ -174,6 +174,10 @@ type passkeyRegistrationBeginResponse struct {
 // adding a passkey to an account only ever happens from inside an
 // already-authenticated session.
 func (rt *Router) handleBeginPasskeyRegistration(w http.ResponseWriter, r *http.Request) {
+	if rt.mfaLib != nil {
+		rt.mfaLib.beginRegistration(w, r)
+		return
+	}
 	userID, ok := rt.currentSessionUserID(r)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "authentication required")
@@ -240,6 +244,10 @@ func passkeyResourceFromStore(c store.PasskeyCredential) passkeyResource {
 // parser, so session_id and label travel as query parameters instead of
 // alongside it in the body.
 func (rt *Router) handleFinishPasskeyRegistration(w http.ResponseWriter, r *http.Request) {
+	if rt.mfaLib != nil {
+		rt.mfaLib.finishRegistration(w, r)
+		return
+	}
 	userID, ok := rt.currentSessionUserID(r)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "authentication required")
@@ -311,6 +319,10 @@ func (rt *Router) handleFinishPasskeyRegistration(w http.ResponseWriter, r *http
 // bytes themselves, only what the settings page needs to label and
 // revoke one.
 func (rt *Router) handleListPasskeys(w http.ResponseWriter, r *http.Request) {
+	if rt.mfaLib != nil {
+		rt.mfaLib.listPasskeys(w, r)
+		return
+	}
 	userID, ok := rt.currentSessionUserID(r)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "authentication required")
@@ -333,6 +345,10 @@ func (rt *Router) handleListPasskeys(w http.ResponseWriter, r *http.Request) {
 // (id, userID) WHERE clause is what actually enforces that, this is
 // just the 404 translation.
 func (rt *Router) handleDeletePasskey(w http.ResponseWriter, r *http.Request) {
+	if rt.mfaLib != nil {
+		rt.mfaLib.deletePasskey(w, r)
+		return
+	}
 	userID, ok := rt.currentSessionUserID(r)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "authentication required")
@@ -371,6 +387,10 @@ type passkeyLoginBeginResponse struct {
 // username-first passkey flows accept; a fully enumeration-resistant
 // flow needs usernameless/discoverable credentials instead.
 func (rt *Router) handleBeginPasskeyLogin(w http.ResponseWriter, r *http.Request) {
+	if rt.mfaLib != nil {
+		rt.mfaLib.beginLogin(w, r)
+		return
+	}
 	if rt.refuseInsecureLogin(w, r) {
 		return
 	}
@@ -444,6 +464,10 @@ func (rt *Router) handleBeginPasskeyLogin(w http.ResponseWriter, r *http.Request
 // a platform authenticator's own verification (biometric or PIN)
 // already establishes both possession and, typically, user verification.
 func (rt *Router) handleFinishPasskeyLogin(w http.ResponseWriter, r *http.Request) {
+	if rt.mfaLib != nil {
+		rt.mfaLib.finishLogin(w, r)
+		return
+	}
 	if rt.refuseInsecureLogin(w, r) {
 		return
 	}
