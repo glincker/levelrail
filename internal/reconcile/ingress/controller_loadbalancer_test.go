@@ -339,3 +339,25 @@ func TestController_ImplicitLoadBalancing(t *testing.T) {
 		})
 	}
 }
+
+func TestController_ImplicitLoadBalancing_LocalNodeIDIsNotRemote(t *testing.T) {
+	svc := lbService(3)
+	svc.NodeID = "local_abc"
+	rt := newFakeRuntime()
+	for i := 0; i < 3; i++ {
+		rt.containers[replicaName(svc, i)] = &docker.ContainerState{Running: true, Ports: []docker.PortBinding{{HostPort: 30000 + i, HostIP: "127.0.0.1"}}}
+	}
+	applier := &fakeApplier{}
+	c := New(&fakeStore{services: []store.DesiredService{svc}}, rt, applier,
+		WithLogger(discardLogger()),
+		WithImplicitLoadBalancing(true),
+		WithNodeUpstreams(fakeNodes{rt: rt, host: "127.0.0.1"}),
+	)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	rp := proxyHandler(t, applier)
+	if len(rp.Upstreams) != 3 || rp.Upstreams[1].Dial != "127.0.0.1:30001" {
+		t.Errorf("upstreams = %+v, want 3 loopback replicas for the local node", rp.Upstreams)
+	}
+}
