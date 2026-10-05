@@ -170,6 +170,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runInit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "auth-engine":
+		return runAuthEngine(prog, args[1:], stdout, stderr, lookupEnv)
 	case "api-docs":
 		return runAPIDocs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "containers":

@@ -72,6 +72,7 @@
 package api
 
 import (
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/statuspage"
@@ -569,9 +570,13 @@ type Router struct {
 	cpBackupScheduleOff bool                      // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
 	cpDR                ControlPlaneDR            // nil is valid: /system/control-plane-dr routes return 501
 
-	authEnginePrefix string       // empty means the library auth engine is off, set via WithAuthEngine
-	authEngine       http.Handler // nil when APP_AUTH_ENGINE is not "library"
+	authEnginePrefix string               // empty means the library auth engine is off, set via WithAuthEngine
+	authEngine       http.Handler         // nil when APP_AUTH_ENGINE is not "library"
+	libSessions      *authengine.Sessions // nil unless the sessions area is served by the library, set via WithAuthSessions
+	mfaLib           *authLibMFA          // nil unless the library serves AreaMFA
+	authLibOAuth     AuthLibOAuth         // nil keeps the in-house OAuth sign-in, see WithAuthLibOAuth
 	cpDRMaterial     EscrowMaterialReader
+	authLib          authLibState // library token, device and shadow hooks, zero in legacy mode
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -717,5 +722,6 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	// sessionStore reads its TTL once at construction, it isn't a field
 	// re-read on every create() call.
 	rt.sessions = newSessionStore(rt.sessionTTL)
+	rt.attachLibSessions()
 	return rt
 }
