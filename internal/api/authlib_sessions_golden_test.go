@@ -110,7 +110,7 @@ type exchange struct {
 
 var volatileKeys = map[string]bool{"expires_at": true, "token": true, "url": true, "id": true}
 
-func normalizeBody(raw string) string {
+func normalizeSessionBody(raw string) string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return ""
@@ -153,7 +153,7 @@ func (e *goldenEnv) do(t *testing.T, c call) (exchange, string) {
 	e.rt.Handler().ServeHTTP(rec, req)
 	res := rec.Result()
 	body, _ := io.ReadAll(res.Body)
-	ex := exchange{Step: c.step, Status: res.StatusCode, Body: normalizeBody(string(body)), Retry: res.Header.Get("Retry-After") != ""}
+	ex := exchange{Step: c.step, Status: res.StatusCode, Body: normalizeSessionBody(string(body)), Retry: res.Header.Get("Retry-After") != ""}
 	newCookie := ""
 	for _, ck := range res.Cookies() {
 		ex.Cookies = append(ex.Cookies, cookieShape(ck))
@@ -172,7 +172,7 @@ func loginBody(email, pass string) string {
 
 type scenario func(t *testing.T, e *goldenEnv) []exchange
 
-func runGolden(t *testing.T, name string, sc scenario) {
+func runSessionGolden(t *testing.T, name string, sc scenario) {
 	t.Helper()
 	t.Run(name, func(t *testing.T) {
 		legacy := sc(t, newGoldenEnv(t, false))
@@ -194,7 +194,7 @@ func seedStandard(t *testing.T, e *goldenEnv) {
 }
 
 func TestAuthLibSessionsGolden(t *testing.T) {
-	runGolden(t, "login ok", func(t *testing.T, e *goldenEnv) []exchange {
+	runSessionGolden(t, "login ok", func(t *testing.T, e *goldenEnv) []exchange {
 		seedStandard(t, e)
 		login, cookie := e.do(t, call{step: "login", method: "POST", path: "/api/v1/auth/login", body: loginBody(goldenRootEmail, goldenRootPass)})
 		session, _ := e.do(t, call{step: "session", method: "GET", path: "/api/v1/auth/session", cookie: cookie})
@@ -202,7 +202,7 @@ func TestAuthLibSessionsGolden(t *testing.T) {
 		return []exchange{login, session, whoami}
 	})
 
-	runGolden(t, "wrong password and unknown user", func(t *testing.T, e *goldenEnv) []exchange {
+	runSessionGolden(t, "wrong password and unknown user", func(t *testing.T, e *goldenEnv) []exchange {
 		seedStandard(t, e)
 		wrong, _ := e.do(t, call{step: "wrong password", method: "POST", path: "/api/v1/auth/login", body: loginBody(goldenRootEmail, "nope-nope-1")})
 		unknown, _ := e.do(t, call{step: "unknown user", method: "POST", path: "/api/v1/auth/login", body: loginBody("ghost@example.test", "nope-nope-1")})
@@ -211,7 +211,7 @@ func TestAuthLibSessionsGolden(t *testing.T) {
 		return []exchange{wrong, unknown, missing, badJSON}
 	})
 
-	runGolden(t, "rate limited", func(t *testing.T, e *goldenEnv) []exchange {
+	runSessionGolden(t, "rate limited", func(t *testing.T, e *goldenEnv) []exchange {
 		seedStandard(t, e)
 		var out []exchange
 		for i := 1; i <= 6; i++ {
@@ -221,7 +221,7 @@ func TestAuthLibSessionsGolden(t *testing.T) {
 		return out
 	})
 
-	runGolden(t, "logout and session after logout", func(t *testing.T, e *goldenEnv) []exchange {
+	runSessionGolden(t, "logout and session after logout", func(t *testing.T, e *goldenEnv) []exchange {
 		seedStandard(t, e)
 		_, cookie := e.do(t, call{step: "login", method: "POST", path: "/api/v1/auth/login", body: loginBody(goldenRootEmail, goldenRootPass)})
 		logout, _ := e.do(t, call{step: "logout", method: "POST", path: "/api/v1/auth/logout", cookie: cookie})
@@ -230,7 +230,7 @@ func TestAuthLibSessionsGolden(t *testing.T) {
 		return []exchange{logout, after, again}
 	})
 
-	runGolden(t, "setup token registration", func(t *testing.T, e *goldenEnv) []exchange {
+	runSessionGolden(t, "setup token registration", func(t *testing.T, e *goldenEnv) []exchange {
 		status1, _ := e.do(t, call{step: "setup status before", method: "GET", path: "/api/v1/auth/setup-status"})
 		badToken, _ := e.do(t, call{step: "bad token", method: "POST", path: "/api/v1/auth/register", body: `{"username":"first@example.test","password":"a-real-password","setup_token":"wrong"}`})
 		short, _ := e.do(t, call{step: "short password", method: "POST", path: "/api/v1/auth/register", body: `{"username":"first@example.test","password":"short","setup_token":"` + e.token + `"}`})
@@ -242,7 +242,7 @@ func TestAuthLibSessionsGolden(t *testing.T) {
 		return []exchange{status1, badToken, short, ok, session, second, status2, relogin}
 	})
 
-	runGolden(t, "session link consume", func(t *testing.T, e *goldenEnv) []exchange {
+	runSessionGolden(t, "session link consume", func(t *testing.T, e *goldenEnv) []exchange {
 		seedStandard(t, e)
 		_, root := e.do(t, call{step: "root login", method: "POST", path: "/api/v1/auth/login", body: loginBody(goldenRootEmail, goldenRootPass)})
 		mint, _ := e.do(t, call{step: "mint", method: "POST", path: "/api/v1/auth/session-links", cookie: root})
@@ -261,7 +261,7 @@ func TestAuthLibSessionsGolden(t *testing.T) {
 		return []exchange{mint, consume, session, reuse, unknown}
 	})
 
-	runGolden(t, "deleted user session rejected", func(t *testing.T, e *goldenEnv) []exchange {
+	runSessionGolden(t, "deleted user session rejected", func(t *testing.T, e *goldenEnv) []exchange {
 		seedStandard(t, e)
 		_, root := e.do(t, call{step: "root login", method: "POST", path: "/api/v1/auth/login", body: loginBody(goldenRootEmail, goldenRootPass)})
 		_, dev := e.do(t, call{step: "dev login", method: "POST", path: "/api/v1/auth/login", body: loginBody(goldenUserEmail, goldenUserPass)})
@@ -276,7 +276,7 @@ func TestAuthLibSessionsGolden(t *testing.T) {
 		return []exchange{before, del, after, relogin}
 	})
 
-	runGolden(t, "password change revokes other sessions", func(t *testing.T, e *goldenEnv) []exchange {
+	runSessionGolden(t, "password change revokes other sessions", func(t *testing.T, e *goldenEnv) []exchange {
 		seedStandard(t, e)
 		_, a := e.do(t, call{step: "login a", method: "POST", path: "/api/v1/auth/login", body: loginBody(goldenRootEmail, goldenRootPass)})
 		_, b := e.do(t, call{step: "login b", method: "POST", path: "/api/v1/auth/login", body: loginBody(goldenRootEmail, goldenRootPass)})

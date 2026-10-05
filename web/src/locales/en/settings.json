@@ -110,5 +110,11 @@
       "owner": "Owner",
       "abilities": "Abilities"
     }
+  },
+  "recoveryCodesNotice": {
+    "title": "Generate new recovery codes",
+    "description": "Your account moved to the new sign-in engine, and recovery codes issued before the move no longer work. Your authenticator app still does. Generate a fresh set so you can get back in if you lose your device.",
+    "action": "Generate recovery codes",
+    "dismiss": "Dismiss"
   }
 }

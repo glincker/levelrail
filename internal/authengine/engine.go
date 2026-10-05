@@ -79,6 +79,7 @@ type Config struct {
 	DeviceTokenTTL  time.Duration
 	DeviceCodeTTL   time.Duration
 	Sessions        SessionsHooks
+	MFA             MFAConfig
 }
 
 // ConfigFromEnv applies the env overrides on top of base and fills defaults.
@@ -125,6 +126,8 @@ type Engine struct {
 	dir         *Directory
 	tokenPrefix string
 	sessions    *Sessions
+	totp        bool
+	passkeys    bool
 }
 
 // New builds the engine over db. The library tables must exist already: they
@@ -187,12 +190,13 @@ func New(db *sql.DB, cfg Config) (*Engine, error) {
 		sess = newSessions(db, cfg.Sessions)
 		applySessionsConfig(&tcfg, sess, store.ThrottleStore())
 	}
+	applyMFA(&tcfg, cfg)
 	a, err := theauth.New(tcfg)
 	if err != nil {
 		return nil, fmt.Errorf("authengine: init: %w", err)
 	}
 	bindSessions(sess, a, cfg.PathPrefix)
-	return &Engine{auth: a, prefix: cfg.PathPrefix, store: store, db: db, dir: cfg.Directory, tokenPrefix: tcfg.APITokens.Prefix, sessions: sess}, nil
+	return &Engine{auth: a, prefix: cfg.PathPrefix, store: store, db: db, dir: cfg.Directory, tokenPrefix: tcfg.APITokens.Prefix, sessions: sess, totp: tcfg.TOTP != nil, passkeys: tcfg.WebAuthn != nil}, nil
 }
 
 // Prefix is the route prefix Handler serves under.
