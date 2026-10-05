@@ -104,7 +104,7 @@ Not considered: a fully compromised control plane host (it holds the master key 
 ### Network and outbound requests
 
 - The agent dials out over mutual TLS and can pin the control plane CA fingerprint during enrollment. `internal/agent/pki.go`, `internal/agent/credentials.go`, [Security overview](security.md#tls-and-network-exposure).
-- Notification and log drain URLs are checked on the dialed IP against loopback, private, link-local and reserved ranges, including redirects. `internal/netguard`.
+- Notification and log drain URLs are checked on the dialed IP against loopback, private, link-local and reserved ranges, including redirects. `kit/netguard`.
 - Security headers and a strict Content Security Policy are set on every response. `internal/api/middleware.go`.
 
 ### Webhooks and pull requests
@@ -131,7 +131,7 @@ Stated plainly. Some are being worked on by other tracks and are listed as plann
 | Release signing has never run in a real release | A broken signing step would go unnoticed until a release | Release workflow signs `checksums.txt` with cosign and attests provenance; `install.sh` verifies the signature when cosign is present, and `APP_INSTALL_VERIFY=require` refuses unsigned releases. Untested against a real release |
 | Secret ciphertext is not bound to its context (app and key name) | A database writer could swap one secret's ciphertext for another's | Planned: secret context binding |
 | Only apps, databases and models have per-resource IAM. Nodes, projects, domains, registries and settings are ability-gated only | You cannot Deny one node or project to a token that has the ability | Open |
-| Git fetches of a private-address Git server are refused by default | A LAN Gitea or GitLab needs `APP_GIT_ALLOW_PRIVATE_NETWORKS=true`, which relaxes only git fetches | Fixed: git fetches use `internal/netguard` with their own opt-in. The older shared `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS` still works for git |
+| Git fetches of a private-address Git server are refused by default | A LAN Gitea or GitLab needs `APP_GIT_ALLOW_PRIVATE_NETWORKS=true`, which relaxes only git fetches | Fixed: git fetches use `kit/netguard` with their own opt-in. The older shared `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS` still works for git |
 | Bind-mount path checks are lexical | A host symlink inside an allowed directory that points at a protected path is followed by Docker | Open: only operators with root on the host can create such a link |
 | The session cookie is not `Secure` over plain HTTP and has no `__Host-` prefix | The dashboard over HTTP (before a domain and certificate exist) exposes the session to a network attacker | Accepted until HTTPS is enabled; enable it from Settings, Ingress |
 | Docker socket is never mounted into apps, but the agent container itself holds it | A compromised agent is root on its node | By design: the agent needs the Engine API. It cannot read other nodes' env, since the control plane only sends a node the workloads placed on it |

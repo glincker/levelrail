@@ -5,6 +5,7 @@ FROM golang:1.26-alpine AS build
 ARG VERSION
 WORKDIR /src
 COPY go.mod go.sum ./
+COPY kit/go.mod ./kit/
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build \

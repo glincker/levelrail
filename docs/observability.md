@@ -235,7 +235,7 @@ The response is `{ "nodes": [...], "fleet": {...} }`:
 
 `GET /api/v1/nodes/{id}/capacity-forecast` answers "at this rate, how long until disk or memory runs out," not just today's usage: a rough heads-up, built from the same `disk_used_bytes`/`disk_total_bytes`/`memory_total_bytes`/`memory_available_bytes` host samples the fleet utilization and disk-pressure views above already read, not a second collector.
 
-The method (`internal/forecast`) is deliberately the simplest honest one available: an ordinary-least-squares line fit over the lookback window's samples, projected forward to the resource's total capacity. It assumes the recent rate of change continues in a straight line, which real usage rarely does exactly (a cleanup, a new deploy's larger image, a burst of logs all bend the line). Every response carries a plain-English disclaimer in `note` saying exactly that; treat the result as a heads-up, not a guarantee.
+The method (`kit/forecast`) is deliberately the simplest honest one available: an ordinary-least-squares line fit over the lookback window's samples, projected forward to the resource's total capacity. It assumes the recent rate of change continues in a straight line, which real usage rarely does exactly (a cleanup, a new deploy's larger image, a burst of logs all bend the line). Every response carries a plain-English disclaimer in `note` saying exactly that; treat the result as a heads-up, not a guarantee.
 
 The response shape:
 ```json
@@ -307,7 +307,7 @@ Override via env vars: `APP_ALERT_PATCH_STATUS_THRESHOLD`, `APP_ALERT_NODE_DISK_
 
 **Backup missing rule logic**
 
-The `backup_missing` rule doesn't invent its own cadence calculation. It reads the same `backup_schedule` cron expression and `backup_history` rows that `internal/backup.Scheduler` uses. It computes the expected interval from the cron expression (`internal/cronexpr`) and fires once the last succeeded attempt is older than that interval plus a grace period.
+The `backup_missing` rule doesn't invent its own cadence calculation. It reads the same `backup_schedule` cron expression and `backup_history` rows that `internal/backup.Scheduler` uses. It computes the expected interval from the cron expression (`kit/cronexpr`) and fires once the last succeeded attempt is older than that interval plus a grace period.
 
 Edge cases:
 - A target with attempts but no success in the lookback fires, anchored to its oldest attempt (a silently-failing backup reads the same as one that stopped).

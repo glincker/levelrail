@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/forecast"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/kit/forecast"
 )
 
 // defaultCapacityForecastLookback is how far back

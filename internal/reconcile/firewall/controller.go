@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/firewall"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/firewall"
 )
 
 // localNodeID is the sentinel meaning "the control plane's own node".

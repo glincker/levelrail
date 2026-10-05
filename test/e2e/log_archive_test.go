@@ -29,12 +29,12 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/netguard"
 	"github.com/GLINCKER/levelrail/internal/objectstore"
 	"github.com/GLINCKER/levelrail/internal/objectstore/objectstoretest"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 const (

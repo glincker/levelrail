@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/netguard"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // Env vars bounding repository inspection.

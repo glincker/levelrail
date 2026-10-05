@@ -11,7 +11,7 @@ import (
 	"time"
 	_ "time/tzdata" // window timezones must resolve on minimal container images
 
-	"github.com/GLINCKER/levelrail/internal/cronexpr"
+	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
 
 // Maintenance window scopes.

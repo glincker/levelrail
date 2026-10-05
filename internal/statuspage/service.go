@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/netguard"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // Store is what Service reads and writes. *store.DB satisfies it.

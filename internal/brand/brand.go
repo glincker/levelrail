@@ -5,6 +5,7 @@ package brand
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -102,4 +103,9 @@ func (b *Brand) validate() error {
 		return fmt.Errorf("binary_name is required")
 	}
 	return nil
+}
+
+// RuleCommentPrefix returns the host firewall rule comment tag, the lowercased ShortName plus a colon.
+func (b *Brand) RuleCommentPrefix() string {
+	return strings.ToLower(b.ShortName) + ":"
 }

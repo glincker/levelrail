@@ -29,7 +29,7 @@ fi
 [ "${#CHANGED_FILES[@]}" -gt 0 ] || exit 0
 
 # Store migrations are read at runtime by nearly every store-backed test.
-UNSCOPABLE_PATTERN='^(go\.mod|go\.sum|internal/store/migrations/.*\.sql|scripts/affected-go-packages\.sh)$'
+UNSCOPABLE_PATTERN='^(go\.mod|go\.sum|kit/go\.mod|kit/go\.sum|internal/store/migrations/.*\.sql|scripts/affected-go-packages\.sh)$'
 # Too common to map a change to the Go files that mention them by name.
 GENERIC_NAMES='^(README\.md|index\.md|Dockerfile|package\.json|package-lock\.json|LICENSE|Makefile|\.gitignore|\.dockerignore)$'
 
@@ -42,10 +42,17 @@ done
 
 has_go() { compgen -G "$1/*.go" >/dev/null; }
 
-declare -A SEED_DIRS=() TEST_SEED_DIRS=()
+module_path="$(head -n1 go.mod | awk '{print $2}')"
+declare -A SEED_DIRS=() TEST_SEED_DIRS=() KIT_IMPORTS=()
 add_seed() { # dir [test]
 	case "$1" in
 	tools | tools/*) return ;; # separate module, see ci.yml's Build, vet
+	kit | kit/*)
+		# Nested module: go list from the root can't resolve its dirs, but root
+		# packages import it, so the import path still seeds the dependents walk.
+		[ "${2:-}" = test ] || KIT_IMPORTS["$module_path/$1"]=1
+		return
+		;;
 	esac
 	[ -d "$1" ] || return 0
 	if [ "${2:-}" = test ]; then
@@ -104,7 +111,7 @@ for f in "${CHANGED_FILES[@]}"; do
 	done < <(git grep -l "${grep_args[@]}" -- '*.go' 2>/dev/null || true)
 done
 
-[ "$((${#SEED_DIRS[@]} + ${#TEST_SEED_DIRS[@]}))" -gt 0 ] || exit 0
+[ "$((${#SEED_DIRS[@]} + ${#TEST_SEED_DIRS[@]} + ${#KIT_IMPORTS[@]}))" -gt 0 ] || exit 0
 
 if [ "$SEEDS_ONLY" = true ]; then
 	printf '%s\n' "${!SEED_DIRS[@]}" "${!TEST_SEED_DIRS[@]}" | sort -u
@@ -115,12 +122,16 @@ TEST_ONLY=()
 if [ "${#TEST_SEED_DIRS[@]}" -gt 0 ]; then
 	mapfile -t TEST_ONLY < <(go list -e -f '{{.ImportPath}}' "${!TEST_SEED_DIRS[@]}")
 fi
-if [ "${#SEED_DIRS[@]}" -eq 0 ]; then
+if [ "${#SEED_DIRS[@]}" -eq 0 ] && [ "${#KIT_IMPORTS[@]}" -eq 0 ]; then
 	printf '%s\n' "${TEST_ONLY[@]}" | sort -u
 	exit 0
 fi
 
-mapfile -t CHANGED_IMPORT_PATHS < <(go list -e -f '{{.ImportPath}}' "${!SEED_DIRS[@]}")
+CHANGED_IMPORT_PATHS=("${!KIT_IMPORTS[@]}")
+if [ "${#SEED_DIRS[@]}" -gt 0 ]; then
+	mapfile -t root_paths < <(go list -e -f '{{.ImportPath}}' "${!SEED_DIRS[@]}")
+	CHANGED_IMPORT_PATHS+=("${root_paths[@]}")
+fi
 
 CHANGED_JSON="$(printf '%s\n' "${CHANGED_IMPORT_PATHS[@]}" | jq -R . | jq -s .)"
 

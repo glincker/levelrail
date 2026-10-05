@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/netguard"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // TestMain shrinks notifyRetryBaseDelay to keep every test in this

@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
-	"github.com/GLINCKER/levelrail/internal/netguard"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // Config is everything needed to talk to one bucket.

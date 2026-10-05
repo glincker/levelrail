@@ -10,6 +10,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/GLINCKER/levelrail/kit/semver"
 )
 
 // NodeSessionCloser ends a node's live agent session. *agent.Server
@@ -108,7 +109,7 @@ func (rt *Router) nodeCertAndAgent(n store.Node, now time.Time) (*nodeCertResour
 		MinVersion: rt.nodeCerts.minAgentVersion, ControlPlaneVersion: version.Version,
 	}
 	if ag.MinVersion != "" {
-		cmp, ok := version.Compare(n.AgentVersion, ag.MinVersion)
+		cmp, ok := semver.Compare(n.AgentVersion, ag.MinVersion)
 		ag.Outdated = n.AgentVersion == "" || (ok && cmp < 0)
 	}
 	return cert, ag

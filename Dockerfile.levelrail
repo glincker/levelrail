@@ -22,6 +22,7 @@ FROM golang:1.26-alpine AS build
 ARG VERSION
 WORKDIR /src
 COPY go.mod go.sum ./
+COPY kit/go.mod ./kit/
 RUN go mod download
 COPY . .
 COPY --from=web /src/web/dist ./web/dist

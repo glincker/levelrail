@@ -49,6 +49,17 @@
     }
   ],
   "packages": {
-    ".": {}
+    ".": {
+      "exclude-paths": ["kit"]
+    },
+    "kit": {
+      "release-type": "go",
+      "package-name": "kit",
+      "component": "kit",
+      "include-component-in-tag": true,
+      "tag-separator": "/",
+      "versioning": "default",
+      "release-as": "0.1.0"
+    }
   }
 }

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/netguard"
 	"github.com/GLINCKER/levelrail/internal/objectstore/objectstoretest"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 func newTestClient(t *testing.T, srv *objectstoretest.Server, bucket string) *Client {

@@ -44,7 +44,8 @@ Go toolchain) sorts changed files into areas:
 | --- | --- |
 | `.github/workflows/ci.yml`, `scripts/ci-*.sh`, `scripts/affected-go-packages.sh`, `scripts/go-test-groups.sh`, the coverage, lane and migration check scripts | Full run of everything: the pipeline itself changed |
 | `go.mod`, `go.sum`, `internal/store/migrations/*.sql` | Every Go package, full lint (same rule as the pre-push hook) |
-| `.golangci.yml` | Full lint |
+| `.golangci.yml` | Full lint, plus the kit lane |
+| `kit/*.go`, `kit/go.mod`, `kit/go.sum` | The kit lane, plus the root packages that import the changed kit package (`kit/go.mod` and `kit/go.sum` run every Go package) |
 | `*.go` | That package, plus its dependents; lint for that package |
 | Non-Go file inside a Go package (embedded schema, SQL, `testdata/`) | That package |
 | File outside any package (`docs/`, root files, `proto/`) | Packages whose Go files name it in a string literal, for example `internal/api` for `docs/api-reference.md` |
@@ -82,6 +83,30 @@ The coverage gate follows the plan: a full run checks the 70% aggregate
 for `internal/`, a scoped run checks the changed-line gate only, at a
 lower 50% bar (a partial profile makes the aggregate meaningless, same as the
 pre-push hook).
+
+## The kit module
+
+`kit/` is a nested Go module (`github.com/GLINCKER/levelrail/kit`), so
+`go test ./...`, `go vet ./...` and `golangci-lint run` from the repo root
+never reach it. It has its own lane instead:
+
+- **Kit (vet, lint, test)** runs only when a diff touches `kit/` (not `kit/*.md`),
+  `.golangci.yml`, or the pipeline itself. It runs `go -C kit vet`, golangci-lint
+  with the root `.golangci.yml` (found by walking up from `kit/`),
+  `go -C kit test -short` and `scripts/check-brand-strings.sh`.
+- Coverage: a 70% floor for all of `kit/` on every run of the lane, and the 50%
+  changed-line bar from the main gate, both through the same coverage scripts
+  with the `kit/` prefix.
+- Dependents: `scripts/affected-go-packages.sh` maps a changed kit package to its
+  import path and walks the root import graph, so root packages that import it are
+  tested in the normal lanes. Test-only kit changes select no root package.
+- The lane is a `needs` of `CI required`, so a skipped lane (no kit change) passes
+  and a failed or cancelled one blocks.
+- `nightly.yml` runs `go -C kit test -race -shuffle=on` without `-short`.
+- Releases are independent: release-please tags the module `kit/vX.Y.Z`, which does
+  not match `release.yml`'s `v*` tag filter, so it never starts a product release.
+  The kit package carries `release-as: 0.1.0` until its first release ships; remove
+  it afterwards.
 
 ## Required checks
 
