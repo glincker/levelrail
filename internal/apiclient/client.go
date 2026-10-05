@@ -2052,6 +2052,87 @@ func (c *Client) ListRegistryCredentialTags(ctx context.Context, id, repository 
 	return out, err
 }
 
+// networkSharesCollectionPath builds /api/v1/network-shares, and
+// networkSharePath builds that same path plus /{id}.
+func networkSharesCollectionPath() string {
+	return "/api/v1/network-shares"
+}
+
+func networkSharePath(id string) string {
+	return networkSharesCollectionPath() + "/" + PathEscape(id)
+}
+
+// CreateNetworkShare calls POST /api/v1/network-shares.
+func (c *Client) CreateNetworkShare(ctx context.Context, req CreateNetworkShareRequest) (NetworkShareResource, error) {
+	var out NetworkShareResource
+	err := c.do(ctx, http.MethodPost, networkSharesCollectionPath(), req, &out)
+	return out, err
+}
+
+// ListNetworkShares calls GET /api/v1/network-shares.
+func (c *Client) ListNetworkShares(ctx context.Context) ([]NetworkShareResource, error) {
+	var out []NetworkShareResource
+	err := c.do(ctx, http.MethodGet, networkSharesCollectionPath(), nil, &out)
+	return out, err
+}
+
+// GetNetworkShare calls GET /api/v1/network-shares/{id}.
+func (c *Client) GetNetworkShare(ctx context.Context, id string) (NetworkShareResource, error) {
+	var out NetworkShareResource
+	err := c.do(ctx, http.MethodGet, networkSharePath(id), nil, &out)
+	return out, err
+}
+
+// UpdateNetworkShare calls PUT /api/v1/network-shares/{id}: a full
+// replace of name/protocol/host/remote_path/mount_options/username. A
+// blank Password in req keeps the share's existing stored password.
+func (c *Client) UpdateNetworkShare(ctx context.Context, id string, req UpdateNetworkShareRequest) (NetworkShareResource, error) {
+	var out NetworkShareResource
+	err := c.do(ctx, http.MethodPut, networkSharePath(id), req, &out)
+	return out, err
+}
+
+// DeleteNetworkShare calls DELETE /api/v1/network-shares/{id}.
+func (c *Client) DeleteNetworkShare(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, networkSharePath(id), nil, nil)
+}
+
+// TestNetworkShare calls POST /api/v1/network-shares/{id}/test: dials
+// the share's host on its protocol's standard port to confirm it's
+// reachable. This is a reachability check only, never an authentication
+// check.
+func (c *Client) TestNetworkShare(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodPost, networkSharePath(id)+"/test", nil, nil)
+}
+
+// GetNetworkTopology calls GET /api/v1/network/topology: a read-only,
+// whole-mesh summary of nodes, apps, databases, load balancers, and
+// app-to-database connections.
+func (c *Client) GetNetworkTopology(ctx context.Context) (NetworkTopologyResource, error) {
+	var out NetworkTopologyResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/network/topology", nil, &out)
+	return out, err
+}
+
+// GetNetworkProxyStatus calls GET /api/v1/network/proxy: per-domain
+// reachability (does this control plane's own ingress reach the app
+// behind it) plus certificate status, the Traffic dashboard page's own
+// data source.
+func (c *Client) GetNetworkProxyStatus(ctx context.Context) (NetworkProxyResource, error) {
+	var out NetworkProxyResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/network/proxy", nil, &out)
+	return out, err
+}
+
+// GetProjectTopology calls GET /api/v1/projects/{id}/topology: a
+// diagram-ready graph of one project's apps, databases, and shared
+// volumes.
+func (c *Client) GetProjectTopology(ctx context.Context, id string) (ProjectTopologyResource, error) {
+	var out ProjectTopologyResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/projects/"+PathEscape(id)+"/topology", nil, &out)
+	return out, err
+}
+
 // CreateNotificationChannel calls POST /api/v1/notification-channels.
 func (c *Client) CreateNotificationChannel(ctx context.Context, req CreateNotificationChannelRequest) (NotificationChannelResource, error) {
 	var out NotificationChannelResource
@@ -3000,6 +3081,35 @@ func (c *Client) ListContainers(ctx context.Context) ([]ContainerResource, error
 func (c *Client) PruneSystem(ctx context.Context) (SystemPruneResult, error) {
 	var out SystemPruneResult
 	err := c.do(ctx, http.MethodPost, "/api/v1/system/prune", nil, &out)
+	return out, err
+}
+
+// StopOrphanedContainer calls POST /api/v1/system/containers/{name}/stop.
+// Server-side re-confirms the container isn't Levelrail-managed (409 if
+// it is); use "apps stop" for a managed app instead.
+func (c *Client) StopOrphanedContainer(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/system/containers/"+PathEscape(name)+"/stop", nil, nil)
+}
+
+// RemoveOrphanedContainer calls POST /api/v1/system/containers/{name}/remove.
+func (c *Client) RemoveOrphanedContainer(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/system/containers/"+PathEscape(name)+"/remove", nil, nil)
+}
+
+// ClaimOrphanedContainerRequest is POST
+// /api/v1/system/containers/{name}/claim's optional request body. A
+// blank Name lets the server derive one from the container's own name.
+type ClaimOrphanedContainerRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// ClaimOrphanedContainer calls POST
+// /api/v1/system/containers/{name}/claim: creates a real app
+// (build.type: image) from the container's own image, same path POST
+// /api/v1/apps itself uses. Returns the created app.
+func (c *Client) ClaimOrphanedContainer(ctx context.Context, name string, req ClaimOrphanedContainerRequest) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/system/containers/"+PathEscape(name)+"/claim", req, &out)
 	return out, err
 }
 
