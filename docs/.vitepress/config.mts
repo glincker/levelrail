@@ -4,6 +4,7 @@ import { buildEnd, changelogHead, changelogPageData } from './changelog.mts'
 import { buildLlmsFullTxt } from './llmsFull.mts'
 import { writeRawMarkdown } from './rawMarkdown.mts'
 import { faqItems } from './theme/faqData'
+import { flattenNav } from './theme/nav/navItems'
 
 const description =
   'A self-hosted deployment platform whose agent talks to Docker’s own Engine API directly, ' +
@@ -336,16 +337,7 @@ export default withMermaid({
   themeConfig: {
     logo: `/favicon.svg?v=${faviconVersion}`,
 
-    nav: [
-      { text: 'Guide', link: '/getting-started' },
-      { text: 'Reference', link: '/app-spec-reference' },
-      { text: 'Compare', link: '/comparison' },
-      { text: 'Demo', link: '/demo' },
-      { text: 'Pricing', link: '/pricing' },
-      { text: 'Troubleshooting', link: '/troubleshooting' },
-      { text: 'Roadmap', link: '/roadmap' },
-      { text: 'Changelog', link: '/changelog/' },
-    ],
+    nav: flattenNav(),
 
     sidebar: sidebarGroups,
 
