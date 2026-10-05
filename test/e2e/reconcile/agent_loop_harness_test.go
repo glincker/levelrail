@@ -117,6 +117,7 @@ func startControlPlane(t *testing.T, repoRoot, bin string) string {
 		"APP_AGENT_ADDR=127.0.0.1:0",
 		"APP_INGRESS_HTTP_ADDR=127.0.0.1:0",
 		"APP_INGRESS_HTTPS_ADDR=127.0.0.1:0",
+		"APP_GIT_ALLOW_PRIVATE_NETWORKS=true",
 	)
 	cmd.Stdout, cmd.Stderr = logFile, logFile
 	if err := cmd.Start(); err != nil {

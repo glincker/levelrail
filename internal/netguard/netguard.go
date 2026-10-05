@@ -85,21 +85,36 @@ func embeddedIPv4(addr netip.Addr) (netip.Addr, bool) {
 // control runs after DNS resolution, on the exact IP about to be dialed,
 // so a hostname that re-resolves to an internal address is still caught.
 func control(_, address string, _ syscall.RawConn) error {
-	if AllowPrivate() {
+	return controlAllowing(AllowPrivateEnv)(address)
+}
+
+func envEnabled(name string) bool {
+	v, err := strconv.ParseBool(os.Getenv(name))
+	return err == nil && v
+}
+
+// controlAllowing is control with a caller-chosen set of opt-in env vars:
+// any one of them being true lets the dial through.
+func controlAllowing(allowEnvs ...string) func(address string) error {
+	return func(address string) error {
+		for _, name := range allowEnvs {
+			if envEnabled(name) {
+				return nil
+			}
+		}
+		host, _, err := net.SplitHostPort(address)
+		if err != nil {
+			return fmt.Errorf("netguard: parse dial address %q: %w", address, err)
+		}
+		ip, err := netip.ParseAddr(host)
+		if err != nil {
+			return fmt.Errorf("netguard: parse dial address %q: %w", address, err)
+		}
+		if IsBlocked(ip) {
+			return fmt.Errorf("%w: %s (set %s=true to allow)", ErrBlockedAddress, ip, allowEnvs[0])
+		}
 		return nil
 	}
-	host, _, err := net.SplitHostPort(address)
-	if err != nil {
-		return fmt.Errorf("netguard: parse dial address %q: %w", address, err)
-	}
-	ip, err := netip.ParseAddr(host)
-	if err != nil {
-		return fmt.Errorf("netguard: parse dial address %q: %w", address, err)
-	}
-	if IsBlocked(ip) {
-		return fmt.Errorf("%w: %s (set %s=true to allow)", ErrBlockedAddress, ip, AllowPrivateEnv)
-	}
-	return nil
 }
 
 // NewClient returns an HTTP client whose every connection, including
@@ -107,10 +122,18 @@ func control(_, address string, _ syscall.RawConn) error {
 // HTTP(S)_PROXY, since a proxy would dial the destination on our behalf
 // and bypass the check.
 func NewClient() *http.Client {
+	return NewClientAllowing(AllowPrivateEnv)
+}
+
+// NewClientAllowing is NewClient with its own opt-in env vars, so one
+// feature can allow private addresses without relaxing the others. The
+// first name is the one shown in the refusal message.
+func NewClientAllowing(allowEnvs ...string) *http.Client {
+	check := controlAllowing(allowEnvs...)
 	dialer := &net.Dialer{
 		Timeout:   10 * time.Second,
 		KeepAlive: 30 * time.Second,
-		Control:   control,
+		Control:   func(_, address string, _ syscall.RawConn) error { return check(address) },
 	}
 	return &http.Client{
 		Transport: &http.Transport{

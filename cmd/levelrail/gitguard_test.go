@@ -13,6 +13,7 @@ import (
 
 func TestInstallGitNetguardBlocksInternalHosts(t *testing.T) {
 	t.Setenv("APP_NOTIFY_ALLOW_PRIVATE_NETWORKS", "false")
+	t.Setenv(gitAllowPrivateEnv, "false")
 	hit := false
 	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { hit = true }))
 	defer srv.Close()
@@ -25,5 +26,18 @@ func TestInstallGitNetguardBlocksInternalHosts(t *testing.T) {
 	}
 	if hit {
 		t.Error("the loopback server was contacted")
+	}
+}
+
+func TestInstallGitNetguardGitOverrideIsIndependent(t *testing.T) {
+	t.Setenv("APP_NOTIFY_ALLOW_PRIVATE_NETWORKS", "false")
+	t.Setenv(gitAllowPrivateEnv, "true")
+	hit := false
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { hit = true }))
+	defer srv.Close()
+	installGitNetguard()
+	_, _ = git.CloneContext(context.Background(), memory.NewStorage(), nil, &git.CloneOptions{URL: srv.URL + "/r.git"})
+	if !hit {
+		t.Error("the loopback server was not contacted although the git override is on")
 	}
 }
