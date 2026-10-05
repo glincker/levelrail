@@ -5,12 +5,12 @@ import FeatureTabsSection from './FeatureTabsSection.vue'
 import LatestReleasesSection from './LatestReleasesSection.vue'
 import LpSection from './landing/LpSection.vue'
 import LpCompare from './landing/LpCompare.vue'
-import LpGallery from './landing/LpGallery.vue'
+import MockCarousel from './mock/MockCarousel.vue'
 import LpFaq from './landing/LpFaq.vue'
 import LpCta from './landing/LpCta.vue'
 import LpStatement from './landing/LpStatement.vue'
 import { faqItems } from './faqData'
-import { compare, gallery, switching } from './homeData'
+import { compare, switching } from './homeData'
 </script>
 
 <template>
@@ -20,7 +20,7 @@ import { compare, gallery, switching } from './homeData'
       lead="The install script checks the host, installs Docker if it is missing, and starts the control plane as a systemd service."
       narrow
     >
-      <TerminalDemo />
+      <TerminalDemo v-reveal />
       <p class="lp-note">
         <code>levelrail-cli deploy</code> points an app at an image and cuts traffic over only once the new container's readiness probe passes. To build from a git repository instead, connect it from the dashboard or run <code>levelrail-cli import &lt;repo-url&gt; --deploy</code>. The full walkthrough is in <a href="/getting-started">Getting started</a>.
       </p>
@@ -30,11 +30,11 @@ import { compare, gallery, switching } from './homeData'
       heading="How it works"
       lead="Four steps, the same ones the reconciler itself runs on every deploy. Select a step to see what it actually does."
     >
-      <HowItWorksFlow />
+      <HowItWorksFlow v-reveal />
     </LpSection>
 
     <LpSection heading="Explore the platform">
-      <FeatureTabsSection />
+      <FeatureTabsSection v-reveal />
     </LpSection>
 
     <LpSection
@@ -54,11 +54,11 @@ import { compare, gallery, switching } from './homeData'
     />
 
     <LpSection heading="See it running">
-      <LpGallery :items="gallery" eager />
+      <MockCarousel v-reveal />
     </LpSection>
 
     <LpSection heading="Latest releases">
-      <LatestReleasesSection />
+      <LatestReleasesSection v-reveal />
     </LpSection>
 
     <LpSection heading="Frequently asked questions">

@@ -5,7 +5,7 @@ defineProps<{ items: { q: string; a: string }[] }>()
 </script>
 
 <template>
-  <div class="lp-faq">
+  <div v-reveal class="lp-faq">
     <details v-for="(f, i) in items" :key="f.q" class="lp-faq__item" :open="i === 0">
       <summary class="lp-faq__q">
         <span>{{ f.q }}</span>

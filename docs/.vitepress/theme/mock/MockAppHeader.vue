@@ -3,8 +3,10 @@ import { PhArrowClockwise, PhCopy, PhHouse, PhRocketLaunch, PhStop, PhTrash, PhC
 import MockButton from './MockButton.vue'
 import MockStatusPill from './MockStatusPill.vue'
 import { activeApp } from './mockData'
+import { useMotion } from './useMockLoop'
 
 defineProps<{ crumb: string }>()
+const motion = useMotion()
 </script>
 
 <template>
@@ -14,11 +16,11 @@ defineProps<{ crumb: string }>()
     </div>
     <div class="pm-ah__row">
       <div class="pm-ah__name">{{ activeApp }}</div>
-      <MockStatusPill status="healthy" />
+      <MockStatusPill :status="motion?.status.value ?? 'healthy'" />
       <span class="pm-ah__actions">
         <MockButton :icon="PhStop">Stop</MockButton>
         <MockButton :icon="PhArrowClockwise">Restart</MockButton>
-        <MockButton :icon="PhRocketLaunch">Redeploy</MockButton>
+        <MockButton data-pm="redeploy" :icon="PhRocketLaunch" :pressed="motion?.pressed.value">Redeploy</MockButton>
         <MockButton :icon="PhCopy">Clone</MockButton>
         <MockButton variant="danger" :icon="PhTrash">Delete</MockButton>
       </span>

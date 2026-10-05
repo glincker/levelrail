@@ -8,8 +8,8 @@ defineProps<{
 
 <template>
   <section class="lp-section" :class="{ 'lp-section--narrow': narrow }">
-    <h2 v-if="heading" class="lp-h2">{{ heading }}</h2>
-    <p v-if="lead" class="lp-lead">{{ lead }}</p>
+    <h2 v-if="heading" v-reveal class="lp-h2">{{ heading }}</h2>
+    <p v-if="lead" v-reveal="1" class="lp-lead">{{ lead }}</p>
     <slot />
   </section>
 </template>

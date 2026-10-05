@@ -3,9 +3,31 @@ import { PhActivity, PhArrowClockwise } from '@phosphor-icons/vue'
 import MockAppHeader from './MockAppHeader.vue'
 import MockAreaChart from './MockAreaChart.vue'
 import MockButton from './MockButton.vue'
-import { charts, deployMarkers, timeRanges, xTicks } from './mockData'
+import { computed, ref, watch } from 'vue'
+import { deployMarkers, timeRanges, xTicks } from './mockData'
+import type { ChartMarker } from './MockAreaChart.vue'
+import { useLiveCharts } from './mockLive'
+import { useMotion } from './useMockLoop'
 
 defineProps<{ animate?: boolean }>()
+
+const motion = useMotion()
+const { charts, advance } = useLiveCharts()
+const STEP = 1 / 39
+let nextId = deployMarkers.length
+const markers = ref<ChartMarker[]>(deployMarkers.map((x, i) => ({ id: i, x })))
+const view = computed(() => markers.value.map((m, i, all) => ({ ...m, old: i < all.length - 4 })))
+const count = computed(() => motion?.deployCount.value ?? 4)
+
+if (motion) {
+  watch(motion.tick, () => {
+    advance()
+    markers.value = markers.value.map((m) => ({ ...m, x: m.x - STEP })).filter((m) => m.x > -0.05)
+  })
+  watch(motion.deployed, () => {
+    markers.value = [...markers.value.slice(-5), { id: nextId++, x: 0.975, fresh: true }]
+  })
+}
 </script>
 
 <template>
@@ -13,7 +35,7 @@ defineProps<{ animate?: boolean }>()
     <MockAppHeader crumb="Metrics" />
     <section class="pm-ov__card">
       <div class="pm-ov__h"><PhActivity :size="15" />Metrics</div>
-      <div class="pm-ov__note">Deploy frequency: 4 in this range. Dashed lines mark real deploy attempts (green succeeded); restarts: 0 in this range.</div>
+      <div class="pm-ov__note">Deploy frequency: {{ count }} in this range. Dashed lines mark real deploy attempts (green succeeded); restarts: 0 in this range.</div>
       <div class="pm-ov__ranges">
         <span class="pm-seg"><b class="on">{{ timeRanges[0] }}</b><b v-for="r in timeRanges.slice(1)" :key="r">{{ r }}</b></span>
         <MockButton :icon="PhArrowClockwise">Refresh</MockButton>
@@ -25,7 +47,7 @@ defineProps<{ animate?: boolean }>()
           </div>
           <MockAreaChart
             :series="c.series" :y-ticks="c.yTicks" :x-ticks="xTicks"
-            :y-min="c.yMin" :y-max="c.yMax" :markers="deployMarkers" :new-marker="animate"
+            :y-min="c.yMin" :y-max="c.yMax" :markers="view" :new-marker="animate" :tick="motion ? motion.tick.value : 0" :live="c.live"
             :width="416" :height="160"
           />
           <div class="pm-ov__legend">

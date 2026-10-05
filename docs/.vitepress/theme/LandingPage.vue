@@ -37,12 +37,12 @@ const related = computed(() => {
 
     <LpSection v-if="d.cards?.length" :heading="d.cardsHeading">
       <div class="lp-cards">
-        <LpCard v-for="c in d.cards" :key="c.title" :card="c" />
+        <LpCard v-for="(c, i) in d.cards" :key="c.title" v-reveal="i % 3" :card="c" />
       </div>
     </LpSection>
 
     <LpSection v-if="d.terminal" :heading="d.terminal.heading" :lead="d.terminal.intro" narrow>
-      <TerminalDemo :lines="d.terminal.lines" :title="d.terminal.title" :aria-label="d.terminal.ariaLabel" />
+      <TerminalDemo v-reveal :lines="d.terminal.lines" :title="d.terminal.title" :aria-label="d.terminal.ariaLabel" />
     </LpSection>
 
     <LpSection v-if="d.compare" :heading="d.compare.heading" :lead="d.compare.intro">

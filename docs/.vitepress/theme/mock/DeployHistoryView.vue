@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { PhArrowCounterClockwise, PhCursor, PhGitCommit } from '@phosphor-icons/vue'
+import { PhArrowCounterClockwise, PhGitCommit } from '@phosphor-icons/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import MockAppHeader from './MockAppHeader.vue'
 import MockBadge from './MockBadge.vue'
 import MockButton from './MockButton.vue'
 import MockStatusPill from './MockStatusPill.vue'
 import MockTable from './MockTable.vue'
+import { useMotion } from './useMockLoop'
 import { deploys, rollbackDeploy, rollbackTargetIndex } from './mockData'
 import type { MockCol, MockDeploy } from './mockData'
 
 const props = defineProps<{ animate?: boolean }>()
+const motion = useMotion()
 
 const cols: MockCol[] = [
   { key: 'status', label: 'Status', size: 'md' },
@@ -46,6 +48,9 @@ function play(): void {
   after(2300, 2)
   after(2700, 3)
   after(4200, FINAL)
+  timers.push(window.setTimeout(() => motion?.moveCursor('rollback'), 700))
+  timers.push(window.setTimeout(() => motion?.clickCursor(), 2300))
+  timers.push(window.setTimeout(() => motion?.hideCursor(), 2700))
 }
 
 const rootEl = ref<HTMLElement | null>(null)
@@ -68,12 +73,12 @@ onMounted(() => {
 
 watch(() => props.animate, (on) => { if (!on) step.value = FINAL })
 onBeforeUnmount(() => {
+  motion?.hideCursor()
   timers.forEach(window.clearTimeout)
   observer?.disconnect()
 })
 
 const rowClass = (_: unknown, i: number): string | undefined => (i === 0 && step.value >= 3 ? 'pm-row--new' : undefined)
-const cursorClass = computed(() => ({ 'is-at': step.value === 1 || step.value === 2, 'is-hidden': step.value >= 3 }))
 </script>
 
 <template>
@@ -94,12 +99,11 @@ const cursorClass = computed(() => ({ 'is-at': step.value === 1 || step.value ==
         <template #cell-image="{ row }"><MockBadge mono>{{ row.image.split('/').pop() }}</MockBadge></template>
         <template #cell-when="{ row }">{{ row.when }}</template>
         <template #cell-action="{ row, index }">
-          <MockButton v-if="row.state === 'superseded'" small :icon="PhArrowCounterClockwise" :pressed="step === 2 && index === rollbackTargetIndex">Rollback</MockButton>
+          <MockButton v-if="row.state === 'superseded'" :data-pm="index === rollbackTargetIndex ? 'rollback' : undefined" small :icon="PhArrowCounterClockwise" :pressed="step === 2 && index === rollbackTargetIndex">Rollback</MockButton>
           <MockBadge v-else-if="row.state === 'live'" tone="ok">Serving traffic</MockBadge>
           <MockBadge v-else tone="info">Waiting for readiness</MockBadge>
         </template>
       </MockTable>
-      <PhCursor v-if="animate" :size="22" weight="fill" class="pm-cursor" :class="cursorClass" />
     </div>
   </div>
 </template>
@@ -113,15 +117,4 @@ const cursorClass = computed(() => ({ 'is-at': step.value === 1 || step.value ==
 .pm-commit { display: flex; flex-direction: column; gap: 3px; padding: 10px 0; }
 .pm-commit b { color: var(--pm-head); font-weight: 500; font-size: 13.5px; }
 .pm-commit span { display: inline-flex; align-items: center; gap: 4px; color: var(--pm-muted); font-family: var(--pm-mono); font-size: 11px; }
-.pm-cursor {
-  position: absolute;
-  top: 300px;
-  right: 8px;
-  color: var(--pm-head);
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
-  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1), opacity 0.3s ease;
-  transform: translate(0, 0);
-}
-.pm-cursor.is-at { transform: translate(-36px, -165px); }
-.pm-cursor.is-hidden { opacity: 0; transform: translate(-36px, -165px); }
 </style>

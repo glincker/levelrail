@@ -17,7 +17,7 @@ defineProps<{
       <span class="lp-frame__dot"></span><span class="lp-frame__dot"></span><span class="lp-frame__dot"></span>
       <span class="lp-frame__url">{{ url }}</span>
     </div>
-    <ProductMock v-if="mock" :view="mock" theme="auto" animate :label="alt" />
+    <ProductMock v-if="mock" :view="mock" theme="auto" animate once :label="alt" />
     <img v-else :src="src" :alt="alt" width="1280" height="800" :loading="eager ? 'eager' : 'lazy'" />
   </div>
 </template>
