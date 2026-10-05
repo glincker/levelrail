@@ -2,7 +2,8 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { PhArrowUp, PhGithubLogo, PhHeart } from '@phosphor-icons/vue'
+import { PhArrowUp, PhHeart } from '@phosphor-icons/vue'
+import { footerColumns, footerLegalLinks } from './footer/footerLinks'
 
 let pluginRegistered = false
 
@@ -143,54 +144,34 @@ onUnmounted(() => {
     <div class="custom-footer__giant" aria-hidden="true">Levelrail</div>
 
     <div class="custom-footer__inner">
-      <div class="custom-footer__col custom-footer__reveal">
-        <p class="custom-footer__heading">Product</p>
-        <a href="/getting-started">Getting started</a>
-        <a href="/comparison">Compare</a>
-        <a href="/demo">Demo</a>
-        <a href="/coolify-alternative">Coolify alternative</a>
-        <a href="/dokploy-alternative">Dokploy alternative</a>
-        <a href="/vercel-alternative">Vercel alternative</a>
-        <a href="/heroku-alternative">Heroku alternative</a>
-        <a href="/railway-alternative">Railway alternative</a>
-        <a href="/pricing">Pricing</a>
-        <a href="/about">About</a>
-        <a href="/contact">Contact</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/terms">Terms</a>
-        <a href="/cookies">Cookies</a>
-        <a href="/roadmap">Roadmap</a>
-        <a href="/troubleshooting">Troubleshooting</a>
-      </div>
-      <div class="custom-footer__col custom-footer__reveal">
-        <p class="custom-footer__heading">Reference</p>
-        <a href="/app-spec-reference">App spec reference</a>
-        <a href="/cli-reference">CLI reference</a>
-        <a href="/api-reference">API reference</a>
-        <a href="/developers">Developers</a>
-        <a href="/security">Security overview</a>
-      </div>
-      <div class="custom-footer__col custom-footer__reveal">
-        <p class="custom-footer__heading">Community</p>
-        <a href="https://github.com/glincker/levelrail" target="_blank" rel="noreferrer">
-          <PhGithubLogo :size="14" weight="bold" />
-          GitHub
-        </a>
-        <a href="https://github.com/glincker/levelrail/issues" target="_blank" rel="noreferrer">Issues</a>
-        <a href="https://github.com/glincker/levelrail/discussions" target="_blank" rel="noreferrer">Discussions</a>
-        <a href="mailto:support@levelrail.com">support@levelrail.com</a>
-      </div>
-      <div class="custom-footer__col custom-footer__reveal">
-        <p class="custom-footer__heading">Levelrail</p>
-        <p class="custom-footer__blurb">A self-hosted deployment platform. Apache 2.0.</p>
+      <div class="custom-footer__brand custom-footer__reveal">
+        <p class="custom-footer__wordmark">Levelrail</p>
+        <p class="custom-footer__blurb">A self-hosted deployment platform. Free and open source under Apache 2.0.</p>
         <a href="https://glincker.com" target="_blank" rel="noreferrer" class="custom-footer__badge">
           A GLINCKER project
         </a>
-        <a href="mailto:support@glincker.com">support@glincker.com</a>
       </div>
+      <nav
+        v-for="col in footerColumns"
+        :key="col.heading"
+        class="custom-footer__col custom-footer__reveal"
+        :aria-label="col.heading"
+      >
+        <p class="custom-footer__heading">{{ col.heading }}</p>
+        <a
+          v-for="l in col.links"
+          :key="l.link"
+          :href="l.link"
+          :target="l.external && l.link.startsWith('http') ? '_blank' : undefined"
+          :rel="l.external && l.link.startsWith('http') ? 'noreferrer' : undefined"
+        >{{ l.text }}</a>
+      </nav>
     </div>
 
     <div class="custom-footer__bottom custom-footer__reveal">
+      <nav class="custom-footer__legal" aria-label="Legal">
+        <a v-for="l in footerLegalLinks" :key="l.link" :href="l.link">{{ l.text }}</a>
+      </nav>
       <div ref="creditsRef" class="custom-footer__credits">
         <span>Crafted with</span>
         <PhHeart class="custom-footer__heart" :size="14" weight="fill" />

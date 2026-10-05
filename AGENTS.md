@@ -48,7 +48,7 @@ Use `npx tsc -b`, not `--noEmit`: the root web tsconfig lists no files, so `--no
 ## Docs, generated files, and screenshots
 
 - Every page under `docs/` needs a `description` in its frontmatter. Do not use em dashes, and keep counts and tool numbers generated, not typed.
-- `docs/template-catalog.md`, `docs/mcp-tool-surface.md` and the API reference are generated. Run the generator (`go run ./scripts/gen-template-catalog-docs`, `go run ./scripts/gen-api-reference`, `go test ./internal/mcptools -run TestToolSurfaceDoc -update-surface`) instead of editing them.
+- `docs/template-catalog.md`, `docs/mcp-tool-surface.md`, the API reference and `docs/public/openapi.json` are generated. Run the generator (`go run ./scripts/gen-template-catalog-docs`, `go run ./scripts/gen-api-reference`, `go test ./internal/mcptools -run TestToolSurfaceDoc -update-surface`) instead of editing them.
 - `docs/public/llms.txt` is the curated index of pages for language models, and `llms-full.txt` is built from it. Add a new page there.
 - Dashboard screenshots in `docs/assets/screenshots/` come from `scripts/screenshots/capture.sh` against a real instance. Check each image before embedding it.
 

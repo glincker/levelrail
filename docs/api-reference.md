@@ -76,12 +76,6 @@ Endpoints for:
 | PUT | /api/v1/auth/password | Session | handleChangePassword |
 | GET | /api/v1/auth/session | Session | handleGetSession |
 | POST | /api/v1/auth/sessions/revoke-others | Session | handleRevokeOtherSessions |
-| GET | /api/v1/auth/2fa | Session |  |
-| POST | /api/v1/auth/2fa/setup | Session |  |
-| POST | /api/v1/auth/2fa/confirm | Session |  |
-| POST | /api/v1/auth/2fa/disable | Session |  |
-| POST | /api/v1/auth/2fa/recovery-codes/regenerate | Session |  |
-| POST | /api/v1/auth/2fa/verify | Public |  |
 | POST | /api/v1/auth/users | AbilityRoot | handleCreateUser |
 | GET | /api/v1/users | AbilityRead | handleListUsers |
 | DELETE | /api/v1/users/{id} | AbilityRoot | handleDeleteUser |
@@ -120,12 +114,6 @@ Endpoints for:
 | DELETE | /api/v1/settings/ai-assistant | AbilityRoot | handleDeleteAIAssistantSettings |
 | GET | /api/v1/settings/deploy-freeze | AbilityRead | handleGetGlobalDeployFreeze |
 | PUT | /api/v1/settings/deploy-freeze | AbilityRoot | handlePutGlobalDeployFreeze |
-| GET | /api/v1/auth/passkeys | Session |  |
-| POST | /api/v1/auth/passkeys/register/begin | Session |  |
-| POST | /api/v1/auth/passkeys/register/finish | Session |  |
-| DELETE | /api/v1/auth/passkeys/{id} | Session |  |
-| POST | /api/v1/auth/passkey-login/begin | Public |  |
-| POST | /api/v1/auth/passkey-login/finish | Public |  |
 | GET | /api/v1/settings/push-subscriptions/vapid-public-key | Session | handleGetPushVAPIDPublicKey |
 | GET | /api/v1/settings/push-subscriptions | Session | handleListPushSubscriptions |
 | POST | /api/v1/settings/push-subscriptions | Session | handleCreatePushSubscription |
@@ -135,7 +123,19 @@ Endpoints for:
 | POST | /api/v1/auth/session-links | AbilityRoot | handleMintSessionLink |
 | GET | /api/v1/auth/session-links/{token}/consume | Public | handleConsumeSessionLink |
 | GET | /api/v1/auth/whoami | Public | handleWhoami |
+| GET | /api/v1/auth/2fa | Session |  |
+| POST | /api/v1/auth/2fa/setup | Session |  |
+| POST | /api/v1/auth/2fa/confirm | Session |  |
+| POST | /api/v1/auth/2fa/disable | Session |  |
+| POST | /api/v1/auth/2fa/recovery-codes/regenerate | Session |  |
+| POST | /api/v1/auth/2fa/verify | Public |  |
+| GET | /api/v1/auth/passkeys | Session |  |
+| POST | /api/v1/auth/passkeys/register/begin | Session |  |
+| POST | /api/v1/auth/passkeys/register/finish | Session |  |
+| DELETE | /api/v1/auth/passkeys/{id} | Session |  |
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
+| POST | /api/v1/auth/passkey-login/begin | Public |  |
+| POST | /api/v1/auth/passkey-login/finish | Public |  |
 
 :::
 

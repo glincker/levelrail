@@ -3,7 +3,8 @@
 // the mux registrations in internal/api/routes*.go.
 //
 // Usage (from the repo root): go run ./scripts/gen-api-reference
-// Pass -check to exit non-zero instead of writing when either output is stale.
+// Pass -check to exit non-zero instead of writing when any output is stale.
+// It also writes docs/public/openapi.json, an OpenAPI 3.1 document.
 package main
 
 import (
@@ -342,6 +343,8 @@ func main() {
 	docPath := flag.String("doc", "docs/api-reference.md", "doc to update")
 	apiDir := flag.String("api", "internal/api", "directory holding routes*.go")
 	openAPIPath := flag.String("openapi", "internal/api/openapi_gen.go", "generated route metadata file to update")
+	specPath := flag.String("spec", "docs/public/openapi.json", "OpenAPI 3.1 document to update")
+	brandPath := flag.String("brand", "brand.yaml", "brand file read for the spec title and contact")
 	flag.Parse()
 
 	routes, err := parseRoutes(*apiDir)
@@ -370,11 +373,28 @@ func main() {
 		os.Exit(1)
 	}
 
+	brand, err := loadBrand(*brandPath)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	gotSpec, err := genOpenAPI31(routes, groups, brand)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	existingSpec, err := os.ReadFile(*specPath) //nolint:gosec // developer tool
+	if err != nil && !os.IsNotExist(err) {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
 	docStale := gotDoc != doc
 	openAPIStale := gotOpenAPI != string(existingOpenAPI)
+	specStale := string(gotSpec) != string(existingSpec)
 
-	if !docStale && !openAPIStale {
-		fmt.Printf("%s and %s up to date (%d routes)\n", *docPath, *openAPIPath, len(routes))
+	if !docStale && !openAPIStale && !specStale {
+		fmt.Printf("%s, %s and %s up to date (%d routes)\n", *docPath, *openAPIPath, *specPath, len(routes))
 		return
 	}
 	if *check {
@@ -383,6 +403,9 @@ func main() {
 		}
 		if openAPIStale {
 			fmt.Fprintf(os.Stderr, "%s is stale: run go run ./scripts/gen-api-reference\n", *openAPIPath)
+		}
+		if specStale {
+			fmt.Fprintf(os.Stderr, "%s is stale: run go run ./scripts/gen-api-reference\n", *specPath)
 		}
 		os.Exit(1)
 	}
@@ -398,5 +421,11 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	fmt.Printf("%s and %s updated (%d routes)\n", *docPath, *openAPIPath, len(routes))
+	if specStale {
+		if err := os.WriteFile(*specPath, gotSpec, 0o644); err != nil { //nolint:gosec // published docs asset
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+	fmt.Printf("%s, %s and %s updated (%d routes)\n", *docPath, *openAPIPath, *specPath, len(routes))
 }
