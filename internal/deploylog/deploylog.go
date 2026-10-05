@@ -26,6 +26,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/untrusted"
 )
 
 // batchMaxLines mirrors internal/telemetry's own logBatchMaxLines: how
@@ -170,6 +171,7 @@ func (r *Recorder) Progress(attemptID string) func(build.ProgressEvent) {
 		if stream == "" {
 			stream = "stdout"
 		}
+		ev.Log = untrusted.RedactTokens(ev.Log)
 		line := Event{Line: ev.Log, Stream: stream}
 
 		r.mu.Lock()

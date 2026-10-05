@@ -402,3 +402,19 @@ func assertCondition(t *testing.T, res reconcile.Result, status reconcile.Condit
 	}
 	t.Fatalf("no Ready condition in result: %+v", res.Conditions)
 }
+
+func TestReconcile_PublicBinding_ReplacedWithLoopback(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(image, true)
+	for _, st := range rt.containers {
+		st.Ports = []docker.PortBinding{{ContainerPort: containerPort, HostPort: HostPort, HostIP: "0.0.0.0"}}
+	}
+	settings := store.RegistrySettings{Enabled: true, Host: "registry.example", Username: "levelrail"}
+	c := New(&fakeStore{settings: settings}, &fakeCreds{set: true, value: "s3cret"}, rt, WithContainerPrefix("acme"))
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if rt.removeCalls != 1 || rt.createCalls != 1 {
+		t.Fatalf("removeCalls/createCalls = %d/%d, want 1/1", rt.removeCalls, rt.createCalls)
+	}
+}

@@ -156,8 +156,8 @@ func (rt *Router) handleCreateSSHNodeProvision(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusBadRequest, "username is required")
 		return
 	}
-	if req.ControlPlaneAddr == "" {
-		writeError(w, http.StatusBadRequest, "control_plane_addr is required")
+	if !controlPlaneAddrRe.MatchString(req.ControlPlaneAddr) {
+		writeError(w, http.StatusBadRequest, "control_plane_addr must be host:port")
 		return
 	}
 	if !nodeProvisionNameRe.MatchString(req.Name) {

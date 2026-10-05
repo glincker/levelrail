@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -242,4 +243,27 @@ func TestRecorder_NilStoreIsTolerated(_ *testing.T) {
 		unsubscribe()
 	}
 	_ = lines
+}
+
+func TestRecorder_ProgressRedactsCredentials(t *testing.T) {
+	store := &fakeStore{}
+	r := NewRecorder(store, discardLogger())
+	r.Start("dep_1")
+	progress := r.Progress("dep_1")
+	progress(build.ProgressEvent{Log: "Cloning https://x-access-token:ghp_abcdefghijklmnopqrstuvwxyz0123@github.com/a/b.git...", Stream: "stdout"}) //nolint:gosec // fake credential for the redaction test
+	progress(build.ProgressEvent{Log: "curl -H 'Authorization: Bearer abcdef0123456789xyz'", Stream: "stdout"})
+	progress(build.ProgressEvent{Log: "author: Jane", Stream: "stdout"})
+	r.Finish(context.Background(), "dep_1")
+	got := store.snapshot()
+	if len(got) != 3 {
+		t.Fatalf("got %d lines", len(got))
+	}
+	for _, e := range got[:2] {
+		if strings.Contains(e.Message, "ghp_") || strings.Contains(e.Message, "abcdef0123456789xyz") {
+			t.Errorf("secret persisted: %q", e.Message)
+		}
+	}
+	if got[2].Message != "author: Jane" {
+		t.Errorf("benign line altered: %q", got[2].Message)
+	}
 }
