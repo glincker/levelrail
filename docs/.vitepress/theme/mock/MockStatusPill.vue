@@ -25,7 +25,11 @@ const tone = computed(() => ({ healthy: 'ok', running: 'ok', deploying: 'warn', 
   font-weight: 500;
   line-height: 1.4;
   white-space: nowrap;
+  transition: color var(--pm-dur-fade, 0.3s) ease, background-color var(--pm-dur-fade, 0.3s) ease;
 }
+.pm-pill--warn .pm-pill__dot { animation: pm-soft-pulse 1.4s ease-in-out infinite; }
+@keyframes pm-soft-pulse { 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .pm-pill--warn .pm-pill__dot { animation: none; } }
 .pm-pill__dot {
   width: 6px;
   height: 6px;

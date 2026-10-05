@@ -9,7 +9,7 @@ defineProps<{
 </script>
 
 <template>
-  <section class="lp-cta">
+  <section v-reveal class="lp-cta">
     <h2 class="lp-cta__title">{{ heading }}</h2>
     <p class="lp-cta__sub">{{ sub }}</p>
     <div class="lp-actions">

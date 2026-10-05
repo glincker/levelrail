@@ -3,9 +3,17 @@ import { PhArrowsOutSimple, PhCopy, PhDownloadSimple, PhMagnifyingGlass, PhScrol
 import MockAppHeader from './MockAppHeader.vue'
 import MockButton from './MockButton.vue'
 import MockLogLine from './MockLogLine.vue'
+import { ref, watch } from 'vue'
 import { logs } from './mockData'
+import { useLiveLogs } from './mockLive'
+import { useMotion } from './useMockLoop'
 
 defineProps<{ animate?: boolean }>()
+const motion = useMotion()
+const { lines, advance } = useLiveLogs()
+let seq = 0
+const slide = ref('')
+if (motion) watch(motion.tick, () => { seq += 1; slide.value = `pm-rise-${seq % 2}`; advance() })
 const levels = ['All', 'Errors', 'Warnings', 'Info', 'Debug']
 </script>
 
@@ -24,7 +32,7 @@ const levels = ['All', 'Errors', 'Warnings', 'Info', 'Debug']
     </div>
     <div class="pm-lg__console">
       <PhArrowsOutSimple :size="13" class="pm-lg__expand" />
-      <MockLogLine v-for="(l, i) in logs" :key="i" :line="l" />
+      <div class="pm-lg__lines" :class="slide"><MockLogLine v-for="l in lines" :key="l.time + l.text" :line="l" /></div>
     </div>
   </div>
 </template>
@@ -42,5 +50,6 @@ const levels = ['All', 'Errors', 'Warnings', 'Info', 'Debug']
 .pm-lg__bar b.on { background: var(--pm-primary); color: var(--pm-primary-fg); box-shadow: none; }
 .pm-lg__search { display: flex; align-items: center; gap: 8px; flex: 1; height: 30px; padding: 0 10px; border-radius: var(--pm-radius); box-shadow: 0 0 0 1px var(--pm-border); background: var(--pm-surface); color: var(--pm-muted); font-size: 12.5px; }
 .pm-lg__console { position: relative; height: 440px; padding: 14px 20px; border-radius: 10px 10px 0 0; background: var(--pm-console); overflow: hidden; box-shadow: 0 0 0 1px var(--pm-border); }
+.pm-lg__lines { position: absolute; left: 20px; right: 20px; bottom: 14px; }
 .pm-lg__expand { position: absolute; top: 14px; right: 14px; color: #7c7f86; }
 </style>

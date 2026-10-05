@@ -4,7 +4,7 @@ defineProps<{ steps: { title: string; body: string }[] }>()
 
 <template>
   <ol class="lp-steps">
-    <li v-for="(s, i) in steps" :key="s.title" class="lp-step">
+    <li v-for="(s, i) in steps" :key="s.title" v-reveal="i" class="lp-step">
       <span class="lp-step__n">{{ i + 1 }}</span>
       <div>
         <h3 class="lp-step__title">{{ s.title }}</h3>

@@ -5,7 +5,7 @@ defineProps<{ compare: NonNullable<LandingData['compare']> }>()
 </script>
 
 <template>
-  <div class="lp-table" role="table" :aria-label="compare.heading">
+  <div v-reveal class="lp-table" role="table" :aria-label="compare.heading">
     <div class="lp-row lp-row--head" role="row">
       <span class="lp-cell lp-cell--label" role="columnheader"></span>
       <span class="lp-cell" role="columnheader">{{ compare.left }}</span>

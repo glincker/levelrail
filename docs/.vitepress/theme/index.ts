@@ -36,6 +36,9 @@ import './styles/copy-command.css'
 import './styles/hero-showcase.css'
 import './styles/announcement-pill.css'
 import './styles/mock.css'
+import './styles/mock-carousel.css'
+import './styles/landing-stats.css'
+import './styles/reveal.css'
 import Layout from './Layout.vue'
 import Card from './Card.vue'
 import CardGroup from './CardGroup.vue'
@@ -50,11 +53,13 @@ import Tabs from './Tabs.vue'
 import Tab from './Tab.vue'
 import InlineToc from './InlineToc.vue'
 import LandingPage from './LandingPage.vue'
+import { vReveal } from './reveal'
 
 export default {
   ...DefaultTheme,
   Layout,
   enhanceApp({ app }) {
+    app.directive('reveal', vReveal)
     app.component('Card', Card)
     app.component('CardGroup', CardGroup)
     app.component('LatestReleasesSection', LatestReleasesSection)

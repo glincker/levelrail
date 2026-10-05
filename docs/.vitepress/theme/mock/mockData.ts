@@ -208,7 +208,8 @@ export const rollbackTargetIndex = 1
 const paths = ['/', '/pricing', '/docs/getting-started', '/assets/app.css', '/assets/app.js', '/api/health', '/blog']
 
 export const logs: MockLog[] = Array.from({ length: 26 }, (_, i): MockLog => {
-  const time = `20:03:${String((14 + Math.floor(i * 2.3)) % 60).padStart(2, '0')}`
+  const secs = 14 + Math.floor(i * 2.3)
+  const time = `20:${String(3 + Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`
   if (i === 9) return { time, level: 'info', text: 'deploy 7f3a9c2 passed readiness check, traffic switched' }
   if (i === 20) return { time, level: 'debug', text: 'cache warm: 128 routes prerendered in 212ms' }
   const ms = 4 + ((i * 7) % 23)
