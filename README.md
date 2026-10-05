@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="88" height="88">
+
 <h1>Levelrail</h1>
 
 <p><strong>Push to git, get a running app with TLS, logs, metrics, and rollback, on your own Linux boxes.</strong></p>
@@ -8,25 +10,25 @@
 
 <p>
   <a href="https://levelrail.com">Docs</a> ·
-  <a href="#quickstart">Quickstart</a> ·
-  <a href="#features">Features</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#what-you-get">Features</a> ·
   <a href="#a-tour-of-the-dashboard">Screenshots</a> ·
   <a href="docs/comparison.md">Compare</a> ·
   <a href="https://discord.gg/Ar5pcaZB99">Discord</a>
 </p>
 
 <p>
-  [![CI](https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg)](https://github.com/glincker/levelrail/actions/workflows/ci.yml)
-  [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-  [![Go Report Card](https://goreportcard.com/badge/github.com/glincker/levelrail)](https://goreportcard.com/report/github.com/glincker/levelrail)
-  [![Go Version](https://img.shields.io/github/go-mod/go-version/glincker/levelrail)](go.mod)
-  [![GitHub stars](https://img.shields.io/github/stars/glincker/levelrail?style=flat)](https://github.com/glincker/levelrail/stargazers)
-  [![Last commit](https://img.shields.io/github/last-commit/glincker/levelrail)](https://github.com/glincker/levelrail/commits/main)
-  [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-  [![Discussions](https://img.shields.io/github/discussions/glincker/levelrail)](https://github.com/glincker/levelrail/discussions)
-  [![Discord](https://img.shields.io/discord/829168897080557579?style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2)](https://discord.gg/Ar5pcaZB99)
-  [![Status: pre-release](https://img.shields.io/badge/status-pre--release-orange.svg)](#status)
-  [![Docs](https://img.shields.io/badge/docs-levelrail.com-f59e0b.svg)](https://levelrail.com)
+  <a href="https://github.com/glincker/levelrail/actions/workflows/ci.yml"><img src="https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0"></a>
+  <a href="https://goreportcard.com/report/github.com/glincker/levelrail"><img src="https://goreportcard.com/badge/github.com/glincker/levelrail" alt="Go Report Card"></a>
+  <a href="go.mod"><img src="https://img.shields.io/github/go-mod/go-version/glincker/levelrail" alt="Go Version"></a>
+  <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat" alt="GitHub stars"></a>
+  <a href="https://github.com/glincker/levelrail/commits/main"><img src="https://img.shields.io/github/last-commit/glincker/levelrail" alt="Last commit"></a>
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome"></a>
+  <a href="https://github.com/glincker/levelrail/discussions"><img src="https://img.shields.io/github/discussions/glincker/levelrail" alt="Discussions"></a>
+  <a href="https://discord.gg/Ar5pcaZB99"><img src="https://img.shields.io/discord/829168897080557579?style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2" alt="Discord"></a>
+  <a href="#status-pre-release"><img src="https://img.shields.io/badge/status-pre--release-orange.svg" alt="Status: pre-release"></a>
+  <a href="https://levelrail.com"><img src="https://img.shields.io/badge/docs-levelrail.com-f59e0b.svg" alt="Docs"></a>
 </p>
 
 <img src="docs/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="900">
@@ -37,15 +39,13 @@
 <summary><b>Table of contents</b></summary>
 
 - [What is Levelrail?](#what-is-levelrail)
-- [Quickstart](#quickstart)
-- [Features](#features)
-- [Status](#status)
-- [Why not Coolify or Dokploy](#why-not-coolify-or-dokploy-self-hosted-herokuvercel-alternative)
-- [Architecture at a glance](#architecture-at-a-glance)
-- [How it compares](#how-it-compares)
+- [Install](#install)
+- [What you get](#what-you-get)
 - [A tour of the dashboard](#a-tour-of-the-dashboard)
-- [Building and running locally](#building-and-running-locally)
-- [Contributing](#contributing)
+- [Status: pre-release](#status-pre-release)
+- [Why not Coolify or Dokploy?](#why-not-coolify-or-dokploy)
+- [How it is built](#how-it-is-built)
+- [Build from source](#build-from-source)
 - [Docs and community](#docs-and-community)
 - [Founding partners](#founding-partners)
 - [Meet the founder](#meet-the-founder)
@@ -55,26 +55,11 @@
 
 ## What is Levelrail?
 
-Levelrail is a self-hosted, open-source PaaS: an alternative to Heroku,
-Vercel, and Railway for teams who would rather run their own deployment
-platform than rent one. Point it at one or more Linux boxes and it
-turns them into a private cloud. Built for 3-50 services across 1-10
-machines, not a Kubernetes competitor.
+Levelrail is a self-hosted, open-source deployment platform: an alternative to Heroku, Vercel, and Railway that runs on your own Linux servers. Push to a git repo and get a running app with HTTPS, logs, metrics, and one-click rollback.
 
-- **No SSH, no shelling out.** An agent on each node talks to Docker's
-  Engine API directly, so there are no polling loops and no parsed `docker`
-  output.
-- **Observability is part of the core.** Metrics and log search ship in the
-  binary, with deploy markers drawn on the charts. No Grafana install.
-- **Small by design.** One Go binary for the control plane, one for the
-  agent, SQLite for state.
-- **AI-ready, not AI-driven.** The HTTP API that runs the dashboard also backs
-  an MCP server. AI reads and suggests; it is never in the reconcile path.
+It is built for people running 3 to 50 services on 1 to 10 machines who do not want to learn Kubernetes. Each server runs a small agent that talks to Docker's Engine API directly, so there is no SSH and no shelling out to the `docker` CLI. Metrics and logs are part of the core, not a Grafana you install afterwards.
 
-If this solves a problem you have, a star helps other people building
-the same thing find it.
-
-## Quickstart
+## Install
 
 You need a Linux server (`amd64` or `arm64`) with systemd, root access, and ports 80 and 443 open. Docker is installed for you if it is missing.
 
@@ -93,7 +78,29 @@ docker run -d -p 127.0.0.1:8080:8080 -v /var/run/docker.sock:/var/run/docker.soc
 
 Images for `linux/amd64` and `linux/arm64` are published as `:beta` (use this until a stable release ships) and `:edge`. Upgrade and uninstall commands, pinning a version, the compose file, and the node agent image are in [Installing](docs/installing.md) and [Docker](docs/docker.md). Walkthrough: [Getting started](docs/getting-started.md).
 
-## Features
+### Your first five minutes
+
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <a href="docs/installing.md#first-sign-in"><img src="docs/assets/screenshots/setup-wizard.png" alt="Levelrail setup wizard running server checks on a fresh install"></a><br>
+      <b>1. Install and sign in</b><br>
+      <sub>One command, then the setup wizard checks the server and walks you to a first app.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <a href="docs/git-integrations.md"><img src="docs/assets/screenshots/app-source.png" alt="Levelrail Git source settings with GitHub, GitLab, Bitbucket, Gitea, and URL tabs"></a><br>
+      <b>2. Connect a repo</b><br>
+      <sub>Pick a provider, let auto-detect choose the build, deploy on every push.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <a href="docs/deployments-page.md"><img src="docs/assets/screenshots/deployments-all.png" alt="Levelrail Deployments page listing recent deploys and a rollback"></a><br>
+      <b>3. Watch it ship</b><br>
+      <sub>Every deploy is listed live, and rolling back is one click.</sub>
+    </td>
+  </tr>
+</table>
+
+## What you get
 
 - **Safe deploys.** Rolling, recreate, or blue-green, gated on real readiness probes. Prior images are pinned, so rollback is always one click and garbage collection cannot remove the target.
 - **Observability built in.** Node-local metrics at 15 second resolution and full-text log search, with deploy markers drawn on the charts so "which deploy caused this" is visible at a glance.
@@ -104,43 +111,6 @@ Images for `linux/amd64` and `linux/arm64` are published as `:beta` (use this un
 - **Access control and audit.** Allow and Deny IAM policies scoped to a single app or database, with a full audit log and CSV export, in the free Apache 2.0 core.
 - **Alerting.** Threshold, crashloop, and certificate expiry rules delivered over 18 notification kinds, including Slack, Discord, email, Telegram, PagerDuty, ntfy, and a generic webhook.
 - **AI-ready.** The HTTP API the dashboard uses also backs an MCP server with 155 tools, so an AI assistant can list apps, read logs, and diagnose a crashloop. AI never sits in the reconciliation path.
-
-## Status
-
-Levelrail is in active development and has no stable release yet. APIs, the app spec format, and the on-disk layout can change between betas, so do not run production workloads on it yet.
-
-Maturity is uneven, and we label it feature by feature in [Feature status](docs/feature-status.md). Single node is the well-tested path. Deploy approvals, database backups with point-in-time recovery, and GitHub previews are marked stable, each with a live end-to-end test. Multi-node enrollment, drain, and placement have run against two real Docker daemons, but the WireGuard mesh across hosts is still unverified. Most other areas are beta, and a few (in-app AI chat, GPU models, the load balancer, platform as code, Cloudflare tunnel) are off by default behind [`APP_EXPERIMENTAL`](docs/experimental-features.md). The [roadmap](docs/roadmap.md) has the current list of what is done and what is next.
-
-## Why not Coolify or Dokploy (self-hosted Heroku/Vercel alternative)
-
-Most self-hosted platforms in this category manage servers by SSHing in and shelling out to the `docker` CLI, then parsing text. That is a common source of flakiness, and it forces polling loops. Levelrail does it differently:
-
-- **Agent-based.** A small agent on each node uses the Docker Engine API directly and streams container events up. The control plane never polls.
-- **Observability in the core.** Metrics and logs ship with the platform.
-- **Small footprint.** One static Go binary for the control plane and one for the agent, with embedded SQLite, an embedded Caddy ingress, and an embedded dashboard. Measured numbers and conditions are in [Performance](docs/performance.md).
-
-## Architecture at a glance
-
-- **Control plane** (`cmd/levelrail`): one Go binary with the dashboard embedded. It reconciles declarative desired state against observed Docker state, the Kubernetes controller pattern without the rest of Kubernetes.
-- **Node agent** (`cmd/levelrail-agent`): dials out to the control plane. In single-node mode it runs in-process, so one node and ten nodes share one code path.
-- **Ingress:** [Caddy](https://caddyserver.com/) embedded as a library, for automatic TLS and routing.
-- **Builds:** [BuildKit](https://github.com/moby/buildkit) as a library, with Railpack detection for apps without a Dockerfile.
-- **State:** SQLite in WAL mode via `modernc.org/sqlite`, pure Go.
-- **CLI and MCP:** `levelrail-cli` and `levelrail-mcp` are thin clients over the same HTTP API under `/api/v1`.
-
-Details: [Architecture](docs/architecture.md).
-
-## How it compares
-
-| | Levelrail | Coolify | Dokploy | CapRover | Dokku | Kamal |
-| --- | --- | --- | --- | --- | --- | --- |
-| Node control | Reverse-dialed agent | SSH + CLI | SSH + Engine API | Swarm API | Local bash | SSH, one-shot |
-| Orchestration | Level-triggered reconciler | Compose | Swarm | Swarm | Bash scheduler | None |
-| Built-in metrics and logs | Yes | Opt-in add-on | Separate binary | No | No | No |
-| Rollback | Pinned images, readiness-gated | Health check off by default | Swarm rollback | Manual | Default scheduler: none | Proxy health gate |
-| Backup verification | Automatic, all 8 engines | Non-empty check | None | None | No backups | No backups |
-
-This is positioning, not a ranking. All of them are worth using. The one area where Levelrail trails is breadth of templates: 301 curated entries against Coolify's roughly 370, an intentional bet on curation (see [ADR 015](adr/015-service-template-catalog-reversal.md)). The full, sourced comparison is in [Comparison](docs/comparison.md).
 
 ## A tour of the dashboard
 
@@ -296,7 +266,42 @@ containers, metrics, and logs. Click one to open the guide for that screen.
 
 </details>
 
-## Building and running locally
+## Status: pre-release
+
+Levelrail is in active development and has no stable release yet. APIs, the app spec format, and the on-disk layout can change between betas, so do not run production workloads on it yet.
+
+Maturity is uneven, and we label it feature by feature in [Feature status](docs/feature-status.md). Single node is the well-tested path. Deploy approvals, database backups with point-in-time recovery, and GitHub previews are marked stable, each with a live end-to-end test. Multi-node enrollment, drain, and placement have run against two real Docker daemons, but the WireGuard mesh across hosts is still unverified. Most other areas are beta, and a few (in-app AI chat, GPU models, the load balancer, platform as code, Cloudflare tunnel) are off by default behind [`APP_EXPERIMENTAL`](docs/experimental-features.md). The [roadmap](docs/roadmap.md) has the current list of what is done and what is next.
+
+## Why not Coolify or Dokploy?
+
+Most self-hosted platforms in this category manage servers by SSHing in and shelling out to the `docker` CLI, then parsing text. That is a common source of flakiness, and it forces polling loops. Levelrail does it differently:
+
+- **Agent-based.** A small agent on each node uses the Docker Engine API directly and streams container events up. The control plane never polls.
+- **Observability in the core.** Metrics and logs ship with the platform.
+- **Small footprint.** One static Go binary for the control plane and one for the agent, with embedded SQLite, an embedded Caddy ingress, and an embedded dashboard. Measured numbers and conditions are in [Performance](docs/performance.md).
+
+| | Levelrail | Coolify | Dokploy | CapRover | Dokku | Kamal |
+| --- | --- | --- | --- | --- | --- | --- |
+| Node control | Reverse-dialed agent | SSH + CLI | SSH + Engine API | Swarm API | Local bash | SSH, one-shot |
+| Orchestration | Level-triggered reconciler | Compose | Swarm | Swarm | Bash scheduler | None |
+| Built-in metrics and logs | Yes | Opt-in add-on | Separate binary | No | No | No |
+| Rollback | Pinned images, readiness-gated | Health check off by default | Swarm rollback | Manual | Default scheduler: none | Proxy health gate |
+| Backup verification | Automatic, all 8 engines | Non-empty check | None | None | No backups | No backups |
+
+This is positioning, not a ranking. All of them are worth using. The one area where Levelrail trails is breadth of templates: 301 curated entries against Coolify's roughly 370, an intentional bet on curation (see [ADR 015](adr/015-service-template-catalog-reversal.md)). The full, sourced comparison is in [Comparison](docs/comparison.md).
+
+## How it is built
+
+- **Control plane** (`cmd/levelrail`): one Go binary with the dashboard embedded. It reconciles declarative desired state against observed Docker state, the Kubernetes controller pattern without the rest of Kubernetes.
+- **Node agent** (`cmd/levelrail-agent`): dials out to the control plane. In single-node mode it runs in-process, so one node and ten nodes share one code path.
+- **Ingress:** [Caddy](https://caddyserver.com/) embedded as a library, for automatic TLS and routing.
+- **Builds:** [BuildKit](https://github.com/moby/buildkit) as a library, with Railpack detection for apps without a Dockerfile.
+- **State:** SQLite in WAL mode via `modernc.org/sqlite`, pure Go.
+- **CLI and MCP:** `levelrail-cli` and `levelrail-mcp` are thin clients over the same HTTP API under `/api/v1`.
+
+Details: [Architecture](docs/architecture.md).
+
+## Build from source
 
 Needs Go 1.26 or newer and Docker.
 
@@ -308,16 +313,10 @@ go build ./cmd/levelrail-cli
 
 The frontend is a Vite project in `web/` that is embedded into the control plane at build time. See [Installing](docs/installing.md#option-3-build-from-source) and [CONTRIBUTING.md](CONTRIBUTING.md) for the dev loop, tests, and commit conventions.
 
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose changes,
-commit conventions, and how to run tests and the linter locally.
-
 ## Docs and community
 
 - [levelrail.com](https://levelrail.com) -- the hosted docs site: getting started, architecture, app spec reference, roadmap, full index
 - [docs/](docs/README.md) -- the same content as plain Markdown, for browsing directly on GitHub
-- [Roadmap](docs/roadmap.md) -- what is shipped, in progress, and next
 - [GitHub Discussions](https://github.com/glincker/levelrail/discussions) -- questions, ideas, show and tell
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99) -- live chat with maintainers and other users, with a dedicated `#levelrail` forum channel for questions and support
 - [support@levelrail.com](mailto:support@levelrail.com) -- direct email support
