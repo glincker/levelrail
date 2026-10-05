@@ -968,6 +968,7 @@ func run(logger *slog.Logger) error {
 		// completes, no opt-in toggle: same "just works" default the
 		// manual verify button already gives an operator on demand.
 		scheduler.Verifier = backupVerifyRunner
+		scheduler.BaseBackups = newBaseBackupRunner(db, secretsManager, client, backupRunner, logger)
 		go func() {
 			if err := scheduler.Run(ctx, backupSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 				logger.Error("backup scheduler stopped", slog.String("error", err.Error()))
@@ -2362,13 +2363,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// own doc comment) so a PITR restore's suspend/unsuspend cycle
 		// gets picked up immediately instead of waiting out a full
 		// resyncInterval on each side of the wipe.
-		baseBackupRunner := &backup.BaseBackupRunner{
-			Store:        db,
-			Secrets:      secretsManager,
-			BaseBackuper: &backup.ContainerBaseBackuper{Runtime: client},
-			Uploader:     backup.S3Uploader{},
-			Runtime:      client,
-		}
+		baseBackupRunner := newBaseBackupRunner(db, secretsManager, client, backupRunner, logger)
 		pitrRunner := &backup.PITRRunner{
 			Store:      db,
 			Secrets:    secretsManager,

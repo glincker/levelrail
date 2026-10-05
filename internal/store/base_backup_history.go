@@ -173,3 +173,13 @@ const baseBackupHistoryColumns = "id, database_name, target_id, object_key, lsn,
 func baseBackupHistoryScanArgs(h *BaseBackupHistory) []any {
 	return []any{&h.ID, &h.DatabaseName, &h.TargetID, &h.ObjectKey, &h.LSN, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt}
 }
+
+// DeleteBaseBackupHistory removes one base backup row, used after its
+// bucket object has been deleted by base backup retention. Deleting an id
+// that is already gone is not an error.
+func (db *DB) DeleteBaseBackupHistory(ctx context.Context, id string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM base_backup_history WHERE id = ?`, id); err != nil {
+		return fmt.Errorf("store: delete base backup history %q: %w", id, err)
+	}
+	return nil
+}
