@@ -22,7 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { ExistingVolumeError } from '../lib/apiError'
 import { useCreateDatabase } from '../queries/databases'
+import { ExistingVolumePrompt } from './ExistingVolumePrompt'
 import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
@@ -250,6 +252,15 @@ export function CreateDatabaseFields({
       defaultValues,
     })
 
+  const onSuccess = buildCreateResourceSuccessHandler({
+    resourceLabel: 'Database',
+    clearDraft,
+    onCreated,
+    onNavigate: (name) => {
+      void navigate({ to: '/databases/$name', params: { name } })
+    },
+  })
+
   const onSubmit = handleSubmit((values) => {
     const nodeId = values.node ?? LOCAL_NODE_VALUE
     createDatabase.mutate(
@@ -266,18 +277,17 @@ export function CreateDatabaseFields({
         // server auto-place this database via simple spread scheduling.
         node_id: resolveSubmittedNodeId(showAdvanced, nodeId),
       },
-      {
-        onSuccess: buildCreateResourceSuccessHandler({
-          resourceLabel: 'Database',
-          clearDraft,
-          onCreated,
-          onNavigate: (name) => {
-            void navigate({ to: '/databases/$name', params: { name } })
-          },
-        }),
-      },
+      { onSuccess },
     )
   })
+
+  const chooseExistingVolume = (choice: 'reuse' | 'discard') => {
+    if (!createDatabase.variables) return
+    createDatabase.mutate(
+      { ...createDatabase.variables, existing_volume: choice },
+      { onSuccess },
+    )
+  }
 
   return (
     <CreateFormShell
@@ -422,7 +432,13 @@ export function CreateDatabaseFields({
         </div>
       ) : null}
 
-      {createDatabase.isError ? (
+      {createDatabase.error instanceof ExistingVolumeError ? (
+        <ExistingVolumePrompt
+          volumes={createDatabase.error.volumes}
+          pending={createDatabase.isPending}
+          onChoose={chooseExistingVolume}
+        />
+      ) : createDatabase.isError ? (
         <Alert variant="destructive">
           <WarningIcon />
           <AlertDescription>{createDatabase.error.message}</AlertDescription>

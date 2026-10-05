@@ -294,3 +294,49 @@ func TestPITRRunner_RunPITRRestore_NeverPromotes_TimesOutAsFailure(t *testing.T)
 		t.Fatalf("finished = %+v, want one failed row", st.finished)
 	}
 }
+
+type fakeWALFetcher struct {
+	err                           error
+	gotDB, gotVolume, gotSinceLSN string
+	calls                         int
+}
+
+func (f *fakeWALFetcher) Fetch(_ context.Context, _ Destination, db, vol, since string) (int, error) {
+	f.calls++
+	f.gotDB, f.gotVolume, f.gotSinceLSN = db, vol, since
+	return 3, f.err
+}
+
+func TestPITRRunner_RunPITRRestore_FetchesShippedWALFirst(t *testing.T) {
+	baseBackups := map[string]store.BaseBackupHistory{
+		"bbh_1": {ID: "bbh_1", TargetID: "tgt_1", LSN: "0/3000100", Status: store.BackupStatusSucceeded},
+	}
+	targets := map[string]store.BackupTarget{"tgt_1": {ID: "tgt_1"}}
+
+	t.Run("fetch runs before the database is touched", func(t *testing.T) {
+		st := &fakePITRHistoryStore{baseBackups: baseBackups, targets: targets}
+		fetch := &fakeWALFetcher{}
+		r := newTestPITRRunner(st, &fakePITRRestorer{}, &fakePITRRuntime{goneAfter: 1, recoveringFor: 1}, nil)
+		r.WAL = fetch
+		r.WALVolume = func(n string) string { return "db-" + n + "-wal-archive" }
+		if err := r.RunPITRRestore(context.Background(), "pitr_1", "mydb", "db-mydb", "db-mydb-data", "bbh_1", time.Now()); err != nil {
+			t.Fatalf("RunPITRRestore() error = %v", err)
+		}
+		if fetch.calls != 1 || fetch.gotVolume != "db-mydb-wal-archive" || fetch.gotSinceLSN != "0/3000100" || fetch.gotDB != "mydb" {
+			t.Errorf("fetch = %+v", fetch)
+		}
+	})
+
+	t.Run("fetch failure aborts before suspending", func(t *testing.T) {
+		st := &fakePITRHistoryStore{baseBackups: baseBackups, targets: targets}
+		r := newTestPITRRunner(st, &fakePITRRestorer{}, &fakePITRRuntime{}, nil)
+		r.WAL = &fakeWALFetcher{err: errors.New("bucket unreachable")}
+		r.WALVolume = func(n string) string { return "db-" + n + "-wal-archive" }
+		if err := r.RunPITRRestore(context.Background(), "pitr_1", "mydb", "db-mydb", "db-mydb-data", "bbh_1", time.Now()); err == nil {
+			t.Fatal("want the fetch failure")
+		}
+		if len(st.suspendCalls) != 0 {
+			t.Errorf("suspendCalls = %v, want none", st.suspendCalls)
+		}
+	})
+}

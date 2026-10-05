@@ -995,6 +995,15 @@ func run(logger *slog.Logger) error {
 				logger.Error("backup scheduler stopped", slog.String("error", err.Error()))
 			}
 		}()
+		walShip := newWALShipScheduler(db, client, backupRunner, func(nodeID string) bool {
+			return nodeID == "" || (meshCfg != nil && nodeID == meshCfg.localNodeID)
+		}, logger)
+		apiRouter.SetWALShipStatus(walShip)
+		go func() {
+			if err := walShip.Run(ctx, walShipInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("wal ship scheduler stopped", slog.String("error", err.Error()))
+			}
+		}()
 	}
 
 	// Scheduled tasks: internal/scheduledtask.Scheduler checks, on its
@@ -2393,6 +2402,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			Secrets:    secretsManager,
 			Downloader: backup.S3Downloader{},
 			Restorer:   &backup.ContainerPITRRestorer{Runtime: client},
+			WAL:        &backup.WALFetcher{Runtime: client, Lister: backup.S3Lister{}, Downloader: backup.S3Downloader{}},
+			WALVolume:  databaseWALArchiveVolume,
 			Runtime:    client,
 			Nudge:      engine.Nudge,
 		}
@@ -2510,6 +2521,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// restore endpoint.
 			api.WithBaseBackupRunner(baseBackupRunner),
 			api.WithPITRRestoreRunner(pitrRunner),
+			api.WithMajorUpgrader(newMajorUpgradeRunner(db, client, engine.Nudge, logger)),
 		)
 		// The AI assistant's own tool-calling engine, distinct from the
 		// BYOK key above: it needs a self-call API token to reach this

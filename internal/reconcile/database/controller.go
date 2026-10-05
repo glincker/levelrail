@@ -42,8 +42,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
@@ -214,6 +216,31 @@ type MariaDBCredentials struct {
 type ClickHouseCredentials struct {
 	Username string
 	Password string
+}
+
+// PostgresNeedsPGDATA reports whether a Postgres image tag is major 18 or
+// newer, whose default PGDATA moved under /var/lib/postgresql/<major>/: without
+// pinning it back, the data directory falls outside the mounted volume and a
+// container recreate loses the data. Older images keep the unchanged env.
+func PostgresNeedsPGDATA(version string) bool {
+	end := 0
+	for end < len(version) && version[end] >= '0' && version[end] <= '9' {
+		end++
+	}
+	major, err := strconv.Atoi(version[:end])
+	return err == nil && major >= 18
+}
+
+// ClickHouseIdent maps a database name to a ClickHouse identifier the image
+// entrypoint can use: it interpolates CLICKHOUSE_DB and CLICKHOUSE_USER into
+// unquoted SQL, so a hyphen fails the CREATE and leaves no database.
+func ClickHouseIdent(name string) string {
+	return strings.Map(func(r rune) rune {
+		if r == '-' || r == '.' {
+			return '_'
+		}
+		return r
+	}, name)
 }
 
 // Controller converges one named database's desired state (read fresh
@@ -390,6 +417,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"POSTGRES_USER":     c.postgresCreds.Username,
 			"POSTGRES_PASSWORD": c.postgresCreds.Password,
 		}
+		if PostgresNeedsPGDATA(desired.Version) {
+			env["PGDATA"] = postgresDataPath
+		}
 		command := postgresCommand(c.tls, c.effectiveSlowQueryThresholdMs(), desired.PITREnabled)
 		return c.reconcileEngine(ctx, desired, env, command, postgresDataPath, postgresContainerPort, c.tls)
 
@@ -460,15 +490,15 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// dragonflyCommand pins dbfilename so restoreRedisLike's
 		// /data/dump.rdb write actually gets loaded on restart; Dragonfly's
 		// own default (dump-{timestamp}) never matches that path.
-		return c.reconcileEngine(ctx, desired, nil, dragonflyCommand, redisDataPath, redisContainerPort, nil)
+		return c.reconcileEngine(ctx, desired, nil, dragonflyCommand(os.Getenv(EnvDragonflyProactorThreads)), redisDataPath, redisContainerPort, nil)
 
 	case store.EngineClickHouse:
 		if c.clickhouseCreds == nil {
 			return credentialsBlockedResult(), nil
 		}
 		env := map[string]string{
-			"CLICKHOUSE_DB":                        c.dbName,
-			"CLICKHOUSE_USER":                      c.clickhouseCreds.Username,
+			"CLICKHOUSE_DB":                        ClickHouseIdent(c.dbName),
+			"CLICKHOUSE_USER":                      ClickHouseIdent(c.clickhouseCreds.Username),
 			"CLICKHOUSE_PASSWORD":                  c.clickhouseCreds.Password,
 			"CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT": "1",
 		}
@@ -899,7 +929,18 @@ func redisCommandAndPort(tls *TLSMaterial) ([]string, int) {
 // prepends the "dragonfly" binary itself whenever the first arg starts
 // with "-", so this is passed as flags only, matching Dragonfly's own
 // documented invocation (--dbfilename without a "dragonfly" prefix).
-var dragonflyCommand = []string{"--dbfilename", "dump"}
+func dragonflyCommand(threads string) []string {
+	cmd := []string{"--dbfilename", "dump"}
+	if n, err := strconv.Atoi(threads); err == nil && n > 0 {
+		cmd = append(cmd, "--proactor_threads", strconv.Itoa(n))
+	}
+	return cmd
+}
+
+// EnvDragonflyProactorThreads caps Dragonfly's io threads (default: one per
+// CPU). Dragonfly refuses to start when threads times 256MiB exceeds the memory
+// available, which a many-core host with little RAM hits.
+const EnvDragonflyProactorThreads = "APP_DRAGONFLY_PROACTOR_THREADS"
 
 // dockerImageFor returns the Docker image name for engine, applying
 // dockerImageMapping where the registry id and image name diverge.

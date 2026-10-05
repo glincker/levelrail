@@ -1029,6 +1029,18 @@ type PITRStatusResource struct {
 	WindowStart   string `json:"window_start,omitempty"`
 	WindowEnd     string `json:"window_end,omitempty"`
 	WindowError   string `json:"window_error,omitempty"`
+	// WALShip is the last shipping outcome of the WAL archive to the backup
+	// target; nil until a pass has run.
+	WALShip *WALShipResource `json:"wal_ship,omitempty"`
+}
+
+// WALShipResource mirrors internal/api's walShipResource.
+type WALShipResource struct {
+	LastAttemptAt string `json:"last_attempt_at,omitempty"`
+	LastSuccessAt string `json:"last_success_at,omitempty"`
+	LastError     string `json:"last_error,omitempty"`
+	Shipped       int    `json:"shipped"`
+	TargetID      string `json:"target_id,omitempty"`
 }
 
 // BaseBackupHistoryResource mirrors internal/api's
@@ -1228,6 +1240,9 @@ type DatabaseResource struct {
 	// ProjectID mirrors internal/api's databaseResource.ProjectID:
 	// response-only, set via PUT /api/v1/databases/{name}/project.
 	ProjectID string `json:"project_id,omitempty"`
+	// ExistingVolume is request-only: "reuse" or "discard" the data volume a
+	// deleted database of the same name left behind.
+	ExistingVolume string `json:"existing_volume,omitempty"`
 	// Resources, PubliclyAccessible, PublicPort, and the Backup* fields
 	// are set through their own dedicated routes (SetDatabaseResources,
 	// SetDatabasePublicAccess, SetBackupSchedule), never through this
@@ -3672,4 +3687,18 @@ type NodeStatusEventResource struct {
 	FromStatus string    `json:"from_status"`
 	ToStatus   string    `json:"to_status"`
 	CreatedAt  time.Time `json:"created_at"`
+}
+
+// MajorUpgradeResource mirrors internal/api's majorUpgradeResource.
+type MajorUpgradeResource struct {
+	ID             string `json:"id"`
+	DatabaseName   string `json:"database_name"`
+	FromVersion    string `json:"from_version"`
+	ToVersion      string `json:"to_version"`
+	Status         string `json:"status"`
+	Phase          string `json:"phase,omitempty"`
+	SnapshotVolume string `json:"snapshot_volume,omitempty"`
+	Error          string `json:"error,omitempty"`
+	StartedAt      string `json:"started_at"`
+	FinishedAt     string `json:"finished_at,omitempty"`
 }

@@ -910,6 +910,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/databases/{name}/base-backups", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListBaseBackupHistory))
 	mux.HandleFunc("POST /api/v1/databases/{name}/pitr-restore", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleTriggerPITRRestore))
 	mux.HandleFunc("GET /api/v1/databases/{name}/pitr-restores", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListPITRRestoreHistory))
+	mux.HandleFunc("POST /api/v1/databases/{name}/major-upgrade", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleMajorUpgrade))
+	mux.HandleFunc("GET /api/v1/databases/{name}/major-upgrades", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListMajorUpgrades))
+	mux.HandleFunc("POST /api/v1/databases/{name}/major-upgrades/{id}/rollback", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleRollbackMajorUpgrade))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/major-upgrades/{id}/snapshot", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleDiscardMajorUpgradeSnapshot))
 
 	// App service volume backups (app_volume_backups.go/
 	// app_volume_backup_download.go/app_volume_backup_verify.go): the

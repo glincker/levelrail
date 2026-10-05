@@ -78,6 +78,9 @@ type databaseResource struct {
 	// PUT /api/v1/databases/{name}/resources (handleSetDatabaseResources),
 	// mirroring the node/project routes' shape rather than appResource's.
 	Resources *store.ServiceResources `json:"resources,omitempty"`
+	// ExistingVolume is request-only: "reuse" or "discard" what a deleted
+	// database of the same name left behind (see database_leftover_volume.go).
+	ExistingVolume string `json:"existing_volume,omitempty"`
 	// ResourcesAppliedLive: see appResource's identically-named field
 	// doc comment. Only ever set by handleSetDatabaseResources; every
 	// other handler returning a databaseResource leaves it false.
@@ -308,6 +311,11 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return false
 	}
+
+	if !rt.resolveExistingVolume(w, r, req) {
+		return false
+	}
+	req.ExistingVolume = ""
 
 	if err := rt.databases.SaveDesiredDatabase(r.Context(), req.toDesiredDatabase()); err != nil {
 		rt.logger.Error("api: create database failed", slog.String("error", err.Error()), slog.String("name", req.Name))

@@ -215,6 +215,14 @@ func (rt *Router) desiredVolumeNames(ctx context.Context) (map[string]bool, erro
 	for _, db := range databases {
 		names["db-"+db.Name+"-data"] = true
 		names["db-"+db.Name+"-certs"] = true
+		names["db-"+db.Name+"-wal-archive"] = true
+	}
+	snapshots, err := rt.majorUpgrades.ListMajorUpgradeSnapshots(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list major upgrade snapshots: %w", err)
+	}
+	for _, u := range snapshots {
+		names[u.SnapshotVolume] = true
 	}
 	return names, nil
 }

@@ -206,12 +206,13 @@ func (r *ContainerRestorer) drainExec(ctx context.Context, containerName string,
 	return err
 }
 
-// postgresRestoreCmd drops and recreates the public schema before piping
-// the plain-SQL dump into psql, a full replace rather than a merge: this
-// assumes every object pg_dump captured lives in the public schema, true
-// for every database this controller creates. Only the trailing psql is
-// exec'd, so the shell survives to run the schema reset first.
-var postgresRestoreCmd = []string{"sh", "-c", `psql --no-password -U "$POSTGRES_USER" "$POSTGRES_USER" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" && exec psql --no-password -U "$POSTGRES_USER" "$POSTGRES_USER"`}
+// postgresRestoreCmd drops and recreates the public schema, then replays the
+// plain-SQL dump, all in one psql transaction with ON_ERROR_STOP: a failing
+// statement rolls everything back and exits non-zero, so a damaged dump
+// leaves the existing data untouched instead of reporting a half-restore as
+// success. It assumes every object pg_dump captured lives in the public
+// schema, true for every database this controller creates.
+var postgresRestoreCmd = []string{"sh", "-c", `{ echo "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"; cat; } | psql --no-password -v ON_ERROR_STOP=1 --single-transaction -U "$POSTGRES_USER" "$POSTGRES_USER"`}
 
 // shBacktick is an escaped backtick for use inside a double-quoted sh
 // string: SQL identifiers are quoted so database names with hyphens work.

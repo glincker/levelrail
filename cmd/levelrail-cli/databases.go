@@ -57,6 +57,14 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesSetResources(prog, rest, stdout, stderr, lookupEnv)
 	case "set-version":
 		return runDatabasesSetVersion(prog, rest, stdout, stderr, lookupEnv)
+	case "major-upgrade":
+		return runDatabasesMajorUpgrade(prog, rest, stdout, stderr, lookupEnv)
+	case "major-upgrades":
+		return runDatabasesMajorUpgrades(prog, rest, stdout, stderr, lookupEnv)
+	case "major-upgrade-rollback":
+		return runDatabasesMajorUpgradeRollback(prog, rest, stdout, stderr, lookupEnv)
+	case "major-upgrade-discard":
+		return runDatabasesMajorUpgradeDiscard(prog, rest, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown databases subcommand %q\n\n", prog, sub)
 		_, _ = fmt.Fprint(stderr, databasesUsage(prog))
@@ -86,6 +94,10 @@ func databasesUsage(prog string) string {
   %[1]s databases public-access clear <name> [flags]  return a database to internal-network-only
   %[1]s databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]  apply memory/CPU limits
   %[1]s databases set-version <name> <version> [flags]  minor or patch image change, same data
+  %[1]s databases major-upgrade <name> --version V [flags]  guarded Postgres major upgrade with rollback snapshot
+  %[1]s databases major-upgrades <name> [flags]  list a database's major upgrade attempts
+  %[1]s databases major-upgrade-rollback <name> <id> [flags]  restore the pre-upgrade data
+  %[1]s databases major-upgrade-discard <name> <id> [flags]  delete a rollback snapshot to free disk
 
 Run "%[1]s databases <subcommand> -h" for a subcommand's own flags.
 `, prog)
