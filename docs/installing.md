@@ -253,8 +253,16 @@ Detects your OS and architecture, verifies the release checksum (and its
 cosign signature, if `cosign` is installed) the same way `install.sh`
 does, and installs to `~/.local/bin`, no root needed. Set
 `LEVELRAIL_CLI_INSTALL_DIR=/usr/local/bin` and run with `sudo` instead
-for a system-wide install. macOS and Linux only today (no Windows build
-yet, run the command above from WSL).
+for a system-wide install.
+
+### Other ways to install the CLI
+
+| Method | Command |
+| --- | --- |
+| Go | `go install github.com/GLINCKER/levelrail/cmd/levelrail-cli@latest` |
+| Direct download | Pick `levelrail-cli-<os>-<arch>` (`linux`, `darwin`, or `windows`; `amd64` or `arm64`) from the [releases page](https://github.com/glincker/levelrail/releases). Windows files end in `.exe`. |
+
+Every release asset is listed in `checksums.txt`, which is signed with cosign and has a build provenance attestation. Windows binaries are published from the release after `v0.2.0-beta.15`; before that, run the install script from WSL.
 
 Then point it at your instance and log in:
 

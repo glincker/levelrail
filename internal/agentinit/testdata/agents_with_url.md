@@ -41,7 +41,7 @@ acme-cli apps logs site --follow
 ## Roll back
 
 ```
-acme-cli apps rollback site
+acme-cli apps deploys list site
 acme-cli apps deploys rollback-to site <deploy-id>
 ```
 

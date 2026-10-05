@@ -118,7 +118,7 @@ Status shows the reconciler's conditions, each with a reason string, so a failin
 
 ![Levelrail app overview: live metrics and deploy history in one view](assets/screenshots/app-overview.png)
 
-To go back to the previous version, use the deploy history in the dashboard or `levelrail-cli apps rollback web`. Prior images are pinned, so garbage collection cannot remove a rollback target.
+To go back to the previous version, use the deploy history in the dashboard, or run `levelrail-cli apps deploys list web` and then `levelrail-cli apps deploys rollback-to web <deploy-id>`. Prior images are pinned, so garbage collection cannot remove a rollback target.
 
 ## Use the CLI from your laptop
 

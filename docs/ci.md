@@ -23,16 +23,15 @@ A PR runs only the work its diff can affect:
 - **Workflow files only**: actionlint on the changed workflow files, inside
   the Lint job.
 
-A `main` push only runs `Build, vet` (scoped against `github.event.before`,
-same as a PR, falling back to `--full` when that SHA is missing or
-unresolvable). `Lint`, every `Test (*)` job, `Coverage gate`,
-`Web (tsc, eslint)` and `install.sh` all skip on `push`: branch protection
-means a commit only reaches `main` by the merge queue fast-forwarding to a
-commit `merge_group` already fully verified, so re-running them finds
-nothing new. See "Concurrency and merge queue" below for the reasoning and
-the risk it accepts. `nightly.yml` runs the full `-race`, no `-short` sweep
-once a day regardless: the actual safety net for anything the PR-time
-scoping under-selects, and now also for that residual risk.
+A `main` push runs the same impact-based jobs as a PR (`Build, vet`, `Lint`,
+every `Test (*)` job, `Coverage gate`, `Web (tsc, eslint)`, `install.sh`),
+scoped against `github.event.before` and falling back to `--full` when that
+SHA is missing or unresolvable. The merge queue is gone, so this is the only
+post-merge verification of the merged tree. Docs-only pushes never trigger
+`ci.yml` at all (`paths-ignore` on the `push` trigger: `**/*.md`, `adr/**`,
+`LICENSE`), and an area with no changed files skips as on a PR.
+`nightly.yml` runs the full `-race`, no `-short` sweep once a day regardless:
+the safety net for anything the scoping under-selects.
 
 ## How a change is scoped
 
@@ -142,56 +141,26 @@ stable if jobs are later split or renamed.
 
 ## Concurrency and merge queue
 
-A new push to a PR cancels that PR's previous CI run. Runs on `main` and in
-a merge queue are never cancelled.
+A new push to a PR cancels that PR's previous CI run. Runs on `main` are
+never cancelled.
 
-`ci.yml` already listens for `merge_group`, so turning on a merge queue for
-`main` needs only the branch protection setting. A queue run scopes itself
-against the queue's base commit with the same rules as a PR.
+There is no merge queue on `main` now, so a PR merges as soon as its own
+`CI required` check passes and the `push` run on `main` is the only
+verification of the merged tree. That run does everything a PR run does,
+scoped by the same impact detection, so a change that was fine alone but
+breaks against a newer `main` is caught the same day, not at the nightly
+sweep.
 
-The ruleset's `merge_queue` rule sets `min_entries_to_merge: 1`, so a PR
-queued alone merges as soon as its own checks pass rather than waiting for
-others to batch with (`min_entries_to_merge_wait_minutes: 5` only matters
-once a second PR is already queued). `grouping_strategy: ALLGREEN` with
-`max_entries_to_build/merge: 5` lets GitHub batch up to 5 queued PRs into
-one `merge_group` run when several land at once, without adding latency
-to a lone PR. Raising the minimums would cut total `merge_group` runs on
-busy days at the cost of making every PR wait for others to queue up
-first: not worth it while the complaint is per-PR wait time, not total
-run count.
+`ci.yml` still listens for `merge_group`, with the same base-commit scoping
+as a PR, so re-enabling a queue needs only the branch protection setting.
+If a queue returns, the `push` run duplicates the `merge_group` run on the
+same tree; restore a `github.event_name != 'push'` guard on the heavy jobs
+at that point (PR #939 did exactly this while a queue existed).
 
-A merge queue means every merged commit triggers two CI runs on the same
-tree: `merge_group` (pre-merge gate) then `push` (post-merge). Both used
-to be scoped identically, so the second run cost roughly what the first
-did on every full-scope PR (a schema migration, `go.mod`, or the
-pipeline itself), which made the duplication large exactly when it
-mattered most, not small.
-
-Fixed 2026-10-04: `Lint`, `Test (*)` (every lane plus the quarantined
-and aggregator jobs), `Coverage gate`, `Web (tsc, eslint)` and
-`install.sh` all skip on `push` now (`github.event_name != 'push'` in
-each job's own `if`), reported as a passing skip the same way an area
-with no changed files already was. `merge_group` is the one branch
-protection actually requires before admission, and branch protection
-also blocks every other path onto `main`, so a `push` to `main` can
-only be the merge queue fast-forwarding to a commit `merge_group` just
-finished verifying: re-running the same suite a second time added no
-new information, only cost.
-
-`Build, vet` keeps running on `push` unconditionally: it is cheap
-(around a minute) and is what refreshes the daily Go build cache
+`Build, vet` also refreshes the daily Go build cache on `push`
 (the cache `save` flag, true only for push events), which PR runs depend on
 staying warm. `codeql.yml` and `secret-scan.yml` are separate workflow
-files with their own `push` triggers, unaffected by anything in
-`ci.yml`.
-
-The residual risk this accepts: a commit that reaches `main` by some
-path branch protection was supposed to block (a misconfigured ruleset,
-an admin override) now gets zero same-day verification instead of a
-redundant one, until `nightly.yml`'s full `-race` sweep catches it
-within 24 hours. That is the same safety net the PR-time scoping above
-already leans on for whatever it under-selects, just covering one more
-case.
+files with their own `push` triggers, unaffected by anything in `ci.yml`.
 
 ## Measured cost before this change
 

@@ -24,7 +24,17 @@ The short version:
 
 This action does not build your image: build and push it separately using whatever your project already uses, then pass the image reference to this action.
 
-The action installs a prebuilt `levelrail-cli` binary from GitHub Releases (available for linux/darwin, amd64/arm64) instead of requiring a Go toolchain in your workflow.
+The action installs a prebuilt `levelrail-cli` binary from GitHub Releases (available for linux/darwin, amd64/arm64) instead of requiring a Go toolchain in your workflow. It verifies the release checksum, and by default picks the newest release, pre-releases included while no stable release exists. Pin one with `cli-version: v0.2.0-beta.15`.
+
+To run other CLI commands in a job, install the CLI on its own with the `setup-cli` action:
+
+```yaml
+- uses: glincker/levelrail/.github/actions/setup-cli@main
+- run: levelrail-cli apps status my-app
+  env:
+    APP_API_URL: ${{ secrets.LEVELRAIL_API_URL }}
+    APP_API_TOKEN: ${{ secrets.LEVELRAIL_API_TOKEN }}
+```
 
 ## Not tied to GitHub Actions
 

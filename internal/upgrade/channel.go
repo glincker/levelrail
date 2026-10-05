@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/Masterminds/semver/v3"
 )
 
 // Update channels a running build can compare itself against.
@@ -105,7 +107,9 @@ func githubGet(ctx context.Context, url string, out any) (status int, err error)
 }
 
 // FetchLatestStable fetches GitHub's /releases/latest: the newest
-// non-prerelease, non-draft release. nil, nil means none published yet.
+// non-prerelease, non-draft release. With no stable release it falls back
+// to the newest pre-release (install.sh's rule). nil, nil means nothing
+// has been published at all.
 func FetchLatestStable(ctx context.Context) (*Release, error) {
 	var rr rawRelease
 	status, err := githubGet(ctx, "https://api.github.com/repos/"+githubRepo+"/releases/latest", &rr)
@@ -113,7 +117,7 @@ func FetchLatestStable(ctx context.Context) (*Release, error) {
 		return nil, err
 	}
 	if status == http.StatusNotFound {
-		return nil, nil
+		return FetchLatestBeta(ctx)
 	}
 	return rr.toRelease(), nil
 }
@@ -226,12 +230,18 @@ func (f Fetchers) LatestForChannel(ctx context.Context, channel string) (*Releas
 // UpdateAvailable reports whether latest represents a newer build than
 // currentVersion. A "dev" build never reports an update available:
 // there is no meaningful newer build to compare an unreleased build
-// against.
+// against. Two SemVer tags compare by precedence (beta.9 < beta.15);
+// anything else (edge's main-<sha>) falls back to inequality.
 func UpdateAvailable(currentVersion string, latest *Release) bool {
 	if latest == nil || currentVersion == "dev" {
 		return false
 	}
-	return latest.Tag != currentVersion
+	cur, curErr := semver.NewVersion(currentVersion)
+	lat, latErr := semver.NewVersion(latest.Tag)
+	if curErr != nil || latErr != nil {
+		return latest.Tag != currentVersion
+	}
+	return lat.GreaterThan(cur)
 }
 
 // Cache holds the last successful channel lookup, so GET /api/v1/updates

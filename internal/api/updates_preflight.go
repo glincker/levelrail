@@ -40,16 +40,12 @@ func (rt *Router) handleUpdatePreflight(w http.ResponseWriter, r *http.Request) 
 		UpgradeCommand:  upgradeCommand(""),
 		RollbackCommand: "levelrail restore-snapshot --list",
 	}
-	release, channel, known := rt.latestReleaseForCurrentChannel(r.Context())
+	release, _, known := rt.latestReleaseForCurrentChannel(r.Context())
 	var assets []string
 	if known && release != nil {
 		tag, url := release.Tag, release.URL
 		out.LatestVersion, out.ReleaseURL = &tag, &url
-		if channel == upgrade.ChannelStable {
-			out.UpdateAvailable = version.Version != "dev" && tag != version.Version
-		} else {
-			out.UpdateAvailable = upgrade.UpdateAvailable(version.Version, release)
-		}
+		out.UpdateAvailable = upgrade.UpdateAvailable(version.Version, release)
 		out.ReleaseNotes = truncateRunes(strings.TrimSpace(release.Body), releaseNotesMaxRunes)
 		out.UpgradeCommand = upgradeCommand(tag)
 		assets = release.AssetNames

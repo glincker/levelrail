@@ -34,6 +34,16 @@ Flags:
 - `--mode` picks the tool exposure written to `.mcp.json`: `agent-core` (default), `read-only`, `standard` or `full`.
 - `--dir`, `--api-url`, `--profile` and `--mcp-binary` override the directory, the URL written into the files, the credentials profile and the MCP binary name.
 
+## Install the skill
+
+The repository ships an agent skill that covers the deploy, wait, diagnose and roll back loop, so an agent follows the safe path without you pasting instructions:
+
+```
+npx skills add glincker/levelrail
+```
+
+`levelrail-cli init` writes the same guidance into a project's own `AGENTS.md`, filled in with that project's app name and API URL.
+
 ## Modes
 
 The MCP server exposes a subset of its tools depending on the mode. Token counts are estimates of the `tools/list` payload the client loads into context.

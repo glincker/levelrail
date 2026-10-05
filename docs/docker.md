@@ -67,6 +67,18 @@ docker run -d \
 
 **`APP_NODE_NAME`** is optional and defaults to the container's hostname (which Docker randomizes). Set it explicitly for a recognizable name in the dashboard.
 
+### Without a container
+
+Releases after `v0.2.0-beta.15` attach the agent as a plain binary (`levelrail-agent-linux-amd64`, `levelrail-agent-linux-arm64`) and as `.deb` and `.rpm` packages, all listed in the signed `checksums.txt`. On a host that already has Docker, install a package, fill in the three enrollment values, and start the service:
+
+```bash
+sudo dpkg -i levelrail-agent-linux-amd64.deb     # or: sudo rpm -i levelrail-agent-linux-amd64.rpm
+sudoedit /etc/levelrail-agent/agent.env           # APP_CONTROL_PLANE_ADDR, APP_JOIN_TOKEN, APP_CA_FINGERPRINT
+sudo systemctl enable --now levelrail-agent
+```
+
+The service keeps its enrolled identity in `/var/lib/levelrail-agent`, and upgrading a package keeps your edits to `agent.env`. The plain binary reads the same environment variables as the image, so it also runs under any other process manager.
+
 ## See also
 
 - [Installing](installing.md) for `install.sh` and other installation methods

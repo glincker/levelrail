@@ -107,8 +107,11 @@ jobs:
       contents: read
     strategy:
       matrix:
-        goos: [linux, darwin]
+        goos: [linux, darwin, windows]
         goarch: [amd64, arm64]
+        include:
+          - goos: windows
+            ext: .exe
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -130,20 +133,107 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
-        run: go build -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${{ env.RELEASE_TAG }}" -o "levelrail-cli-${{ matrix.goos }}-${{ matrix.goarch }}" ./cmd/levelrail-cli
+        run: go build -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${{ env.RELEASE_TAG }}" -o "levelrail-cli-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}" ./cmd/levelrail-cli
 
       - name: Upload binary
         uses: actions/upload-artifact@v7
         with:
           name: cli-binary-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: levelrail-cli-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: levelrail-cli-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
+          retention-days: 1
+
+  build-agent-binaries:
+    name: Build agent (linux/${{ matrix.goarch }})
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        goarch: [amd64, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        env:
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: go build -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${{ env.RELEASE_TAG }}" -o "levelrail-agent-linux-${{ matrix.goarch }}" ./cmd/levelrail-agent
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: agent-binary-${{ matrix.goarch }}
+          path: levelrail-agent-linux-${{ matrix.goarch }}
+          retention-days: 1
+
+  build-agent-packages:
+    name: Package agent (linux/${{ matrix.goarch }})
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    needs: build-agent-binaries
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        goarch: [amd64, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Download agent binary
+        uses: actions/download-artifact@v8
+        with:
+          name: agent-binary-${{ matrix.goarch }}
+          path: agent-bin
+
+      # nfpm turns a prerelease like 0.2.0-beta.16 into 0.2.0~beta.16, so
+      # a beta sorts before its final release in apt and dnf. The output
+      # files get stable names like the other release assets, so their
+      # names match the entries in checksums.txt.
+      - name: Build deb and rpm
+        env:
+          ARCH: ${{ matrix.goarch }}
+        run: |
+          set -euo pipefail
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.47.0
+          mkdir -p pkg out
+          cp "agent-bin/levelrail-agent-linux-${ARCH}" pkg/levelrail-agent
+          export VERSION="${RELEASE_TAG#v}"
+          for fmt in deb rpm; do
+            "$(go env GOPATH)/bin/nfpm" package --config packaging/nfpm/agent.yaml --packager "$fmt" --target "out/levelrail-agent-linux-${ARCH}.${fmt}"
+          done
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: agent-package-${{ matrix.goarch }}
+          path: out/*
           retention-days: 1
 
   release:
     name: Publish release
     if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
-    needs: [build-binaries, build-cli-binaries]
+    needs: [build-binaries, build-cli-binaries, build-agent-binaries, build-agent-packages]
     timeout-minutes: 10
     permissions:
       contents: write
@@ -161,6 +251,20 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           pattern: cli-binary-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download agent binaries
+        uses: actions/download-artifact@v8
+        with:
+          pattern: agent-binary-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download agent packages
+        uses: actions/download-artifact@v8
+        with:
+          pattern: agent-package-*
           path: dist
           merge-multiple: true
 
@@ -198,6 +302,75 @@ jobs:
               --repo "${{ github.repository }}" \
               --generate-notes
           fi
+
+  package-managers:
+    name: Publish CLI to Homebrew and npm
+    needs: release
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      HAS_TAP_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY != '' }}
+      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release download "${{ env.RELEASE_TAG }}" --repo "${{ github.repository }}" --pattern 'levelrail-cli-*' --pattern checksums.txt --dir dist
+
+      # Skipped, not failed, until the owner adds the deploy key: the
+      # release itself must not depend on package-manager credentials.
+      # A deploy key is scoped to the tap repo alone, unlike a user token.
+      - name: Update Homebrew tap
+        if: env.HAS_TAP_KEY == 'true'
+        env:
+          TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$TAP_DEPLOY_KEY" > ~/.ssh/tap_key
+          chmod 600 ~/.ssh/tap_key
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/tap_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git clone --depth 1 git@github.com:glincker/homebrew-tap.git tap
+          mkdir -p tap/Formula
+          scripts/render-homebrew-formula.sh "${{ env.RELEASE_TAG }}" dist/checksums.txt > tap/Formula/levelrail-cli.rb
+          cd tap
+          git config user.name "levelrail release"
+          git config user.email "support@levelrail.com"
+          git add Formula/levelrail-cli.rb
+          git diff --cached --quiet || git commit -m "levelrail-cli ${{ env.RELEASE_TAG }}"
+          git push
+          rm -f ~/.ssh/tap_key
+
+      - name: Set up Node
+        if: env.HAS_NPM_TOKEN == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # A prerelease version publishes under the beta dist-tag so it never
+      # becomes what a plain `npm install levelrail-cli` resolves to.
+      - name: Publish npm packages
+        if: env.HAS_NPM_TOKEN == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          scripts/build-npm-packages.sh "${{ env.RELEASE_TAG }}" dist npm-out
+          dist_tag=latest
+          case "${{ env.RELEASE_TAG }}" in *-*) dist_tag=beta ;; esac
+          for dir in npm-out/levelrail-cli-*/ npm-out/levelrail-cli/; do
+            (cd "$dir" && npm publish --provenance --access public --tag "$dist_tag")
+          done
 
   image-channel:
     name: Resolve image tags
