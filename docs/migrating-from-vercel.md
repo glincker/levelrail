@@ -7,7 +7,7 @@ description: A practical runbook for moving a Vercel-hosted Next.js app to Level
 This is a runbook for moving one Vercel-hosted Next.js app onto a Levelrail instance you run yourself. It maps only to features that exist in this repository today. Where something is unverified or has no equivalent, it says so.
 
 ::: warning
-Levelrail has no stable release yet (see [feature status](feature-status.md)), and real public ACME has one recorded live run but no renewal or wildcard verification yet (see [acme-verification-runbook.md](acme-verification-runbook.md)). Run the new deployment in parallel with Vercel, and keep Vercel as the rollback path until the shadow run in section 6 is clean.
+Levelrail has no stable release yet (see [feature status](feature-status.md)), and real public ACME has one recorded live run but no renewal or wildcard verification yet (see the [ACME verification runbook](acme-verification-runbook.md)). Run the new deployment in parallel with Vercel, and keep Vercel as the rollback path until the shadow run in section 6 is clean.
 :::
 
 Unlike the platform importer in [Migrating from Coolify, Dokploy, or CapRover](migrating-from-coolify-dokploy-and-caprover.md), there is no importer for Vercel. Everything below is manual. Record every surprise you hit in `FRICTION.md` at the repo root.
@@ -36,7 +36,7 @@ Collect this before touching Levelrail. Vercel keeps configuration in its dashbo
 | Git deploy on push | A git source with `trigger_mode: push`, from a GitHub, GitLab, Bitbucket, or Gitea connection | Provider connections are set up in the dashboard only. Path filters (`--paths`, `--paths-ignore`) exist. See [Git integrations](git-integrations.md). |
 | Build with framework preset | `build.type: railpack` (Node.js is a supported provider) or `build.type: dockerfile` | The "Deploy from git" wizard shows what Railpack detects before you build. Only Node.js, Go, Java (Spring Boot), and Python are accepted. |
 | `output: "standalone"` with your own Dockerfile | `build.type: dockerfile`, with `build.args` for `ARG` values | Use this when you need control over the image. You own the Dockerfile. Build args are not stored with the app, see the build-time section below. |
-| Static export (`output: "export"`) | `build.type: static`, served by the embedded Caddy with no container | Static runs no build step. It copies `build.path` (relative to the repo root, or to `build.baseDirectory`) from the commit as it is, so the exported `out/` directory must be committed. Otherwise build with `dockerfile` or `railpack`. `apps create` does not accept static; deploy it with `apps deploy-spec <app> --file app.yaml --repo-url URL --ref main`. The spec forbids `port`, `host_port`, `bind_address`, and `hooks`. |
+| Static export (`output: "export"`) | `build.type: static`, served by the embedded Caddy with no container | Static runs no build step. It copies `build.path` (relative to the repo root, or to `build.baseDirectory`) from the commit as it is, so the exported `out/` directory must be committed. Otherwise build with `dockerfile` or `railpack`. Deploy it with `apps deploy-spec <app> --file app.yaml --repo-url URL --ref main`, or `apps create --file`, which routes a static service through the same path. The spec forbids `port`, `host_port`, `bind_address`, and `hooks`. |
 | Production and Preview environments | Optional environments inside a project. Apps are tagged with one. Promote copies only the image tag to a sibling app in another environment | Env vars stay per app, so a staging and a production app each keep their own. See [Projects and organizations](projects-and-organizations.md) and [Promote details](deploying-apps.md#promote-details). |
 | Environment variables | Plain env (`apps env import --file`), encrypted secrets (`apps secrets set --env-file`), or Vault references | Plain import skips keys that are already secrets. Export never includes secret values. |
 | Sensitive env vars | `apps secrets set`, envelope-encrypted and write-only | Never returned by the API after save. |
@@ -47,14 +47,14 @@ Collect this before touching Levelrail. Vercel keeps configuration in its dashbo
 | Deployment protection | Protected environments and deploy approvals | Deploy approvals are labeled stable in [feature status](feature-status.md). |
 | Domains | `domains:` in the app spec, or `apps domains add`. Caddy routes by `Host` and handles TLS | Point an A or AAAA record at the server. See [Domains and ingress](domains-and-ingress.md). |
 | `www` to apex redirect | Add `www` to the app's domains, then `domains redirect set <app> www.example.com --target https://example.com` (301 or 302) | The target must be an absolute URL. A bare origin target keeps the request path and query; a target with its own path always redirects there. |
-| Automatic HTTPS | Caddy internal issuer by default (self-signed), or real ACME once enabled in settings | ACME is built and unit-tested but not verified against a real domain. Bring-your-own certificate is also supported. |
+| Automatic HTTPS | Caddy internal issuer by default (self-signed), or real ACME once enabled in settings | ACME has one recorded live run on a public VPS, with renewal and wildcards not yet verified. Bring-your-own certificate is also supported. |
 | Instant Rollback | `apps deploys rollback-to <app> <deploy-id>` (pinned by digest), `apps rollback <app> --image <tag>` for a tag listed by `apps images <app>`, the dashboard's per-deploy Rollback button, and auto-rollback on crashloop | Prior images are pinned so garbage collection cannot remove a rollback target. Take the deploy id from `apps deploys list <app>`. |
 | Cron Jobs | Scheduled tasks: `apps scheduled-tasks create`, with a 5-field cron expression and an argv command run inside the running container | Not an HTTP call. To trigger a route, the command must use something present in your image. Confirm the tool exists in the image. |
 | Runtime and build logs | `apps logs`, `apps deploys logs`, a node-local log store with full-text search, and live build steps | See [Observability](observability.md). |
 | Firewall and rate limiting | Opt-in WAF (detect or block) and rate limiting per domain | See [Domains and ingress](domains-and-ingress.md). |
 | Maintenance page | Per-domain maintenance mode | Takes precedence over a redirect. |
 | Vercel Postgres, KV | Managed databases (Postgres, Redis, and others) with scheduled backups | You dump and restore the data yourself. See [Managing databases](managing-databases.md). |
-| Team members and roles | IAM-style Allow and Deny policies and scoped tokens | Beta. See [Identity and access](identity-and-access.md). |
+| Team members and roles | IAM-style Allow and Deny policies and scoped tokens | See [Identity and access](identity-and-access.md). |
 
 ### Build-time versus runtime env
 
@@ -71,7 +71,7 @@ Server-only variables are set as normal app env or secrets and read when the con
 ## 3. Procedure
 
 1. **Connect the git provider** in the dashboard, then confirm it from the CLI with `git-providers`.
-2. **Create the app** from git, as in [Deploying apps, git-repo build](deploying-apps.md#_2-git-repo-build), or commit an `app.yaml`:
+2. **Create the app** from git, as in [Deploying apps, git-repo build](deploying-apps.md#from-a-git-repository), or commit an `app.yaml`:
 
    ```yaml
    version: 1
@@ -92,7 +92,7 @@ Server-only variables are set as normal app env or secrets and read when the con
 
    Leave out `domains:` for now, so nothing competes with Vercel for the real hostname. If `APP_PUBLIC_HOST` is set to a public IP, `apps network <app>` shows a zero-config sslip.io URL to test on. The host port behind it changes on every restart, so run `apps network` again after one.
 3. **Load env vars.** Plain values with `apps env import <app> --file prod.env --dry-run`, then again without `--dry-run`. Secrets with `apps secrets set <app> --env-file secrets.env`. Copy from the Production column in Vercel, not Preview. Keep `NEXT_PUBLIC_*` out of these files; see the build-time section above. Run `apps apply <app>` afterwards.
-4. **Add a readiness path.** Add a cheap route such as `/api/health` that does not depend on external services, and set it with `health.readiness` in `app.yaml` or `apps health set <app> --probe readiness --path /api/health`. Known issue: a deploy that fails readiness still receives traffic today (`FRICTION.md`, F-002). Check `apps status <app>` after each deploy and roll back with `apps deploys rollback-to` if it reports `RunningNotReady`.
+4. **Add a readiness path.** Add a cheap route such as `/api/health` that does not depend on external services, and set it with `health.readiness` in `app.yaml` or `apps health set <app> --probe readiness --path /api/health`. A deploy that fails readiness does not take over traffic: the ingress keeps routing to the previous release and the attempt is recorded as failed. Still check `apps status <app>` after each deploy.
 5. **Deploy, then verify** on the zero-config URL: pages, API routes, auth callbacks, image requests, and streaming responses.
 6. **Move data** if the app uses Vercel Postgres or KV: create a managed database here, restore a dump into it, and rehearse the restore before cutover.
 7. **Recreate cron jobs** as scheduled tasks, and run each once with `apps scheduled-tasks run`.
@@ -112,7 +112,6 @@ Plan for these before you commit to moving.
 | Per-branch preview URLs | Previews are per pull request only. |
 | Serverless scale to zero and autoscaling | Long-running containers with fixed replicas. There is no autoscaling. |
 | Vercel Cron calling HTTP routes | Scheduled tasks exec a command in the container instead. |
-| HTTP to HTTPS redirect | None. The ingress does not redirect `http://` to `https://`, so plain HTTP links to your domain fail. Put the redirect in front (for example at your DNS or CDN provider) if you rely on it. |
 | Build-time env for Railpack | None. Use a committed `.env.production`, see the build-time section in 2. |
 
 ## 5. DNS cutover and rollback plan
@@ -130,7 +129,8 @@ Plan for these before you commit to moving.
 
 Run both platforms side by side long enough for boring problems to appear. Suggested minimum: one full business cycle, including any weekly or monthly cron.
 
-- [ ] Readiness probe passes, and a deliberately broken deploy is rejected while the old container keeps serving. This currently fails (F-002); until it is fixed, confirm you can detect it with `apps status` and recover with `apps deploys rollback-to`.
+- [ ] Readiness probe passes, and a deliberately broken deploy is rejected while the old container keeps serving.
+- [ ] Plain `http://` links to your domain redirect to HTTPS (the ingress does this when it can bind port 80, see [Domains and ingress](domains-and-ingress.md)).
 - [ ] The `www` redirect, basic auth, WAF, and uploaded certificates are still set after an env change and a redeploy.
 - [ ] A rollback to the previous image works, from both the CLI and the dashboard.
 - [ ] Every env var key present in Vercel Production exists here.
@@ -156,3 +156,4 @@ Decommission Vercel only after this passes and you have decided what to do about
 - [Git integrations](git-integrations.md)
 - [app.yaml reference](app-spec-reference.md)
 - [Feature status](feature-status.md)
+- [Vercel alternative](vercel-alternative.md)

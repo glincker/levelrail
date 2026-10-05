@@ -1,16 +1,18 @@
 ---
-description: Configure backup targets and registry credentials for S3-compatible storage, manage app volume and database backups, and enable the built-in container registry.
+description: Configure backup targets and registry credentials for S3-compatible storage, schedule and prune database and app volume backups, and enable the built-in container registry.
 ---
 
 # Backup targets, registry credentials, and app volume backups
 
-This guide covers three related resources for storing backups and managing image registries:
+This guide covers three related resources:
 
 1. **Backup targets**: S3-compatible buckets where database and app volume backups are stored.
-2. **Registry credentials**: Authentication for pulling private images from external registries.
-3. **Built-in registry**: Levelrail's own `registry:2` container for managing and caching images locally.
+2. **Registry credentials**: authentication for pulling private images from external registries.
+3. **Built-in registry**: Levelrail's own `registry:2` container for pushing and caching images locally.
 
-All three share the same pattern: an external system that requires a working credential, tested on demand rather than discovered as broken mid-deploy or mid-backup.
+All three share one pattern: an external system that needs a working credential, which you test on demand instead of finding out it is broken mid-deploy or mid-backup. For the database side of backups (restore, point-in-time recovery, verification), see [Managing databases](managing-databases.md). For backing up the control plane itself, see [Control plane backup](control-plane-backup.md) and [Disaster recovery](disaster-recovery.md).
+
+<InlineToc default-open />
 
 ## Backup lifecycle at a glance
 
@@ -24,359 +26,278 @@ graph LR
     D -.->|manual trigger| F
 ```
 
+## Quick start
+
+<Steps>
+<Step title="Connect a backup target">
+
+```bash
+levelrail-cli backup-targets create \
+  --name "primary-r2" \
+  --provider r2 \
+  --endpoint https://<account-id>.r2.cloudflarestorage.com \
+  --bucket levelrail-backups \
+  --access-key-id AKIA... \
+  --secret-access-key ...
+```
+
+The response never echoes the credentials back. `--provider` accepts `aws`, `r2`, or `custom`. `--endpoint` is required for `r2` and `custom`, and `aws` must omit it (AWS resolves its own endpoint per region). For Backblaze B2, Wasabi, or MinIO, use [Object storage](object-storage.md) to connect the bucket as a storage destination: the same record shows up under backup targets.
+
+</Step>
+<Step title="Test the credential">
+
+```bash
+levelrail-cli backup-targets test bkt_9f2a1c...
+```
+
+The command exits non-zero with a specific message ("authentication rejected", "bucket not found") if the credential does not work, and succeeds silently if it does.
+
+</Step>
+<Step title="Schedule a database's backups against it">
+
+```bash
+levelrail-cli backups schedule set my-postgres \
+  --target bkt_9f2a1c... \
+  --cron "0 3 * * *" \
+  --retain 7 \
+  --retain-days 30
+```
+
+</Step>
+<Step title="Schedule an app volume's backups against the same target">
+
+```bash
+levelrail-cli app-volume-backups schedule set my-app uploads \
+  --target bkt_9f2a1c... \
+  --cron "0 4 * * *" \
+  --retain 14
+```
+
+</Step>
+</Steps>
+
 ## Why a backup target is its own resource
 
-A backup target is not a field on a database or volume. It is a separate resource: a connected S3-compatible bucket that any number of databases and app volumes can reference by ID.
-
-This design means:
-- Connect a bucket once in Settings.
-- Every database and app volume's backup schedule references it by `target_id`.
-- Rotating a leaked access key happens in one place, not N places.
+A backup target is not a field on a database or volume. It is a separate resource that any number of databases and app volumes reference by ID. You connect a bucket once in **Settings, Backup targets**, every backup schedule references it by `target_id`, and rotating a leaked access key happens in one place.
 
 ### Credentials are write-only
 
-Credentials never round-trip through the API. For backup targets:
+Credentials never round-trip through the API.
 
-- `access_key_id` and `secret_access_key` are accepted only in create/update request bodies.
-- Credentials are written to the secrets store *before* the backup target record itself is saved, not after.
-- This ensures credentials are never orphaned if the save fails.
-- `GET` and `PUT` responses never echo credential fields back.
+- `access_key_id` and `secret_access_key` are accepted only in create and update request bodies.
+- They are written to the secrets store before the backup target record is saved, so a failed save never orphans a credential.
+- `GET` and `PUT` responses never echo credential fields, and error responses never include them.
 
-Registry credentials follow the same pattern:
+Registry credentials follow the same pattern: only the `password` field is accepted, it is written to the secrets store first, and it is never echoed back. When you reference a registry credential in `app.yaml` by name, the deploy authenticates without the password being stored in the file.
 
-- Only the `password` field is accepted in the request body.
-- It's written to the secrets store before the credential record itself, never echoed back.
-- When you reference a registry credential in `app.yaml` by name, the deploy can authenticate without the password being stored in the file.
+Every write endpoint on this page returns `501` if the control plane has no master key configured, because none of these resources can hold a working credential without one.
 
-## Testing a connection before it's needed
+## Test a connection before it is needed
 
-Both resources expose a `POST .../test` endpoint that validates the credential without performing the actual operation.
-
-### Backup targets
-
-`POST /api/v1/backup-targets/{id}/test` calls `HeadBucket` against the target bucket. No upload, no delete happens.
-
-**Error messages:**
-
-- `401` or `403`: Authentication rejected - check the access key ID and secret access key.
-- `404`: Bucket not found - check the bucket name, region, and endpoint.
-- Other errors: Could not reach the backup target.
-
-### Registry credentials
-
-`POST /api/v1/registry-credentials/{id}/test` authenticates the stored username/password against the registry host using the same path that a real image pull uses. No image is actually pulled.
-
-**Error messages:**
-
-- Unauthorized response: Authentication rejected by registry - check the username and password.
-- Other errors: Could not reach the registry.
-
-### Dashboard and CLI
+Both resources expose a `POST .../test` endpoint that validates the credential without doing the real operation.
 
 ![Levelrail Backups page on a fresh install, prompting you to add a backup target](assets/screenshots/backups.png)
 
-The **Backups** page starts empty until you connect a target. Test connection before a deploy or scheduled backup fails:
-- Dashboard: "Test connection" button on each row of Backup targets and Registry credentials tables.
-- CLI: `levelrail-cli backup-targets test <id>` or `levelrail-cli registry-credentials test <id>`
+<Tabs :items="['Backup target', 'Registry credential']">
+<Tab value="Backup target">
+
+`POST /api/v1/backup-targets/{id}/test` calls `HeadBucket` against the bucket. Nothing is uploaded or deleted.
+
+- `401` or `403`: authentication rejected. Check the access key ID and secret access key.
+- `404`: bucket not found. Check the bucket name, region, and endpoint.
+- Anything else: the backup target could not be reached.
+
+CLI: `levelrail-cli backup-targets test <id>`. Dashboard: the **Test connection** button on each row of the Backup targets table.
+
+`HeadBucket` proves the bucket exists and can be reached, but not that the key can write or delete, which backups and pruning need. A storage destination's connection test (`levelrail-cli storage test <id>`) does a full write, read, and delete round trip, see [Object storage](object-storage.md#what-the-connection-test-does).
+
+</Tab>
+<Tab value="Registry credential">
+
+`POST /api/v1/registry-credentials/{id}/test` authenticates the stored username and password against the registry host the same way a real image pull does. No image is pulled.
+
+- Unauthorized response: authentication rejected by the registry. Check the username and password.
+- Anything else: the registry could not be reached.
+
+CLI: `levelrail-cli registry-credentials test <id>`. Dashboard: the **Test connection** button on each row of the Registry credentials table.
+
+</Tab>
+</Tabs>
 
 ::: tip
-Finding a stale credential here means fixing it immediately, not discovering it from a failed 3am backup or a failed deploy mid-pull.
+Finding a stale credential here means fixing it now, not discovering it from a failed 3am backup or a failed deploy mid-pull.
 :::
 
-Credentials are never echoed back in error responses.
+## Database and app volume backups
 
-## How database backups and app volume backups share one concept
-
-A backup target doesn't know or care what it's backing up. Both databases and app volumes reference the same `target_id`.
+A backup target does not know what it is backing up: databases and app volumes reference the same `target_id`.
 
 | Resource | Trigger | History | Schedule |
 | --- | --- | --- | --- |
 | Database | `POST /api/v1/databases/{name}/backups` | `GET /api/v1/databases/{name}/backups` | `PUT`/`DELETE /api/v1/databases/{name}/backup-schedule` |
 | App volume | `POST /api/v1/apps/{name}/volumes/{volume}/backups` | `GET /api/v1/apps/{name}/volumes/{volume}/backups` | `PUT`/`DELETE /api/v1/apps/{name}/volumes/{volume}/backup-schedule` |
 
-### How backups are triggered
+Both trigger endpoints validate `target_id` against a real backup target, create a backup history record, start the dump-and-upload (or volume-tar-and-upload) in the background, and return `202 Accepted` immediately. Poll the history endpoint to see the result: status starts at `running`.
 
-Both trigger endpoints work the same way:
+A database dump and a volume archive both stream from their source to the bucket and never touch local disk. The one local write is the backup's own history row, in the control plane's SQLite database under `APP_DATA_DIR`. Before starting, the control plane checks free space there and fails fast with `507` instead of failing confusingly partway through. The floor is `APP_MIN_BACKUP_DISK_MB` (default `256`); an unconfigured or unreadable data directory skips the check.
 
-1. Validate `target_id` against a real backup target.
-2. Create a backup history record.
-3. Start the dump-and-upload (or volume-tar-and-upload) in the background.
-4. Return `202 Accepted` immediately.
+### Schedules
 
-Poll the history endpoint to check whether the backup finished (status starts at `running`).
+Database schedules are stored on the database itself. App volume schedules are stored per named volume, because a service can declare several named volumes in `app.yaml` and there is no single "app" to attach one schedule to. Both use the same cron validation (a bad cron string returns `400` at request time), the same retention fields, and the same check that the target exists before saving.
 
-**Disk-space preflight:** a database dump and a volume archive both stream directly from their source (a container, via `docker exec`) to the destination bucket, never touching local disk. The one real local write either makes is its own backup/restore history row, in the control plane's own SQLite database (`APP_DATA_DIR`). Before starting, the control plane checks free space there and fails fast rather than let a disk-full control plane fail confusingly partway through recording the attempt. The minimum is configurable via `APP_MIN_BACKUP_DISK_MB` (default `256`, i.e. 256MB); an unconfigured or unreadable data directory skips the check entirely.
+On the dashboard, a database's schedule form is on its Overview page and an app volume's is on the app's Volumes tab. Backup targets themselves are configured account-wide under **Settings, Backup targets**.
 
-### How schedules are stored
+### Volume backup commands
 
-**Database schedules** are stored alongside the database resource itself (its target, cron schedule, and retention settings).
+App volume backups have the same lifecycle as database backups:
 
-**App volume schedules** are stored separately, one record per named volume. A service can declare multiple named volumes in `app.yaml`, so there's no single "the app" resource to attach one schedule to.
+```bash
+levelrail-cli app-volume-backups trigger <app> <volume> --target ID
+levelrail-cli app-volume-backups list <app> <volume>
+levelrail-cli app-volume-backups verify <app> <volume> --backup ID
+levelrail-cli app-volume-backups restore <app> <volume> --backup ID --confirm APP/VOLUME
+levelrail-cli app-volume-backups restore-as-new <app> <volume> --backup ID
+```
 
-Both use:
-- Same cron validation, checked at request time, so a bad cron string returns `400` immediately.
-- Same retention fields.
-- Same check that the target must exist before saving.
+### Instance-wide backup visibility
 
-On the dashboard: a database's schedule form lives on that database's
-overview page, and an app volume's lives on that app's Volumes tab.
-Backup targets themselves are configured once, account-wide, at Settings
--> Backup targets, never from a database or app page directly.
+`GET /api/v1/backups` (newest first, cursor-paginated with `?limit=&before=`) lists backups across every database and app volume. Each entry carries `resource_kind` (`database` or `volume`) and identity fields (`database_name`, or `service_name` and `volume_name`).
 
-## Instance-wide backup visibility
+On the dashboard this is the top-level **Backups** page, with download, verify, and delete actions per row. On the CLI it is `levelrail-cli backups list-all [--limit N] [--before RFC3339]`. Triggering and restoring stay on the resource's own page, because they need context (which target, which confirmation flow) that the aggregated view does not have.
 
-All previous sections are scoped to one resource at a time (a database's overview page, an app's volumes page). Use `GET /api/v1/backups` to see all backups across all databases and app volumes in one place.
+## Retention
 
-**API details:**
+Retention has two independent dimensions, both optional:
 
-- Newest first, cursor-paginated (`?limit=&before=`).
-- Each entry includes `resource_kind` (`database` or `volume`) and identity fields (`database_name` or `service_name`/`volume_name`).
-- Allows routing back to the resource's own trigger, download, verify, or delete endpoints.
+- **`retain` (count):** keep the newest N successful backups by `started_at`.
+- **`retain_days` (age):** keep only backups less than N days old.
 
-**Dashboard:** Top-level Backups page (not nested under Settings). Lists all backups with resource, status, size, and timestamps. Download, verify, and delete actions are available here.
-
-**CLI:** `levelrail-cli backups list-all` lists all backups across all resources.
-
-**Note on triggering and restoring:** Both actions stay on their resource-scoped pages because they need context (which target, which confirmation flow) that the aggregated view doesn't provide.
-
-::: tip
-Without this page, an operator running multiple databases or apps had no single place to verify whether everything backed up successfully - they had to visit each resource's page in turn.
-:::
-
-## Retention: by count and by age, independently
-
-Retention uses two independent dimensions (both optional):
-
-- **`retain` (count):** Keep the newest N successful backups by `started_at`.
-- **`retain_days` (age):** Keep only backups less than N days old.
-
-These combine as an OR (delete if either condition is met):
-- `retain: 7` and `retain_days: 30` means: keep the 7 newest backups AND never keep anything older than 30 days (whichever is more aggressive at any moment).
-- `0` disables that dimension; `0` for both disables pruning entirely.
+They combine, so a backup is deleted when either rule would remove it. With `retain: 7` and `retain_days: 30`, you keep at most the 7 newest backups, and never anything older than 30 days. `0` disables a dimension, and `0` for both disables pruning.
 
 ::: warning
-Only succeeded backups are considered for deletion. Running or failed attempts are always kept, regardless of age or count. A failed attempt's logs have diagnostic value and should not be erased by a count limit.
+Only succeeded backups are ever pruned. Running and failed attempts are kept regardless of age or count, since a failed attempt's logs have diagnostic value.
 :::
 
-### When pruning runs
+Pruning runs after every scheduled backup that succeeds, not after manual ones. A pruning failure is logged and does not fail the backup, which is already durably recorded. The dashboard's schedule form defaults a new database's "keep last N backups" to 7 and "delete backups older than (days)" to 0 (no age limit).
 
-Pruning runs after every scheduled backup, not after manually triggered ones:
+## Delete one backup on demand
 
-1. The scheduled backup (database or app volume) completes successfully.
-2. Old backups beyond the retention policy are removed immediately after.
-3. Pruning failures are logged, not surfaced as backup failures. The backup already succeeded and is durably recorded, so a cleanup issue afterward should not retroactively fail it.
+Retention removes old backups automatically. To delete one specific backup right now without touching the schedule:
 
-The dashboard's schedule form defaults a new database's "keep last N
-backups" field to 7 and "delete backups older than (days)" to 0 (no age
-limit); both are plain number inputs, 0 meaning no limit for that
-dimension, documented inline in the form itself.
+- CLI: `levelrail-cli backups delete <database> <backup-id>` or `levelrail-cli app-volume-backups delete <app> <volume> <backup-id>`
+- API: `DELETE /api/v1/databases/{name}/backups/{historyId}` or `DELETE /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}`
+- Dashboard: the Delete action on every non-running backup row, behind a confirm dialog.
 
-## Deleting one archived backup on demand
+Naming the exact backup ID is the confirmation, so there is no `--confirm` flag. The stored object is removed first (best effort), then the history row. If the object is already gone, the target was deleted, or storage returns an error, the failure is logged and the row is removed anyway, so an explicit delete is never stuck in the history. A backup that is still `running` cannot be deleted (`409`). The endpoint needs `write:sensitive`.
 
-Retention schedules remove old backups automatically. To delete one specific backup right now without affecting the schedule, use an on-demand delete:
+## Alert on a missing or failing backup
 
-**API:**
-- Database: `DELETE /api/v1/databases/{name}/backups/{historyId}`
-- App volume: `DELETE /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}`
+A `backup_missing` alert rule watches each database's and app volume's backup schedule. It fires when the last successful backup trails the expected interval by more than the rule's `for_duration` (default 6 hours). It reads the same schedule and history rows the scheduler uses, so it catches both a schedule that silently stopped running and repeated failures with no recent success. It notifies through your normal alert channels. See [Observability](observability.md#alert-rules) for the rule table and setup.
 
-**Dashboard:** Every non-running backup history row has a Delete action behind a confirm dialog.
+## Registry credentials
 
-**CLI:**
-- `levelrail-cli backups delete <database> <backup-id>`
-- `levelrail-cli app-volume-backups delete <app> <volume> <backup-id>`
+Registry credentials authenticate to external registries such as Docker Hub or ghcr.io, so deploys can pull private images.
 
-No separate `--confirm` flag is needed; naming the exact backup ID is the deliberate signal.
+<Steps>
+<Step title="Create the credential">
 
-### How deletion works
+```bash
+levelrail-cli registry-credentials create \
+  --name ghcr-private \
+  --registry-host ghcr.io \
+  --username you \
+  --password ghp_...
+```
 
-1. Remove the stored object first (best-effort).
-2. Remove the `backup_history` row.
+`--expires-at RFC3339` records an expiry you already know, such as a GitHub token's.
 
-If the storage operation fails, a target is already deleted, or the object is already gone, the failure is logged and skipped. An operator who explicitly asked to delete should not be stuck with it still showing up in history because removing the bytes hit a snag.
+</Step>
+<Step title="Reference it from app.yaml">
 
-::: warning
-A backup that is still `running` cannot be deleted (returns `409`). Only `succeeded` or `failed` attempts can be deleted.
-:::
+```yaml
+services:
+  web:
+    build:
+      type: image
+      image: ghcr.io/you/private-app:latest
+      registryCredential: ghcr-private
+```
 
-**Permission level:** `write:sensitive` (same as triggering a backup or deleting a backup target). Nothing here touches live data, only historical archives.
+</Step>
+<Step title="Test it before the next deploy relies on it">
 
-## Alerting on a missing or failing scheduled backup
+```bash
+levelrail-cli registry-credentials test <id>
+```
 
-A `kind=backup_missing` alert rule watches each database and app volume's backup schedule and fires if no successful backup has occurred within the expected interval (plus a grace period).
+</Step>
+</Steps>
 
-**How it works:**
-
-- Reads the same schedule and backup history rows that the scheduler uses (no separate calculation).
-- Fires when the last successful backup trails the expected interval by more than `for_duration` (default: 6 hours).
-- Surfaces through the usual alert channels: dashboard badge, webhook, Slack, Discord, or other connected notification channel.
-
-This catches:
-- Scheduled backups that silently stopped running.
-- Repeated failures with no recent success.
-
-See `docs/observability.md` for the full alert-rule table and configuration details.
+`expires_at` is informational: it drives a healthy, expiring soon, or expired badge (like TLS certificates), and nothing blocks a deploy from using an expired credential. There is no automatic rotation.
 
 ## The built-in container registry
 
-This is separate from **registry credentials** (which authenticate to external registries like Docker Hub or ghcr.io).
+The built-in registry is Levelrail's own `registry:2` container, a local image distribution point with no external dependency. It is separate from registry credentials above.
 
-The **built-in registry** is Levelrail's own `registry:2` container, giving you a local build cache and image distribution point without external dependencies.
+### Enable it
 
-### Enabling the registry
+```bash
+levelrail-cli registry enable --host registry.internal.example
+```
 
-Call `PUT /api/v1/settings/registry` with `enabled: true` and a `host`.
+This calls `PUT /api/v1/settings/registry` with `enabled: true` and the host. It generates the fixed username `levelrail` and a random password, and returns the password once. If you lose it, disable and re-enable to get a new one. Later calls (changing the host, re-enabling) leave existing credentials untouched.
 
-This:
-- Generates a fixed username (`levelrail`) and a random password.
-- Returns the password once in the response. It cannot be retrieved later.
-- If lost, disable and re-enable to get a new password.
+```text
+enabled:         true
+host:            registry.internal.example
+username:        levelrail
+has_credentials: true
+status:          running
 
-Every later call (toggling host, re-enabling after disable) leaves existing credentials untouched.
+password:        <printed once, never again>
 
-**Disabling:** `DELETE /api/v1/settings/registry` clears generated credentials. This is idempotent.
+This password is shown once and never again. Store it now, e.g.:
+  docker login registry.internal.example -u levelrail
+```
 
-### Viewing repositories and tags
+`levelrail-cli registry disable` (`DELETE /api/v1/settings/registry`) clears the generated credentials and is idempotent.
 
-Repositories and tags are read from the running registry container's Docker Registry HTTP API v2 catalog, authenticated server-side (the browsing caller never needs the password).
+### Browse repositories and tags
 
-**Dashboard:** "Existing image" picker when creating an app from an image already pushed to the built-in registry.
+Repositories and tags come from the running registry's HTTP API v2 catalog, authenticated server-side, so the caller never needs the password. On the dashboard, the "Existing image" picker when creating an app uses this. On the CLI:
 
-**API:** 
-- Built-in registry: `GET /api/v1/registry/repositories` and `/api/v1/registry/tags?repository=...`
-- External registry credential: `GET /api/v1/registry-credentials/{id}/repositories` and `/api/v1/registry-credentials/{id}/tags?repository=...`
+```bash
+levelrail-cli registry repositories
+levelrail-cli registry tags --repository NAME
+levelrail-cli registry-credentials repositories <id>
+levelrail-cli registry-credentials tags <id> <repository>
+```
 
-## Verified behaviour and honest limits
+## What has been tested, and limits
 
-Exercised end to end against a real S3 compatible endpoint (SeaweedFS) and real database containers:
+These ran end to end against a real S3-compatible endpoint (SeaweedFS) and real database containers:
 
 | Check | Result |
 | --- | --- |
-| Backup and restore-as-new for Postgres, MySQL, MariaDB, MongoDB and Redis (TLS on) | Row and document counts match the source after restore |
+| Backup and restore-as-new for Postgres, MySQL, MariaDB, MongoDB, and Redis (TLS on) | Row and document counts match the source |
+| Backup, verify, and restore-as-new for ClickHouse, KeyDB, and Dragonfly (hyphenated names) | Rows and keys match the source |
 | Flip one byte of a stored backup, then verify | Verification fails with a checksum mismatch |
 | Restore from that corrupted object | Refused before the database is touched |
-| Restore-as-new into a database whose name contains a hyphen | Works (identifiers are quoted) |
-| Postgres point-in-time restore to a timestamp | Returns exactly the data from before that moment |
-| Postgres point-in-time restore after deleting both the data volume and the WAL archive volume | Works from the copy shipped to the bucket |
-| Postgres restore of a dump with a failing statement | Fails and leaves the existing data untouched (single transaction) |
-| Backup, verify and restore-as-new for ClickHouse, KeyDB and Dragonfly (hyphenated names) | Rows and keys match the source |
-| App volume backup and restore-as-new of a volume holding a directory owned by uid 1234:5678, mode 750, a 640 file with an old mtime and a symlink | Owners, modes, mtimes and the symlink are identical in the restored volume |
+| Postgres restore of a dump with a failing statement | Fails and leaves the existing data untouched |
+| Postgres point-in-time restore, including after deleting both the data volume and the WAL archive volume | Returns exactly the data from before the target time, from the copy shipped to the bucket |
+| App volume backup and restore-as-new with a directory owned by uid 1234:5678 (mode 750), a 640 file with an old mtime, and a symlink | Owners, modes, mtimes, and the symlink are identical |
 | Create a database with the name of a deleted one | Refused until you choose to reuse or discard the old data |
-| Every backup and the major upgrade with the free-space floor set absurdly high | Manual triggers return `507`; a major upgrade fails in its first phase with the same message and the database is never stopped |
-| New named volume on an image that runs as a non-root user | Writable on first start (the volume is chowned to the image user once, while empty) |
+| Free-space floor set absurdly high | Manual triggers return `507`; a major upgrade fails in its first phase and the database is never stopped |
 
-Limits you should know about:
+Limits to know about:
 
-- A backup is a logical dump (`pg_dump`, `mysqldump`, `mongodump`, an RDB snapshot). It is consistent per database but is not a physical copy; for Postgres use point-in-time restore when you need to recover to an exact second.
-- Verification catches a damaged or truncated object. It does not prove the dump restores cleanly; a periodic restore-as-new into a scratch database is the only proof, and is cheap to do.
-- Deleting a database keeps its data volume and your backups. Recreating a database with the same name is refused until you pick `reuse` or `discard` for the old volume (see [managing databases](managing-databases.md)); a volume left on a remote node is not checked.
-- Disk-full protection is a free-space floor (`APP_MIN_BACKUP_DISK_MB`) on the control plane's data directory, checked before manual and scheduled backups, base backups and major upgrades. It was exercised by raising the floor, not by filling a real disk. Nothing watches the Docker host's own disk for a snapshot copy; a copy that runs out of space fails the upgrade before it changes anything.
-- Postgres WAL for point-in-time restore is shipped to the backup target and verified, but only for databases on the control plane's own node. See the point-in-time section of [managing databases](managing-databases.md).
-- The storage endpoint must resolve to a public address unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` is set, which is needed for a MinIO on the same private network.
-- A manual backup is refused with `507` when the control plane's own data directory is nearly full.
-
-## Integration walkthrough
-
-1. **Connect a backup target**:
-
-   ```bash
-   levelrail-cli backup-targets create \
-     --name "primary-r2" \
-     --provider r2 \
-     --endpoint https://<account-id>.r2.cloudflarestorage.com \
-     --bucket levelrail-backups \
-     --access-key-id AKIA... \
-     --secret-access-key ...
-   ```
-
-   Response (credentials never echoed back):
-
-   ```json
-   {
-     "id": "bkt_9f2a1c...",
-     "name": "primary-r2",
-     "provider": "r2",
-     "endpoint": "https://<account-id>.r2.cloudflarestorage.com",
-     "bucket": "levelrail-backups",
-     "created_at": "2026-09-12T10:00:00Z"
-   }
-   ```
-
-2. **Prove the credential actually works**:
-
-   ```bash
-   levelrail-cli backup-targets test bkt_9f2a1c...
-   ```
-
-   Exits non-zero with a specific message ("authentication rejected...",
-   "bucket not found...") if it doesn't; silent success (`204`) if it
-   does.
-
-3. **Schedule a database's backups against it**:
-
-   ```bash
-   levelrail-cli backups schedule set my-postgres \
-     --target bkt_9f2a1c... \
-     --cron "0 3 * * *" \
-     --retain 7 \
-     --retain-days 30
-   ```
-
-4. **Or schedule an app volume's backups against the same target**:
-
-   ```bash
-   levelrail-cli app-volume-backups schedule set my-app uploads \
-     --target bkt_9f2a1c... \
-     --cron "0 4 * * *" \
-     --retain 14
-   ```
-
-5. **Connect a registry credential for a private image pull**, then
-   reference it from `app.yaml`:
-
-   ```bash
-   levelrail-cli registry-credentials create \
-     --name ghcr-private \
-     --registry-host ghcr.io \
-     --username you \
-     --password ghp_...
-   ```
-
-   ```yaml
-   services:
-     web:
-       build:
-         type: image
-         image: ghcr.io/you/private-app:latest
-         registryCredential: ghcr-private
-   ```
-
-6. **Test it before the next deploy relies on it**:
-
-   ```bash
-   levelrail-cli registry-credentials test <id>
-   ```
-
-7. **Enable the built-in registry** if you'd rather push there than
-   manage an external one:
-
-   ```bash
-   levelrail-cli registry enable --host registry.internal.example
-   ```
-
-   Output includes the password once:
-
-   ```
-   enabled:         true
-   host:            registry.internal.example
-   username:        levelrail
-   has_credentials: true
-   status:          running
-
-   password:        <printed once, never again>
-
-   This password is shown once and never again. Store it now, e.g.:
-     docker login registry.internal.example -u levelrail
-   ```
+- A backup is a logical dump (`pg_dump`, `mysqldump`, `mongodump`, an RDB snapshot). It is consistent per database but not a physical copy. For Postgres, use point-in-time restore when you need to recover to an exact second.
+- Verification catches a damaged or truncated object. It does not prove the dump restores cleanly. A periodic restore-as-new into a scratch database is the only proof, and it is cheap.
+- Deleting a database keeps its data volume and your backups. See [Managing databases](managing-databases.md#stop-start-and-delete).
+- The free-space floor protects the control plane's data directory. Nothing watches the Docker host's own disk for a major upgrade's snapshot copy: a copy that runs out of space fails the upgrade before it changes anything.
+- WAL for point-in-time restore is shipped to the backup target only for databases on the control plane's own node.
+- A storage endpoint must resolve to a public address unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` is set, which a MinIO on the same private network needs.
+- Deleting a backup target leaves its stored access key and secret in the secrets store, unreferenced and unreachable through the API but not erased at rest. Registry credentials behave the same way.
 
 ## API reference
 
@@ -414,71 +335,62 @@ Limits you should know about:
 | `PUT` | `/api/v1/apps/{name}/volumes/{volume}/backup-schedule` | `write:sensitive` |
 | `DELETE` | `/api/v1/apps/{name}/volumes/{volume}/backup-schedule` | `write:sensitive` |
 
-Every write-tier endpoint above returns `501` if the control plane has
-no master key configured: none of these resources can hold a working
-credential without one.
-
 ## CLI
 
 ```bash
-levelrail-cli backup-targets list [flags]
-levelrail-cli backup-targets get <id> [flags]
+levelrail-cli backup-targets list
+levelrail-cli backup-targets get <id>
+levelrail-cli backup-targets delete <id>
+levelrail-cli backup-targets test <id>
 levelrail-cli backup-targets create --name NAME --provider PROVIDER --bucket BUCKET --access-key-id ID --secret-access-key KEY [--endpoint URL] [--region REGION]
 levelrail-cli backup-targets update <id> --name NAME --provider PROVIDER --bucket BUCKET [--access-key-id ID --secret-access-key KEY] [--endpoint URL] [--region REGION]
-levelrail-cli backup-targets delete <id> [flags]
-levelrail-cli backup-targets test <id> [flags]
 
-levelrail-cli registry-credentials list [flags]
-levelrail-cli registry-credentials get <id> [flags]
+levelrail-cli registry-credentials list
+levelrail-cli registry-credentials get <id>
+levelrail-cli registry-credentials delete <id>
+levelrail-cli registry-credentials test <id>
 levelrail-cli registry-credentials create --name NAME --registry-host HOST --username USER --password PASS [--expires-at RFC3339]
 levelrail-cli registry-credentials update <id> --name NAME --registry-host HOST --username USER [--password PASS] [--expires-at RFC3339]
-levelrail-cli registry-credentials delete <id> [flags]
-levelrail-cli registry-credentials test <id> [flags]
-levelrail-cli registry-credentials repositories <id> [flags]
-levelrail-cli registry-credentials tags <id> <repository> [flags]
+levelrail-cli registry-credentials repositories <id>
+levelrail-cli registry-credentials tags <id> <repository>
 
-levelrail-cli registry status [flags]
-levelrail-cli registry enable --host HOST [flags]
-levelrail-cli registry disable [flags]
-levelrail-cli registry repositories [flags]
-levelrail-cli registry tags --repository NAME [flags]
+levelrail-cli registry status
+levelrail-cli registry enable --host HOST
+levelrail-cli registry disable
+levelrail-cli registry repositories
+levelrail-cli registry tags --repository NAME
 
 levelrail-cli backups schedule set <database> --target ID --cron EXPR [--retain N] [--retain-days N]
-levelrail-cli backups schedule clear <database> [flags]
-levelrail-cli backups delete <database> <backup-id> [flags]
-levelrail-cli backups list-all [--limit N] [--before RFC3339] [flags]
+levelrail-cli backups schedule clear <database>
+levelrail-cli backups delete <database> <backup-id>
+levelrail-cli backups list-all [--limit N] [--before RFC3339]
 
 levelrail-cli app-volume-backups schedule set <app> <volume> --target ID --cron EXPR [--retain N] [--retain-days N]
-levelrail-cli app-volume-backups schedule clear <app> <volume> [flags]
-levelrail-cli app-volume-backups delete <app> <volume> <backup-id> [flags]
+levelrail-cli app-volume-backups schedule clear <app> <volume>
+levelrail-cli app-volume-backups delete <app> <volume> <backup-id>
 ```
 
-`--provider` accepts `aws`, `r2`, or `custom`. `--endpoint` is required
-for `r2` and `custom` (AWS S3 resolves its own default endpoint per
-region, so `aws` must omit it).
+## Next steps
 
-## See also
+<CardGroup :cols="2">
+<Card title="Managing databases" href="/managing-databases">
 
-- [Observability](observability.md) - Configure backup failure alerts with `kind=backup_missing` rules
-- [Deploying apps](deploying-apps.md) - Deploy apps that can reference backup targets and registry credentials
-- [Managing databases](managing-databases.md) - Set backup schedules on individual PostgreSQL and Redis instances
+Restore, point-in-time recovery, and backup verification.
 
-## Not built yet (deliberate follow-ups)
+</Card>
+<Card title="Object storage" href="/object-storage">
 
-**No secret deletion**
-- Deleting a backup target or registry credential leaves its secrets behind in the store, unreferenced and unreachable through the API but not erased at rest.
-- Adding secret deletion requires its own change to the secrets storage layer, not bundled into either resource.
+Connect Backblaze B2, Wasabi, MinIO, and other S3-compatible buckets.
 
-**No registry credential expiry enforcement**
-- `expires_at` on a registry credential is informational only (drives a health/expiring_soon/expired badge, like TLS certificates).
-- Nothing blocks a deploy from using an already-expired credential.
-- No automatic rotation or renewal.
+</Card>
+<Card title="Observability" href="/observability">
 
-**No cross-provider bucket validation beyond `HeadBucket`**
-- The test endpoint proves the bucket exists and can be read.
-- It does not verify write/delete permission, which backups and retention pruning need.
+Alert rules, including `backup_missing`.
 
-**No UI or CLI surface for retention-pruning failures**
-- Pruning or per-object delete failures after a successful backup are logged server-side only.
-- No dashboard alert for this specific case.
-- The backup itself silently stopping or failing is caught by the `kind=backup_missing` alert rule (see "Alerting on a missing or failing scheduled backup").
+</Card>
+<Card title="Deploying apps" href="/deploying-apps">
+
+Deploy apps that use registry credentials.
+
+</Card>
+</CardGroup>

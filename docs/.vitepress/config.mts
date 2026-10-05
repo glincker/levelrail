@@ -48,10 +48,14 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Deploying apps', link: '/deploying-apps' },
+          { text: 'Importing apps', link: '/importing-apps' },
           { text: 'Deploy safety', link: '/deploy-safety' },
           { text: 'Deploy failures', link: '/deploy-failures' },
           { text: 'Scheduled deploys', link: '/scheduled-deploys' },
           { text: 'Deployments page', link: '/deployments-page' },
+          { text: 'Deploy previews', link: '/deploy-previews' },
+          { text: 'Chat deploy approvals', link: '/chat-deploy-approvals' },
+          { text: 'Supply chain visibility', link: '/supply-chain' },
           { text: 'Deploy status badge', link: '/deploy-status-badge' },
           { text: 'Screenshots', link: '/screenshots' },
           { text: 'Docker', link: '/docker' },
@@ -72,6 +76,8 @@ const sidebarGroups = [
             link: '/multi-cloud-provisioning',
           },
           { text: 'Network topology', link: '/network-topology' },
+          { text: 'Project topology graph', link: '/service-topology-graph' },
+          { text: 'Build node routing', link: '/build-node-routing' },
         ],
       },
       {
@@ -85,6 +91,7 @@ const sidebarGroups = [
           },
           { text: 'Backups and storage', link: '/backups-and-storage' },
           { text: 'Object storage', link: '/object-storage' },
+          { text: 'Network shares', link: '/network-shares' },
           { text: 'Log archive', link: '/log-archive' },
           { text: 'Control plane backup', link: '/control-plane-backup' },
           { text: 'Disaster recovery', link: '/disaster-recovery' },
@@ -96,6 +103,7 @@ const sidebarGroups = [
         items: [
           { text: 'Deploying from GitHub Actions', link: '/github-actions' },
           { text: 'Pipelines', link: '/pipelines' },
+          { text: 'Pipelines: OIDC federation', link: '/pipelines-oidc' },
           { text: 'Platform as code', link: '/platform-as-code' },
           { text: 'Git integrations', link: '/git-integrations' },
         ],
@@ -106,6 +114,7 @@ const sidebarGroups = [
         items: [
           { text: 'Feature flags', link: '/feature-flags' },
           { text: 'Library auth engine', link: '/auth-engine' },
+          { text: 'Host firewall', link: '/host-firewall' },
           { text: 'Master key rotation', link: '/master-key-rotation' },
           { text: 'Identity and access', link: '/identity-and-access' },
           {
@@ -119,10 +128,25 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Managing apps at scale', link: '/managing-apps-at-scale' },
+          { text: 'Tags', link: '/tags' },
+          { text: 'Command palette', link: '/command-palette' },
+          { text: 'Cost estimate', link: '/cost-estimate' },
+          { text: 'Integrations', link: '/integrations' },
           { text: 'Resilience', link: '/resilience' },
+          { text: 'Resilience, in short', link: '/resilience-summary' },
           { text: 'Observability', link: '/observability' },
           { text: 'Public status page', link: '/status-page' },
+          { text: "What's new panel", link: '/whats-new-panel' },
+        ],
+      },
+      {
+        text: 'AI and agents',
+        collapsed: true,
+        items: [
           { text: 'AI models', link: '/ai-models' },
+          { text: 'Working with AI agents', link: '/agents' },
+          { text: 'AI assistant integration', link: '/ai-assistant' },
+          { text: 'In-app AI assistant chat', link: '/ai-assistant-chat' },
         ],
       },
       {
@@ -154,9 +178,12 @@ const sidebarGroups = [
       { text: 'App spec reference', link: '/app-spec-reference' },
       { text: 'Feature catalog', link: '/feature-catalog' },
       { text: 'CLI reference', link: '/cli-reference' },
+      { text: 'Environment variables', link: '/environment-variables' },
       { text: 'API reference', link: '/api-reference' },
       { text: 'API explorer', link: '/api-explorer' },
       { text: 'MCP tool surface', link: '/mcp-tool-surface' },
+      { text: 'Agent tooling audit', link: '/agent-tooling-audit' },
+      { text: 'Shared Go kit', link: '/kit' },
     ],
   },
   {
@@ -169,6 +196,7 @@ const sidebarGroups = [
       { text: 'Security alert verdicts', link: '/security-alert-verdicts' },
       { text: 'Comparison', link: '/comparison' },
       { text: 'Who Levelrail is for', link: '/use-cases' },
+      { text: 'White-labeling', link: '/white-labeling' },
     ],
   },
   {
@@ -189,6 +217,8 @@ const sidebarGroups = [
       { text: 'Experimental features', link: '/experimental-features' },
       { text: 'Performance', link: '/performance' },
       { text: 'CI', link: '/ci' },
+      { text: 'VPS smoke test', link: '/vps-smoke' },
+      { text: 'Internationalization', link: '/i18n' },
       { text: 'Changelog', link: '/changelog/' },
     ],
   },

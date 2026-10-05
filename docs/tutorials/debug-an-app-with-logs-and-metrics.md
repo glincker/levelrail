@@ -11,7 +11,8 @@ Most self-hosted platforms tell you to install Grafana and a log stack before yo
 - A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
 - An app that has been running for a few minutes. Any app from the earlier tutorials works.
 
-## 1. Start with what needs attention
+<Steps>
+<Step title="Start with what needs attention">
 
 ```bash
 levelrail-cli attention
@@ -42,7 +43,8 @@ Observability  fail   no alert rules configured for this app
 
 Each line names a concrete gap, so you know where to look.
 
-## 2. Search the logs
+</Step>
+<Step title="Search the logs">
 
 Logs are stored on the node and searchable by text and time window:
 
@@ -69,7 +71,8 @@ The flags you will use most:
 
 The dashboard's log viewer reads the same store, with search and live tail.
 
-## 3. Follow live
+</Step>
+<Step title="Follow live">
 
 ```bash
 levelrail-cli apps logs hello --follow
@@ -77,7 +80,8 @@ levelrail-cli apps logs hello --follow
 
 This streams new lines until you press Ctrl+C. It uses the same stream as the dashboard viewer. `--follow` cannot be combined with `--since`, `--q`, or `--tail`, because it only shows new lines.
 
-## 4. Read CPU and memory
+</Step>
+<Step title="Read CPU and memory">
 
 ```bash
 levelrail-cli apps metrics hello --metric memory_usage_bytes --since 15m --step 60s
@@ -96,7 +100,8 @@ Metrics are sampled every 15 seconds and aggregated into the bucket size you set
 
 On the dashboard the same data becomes charts with deploy markers drawn on them. That is the quickest way to answer "which deploy made it slow": the line changes where the marker is.
 
-## 5. Tie it back to deploys
+</Step>
+<Step title="Tie it back to deploys">
 
 ```bash
 levelrail-cli deployments summary
@@ -116,6 +121,9 @@ A spike in the metrics that lines up with a deploy usually means that release. R
 levelrail-cli apps deploys list hello
 levelrail-cli apps deploys rollback-to hello <deploy-id>
 ```
+
+</Step>
+</Steps>
 
 ## Add an alert so you hear about it first
 

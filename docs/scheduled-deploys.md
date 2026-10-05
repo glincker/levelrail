@@ -15,20 +15,33 @@ must be a repo to redeploy from.
 
 ## Configure
 
+<Tabs :items="['UI','CLI','API']">
+<Tab value="UI">
+
+Open the app, then **Deploy settings**, and use the **Scheduled deploys** card. It has the same fields as the CLI, a next-run preview, and a short history list.
+
+</Tab>
+<Tab value="CLI">
+
 ```bash
-levelrail apps schedule set web --cron "0 3 * * *" --branch main --timezone UTC
-levelrail apps schedule get web
-levelrail apps schedule history web
+levelrail-cli apps schedule set web --cron "0 3 * * *" --branch main --timezone UTC
+levelrail-cli apps schedule get web
+levelrail-cli apps schedule history web
 ```
 
-In the dashboard, app **Deploy settings** has a **Scheduled deploys**
-card with the same fields, a next-run preview, and a short history list.
+</Tab>
+<Tab value="API">
+
+`PUT /api/v1/apps/{name}/schedule` with `{cron, branch, timezone?, enabled?}`. The full endpoint list is under [API](#api).
+
+</Tab>
+</Tabs>
 
 The cron expression is standard 5-field syntax (minute hour
 day-of-month month day-of-week) and is validated on save; an invalid
 expression or an unrecognized timezone is rejected with a clear error,
 nothing is written. `timezone` defaults to `UTC`. `enabled` defaults to
-`true`; set it to `false` to keep a schedule configured but paused.
+`true`; set it to `false` (CLI: `--disable`) to keep a schedule configured but paused.
 
 ## How it fires
 
@@ -38,7 +51,7 @@ no granularity finer than a minute, so a shorter interval buys nothing)
 which schedules are due, and redeploys the latest commit on the
 configured branch through the same git-source deploy path a webhook push
 uses. The resulting deploy is recorded with trigger `schedule`
-(`GET /api/v1/deployments?trigger=schedule`, or `levelrail apps deploys
+(`GET /api/v1/deployments?trigger=schedule`, or `levelrail-cli apps deploys
 list`), distinct from `git push`, `manual`, `api`, `rollback` and
 `preview`.
 
@@ -58,8 +71,8 @@ in the control plane process's memory. This matters for two cases:
 
 - **A schedule seen for the first time** (just created, or just
   re-enabled) is armed to its next occurrence and does not fire
-  immediately. This matches every other cron-driven scheduler in this
-  codebase (scheduled tasks, scheduled backups).
+  immediately. This matches Levelrail's other cron-driven features
+  (scheduled tasks, scheduled backups).
 - **The control plane restarts.** Because the next-fire time is
   persisted, a schedule that was due, or that missed one or more
   occurrences entirely while the process was down, still fires **at most

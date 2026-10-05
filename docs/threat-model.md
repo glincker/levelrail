@@ -89,13 +89,14 @@ Not considered: a fully compromised control plane host (it holds the master key 
 
 ### Secrets
 
-- Envelope encryption with per-secret data keys under one master key: `internal/secrets`. Secret values are write-only through the API.
+- Envelope encryption with per-owner data keys under one master key: `internal/secrets`. Secret values are write-only through the API.
+- Each ciphertext is bound to its owner and key name, so a database writer cannot swap one secret's ciphertext into another slot. Legacy unbound values are bound with `levelrail-cli secrets rebind` ([Master key rotation](master-key-rotation.md#binding-secrets-to-their-slot)).
 - Secrets are injected at container create time and never returned in a response body. Master key rotation re-wraps without exposing plaintext ([Master key rotation](master-key-rotation.md)).
 
 ### Process execution and shell use
 
 - Docker and BuildKit are driven through their APIs, never the CLI. Git is done with go-git, not the `git` binary.
-- Host process spawning exists in exactly four files, all with literal binary names and argv (no shell): `internal/gpu/gpu.go`, `internal/network/link.go`, `internal/telemetry/hostpatch.go`, `internal/api/doctor_firewall.go`. `test/execgate` fails the build if any other non-test Go file imports `os/exec` or calls `os.StartProcess` or `syscall.Exec`, and requires a written reason for each allowlisted file.
+- Host process spawning is limited to the files listed in `test/execgate/allowlist.txt` (GPU probe, mesh network link, host patch count, firewall and NAS doctor checks, and the `ufw` helper in `kit/firewall`), all with literal binary names and argv (no shell). `test/execgate` fails the build if any other non-test Go file imports `os/exec` or calls `os.StartProcess` or `syscall.Exec`, and requires a written reason for each allowlisted file.
 - Pipeline `run` scripts: values that come from webhooks, PRs or earlier steps (`branch`, `ref`, `tag`, `actor`, `inputs.*`, `needs.*.outputs.*`) are exported as single-quoted environment variables and referenced as `${PIPELINE_EXPR_*}`, never pasted into the script text. `internal/pipeline/interpolate_script.go`.
 - Egress allowlist hosts, which the egress sidecar's shell script word-splits, are limited to hostnames and IPv4 literals. `internal/api/apps_egress.go`, `internal/spec/validate.go`.
 - `repo_url` on the build and multi-service deploy routes must be http or https, so go-git cannot be pointed at a local path. `internal/build/detect.go` (`ValidatePublicRepoURL`).
@@ -104,6 +105,7 @@ Not considered: a fully compromised control plane host (it holds the master key 
 ### Network and outbound requests
 
 - The agent dials out over mutual TLS and can pin the control plane CA fingerprint during enrollment. `internal/agent/pki.go`, `internal/agent/credentials.go`, [Security overview](security.md#tls-and-network-exposure).
+- Agent client certificates are renewed by the agent itself, after two thirds of their lifetime by default, with jitter and retry. `internal/agent/renew.go`.
 - Notification and log drain URLs are checked on the dialed IP against loopback, private, link-local and reserved ranges, including redirects. `kit/netguard`.
 - Security headers and a strict Content Security Policy are set on every response. `internal/api/middleware.go`.
 
@@ -122,14 +124,12 @@ Not considered: a fully compromised control plane host (it holds the master key 
 
 ## Known gaps
 
-Stated plainly. Some are being worked on by other tracks and are listed as planned.
+Stated plainly. Status says whether a gap is open, accepted, or by design.
 
 | Gap | Impact | Status |
 | --- | --- | --- |
-| Agent certificates are issued once and there is no scheduled renewal | A leaked agent key stays valid until the certificate expires or the node is re-enrolled | Planned: agent certificate renewal |
 | Container hardening has no per-app override and read-only root filesystems are opt-in | An image that needs more than the minimal capability set must be granted it host-wide | Default is now `enforce`: all capabilities dropped except a small documented set, `no-new-privileges` and a PID limit. `APP_CONTAINER_HARDENING_CAP_ADD` widens it, `warn` opts out. Per-app policy is future work |
 | Release signing has never run in a real release | A broken signing step would go unnoticed until a release | Release workflow signs `checksums.txt` with cosign and attests provenance; `install.sh` verifies the signature when cosign is present, and `APP_INSTALL_VERIFY=require` refuses unsigned releases. Untested against a real release |
-| Secret ciphertext is not bound to its context (app and key name) | A database writer could swap one secret's ciphertext for another's | Planned: secret context binding |
 | Only apps, databases and models have per-resource IAM. Nodes, projects, domains, registries and settings are ability-gated only | You cannot Deny one node or project to a token that has the ability | Open |
 | Git fetches of a private-address Git server are refused by default | A LAN Gitea or GitLab needs `APP_GIT_ALLOW_PRIVATE_NETWORKS=true`, which relaxes only git fetches | Fixed: git fetches use `kit/netguard` with their own opt-in. The older shared `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS` still works for git |
 | Bind-mount path checks are lexical | A host symlink inside an allowed directory that points at a protected path is followed by Docker | Open: only operators with root on the host can create such a link |
@@ -143,8 +143,8 @@ Stated plainly. Some are being worked on by other tracks and are listed as plann
 | Pipeline containers share the node's Docker daemon | A malicious pipeline that reaches the daemon is root on the node | Depends on container hardening above |
 | A ClickHouse dump interpolates table names from the target database into SQL | Only a user who already owns the database can craft a name | Accepted, low |
 | Sessions are process-local | No session listing across a restart, and no shared sessions for an HA control plane | Accepted for single control plane |
-| No SSO or SAML | Local password and OAuth sign-in only | Open |
-| No secret scanning of app source, no image vulnerability scanning | Not a boundary Levelrail enforces | Open |
+| No SSO or SAML | Sign-in is local password, passkey or OAuth | Open |
+| No secret scanning of app source. Image vulnerability scanning is optional and off by default ([Supply chain](supply-chain.md)) | Not a boundary Levelrail enforces | Open |
 
 ## Choosing a safer deployment
 

@@ -2,28 +2,13 @@
 description: Automatic TLS, domain routing, WAF, rate limiting, and redirects, all embedded in the control plane, with no separate proxy to manage.
 ---
 
-# Domains and ingress: you don't set up a reverse proxy
+# Domains and ingress
 
-If you're coming from a platform that requires you to install and wire up your own Traefik or nginx container, stop: Levelrail works differently. There is nothing to install for ingress and nothing separate to keep running.
+Levelrail has nothing to install for ingress. The control plane embeds [Caddy](https://caddyserver.com/) as a Go library (`internal/ingress`) and drives it through its admin API, not a hand-written Caddyfile. Config comes from the app specs the reconciler already knows about, so there is no `caddy` binary, no separate proxy container, and no way for ingress config to drift from desired state. The reasoning is in [ADR 005](../adr/005-caddy-embedded-ingress.md) and the [comparison](comparison.md).
 
-## Why there's no proxy to install
+To serve an app on a domain, write `domains:` in its `app.yaml` (or add the domain in the dashboard) and deploy. Routing and certificates follow automatically.
 
-Levelrail's control plane embeds [Caddy](https://caddyserver.com/) directly as a Go library (`internal/ingress`). It drives Caddy through its admin API, not via a hand-written Caddyfile. Config comes from the app specs the reconciler already knows about.
-
-There is no `caddy` binary and no separate ingress container to start, restart, or misconfigure.
-
-### How this differs from competitors
-
-Coolify and Dokploy both run Traefik as a separate, long-lived container alongside the control plane. That separation means:
-
-- A second process with its own config surface and restart semantics.
-- Risk that ingress config drifts out of sync with the platform's desired state.
-
-Levelrail removes that failure mode by design. One process, one source of desired state (the reconciler and database), and no way for ingress config to diverge from it. See [ADR 005](../adr/005-caddy-embedded-ingress.md) and [docs/comparison.md](comparison.md) for the full reasoning.
-
-### What you actually do
-
-Write `domains:` in your app's `app.yaml` and deploy. Routing and certificates happen automatically. No proxy config file, no extra container, nothing extra to monitor.
+<InlineToc default-open />
 
 ## How domain routing actually works
 
@@ -50,7 +35,7 @@ flowchart TD
   M --> J
 ```
 
-Add the `domains` field to a service in `app.yaml`:
+Add `domains` to a service in `app.yaml`:
 
 ```yaml
 version: 1
@@ -63,7 +48,7 @@ services:
     port: 3000
 ```
 
-`domains` is a list of public hostnames routed to that service. Each domain can only be claimed by one service across your whole spec (see [docs/app-spec-reference.md](app-spec-reference.md)). When you deploy, the control plane builds a Caddy route that matches incoming requests by `Host` header and reverse-proxies them to the service's container. Static sites (`build.type: static`) skip the container entirely and are served by Caddy from disk.
+`domains` is a list of public hostnames routed to that service. Each domain can be claimed by only one service across your whole spec (see [App spec reference](app-spec-reference.md)). When you deploy, the control plane builds a Caddy route that matches incoming requests by `Host` header and reverse-proxies them to the service's container. Static sites (`build.type: static`) skip the container entirely and are served by Caddy from disk.
 
 ### Setting up DNS
 
@@ -75,7 +60,7 @@ Check that DNS has propagated:
 dig +short app.example.com
 ```
 
-Run this from a machine outside your own network. Once it resolves and the app is deployed, Caddy automatically starts routing and issuing certificates (depending on your TLS configuration below). No manual reload needed.
+Run this from a machine outside your own network. The control plane can also check for you: `levelrail-cli domains check <app> <domain>` reports whether the domain currently resolves to this control plane's advertised address. Once it resolves and the app is deployed, Caddy starts routing and issuing certificates (depending on your TLS configuration below). No manual reload is needed.
 
 ### Managing DNS records from the dashboard
 
@@ -93,26 +78,37 @@ levelrail-cli domains dns remove <app> <domain> --type A --name www --value 203.
 
 Editing a record in place is dashboard-only: it's a delete-then-add under the hood, and the CLI exposes those two primitives directly rather than a third verb that just composes them.
 
-### Changing domains after deploy
+### Adding or changing domains
 
-Add or change a domain either by:
+<Tabs :items="['Dashboard', 'CLI', 'app.yaml']">
+<Tab value="Dashboard">
 
-- Editing `domains:` in `app.yaml` and redeploying, or
-- Using the dashboard's per-app **Domains** tab to add a domain inline and view DNS and certificate status
+Open the app's **Domains** tab, add the domain inline, and view its DNS and certificate status. No redeploy is needed.
 
-The dashboard's cross-app **Domains** page lists every domain across every app with its certificate status, plus read-only badges for WAF, redirect, maintenance mode, and basic auth when configured; editing those settings still happens on the owning app's own Domains tab.
+</Tab>
+<Tab value="CLI">
 
-![Levelrail Domains page with the platform ingress settings: primary domain, ACME certificates, and HSTS](assets/screenshots/domains-list.png)
-
-List all domains currently routed:
-
-```
+```bash
+levelrail-cli apps domains add <app> www.example.com
+levelrail-cli apps domains remove <app> www.example.com
 levelrail-cli domains list
 ```
 
+</Tab>
+<Tab value="app.yaml">
+
+Edit `domains:` in `app.yaml` and redeploy.
+
+</Tab>
+</Tabs>
+
+**Infrastructure > Domains** lists every domain across every app with its certificate status, plus read-only badges for WAF, redirect, maintenance mode and basic auth. Edit those settings on the owning app's Domains tab.
+
+![Levelrail Domains page with the platform ingress settings: primary domain, ACME certificates, and HSTS](assets/screenshots/domains-list.png)
+
 ### The dashboard's own domain
 
-**Settings > Domains** sets the control plane's own `primary_domain`, the one the dashboard itself is reachable at, separate from any app's `domains:` in `app.yaml`. Give it its own dedicated subdomain rather than reusing one an app already serves, the same convention CapRover uses for its panel (`captain.<domain>`): something like `console.example.com` or `panel.example.com`.
+**Infrastructure > Domains** sets the control plane's own `primary_domain`, the one the dashboard itself is reachable at, separate from any app's `domains:` in `app.yaml`. Give it its own dedicated subdomain rather than reusing one an app already serves, the same convention CapRover uses for its panel (`captain.<domain>`): something like `console.example.com` or `panel.example.com`.
 
 Setting the primary domain to a domain an app already owns is rejected with a `409` naming the conflicting app, so this is a real guardrail, not just a convention. Pick a domain no app uses from the start and there's nothing to collide with later.
 
@@ -127,7 +123,7 @@ At first start the control plane works out its own public IP, in this order:
 1. `APP_PUBLIC_HOST`, if set (an IP, or a hostname if you only need it for DNS checks). This always wins.
 2. Otherwise it asks public what-is-my-IP services (`api.ipify.org`, `icanhazip.com`, `ifconfig.me`) and takes the first public answer. Private, loopback and link-local answers are ignored.
 
-Settings > Domains shows the address and how it was found (`from APP_PUBLIC_HOST`, `detected`, `detection disabled`, `not found`), and `levelrail-cli settings ingress get` prints it as `public_host`.
+The Domains page shows the address and how it was found (`from APP_PUBLIC_HOST`, `detected`, `detection disabled`, `not found`), and `levelrail-cli settings ingress get` prints it as `public_host`.
 
 | Variable | Default | Effect |
 |---|---|---|
@@ -140,12 +136,12 @@ If the server is behind NAT or a load balancer, detection finds the wrong addres
 
 ### One-click HTTPS for the dashboard
 
-Settings > Domains opens with an **Enable HTTPS** card (the setup wizard's domain step shows the same card first). Enter a contact email and click the button. The control plane:
+The Domains page opens with an **Enable HTTPS** card (the setup wizard's domain step shows the same card first). Enter a contact email and click the button. The control plane:
 
 1. sets the dashboard's primary domain to `<dashed-ip>.sslip.io`,
 2. turns on real ACME issuance and asks Let's Encrypt for a certificate over the HTTP-01 challenge,
 3. shows `pending`, then `issued` with the issuer and expiry, and
-4. once you are looking at the dashboard on that https address, saves it as the dashboard URL (sign-in over plain HTTP is then refused, as documented under [Dashboard URL](#the-dashboards-own-domain)).
+4. once you are looking at the dashboard on that https address, saves it as the dashboard URL (sign-in over plain HTTP is then refused).
 
 From the CLI:
 
@@ -182,7 +178,7 @@ It is routed by the same ingress and gets the same TLS treatment as any other do
 - It appears on the app's **Network** tab, in `levelrail-cli apps network <name>`, and in `levelrail-cli domains list` (source `automatic`) and `GET /api/v1/domains` (`"automatic": true`).
 - It disappears the moment you add a real domain. A configured domain always wins.
 - It is generated each pass and never stored on the app, so per-domain features (basic auth, WAF, BYO certificate, maintenance mode) do not apply to it. Add a real domain for those.
-- **Toggle:** Settings > Domains > Automatic app hostnames, or `levelrail-cli settings ingress set --fallback-domains=false`. It is off-able per server, not per app.
+- **Toggle:** the **Automatic app hostnames** setting on the Domains page, or `levelrail-cli settings ingress set --fallback-domains=false`. It is off-able per server, not per app.
 - It needs a public IPv4 address (detected or `APP_PUBLIC_HOST`). With a private address, a hostname, or detection turned off there is nothing to build, and the Network tab says so.
 
 ### HTTP redirects to HTTPS
@@ -203,7 +199,7 @@ The tradeoff: browsers and HTTP clients show a trust warning until you accept th
 
 ### Real public ACME (Let's Encrypt or RFC 8555 CA)
 
-A Caddy ACME issuer is built and wired end-to-end. Enable it under **Settings > Domains** (`ACMEEnabled`, backed by `GET/PUT /api/v1/settings/ingress`). Form validation for account email and optional directory URL are included.
+A Caddy ACME issuer is built and wired end-to-end. Enable it with the **Issue real ACME certificates** toggle on the Domains page, or with `levelrail-cli settings ingress set --acme-enabled --acme-email you@example.com`. The API is `GET/PUT /api/v1/settings/ingress`. An account email is required, and a directory URL is optional.
 
 ::: tip Verified against a live domain
 Real Let's Encrypt issuance, HTTP to HTTPS redirect and trusted-chain handshakes were run on a public VPS (`<dashed-ip>.sslip.io`, ports 80 and 443 open). The recorded run, including what failed before it worked, is in [docs/acme-verification-runbook.md](acme-verification-runbook.md#recorded-run-2026-10-05).
@@ -211,7 +207,7 @@ Real Let's Encrypt issuance, HTTP to HTTPS redirect and trusted-chain handshakes
 
 ### HSTS (HTTP Strict Transport Security)
 
-Turn on **Enable HSTS** under **Settings > Domains** to send `Strict-Transport-Security` on every https response, including the dashboard's HTML page, no restart required. It is never sent over plain HTTP. HSTS defaults to off on purpose.
+Turn on **Enable HSTS** on the Domains page (or `levelrail-cli settings ingress set --hsts-enabled`) to send `Strict-Transport-Security` on every https response, including the dashboard's HTML page, no restart required. It is never sent over plain HTTP. HSTS defaults to off on purpose.
 
 Setting the `APP_ENABLE_HSTS=true` environment variable still works the same way it always has, for anyone who already relies on it. The two are additive: HSTS is sent if either the dashboard toggle or the environment variable is on, so upgrading never turns HSTS off for a deployment that already had it on.
 
@@ -221,55 +217,53 @@ HSTS tells browsers to refuse plain HTTP and refuse certificate warnings on this
 
 ### Bring your own certificate
 
-For domains ACME can't reach (internal-only hosts, externally issued wildcards, or certs provisioned before DNS cuts over), upload your certificate and key:
+For domains ACME can't reach (internal-only hosts, externally issued wildcards, or certificates provisioned before DNS cuts over), upload a certificate and key. Caddy loads it directly and skips automatic issuance for that host.
 
-```
-PUT /api/v1/apps/{name}/domains/{domain}/tls-cert
-levelrail-cli domains tls-cert set
-# or via the dashboard's per-domain TLS control
+```bash
+levelrail-cli domains tls-cert set <app> <domain> --cert-file fullchain.pem --key-file privkey.pem
+levelrail-cli domains tls-cert get <app> <domain>
 ```
 
-Caddy loads it directly and skips automatic issuance for that host.
+The API is `PUT /api/v1/apps/{name}/domains/{domain}/tls-cert`, and the dashboard has a per-domain TLS control.
 
 ## Wildcard domains: DNS-01 providers
 
 Wildcard domains like `*.example.com` need ACME's DNS-01 challenge (HTTP-01 cannot validate wildcards). DNS-01 works by creating a short-lived TXT record at your DNS provider, so you must grant API access.
 
-Two providers are supported. Configure them platform-wide under **Domains** in the dashboard or via CLI. Only one can be active per reconcile pass; if both are enabled, Cloudflare takes precedence.
+Two providers are supported. Configure them platform-wide on the **Domains** page or with the CLI. Only one is active per reconcile pass, and Cloudflare wins if both are enabled.
 
-::: code-group
+<Tabs :items="['Cloudflare', 'Route53']">
+<Tab value="Cloudflare">
 
-```bash [Cloudflare]
-# Use an API token scoped to Zone:DNS:Edit for your zone
-# Never use the global API key
+Use an API token scoped to `Zone:DNS:Edit` for your zone, never the global API key.
 
-# Via API:
-GET/PUT/DELETE /api/v1/settings/cloudflare-dns
-
-# Via CLI:
-levelrail-cli domains cloudflare-dns get|set|clear
+```bash
+levelrail-cli domains cloudflare-dns set --cf-api-token <token>
+levelrail-cli domains cloudflare-dns get
+levelrail-cli domains cloudflare-dns clear
 ```
 
-```bash [Route53]
-# Use an AWS IAM access key pair with these permissions:
-# - route53:ChangeResourceRecordSets
-# - route53:ListResourceRecordSets
-# - route53:GetChange
-#
-# Region and hosted zone ID are optional (AWS SDK auto-resolves)
+The API is `GET/PUT/DELETE /api/v1/settings/cloudflare-dns`.
 
-# Via API:
-GET/PUT/DELETE /api/v1/settings/route53-dns
+</Tab>
+<Tab value="Route53">
 
-# Via CLI:
-levelrail-cli domains route53-dns get|set|clear
+Use an AWS IAM access key pair with `route53:ChangeResourceRecordSets`, `route53:ListResourceRecordSets` and `route53:GetChange`. The region and hosted zone ID are optional.
+
+```bash
+levelrail-cli domains route53-dns set --aws-access-key-id <id> --aws-secret-access-key <secret>
+levelrail-cli domains route53-dns get
+levelrail-cli domains route53-dns clear
 ```
 
-:::
+The API is `GET/PUT/DELETE /api/v1/settings/route53-dns`.
 
-### Security and extensibility
+</Tab>
+</Tabs>
 
-Credentials are envelope-encrypted at rest (`internal/secrets`) and never returned in plaintext by GET. Settings responses only report whether a credential is present, not its value. The provider abstraction (`internal/ingress.DNS01Provider`) supports additional providers beyond these two.
+### Credential storage
+
+Credentials are envelope-encrypted at rest and never returned by GET: responses report only whether a credential is present.
 
 ## Opt-in WAF and rate limiting
 
@@ -302,20 +296,28 @@ Clients exceeding either limit get a 429 response. Set burst equal to or below r
 
 ### Configuration
 
-**Dashboard:** Each domain's row in the **Domains** tab has an "Add WAF / rate limit" control.
+<Tabs :items="['Dashboard', 'CLI', 'API']">
+<Tab value="Dashboard">
 
-**API:**
+Each domain's row in an app's **Domains** tab has an **Add WAF / rate limit** control.
 
-```
-GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/waf
-```
+</Tab>
+<Tab value="CLI">
 
-**CLI:**
-
-```
+```bash
 levelrail-cli domains waf get|set|clear <app> <domain>
 levelrail-cli domains waf set my-app my-app.example.com --waf --mode detect --rps 20 --burst 50
 ```
+
+</Tab>
+<Tab value="API">
+
+```text
+GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/waf
+```
+
+</Tab>
+</Tabs>
 
 ::: details Not included in v1
 - No UI for custom CRS exclusion or override rules.
@@ -341,7 +343,7 @@ This uses Caddy's `static_response` handler with a `Location` header and redirec
 
 ### Requirements
 
-- The domain must already be one of the app's domains. Add it first (`apps domains add <app> www.example.com`).
+- The domain must already be one of the app's domains. Add it first with `levelrail-cli apps domains add <app> www.example.com`.
 - Target must be an absolute URL, e.g. `https://example.com` or `https://newapp.example.com/promo`.
 - Bare hostnames, relative paths, and non-HTTP(S) schemes are rejected.
 
@@ -353,57 +355,62 @@ If a domain has both a redirect and maintenance mode configured, maintenance mod
 
 ### Configuration
 
-**Dashboard:** Each domain's row in an app's **Domains** tab has an "Add redirect" control.
+<Tabs :items="['Dashboard', 'CLI', 'API']">
+<Tab value="Dashboard">
 
-**API:**
+Each domain's row in an app's **Domains** tab has an **Add redirect** control.
 
-```
-GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/redirect
-```
+</Tab>
+<Tab value="CLI">
 
-**CLI:**
-
-```
+```bash
 levelrail-cli domains redirect get|set|clear <app> <domain>
 levelrail-cli domains redirect set my-app www.example.com --target https://example.com
 ```
 
+Add `--temporary` for a `302`. The default is a permanent `301`.
+
+</Tab>
+<Tab value="API">
+
+```text
+GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/redirect
+```
+
+</Tab>
+</Tabs>
+
 ## Custom error pages
 
-Replace Caddy's bare default error text, or whatever the backend itself
-returned, with your own HTML for a domain, for a fixed set of status
-codes: `404`, `500`, `502`, and `503`. No new container, no new infra
-dependency: this is `reverse_proxy`'s own `handle_response` mechanism
-(catches a status the backend actually returns) plus a wrapping
-`subroute`'s error handling (catches a real proxy failure, e.g. the
-container being unreachable, which Caddy turns into its own 502/504
-before a response from the backend ever exists to match against).
-Either way the original status code is preserved; only the body changes.
+Replace Caddy's bare default error text, or whatever the backend returned, with your own HTML for a domain. Four status codes are supported: `404`, `500`, `502` and `503`. The original status code is kept and only the body changes. It covers both a status the backend actually returns and a proxy failure such as an unreachable container, which Caddy turns into its own 502 or 504.
 
-- **A domain can have more than one mapping at once**: e.g. a custom
-  `404` and a separate custom `503` "this app is temporarily down" page,
-  configured independently.
-- **Only these four codes are supported.** This is deliberately not a
-  generic arbitrary-status-code system: 404, 500, 502, and 503 cover the
-  cases an operator actually wants a custom page for (a real not-found,
-  an application error, and the container being unreachable).
-- **Where to configure it:**
-  - Dashboard: each domain's row in an app's **Domains** tab has an "Add
-    error page" control, letting you pick a status code and paste in
-    HTML.
-  - API: `GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/error-pages`.
-    PUT upserts one status-code-to-body mapping per call; DELETE takes an
-    optional `?status_code=` to remove a single mapping, or removes every
-    mapping for the domain when omitted.
-  - CLI: `levelrail-cli domains error-pages get|set|clear <app> <domain>`,
-    e.g. `levelrail-cli domains error-pages set my-app my-app.example.com --code 404 --body-file 404.html`.
+- A domain can have several mappings at once, for example a custom `404` and a separate `503` "temporarily down" page.
+- The HTML is served byte for byte: no templating, no variables, and no per-app default separate from the per-domain mapping.
 
-- **What this doesn't do.** There's no live preview in the dashboard, no
-  templating or variable interpolation inside the HTML you provide (it's
-  served byte-for-byte), and no per-app default separate from the
-  per-domain mapping. All of that is a real gap, not a hidden default;
-  the small, fixed-status-code surface here is deliberately the whole v1
-  scope.
+<Tabs :items="['Dashboard', 'CLI', 'API']">
+<Tab value="Dashboard">
+
+Each domain's row in an app's **Domains** tab has an **Add error page** control. Pick a status code and paste in HTML. There is no live preview.
+
+</Tab>
+<Tab value="CLI">
+
+```bash
+levelrail-cli domains error-pages get|set|clear <app> <domain>
+levelrail-cli domains error-pages set my-app my-app.example.com --code 404 --body-file 404.html
+```
+
+</Tab>
+<Tab value="API">
+
+```text
+GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/error-pages
+```
+
+`PUT` upserts one status code mapping per call. `DELETE` takes an optional `?status_code=` to remove one mapping, or removes all of the domain's mappings when omitted.
+
+</Tab>
+</Tabs>
 
 ## Edge limits, client IPs and failover
 
@@ -501,39 +508,23 @@ APP_INGRESS_HTTP_ADDR=:8080 \
 
 ## Raw TCP streams: forwarding a non-HTTP port
 
-Domains and WAF/redirects/error pages above are all for HTTP(S). Some
-services aren't HTTP at all: a Postgres instance, an SSH server, a game
-server, anything that speaks its own protocol over raw TCP. A **stream**
-forwards a host port straight to one of an app's container ports, byte
-for byte, with no Host-header routing and no protocol awareness on
-Levelrail's side.
+Domains, WAF, redirects and error pages are all for HTTP(S). Some services are not HTTP: a Postgres instance, an SSH server, a game server. A **stream** forwards a host port to one of an app's container ports byte for byte, with no Host-header routing and no protocol awareness.
 
 ```bash
-levelrail apps streams create my-postgres --host-port 15432 --container-port 5432
-levelrail apps streams list my-postgres
-levelrail apps streams delete my-postgres <id>
+levelrail-cli apps streams create my-postgres --host-port 15432 --container-port 5432
+levelrail-cli apps streams list my-postgres
+levelrail-cli apps streams delete my-postgres <id>
 ```
 
-Or from the dashboard: an app's **Streams** tab lists its forwards and
-lets you add or remove one. The same thing is available via
-`GET`/`POST`/`DELETE /api/v1/apps/{name}/streams`.
+The dashboard's app **Streams** tab lists, adds and removes forwards, and the API is `GET`/`POST`/`DELETE /api/v1/apps/{name}/streams`.
 
-Under the hood this uses the same embedded Caddy instance as every HTTP
-route above, via its `layer4` app
-([`github.com/mholt/caddy-l4`](https://github.com/mholt/caddy-l4)), not a
-second proxy process. A stream added to an already-running app takes
-effect on that app's next restart (triggered automatically when you
-create or delete one), the same way an env var change does, since Docker
-has no way to add a published port to a running container.
+Streams use the same embedded Caddy through its [`layer4`](https://github.com/mholt/caddy-l4) app, not a second proxy. Creating or deleting one restarts the app automatically, because Docker cannot add a published port to a running container.
 
-**v1 scope, deliberately:** TCP only, one stream per forward, no access
-lists, no TLS termination on the stream itself (if the backend speaks
-TLS, that's between the client and the backend, Levelrail just carries
-the bytes), and no multi-app or load-balanced streams yet.
+Scope: TCP only, one stream per forward, no access lists, and no TLS termination on the stream (if the backend speaks TLS, that is between the client and the backend). Multi-app and load-balanced streams are not supported.
 
 ## Traffic: routing status for every domain at a glance
 
-**Infrastructure > Traffic** in the dashboard (`GET /api/v1/network/proxy`, `read` ability, so any signed-in user can check it) is a flat, one-row-per-domain table: which app a domain routes to, which node that app actually runs on, whether this control plane's own embedded ingress can reach it, its port, and TLS status and issuer.
+**Infrastructure > Traffic** in the dashboard (`GET /api/v1/network/proxy`, `read` ability) is a flat, one-row-per-domain table: which app a domain routes to, which node that app actually runs on, whether this control plane's own embedded ingress can reach it, its port, and TLS status and issuer.
 
 It exists for one otherwise-invisible failure: the embedded Caddy ingress reaches an app on another node only over the WireGuard mesh. If that path is down, the app's container can be perfectly healthy while its domain silently never routes. When the path is healthy the domain routes normally and shows **Reachable**. See [Multi-node: Routing to apps on remote nodes](multi-node.md#routing-to-apps-on-remote-nodes) for how the mesh bind works.
 
@@ -545,64 +536,65 @@ levelrail-cli apps set-node <app-name> <this control plane's own node id>
 levelrail-cli apps clear-node <app-name>
 ```
 
-## Walkthrough: your first domain, from install to HTTPS
+## Walkthrough: your first domain
 
-This assumes you already have the control plane running and an app deployed (see [docs/getting-started.md](getting-started.md)).
+This assumes the control plane is running and an app is deployed (see [Getting started](getting-started.md)).
 
-1. **Point DNS at your server.**
+<Steps>
+<Step title="Point DNS at your server">
 
-   Create an A record for your domain pointing at your server's public IP. Verify it resolves from outside your network:
+Create an A record for your domain pointing at the server's public IP, then check it from outside your network:
 
-   ```bash
-   dig +short my-app.example.com
-   ```
+```bash
+dig +short my-app.example.com
+```
 
-2. **Add the domain to your app.**
+</Step>
+<Step title="Add the domain to your app">
 
-   Option A: Edit `app.yaml` and redeploy:
+Run `levelrail-cli apps domains add my-app my-app.example.com`, add it on the app's **Domains** tab, or put it in `domains:` in `app.yaml` and redeploy.
 
-   ```yaml
-   services:
-     web:
-       domains:
-         - my-app.example.com
-       port: 3000
-   ```
+</Step>
+<Step title="Open ports 80 and 443">
 
-   ```bash
-   APP_API_TOKEN=dev-root-token ./levelrail-cli apps deploy your-app --file app.yaml
-   ```
+Open them in your cloud firewall, `ufw` or `iptables`, or re-run the installer with `LEVELRAIL_CONFIGURE_UFW=1 ./install.sh`. See [Firewall](#firewall-ports-80-and-443).
 
-   Option B: Open the app's **Domains** tab in the dashboard and add it directly (no redeploy needed).
+</Step>
+<Step title="Get a trusted certificate">
 
-3. **Open ports 80 and 443.**
+By default the domain is served over HTTPS with a self-signed certificate, so browsers warn. For a trusted one, enable ACME on the Domains page and follow the [ACME verification runbook](acme-verification-runbook.md).
 
-   Either re-run `install.sh` with `LEVELRAIL_CONFIGURE_UFW=1`:
+</Step>
+<Step title="Test it">
 
-   ```bash
-   LEVELRAIL_CONFIGURE_UFW=1 ./install.sh
-   ```
+```bash
+curl -v https://my-app.example.com
+```
 
-   Or manually open ports 80 and 443 via your cloud provider's firewall, `ufw`, or `iptables`.
+</Step>
+</Steps>
 
-4. **Check certificate status.**
+## Next steps
 
-   By default, your app is now reachable over HTTPS with a self-signed certificate. Browsers will warn until you trust it. For a real, browser-trusted certificate, go to **Settings > Domains**, enable ACME, and follow [docs/acme-verification-runbook.md](acme-verification-runbook.md).
+<CardGroup :cols="2">
+<Card title="ACME verification runbook" href="/acme-verification-runbook">
 
-5. **Test the connection.**
+Issue and verify a real Let's Encrypt certificate.
 
-   ```bash
-   curl -v https://my-app.example.com
-   ```
+</Card>
+<Card title="Load balancing" href="/load-balancing">
 
-   Or visit it in a browser from outside your network.
+Balance traffic across an app's replicas.
 
-Done. No proxy container to configure anywhere.
+</Card>
+<Card title="App spec reference" href="/app-spec-reference">
 
-## See also
+Configure domains in `app.yaml`.
 
-- [App spec reference](app-spec-reference.md) - how to configure domains in your app.yaml
-- [ACME verification runbook](acme-verification-runbook.md) - step-by-step guide for issuing real Let's Encrypt certificates
-- [Getting started](getting-started.md) - first deployment walkthrough
-- [ADR 005: Caddy embedded ingress](../adr/005-caddy-embedded-ingress.md) - architecture decision rationale
-- [Comparison to Coolify and Dokploy](comparison.md) - why Levelrail's ingress is different
+</Card>
+<Card title="Multi-node" href="/multi-node">
+
+How ingress reaches apps on worker nodes.
+
+</Card>
+</CardGroup>

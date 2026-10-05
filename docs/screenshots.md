@@ -74,23 +74,15 @@ All credentials are freshly created for each run and never leave the scratch dat
 - `scripts/screenshots/login_state.py`: logs into a running control plane through the real login form and saves the session as a Playwright storage state file, reused across every shot.
 - `scripts/screenshots/capture.sh`: orchestrates the whole pipeline.
 
-## A second source: the live multi-node cluster
+## Screens that need more than one node
 
-Everything above runs against a fresh, disposable, single-node instance. Some screens genuinely don't exist on a single node: a multi-node topology view, cross-node ingress routing, a second node's own health. For those, capture from a real multi-node cluster instead.
-
-This is a manual maintainer process against real, credentialed external infrastructure, the same "not a CI job" framing as `capture.sh` above but more so: there is no script that drives it end to end, and there shouldn't be one left running unattended against a live box. Re-running it means repeating these steps by hand.
+Some screens do not exist on a single node: the multi-node topology view, cross-node ingress routing, a second node's own health. `capture.sh` does not cover them. Capture these by hand from a real multi-node cluster you control, with a logged-in browser session, and save the PNGs to `docs/assets/screenshots/` with a `multi-node-` prefix so their source is obvious. Embed them in [Multi-node](multi-node.md) or [Network topology](network-topology.md).
 
 ::: warning
-This touches a real server with real credentials. Never commit a credential value, a session token, or a `.env`-style file from this process. Only the resulting PNGs and doc edits are safe to commit.
+Never commit a credential, a session token, or a `.env` file from this process. Only the resulting PNGs and doc edits are safe to commit.
 :::
 
-::: details Steps
-1. **SSH in and look around, read-only first.** Confirm what's actually running before planning which screens to capture: `systemctl status levelrail`, check the data directory, and query the control plane's own API or CLI for existing apps/nodes/databases. Don't assume state from an old note; verify it live.
-2. **Get a real logged-in session.** Playwright/Puppeteer MCP are not used in this project; use `agent-browser` or `pinchtab` per their skill files. Check first whether a persistent browser profile from an earlier session already has a valid cookie for the cluster's dashboard domain before creating new credentials.
-3. **If no session is recoverable, mint a fresh credential on the server, not by guessing a password.** The control plane ships a built-in recovery path for exactly this: `sudo APP_DATA_DIR=<data dir> levelrail recover-admin` (add `-username`/`-password` to pin either, otherwise both are generated) resets or creates the first admin account directly against the local database through the application's own code, no SQL, no API session needed first. This mutates the live admin account, so treat it the same as any other production credential change: get explicit sign-off before running it, and rotate or remove the credential afterward once the capture is done.
-4. **Capture a small, genuinely useful set of shots**: node list/topology, mesh status, cross-node domain routing, and whatever else the specific cluster has real data for. Save them to `docs/assets/screenshots/` with a `multi-node-` prefix so it's obvious at a glance they came from this source, not from `capture.sh`.
-5. **Embed them in the relevant docs** (`multi-node.md`, `network-topology.md`) the same way the single-node shots are embedded elsewhere in this file's "See also" docs.
-:::
+If you lose access to the admin account on a cluster you own, `sudo APP_DATA_DIR=<data dir> levelrail recover-admin` resets or creates the first admin directly against the local database (add `-username` and `-password` to pin either, otherwise both are generated). It changes a live credential, so rotate or remove it once you are done.
 
 ## See also
 

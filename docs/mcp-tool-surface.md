@@ -1,5 +1,5 @@
 ---
-description: Estimated model context cost of the MCP tool list, by toolset.
+description: Estimated model context cost of the MCP tool list, by toolset, and the agent-core tool profile.
 ---
 
 # MCP tool surface
@@ -45,7 +45,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 
 Select with `--tool-profile agent-core` or `APP_MCP_TOOL_PROFILE=agent-core`. It is an allowlist independent of the read-only, standard and full modes; the API token's abilities still apply.
 
-15 tools, 1915 estimated tokens (cap 4000).
+15 tools, 1942 estimated tokens (cap 4000).
 
 - `cancel_deploy`
 - `deploy_app`

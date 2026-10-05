@@ -51,8 +51,8 @@
       {
         "heading": "Outbound connections",
         "paragraphs": [
-          "Levelrail's own code contains no hardcoded calls to servers operated by us. The one built-in lookup is an update check against GitHub's releases API, and it only runs when an operator opts in to automatic update checks. It checks and records the result and never applies an update by itself.",
-          "Everything else that leaves your network is something you configure: git providers for webhooks and clones, an ACME certificate authority for TLS, container registries, cloud provider APIs for node provisioning, object storage for backups, and the alert channels you set up."
+          "Levelrail's own code contains no hardcoded calls to servers operated by us. The one built-in lookup is a release check against GitHub's releases API. The periodic check only runs when an operator opts in to automatic update checks, and the Updates page also queries it when you open it. It records the result and never applies an update by itself.",
+          "Everything else that leaves your network is something you configure: git providers for webhooks and clones, an ACME certificate authority for TLS, container registries, cloud provider APIs for node provisioning, object storage for backups, browser push services for devices that subscribe to web push, and the alert channels you set up."
         ]
       },
       {
@@ -82,7 +82,7 @@
       },
       {
         "q": "Does it phone home?",
-        "a": "Only if you opt in to update checks, which query GitHub's releases API. Nothing else in the source calls a host operated by the project."
+        "a": "The only built-in lookup is the release check against GitHub's releases API, which runs periodically only if you opt in and when you open the Updates page. Nothing else in the source calls a host operated by the project."
       },
       {
         "q": "Where are my secrets stored?",

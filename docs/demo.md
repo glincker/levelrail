@@ -113,7 +113,7 @@
       },
       {
         "q": "How long does the install take?",
-        "a": "The install script handles the host check, Docker and the systemd service in one run. Most of the time is Docker pulling images on a fresh server."
+        "a": "The install script handles the host check, Docker and the systemd service in one run. Time depends mostly on your server and network, for example Docker pulling images on a fresh host."
       },
       {
         "q": "Can I try it without touching my current setup?",
@@ -122,7 +122,7 @@
     ],
     "cta": {
       "heading": "Run the demo on your own server",
-      "sub": "Ten minutes, one small VPS, nothing to sign up for."
+      "sub": "One small VPS, nothing to sign up for."
     },
     "related": [
       {

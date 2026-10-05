@@ -4,11 +4,7 @@ description: Core architecture of Levelrail's reconciler, agent, builds, ingress
 
 # Architecture
 
-This page explains how Levelrail is built, for contributors and for operators who want to know what runs on their server. To use the platform, start with [Getting started](getting-started.md).
-
-This is how Levelrail is actually built today, not just how the phase plan
-describes it. Where "shipped" and "designed for later" differ, this page
-says which one you're looking at.
+This page explains how Levelrail is built, for contributors and for operators who want to know what runs on their server. It describes the code as it is today. To use the platform, start with [Getting started](getting-started.md). For maturity per feature, see [feature status](feature-status.md).
 
 ## Control plane
 
@@ -65,8 +61,8 @@ graph LR
 ```
 
 **Additional capabilities:**
-- **WireGuard mesh** - `internal/network` (built on `wireguard-go`) gives every node a peer and internal DNS names that resolve across machines
-- **Dedicated build nodes** - Build nodes can be separated so builds don't compete with production containers for CPU
+- **WireGuard mesh** - `internal/network` (built on `wireguard-go`) is designed to give every node a peer and internal DNS names that resolve across machines. It is beta and not yet verified across real hosts, see [feature status](feature-status.md)
+- **Dedicated build nodes** - Nodes marked build-capable run builds so they don't compete with production containers for CPU
 
 ## Builds
 
@@ -79,7 +75,7 @@ Package: `internal/build` (see `internal/build/client.go`, `internal/build/solve
 - **Railpack auto-detection** - (`github.com/railwayapp/railpack`) auto-detects a build plan for apps that don't ship a Dockerfile
 - **Static site serving** - `build.type: static` is its own path with no container involved
 
-**Remote cache:** Registry-backed (`internal/build/cache.go`), allowing a fleet of dedicated build nodes to share cache state instead of each one rebuilding from scratch.
+**Remote cache:** Registry-backed (`internal/build/cache.go`), with an S3 option (`internal/build/cache_s3.go`), so dedicated build nodes can share cache state instead of each one rebuilding from scratch.
 
 ## Ingress
 
@@ -168,18 +164,9 @@ Directory: `web/` (React, Vite, TypeScript, Tailwind, TanStack Router and Query)
 
 **Live streaming:** Live build logs and app log tailing use server-sent events (SSE) rather than websockets, because SSE reconnects cleanly through proxies without extra client-side plumbing.
 
-::: details What's still ahead of the code
-
-A few pieces described in the platform's design aren't finished yet. Worth naming plainly rather than leaving implicit:
-
-**Public ACME certificate issuance (verified against a live domain)**
-
-Ingress defaults to an internal, self-signed issuer. A real Caddy ACME issuer, settings toggle, and form validation are all built and wired end to end, and issuance has been run against Let's Encrypt on a real public VPS (see [the recorded run](acme-verification-runbook.md#recorded-run-2026-10-05)). Still unproven live: renewal near expiry, and wildcard certificates via DNS-01.
-
-:::
-
 ## See also
 
-- [Comparison](comparison.md) - How this architecture compares to Coolify, Dokploy, and others
-- [Security overview](security.md) - How secrets, tokens, and TLS fit into this design
-- [Feature catalog](feature-catalog.md) - What's currently shipped across all layers
+- [Comparison](comparison.md): how this architecture compares to Coolify, Dokploy, and others
+- [Security overview](security.md): how secrets, tokens, and TLS fit into this design
+- [Feature status](feature-status.md): maturity of each layer
+- [ADRs](../adr): the decisions behind this design

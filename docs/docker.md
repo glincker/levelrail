@@ -11,11 +11,14 @@ Levelrail publishes two images to GitHub Container Registry, built for `linux/am
 
 See [Installing: image tags](installing.md#option-2-docker) for the `:latest`/`:beta`/`:edge` channels and how to verify a signature.
 
-The `install.sh` one-liner (in the root [README](../README.md)) remains the default for real deployments, as it also sets up Docker and a systemd unit. Use these images if you already run everything as containers and want Levelrail to follow the same pattern.
+The `install.sh` one-liner (see [Installing](installing.md)) remains the default for real deployments, as it also sets up Docker and a systemd unit. Use these images if you already run everything as containers and want Levelrail to follow the same pattern.
 
 ## Control plane
 
 The control plane image runs as a non-root user (distroless's `nonroot`, uid/gid 65532); the [agent image](#node-agent) runs as root. The `--group-add $(stat -c '%g' /var/run/docker.sock)` flag adds that user to the socket's host-side group at runtime, since the GID varies per system and cannot be baked into the image.
+
+<Tabs :items="['docker run','Compose']">
+<Tab value="docker run">
 
 ```bash
 docker run -d \
@@ -30,12 +33,18 @@ docker run -d \
   ghcr.io/glincker/levelrail:beta
 ```
 
-A [`docker-compose.yml`](../docker-compose.yml) is committed at the repo root and does the same thing. Before running it, find your host's docker group GID and export it, since the container's nonroot user needs to be added to that group to reach the socket:
+</Tab>
+<Tab value="Compose">
+
+A [`docker-compose.yml`](https://github.com/glincker/levelrail/blob/main/docker-compose.yml) is committed at the repo root and does the same thing. Before running it, find your host's docker group GID and export it, since the container's nonroot user needs to be added to that group to reach the socket:
 
 ```bash
 export DOCKER_GID=$(getent group docker | cut -d: -f3)
 docker compose up -d
 ```
+
+</Tab>
+</Tabs>
 
 Port 8080 is the plain-HTTP dashboard and API, so both the `docker run` example and the compose file bind it to `127.0.0.1` only. For the first sign-in, either tunnel to it (`ssh -L 8080:127.0.0.1:8080 user@host`, then open `http://127.0.0.1:8080`) or preset the admin with `APP_ADMIN_USERNAME`/`APP_ADMIN_PASSWORD`. Print the setup token with `docker compose exec levelrail levelrail setup-token`. Once a domain and `https://` dashboard URL are configured, the dashboard is served over 80/443 by the embedded Caddy. To publish 8080 on every interface anyway (for example on a private network), set `LEVELRAIL_HTTP_BIND=0.0.0.0` in the environment or `.env` file; for `docker run`, drop the `127.0.0.1:` prefix.
 
@@ -44,12 +53,12 @@ If `DOCKER_GID` is unset, the compose file falls back to `999`, the common defau
 The image ships a Docker `HEALTHCHECK` (`levelrail healthcheck --ready`, a GET against its own [`/readyz`](/troubleshooting#readiness-readyz)), so `docker ps` and `docker compose ps` show a real health status without extra compose config. Distroless has no shell or `curl`/`wget`, which is why this is a dedicated subcommand on the binary itself rather than a shell one-liner.
 
 ::: warning
-Granting access to `/var/run/docker.sock` allows this container to control every other container on the host, including starting privileged ones. This is not a new risk specific to Docker: it's the same trust level that `install.sh`'s systemd install already uses, because that's what's required to manage containers on your behalf (see [architecture.md](architecture.md)). Only run this image on a host you already trust with that level of access.
+Granting access to `/var/run/docker.sock` allows this container to control every other container on the host, including starting privileged ones. This is the same trust level that `install.sh`'s systemd install already uses, because that's what's required to manage containers on your behalf (see [Architecture](architecture.md)). Only run this image on a host you already trust with that level of access.
 :::
 
 ## Node agent
 
-The agent dials out to the control plane (it does not accept inbound connections, see [architecture.md](architecture.md)). You need to provide Docker socket access and a one-time join token for enrollment on first run.
+The agent dials out to the control plane (it does not accept inbound connections, see [Architecture](architecture.md)). You need to provide Docker socket access and a one-time join token for enrollment on first run.
 
 Unlike the control plane image, the agent image runs as **root**. It needs `/var/run/docker.sock` (root-equivalent on the host regardless of the user inside the container) and, for the WireGuard mesh, `--cap-add NET_ADMIN --device /dev/net/tun -e APP_MESH_ENABLED=1`. Running as root also means a named volume or a Docker-created host directory for the identity file is writable with no `chown`. The agent additionally refuses to send its join token until it has proven it can write the identity file, so a permissions mistake never burns the token.
 

@@ -88,13 +88,13 @@
         },
         {
           "label": "Observability",
-          "left": "Built-in plus paid add-ons",
+          "left": "See Vercel's own documentation",
           "right": "Metrics and log search built in, node-local"
         },
         {
           "label": "Data",
           "left": "Handled by the vendor",
-          "right": "Secrets, metrics and logs never leave your nodes"
+          "right": "Secrets, metrics and logs stay on your nodes unless you configure an export or drain"
         },
         {
           "label": "Edge network",

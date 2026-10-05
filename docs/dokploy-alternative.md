@@ -64,7 +64,7 @@
       },
       {
         "title": "Observability is core",
-        "body": "Metrics, full-text logs, crashloop detection with the last log lines, and alerts to seventeen channels all ship in the box, with no extra stack to install.",
+        "body": "Metrics, full-text logs, crashloop detection with the last log lines, and alerts to 18 notification channel kinds all ship in the box, with no extra stack to install.",
         "visual": [
           {
             "k": "cmd",

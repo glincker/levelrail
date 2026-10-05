@@ -4,35 +4,51 @@ description: Configure SMTP, AWS SES, or Resend as the backend for alert emails 
 
 # Email notifications
 
-Levelrail sends two kinds of email: alert notifications (when an alert
-rule you've configured fires) and password-reset links. Both go through
-the same backend, configured once at **Settings > Email**.
+Levelrail sends email for alert notifications (when an alert rule with an email channel fires), password-reset links and team invites. All of them go through one backend, configured once at **Settings > Email**.
 
-## Choosing a backend
+Credentials are stored with the control plane's envelope encryption, so a master key must be configured. They are never shown back after saving: a saved field reads "already configured, leave blank to keep it".
 
-Pick whichever you already have:
+## Choose a backend
 
-- **SMTP** works with any mail server or transactional-email provider
-  that speaks SMTP (Gmail, Mailgun, Postmark, your own mail server).
-- **AWS SES** if you already run infrastructure on AWS.
-- **Resend** if you want a dedicated transactional-email provider with a
-  simple API key.
+<Tabs :items="['SMTP', 'AWS SES', 'Resend']">
+<Tab value="SMTP">
 
-Each backend needs a "from" address and provider-specific credentials.
-Credentials are encrypted at rest and never shown back to you after
-saving; a saved field shows "already configured, leave blank to keep
-it" instead of the actual value.
+Works with any mail server or transactional provider that speaks SMTP (Gmail, Mailgun, Postmark, your own server). Needs a host, port, "from" address, and optionally a username and password.
 
-## Testing it
+```bash
+levelrail-cli settings email set --backend smtp \
+  --smtp-host smtp.example.com --smtp-port 587 \
+  --smtp-username apikey --smtp-password '...' \
+  --smtp-from alerts@example.com
+```
 
-After saving, use **Send test email** to confirm the backend actually
-works end-to-end: it sends one real email through the exact same code
-path alert notifications and password resets use, so a successful test
-means both of those will work too.
+You can also set `APP_SMTP_HOST`, `APP_SMTP_PORT`, `APP_SMTP_USERNAME`, `APP_SMTP_PASSWORD` and `APP_SMTP_FROM` on the control plane.
 
-## Looking for Slack, Discord, or webhook notifications instead?
+</Tab>
+<Tab value="AWS SES">
 
-Email is one notification channel among several. Chat and webhook
-notifications (Slack, Discord, Telegram, PagerDuty, and more) live at
-**Settings > Notification channels**, configured per-alert-rule rather
-than platform-wide.
+For installs already on AWS. Needs a region, access key ID, secret access key and a verified "from" address.
+
+```bash
+levelrail-cli settings email set --backend ses \
+  --ses-region us-east-1 --ses-access-key-id AKIA... \
+  --ses-secret-access-key '...' --ses-from alerts@example.com
+```
+
+</Tab>
+<Tab value="Resend">
+
+A dedicated transactional provider with a single API key. Needs the API key and a "from" address. Configure it in **Settings > Email** or through `PUT` on the email settings API; the CLI's `settings email set` covers SMTP and SES only.
+
+</Tab>
+</Tabs>
+
+`levelrail-cli settings email get` shows the current settings without credential values.
+
+## Test it
+
+After saving, use **Send test email** in **Settings > Email**. It sends one real message through the same code path alerts, resets and invites use, so a successful test covers all three.
+
+## Other notification channels
+
+Email is one channel among several. Slack, Discord, Telegram, PagerDuty and the rest are configured per channel at **Settings > Notification channels**. See [Observability](observability.md#notification-channels).

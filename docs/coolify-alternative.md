@@ -112,7 +112,7 @@
     },
     "compare": {
       "heading": "Coolify and Levelrail, side by side",
-      "intro": "Architecture and design choices, not a ranking. Coolify is a mature project with a very large template catalog.",
+      "intro": "Architecture and design choices, not a ranking. Coolify is a mature project with a wide template catalog.",
       "left": "Coolify",
       "right": "Levelrail",
       "rows": [
@@ -173,7 +173,7 @@
       },
       {
         "q": "Does Levelrail have Coolify's one-click service catalog?",
-        "a": "Levelrail ships a curated template catalog and is expanding it. Coolify has a larger catalog today, so check whether the services you need are covered before moving."
+        "a": "Levelrail ships a catalog of 311 one-click templates, a sample of which is deployed by its end-to-end tests. Check that the services you need are covered, in either catalog, before moving."
       },
       {
         "q": "Can I run Levelrail on more than one server?",

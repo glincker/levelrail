@@ -94,7 +94,7 @@
         {
           "label": "Data location",
           "left": "With the vendor",
-          "right": "On your nodes: secrets, metrics and logs stay local"
+          "right": "On your nodes: secrets, metrics and logs are stored locally unless you configure an export"
         }
       ],
       "more": {

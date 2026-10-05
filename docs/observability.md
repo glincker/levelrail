@@ -14,6 +14,8 @@ This platform keeps metrics and logs on each node's local store, with a federate
 - `app_resource_usage.go`, `alerts.go`, `notification_channels.go` - supporting handlers
 :::
 
+<InlineToc default-open />
+
 ## Why node-local, not a central store
 
 Every other platform in this category (and every hosted observability vendor) centralizes: ship every metric and log line to one place, index it there, query it there. That creates write amplification for every container on every node, plus a central index that keeps growing whether or not anyone queries it.
@@ -136,7 +138,7 @@ When the database exceeds the size cap, the oldest tenth of the finest tier is d
 - Node metrics - `NodeMetricsDashboard` shows the sum-across-placed-services view plus real disk/patch readings.
 
 **App health timeline:**
-- `/apps/$name/overview` - `AppHealthTimeline` is a compact 24h/7d strip answering "what happened to this app, and when". It plots deploy markers (green succeeded, red failed, blue running), container restarts (amber, bucketed so a burst reads as one marker with a count), and shaded error windows (a failed deploy from start to finish, or a crashloop of 3 or more restarts with under 15 minutes between them). Markers are keyboard focusable with aria labels and show details on hover or focus; Enter or click opens the deploy's logs (deploys) or the app's logs (restarts). It reads only existing data (`GET /api/v1/apps/{name}/deploy-attempts` and the `container_restart_count` metric), so there is no new API or CLI surface: the same data is available from `levelrail apps deploys list` and the metrics API. If telemetry is not configured, only deploys are shown.
+- `/apps/$name/overview` - `AppHealthTimeline` is a compact 24h/7d strip answering "what happened to this app, and when". It plots deploy markers (green succeeded, red failed, blue running), container restarts (amber, bucketed so a burst reads as one marker with a count), and shaded error windows (a failed deploy from start to finish, or a crashloop of 3 or more restarts with under 15 minutes between them). Markers are keyboard focusable with aria labels and show details on hover or focus; Enter or click opens the deploy's logs (deploys) or the app's logs (restarts). It reads only existing data (`GET /api/v1/apps/{name}/deploy-attempts` and the `container_restart_count` metric), so there is no new API or CLI surface: the same data is available from `levelrail-cli apps deploys list` and the metrics API. If telemetry is not configured, only deploys are shown.
 
 **Logs:**
 - `/apps/$name/logs` - Two tabs: `Live` (LiveLogViewer, default) and `Search` (LogSearchPanel for historical full-text search). Scoped to the app's running container(s).
@@ -156,7 +158,7 @@ When the database exceeds the size cap, the oldest tenth of the finest tier is d
 
 These are three different reads over the same underlying log store, not separate systems:
 
-Log collection resumes where it stopped. When the control plane restarts, or a container exits and its log stream reconnects, collection continues from the newest stored line for that container instead of re-reading Docker's whole buffer, so lines are not duplicated. Verified locally: a restart left an app's stored line count unchanged, where before every restart added another full copy of the container's output.
+Log collection resumes where it stopped. When the control plane restarts, or a container exits and its log stream reconnects, collection continues from the newest stored line for that container instead of re-reading Docker's whole buffer, so lines are not duplicated.
 
 **Live tail** (`GET /api/v1/apps/{name}/logs/stream`, SSE)
 - Opens with a short backfill (last 5 minutes, capped at 200 lines, oldest first).
@@ -170,7 +172,7 @@ Log collection resumes where it stopped. When the control plane restarts, or a c
 - The response carries `total` (matches before `limit`) and each entry a `level` when one was detected.
 - This is what "why was this app slow at 3am last Tuesday" queries.
 
-**Compact query for agents** (`levelrail logs query <app>`, MCP `query_logs`)
+**Compact query for agents** (`levelrail-cli logs query <app>`, MCP `query_logs`)
 - Filters by level, time window (`--since`/`--until`, a duration or RFC3339), deploy attempt (`--deploy`, the window from that attempt's start to the next attempt's start) and text.
 - Returns an excerpt of the newest matching lines, never a full dump: at most `--max-lines` lines (default 100) and a byte cap (default 8 KB, set with `--max-bytes` or `APP_MCP_LOG_MAX_BYTES`), plus counts and a notice such as `showing 40 of 1,812 matching lines (newest), use since/until or level to narrow`.
 - Uses the stored search above with `level` and `limit`; `--json` prints the excerpt as one object.
@@ -197,7 +199,7 @@ Log collection resumes where it stopped. When the control plane restarts, or a c
 `GET /api/v1/databases/{name}/slow-queries` returns structured slow-query entries (timestamp, duration, query text, rows examined where the engine reports it) for Postgres and MySQL. The two engines get their data differently:
 
 - **Postgres**: `log_min_duration_statement` is always set on the container (default 1000ms), so any statement at or above the threshold gets logged as `duration: N ms  statement: ...`. This lands in the same container log stream `/logs` already reads, so the handler reads it from the log store, no separate collector. No rows-examined count; Postgres doesn't log it here.
-- **MySQL**: the built-in slow query log is enabled (`slow-query-log=1`, `long-query-time` from the same threshold), writing to a file inside the container's own data directory. MySQL 8's FILE log sink cannot reliably open `/dev/stderr` from inside a container (confirmed against a real container: `Could not use /dev/stderr for logging`), so there is no working Docker-log-stream source for this engine. The handler execs into the running container instead (the same `docker.Runtime.Exec` primitive backups already use to run `pg_dump`/`mysqldump`) and reads the file directly, bounded to the last 4,000 lines.
+- **MySQL**: the built-in slow query log is enabled (`slow-query-log=1`, `long-query-time` from the same threshold), writing to a file inside the container's own data directory. MySQL 8's FILE log sink cannot reliably open `/dev/stderr` from inside a container (it fails with `Could not use /dev/stderr for logging`), so there is no working Docker-log-stream source for this engine. The handler execs into the running container instead (the same `docker.Runtime.Exec` primitive backups already use to run `pg_dump`/`mysqldump`) and reads the file directly, bounded to the last 4,000 lines.
 - **Redis and every other engine** (MongoDB, MariaDB, KeyDB, Dragonfly, ClickHouse) return 400. Redis's SLOWLOG is a live-server command against an in-memory ring buffer, not something that appears in log output, so it doesn't fit this shape and isn't planned for this endpoint.
 
 Threshold is control-plane-wide, not per-database: `APP_DATABASE_SLOW_QUERY_THRESHOLD_MS` (default 1000). Changing it takes effect on the database's next reconcile (container recreate). The MySQL path requires exec support configured on the control plane (same requirement `apps/{name}/exec` has); without it, MySQL slow-query requests return 501.
@@ -268,11 +270,11 @@ From the CLI: `levelrail-cli nodes capacity-forecast <id>`.
 
 ## Alert rules
 
-There are ten rule kinds, all stored in one table (`alert_rules`). The evaluation loop (`internal/alerting.Engine`) runs every 30 seconds (`alertEvaluationInterval`, fixed, not env-configurable).
+There are fifteen rule kinds, all stored in one table (`alert_rules`). The evaluation loop (`internal/alerting.Engine`) runs every 30 seconds (`alertEvaluationInterval`, fixed, not env-configurable).
 
 Each rule tracks its own pending/firing state and notifies only on transitions (firing or resolved), never on every tick a rule stays in the same state. This prevents channels from being trained to ignore repeated alerts.
 
-::: details Ten rule kinds and their configuration
+::: details Rule kinds and their configuration
 
 | Kind | Scope | What it watches | Key fields |
 | --- | --- | --- | --- |
@@ -288,6 +290,8 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 | `domain_health` | one app's own domains | a DNS check gone bad (not resolving, or resolving somewhere else) on any of the app's configured domains | `for_duration` (optional debounce) |
 | `backup_missing` | one database (platform-wide) or one app's own volume | last successful backup trailing its own cron schedule's expected interval by more than a grace period | `backup_resource_kind` (`database` or `volume`), `backup_database_name` or `backup_service_name`/`backup_volume_name`, `for_duration` (reused as the overdue grace period, default 6h) |
 | `control_plane_backup_stale` | platform-wide | the newest control plane self-backup snapshot (see [control plane backup](/control-plane-backup)) being older than a maximum age; quiet when scheduled backups are disabled or no snapshot exists yet | `for_duration` (reused as the maximum age, default 3d) |
+| `slo_burn` | one app | error budget burn rate over the app's ingress request metrics, see [SLO burn-rate alerts](#slo-burn-rate-alerts) | `slo` (target, optional latency limit) |
+| `version_skew` | platform-wide | the running build is behind the latest release on the configured update channel | none required |
 | `log_archive_stale` | platform-wide | a log archive policy's last run failed, or it has not succeeded within a maximum age (see [log archive](/log-archive)) | `for_duration` (reused as the maximum age, default three intervals, at least 2h) |
 
 :::
@@ -321,7 +325,7 @@ A firing `crashloop` rule attaches the last 200 lines of the crashlooping contai
 
 This is useful context for recipients, but there's no API endpoint that reconstructs those exact lines after the fact. `AlertRulesPanel` links to the app's live/historical log view instead of trying to retrieve them.
 
-**Restart backoff.** The reconciler does not restart a container that keeps exiting on every Docker event. The first restart is immediate. After it, each further restart of the same container waits twice as long as the last (`APP_RESTART_BACKOFF_BASE`, default `5s`, doubling up to `APP_RESTART_BACKOFF_MAX`, default `2m`), and the delay starts over once the container has stayed up for `APP_RESTART_BACKOFF_RESET` (default `10m`). While a container is waiting, the app's `Ready` condition is `False` with reason `CrashLoopBackOff` and a message such as `keeps exiting (2 restarts), next restart in 9s`, and `levelrail-cli apps status <name>` shows it. Set `APP_RESTART_BACKOFF_BASE=0` to restore the old restart-immediately behavior. The backoff is in memory, so a control plane restart clears it. Verified locally with a container that exits immediately: about 140 reconcile passes in two minutes before, 6 in 45 seconds after. The default maximum of 2 minutes keeps a crashlooping app above the usual crashloop rule threshold (3 restarts in 10 minutes), so the rule keeps firing instead of resolving between restarts.
+**Restart backoff.** The reconciler does not restart a container that keeps exiting on every Docker event. The first restart is immediate. After it, each further restart of the same container waits twice as long as the last (`APP_RESTART_BACKOFF_BASE`, default `5s`, doubling up to `APP_RESTART_BACKOFF_MAX`, default `2m`), and the delay starts over once the container has stayed up for `APP_RESTART_BACKOFF_RESET` (default `10m`). While a container is waiting, the app's `Ready` condition is `False` with reason `CrashLoopBackOff` and a message such as `keeps exiting (2 restarts), next restart in 9s`, and `levelrail-cli apps status <name>` shows it. Set `APP_RESTART_BACKOFF_BASE=0` to restore the old restart-immediately behavior. The backoff is in memory, so a control plane restart clears it. The default maximum of 2 minutes keeps a crashlooping app above the usual crashloop rule threshold (3 restarts in 10 minutes), so the rule keeps firing instead of resolving between restarts.
 
 **Auto-rollback on crashloop**
 
@@ -525,55 +529,65 @@ Dashboard: the **Health & readiness** panel on an app's Overview tab (`AppHealth
 
 ## Integration walkthrough
 
-1. **Query one app's CPU over the last hour, bucketed into 5-minute averages**:
+<Steps>
+<Step title="Query one app's CPU over the last hour, bucketed into 5-minute averages">
 
-   ::: code-group
-   ```bash [curl]
-   curl -s -H "Authorization: Bearer $TOKEN" \
-     "https://your-control-plane/api/v1/apps/my-app/metrics?metric=cpu_percent&step=5m"
-   ```
-   ```bash [CLI]
-   levelrail-cli apps metrics my-app --metric cpu_percent --since 1h --step 5m
-   ```
-   :::
+::: code-group
+```bash [curl]
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "https://your-control-plane/api/v1/apps/my-app/metrics?metric=cpu_percent&step=5m"
+```
+```bash [CLI]
+levelrail-cli apps metrics my-app --metric cpu_percent --since 1h --step 5m
+```
+:::
 
-   Response:
+Response:
 
-   ```json
-   { "metric": "cpu_percent", "points": [
-     { "timestamp": "2026-09-12T09:00:00Z", "value": 4.2, "count": 20 },
-     { "timestamp": "2026-09-12T09:05:00Z", "value": 5.1, "count": 20 }
-   ] }
-   ```
+```json
+{ "metric": "cpu_percent", "points": [
+  { "timestamp": "2026-09-12T09:00:00Z", "value": 4.2, "count": 20 },
+  { "timestamp": "2026-09-12T09:05:00Z", "value": 5.1, "count": 20 }
+] }
+```
 
-2. **Search that app's logs for an error in the last day**:
+</Step>
+<Step title="Search that app's logs for an error in the last day">
 
-   ::: code-group
-   ```bash [curl]
-   curl -s -H "Authorization: Bearer $TOKEN" \
-     "https://your-control-plane/api/v1/apps/my-app/logs?from=2026-09-11T00:00:00Z&q=panic"
-   ```
-   ```bash [CLI]
-   levelrail-cli apps logs my-app --since 24h --q panic
-   ```
-   :::
+::: code-group
+```bash [curl]
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "https://your-control-plane/api/v1/apps/my-app/logs?from=2026-09-11T00:00:00Z&q=panic"
+```
+```bash [CLI]
+levelrail-cli apps logs my-app --since 24h --q panic
+```
+:::
 
-3. **Connect a Slack channel and test it**:
+</Step>
+<Step title="Connect a Slack channel and test it">
 
-   ```bash
-   levelrail-cli channels create --name "on-call" --kind slack --notify-url https://hooks.slack.com/services/...
-   levelrail-cli channels test <id>
-   ```
+```bash
+levelrail-cli channels create --name "on-call" --kind slack --notify-url https://hooks.slack.com/services/...
+levelrail-cli channels test <id>
+```
 
-4. **Create a threshold alert on that app, notifying through the new channel**:
+</Step>
+<Step title="Create a threshold alert on that app, notifying through the new channel">
 
-   ```bash
-   levelrail-cli apps alerts create my-app --name "high CPU" --kind threshold \
-     --metric cpu_percent --comparator ">" --threshold 90 --for-duration 5m \
-     --channel-id <channel-id>
-   ```
+```bash
+levelrail-cli apps alerts create my-app --name "high CPU" --kind threshold \
+  --metric cpu_percent --comparator ">" --threshold 90 --for-duration 5m \
+  --channel-id <channel-id>
+```
 
-5. **Watch it fire**: `levelrail-cli apps alerts list my-app` shows `FIRING=true` once the condition holds for 5 minutes; a delivery row shows up under `levelrail-cli channels deliveries <channel-id>`.
+</Step>
+<Step title="Watch it fire">
+
+`levelrail-cli apps alerts list my-app` shows `FIRING=true` once the condition holds for 5 minutes; a delivery row shows up under `levelrail-cli channels deliveries <channel-id>`.
+
+</Step>
+</Steps>
 
 ## API reference
 
@@ -702,7 +716,6 @@ levelrail-cli push-subscriptions revoke <id>
 **Fixed configurations:**
 - Alert evaluation interval (30s) is fixed, not env-configurable (unlike per-kind thresholds).
 - No alert-rule-specific change history (visible only in generic `GET /api/v1/audit-log`).
-- SLO burn-rate rules are not built; the noise pipeline has no special handling for them yet.
 - Grouping, streak, flap and held-notification state is in memory and does not survive a control plane restart.
 - Silences and history are global, not scoped by IAM policy on individual apps: any principal with the base `read` or `write` ability can list or create them for any app.
 

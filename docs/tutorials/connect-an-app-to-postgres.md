@@ -11,7 +11,8 @@ By the end of this tutorial you will have a Postgres database running next to yo
 - A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
 - An app to connect. This tutorial reuses the `hello` app from [Deploy a Docker app](deploy-a-docker-app.md). Any app works.
 
-## 1. Create the database
+<Steps>
+<Step title="Create the database">
 
 ```bash
 levelrail-cli databases create --name main-db --engine postgres --version 16
@@ -40,7 +41,8 @@ The first start pulls the image, so allow a minute on a fresh server.
 
 ![The Databases page listing a healthy Postgres 16 database](../assets/screenshots/databases-list.png)
 
-## 2. Connect the app
+</Step>
+<Step title="Connect the app">
 
 ```bash
 levelrail-cli apps connect hello main-db
@@ -66,7 +68,8 @@ MAIN_DB_DATABASE_URL  main-db   url    db-main-db  false     false
 
 You can pick a different field or variable name. For example, `levelrail-cli apps connect hello main-db --field host --env-var DB_HOST` injects only the host. The fields are `url`, `host`, `port`, `username`, `password`, and `database`.
 
-## 3. Restart so the app picks it up
+</Step>
+<Step title="Restart so the app picks it up">
 
 The value is injected when a container is created, so restart the app:
 
@@ -88,6 +91,9 @@ postgres://main-db:<password>@db-main-db:5432/main-db?sslmode=require
 The app reaches the database by its container name on a private network, with TLS required. Levelrail generated the credentials, so you never choose or paste a password.
 
 If `apps exec` answers `app has no running container`, the new container is still starting. Wait a few seconds and run it again.
+
+</Step>
+</Steps>
 
 ## What the reachability badge means
 
