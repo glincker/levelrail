@@ -38,7 +38,7 @@ func TestClient_AppLifecycleActions(t *testing.T) {
 		},
 		{
 			name:       "DeleteDatabase",
-			call:       func(c *Client) error { return c.DeleteDatabase(context.Background(), "main") },
+			call:       func(c *Client) error { return c.DeleteDatabase(context.Background(), "main", false) },
 			wantMethod: http.MethodDelete,
 			wantPath:   "/api/v1/databases/main",
 		},

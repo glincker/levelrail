@@ -86,12 +86,12 @@ func newTestSucceededBackup(content string) store.BackupHistory {
 }
 
 func TestVerifyRunner_VerifyBackup_Passed(t *testing.T) {
-	backup := newTestSucceededBackup("dump-bytes")
+	backup := newTestSucceededBackup("dump-bytes\n-- PostgreSQL database dump complete\n")
 	hs := &fakeVerificationHistoryStore{
 		backups: map[string]store.BackupHistory{"bkh_1": backup},
 		targets: map[string]store.BackupTarget{"bkt_test": newTestTarget()},
 	}
-	down := &fakeDownloader{content: "dump-bytes"}
+	down := &fakeDownloader{content: "dump-bytes\n-- PostgreSQL database dump complete\n"}
 	fixed := time.Date(2026, 8, 15, 4, 0, 0, 0, time.UTC)
 	vr := &VerifyRunner{
 		Store:      hs,
@@ -118,8 +118,8 @@ func TestVerifyRunner_VerifyBackup_Passed(t *testing.T) {
 	if !got.checksumMatch || !got.sizeMatch || !got.formatValid {
 		t.Errorf("finish checks = %+v, want all true", got)
 	}
-	if got.downloadedBytes != int64(len("dump-bytes")) {
-		t.Errorf("finish downloadedBytes = %d, want %d", got.downloadedBytes, len("dump-bytes"))
+	if got.downloadedBytes != int64(len("dump-bytes\n-- PostgreSQL database dump complete\n")) {
+		t.Errorf("finish downloadedBytes = %d, want %d", got.downloadedBytes, len("dump-bytes\n-- PostgreSQL database dump complete\n"))
 	}
 	if got.errMsg != "" {
 		t.Errorf("finish errMsg = %q, want empty", got.errMsg)
@@ -317,7 +317,7 @@ func TestVerifyRunner_VerifyBackup_LegacyBackupWithNoChecksumOrSize_ChecksOnlyFo
 	vr := &VerifyRunner{
 		Store:      hs,
 		Secrets:    newTestSecrets(),
-		Downloader: &fakeDownloader{content: "dump-bytes"},
+		Downloader: &fakeDownloader{content: "dump-bytes\n-- PostgreSQL database dump complete\n"},
 	}
 
 	err := vr.VerifyBackup(context.Background(), "bkv_1", "bkh_1", store.EnginePostgres, "alice")
@@ -326,5 +326,40 @@ func TestVerifyRunner_VerifyBackup_LegacyBackupWithNoChecksumOrSize_ChecksOnlyFo
 	}
 	if len(hs.finished) != 1 || hs.finished[0].status != store.BackupVerificationStatusPassed {
 		t.Fatalf("finish calls = %+v, want exactly one BackupVerificationStatusPassed", hs.finished)
+	}
+}
+
+func TestValidateFormat_DumpTrailers(t *testing.T) {
+	tests := []struct {
+		name   string
+		engine string
+		tail   string
+		want   bool
+	}{
+		{"postgres complete", store.EnginePostgres, "x\n-- PostgreSQL database dump complete\n\n\\unrestrict abc\n", true},
+		{"postgres truncated", store.EnginePostgres, "COPY t (a) FROM stdin;\n1\n2", false},
+		{"mysql complete", store.EngineMySQL, "-- Dump completed on 2026-10-05  1:00:00\n", true},
+		{"mysql truncated", store.EngineMySQL, "INSERT INTO t VALUES (1),(2", false},
+		{"mariadb truncated", store.EngineMariaDB, "INSERT INTO t VALUES (1)", false},
+		{"mongodb has no trailer check", store.EngineMongoDB, "anything", true},
+		{"unknown engine only needs bytes", "", "anything", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, msg := validateFormat(tt.engine, []byte("-- header"), []byte(tt.tail), int64(len(tt.tail)))
+			if got != tt.want {
+				t.Fatalf("validateFormat = %v (%s), want %v", got, msg, tt.want)
+			}
+		})
+	}
+}
+
+func TestTailCapture_KeepsLastBytes(t *testing.T) {
+	c := &tailCapture{maxBytes: 4}
+	for _, chunk := range []string{"ab", "cdef", "g"} {
+		_, _ = c.Write([]byte(chunk))
+	}
+	if string(c.bytes()) != "defg" {
+		t.Fatalf("tail = %q, want defg", c.bytes())
 	}
 }

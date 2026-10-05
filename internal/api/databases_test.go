@@ -928,3 +928,51 @@ func TestHandleDatabaseStatus_NoConditionsYetIsEmptyList(t *testing.T) {
 		t.Errorf("conditions = %+v, want empty (no reconcile has run against this test router)", conditions)
 	}
 }
+
+func TestHandleDeleteDatabase_Safety(t *testing.T) {
+	tests := []struct {
+		name       string
+		query      string
+		attach     bool
+		wantStatus int
+		wantGone   bool
+	}{
+		{"unused database deletes", "", false, http.StatusNoContent, true},
+		{"used database refused", "", true, http.StatusConflict, false},
+		{"used database with force deletes", "?force=true", true, http.StatusNoContent, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fake := &fakeExecAppRuntime{inspectByNameCalls: make(chan struct{}, 4)}
+			rt, db := newTestRouterWithExecRuntime(t, fake)
+			cookie := loginTestSession(t, rt, db)
+			seedWebAppForTest(t, db)
+			mustCreateDatabase(t, rt, cookie, `{"name":"main","engine":"redis","version":"7"}`)
+			if tt.attach {
+				rec := httptest.NewRecorder()
+				rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/connections", `{"database":"main"}`))
+				if rec.Code != http.StatusOK {
+					t.Fatalf("connect status = %d, body = %s", rec.Code, rec.Body.String())
+				}
+			}
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/databases/main"+tt.query, ""))
+			if rec.Code != tt.wantStatus {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, tt.wantStatus, rec.Body.String())
+			}
+
+			_, err := db.GetDesiredDatabase(context.Background(), "main")
+			if gone := errors.Is(err, store.ErrDatabaseNotFound); gone != tt.wantGone {
+				t.Fatalf("database gone = %v, want %v (err %v)", gone, tt.wantGone, err)
+			}
+			if tt.wantGone {
+				select {
+				case <-fake.inspectByNameCalls:
+				case <-time.After(2 * time.Second):
+					t.Fatal("deleting a database must tear its container down")
+				}
+			}
+		})
+	}
+}

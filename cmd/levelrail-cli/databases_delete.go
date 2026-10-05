@@ -11,6 +11,7 @@ import (
 func runDatabasesDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "databases delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesDeleteUsage(prog)) }
+	force := fs.Bool("force", false, "delete even while apps still connect to this database")
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -24,7 +25,7 @@ func runDatabasesDelete(prog string, args []string, stdout, stderr io.Writer, lo
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
-	if err := client.DeleteDatabase(context.Background(), name); err != nil {
+	if err := client.DeleteDatabase(context.Background(), name, *force); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete database %q: %w", name, err))
 	}
 
@@ -41,9 +42,12 @@ func databasesDeleteUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s databases delete <name> [flags]
 
-Removes a managed database's desired state.
+Stops a managed database and removes it from the control plane. Its data
+volume and any backups in storage are kept. Refuses while apps still connect
+to it unless --force is given.
 
 Flags:
+  --force                   delete even while apps still connect to this database
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

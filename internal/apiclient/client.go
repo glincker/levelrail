@@ -831,8 +831,12 @@ func (c *Client) StartDatabase(ctx context.Context, name string) (DatabaseResour
 }
 
 // DeleteDatabase calls DELETE /api/v1/databases/{name}.
-func (c *Client) DeleteDatabase(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name), nil, nil)
+func (c *Client) DeleteDatabase(ctx context.Context, name string, force bool) error {
+	path := "/api/v1/databases/" + PathEscape(name)
+	if force {
+		path += "?force=true"
+	}
+	return c.do(ctx, http.MethodDelete, path, nil, nil)
 }
 
 // ListDatabaseEngines calls GET /api/v1/database-engines: every engine
@@ -849,6 +853,14 @@ func (c *Client) ListDatabaseEngines(ctx context.Context) ([]DatabaseEngineResou
 func (c *Client) SetDatabaseResources(ctx context.Context, name string, resources *ServiceResources) (DatabaseResource, error) {
 	var out DatabaseResource
 	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/resources", SetDatabaseResourcesRequest{Resources: resources}, &out)
+	return out, err
+}
+
+// SetDatabaseVersion calls PUT /api/v1/databases/{name}/version: a minor or
+// patch image change over the same data volume.
+func (c *Client) SetDatabaseVersion(ctx context.Context, name, version string) (DatabaseResource, error) {
+	var out DatabaseResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/version", map[string]string{"version": version}, &out)
 	return out, err
 }
 

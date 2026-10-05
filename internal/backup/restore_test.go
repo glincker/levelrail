@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -14,7 +15,7 @@ import (
 
 func TestContainerRestorer_Restore_Postgres(t *testing.T) {
 	rt := &fakeExecRuntime{content: "CREATE TABLE...\n"}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	dump := "-- pg_dump plain SQL output"
 	if err := r.Restore(context.Background(), store.EnginePostgres, "db-mydb", strings.NewReader(dump)); err != nil {
@@ -35,7 +36,7 @@ func TestContainerRestorer_Restore_Postgres(t *testing.T) {
 
 func TestContainerRestorer_Restore_MySQL(t *testing.T) {
 	rt := &fakeExecRuntime{content: "-- mysql restore output\n"}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	dump := "DROP TABLE IF EXISTS `t`;\nCREATE TABLE `t` (...);\n"
 	if err := r.Restore(context.Background(), store.EngineMySQL, "db-mydb", strings.NewReader(dump)); err != nil {
@@ -48,7 +49,7 @@ func TestContainerRestorer_Restore_MySQL(t *testing.T) {
 	if rt.gotStdin != dump {
 		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
 	}
-	wantCmd := []string{"sh", "-c", `mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $MYSQL_DATABASE; CREATE DATABASE $MYSQL_DATABASE;" && exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"`}
+	wantCmd := []string{"sh", "-c", `mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS ` + shBacktick + `$MYSQL_DATABASE` + shBacktick + `; CREATE DATABASE ` + shBacktick + `$MYSQL_DATABASE` + shBacktick + `;" && exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"`}
 	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
 		t.Errorf("cmd = %v, want %v", rt.gotInputCmd, wantCmd)
 	}
@@ -56,7 +57,7 @@ func TestContainerRestorer_Restore_MySQL(t *testing.T) {
 
 func TestContainerRestorer_Restore_MongoDB(t *testing.T) {
 	rt := &fakeExecRuntime{content: "-- mongorestore output\n"}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	dump := "mongodump archive bytes"
 	if err := r.Restore(context.Background(), store.EngineMongoDB, "db-mydb", strings.NewReader(dump)); err != nil {
@@ -69,7 +70,7 @@ func TestContainerRestorer_Restore_MongoDB(t *testing.T) {
 	if rt.gotStdin != dump {
 		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
 	}
-	wantCmd := []string{"sh", "-c", `mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval 'db.getMongo().getDBNames().forEach(function(n){if(n!=="admin"&&n!=="local"&&n!=="config"){db.getSiblingDB(n).dropDatabase()}})' && exec mongorestore --archive --drop --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}
+	wantCmd := []string{"sh", "-c", `mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval 'db.getMongo().getDBNames().forEach(function(n){if(n!=="admin"&&n!=="local"&&n!=="config"){db.getSiblingDB(n).dropDatabase()}})' && exec mongorestore --archive --drop --nsExclude "admin.*" --nsExclude "config.*" --nsExclude "local.*" --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}
 	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
 		t.Errorf("cmd = %v, want %v", rt.gotInputCmd, wantCmd)
 	}
@@ -84,7 +85,7 @@ func TestContainerRestorer_Restore_Redis(t *testing.T) {
 	rt := &fakeExecRuntime{
 		inspectState: &docker.ContainerState{ID: "container-id-123"},
 	}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	dump := "REDIS0011..."
 	if err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader(dump)); err != nil {
@@ -111,7 +112,7 @@ func TestContainerRestorer_Restore_Redis(t *testing.T) {
 	if !reflect.DeepEqual(rt.callOrder, wantOrder) {
 		t.Errorf("call order = %v, want %v", rt.callOrder, wantOrder)
 	}
-	wantDisableSaveCmd := []string{"redis-cli", "CONFIG", "SET", "save", ""}
+	wantDisableSaveCmd := redisDisableAutoSaveCmd
 	if !reflect.DeepEqual(rt.gotCmd, wantDisableSaveCmd) {
 		t.Errorf("Exec cmd = %v, want %v", rt.gotCmd, wantDisableSaveCmd)
 	}
@@ -119,7 +120,7 @@ func TestContainerRestorer_Restore_Redis(t *testing.T) {
 
 func TestContainerRestorer_Restore_MariaDB(t *testing.T) {
 	rt := &fakeExecRuntime{content: "-- mariadb restore output\n"}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	dump := "DROP TABLE IF EXISTS `t`;\nCREATE TABLE `t` (...);\n"
 	if err := r.Restore(context.Background(), store.EngineMariaDB, "db-mydb", strings.NewReader(dump)); err != nil {
@@ -132,7 +133,7 @@ func TestContainerRestorer_Restore_MariaDB(t *testing.T) {
 	if rt.gotStdin != dump {
 		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
 	}
-	wantCmd := []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $MARIADB_DATABASE; CREATE DATABASE $MARIADB_DATABASE;" && exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"`}
+	wantCmd := []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS ` + shBacktick + `$MARIADB_DATABASE` + shBacktick + `; CREATE DATABASE ` + shBacktick + `$MARIADB_DATABASE` + shBacktick + `;" && exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"`}
 	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
 		t.Errorf("cmd = %v, want %v", rt.gotInputCmd, wantCmd)
 	}
@@ -146,7 +147,7 @@ func TestContainerRestorer_Restore_KeyDB(t *testing.T) {
 	rt := &fakeExecRuntime{
 		inspectState: &docker.ContainerState{ID: "container-id-456"},
 	}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	dump := "REDIS0011..."
 	if err := r.Restore(context.Background(), store.EngineKeyDB, "db-cache", strings.NewReader(dump)); err != nil {
@@ -176,7 +177,7 @@ func TestContainerRestorer_Restore_KeyDB(t *testing.T) {
 func TestContainerRestorer_Restore_Redis_DisableSaveError(t *testing.T) {
 	wantErr := errors.New("exec: command exited 1")
 	rt := &fakeExecRuntime{err: wantErr, inspectState: &docker.ContainerState{ID: "container-id-123"}}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader("x"))
 	if err == nil {
@@ -193,7 +194,7 @@ func TestContainerRestorer_Restore_Redis_DisableSaveError(t *testing.T) {
 func TestContainerRestorer_Restore_Redis_ExecWithInputError(t *testing.T) {
 	wantErr := errors.New("exec: command exited 1")
 	rt := &fakeExecRuntime{execWithInputErr: wantErr, inspectState: &docker.ContainerState{ID: "container-id-123"}}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader("x"))
 	if err == nil {
@@ -210,7 +211,7 @@ func TestContainerRestorer_Restore_Redis_ExecWithInputError(t *testing.T) {
 func TestContainerRestorer_Restore_Redis_InspectError(t *testing.T) {
 	wantErr := errors.New("inspect: connection refused")
 	rt := &fakeExecRuntime{inspectErr: wantErr}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader("x"))
 	if err == nil {
@@ -226,7 +227,7 @@ func TestContainerRestorer_Restore_Redis_InspectError(t *testing.T) {
 
 func TestContainerRestorer_Restore_Redis_NotFound(t *testing.T) {
 	rt := &fakeExecRuntime{inspectState: nil}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader("x"))
 	if err == nil {
@@ -240,7 +241,7 @@ func TestContainerRestorer_Restore_Redis_NotFound(t *testing.T) {
 func TestContainerRestorer_Restore_Redis_StopError(t *testing.T) {
 	wantErr := errors.New("stop: timeout")
 	rt := &fakeExecRuntime{stopErr: wantErr, inspectState: &docker.ContainerState{ID: "container-id-123"}}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader("x"))
 	if err == nil {
@@ -258,7 +259,7 @@ func TestContainerRestorer_Restore_Redis_StopError(t *testing.T) {
 func TestContainerRestorer_Restore_Redis_StartError(t *testing.T) {
 	wantErr := errors.New("start: no such container")
 	rt := &fakeExecRuntime{startErr: wantErr, inspectState: &docker.ContainerState{ID: "container-id-123"}}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader("x"))
 	if err == nil {
@@ -281,7 +282,7 @@ func TestContainerRestorer_Restore_Dragonfly(t *testing.T) {
 	rt := &fakeExecRuntime{
 		inspectState: &docker.ContainerState{ID: "container-id-789"},
 	}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	dump := "REDIS0011..."
 	if err := r.Restore(context.Background(), store.EngineDragonfly, "db-cache", strings.NewReader(dump)); err != nil {
@@ -313,7 +314,7 @@ func TestContainerRestorer_Restore_Dragonfly(t *testing.T) {
 
 func TestContainerRestorer_Restore_ClickHouse(t *testing.T) {
 	rt := &fakeExecRuntime{content: "-- clickhouse restore output\n"}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	dump := "CREATE TABLE t (...) ENGINE = MergeTree ORDER BY id;\nINSERT INTO t (id) VALUES (1);\n"
 	if err := r.Restore(context.Background(), store.EngineClickHouse, "db-mydb", strings.NewReader(dump)); err != nil {
@@ -326,7 +327,7 @@ func TestContainerRestorer_Restore_ClickHouse(t *testing.T) {
 	if rt.gotStdin != dump {
 		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
 	}
-	wantCmd := []string{"sh", "-c", `clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --query "DROP DATABASE IF EXISTS $CLICKHOUSE_DB; CREATE DATABASE $CLICKHOUSE_DB" && exec clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB"`}
+	wantCmd := []string{"sh", "-c", `clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --query "DROP DATABASE IF EXISTS ` + shBacktick + `$CLICKHOUSE_DB` + shBacktick + `; CREATE DATABASE ` + shBacktick + `$CLICKHOUSE_DB` + shBacktick + `" && exec clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB"`}
 	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
 		t.Errorf("cmd = %v, want %v", rt.gotInputCmd, wantCmd)
 	}
@@ -334,7 +335,7 @@ func TestContainerRestorer_Restore_ClickHouse(t *testing.T) {
 
 func TestContainerRestorer_Restore_UnknownEngine(t *testing.T) {
 	rt := &fakeExecRuntime{}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	err := r.Restore(context.Background(), "cassandra", "db-mydb", strings.NewReader("x"))
 	if err == nil {
@@ -348,7 +349,7 @@ func TestContainerRestorer_Restore_UnknownEngine(t *testing.T) {
 func TestContainerRestorer_Restore_ExecError(t *testing.T) {
 	wantErr := errors.New("exec: command exited 1")
 	rt := &fakeExecRuntime{err: wantErr}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	err := r.Restore(context.Background(), store.EnginePostgres, "db-mydb", strings.NewReader("x"))
 	if err == nil {
@@ -372,7 +373,7 @@ func (f fakeExecReadCloserErr) Close() error             { return nil }
 func TestContainerRestorer_Restore_StreamErrorAfterExecSucceeds(t *testing.T) {
 	wantErr := errors.New("docker: exec ... exited 1: ERROR: syntax error")
 	rt := &execWithInputStreamErrRuntime{err: wantErr}
-	r := &ContainerRestorer{Runtime: rt}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Millisecond, ReadyInterval: time.Millisecond}
 
 	err := r.Restore(context.Background(), store.EnginePostgres, "db-mydb", strings.NewReader("garbage sql"))
 	if err == nil {
@@ -397,4 +398,41 @@ type execWithInputStreamErrRuntime struct {
 func (f *execWithInputStreamErrRuntime) ExecWithInput(_ context.Context, _ string, _ []string, stdin io.Reader) (io.ReadCloser, error) {
 	_, _ = io.Copy(io.Discard, stdin)
 	return fakeExecReadCloserErr{err: f.err}, nil
+}
+
+type flakyReadyRuntime struct {
+	*fakeExecRuntime
+	failures int
+}
+
+func (f *flakyReadyRuntime) Exec(ctx context.Context, id string, cmd []string) (io.ReadCloser, error) {
+	if f.failures > 0 {
+		f.failures--
+		return nil, errors.New("pg_isready: no response")
+	}
+	return f.fakeExecRuntime.Exec(ctx, id, cmd)
+}
+
+func TestContainerRestorer_WaitsForServerBeforeRestoring(t *testing.T) {
+	inner := &fakeExecRuntime{}
+	rt := &flakyReadyRuntime{fakeExecRuntime: inner, failures: 3}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: time.Second, ReadyInterval: time.Millisecond}
+
+	if err := r.Restore(context.Background(), store.EnginePostgres, "db-new", strings.NewReader("sql")); err != nil {
+		t.Fatalf("Restore: %v", err)
+	}
+	if rt.failures != 0 || inner.execWithInputCalls != 1 {
+		t.Fatalf("failures left = %d, restore calls = %d, want the restore to run after the probe succeeded", rt.failures, inner.execWithInputCalls)
+	}
+}
+
+func TestContainerRestorer_GivesUpWhenServerNeverComesUp(t *testing.T) {
+	rt := &flakyReadyRuntime{fakeExecRuntime: &fakeExecRuntime{}, failures: 1 << 20}
+	r := &ContainerRestorer{Runtime: rt, ReadyTimeout: 20 * time.Millisecond, ReadyInterval: time.Millisecond}
+	if err := r.Restore(context.Background(), store.EngineMySQL, "db-new", strings.NewReader("sql")); err == nil {
+		t.Fatal("Restore succeeded against a server that never accepted connections")
+	}
+	if rt.execWithInputCalls != 0 {
+		t.Fatal("restore ran against a server that was not ready")
+	}
 }

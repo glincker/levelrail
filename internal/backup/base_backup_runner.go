@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -33,6 +34,10 @@ type BaseBackupRunner struct {
 	// empty LSN, the same "optional capability" shape this package
 	// already uses for Runner.VolumeArchiver.
 	Runtime Runtime
+	// Maintainer, if set, prunes old base backups and archived WAL after each
+	// successful base backup. Failures are logged, never returned: the new
+	// backup already succeeded.
+	Maintainer BaseBackupMaintainer
 	// WorkDir/Now match Runner's own identically-named fields exactly
 	// (runner.go's own doc comments for each apply here unchanged).
 	WorkDir string
@@ -89,7 +94,17 @@ func (r *BaseBackupRunner) RunBaseBackup(ctx context.Context, historyID, databas
 	if err := r.Store.FinishBaseBackupHistory(ctx, historyID, status, size, lsn, errMsg, finishedAt); err != nil {
 		return fmt.Errorf("backup: finish base backup history %q: %w", historyID, err)
 	}
+	if runErr == nil && r.Maintainer != nil {
+		if err := r.Maintainer.Prune(ctx, databaseName, containerName); err != nil {
+			slog.Warn("backup: base backup maintenance failed", slog.String("database", databaseName), slog.String("error", err.Error()))
+		}
+	}
 	return runErr
+}
+
+// BaseBackupMaintainer is the retention hook PITRMaintainer implements.
+type BaseBackupMaintainer interface {
+	Prune(ctx context.Context, databaseName, containerName string) error
 }
 
 func (r *BaseBackupRunner) runBaseBackupAndUpload(ctx context.Context, containerName, targetID, objectKey string) (size int64, err error) {

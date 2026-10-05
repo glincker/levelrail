@@ -8,6 +8,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"sort"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -392,13 +394,38 @@ func (rt *Router) handleGetDatabase(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, rt.toDatabaseResourceWithStatus(r.Context(), *d))
 }
 
-// handleDeleteDatabase handles DELETE /api/v1/databases/{name}. Same
-// known gap as handleDeleteApp: removes desired state, does not itself
-// stop or remove a running container.
+// handleDeleteDatabase handles DELETE /api/v1/databases/{name}. It refuses
+// with 409 while an app still connects to the database unless ?force=true,
+// then removes desired state and stops the container. The data volume is
+// kept so a mistaken delete never destroys data.
 func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
-	err := rt.databases.DeleteDesiredDatabase(r.Context(), name)
+	existing, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	}
+	if err != nil {
+		rt.logger.Error("api: delete database: load failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	if r.URL.Query().Get("force") != "true" {
+		users, err := rt.appsUsingDatabase(r.Context(), name)
+		if err != nil {
+			rt.logger.Error("api: delete database: list dependent apps failed", slog.String("error", err.Error()), slog.String("name", name))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		if len(users) > 0 {
+			writeError(w, http.StatusConflict, "database is used by apps ("+strings.Join(users, ", ")+"); detach them or retry with force=true")
+			return
+		}
+	}
+
+	err = rt.databases.DeleteDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
@@ -408,8 +435,38 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rt.teardownDatabaseContainer(name, existing.NodeID)
 	rt.nudgeReconciler()
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// appsUsingDatabase returns the sorted names of apps whose env connections
+// or attachment reference databaseName.
+func (rt *Router) appsUsingDatabase(ctx context.Context, databaseName string) ([]string, error) {
+	services, err := rt.apps.ListDesiredServices(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list apps: %w", err)
+	}
+	var users []string
+	for _, svc := range services {
+		if serviceUsesDatabase(svc, databaseName) {
+			users = append(users, svc.Name)
+		}
+	}
+	sort.Strings(users)
+	return users, nil
+}
+
+func serviceUsesDatabase(svc store.DesiredService, databaseName string) bool {
+	if svc.DatabaseAttachment != nil && svc.DatabaseAttachment.DatabaseName == databaseName {
+		return true
+	}
+	for _, ref := range svc.DatabaseEnv {
+		if ref.Database == databaseName {
+			return true
+		}
+	}
+	return false
 }
 
 // reloadAndWriteDatabase reloads name's desired database and writes it as

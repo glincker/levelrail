@@ -1,7 +1,9 @@
 package main
 
 import (
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -53,5 +55,38 @@ func TestRun_DatabasesDelete_Help(t *testing.T) {
 	_, stderr := runCLIExpectOK(t, []string{"databases", "delete", "-h"})
 	if !strings.Contains(stderr, "databases delete") {
 		t.Errorf("stderr = %q, want usage text", stderr)
+	}
+}
+
+func TestRun_DatabasesDelete_Force(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"databases", "delete", "main", "--force", "--api-url", srv.URL})
+	if gotQuery != "force=true" {
+		t.Errorf("query = %q, want force=true", gotQuery)
+	}
+}
+
+func TestRun_DatabasesSetVersion(t *testing.T) {
+	var gotPath, gotMethod, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotMethod = r.URL.Path, r.Method
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		_, _ = w.Write([]byte(`{"name":"main","engine":"postgres","version":"16.4"}`))
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"databases", "set-version", "main", "16.4", "--api-url", srv.URL})
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/databases/main/version" || !strings.Contains(gotBody, `"version":"16.4"`) {
+		t.Errorf("request = %s %s %s", gotMethod, gotPath, gotBody)
+	}
+	if !strings.Contains(stdout, "16.4") {
+		t.Errorf("stdout = %q, want the new version", stdout)
 	}
 }

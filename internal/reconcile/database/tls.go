@@ -1,7 +1,8 @@
 package database
 
 import (
-	"crypto/ed25519"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -33,16 +34,17 @@ type TLSMaterial struct {
 // action, not something a short expiry should silently force.
 const tlsCertValidity = 10 * 365 * 24 * time.Hour
 
-// GenerateSelfSignedCert creates a new self-signed ed25519 certificate
-// for commonName (a database's own container name, ContainerName), for
-// cmd/levelrail's tlsMaterialFor to generate once and persist. ed25519
-// for the same reasons agent/pki.go's GenerateCA already gives: fast key
-// generation, small keys, no RSA parameter-size decision to make.
+// GenerateSelfSignedCert creates a new self-signed ECDSA P-256 certificate
+// for commonName. Not ed25519: libpq's SCRAM channel binding hashes the
+// certificate signature and fails with "could not find digest for NID
+// UNDEF" on an ed25519 certificate, which broke psql, psycopg2 and every
+// other libpq client connecting with sslmode=require.
 func GenerateSelfSignedCert(commonName string) (certPEM, keyPEM []byte, err error) {
-	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, fmt.Errorf("database: generate tls key: %w", err)
 	}
+	pub := priv.Public()
 
 	serial, err := randTLSSerial()
 	if err != nil {
@@ -80,4 +82,18 @@ func randTLSSerial() (*big.Int, error) {
 		return nil, fmt.Errorf("database: generate tls certificate serial: %w", err)
 	}
 	return serial, nil
+}
+
+// IsLegacyTLSCert reports whether certPEM is one of the ed25519
+// certificates earlier releases generated, which libpq cannot use.
+func IsLegacyTLSCert(certPEM []byte) bool {
+	block, _ := pem.Decode(certPEM)
+	if block == nil {
+		return false
+	}
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return false
+	}
+	return cert.PublicKeyAlgorithm == x509.Ed25519
 }

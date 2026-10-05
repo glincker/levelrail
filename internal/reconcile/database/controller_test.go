@@ -2182,3 +2182,35 @@ func TestController_Reconcile_MariaDB_SetsSlowQueryLogFlagsByDefault(t *testing.
 }
 
 func boolPtr(v bool) *bool { return &v }
+
+// A TLS container created before the ECDSA switch has no cert label: it is
+// reprovisioned and replaced once, then left alone (level-triggered).
+func TestController_Reconcile_TLS_LegacyCertContainerIsRotatedOnce(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("cache"), "redis:7", true)
+	certPEM, keyPEM, err := GenerateSelfSignedCert("db-cache")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
+	desired := &store.DesiredDatabase{Name: "cache", Engine: store.EngineRedis, Version: "7"}
+	c := New("cache", &fakeStore{db: desired}, rt, WithTLS(&TLSMaterial{CertPEM: certPEM, KeyPEM: keyPEM}))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("first Reconcile() error = %v", err)
+	}
+	if rt.execWithInputCalls != 1 {
+		t.Fatalf("after first reconcile execWithInputCalls = %d, want 1 (certs rewritten)", rt.execWithInputCalls)
+	}
+	createsAfterRotation := rt.createCalls
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("second Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Reason != "AlreadyRunning" {
+		t.Errorf("second condition = %+v, want AlreadyRunning", cond)
+	}
+	if rt.execWithInputCalls != 1 || rt.createCalls != createsAfterRotation {
+		t.Errorf("second reconcile must be a no-op, got execWithInputCalls=%d createCalls=%d (was %d)", rt.execWithInputCalls, rt.createCalls, createsAfterRotation)
+	}
+}

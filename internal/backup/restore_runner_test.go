@@ -3,6 +3,8 @@ package backup
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"io"
 	"strings"
@@ -282,5 +284,42 @@ func TestRestoreRunner_RunRestore_SecretResolveFails_NeverDownloads(t *testing.T
 	}
 	if down.gotKey != "" {
 		t.Error("Downloader was called despite a secret resolution failure, want it skipped")
+	}
+}
+
+func TestRestoreRunner_RefusesCorruptedObjectBeforeTouchingDatabase(t *testing.T) {
+	sum := sha256.Sum256([]byte("dump-bytes"))
+	tests := []struct {
+		name      string
+		stored    string
+		checksum  string
+		wantError bool
+	}{
+		{"intact object restores", "dump-bytes", hex.EncodeToString(sum[:]), false},
+		{"corrupted object refused", "dump-bYtes", hex.EncodeToString(sum[:]), true},
+		{"legacy row without checksum restores", "anything", "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := newTestBackup()
+			b.ChecksumSHA256 = tt.checksum
+			hs := &fakeRestoreHistoryStore{
+				backups: map[string]store.BackupHistory{"bkh_1": b},
+				targets: map[string]store.BackupTarget{"bkt_test": newTestTarget()},
+			}
+			restorer := &fakeRestorer{}
+			rr := &RestoreRunner{Store: hs, Secrets: newTestSecrets(), Downloader: &fakeDownloader{content: tt.stored}, Restorer: restorer}
+
+			err := rr.RunRestore(context.Background(), "rsh_1", "mydb", "bkh_1", "postgres", "db-mydb")
+			if (err != nil) != tt.wantError {
+				t.Fatalf("RunRestore() error = %v, wantError %v", err, tt.wantError)
+			}
+			if tt.wantError && (restorer.gotBody != "" || restorer.gotContainer != "") {
+				t.Fatal("restorer was invoked for a corrupted object")
+			}
+			if tt.wantError && !strings.Contains(hs.finished[0].errMsg, "corrupted") {
+				t.Errorf("recorded error = %q, want it to say the object is corrupted", hs.finished[0].errMsg)
+			}
+		})
 	}
 }
