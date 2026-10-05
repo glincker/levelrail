@@ -478,13 +478,11 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 **Limitation:** Only the node running the control plane itself can be rotated today. Rotating a remote node returns HTTP `501` (not implemented). The agent-side wire extension for remote key rotation does not exist yet, but is scoped future work.
 
-### What doesn't work yet: multi-node mesh
+### Multi-node mesh: built, not yet proven across hosts
 
-`internal/network.ConfigSink` (the interface that carries mesh config to remote nodes over gRPC) is not built. Today only `LocalSink` exists, which configures only the process it runs in.
+The agent-side mesh arm exists: the control plane sends `ApplyMesh` and `RotateMeshKey` requests to each enrolled agent, and the agent applies them to its own WireGuard device when started with `APP_MESH_ENABLED=1`. It has only been exercised against fakes and a single host, never between two real servers, so treat cross-host mesh as unverified.
 
-**Result:** Enabling `APP_MESH_ENABLED` on a control plane with a second enrolled node does not mesh that node in. The control plane has its own device and can rotate its own key (both documented above), but there's no agent message to deliver config to remote nodes, and no agent-side code to apply it.
-
-**What's scoped:** One new agent request/response message, plus a case in `internal/agent.Execute` calling `Mesh.Apply`. It's defined work, not built.
+An agent needs a TUN device and `NET_ADMIN` to create its WireGuard interface. Nodes enrolled through the dashboard's SSH or cloud provisioning flows get both automatically when the control plane itself runs with `APP_MESH_ENABLED=1`. If you run the agent container by hand, add `--cap-add NET_ADMIN --device /dev/net/tun -e APP_MESH_ENABLED=1`; without them the agent keeps serving containers and answers mesh requests with "no mesh networking configured".
 
 This is the same gap the `::: danger` callout near the top of this page describes: until mesh spans nodes, a domain-routed app placed off the control-plane node is unreachable via its domain, and `levelrail-cli doctor`'s `cross_node_ingress` check exists to catch it. See [Domains and ingress: Traffic](domains-and-ingress.md#traffic-routing-status-for-every-domain-at-a-glance) for the dashboard page that surfaces exactly this, per domain, with a one-click fix.
 

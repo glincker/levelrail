@@ -26,6 +26,9 @@ type CloudInitParams struct {
 	// AgentVersion.
 	AgentImage   string
 	AgentVersion string
+	// MeshEnabled gives the agent container the TUN device and NET_ADMIN
+	// its WireGuard device needs.
+	MeshEnabled bool
 }
 
 func (p CloudInitParams) agentImage() string {
@@ -74,8 +77,13 @@ func RenderCloudInit(p CloudInitParams) (string, error) {
 		fmt.Fprintf(&envLines, "APP_CA_FINGERPRINT=%s\n", p.CAFingerprint)
 	}
 	fmt.Fprintf(&envLines, "APP_AGENT_IDENTITY_FILE=/var/lib/levelrail-agent-data/identity.json\n")
+	meshFlags := ""
+	if p.MeshEnabled {
+		envLines.WriteString("APP_MESH_ENABLED=1\n")
+		meshFlags = " -e APP_MESH_ENABLED --cap-add NET_ADMIN --device /dev/net/tun"
+	}
 
-	unit := fmt.Sprintf(agentUnit, p.agentImage())
+	unit := fmt.Sprintf(agentUnit, p.agentImage(), meshFlags)
 	return fmt.Sprintf(cloudInitTemplate, indentBlock(envLines.String()), indentBlock(unit)), nil
 }
 
@@ -89,7 +97,7 @@ Wants=network-online.target
 EnvironmentFile=/etc/levelrail-agent.env
 ExecStartPre=-/usr/bin/docker rm -f levelrail-agent
 ExecStartPre=/usr/bin/docker pull %[1]s
-ExecStart=/usr/bin/docker run --rm --name levelrail-agent --network host -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/levelrail-agent-data:/var/lib/levelrail-agent-data -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE %[1]s
+ExecStart=/usr/bin/docker run --rm --name levelrail-agent --network host -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/levelrail-agent-data:/var/lib/levelrail-agent-data -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE%[2]s %[1]s
 Restart=on-failure
 RestartSec=5
 

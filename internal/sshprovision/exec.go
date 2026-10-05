@@ -216,7 +216,7 @@ func (p *Provisioner) installAgent(ctx context.Context, client *ssh.Client, para
 	if agentImage == "" {
 		agentImage = defaultAgentImage
 	}
-	unit := fmt.Sprintf(agentUnitTemplate, agentImage)
+	unit := fmt.Sprintf(agentUnitTemplate, agentImage, meshRunFlags(params.MeshEnabled))
 	if err := p.writeRemoteFile(ctx, client, agentUnitPath, unit, "644"); err != nil {
 		return fmt.Errorf("write agent systemd unit: %w", err)
 	}
@@ -234,6 +234,14 @@ func (p *Provisioner) installAgent(ctx context.Context, client *ssh.Client, para
 	return nil
 }
 
+// meshRunFlags are the extra docker run flags the agent needs for WireGuard.
+func meshRunFlags(enabled bool) string {
+	if !enabled {
+		return ""
+	}
+	return " -e APP_MESH_ENABLED --cap-add NET_ADMIN --device /dev/net/tun"
+}
+
 func renderAgentEnvFile(p InstallParams) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "APP_CONTROL_PLANE_ADDR=%s\n", p.ControlPlaneAddr)
@@ -243,6 +251,9 @@ func renderAgentEnvFile(p InstallParams) string {
 		fmt.Fprintf(&b, "APP_CA_FINGERPRINT=%s\n", p.CAFingerprint)
 	}
 	b.WriteString("APP_AGENT_IDENTITY_FILE=/var/lib/levelrail-agent-data/identity.json\n")
+	if p.MeshEnabled {
+		b.WriteString("APP_MESH_ENABLED=1\n")
+	}
 	return b.String()
 }
 
@@ -270,7 +281,7 @@ Wants=network-online.target
 EnvironmentFile=/etc/levelrail-agent.env
 ExecStartPre=-/usr/bin/docker rm -f levelrail-agent
 ExecStartPre=/usr/bin/docker pull %[1]s
-ExecStart=/usr/bin/docker run --rm --name levelrail-agent --network host -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/levelrail-agent-data:/var/lib/levelrail-agent-data -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE %[1]s
+ExecStart=/usr/bin/docker run --rm --name levelrail-agent --network host -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/levelrail-agent-data:/var/lib/levelrail-agent-data -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE%[2]s %[1]s
 Restart=on-failure
 RestartSec=5
 
