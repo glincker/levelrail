@@ -86,7 +86,7 @@
   content: '';
   position: absolute;
   inset: auto 0 0 0;
-  height: 22%;
+  height: min(22%, 100px);
   background: linear-gradient(to bottom, transparent 0%, var(--vp-c-bg) 100%);
   mask-image: linear-gradient(to bottom, transparent 0%, black 55%);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 55%);

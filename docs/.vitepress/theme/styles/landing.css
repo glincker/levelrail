@@ -16,12 +16,14 @@
 }
 
 .trust-strip {
+  position: relative;
+  z-index: 2;
+  padding-bottom: 56px;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 18px;
   margin: 18px 0 0;
-  padding: 0;
   list-style: none;
   font-size: 13px;
   color: var(--hero-text-muted);
