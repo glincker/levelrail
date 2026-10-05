@@ -22,6 +22,20 @@
   font-family: var(--glinui-font-sans);
   color: inherit;
   cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.vp-inline-toc__header:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.dark .vp-inline-toc__header:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.vp-inline-toc__header:focus-visible {
+  outline: 2px solid var(--glinui-accent);
+  outline-offset: -2px;
 }
 
 .vp-inline-toc__title {
