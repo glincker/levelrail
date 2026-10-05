@@ -96,11 +96,11 @@ Every container Levelrail creates (apps, databases, catalogue services, helpers)
 
 | Value | Behavior |
 | --- | --- |
-| `warn` (default) | Nothing is applied to containers. `GET /api/v1/system/doctor` (`levelrail doctor`) reports the exact settings `enforce` would apply. Cannot break existing deployments. |
-| `enforce` | Applies the settings below to every container created from then on. Running containers pick them up on their next recreate (redeploy or restart of the resource). |
+| `enforce` (default) | Applies the settings below to every container created from then on. Running containers pick them up on their next recreate (redeploy or restart of the resource). |
+| `warn` | Nothing is applied to containers. `GET /api/v1/system/doctor` (`levelrail doctor`) reports the exact settings `enforce` would apply. Use it to opt out while you work out which images need extra capabilities. |
 | `off` | Nothing applied, and the doctor warns that Docker's default capability set is in use. |
 
-`warn` cannot tell you which containers would fail, because the failure only shows when a container starts. Turn on `enforce` on a staging box or for one node first, and redeploy an app to try it.
+`enforce` has been the default since the container hardening review: an image that needs a capability outside the minimal set fails when it starts, and the fix is `APP_CONTAINER_HARDENING_CAP_ADD` (or `APP_CONTAINER_HARDENING=warn` while you investigate). The stock nginx, postgres, mysql, mongo and redis images were verified to start under these settings.
 
 What `enforce` sets:
 
@@ -127,6 +127,18 @@ Container hardening (above) adjusts automatically under detected rootless: `Pids
 
 Treat single-container rootless or Podman hosts as best-effort, not fully verified, until tested against a real installation.
 
+## Hardening notes from the adversarial review
+
+- **CSRF.** A cookie-authenticated state-changing request is refused when its `Origin` names another host, when `Origin` is `null`, when there is no `Origin` but `Sec-Fetch-Site` says `cross-site` or `same-site`, or when there is no `Origin` and the `Referer` names another host. Requests with a bearer token or no session cookie are not subject to the check.
+- **Static responses.** Redirect targets and custom error pages are written to the ingress with `{` and `}` escaped, so a placeholder such as `{env.NAME}` or `{file.path}` in operator text can never be expanded into a control plane secret.
+- **Certificates.** Stored certificates from other CAs are purged only when the configured CA changes, not on every start, so a restart never deletes valid certificates or spends Let's Encrypt rate limit. The sslip.io hostname is only offered for a publicly routable address (carrier-grade NAT, benchmarking and reserved ranges are refused).
+- **Bind mounts.** In addition to `/etc`, `/root` and the Docker socket, `/run`, `/dev`, the control plane and agent data directories, and any parent directory that would contain a protected path (`/var`, `/var/lib`) are refused. Paths are checked lexically: a symlink on the host that points into a protected path is not followed, so do not create such symlinks inside a directory you let apps mount.
+- **Registry port.** The built-in registry's plain HTTP port is published on loopback only. Remote nodes pull through the TLS route. An existing container published on all interfaces is recreated.
+- **Git fetches.** `repo_url` clones, branch listing and pipeline checkouts go through the same guarded HTTP client as webhooks: internal, loopback, link-local and metadata addresses are refused, including after redirects and DNS changes. A self-hosted Git server on a private address needs `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true`.
+- **Build logs.** Private keys, bearer tokens, token-shaped strings and credentials in URLs are masked before a build or clone log line is stored or streamed.
+- **Agent enrolment.** A node name must be 1 to 63 letters, digits, dot, underscore or hyphen, and `control_plane_addr` for provisioning must be `host:port`, so neither can inject lines into the agent's environment file.
+- **install.sh.** Data and install directories must be absolute, free of shell and unit metacharacters, and the data directory may not be a system directory (it is the target of `rm -rf` on `uninstall --purge`). Ports must be numbers in range and `LEVELRAIL_VERSION` is restricted to a safe character set.
+
 ## Reporting a vulnerability
 
 Levelrail does not yet have a dedicated security disclosure address. Until one exists, open a private security advisory on the [GitHub repository](https://github.com/glincker/levelrail/security/advisories/new) rather than a public issue. The repository's [SECURITY.md](../SECURITY.md) has the full policy, including what to expect after reporting.
@@ -135,7 +147,7 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 
 - No SSO/SAML, only local password auth and OAuth sign-in.
 - No secret scanning of an app's own source repository.
-- Container hardening is opt-in (`APP_CONTAINER_HARDENING=enforce`) and has no per-app override yet.
+- Container hardening is on by default but has no per-app override yet, and read-only root filesystems stay opt-in.
 - Rootless Docker and Podman detection and hardening adjustment ([above](#rootless-and-podman)) exist but are not verified against a real installation; bind-mount ownership and cgroup resource limits beyond `PidsLimit` are known gaps.
 
 ## See also

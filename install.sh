@@ -123,6 +123,36 @@ auto | require | off) ;;
 *) fatal "APP_INSTALL_VERIFY must be auto, require or off, got: $VERIFY_MODE" ;;
 esac
 
+# These values land in a systemd unit and, for DATA_DIR, in rm -rf on purge.
+safe_dir() {
+	case "$2" in
+	/ | /bin | /boot | /dev | /etc | /home | /lib | /lib64 | /opt | /proc | /root | /run | /sbin | /srv | /sys | /tmp | /usr | /usr/bin | /usr/local | /usr/local/bin | /var | /var/lib)
+		if [ "$1" = "LEVELRAIL_DATA_DIR" ]; then fatal "$1 must not be a system directory: $2"; fi
+		;;
+	esac
+	case "$2" in
+	/*) ;;
+	*) fatal "$1 must be an absolute path: $2" ;;
+	esac
+	case "$2" in
+	*[!A-Za-z0-9._/-]* | *..*) fatal "$1 may only contain letters, digits, dot, dash, underscore and slash, and no '..': $2" ;;
+	esac
+}
+safe_port() {
+	case "$2" in
+	'' | *[!0-9]*) fatal "$1 must be a port number: $2" ;;
+	esac
+	{ [ "$2" -ge 1 ] && [ "$2" -le 65535 ]; } || fatal "$1 must be between 1 and 65535: $2"
+}
+safe_dir LEVELRAIL_DATA_DIR "$DATA_DIR"
+safe_dir LEVELRAIL_INSTALL_DIR "$INSTALL_DIR"
+safe_port LEVELRAIL_DASHBOARD_PORT "$DASHBOARD_PORT"
+safe_port LEVELRAIL_HTTP_PORT "$HTTP_PORT"
+safe_port LEVELRAIL_HTTPS_PORT "$HTTPS_PORT"
+case "${LEVELRAIL_VERSION:-}" in
+*[!A-Za-z0-9._+-]*) fatal "LEVELRAIL_VERSION may only contain letters, digits, dot, dash, plus and underscore" ;;
+esac
+
 [ "$(id -u)" -eq 0 ] || fatal "must run as root, e.g.: curl -fsSL <url> | sudo sh"
 
 github_api() {

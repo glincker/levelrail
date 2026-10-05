@@ -535,9 +535,9 @@ the bytes), and no multi-app or load-balanced streams yet.
 
 **Infrastructure > Traffic** in the dashboard (`GET /api/v1/network/proxy`, `read` ability, so any signed-in user can check it) is a flat, one-row-per-domain table: which app a domain routes to, which node that app actually runs on, whether this control plane's own embedded ingress can reach it, its port, and TLS status and issuer.
 
-It exists for one specific, otherwise-invisible failure: the embedded Caddy ingress above only ever routes containers on **its own node**. If an app gets placed on a different node, its container can be perfectly healthy while its domain silently never routes, because there's no mesh path to it yet. See [Multi-node: WireGuard mesh and internal DNS](multi-node.md#wireguard-mesh-and-internal-dns) for why that gap exists today.
+It exists for one otherwise-invisible failure: the embedded Caddy ingress reaches an app on another node only over the WireGuard mesh. If that path is down, the app's container can be perfectly healthy while its domain silently never routes. When the path is healthy the domain routes normally and shows **Reachable**. See [Multi-node: Routing to apps on remote nodes](multi-node.md#routing-to-apps-on-remote-nodes) for how the mesh bind works.
 
-This is the fastest way to spot it. A domain in that state shows an **Unreachable** badge (with a banner at the top of the page when any exist) instead of only turning up as a line in `GET /api/v1/doctor`'s report. Each unreachable row carries a **Move** button straight to the same move-with-volumes flow described in [Moving an app with its volumes](multi-node.md#moving-an-app-with-its-volumes), or run the fix directly:
+This is the fastest way to spot it. A domain in that state shows an **Unreachable** badge with the reason (with a banner at the top of the page when any exist; `levelrail-cli nodes traffic` prints the same reason) instead of only turning up as a line in `GET /api/v1/doctor`'s report. Each unreachable row carries a **Move** button straight to the same move-with-volumes flow described in [Moving an app with its volumes](multi-node.md#moving-an-app-with-its-volumes), or run the fix directly:
 
 ```bash
 levelrail-cli apps set-node <app-name> <this control plane's own node id>

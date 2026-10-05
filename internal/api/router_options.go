@@ -9,6 +9,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/meshpath"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -563,6 +565,12 @@ func (rt *Router) SetMesh(mesh MeshStatusProvider, rotator MeshKeyRotator) {
 	rt.meshRotator = rotator
 }
 
+// SetMeshPaths sets the resolver the doctor and app status use to tell
+// whether a remote node's app can be routed over the WireGuard mesh.
+func (rt *Router) SetMeshPaths(r meshpath.Resolver) {
+	rt.meshPaths = r
+}
+
 // WithMasterKeyRotation enables POST
 // /api/v1/system/master-key/rotate and the doctor's rotation-age check.
 // masterKeyFilePath should be the on-disk path the running control plane
@@ -1088,3 +1096,19 @@ func WithTokenRedeemRateLimit(perMinute int) Option {
 func WithAllowInsecureLogin(allow bool) Option {
 	return func(rt *Router) { rt.allowInsecureLogin = allow }
 }
+
+// WithAppTeardownOptions sets the application options (instance ID, network
+// prefix) used to match containers when an app is deleted, so delete never
+// touches containers another control plane created on a shared daemon.
+func WithAppTeardownOptions(opts ...application.Option) Option {
+	return func(rt *Router) { rt.teardownOpts = opts }
+}
+
+// WithDeleteTeardownTimeout bounds how long DELETE /apps/{name} waits for containers to stop.
+func WithDeleteTeardownTimeout(d time.Duration) Option {
+	return func(rt *Router) { rt.deleteTimeout = d }
+}
+
+// SetAppTeardownOptions is WithAppTeardownOptions for callers that learn
+// the instance ID only after the router is built.
+func (rt *Router) SetAppTeardownOptions(opts ...application.Option) { rt.teardownOpts = opts }

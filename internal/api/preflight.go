@@ -68,6 +68,7 @@ func (rt *Router) handlePreflightNew(w http.ResponseWriter, r *http.Request) {
 		BindMounts: body.BindMounts, VolumePaths: body.VolumePaths, GPU: body.GPU, GitURL: body.GitURL, GitBranch: body.GitBranch,
 		IsLocalNode: rt.isLocalNode(body.NodeID),
 	}
+	req.MeshUsable, req.MeshReason = rt.preflightMesh(r.Context(), body.NodeID)
 	writeJSON(w, http.StatusOK, preflight.Run(r.Context(), req, rt.preflightEnv(req, false)))
 }
 
@@ -106,6 +107,7 @@ func (rt *Router) preflightRequestFor(ctx context.Context, svc *store.DesiredSer
 		Domains: svc.Domains, EnvKeys: configuredEnvKeys(svc),
 		IsLocalNode: rt.isLocalNode(svc.NodeID),
 	}
+	req.MeshUsable, req.MeshReason = rt.preflightMesh(ctx, svc.NodeID)
 	if svc.HostPort != nil {
 		req.HostPort = *svc.HostPort
 	}
@@ -196,4 +198,20 @@ func (rt *Router) hostPortHolder(ctx context.Context, self, nodeID string, port 
 	}
 	_ = conn.Close()
 	return "a process on this host", true, nil
+}
+
+// preflightMesh reports whether the control plane can reach nodeID over the
+// WireGuard mesh, and why not when it cannot.
+func (rt *Router) preflightMesh(ctx context.Context, nodeID string) (usable bool, reason string) {
+	if rt.isLocalNode(nodeID) {
+		return true, ""
+	}
+	if rt.meshPaths == nil {
+		return false, "mesh networking is off on this control plane (set APP_MESH_ENABLED=1 and restart it)"
+	}
+	path, err := rt.meshPaths.Path(ctx, nodeID)
+	if err != nil {
+		return false, "the mesh path could not be read: " + err.Error()
+	}
+	return path.Local || path.Usable, path.Reason
 }

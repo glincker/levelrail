@@ -18,9 +18,9 @@ const (
 	// HardeningOff applies nothing and reports nothing.
 	HardeningOff HardeningMode = "off"
 	// HardeningWarn applies nothing to containers; diagnostics report what
-	// enforce would set. Default, so existing deployments cannot break.
+	// enforce would set. Explicit opt-out of the enforce default.
 	HardeningWarn HardeningMode = "warn"
-	// HardeningEnforce drops all capabilities except the minimal set, sets
+	// HardeningEnforce (the default) drops all capabilities except the minimal set, sets
 	// no-new-privileges and a PID limit on every container Create makes.
 	HardeningEnforce HardeningMode = "enforce"
 )
@@ -73,16 +73,16 @@ type HardeningReport struct {
 func ParseHardeningMode(s string) (HardeningMode, error) {
 	switch m := HardeningMode(strings.ToLower(strings.TrimSpace(s))); m {
 	case "":
-		return HardeningWarn, nil
+		return HardeningEnforce, nil
 	case HardeningOff, HardeningWarn, HardeningEnforce:
 		return m, nil
 	default:
-		return HardeningWarn, fmt.Errorf("docker: %s=%q is not one of off, warn, enforce", envHardening, s)
+		return HardeningEnforce, fmt.Errorf("docker: %s=%q is not one of off, warn, enforce", envHardening, s)
 	}
 }
 
 // HardeningFromEnv reads the hardening policy from the environment. On an
-// invalid value it returns the safe default (warn) together with the
+// invalid value it returns the safe default (enforce) together with the
 // error. runtime.Rootless auto-disables PidsLimit unless
 // APP_CONTAINER_PIDS_LIMIT is set explicitly: rootless Docker without a
 // delegated cgroup v2 controller rejects a pids-limit HostConfig at

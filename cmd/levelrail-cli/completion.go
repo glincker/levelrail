@@ -48,6 +48,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"domains":                 {subs: map[string]*cmdNode{"list": nil, "add": nil, "remove": nil}},
 		"streams":                 {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil}},
 		"restart":                 nil,
+		"scale":                   nil,
 		"stop":                    nil,
 		"start":                   nil,
 		"delete":                  nil,

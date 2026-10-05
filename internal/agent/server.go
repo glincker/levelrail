@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"sync"
 	"time"
 
@@ -123,6 +124,9 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 	}
 	if req.GetNodeName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "node_name is required")
+	}
+	if !validEnrollNodeName(req.GetNodeName()) {
+		return nil, status.Error(codes.InvalidArgument, "node_name must be 1-63 characters of letters, digits, dot, underscore or hyphen")
 	}
 	if len(req.GetCsrDer()) == 0 && s.requireCSR {
 		return nil, status.Error(codes.FailedPrecondition, "this control plane requires agents to generate their own key: upgrade the agent")
@@ -466,3 +470,7 @@ func certFingerprintFromPEM(certPEM []byte) (string, error) {
 func randomNodeID() (string, error) {
 	return randomRequestID()
 }
+
+var enrollNodeNameRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$`)
+
+func validEnrollNodeName(name string) bool { return enrollNodeNameRe.MatchString(name) }

@@ -60,6 +60,8 @@ type createFlags struct {
 	// same "flag omitted vs explicitly set" distinction
 	// nodes_workloads.go's own doc comment explains plain BoolVar/
 	// StringVar defaults alone can't make.
+	replicas  int
+	strategy  string
 	nodeID    string
 	nodeIDSet bool
 
@@ -340,6 +342,8 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 			Resources:   resources,
 			Health:      health,
 			Command:     svc.Command,
+			Replicas:    svc.Replicas,
+			Strategy:    svc.Strategy,
 		},
 		Build: &buildTriggerRequest{
 			RepoURL:   repo,
@@ -403,6 +407,8 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 			Resources:   resources,
 			Health:      health,
 			Command:     svc.Command,
+			Replicas:    svc.Replicas,
+			Strategy:    svc.Strategy,
 		},
 		Volumes: svc.Volumes,
 	}, nil
@@ -752,6 +758,12 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if f.nodeIDSet {
 		plan.CreateBody.NodeID = f.nodeID
 	}
+	if f.replicas > 0 {
+		plan.CreateBody.Replicas = f.replicas
+	}
+	if f.strategy != "" {
+		plan.CreateBody.Strategy = f.strategy
+	}
 	if len(f.secrets) > 0 {
 		plan.CreateBody.Secrets = f.secrets
 	}
@@ -923,6 +935,8 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.imageRepo, "image-repo", "", "image name without a tag, e.g. registry.example.com/org/app (git-build path)")
 	fs.StringVar(&f.file, "file", "", "path to an app.yaml (or equivalent) spec file; an alternative to the flag-only paths above")
 	fs.StringVar(&f.service, "service", "", "which service in --file's services: map to create, required when it declares more than one")
+	fs.IntVar(&f.replicas, "replicas", 0, "number of container replicas (default 1, or the spec's replicas with --file)")
+	fs.StringVar(&f.strategy, "strategy", "", "deploy strategy: rolling, recreate, or blue-green (default blue-green, or the spec's strategy with --file)")
 	fs.StringVar(&f.nodeID, "node-id", "", "node to place this app on (default: auto-placed on the least-loaded registered node, or the local node if only one exists)")
 	fs.StringVar(&f.attachDatabase, "attach-database", "", "name of an existing managed database to attach after create (injects a connection env var, see --attach-database-env-var/--attach-database-field)")
 	fs.StringVar(&f.attachDatabaseEnvVar, "attach-database-env-var", "", "env var name the attached database's value is injected as (default: DATABASE_URL); only meaningful with --attach-database")

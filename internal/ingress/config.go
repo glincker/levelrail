@@ -362,9 +362,15 @@ func NewRedirectResponseHandler(targetURL string, statusCode int) StaticResponse
 func redirectLocation(targetURL string) string {
 	u, err := url.Parse(targetURL)
 	if err != nil || (u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
-		return targetURL
+		return escapePlaceholders(targetURL)
 	}
-	return strings.TrimSuffix(targetURL, "/") + "{http.request.uri}"
+	return escapePlaceholders(strings.TrimSuffix(targetURL, "/")) + "{http.request.uri}"
+}
+
+// escapePlaceholders makes operator text literal in a Caddy static_response,
+// which expands {env.*} and {file.*} and would otherwise leak control plane secrets.
+func escapePlaceholders(s string) string {
+	return strings.NewReplacer("{", `\{`, "}", `\}`).Replace(s)
 }
 
 // NewErrorPageResponse builds the fixed response for one custom error
@@ -374,7 +380,7 @@ func NewErrorPageResponse(statusCode int, body string) StaticResponseHandler {
 	return StaticResponseHandler{
 		Handler:    "static_response",
 		StatusCode: statusCode,
-		Body:       body,
+		Body:       escapePlaceholders(body),
 		Headers:    map[string][]string{"Content-Type": {"text/html; charset=utf-8"}},
 	}
 }

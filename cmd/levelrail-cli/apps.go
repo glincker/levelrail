@@ -63,6 +63,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsStreams(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "restart":
 		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "scale":
+		return runAppsScale(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "stop":
 		return runAppsStop(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "start":
@@ -216,7 +218,8 @@ func appsUsage(prog string) string {
   %[1]s apps streams delete <name> <id> [flags]                                              remove a stream
   %[1]s apps stop <name> [flags]        stop an app's running container
   %[1]s apps start <name> [flags]       start an app previously stopped
-  %[1]s apps delete <name> [flags]      remove an app's desired state
+  %[1]s apps scale <name> --replicas N [--strategy S] [flags]   change replica count and/or deploy strategy
+  %[1]s apps delete <name> [flags]      remove an app and stop its containers
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
   %[1]s apps diagnose <name> [--deploy ID] [--apply-fix N] [flags]   explain a failed deploy or crashloop, optionally apply a fix
   %[1]s apps preflight <name> [--require-env A,B] [flags]   run pre-deploy checks (DNS, ports, disk, image, env)

@@ -46,6 +46,9 @@ func ValidateDocument(data []byte) (*Spec, []Issue) {
 	if err := yamlUnmarshalStrict(data, &s); err != nil {
 		return nil, []Issue{{Message: strings.TrimPrefix(err.Error(), "spec: parse: ")}}
 	}
+	if err := s.normalizeImageShorthand(); err != nil {
+		return nil, []Issue{semanticIssue(err)}
+	}
 	if err := s.Validate(); err != nil {
 		return nil, []Issue{semanticIssue(err)}
 	}
