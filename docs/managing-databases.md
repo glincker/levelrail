@@ -595,6 +595,17 @@ hyphenated database names:
   otherwise restoring into a database with a different name (restore-as-new)
   tried to create the tables in the source's name and failed. Backups taken
   before this fix restore into a database of the same ClickHouse identifier only.
+- **In-place restore** (destructive) was also run for all three: ClickHouse rows
+  and the KeyDB and Dragonfly key sets came back exactly as in the backup, and
+  keys written after the backup were gone.
+- **Dragonfly and small hosts.** Dragonfly starts one io thread per CPU and
+  refuses to start when the threads times 256MiB exceed the memory available
+  (`There are 14 threads, so 3.50GiB are required. Exiting...`), which a
+  many-core host with little RAM hits, and which restart loops forever. Set
+  `APP_DRAGONFLY_PROACTOR_THREADS` (for example `2`) on the control plane to cap
+  it for Dragonfly databases created or recreated afterwards. An existing
+  container keeps the command it was created with: remove it so the reconciler
+  recreates it (the data volume is kept).
 - **TLS** is Postgres and Redis only (see above). KeyDB, Dragonfly and ClickHouse
   connections are plaintext inside the Docker network.
 - A failed restore-as-new leaves the new database in place with whatever state

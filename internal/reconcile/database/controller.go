@@ -42,6 +42,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -489,7 +490,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// dragonflyCommand pins dbfilename so restoreRedisLike's
 		// /data/dump.rdb write actually gets loaded on restart; Dragonfly's
 		// own default (dump-{timestamp}) never matches that path.
-		return c.reconcileEngine(ctx, desired, nil, dragonflyCommand, redisDataPath, redisContainerPort, nil)
+		return c.reconcileEngine(ctx, desired, nil, dragonflyCommand(os.Getenv(EnvDragonflyProactorThreads)), redisDataPath, redisContainerPort, nil)
 
 	case store.EngineClickHouse:
 		if c.clickhouseCreds == nil {
@@ -928,7 +929,18 @@ func redisCommandAndPort(tls *TLSMaterial) ([]string, int) {
 // prepends the "dragonfly" binary itself whenever the first arg starts
 // with "-", so this is passed as flags only, matching Dragonfly's own
 // documented invocation (--dbfilename without a "dragonfly" prefix).
-var dragonflyCommand = []string{"--dbfilename", "dump"}
+func dragonflyCommand(threads string) []string {
+	cmd := []string{"--dbfilename", "dump"}
+	if n, err := strconv.Atoi(threads); err == nil && n > 0 {
+		cmd = append(cmd, "--proactor_threads", strconv.Itoa(n))
+	}
+	return cmd
+}
+
+// EnvDragonflyProactorThreads caps Dragonfly's io threads (default: one per
+// CPU). Dragonfly refuses to start when threads times 256MiB exceeds the memory
+// available, which a many-core host with little RAM hits.
+const EnvDragonflyProactorThreads = "APP_DRAGONFLY_PROACTOR_THREADS"
 
 // dockerImageFor returns the Docker image name for engine, applying
 // dockerImageMapping where the registry id and image name diverge.

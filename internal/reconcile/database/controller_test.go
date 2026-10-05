@@ -2226,3 +2226,20 @@ func TestPostgresNeedsPGDATA(t *testing.T) {
 		}
 	}
 }
+
+func TestDragonflyCommand(t *testing.T) {
+	tests := []struct {
+		threads string
+		want    []string
+	}{
+		{"", []string{"--dbfilename", "dump"}},
+		{"4", []string{"--dbfilename", "dump", "--proactor_threads", "4"}},
+		{"0", []string{"--dbfilename", "dump"}},
+		{"many", []string{"--dbfilename", "dump"}},
+	}
+	for _, tt := range tests {
+		if got := dragonflyCommand(tt.threads); !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("dragonflyCommand(%q) = %v, want %v", tt.threads, got, tt.want)
+		}
+	}
+}
