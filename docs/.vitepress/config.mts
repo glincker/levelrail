@@ -247,6 +247,9 @@ const landingSlugs = new Set([
   'privacy',
   'demo',
   'case-studies',
+  'developers',
+  'about',
+  'contact',
 ])
 function sitemapPriority(url: string): number {
   if (url === '') return 1.0
@@ -303,6 +306,36 @@ export default withMermaid({
           name: 'GLINCKER',
           url: 'https://glincker.com',
         },
+      }),
+    ],
+    [
+      'script',
+      { type: 'application/ld+json' },
+      JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'GLINCKER',
+        url: 'https://glincker.com',
+        sameAs: [
+          'https://github.com/glincker',
+          'https://github.com/glincker/levelrail',
+          'https://discord.gg/Ar5pcaZB99',
+        ],
+        contactPoint: {
+          '@type': 'ContactPoint',
+          contactType: 'customer support',
+          email: 'support@levelrail.com',
+        },
+      }),
+    ],
+    [
+      'script',
+      { type: 'application/ld+json' },
+      JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'Levelrail',
+        url: `${siteUrl}/`,
       }),
     ],
   ],
