@@ -57,7 +57,7 @@ flowchart TD
 
 ## What does not survive
 
-**Caddy's routing dies in the same instant the control plane does.** This is not a bug, it is the direct, unavoidable consequence of a locked architecture decision: Caddy runs embedded inside the control plane process, not as a sibling container with its own lifecycle. There is no separate proxy process to keep serving while the control plane is down.
+**Caddy's routing dies in the same instant the control plane does, unless systemd holds the sockets.** (With `LEVELRAIL_SOCKET_ACTIVATION=1` the listening sockets outlive the process and connections queue instead of being refused, see [measured windows](#ingress-availability-windows-measured).) This is not a bug, it is the direct, unavoidable consequence of a locked architecture decision: Caddy runs embedded inside the control plane process, not as a sibling container with its own lifecycle. There is no separate proxy process to keep serving while the control plane is down.
 
 Concretely: from the moment the control plane process exits to the moment a new one starts and reconciles ingress at least once, **domain-based HTTPS routing is down**. A request to your app's domain fails during that window even though the container behind it never stopped. A request straight to the container's published host port succeeds the whole time; a request through the domain does not.
 
@@ -72,6 +72,27 @@ The restarted control plane's first reconcile pass (it runs one immediately on s
 - An already-running, already-healthy container is left alone: not recreated, not restarted. Its restart count and container ID stay exactly what they were. The reconciler only acts when it observes a container that is missing or not running, never as a routine step on every pass.
 - Ingress resumes once the ingress controller reconciles again, which happens on that same first pass, and the domain starts routing without needing to touch the container behind it.
 - If the container was on a remote node whose agent has not reconnected yet, that service's controller is skipped for the pass rather than erring or tearing anything down (logged as "skipping service for this reconcile pass: node transport unavailable"). It picks back up automatically once the agent's own reconnect loop finds the control plane again; no restart of the agent is needed.
+
+## Ingress availability windows (measured)
+
+Measured locally on an Apple silicon laptop (real Docker, a real `traefik/whoami` container, the embedded Caddy over HTTPS with HTTP/2) with a load generator sending 200 requests per second. The same scenarios on the 2 vCPU droplets earlier were slower (about 4s for a restart, 1s for a kill), so read these as the shape and relative improvement, not as the numbers a small VPS will see.
+
+| Scenario | Before | After |
+| --- | --- | --- |
+| Control plane restart (`SIGTERM`, then start) | every connection refused for about 1.7s (335 of 4984 requests failed) | with socket activation: nothing refused, requests wait up to about 1.3s, 0 to 28 of about 2700 requests fail with a TLS handshake error at the instant the old process stops |
+| Kill the only serving container | 54 requests got a raw `502` over 265ms | 58 got a styled `503` with `Retry-After` over 285ms (the window is the time the reconciler takes to repoint ingress, so it did not shrink) |
+| Kill one replica of a pool | not measured | 40 of 40 requests succeeded with one dead upstream (retried onto the live one) |
+| Redeploy or restart an app (blue-green) | 0 errors | 0 errors |
+| Request in flight when the old process stops | connection closed | finishes (3s grace period under socket activation) |
+
+Where the windows cannot be removed:
+
+- **Without socket activation a restart still refuses connections** for the length of the restart. It is off by default because it changes how the installer owns ports 80 and 443; turn it on with `LEVELRAIL_SOCKET_ACTIVATION=1` ([how](domains-and-ingress.md#surviving-a-control-plane-restart)).
+- **Even with it, the instant the old process stops, a handful of TLS handshakes already in progress can fail** (most likely Caddy unloading its certificate cache while the listener is still draining, which we did not confirm). Browsers retry these; a script without retries may see an error.
+- **A killed single-replica container still has a window** of about the reconciler's reaction time (a few hundred milliseconds locally, up to a second on a small server) in which requests get the friendly `503`. Retrying the same address cannot help because the replacement usually gets a new port. Use two replicas for a service that must not drop requests.
+- **`recreate` deploys are down by design** while the old container stops and the new one starts. Visitors get the styled `503` and a page that reloads itself, not a dead connection or a TLS error.
+- **A pinned host port** still needs a stop-then-start swap, see [deploy safety](deploy-safety.md#pinned-host-ports).
+- **A control plane crash** (not a restart) with socket activation queues connections until `Restart=on-failure` brings it back, 5 seconds by default (`RestartSec`). Connections wait that long and may time out at the client.
 
 ## What this page does not cover
 
@@ -89,13 +110,13 @@ Measured on a 2 vCPU droplet running a build of this branch's predecessor (v0.2.
 | Blue-green, fast start app | 0 errors in about 2500 requests |
 | Blue-green, app that takes 10s to become ready | 0 errors in 3000 requests, cutover after readiness |
 | Rollback to the held previous release | 0 errors |
-| Recreate | about 2s of 502 responses (stop, start, ingress repoint) |
+| Recreate | about 2s of 502 responses (stop, start, ingress repoint). Since this release a styled 503 with `Retry-After` that reloads itself, and the domain keeps its certificate |
 | Rolling with 2 replicas | about 1s of 502 (old replica 0 removed before ingress moved) |
 | Deploy whose readiness never passes | old release served every request, deploy marked failed, reason shown in `apps status` and `attention` |
 | Deploy that is OOM-killed during readiness | old release kept serving, reason `OOMKilledDuringReadiness` |
-| `docker kill` of the serving container | about 1s of 502 until ingress moved to the held release |
+| `docker kill` of the serving container | about 1s of 502 until ingress moved to the held release. Since this release a styled 503 for the same window |
 | Pinned host port, blue-green | broken: the second container could not bind, was left running without its port and reported Ready |
-| Control plane restart | ingress is down for about 4s (embedded Caddy), containers unaffected |
+| Control plane restart | ingress is down for about 4s (embedded Caddy), containers unaffected. With `LEVELRAIL_SOCKET_ACTIVATION=1` connections queue instead of being refused, see [measured windows](#ingress-availability-windows-measured) |
 
 Fixes shipped from these runs: pinned host port handoff with restore on failure, removal of half-started containers, a check that a pinned port is actually published, rolling deploys keeping the routed replica until cutover, required secrets enforced at reconcile time, default load balancing for multi-replica apps, and ingress config applies skipped when nothing changed. These fixes are covered by unit tests with a fake Docker client; they have not yet been re-measured on a real server.
 

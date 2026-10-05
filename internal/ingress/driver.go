@@ -175,6 +175,11 @@ func listenPortsOf(cfg *Config) map[int]bool {
 			redirects = true
 		}
 	}
+	for _, p := range cfg.ownedPorts {
+		if p != 0 {
+			ports[p] = true
+		}
+	}
 	if redirects {
 		httpPort := cfg.Apps.HTTP.HTTPPort
 		if httpPort == 0 {
