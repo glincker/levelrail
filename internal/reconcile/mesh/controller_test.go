@@ -26,9 +26,10 @@ type fakeStore struct {
 	services  []store.DesiredService
 	databases []store.DesiredDatabase
 
-	nodesErr    error
-	servicesErr error
-	updateErr   error
+	nodesErr     error
+	servicesErr  error
+	databasesErr error
+	updateErr    error
 
 	updates []meshUpdate
 }
@@ -46,7 +47,7 @@ func (f *fakeStore) ListDesiredServices(context.Context) ([]store.DesiredService
 }
 
 func (f *fakeStore) ListDesiredDatabases(context.Context) ([]store.DesiredDatabase, error) {
-	return f.databases, nil
+	return f.databases, f.databasesErr
 }
 
 func (f *fakeStore) UpdateNodeMesh(_ context.Context, id, publicKey, address string) error {
@@ -322,6 +323,15 @@ func TestReconcile_StoreFailures(t *testing.T) {
 			store: &fakeStore{
 				nodes:       []store.Node{{ID: "control", Name: "control", MeshPublicKey: key(1).String(), MeshAddress: "10.181.0.1"}},
 				servicesErr: errors.New("database is locked"),
+			},
+			wantKind:  "DNSResolvable",
+			wantState: reconcile.ConditionUnknown,
+		},
+		{
+			name: "services listed but cannot list databases, mesh already distributed",
+			store: &fakeStore{
+				nodes:        []store.Node{{ID: "control", Name: "control", MeshPublicKey: key(1).String(), MeshAddress: "10.181.0.1"}},
+				databasesErr: errors.New("database is locked"),
 			},
 			wantKind:  "DNSResolvable",
 			wantState: reconcile.ConditionUnknown,
