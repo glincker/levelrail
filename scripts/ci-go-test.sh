@@ -11,6 +11,8 @@
 #   RERUNS              reruns per failed test (default 2, 0 disables)
 #   RERUN_MAX_FAILURES  skip reruns entirely above this many failures (default 5)
 #   SHARD               "i/n": run only every n-th top-level test (single package only)
+#   TEST_NAME_FILTER    "|"-joined regex: shard only tests matching this,
+#                       from scripts/ci-go-plan.sh's internal/api narrowing
 #   QUARANTINE          "skip" (default) skips .github/flaky-tests.txt entries,
 #                       "only" runs just those entries
 #   RESULTS_DIR         output directory (default test-results)
@@ -85,6 +87,11 @@ if [ -n "${SHARD:-}" ]; then
 	shard_i="${SHARD%/*}"
 	shard_n="${SHARD#*/}"
 	names="$(go test -list '.*' "${packages[0]}" | grep -E '^(Test|Example|Fuzz)' | sort)" || exit 2
+	if [ -n "${TEST_NAME_FILTER:-}" ]; then
+		# Shard within the narrowed set, not every test in the package:
+		# an empty shard below just means this lane found nothing to do.
+		names="$(grep -E "^($TEST_NAME_FILTER)\$" <<<"$names" || true)"
+	fi
 	shard_names="$(awk -v i="$shard_i" -v n="$shard_n" '(NR - 1) % n == i - 1' <<<"$names" | paste -sd'|' -)"
 	if [ -z "$shard_names" ]; then
 		echo "Shard $SHARD of $lane has no tests." | tee -a "$summary"

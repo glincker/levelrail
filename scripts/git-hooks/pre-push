@@ -81,6 +81,23 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 		fi
 	fi
 	api_tests="$(printf '%s\n' "$changed_files" | grep '^internal/api/.*_test\.go$' | while read -r f; do grep -ho '^func Test[A-Za-z0-9_]*' "$f" 2>/dev/null | sed 's/^func //'; done | sort -u | paste -sd'|' -)"
+	# internal/api wasn't itself touched, but it's in the affected set
+	# (a dependency changed): scripts/affected-api-tests.sh (same closure
+	# CI's ci-go-plan.sh uses) can sometimes narrow to the handful of
+	# tests that actually reach it, instead of skipping internal/api here
+	# entirely and leaving it to CI.
+	if [ -z "$api_tests" ] && ! printf '%s\n' "$changed_files" | grep -q '^internal/api/' \
+		&& printf '%s\n' "$scope" | grep -qxF github.com/GLINCKER/levelrail/internal/api; then
+		seed_dirs="$(printf '%s\n' "$changed_files" | scripts/affected-go-packages.sh --stdin --seeds 2>/dev/null || true)"
+		if [ -n "$seed_dirs" ]; then
+			mapfile -t seed_dirs_arr <<<"$seed_dirs"
+			mapfile -t seed_pkgs < <(go list -e -f '{{.ImportPath}}' "${seed_dirs_arr[@]}" 2>/dev/null | grep -vxF "github.com/GLINCKER/levelrail/internal/api" || true)
+			if [ "${#seed_pkgs[@]}" -gt 0 ]; then
+				narrowed="$(scripts/affected-api-tests.sh "${seed_pkgs[@]}" 2>/dev/null || echo ALL)"
+				[ "$narrowed" != ALL ] && api_tests="$narrowed"
+			fi
+		fi
+	fi
 	if [ "$fail" -eq 0 ] && [ -n "$api_tests" ]; then
 		echo "pre-push: go test -short ./internal/api, only tests from changed test files"
 		if ! go test ./internal/api -short -run "^($api_tests)\$" 2>&1; then
