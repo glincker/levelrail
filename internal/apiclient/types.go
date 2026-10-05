@@ -1185,6 +1185,14 @@ type SessionInfoResource struct {
 	ExpiresAt string `json:"expires_at"`
 }
 
+// WhoamiResource mirrors internal/api's whoamiResponse (internal/api/whoami.go).
+type WhoamiResource struct {
+	Kind      string   `json:"kind"`
+	Name      string   `json:"name"`
+	Abilities []string `json:"abilities"`
+	ExpiresAt string   `json:"expires_at"`
+}
+
 // SessionLinkResource mirrors internal/api's mintSessionLinkResponse
 // (internal/api/session_links.go): Token is a one-time secret, URL is
 // the same token already embedded in a ready-to-open login link.

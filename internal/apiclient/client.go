@@ -1599,6 +1599,14 @@ func (c *Client) GetSession(ctx context.Context) (SessionInfoResource, error) {
 	return out, err
 }
 
+// Whoami calls GET /api/v1/auth/whoami, which accepts a bearer token as
+// well as a session cookie.
+func (c *Client) Whoami(ctx context.Context) (WhoamiResource, error) {
+	var out WhoamiResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/auth/whoami", nil, &out)
+	return out, err
+}
+
 // MintSessionLink calls POST /api/v1/auth/session-links using this
 // Client's bearer token, which must hold AbilityRoot: minting a session
 // link is root-equivalent since redeeming it establishes a session with

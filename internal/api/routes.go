@@ -139,6 +139,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/logout", rt.requireAuth(rt.handleLogout))
 	mux.HandleFunc("PUT /api/v1/auth/password", rt.requireAuth(rt.handleChangePassword))
 	mux.HandleFunc("GET /api/v1/auth/session", rt.requireAuth(rt.handleGetSession))
+	mux.HandleFunc("GET /api/v1/auth/whoami", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleWhoami))
 	mux.HandleFunc("POST /api/v1/auth/sessions/revoke-others", rt.requireAuth(rt.handleRevokeOtherSessions))
 
 	// Session links (session_links.go): a short-lived, single-use,

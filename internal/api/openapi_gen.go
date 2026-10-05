@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 651 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 652 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -263,6 +263,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/tokens", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateToken", Description: "API tokens: session-only, deliberately never bearer-token authenticated. A token cannot mint or revoke another token on its own behalf; only an interactive human session can manage the token set, the same boundary that stops a leaked scoped token from escalating itself by minting a broader one."},
 	{Method: "DELETE", Path: "/api/v1/auth/tokens/{id}", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeToken", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/users", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateUser", Description: "Multi-user: creating another local-password user (see handleRegister's own doc comment) is AbilityRoot, not merely requireAuth: the caller also picks the new user's Abilities, so anyone able to reach this route can mint access at any tier, themselves included, only a root caller may do that. Listing stays AbilityRead, same tier as every other passive view."},
+	{Method: "GET", Path: "/api/v1/auth/whoami", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleWhoami", Description: ""},
 	{Method: "GET", Path: "/api/v1/iam/policies", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListPolicies", Description: ""},
 	{Method: "POST", Path: "/api/v1/iam/policies", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreatePolicy", Description: "IAM policies (iam.go/iam_handlers.go): resource-scoped Allow/Deny documents attached to a user or token, additive on top of the flat Abilities list above. Reading the catalog is AbilityRead like roles above; every mutation (create/update/delete/attach/detach) is AbilityRoot, the same tier as handleUpdateUserAbilities, since a policy can grant or deny access at a resource-scoped level a non-root caller could not otherwise touch."},
 	{Method: "DELETE", Path: "/api/v1/iam/policies/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeletePolicy", Description: ""},
