@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CascadeDeleteOption } from './CascadeDeleteOption'
 import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -27,6 +28,7 @@ export function DeleteOrganizationDialog({
   onDeleted?: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const [cascade, setCascade] = useState(false)
   const deleteOrganization = useDeleteOrganization()
 
   function handleOpenChange(next: boolean) {
@@ -49,8 +51,8 @@ export function DeleteOrganizationDialog({
             Delete &ldquo;{name}&rdquo;?
           </DialogTitle>
           <DialogDescription>
-            This removes the organization label only. Any projects filed
-            under it keep running exactly as they are, they just become
+            This removes the organization label only. Any projects filed under
+            it keep running exactly as they are, they just become
             organization-less again. This cannot be undone from here.
           </DialogDescription>
         </DialogHeader>
@@ -59,6 +61,7 @@ export function DeleteOrganizationDialog({
             {deleteOrganization.error.message}
           </p>
         ) : null}
+        <CascadeDeleteOption checked={cascade} onChange={setCascade} />
         <DialogFooter>
           <Button
             type="button"
@@ -74,19 +77,24 @@ export function DeleteOrganizationDialog({
             variant="destructive"
             disabled={deleteOrganization.isPending}
             onClick={() => {
-              deleteOrganization.mutate(id, {
-                onSuccess: () => {
-                  setOpen(false)
-                  toast.add({
-                    title: `Organization "${name}" deleted.`,
-                    type: 'success',
-                  })
-                  onDeleted?.()
+              deleteOrganization.mutate(
+                { id, cascade },
+                {
+                  onSuccess: () => {
+                    setOpen(false)
+                    toast.add({
+                      title: `Organization "${name}" deleted.`,
+                      type: 'success',
+                    })
+                    onDeleted?.()
+                  },
                 },
-              })
+              )
             }}
           >
-            {deleteOrganization.isPending ? 'Deleting...' : 'Delete organization'}
+            {deleteOrganization.isPending
+              ? 'Deleting...'
+              : 'Delete organization'}
           </Button>
         </DialogFooter>
       </DialogContent>

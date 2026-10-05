@@ -36,5 +36,9 @@
     "deleted": "App \"{{name}}\" deleted.",
     "pendingTitle": "App \"{{name}}\" deleted, cleanup pending.",
     "pendingDescription": "Its containers are not removed yet ({{reason}}). Cleanup retries automatically."
+  },
+  "cascadeDelete": {
+    "label": "Also delete everything inside",
+    "hint": "Removes every app and database in it and their containers. Volumes are kept. If something cannot be removed, nothing else is lost and you can run this again."
   }
 }

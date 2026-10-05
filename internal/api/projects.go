@@ -135,30 +135,17 @@ func (rt *Router) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, toProjectResource(p))
 }
 
-// handleDeleteProject handles DELETE /api/v1/projects/{id}. See
-// store.DB.DeleteProject's own doc comment for the behavior this
-// deliberately relies on rather than re-implements: desired_services.
-// project_id and desired_databases.project_id are
-// "ON DELETE SET NULL" foreign keys (migrations/0022_projects.sql), so
-// every app and database that belonged to this project is left running
-// exactly as it was, simply project-less again. This is not a gap left
-// for later, it's the chosen, documented behavior: a project is an
-// organizational label, not a lifecycle owner, so deleting the label
-// must never delete or disrupt the real resources it labeled.
+// handleDeleteProject handles DELETE /api/v1/projects/{id}. By default every
+// app and database in it is left running, simply project-less again
+// (desired_services.project_id is ON DELETE SET NULL, migrations/0022).
+// cascade=true tears them all down first, see deleteWithMembers.
 func (rt *Router) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-
-	err := rt.projects.DeleteProject(r.Context(), id)
-	if errors.Is(err, store.ErrProjectNotFound) {
-		writeError(w, http.StatusNotFound, "project not found")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: delete project failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
+	rt.deleteWithMembers(w, r, "project", func(ctx context.Context) (cascadeScope, error) {
+		return rt.projectScope(ctx, id)
+	}, func(ctx context.Context, _ cascadeScope) error {
+		return rt.projects.DeleteProject(ctx, id)
+	})
 }
 
 // randomProjectID mirrors randomBackupTargetID/randomTokenID exactly:

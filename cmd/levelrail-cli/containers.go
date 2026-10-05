@@ -34,6 +34,10 @@ func runContainers(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return runContainersStop(prog, rest, stdout, stderr, lookupEnv)
 	case "remove":
 		return runContainersRemove(prog, rest, stdout, stderr, lookupEnv)
+	case "orphans":
+		return runContainersOrphans(prog, rest, stdout, stderr, lookupEnv)
+	case "reap":
+		return runContainersReap(prog, rest, stdout, stderr, lookupEnv)
 	case "claim":
 		return runContainersClaim(prog, rest, stdout, stderr, lookupEnv)
 	default:
@@ -180,6 +184,8 @@ func containersUsage(prog string) string {
   %[1]s containers stop <name> [flags]                   stop an orphaned container
   %[1]s containers remove <name> [flags]                 remove an orphaned container
   %[1]s containers claim <name> [--as app-name] [flags]  adopt an orphaned container into a new app
+  %[1]s containers orphans [flags]                       leftover containers and volumes, with grace status
+  %[1]s containers reap [--dry-run] [flags]              remove due leftovers now (the reaper also runs on a schedule)
 
 stop/remove/claim only ever act on a container Levelrail does not
 already manage (409 otherwise); for a %[1]s-managed app, use

@@ -9,6 +9,8 @@
 // start of a permission system (internal/api/projects.go's own package
 // doc comment): create/list/get/delete only, nothing scoped to it.
 
+import { deleteWithCascade } from '../lib/cascadeDelete'
+import type { CascadeDeleteArgs } from '../lib/cascadeDelete'
 import {
   queryOptions,
   useMutation,
@@ -134,16 +136,8 @@ export function useCreateProject() {
 // field just changed for every row that belonged to this project, the
 // same cross-resource invalidation reasoning useDrainNode already
 // applies to its own multi-resource side effect.
-export async function deleteProject(id: string): Promise<void> {
-  const res = await fetch(`/api/v1/projects/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  })
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `delete project failed: ${res.status}`),
-    )
-  }
+export function deleteProject(args: CascadeDeleteArgs): Promise<void> {
+  return deleteWithCascade('/api/v1/projects', args, 'delete project failed')
 }
 
 // POST /api/v1/projects/{id}/stop and .../start (handleStopProject/
@@ -201,10 +195,15 @@ export function useStartProject() {
 // every app filed under this project to have its running container
 // recreated with no image change, the project-scoped counterpart of
 // restartApp (queries/apps.ts). No request body.
-export async function restartProject(id: string): Promise<ProjectRestartResponse> {
-  const res = await fetch(`/api/v1/projects/${encodeURIComponent(id)}/restart`, {
-    method: 'POST',
-  })
+export async function restartProject(
+  id: string,
+): Promise<ProjectRestartResponse> {
+  const res = await fetch(
+    `/api/v1/projects/${encodeURIComponent(id)}/restart`,
+    {
+      method: 'POST',
+    },
+  )
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -236,7 +235,7 @@ export function useDeleteProject() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteProject,
-    onSuccess: (_data, id) => {
+    onSuccess: (_data, { id }) => {
       queryClient.removeQueries({ queryKey: projectKeys.detail(id) })
       void queryClient.invalidateQueries({ queryKey: projectKeys.list() })
       void queryClient.invalidateQueries({ queryKey: appKeys.list() })

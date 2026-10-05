@@ -3,6 +3,9 @@
 // queries/scheduledTasks.ts scopes to one app. Every key below is keyed
 // by project id: there is no unscoped "list every environment" endpoint.
 
+import { appKeys } from './apps'
+import { deleteWithCascade } from '../lib/cascadeDelete'
+import type { CascadeDeleteArgs } from '../lib/cascadeDelete'
 import {
   queryOptions,
   useMutation,
@@ -97,6 +100,7 @@ export function useCreateEnvironment(projectId: string) {
       void queryClient.invalidateQueries({
         queryKey: environmentKeys.list(projectId),
       })
+      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
     },
   })
 }
@@ -157,16 +161,12 @@ export function useProtectedEnvironment(app: {
 // tagged with it survives, simply untagged again (the backend's ON
 // DELETE SET NULL foreign key), the same reasoning useDeleteProject's
 // own doc comment gives for its resource.
-export async function deleteEnvironment(id: string): Promise<void> {
-  const res = await fetch(`/api/v1/environments/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  })
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `delete environment failed: ${res.status}`),
-    )
-  }
+export function deleteEnvironment(args: CascadeDeleteArgs): Promise<void> {
+  return deleteWithCascade(
+    '/api/v1/environments',
+    args,
+    'delete environment failed',
+  )
 }
 
 export function useDeleteEnvironment(projectId: string) {

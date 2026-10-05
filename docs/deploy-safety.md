@@ -204,6 +204,10 @@ In the dashboard, the deploy history row menu has **Roll back to this** and
 **Cancel deploy**, and app **Deploy settings** has the cancel-superseded
 switch. The MCP server exposes `cancel_deploy`.
 
+## Cleanup never touches a rollback target
+
+Pruning removes only dangling (untagged) images, and Docker itself refuses to remove an image a container still uses, even when its tag has since moved to newer content. A pinned rollback tag is never dangling, so it is never a candidate. Both properties are checked against a real daemon in `internal/docker/prune_images_live_test.go`: a pinned tag, an untagged image still backing a running container, and a truly orphaned image go in, and only the last one comes out. A rollback whose image is gone anyway answers `410` with an instruction to redeploy from source instead of a half-working deploy. See [Delete and clean up](deploying-apps.md#delete-and-clean-up) for the container, volume and certificate reaper.
+
 ## Limits
 
 - On remote nodes reached over the agent transport the running image ID is

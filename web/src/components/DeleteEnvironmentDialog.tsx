@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CascadeDeleteOption } from './CascadeDeleteOption'
 import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -28,6 +29,7 @@ export function DeleteEnvironmentDialog({
   onDeleted?: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const [cascade, setCascade] = useState(false)
   const deleteEnvironment = useDeleteEnvironment(projectId)
 
   function handleOpenChange(next: boolean) {
@@ -40,7 +42,9 @@ export function DeleteEnvironmentDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
-        render={<Button variant="ghost" size="sm" aria-label={`Delete ${name}`} />}
+        render={
+          <Button variant="ghost" size="sm" aria-label={`Delete ${name}`} />
+        }
       >
         <TrashIcon className="size-3.5" aria-hidden="true" />
       </DialogTrigger>
@@ -51,9 +55,8 @@ export function DeleteEnvironmentDialog({
             Delete &ldquo;{name}&rdquo;?
           </DialogTitle>
           <DialogDescription>
-            Any app tagged with this environment keeps running exactly as
-            it is, it just becomes untagged again. This cannot be undone
-            from here.
+            Any app tagged with this environment keeps running exactly as it is,
+            it just becomes untagged again. This cannot be undone from here.
           </DialogDescription>
         </DialogHeader>
         {deleteEnvironment.isError ? (
@@ -61,6 +64,7 @@ export function DeleteEnvironmentDialog({
             {deleteEnvironment.error.message}
           </p>
         ) : null}
+        <CascadeDeleteOption checked={cascade} onChange={setCascade} />
         <DialogFooter>
           <Button
             type="button"
@@ -76,16 +80,19 @@ export function DeleteEnvironmentDialog({
             variant="destructive"
             disabled={deleteEnvironment.isPending}
             onClick={() => {
-              deleteEnvironment.mutate(id, {
-                onSuccess: () => {
-                  setOpen(false)
-                  toast.add({
-                    title: `Environment "${name}" deleted.`,
-                    type: 'success',
-                  })
-                  onDeleted?.()
+              deleteEnvironment.mutate(
+                { id, cascade },
+                {
+                  onSuccess: () => {
+                    setOpen(false)
+                    toast.add({
+                      title: `Environment "${name}" deleted.`,
+                      type: 'success',
+                    })
+                    onDeleted?.()
+                  },
                 },
-              })
+              )
             }}
           >
             {deleteEnvironment.isPending ? 'Deleting...' : 'Delete'}

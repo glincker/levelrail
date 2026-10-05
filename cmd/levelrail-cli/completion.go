@@ -206,7 +206,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"doctor":                   nil,
 	"api-docs":                 nil,
 	"init":                     nil,
-	"containers":               {subs: map[string]*cmdNode{"list": nil, "stop": nil, "remove": nil, "claim": nil}},
+	"containers":               {subs: map[string]*cmdNode{"list": nil, "stop": nil, "remove": nil, "claim": nil, "orphans": nil, "reap": nil}},
 	"system-prune":             nil,
 	"volumes-orphaned":         nil,
 	"volumes-orphaned-cleanup": nil,

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CascadeDeleteOption } from './CascadeDeleteOption'
 import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -34,6 +35,7 @@ export function DeleteProjectDialog({
   onDeleted?: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const [cascade, setCascade] = useState(false)
   const deleteProject = useDeleteProject()
 
   function handleOpenChange(next: boolean) {
@@ -66,6 +68,7 @@ export function DeleteProjectDialog({
             {deleteProject.error.message}
           </p>
         ) : null}
+        <CascadeDeleteOption checked={cascade} onChange={setCascade} />
         <DialogFooter>
           <Button
             type="button"
@@ -81,16 +84,19 @@ export function DeleteProjectDialog({
             variant="destructive"
             disabled={deleteProject.isPending}
             onClick={() => {
-              deleteProject.mutate(id, {
-                onSuccess: () => {
-                  setOpen(false)
-                  toast.add({
-                    title: `Project "${name}" deleted.`,
-                    type: 'success',
-                  })
-                  onDeleted?.()
+              deleteProject.mutate(
+                { id, cascade },
+                {
+                  onSuccess: () => {
+                    setOpen(false)
+                    toast.add({
+                      title: `Project "${name}" deleted.`,
+                      type: 'success',
+                    })
+                    onDeleted?.()
+                  },
                 },
-              })
+              )
             }}
           >
             {deleteProject.isPending ? 'Deleting...' : 'Delete project'}

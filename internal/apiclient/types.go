@@ -3672,3 +3672,58 @@ type NodeStatusEventResource struct {
 	ToStatus   string    `json:"to_status"`
 	CreatedAt  time.Time `json:"created_at"`
 }
+
+// OrphanResource mirrors internal/orphans.Orphan: a leftover container or
+// volume that desired state no longer accounts for.
+type OrphanResource struct {
+	Kind      string `json:"kind"`
+	Name      string `json:"name"`
+	ID        string `json:"id,omitempty"`
+	NodeID    string `json:"node_id"`
+	Reason    string `json:"reason"`
+	Image     string `json:"image,omitempty"`
+	SizeBytes int64  `json:"size_bytes,omitempty"`
+	PlacedOn  string `json:"placed_on,omitempty"`
+	Skip      string `json:"skip,omitempty"`
+}
+
+// OrphanFinding is an OrphanResource plus its grace period status.
+type OrphanFinding struct {
+	OrphanResource
+	FirstSeenAt *string `json:"first_seen_at,omitempty"`
+	ReapAfter   *string `json:"reap_after,omitempty"`
+	Due         bool    `json:"due"`
+}
+
+// OrphanFailure is an orphan the reaper could not remove.
+type OrphanFailure struct {
+	OrphanResource
+	Error string `json:"error"`
+}
+
+// OrphanReport mirrors internal/orphans.Report.
+type OrphanReport struct {
+	DryRun      bool             `json:"dry_run"`
+	Findings    []OrphanFinding  `json:"findings"`
+	Removed     []OrphanResource `json:"removed"`
+	Failed      []OrphanFailure  `json:"failed,omitempty"`
+	Unreachable []string         `json:"unreachable,omitempty"`
+	Halted      string           `json:"halted,omitempty"`
+}
+
+// CascadeDeleteResult mirrors internal/api's cascadeResponse. The zero value
+// is what a 204 (nothing inside) decodes to.
+type CascadeDeleteResult struct {
+	Status           string                 `json:"status"`
+	DeletedApps      []string               `json:"deleted_apps"`
+	DeletedDatabases []string               `json:"deleted_databases"`
+	TeardownPending  []string               `json:"teardown_pending,omitempty"`
+	Failed           []CascadeDeleteFailure `json:"failed,omitempty"`
+}
+
+// CascadeDeleteFailure is one member a cascading delete could not remove.
+type CascadeDeleteFailure struct {
+	Kind  string `json:"kind"`
+	Name  string `json:"name"`
+	Error string `json:"error"`
+}

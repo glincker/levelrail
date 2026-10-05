@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 655 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 657 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -656,11 +656,13 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/system/control-plane-dr/settings", Ability: "AbilityWriteSensitive", Group: "System", Handler: "handleUpdateControlPlaneDR", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/doctor", Ability: "AbilityRead", Group: "System", Handler: "handleSystemDoctor", Description: "Doctor (levelrail-cli doctor): a superset preflight bundle of the same individual checks above, plus a few doctor-only ones (data dir writability, ingress port availability, SQLite reachability), AbilityRead like system/status above."},
 	{Method: "POST", Path: "/api/v1/system/master-key/rotate", Ability: "AbilityRoot", Group: "System", Handler: "handleRotateMasterKey", Description: "Master key rotation re-wraps every stored DEK live: AbilityRoot, the same fleet-wide-blast-radius tier as prune above, not AbilityWrite (SecretSetter's own gate for a single app's values)."},
+	{Method: "GET", Path: "/api/v1/system/orphans", Ability: "AbilityRead", Group: "System", Handler: "handleListOrphans", Description: "Orphaned named volumes: detection is a read (AbilityRead), the cleanup that actually deletes one is the same AbilityRoot, fleet-wide, no-undo tier system/prune sits behind, not AbilityWrite."},
+	{Method: "POST", Path: "/api/v1/system/orphans/reap", Ability: "AbilityRoot", Group: "System", Handler: "handleReapOrphans", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/prune", Ability: "AbilityRoot", Group: "System", Handler: "handleSystemPrune", Description: "POST /system/prune deletes real Docker resources (stopped containers, dangling images, anonymous volumes, unused build cache) fleet-wide, not scoped to one app: AbilityRoot, the same gate handleDrainNode uses for its own fleet-wide, no-undo action, not AbilityWrite (which a narrower, single-app token could hold)."},
 	{Method: "GET", Path: "/api/v1/system/secrets/binding", Ability: "AbilityRead", Group: "System", Handler: "handleGetSecretBinding", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/secrets/rebind", Ability: "AbilityRoot", Group: "System", Handler: "handleRebindSecrets", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/status", Ability: "AbilityRead", Group: "System", Handler: "handleSystemStatus", Description: "System status (General settings page): configured/not-configured signals plus disk usage, AbilityRead like everything else an authenticated operator can passively view."},
-	{Method: "GET", Path: "/api/v1/system/volumes/orphaned", Ability: "AbilityRead", Group: "System", Handler: "handleListOrphanedVolumes", Description: "Orphaned named volumes: detection is a read (AbilityRead), the cleanup that actually deletes one is the same AbilityRoot, fleet-wide, no-undo tier system/prune sits behind, not AbilityWrite."},
+	{Method: "GET", Path: "/api/v1/system/volumes/orphaned", Ability: "AbilityRead", Group: "System", Handler: "handleListOrphanedVolumes", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/volumes/orphaned/cleanup", Ability: "AbilityRoot", Group: "System", Handler: "handleCleanupOrphanedVolumes", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates", Ability: "AbilityRead", Group: "System", Handler: "handleGetUpdates", Description: "Updates (Settings > Updates page): running version vs. GitHub's latest published release, AbilityRead like system/status above."},
 	{Method: "GET", Path: "/api/v1/updates/preflight", Ability: "AbilityRead", Group: "System", Handler: "handleUpdatePreflight", Description: ""},

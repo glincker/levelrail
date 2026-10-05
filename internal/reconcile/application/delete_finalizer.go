@@ -19,12 +19,13 @@ type TeardownStore interface {
 	DeletePendingTeardown(ctx context.Context, name string) error
 	RecordPendingTeardownFailure(ctx context.Context, name, cause string) error
 	ListPendingTeardowns(ctx context.Context) ([]store.PendingTeardown, error)
+	GetNode(ctx context.Context, id string) (*store.Node, error)
 }
 
 // RuntimeResolver maps a node ID to the runtime that reaches it.
 type RuntimeResolver func(nodeID string) (docker.Runtime, error)
 
-// DeleteFinalizer removes the containers of deleted apps. A tombstone is
+// DeleteFinalizer removes the containers of deleted or moved apps. A tombstone is
 // written before desired state is deleted and cleared only after the
 // containers are confirmed gone, so an unreachable node or a failed stop is
 // retried on every reconcile pass instead of orphaning containers.
@@ -93,15 +94,28 @@ func (f *DeleteFinalizer) Reconcile(ctx context.Context) (reconcile.Result, erro
 	}
 	var errs []error
 	for _, p := range pending {
-		if _, err := f.store.GetDesiredService(ctx, p.Name); err == nil {
-			// Recreated under the same name: its own controller owns the containers now.
-			if derr := f.store.DeletePendingTeardown(ctx, p.Name); derr != nil {
-				errs = append(errs, derr)
+		if svc, err := f.store.GetDesiredService(ctx, p.Name); err == nil {
+			// Still placed on the tombstone's node: recreated under the same name, its own controller owns the containers.
+			// Placed elsewhere: a move, so the leftovers on this node still need removing.
+			if svc.NodeID == p.NodeID {
+				if derr := f.store.DeletePendingTeardown(ctx, p.Name); derr != nil {
+					errs = append(errs, derr)
+				}
+				continue
 			}
-			continue
 		} else if !errors.Is(err, store.ErrServiceNotFound) {
 			errs = append(errs, fmt.Errorf("load %q: %w", p.Name, err))
 			continue
+		}
+		if p.NodeID != "" {
+			if _, err := f.store.GetNode(ctx, p.NodeID); errors.Is(err, store.ErrNodeNotFound) {
+				// The node was removed from the fleet: nothing left to reach. If it ever re-enrols, the orphan reaper finds what it still runs.
+				f.logger.Warn("application: dropping teardown for a removed node", slog.String("name", p.Name), slog.String("node_id", p.NodeID))
+				if derr := f.store.DeletePendingTeardown(ctx, p.Name); derr != nil {
+					errs = append(errs, derr)
+				}
+				continue
+			}
 		}
 		tctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 		ferr := f.Finalize(tctx, p.Name, p.NodeID)

@@ -70,6 +70,9 @@ func TestDeleteFinalizer_NodeUnreachableThenReturns(t *testing.T) {
 	db := newFinalizerStore(t)
 	rt := newFakeRuntime(0)
 	rt.seed(ContainerName("web", "img:v1", ""), true)
+	if err := db.SaveNode(ctx, store.Node{ID: "node_b", Name: "b", Status: store.NodeStatusOffline}); err != nil {
+		t.Fatal(err)
+	}
 	online := false
 	f := NewDeleteFinalizer(db, func(nodeID string) (docker.Runtime, error) {
 		if nodeID != "node_b" || !online {
@@ -151,5 +154,43 @@ func TestDeleteFinalizer_OnlyRemovesOwnAppContainers(t *testing.T) {
 	}
 	if got[mine] || !got[sibling] || !got[other] || !got[foreign] {
 		t.Errorf("containers after finalize = %v, want only %q removed", rt.names(), mine)
+	}
+}
+
+func TestDeleteFinalizer_DropsTombstoneForRemovedNode(t *testing.T) {
+	ctx := context.Background()
+	db := newFinalizerStore(t)
+	f := NewDeleteFinalizer(db, func(string) (docker.Runtime, error) { return nil, errors.New("node gone") }, nil)
+	if err := f.Begin(ctx, "web", "dead-node"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Reconcile(ctx); err != nil {
+		t.Fatalf("Reconcile() error = %v, want the removed node's tombstone dropped quietly", err)
+	}
+	if names := pendingNames(t, db); len(names) != 0 {
+		t.Fatalf("tombstones left = %v", names)
+	}
+}
+
+func TestDeleteFinalizer_MovedAppStillGetsOldNodeTornDown(t *testing.T) {
+	ctx := context.Background()
+	db := newFinalizerStore(t)
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:v1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpdateServiceNode(ctx, "web", ""); err != nil {
+		t.Fatal(err)
+	}
+	rt := newFakeRuntime(0)
+	rt.seed(ContainerName("web", "img:v1", ""), true)
+	f := NewDeleteFinalizer(db, func(string) (docker.Runtime, error) { return rt, nil }, nil)
+	if err := f.Begin(ctx, "web", ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Reconcile(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if len(rt.names()) != 1 {
+		t.Fatal("tombstone on the node the app still lives on must not remove its container")
 	}
 }

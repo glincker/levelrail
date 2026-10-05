@@ -2446,6 +2446,15 @@ func (c *Client) DeleteOrganization(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, organizationPath(id), nil, nil)
 }
 
+// DeleteOrganizationCascade calls DELETE with cascade=true: every app and database
+// inside is torn down first. A partial result (Status "partial") means the
+// organization still exists and repeating the call resumes.
+func (c *Client) DeleteOrganizationCascade(ctx context.Context, id string) (CascadeDeleteResult, error) {
+	var out CascadeDeleteResult
+	err := c.do(ctx, http.MethodDelete, organizationPath(id)+"?cascade=true", nil, &out)
+	return out, err
+}
+
 func projectsCollectionPath() string {
 	return "/api/v1/projects"
 }
@@ -2478,6 +2487,15 @@ func (c *Client) GetProject(ctx context.Context, id string) (ProjectResource, er
 // DeleteProject calls DELETE /api/v1/projects/{id}.
 func (c *Client) DeleteProject(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, projectPath(id), nil, nil)
+}
+
+// DeleteProjectCascade calls DELETE with cascade=true: every app and database
+// inside is torn down first. A partial result (Status "partial") means the
+// project still exists and repeating the call resumes.
+func (c *Client) DeleteProjectCascade(ctx context.Context, id string) (CascadeDeleteResult, error) {
+	var out CascadeDeleteResult
+	err := c.do(ctx, http.MethodDelete, projectPath(id)+"?cascade=true", nil, &out)
+	return out, err
 }
 
 // RestartProject calls POST /api/v1/projects/{id}/restart: force every
@@ -2617,6 +2635,15 @@ func (c *Client) UpdateEnvironment(ctx context.Context, id string, req UpdateEnv
 // DeleteEnvironment calls DELETE /api/v1/environments/{id}.
 func (c *Client) DeleteEnvironment(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, environmentPath(id), nil, nil)
+}
+
+// DeleteEnvironmentCascade calls DELETE with cascade=true: every app and database
+// inside is torn down first. A partial result (Status "partial") means the
+// environment still exists and repeating the call resumes.
+func (c *Client) DeleteEnvironmentCascade(ctx context.Context, id string) (CascadeDeleteResult, error) {
+	var out CascadeDeleteResult
+	err := c.do(ctx, http.MethodDelete, environmentPath(id)+"?cascade=true", nil, &out)
+	return out, err
 }
 
 // GetEnvironmentEnv calls GET /api/v1/environments/{id}/env.
@@ -4072,4 +4099,24 @@ func (c *Client) ListStaticSites(ctx context.Context) ([]StaticSiteResource, err
 // the same reuse reason as ExtractErrorMessage.
 func PathEscape(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(s, "%", "%25"), "/", "%2F")
+}
+
+// ListOrphans calls GET /api/v1/system/orphans: every leftover container and
+// volume across nodes with its grace period status. Removes nothing.
+func (c *Client) ListOrphans(ctx context.Context) (OrphanReport, error) {
+	var out OrphanReport
+	err := c.do(ctx, http.MethodGet, "/api/v1/system/orphans", nil, &out)
+	return out, err
+}
+
+// ReapOrphans calls POST /api/v1/system/orphans/reap: one reaper pass now.
+// dryRun reports what would go without removing it.
+func (c *Client) ReapOrphans(ctx context.Context, dryRun bool) (OrphanReport, error) {
+	var out OrphanReport
+	path := "/api/v1/system/orphans/reap"
+	if dryRun {
+		path += "?dry_run=true"
+	}
+	err := c.do(ctx, http.MethodPost, path, nil, &out)
+	return out, err
 }

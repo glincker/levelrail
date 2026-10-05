@@ -124,22 +124,17 @@ func (rt *Router) handleUpdateEnvironment(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusOK, toEnvironmentResource(e))
 }
 
-// handleDeleteEnvironment handles DELETE /api/v1/environments/{id}.
-// desired_services.environment_id is ON DELETE SET NULL, so tagged
-// services survive, simply untagged again.
+// handleDeleteEnvironment handles DELETE /api/v1/environments/{id}. By
+// default tagged services survive, simply untagged again
+// (desired_services.environment_id is ON DELETE SET NULL). cascade=true tears
+// them down first, see deleteWithMembers.
 func (rt *Router) handleDeleteEnvironment(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	err := rt.environments.DeleteEnvironment(r.Context(), id)
-	if errors.Is(err, store.ErrEnvironmentNotFound) {
-		writeError(w, http.StatusNotFound, "environment not found")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: delete environment failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
+	rt.deleteWithMembers(w, r, "environment", func(ctx context.Context) (cascadeScope, error) {
+		return rt.environmentScope(ctx, id)
+	}, func(ctx context.Context, _ cascadeScope) error {
+		return rt.environments.DeleteEnvironment(ctx, id)
+	})
 }
 
 type setAppEnvironmentRequest struct {

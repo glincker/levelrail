@@ -299,6 +299,7 @@ type Controller struct {
 	// "storageDir/file storage instead" (see WithCertStore).
 	certStore   ingress.CertStore
 	certStorage any
+	servedHosts ServedHostsRecorder
 
 	// auditRecorder, if set via WithAuditRecorder, is attached to the
 	// same SQLiteStorage certStore builds, so a certificate issuance or
@@ -429,6 +430,17 @@ func WithStorageDir(dir string) Option {
 // ingress.SetActiveCertStorage exactly once, not on every Reconcile.
 func WithCertStore(certStore ingress.CertStore) Option {
 	return func(c *Controller) { c.certStore = certStore }
+}
+
+// ServedHostsRecorder persists the hostnames an applied config serves.
+type ServedHostsRecorder interface {
+	ReplaceServedHosts(ctx context.Context, hosts []string) error
+}
+
+// WithServedHostsRecorder records every hostname the applied config serves,
+// the evidence the orphan reaper needs before it may drop a certificate.
+func WithServedHostsRecorder(r ServedHostsRecorder) Option {
+	return func(c *Controller) { c.servedHosts = r }
 }
 
 // WithAuditRecorder records a system-actor audit_log row for every
@@ -898,6 +910,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	c.publishRequestHostOwners(claimedHosts)
 	if err := c.driver.Apply(ctx, cfg); err != nil {
 		return notReady("ApplyFailed", err), fmt.Errorf("ingress: apply config: %w", err)
+	}
+
+	if c.servedHosts != nil {
+		if err := c.servedHosts.ReplaceServedHosts(ctx, ingress.ServedHosts(cfg)); err != nil {
+			slog.Warn("ingress: record served hosts failed", slog.String("error", err.Error()))
+		}
 	}
 
 	c.recordLoadBalancers(lbPlans, lbConfigs)
