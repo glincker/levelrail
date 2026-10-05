@@ -1,6 +1,6 @@
-/* Half-cut product frame on the home hero's right side (HeroShowcase.vue).
-   Desktop: absolutely placed, bleeding off the right and bottom edges of
-   .VPHero. Below 1100px it stacks under the text in normal flow. */
+/* Product window on the home hero's right side (HeroShowcase.vue).
+   From 1280px it sits beside the text and fades out at the bottom; below
+   that it stacks under the text in normal flow. */
 :root {
   --showcase-radius: 14px;
   --showcase-border: rgba(255, 255, 255, 0.14);
@@ -66,35 +66,22 @@
   height: auto;
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 1280px) {
   .VPHome .VPHero .hero-showcase {
     position: absolute;
-    top: 150px;
-    left: 52%;
-    right: -9vw;
+    top: 132px;
+    left: 55%;
+    right: 3vw;
     width: auto;
-    margin: 0;
+    max-width: 780px;
+    margin: 0 0 0 auto;
     z-index: 0;
-    -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 98%),
-      linear-gradient(to right, transparent 0%, #000 12%);
-    -webkit-mask-composite: source-in;
-    mask-image: linear-gradient(to bottom, #000 62%, transparent 98%), linear-gradient(to right, transparent 0%, #000 12%);
-    mask-composite: intersect;
-  }
-
-  .hero-showcase__frame {
-    transform: rotateY(-9deg) rotateX(3deg);
-    transform-origin: left center;
+    -webkit-mask-image: linear-gradient(to bottom, #000 66%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 66%, transparent 100%);
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hero-showcase__frame {
-    transform: none;
-  }
-}
-
-@media (min-width: 960px) and (max-width: 1099px) {
+@media (min-width: 960px) and (max-width: 1279px) {
   .VPHome .VPHero.has-image .container {
     flex-direction: column;
   }
@@ -105,7 +92,7 @@
   }
 }
 
-@media (max-width: 1099px) {
+@media (max-width: 1279px) {
   .VPHome .VPHero .image-container {
     width: 100%;
     height: auto;
@@ -113,5 +100,11 @@
 
   .VPHome .VPHero .image {
     order: 3;
+  }
+}
+
+@media (min-width: 1440px) {
+  .VPHome .VPHero .hero-showcase {
+    left: 52%;
   }
 }

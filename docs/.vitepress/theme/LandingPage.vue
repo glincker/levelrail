@@ -64,7 +64,7 @@ const related = computed(() => {
       </template>
     </LpSection>
 
-    <LpSection v-if="d.faq?.length" heading="Frequently asked questions" narrow>
+    <LpSection v-if="d.faq?.length" heading="Frequently asked questions">
       <LpFaq :items="d.faq" />
     </LpSection>
 
