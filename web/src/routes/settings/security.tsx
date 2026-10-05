@@ -51,6 +51,7 @@ import {
   SettingsHeaderSkeleton,
 } from '@/components/settings/SettingsSkeletons'
 import { PageHeader } from '@/components/shell/PageHeader'
+import { RecoveryCodesNotice } from '../../components/RecoveryCodesNotice'
 
 // Loader-primed the same way routes/settings/tokens.tsx primes
 // tokenListQueryOptions: the component below only ever reads that warm
@@ -272,6 +273,7 @@ function TwoFactorCard() {
       <CardContent className="space-y-3">
         {status.enabled ? (
           <>
+            <RecoveryCodesNotice inline />
             <p className="text-sm text-muted-foreground">
               Enabled. {status.recovery_codes_remaining} recovery code
               {status.recovery_codes_remaining === 1 ? '' : 's'} remaining.
