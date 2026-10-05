@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/diskspace"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/kit/diskspace"
 )
 
 const (

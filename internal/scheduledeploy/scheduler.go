@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cronexpr"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
 
 // ScheduleStore is the narrow store surface Scheduler needs, re-derived

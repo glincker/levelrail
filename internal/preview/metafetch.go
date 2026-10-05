@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/netguard"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // PageResult is a fetched page's outcome.

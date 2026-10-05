@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/untrusted"
+	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
 
 // SecretsAPIKeyEnvKey is the internal/secrets envKey the BYOK LLM API

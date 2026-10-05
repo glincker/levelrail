@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cronexpr"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
 
 // StartOptions describes one run to start.

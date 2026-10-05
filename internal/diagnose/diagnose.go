@@ -12,7 +12,7 @@ package diagnose
 import (
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/untrusted"
+	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
 
 // Confidence levels Result.Confidence can hold.

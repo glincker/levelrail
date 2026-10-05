@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cronexpr"
 	"github.com/GLINCKER/levelrail/internal/objectstore"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
 
 // Warning is one actionable finding about the DR setup.

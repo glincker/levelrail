@@ -88,9 +88,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/dockerhub"
 	"github.com/GLINCKER/levelrail/internal/email"
-	"github.com/GLINCKER/levelrail/internal/firewall"
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
@@ -99,6 +97,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/upgrade"
+	"github.com/GLINCKER/levelrail/kit/dockerhub"
+	"github.com/GLINCKER/levelrail/kit/firewall"
 )
 
 // Router wires every internal/api handler onto one http.Handler.

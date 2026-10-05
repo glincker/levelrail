@@ -26,7 +26,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/internal/untrusted"
+	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
 
 // batchMaxLines mirrors internal/telemetry's own logBatchMaxLines: how

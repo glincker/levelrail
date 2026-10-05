@@ -68,7 +68,7 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 	changed_files="$(git diff --name-only origin/main...HEAD -- '*.go' 2>/dev/null)"
 	fast_pkgs=""
 	for d in $(printf '%s\n' "$changed_files" | xargs -n1 dirname 2>/dev/null | sort -u); do
-		case "$d" in test/e2e* | internal/api) continue ;; esac
+		case "$d" in test/e2e* | internal/api | kit | kit/*) continue ;; esac
 		if ls "$d"/*_test.go >/dev/null 2>&1; then
 			fast_pkgs="$fast_pkgs ./$d"
 		fi
@@ -138,6 +138,22 @@ if [ "$fail" -eq 0 ] && [ -f "$coverage_out" ] && [ -s "$coverage_out" ]; then
 			fail=1
 		fi
 	fi
+fi
+
+# kit/ is a nested module: `go test ./...` above never reaches it. It is small,
+# so run the whole module whenever the branch touched it.
+if [ "$fail" -eq 0 ] && git rev-parse --verify --quiet origin/main >/dev/null \
+	&& [ -n "$(git diff --name-only origin/main...HEAD -- kit/ 2>/dev/null)" ]; then
+	kit_cov="$(mktemp -t levelrail-kit-coverage.XXXXXX)"
+	echo "pre-push: go test -short (kit)"
+	if ! go -C kit test -short -coverprofile="$kit_cov" ./... 2>&1; then
+		fail=1
+	elif ! scripts/check-coverage.sh "$kit_cov" kit/ 70; then
+		fail=1
+	elif ! scripts/check-changed-file-coverage.sh "$kit_cov" origin/main kit/ 50; then
+		fail=1
+	fi
+	rm -f "$kit_cov"
 fi
 
 if [ "$fail" -ne 0 ]; then

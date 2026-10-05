@@ -14,9 +14,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/pathfilter"
 	"github.com/GLINCKER/levelrail/internal/pipeline"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/pathfilter"
 )
 
 // PipelineStore is the store surface the pipeline handlers need.

@@ -6,8 +6,8 @@ import (
 	"io"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/probe"
 )
 
 // WithProbeLimits sets redirect, exec-output and default-timing bounds for

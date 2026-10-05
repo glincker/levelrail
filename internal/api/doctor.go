@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/diskspace"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/kit/diskspace"
 )
 
 // Doctor check statuses. Warn never affects the response's overall OK

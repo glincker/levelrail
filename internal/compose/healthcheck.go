@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	probepkg "github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
+	probepkg "github.com/GLINCKER/levelrail/kit/probe"
 )
 
 // healthcheckURLPattern locates an http(s):// URL embedded in a

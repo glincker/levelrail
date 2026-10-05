@@ -13,7 +13,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agentinit"
 	"github.com/GLINCKER/levelrail/internal/spec"
-	"github.com/GLINCKER/levelrail/internal/stackdetect"
+	"github.com/GLINCKER/levelrail/kit/stackdetect"
 )
 
 // File actions reported by init.

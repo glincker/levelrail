@@ -10,7 +10,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/probe"
+	"github.com/GLINCKER/levelrail/kit/probe"
 )
 
 // runAppsHealth dispatches "apps health <verb>", the CLI side of

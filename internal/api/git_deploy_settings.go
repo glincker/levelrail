@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/pathfilter"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/pathfilter"
 )
 
 const maxDeployPathGlobs = 50

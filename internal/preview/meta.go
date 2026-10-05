@@ -11,7 +11,7 @@ import (
 
 	"golang.org/x/net/html"
 
-	"github.com/GLINCKER/levelrail/internal/netguard"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 const (

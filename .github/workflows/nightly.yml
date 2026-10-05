@@ -97,6 +97,24 @@ jobs:
           retention-days: 14
           overwrite: true
 
+  kit-full:
+    name: Kit full suite
+    needs: check-activity
+    if: needs.check-activity.outputs.has-commits == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: go test (kit, race, shuffled)
+        run: go -C kit test -race -shuffle=on -timeout=10m ./...
+
   # Repeats the packages with a flake history, shuffled, with no reruns, so
   # an intermittent failure shows up here before it shows up on a PR.
   # Non-blocking: its job is to file issues, not to go red.

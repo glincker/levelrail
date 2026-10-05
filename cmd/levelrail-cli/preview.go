@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
-	"github.com/GLINCKER/levelrail/internal/diskspace"
+	"github.com/GLINCKER/levelrail/kit/diskspace"
 )
 
 // runPreview dispatches "preview <verb>": the CLI counterpart of the

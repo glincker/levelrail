@@ -11,6 +11,8 @@ on:
       - '**/*.go'
       - 'go.mod'
       - 'go.sum'
+      - 'kit/go.mod'
+      - 'kit/go.sum'
       - 'web/**'
   schedule:
     - cron: "0 8 * * 3"

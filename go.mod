@@ -4,6 +4,7 @@ go 1.26.8
 
 require (
 	filippo.io/age v1.3.2
+	github.com/GLINCKER/levelrail/kit v0.0.0
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/aws/aws-sdk-go-v2 v1.47.1
@@ -349,3 +350,5 @@ require (
 	mvdan.cc/sh/v3 v3.14.1 // indirect
 	rsc.io/binaryregexp v0.2.0 // indirect
 )
+
+replace github.com/GLINCKER/levelrail/kit => ./kit

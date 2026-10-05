@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/bindmount"
-	"github.com/GLINCKER/levelrail/internal/diskspace"
+	"github.com/GLINCKER/levelrail/kit/diskspace"
 )
 
 func pass(id, name, reason string) Check {

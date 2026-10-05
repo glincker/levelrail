@@ -4,9 +4,9 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/GLINCKER/levelrail/internal/diskspace"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/models"
+	"github.com/GLINCKER/levelrail/kit/diskspace"
 )
 
 // wireModelPreflight enables Hugging Face preflight and the model cache
