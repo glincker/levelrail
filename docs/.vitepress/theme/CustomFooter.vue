@@ -151,6 +151,8 @@ onUnmounted(() => {
         <a href="/vercel-alternative">Vercel alternative</a>
         <a href="/heroku-alternative">Heroku alternative</a>
         <a href="/pricing">Pricing</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
         <a href="/privacy">Privacy</a>
         <a href="/roadmap">Roadmap</a>
         <a href="/troubleshooting">Troubleshooting</a>
@@ -160,6 +162,7 @@ onUnmounted(() => {
         <a href="/app-spec-reference">App spec reference</a>
         <a href="/cli-reference">CLI reference</a>
         <a href="/api-reference">API reference</a>
+        <a href="/developers">Developers</a>
         <a href="/security">Security overview</a>
       </div>
       <div class="custom-footer__col custom-footer__reveal">

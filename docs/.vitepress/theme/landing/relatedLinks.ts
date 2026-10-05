@@ -21,6 +21,9 @@ export const landingRelatedLinks: RelatedLink[] = [
   { text: 'Privacy', link: '/privacy' },
   { text: 'Demo', link: '/demo' },
   { text: 'Case studies', link: '/case-studies' },
+  { text: 'Developers', link: '/developers' },
+  { text: 'About', link: '/about' },
+  { text: 'Contact', link: '/contact' },
   { text: 'Contribute', link: '/contribute' },
   { text: 'Full comparison', link: '/comparison' },
 ]
