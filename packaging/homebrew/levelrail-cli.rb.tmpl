@@ -28,6 +28,7 @@ class LevelrailCli < Formula
 
   def install
     bin.install Dir["levelrail-cli-*"].first => "levelrail-cli"
+    chmod 0555, bin/"levelrail-cli"
     generate_completions_from_executable(bin/"levelrail-cli", "completion")
   end
 
