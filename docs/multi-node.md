@@ -647,3 +647,10 @@ The dispatch logic in `internal/build.SelectBuildNode` is built, but no per-buil
 Cordon, drain, or workload toggle are captured by the generic platform audit log (`GET /api/v1/audit-log`).
 No node-specific history view beyond that.
 :::
+
+## See also
+
+- [Getting started](getting-started.md) - Deploy your first app after initial setup
+- [Architecture](architecture.md) - How the agent, control plane, and reconciler work
+- [Deploying apps](deploying-apps.md) - How apps are placed and orchestrated across nodes
+- [Identity and access](identity-and-access.md) - Node management requires appropriate permissions
