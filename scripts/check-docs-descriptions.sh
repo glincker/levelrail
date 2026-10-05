@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Every top-level docs/*.md page needs a frontmatter `description:` so
+# Every top-level docs/*.md page needs a frontmatter `description` (YAML or JSON style) so
 # config.mts's transformHead has real per-page copy for og:description /
 # twitter:description instead of silently falling back to the site-wide
 # default. changelog/[slug].md is exempt: changelog.mts fills its
@@ -9,7 +9,7 @@ cd "$(dirname "$0")/.."
 
 missing=()
 for f in docs/*.md; do
-  if ! grep -q '^description:' "$f"; then
+  if ! grep -q -E '^(description:|  "description":)' "$f"; then
     missing+=("$f")
   fi
 done

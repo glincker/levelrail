@@ -89,9 +89,6 @@ func (h *oauthHarness) startPath(provider string) string {
 }
 
 func (h *oauthHarness) callbackPath(provider string) string {
-	if h.mode == modeLibrary {
-		return h.eng.Prefix() + "/providers/" + provider + "/callback"
-	}
 	return "/api/v1/auth/oauth/" + provider + "/callback"
 }
 

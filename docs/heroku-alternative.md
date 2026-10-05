@@ -19,7 +19,7 @@
     },
     "install": "curl -fsSL https://levelrail.com/install.sh | sudo sh",
     "shot": {
-      "src": "/assets/screenshots/app-overview.png",
+      "mock": "overview",
       "alt": "Levelrail app overview with live metrics and deploy history"
     },
     "cardsHeading": "What carries over from Heroku",
@@ -138,45 +138,7 @@
     "cta": {
       "heading": "Stop paying per dyno",
       "sub": "Try it on one small server and move a project across when it feels right."
-    },
-    "related": [
-      {
-        "text": "Coolify alternative",
-        "link": "/coolify-alternative"
-      },
-      {
-        "text": "Dokploy alternative",
-        "link": "/dokploy-alternative"
-      },
-      {
-        "text": "Vercel alternative",
-        "link": "/vercel-alternative"
-      },
-      {
-        "text": "Railway alternative",
-        "link": "/railway-alternative"
-      },
-      {
-        "text": "Pricing",
-        "link": "/pricing"
-      },
-      {
-        "text": "Privacy",
-        "link": "/privacy"
-      },
-      {
-        "text": "Demo",
-        "link": "/demo"
-      },
-      {
-        "text": "Case studies",
-        "link": "/case-studies"
-      },
-      {
-        "text": "Full comparison",
-        "link": "/comparison"
-      }
-    ]
+    }
   }
 }
 ---

@@ -1,0 +1,12 @@
+{
+  "serverInfo": {
+    "name": "levelrail-mcp",
+    "title": "Levelrail MCP server"
+  },
+  "description": "Self-hosted MCP server that wraps the REST API of your own Levelrail instance. There is no hosted endpoint: you run the levelrail-mcp binary yourself over stdio or a network listener you control, with an API token from your instance.",
+  "documentationUrl": "https://levelrail.com/ai-assistant",
+  "repository": "https://github.com/glincker/levelrail",
+  "license": "Apache-2.0",
+  "transports": ["stdio", "streamable-http"],
+  "hosted": false
+}

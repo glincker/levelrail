@@ -19,7 +19,7 @@ export interface LandingData {
   primary: { text: string; link: string }
   secondary?: { text: string; link: string }
   install?: string
-  shot?: { src: string; alt: string }
+  shot?: { src?: string; mock?: 'apps' | 'overview' | 'deploys' | 'logs'; alt: string }
   stats?: { value: string; label: string }[]
   cardsHeading?: string
   cards?: LandingCard[]

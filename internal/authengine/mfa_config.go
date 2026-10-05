@@ -130,6 +130,7 @@ func applyMFA(tcfg *theauth.Config, cfg Config) {
 			RPOrigins:               m.RPOrigins,
 			RequireUserVerification: m.RequireUserVerification,
 			CloneWarning:            m.CloneWarning,
+			UserHandleResolver:      cfg.Directory.ResolveLegacyUserHandle,
 		}
 	}
 	if tcfg.LoginThrottle == nil {

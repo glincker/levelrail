@@ -30,7 +30,6 @@
   max-width: 1160px;
   z-index: 30;
   height: 56px;
-  overflow: hidden;
   border-radius: var(--glinui-radius-full);
   border: 1px solid var(--glinui-glass-border);
   background-color: var(--glinui-nav-bg);
@@ -139,6 +138,7 @@
   position: absolute;
   inset: 0 0 auto 0;
   height: 50%;
+  border-radius: inherit;
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.08), transparent);
   pointer-events: none;
 }
@@ -289,23 +289,6 @@
   margin-left: 4px;
 }
 
-/* Secondary links (Troubleshooting, Roadmap, Changelog) drop out first so
-   the pill never clips its search box; the mobile menu still lists them. */
-@media (max-width: 1239px) {
-  .custom-nav__link--secondary {
-    display: none;
-  }
-}
-
-/* Landing pages render VitePress's own navbar; same priority rule there. */
-@media (max-width: 1239px) {
-  .VPNavBarMenu .VPLink[href^='/troubleshooting'],
-  .VPNavBarMenu .VPLink[href^='/roadmap'],
-  .VPNavBarMenu .VPLink[href^='/changelog'] {
-    display: none;
-  }
-}
-
 @media (max-width: 1099px) {
   .custom-nav__inner {
     gap: 10px;
@@ -313,12 +296,6 @@
 
   .custom-nav__link {
     padding: 7px 8px;
-  }
-}
-
-@media (max-width: 959px) {
-  .custom-nav {
-    display: none;
   }
 }
 
