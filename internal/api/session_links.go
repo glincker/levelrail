@@ -77,6 +77,11 @@ func (rt *Router) handleMintSessionLink(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if rt.libSessions != nil && principalType == store.PrincipalTypeUser {
+		rt.mintLibSessionLink(w, r, principalID)
+		return
+	}
+
 	plaintext, err := randomToken()
 	if err != nil {
 		rt.internalError(w, "api: mint session link: generate token failed", err)
@@ -149,6 +154,10 @@ func (rt *Router) handleConsumeSessionLink(w http.ResponseWriter, r *http.Reques
 
 	rec, err := rt.sessionLinkTokens.GetSessionLinkTokenByHash(r.Context(), hashToken(token))
 	if errors.Is(err, store.ErrSessionLinkTokenNotFound) {
+		if rt.libSessions != nil {
+			rt.consumeLibSessionLink(w, r, token)
+			return
+		}
 		writeError(w, http.StatusBadRequest, errInvalidOrExpiredSessionLink.Error())
 		return
 	}
