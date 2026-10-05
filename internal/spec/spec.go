@@ -28,7 +28,10 @@ type Spec struct {
 
 // Service is one entry under services:.
 type Service struct {
-	Build   Build    `yaml:"build"`
+	Build Build `yaml:"build"`
+	// Image is shorthand for build: {type: image, image: ...}; Parse folds it
+	// into Build, so consumers only ever read Build.
+	Image   string   `yaml:"image,omitempty"`
 	Domains []string `yaml:"domains,omitempty"`
 	Port    int      `yaml:"port,omitempty"`
 	// HostPort pins the host-side port Docker binds Port to, 0 meaning
@@ -323,11 +326,34 @@ func Parse(data []byte) (*Spec, error) {
 		return nil, fmt.Errorf("spec: parse: %w", err)
 	}
 
+	if err := s.normalizeImageShorthand(); err != nil {
+		return nil, err
+	}
 	if err := s.Validate(); err != nil {
 		return nil, err
 	}
 
 	return &s, nil
+}
+
+// normalizeImageShorthand folds a service-level image: into Build.
+func (s *Spec) normalizeImageShorthand() error {
+	for name, svc := range s.Services {
+		if svc.Image == "" {
+			continue
+		}
+		switch {
+		case svc.Build.Type == "" && svc.Build.Image == "":
+			svc.Build = Build{Type: BuildImage, Image: svc.Image}
+		case svc.Build.Type == BuildImage && (svc.Build.Image == "" || svc.Build.Image == svc.Image):
+			svc.Build.Image = svc.Image
+		default:
+			return fmt.Errorf("spec: service %q: image conflicts with build, set one or the other", name)
+		}
+		svc.Image = ""
+		s.Services[name] = svc
+	}
+	return nil
 }
 
 // yamlUnmarshalStrict decodes with KnownFields(true), rejecting any YAML

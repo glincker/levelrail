@@ -1029,21 +1029,17 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleDeleteApp handles DELETE /api/v1/apps/{name}: removes desired
-// state and, via teardownServiceContainers below, stops and removes the
-// running container in the background (not before responding, since
-// that can take several seconds).
+// state and its containers. 204 means the containers are confirmed gone.
+// 202 means desired state is deleted but teardown could not finish (node
+// unreachable, stop failed); a tombstone keeps retrying it, see
+// application.DeleteFinalizer.
 //
 // If the deleted service was the last member of its store.App
 // (migrations/0039_apps.sql), the now-empty App row is deleted too, via
-// deleteAppIfOrphaned below. Without this, a single-service app's App
-// row (set by that migration's own backfill, or by a multi-service
-// deploy's own store.App.ID == store.App.Name convention) would outlive
-// every service that ever belonged to it, and the per-app Docker
-// network internal/reconcile/application.NetworkCleanupController tears
-// down once its App row disappears would never actually go away.
+// deleteAppIfOrphaned below, so the per-app network can be cleaned up.
 func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	err := rt.deleteApp(r.Context(), name)
+	teardownErr, err := rt.deleteApp(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -1053,21 +1049,45 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt.nudgeReconciler()
+	if teardownErr != nil {
+		writeJSON(w, http.StatusAccepted, map[string]string{
+			"status":  "teardown_pending",
+			"message": "app deleted, but its containers are not removed yet; teardown retries automatically",
+			"error":   teardownErr.Error(),
+		})
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// deleteApp removes name's desired state, tears its containers down in the
-// background and drops its App row if it was the last member. Callers nudge
-// the reconciler afterwards.
-func (rt *Router) deleteApp(ctx context.Context, name string) error {
+// deleteApp removes name's desired state, tears its containers down and
+// drops its App row if it was the last member. A tombstone is written first
+// so a failed teardown (second return) is retried by the reconciler. Callers
+// nudge the reconciler afterwards.
+func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err error) {
 	existing, err := rt.apps.GetDesiredService(ctx, name)
 	if err != nil {
-		return fmt.Errorf("load app %q: %w", name, err)
+		return nil, fmt.Errorf("load app %q: %w", name, err)
+	}
+	finalizer := rt.deleteFinalizer()
+	if finalizer != nil {
+		if err := finalizer.Begin(ctx, name, existing.NodeID); err != nil {
+			return nil, err
+		}
 	}
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
-		return fmt.Errorf("delete app %q: %w", name, err)
+		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
-	rt.teardownServiceContainers(name, existing.NodeID)
+	// Nudge before the slow teardown so the ingress route drops right away.
+	rt.nudgeReconciler()
+	if finalizer != nil {
+		tctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())
+		teardownErr = finalizer.Finalize(tctx, name, existing.NodeID)
+		cancel()
+		if teardownErr != nil {
+			rt.logger.Error("api: delete app: teardown pending", slog.String("error", teardownErr.Error()), slog.String("name", name))
+		}
+	}
 	if rt.preview != nil {
 		if err := rt.preview.DeleteApp(ctx, name); err != nil {
 			rt.logger.Warn("api: delete app: remove previews failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -1081,14 +1101,37 @@ func (rt *Router) deleteApp(ctx context.Context, name string) error {
 	if existing.AppID != "" {
 		rt.deleteAppIfOrphaned(ctx, existing.AppID)
 	}
-	return nil
+	return teardownErr, nil
 }
+
+// deleteFinalizer is nil when no runtime resolver or tombstone-capable
+// store is configured.
+func (rt *Router) deleteFinalizer() *application.DeleteFinalizer {
+	if rt.execRuntime == nil {
+		return nil
+	}
+	ts, ok := rt.apps.(application.TeardownStore)
+	if !ok {
+		return nil
+	}
+	return application.NewDeleteFinalizer(ts, application.RuntimeResolver(rt.execRuntime), rt.logger, rt.teardownOpts...)
+}
+
+func (rt *Router) deleteTeardownTimeout() time.Duration {
+	if rt.deleteTimeout > 0 {
+		return rt.deleteTimeout
+	}
+	return defaultDeleteTeardownTimeout
+}
+
+// defaultDeleteTeardownTimeout bounds how long DELETE waits for containers to stop.
+const defaultDeleteTeardownTimeout = 45 * time.Second
 
 // teardownServiceContainers stops name's running containers in the
 // background after its desired state is already deleted: stopping a
 // container can take several seconds, so this must not make the
-// caller's own response wait, the same reasoning sendInviteEmail's own
-// background dispatch already applies.
+// caller's own response wait. Used by move/preview flows; delete uses
+// DeleteFinalizer, which retries.
 func (rt *Router) teardownServiceContainers(name, nodeID string) {
 	if rt.execRuntime == nil {
 		return
@@ -1099,7 +1142,7 @@ func (rt *Router) teardownServiceContainers(name, nodeID string) {
 		return
 	}
 	go func() { //nolint:gosec // deliberately outlives the request, same as sendInviteEmail's own background send
-		if err := application.New(name, rt.apps, runtime).Teardown(context.Background()); err != nil {
+		if err := application.New(name, rt.apps, runtime, rt.teardownOpts...).Teardown(context.Background()); err != nil {
 			rt.logger.Error("api: teardown containers failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 	}()

@@ -38,8 +38,10 @@ The dashboard's **New** wizard offers an existing image, a git repository, and D
 Skips the build step. Send `image` and `port` to `POST /api/v1/apps`, or:
 
 ```bash
-levelrail-cli apps create --name NAME --image IMAGE --port PORT
+levelrail-cli apps create --name NAME --image IMAGE --port PORT [--replicas N] [--strategy rolling|recreate|blue-green]
 ```
+
+Scale it later with `levelrail-cli apps scale NAME --replicas N`. In an `app.yaml`, a prebuilt-image service can be written as `image: traefik/whoami:v1.10` next to `replicas` and `strategy`.
 
 In the dashboard, the **Docker image** card has an image picker that browses the built-in registry, a connected registry credential, or public Docker Hub (`GET /api/v1/dockerhub/search` and `GET /api/v1/dockerhub/repositories/{namespace}/{repo}/tags`). The plain text field always works too.
 
@@ -424,7 +426,7 @@ To duplicate a single app instead, use `levelrail-cli apps clone NAME NEW_NAME`.
 | Restart | Recreates the container from the same image. The only way to force a recreate without an image change | Deploy or rollback, which act only when the image changes |
 | Stop | Sets `Suspended`, and the reconciler stops the container on its next pass | Delete, which removes the desired state |
 | Start | Clears `Suspended` | Create |
-| Delete | Removes the app from desired state, and containers are torn down in the background | Stop, which keeps the app |
+| Delete | Removes the app from desired state and stops its containers and ingress route. `204` means the containers are gone. `202` (`teardown_pending`) means the app is deleted but the node was unreachable or a stop failed: a tombstone retries the teardown on every reconcile pass until it succeeds, including when an offline node comes back | Stop, which keeps the app |
 
 Restart gets a fresh `restart_nonce` folded into the container name hash, so "same image, new nonce" looks like a change to the cutover logic and the usual readiness-gated rollout applies.
 
@@ -518,6 +520,7 @@ The CLI groups below cover an app's own lifecycle. Run `levelrail-cli apps SUBCO
 
 ```bash
 levelrail-cli apps create | list | get | delete | validate
+levelrail-cli apps scale NAME --replicas N [--strategy rolling|recreate|blue-green]
 levelrail-cli apps deploy | rollback | wait | promote | restart | stop | start | apply
 levelrail-cli apps deploy-compose | deploy-spec | builds trigger
 levelrail-cli apps deploys list | compare          levelrail-cli deployments list | summary | watch

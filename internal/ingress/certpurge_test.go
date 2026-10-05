@@ -41,3 +41,29 @@ func TestPurgeCertsFromOtherIssuers(t *testing.T) {
 		t.Fatalf("second purge = %d, %v; want idempotent 0", n, err)
 	}
 }
+
+func TestPurgeCertsFromOtherIssuersOnceDoesNotChurn(t *testing.T) {
+	ctx := context.Background()
+	db, err := store.Open(ctx, filepath.Join(t.TempDir(), "t.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	stale := "certificates/local/b.example/b.example.crt"
+	if err := db.SaveCertStorageValue(ctx, stale, []byte("v")); err != nil {
+		t.Fatal(err)
+	}
+	n, err := PurgeCertsFromOtherIssuersOnce(ctx, db, "")
+	if err != nil || n != 1 {
+		t.Fatalf("first run = %d, %v; want 1", n, err)
+	}
+	if err := db.SaveCertStorageValue(ctx, stale, []byte("v")); err != nil {
+		t.Fatal(err)
+	}
+	if n, err = PurgeCertsFromOtherIssuersOnce(ctx, db, ""); err != nil || n != 0 {
+		t.Fatalf("restart with same issuer = %d, %v; want 0 (no churn)", n, err)
+	}
+	if n, err = PurgeCertsFromOtherIssuersOnce(ctx, db, "https://acme-staging-v02.api.letsencrypt.org/directory"); err != nil || n != 1 {
+		t.Fatalf("issuer change = %d, %v; want 1", n, err)
+	}
+}

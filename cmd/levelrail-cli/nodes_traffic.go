@@ -57,6 +57,11 @@ func printNetworkProxyHuman(out io.Writer, s networkProxyResource) {
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", d.Domain, d.App, orDash(d.NodeName), reachable, orDash(d.TLSStatus), fix)
 	}
 	_ = tw.Flush()
+	for _, d := range s.Domains {
+		if !d.Reachable && d.Reason != "" {
+			_, _ = fmt.Fprintf(out, "\n%s is unreachable: %s\n", d.Domain, d.Reason)
+		}
+	}
 }
 
 func nodesTrafficUsage(prog string) string {
@@ -66,7 +71,8 @@ func nodesTrafficUsage(prog string) string {
 Shows, per domain, which app it routes to, where that app actually
 runs, whether this control plane's own ingress can reach it, and its
 certificate status. A domain placed on a node this control plane's
-ingress cannot yet reach shows reachable=no with a fix command.
+ingress cannot reach over the WireGuard mesh shows reachable=no, the
+reason, and a fix command.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

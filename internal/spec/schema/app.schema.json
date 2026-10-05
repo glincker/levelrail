@@ -21,10 +21,11 @@
   "$defs": {
     "service": {
       "type": "object",
-      "required": ["build"],
+      "anyOf": [{ "required": ["build"] }, { "required": ["image"] }],
       "additionalProperties": false,
       "properties": {
         "build": { "$ref": "#/$defs/build" },
+        "image": { "type": "string", "minLength": 1 },
         "domains": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 }

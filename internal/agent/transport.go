@@ -129,8 +129,10 @@ var ErrNodeNotRegistered = errors.New("agent: node not registered in this transp
 // GetAPITokenByHash establishes for a different resource in
 // internal/store.
 type Registry struct {
-	mu   sync.RWMutex
-	byID map[string]Transport
+	mu       sync.RWMutex
+	byID     map[string]Transport
+	localID  string
+	localTpt Transport
 }
 
 // NewRegistry builds an empty Registry.
@@ -165,4 +167,26 @@ func (r *Registry) Get(nodeID string) (Transport, error) {
 		return nil, fmt.Errorf("%w: %q", ErrNodeNotRegistered, nodeID)
 	}
 	return t, nil
+}
+
+// SetLocal makes Resolve answer localID with t, this process's own runtime.
+// It is deliberately not in byID: Get callers (build dispatch, mesh sink)
+// must keep treating the local node as "not a remote agent".
+func (r *Registry) SetLocal(localID string, t Transport) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.localID, r.localTpt = localID, t
+}
+
+// Resolve is Get plus the local node's own ID, for callers that just need
+// a runtime for whichever node a resource is placed on.
+func (r *Registry) Resolve(nodeID string) (Transport, error) {
+	r.mu.RLock()
+	if nodeID != "" && nodeID == r.localID && r.localTpt != nil {
+		t := r.localTpt
+		r.mu.RUnlock()
+		return t, nil
+	}
+	r.mu.RUnlock()
+	return r.Get(nodeID)
 }

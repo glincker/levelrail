@@ -799,7 +799,14 @@ export function useCloneApp() {
 // Same known gap the backend doc comment names: removes desired state,
 // does not itself stop or remove a running container, mirroring
 // deleteDatabase's own reasoning above.
-export async function deleteApp(name: string): Promise<void> {
+export interface DeleteAppResult {
+  // True when the app is deleted but its containers are not yet confirmed
+  // gone (HTTP 202); the control plane keeps retrying the teardown.
+  teardownPending: boolean
+  error: string
+}
+
+export async function deleteApp(name: string): Promise<DeleteAppResult> {
   const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}`, {
     method: 'DELETE',
   })
@@ -809,6 +816,11 @@ export async function deleteApp(name: string): Promise<void> {
       await readErrorMessage(res, `delete app failed: ${res.status}`),
     )
   }
+  if (res.status === 202) {
+    const body = (await res.json()) as { error?: string }
+    return { teardownPending: true, error: body.error ?? '' }
+  }
+  return { teardownPending: false, error: '' }
 }
 
 // Mirrors useDeleteDatabase's cache-invalidation shape exactly: the

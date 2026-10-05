@@ -668,7 +668,30 @@ func (c *Client) StartApp(ctx context.Context, name string) (AppResource, error)
 // state (internal/api/apps.go's own handleDeleteApp doc comment covers
 // the known gap that this does not itself stop the running container).
 func (c *Client) DeleteApp(ctx context.Context, name string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name), nil, nil)
+	_, err := c.DeleteAppResult(ctx, name)
+	return err
+}
+
+// DeleteAppResult is DELETE /api/v1/apps/{name}'s outcome: Pending is true
+// when the app is deleted but its containers are not yet confirmed gone.
+type DeleteAppResult struct {
+	Pending bool   `json:"pending"`
+	Message string `json:"message,omitempty"`
+	Error   string `json:"error,omitempty"`
+}
+
+// DeleteAppResult calls DELETE /api/v1/apps/{name} and reports whether
+// container teardown is still pending (HTTP 202).
+func (c *Client) DeleteAppResult(ctx context.Context, name string) (DeleteAppResult, error) {
+	var body struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+		Error   string `json:"error"`
+	}
+	if err := c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name), nil, &body); err != nil {
+		return DeleteAppResult{}, err
+	}
+	return DeleteAppResult{Pending: body.Status == "teardown_pending", Message: body.Message, Error: body.Error}, nil
 }
 
 // GetDeployStatus calls GET /api/v1/apps/{name}/deploys: the application

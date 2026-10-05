@@ -66,9 +66,13 @@ type AppResource struct {
 	// "private" (loopback only, the default), "public" (every
 	// interface), or a literal IP. No omitempty: a response always
 	// carries the resolved value.
-	BindAddress string            `json:"bind_address"`
-	Domains     []string          `json:"domains,omitempty"`
-	Env         map[string]string `json:"env,omitempty"`
+	BindAddress string `json:"bind_address"`
+	// Replicas and Strategy must round-trip: UpdateApp is a full replace, so
+	// dropping them on a GET-then-PUT would reset a scaled app to defaults.
+	Replicas int               `json:"replicas,omitempty"`
+	Strategy string            `json:"strategy,omitempty"`
+	Domains  []string          `json:"domains,omitempty"`
+	Env      map[string]string `json:"env,omitempty"`
 	// SecretEnv mirrors internal/api's appResource.SecretEnv: names of
 	// env vars backed by encrypted secret storage, values held only in
 	// Secrets below or set later via PUT .../secrets/{key}, never here.
@@ -1947,6 +1951,7 @@ type NetworkProxyDomainResource struct {
 	IsLocalNode bool   `json:"is_local_node"`
 	Port        int    `json:"port"`
 	Reachable   bool   `json:"reachable"`
+	Reason      string `json:"reason,omitempty"`
 	FixCommand  string `json:"fix_command,omitempty"`
 	TLSStatus   string `json:"tls_status,omitempty"`
 	TLSIssuer   string `json:"tls_issuer,omitempty"`
