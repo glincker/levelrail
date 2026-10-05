@@ -5,31 +5,40 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// crossNodeIngressCondition reports every service whose domains can never
-// be reached: no mesh path lets this node's Caddy forward to a container
-// placed elsewhere. Returns nil when nothing is affected, mirroring
-// lbCondition's own "omit when unused" shape.
-func crossNodeIngressCondition(services []store.DesiredService, isLocal func(string) bool) *reconcile.Condition {
-	var unreachable []string
-	for _, svc := range services {
-		if len(svc.Domains) == 0 || isLocal(svc.NodeID) {
-			continue
-		}
-		unreachable = append(unreachable, fmt.Sprintf("%s (node %s, domain(s) %s)", svc.Name, svc.NodeID, strings.Join(svc.Domains, ", ")))
-	}
-	if len(unreachable) == 0 {
+const (
+	conditionCrossNodeIngress = "CrossNodeIngress"
+	reasonNoMeshIngressPath   = "NoMeshIngressPath"
+)
+
+// remoteBlock is one remote service whose hosts cannot be routed this pass,
+// with the reason and next action for the operator.
+type remoteBlock struct {
+	Service string
+	NodeID  string
+	Hosts   []string
+	Why     string
+}
+
+// crossNodeIngressCondition reports every remote service this node's Caddy
+// cannot reach over the mesh. Returns nil when none is blocked, which
+// clears the condition on the next pass.
+func crossNodeIngressCondition(blocks []remoteBlock) *reconcile.Condition {
+	if len(blocks) == 0 {
 		return nil
 	}
+	parts := make([]string, 0, len(blocks))
+	for _, b := range blocks {
+		parts = append(parts, fmt.Sprintf("%s (node %s, host(s) %s): %s", b.Service, b.NodeID, strings.Join(b.Hosts, ", "), b.Why))
+	}
 	return &reconcile.Condition{
-		Type:   "CrossNodeIngress",
+		Type:   conditionCrossNodeIngress,
 		Status: reconcile.ConditionFalse,
-		Reason: "NoMeshIngressPath",
+		Reason: reasonNoMeshIngressPath,
 		Message: fmt.Sprintf(
-			"%d service(s) have domains routed by this node's ingress but are placed on a different node with no mesh path to reach them yet: %s",
-			len(unreachable), strings.Join(unreachable, "; "),
+			"%d service(s) are placed on a remote node this node's ingress cannot reach over the WireGuard mesh: %s",
+			len(blocks), strings.Join(parts, "; "),
 		),
 	}
 }

@@ -74,6 +74,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -355,6 +356,7 @@ type Controller struct {
 	implicitLB    bool               // see WithImplicitLoadBalancing
 	lbRegistry    *loadbalancer.Registry
 	nodeUpstreams NodeUpstreamResolver
+	meshPaths     meshpath.Resolver
 
 	// localNodeID is this control plane's own node ID (see WithLocalNodeID).
 	localNodeID string
@@ -673,6 +675,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return notReady("StoreError", err), fmt.Errorf("ingress: get application readiness: %w", err)
 	}
 	var lbPlans []lbPlan
+	var remoteBlocks []remoteBlock
 	now := time.Now()
 
 	var routes []ingress.ProxyRoute
@@ -766,6 +769,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			lbPlans = append(lbPlans, plan)
 			if lb, ok = plan.route, plan.route != nil; ok {
 				dial = lb.Upstreams[0]
+			}
+		} else if !c.isLocalNode(svc.NodeID) {
+			var why string
+			if dial, why, ok = c.dialForRemoteService(ctx, svc, readyByService[svc.Name]); !ok && why != "" {
+				remoteBlocks = append(remoteBlocks, remoteBlock{Service: svc.Name, NodeID: svc.NodeID, Hosts: activeHosts, Why: why})
 			}
 		} else {
 			dial, ok = c.dialForService(ctx, svc, readyByService[svc.Name])
@@ -931,7 +939,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if cond := lbCondition(lbPlans); cond != nil {
 		conditions = append(conditions, *cond)
 	}
-	if cond := crossNodeIngressCondition(services, c.isLocalNode); cond != nil {
+	if cond := crossNodeIngressCondition(remoteBlocks); cond != nil {
 		conditions = append(conditions, *cond)
 	}
 	return reconcile.Result{Conditions: conditions}, nil

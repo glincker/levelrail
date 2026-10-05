@@ -15,7 +15,7 @@ func doctorCheckContainerHardening(cfg docker.HardeningConfig, cfgErr error) doc
 	const code, name = "container_hardening", "Container hardening"
 	r := cfg.Report()
 	detail := fmt.Sprintf("cap_drop=ALL, cap_add=%s, no-new-privileges, pids_limit=%d", strings.Join(r.CapAdd, ","), r.PidsLimit)
-	fix := "Set APP_CONTAINER_HARDENING=enforce to apply these defaults to new containers; extra capabilities go in APP_CONTAINER_HARDENING_CAP_ADD."
+	fix := "Unset APP_CONTAINER_HARDENING or set it to enforce to apply these defaults to new containers; extra capabilities go in APP_CONTAINER_HARDENING_CAP_ADD."
 	warn := func(msg string) doctorCheckResource {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusWarn, Message: msg, Fix: fix, DocsPath: hardeningDocsPath}
 	}

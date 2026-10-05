@@ -289,7 +289,7 @@ Every published port (a service's `port`/`host_port`, and a managed database's p
 
 | Value | Resolves to | Meaning |
 | --- | --- | --- |
-| `private` (default, or omitted) | `127.0.0.1` | Reachable only from this host. |
+| `private` (default, or omitted) | `127.0.0.1` | Reachable only from this host. On a remote node with a healthy WireGuard mesh, the main port binds to that node's mesh IP instead (never public), so the control plane's ingress can reach it; see [multi-node](multi-node.md#routing-to-apps-on-remote-nodes). |
 | `public` | `0.0.0.0` | Reachable from any network that can route to this host. Requires the literal string `public`; blank or malformed values never resolve here. |
 | any other value | itself | Treated as a literal IP (a specific host interface or, once the WireGuard mesh lands, a mesh peer address). Must parse as a valid IP. |
 

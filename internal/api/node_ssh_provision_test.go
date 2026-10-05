@@ -134,6 +134,7 @@ func TestHandleCreateSSHNodeProvisionValidation(t *testing.T) {
 		{"missing username", `{"host":"1.2.3.4","auth":{"type":"password","password":"x"},"name":"a","control_plane_addr":"cp:9443"}`},
 		{"missing control plane addr", `{"host":"1.2.3.4","username":"root","auth":{"type":"password","password":"x"},"name":"a"}`},
 		{"bad name", `{"host":"1.2.3.4","username":"root","auth":{"type":"password","password":"x"},"name":"BadName!","control_plane_addr":"cp:9443"}`},
+		{"newline in control plane addr", `{"host":"1.2.3.4","username":"root","auth":{"type":"password","password":"x"},"name":"a","control_plane_addr":"cp:9443\nAPP_X=1"}`},
 		{"bad role", `{"host":"1.2.3.4","username":"root","auth":{"type":"password","password":"x"},"name":"a","role":"weird","control_plane_addr":"cp:9443"}`},
 		{"bad auth type", `{"host":"1.2.3.4","username":"root","auth":{"type":"fingerprint"},"name":"a","control_plane_addr":"cp:9443"}`},
 		{"key auth missing key", `{"host":"1.2.3.4","username":"root","auth":{"type":"key"},"name":"a","control_plane_addr":"cp:9443"}`},

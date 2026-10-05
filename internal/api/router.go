@@ -72,13 +72,13 @@
 package api
 
 import (
+	"github.com/GLINCKER/levelrail/internal/meshpath"
+	"github.com/GLINCKER/levelrail/internal/orphans"
+	"github.com/GLINCKER/levelrail/internal/statuspage"
 	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/GLINCKER/levelrail/internal/orphans"
-	"github.com/GLINCKER/levelrail/internal/statuspage"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
 	"github.com/GLINCKER/levelrail/internal/brand"
@@ -514,6 +514,9 @@ type Router struct {
 	// Set via SetMesh, a late setter for the same reason SetLocalNodeID
 	// is: cmd/levelrail's mesh setup runs after NewRouter is called.
 	mesh MeshStatusProvider
+	// meshPaths reports whether a remote node is reachable over the mesh,
+	// set via SetMeshPaths. nil reads as "mesh networking is off".
+	meshPaths meshpath.Resolver
 	// meshRotator is the same node's *network.Coordinator, narrowed to
 	// MeshKeyRotator. nil is valid, same shape as mesh above; set
 	// together with it by SetMesh.

@@ -15,10 +15,10 @@
     "yes": "Reachable",
     "no": "Unreachable"
   },
-  "unreachableBanner_one": "1 domain is unreachable: its app runs on a different node than this control plane's own ingress, with no mesh path to reach it yet.",
-  "unreachableBanner_other": "{{count}} domains are unreachable: their apps run on a different node than this control plane's own ingress, with no mesh path to reach them yet.",
+  "unreachableBanner_one": "1 domain is unreachable: its app runs on another node and this control plane's ingress has no usable WireGuard mesh path to it. Check the mesh status on the Network page.",
+  "unreachableBanner_other": "{{count}} domains are unreachable: their apps run on other nodes and this control plane's ingress has no usable WireGuard mesh path to them. Check the mesh status on the Network page.",
   "fix": {
-    "explanation": "This control plane's embedded ingress only ever routes containers on its own node. Move the app back here, or wait for mesh networking (ADR 006).",
+    "explanation": "The WireGuard mesh path to this app's node is not usable, so the embedded ingress cannot reach it. Fix the mesh, or move the app back to this node.",
     "moveHere": "Move to this node"
   },
   "tlsSource": {

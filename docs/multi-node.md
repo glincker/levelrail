@@ -8,20 +8,15 @@ Everything on this page is optional. A fresh install runs entirely on the contro
 
 A second node is something you add when one box runs out of room, when you want to isolate builds from production containers, or when you want a dedicated database host - not something the platform makes you think about on day one.
 
-::: danger Ingress only listens on the control-plane node
-The embedded Caddy ingress ([Domains and ingress](domains-and-ingress.md)) runs in the control plane's own process. A worker node has **no public listener at all**: nothing is bound to 80/443 there, by design.
+::: tip Ingress listens on the control-plane node and reaches workers over the mesh
+The embedded Caddy ingress ([Domains and ingress](domains-and-ingress.md)) runs in the control plane's own process. A worker node has **no public listener**: nothing is bound to 80/443 there. When the WireGuard mesh is up, the ingress reaches an app on a worker through that node's mesh address, so its domains and its `<app>.<ip>.sslip.io` hostname work with normal TLS. See [Routing to apps on remote nodes](#routing-to-apps-on-remote-nodes).
 
-If you move or place an app on a worker node without also moving its domain's routing, the control plane still builds a Caddy route for that domain, but the route points at a backend the control plane's own ingress cannot reach. What an operator actually sees is **not** a clean "app unreachable" error: a browser gets a TLS handshake failure or connection reset against the domain, while the app itself reports healthy in the dashboard. That gap between "looks healthy" and "not reachable" is the trap.
-
-**Fix:** keep that app on the control-plane node, or point it back there:
+If the mesh path is down (mesh off, node not joined, no recent handshake), the app is **not** routed: a browser gets a TLS handshake failure while the app reports healthy. Levelrail reports this as the `NoMeshIngressPath` condition on the app, in `levelrail-cli doctor` (`cross_node_ingress`), in preflight and on the Traffic page, each with the reason and a fix:
 
 ```bash
-levelrail-cli apps clear-node <name>
-# or, equivalently:
-levelrail-cli apps set-node <name> <the control plane's own node id>
+levelrail-cli nodes mesh                        # see which peer has no handshake
+levelrail-cli apps set-node <name> <the control plane's own node id>   # or move it back
 ```
-
-**You don't have to catch this by eyeballing placements yourself.** `GET /api/v1/system/doctor` (`levelrail-cli doctor`) runs a `cross_node_ingress` check that flags exactly this app/domain/node combination with the fix command above, so this is a backstop, not the only line of defense, but don't rely on it as the first one: avoid placing a domain-routed app off the control-plane node until the [WireGuard mesh](#wireguard-mesh-and-internal-dns) spans nodes.
 :::
 
 ## Why a second node is optional, not assumed
@@ -510,7 +505,35 @@ The agent-side mesh arm exists: the control plane sends `ApplyMesh` and `RotateM
 - **The control plane is the hub:** agents send WireGuard handshakes to `APP_AGENT_ADVERTISE_HOST` on UDP `51820`. Set that variable to the control plane's public host (it already has to be, for enrolment), and allow **inbound UDP 51820** on the control plane's firewall and cloud security group. A loopback advertise host leaves agents with no endpoint (`no known endpoint for peer`); `levelrail-cli doctor` reports this as `mesh_hub_endpoint`.
 - **Same brand on both sides:** the interface name comes from the brand short name. The agent image carries the default `brand.yaml`; override with `APP_BRAND_SHORT_NAME` (or mount your own at `APP_BRAND_FILE`) if you rebrand the control plane.
 
-This is the same gap the `::: danger` callout near the top of this page describes: until mesh spans nodes, a domain-routed app placed off the control-plane node is unreachable via its domain, and `levelrail-cli doctor`'s `cross_node_ingress` check exists to catch it. See [Domains and ingress: Traffic](domains-and-ingress.md#traffic-routing-status-for-every-domain-at-a-glance) for the dashboard page that surfaces exactly this, per domain, with a one-click fix.
+### Routing to apps on remote nodes
+
+An app placed on a worker node is reachable through the control plane's ingress over the mesh:
+
+1. The app controller publishes the container's main port on the worker's **mesh address** (for example `10.181.0.2:32768`), never on `0.0.0.0` and never on a public interface.
+2. The ingress controller dials `<mesh-ip>:<host-port>` and obtains the TLS certificate for the hostname as usual (ACME for custom domains and sslip.io names, or your uploaded certificate).
+3. The path counts as healthy when the node has a mesh address and the control plane's WireGuard device has a handshake with it from the last 3 minutes.
+
+How this interacts with `bind_address` and `host_port`:
+
+| App setting on a remote node | Published on the worker as |
+| --- | --- |
+| `private` (default) | the node's mesh IP while the path is healthy, else `127.0.0.1` |
+| `public` | `0.0.0.0` (your explicit choice, also reachable over the mesh) |
+| a literal IP | that IP, unchanged (ingress routes only if it is the mesh IP or a wildcard) |
+| `host_port` pinned | the pinned port on the same address as above |
+
+Only the app's main port moves. App streams, managed databases and every unpublished container port are untouched: a database is never bound to the mesh address by this feature (a test enforces that the database controller cannot depend on it).
+
+**The mesh comes up after the app was deployed.** The reconciler is level-triggered: when it sees a running container whose main port is still on loopback and the path is now healthy, it removes that container and recreates it with the mesh bind (a brief restart, the app was unreachable through ingress anyway). A mesh flap never recreates a container: once bound, it stays bound while the path is down, and the condition reports the outage.
+
+**Reading the status.** While a remote app cannot be routed, the app shows a `CrossNodeIngress` condition with reason `NoMeshIngressPath`, the specific cause and the next action. It clears on the next reconcile pass after the mesh is healthy. Typical causes:
+
+- `mesh networking is off`: set `APP_MESH_ENABLED=1` and restart the control plane.
+- `the node has not joined the mesh yet`: check `levelrail-cli nodes mesh`.
+- `no recent WireGuard handshake`: open UDP 51820 between the hosts.
+- `publishes its port on loopback only`: transient, the app controller republishes it on its next pass.
+
+This does not move databases or app streams onto the mesh, and auto-placement still prefers the control plane's own node for apps created with a domain.
 
 ## API reference
 

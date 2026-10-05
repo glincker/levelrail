@@ -33,6 +33,13 @@ var ForbiddenPaths = []string{
 	"/var/lib/docker",
 	"/var/run/docker.sock",
 	"/var/run",
+	"/run",
+	"/dev",
+	"/lib/modules",
+	"/var/lib/containerd",
+	"/var/lib/kubelet",
+	"/var/lib/levelrail-data",
+	"/var/lib/levelrail-agent-data",
 }
 
 // ValidateHostPath rejects a relative path and every path ForbiddenPaths
@@ -46,6 +53,10 @@ func ValidateHostPath(hostPath string) error {
 	for _, forbidden := range ForbiddenPaths {
 		if clean == forbidden || strings.HasPrefix(clean, forbidden+"/") {
 			return fmt.Errorf("bind-mount host path %q is not allowed: %q is a protected system path", hostPath, forbidden)
+		}
+		// An ancestor mount (/var, /var/lib) exposes the protected path beneath it.
+		if forbidden != "/" && strings.HasPrefix(forbidden, strings.TrimSuffix(clean, "/")+"/") {
+			return fmt.Errorf("bind-mount host path %q is not allowed: it contains the protected system path %q", hostPath, forbidden)
 		}
 	}
 	return nil

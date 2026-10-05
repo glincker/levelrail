@@ -52,6 +52,19 @@ const containerPort = 5000
 // container is never dialed by anything else in this codebase.
 const HostPort = 5540
 
+// loopbackIP keeps the plain-HTTP registry port off every public interface;
+// remote pulls go through the ingress TLS route, which dials loopback.
+const loopbackIP = "127.0.0.1"
+
+func publishedBeyondLoopback(state *docker.ContainerState) bool {
+	for _, p := range state.Ports {
+		if p.HostPort == HostPort && p.HostIP != loopbackIP {
+			return true
+		}
+	}
+	return false
+}
+
 const defaultStopTimeout = 10 * time.Second
 
 // defaultPrefix mirrors cloudflaretunnel.defaultPrefix's own fallback:
@@ -211,7 +224,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		Entrypoint: []string{"sh", "-c"},
 		Command:    []string{htpasswdBootScript},
 		Volumes:    []docker.VolumeMount{{Name: volName, ContainerPath: dataPath}},
-		Ports:      []docker.PortBinding{{ContainerPort: containerPort, HostPort: HostPort}},
+		Ports:      []docker.PortBinding{{ContainerPort: containerPort, HostPort: HostPort, HostIP: loopbackIP}},
 	}
 
 	justDeployed := false
@@ -222,7 +235,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		}
 		justDeployed = true
 
-	case state.Image != image:
+	case state.Image != image || publishedBeyondLoopback(state):
 		if err := c.replace(ctx, state, spec); err != nil {
 			return notReady("ReplaceFailed", err), fmt.Errorf("registry: %w", err)
 		}

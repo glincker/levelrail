@@ -121,6 +121,15 @@ func Redact(s string) string {
 	return kvSecret.ReplaceAllString(s, "${1}"+Redacted)
 }
 
+// RedactTokens masks private keys, bearer tokens, token-shaped strings and URL
+// credentials, but not key=value pairs, so ordinary log lines stay readable.
+func RedactTokens(s string) string {
+	s = pemBlock.ReplaceAllString(s, Redacted)
+	s = bearer.ReplaceAllString(s, "$1 "+Redacted)
+	s = urlCreds.ReplaceAllString(s, "${1}:"+Redacted+"@")
+	return tokenShape.ReplaceAllString(s, Redacted)
+}
+
 // Truncate cuts s to at most max bytes on a rune boundary and notes the cut.
 func Truncate(s string, limit int) string {
 	if limit <= 0 || len(s) <= limit {

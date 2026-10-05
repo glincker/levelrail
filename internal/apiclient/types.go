@@ -1936,6 +1936,7 @@ type NetworkProxyDomainResource struct {
 	IsLocalNode bool   `json:"is_local_node"`
 	Port        int    `json:"port"`
 	Reachable   bool   `json:"reachable"`
+	Reason      string `json:"reason,omitempty"`
 	FixCommand  string `json:"fix_command,omitempty"`
 	TLSStatus   string `json:"tls_status,omitempty"`
 	TLSIssuer   string `json:"tls_issuer,omitempty"`
