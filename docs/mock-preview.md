@@ -1,5 +1,6 @@
 ---
 title: Product mock preview
+description: Internal preview of the product mock components in dark and light themes.
 sidebar: false
 aside: false
 head:

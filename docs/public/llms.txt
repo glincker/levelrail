@@ -120,6 +120,18 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Privacy and data handling](https://levelrail.com/privacy): what Levelrail stores, where, and what it connects to.
 - [Demo](https://levelrail.com/demo): screenshots and a terminal walkthrough from install to rollback.
 - [Case studies](https://levelrail.com/case-studies): measured results and what is not proven yet.
+- [CapRover alternative](https://levelrail.com/caprover-alternative): plain Docker instead of Swarm, with a read-only importer.
+- [Dokku alternative](https://levelrail.com/dokku-alternative): git push deploys plus a dashboard and multi-server.
+- [Kamal alternative](https://levelrail.com/kamal-alternative): zero-downtime deploys with a control plane.
+- [Self-hosted PaaS guide](https://levelrail.com/self-hosted-paas): six questions to ask when choosing a self-hosted PaaS.
+- [Self-host Next.js](https://levelrail.com/self-host-nextjs): deploy a Next.js app with TLS, previews and rollback.
+- [Zero-downtime deploys](https://levelrail.com/zero-downtime-deploys): readiness-gated cutover, stale-deploy guard, freeze windows, rollback.
+- [Preview environments](https://levelrail.com/preview-environments): a preview per pull request on GitHub, GitLab, Bitbucket and Gitea.
+- [Contribute](https://levelrail.com/contribute): ways to help, good first issues and the contributing guide.
+- [Terms of use](https://levelrail.com/terms): license, no warranty and trademarks.
+- [Privacy policy](https://levelrail.com/privacy-policy): what the website collects.
+- [Cookie notice](https://levelrail.com/cookies): the site sets no cookies of its own.
+- [License and notices](https://levelrail.com/license): Apache 2.0 in plain language.
 
 ## Optional
 

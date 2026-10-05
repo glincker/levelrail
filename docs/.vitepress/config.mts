@@ -194,6 +194,16 @@ const sidebarGroups = [
     ],
   },
   {
+    text: 'Legal',
+    collapsed: true,
+    items: [
+      { text: 'Terms of use', link: '/terms' },
+      { text: 'Privacy policy', link: '/privacy-policy' },
+      { text: 'Cookie notice', link: '/cookies' },
+      { text: 'License and notices', link: '/license' },
+    ],
+  },
+  {
     text: 'Docs index',
     collapsed: true,
     items: [{ text: 'Overview', link: '/README' }],
@@ -237,6 +247,7 @@ const sectionPriority: Record<string, number> = {
   Status: 0.4,
   'Design proposals': 0.3,
   'Docs index': 0.3,
+  Legal: 0.3,
 }
 const landingSlugs = new Set([
   'coolify-alternative',
@@ -285,7 +296,9 @@ export default withMermaid({
   sitemap: {
     hostname: siteUrl,
     transformItems: (items) =>
-      items.map((item) => ({ ...item, priority: sitemapPriority(item.url) })),
+      items
+        .filter((item) => !item.url.startsWith('mock-preview'))
+        .map((item) => ({ ...item, priority: sitemapPriority(item.url) })),
   },
 
   head: [

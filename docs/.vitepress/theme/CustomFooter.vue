@@ -157,6 +157,8 @@ onUnmounted(() => {
         <a href="/about">About</a>
         <a href="/contact">Contact</a>
         <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/cookies">Cookies</a>
         <a href="/roadmap">Roadmap</a>
         <a href="/troubleshooting">Troubleshooting</a>
       </div>
