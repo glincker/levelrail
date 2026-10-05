@@ -1,4 +1,4 @@
-# ADR 026: Adopt theauth-go in phases, superseding ADR 010
+# ADR 027: Adopt theauth-go in phases, superseding ADR 010
 
 Status: Accepted
 

@@ -1,6 +1,6 @@
 # ADR 010: Extend Levelrail's own auth, don't adopt theauth-go yet
 
-Status: Superseded by ADR 026
+Status: Superseded by ADR 027
 
 Date: 2026-08-13
 
