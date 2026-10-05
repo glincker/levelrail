@@ -57,7 +57,7 @@ func (rt *Router) registerAuthLibOAuthRoutes(mux *http.ServeMux) {
 // and Secure whenever the client connection is HTTPS, like the in-house binding cookie.
 func (rt *Router) forwardOAuthCookies(w http.ResponseWriter, r *http.Request, provider string, cookies []*http.Cookie) {
 	for _, c := range cookies {
-		c.Path = rt.authLibOAuth.Prefix() + "/providers/" + provider + "/callback"
+		c.Path = authengine.OAuthCallbackPath(provider)
 		c.Secure = requestIsHTTPS(r)
 		http.SetCookie(w, c) // NOSONAR: Secure follows the client transport, see requestIsHTTPS
 	}

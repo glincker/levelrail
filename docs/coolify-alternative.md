@@ -191,45 +191,7 @@
     "cta": {
       "heading": "Try it next to your current setup",
       "sub": "Import read-only, compare for a week, and keep what works. Open source, so you can read every line."
-    },
-    "related": [
-      {
-        "text": "Dokploy alternative",
-        "link": "/dokploy-alternative"
-      },
-      {
-        "text": "Vercel alternative",
-        "link": "/vercel-alternative"
-      },
-      {
-        "text": "Heroku alternative",
-        "link": "/heroku-alternative"
-      },
-      {
-        "text": "Railway alternative",
-        "link": "/railway-alternative"
-      },
-      {
-        "text": "Pricing",
-        "link": "/pricing"
-      },
-      {
-        "text": "Privacy",
-        "link": "/privacy"
-      },
-      {
-        "text": "Demo",
-        "link": "/demo"
-      },
-      {
-        "text": "Case studies",
-        "link": "/case-studies"
-      },
-      {
-        "text": "Full comparison",
-        "link": "/comparison"
-      }
-    ]
+    }
   }
 }
 ---

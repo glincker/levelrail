@@ -116,45 +116,7 @@
     "cta": {
       "heading": "Add your results",
       "sub": "Run it, measure it, and tell us what you find."
-    },
-    "related": [
-      {
-        "text": "Coolify alternative",
-        "link": "/coolify-alternative"
-      },
-      {
-        "text": "Dokploy alternative",
-        "link": "/dokploy-alternative"
-      },
-      {
-        "text": "Vercel alternative",
-        "link": "/vercel-alternative"
-      },
-      {
-        "text": "Heroku alternative",
-        "link": "/heroku-alternative"
-      },
-      {
-        "text": "Railway alternative",
-        "link": "/railway-alternative"
-      },
-      {
-        "text": "Pricing",
-        "link": "/pricing"
-      },
-      {
-        "text": "Privacy",
-        "link": "/privacy"
-      },
-      {
-        "text": "Demo",
-        "link": "/demo"
-      },
-      {
-        "text": "Full comparison",
-        "link": "/comparison"
-      }
-    ]
+    }
   }
 }
 ---

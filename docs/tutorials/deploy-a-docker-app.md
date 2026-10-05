@@ -84,7 +84,7 @@ Every routed domain gets a TLS certificate automatically. Out of the box it is s
 
 Real Let's Encrypt certificates are switched on under **Settings, Domains**: enter an account email and enable ACME, with ports 80 and 443 open to the internet. See [Domains and ingress](../domains-and-ingress.md#real-public-acme-let-s-encrypt-or-rfc-8555-ca) and the [ACME verification runbook](../acme-verification-runbook.md) if issuance fails.
 
-If you have no domain at all, a hostname of the form `<dashed-ip>.sslip.io` works with no DNS record; see [Zero DNS setup](../domains-and-ingress.md#zero-dns-setup-sslipio-hostnames-and-one-click-https).
+If you have no domain at all, a hostname of the form `<dashed-ip>.sslip.io` works with no DNS record; see [Zero DNS setup](../domains-and-ingress.md#zero-dns-setup-sslip-io-hostnames-and-one-click-https).
 
 </Step>
 <Step title="Ship a second version">

@@ -113,7 +113,7 @@
       },
       {
         "q": "How long does the install take?",
-        "a": "The install script handles the host check, Docker and the systemd service in one run. Time depends mostly on your server and network, for example Docker pulling images on a fresh host."
+        "a": "The install script handles the host check, Docker and the systemd service in one run. Most of the time is Docker pulling images on a fresh server."
       },
       {
         "q": "Can I try it without touching my current setup?",
@@ -122,46 +122,8 @@
     ],
     "cta": {
       "heading": "Run the demo on your own server",
-      "sub": "One small VPS, nothing to sign up for."
-    },
-    "related": [
-      {
-        "text": "Coolify alternative",
-        "link": "/coolify-alternative"
-      },
-      {
-        "text": "Dokploy alternative",
-        "link": "/dokploy-alternative"
-      },
-      {
-        "text": "Vercel alternative",
-        "link": "/vercel-alternative"
-      },
-      {
-        "text": "Heroku alternative",
-        "link": "/heroku-alternative"
-      },
-      {
-        "text": "Railway alternative",
-        "link": "/railway-alternative"
-      },
-      {
-        "text": "Pricing",
-        "link": "/pricing"
-      },
-      {
-        "text": "Privacy",
-        "link": "/privacy"
-      },
-      {
-        "text": "Case studies",
-        "link": "/case-studies"
-      },
-      {
-        "text": "Full comparison",
-        "link": "/comparison"
-      }
-    ]
+      "sub": "Ten minutes, one small VPS, nothing to sign up for."
+    }
   }
 }
 ---

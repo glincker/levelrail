@@ -56,8 +56,8 @@ Evaluation order, the full ability list, and policy examples: [Identity and acce
 ## TLS and network exposure
 
 - Certificates are issued and renewed automatically through embedded Caddy's ACME client. See the [ACME verification runbook](acme-verification-runbook.md) if issuance fails.
-- HSTS (`Strict-Transport-Security`) is opt-in, not on by default, because turning it on for a domain that later loses TLS locks users out until the header expires. See [Domains and ingress](domains-and-ingress.md#tls).
-- WAF mode and rate limiting are configurable per domain, with a detect-only mode for testing rules before enforcing them. See [Domains and ingress](domains-and-ingress.md#waf-and-rate-limiting).
+- HSTS (`Strict-Transport-Security`) is opt-in, not on by default, because turning it on for a domain that later loses TLS locks users out until the header expires. See [Domains and ingress](domains-and-ingress.md#tls-what-s-actually-shipped-today).
+- WAF mode and rate limiting are configurable per domain, with a detect-only mode for testing rules before enforcing them. See [Domains and ingress](domains-and-ingress.md#opt-in-waf-and-rate-limiting).
 - The node agent dials **out** to the control plane. No inbound ports need to be open on a managed server for enrollment or day-to-day operation.
 - **Agent enrollment pins the control plane CA.** A join token is shown together with the agent CA's SHA-256 fingerprint; with `APP_CA_FINGERPRINT` set, the agent checks the control plane's certificate against that CA before it sends the token, so an attacker in the network path cannot capture the token or pose as the control plane. Without the fingerprint the agent falls back to trust on first use and logs a warning. After enrollment every connection is mutual TLS against the saved CA.
 - **Container installs bind plain HTTP to loopback.** The committed `docker-compose.yml` publishes `8080` on `127.0.0.1` only (override with `LEVELRAIL_HTTP_BIND`), see [Docker](docker.md#control-plane).

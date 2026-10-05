@@ -104,7 +104,7 @@ These tune the scheduled off-box copy of the control plane's own state and its r
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_PITR_WAL_SEGMENT_BYTES` | `16777216` (16 MiB) | WAL segment size, in bytes, that the restore path assumes when it maps a base backup's start position to a segment. Set it only if the Postgres server was initialized with a non-default WAL segment size. Positive integer. Control plane. See [Managing databases](managing-databases.md#point-in-time-restore-pitr-postgres-only). |
+| `APP_PITR_WAL_SEGMENT_BYTES` | `16777216` (16 MiB) | WAL segment size, in bytes, that the restore path assumes when it maps a base backup's start position to a segment. Set it only if the Postgres server was initialized with a non-default WAL segment size. Positive integer. Control plane. See [Managing databases](managing-databases.md#point-in-time-restore-postgres-only). |
 
 ## Log archive
 

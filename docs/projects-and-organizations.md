@@ -100,7 +100,7 @@ An app with no project and no environment gets its own `env`/`secretEnv` (plus a
 
 ### Secret-marked shared env vars
 
-Any shared env var can be marked as a secret. Secret-marked variables are encrypted at rest using the same envelope-encryption path as per-app secrets (see [Security overview](./security.md#secrets)). Their values are never returned in plaintext from API endpoints or the dashboard; only the key name is shown.
+Any shared env var can be marked as a secret. Secret-marked variables are encrypted at rest using the same envelope-encryption path as per-app secrets (see [Security overview](./security.md#secrets-envelope-encryption)). Their values are never returned in plaintext from API endpoints or the dashboard; only the key name is shown.
 
 **Creating a secret shared env var via CLI:**
 

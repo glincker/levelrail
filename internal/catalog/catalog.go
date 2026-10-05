@@ -66,6 +66,7 @@ var Templates = concat(
 	catalogBatch3Templates,
 	catalogBatch4Templates,
 	catalogBatch5Templates,
+	catalogBatch6Templates,
 	contribTemplates,
 )
 

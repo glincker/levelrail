@@ -1,5 +1,5 @@
 ---
-description: Seven starter-kit templates that show multi-service Compose wiring patterns: web plus database, worker plus queue, reverse proxy plus backends.
+description: "Seven starter-kit templates that show multi-service Compose wiring patterns: web plus database, worker plus queue, reverse proxy plus backends."
 ---
 
 # Starter kit templates

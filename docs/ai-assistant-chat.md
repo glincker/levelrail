@@ -4,7 +4,7 @@ description: The in-app AI assistant chat, how to enable it behind the ai-chat e
 
 # In-app AI assistant chat
 
-A chat panel in the dashboard, backed by the control plane's own `internal/ai` engine. It reads your apps, deploys, logs, metrics and diagnostics through the same tool surface the MCP server exposes, and it can propose actions, but **every action that would change anything pauses for an explicit confirmation click first**. AI in Levelrail is a read-and-suggest layer on top of the API: this is the same engine and the same confirmation gate described in [AI assistant integration](ai-assistant.md#untrusted-text-and-the-assistants-confirmation-gate), surfaced as a dashboard panel and a CLI command.
+A chat panel in the dashboard, backed by the control plane's own `internal/ai` engine. It reads your apps, deploys, logs, metrics and diagnostics through the same tool surface the MCP server exposes, and it can propose actions, but **every action that would change anything pauses for an explicit confirmation click first**. AI in Levelrail is a read-and-suggest layer on top of the API: this is the same engine and the same confirmation gate described in [AI assistant integration](ai-assistant.md#untrusted-text-and-the-assistant-s-confirmation-gate), surfaced as a dashboard panel and a CLI command.
 
 This is separate from `levelrail-mcp`. To point an external MCP client (Claude Desktop, Claude Code, your own) at this control plane, read [AI assistant integration](ai-assistant.md) instead.
 
@@ -58,7 +58,7 @@ With both set, the **AI assistant** page appears in the dashboard and `levelrail
 - **Propose, never execute directly.** A mutating tool call (deploy, rollback, restart, an env change, and so on) is recorded as a pending confirmation and streamed to the UI as a `tool_call_proposed` event. It does not run until a human clicks **Approve** (dashboard) or runs `levelrail-cli ai sessions resolve <session> <confirmation-id> --approve` (CLI). Rejecting it is just as explicit a path (`--reject`), and the model sees "User declined to run this action" as the result either way, so it can explain and move on rather than retry blindly.
 - **Never in the reconciliation path.** The assistant only calls the platform's own REST API (`internal/apiclient`), the same path any external MCP client or the CLI uses. It has no privileged entry point into the reconciler, the Docker client, or the database.
 
-Untrusted-text handling and the confirmation gate's exact rules (what counts as tainted, which annotations make a tool auto-run) are documented once, under [Untrusted text and the assistant's confirmation gate](ai-assistant.md#untrusted-text-and-the-assistants-confirmation-gate).
+Untrusted-text handling and the confirmation gate's exact rules (what counts as tainted, which annotations make a tool auto-run) are documented once, under [Untrusted text and the assistant's confirmation gate](ai-assistant.md#untrusted-text-and-the-assistant-s-confirmation-gate).
 
 ## Using it
 

@@ -243,7 +243,7 @@ an object with these fields.
 | `from` | string | no | none | References another resource's computed value, for example `postgres.main.url`. |
 | `secret` | boolean | no | `false` | The operator provides this value at deploy time through envelope-encrypted secret storage; it is never written to `app.yaml` or the git repo. |
 | `required` | boolean | no | `false` | Only meaningful alongside `secret: true`: fail the deploy if no value has been provided, rather than starting the container with the variable unset. |
-| `vault` | `VaultRef` | no | none | Resolves this value live from an external HashiCorp Vault instance instead of Levelrail's own envelope-encrypted storage. Mutually exclusive with `from` and `secret`. See [external secrets: HashiCorp Vault](deploying-apps.md#external-secrets-hashicorp-vault). |
+| `vault` | `VaultRef` | no | none | Resolves this value live from an external HashiCorp Vault instance instead of Levelrail's own envelope-encrypted storage. Mutually exclusive with `from` and `secret`. See [external secrets: HashiCorp Vault](deploying-apps.md#external-secrets-from-hashicorp-vault). |
 
 The object form must set at least one of `from`, `secret`, or `vault`.
 `vault` is mutually exclusive with both `from` and `secret`: a given env

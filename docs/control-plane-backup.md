@@ -70,7 +70,7 @@ The doctor check only helps when someone looks. To be notified instead, create a
 levelrail-cli apps alerts create <app> --name "Control plane backup stale" --kind control_plane_backup_stale --channel-id CHANNEL
 ```
 
-It fires once the newest snapshot is older than 3 days and sends a resolved notice after the next snapshot lands. Set `--for-duration` (for example `48h`) to change the maximum age. The rule is platform-wide (the app only decides where it is listed), stays quiet when `APP_CONTROL_PLANE_BACKUP_INTERVAL=0`, and also stays quiet before the first snapshot exists. The dashboard's alert rule dialog and the alerting quick setup prompt offer it too. See [observability](/observability#alerting).
+It fires once the newest snapshot is older than 3 days and sends a resolved notice after the next snapshot lands. Set `--for-duration` (for example `48h`) to change the maximum age. The rule is platform-wide (the app only decides where it is listed), stays quiet when `APP_CONTROL_PLANE_BACKUP_INTERVAL=0`, and also stays quiet before the first snapshot exists. The dashboard's alert rule dialog and the alerting quick setup prompt offer it too. See [observability](/observability#alert-rules).
 
 ### Before an upgrade
 

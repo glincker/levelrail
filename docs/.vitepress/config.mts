@@ -4,6 +4,7 @@ import { buildEnd, changelogHead, changelogPageData } from './changelog.mts'
 import { buildLlmsFullTxt } from './llmsFull.mts'
 import { writeRawMarkdown } from './rawMarkdown.mts'
 import { faqItems } from './theme/faqData'
+import { flattenNav } from './theme/nav/navItems'
 
 const description =
   'A self-hosted deployment platform whose agent talks to Docker’s own Engine API directly, ' +
@@ -223,6 +224,16 @@ const sidebarGroups = [
     ],
   },
   {
+    text: 'Legal',
+    collapsed: true,
+    items: [
+      { text: 'Terms of use', link: '/terms' },
+      { text: 'Privacy policy', link: '/privacy-policy' },
+      { text: 'Cookie notice', link: '/cookies' },
+      { text: 'License and notices', link: '/license' },
+    ],
+  },
+  {
     text: 'Docs index',
     collapsed: true,
     items: [{ text: 'Overview', link: '/README' }],
@@ -266,6 +277,7 @@ const sectionPriority: Record<string, number> = {
   Status: 0.4,
   'Design proposals': 0.3,
   'Docs index': 0.3,
+  Legal: 0.3,
 }
 const landingSlugs = new Set([
   'coolify-alternative',
@@ -277,6 +289,17 @@ const landingSlugs = new Set([
   'privacy',
   'demo',
   'case-studies',
+  'caprover-alternative',
+  'dokku-alternative',
+  'kamal-alternative',
+  'self-hosted-paas',
+  'self-host-nextjs',
+  'zero-downtime-deploys',
+  'preview-environments',
+  'contribute',
+  'developers',
+  'about',
+  'contact',
 ])
 function sitemapPriority(url: string): number {
   if (url === '') return 1.0
@@ -303,7 +326,9 @@ export default withMermaid({
   sitemap: {
     hostname: siteUrl,
     transformItems: (items) =>
-      items.map((item) => ({ ...item, priority: sitemapPriority(item.url) })),
+      items
+        .filter((item) => !item.url.startsWith('mock-preview'))
+        .map((item) => ({ ...item, priority: sitemapPriority(item.url) })),
   },
 
   head: [
@@ -335,6 +360,36 @@ export default withMermaid({
         },
       }),
     ],
+    [
+      'script',
+      { type: 'application/ld+json' },
+      JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'GLINCKER',
+        url: 'https://glincker.com',
+        sameAs: [
+          'https://github.com/glincker',
+          'https://github.com/glincker/levelrail',
+          'https://discord.gg/Ar5pcaZB99',
+        ],
+        contactPoint: {
+          '@type': 'ContactPoint',
+          contactType: 'customer support',
+          email: 'support@levelrail.com',
+        },
+      }),
+    ],
+    [
+      'script',
+      { type: 'application/ld+json' },
+      JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'Levelrail',
+        url: `${siteUrl}/`,
+      }),
+    ],
   ],
 
   cleanUrls: true,
@@ -358,16 +413,7 @@ export default withMermaid({
   themeConfig: {
     logo: `/favicon.svg?v=${faviconVersion}`,
 
-    nav: [
-      { text: 'Guide', link: '/getting-started' },
-      { text: 'Reference', link: '/app-spec-reference' },
-      { text: 'Compare', link: '/comparison' },
-      { text: 'Demo', link: '/demo' },
-      { text: 'Pricing', link: '/pricing' },
-      { text: 'Troubleshooting', link: '/troubleshooting' },
-      { text: 'Roadmap', link: '/roadmap' },
-      { text: 'Changelog', link: '/changelog/' },
-    ],
+    nav: flattenNav(),
 
     sidebar: sidebarGroups,
 

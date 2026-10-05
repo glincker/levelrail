@@ -1,0 +1,19 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "name": "levelrail.com"
+  },
+  "entries": [
+    {
+      "identifier": "urn:levelrail:mcp:levelrail-mcp",
+      "displayName": "Levelrail MCP server (self-hosted, run it yourself)",
+      "mediaType": "application/mcp-server-card+json",
+      "type": "application/mcp-server-card+json",
+      "url": "https://levelrail.com/.well-known/mcp/server-card.json",
+      "representativeQueries": [
+        "List the apps running on my Levelrail instance",
+        "Roll back the web app on my Levelrail instance"
+      ]
+    }
+  ]
+}

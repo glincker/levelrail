@@ -232,7 +232,7 @@ The `mesh_hub_endpoint` check applies when `APP_MESH_ENABLED=1`: agents send Wir
 
 ### Node stuck pending: "join token already used"
 
-An agent that logs `join token already used` is retrying with a spent token. The node row stays `pending` and the dashboard and `levelrail-cli nodes list` flag it "Never connected" after five minutes. The token cannot be reused: delete the node, fix the cause the agent logged (an unwritable identity directory is the usual one; current agents check this before sending the token), and enrol again with a new join token. See [Multi-node](multi-node.md#step-3-confirm-it-registered).
+An agent that logs `join token already used` is retrying with a spent token. The node row stays `pending` and the dashboard and `levelrail-cli nodes list` flag it "Never connected" after five minutes. The token cannot be reused: delete the node, fix the cause the agent logged (an unwritable identity directory is the usual one; current agents check this before sending the token), and enrol again with a new join token. See [Multi-node](multi-node.md#enrolling-a-second-node).
 
 ### Registry reachability failed
 
