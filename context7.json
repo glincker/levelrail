@@ -17,7 +17,7 @@
     "Preview changes with `--dry-run`, `levelrail-cli apps preflight <app>`, or the MCP `plan_change` tool before applying anything destructive.",
     "Set secrets with `levelrail-cli apps secrets set <app> --env-file <path>` from a git-ignored file; secret values are write-only and are never read back.",
     "The app spec is app.yaml, version 1; validate it with the same parser the control plane uses via `levelrail-cli init --dry-run` or `apps preflight`.",
-    "Roll back first when production is down (`levelrail-cli apps rollback <app>`), then investigate.",
+    "Roll back first when production is down: list deploys with `levelrail-cli apps deploys list <app>`, then `levelrail-cli apps deploys rollback-to <app> <deploy-id>`; then investigate.",
     "Start the MCP server in the smallest mode that works: agent-core, read-only, standard, then full."
   ]
 }

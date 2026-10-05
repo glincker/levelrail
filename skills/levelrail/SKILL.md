@@ -37,7 +37,7 @@ levelrail-cli apps logs <app> --follow
 ## Roll back
 
 ```
-levelrail-cli apps rollback <app>
+levelrail-cli apps deploys list <app>
 levelrail-cli apps deploys rollback-to <app> <deploy-id>
 ```
 
