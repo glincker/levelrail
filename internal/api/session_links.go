@@ -50,7 +50,7 @@ func (rt *Router) resolveMintingPrincipal(r *http.Request) (principalType, princ
 		return store.PrincipalTypeUser, userID, user.DisplayName, user.Abilities, nil
 	}
 	if token, ok := bearerToken(r); ok {
-		rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(token))
+		rec, err := rt.lookupBearerToken(r.Context(), token)
 		if err != nil {
 			return "", "", "", nil, fmt.Errorf("api: load minting token: %w", err)
 		}

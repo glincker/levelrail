@@ -22,13 +22,15 @@ const totpSecretEnvKeyName = "secret"
 // authEngineOptions mounts the library auth beside the legacy routes when
 // APP_AUTH_ENGINE=library. Off (the default) it returns nothing.
 func authEngineOptions(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *sql.DB, mgr *secrets.Manager) []api.Option {
-	if !authengine.Enabled() {
+	if authengine.Mode() == authengine.EngineLegacy {
 		return nil
 	}
 	cfg := authengine.Config{
-		TokenPrefix: b.ShortName,
-		TOTPIssuer:  b.Name,
-		Directory:   authengine.NewDirectory(db),
+		TokenPrefix:    b.ShortName,
+		TOTPIssuer:     b.Name,
+		Directory:      authengine.NewDirectory(db),
+		DeviceTokenTTL: api.DeviceTokenTTL(),
+		DeviceCodeTTL:  api.DeviceCodeTTL(),
 	}
 	if dial := dashboardDialAddr(httpAddr()); dial != "" {
 		cfg.BaseURL = "http://" + dial
@@ -46,8 +48,12 @@ func authEngineOptions(ctx context.Context, logger *slog.Logger, b *brand.Brand,
 		logger.Error("auth engine: setup failed, library routes stay off", slog.String("error", err.Error()))
 		return nil
 	}
+	if authengine.ShadowEnabled() {
+		logger.Info("auth engine: shadow comparison on, legacy still decides")
+		return []api.Option{api.WithAuthEngineShadow(eng, authengine.ShadowConfigFromEnv())}
+	}
 	logger.Info("auth engine: library routes mounted", slog.String("prefix", eng.Prefix()))
-	return []api.Option{api.WithAuthEngine(eng.Prefix(), eng.Handler())}
+	return []api.Option{api.WithAuthEngine(eng.Prefix(), eng.Handler()), api.WithAuthEngineLibrary(eng)}
 }
 
 // runAuthBackfill implements `<binary> auth-backfill [--dry-run]`.

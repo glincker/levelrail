@@ -51,7 +51,7 @@ func (rt *Router) resolveCaller(ctx context.Context, r *http.Request) (principal
 	if !ok {
 		return "", "", nil, errCallerGone
 	}
-	rec, terr := rt.tokens.GetAPITokenByHash(ctx, hashToken(token))
+	rec, terr := rt.lookupBearerToken(ctx, token)
 	if errors.Is(terr, store.ErrAPITokenNotFound) {
 		return "", "", nil, errCallerGone
 	}

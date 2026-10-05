@@ -572,6 +572,7 @@ type Router struct {
 	authEnginePrefix string       // empty means the library auth engine is off, set via WithAuthEngine
 	authEngine       http.Handler // nil when APP_AUTH_ENGINE is not "library"
 	cpDRMaterial     EscrowMaterialReader
+	authLib          authLibState // library token, device and shadow hooks, zero in legacy mode
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.

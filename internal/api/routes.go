@@ -18,6 +18,7 @@ func (rt *Router) Handler() http.Handler {
 		mux.Handle(rt.authEnginePrefix+"/", rt.authEngine)
 	}
 	rt.registerCoreRoutes(mux)
+	rt.registerAuthEngineStatusRoute(mux)
 	rt.registerPlatformRoutes(mux)
 	rt.registerStorageRoutes(mux)
 	rt.registerPipelineRoutes(mux)

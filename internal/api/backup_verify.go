@@ -204,7 +204,7 @@ func (rt *Router) checkedByFromRequest(r *http.Request) string {
 		return user.DisplayName
 	}
 	if token, ok := bearerToken(r); ok {
-		rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(token))
+		rec, err := rt.lookupBearerToken(r.Context(), token)
 		if err == nil {
 			return rec.Name
 		}

@@ -81,7 +81,7 @@ func (rt *Router) currentActor(r *http.Request) (actorType, actorID, actorName s
 	if !tokOK {
 		return "", "", "", false
 	}
-	rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(token))
+	rec, err := rt.lookupBearerToken(r.Context(), token)
 	if err != nil {
 		return "", "", "", false
 	}

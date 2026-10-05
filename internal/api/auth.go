@@ -521,6 +521,8 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 			return
 		}
 
+		rt.observeShadow(token)
+
 		// Keyed by the token's own hash, not its DB record ID: this runs
 		// before the lookup below, so a leaked token gets throttled even
 		// while repeatedly hitting an already-revoked or expired record.
@@ -531,7 +533,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 			}
 		}
 
-		rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(token))
+		rec, err := rt.lookupBearerToken(r.Context(), token)
 		if errors.Is(err, store.ErrAPITokenNotFound) {
 			writeError(w, http.StatusUnauthorized, "invalid token")
 			return
@@ -653,7 +655,7 @@ func (rt *Router) callerHasAbility(r *http.Request, ability string) bool {
 	if !ok {
 		return false
 	}
-	rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(token))
+	rec, err := rt.lookupBearerToken(r.Context(), token)
 	if err != nil {
 		return false
 	}
@@ -680,7 +682,7 @@ func (rt *Router) callerPrincipal(r *http.Request) (principalType, principalID s
 		return store.PrincipalTypeUser, userID, user.Abilities, nil
 	}
 	if token, ok := bearerToken(r); ok {
-		rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(token))
+		rec, err := rt.lookupBearerToken(r.Context(), token)
 		if err != nil {
 			return "", "", nil, fmt.Errorf("api: load caller token: %w", err)
 		}
@@ -742,7 +744,7 @@ func (rt *Router) callerAbilities(r *http.Request) ([]string, error) {
 		return user.Abilities, nil
 	}
 	if token, ok := bearerToken(r); ok {
-		rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(token))
+		rec, err := rt.lookupBearerToken(r.Context(), token)
 		if err != nil {
 			return nil, fmt.Errorf("api: load caller token: %w", err)
 		}
