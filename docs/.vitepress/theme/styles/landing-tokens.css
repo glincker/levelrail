@@ -1,6 +1,7 @@
 /* Single source of design values for every landing page component.
    Change a value here and it applies to all pages. */
-.lp {
+.lp,
+.lp-scope {
   --lp-bg: #020202;
   --lp-card: #0a0a0b;
   --lp-card-top: #0d0d0f;

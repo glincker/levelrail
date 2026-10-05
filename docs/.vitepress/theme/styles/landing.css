@@ -234,7 +234,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 4px 0;
+  gap: 4px 18px;
   margin: 18px 0 0;
   padding: 0;
   list-style: none;
@@ -246,18 +246,6 @@
   display: inline;
   margin: 0;
   line-height: 1.5;
-}
-
-.trust-strip__item + .trust-strip__item::before {
-  content: '';
-  display: inline-block;
-  width: 3px;
-  height: 3px;
-  margin: 0 10px;
-  vertical-align: middle;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.6;
 }
 
 .trust-strip__item a {

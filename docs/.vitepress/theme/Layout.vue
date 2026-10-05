@@ -8,6 +8,8 @@ import CustomFooter from './CustomFooter.vue'
 import PageActions from './PageActions.vue'
 import CopyCommand from './CopyCommand.vue'
 import HeroShowcase from './HeroShowcase.vue'
+import AnnouncementPill from './AnnouncementPill.vue'
+import HomeFeatures from './HomeFeatures.vue'
 
 const INSTALL_COMMAND = 'curl -fsSL https://levelrail.com/install.sh | sudo sh'
 
@@ -31,7 +33,7 @@ const { hasSidebar } = useSidebar()
       <PageActions />
     </template>
     <template #home-hero-info-before>
-      <p class="hero-eyebrow">Self-hosted &middot; Apache 2.0</p>
+      <AnnouncementPill />
     </template>
     <template #home-hero-image>
       <HeroField />
@@ -55,6 +57,9 @@ const { hasSidebar } = useSidebar()
         </li>
         <li class="trust-strip__item">Secrets, metrics and logs stay on your servers</li>
       </ul>
+    </template>
+    <template #home-hero-after>
+      <HomeFeatures />
     </template>
     <template #layout-bottom>
       <CustomFooter />

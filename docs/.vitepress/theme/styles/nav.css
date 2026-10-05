@@ -297,6 +297,15 @@
   }
 }
 
+/* Landing pages render VitePress's own navbar; same priority rule there. */
+@media (max-width: 1239px) {
+  .VPNavBarMenu .VPLink[href^='/troubleshooting'],
+  .VPNavBarMenu .VPLink[href^='/roadmap'],
+  .VPNavBarMenu .VPLink[href^='/changelog'] {
+    display: none;
+  }
+}
+
 @media (max-width: 1099px) {
   .custom-nav__inner {
     gap: 10px;

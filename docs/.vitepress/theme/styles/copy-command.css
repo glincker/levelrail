@@ -95,3 +95,10 @@
 .copy-cmd__status:empty {
   display: none;
 }
+
+@media (max-width: 480px) {
+  .copy-cmd__text {
+    white-space: normal;
+    word-break: break-all;
+  }
+}
