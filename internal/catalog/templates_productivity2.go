@@ -280,18 +280,15 @@ var productivity2Templates = []Template{
 		Category:               "Productivity",
 		DocumentationURL:       "https://readeck.org/en/docs/",
 		RecommendedMemoryBytes: 268435456, // 256Mi
-		// Only published under a rolling :latest tag upstream; this
-		// pinned version couldn't be verified against a live registry in
-		// this environment.
-		// Tag unverified: codeberg.org returned 401.
+		// The image has no curl, so the healthcheck uses readeck's own command.
 		Compose: `services:
   readeck:
-    image: codeberg.org/readeck/readeck:0.19.1
+    image: codeberg.org/readeck/readeck:0.23.4
     ports: ["8000:8000"]
     volumes:
       - readeck_data:/readeck
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8000/"]
+      test: ["CMD", "readeck", "healthcheck"]
       interval: 10s
       timeout: 5s
       retries: 3
