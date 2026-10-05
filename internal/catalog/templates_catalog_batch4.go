@@ -20,7 +20,7 @@ var catalogBatch4Templates = []Template{
 		RecommendedMemoryBytes: 2147483648, // 2Gi
 		Compose: `services:
   plex:
-    image: lscr.io/linuxserver/plex:1.41.9.9937-c6926edb6-ls213
+    image: lscr.io/linuxserver/plex:1.43.4.10903-e5521bd8c-ls327
     ports: ["32400:32400"]
     environment:
       PUID: "1000"
