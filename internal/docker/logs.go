@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -64,7 +63,7 @@ func (c *Client) Logs(ctx context.Context, containerID string, follow bool, sinc
 		Timestamps: true,
 	}
 	if !since.IsZero() {
-		opts.Since = strconv.FormatInt(since.Unix(), 10)
+		opts.Since = fmt.Sprintf("%d.%09d", since.Unix(), since.Nanosecond())
 	}
 
 	reader, err := c.cli.ContainerLogs(ctx, containerID, opts)

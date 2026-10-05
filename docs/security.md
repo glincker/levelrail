@@ -39,6 +39,8 @@ Credentials for backup targets and registry integrations follow the same write-o
 - **Token-redeeming routes are rate limited.** `POST /api/v1/auth/reset-password` and `POST /api/v1/invites/accept` are unauthenticated by design, so each gets a per-client-IP budget (`APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM`, default `10` per minute, `0` disables). Over budget returns `429` with `Retry-After`.
 - **API tokens** are minted per-user, scoped by ability (a user can only mint a token holding abilities they hold themselves), and can be issued through a device-code flow for headless environments.
 - **Two-factor authentication (TOTP)** is available per user, with recovery codes for account lockout.
+- **Two-factor codes are single-use.** A TOTP code that was already accepted is refused if presented again inside its validity window, and recovery codes are consumed on use.
+- **Read-tier callers cannot enumerate people or credentials.** `GET /api/v1/users` returns only the caller's own record unless the caller is `root`, and notification destinations (webhook URLs, bot tokens, routing keys) are shown as `(hidden)` without `read:sensitive`, see [observability](observability.md#notification-channels).
 
 Full detail on all three: [Identity and access](identity-and-access.md#principals-a-session-or-a-token).
 
@@ -72,6 +74,8 @@ APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true
 ```
 
 on the control plane. This re-allows every internal address for notification requests, so only enable it when every user who can create alert rules or notification channels is trusted with access to that network.
+
+The same check runs when you create or edit a notification channel: a URL that is not `http(s)`, or that is a loopback, private or link-local address (or `localhost`, or a hostname that resolves only to those), is refused up front with a `400` that names `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS`, instead of being saved and failing silently on every send. Set the variable before creating the channel when the receiver really is on a private network.
 
 Email notifications are separate: recipient addresses must be a single plain address, and subjects are MIME-encoded, so user input cannot add mail headers.
 
@@ -135,6 +139,10 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 
 - No SSO/SAML, only local password auth and OAuth sign-in.
 - No secret scanning of an app's own source repository.
+- Notification destinations (webhook URLs, Telegram bot tokens, PagerDuty and Opsgenie keys) are stored as plain text in `alerting.db`, not envelope encrypted. Treat that file as sensitive.
+- Sessions live in memory, so every control plane restart (including an upgrade) signs everyone out. API tokens are unaffected.
+- `GET /api/v1/system/containers` lists every container on the Docker host, including ones Levelrail does not manage, to any caller with `read`.
+- Passkey login was not exercised end to end here: it needs a real browser authenticator.
 - Container hardening is opt-in (`APP_CONTAINER_HARDENING=enforce`) and has no per-app override yet.
 - Rootless Docker and Podman detection and hardening adjustment ([above](#rootless-and-podman)) exist but are not verified against a real installation; bind-mount ownership and cgroup resource limits beyond `PidsLimit` are known gaps.
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/netguard"
 )
 
 // This file is global, connect-once notification channels (Settings ->
@@ -113,6 +114,28 @@ func validateNotifyKind(kind string) (alerting.NotifyKind, error) {
 	return "", fmt.Errorf("kind must be one of %q", validNotifyKinds)
 }
 
+// kindsWithoutDestinationURL post to a fixed vendor endpoint (or send mail
+// or push), so notify_url holds a key or address rather than a URL to dial.
+var kindsWithoutDestinationURL = map[alerting.NotifyKind]bool{
+	alerting.NotifyEmail: true, alerting.NotifyPagerDuty: true, alerting.NotifyOpsgenie: true,
+	alerting.NotifyResend: true, alerting.NotifyWebpush: true,
+}
+
+// validateNotifyDestination refuses, at save time, a webhook URL the SSRF
+// guard would reject on every send, so the operator hears about it now.
+func validateNotifyDestination(ctx context.Context, kind alerting.NotifyKind, notifyURL string) error {
+	if kindsWithoutDestinationURL[kind] {
+		return nil
+	}
+	if err := netguard.ValidateURL(ctx, notifyURL); err != nil {
+		if errors.Is(err, netguard.ErrBlockedAddress) {
+			return fmt.Errorf("notify_url points at an internal address and would never be delivered: %w", err)
+		}
+		return errors.New("notify_url must be an absolute http or https URL")
+	}
+	return nil
+}
+
 // toChannel validates req and builds the channel to save.
 // existingSecret is "" on create, or the channel's own already-stored
 // InteractiveSecret on update; a blank req.InteractiveSecret then means
@@ -178,7 +201,9 @@ func (rt *Router) handleListNotificationChannels(w http.ResponseWriter, r *http.
 	}
 	out := make([]notificationChannelResource, 0, len(channels))
 	for _, c := range channels {
-		out = append(out, toNotificationChannelResource(c))
+		res := toNotificationChannelResource(c)
+		res.NotifyURL = rt.notifyTargetFor(r, c.Kind, c.NotifyURL)
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -204,6 +229,9 @@ func (rt *Router) handleCreateNotificationChannel(w http.ResponseWriter, r *http
 	}
 
 	channel, err := req.toChannel(id, "")
+	if err == nil {
+		err = validateNotifyDestination(r.Context(), channel.Kind, channel.NotifyURL)
+	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -249,7 +277,13 @@ func (rt *Router) handleUpdateNotificationChannel(w http.ResponseWriter, r *http
 		return
 	}
 
+	if req.NotifyURL != existing.NotifyURL && req.NotifyURL == redactNotifyTarget(existing.Kind, existing.NotifyURL) {
+		req.NotifyURL = existing.NotifyURL
+	}
 	channel, err := req.toChannel(id, existing.InteractiveSecret)
+	if err == nil {
+		err = validateNotifyDestination(r.Context(), channel.Kind, channel.NotifyURL)
+	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return

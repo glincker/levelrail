@@ -279,12 +279,26 @@ func (rt *Router) writeAuditLogCSV(w http.ResponseWriter, entries []store.AuditE
 	_ = cw.Write(auditLogCSVHeader)
 	for _, e := range entries {
 		_ = cw.Write([]string{
-			e.ID, e.ActorType, e.ActorID, e.ActorName, e.Ability,
-			e.Method, e.Path, strconv.Itoa(e.StatusCode), e.RemoteAddr, e.CreatedAt, e.ClientKind,
+			e.ID, csvSafe(e.ActorType), csvSafe(e.ActorID), csvSafe(e.ActorName), csvSafe(e.Ability),
+			csvSafe(e.Method), csvSafe(e.Path), strconv.Itoa(e.StatusCode), e.RemoteAddr, e.CreatedAt, e.ClientKind,
 		})
 	}
 	cw.Flush()
 	if err := cw.Error(); err != nil {
 		rt.logger.Warn("api: write audit log csv failed", slog.String("error", err.Error()))
 	}
+}
+
+// csvSafe defuses spreadsheet formula injection: a cell starting with = + -
+// @ or a control character would be evaluated by Excel or Sheets, and token
+// names and display names are caller-chosen.
+func csvSafe(v string) string {
+	if v == "" {
+		return v
+	}
+	switch v[0] {
+	case '=', '+', '-', '@', '\t', '\r', '\n':
+		return "'" + v
+	}
+	return v
 }

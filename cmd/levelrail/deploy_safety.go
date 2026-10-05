@@ -11,6 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -143,4 +144,24 @@ func (s registryAuthSource) RegistryAuth(ctx context.Context, credentialID strin
 		return nil, fmt.Errorf("resolve registry credential password: %w", err)
 	}
 	return &docker.RegistryAuth{Username: cred.Username, Password: password}, nil
+}
+
+const (
+	restartBackoffBaseEnv  = "APP_RESTART_BACKOFF_BASE"
+	restartBackoffMaxEnv   = "APP_RESTART_BACKOFF_MAX"
+	restartBackoffResetEnv = "APP_RESTART_BACKOFF_RESET"
+
+	defaultRestartBackoffBase  = 5 * time.Second
+	defaultRestartBackoffMax   = 2 * time.Minute
+	defaultRestartBackoffReset = 10 * time.Minute
+)
+
+// newRestartBackoff builds the shared crash restart backoff from env;
+// APP_RESTART_BACKOFF_BASE=0 turns backoff off.
+func newRestartBackoff(logger *slog.Logger) *application.RestartBackoff {
+	return application.NewRestartBackoff(
+		envDurationOr(logger, restartBackoffBaseEnv, defaultRestartBackoffBase),
+		envDurationOr(logger, restartBackoffMaxEnv, defaultRestartBackoffMax),
+		envDurationOr(logger, restartBackoffResetEnv, defaultRestartBackoffReset),
+	)
 }

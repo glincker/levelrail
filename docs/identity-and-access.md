@@ -182,6 +182,8 @@ Details:
 
 Regenerating recovery codes invalidates the entire previous set.
 
+**Single-use codes.** A TOTP code is accepted once. The control plane remembers the newest time step it accepted for each user (`users.totp_last_step`, migration `0350`), so a code that was just used, shoulder-surfed or replayed inside its roughly 90 second validity window is refused with `invalid code`. The check is atomic, so two simultaneous logins presenting the same code cannot both pass. The step is claimed at login (`/2fa/verify`), not at `/2fa/confirm`, so the code you enrol with can still be used once to sign in. Recovery codes were already single-use. Verified locally: first login with a code `200`, same code again `401`; recovery code first use `200`, second use `401`; five wrong codes on one login attempt trigger `429`.
+
 **Rate limiting**
 
 Both the login-time verify step and every setup/confirm/disable call are rate limited (exponential backoff with a handful of free failures). This is separate from the password rate limiter.
@@ -241,6 +243,8 @@ The caller cannot invite someone with an ability they don't hold themselves. `Ab
 
 The response always includes the plaintext accept link, whether or not SMTP is configured. A control plane with no email capability is still fully usable by copy/pasting the link.
 
+The link is absolute when the control plane knows its own origin: the primary domain if one is set, otherwise the dashboard URL (the Domains page, or `levelrail-cli settings dashboard-url set`). With neither set, the link and the emailed link are a bare path (`/accept-invite?token=...`) that only works if pasted after the dashboard's address, so set the dashboard URL before inviting people by email. The request's `Host` header is never used to build the link. The password reset email follows the same rule.
+
 **Invitation acceptance**
 
 Default TTL is 7 days (`APP_INVITE_TTL`). `POST /api/v1/invites/accept` creates a normal local-password user through the exact same path `POST /api/v1/auth/users` uses. An invited account is never distinguishable from an admin-created one.
@@ -248,6 +252,10 @@ Default TTL is 7 days (`APP_INVITE_TTL`). `POST /api/v1/invites/accept` creates 
 **Visibility**
 
 A non-root caller only sees invites they created themselves. A root caller sees every pending invite.
+
+`GET /api/v1/users` follows the same idea: a `root` caller lists every account, any other caller (a `viewer`, an `operator`, a scoped token) gets only their own record, or an empty list for a token. Emails and ability sets of colleagues are not visible to read-tier callers.
+
+**IAM Deny and lists.** A Deny policy on `app:<name>` hides that app from `GET /api/v1/apps`, `apps-summary`, `apps-metrics`, deployments, certificates (including the auto-generated `sslip.io` hostname), `GET /api/v1/network/topology` (apps and databases) and the container names in `GET /api/v1/system/containers`, as well as returning `403` on every `/apps/{name}/...` route. Verified locally with an operator denied on one app: 22 app-scoped routes returned `403`, the global lists no longer named it.
 
 ### API tokens
 
@@ -314,7 +322,7 @@ Recording is best-effort and runs after the real request completes. A failed aud
 
 **Query**
 
-`GET /api/v1/audit-log` is cursor-paginated (`?before`, an RFC3339 timestamp) and filterable by `?path`, `?method`, `?client_kind`, and `?agent` (the agent label of the token, see [AI assistant](ai-assistant.md#agent-identity)). Use `?format=csv` to return rows as a downloadable attachment instead of JSON, for compliance export.
+`GET /api/v1/audit-log` is cursor-paginated (`?before`, an RFC3339 timestamp) and filterable by `?path`, `?method`, `?client_kind`, and `?agent` (the agent label of the token, see [AI assistant](ai-assistant.md#agent-identity)). Use `?format=csv` to return rows as a downloadable attachment instead of JSON, for compliance export. Cells that start with `=`, `+`, `-`, `@` or a tab get a leading `'` in the CSV, so a token named `=HYPERLINK(...)` is not evaluated as a formula when the export is opened in a spreadsheet.
 
 **Retention**
 

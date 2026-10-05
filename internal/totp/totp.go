@@ -57,28 +57,35 @@ func GenerateSecret() (string, error) {
 // caller treats "not a valid code right now" identically regardless of
 // why.
 func Validate(secretBase32, code string, now time.Time) bool {
+	_, ok := ValidateStep(secretBase32, code, now)
+	return ok
+}
+
+// ValidateStep is Validate that also returns the time step the code
+// matched, so a caller can refuse to accept that step a second time.
+func ValidateStep(secretBase32, code string, now time.Time) (int64, bool) {
 	code = strings.TrimSpace(code)
 	if len(code) != digits {
-		return false
+		return 0, false
 	}
 	for _, r := range code {
 		if r < '0' || r > '9' {
-			return false
+			return 0, false
 		}
 	}
 
 	key, err := decodeSecret(secretBase32)
 	if err != nil {
-		return false
+		return 0, false
 	}
 
 	counter := now.Unix() / stepSeconds
 	for delta := int64(-skewSteps); delta <= skewSteps; delta++ {
 		if generate(key, counter+delta) == code {
-			return true
+			return counter + delta, true
 		}
 	}
-	return false
+	return 0, false
 }
 
 // GenerateCode returns the 6-digit TOTP for secretBase32 at the step
