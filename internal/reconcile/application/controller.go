@@ -38,6 +38,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/integrations"
+	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
@@ -257,6 +258,7 @@ type Controller struct {
 	pinnedPortRetry     time.Duration                   // see WithPinnedPortRetry
 	handoffFailed       map[string]time.Time            // target name to the time its next pinned-port handoff may run
 	restartBackoff      *RestartBackoff                 // nil disables crash restart backoff, see WithRestartBackoff
+	meshPaths           meshpath.Resolver               // nil is valid: remote ports stay on loopback, see WithMeshPaths
 }
 
 // Option configures optional Controller behavior.
@@ -883,6 +885,13 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		state = nil
 	}
 
+	if c.meshBindStale(ctx, state, desired) {
+		if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+			return replicaOutcome{reason: "MeshBindRecreateFailed"}, fmt.Errorf("remove %q to republish its port on the mesh address: %w", target, err)
+		}
+		state = nil
+	}
+
 	var released []docker.ContainerState
 	justDeployed := false
 	// created is narrower than justDeployed: true only when this pass
@@ -1115,6 +1124,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if err != nil {
 		return fmt.Errorf("container spec: %w", err)
 	}
+	c.applyMeshBind(ctx, desired, &spec)
 	streamPorts, err := c.streamPortBindings(ctx, desired.Name)
 	if err != nil {
 		return fmt.Errorf("app streams: %w", err)

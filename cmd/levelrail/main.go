@@ -518,6 +518,9 @@ func run(logger *slog.Logger) error {
 		return fmt.Errorf("load or generate agent CA: %w", err)
 	}
 	agentRegistry := agent.NewRegistry()
+	if id := readLocalNodeID(agentDataDir); id != "" {
+		agentRegistry.SetLocal(id, agent.NewLocal(client))
+	}
 	agentCreds, err := agent.NewServerCredentials(agentCA, []string{agentAdvertiseHost()}, agentServerCertValidity)
 	if err != nil {
 		return fmt.Errorf("build agent grpc credentials: %w", err)
@@ -596,6 +599,7 @@ func run(logger *slog.Logger) error {
 	// resolves email_settings (falling back to APP_SMTP_* env vars)
 	// fresh on every send, deferring "not configured" to send time.
 	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv()))
+	installGitNetguard()
 	notifyClient := netguard.NewClient()
 
 	// pushSender backs the "webpush" notification-channel kind: nil
@@ -766,11 +770,14 @@ func run(logger *slog.Logger) error {
 		// that would otherwise run fine without it.
 		logger.Warn("mesh not configured", slog.String("error", err.Error()))
 	}
+	apiRouter.SetAppTeardownOptions(application.WithNetworkPrefix(b.ShortName), application.WithInstanceID(instanceID))
 	if meshCfg != nil {
 		defer meshCfg.close()
 		apiRouter.SetLocalNodeID(meshCfg.localNodeID)
+		agentRegistry.SetLocal(meshCfg.localNodeID, agent.NewLocal(client))
 		apiRouter.SetMesh(meshCfg.device, meshCfg.coordinator)
 	}
+	apiRouter.SetMeshPaths(newMeshPathResolver(meshCfg, db))
 	// Resolved once at startup, not per reconcile pass: the bridge
 	// gateway IP a container-reachable mesh DNS address depends on
 	// (containerDNSAddr's own doc comment) does not change while this
@@ -3518,6 +3525,8 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithRequestStats(),
 			// Lets Reconcile flag a service placed on an unreachable node.
 			ingressreconcile.WithLocalNodeID(localNodeIDOf(deps)),
+			// Routes remote apps to their node's mesh address.
+			ingressreconcile.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
 		}
 		if experimental.Enabled(experimental.AIModels) {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
@@ -3648,6 +3657,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithPinnedPortRetry(pinnedPortRetry(deps.logger)),
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
 		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
+		application.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
 	}
 	if deps.secretsManager != nil {
 		appOpts = append(appOpts, application.WithSecretResolver(deps.secretsManager))
@@ -3669,6 +3679,9 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		}
 		controllers = append(controllers, application.New(svc.Name, deps.db, svcRuntime, appOpts...))
 	}
+	controllers = append(controllers, application.NewDeleteFinalizer(deps.db, func(nodeID string) (docker.Runtime, error) {
+		return resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, nodeID))
+	}, deps.logger, application.WithNetworkPrefix(deps.networkPrefix), application.WithInstanceID(deps.instanceID)))
 	return controllers
 }
 
@@ -3788,7 +3801,7 @@ func resolveNodeTransport(local docker.Runtime, registry *agent.Registry, nodeID
 	if nodeID == "" {
 		return local, nil
 	}
-	return registry.Get(nodeID)
+	return registry.Resolve(nodeID)
 }
 
 // runtimeNodeID maps this process's own mesh node ID back to the local
@@ -3873,7 +3886,7 @@ func purgeStaleIssuerCerts(ctx context.Context, db *store.DB, logger *slog.Logge
 	if err != nil || !settings.ACMEEnabled {
 		return
 	}
-	n, err := ingressdriver.PurgeCertsFromOtherIssuers(ctx, db, settings.ACMEDirectoryURL)
+	n, err := ingressdriver.PurgeCertsFromOtherIssuersOnce(ctx, db, settings.ACMEDirectoryURL)
 	if err != nil {
 		logger.Warn("purging certificates from other issuers failed", slog.String("error", err.Error()))
 		return

@@ -8,6 +8,8 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
+	"os"
+	"strings"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" database/sql driver
 )
@@ -27,6 +29,7 @@ func Open(ctx context.Context, path string, opts ...OpenOption) (*DB, error) {
 	for _, o := range opts {
 		o(&cfg)
 	}
+	restrictDBFile(path)
 	dsn := dsn(path)
 
 	sqlDB, err := sql.Open("sqlite", dsn)
@@ -53,6 +56,19 @@ func Open(ctx context.Context, path string, opts ...OpenOption) (*DB, error) {
 	}
 
 	return db, nil
+}
+
+// restrictDBFile creates the database 0600 (SQLite gives -wal and -shm the same
+// mode) and tightens an existing one, so token hashes and ciphertext are never world readable.
+func restrictDBFile(path string) {
+	if path == "" || strings.HasPrefix(path, ":") || strings.HasPrefix(path, "file:") {
+		return
+	}
+	if f, err := os.OpenFile(path, //nolint:gosec // path is the operator-configured database location
+		os.O_CREATE|os.O_RDWR, 0o600); err == nil {
+		_ = f.Close()
+	}
+	_ = os.Chmod(path, 0o600)
 }
 
 func dsn(path string) string {

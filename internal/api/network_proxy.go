@@ -31,9 +31,11 @@ type networkProxyDomainResource struct {
 	IsLocalNode bool   `json:"is_local_node"`
 	Port        int    `json:"port"`
 	// Reachable is false exactly when CrossNodeIngress's own condition
-	// fires for this app: placed on a different node with no mesh path
-	// to it yet.
+	// fires for this app: placed on a different node with no usable mesh
+	// path to it.
 	Reachable bool `json:"reachable"`
+	// Reason says why Reachable is false (the mesh path state), empty otherwise.
+	Reason string `json:"reason,omitempty"`
 	// FixCommand mirrors doctor_cross_node_ingress.go's own Fix string,
 	// empty when Reachable is true.
 	FixCommand string `json:"fix_command,omitempty"`
@@ -70,6 +72,7 @@ func (rt *Router) handleGetNetworkProxy(w http.ResponseWriter, r *http.Request) 
 	out := make([]networkProxyDomainResource, 0, len(services))
 	for _, svc := range services {
 		for _, domain := range svc.Domains {
+			_, why, blocked := rt.remoteIngressBlock(ctx, svc)
 			row := networkProxyDomainResource{
 				Domain:      domain,
 				App:         svc.Name,
@@ -77,12 +80,13 @@ func (rt *Router) handleGetNetworkProxy(w http.ResponseWriter, r *http.Request) 
 				NodeName:    nodeNames[svc.NodeID],
 				IsLocalNode: rt.isLocalNode(svc.NodeID),
 				Port:        svc.Port,
-				Reachable:   rt.isLocalNode(svc.NodeID),
+				Reachable:   !blocked,
+				Reason:      why,
 			}
-			if !row.Reachable {
+			if blocked {
 				row.FixCommand = fmt.Sprintf(
-					"levelrail-cli apps set-node %s <this control plane's own node id>   # or: levelrail-cli apps clear-node %s",
-					svc.Name, svc.Name,
+					"levelrail-cli nodes mesh   # fix the mesh path; or: levelrail-cli apps set-node %s <this control plane's own node id>",
+					svc.Name,
 				)
 			}
 			if cert, ok := certByDomain[strings.ToLower(domain)]; ok {

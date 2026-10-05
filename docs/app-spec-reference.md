@@ -91,7 +91,8 @@ Three additions beyond the project's planning doc, all implemented:
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `build` | `Build` | yes | none | How the service's image gets built. |
+| `build` | `Build` | one of `build`/`image` | none | How the service's image gets built. |
+| `image` | string | one of `build`/`image` | none | Shorthand for `build: {type: image, image: ...}`: deploy a prebuilt image as-is. Works with `replicas`, `strategy` and every other service field. Setting both is an error unless `build.type` is `image` with the same reference. |
 | `domains` | list of string | no | none | Public hostnames routed to this service. A domain can only be claimed by one service across the whole spec. |
 | `port` | integer | conditional | none | 1 to 65535. Required unless `build.type` is `static`; must be omitted when `build.type` is `static`, since a static site has no running container to route to. |
 | `host_port` | integer | no | auto-assigned | 1 to 65535. Pins the host-side port Docker binds `port` to. Omit to let Docker assign one. Must be omitted when `build.type` is `static`. |
@@ -288,7 +289,7 @@ Every published port (a service's `port`/`host_port`, and a managed database's p
 
 | Value | Resolves to | Meaning |
 | --- | --- | --- |
-| `private` (default, or omitted) | `127.0.0.1` | Reachable only from this host. |
+| `private` (default, or omitted) | `127.0.0.1` | Reachable only from this host. On a remote node with a healthy WireGuard mesh, the main port binds to that node's mesh IP instead (never public), so the control plane's ingress can reach it; see [multi-node](multi-node.md#routing-to-apps-on-remote-nodes). |
 | `public` | `0.0.0.0` | Reachable from any network that can route to this host. Requires the literal string `public`; blank or malformed values never resolve here. |
 | any other value | itself | Treated as a literal IP (a specific host interface or, once the WireGuard mesh lands, a mesh peer address). Must parse as a valid IP. |
 

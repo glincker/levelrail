@@ -105,7 +105,7 @@ func (rt *Router) rollbackClone(reqCtx context.Context, name string) {
 			rt.logger.Error("api: clone app: roll back secrets failed", slog.String("error", err.Error()), slog.String("new_name", name))
 		}
 	}
-	if err := rt.deleteApp(ctx, name); err != nil && !errors.Is(err, store.ErrServiceNotFound) {
+	if _, err := rt.deleteApp(ctx, name); err != nil && !errors.Is(err, store.ErrServiceNotFound) {
 		rt.logger.Error("api: clone app: roll back failed", slog.String("error", err.Error()), slog.String("new_name", name))
 	}
 }

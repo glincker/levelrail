@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.0-beta.17](https://github.com/glincker/levelrail/compare/v0.2.0-beta.16...v0.2.0-beta.17) (2026-10-05)
+
+
+### Features
+
+* one-command npm bootstrap and opt-in hands-off releases ([#995](https://github.com/glincker/levelrail/issues/995)) ([ff224c0](https://github.com/glincker/levelrail/commit/ff224c0d943e45f653d9192c654239594a22b8ab))
+* route ingress to apps on remote nodes over the WireGuard mesh ([#996](https://github.com/glincker/levelrail/issues/996)) ([45d24a7](https://github.com/glincker/levelrail/commit/45d24a78b47bf11c93c92ad0542ed807264d831a))
+
+
+### Bug Fixes
+
+* app delete tears containers down and retries until gone ([#991](https://github.com/glincker/levelrail/issues/991)) ([9ce2ae1](https://github.com/glincker/levelrail/commit/9ce2ae125e0af5ebb1f453ac2217c7ddc9f88266))
+* **auth:** token ownership, OAuth state binding with PKCE, atomic device redeem ([#981](https://github.com/glincker/levelrail/issues/981)) ([d564160](https://github.com/glincker/levelrail/commit/d564160b6cb036d9faa99add2a43dfc821cb9dd1))
+* balance multi-replica apps by default and route the local node's replicas ([#994](https://github.com/glincker/levelrail/issues/994)) ([4982c46](https://github.com/glincker/levelrail/commit/4982c46b81691a150e8d0615b5e9a0f323a6ff04))
+* Homebrew formula exec bit, npm trusted publishing, split publish jobs ([#992](https://github.com/glincker/levelrail/issues/992)) ([b4b86b5](https://github.com/glincker/levelrail/commit/b4b86b553e09229a1048341e42df0a6cb4999b4e))
+* make node enrolment and mesh work out of the box on the agent image ([#983](https://github.com/glincker/levelrail/issues/983)) ([9070648](https://github.com/glincker/levelrail/commit/90706483c58642c63430612b526a52dac0616a6e))
+* security review hardening (CSRF, cert purge churn, placeholder escape, git SSRF, hardening default) ([#997](https://github.com/glincker/levelrail/issues/997)) ([ae25465](https://github.com/glincker/levelrail/commit/ae25465e3985558200f7512fa47cd74ade03ad69))
+
 ## [0.2.0-beta.16](https://github.com/glincker/levelrail/compare/v0.2.0-beta.15...v0.2.0-beta.16) (2026-10-05)
 
 

@@ -99,11 +99,11 @@ func TestHardeningFromEnv(t *testing.T) {
 		want    HardeningConfig
 		wantErr bool
 	}{
-		{name: "defaults to warn", want: HardeningConfig{Mode: HardeningWarn, PidsLimit: DefaultPidsLimit}},
+		{name: "defaults to enforce", want: HardeningConfig{Mode: HardeningEnforce, PidsLimit: DefaultPidsLimit}},
 		{name: "enforce with overrides", mode: "Enforce", pids: "50", caps: "cap_sys_chroot, net_raw",
 			want: HardeningConfig{Mode: HardeningEnforce, PidsLimit: 50, ExtraCaps: []string{"SYS_CHROOT", "NET_RAW"}}},
 		{name: "off", mode: "off", want: HardeningConfig{Mode: HardeningOff, PidsLimit: DefaultPidsLimit}},
-		{name: "bad mode falls back to warn", mode: "strict", wantErr: true, want: HardeningConfig{Mode: HardeningWarn, PidsLimit: DefaultPidsLimit}},
+		{name: "bad mode falls back to enforce", mode: "strict", wantErr: true, want: HardeningConfig{Mode: HardeningEnforce, PidsLimit: DefaultPidsLimit}},
 		{name: "bad pids keeps default", mode: "enforce", pids: "lots", wantErr: true, want: HardeningConfig{Mode: HardeningEnforce, PidsLimit: DefaultPidsLimit}},
 		{name: "rootless auto-disables pids limit", mode: "enforce", runtime: RuntimeInfo{Rootless: true},
 			want: HardeningConfig{Mode: HardeningEnforce, PidsLimit: 0}},

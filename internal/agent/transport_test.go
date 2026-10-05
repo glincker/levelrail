@@ -136,3 +136,17 @@ func TestRegistry_Register_ReplacesExisting(t *testing.T) {
 		t.Error("Get() after re-registering, want the second (replacing) Transport, not the first")
 	}
 }
+
+func TestRegistry_ResolveLocalAlias(t *testing.T) {
+	r := NewRegistry()
+	r.SetLocal("local_abc", NewLocal(nil))
+	if _, err := r.Resolve("local_abc"); err != nil {
+		t.Fatalf("Resolve(local) error = %v, want the local transport", err)
+	}
+	if _, err := r.Get("local_abc"); err == nil {
+		t.Error("Get(local) error = nil, want not registered (build and mesh dispatch must not see the local node)")
+	}
+	if _, err := r.Resolve("remote"); !errors.Is(err, ErrNodeNotRegistered) {
+		t.Errorf("Resolve(unknown) error = %v, want ErrNodeNotRegistered", err)
+	}
+}

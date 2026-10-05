@@ -25,5 +25,16 @@
     "signingIn": "Signing you in...",
     "invalid": "This sign-in link is invalid or has expired. Request a new one.",
     "backToSignIn": "Back to sign in"
+  },
+  "deleteApp": {
+    "trigger": "Delete",
+    "title": "Delete \"{{name}}\"?",
+    "description": "This stops and removes the app's containers, then deletes the app. If its node is unreachable the app is still deleted and cleanup retries until it succeeds. This cannot be undone.",
+    "cancel": "Cancel",
+    "confirm": "Delete app",
+    "deleting": "Deleting...",
+    "deleted": "App \"{{name}}\" deleted.",
+    "pendingTitle": "App \"{{name}}\" deleted, cleanup pending.",
+    "pendingDescription": "Its containers are not removed yet ({{reason}}). Cleanup retries automatically."
   }
 }

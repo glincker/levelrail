@@ -209,6 +209,12 @@ detach the database `<name>` currently resolves its connection env var from
 ```
 levelrail-cli apps delete <name> [flags]
 ```
+remove an app and stop its containers; if the node is unreachable the delete is reported as pending and retried
+
+```
+levelrail-cli apps scale <name> --replicas N [--strategy rolling|recreate|blue-green] [flags]
+```
+change an app's replica count and/or deploy strategy
 
 ```
 levelrail-cli apps disconnect <app> <env-var> [flags]
