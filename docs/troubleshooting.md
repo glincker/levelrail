@@ -4,7 +4,22 @@ description: Fixes for the most common problems when deploying, logging in, or r
 
 # Troubleshooting
 
-Start here for a fast fix. Each entry links to the full page if you need more depth.
+Find the symptom, apply the fix, and follow the link if you need more depth. Entries are grouped: problems with an app or deploy first, then problems with the server itself, then what each `doctor` finding means.
+
+## Where to look first
+
+Four commands cover most investigations. All of them work from your laptop once you have signed in with `levelrail-cli auth login`.
+
+```bash
+levelrail-cli attention              # everything failing right now: apps, nodes, certificates, doctor checks
+levelrail-cli apps status NAME       # the app's reconcile conditions, each with a reason string
+levelrail-cli apps logs NAME --follow
+levelrail-cli doctor                 # preflight checks for Docker, disk, ports, and the database
+```
+
+Every reconcile pass writes a status condition with a reason, so `apps status` usually names the problem directly. The dashboard shows the same data on the app's Overview page and on the Status page (`/status`, with a badge in the sidebar). `attention` and the Status page list failing apps, offline nodes, expired or expiring certificates, and doctor warnings or failures, critical first. The CLI exits 1 when any item is critical. A node listed as offline has a connection history: `levelrail-cli nodes events <id>`.
+
+## Apps and deploys
 
 ::: details My deploy is stuck or failed
 <Steps>
@@ -35,14 +50,26 @@ If this keeps happening on every deploy of a given app, consider turning on "Aut
 </Step>
 <Step title="Still stuck?">
 
-[Deploying apps](deploying-apps.md#health-checks) covers the full health check contract.
+[Deploying apps](deploying-apps.md#deploy-and-watch-a-rollout) explains what a rollout does and how it fails, and `levelrail-cli apps diagnose <name>` runs the cause detection described under [Deploy preflight and failure diagnosis](#deploy-preflight-and-failure-diagnosis).
 
 </Step>
 </Steps>
 :::
 
-::: details Something is wrong but I don't know what
-Open the Status page (`/status`, with a badge in the sidebar) or run `levelrail-cli attention`. Both list failing apps, offline nodes, expired or expiring certificates, and doctor warnings or failures, critical first. The CLI exits 1 when any item is critical. A node listed as offline has a connection history: `levelrail-cli nodes events <id>`.
+::: details A rollback target is missing
+Levelrail pins the previous N images specifically so garbage collection can't orphan a rollback target. If one is still missing, check `levelrail-cli apps deploys list <name>` for what's actually retained, then see [Deploying apps](deploying-apps.md#roll-back).
+:::
+
+::: details A managed database won't accept connections
+Check whether public access is actually enabled for that database. It's off by default; enabling it needs an explicit port and bind address. See [Managing databases](managing-databases.md#public-access).
+:::
+
+## Login, domains, and ports
+
+::: details I can't log in, or my session keeps dropping
+If sign-in fails with "sign-in over plain HTTP is disabled", an `https://` dashboard URL is configured: open that URL instead. If it no longer works, set `APP_ALLOW_INSECURE_LOGIN=true` on the control plane (for install.sh installs, add `Environment=APP_ALLOW_INSECURE_LOGIN=true` to the systemd unit), restart it, sign in over HTTP, and fix or clear the dashboard URL on the Domains page.
+
+On a fresh install the login page asks for a **setup token**. Print it with `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` on the server. Full detail: [Identity and access](identity-and-access.md#principals-a-session-or-a-token).
 :::
 
 ::: details TLS certificate won't issue
@@ -51,35 +78,8 @@ This has its own dedicated runbook: [ACME verification runbook](acme-verificatio
 To see whether renewal is failing, run `levelrail-cli domains certificates`. The `RENEWAL` column is `ok` or `stalled`, and the same value is the `renewal` field of `GET /api/v1/certificates`. The dashboard shows a "Renewal stalled" badge on the domain row and in the domain editor. A certificate is `stalled` when it has already expired, or when it has been `expiring_soon` with an unchanged expiry for longer than `APP_CERT_RENEWAL_STALLED_THRESHOLD` (default 6h, Go duration syntax). The second case needs a `cert_expiry` alert rule, since the rule's evaluations record how long the expiry has been stuck.
 :::
 
-::: details I can't log in, or my session keeps dropping
-If sign-in fails with "sign-in over plain HTTP is disabled", an `https://` dashboard URL is configured: open that URL instead. If it no longer works, set `APP_ALLOW_INSECURE_LOGIN=true` on the control plane (for install.sh installs, add `Environment=APP_ALLOW_INSECURE_LOGIN=true` to the systemd unit), restart it, sign in over HTTP, and fix or clear the dashboard URL on the Domains page.
-
-On a fresh install the login page asks for a **setup token**. Print it with `sudo levelrail setup-token` on the server. Full detail: [Identity and access](identity-and-access.md#principals-a-session-or-a-token).
-:::
-
-::: details A node shows offline or won't enroll
-The node agent dials **out** to the control plane, so check the *agent's* outbound connectivity first, not inbound firewall rules on the control plane. Confirm the join token hasn't expired and that the agent's clock isn't skewed (certificate validation is time-sensitive). See [Multi-node](multi-node.md#enrolling-a-second-node).
-:::
-
-::: details A managed database won't accept connections
-Check whether public access is actually enabled for that database. It's off by default; enabling it needs an explicit port and bind address. See [Managing databases](managing-databases.md#public-access).
-:::
-
-::: details "docker: permission denied" when the control plane starts
-The control plane needs access to the Docker socket. Add the user running it to the `docker` group, or run it as root if that's your deployment model. See [Docker](docker.md) for the exact socket path and permission model.
-
-Running via the committed `docker-compose.yml`, the same error (visible in `docker compose logs`, e.g. `permission denied while trying to connect to the Docker daemon socket`) means `DOCKER_GID` doesn't match your host's actual docker group. Fix it:
-
-```bash
-export DOCKER_GID=$(getent group docker | cut -d: -f3)
-docker compose up -d
-```
-
-The compose file falls back to `999` (the common Debian/Ubuntu default) if `DOCKER_GID` is unset, which is wrong on any host where the docker group has a different GID.
-:::
-
-::: details The data directory isn't writable
-`levelrail-cli doctor`'s `data_dir_writable` check fails when the user running the control plane can't create a file in `APP_DATA_DIR`. This is almost always ownership or permissions drift, most commonly after restoring a volume from a backup as a different user, or a manual `chown` on the host. Fix it with `chown -R <service user> <data dir>` for a systemd install, or check the volume's ownership matches the container's `nonroot` user (uid/gid 65532) for the Docker image; see [Docker](docker.md) for that image's exact user model.
+::: details My domain won't resolve, or the setup wizard's DNS check stays red
+Create an A (or AAAA for IPv6) record pointing the domain at your server's public IP, then check it actually propagated: `dig +short yourdomain.com` from your own machine, or [dnschecker.org](https://dnschecker.org/) to see it from multiple regions at once. A record you just created can take a few minutes to show up everywhere. If it never resolves, double check you edited the zone your domain's registrar actually uses, not a leftover one. See [Domains and ingress: setting up DNS](domains-and-ingress.md#setting-up-dns). No domain yet? Use the zero-config `sslip.io` URL the dashboard already shows instead.
 :::
 
 ::: details Port 80 or 443 is already in use
@@ -111,43 +111,62 @@ sudo firewall-cmd --permanent --add-service=http --add-service=https && sudo fir
 Then also check your cloud provider's firewall or security group rules; a host firewall being open doesn't mean the provider's edge is.
 :::
 
-::: details My domain won't resolve, or the setup wizard's DNS check stays red
-Create an A (or AAAA for IPv6) record pointing the domain at your server's public IP, then check it actually propagated: `dig +short yourdomain.com` from your own machine, or [dnschecker.org](https://dnschecker.org/) to see it from multiple regions at once. A record you just created can take a few minutes to show up everywhere. If it never resolves, double check you edited the zone your domain's registrar actually uses, not a leftover one. See [Domains and ingress: setting up DNS](domains-and-ingress.md#setting-up-dns). No domain yet? Use the zero-config `sslip.io` URL the dashboard already shows instead.
+## The server and its nodes
+
+::: details "docker: permission denied" when the control plane starts
+The control plane needs access to the Docker socket. Add the user running it to the `docker` group, or run it as root if that's your deployment model. See [Docker](docker.md) for the exact socket path and permission model.
+
+Running via the committed `docker-compose.yml`, the same error (visible in `docker compose logs`, e.g. `permission denied while trying to connect to the Docker daemon socket`) means `DOCKER_GID` doesn't match your host's actual docker group. Fix it:
+
+```bash
+export DOCKER_GID=$(getent group docker | cut -d: -f3)
+docker compose up -d
+```
+
+The compose file falls back to `999` (the common Debian/Ubuntu default) if `DOCKER_GID` is unset, which is wrong on any host where the docker group has a different GID.
 :::
 
-::: details A rollback target is missing
-Levelrail pins the previous N images specifically so garbage collection can't orphan a rollback target. If one is still missing, check `levelrail-cli apps deploys list <name>` for what's actually retained, then see [Deploying apps](deploying-apps.md#rollback).
+::: details The data directory isn't writable
+`levelrail-cli doctor`'s `data_dir_writable` check fails when the user running the control plane can't create a file in `APP_DATA_DIR`. This is almost always ownership or permissions drift, most commonly after restoring a volume from a backup as a different user, or a manual `chown` on the host. Fix it with `chown -R <service user> <data dir>` for a systemd install, or check the volume's ownership matches the container's `nonroot` user (uid/gid 65532) for the Docker image; see [Docker](docker.md) for that image's exact user model.
 :::
 
-## Clock skew
+::: details A node shows offline or won't enroll
+The node agent dials **out** to the control plane, so check the *agent's* outbound connectivity first, not inbound firewall rules on the control plane. Confirm the join token hasn't expired and that the agent's clock isn't skewed (certificate validation is time-sensitive). See [Multi-node](multi-node.md#enrolling-a-second-node).
+:::
+
+## What each doctor finding means
+
+`levelrail-cli doctor` and the Status page report these checks. Each section below names the check code, what trips it, and the fix.
+
+### Clock skew
 
 `levelrail-cli doctor`'s `clock_skew` check compares this host's clock against a remote HTTP `Date` header. A skew past the warning threshold (`APP_DOCTOR_CLOCK_SKEW_WARN`, default 5 minutes) usually means no NTP client is running. Install and enable one: `sudo systemctl enable --now systemd-timesyncd`, or `chronyd` if your distribution ships that instead. A wrong clock is a common, silent cause of certificate validation failures, since TLS checks a certificate's validity window against the local clock.
 
-## External reachability could not be verified
+### External reachability could not be verified
 
 The `external_reachability_80`/`external_reachability_443` checks dial this host's own public IP from itself. Many routers and cloud NAT setups don't support "hairpin" loopback (a LAN host reaching its own public address), so a failed dial here does **not** mean the port is actually unreachable from the internet, only that this particular self-test couldn't confirm it. Verify from an actual external vantage point instead: [canyouseeme.org](https://canyouseeme.org/), or `curl` from a different network. If it's genuinely closed, check your router's or cloud provider's port forwarding/security group rules for ports 80 and 443.
 
-## Below the recommended minimum RAM or CPU
+### Below the recommended minimum RAM or CPU
 
 The `ram`/`cpu` checks warn when this host is below the recommended minimums (`APP_DOCTOR_MIN_RAM_BYTES`/`APP_DOCTOR_MIN_CPU_COUNT`, defaults 1GiB and 2 cores). This is a heads-up, not a hard requirement: a single small app can run fine below it. If you're seeing real slowness or OOM kills, add RAM/CPU or reduce the number of apps and concurrent builds on this box.
 
-## Disk write latency is high
+### Disk write latency is high
 
 The `disk_io_latency` check writes and fsyncs a 1MiB file to the data directory and warns when that took longer than `APP_DOCTOR_DISK_IO_WARN_MS` (default 200ms). Free space (`disk_space`) says nothing about this: a disk can have plenty of room left and still write slowly enough to make every deploy, log write, and SQLite commit feel stuck. Check for a saturated disk with `iostat`/`iotop`, a network volume under load, or a nearly-full disk whose remaining space is fragmented.
 
-## Agent advertise host is unreachable
+### Agent advertise host is unreachable
 
 The `agent_advertise_reachability` check confirms `APP_AGENT_ADVERTISE_HOST`, the address a remote agent dials to reach this control plane, is actually reachable. It fails when that address is still the loopback default (`127.0.0.1`) while one or more nodes are enrolled, since a remote agent can never dial its own machine's loopback address to reach a different host. It warns when the configured address doesn't accept a connection from this host itself. Set `APP_AGENT_ADVERTISE_HOST` to this control plane's real, reachable hostname or IP before enrolling a second node, restart, then re-enroll or re-issue certificates for any node that joined before the fix.
 
-## Registry reachability failed
+### Registry reachability failed
 
 The `registry_reachability_<host>` checks probe outbound HTTPS connectivity to every registry this control plane actually pulls or pushes against: each external registry credential's host, the built-in registry when enabled, and Docker Hub (`registry-1.docker.io`) when neither is configured. A warning here means builds and deploys against that specific registry will fail with a pull or push error until the connection is fixed (egress firewall rules, `HTTP(S)_PROXY` settings, or the registry itself being down).
 
-## Control plane backup is stale
+### Control plane backup is stale
 
 The `control_plane_backup` check warns when the newest control plane snapshot is more than 3 days old. Scheduled snapshots may be failing (check the server log for `scheduled control plane backup failed`, often a full disk) or the server restarts more often than `APP_CONTROL_PLANE_BACKUP_INTERVAL` (default 24h). Take one now with `levelrail-cli control-plane-backups create`. See [Control plane backup and restore](/control-plane-backup).
 
-## Control plane disaster recovery warning
+### Control plane disaster recovery warning
 
 The `control_plane_dr` check warns when encrypted off-box backups are off or unhealthy. The message names the problem: no recipient set, last run failed (the error is shown; a rejected credential or a full bucket are the usual causes), run overdue, no escrow bundle, no drill yet, a failed or overdue drill, or the escrow destination being the backup bucket. `levelrail-cli control-plane-backups schedule show` lists every warning. See [Disaster recovery](/disaster-recovery).
 

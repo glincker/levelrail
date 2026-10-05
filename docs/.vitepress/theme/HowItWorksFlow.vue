@@ -17,7 +17,7 @@ const steps: Step[] = [
   {
     index: '01',
     title: 'Push to your git repo',
-    summary: 'GitHub, GitLab, or Bitbucket webhooks fire on every push, with the commit SHA tracked end to end.',
+    summary: 'GitHub, GitLab, Bitbucket, or Gitea webhooks fire on every push, with the commit SHA tracked end to end.',
     lines: [
       { kind: 'command', text: 'git push origin main' },
       { kind: 'output', text: 'webhook received: commit a3f91c2 on main' },
@@ -27,7 +27,7 @@ const steps: Step[] = [
   {
     index: '02',
     title: 'Build through BuildKit',
-    summary: 'A Dockerfile, a Compose file, or Railpack auto-detection builds through BuildKit, with remote cache and live log streaming.',
+    summary: 'A Dockerfile or Railpack auto-detection builds through BuildKit, with an optional remote cache and live log streaming.',
     lines: [
       { kind: 'output', text: 'building web (Dockerfile) via BuildKit' },
       { kind: 'output', text: '#6 [3/4] RUN go build -o /bin/web ./cmd/web' },
@@ -53,11 +53,10 @@ const steps: Step[] = [
     title: 'Cut over traffic',
     summary: 'Rolling or blue-green strategy: route traffic to the new container, drain the old one, and keep the prior image pinned for rollback.',
     lines: [
-      { kind: 'command', text: 'levelrail deploy web' },
-      { kind: 'output', text: 'strategy: rolling' },
+      { kind: 'output', text: 'strategy: blue-green' },
       { kind: 'output', text: 'routing 100% of traffic to web:a3f91c2' },
-      { kind: 'output', text: 'draining web:f81c0ad (30s grace period)' },
-      { kind: 'condition', text: 'condition: Available=True reason=RolloutComplete' },
+      { kind: 'output', text: 'draining web:f81c0ad, then stopping it' },
+      { kind: 'condition', text: 'condition: Ready=True' },
     ],
   },
 ]

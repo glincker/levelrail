@@ -608,6 +608,11 @@ secret is encrypted with it, and it cannot be recovered if lost.
 The dashboard is served over plain HTTP until you point a domain at this
 server and set an https dashboard URL on the Domains page.
 
+Manage it from your own machine with the CLI (no root needed there):
+  curl -fsSL https://levelrail.com/install-cli.sh | sh
+  export APP_API_URL=${DASHBOARD_SCHEME}://<server-ip>:${DASHBOARD_PORT}
+  levelrail-cli auth login --device
+
   Service status: systemctl status ${SERVICE_NAME}
   Logs:           journalctl -u ${SERVICE_NAME} -f
   Data directory: ${DATA_DIR}

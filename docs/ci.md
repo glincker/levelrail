@@ -158,7 +158,7 @@ same tree; restore a `github.event_name != 'push'` guard on the heavy jobs
 at that point (PR #939 did exactly this while a queue existed).
 
 `Build, vet` also refreshes the daily Go build cache on `push`
-(`save: ${{ github.event_name == 'push' }}`), which PR runs depend on
+(the cache `save` flag, true only for push events), which PR runs depend on
 staying warm. `codeql.yml` and `secret-scan.yml` are separate workflow
 files with their own `push` triggers, unaffected by anything in `ci.yml`.
 
