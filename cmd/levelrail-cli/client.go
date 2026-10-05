@@ -80,6 +80,7 @@ type (
 	backupVerificationResource       = apiclient.BackupVerificationResource
 	restoreHistoryResource           = apiclient.RestoreHistoryResource
 	sessionInfoResource              = apiclient.SessionInfoResource
+	whoamiResource                   = apiclient.WhoamiResource
 	sessionLinkResource              = apiclient.SessionLinkResource
 	databaseResource                 = apiclient.DatabaseResource
 	databaseEngineResource           = apiclient.DatabaseEngineResource
