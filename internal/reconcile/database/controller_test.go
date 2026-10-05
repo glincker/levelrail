@@ -2214,3 +2214,15 @@ func TestController_Reconcile_TLS_LegacyCertContainerIsRotatedOnce(t *testing.T)
 		t.Errorf("second reconcile must be a no-op, got execWithInputCalls=%d createCalls=%d (was %d)", rt.execWithInputCalls, rt.createCalls, createsAfterRotation)
 	}
 }
+
+func TestPostgresNeedsPGDATA(t *testing.T) {
+	tests := []struct {
+		version string
+		want    bool
+	}{{"16", false}, {"17.2", false}, {"18", true}, {"18.1-alpine", true}, {"19", true}, {"latest", false}, {"", false}}
+	for _, tt := range tests {
+		if got := PostgresNeedsPGDATA(tt.version); got != tt.want {
+			t.Errorf("PostgresNeedsPGDATA(%q) = %v, want %v", tt.version, got, tt.want)
+		}
+	}
+}

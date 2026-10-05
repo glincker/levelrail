@@ -41,8 +41,9 @@ func databasesSetVersionUsage(prog string) string {
 
 Changes a database's image tag, for a minor or patch update (16 to 16.4).
 The container is recreated over the same data volume. A major version change
-is refused because the data files are not portable: take a backup and restore
-it into a new database instead. Take a backup first.
+is refused because the data files are not portable: for Postgres use
+"databases major-upgrade", otherwise back up and restore into a new database.
+Take a backup first.
 
 `, prog) + databaseMoveNodeFlagsUsage()
 }

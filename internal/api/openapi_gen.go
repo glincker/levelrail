@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 655 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 659 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -326,6 +326,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/databases/{name}/base-backups", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleTriggerBaseBackup", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/logs", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleQueryDatabaseLogs", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/logs/stream", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleLiveDatabaseLogStream", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/major-upgrade", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleMajorUpgrade", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/major-upgrades", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListMajorUpgrades", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/major-upgrades/{id}/rollback", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleRollbackMajorUpgrade", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/databases/{name}/major-upgrades/{id}/snapshot", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDiscardMajorUpgradeSnapshot", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/metrics", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleQueryDatabaseMetrics", Description: "Telemetry query, the database counterpart to GET /apps/{name}/metrics, /logs, /logs/stream above: same TelemetryQuerier/logBroadcaster gating (501 when unconfigured). database_metrics.go/database_logs.go share the actual query/stream logic with their app equivalents via queryResourceMetrics/ queryResourceLogs/streamResourceLogs (metrics.go/logs.go/ live_logs.go), parameterized on a resourceLookup, not a hand-copied duplicate."},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/node", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseNode", Description: "Placement, the database counterpart to PUT /apps/{name}/node above: same AbilityRoot gating."},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/pitr", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDisablePITR", Description: ""},

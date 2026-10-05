@@ -14,7 +14,7 @@
   "version": {
     "trigger": "Change",
     "title": "Change version of \"{{name}}\"",
-    "description": "Minor and patch updates recreate the container over the same data. Major versions are refused: take a backup and restore it into a new database instead. Take a backup first.",
+    "description": "Minor and patch updates recreate the container over the same data. A major version change needs the guarded major upgrade (Postgres) below, or a backup restored into a new database. Take a backup first.",
     "label": "Version",
     "placeholder": "16.4",
     "cancel": "Cancel",
@@ -35,5 +35,34 @@
     "ok": "last shipped {{when}}",
     "failing": "failing since {{when}}: {{error}}",
     "hint": "Archived WAL is copied to the backup target so point-in-time restore survives losing this host's disk."
+  },
+  "majorUpgrade": {
+    "title": "Major version upgrade",
+    "description": "Upgrades this database across a major version by dump and restore. It is offline while it runs. The old data is copied to a rollback snapshot first, and a failure after that rolls back automatically.",
+    "versionLabel": "Target major version",
+    "versionPlaceholder": "17",
+    "confirmLabel": "Type the database name to confirm",
+    "start": "Start upgrade",
+    "starting": "Starting...",
+    "started": "Major upgrade of \"{{name}}\" started.",
+    "history": "Upgrade history",
+    "empty": "No major upgrades yet.",
+    "colFrom": "From",
+    "colTo": "To",
+    "colStatus": "Status",
+    "colPhase": "Phase",
+    "status": {
+      "running": "Running",
+      "succeeded": "Succeeded",
+      "failed": "Failed",
+      "rolled_back": "Rolled back"
+    },
+    "rollback": "Roll back",
+    "rollbackConfirm": "Roll back to version {{version}}? Every write since the upgrade is lost.",
+    "rollbackStarted": "Rollback started.",
+    "discard": "Discard snapshot",
+    "discardConfirm": "Delete the rollback snapshot? You can no longer roll back this upgrade.",
+    "discarded": "Snapshot discarded.",
+    "pitrBlocked": "Disable point-in-time restore before upgrading: its base backups cannot be replayed on another major version."
   }
 }

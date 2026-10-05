@@ -3683,3 +3683,17 @@ type NodeStatusEventResource struct {
 	ToStatus   string    `json:"to_status"`
 	CreatedAt  time.Time `json:"created_at"`
 }
+
+// MajorUpgradeResource mirrors internal/api's majorUpgradeResource.
+type MajorUpgradeResource struct {
+	ID             string `json:"id"`
+	DatabaseName   string `json:"database_name"`
+	FromVersion    string `json:"from_version"`
+	ToVersion      string `json:"to_version"`
+	Status         string `json:"status"`
+	Phase          string `json:"phase,omitempty"`
+	SnapshotVolume string `json:"snapshot_volume,omitempty"`
+	Error          string `json:"error,omitempty"`
+	StartedAt      string `json:"started_at"`
+	FinishedAt     string `json:"finished_at,omitempty"`
+}

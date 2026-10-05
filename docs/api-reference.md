@@ -403,6 +403,10 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/pitr-restore | AbilityRoot | handleTriggerPITRRestore |
 | GET | /api/v1/databases/{name}/pitr-restores | AbilityRead | handleListPITRRestoreHistory |
 | PUT | /api/v1/databases/{name}/version | AbilityWriteSensitive | handleSetDatabaseVersion |
+| POST | /api/v1/databases/{name}/major-upgrade | AbilityRoot | handleMajorUpgrade |
+| GET | /api/v1/databases/{name}/major-upgrades | AbilityRead | handleListMajorUpgrades |
+| POST | /api/v1/databases/{name}/major-upgrades/{id}/rollback | AbilityRoot | handleRollbackMajorUpgrade |
+| DELETE | /api/v1/databases/{name}/major-upgrades/{id}/snapshot | AbilityRoot | handleDiscardMajorUpgradeSnapshot |
 
 ## Projects / Organizations / Environments
 

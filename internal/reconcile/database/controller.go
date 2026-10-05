@@ -217,6 +217,19 @@ type ClickHouseCredentials struct {
 	Password string
 }
 
+// PostgresNeedsPGDATA reports whether a Postgres image tag is major 18 or
+// newer, whose default PGDATA moved under /var/lib/postgresql/<major>/: without
+// pinning it back, the data directory falls outside the mounted volume and a
+// container recreate loses the data. Older images keep the unchanged env.
+func PostgresNeedsPGDATA(version string) bool {
+	end := 0
+	for end < len(version) && version[end] >= '0' && version[end] <= '9' {
+		end++
+	}
+	major, err := strconv.Atoi(version[:end])
+	return err == nil && major >= 18
+}
+
 // ClickHouseIdent maps a database name to a ClickHouse identifier the image
 // entrypoint can use: it interpolates CLICKHOUSE_DB and CLICKHOUSE_USER into
 // unquoted SQL, so a hyphen fails the CREATE and leaves no database.
@@ -402,6 +415,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		env := map[string]string{
 			"POSTGRES_USER":     c.postgresCreds.Username,
 			"POSTGRES_PASSWORD": c.postgresCreds.Password,
+		}
+		if PostgresNeedsPGDATA(desired.Version) {
+			env["PGDATA"] = postgresDataPath
 		}
 		command := postgresCommand(c.tls, c.effectiveSlowQueryThresholdMs(), desired.PITREnabled)
 		return c.reconcileEngine(ctx, desired, env, command, postgresDataPath, postgresContainerPort, c.tls)

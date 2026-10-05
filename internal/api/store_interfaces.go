@@ -572,6 +572,7 @@ type Store interface {
 	RestoreHistoryStore
 	BaseBackupHistoryStore
 	PITRRestoreHistoryStore
+	MajorUpgradeStore
 	ServiceVolumeBackupHistoryStore
 	ServiceVolumeBackupScheduleStore
 	ServiceVolumeRestoreHistoryStore

@@ -384,6 +384,8 @@ type Router struct {
 	cloneRestoreRunner           CloneRestoreRunner               // nil is valid: POST /api/v1/databases/{name}/restore-as-new returns 501, same shape as restoreRunner above
 	baseBackupHistory            BaseBackupHistoryStore           // always set, same "core Store interface" shape as backupHistory above
 	baseBackupRunner             BaseBackupRunner                 // nil is valid: POST /api/v1/databases/{name}/base-backups returns 501, same shape as backupRunner above
+	majorUpgrader                MajorUpgrader                    // nil is valid: the major upgrade routes return 501
+	majorUpgrades                MajorUpgradeStore                // always set, same "core Store interface" shape as pitrRestoreHistory
 	pitrRestoreHistory           PITRRestoreHistoryStore          // always set, same "core Store interface" shape as restoreHistory above
 	walShipStatus                WALShipStatusSource              // nil is valid: "pitr status" omits wal_ship
 	pitrRestoreRunner            PITRRestoreRunner                // nil is valid: POST /api/v1/databases/{name}/pitr-restore returns 501, same shape as restoreRunner above
@@ -606,6 +608,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		restoreHistory:              s,
 		baseBackupHistory:           s,
 		pitrRestoreHistory:          s,
+		majorUpgrades:               s,
 		serviceVolumeBackupHistory:  s,
 		serviceVolumeBackupSchedule: s,
 		serviceVolumeRestoreHistory: s,

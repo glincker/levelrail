@@ -2506,6 +2506,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// restore endpoint.
 			api.WithBaseBackupRunner(baseBackupRunner),
 			api.WithPITRRestoreRunner(pitrRunner),
+			api.WithMajorUpgrader(newMajorUpgradeRunner(db, client, engine.Nudge, logger)),
 		)
 		// The AI assistant's own tool-calling engine, distinct from the
 		// BYOK key above: it needs a self-call API token to reach this

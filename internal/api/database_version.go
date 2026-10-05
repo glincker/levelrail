@@ -80,10 +80,17 @@ func checkVersionChange(engine, from, to string) error {
 		}
 	default:
 		if toMajor != fromMajor {
-			return fmt.Errorf("changing %s major version %d to %d in place would corrupt the data directory: take a backup and restore it into a new database on the new version", engine, fromMajor, toMajor)
+			return fmt.Errorf("changing %s major version %d to %d in place would corrupt the data directory: %s", engine, fromMajor, toMajor, majorChangeAdvice(engine))
 		}
 	}
 	return nil
+}
+
+func majorChangeAdvice(engine string) string {
+	if engine == store.EnginePostgres {
+		return "use the guarded major upgrade (POST /api/v1/databases/{name}/major-upgrade, CLI: databases major-upgrade), or restore a backup into a new database on the new version"
+	}
+	return "take a backup and restore it into a new database on the new version"
 }
 
 func majorVersion(v string) (int, bool) {

@@ -58,3 +58,19 @@ func TestLoadMasterKey_InvalidInput(t *testing.T) {
 		t.Fatal("LoadMasterKey() error = nil, want an error for malformed input")
 	}
 }
+
+func TestLoadMasterKey_ToleratesSurroundingWhitespace(t *testing.T) {
+	mk, err := GenerateMasterKey()
+	if err != nil {
+		t.Fatalf("GenerateMasterKey() error = %v", err)
+	}
+	for _, suffix := range []string{"\n", "\r\n", "  \n\n"} {
+		got, err := LoadMasterKey("  " + mk.String() + suffix)
+		if err != nil {
+			t.Fatalf("LoadMasterKey with suffix %q error = %v", suffix, err)
+		}
+		if got.String() != mk.String() {
+			t.Errorf("suffix %q: loaded a different key", suffix)
+		}
+	}
+}

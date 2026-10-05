@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"time"
@@ -65,6 +66,37 @@ func walShipInterval(logger *slog.Logger) time.Duration {
 	if err != nil || d < 0 {
 		logger.Warn("invalid APP_PITR_WAL_SHIP_INTERVAL, using the default", slog.String("value", raw))
 		return defaultWALShipInterval
+	}
+	return d
+}
+
+// newMajorUpgradeRunner builds the guarded Postgres major upgrade runner and
+// settles any upgrade a previous run of the control plane left half done.
+func newMajorUpgradeRunner(db *store.DB, client *docker.Client, nudge func(), logger *slog.Logger) *backup.MajorUpgradeRunner {
+	r := &backup.MajorUpgradeRunner{
+		Store:    db,
+		Runtime:  client,
+		Dumper:   &backup.ContainerDumper{Runtime: client},
+		Restorer: &backup.ContainerRestorer{Runtime: client},
+		Nudge:    nudge,
+		Logger:   logger,
+		Wait:     durationFromEnv("APP_MAJOR_UPGRADE_WAIT", 0, logger),
+	}
+	time.AfterFunc(15*time.Second, func() { r.RecoverInterrupted(context.Background()) })
+	return r
+}
+
+// durationFromEnv parses a Go duration from env key, returning def when it is
+// unset or invalid.
+func durationFromEnv(key string, def time.Duration, logger *slog.Logger) time.Duration {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return def
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil || d <= 0 {
+		logger.Warn("invalid duration in environment, using the default", slog.String("key", key), slog.String("value", raw))
+		return def
 	}
 	return d
 }
