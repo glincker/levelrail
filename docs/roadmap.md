@@ -7,7 +7,7 @@ description: Status of Levelrail by phase - what is shipped, in progress, and pl
 
 There is no stable release yet. For per-feature maturity (stable, beta, hidden behind a flag) and the evidence behind each label, see [feature status](feature-status.md). "Shipped" on this page means built and merged, not proven in production.
 
-Status as of 2026-09-24 (refreshed against current `main`), not the aspirational plan. See `/adr` for the phase-by-phase architectural decisions behind this build order.
+Status as of 2026-10-04 (counts re-verified against `main`), not the aspirational plan. See `/adr` for the phase-by-phase architectural decisions behind this build order.
 
 The build has moved further and less linearly than the phase plan implies: parts of Phase 3 (multi-node, the WireGuard mesh) ship while some Phase 1 items (real public ACME against a live domain) remain open. This page describes what is actually true today.
 
@@ -88,8 +88,8 @@ flowchart LR
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
   from the creation wizard, with a category-specific icon per card.
-  Every template's Compose body is written fresh for this platform, not
-  copied from another project's dataset.
+  Each template's Compose body is adapted to the Compose subset this
+  platform supports.
 - Git webhook receiver with HMAC-SHA256 signature verification, branch
   gating, and SHA-pinned fetch (no `git` CLI shelling).
 - Persisted per-app git source and multi-app GitHub webhook support,
@@ -331,10 +331,10 @@ flowchart LR
   RFC-8628-shaped): prints a short code and URL, operator approves from
   "CLI access" settings page, CLI polls until a token is minted. Works over
   plain HTTP since no password crosses the wire.
-- Migration CLI: `levelrail migrate coolify`, `dokploy`, `caprover`
+- Migration CLI: `levelrail-cli migrate coolify`, `dokploy`, `caprover`
   pulls every app off a live source and either writes app.yaml files or
   applies them directly to a target Levelrail instance.
-- `levelrail apps create --interactive` (`-i`): step-by-step wizard for
+- `levelrail-cli apps create --interactive` (`-i`): step-by-step wizard for
   creating an app without hand-writing app.yaml or knowing every flag,
   ends in either written app.yaml or direct API call, operator's choice.
 - An MCP server (`cmd/levelrail-mcp`), wrapping the same versioned REST
@@ -342,7 +342,7 @@ flowchart LR
   abilities than a tool needs gets the same 403 the REST API itself
   returns.
   
-  144 registered tools today (see [MCP tool surface](mcp-tool-surface.md)
+  156 registered tools in full mode today, 146 in the default standard mode (see [MCP tool surface](mcp-tool-surface.md)
   for the per-toolset count, and [feature status](feature-status.md) for
   maturity: the MCP server is beta). The list below is a partial summary
   of the areas covered:
@@ -379,11 +379,10 @@ flowchart LR
   multi-service fan-out (see Multi-service apps, above).
   
   Does not yet exercise a full multi-node mesh or real ACME against a live
-  domain. Also does not deploy any service template: the 311-entry
-  catalog (up from the 206 counted when this note was first written;
-  Coolify's own catalog is around 371 for comparison) is checked for
-  shape and a floor of 180 entries, not for whether any one template
-  actually deploys.
+  domain. Also does not deploy every service template: a sample of 16
+  from the 311-entry catalog is live-deployed (`test/e2e/template_fleet_test.go`),
+  and the rest are checked for shape and a floor of 180 entries, not for
+  whether each one actually deploys.
 
 **Observability**
 
@@ -396,7 +395,7 @@ flowchart LR
 - Federated query API across nodes with time range, filtering, and aggregation.
 - Frontend metrics dashboard: range selector, historical log search, and
   deploy markers overlaid on metric charts.
-- Alerting over nine rule kinds:
+- Alerting over fourteen rule kinds:
   
   - Threshold and crashloop detection (original)
   - Certificate expiry
@@ -406,6 +405,11 @@ flowchart LR
   - Node resource usage (per-node CPU/memory)
   - Domain health (periodic DNS check against every domain, catches silently repointed CNAMEs)
   - Backup missing (when scheduled backup trails its cron schedule, catches silently stopped backups)
+  - Control plane backup stale (newest control plane snapshot is too old)
+  - Node offline
+  - Node certificate expiring (an agent certificate is close to expiry)
+  - Log archive stale (a log archive policy fails or stops succeeding)
+  - Version skew (the running build is behind the update channel's latest release)
   
   Each evaluator is independent. Eighteen notification channel kinds supported: webhook, Slack, Discord, email, Telegram, Pushover, PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark, Rocket.Chat, Opsgenie, Webex, Google Chat, and browser push, plus separate deploy-outcome notifications.
   
@@ -418,7 +422,7 @@ flowchart LR
 - Live app log streaming over SSE, separate from historical search.
 - Per-node metrics dashboard.
 - Per-node OS package-update status via a periodic collector, surfaced
-  on the node detail page and via `levelrail nodes patch-status`. Not an
+  on the node detail page and via `levelrail-cli nodes patch-status`. Not an
   automatic patcher.
 - TLS certificate renewal visibility in the UI, including a `renewal`
   state (`ok` or `stalled`) on `GET /api/v1/certificates`, a RENEWAL

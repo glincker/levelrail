@@ -17,7 +17,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | audit | 1 | 309 |
 | backups | 11 | 1031 |
 | databases | 3 | 167 |
-| deploys | 24 | 3587 |
+| deploys | 25 | 3891 |
 | diagnostics | 3 | 328 |
 | domains | 10 | 1145 |
 | environments | 3 | 556 |
@@ -27,7 +27,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | loadbalancer | 9 | 1347 |
 | logs | 12 | 1663 |
 | metrics | 4 | 626 |
-| models | 15 | 2201 |
+| models | 15 | 2243 |
 | nodes | 4 | 315 |
 | notifications | 3 | 324 |
 | orgs | 2 | 170 |
@@ -39,7 +39,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | system | 4 | 284 |
 | templates | 2 | 126 |
 | webhooks | 1 | 155 |
-| **total** | **155** | **20220** |
+| **total** | **156** | **20566** |
 
 ## agent-core profile
 
