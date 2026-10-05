@@ -16,6 +16,10 @@ import (
 // library cannot sign up; sign-in with such a username still works.
 var ErrNotAnAddress = errors.New("authengine: username is not an email address")
 
+// ErrSecondFactorRequired means the password was right but the library holds a
+// confirmed TOTP secret for the user, so only a pending session was issued.
+var ErrSecondFactorRequired = errors.New("authengine: second factor required")
+
 // LoginInput is one password login attempt.
 type LoginInput struct {
 	Email, Password, UserAgent, IP string
@@ -37,7 +41,15 @@ func (s *Sessions) Login(ctx context.Context, in LoginInput) (token, legacyUserI
 	}
 	info, ok := s.Lookup(ctx, token)
 	if !ok {
-		s.revokeToken(ctx, token)
+		if _, uid, pending := s.lookupSession(ctx, token); pending {
+			legacy, lerr := s.legacyID(ctx, uid.String())
+			s.revokeToken(ctx, token)
+			if lerr == nil && legacy != "" {
+				return "", legacy, ErrSecondFactorRequired
+			}
+		} else {
+			s.revokeToken(ctx, token)
+		}
 		return "", "", &Error{Status: 401, Code: CodeInvalidCredentials, Message: "invalid email or password"}
 	}
 	return token, info.LegacyUserID, nil

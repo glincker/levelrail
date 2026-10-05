@@ -81,6 +81,15 @@ func (rt *Router) handleLibLogin(w http.ResponseWriter, r *http.Request) {
 	token, userID, err := rt.libSessions.Login(r.Context(), authengine.LoginInput{
 		Email: req.Email, Password: req.Password, UserAgent: r.UserAgent(), IP: clientIP(r),
 	})
+	if errors.Is(err, authengine.ErrSecondFactorRequired) {
+		pending, perr := rt.mfaPending.create(userID)
+		if perr != nil {
+			rt.internalError(w, "api: login: create mfa pending token failed", perr, slog.String("user_id", userID))
+			return
+		}
+		writeJSON(w, http.StatusOK, loginResponse{MFARequired: true, MFAToken: pending})
+		return
+	}
 	if err != nil {
 		rt.writeLibAuthError(w, "api: login: library sign-in failed", err)
 		return
