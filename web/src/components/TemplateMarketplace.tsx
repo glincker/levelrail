@@ -327,7 +327,7 @@ function MarketplaceCard({
 // it per row once rendered, same as AppsListBody's own grid mode.
 const ESTIMATED_ROW_HEIGHT = 224
 
-// Virtualized card grid: 257 catalog templates (internal/catalog) is well
+// Virtualized card grid: the catalog (internal/catalog) is well
 // past this repo's "lists over 50 items must be virtualized" rule, and the
 // row-of-N windowing here mirrors AppsListBody's own grid-mode pattern
 // rather than introducing a second virtualization approach.
