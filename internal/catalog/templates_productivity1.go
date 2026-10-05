@@ -91,7 +91,7 @@ var productivity1Templates = []Template{
 		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   mealie:
-    image: ghcr.io/mealie-recipes/mealie:v3.17.0
+    image: ghcr.io/mealie-recipes/mealie:v3.28.0
     ports: ["9925:9000"]
     environment:
       BASE_URL: ${SERVICE_FQDN_MEALIE:-http://localhost:9925}
