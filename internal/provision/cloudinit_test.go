@@ -11,6 +11,8 @@ func TestRenderCloudInit(t *testing.T) {
 		JoinToken:        "njt-secret",
 		CAFingerprint:    "abc123",
 		NodeName:         "web-1",
+		AgentName:        "acme-agent",
+		DisplayName:      "Acme",
 		AgentVersion:     "v1.2.3",
 	})
 	if err != nil {
@@ -22,10 +24,10 @@ func TestRenderCloudInit(t *testing.T) {
 		"APP_JOIN_TOKEN=njt-secret",
 		"APP_CA_FINGERPRINT=abc123",
 		"APP_NODE_NAME=web-1",
-		"ghcr.io/glincker/levelrail-agent:v1.2.3",
-		"levelrail-agent.service",
-		"chown root:root /var/lib/levelrail-agent-data",
-		"chmod 700 /var/lib/levelrail-agent-data",
+		"ghcr.io/glincker/acme-agent:v1.2.3",
+		"acme-agent.service",
+		"chown root:root /var/lib/acme-agent-data",
+		"chmod 700 /var/lib/acme-agent-data",
 		"--user 0:0",
 	} {
 		if !strings.Contains(out, want) {
@@ -39,11 +41,13 @@ func TestRenderCloudInit_FallsBackToEdgeWithNoVersion(t *testing.T) {
 		ControlPlaneAddr: "cp.example.com:9443",
 		JoinToken:        "tok",
 		NodeName:         "web-1",
+		AgentName:        "acme-agent",
+		DisplayName:      "Acme",
 	})
 	if err != nil {
 		t.Fatalf("RenderCloudInit: %v", err)
 	}
-	if !strings.Contains(out, "ghcr.io/glincker/levelrail-agent:edge") {
+	if !strings.Contains(out, "ghcr.io/glincker/acme-agent:edge") {
 		t.Errorf("expected the edge tag, got:\n%s", out)
 	}
 }
@@ -53,12 +57,14 @@ func TestRenderCloudInit_FallsBackToEdgeForDevBuilds(t *testing.T) {
 		ControlPlaneAddr: "cp.example.com:9443",
 		JoinToken:        "tok",
 		NodeName:         "web-1",
+		AgentName:        "acme-agent",
+		DisplayName:      "Acme",
 		AgentVersion:     "dev",
 	})
 	if err != nil {
 		t.Fatalf("RenderCloudInit: %v", err)
 	}
-	if !strings.Contains(out, "ghcr.io/glincker/levelrail-agent:edge") {
+	if !strings.Contains(out, "ghcr.io/glincker/acme-agent:edge") {
 		t.Errorf("expected the edge tag for a dev build, got:\n%s", out)
 	}
 }
@@ -68,21 +74,25 @@ func TestRenderCloudInit_CustomAgentImage(t *testing.T) {
 		ControlPlaneAddr: "cp.example.com:9443",
 		JoinToken:        "tok",
 		NodeName:         "web-1",
-		AgentImage:       "registry.internal/mirror/levelrail-agent:v9",
+		AgentName:        "acme-agent",
+		DisplayName:      "Acme",
+		AgentImage:       "registry.internal/mirror/acme-agent:v9",
 	})
 	if err != nil {
 		t.Fatalf("RenderCloudInit: %v", err)
 	}
-	if !strings.Contains(out, "registry.internal/mirror/levelrail-agent:v9") {
+	if !strings.Contains(out, "registry.internal/mirror/acme-agent:v9") {
 		t.Errorf("expected the custom image, got:\n%s", out)
 	}
 }
 
 func TestRenderCloudInit_RejectsMissingFields(t *testing.T) {
 	cases := []CloudInitParams{
-		{JoinToken: "tok", NodeName: "n"},
-		{ControlPlaneAddr: "a", NodeName: "n"},
-		{ControlPlaneAddr: "a", JoinToken: "tok"},
+		{JoinToken: "tok", NodeName: "n", AgentName: "a", DisplayName: "A"},
+		{ControlPlaneAddr: "a", NodeName: "n", AgentName: "a", DisplayName: "A"},
+		{ControlPlaneAddr: "a", JoinToken: "tok", AgentName: "a", DisplayName: "A"},
+		{ControlPlaneAddr: "a", JoinToken: "tok", NodeName: "n", DisplayName: "A"},
+		{ControlPlaneAddr: "a", JoinToken: "tok", NodeName: "n", AgentName: "a"},
 	}
 	for i, p := range cases {
 		if _, err := RenderCloudInit(p); err == nil {
@@ -103,7 +113,7 @@ func TestRenderCloudInit_RejectsNewlineInjection(t *testing.T) {
 }
 
 func TestRenderCloudInit_MeshFlags(t *testing.T) {
-	base := CloudInitParams{ControlPlaneAddr: "cp:9443", JoinToken: "tok", NodeName: "n1"}
+	base := CloudInitParams{ControlPlaneAddr: "cp:9443", JoinToken: "tok", NodeName: "n1", AgentName: "acme-agent", DisplayName: "Acme"}
 	tests := []struct {
 		name string
 		mesh bool

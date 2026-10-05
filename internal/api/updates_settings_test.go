@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/upgrade"
+	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
 func TestHandleGetUpdateSettings_Default(t *testing.T) {

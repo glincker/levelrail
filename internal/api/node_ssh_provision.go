@@ -213,7 +213,7 @@ func (rt *Router) handleCreateSSHNodeProvision(w http.ResponseWriter, r *http.Re
 		JoinToken:        token.plaintext,
 		CAFingerprint:    rt.agentCAFingerprint,
 		NodeName:         req.Name,
-		AgentImage:       sshProvisionAgentImage(),
+		AgentImage:       sshProvisionAgentImage(rt.brand.AgentName()),
 		MeshEnabled:      rt.mesh != nil,
 	}
 	go rt.runSSHNodeProvision(id, creds, params) //nolint:gosec // deliberate: the request context is gone by the time this goroutine finishes, runSSHNodeProvision derives its own bounded context (sshNodeProvisionTimeout) instead
@@ -235,7 +235,7 @@ func (rt *Router) runSSHNodeProvision(id string, creds sshprovision.Credentials,
 	var log logAccumulator
 	provisioner := rt.sshProvisioner
 	if provisioner == nil {
-		provisioner = sshprovision.New()
+		provisioner = sshprovision.New(rt.brand.AgentName(), rt.brand.Name)
 	}
 
 	host, err := provisioner.Provision(ctx, creds, params, func(e sshprovision.Event) {
@@ -297,12 +297,12 @@ func (l *logAccumulator) String() string {
 // cloud-VM creation, a different feature internal/sshprovision must not
 // import from (see that package's doc comment), so this small piece of
 // version-to-tag logic is duplicated here rather than shared.
-func sshProvisionAgentImage() string {
+func sshProvisionAgentImage(agentName string) string {
 	tag := version.Version
 	if tag == "" || tag == "dev" {
 		tag = "edge"
 	}
-	return "ghcr.io/glincker/levelrail-agent:" + tag
+	return "ghcr.io/glincker/" + agentName + ":" + tag
 }
 
 // handleListSSHNodeProvisions handles GET /api/v1/nodes/ssh-provisions:

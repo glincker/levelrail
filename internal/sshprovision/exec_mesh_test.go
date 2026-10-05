@@ -13,7 +13,7 @@ func TestRenderAgentEnvFile_MeshToggle(t *testing.T) {
 	}{{"off", false, false}, {"on", true, true}}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			env := renderAgentEnvFile(InstallParams{ControlPlaneAddr: "cp:9443", JoinToken: "t", NodeName: "n", MeshEnabled: tc.mesh})
+			env := renderAgentEnvFile(testNames, InstallParams{ControlPlaneAddr: "cp:9443", JoinToken: "t", NodeName: "n", MeshEnabled: tc.mesh})
 			if got := strings.Contains(env, "APP_MESH_ENABLED=1"); got != tc.want {
 				t.Errorf("env mesh line = %v, want %v", got, tc.want)
 			}
@@ -33,9 +33,9 @@ func TestAgentUnitAndDataDir(t *testing.T) {
 	}{
 		{"runs as root", agentUnitTemplate, "--user 0:0"},
 		{"identity env", agentUnitTemplate, "-e APP_AGENT_IDENTITY_FILE"},
-		{"data dir exists", agentDataDirCmd, "mkdir -p /var/lib/levelrail-agent-data"},
-		{"data dir root owned", agentDataDirCmd, "chown root:root /var/lib/levelrail-agent-data"},
-		{"data dir private", agentDataDirCmd, "chmod 700 /var/lib/levelrail-agent-data"},
+		{"data dir exists", testNames.dataDirCmd(), "mkdir -p /var/lib/acme-agent-data"},
+		{"data dir root owned", testNames.dataDirCmd(), "chown root:root /var/lib/acme-agent-data"},
+		{"data dir private", testNames.dataDirCmd(), "chmod 700 /var/lib/acme-agent-data"},
 		{"mesh needs tun", meshRunFlags(true), "--device /dev/net/tun"},
 		{"mesh needs net admin", meshRunFlags(true), "--cap-add NET_ADMIN"},
 	}

@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/upgrade"
 	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
 const releaseNotesMaxRunes = 1200

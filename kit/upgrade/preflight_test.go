@@ -30,7 +30,7 @@ func baseInputs() Inputs {
 		FreeBytes:     func() (int64, error) { return 10 << 30, nil },
 		NewestBackup:  func() (time.Time, bool, error) { return now.Add(-time.Hour), true, nil },
 		Now:           now,
-		AssetNames:    []string{ChecksumsAsset, SignatureAsset, "levelrail-linux-amd64"},
+		AssetNames:    []string{ChecksumsAsset, SignatureAsset, "acme-linux-amd64"},
 		ReleaseKnown:  true,
 	}
 }

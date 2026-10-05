@@ -109,3 +109,24 @@ func (b *Brand) validate() error {
 func (b *Brand) RuleCommentPrefix() string {
 	return strings.ToLower(b.ShortName) + ":"
 }
+
+// AgentName returns the node agent's unit, container and path stem, the lowercased ShortName plus "-agent".
+func (b *Brand) AgentName() string {
+	return strings.ToLower(b.ShortName) + "-agent"
+}
+
+// RepoSlug returns the lowercased "owner/name" parsed from RepoURL, or "" if it has no such path.
+func (b *Brand) RepoSlug() string {
+	if b == nil {
+		return ""
+	}
+	rest := b.RepoURL
+	if i := strings.Index(rest, "://"); i >= 0 {
+		rest = rest[i+3:]
+	}
+	parts := strings.Split(strings.Trim(rest, "/"), "/")
+	if len(parts) < 3 || parts[1] == "" || parts[2] == "" {
+		return ""
+	}
+	return strings.ToLower(parts[1] + "/" + strings.TrimSuffix(parts[2], ".git"))
+}

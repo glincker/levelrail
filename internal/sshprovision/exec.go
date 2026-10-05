@@ -203,32 +203,33 @@ func lastLines(s string, n int) string {
 // (bad image pull, a resource limit) is reported here rather than
 // silently left for the enrollment poll to eventually time out on.
 func (p *Provisioner) installAgent(ctx context.Context, client *ssh.Client, params InstallParams, onLine func(string)) error {
-	if _, err := p.run(ctx, client, agentDataDirCmd, onLine); err != nil {
+	n := agentNames{name: p.AgentName, display: p.DisplayName}
+	if _, err := p.run(ctx, client, n.dataDirCmd(), onLine); err != nil {
 		return fmt.Errorf("prepare agent data directory: %w", err)
 	}
 
-	if err := p.writeRemoteFile(ctx, client, agentEnvPath, renderAgentEnvFile(params), "600"); err != nil {
+	if err := p.writeRemoteFile(ctx, client, n.envPath(), renderAgentEnvFile(n, params), "600"); err != nil {
 		return fmt.Errorf("write agent environment file: %w", err)
 	}
 	onLine("wrote agent environment file")
 
 	agentImage := params.AgentImage
 	if agentImage == "" {
-		agentImage = defaultAgentImage
+		agentImage = n.defaultImage()
 	}
-	unit := fmt.Sprintf(agentUnitTemplate, agentImage, meshRunFlags(params.MeshEnabled))
-	if err := p.writeRemoteFile(ctx, client, agentUnitPath, unit, "644"); err != nil {
+	unit := renderAgentUnit(n, agentImage, meshRunFlags(params.MeshEnabled))
+	if err := p.writeRemoteFile(ctx, client, n.unitPath(), unit, "644"); err != nil {
 		return fmt.Errorf("write agent systemd unit: %w", err)
 	}
 	onLine("wrote agent systemd unit")
 
-	if _, err := p.run(ctx, client, "systemctl daemon-reload && systemctl enable --now levelrail-agent", onLine); err != nil {
+	if _, err := p.run(ctx, client, "systemctl daemon-reload && systemctl enable --now "+n.name, onLine); err != nil {
 		return fmt.Errorf("start the agent service: %w", err)
 	}
 
-	active, actErr := p.run(ctx, client, "sleep 2 && systemctl is-active levelrail-agent", nil)
+	active, actErr := p.run(ctx, client, "sleep 2 && systemctl is-active "+n.name, nil)
 	if actErr != nil || strings.TrimSpace(active) != "active" {
-		diag, _ := p.run(ctx, client, "journalctl -u levelrail-agent --no-pager -n 50", nil)
+		diag, _ := p.run(ctx, client, "journalctl -u "+n.name+" --no-pager -n 50", nil)
 		return fmt.Errorf("the agent service did not stay active after starting: %s", lastLines(diag, 20))
 	}
 	return nil
@@ -242,7 +243,7 @@ func meshRunFlags(enabled bool) string {
 	return " -e APP_MESH_ENABLED --cap-add NET_ADMIN --device /dev/net/tun"
 }
 
-func renderAgentEnvFile(p InstallParams) string {
+func renderAgentEnvFile(n agentNames, p InstallParams) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "APP_CONTROL_PLANE_ADDR=%s\n", p.ControlPlaneAddr)
 	fmt.Fprintf(&b, "APP_JOIN_TOKEN=%s\n", p.JoinToken)
@@ -250,42 +251,46 @@ func renderAgentEnvFile(p InstallParams) string {
 	if p.CAFingerprint != "" {
 		fmt.Fprintf(&b, "APP_CA_FINGERPRINT=%s\n", p.CAFingerprint)
 	}
-	b.WriteString("APP_AGENT_IDENTITY_FILE=/var/lib/levelrail-agent-data/identity.json\n")
+	fmt.Fprintf(&b, "APP_AGENT_IDENTITY_FILE=%s/identity.json\n", n.dataDir())
 	if p.MeshEnabled {
 		b.WriteString("APP_MESH_ENABLED=1\n")
 	}
 	return b.String()
 }
 
-// agentDataDirCmd creates the identity directory root-owned: the agent
-// container runs as root, so the bind mount needs no other owner.
-const agentDataDirCmd = "mkdir -p /var/lib/levelrail-agent-data && chown root:root /var/lib/levelrail-agent-data && chmod 700 /var/lib/levelrail-agent-data"
+// agentNames derives every remote unit, path and container name from one brand-supplied stem.
+type agentNames struct{ name, display string }
 
-const (
-	agentEnvPath  = "/etc/levelrail-agent.env"
-	agentUnitPath = "/etc/systemd/system/levelrail-agent.service"
-	// defaultAgentImage mirrors provision.defaultAgentImageRepo (internal/
-	// provision/cloudinit.go) at the "edge" tag (internal/provision's own
-	// fallback for a non-tagged-release build): that package is cloud-VM
-	// creation, a different feature this package must not import from
-	// (see this package's doc comment), so the repo is duplicated here
-	// rather than shared. internal/api resolves a real release tag and
-	// passes it through InstallParams.AgentImage in production; this
-	// constant is only the fallback for a caller that leaves it empty.
-	defaultAgentImage = "ghcr.io/glincker/levelrail-agent:edge"
-)
+func (n agentNames) dataDir() string { return "/var/lib/" + n.name + "-data" }
+func (n agentNames) envPath() string { return "/etc/" + n.name + ".env" }
+func (n agentNames) unitPath() string {
+	return "/etc/systemd/system/" + n.name + ".service"
+}
+
+// defaultImage is the fallback for a caller that leaves InstallParams.AgentImage empty.
+func (n agentNames) defaultImage() string { return "ghcr.io/glincker/" + n.name + ":edge" }
+
+// dataDirCmd creates the identity directory root-owned: the agent container runs as root.
+func (n agentNames) dataDirCmd() string {
+	d := n.dataDir()
+	return "mkdir -p " + d + " && chown root:root " + d + " && chmod 700 " + d
+}
+
+func renderAgentUnit(n agentNames, image, meshFlags string) string {
+	return fmt.Sprintf(agentUnitTemplate, image, meshFlags, n.name, n.envPath(), n.dataDir(), n.display)
+}
 
 const agentUnitTemplate = `[Unit]
-Description=Levelrail node agent
+Description=%[6]s node agent
 After=network-online.target docker.service
 Requires=docker.service
 Wants=network-online.target
 
 [Service]
-EnvironmentFile=/etc/levelrail-agent.env
-ExecStartPre=-/usr/bin/docker rm -f levelrail-agent
+EnvironmentFile=%[4]s
+ExecStartPre=-/usr/bin/docker rm -f %[3]s
 ExecStartPre=/usr/bin/docker pull %[1]s
-ExecStart=/usr/bin/docker run --rm --name levelrail-agent --user 0:0 --network host -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/levelrail-agent-data:/var/lib/levelrail-agent-data -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE%[2]s %[1]s
+ExecStart=/usr/bin/docker run --rm --name %[3]s --user 0:0 --network host -v /var/run/docker.sock:/var/run/docker.sock -v %[5]s:%[5]s -e APP_CONTROL_PLANE_ADDR -e APP_JOIN_TOKEN -e APP_CA_FINGERPRINT -e APP_NODE_NAME -e APP_AGENT_IDENTITY_FILE%[2]s %[1]s
 Restart=on-failure
 RestartSec=5
 

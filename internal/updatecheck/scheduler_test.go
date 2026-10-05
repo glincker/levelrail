@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/upgrade"
 	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
 // fakeStore is a Store that can be told to fail, matching this
@@ -38,7 +38,7 @@ func discardLogger() *slog.Logger {
 func TestScheduler_Tick_SkipsWhenDisabled(t *testing.T) {
 	st := &fakeStore{settings: store.UpdateSettings{Channel: "stable", AutoUpdateEnabled: false}}
 	called := false
-	sched := NewScheduler(st, discardLogger())
+	sched := NewScheduler(st, discardLogger(), "acme/widget")
 	sched.Fetchers = upgrade.Fetchers{
 		Stable: func(context.Context) (*upgrade.Release, error) { called = true; return nil, nil },
 		Beta:   func(context.Context) (*upgrade.Release, error) { called = true; return nil, nil },
@@ -58,7 +58,7 @@ func TestScheduler_Tick_SkipsWhenDisabled(t *testing.T) {
 
 func TestScheduler_Tick_StoreErrorPropagates(t *testing.T) {
 	st := &fakeStore{err: errors.New("db unavailable")}
-	sched := NewScheduler(st, discardLogger())
+	sched := NewScheduler(st, discardLogger(), "acme/widget")
 
 	if err := sched.Tick(context.Background()); err == nil {
 		t.Fatal("Tick() error = nil, want a wrapped store error")
@@ -67,7 +67,7 @@ func TestScheduler_Tick_StoreErrorPropagates(t *testing.T) {
 
 func TestScheduler_Tick_FetchErrorPropagates(t *testing.T) {
 	st := &fakeStore{settings: store.UpdateSettings{Channel: "stable", AutoUpdateEnabled: true}}
-	sched := NewScheduler(st, discardLogger())
+	sched := NewScheduler(st, discardLogger(), "acme/widget")
 	sched.Fetchers = fakeFetchers(nil, errors.New("github unreachable"))
 
 	if err := sched.Tick(context.Background()); err == nil {
@@ -84,7 +84,7 @@ func TestScheduler_Tick_RecordsUpdateAvailable(t *testing.T) {
 	t.Cleanup(func() { version.Version = orig })
 
 	st := &fakeStore{settings: store.UpdateSettings{Channel: "beta", AutoUpdateEnabled: true}}
-	sched := NewScheduler(st, discardLogger())
+	sched := NewScheduler(st, discardLogger(), "acme/widget")
 	sched.Fetchers = fakeFetchers(&upgrade.Release{Tag: "v1.1.0-beta.1", URL: "https://example.com/beta"}, nil)
 
 	if err := sched.Tick(context.Background()); err != nil {
@@ -104,7 +104,7 @@ func TestScheduler_Tick_RecordsUpdateAvailable(t *testing.T) {
 
 func TestScheduler_Tick_InvalidChannelFallsBackToStable(t *testing.T) {
 	st := &fakeStore{settings: store.UpdateSettings{Channel: "nightly", AutoUpdateEnabled: true}}
-	sched := NewScheduler(st, discardLogger())
+	sched := NewScheduler(st, discardLogger(), "acme/widget")
 	var calledChannel string
 	sched.Fetchers = upgrade.Fetchers{
 		Stable: func(context.Context) (*upgrade.Release, error) {
@@ -125,7 +125,7 @@ func TestScheduler_Tick_InvalidChannelFallsBackToStable(t *testing.T) {
 
 func TestScheduler_Run_StopsOnContextCancel(t *testing.T) {
 	st := &fakeStore{settings: store.UpdateSettings{AutoUpdateEnabled: false}}
-	sched := NewScheduler(st, discardLogger())
+	sched := NewScheduler(st, discardLogger(), "acme/widget")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)

@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/upgrade"
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/kit/ticker"
+	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
 // Store is the narrow store surface Scheduler needs. *store.DB satisfies
@@ -38,7 +38,7 @@ type Result struct {
 
 // Scheduler checks, on its own tick, whether update_settings has
 // auto-update enabled and, if so, fetches the configured channel's
-// latest release via Fetchers (internal/upgrade), the identical
+// latest release via Fetchers (kit/upgrade), the identical
 // lookup+comparison logic GET /api/v1/updates itself uses
 // (internal/api/updates.go's handleGetUpdates). Run's own tick-forever
 // shape mirrors backup.Scheduler.Run/alerting.Engine.Run.
@@ -54,11 +54,11 @@ type Scheduler struct {
 // NewScheduler builds a Scheduler ready to Tick or Run. logger defaults
 // to slog.Default() if nil, the same convention backup.NewScheduler
 // already establishes.
-func NewScheduler(st Store, logger *slog.Logger) *Scheduler {
+func NewScheduler(st Store, logger *slog.Logger, repo string) *Scheduler {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Scheduler{Store: st, Fetchers: upgrade.DefaultFetchers(), Logger: logger}
+	return &Scheduler{Store: st, Fetchers: upgrade.DefaultFetchers(repo), Logger: logger}
 }
 
 func (s *Scheduler) log() *slog.Logger {
