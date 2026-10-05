@@ -201,7 +201,9 @@ Every step above, and the failure cases (an interrupted restore, a tampered back
 
 Verified on a real server: `control-plane-backups create`, `verify` (checksum, `integrity_check` and schema version all report ok) and `download` produce a snapshot whose SHA-256 matches the one the server recorded.
 
-Not yet verified by us end to end: restoring that snapshot onto a second machine and starting the control plane there, and the off-box encrypted path against a live bucket. Both are covered by automated tests (see the contributor table above) but treat them as unproven on your hardware until you have run the drill yourself: `control-plane-backups drill run`, then a real `levelrail restore --dry-run` on a spare machine.
+Also verified, into a second data directory on one machine: `levelrail restore-db` of a snapshot with the original master key and agent CA files copied in, then starting the control plane on that directory. Databases, backup targets and tokens were all back, and a new database backup through the restored target succeeded, which proves the restored secrets decrypt with the same master key.
+
+Not yet verified by us: the same restore onto a different machine, and the off-box encrypted path against a live bucket. Both are covered by automated tests (see the contributor table above) but treat them as unproven on your hardware until you have run the drill yourself: `control-plane-backups drill run`, then a real `levelrail restore --dry-run` on a spare machine.
 
 Two limits that are easy to miss:
 

@@ -235,13 +235,16 @@ var mariadbRestoreCmd = []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PA
 // the archive, so anything added post-backup would otherwise pass through
 // untouched, which is the exact gap this command closes.
 //
+// The restore skips admin, config and local: the archive carries the source
+// database's users, and restoring them into a restore-as-new target replaced
+// its own root credentials with the source's, locking the platform out.
 // The mongosh eval only ever calls dropDatabase() on names outside
 // {admin, config, local}, MongoDB's own reserved system databases. admin
 // holds user credentials and roles, config and local hold replication and
 // cluster metadata; dropping any of them would break authentication or
 // cluster state rather than restore user data, so this exclusion list is
 // never optional and must never be narrowed or removed.
-var mongoRestoreCmd = []string{"sh", "-c", `mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval 'db.getMongo().getDBNames().forEach(function(n){if(n!=="admin"&&n!=="local"&&n!=="config"){db.getSiblingDB(n).dropDatabase()}})' && exec mongorestore --archive --drop --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}
+var mongoRestoreCmd = []string{"sh", "-c", `mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval 'db.getMongo().getDBNames().forEach(function(n){if(n!=="admin"&&n!=="local"&&n!=="config"){db.getSiblingDB(n).dropDatabase()}})' && exec mongorestore --archive --drop --nsExclude "admin.*" --nsExclude "config.*" --nsExclude "local.*" --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}
 
 // clickhouseRestoreCmd drops and recreates $CLICKHOUSE_DB (same
 // full-replace reasoning as mysqlRestoreCmd), then reconnects with it as
