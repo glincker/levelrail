@@ -102,6 +102,10 @@ func (rt *Router) handleListPublicOAuthProviders(w http.ResponseWriter, r *http.
 // handleOAuthStart handles GET /api/v1/auth/oauth/{provider}/start: the
 // public, anonymous sign-in entry point.
 func (rt *Router) handleOAuthStart(w http.ResponseWriter, r *http.Request) {
+	if rt.authLibOAuthActive() {
+		rt.authLibOAuthStart(w, r)
+		return
+	}
 	rt.beginOAuthFlow(w, r, oauthPurposeSignin, "")
 }
 
@@ -372,6 +376,7 @@ func (rt *Router) completeOAuthLink(ctx context.Context, linkUserID, provider st
 		}
 		return store.User{}, fmt.Errorf("save oauth identity: %w", err)
 	}
+	rt.authLibOAuthMirrorLink(ctx, user.ID, provider, info.ProviderUserID)
 	return *user, nil
 }
 

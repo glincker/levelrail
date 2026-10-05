@@ -17,6 +17,7 @@ func (rt *Router) Handler() http.Handler {
 	if rt.authEngine != nil {
 		mux.Handle(rt.authEnginePrefix+"/", rt.authEngine)
 	}
+	rt.registerAuthLibOAuthRoutes(mux)
 	rt.registerCoreRoutes(mux)
 	rt.registerPlatformRoutes(mux)
 	rt.registerStorageRoutes(mux)

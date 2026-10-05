@@ -571,6 +571,7 @@ type Router struct {
 
 	authEnginePrefix string       // empty means the library auth engine is off, set via WithAuthEngine
 	authEngine       http.Handler // nil when APP_AUTH_ENGINE is not "library"
+	authLibOAuth     AuthLibOAuth // nil keeps the in-house OAuth sign-in, see WithAuthLibOAuth
 	cpDRMaterial     EscrowMaterialReader
 }
 
