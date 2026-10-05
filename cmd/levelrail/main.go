@@ -3518,7 +3518,6 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithLocalNodeID(localNodeIDOf(deps)),
 			// Routes remote apps to their node's mesh address.
 			ingressreconcile.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
-			ingressreconcile.WithNodeUpstreams(lbNodeUpstreams{db: deps.db, local: deps.runtime, registry: deps.agentRegistry}),
 		}
 		if experimental.Enabled(experimental.AIModels) {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
