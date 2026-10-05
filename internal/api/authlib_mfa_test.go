@@ -345,11 +345,21 @@ func TestMFALibraryBackfilledPasskey(t *testing.T) {
 
 	t.Run("the authenticator still holds the built-in user handle", func(t *testing.T) {
 		k := k
+		k.auth.Options.UserHandle = []byte(h.userID)
 		k.cred.Counter = 2
 		target, body := h.passkeyAssertion(k, h.rp())
-		rec := h.finishLogin(target, body)
-		if rec.Code != http.StatusOK {
-			t.Skipf("library gap: discoverable login rejects a user handle that is not a 16 byte ULID (status %d); passkeys registered before the cutover must be re-registered", rec.Code)
+		if rec := h.finishLogin(target, body); rec.Code != http.StatusOK || !hasSessionCookie(rec) {
+			t.Fatalf("login with legacy handle: %d %s", rec.Code, rec.Body.String())
+		}
+	})
+
+	t.Run("a legacy handle naming no mapped user is rejected", func(t *testing.T) {
+		k := k
+		k.auth.Options.UserHandle = []byte("not-a-mapped-user")
+		k.cred.Counter = 3
+		target, body := h.passkeyAssertion(k, h.rp())
+		if rec := h.finishLogin(target, body); rec.Code != http.StatusUnauthorized || hasSessionCookie(rec) {
+			t.Fatalf("status = %d, want 401 and no session: %s", rec.Code, rec.Body.String())
 		}
 	})
 }

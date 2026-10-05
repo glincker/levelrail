@@ -27,6 +27,7 @@ With the variable unset (or `legacy`), nothing is mounted and the new tables are
 | `APP_AUTH_ENGINE_DEVICE_POLL_INTERVAL` | `5s` | Device login poll interval |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_IP` | library default | Per-IP request budget |
 | `APP_AUTH_ENGINE_OAUTH_PROVIDER_TTL` | `30s` | How long a resolved OAuth provider is cached. Saving provider settings drops it at once |
+| `APP_AUTH_ENGINE_OAUTH_ALLOWED_HOSTS` | empty | Extra hosts allowed in an OAuth redirect URI once a dashboard URL is set |
 
 ## Copy your accounts across
 
@@ -176,7 +177,7 @@ Things to know:
 
 - **Recovery codes need regenerating.** Legacy codes cannot be converted, so after the cutover every user with two-factor on has none. The first time they open the dashboard a notice asks them to generate a new set (Settings, Security). Their authenticator app keeps working in the meantime. The 2FA status response carries `recovery_codes_need_regeneration` while this applies.
 - **Passkey relying party comes from configuration, not the request.** The library fixes the relying party ID at startup. It is derived from the dashboard URL (Settings, Ingress) when the control plane starts, so changing that URL needs a restart. An IP address cannot be a relying party ID: set the dashboard URL to a domain, or set `APP_AUTH_ENGINE_WEBAUTHN_RP_ID`. Without one, passkey routes answer 501.
-- **Passkeys registered before the cutover can be listed, renamed and deleted but cannot sign in.** The library identifies the account from a user handle stored on the authenticator, and passkeys made by the built-in engine store a different one. Register the passkey again from Settings, Security.
+- **Passkeys registered before the cutover keep working.** Their authenticators hold the built-in user handle, so Levelrail maps it to the backfilled library user and the library checks it against the credential's owner. Run `levelrail auth-backfill` first: a passkey whose user was not copied cannot sign in. No re-registration is needed.
 - **Code reuse and lockout.** A TOTP code can be used once: a second use inside its 30 second window is refused (the built-in engine already did this on sign-in and disable; the library applies it to regeneration too). The library also locks a user out after repeated wrong codes (default 5 wrong codes, 15 minutes), counted per user across every device, on top of the existing per-address limit. A lockout answers 429 with `Retry-After`.
 - **Sign-in with a passkey does not ask for a code**, as before.
 - **A user must be copied across first.** Run `levelrail auth-backfill` after creating users, or their two-factor routes answer 409.
@@ -193,15 +194,13 @@ What stays the same:
 - Sign-in still starts at `/api/v1/auth/oauth/{provider}/start` and ends at `/oauth/complete`. Failures still land on `/login?oauth_error=<code>` with the same codes.
 - The browser binding cookie keeps its rules: HttpOnly, SameSite Lax, ten minutes, Secure on HTTPS, cleared on use. PKCE (S256) and the state check are unchanged.
 - A provider's allowed email domain still gates new accounts only. With it empty, any user the provider verifies may sign up with the `read` ability. Existing linked identities always sign in.
-- Linking a provider to an account from your profile still uses the built-in flow and its callback URL. Identities linked this way are copied into the library as well.
+- Linking a provider to an account from your profile still uses the built-in flow (same callback URL). Identities linked this way are copied into the library as well.
 
-### Callback URLs change
+### Callback URLs stay the same
 
-The library builds the redirect URI as `{APP_AUTH_ENGINE_BASE_URL}{APP_AUTH_ENGINE_PATH_PREFIX}/providers/{provider}/callback`. The built-in flow uses `https://<host>/api/v1/auth/oauth/{provider}/callback`. The library cannot produce the old path, so each provider needs one more redirect URI before you enable the area:
+The library is told to use the built-in redirect URI, `https://<host>/api/v1/auth/oauth/{provider}/callback`, built from the request host exactly as before. No provider needs a new redirect URI, and a rollback needs none either. The link flow keeps using the same callback: Levelrail tells the two apart by the state value.
 
-1. At each identity provider, add `https://<your-host>/api/v1/auth-lib/providers/<provider>/callback` (use your own prefix if you changed it).
-2. Keep the old `/api/v1/auth/oauth/<provider>/callback` entry. The link flow and a rollback still use it.
-3. Enable the area and restart.
+Once a dashboard URL is set (Settings, Ingress), redirect URIs are limited to that host and the base URL host. Add other hostnames you sign in from with `APP_AUTH_ENGINE_OAUTH_ALLOWED_HOSTS` (comma separated, `host` or `host:port`). With no dashboard URL, any request host is accepted, as in the built-in flow.
 
 ### Behavior changes
 
@@ -215,7 +214,7 @@ The library builds the redirect URI as `{APP_AUTH_ENGINE_BASE_URL}{APP_AUTH_ENGI
 
 ### Roll back
 
-Remove `oauth` from `APP_AUTH_ENGINE_AREAS` (or unset `APP_AUTH_ENGINE`) and restart. Sign-in returns to the built-in flow and its callback URLs, which you kept registered.
+Remove `oauth` from `APP_AUTH_ENGINE_AREAS` (or unset `APP_AUTH_ENGINE`) and restart. Sign-in returns to the built-in flow, which uses the same callback URLs.
 
 ## Rehearsing the migration
 
@@ -270,7 +269,7 @@ The first run shows exact counts and what would be refused. The second applies i
 - The dry run on a copy of production prints counts you can explain.
 - The real run on the copy succeeds and a second run copies nothing.
 - No refusal remains (duplicate emails resolved, no unknown abilities).
-- Sign-in works through the library for an admin, an ordinary user, and a two-factor user on the copy.
+- Sign-in works through the library for an admin, an ordinary user, a two-factor user, and a user with a passkey registered before the cutover on the copy.
 - A live API token and a revoked one behave correctly through the library on the copy.
 - You have a recent backup of the real data directory and you know the rollback: unset `APP_AUTH_ENGINE`, or narrow `APP_AUTH_ENGINE_AREAS`, and restart.
 - You have told two-factor users they must regenerate recovery codes.
