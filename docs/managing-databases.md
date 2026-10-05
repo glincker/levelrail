@@ -73,7 +73,7 @@ Both engines expose an "encrypt without verifying" mode in their standard connec
 
 Mainstream client libraries honor these with zero app-side code changes.
 
-MySQL/MariaDB lack a driver-agnostic URI knob for this. MongoDB's equivalent exists but isn't wired up yet. KeyDB/Dragonfly fork Redis's TLS flags under unverified names.
+MySQL/MariaDB lack a driver-agnostic URI knob for this. MongoDB's equivalent exists but isn't wired up yet. KeyDB accepts Redis's TLS flags unchanged (checked against `eqalpha/keydb`) but this is not wired up yet. Dragonfly refuses to start with TLS and no authentication (`TLS configured but no authentication method is used`), and this platform configures no database passwords for Redis-family engines, so it cannot be enabled without a larger change. ClickHouse is not wired.
 
 The certificate is self-signed and never distributed to a party that verifies its issuer. It is valid for ten years. Rotation is a deliberate future operator action, not forced by expiry.
 
@@ -188,9 +188,29 @@ dashboard. It stops and removes the container and the database record but
 **keeps the data volume** (`db-<name>-data`) and every backup in your storage
 destination. If apps still connect to the database it is refused with a `409`
 naming them; the dashboard then offers "Delete anyway" and the CLI takes
-`--force`. Creating a new database with the same name later reuses the old
-volume, so remove the volume yourself (`docker volume rm`) when you want a
-clean slate.
+`--force`.
+
+#### Creating a database with the name of a deleted one
+
+Because the data volume survives a delete, a new database with the same name
+would find the old data. The control plane no longer does that silently: the
+create is refused with a `409` (`code: "existing_volume"`, listing the volumes
+and their sizes) until you choose what to do with the old data:
+
+| Choice | API field | CLI | Dashboard | Effect |
+| --- | --- | --- | --- | --- |
+| Reuse | `"existing_volume": "reuse"` | `--existing-volume reuse` | "Reuse old data" | The new database starts on the old data. Use the same engine and a compatible version. |
+| Discard | `"existing_volume": "discard"` | `--existing-volume discard` | "Discard and start empty" | The old data, certificate and WAL archive volumes are deleted, then the database starts empty. Refused while a container still mounts one of them. |
+
+```bash
+levelrail-cli databases create --name main --engine postgres --version 16 --existing-volume discard
+```
+
+Verified live: delete a Postgres database holding a table, create it again with
+no choice (refused), then with `discard` (the table is gone). The check covers
+the control plane's own node only; a volume left on a remote node is not
+inspected, so remove that one yourself. Restore-as-new into a name that has a
+leftover volume is refused the same way.
 
 ### Changing the version
 
@@ -204,8 +224,80 @@ and recreated over the same data volume, so take a backup first. Only minor
 and patch changes are accepted for Postgres, MySQL, MariaDB, MongoDB and
 ClickHouse: a major change would corrupt the data directory and is refused
 with a `409`. Redis, KeyDB and Dragonfly may move to a newer major but never
-back. For a major upgrade, back up, then restore into a new database on the
-new version with `backups restore-as-new`.
+back. For a Postgres major upgrade use the guarded flow below; for the other
+engines, back up, then restore into a new database on the new version with
+`backups restore-as-new`.
+
+Postgres 18 and newer images moved their default data directory outside the
+path this platform mounts, which would lose data on any container recreate.
+For version 18 and above the controller pins `PGDATA` back to the mounted path
+so the data stays on the volume.
+
+### Major version upgrade (Postgres)
+
+```bash
+levelrail-cli databases major-upgrade <name> --version 17 [--confirm NAME]
+levelrail-cli databases major-upgrades <name>
+levelrail-cli databases major-upgrade-rollback <name> <id> [--confirm NAME]
+levelrail-cli databases major-upgrade-discard <name> <id>
+```
+
+The dashboard has a "Major version upgrade" card on a Postgres database's
+Overview tab (type the database name to enable the button).
+
+The database is **offline** while this runs. The data files are never converted
+in place. The phases, in order:
+
+1. **preflight**: free space in the data directory, and the target image must be
+   pullable. A version that does not exist fails here, before any downtime.
+2. **suspend**: the database stops, cleanly.
+3. **snapshot**: the data volume is copied to `db-<name>-data-pre<major>-<id>`.
+4. **dump**: a temporary container on the *old* version starts on that snapshot
+   (so the dump is consistent, because the live database is stopped, and the
+   snapshot is proven to start), and `pg_dump` plus a per-table row count are
+   taken from it. A dump without the pg_dump completion marker is refused.
+5. **wipe, upgrade, restore**: the live volume is emptied, the version is
+   changed, the reconciler starts the new version, and the dump is replayed in a
+   single transaction.
+6. **verify**: the server reports the target major, and the row count of every
+   public table equals the old cluster's.
+
+A failure before the wipe unsuspends the database on the old version and
+removes the snapshot: nothing changed. A failure after the wipe (restore error,
+count mismatch, the new version not starting) **rolls back automatically**: the
+snapshot is copied back, the old version is restored, and the attempt is marked
+`rolled_back`. If a control plane restart interrupts an upgrade, it settles the
+attempt on the next start the same way. If a rollback itself fails, the attempt
+is marked `failed` with the snapshot volume's name and that volume is left
+intact.
+
+After a success the snapshot is kept so `major-upgrade-rollback` can undo the
+upgrade (every write since the upgrade is lost) until you run
+`major-upgrade-discard` to free the disk. The snapshot volume is protected from
+the orphaned volume cleanup while it is recorded.
+
+Verified live on Postgres 16 to 17 with 5000 rows, a JSON column and a view
+(all present after, `version()` reports 17.x); a manual rollback (16.x again, a
+row written after the upgrade is gone); and a forced failure (a table owned by a
+second role, which a single-database dump cannot recreate), which rolled back
+automatically with the data intact.
+
+Honest limits:
+
+- Roles other than the database's own user are not part of a single-database
+  dump. Objects owned by another role make the restore fail, which rolls back
+  safely, but the upgrade cannot proceed until that ownership is changed.
+- Only the `public` schema's tables are counted in verification, matching what
+  restore recreates.
+- Refused while point-in-time restore is enabled (its base backups and WAL
+  cannot be replayed on another major version): disable it, upgrade, enable it
+  again and take a new base backup. Downgrades across a major are refused.
+- Needs free disk for the snapshot (the data volume's size again) on the Docker
+  host plus the dump file in the data directory. A copy that runs out of disk
+  fails before the wipe and changes nothing.
+- Apps connected to the database see downtime for the whole run.
+- Each wait (a container stopping, starting, accepting connections) is bounded by `APP_MAJOR_UPGRADE_WAIT`, a Go duration, default 5 minutes; a large cluster needing longer crash recovery should raise it.
+- Postgres only. The other engines keep the backup and restore-as-new route.
 
 ## The backup story
 
@@ -404,21 +496,41 @@ actually been archived, never reaches the live database at all.
 
 **Retention and disk use**
 
-Archived WAL lives in the database's `wal-archive` Docker volume on the same
-host, not in your bucket: only base backups go to the bucket. Left alone it
-would grow forever, so after every successful base backup the control plane
-keeps the newest `APP_PITR_BASE_BACKUP_KEEP` (default 3) base backups, deletes
-older ones and their bucket objects, and removes archived WAL older than the
-oldest base backup that remains, since a restore can never start earlier. A
-base backup that a PITR restore record references is kept. When a database has
-a backup schedule, each scheduled backup of a PITR-enabled database is followed
-by a base backup, so there is no second schedule to set up. The local WAL
-archive is still a single copy on the database's host: if that disk is lost,
-point-in-time restore is lost with it, though logical backups and base backups
-in the bucket remain.
+Archived WAL is first copied by Postgres into the database's `wal-archive`
+Docker volume on the same host, and the control plane then **ships it to the
+backup target** of the newest base backup, under `<database>/wal/` next to the
+base backups. Shipping runs every minute (`APP_PITR_WAL_SHIP_INTERVAL`, a Go
+duration, `0` disables it) and straight after every base backup, which first
+forces the current segment out. A segment still being written is never shipped
+(only files of full segment size are), and an object already in the bucket at
+the same size is skipped. `pitr status` shows when WAL was last shipped and the
+last error, in the CLI and on the dashboard card. A point-in-time restore pulls
+the shipped WAL back into the archive volume before it touches the database,
+overwriting same-named local files, so it works after the database host's disk
+is lost.
 
-Verified live on Postgres 16: enable, base backup, insert rows, restore to a
-timestamp between two inserts returned exactly the rows from before it.
+Old data is pruned automatically: after every successful base backup the control
+plane keeps the newest `APP_PITR_BASE_BACKUP_KEEP` (default 3) base backups,
+deletes older ones and their bucket objects, and removes archived WAL older than
+the oldest base backup that remains, both on the host and in the bucket, since a
+restore can never start earlier. A base backup that a PITR restore record
+references is kept. When a database has a backup schedule, each scheduled backup
+of a PITR-enabled database is followed by a base backup, so there is no second
+schedule to set up.
+
+Honest limits of the remote copy: the data loss window after a disk failure is
+up to one shipping interval of WAL (plus a segment Postgres has not archived
+yet); shipping covers databases on the control plane's own node only; an object
+that exists at the same size is never re-uploaded, so after a total host loss a
+re-initialised cluster reuses segment names and the bucket keeps the original
+lineage (which is what a restore wants). If the bucket is unreachable, shipping
+fails visibly in `pitr status` and local WAL keeps accumulating on the host.
+
+Verified live on Postgres 16 against a real S3 server: enable, base backup,
+insert rows, restore to a timestamp between two inserts returned exactly the rows
+from before it. Also verified from the remote copy alone: with the database
+stopped and both its data volume and its `wal-archive` volume deleted, a restore
+to the same timestamp returned exactly the rows from before it.
 
 **CLI**
 
@@ -464,7 +576,37 @@ List past point-in-time restore attempts with
 `levelrail pitr restores <database>` (`GET /api/v1/databases/{name}/pitr-restores`).
 Ordinary restore attempts are listed with `levelrail backups restores <database>`.
 
+### ClickHouse, KeyDB and Dragonfly: what was verified
+
+Run against real containers (ClickHouse 24.8, `eqalpha/keydb`, Dragonfly 1.27) with
+hyphenated database names:
+
+| Engine | Create | Backup | Verify | Restore as new |
+| --- | --- | --- | --- | --- |
+| ClickHouse | works (see below) | DDL plus rows as SQL | passed | rows identical, including a value with a quote and a comma |
+| KeyDB | works | RDB snapshot | passed | keys identical |
+| Dragonfly | works | RDB snapshot | passed | keys identical |
+
+- **ClickHouse and hyphens.** The image's entrypoint puts `CLICKHOUSE_DB` and
+  `CLICKHOUSE_USER` into unquoted SQL, so a database named `web-db` failed to
+  create its database and user and came up with only the `default` one. The
+  controller now passes `web_db` (hyphens and dots become underscores) for both,
+  and the dump strips the source database's name from each table's DDL, because
+  otherwise restoring into a database with a different name (restore-as-new)
+  tried to create the tables in the source's name and failed. Backups taken
+  before this fix restore into a database of the same ClickHouse identifier only.
+- **TLS** is Postgres and Redis only (see above). KeyDB, Dragonfly and ClickHouse
+  connections are plaintext inside the Docker network.
+- A failed restore-as-new leaves the new database in place with whatever state
+  the failure left; delete it and retry.
+
 ### Restore safety checks
+
+A Postgres restore replays the dump in one transaction with `ON_ERROR_STOP`: a
+statement that fails rolls everything back and the restore reports failure, so a
+damaged or partial dump leaves the existing data untouched. (It used to carry on
+past errors and report success after dropping the schema.) Verified against a
+real container with a deliberately broken dump.
 
 Before any restore (in place or restore-as-new) the stored object is hashed in
 a first pass and compared with the checksum recorded at backup time. A
@@ -543,6 +685,11 @@ Slow query logs capture individual statements that exceed a performance threshol
 **CLI**
 
 ```bash
+levelrail-cli databases set-version <name> <version>
+levelrail-cli databases major-upgrade <name> --version V [--confirm NAME]
+levelrail-cli databases major-upgrades <name>
+levelrail-cli databases major-upgrade-rollback <name> <id> [--confirm NAME]
+levelrail-cli databases major-upgrade-discard <name> <id>
 levelrail-cli databases slow-queries <name> [flags]
 ```
 
@@ -642,6 +789,10 @@ Query parameters:
 | `GET` | `/api/v1/databases/{name}/base-backups` | `read` |
 | `POST` | `/api/v1/databases/{name}/pitr-restore` | `root` |
 | `GET` | `/api/v1/databases/{name}/pitr-restores` | `read` |
+| `POST` | `/api/v1/databases/{name}/major-upgrade` | `root` |
+| `GET` | `/api/v1/databases/{name}/major-upgrades` | `read` |
+| `POST` | `/api/v1/databases/{name}/major-upgrades/{id}/rollback` | `root` |
+| `DELETE` | `/api/v1/databases/{name}/major-upgrades/{id}/snapshot` | `root` |
 | `PUT` | `/api/v1/apps/{name}/database` | `write` |
 | `DELETE` | `/api/v1/apps/{name}/database` | `write` |
 | `GET`/`POST`/`PUT`/`DELETE` | `/api/v1/backup-targets` (+ `/{id}`, `/{id}/test`) | `read` (GET) / `write:sensitive` (everything else) |
@@ -649,7 +800,7 @@ Query parameters:
 ## CLI
 
 ```bash
-levelrail-cli databases create --name NAME --engine ENGINE --version VERSION [--node-id ID]
+levelrail-cli databases create --name NAME --engine ENGINE --version VERSION [--node-id ID] [--existing-volume reuse|discard]
 levelrail-cli databases create --interactive   # also prompts for resource limits, public access, backup schedule
 levelrail-cli databases list
 levelrail-cli databases get <name>
@@ -713,7 +864,7 @@ database's own Overview and Resources tabs once it exists.
   `internal/secrets` has no revoke operation. A backup target's stored access key and secret remain in the secrets store after `DELETE /api/v1/backup-targets/{id}`, unreferenced but not erased at rest.
 
 - **TLS is Postgres and Redis only, with no operator toggle**
-  MySQL/MariaDB lack a driver-agnostic "encrypt without verifying" URI option. MongoDB's equivalent exists but isn't wired up. KeyDB/Dragonfly's TLS flags haven't been verified. There is also no way to opt out of TLS for Postgres/Redis if you wanted to.
+  MySQL/MariaDB lack a driver-agnostic "encrypt without verifying" URI option. MongoDB's equivalent exists but isn't wired up. KeyDB takes Redis's flags unchanged but is not wired; Dragonfly needs authentication enabled first. There is also no way to opt out of TLS for Postgres/Redis if you wanted to.
 
 - **No scheduler catch-up after downtime**
   If the control plane is down when a scheduled backup should fire, that run is missed, not queued or caught up on restart. Deliberately deferred because catch-up needs design work (how many missed runs to replay, how to avoid a thundering herd after a long outage).
