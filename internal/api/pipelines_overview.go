@@ -103,7 +103,7 @@ func (rt *Router) resolveCallerAccess(r *http.Request) (callerAccess, error) {
 		}
 		principalType, principalID, abilities = store.PrincipalTypeUser, userID, user.Abilities
 	} else if tok, ok := bearerToken(r); ok {
-		rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(tok))
+		rec, err := rt.lookupBearerToken(r.Context(), tok)
 		if err != nil {
 			return callerAccess{}, fmt.Errorf("api: load api token: %w", err)
 		}

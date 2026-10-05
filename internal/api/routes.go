@@ -17,7 +17,9 @@ func (rt *Router) Handler() http.Handler {
 	if rt.authEngine != nil {
 		mux.Handle(rt.authEnginePrefix+"/", rt.authEngine)
 	}
+	rt.registerAuthLibOAuthRoutes(mux)
 	rt.registerCoreRoutes(mux)
+	rt.registerAuthEngineStatusRoute(mux)
 	rt.registerPlatformRoutes(mux)
 	rt.registerStorageRoutes(mux)
 	rt.registerPipelineRoutes(mux)
@@ -177,6 +179,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/passkeys/register/begin", rt.requireAuth(rt.handleBeginPasskeyRegistration))
 	mux.HandleFunc("POST /api/v1/auth/passkeys/register/finish", rt.requireAuth(rt.handleFinishPasskeyRegistration))
 	mux.HandleFunc("DELETE /api/v1/auth/passkeys/{id}", rt.requireAuth(rt.handleDeletePasskey))
+	if rt.mfaLib != nil {
+		mux.HandleFunc("PATCH /api/v1/auth/passkeys/{id}", rt.requireAuth(rt.mfaLib.renamePasskey))
+	}
 	mux.HandleFunc("POST /api/v1/auth/passkey-login/begin", rt.handleBeginPasskeyLogin)
 	mux.HandleFunc("POST /api/v1/auth/passkey-login/finish", rt.handleFinishPasskeyLogin)
 

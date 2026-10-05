@@ -82,6 +82,11 @@ func (rt *Router) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	rt.forgotPasswordByIP.recordFailure(ipKey)
 	rt.forgotPasswordByEmail.recordFailure(emailKey)
 
+	if rt.libSessions != nil {
+		go rt.requestLibPasswordReset(req.Email, clientIP(r))
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	go rt.sendPasswordResetEmail(context.Background(), req.Email)
 
 	w.WriteHeader(http.StatusNoContent)
@@ -131,14 +136,25 @@ func (rt *Router) sendPasswordResetEmail(ctx context.Context, email string) {
 	}
 
 	url := rt.passwordResetURL(ctx, plaintext)
-	subject := fmt.Sprintf("[%s] Reset your password", rt.brand.Name)
-	body := fmt.Sprintf(
-		"A password reset was requested for your %s account.\n\nReset your password: %s\n\nThis link expires in %d minutes. If you didn't request this, you can safely ignore this email.",
-		rt.brand.Name, url, int(passwordResetTokenTTL.Minutes()),
-	)
+	subject, body := rt.passwordResetMessageFor(url)
 	if err := rt.emailSender.Send(ctx, user.Email, subject, body); err != nil {
 		rt.logger.Error("api: forgot password: send email failed", slog.String("error", err.Error()))
 	}
+}
+
+// passwordResetMessageFor builds the reset email subject and body for url.
+func (rt *Router) passwordResetMessageFor(url string) (subject, body string) {
+	subject = fmt.Sprintf("[%s] Reset your password", rt.brand.Name)
+	body = fmt.Sprintf(
+		"A password reset was requested for your %s account.\n\nReset your password: %s\n\nThis link expires in %d minutes. If you didn't request this, you can safely ignore this email.",
+		rt.brand.Name, url, int(passwordResetTokenTTL.Minutes()),
+	)
+	return subject, body
+}
+
+// passwordResetMessage builds the reset email for a raw token.
+func (rt *Router) passwordResetMessage(ctx context.Context, token string) (subject, body string) {
+	return rt.passwordResetMessageFor(rt.passwordResetURL(ctx, token))
 }
 
 // passwordResetURL builds the link the reset email points at: absolute
@@ -177,6 +193,10 @@ func (rt *Router) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(req.NewPassword) < minPasswordLength {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("new password must be at least %d characters", minPasswordLength))
+		return
+	}
+	if rt.libSessions != nil {
+		rt.resetLibPassword(w, r, req)
 		return
 	}
 

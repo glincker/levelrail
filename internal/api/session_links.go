@@ -50,7 +50,7 @@ func (rt *Router) resolveMintingPrincipal(r *http.Request) (principalType, princ
 		return store.PrincipalTypeUser, userID, user.DisplayName, user.Abilities, nil
 	}
 	if token, ok := bearerToken(r); ok {
-		rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(token))
+		rec, err := rt.lookupBearerToken(r.Context(), token)
 		if err != nil {
 			return "", "", "", nil, fmt.Errorf("api: load minting token: %w", err)
 		}
@@ -74,6 +74,11 @@ func (rt *Router) handleMintSessionLink(w http.ResponseWriter, r *http.Request) 
 	principalType, principalID, displayName, abilities, err := rt.resolveMintingPrincipal(r)
 	if err != nil {
 		rt.internalError(w, "api: mint session link: resolve principal failed", err)
+		return
+	}
+
+	if rt.libSessions != nil && principalType == store.PrincipalTypeUser {
+		rt.mintLibSessionLink(w, r, principalID)
 		return
 	}
 
@@ -149,6 +154,10 @@ func (rt *Router) handleConsumeSessionLink(w http.ResponseWriter, r *http.Reques
 
 	rec, err := rt.sessionLinkTokens.GetSessionLinkTokenByHash(r.Context(), hashToken(token))
 	if errors.Is(err, store.ErrSessionLinkTokenNotFound) {
+		if rt.libSessions != nil {
+			rt.consumeLibSessionLink(w, r, token)
+			return
+		}
 		writeError(w, http.StatusBadRequest, errInvalidOrExpiredSessionLink.Error())
 		return
 	}

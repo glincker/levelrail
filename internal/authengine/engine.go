@@ -23,6 +23,9 @@ const (
 	EngineLegacy = "legacy"
 	// EngineLibrary is the EnvEngine value that mounts the library handler.
 	EngineLibrary = "library"
+	// EngineShadow is the EnvEngine value that serves from the legacy engine
+	// and compares bearer tokens against the library in the background.
+	EngineShadow = "shadow"
 
 	// EnvPathPrefix overrides DefaultPathPrefix.
 	EnvPathPrefix = "APP_AUTH_ENGINE_PATH_PREFIX"
@@ -43,13 +46,19 @@ const (
 	cookieName               = "authx_session"
 )
 
-// Mode returns the engine selected by APP_AUTH_ENGINE; anything but "library" is legacy.
+// Mode returns the engine selected by APP_AUTH_ENGINE: library, shadow, or legacy for anything else.
 func Mode() string {
-	if strings.EqualFold(strings.TrimSpace(os.Getenv(EnvEngine)), EngineLibrary) {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(EnvEngine))) {
+	case EngineLibrary:
 		return EngineLibrary
+	case EngineShadow:
+		return EngineShadow
 	}
 	return EngineLegacy
 }
+
+// ShadowEnabled reports whether shadow comparison is selected.
+func ShadowEnabled() bool { return Mode() == EngineShadow }
 
 // Enabled reports whether the library engine is selected.
 func Enabled() bool { return Mode() == EngineLibrary }
@@ -67,6 +76,11 @@ type Config struct {
 	MinPasswordLen  int
 	Directory       *Directory
 	DeviceVerifyURL string
+	DeviceTokenTTL  time.Duration
+	DeviceCodeTTL   time.Duration
+	Sessions        SessionsHooks
+	MFA             MFAConfig
+	OAuth           *OAuthWiring
 }
 
 // ConfigFromEnv applies the env overrides on top of base and fills defaults.
@@ -106,8 +120,16 @@ func ConfigFromEnv(base Config) Config {
 
 // Engine wraps one theauth instance.
 type Engine struct {
-	auth   *theauth.TheAuth
-	prefix string
+	auth        *theauth.TheAuth
+	prefix      string
+	store       *sqlitestore.Store
+	db          *sql.DB
+	dir         *Directory
+	tokenPrefix string
+	sessions    *Sessions
+	totp        bool
+	passkeys    bool
+	oauth       *oauthRuntime
 }
 
 // New builds the engine over db. The library tables must exist already: they
@@ -143,7 +165,7 @@ func New(db *sql.DB, cfg Config) (*Engine, error) {
 			AllowLegacyBcrypt: true,
 		},
 		APITokens: &theauth.APITokensConfig{
-			Prefix:           cfg.TokenPrefix,
+			Prefix:           defaultIfEmpty(cfg.TokenPrefix, libraryDefaultTokenPrefix),
 			AcceptUnprefixed: true,
 			Abilities:        EngineAbilities(),
 			UserAbilities:    cfg.Directory.UserAbilities,
@@ -153,6 +175,8 @@ func New(db *sql.DB, cfg Config) (*Engine, error) {
 				VerificationURI:  verify,
 				DefaultAbilities: []string{AbilityRead},
 				Interval:         cfg.PollInterval,
+				TokenTTL:         cfg.DeviceTokenTTL,
+				CodeTTL:          cfg.DeviceCodeTTL,
 			},
 		},
 	}
@@ -163,11 +187,19 @@ func New(db *sql.DB, cfg Config) (*Engine, error) {
 		tcfg.EncryptionKey = cfg.EncryptionKey
 		tcfg.TOTP = &theauth.TOTPConfig{Issuer: cfg.TOTPIssuer}
 	}
+	var sess *Sessions
+	if AreaActive(AreaSessions) {
+		sess = newSessions(db, cfg.Sessions)
+		applySessionsConfig(&tcfg, sess, store.ThrottleStore())
+	}
+	applyMFA(&tcfg, cfg)
+	oauthRT := applyOAuth(&tcfg, cfg, db)
 	a, err := theauth.New(tcfg)
 	if err != nil {
 		return nil, fmt.Errorf("authengine: init: %w", err)
 	}
-	return &Engine{auth: a, prefix: cfg.PathPrefix}, nil
+	bindSessions(sess, a, cfg.PathPrefix)
+	return &Engine{auth: a, prefix: cfg.PathPrefix, store: store, db: db, dir: cfg.Directory, tokenPrefix: tcfg.APITokens.Prefix, sessions: sess, totp: tcfg.TOTP != nil, passkeys: tcfg.WebAuthn != nil, oauth: oauthRT}, nil
 }
 
 // Prefix is the route prefix Handler serves under.
@@ -180,4 +212,18 @@ func (e *Engine) Handler() http.Handler { return e.auth.Handler() }
 func (e *Engine) Auth() *theauth.TheAuth { return e.auth }
 
 // Close stops the library's background work. It does not close the database.
-func (e *Engine) Close() { e.auth.Close() }
+func (e *Engine) Close() {
+	if e.sessions != nil {
+		e.sessions.close()
+	}
+	e.auth.Close()
+}
+
+const libraryDefaultTokenPrefix = "tk"
+
+func defaultIfEmpty(v, def string) string {
+	if v == "" {
+		return def
+	}
+	return v
+}

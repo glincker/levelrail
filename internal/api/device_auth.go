@@ -103,6 +103,11 @@ func (rt *Router) handleDeviceAuthStart(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if rt.authLib.device != nil {
+		rt.libraryDeviceStart(w, r, req)
+		return
+	}
+
 	id, err := store.NewDeviceAuthRequestID()
 	if err != nil {
 		rt.internalError(w, "api: device auth start: generate id failed", err)
@@ -164,6 +169,11 @@ func (rt *Router) handleDeviceAuthToken(w http.ResponseWriter, r *http.Request) 
 	}
 	if req.DeviceCode == "" {
 		writeError(w, http.StatusBadRequest, "device_code is required")
+		return
+	}
+
+	if rt.authLib.device != nil {
+		rt.libraryDeviceToken(w, r, req.DeviceCode)
 		return
 	}
 
@@ -271,6 +281,10 @@ type deviceAuthRequestResource struct {
 // device login, since approving one only ever grants a token scoped to
 // their own abilities.
 func (rt *Router) handleListDeviceAuthRequests(w http.ResponseWriter, r *http.Request) {
+	if rt.authLib.device != nil {
+		rt.libraryListDeviceRequests(w, r)
+		return
+	}
 	recs, err := rt.deviceAuth.ListPendingDeviceAuthRequests(r.Context(), time.Now())
 	if err != nil {
 		rt.internalError(w, "api: list device auth requests failed", err)
@@ -305,6 +319,11 @@ func (rt *Router) decideDeviceAuthRequest(w http.ResponseWriter, r *http.Request
 	userID, ok := rt.currentSessionUserID(r)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	if rt.authLib.device != nil {
+		rt.libraryDecideDevice(w, r, userID, userCode, status == store.DeviceAuthStatusApproved)
 		return
 	}
 

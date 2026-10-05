@@ -202,7 +202,7 @@ func (rt *Router) pipelineActor(r *http.Request) string {
 		return "user:" + id
 	}
 	if tok, ok := bearerToken(r); ok {
-		if rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(tok)); err == nil {
+		if rec, err := rt.lookupBearerToken(r.Context(), tok); err == nil {
 			return "token:" + rec.Name
 		}
 	}

@@ -135,5 +135,6 @@ func (rt *Router) handleUpdateOAuthProviderSettings(w http.ResponseWriter, r *ht
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rt.authLibOAuthInvalidate(provider)
 	writeJSON(w, http.StatusOK, rt.toOAuthProviderSettingsResource(r.Context(), settings))
 }
