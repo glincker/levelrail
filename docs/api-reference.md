@@ -52,6 +52,8 @@ System endpoints for:
 | POST | /api/v1/system/containers/{name}/claim | AbilityWrite | handleClaimOrphanedContainer |
 | GET | /api/v1/updates/settings | AbilityRoot | handleGetUpdateSettings |
 | PUT | /api/v1/updates/settings | AbilityRoot | handleUpdateSettings |
+| GET | /api/v1/system/orphans | AbilityRead | handleListOrphans |
+| POST | /api/v1/system/orphans/reap | AbilityRoot | handleReapOrphans |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

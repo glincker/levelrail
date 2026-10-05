@@ -88,21 +88,22 @@ func (rt *Router) handleCreateOrganization(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusCreated, toOrganizationResource(o))
 }
 
-// handleDeleteOrganization handles DELETE /api/v1/organizations/{id}.
-// projects.org_id is ON DELETE SET NULL, so member projects survive.
+// handleDeleteOrganization handles DELETE /api/v1/organizations/{id}. By
+// default member projects survive (projects.org_id is ON DELETE SET NULL).
+// cascade=true tears down every app and database in them first, see
+// deleteWithMembers.
 func (rt *Router) handleDeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	err := rt.organizations.DeleteOrganization(r.Context(), id)
-	if errors.Is(err, store.ErrOrganizationNotFound) {
-		writeError(w, http.StatusNotFound, "organization not found")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: delete organization failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
+	rt.deleteWithMembers(w, r, "organization", func(ctx context.Context) (cascadeScope, error) {
+		return rt.organizationScope(ctx, id)
+	}, func(ctx context.Context, sc cascadeScope) error {
+		for _, projectID := range sc.projects {
+			if err := rt.projects.DeleteProject(ctx, projectID); err != nil && !errors.Is(err, store.ErrProjectNotFound) {
+				return fmt.Errorf("delete project %q: %w", projectID, err)
+			}
+		}
+		return rt.organizations.DeleteOrganization(ctx, id)
+	})
 }
 
 type setProjectOrganizationRequest struct {

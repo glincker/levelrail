@@ -6,6 +6,8 @@ import (
 	"io"
 	"sort"
 	"text/tabwriter"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runAppsOrganizations dispatches "apps organizations <verb> [flags]" to
@@ -203,6 +205,7 @@ Flags:
 func runAppsOrganizationsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps organizations delete", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsOrganizationsDeleteUsage(prog)) }
+	cascade := fs.Bool("cascade", false, cascadeFlagUsage)
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -215,7 +218,9 @@ func runAppsOrganizationsDelete(prog string, args []string, stdout, stderr io.Wr
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	if err := client.DeleteOrganization(context.Background(), id); err != nil {
+	if err := deleteMaybeCascade(context.Background(), *cascade, func(ctx context.Context) error { return client.DeleteOrganization(ctx, id) }, func(ctx context.Context) (apiclient.CascadeDeleteResult, error) {
+		return client.DeleteOrganizationCascade(ctx, id)
+	}); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete organization %q: %w", id, err))
 	}
 
@@ -232,6 +237,7 @@ Deletes an organization. Every project filed under it survives,
 simply organization-less again.
 
 Flags:
+  --cascade                 also delete every app and database inside, resumable if interrupted
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

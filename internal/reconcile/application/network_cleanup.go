@@ -42,6 +42,14 @@ type NetworkCleanupController struct {
 	runtime    docker.Runtime
 	prefix     string
 	instanceID string
+	nodeID     string
+}
+
+// ForNode names this controller after a remote node so one runs per node
+// without sharing a reconcile status.
+func (c *NetworkCleanupController) ForNode(nodeID string) *NetworkCleanupController {
+	c.nodeID = nodeID
+	return c
 }
 
 // NewNetworkCleanupController builds a NetworkCleanupController. prefix
@@ -58,7 +66,12 @@ func NewNetworkCleanupController(apps AppLister, runtime docker.Runtime, prefix,
 }
 
 // Name implements reconcile.Controller.
-func (c *NetworkCleanupController) Name() string { return "application/network-cleanup" }
+func (c *NetworkCleanupController) Name() string {
+	if c.nodeID != "" {
+		return "application/network-cleanup/" + c.nodeID
+	}
+	return "application/network-cleanup"
+}
 
 // Reconcile implements reconcile.Controller.
 func (c *NetworkCleanupController) Reconcile(ctx context.Context) (reconcile.Result, error) {

@@ -297,6 +297,8 @@ type (
 
 	systemPruneResult = apiclient.SystemPruneResult
 
+	orphanReport                 = apiclient.OrphanReport
+	orphanFinding                = apiclient.OrphanFinding
 	orphanedVolumeResource       = apiclient.OrphanedVolumeResource
 	cleanupOrphanedVolumesResult = apiclient.CleanupOrphanedVolumesResult
 

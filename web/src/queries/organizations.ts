@@ -4,6 +4,8 @@
 // nothing more: create/list/get/delete plus the project-assignment
 // endpoint, no member list or ability of its own.
 
+import { deleteWithCascade } from '../lib/cascadeDelete'
+import type { CascadeDeleteArgs } from '../lib/cascadeDelete'
 import {
   queryOptions,
   useMutation,
@@ -114,23 +116,19 @@ export function useCreateOrganization() {
 // backend's ON DELETE SET NULL foreign key). The project list/detail
 // caches are invalidated for exactly that reason, the same cross-resource
 // reasoning useDeleteProject's own doc comment gives for apps/databases.
-export async function deleteOrganization(id: string): Promise<void> {
-  const res = await fetch(`/api/v1/organizations/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  })
-  if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `delete organization failed: ${res.status}`),
-    )
-  }
+export function deleteOrganization(args: CascadeDeleteArgs): Promise<void> {
+  return deleteWithCascade(
+    '/api/v1/organizations',
+    args,
+    'delete organization failed',
+  )
 }
 
 export function useDeleteOrganization() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteOrganization,
-    onSuccess: (_data, id) => {
+    onSuccess: (_data, { id }) => {
       queryClient.removeQueries({ queryKey: organizationKeys.detail(id) })
       void queryClient.invalidateQueries({ queryKey: organizationKeys.list() })
       void queryClient.invalidateQueries({ queryKey: projectKeys.list() })
@@ -157,7 +155,10 @@ export async function setProjectOrganization(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `set project organization failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `set project organization failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as ProjectResource

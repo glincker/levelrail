@@ -10,6 +10,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
+	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -795,6 +796,10 @@ func WithDockerPruner(p DockerPruner) Option {
 func WithOrphanedVolumeManager(m OrphanedVolumeManager) Option {
 	return func(rt *Router) { rt.orphanedVolumes = m }
 }
+
+// SetOrphanReaper enables GET /api/v1/system/orphans and POST
+// /api/v1/system/orphans/reap, backed by the same reaper the reconcile loop runs.
+func (rt *Router) SetOrphanReaper(r *orphans.Reaper) { rt.orphanReaper = r }
 
 // WithOrphanedContainerManager enables POST
 // /api/v1/system/containers/{name}/stop and .../remove. Without one

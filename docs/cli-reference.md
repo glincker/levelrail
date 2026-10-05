@@ -349,7 +349,7 @@ levelrail-cli apps environments create <project-id> --name NAME [--protected] [f
 create an environment under a project
 
 ```
-levelrail-cli apps environments delete <id> [flags]
+levelrail-cli apps environments delete <id> [--cascade] [flags]
 ```
 
 ```
@@ -424,7 +424,7 @@ levelrail-cli apps organizations create --name NAME [flags]
 create an organization
 
 ```
-levelrail-cli apps organizations delete <id> [flags]
+levelrail-cli apps organizations delete <id> [--cascade] [flags]
 ```
 
 ```
@@ -495,7 +495,7 @@ levelrail-cli apps projects create --name NAME [flags]
 create a project
 
 ```
-levelrail-cli apps projects delete <id> [flags]
+levelrail-cli apps projects delete <id> [--cascade] [flags]
 ```
 
 ```
@@ -1473,7 +1473,11 @@ levelrail-cli doctor [flags]
 
 ```
 levelrail-cli containers [flags]
+levelrail-cli containers orphans [flags]
+levelrail-cli containers reap [--dry-run] [flags]
 ```
+
+`orphans` lists leftover containers, volumes and certificates that no app or database accounts for, with where each stands against its grace period. `reap` runs one removal pass now (`--dry-run` reports without removing; exit 1 if anything could not be removed). Details and the `APP_ORPHAN_*` settings are in [Delete and clean up](deploying-apps.md#delete-and-clean-up).
 
 :::
 

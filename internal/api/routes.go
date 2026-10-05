@@ -104,6 +104,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// cleanup that actually deletes one is the same AbilityRoot,
 	// fleet-wide, no-undo tier system/prune sits behind, not
 	// AbilityWrite.
+	mux.HandleFunc("GET /api/v1/system/orphans", rt.requireAbility(AbilityRead, rt.handleListOrphans))
+	mux.HandleFunc("POST /api/v1/system/orphans/reap", rt.requireAbility(AbilityRoot, rt.handleReapOrphans))
 	mux.HandleFunc("GET /api/v1/system/volumes/orphaned", rt.requireAbility(AbilityRead, rt.handleListOrphanedVolumes))
 	mux.HandleFunc("POST /api/v1/system/volumes/orphaned/cleanup", rt.requireAbility(AbilityRoot, rt.handleCleanupOrphanedVolumes))
 	// Master key rotation re-wraps every stored DEK live: AbilityRoot,

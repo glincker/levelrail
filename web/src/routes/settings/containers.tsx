@@ -23,6 +23,7 @@ import { useContainers } from '../../queries/containers'
 import type { ContainerPort, ContainerResource } from '../../queries/containers'
 import { ContainerRowActions } from '../../components/ContainerRowActions'
 import { PageHeader } from '@/components/shell/PageHeader'
+import { OrphanReaperCard } from '../../components/OrphanReaperCard'
 
 // Web equivalent of "levelrail-cli containers": GET
 // /api/v1/system/containers, every container Docker knows about on this
@@ -88,6 +89,8 @@ function ContainersPage() {
           description="Every container on this node, whether or not it's managed by this platform."
         />
       </div>
+
+      <OrphanReaperCard />
 
       {isLoading ? <ListSkeleton rows={5} /> : null}
 

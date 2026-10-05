@@ -50,6 +50,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/netguard"
 	"github.com/GLINCKER/levelrail/internal/objectstore"
+	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
@@ -797,6 +798,9 @@ func run(logger *slog.Logger) error {
 	apiRouter.SetPreview(previewManager)
 	apiRouter.SetSupplyChain(supplyChainSvc)
 
+	orphanReaper := newOrphanReaper(db, client, agentRegistry, previewLocalNodeID, instanceID, logger)
+	apiRouter.SetOrphanReaper(orphanReaper)
+
 	edge, err := loadIngressEdge(logger)
 	if err != nil {
 		return fmt.Errorf("ingress edge settings: %w", err)
@@ -805,6 +809,7 @@ func run(logger *slog.Logger) error {
 
 	engine.SetStore(db)
 	engine.SetSource(dynamicSource(dynamicSourceDeps{
+		orphanReaper:                 orphanReaper,
 		ingressEdge:                  edge,
 		db:                           db,
 		runtime:                      client,
@@ -3502,6 +3507,8 @@ type dynamicSourceDeps struct {
 	// httpRedirect is httpRedirectEnabled: Caddy serves port 80 and redirects to https.
 	httpRedirect bool
 	models       *modelDeps
+	// orphanReaper removes leftover containers and volumes on a schedule.
+	orphanReaper *orphans.Reaper
 	ingressEdge  ingressEdge
 	// lbRegistry is shared with the API so it can report live upstream status.
 	lbRegistry *loadbalancer.Registry
@@ -3538,6 +3545,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithLogger(deps.logger),
 			ingressreconcile.WithPublicHost(deps.publicHost),
 			ingressreconcile.WithCertStore(deps.db),
+			ingressreconcile.WithServedHostsRecorder(deps.db),
 			ingressreconcile.WithAuditRecorder(deps.db),
 			ingressreconcile.WithListenAddr(deps.ingressHTTPSAddr),
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
@@ -3594,6 +3602,17 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// controller above: per-app networks are single-node scope until
 		// the WireGuard mesh exists.
 		controllers = append(controllers, application.NewNetworkCleanupController(deps.db, deps.runtime, deps.networkPrefix, deps.instanceID))
+		for _, n := range nodes {
+			if runtimeNodeID(deps, n.ID) == "" {
+				continue
+			}
+			if nodeRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, n.ID); err == nil {
+				controllers = append(controllers, application.NewNetworkCleanupController(deps.db, nodeRuntime, deps.networkPrefix, deps.instanceID).ForNode(n.ID))
+			}
+		}
+		if deps.orphanReaper != nil {
+			controllers = append(controllers, orphans.NewController(deps.orphanReaper))
+		}
 
 		// Cloudflare Tunnel: also local-runtime-unconditional, the same
 		// "this control plane's own node, not per-app placement" shape as

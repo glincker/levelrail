@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/orphans"
 )
 
 // containerPortResource mirrors docker.PortBinding exactly, no invented
@@ -64,7 +65,7 @@ func (rt *Router) handleListContainers(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: list containers failed", err)
 		return
 	}
-	desired, err := rt.desiredContainerNameSet(r.Context())
+	desired, err := rt.loadOrphanDesired(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: list containers: compute desired container names failed", err)
 		return
@@ -81,7 +82,7 @@ func (rt *Router) handleListContainers(w http.ResponseWriter, r *http.Request) {
 		if containerHidden(c.Name, hidden) {
 			continue
 		}
-		out = append(out, toContainerResource(c, isManagedContainer(c, desired)))
+		out = append(out, toContainerResource(c, orphans.IsManaged(c, desired, "")))
 	}
 	writeJSON(w, http.StatusOK, out)
 }

@@ -475,6 +475,58 @@ Each task tracks `last_run_at`, `last_run_status`, `last_run_output`, and a `con
 | `forbid` | Skips the new run and records a distinct `skipped_concurrency` status. |
 | `replace` | Cancels the in-flight run (recorded as `replaced`) and starts the new one. Cancellation is best effort: it closes the exec stream, and a command that ignores that keeps running, because the Docker Engine API has no "kill this exec" call. |
 
+## Delete and clean up
+
+Deleting something never relies on a single best-effort call. Every path that removes containers (delete an app, move it to another node, prune a stale compose service, tear down a preview, drain a node) first records a tombstone and clears it only when the containers are confirmed gone, so a failed stop retries on every reconcile pass and shows up as `teardown_pending`. A tombstone for a node that was since removed from the fleet is dropped instead of retrying forever.
+
+### Projects, environments and organizations
+
+By default deleting a project, environment or organization only removes the label: its apps and databases keep running, detached. To tear everything inside down too, pass `cascade=true`:
+
+```
+levelrail-cli apps projects delete --cascade PROJECT_ID
+levelrail-cli apps environments delete --cascade ENV_ID
+levelrail-cli apps organizations delete --cascade ORG_ID
+```
+
+The dashboard delete dialogs have an **Also delete everything inside** checkbox. The API is `DELETE /api/v1/{projects|environments|organizations}/{id}?cascade=true`. Apps go first, then databases, then the container itself is removed last. If anything cannot be removed (a database still used by an app outside the scope, a database error) the response is `207` with the per-resource result, the container is kept, and repeating the same request resumes where it stopped. Database data volumes and app volumes are kept, they show up under leftovers below.
+
+### Leftovers and the orphan reaper
+
+A reaper compares what exists on every node with desired state and removes what nothing accounts for, so a crash between "delete desired state" and "stop the container" cannot leave something running forever. It looks at three kinds of leftovers:
+
+| Kind | Removed when | Never removed |
+| --- | --- | --- |
+| Container | Created by this control plane, named like an app or database container, and its app or database is gone, or the app now lives on another node and a running copy exists there | A container of a live app (including older releases the reconciler retires itself), another instance's container, anything with an unrecognized name, an app whose teardown is pending |
+| Volume | Opt in with `APP_ORPHAN_REAP_VOLUMES=true`: an `app-` volume no desired state references and no container mounts | Database data volumes (`db-` prefix), mounted volumes |
+| Certificate | Stored for a hostname the ingress layer no longer serves | A certificate for any served host, or a wildcard that could cover one |
+
+A resource is removed only after it has stayed orphaned for the grace period, counted from the first pass that saw it. Each removal writes an audit log entry (`REAP`, actor `orphan-reaper`). A pass removes at most `APP_ORPHAN_MAX_REMOVALS` resources, and removes nothing at all while no app or database exists, so an empty database read cannot wipe a node.
+
+```
+levelrail-cli containers orphans             # what is left over and where it stands against the grace period
+levelrail-cli containers reap --dry-run      # what a pass would remove right now
+levelrail-cli containers reap                # one pass now
+```
+
+The same view is in **Settings, Containers** in the dashboard. The reaper runs on the reconcile loop (at most every `APP_ORPHAN_INTERVAL`). Remote nodes are scanned through their agent for containers and networks; volumes are only scanned on the control plane's own node. An unreachable node is reported and skipped, never treated as empty.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_ORPHAN_REAPER` | `on` | `on`, `dry-run` (record and report only) or `off` |
+| `APP_ORPHAN_GRACE` | `15m` | Containers |
+| `APP_ORPHAN_CERT_GRACE` | `24h` | Certificates, long so a domain that comes back keeps its certificate |
+| `APP_ORPHAN_VOLUME_GRACE` | `168h` | Volumes |
+| `APP_ORPHAN_REAP_VOLUMES` | `false` | Opt in to automatic volume removal |
+| `APP_ORPHAN_MAX_REMOVALS` | `20` | Removal cap per pass |
+| `APP_ORPHAN_INTERVAL` | `1m` | Minimum time between passes |
+
+Changing or removing an app's domain drops its route on the next ingress pass, and its certificate is removed by the reaper after the certificate grace period.
+
+### Removing a node
+
+`DELETE /api/v1/nodes/{id}` is refused (`409`) while apps or databases are placed on the node. Drain it first (`POST /api/v1/nodes/{id}/drain`), which moves every placement. Draining an unreachable node still works: the placements move, and the leftover containers on the dead node are dropped from the retry list when the node is deleted. If the node later re-enrols, the reaper removes any copy of an app that now lives elsewhere. Volumes are not moved by a drain: an app with data on a dead node needs `apps set-node NAME NODE --with-volumes` while the node is still reachable, or a restore from backup.
+
 ## API and CLI quick reference
 
 | Method | Path | Ability |

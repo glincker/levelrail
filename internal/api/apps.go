@@ -1127,23 +1127,24 @@ func (rt *Router) deleteTeardownTimeout() time.Duration {
 // defaultDeleteTeardownTimeout bounds how long DELETE waits for containers to stop.
 const defaultDeleteTeardownTimeout = 45 * time.Second
 
-// teardownServiceContainers stops name's running containers in the
-// background after its desired state is already deleted: stopping a
-// container can take several seconds, so this must not make the
-// caller's own response wait. Used by move/preview flows; delete uses
-// DeleteFinalizer, which retries.
+// teardownServiceContainers removes name's containers on nodeID after its
+// desired state was deleted or moved off that node. A tombstone makes a failed
+// teardown retry on every reconcile pass instead of being lost, and the slow
+// stop runs in the background so the caller's response does not wait on it.
 func (rt *Router) teardownServiceContainers(name, nodeID string) {
-	if rt.execRuntime == nil {
+	finalizer := rt.deleteFinalizer()
+	if finalizer == nil {
 		return
 	}
-	runtime, err := rt.execRuntime(nodeID)
-	if err != nil {
-		rt.logger.Error("api: teardown containers: resolve node runtime failed", slog.String("error", err.Error()), slog.String("name", name))
+	if err := finalizer.Begin(context.Background(), name, nodeID); err != nil {
+		rt.logger.Error("api: teardown containers: record tombstone failed", slog.String("error", err.Error()), slog.String("name", name))
 		return
 	}
 	go func() { //nolint:gosec // deliberately outlives the request, same as sendInviteEmail's own background send
-		if err := application.New(name, rt.apps, runtime, rt.teardownOpts...).Teardown(context.Background()); err != nil {
-			rt.logger.Error("api: teardown containers failed", slog.String("error", err.Error()), slog.String("name", name))
+		ctx, cancel := context.WithTimeout(context.Background(), rt.deleteTeardownTimeout())
+		defer cancel()
+		if err := finalizer.Finalize(ctx, name, nodeID); err != nil {
+			rt.logger.Error("api: teardown containers pending, will retry", slog.String("error", err.Error()), slog.String("name", name), slog.String("node_id", nodeID))
 		}
 	}()
 }

@@ -46,5 +46,43 @@
     "comingSoon": "More notification options are coming here: custom email templates, send-rate limiting, and per-alert frequency controls.",
     "channelsCta": "Looking for Slack, Discord, or webhook notifications instead?",
     "channelsLink": "Notification channels"
+  },
+  "orphans": {
+    "title": "Leftover resources",
+    "description": "Containers, volumes and certificates that no app or database accounts for. They are removed automatically once they stay orphaned past the grace period. Database data volumes are never removed.",
+    "empty": "Nothing left over. Every container and volume belongs to a live app or database.",
+    "localNode": "this node",
+    "kind": {
+      "container": "Container",
+      "volume": "Volume",
+      "certificate": "Certificate"
+    },
+    "reason": {
+      "service_deleted": "App deleted",
+      "database_deleted": "Database deleted",
+      "misplaced": "App moved to another node",
+      "stale_generation": "Older release of a live app",
+      "unmanaged": "Not created here",
+      "foreign_instance": "Another control plane's",
+      "unrecognized_name": "Unrecognized name",
+      "unreferenced_volume": "No longer referenced",
+      "unserved_certificate": "No longer served"
+    },
+    "status": {
+      "kept": "Kept",
+      "due": "Due",
+      "grace": "In grace period"
+    },
+    "more_one": "And {{count}} more not shown.",
+    "more_other": "And {{count}} more not shown.",
+    "dryRun": "Dry run",
+    "reapNow_one": "Remove {{count}} due now",
+    "reapNow_other": "Remove {{count}} due now",
+    "toast": {
+      "dryRun_one": "Dry run: {{count}} resource would be removed.",
+      "dryRun_other": "Dry run: {{count}} resources would be removed.",
+      "reaped_one": "Removed {{count}} leftover resource.",
+      "reaped_other": "Removed {{count}} leftover resources."
+    }
   }
 }

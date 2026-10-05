@@ -12,17 +12,8 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/orphans"
 )
-
-// A container is managed if it carries this platform's instance label
-// and its name still has a live app/database record; otherwise orphaned.
-func isManagedContainer(c docker.ContainerState, desired map[string]bool) bool {
-	if c.Labels[spec.InstanceLabelKey] == "" {
-		return false
-	}
-	return desired[c.Name]
-}
 
 func lookupSystemContainer(name string, containers []docker.ContainerState) (docker.ContainerState, bool) {
 	for _, c := range containers {
@@ -46,12 +37,12 @@ func (rt *Router) requireOrphanedContainer(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "container not found")
 		return docker.ContainerState{}, false
 	}
-	desired, err := rt.desiredContainerNameSet(r.Context())
+	desired, err := rt.loadOrphanDesired(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: compute desired container names failed", err)
 		return docker.ContainerState{}, false
 	}
-	if isManagedContainer(c, desired) {
+	if orphans.IsManaged(c, desired, "") {
 		writeError(w, http.StatusConflict, "container is managed by Levelrail; manage it from its own app page instead")
 		return docker.ContainerState{}, false
 	}

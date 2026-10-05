@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"text/tabwriter"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runAppsEnvironments dispatches "apps environments <verb> [flags]" to
@@ -251,6 +253,7 @@ func parseEnvironmentIDCommand(fs *flag.FlagSet, args []string, stderr io.Writer
 func runAppsEnvironmentsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps environments delete", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsDeleteUsage(prog)) }
+	cascade := fs.Bool("cascade", false, cascadeFlagUsage)
 
 	id, tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments delete", apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP})
 	if !ok {
@@ -258,7 +261,9 @@ func runAppsEnvironmentsDelete(prog string, args []string, stdout, stderr io.Wri
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	if err := client.DeleteEnvironment(context.Background(), id); err != nil {
+	if err := deleteMaybeCascade(context.Background(), *cascade, func(ctx context.Context) error { return client.DeleteEnvironment(ctx, id) }, func(ctx context.Context) (apiclient.CascadeDeleteResult, error) {
+		return client.DeleteEnvironmentCascade(ctx, id)
+	}); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete environment %q: %w", id, err))
 	}
 
@@ -275,6 +280,7 @@ Deletes an environment. Any app tagged with it survives, simply
 untagged again.
 
 Flags:
+  --cascade                 also delete every app and database inside, resumable if interrupted
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
