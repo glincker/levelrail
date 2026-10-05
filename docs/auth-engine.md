@@ -52,7 +52,7 @@ Things to know:
 - Linked OAuth identities are copied too, see [OAuth and OIDC sign-in](#oauth-and-oidc-sign-in)
 - Recovery codes are not converted. Users with two-factor enabled must regenerate them.
 - API tokens with no owner (created by the system itself) are not copied.
-- Emails that differ only by letter case count as duplicates in the library. The backfill stops and tells you how many collide so you can rename them first.
+- Emails that differ only by letter case count as duplicates in the library. The backfill stops, exits non-zero and lists each colliding group (ids and emails) so you can rename them first.
 - A token's effective abilities are limited to what its owner currently holds, so a token can never exceed its owner.
 
 ## Sessions and login
@@ -100,10 +100,6 @@ Things to know:
 - Multi-factor sign-in and passkeys are separate areas. While `mfa` is not served by the library, a user with two-factor enabled still gets the usual second step.
 
 Roll back by removing `sessions` from `APP_AUTH_ENGINE_AREAS`, or by unsetting `APP_AUTH_ENGINE`, and restarting. Built-in sessions start empty, so everyone signs in once more. Passwords keep working because Levelrail's own copy is kept up to date.
-
-## Roll back
-
-Unset `APP_AUTH_ENGINE` (or set it to `legacy`) and restart. The built-in engine never stopped being authoritative, so there is nothing to undo. The copied rows can stay; they are inert.
 
 ## Shadow mode and token cutover
 
@@ -274,3 +270,18 @@ The first run shows exact counts and what would be refused. The second applies i
 - A live API token and a revoked one behave correctly through the library on the copy.
 - You have a recent backup of the real data directory and you know the rollback: unset `APP_AUTH_ENGINE`, or narrow `APP_AUTH_ENGINE_AREAS`, and restart.
 - You have told two-factor users they must regenerate recovery codes.
+
+## Go/no-go checklist
+
+Before switching an area on in production:
+
+1. Rehearsal passed on a copy of production data (section above), and the third backfill run reported zero copied.
+2. `levelrail auth-backfill --dry-run` on the live host exits cleanly. If it lists case-duplicate email groups, rename one account in each group and re-run.
+3. A database backup taken in the last hour.
+4. One area at a time, in this order: `tokens`, `device`, `sessions`, `mfa`, `oauth`. Watch `levelrail auth-engine status` for a day before the next one.
+5. You know the rollback: remove the area from `APP_AUTH_ENGINE_AREAS` (or set `APP_AUTH_ENGINE=legacy`) and restart.
+6. Passkeys: backfilled passkeys cannot sign in through the library until the library's user handle resolver is wired in. Keep `mfa` off for users who rely on passkeys, or have them re-enrol.
+
+## Roll back
+
+Unset `APP_AUTH_ENGINE` (or set it to `legacy`) and restart. The built-in engine never stopped being authoritative, so there is nothing to undo. The copied rows can stay; they are inert.
