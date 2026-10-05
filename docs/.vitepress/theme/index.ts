@@ -26,6 +26,7 @@ import './styles/accordion.css'
 import './styles/steps.css'
 import './styles/tabs.css'
 import './styles/inline-toc.css'
+import './styles/landing-page.css'
 import Layout from './Layout.vue'
 import Card from './Card.vue'
 import CardGroup from './CardGroup.vue'
@@ -39,6 +40,7 @@ import Step from './Step.vue'
 import Tabs from './Tabs.vue'
 import Tab from './Tab.vue'
 import InlineToc from './InlineToc.vue'
+import LandingPage from './LandingPage.vue'
 
 export default {
   ...DefaultTheme,
@@ -56,5 +58,6 @@ export default {
     app.component('Tabs', Tabs)
     app.component('Tab', Tab)
     app.component('InlineToc', InlineToc)
+    app.component('landing', LandingPage)
   },
 } satisfies Theme

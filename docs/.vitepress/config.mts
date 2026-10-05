@@ -237,8 +237,20 @@ const sectionPriority: Record<string, number> = {
   'Design proposals': 0.3,
   'Docs index': 0.3,
 }
+const landingSlugs = new Set([
+  'coolify-alternative',
+  'dokploy-alternative',
+  'vercel-alternative',
+  'heroku-alternative',
+  'railway-alternative',
+  'pricing',
+  'privacy',
+  'demo',
+  'case-studies',
+])
 function sitemapPriority(url: string): number {
   if (url === '') return 1.0
+  if (landingSlugs.has(url)) return 0.9
   if (url === 'getting-started') return 0.9
   if (url.startsWith('changelog/') && url !== 'changelog/') return 0.3
   const section = pageToSection.get(url)
@@ -320,6 +332,8 @@ export default withMermaid({
       { text: 'Guide', link: '/getting-started' },
       { text: 'Reference', link: '/app-spec-reference' },
       { text: 'Compare', link: '/comparison' },
+      { text: 'Demo', link: '/demo' },
+      { text: 'Pricing', link: '/pricing' },
       { text: 'Troubleshooting', link: '/troubleshooting' },
       { text: 'Roadmap', link: '/roadmap' },
       { text: 'Changelog', link: '/changelog/' },
@@ -401,6 +415,23 @@ export default withMermaid({
           '@context': 'https://schema.org',
           '@type': 'FAQPage',
           mainEntity: faqItems.map((item) => ({
+            '@type': 'Question',
+            name: item.q,
+            acceptedAnswer: { '@type': 'Answer', text: item.a },
+          })),
+        }),
+      ])
+    }
+
+    const landingFaq = pageData.frontmatter.landing?.faq as { q: string; a: string }[] | undefined
+    if (landingFaq?.length) {
+      head.push([
+        'script',
+        { type: 'application/ld+json' },
+        JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: landingFaq.map((item) => ({
             '@type': 'Question',
             name: item.q,
             acceptedAnswer: { '@type': 'Answer', text: item.a },

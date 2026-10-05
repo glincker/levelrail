@@ -147,6 +147,11 @@ onUnmounted(() => {
         <p class="custom-footer__heading">Product</p>
         <a href="/getting-started">Getting started</a>
         <a href="/comparison">Compare</a>
+        <a href="/coolify-alternative">Coolify alternative</a>
+        <a href="/vercel-alternative">Vercel alternative</a>
+        <a href="/heroku-alternative">Heroku alternative</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/privacy">Privacy</a>
         <a href="/roadmap">Roadmap</a>
         <a href="/troubleshooting">Troubleshooting</a>
       </div>

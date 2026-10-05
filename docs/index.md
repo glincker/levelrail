@@ -118,6 +118,8 @@ Many self-hosted platforms in this category manage servers by SSHing in and runn
 
 <a class="compare-cta" href="/comparison">See the full comparison against Coolify, Dokploy, CapRover, Dokku, and Kamal</a>
 
+<p class="compare-more">Switching? See the <a href="/coolify-alternative">Coolify</a>, <a href="/dokploy-alternative">Dokploy</a>, <a href="/vercel-alternative">Vercel</a>, <a href="/heroku-alternative">Heroku</a> and <a href="/railway-alternative">Railway</a> guides, or the <a href="/demo">demo</a> and <a href="/pricing">pricing</a>.</p>
+
 </section>
 
 <section class="landing-section landing-section--statement">
