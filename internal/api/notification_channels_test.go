@@ -664,3 +664,76 @@ func TestNotificationChannelRoutes_RequireAuth(t *testing.T) {
 		})
 	}
 }
+
+func TestHandleCreateNotificationChannel_RejectsInternalURL(t *testing.T) {
+	t.Setenv("APP_NOTIFY_ALLOW_PRIVATE_NETWORKS", "")
+	rt, db, _ := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+
+	tests := []struct {
+		name, body string
+		wantCode   int
+		wantText   string
+	}{
+		{"loopback", `{"name":"x","kind":"generic","notify_url":"http://127.0.0.1:9000/hook"}`, http.StatusBadRequest, "APP_NOTIFY_ALLOW_PRIVATE_NETWORKS"},
+		{"private", `{"name":"x","kind":"slack","notify_url":"http://10.1.2.3/hook"}`, http.StatusBadRequest, "internal address"},
+		{"not http", `{"name":"x","kind":"generic","notify_url":"ftp://example.com/x"}`, http.StatusBadRequest, "http or https"},
+		{"email address untouched", `{"name":"x","kind":"email","notify_url":"ops@example.com"}`, http.StatusCreated, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/notification-channels", tt.body))
+			if rec.Code != tt.wantCode {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, tt.wantCode, rec.Body.String())
+			}
+			if tt.wantText != "" && !strings.Contains(rec.Body.String(), tt.wantText) {
+				t.Errorf("body %q missing %q", rec.Body.String(), tt.wantText)
+			}
+		})
+	}
+}
+
+func TestRedactNotifyTarget(t *testing.T) {
+	tests := []struct {
+		name   string
+		kind   alerting.NotifyKind
+		target string
+		want   string
+	}{
+		{"slack webhook", alerting.NotifySlack, "https://hooks.slack.com/services/T0/B0/secret", "https://hooks.slack.com/(hidden)"},
+		{"telegram bot token", alerting.NotifyTelegram, "https://api.telegram.org/bot123:abc/sendMessage?chat_id=1", "https://api.telegram.org/(hidden)"},
+		{"pagerduty routing key", alerting.NotifyPagerDuty, "R0UT1NGKEY", redactedNotifyTarget},
+		{"email stays visible", alerting.NotifyEmail, "ops@example.com", "ops@example.com"},
+		{"empty", alerting.NotifyWebpush, "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := redactNotifyTarget(tt.kind, tt.target); got != tt.want {
+				t.Errorf("redactNotifyTarget() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHandleListNotificationChannels_ReadTierDoesNotSeeSecrets(t *testing.T) {
+	rt, db, adb := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := adb.SaveNotificationChannel(context.Background(), alerting.NotificationChannel{
+		ID: "chn_secret", Name: "ops", Kind: alerting.NotifySlack, NotifyURL: "https://hooks.slack.com/services/T0/B0/topsecret", Enabled: true,
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, requestWithReadScopedToken(t, db, httptest.NewRequest(http.MethodGet, "/api/v1/notification-channels", nil)))
+	if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), "topsecret") {
+		t.Errorf("read-tier list: status %d, body %s: must not contain the webhook secret", rec.Code, rec.Body.String())
+	}
+
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/notification-channels", ""))
+	if !strings.Contains(rec.Body.String(), "topsecret") {
+		t.Errorf("root list lost the full URL: %s", rec.Body.String())
+	}
+}

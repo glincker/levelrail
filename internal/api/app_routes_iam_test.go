@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -44,5 +45,35 @@ func TestAppScopedReadRoutes_IAMDenyScopedToApp(t *testing.T) {
 				t.Errorf("user without policies on secret-app = %d, want the handler's normal status", got)
 			}
 		})
+	}
+}
+
+func TestNetworkTopology_HidesIAMDeniedApps(t *testing.T) {
+	rt, db, _ := newPipelineRouter(t)
+	bootstrapTestAdmin(t, db)
+	seedScheduledTaskApp(t, db, "secret-app")
+	seedScheduledTaskApp(t, db, "open-app")
+	denied := storeUserWithAbilitiesForTest(t, db, "denied@example.com", []string{AbilityRead})
+	cookie := sessionCookieForTest(t, rt, denied.ID)
+	attachTestPolicy(t, db, "deny-secret", "Deny", AbilityRead, "app:secret-app", store.PrincipalTypeUser, denied.ID)
+
+	w := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(w, authedRequest(t, cookie, http.MethodGet, "/api/v1/network/topology", ""))
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", w.Code, w.Body.String())
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "secret-app") {
+		t.Errorf("topology leaked a denied app: %s", body)
+	}
+	if !strings.Contains(body, "open-app") {
+		t.Errorf("topology lost a visible app: %s", body)
+	}
+}
+
+func TestContainerHidden(t *testing.T) {
+	prefixes := []string{"secret-app-"}
+	if !containerHidden("secret-app-76064f79", prefixes) || containerHidden("open-app-1234", prefixes) || containerHidden("db-main", nil) {
+		t.Error("containerHidden prefix matching is wrong")
 	}
 }

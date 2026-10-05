@@ -507,7 +507,9 @@ func (rt *Router) handleListAlertRules(w http.ResponseWriter, r *http.Request) {
 
 	out := make([]ruleResource, 0, len(rules))
 	for _, rl := range rules {
-		out = append(out, toRuleResource(rl))
+		res := toRuleResource(rl)
+		res.NotifyURL = rt.notifyTargetFor(r, rl.NotifyKind, rl.NotifyURL)
+		out = append(out, res)
 	}
 	rt.annotateSilenced(r.Context(), name, rules, out)
 	writeJSON(w, http.StatusOK, out)

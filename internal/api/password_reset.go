@@ -145,12 +145,7 @@ func (rt *Router) sendPasswordResetEmail(ctx context.Context, email string) {
 // against the primary domain when one is set (an email client needs a
 // clickable absolute link), a bare path otherwise.
 func (rt *Router) passwordResetURL(ctx context.Context, token string) string {
-	const path = "/reset-password?token="
-	settings, err := rt.ingressSettings.GetIngressSettings(ctx)
-	if err != nil || settings.PrimaryDomain == "" {
-		return path + token
-	}
-	return "https://" + settings.PrimaryDomain + path + token
+	return rt.emailLinkBase(ctx) + "/reset-password?token=" + token
 }
 
 type resetPasswordRequest struct {

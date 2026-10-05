@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -167,5 +168,30 @@ func TestRun_SecretsHelp(t *testing.T) {
 	stdout, _ := runCLIExpectOK(t, []string{"secrets", "-h"})
 	if !strings.Contains(stdout, "rotate-master-key") {
 		t.Errorf("stdout = %q, want the rotate-master-key usage line", stdout)
+	}
+}
+
+func TestRunSecretsGenerateMasterKey(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "new.key")
+	var stdout, stderr bytes.Buffer
+	if code := runSecrets("lr", []string{"generate-master-key", "--out", out}, &stdout, &stderr, nil); code != exitOK {
+		t.Fatalf("exit = %d, stderr = %s", code, stderr.String())
+	}
+	info, err := os.Stat(out)
+	if err != nil {
+		t.Fatalf("stat: %v", err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Errorf("mode = %v, want 0600", info.Mode().Perm())
+	}
+	raw, err := os.ReadFile(out) //nolint:gosec // path is a t.TempDir() file
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if _, err := secrets.LoadMasterKey(strings.TrimSpace(string(raw))); err != nil {
+		t.Errorf("generated key does not load: %v", err)
+	}
+	if code := runSecrets("lr", []string{"generate-master-key", "--out", out}, &stdout, &stderr, nil); code == exitOK {
+		t.Error("second run overwrote an existing key file")
 	}
 }
