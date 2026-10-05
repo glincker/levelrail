@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
+	"slices"
+	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -33,6 +36,37 @@ const deviceAuthTTL = 10 * time.Minute
 // field: a fixed value is enough here, this flow has no need for the
 // "slow_down"-response escalation real OAuth device grants define.
 const devicePollInterval = 5
+
+const (
+	envDeviceTokenTTLDays   = "APP_DEVICE_TOKEN_TTL_DAYS"   //nolint:gosec // env var name
+	envDeviceTokenAllowRoot = "APP_DEVICE_TOKEN_ALLOW_ROOT" //nolint:gosec // env var name
+	defaultDeviceTokenDays  = 30
+)
+
+// deviceTokenTTL is how long a device-flow token lives, env-overridable.
+func deviceTokenTTL() time.Duration {
+	days := defaultDeviceTokenDays
+	if n, err := strconv.Atoi(os.Getenv(envDeviceTokenTTLDays)); err == nil && n > 0 {
+		days = n
+	}
+	return time.Duration(days) * 24 * time.Hour
+}
+
+// capDeviceAbilities keeps a device token to the approver's abilities,
+// but never silently root: a root approver gets every non-root ability
+// unless APP_DEVICE_TOKEN_ALLOW_ROOT=true.
+func capDeviceAbilities(approver []string) []string {
+	if !slices.Contains(approver, AbilityRoot) || os.Getenv(envDeviceTokenAllowRoot) == "true" {
+		return approver
+	}
+	capped := make([]string, 0, len(validAbilities))
+	for _, a := range validAbilities {
+		if a != AbilityRoot {
+			capped = append(capped, a)
+		}
+	}
+	return capped
+}
 
 type deviceStartRequest struct {
 	// ClientName is an optional operator-facing label (e.g. a hostname)
@@ -186,34 +220,34 @@ func (rt *Router) handleDeviceAuthToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Claim before minting: the atomic UPDATE is the single point
+	// concurrent polls race on, so exactly one proceeds to mint.
+	if err := rt.deviceAuth.RedeemDeviceAuthRequest(r.Context(), req.DeviceCode, tokenID, time.Now()); err != nil {
+		if errors.Is(err, store.ErrDeviceAuthRequestNotFound) {
+			writeError(w, http.StatusBadRequest, "expired_token")
+			return
+		}
+		rt.internalError(w, "api: device auth token: redeem failed", err)
+		return
+	}
+
 	tokenName := "cli login"
 	if rec.ClientName != "" {
 		tokenName = "cli login: " + rec.ClientName
 	}
+	now := time.Now()
+	expiresAt := now.Add(deviceTokenTTL())
 	tokenRec := store.APIToken{
-		ID:        tokenID,
-		Name:      tokenName,
-		TokenHash: hashToken(plaintext),
-		// Scoped to exactly what the approving operator can already do:
-		// an unauthenticated device request never gets to pick its own
-		// abilities, it inherits the approver's, the same "logging in as
-		// yourself from a new device" guarantee a session cookie gives.
-		Abilities: user.Abilities,
-		CreatedAt: time.Now(),
+		ID:          tokenID,
+		Name:        tokenName,
+		TokenHash:   hashToken(plaintext),
+		Abilities:   capDeviceAbilities(user.Abilities),
+		CreatedAt:   now,
+		ExpiresAt:   &expiresAt,
+		OwnerUserID: user.ID,
 	}
 	if err := rt.tokens.SaveAPIToken(r.Context(), tokenRec); err != nil {
 		rt.internalError(w, "api: device auth token: save token failed", err)
-		return
-	}
-
-	if err := rt.deviceAuth.RedeemDeviceAuthRequest(r.Context(), req.DeviceCode, tokenID, time.Now()); err != nil {
-		// The token row above is already committed; a redeem race lost
-		// here just means a second concurrent poll would also see
-		// ErrDeviceAuthRequestNotFound below and get expired_token, never
-		// a second token. Not ideal (an orphaned token stays valid and
-		// revocable via the normal tokens list), but never a security
-		// gap: the code has already done its one job.
-		rt.internalError(w, "api: device auth token: redeem failed", err)
 		return
 	}
 
@@ -286,6 +320,9 @@ func (rt *Router) decideDeviceAuthRequest(w http.ResponseWriter, r *http.Request
 	if n == 0 {
 		writeError(w, http.StatusNotFound, "no pending device login with this code")
 		return
+	}
+	if status == store.DeviceAuthStatusApproved {
+		rt.recordAudit(r.Context(), r, AbilityWrite, auditActorSession, userID, "", http.StatusNoContent)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

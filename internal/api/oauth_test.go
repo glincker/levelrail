@@ -48,16 +48,20 @@ func (f *fakeOAuthSecrets) Resolve(_ context.Context, serviceName, envKey string
 // network call, a test configures exactly what Exchange/FetchUserInfo
 // return.
 type fakeOAuthClient struct {
-	exchangeErr error
-	userInfo    oauthUserInfo
-	userInfoErr error
+	exchangeErr  error
+	userInfo     oauthUserInfo
+	userInfoErr  error
+	authOpts     int
+	exchangeOpts int
 }
 
-func (f *fakeOAuthClient) AuthCodeURL(state string) string {
+func (f *fakeOAuthClient) AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string {
+	f.authOpts = len(opts)
 	return "https://provider.example.com/authorize?state=" + state
 }
 
-func (f *fakeOAuthClient) Exchange(_ context.Context, code string) (*oauth2.Token, error) {
+func (f *fakeOAuthClient) Exchange(_ context.Context, code string, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error) {
+	f.exchangeOpts = len(opts)
 	if f.exchangeErr != nil {
 		return nil, f.exchangeErr
 	}
@@ -114,6 +118,11 @@ func startOAuthFlow(t *testing.T, rt *Router, path string, cookie *http.Cookie) 
 	state := loc.Query().Get("state")
 	if state == "" {
 		t.Fatalf("Location %q carries no state parameter", loc.String())
+	}
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == oauthBindingCookieName {
+			oauthTestBindings.Store(state, &http.Cookie{Name: c.Name, Value: c.Value}) //nolint:gosec // test fixture
+		}
 	}
 	return state
 }
@@ -222,13 +231,13 @@ func TestHandleOAuthCallback_StateIsSingleUse(t *testing.T) {
 	state := startOAuthFlow(t, rt, "/api/v1/auth/oauth/google/start", nil)
 
 	first := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(first, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback?state="+state+"&code=abc", nil))
+	rt.Handler().ServeHTTP(first, oauthCallbackRequest(state))
 	if first.Code != http.StatusFound || first.Header().Get("Location") != "/oauth/complete" {
 		t.Fatalf("first callback: status = %d, location = %q, want a redirect to /oauth/complete", first.Code, first.Header().Get("Location"))
 	}
 
 	second := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(second, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback?state="+state+"&code=abc", nil))
+	rt.Handler().ServeHTTP(second, oauthCallbackRequest(state))
 	assertOAuthErrorRedirect(t, second, "invalid_state")
 }
 
@@ -241,7 +250,7 @@ func TestHandleOAuthCallback_NewIdentity_AutoProvisionsUser(t *testing.T) {
 
 	state := startOAuthFlow(t, rt, "/api/v1/auth/oauth/google/start", nil)
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback?state="+state+"&code=abc", nil))
+	rt.Handler().ServeHTTP(rec, oauthCallbackRequest(state))
 
 	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/oauth/complete" {
 		t.Fatalf("status = %d, location = %q, want a redirect to /oauth/complete", rec.Code, rec.Header().Get("Location"))
@@ -291,7 +300,7 @@ func TestHandleOAuthCallback_ExistingIdentity_SignsInSameUser(t *testing.T) {
 
 	state := startOAuthFlow(t, rt, "/api/v1/auth/oauth/google/start", nil)
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback?state="+state+"&code=abc", nil))
+	rt.Handler().ServeHTTP(rec, oauthCallbackRequest(state))
 
 	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/oauth/complete" {
 		t.Fatalf("status = %d, location = %q, want a redirect to /oauth/complete", rec.Code, rec.Header().Get("Location"))
@@ -317,7 +326,7 @@ func TestHandleOAuthCallback_DomainNotAllowed_Rejected(t *testing.T) {
 
 	state := startOAuthFlow(t, rt, "/api/v1/auth/oauth/google/start", nil)
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback?state="+state+"&code=abc", nil))
+	rt.Handler().ServeHTTP(rec, oauthCallbackRequest(state))
 	assertOAuthErrorRedirect(t, rec, "domain_not_allowed")
 
 	if _, err := db.GetUserByEmail(context.Background(), "someone@notallowed.com"); !errors.Is(err, store.ErrUserNotFound) {
@@ -339,7 +348,7 @@ func TestHandleOAuthCallback_EmailBelongsToExistingAccount_Rejected(t *testing.T
 
 	state := startOAuthFlow(t, rt, "/api/v1/auth/oauth/google/start", nil)
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback?state="+state+"&code=abc", nil))
+	rt.Handler().ServeHTTP(rec, oauthCallbackRequest(state))
 	assertOAuthErrorRedirect(t, rec, "email_in_use")
 
 	// No session must have been established for the victim's account.
@@ -387,7 +396,7 @@ func TestHandleOAuthCallback_LinkPurpose_AttachesIdentityToAuthenticatedUser(t *
 
 	state := startOAuthFlow(t, rt, "/api/v1/auth/oauth/google/link/start", cookie)
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback?state="+state+"&code=abc", nil))
+	rt.Handler().ServeHTTP(rec, oauthCallbackRequest(state))
 
 	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/oauth/complete" {
 		t.Fatalf("status = %d, location = %q, want a redirect to /oauth/complete", rec.Code, rec.Header().Get("Location"))
@@ -427,7 +436,7 @@ func TestHandleOAuthCallback_LinkPurpose_AlreadyLinkedToAnotherUser_Rejected(t *
 
 	state := startOAuthFlow(t, rt, "/api/v1/auth/oauth/google/link/start", cookie)
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback?state="+state+"&code=abc", nil))
+	rt.Handler().ServeHTTP(rec, oauthCallbackRequest(state))
 	assertOAuthErrorRedirect(t, rec, "already_linked")
 
 	identity, err := db.GetOAuthIdentity(context.Background(), store.OAuthProviderGoogle, "already-taken")
