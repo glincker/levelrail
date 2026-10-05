@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.2.0-beta.16](https://github.com/glincker/levelrail/compare/v0.2.0-beta.15...v0.2.0-beta.16) (2026-10-05)
+
+
+### Features
+
+* CLI and agent distribution, Windows CLI, agent skill files, update-check and main CI fixes ([#972](https://github.com/glincker/levelrail/issues/972)) ([17e7967](https://github.com/glincker/levelrail/commit/17e7967bbfdae7526db6831ff0e874bb412c22a7))
+* zero-DNS sslip.io HTTPS, db cert storage, http redirect ([#977](https://github.com/glincker/levelrail/issues/977)) ([fdf1a57](https://github.com/glincker/levelrail/commit/fdf1a57027215513b778be21273d2da8d343a44d))
+
+
+### Bug Fixes
+
+* data safety hardening for databases, backups, restore and volumes ([#980](https://github.com/glincker/levelrail/issues/980)) ([cfc4586](https://github.com/glincker/levelrail/commit/cfc4586074d2188bbd986b60844c9fd7168c122f))
+* mention levelrail-cli install and login in install.sh summary ([#970](https://github.com/glincker/levelrail/issues/970)) ([4f884ad](https://github.com/glincker/levelrail/commit/4f884ad0492be1c769f88eea0184644f29f3b0fa))
+* reject cross-origin cookie-authenticated mutations ([#976](https://github.com/glincker/levelrail/issues/976)) ([544e5af](https://github.com/glincker/levelrail/commit/544e5af38ebb32dfd605daf067e7838bafa3c96a))
+* zero-downtime hardening for pinned ports, rolling, secrets, replicas ([#978](https://github.com/glincker/levelrail/issues/978)) ([4cd2550](https://github.com/glincker/levelrail/commit/4cd2550cb6f54f5e21619147d7d30ff08f3c3ff4))
+
+
+### Documentation
+
+* add seven tutorials for search and fix restore-as-new race ([#979](https://github.com/glincker/levelrail/issues/979)) ([8b4103a](https://github.com/glincker/levelrail/commit/8b4103a5686f7cddcc3a1e08bf7eb336a78189a7))
+* fix MCP tool count and ci.md Vue interpolation build error ([#975](https://github.com/glincker/levelrail/issues/975)) ([cbafa97](https://github.com/glincker/levelrail/commit/cbafa9706cee7c04921581933788aa67c35ec93d))
+* rewrite deploying-apps as a lifecycle guide, refresh landing, comparison, troubleshooting, status ([#974](https://github.com/glincker/levelrail/issues/974)) ([91277f9](https://github.com/glincker/levelrail/commit/91277f96a71b58db81e615cae27cf22aa245c8fc))
+
 ## [0.2.0-beta.15](https://github.com/glincker/levelrail/compare/v0.2.0-beta.14...v0.2.0-beta.15) (2026-10-05)
 
 
