@@ -6,6 +6,10 @@ import CustomTopNav from './CustomTopNav.vue'
 import CustomSidebar from './CustomSidebar.vue'
 import CustomFooter from './CustomFooter.vue'
 import PageActions from './PageActions.vue'
+import CopyCommand from './CopyCommand.vue'
+import HeroShowcase from './HeroShowcase.vue'
+
+const INSTALL_COMMAND = 'curl -fsSL https://levelrail.com/install.sh | sudo sh'
 
 const { Layout } = DefaultTheme
 const { hasSidebar } = useSidebar()
@@ -31,21 +35,26 @@ const { hasSidebar } = useSidebar()
     </template>
     <template #home-hero-image>
       <HeroField />
+      <HeroShowcase
+        src="/assets/screenshots/dashboard-home.png"
+        alt="The Levelrail dashboard home: apps, nodes and recent deploys at a glance"
+        url="levelrail.local"
+      />
     </template>
     <template #home-hero-actions-after>
-      <div class="trust-strip">
-        <a
-          class="trust-strip__item"
-          href="https://github.com/glincker/levelrail/blob/main/LICENSE"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Apache 2.0
-        </a>
-        <span class="trust-strip__item trust-strip__item--text">
-          Runs on your own servers: secrets, metrics, and logs stay node-local, nothing shipped to a third party.
-        </span>
+      <div class="hero-install">
+        <CopyCommand :command="INSTALL_COMMAND" prompt="$" />
       </div>
+      <ul class="trust-strip">
+        <li class="trust-strip__item">
+          <a href="https://github.com/glincker/levelrail/blob/main/LICENSE" target="_blank" rel="noreferrer">Free, Apache 2.0</a>
+        </li>
+        <li class="trust-strip__item">Pre-release</li>
+        <li class="trust-strip__item">
+          <a href="https://github.com/glincker/levelrail" target="_blank" rel="noreferrer">GitHub</a>
+        </li>
+        <li class="trust-strip__item">Secrets, metrics and logs stay on your servers</li>
+      </ul>
     </template>
     <template #layout-bottom>
       <CustomFooter />

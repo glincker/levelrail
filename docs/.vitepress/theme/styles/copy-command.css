@@ -1,0 +1,97 @@
+/* Reusable copy-to-clipboard command chip (CopyCommand.vue). Values come
+   from --copy-cmd-* tokens so one edit restyles every instance. */
+:root {
+  --copy-cmd-bg: rgba(255, 255, 255, 0.05);
+  --copy-cmd-border: rgba(255, 255, 255, 0.14);
+  --copy-cmd-fg: #ececec;
+  --copy-cmd-muted: #a1a1a6;
+  --copy-cmd-accent: var(--glinui-accent-soft-text, #58b1ce);
+  --copy-cmd-radius: var(--glinui-radius-full, 999px);
+}
+
+.copy-cmd {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 6px 6px 6px 16px;
+  border: 1px solid var(--copy-cmd-border);
+  border-radius: var(--copy-cmd-radius);
+  background: var(--copy-cmd-bg);
+  color: var(--copy-cmd-fg);
+  font-family: var(--glinui-font-mono, ui-monospace, monospace);
+  font-size: 13px;
+}
+
+.copy-cmd__prompt {
+  color: var(--copy-cmd-accent);
+  user-select: none;
+}
+
+.copy-cmd__text {
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+  scrollbar-width: none;
+}
+
+.copy-cmd__text::-webkit-scrollbar {
+  display: none;
+}
+
+.copy-cmd__btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--copy-cmd-radius);
+  background: transparent;
+  color: var(--copy-cmd-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.copy-cmd__btn:hover {
+  color: var(--copy-cmd-fg);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.copy-cmd__btn:focus-visible {
+  outline: 2px solid var(--copy-cmd-accent);
+  outline-offset: 2px;
+}
+
+.copy-cmd__icon {
+  width: 16px;
+  height: 16px;
+}
+
+.copy-cmd__btn:has(.copy-cmd__icon:only-child) {
+  color: inherit;
+}
+
+.copy-cmd__status {
+  position: absolute;
+  right: 6px;
+  bottom: calc(100% + 6px);
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--copy-cmd-accent);
+  color: #04141a;
+  font-family: var(--glinui-font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.copy-cmd__status:empty {
+  display: none;
+}

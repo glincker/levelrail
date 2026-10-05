@@ -1,0 +1,117 @@
+/* Half-cut product frame on the home hero's right side (HeroShowcase.vue).
+   Desktop: absolutely placed, bleeding off the right and bottom edges of
+   .VPHero. Below 1100px it stacks under the text in normal flow. */
+:root {
+  --showcase-radius: 14px;
+  --showcase-border: rgba(255, 255, 255, 0.14);
+  --showcase-bg: #0b0d10;
+  --showcase-glow: rgba(47, 179, 220, 0.35);
+  --showcase-shadow: 0 40px 120px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.hero-showcase {
+  position: relative;
+  width: min(720px, 94%);
+  margin: 40px auto 0;
+  perspective: 1800px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+}
+
+.hero-showcase__glow {
+  position: absolute;
+  inset: 6% 4% 10% 4%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--showcase-glow), transparent 75%);
+  filter: blur(40px);
+  z-index: 0;
+}
+
+.hero-showcase__frame {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border: 1px solid var(--showcase-border);
+  border-radius: var(--showcase-radius);
+  background: var(--showcase-bg);
+  box-shadow: var(--showcase-shadow);
+}
+
+.hero-showcase__chrome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--showcase-border);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.hero-showcase__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.hero-showcase__url {
+  margin-left: 10px;
+  color: #8a8a92;
+  font-family: var(--glinui-font-mono, ui-monospace, monospace);
+  font-size: 11px;
+}
+
+.hero-showcase__img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (min-width: 1100px) {
+  .VPHome .VPHero .hero-showcase {
+    position: absolute;
+    top: 150px;
+    left: 52%;
+    right: -9vw;
+    width: auto;
+    margin: 0;
+    z-index: 0;
+    -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 98%),
+      linear-gradient(to right, transparent 0%, #000 12%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to bottom, #000 62%, transparent 98%), linear-gradient(to right, transparent 0%, #000 12%);
+    mask-composite: intersect;
+  }
+
+  .hero-showcase__frame {
+    transform: rotateY(-9deg) rotateX(3deg);
+    transform-origin: left center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-showcase__frame {
+    transform: none;
+  }
+}
+
+@media (min-width: 960px) and (max-width: 1099px) {
+  .VPHome .VPHero.has-image .container {
+    flex-direction: column;
+  }
+
+  .VPHome .VPHero.has-image .main {
+    width: 100%;
+    max-width: 592px;
+  }
+}
+
+@media (max-width: 1099px) {
+  .VPHome .VPHero .image-container {
+    width: 100%;
+    height: auto;
+  }
+
+  .VPHome .VPHero .image {
+    order: 3;
+  }
+}

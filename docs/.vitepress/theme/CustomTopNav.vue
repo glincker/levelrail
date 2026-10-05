@@ -28,6 +28,7 @@ function toggleDark() {
 // page and doc pages. The scroll listener itself can just always be
 // attached -- it's a cheap no-op on pages where isHome is false, so it
 // doesn't need its own attach/detach lifecycle tied to route changes.
+const SECONDARY_LINKS = ['/troubleshooting', '/roadmap', '/changelog/']
 const scrolled = ref(false)
 const isHome = computed(() => frontmatter.value.layout === 'home')
 
@@ -68,6 +69,7 @@ onUnmounted(() => {
           v-for="item in theme.nav ?? []"
           :key="item.text"
           class="custom-nav__link"
+          :class="{ 'custom-nav__link--secondary': SECONDARY_LINKS.includes(item.link) }"
           :href="item.link"
         >
           {{ item.text }}
