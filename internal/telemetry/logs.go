@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -316,6 +317,47 @@ type LogCollector struct {
 	store       *DB
 	broadcaster *LogBroadcaster
 	logger      *slog.Logger
+
+	cursorMu sync.Mutex
+	cursors  map[string]time.Time
+}
+
+// resumePoint is where a (re)subscription to containerID's log stream must
+// start so already-stored lines are not ingested again: the in-memory
+// cursor, else the newest stored line (a control plane restart), else the
+// zero time (a container never seen).
+func (lc *LogCollector) resumePoint(ctx context.Context, resourceID, containerID string) time.Time {
+	lc.cursorMu.Lock()
+	cur, ok := lc.cursors[containerID]
+	lc.cursorMu.Unlock()
+	if ok {
+		return cur
+	}
+	latest, err := lc.store.LatestLogTimestamp(ctx, resourceID, containerID)
+	if err != nil {
+		lc.logger.Warn("telemetry: resolve log resume point failed", slog.String("container_id", containerID), slog.String("error", err.Error()))
+		return time.Time{}
+	}
+	return latest
+}
+
+func (lc *LogCollector) advanceCursor(containerID string, ts time.Time) {
+	lc.cursorMu.Lock()
+	defer lc.cursorMu.Unlock()
+	if lc.cursors == nil {
+		lc.cursors = make(map[string]time.Time)
+	}
+	if next := ts.Add(time.Nanosecond); next.After(lc.cursors[containerID]) {
+		lc.cursors[containerID] = next
+	}
+}
+
+// forgetCursor drops containerID's resume point once its container is no
+// longer a log target.
+func (lc *LogCollector) forgetCursor(containerID string) {
+	lc.cursorMu.Lock()
+	delete(lc.cursors, containerID)
+	lc.cursorMu.Unlock()
 }
 
 // NewLogCollector builds a LogCollector. broadcaster may be nil: without
@@ -342,7 +384,7 @@ func NewLogCollector(source LogSource, store *DB, broadcaster *LogBroadcaster, l
 // this package's two collectors have genuinely different shapes even
 // though they share a store and a retention pattern.
 func (lc *LogCollector) StreamOne(ctx context.Context, target LogTarget) error {
-	lines, errs := lc.source.Logs(ctx, target.ContainerID, true, time.Time{})
+	lines, errs := lc.source.Logs(ctx, target.ContainerID, true, lc.resumePoint(ctx, target.ResourceID, target.ContainerID))
 
 	ticker := time.NewTicker(logBatchMaxWait)
 	defer ticker.Stop()
@@ -387,6 +429,7 @@ func (lc *LogCollector) StreamOne(ctx context.Context, target LogTarget) error {
 				return nil // the stream ended on its own, e.g. the container stopped
 			}
 			entry := toLogEntry(target.ResourceID, target.ContainerID, line)
+			lc.advanceCursor(target.ContainerID, entry.Timestamp)
 			// Published before it's ever added to the batch below: a
 			// live subscriber must see this line the instant it arrives,
 			// not delayed behind logBatchMaxLines/logBatchMaxWait, which
@@ -459,6 +502,7 @@ func (lc *LogCollector) Run(ctx context.Context, resync time.Duration, targetsFu
 			if _, ok := wanted[id]; !ok {
 				cancel()
 				delete(active, id)
+				lc.forgetCursor(id)
 			}
 		}
 
@@ -491,4 +535,18 @@ func (lc *LogCollector) Run(ctx context.Context, resync time.Duration, targetsFu
 			reconcile()
 		}
 	}
+}
+
+// LatestLogTimestamp returns the newest stored line time for containerID,
+// or the zero time when none is stored.
+func (db *DB) LatestLogTimestamp(ctx context.Context, resourceID, containerID string) (time.Time, error) {
+	var ns sql.NullInt64
+	err := db.QueryRowContext(ctx, `SELECT MAX(ts) FROM log_entries WHERE resource_id = ? AND container_id = ?`, resourceID, containerID).Scan(&ns)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("telemetry: latest log timestamp for %s: %w", containerID, err)
+	}
+	if !ns.Valid {
+		return time.Time{}, nil
+	}
+	return time.Unix(0, ns.Int64).Add(time.Nanosecond), nil
 }

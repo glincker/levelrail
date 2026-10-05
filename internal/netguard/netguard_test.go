@@ -95,3 +95,37 @@ func TestNewClient_OptInTogglesInternalAccess(t *testing.T) {
 		t.Fatalf("GET after disabling opt-in: err = %v, want ErrBlockedAddress", err)
 	}
 }
+
+func TestValidateURL(t *testing.T) {
+	t.Setenv(AllowPrivateEnv, "")
+	tests := []struct {
+		name    string
+		url     string
+		wantErr error
+	}{
+		{"loopback ip", "http://127.0.0.1:9000/hook", ErrBlockedAddress},
+		{"localhost", "http://localhost/hook", ErrBlockedAddress},
+		{"private ip", "https://10.0.0.5/hook", ErrBlockedAddress},
+		{"metadata", "http://169.254.169.254/", ErrBlockedAddress},
+		{"ipv6 loopback", "http://[::1]/", ErrBlockedAddress},
+		{"public ip", "https://8.8.8.8/hook", nil},
+		{"not http", "ftp://example.com/x", ErrInvalidURL},
+		{"no host", "https:///x", ErrInvalidURL},
+		{"garbage", "not a url", ErrInvalidURL},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateURL(context.Background(), tt.url)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("ValidateURL(%q) = %v, want %v", tt.url, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateURL_AllowPrivate(t *testing.T) {
+	t.Setenv(AllowPrivateEnv, "true")
+	if err := ValidateURL(context.Background(), "http://127.0.0.1:9000/hook"); err != nil {
+		t.Errorf("ValidateURL with %s=true = %v, want nil", AllowPrivateEnv, err)
+	}
+}

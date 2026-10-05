@@ -560,3 +560,21 @@ func TestHandlePurgeAuditLog_Error(t *testing.T) {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
 	}
 }
+
+func TestCSVSafe(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"", ""},
+		{"root", "root"},
+		{"/api/v1/apps", "/api/v1/apps"},
+		{`=HYPERLINK("http://evil","x")`, `'=HYPERLINK("http://evil","x")`},
+		{"+1+1", "'+1+1"},
+		{"-2+3", "'-2+3"},
+		{"@SUM(A1)", "'@SUM(A1)"},
+		{"\tcmd", "'\tcmd"},
+	}
+	for _, tt := range tests {
+		if got := csvSafe(tt.in); got != tt.want {
+			t.Errorf("csvSafe(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}

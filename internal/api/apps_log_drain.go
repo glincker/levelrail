@@ -54,7 +54,9 @@ func (rt *Router) handleGetAppLogDrain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toLogDrainResource(name, *svc.LogDrain))
+	res := toLogDrainResource(name, *svc.LogDrain)
+	res.Target = rt.notifyTargetFor(r, "", res.Target)
+	writeJSON(w, http.StatusOK, res)
 }
 
 // handleSetAppLogDrain handles PUT /api/v1/apps/{name}/log-drain:

@@ -47,15 +47,32 @@ func toUserResource(u store.User, providers []string) userResource {
 	}
 }
 
-// handleListUsers handles GET /api/v1/users: every account with access
-// to this control plane. AbilityRead, the same tier GET /api/v1/apps
-// uses: this is who has access, not a credential.
+// handleListUsers handles GET /api/v1/users. A root caller sees every
+// account; any other caller sees only their own record (the UI needs it
+// to know its own role), so a read-scoped user or token cannot enumerate
+// colleagues' emails and abilities.
 func (rt *Router) handleListUsers(w http.ResponseWriter, r *http.Request) {
+	principalType, principalID, abilities, err := rt.callerPrincipal(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
 	users, err := rt.auth.ListUsers(r.Context())
 	if err != nil {
 		rt.logger.Error("api: list users failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
+	}
+	if !hasAbility(abilities, AbilityRoot) {
+		own := make([]store.User, 0, 1)
+		if principalType == store.PrincipalTypeUser {
+			for _, u := range users {
+				if u.ID == principalID {
+					own = append(own, u)
+				}
+			}
+		}
+		users = own
 	}
 
 	out := make([]userResource, 0, len(users))

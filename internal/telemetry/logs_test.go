@@ -537,3 +537,73 @@ func TestLogCollectorRun_TargetsFuncError_ContinuesToNextResync(t *testing.T) {
 		t.Errorf("targetsFunc called %d times, want at least 2: a failing resync must not stop future attempts", call)
 	}
 }
+
+// sinceLogSource replays a fixed history but honors the resume point, like
+// Docker's own "since" option.
+type sinceLogSource struct {
+	lines []docker.LogLine
+	since []time.Time
+}
+
+func (f *sinceLogSource) Logs(_ context.Context, _ string, _ bool, since time.Time) (<-chan docker.LogLine, <-chan error) {
+	f.since = append(f.since, since)
+	out := make(chan docker.LogLine, len(f.lines))
+	errCh := make(chan error)
+	for _, l := range f.lines {
+		if since.IsZero() || !l.Timestamp.Before(since) {
+			out <- l
+		}
+	}
+	close(out)
+	close(errCh)
+	return out, errCh
+}
+
+func TestStreamOne_ResubscribeDoesNotDuplicateLines(t *testing.T) {
+	base := time.Now().Add(-time.Hour).Truncate(time.Millisecond)
+	history := []docker.LogLine{
+		{Stream: "stdout", Timestamp: base, Message: "one"},
+		{Stream: "stdout", Timestamp: base.Add(time.Second), Message: "two"},
+	}
+	target := LogTarget{ResourceID: "service:web", ContainerID: "c1"}
+	count := func(db *DB) int {
+		got, err := db.QueryLogs(context.Background(), "service:web", base.Add(-time.Minute), base.Add(time.Minute), "")
+		if err != nil {
+			t.Fatalf("QueryLogs: %v", err)
+		}
+		return len(got)
+	}
+
+	tests := []struct {
+		name     string
+		sameProc bool
+	}{
+		{"same process reconnect uses the in-memory cursor", true},
+		{"control plane restart resumes from the stored newest line", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newTestDB(t)
+			src := &sinceLogSource{lines: history}
+			lc := NewLogCollector(src, db, nil, nil)
+			if err := lc.StreamOne(context.Background(), target); err != nil {
+				t.Fatalf("first StreamOne: %v", err)
+			}
+			if tt.sameProc {
+				src.lines = append(src.lines, docker.LogLine{Stream: "stdout", Timestamp: base.Add(2 * time.Second), Message: "three"})
+			} else {
+				lc = NewLogCollector(src, db, nil, nil)
+				src.lines = append(src.lines, docker.LogLine{Stream: "stdout", Timestamp: base.Add(2 * time.Second), Message: "three"})
+			}
+			if err := lc.StreamOne(context.Background(), target); err != nil {
+				t.Fatalf("second StreamOne: %v", err)
+			}
+			if got := count(db); got != 3 {
+				t.Errorf("stored %d lines after resubscribing, want 3 (no duplicates, new line kept)", got)
+			}
+			if !src.since[0].IsZero() || src.since[1].IsZero() {
+				t.Errorf("since args = %v, want zero then non-zero", src.since)
+			}
+		})
+	}
+}

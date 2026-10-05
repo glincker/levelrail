@@ -1623,6 +1623,11 @@ levelrail-cli iam policies update <id> --name NAME --document DOC [flags]
 ## Secrets
 
 ```
+levelrail-cli secrets generate-master-key --out PATH
+```
+write a new master key to a file (mode 0600, never overwrites), locally
+
+```
 levelrail-cli secrets rotate-master-key --new-key-file PATH [flags]
 ```
 

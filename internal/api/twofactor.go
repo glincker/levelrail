@@ -458,13 +458,37 @@ func (rt *Router) verifyTwoFactorCode(ctx context.Context, userID, code, recover
 		if resolveErr != nil {
 			return false, nil
 		}
-		return totp.Validate(secret, code, time.Now()), nil
+		return rt.claimTOTPCode(ctx, userID, secret, code)
 	case recoveryCode != "":
 		hash := hashToken(totp.NormalizeRecoveryCode(recoveryCode))
 		return rt.recoveryCodes.ConsumeUserRecoveryCode(ctx, userID, hash)
 	default:
 		return false, nil
 	}
+}
+
+// totpStepClaimer is the optional store capability that makes a TOTP code
+// single-use; a store without it keeps the plain time-window check.
+type totpStepClaimer interface {
+	ClaimUserTOTPStep(ctx context.Context, id string, step int64) (bool, error)
+}
+
+// claimTOTPCode validates code and, when the store supports it, burns its
+// time step so the same code cannot be replayed inside its window.
+func (rt *Router) claimTOTPCode(ctx context.Context, userID, secret, code string) (bool, error) {
+	step, ok := totp.ValidateStep(secret, code, time.Now())
+	if !ok {
+		return false, nil
+	}
+	claimer, supported := rt.auth.(totpStepClaimer)
+	if !supported {
+		return true, nil
+	}
+	fresh, err := claimer.ClaimUserTOTPStep(ctx, userID, step)
+	if err != nil {
+		return false, fmt.Errorf("claim totp step: %w", err)
+	}
+	return fresh, nil
 }
 
 // generateRecoveryCodes mints recoveryCodeCount fresh single-use

@@ -116,6 +116,17 @@ func (rt *Router) handleGetNetworkTopology(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	canSeeApp, err := rt.appVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: get network topology: visibility", err)
+		return
+	}
+	canSeeDB, err := rt.databaseVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: get network topology: visibility", err)
+		return
+	}
+
 	byID := make(map[string]store.Node, len(nodes))
 	for _, n := range nodes {
 		byID[n.ID] = n
@@ -133,6 +144,9 @@ func (rt *Router) handleGetNetworkTopology(w http.ResponseWriter, r *http.Reques
 	}
 
 	for _, s := range services {
+		if !canSeeApp(s.Name) {
+			continue
+		}
 		node := resolvePlacementNode(s.NodeID, rt.localNodeID, byID)
 		app := networkTopologyAppResource{
 			Name:    s.Name,
@@ -148,6 +162,9 @@ func (rt *Router) handleGetNetworkTopology(w http.ResponseWriter, r *http.Reques
 	}
 
 	for _, d := range databases {
+		if !canSeeDB(d.Name) {
+			continue
+		}
 		node := resolvePlacementNode(d.NodeID, rt.localNodeID, byID)
 		db := networkTopologyDatabaseResource{
 			Name:    d.Name,

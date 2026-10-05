@@ -4,13 +4,16 @@
 package netguard
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"net/netip"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -123,4 +126,45 @@ func NewClient() *http.Client {
 			ExpectContinueTimeout: time.Second,
 		},
 	}
+}
+
+// ErrInvalidURL is returned by ValidateURL for a URL that is not an
+// absolute http(s) URL with a host.
+var ErrInvalidURL = errors.New("netguard: not an absolute http or https URL")
+
+// ValidateURL rejects, at configuration time, a URL every later send would
+// refuse: a non-http(s) URL, a loopback or private IP literal, localhost, or
+// a hostname whose every resolved address is internal. A hostname that does
+// not resolve here is accepted, since resolution can differ at send time.
+func ValidateURL(ctx context.Context, raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" {
+		return ErrInvalidURL
+	}
+	if AllowPrivate() {
+		return nil
+	}
+	host := strings.ToLower(u.Hostname())
+	blocked := fmt.Errorf("%w: %s (set %s=true on the control plane to allow internal destinations)", ErrBlockedAddress, host, AllowPrivateEnv)
+	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
+		return blocked
+	}
+	if ip, perr := netip.ParseAddr(host); perr == nil {
+		if IsBlocked(ip) {
+			return blocked
+		}
+		return nil
+	}
+	lookupCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	addrs, lerr := net.DefaultResolver.LookupNetIP(lookupCtx, "ip", host)
+	if lerr != nil || len(addrs) == 0 {
+		return nil
+	}
+	for _, a := range addrs {
+		if !IsBlocked(a) {
+			return nil
+		}
+	}
+	return blocked
 }

@@ -801,9 +801,16 @@ func run(logger *slog.Logger) error {
 	orphanReaper := newOrphanReaper(db, client, agentRegistry, previewLocalNodeID, instanceID, logger)
 	apiRouter.SetOrphanReaper(orphanReaper)
 
+	edge, err := loadIngressEdge(logger)
+	if err != nil {
+		return fmt.Errorf("ingress edge settings: %w", err)
+	}
+	apiRouter.SetDoctorIngressEdge(edge.doctorInfo())
+
 	engine.SetStore(db)
 	engine.SetSource(dynamicSource(dynamicSourceDeps{
 		orphanReaper:                 orphanReaper,
+		ingressEdge:                  edge,
 		db:                           db,
 		runtime:                      client,
 		driver:                       ingressDriver,
@@ -819,10 +826,11 @@ func run(logger *slog.Logger) error {
 		networkPrefix:                b.ShortName,
 		instanceID:                   instanceID,
 		livenessTracker:              application.NewLivenessTracker(),
+		restartBackoff:               newRestartBackoff(logger),
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),
 		ingressHTTPAddr:              ingressHTTPAddr(),
-		httpRedirect:                 httpRedirectEnabled(ingressHTTPAddr(), logger),
+		httpRedirect:                 httpRedirectEnabled(ingressHTTPAddr(), edge.inherited, logger),
 		models:                       newModelDeps(),
 		lbRegistry:                   lbRegistry,
 		previewNotifier:              previewManager,
@@ -3472,6 +3480,8 @@ type dynamicSourceDeps struct {
 	// livenessTracker outlives the per-pass controllers below, which is
 	// the whole point: see application.WithLivenessTracker.
 	livenessTracker *application.LivenessTracker
+	// restartBackoff is shared for the same reason as livenessTracker.
+	restartBackoff *application.RestartBackoff
 	// publicHost is APP_PUBLIC_HOST, threaded to the ingress controller
 	// for the zero-config fallback domain feature; see
 	// ingressreconcile.WithPublicHost's own doc comment.
@@ -3487,6 +3497,7 @@ type dynamicSourceDeps struct {
 	models       *modelDeps
 	// orphanReaper removes leftover containers and volumes on a schedule.
 	orphanReaper *orphans.Reaper
+	ingressEdge  ingressEdge
 	// lbRegistry is shared with the API so it can report live upstream status.
 	lbRegistry *loadbalancer.Registry
 }
@@ -3533,6 +3544,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			// Routes remote apps to their node's mesh address.
 			ingressreconcile.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
 		}
+		ingressOpts = append(ingressOpts, deps.ingressEdge.options()...)
 		if experimental.Enabled(experimental.AIModels) {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
 		}
@@ -3666,6 +3678,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithNetworkPrefix(deps.networkPrefix),
 		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),
+		application.WithRestartBackoff(deps.restartBackoff),
 		application.WithRolloutRecorder(rolloutRecorderFor(deps.db, deps.previewNotifier)),
 		application.WithAppliedConfigRecorder(deps.db),
 		application.WithPreviousReleaseHold(previousReleaseHold(deps.logger)),
@@ -3853,12 +3866,15 @@ func publicHostSource() string {
 // httpRedirectEnabled reads APP_INGRESS_HTTP_REDIRECT (true, false, or auto,
 // the default). Auto enables the redirect only when the HTTP address can be
 // bound right now, so a non-root dev run keeps working without port 80.
-func httpRedirectEnabled(addr string, logger *slog.Logger) bool {
+func httpRedirectEnabled(addr string, inherited *ingressdriver.InheritedSockets, logger *slog.Logger) bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv("APP_INGRESS_HTTP_REDIRECT"))) {
 	case "1", "true", "on", "yes":
 		return true
 	case "0", "false", "off", "no":
 		return false
+	}
+	if inherited.Active() && inherited.HTTP != 0 {
+		return true
 	}
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {

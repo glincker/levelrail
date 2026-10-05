@@ -28,9 +28,14 @@ Snapshots here stay on the same disk as the database; see [disaster recovery](/d
 | In a backup | Not in a backup |
 | --- | --- |
 | Every app, domain, environment, project and user record | **The master key** |
-| API token hashes and session data | App volumes and managed database contents |
+| API token hashes (browser sessions are in memory and never stored) | App volumes and managed database contents |
 | Secrets, still encrypted | The telemetry (metrics and logs) database |
 | Deploy history and audit log | TLS private keys held outside the database |
+| | **Alert rules, notification channels, silences, maintenance windows and alert history**, which live in a separate `alerting.db` |
+
+::: warning Alerting configuration is not in a backup yet
+`alerting.db` sits next to `levelrail.db` in the data directory and holds every alert rule, notification channel (with its webhook URL or key), silence and maintenance window. Neither the local snapshots nor the off-box encrypted backup include it, so a restore on a new machine comes back with apps and users but no alerts. Until that is fixed, copy it yourself on a schedule, for example `sqlite3 <data dir>/alerting.db ".backup '/safe/place/alerting.db'"` (safe while the control plane runs), and put it back, with the control plane stopped, after a restore. The file holds channel credentials in plain text, so treat the copy like `master.key`. Verified locally: a snapshot taken with `levelrail-cli control-plane-backups create` contained only `levelrail.db`.
+:::
 
 ::: warning The master key is never in a backup
 Secrets in the database are encrypted with the master key. A restore without the same master key leaves those secrets unreadable. Keep a separate copy of the master key (a password manager or offline vault), and store it apart from the backups. Whoever holds both can read your secrets.

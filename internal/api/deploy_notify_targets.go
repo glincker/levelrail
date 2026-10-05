@@ -171,7 +171,9 @@ func (rt *Router) handleListDeployNotifyTargets(w http.ResponseWriter, r *http.R
 
 	out := make([]deployTargetResource, 0, len(targets))
 	for _, t := range targets {
-		out = append(out, toDeployTargetResource(t))
+		res := toDeployTargetResource(t)
+		res.NotifyURL = rt.notifyTargetFor(r, t.NotifyKind, t.NotifyURL)
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
 }

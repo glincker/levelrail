@@ -38,7 +38,7 @@
 #   LEVELRAIL_MIN_DISK_GB    free disk requirement (default: 10)
 #   LEVELRAIL_MIN_DOCKER_MAJOR  minimum Docker major version (default: 24)
 #   LEVELRAIL_HEALTH_WAIT    seconds to wait for the service (default: 60)
-#   LEVELRAIL_CONFIGURE_UFW  set to 1 to allow SSH, 80/tcp, and 443/tcp in
+#   LEVELRAIL_CONFIGURE_UFW  set to 1 to allow SSH, 80/tcp, 443/tcp, and 443/udp in
 #                            ufw and enable it if inactive. Off by default.
 #   LEVELRAIL_DASHBOARD_PORT dashboard/API port (default: 8080). If taken and
 #                            left at its default, the installer picks the
@@ -50,6 +50,12 @@
 #                            the installer never does this on its own; it
 #                            fails preflight instead and tells you to set
 #                            these explicitly once you've accepted that trade.
+#   LEVELRAIL_SOCKET_ACTIVATION  set to 1 to let systemd own the ingress
+#                            sockets, so a restart or upgrade of the control
+#                            plane queues connections instead of refusing
+#                            them (see docs/resilience.md). Off by default;
+#                            on upgrade, 1 switches an existing install over
+#                            (one brief stop) and 0 switches it back.
 
 set -eu
 
@@ -59,6 +65,9 @@ SERVICE_NAME="levelrail"
 INSTALL_DIR="${LEVELRAIL_INSTALL_DIR:-/usr/local/bin}"
 DATA_DIR="${LEVELRAIL_DATA_DIR:-/var/lib/levelrail-data}"
 UNIT_PATH="/etc/systemd/system/${SERVICE_NAME}.service"
+SOCKET_ACTIVATION="${LEVELRAIL_SOCKET_ACTIVATION:-}"
+HTTP_SOCKET_UNIT="${SERVICE_NAME}-http.socket"
+HTTPS_SOCKET_UNIT="${SERVICE_NAME}-https.socket"
 BIN_PATH="${INSTALL_DIR}/${BINARY_NAME}"
 DASHBOARD_PORT="${LEVELRAIL_DASHBOARD_PORT:-8080}"
 DASHBOARD_PORT_PINNED=0
@@ -461,13 +470,52 @@ write_brand() {
 	EOF
 }
 
+write_socket_units() {
+	cat >"/etc/systemd/system/${HTTP_SOCKET_UNIT}" <<EOF
+[Unit]
+Description=Levelrail ingress HTTP socket (held open across control plane restarts)
+
+[Socket]
+ListenStream=${HTTP_PORT}
+FileDescriptorName=http
+Service=${SERVICE_NAME}.service
+
+[Install]
+WantedBy=sockets.target
+EOF
+	cat >"/etc/systemd/system/${HTTPS_SOCKET_UNIT}" <<EOF
+[Unit]
+Description=Levelrail ingress HTTPS socket (held open across control plane restarts)
+
+[Socket]
+ListenStream=${HTTPS_PORT}
+FileDescriptorName=https
+Service=${SERVICE_NAME}.service
+
+[Install]
+WantedBy=sockets.target
+EOF
+}
+
+# remove_socket_units goes back to the control plane binding 80/443 itself.
+remove_socket_units() {
+	systemctl disable --now "$HTTP_SOCKET_UNIT" "$HTTPS_SOCKET_UNIT" >/dev/null 2>&1 || true
+	rm -f "/etc/systemd/system/${HTTP_SOCKET_UNIT}" "/etc/systemd/system/${HTTPS_SOCKET_UNIT}"
+}
+
 write_unit() {
+	socket_deps=""
+	if [ "$SOCKET_ACTIVATION" = "1" ]; then
+		socket_deps="Requires=${HTTP_SOCKET_UNIT} ${HTTPS_SOCKET_UNIT}
+After=${HTTP_SOCKET_UNIT} ${HTTPS_SOCKET_UNIT}"
+	fi
 	cat >"$UNIT_PATH" <<EOF
 [Unit]
 Description=Levelrail control plane
 After=network-online.target docker.service
 Requires=docker.service
 Wants=network-online.target
+${socket_deps}
 
 [Service]
 ExecStart=${BIN_PATH}
@@ -498,11 +546,12 @@ configure_ufw() {
 	ufw allow OpenSSH >/dev/null 2>&1 || ufw allow 22/tcp >/dev/null 2>&1
 	ufw allow "${HTTP_PORT}/tcp" >/dev/null 2>&1
 	ufw allow "${HTTPS_PORT}/tcp" >/dev/null 2>&1
+	ufw allow "${HTTPS_PORT}/udp" >/dev/null 2>&1
 	if [ "$was_active" -eq 1 ]; then
 		log "ufw was already active, added rules without re-enabling."
 	else
 		ufw --force enable >/dev/null 2>&1
-		log "ufw enabled: SSH, ${HTTP_PORT}/tcp, and ${HTTPS_PORT}/tcp are allowed, everything else denied by default."
+		log "ufw enabled: SSH, ${HTTP_PORT}/tcp, ${HTTPS_PORT}/tcp, and ${HTTPS_PORT}/udp (HTTP/3) are allowed, everything else denied by default."
 	fi
 }
 
@@ -704,9 +753,13 @@ do_install() {
 	install_binary
 	write_brand
 	write_unit
+	[ "$SOCKET_ACTIVATION" != "1" ] || write_socket_units
 	configure_ufw
 	systemctl daemon-reload
 	systemctl enable "$SERVICE_NAME" >/dev/null 2>&1
+	if [ "$SOCKET_ACTIVATION" = "1" ]; then
+		systemctl enable --now "$HTTP_SOCKET_UNIT" "$HTTPS_SOCKET_UNIT" >/dev/null 2>&1
+	fi
 	systemctl restart "$SERVICE_NAME"
 	wait_healthy
 	discover_public_ip
@@ -719,7 +772,20 @@ do_upgrade() {
 	detect_arch
 	[ -n "$GOARCH" ] || fatal "unsupported architecture: $(uname -m)"
 	install_binary
-	[ -f "$UNIT_PATH" ] || write_unit
+	case "$SOCKET_ACTIVATION" in
+	1)
+		write_unit
+		write_socket_units
+		systemctl daemon-reload
+		systemctl stop "$SERVICE_NAME" >/dev/null 2>&1 || true
+		systemctl enable --now "$HTTP_SOCKET_UNIT" "$HTTPS_SOCKET_UNIT" >/dev/null 2>&1
+		;;
+	0)
+		remove_socket_units
+		write_unit
+		;;
+	*) [ -f "$UNIT_PATH" ] || write_unit ;;
+	esac
 	systemctl daemon-reload
 	systemctl restart "$SERVICE_NAME"
 	wait_healthy
@@ -729,6 +795,7 @@ do_upgrade() {
 do_uninstall() {
 	if [ -f "$UNIT_PATH" ]; then
 		systemctl disable --now "$SERVICE_NAME" >/dev/null 2>&1 || true
+		remove_socket_units
 		rm -f "$UNIT_PATH"
 		systemctl daemon-reload
 	fi

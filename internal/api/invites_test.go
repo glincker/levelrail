@@ -557,3 +557,23 @@ func TestHandleAcceptInvite_DuplicateEmailAgainstExistingUser(t *testing.T) {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusConflict, rec.Body.String())
 	}
 }
+
+func TestHandleCreateInvite_LinkIsAbsoluteWithDashboardURL(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SetDashboardURL(context.Background(), "https://deploy.example.com"); err != nil {
+		t.Fatalf("SetDashboardURL: %v", err)
+	}
+
+	req := authedRequest(t, cookie, http.MethodPost, "/api/v1/invites", createInviteBody("abs@example.com", RoleViewer))
+	req.Host = "evil.example.net"
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	var resp createInviteResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal: %v, body = %s", err, rec.Body.String())
+	}
+	if !strings.HasPrefix(resp.Link, "https://deploy.example.com/accept-invite?token=") {
+		t.Errorf("Link = %q, want an absolute link on the dashboard URL, never the request Host", resp.Link)
+	}
+}

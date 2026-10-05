@@ -382,16 +382,22 @@ jobs:
       - name: Upgrade npm for OIDC
         run: npm install -g npm@11.18.0
 
-      # A prerelease version publishes under the beta dist-tag so it never
-      # becomes what a plain `npm install levelrail-cli` resolves to. A
-      # package version that is already on the registry is skipped, so a
-      # re-run after a partial failure finishes the rest.
+      # A prerelease takes the latest dist-tag only while no stable version
+      # exists on npm, so `npm install levelrail-cli` gets the newest build
+      # instead of a stale one; after the first stable release, prereleases
+      # go to beta. A package version that is already on the registry is
+      # skipped, so a re-run after a partial failure finishes the rest.
       - name: Publish npm packages
         run: |
           set -euo pipefail
           scripts/build-npm-packages.sh "${{ env.RELEASE_TAG }}" dist npm-out
           dist_tag=latest
-          case "${{ env.RELEASE_TAG }}" in *-*) dist_tag=beta ;; esac
+          case "${{ env.RELEASE_TAG }}" in
+            *-*)
+              has_stable=$(npm view levelrail-cli versions --json 2>/dev/null | node -e 'const v=[].concat(JSON.parse(require("fs").readFileSync(0,"utf8")||"[]")); console.log(v.some((x) => !x.includes("-")))')
+              [ "$has_stable" = "true" ] && dist_tag=beta
+              ;;
+          esac
           for dir in npm-out/levelrail-cli-*/ npm-out/levelrail-cli/; do
             name=$(node -p "require('./${dir}package.json').name")
             version=$(node -p "require('./${dir}package.json').version")

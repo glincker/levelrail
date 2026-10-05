@@ -1,7 +1,9 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/orphans"
@@ -69,9 +71,50 @@ func (rt *Router) handleListContainers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hidden, err := rt.hiddenContainerPrefixes(r)
+	if err != nil {
+		rt.internalError(w, "api: list containers: resolve visibility failed", err)
+		return
+	}
+
 	out := make([]containerResource, 0, len(containers))
 	for _, c := range containers {
+		if containerHidden(c.Name, hidden) {
+			continue
+		}
 		out = append(out, toContainerResource(c, orphans.IsManaged(c, desired, "")))
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// hiddenContainerPrefixes lists "<app>-" prefixes of apps the caller's IAM
+// policies deny, so a denied app's containers do not show up by name.
+func (rt *Router) hiddenContainerPrefixes(r *http.Request) ([]string, error) {
+	canRead, filtered, err := rt.callerAppVisibility(r)
+	if err != nil {
+		return nil, fmt.Errorf("resolve caller visibility: %w", err)
+	}
+	if !filtered {
+		return nil, nil
+	}
+	services, err := rt.apps.ListDesiredServices(r.Context())
+	if err != nil {
+		return nil, fmt.Errorf("list services: %w", err)
+	}
+	var hidden []string
+	for _, s := range services {
+		if !canRead(s.Name) {
+			hidden = append(hidden, s.Name+"-")
+		}
+	}
+	return hidden, nil
+}
+
+func containerHidden(name string, prefixes []string) bool {
+	for _, p := range prefixes {
+		if strings.HasPrefix(name, p) {
+			return true
+		}
+	}
+	return false
 }
