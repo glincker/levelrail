@@ -73,7 +73,9 @@ Both resources expose a `POST .../test` endpoint that validates the credential w
 
 ### Dashboard and CLI
 
-Test connection before a deploy or scheduled backup fails:
+![Levelrail Backups page on a fresh install, prompting you to add a backup target](assets/screenshots/backups.png)
+
+The **Backups** page starts empty until you connect a target. Test connection before a deploy or scheduled backup fails:
 - Dashboard: "Test connection" button on each row of Backup targets and Registry credentials tables.
 - CLI: `levelrail-cli backup-targets test <id>` or `levelrail-cli registry-credentials test <id>`
 

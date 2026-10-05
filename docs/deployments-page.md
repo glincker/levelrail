@@ -6,7 +6,7 @@ description: The cross-app Deployments page shows every deploy in one live list,
 
 The Deployments page (`/deployments`) lists every deploy across every app you can read, newest first. It updates live, so a deploy that starts or finishes appears without a refresh.
 
-![Levelrail deploy history view with one-click rollback](assets/screenshots/deploy-history.png)
+![Levelrail Deployments page with the summary strip and a live list of redeploys and a rollback across apps](assets/screenshots/deployments-all.png)
 
 ## What it shows
 

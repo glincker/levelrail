@@ -34,6 +34,8 @@ def main() -> None:
         page = browser.new_page()
         page.goto(f"{BASE_URL}/login")
         page.fill("#login-username", USERNAME)
+        page.get_by_role("button", name="Continue").click()
+        page.wait_for_selector("#login-password", timeout=15000)
         page.fill("#login-password", PASSWORD)
         page.click("button[type=submit]")
         page.wait_for_url(lambda url: "/login" not in url, timeout=15000)

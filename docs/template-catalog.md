@@ -6,6 +6,8 @@ description: Every service in Levelrail's one-click template catalog, grouped by
 
 Every entry in `internal/catalog.Templates` as of this build, grouped by category. This page exists so you can browse the full breadth of what's deployable in one click without opening the dashboard.
 
+![Levelrail service templates page: search box, category list with counts, and Deploy now cards](assets/screenshots/templates-catalog.png)
+
 This is a browsing list, not a how-to. For the API/CLI/UI mechanics (how a template deploys, the `$SERVICE_PASSWORD_*` magic variables, custom templates), see [Templates and registry](/templates-and-registry). The `Starter Kits` category gets its own deep-dive page, [Starter kit templates](/templates), covering the multi-service wiring patterns those seven demonstrate; this page lists them too, for completeness, but doesn't repeat that detail.
 
 ## How to read this
@@ -14,7 +16,7 @@ This is a browsing list, not a how-to. For the API/CLI/UI mechanics (how a templ
 - **ID** is what you pass to `levelrail-cli templates get <id>` / `templates deploy <id>`, and what `GET /api/v1/service-templates/{id}` expects.
 - **Notes** only flags something that changes how you'd deploy it. Today the only note in use is "Requires GPU": those entries ship CPU-safe Compose bodies that run, but aren't practical without an NVIDIA GPU passed through (and `internal/compose` doesn't support GPU passthrough yet, see [Templates and registry](/templates-and-registry#how-it-actually-works)).
 - This page has no popularity counts, deployment counts, or ratings. None of that is tracked anywhere in this codebase, so there's nothing honest to show.
-- Logos for many of these are already visible in the dashboard's own template picker (**Apps → New app → Browse templates**); this page stays text-only to keep it simple and to keep the table generator (below) the only thing that can go stale, not an icon mapping too.
+- Logos for many of these are already visible in the dashboard's own template picker (**Apps → New app → Browse templates**); the table below stays text-only to keep it simple and to keep the table generator (below) the only thing that can go stale, not an icon mapping too.
 
 <!-- BEGIN GENERATED CATALOG TABLE -->
 
