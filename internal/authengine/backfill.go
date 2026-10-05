@@ -45,6 +45,7 @@ type BackfillReport struct {
 	Passkeys              int
 	TOTP                  int
 	RecoveryCodesNotMoved int
+	OAuthIdentities       int
 }
 
 type legacyUser struct {
@@ -92,6 +93,9 @@ func Backfill(ctx context.Context, db *sql.DB, opts BackfillOptions) (BackfillRe
 		return rep, err
 	}
 	if err := backfillTOTP(ctx, tx, idMap, totp, &rep); err != nil {
+		return rep, err
+	}
+	if err := backfillOAuthIdentities(ctx, tx, idMap, opts.EncryptionKey, &rep); err != nil {
 		return rep, err
 	}
 	if opts.DryRun {

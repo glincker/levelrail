@@ -574,6 +574,7 @@ type Router struct {
 	authEngine       http.Handler         // nil when APP_AUTH_ENGINE is not "library"
 	libSessions      *authengine.Sessions // nil unless the sessions area is served by the library, set via WithAuthSessions
 	mfaLib           *authLibMFA          // nil unless the library serves AreaMFA
+	authLibOAuth     AuthLibOAuth         // nil keeps the in-house OAuth sign-in, see WithAuthLibOAuth
 	cpDRMaterial     EscrowMaterialReader
 	authLib          authLibState // library token, device and shadow hooks, zero in legacy mode
 }

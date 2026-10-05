@@ -45,6 +45,7 @@ func authEngineOptions(ctx context.Context, logger *slog.Logger, b *brand.Brand,
 			cfg.EncryptionKey = key
 		}
 	}
+	cfg.OAuth = authEngineOAuthWiring(logger, db, mgr)
 	eng, err := authengine.New(db, authengine.ConfigFromEnv(cfg))
 	if err != nil {
 		logger.Error("auth engine: setup failed, library routes stay off", slog.String("error", err.Error()))
@@ -57,7 +58,8 @@ func authEngineOptions(ctx context.Context, logger *slog.Logger, b *brand.Brand,
 	logger.Info("auth engine: library routes mounted", slog.String("prefix", eng.Prefix()))
 	opts := []api.Option{api.WithAuthEngine(eng.Prefix(), eng.Handler()), api.WithAuthEngineLibrary(eng)}
 	opts = append(opts, authSessionsOptions(eng)...)
-	return append(opts, authEngineMFAOptions(logger, eng, db)...)
+	opts = append(opts, authEngineMFAOptions(logger, eng, db)...)
+	return append(opts, authEngineOAuthOptions(eng)...)
 }
 
 // runAuthBackfill implements `<binary> auth-backfill [--dry-run]`.
@@ -105,6 +107,7 @@ func backfillAuth(ctx context.Context, db *store.DB, dataDir string, dryRun bool
 	_, _ = fmt.Fprintf(stdout, "  api tokens copied:       %d (skipped, no owner: %d)\n", rep.Tokens, rep.TokensSkippedNoOwner)
 	_, _ = fmt.Fprintf(stdout, "  passkeys copied:         %d\n", rep.Passkeys)
 	_, _ = fmt.Fprintf(stdout, "  totp secrets copied:     %d\n", rep.TOTP)
+	_, _ = fmt.Fprintf(stdout, "  oauth identities copied: %d\n", rep.OAuthIdentities)
 	if rep.RecoveryCodesNotMoved > 0 {
 		_, _ = fmt.Fprintf(stdout, "  note: recovery codes are not converted; %d user(s) must regenerate them\n", rep.RecoveryCodesNotMoved)
 	}
