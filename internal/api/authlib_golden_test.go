@@ -22,9 +22,14 @@ type goldenStep struct {
 // goldenRouter builds a router in the given engine mode over a fresh database.
 func goldenRouter(t *testing.T, mode string) (*Router, *http.Cookie, *store.DB) {
 	t.Helper()
+	return goldenRouterPoll(t, mode, "1ms")
+}
+
+func goldenRouterPoll(t *testing.T, mode, pollInterval string) (*Router, *http.Cookie, *store.DB) {
+	t.Helper()
 	t.Setenv(authengine.EnvEngine, mode)
 	t.Setenv(authengine.EnvAreas, "")
-	t.Setenv(authengine.EnvPollInterval, "1ms")
+	t.Setenv(authengine.EnvPollInterval, pollInterval)
 	db := openTestDB(t)
 	var opts []Option
 	if mode != authengine.EngineLegacy {
@@ -176,5 +181,35 @@ func TestAuthEngineGoldenContract(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// Within the poll interval the library answers slow-down, which must not mask a redeemed code.
+func TestAuthEngineRedeemedDeviceCodeIsExpiredWithinInterval(t *testing.T) {
+	type outcome struct {
+		status int
+		body   string
+	}
+	run := func(mode string) []outcome {
+		rt, cookie, _ := goldenRouterPoll(t, mode, "1h")
+		g := &goldenRun{t: t, rt: rt, cookie: cookie}
+		start := g.do("start", httptest.NewRequest(http.MethodPost, "/api/v1/auth/device/start", strings.NewReader(`{}`)))
+		code := fmt.Sprint(start["device_code"])
+		g.do("approve", g.session(http.MethodPost, "/api/v1/auth/device/"+fmt.Sprint(start["user_code"])+"/approve", ""))
+		var out []outcome
+		for range 3 {
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/device/token", strings.NewReader(`{"device_code":"`+code+`"}`)))
+			out = append(out, outcome{rec.Code, strings.TrimSpace(rec.Body.String())})
+		}
+		return out
+	}
+	legacy := run(authengine.EngineLegacy)
+	if legacy[0].status != http.StatusOK || legacy[1].status != http.StatusBadRequest || !strings.Contains(legacy[1].body, "expired_token") {
+		t.Fatalf("legacy baseline unexpected: %+v", legacy)
+	}
+	got := run(authengine.EngineLibrary)
+	if got[0].status != legacy[0].status || got[1] != legacy[1] || got[2] != legacy[2] {
+		t.Errorf("library = %+v, want legacy shape %+v", got[1:], legacy[1:])
 	}
 }

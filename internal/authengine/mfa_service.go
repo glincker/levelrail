@@ -7,13 +7,18 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
 	sqlitestore "github.com/glincker/theauth-go/storage/sqlite"
 	theauth "github.com/glincker/theauth-go/v2"
+	theauthcrypto "github.com/glincker/theauth-go/v2/crypto"
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/oklog/ulid/v2"
+
+	"github.com/GLINCKER/levelrail/internal/totp"
 )
 
 var (
@@ -176,7 +181,7 @@ func (m *MFA) TOTPFinish(ctx context.Context, legacyID, code string) ([]string, 
 	m.mu.Lock()
 	delete(m.enrollments, legacyID)
 	m.mu.Unlock()
-	return codes, nil
+	return m.reissueRecoveryCodes(ctx, uid, len(codes))
 }
 
 // TOTPStatus reports enrollment and remaining recovery codes.
@@ -218,7 +223,7 @@ func (m *MFA) CheckSecondFactor(ctx context.Context, legacyID, code, recoveryCod
 	if code != "" {
 		_, _, err = m.auth.VerifyTOTP(ctx, token, code)
 	} else {
-		_, _, err = m.auth.ConsumeRecoveryCode(ctx, token, recoveryCode)
+		_, _, err = m.auth.ConsumeRecoveryCode(ctx, token, canonicalRecoveryCode(recoveryCode))
 	}
 	return mapCodeError(err)
 }
@@ -267,7 +272,42 @@ func (m *MFA) RegenerateRecoveryCodes(ctx context.Context, legacyID string) ([]s
 	if err != nil {
 		return nil, fmt.Errorf("authengine: regenerate recovery codes: %w", err)
 	}
-	return codes, nil
+	return m.reissueRecoveryCodes(ctx, uid, len(codes))
+}
+
+var libraryRecoveryCode = regexp.MustCompile(`^[0-9a-f]{10}$`)
+
+// canonicalRecoveryCode maps typed input to the form stored in the library:
+// codes issued before the format change are bare lowercase hex, the rest are hyphen-free uppercase.
+func canonicalRecoveryCode(code string) string {
+	if c := strings.ToLower(strings.TrimSpace(code)); libraryRecoveryCode.MatchString(c) {
+		return c
+	}
+	return totp.NormalizeRecoveryCode(code)
+}
+
+// reissueRecoveryCodes swaps the library's hex codes for ones in the platform's
+// XXXX-XXXX-XXXX-XXXX format, so the API shape does not depend on the engine.
+func (m *MFA) reissueRecoveryCodes(ctx context.Context, uid theauth.ULID, count int) ([]string, error) {
+	shown := make([]string, 0, count)
+	stored := make([]theauth.RecoveryCode, 0, count)
+	now := time.Now()
+	for range count {
+		code, err := totp.GenerateRecoveryCode()
+		if err != nil {
+			return nil, fmt.Errorf("authengine: generate recovery code: %w", err)
+		}
+		hash, err := theauthcrypto.HashRecoveryCode(totp.NormalizeRecoveryCode(code))
+		if err != nil {
+			return nil, fmt.Errorf("authengine: hash recovery code: %w", err)
+		}
+		shown = append(shown, code)
+		stored = append(stored, theauth.RecoveryCode{ID: ulid.Make(), UserID: uid, CodeHash: hash, CreatedAt: now})
+	}
+	if err := m.store.ReplaceRecoveryCodes(ctx, uid, stored); err != nil {
+		return nil, fmt.Errorf("authengine: store recovery codes: %w", err)
+	}
+	return shown, nil
 }
 
 // PasskeyBeginRegistration starts a registration ceremony and returns the options and challenge id.
