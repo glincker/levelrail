@@ -25,6 +25,7 @@ import {
 } from '../../queries/twoFactor'
 import { passkeysQueryOptions } from '../../queries/passkeys'
 import { PasskeysCard } from '../../components/PasskeysCard'
+import { AuthEngineCard } from '../../components/AuthEngineCard'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import {
   Card,
@@ -129,6 +130,8 @@ function SecuritySettingsPage() {
       <TwoFactorCard />
 
       <PasskeysCard />
+
+      <AuthEngineCard />
 
       <Card>
         <CardHeader>

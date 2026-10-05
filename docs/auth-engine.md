@@ -56,3 +56,49 @@ Things to know:
 ## Roll back
 
 Unset `APP_AUTH_ENGINE` (or set it to `legacy`) and restart. The built-in engine never stopped being authoritative, so there is nothing to undo. The copied rows can stay; they are inert.
+
+## Shadow mode and token cutover
+
+`APP_AUTH_ENGINE` takes three values: `legacy` (default), `shadow` and `library`.
+
+### Shadow mode
+
+```
+APP_AUTH_ENGINE=shadow
+```
+
+The built-in engine serves every request exactly as before. For each request that presents a bearer API token, the library also authenticates the same token in the background and records whether it agrees on three things: accept or reject, the owning user, and the effective abilities. Nothing is mounted, nothing is slowed (comparisons run on a small bounded queue and are dropped, with a counter, when it is full), and no secret is ever logged or stored in the results.
+
+Check it:
+
+```
+levelrail-cli auth-engine status
+```
+
+The same data is on Settings > Security (root only) and at `GET /api/v1/auth-engine/status`: mode, library version, counts (compared, matched, mismatched, dropped, skipped, errors) and the most recent mismatches (token id, owner id, kind). Tokens created by the system itself have no owner, are never copied across, and are counted as skipped. Run the backfill first, or every owned token shows up as a `decision` mismatch.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `APP_AUTH_ENGINE_SHADOW_QUEUE` | `256` | Pending comparisons before new ones are dropped |
+| `APP_AUTH_ENGINE_SHADOW_WORKERS` | `2` | Comparison goroutines |
+| `APP_AUTH_ENGINE_SHADOW_MISMATCH_LOG` | `50` | Mismatches kept for the status view |
+
+A library token's abilities are limited to what its owner holds right now, so a mismatch of kind `abilities` usually means a user lost an ability after minting the token. The built-in engine does not clamp.
+
+### Cut tokens and device login over
+
+```
+APP_AUTH_ENGINE=library
+APP_AUTH_ENGINE_AREAS=tokens,device
+```
+
+Bearer authentication, the token routes (`/api/v1/auth/tokens`) and the device login routes (`/api/v1/auth/device/*`) then run on the library. Request and response shapes and status codes are unchanged. Sign-in, sessions and everything else stay on the built-in engine.
+
+- Copied tokens keep working with no prefix. New tokens carry the library prefix. Tokens that never expire still never expire.
+- Every token created in this mode is also written to the built-in table, so rolling back loses nothing.
+- A token with an owner that the backfill has not copied is refused (a warning names its id): run `levelrail auth-backfill` first. System tokens with no owner keep working.
+- Device login keeps `APP_DEVICE_TOKEN_TTL_DAYS`, the one-time redeem, and the cap that stops a root approver minting a root token unless `APP_DEVICE_TOKEN_ALLOW_ROOT=true`. Differences: the token is named `device: <client>` instead of `cli login: <client>`, and its abilities are fixed when the request is approved rather than when it is collected.
+
+### Roll back
+
+Set `APP_AUTH_ENGINE` to `legacy` (or `shadow`) and restart. Tokens revoked while on the library are revoked in the built-in table too. No data is lost.
