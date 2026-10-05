@@ -7,6 +7,7 @@
 | `internal/store` ListDeployments | 2026-09-29 | 2590872 ns/op, 240910 B/op, 1637 allocs/op | 2594280 ns/op, 240906 B/op, 1637 allocs/op |
 | `internal/store` ListAppEvents | 2023-10-24 | 385868 ns/op | 384418 ns/op |
 | `internal/store` ListDeployFreezeWindows | 2023-10-24 | 325603 ns/op | 312775 ns/op |
+| `internal/store` UpsertConditions | 2026-10-05 | 2524228 ns/op, 25576 B/op, 757 allocs/op | 628789 ns/op, 10265 B/op, 21 allocs/op |
 
 ## Rejected
 
