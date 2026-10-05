@@ -163,11 +163,10 @@ jobs:
   test-go:
     name: Test (${{ matrix.lane }})
     needs: [changes, build-vet]
-    # Skipped on push: branch protection only lets a commit reach main
-    # through the merge queue, so a push-triggered run retests a tree
-    # merge_group already fully verified seconds earlier. See docs/ci.md.
+    # Also runs on push to main (no merge queue verifies the tree first),
+    # scoped by the same impact detection as a PR. See docs/ci.md.
     if: >-
-      github.event_name != 'push' && needs.build-vet.result == 'success'
+      needs.build-vet.result == 'success'
       && needs.build-vet.outputs.has_tests == 'true'
     runs-on: ubuntu-latest
     # 5 min above the docker/rest lanes' own -timeout=27m (scripts/ci-go-plan.sh):
@@ -235,10 +234,8 @@ jobs:
   test-api:
     name: Test (internal/api)
     needs: [changes, build-vet, test-go]
-    # Mirrors test-go's own push skip: its lanes never ran on push, so
-    # checking their results here would find nothing instead of a pass.
     if: >-
-      github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.build-vet.result != 'success' || contains(needs.build-vet.outputs.api_checks, 'Test ('))))
     runs-on: ubuntu-latest
     permissions:
@@ -266,9 +263,8 @@ jobs:
   test-rest:
     name: Test (everything else)
     needs: [changes, build-vet, test-go]
-    # Mirrors test-go's own push skip, same reasoning test-api's if has.
     if: >-
-      github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.build-vet.result != 'success' || contains(needs.build-vet.outputs.rest_checks, 'Test ('))))
     runs-on: ubuntu-latest
     permissions:
@@ -298,10 +294,9 @@ jobs:
   test-quarantined:
     name: Test (quarantined, non-blocking)
     needs: [changes, build-vet]
-    # Not a required check, but still a real test run: skip the push
-    # repeat for the same reason test-go's own if skips it.
+    # Not a required check, but still a real test run.
     if: >-
-      github.event_name != 'push' && needs.build-vet.result == 'success'
+      needs.build-vet.result == 'success'
       && needs.build-vet.outputs.quarantine == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -329,10 +324,8 @@ jobs:
   coverage-gate:
     name: Coverage gate
     needs: [changes, build-vet, test-go]
-    # No coverage artifacts exist on push (test-go didn't run), same
-    # reasoning as test-api/test-rest's own push skip above.
     if: >-
-      github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.build-vet.result != 'success' || needs.build-vet.outputs.has_tests == 'true')))
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -398,10 +391,8 @@ jobs:
   lint:
     name: Lint
     needs: changes
-    # Skipped on push, same reasoning as test-go's own if: merge_group
-    # already lints this exact tree before the merge queue admits it.
     if: >-
-      ${{ github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.lint != 'none'
+      ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.lint != 'none'
       || needs.changes.outputs.workflows == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -465,8 +456,7 @@ jobs:
   web-check:
     name: Web (tsc, eslint)
     needs: changes
-    # Skipped on push, same reasoning as test-go's own if.
-    if: ${{ github.event_name != 'push' && !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.web != 'none') }}
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.web != 'none') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -563,8 +553,7 @@ jobs:
   install-sh:
     name: install.sh (${{ matrix.image }})
     needs: changes
-    # Skipped on push, same reasoning as test-go's own if.
-    if: github.event_name != 'push' && needs.changes.outputs.installer == 'true'
+    if: needs.changes.outputs.installer == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
