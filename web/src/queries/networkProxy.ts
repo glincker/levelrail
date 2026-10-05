@@ -17,6 +17,7 @@ export interface NetworkProxyDomain {
   is_local_node: boolean
   port: number
   reachable: boolean
+  reason?: string
   fix_command?: string
   tls_status?: 'healthy' | 'expiring_soon' | 'expired'
   tls_issuer?: string
