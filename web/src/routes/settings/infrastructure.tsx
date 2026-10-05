@@ -134,10 +134,11 @@ function InfrastructureSettingsPage() {
             />
           </Field>
           <div className="flex flex-wrap items-center gap-3">
-            <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
+            <label htmlFor="iac-upload" className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
               <UploadSimpleIcon className="size-4" />
               <span>Upload files</span>
               <input
+                id="iac-upload"
                 type="file"
                 multiple
                 accept=".yaml,.yml"
@@ -175,8 +176,9 @@ function InfrastructureSettingsPage() {
             </Field>
           </div>
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm text-foreground">
+            <label htmlFor="iac-prune" className="flex items-center gap-2 text-sm text-foreground">
               <Checkbox
+                id="iac-prune"
                 checked={prune}
                 onCheckedChange={(v) => setPrune(v === true)}
               />
@@ -188,8 +190,9 @@ function InfrastructureSettingsPage() {
                 Prune needs a source name.
               </p>
             ) : null}
-            <label className="flex items-center gap-2 text-sm text-foreground">
+            <label htmlFor="iac-no-deploy" className="flex items-center gap-2 text-sm text-foreground">
               <Checkbox
+                id="iac-no-deploy"
                 checked={noDeploy}
                 onCheckedChange={(v) => setNoDeploy(v === true)}
               />
