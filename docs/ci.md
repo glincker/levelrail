@@ -180,7 +180,7 @@ new information, only cost.
 
 `Build, vet` keeps running on `push` unconditionally: it is cheap
 (around a minute) and is what refreshes the daily Go build cache
-(`save: ${{ github.event_name == 'push' }}`), which PR runs depend on
+(the cache `save` flag, true only for push events), which PR runs depend on
 staying warm. `codeql.yml` and `secret-scan.yml` are separate workflow
 files with their own `push` triggers, unaffected by anything in
 `ci.yml`.

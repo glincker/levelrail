@@ -19,15 +19,14 @@ interface FeatureTab {
   lines: TermLine[]
 }
 
-// Every tab is grounded in a specific CLAUDE.md section (noted per tab
-// below); none of this invents command syntax that section doesn't cover.
+// Every tab shows real command names, routes, and spec fields. Check them
+// against the CLI and API before editing.
 const tabs: FeatureTab[] = [
   {
     id: 'deploy',
     label: 'Deploy',
     summary: 'Push to git. Levelrail builds from app.yaml and only cuts traffic once the readiness probe passes.',
     filename: 'app.yaml',
-    // Section 4.9's app spec example, trimmed to the build/domain/health/strategy fields.
     codeLines: [
       'version: 1',
       'services:',
@@ -58,12 +57,11 @@ const tabs: FeatureTab[] = [
     label: 'Rollback',
     summary: 'The previous N images stay pinned, so garbage collection can never orphan a rollback target.',
     filename: 'rollback.sh',
-    // Phase 1 rollback guarantee + the documented `levelrail rollback` CLI command.
-    codeLines: ["# previous images stay pinned,", "# so GC can't orphan a rollback target", '$ levelrail rollback web'],
+    codeLines: ["# previous images stay pinned,", "# so GC can't orphan a rollback target", '$ levelrail-cli rollback web --image web:f81c0ad'],
     terminalTitle: 'rollback',
     terminalAria: 'Terminal recording: rolling back an app to its previously pinned image',
     lines: [
-      { kind: 'command', text: 'levelrail rollback web' },
+      { kind: 'command', text: 'levelrail-cli rollback web --image web:f81c0ad' },
       { kind: 'output', text: 'image web:f81c0ad is still pinned (gc-safe)' },
       { kind: 'output', text: 'rolling back web to f81c0ad' },
       { kind: 'success', text: 'web is live on f81c0ad again' },
@@ -74,8 +72,7 @@ const tabs: FeatureTab[] = [
     label: 'Observability',
     summary: 'Node-local metrics at 15s resolution and full-text log search, no separate Grafana or Loki install.',
     filename: 'prometheus.yml',
-    // Section 4.8: node-local metrics/logs, Prometheus remote read endpoint.
-    codeLines: ['# point any Prometheus at the', '# built-in remote read endpoint', 'remote_read:', '  - url: https://levelrail.local/api/v1/metrics/read'],
+    codeLines: ['# point any Prometheus at the', '# built-in remote read endpoint (API token as bearer)', 'remote_read:', '  - url: https://levelrail.local/api/v1/prometheus/read'],
     terminalTitle: 'metrics + logs',
     terminalAria: 'Terminal recording: querying node-local metrics and logs without a separate observability stack',
     lines: [
@@ -89,7 +86,6 @@ const tabs: FeatureTab[] = [
     label: 'Databases',
     summary: 'Managed Postgres, Redis, and more, declared alongside the app that uses them.',
     filename: 'app.yaml',
-    // Section 4.9's databases: block, verbatim.
     codeLines: ['databases:', '  main:', '    engine: postgres', '    version: "16"', '    backup: { schedule: "0 3 * * *", retain: 7 }'],
     terminalTitle: 'managed database',
     terminalAria: 'Terminal recording: provisioning a managed Postgres database and injecting its connection string',
@@ -104,14 +100,13 @@ const tabs: FeatureTab[] = [
     label: 'Multi-node',
     summary: 'A WireGuard mesh gives every node a peer, with stable internal DNS for apps across machines.',
     filename: 'mesh.conf',
-    // Section 4.6: WireGuard mesh, peer config distributed by the control plane.
-    codeLines: ['# every node gets a wireguard peer;', '# the control plane distributes config', '[Peer]', 'AllowedIPs = 10.42.0.3/32'],
+    codeLines: ['# every node gets a wireguard peer;', '# the control plane distributes config', '[Peer]', 'AllowedIPs = 10.181.0.3/32'],
     terminalTitle: 'multi-node',
     terminalAria: 'Terminal recording: enrolling a second node and moving an app to it over the WireGuard mesh',
     lines: [
       { kind: 'output', text: 'agent enrolls via one-time join token, issues client cert' },
-      { kind: 'output', text: 'wireguard peer added: node-02 (10.42.0.3)' },
-      { kind: 'success', text: 'web.internal resolves across both nodes' },
+      { kind: 'output', text: 'wireguard peer added: node-02 (10.181.0.3)' },
+      { kind: 'success', text: 'mesh DNS resolves web across both nodes' },
     ],
   },
   {
@@ -119,14 +114,13 @@ const tabs: FeatureTab[] = [
     label: 'AI-ready API',
     summary: 'MCP tools are a thin wrapper over the same HTTP API the dashboard runs on.',
     filename: 'mcp-tools',
-    // Section 4.11: MCP server over the platform API, tool list includes diagnose/explain.
-    codeLines: ['# same HTTP API the dashboard runs on,', '# exposed as MCP tools for an AI client', 'mcp.call("diagnose_crashloop", app="web")'],
+    codeLines: ['# same HTTP API the dashboard runs on,', '# exposed as MCP tools for an AI client', 'mcp.call("diagnose_app_failure", name="web")'],
     terminalTitle: 'ai tools',
     terminalAria: 'Terminal recording: an AI client calling an MCP tool to diagnose a crashlooping app',
     lines: [
-      { kind: 'output', text: '144 MCP tools (beta), same contract as the HTTP API' },
-      { kind: 'output', text: 'diagnosing crashloop: last 200 lines surfaced automatically' },
-      { kind: 'success', text: 'explain_failed_build: readiness probe timed out after 3 attempts' },
+      { kind: 'output', text: '156 MCP tools (beta), same contract as the HTTP API' },
+      { kind: 'output', text: 'typed causes with evidence lines and numbered fixes' },
+      { kind: 'success', text: 'cause HEALTHCHECK_FAILING: patch health.readiness.path to /healthz' },
     ],
   },
 ]
