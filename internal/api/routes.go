@@ -14,10 +14,7 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /healthz", rt.handleHealthz)
 	mux.HandleFunc("GET /readyz", rt.handleReadyz)
 	mux.HandleFunc("GET /.well-known/jwks.json", rt.handleOIDCJWKS)
-	if rt.authEngine != nil {
-		mux.Handle(rt.authEnginePrefix+"/", rt.authEngine)
-	}
-	rt.registerAuthLibOAuthRoutes(mux)
+	mux.Handle(rt.authEngine.Prefix()+"/", rt.authEngine.Handler())
 	rt.registerCoreRoutes(mux)
 	rt.registerAuthEngineStatusRoute(mux)
 	rt.registerPlatformRoutes(mux)
@@ -164,26 +161,24 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// rt.mfaVerify instead of a session/ability check. Every other route
 	// here acts on the caller's own account, so requireAuth
 	// (session-only, matching handleChangePassword's own reasoning).
-	mux.HandleFunc("GET /api/v1/auth/2fa", rt.requireAuth(rt.handleGetTwoFactorStatus))
-	mux.HandleFunc("POST /api/v1/auth/2fa/setup", rt.requireAuth(rt.handleSetupTwoFactor))
-	mux.HandleFunc("POST /api/v1/auth/2fa/confirm", rt.requireAuth(rt.handleConfirmTwoFactor))
-	mux.HandleFunc("POST /api/v1/auth/2fa/disable", rt.requireAuth(rt.handleDisableTwoFactor))
-	mux.HandleFunc("POST /api/v1/auth/2fa/recovery-codes/regenerate", rt.requireAuth(rt.handleRegenerateRecoveryCodes))
-	mux.HandleFunc("POST /api/v1/auth/2fa/verify", rt.handleVerifyTwoFactor)
+	mux.HandleFunc("GET /api/v1/auth/2fa", rt.requireAuth(rt.mfaLib.status))
+	mux.HandleFunc("POST /api/v1/auth/2fa/setup", rt.requireAuth(rt.mfaLib.setup))
+	mux.HandleFunc("POST /api/v1/auth/2fa/confirm", rt.requireAuth(rt.mfaLib.confirm))
+	mux.HandleFunc("POST /api/v1/auth/2fa/disable", rt.requireAuth(rt.mfaLib.disable))
+	mux.HandleFunc("POST /api/v1/auth/2fa/recovery-codes/regenerate", rt.requireAuth(rt.mfaLib.regenerate))
+	mux.HandleFunc("POST /api/v1/auth/2fa/verify", rt.mfaLib.verify)
 
 	// Passkeys (WebAuthn, passkeys.go). Registration acts on the
 	// caller's own account, so requireAuth like the 2FA routes above.
 	// /passkey-login/... is the sign-in ceremony, necessarily public,
 	// same shape as /2fa/verify.
-	mux.HandleFunc("GET /api/v1/auth/passkeys", rt.requireAuth(rt.handleListPasskeys))
-	mux.HandleFunc("POST /api/v1/auth/passkeys/register/begin", rt.requireAuth(rt.handleBeginPasskeyRegistration))
-	mux.HandleFunc("POST /api/v1/auth/passkeys/register/finish", rt.requireAuth(rt.handleFinishPasskeyRegistration))
-	mux.HandleFunc("DELETE /api/v1/auth/passkeys/{id}", rt.requireAuth(rt.handleDeletePasskey))
-	if rt.mfaLib != nil {
-		mux.HandleFunc("PATCH /api/v1/auth/passkeys/{id}", rt.requireAuth(rt.mfaLib.renamePasskey))
-	}
-	mux.HandleFunc("POST /api/v1/auth/passkey-login/begin", rt.handleBeginPasskeyLogin)
-	mux.HandleFunc("POST /api/v1/auth/passkey-login/finish", rt.handleFinishPasskeyLogin)
+	mux.HandleFunc("GET /api/v1/auth/passkeys", rt.requireAuth(rt.mfaLib.listPasskeys))
+	mux.HandleFunc("POST /api/v1/auth/passkeys/register/begin", rt.requireAuth(rt.mfaLib.beginRegistration))
+	mux.HandleFunc("POST /api/v1/auth/passkeys/register/finish", rt.requireAuth(rt.mfaLib.finishRegistration))
+	mux.HandleFunc("DELETE /api/v1/auth/passkeys/{id}", rt.requireAuth(rt.mfaLib.deletePasskey))
+	mux.HandleFunc("PATCH /api/v1/auth/passkeys/{id}", rt.requireAuth(rt.mfaLib.renamePasskey))
+	mux.HandleFunc("POST /api/v1/auth/passkey-login/begin", rt.mfaLib.beginLogin)
+	mux.HandleFunc("POST /api/v1/auth/passkey-login/finish", rt.mfaLib.finishLogin)
 
 	// Browser push notification subscriptions (push_subscriptions.go):
 	// one admin account's registered browsers, the delivery target for

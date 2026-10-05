@@ -1,0 +1,248 @@
+[
+  {
+    "Label": "create rejects empty name",
+    "Status": 400,
+    "Body": {
+      "error": "name is required"
+    }
+  },
+  {
+    "Label": "create rejects unknown ability",
+    "Status": 400,
+    "Body": {
+      "error": "unknown ability \"nope\""
+    }
+  },
+  {
+    "Label": "create read token",
+    "Status": 201,
+    "Body": {
+      "abilities": [
+        "read"
+      ],
+      "created_at": "\u003ccreated_at\u003e",
+      "id": "\u003cid\u003e",
+      "name": "reader",
+      "token": "\u003ctoken\u003e"
+    }
+  },
+  {
+    "Label": "create agent token",
+    "Status": 201,
+    "Body": {
+      "abilities": [
+        "read",
+        "deploy"
+      ],
+      "agent": {
+        "description": "ci",
+        "name": "claude"
+      },
+      "created_at": "\u003ccreated_at\u003e",
+      "expires_at": "\u003cexpires_at\u003e",
+      "id": "\u003cid\u003e",
+      "name": "bot",
+      "token": "\u003ctoken\u003e"
+    }
+  },
+  {
+    "Label": "list",
+    "Status": 200,
+    "Body": [
+      {
+        "abilities": [
+          "read",
+          "deploy"
+        ],
+        "agent": {
+          "description": "ci",
+          "name": "claude"
+        },
+        "created_at": "\u003ccreated_at\u003e",
+        "expires_at": "\u003cexpires_at\u003e",
+        "id": "\u003cid\u003e",
+        "name": "bot"
+      },
+      {
+        "abilities": [
+          "read"
+        ],
+        "created_at": "\u003ccreated_at\u003e",
+        "id": "\u003cid\u003e",
+        "name": "reader"
+      }
+    ]
+  },
+  {
+    "Label": "read token reads",
+    "Status": 200,
+    "Body": []
+  },
+  {
+    "Label": "read token cannot write",
+    "Status": 403,
+    "Body": {
+      "error": "token lacks the required ability"
+    }
+  },
+  {
+    "Label": "garbage token",
+    "Status": 401,
+    "Body": {
+      "error": "invalid token"
+    }
+  },
+  {
+    "Label": "revoke",
+    "Status": 204,
+    "Body": null
+  },
+  {
+    "Label": "revoked token",
+    "Status": 401,
+    "Body": {
+      "error": "token revoked"
+    }
+  },
+  {
+    "Label": "revoke unknown",
+    "Status": 404,
+    "Body": {
+      "error": "token not found"
+    }
+  },
+  {
+    "Label": "list after revoke",
+    "Status": 200,
+    "Body": [
+      {
+        "abilities": [
+          "read",
+          "deploy"
+        ],
+        "agent": {
+          "description": "ci",
+          "name": "claude"
+        },
+        "created_at": "\u003ccreated_at\u003e",
+        "expires_at": "\u003cexpires_at\u003e",
+        "id": "\u003cid\u003e",
+        "name": "bot"
+      },
+      {
+        "abilities": [
+          "read"
+        ],
+        "created_at": "\u003ccreated_at\u003e",
+        "id": "\u003cid\u003e",
+        "last_used_at": "\u003clast_used_at\u003e",
+        "name": "reader",
+        "revoked_at": "\u003crevoked_at\u003e"
+      }
+    ]
+  },
+  {
+    "Label": "device start",
+    "Status": 201,
+    "Body": {
+      "device_code": "\u003cdevice_code\u003e",
+      "expires_in": 600,
+      "interval": "\u003cinterval\u003e",
+      "user_code": "\u003cuser_code\u003e",
+      "verification_uri": "http://example.com/settings/cli-access",
+      "verification_uri_complete": "\u003cverification_uri_complete\u003e"
+    }
+  },
+  {
+    "Label": "device poll pending",
+    "Status": 400,
+    "Body": {
+      "error": "authorization_pending"
+    }
+  },
+  {
+    "Label": "device pending list",
+    "Status": 200,
+    "Body": [
+      {
+        "client_name": "laptop",
+        "created_at": "\u003ccreated_at\u003e",
+        "expires_at": "\u003cexpires_at\u003e",
+        "user_code": "\u003cuser_code\u003e"
+      }
+    ]
+  },
+  {
+    "Label": "device approve unknown",
+    "Status": 404,
+    "Body": {
+      "error": "no pending device login with this code"
+    }
+  },
+  {
+    "Label": "device approve",
+    "Status": 204,
+    "Body": null
+  },
+  {
+    "Label": "device poll granted",
+    "Status": 200,
+    "Body": {
+      "abilities": [
+        "read",
+        "read:sensitive",
+        "write",
+        "write:sensitive",
+        "deploy"
+      ],
+      "created_at": "\u003ccreated_at\u003e",
+      "expires_at": "\u003cexpires_at\u003e",
+      "id": "\u003cid\u003e",
+      "name": "\u003cname\u003e",
+      "token": "\u003ctoken\u003e"
+    }
+  },
+  {
+    "Label": "device poll redeemed",
+    "Status": 400,
+    "Body": {
+      "error": "expired_token"
+    }
+  },
+  {
+    "Label": "device token works",
+    "Status": 200,
+    "Body": []
+  },
+  {
+    "Label": "device start 2",
+    "Status": 201,
+    "Body": {
+      "device_code": "\u003cdevice_code\u003e",
+      "expires_in": 600,
+      "interval": "\u003cinterval\u003e",
+      "user_code": "\u003cuser_code\u003e",
+      "verification_uri": "http://example.com/settings/cli-access",
+      "verification_uri_complete": "\u003cverification_uri_complete\u003e"
+    }
+  },
+  {
+    "Label": "device deny",
+    "Status": 204,
+    "Body": null
+  },
+  {
+    "Label": "device poll denied",
+    "Status": 400,
+    "Body": {
+      "error": "access_denied"
+    }
+  },
+  {
+    "Label": "device poll unknown code",
+    "Status": 400,
+    "Body": {
+      "error": "expired_token"
+    }
+  }
+]

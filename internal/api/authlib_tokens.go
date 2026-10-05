@@ -13,82 +13,15 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// authLibState holds the library hooks. Every field is nil in legacy mode.
+// authLibState holds the library engine that serves tokens and device login.
 type authLibState struct {
 	tokens *authengine.Engine
 	device *authengine.Engine
-	shadow *authengine.Shadow
-	mode   string
 }
 
-// WithAuthEngineLibrary routes the areas listed in APP_AUTH_ENGINE_AREAS
-// (tokens, device) through the library. A nil engine is a no-op.
-func WithAuthEngineLibrary(e *authengine.Engine) Option {
-	return func(rt *Router) {
-		if e == nil {
-			return
-		}
-		if authengine.AreaActive(authengine.AreaTokens) {
-			rt.authLib.tokens = e
-		}
-		if authengine.AreaActive(authengine.AreaDevice) {
-			rt.authLib.device = e
-		}
-	}
-}
-
-// WithAuthEngineShadow compares bearer tokens against the library in the
-// background while the legacy engine keeps deciding. A nil engine is a no-op.
-func WithAuthEngineShadow(e *authengine.Engine, cfg authengine.ShadowConfig) Option {
-	return func(rt *Router) {
-		if e == nil {
-			return
-		}
-		rt.authLib.shadow = authengine.NewShadow(e, rt.legacyOutcome, cfg, rt.logger)
-	}
-}
-
-// CloseAuthShadow stops the shadow workers, if any.
-func (rt *Router) CloseAuthShadow() {
-	if rt.authLib.shadow != nil {
-		rt.authLib.shadow.Close()
-	}
-}
-
-func (rt *Router) observeShadow(raw string) {
-	if rt.authLib.shadow != nil {
-		rt.authLib.shadow.Observe(raw)
-	}
-}
-
-// legacyOutcome is the legacy engine's decision for a bearer secret, in the
-// form the shadow comparison needs.
-func (rt *Router) legacyOutcome(ctx context.Context, raw string) (authengine.LegacyOutcome, error) {
-	rec, err := rt.tokens.GetAPITokenByHash(ctx, hashToken(raw))
-	if errors.Is(err, store.ErrAPITokenNotFound) {
-		return authengine.LegacyOutcome{}, nil
-	}
-	if err != nil {
-		return authengine.LegacyOutcome{}, fmt.Errorf("api: shadow legacy lookup: %w", err)
-	}
-	out := authengine.LegacyOutcome{TokenID: rec.ID, OwnerID: rec.OwnerUserID, Abilities: rec.Abilities}
-	if rec.RevokedAt != nil || (rec.ExpiresAt != nil && time.Now().After(*rec.ExpiresAt)) {
-		return out, nil
-	}
-	gone, err := rt.tokenOwnerGone(ctx, rec)
-	if err != nil {
-		return authengine.LegacyOutcome{}, err
-	}
-	out.Accepted = !gone
-	return out, nil
-}
-
-// lookupBearerToken resolves a raw bearer secret to a token record: the
-// legacy table by default, the library when the tokens area is cut over.
+// lookupBearerToken resolves a raw bearer secret to a token record through
+// the library, falling back to the platform table for system-minted tokens.
 func (rt *Router) lookupBearerToken(ctx context.Context, raw string) (*store.APIToken, error) {
-	if rt.authLib.tokens == nil {
-		return rt.tokens.GetAPITokenByHash(ctx, hashToken(raw))
-	}
 	rec, err := rt.authLib.tokens.LookupBearer(ctx, raw)
 	switch {
 	case errors.Is(err, authengine.ErrTokenUnknown):
@@ -102,15 +35,14 @@ func (rt *Router) lookupBearerToken(ctx context.Context, raw string) (*store.API
 }
 
 // legacySystemToken serves tokens the library never holds (system-minted, no
-// owner). An owned token missing from the library means the backfill has not
-// run, so it is refused rather than silently served by the old path.
+// owner). An owned token missing from the library is refused.
 func (rt *Router) legacySystemToken(ctx context.Context, raw string) (*store.APIToken, error) {
 	rec, err := rt.tokens.GetAPITokenByHash(ctx, hashToken(raw))
 	if err != nil {
 		return nil, err
 	}
 	if rec.OwnerUserID != "" {
-		rt.logger.Warn("api: token missing from the auth library, run the auth backfill", slog.String("token_id", rec.ID))
+		rt.logger.Warn("api: owned token missing from the auth library", slog.String("token_id", rec.ID))
 		return nil, store.ErrAPITokenNotFound
 	}
 	return rec, nil
@@ -125,7 +57,7 @@ func libraryTokenToStore(r authengine.TokenRecord) *store.APIToken {
 }
 
 // libraryCreateToken is handleCreateToken's mint step when tokens run on the
-// library. The legacy table gets a matching row so a rollback loses nothing.
+// library. The platform table gets a matching row for the agent description and system listing.
 func (rt *Router) libraryCreateToken(w http.ResponseWriter, r *http.Request, req createTokenRequest, agent agentIdentity, ownerID string, expiresAt *time.Time) {
 	legacyID, err := randomTokenID()
 	if err != nil {

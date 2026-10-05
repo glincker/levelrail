@@ -20670,7 +20670,7 @@
     "/api/v1/auth/2fa": {
       "get": {
         "description": "Two-factor auth (twofactor.go). /2fa/verify is necessarily public (it's step two of login, before a session exists), rate-limited by rt.mfaVerify instead of a session/ability check. Every other route here acts on the caller's own account, so requireAuth (session-only, matching handleChangePassword's own reasoning).\n\nRequires a signed-in dashboard session.",
-        "operationId": "handleGetTwoFactorStatus",
+        "operationId": "Getapiv1auth2fa",
         "responses": {
           "200": {
             "content": {
@@ -20726,7 +20726,7 @@
     "/api/v1/auth/2fa/confirm": {
       "post": {
         "description": "Requires a signed-in dashboard session.",
-        "operationId": "handleConfirmTwoFactor",
+        "operationId": "Postapiv1auth2faconfirm",
         "requestBody": {
           "content": {
             "application/json": {
@@ -20783,7 +20783,7 @@
             "sessionAuth": []
           }
         ],
-        "summary": "Confirm Two Factor",
+        "summary": "POST /api/v1/auth/2fa/confirm",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ],
@@ -20793,7 +20793,7 @@
     "/api/v1/auth/2fa/disable": {
       "post": {
         "description": "Requires a signed-in dashboard session.",
-        "operationId": "handleDisableTwoFactor",
+        "operationId": "Postapiv1auth2fadisable",
         "requestBody": {
           "content": {
             "application/json": {
@@ -20850,7 +20850,7 @@
             "sessionAuth": []
           }
         ],
-        "summary": "Disable Two Factor",
+        "summary": "POST /api/v1/auth/2fa/disable",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ],
@@ -20860,7 +20860,7 @@
     "/api/v1/auth/2fa/recovery-codes/regenerate": {
       "post": {
         "description": "Requires a signed-in dashboard session.",
-        "operationId": "handleRegenerateRecoveryCodes",
+        "operationId": "Postapiv1auth2farecoverycodesregenerate",
         "requestBody": {
           "content": {
             "application/json": {
@@ -20917,7 +20917,7 @@
             "sessionAuth": []
           }
         ],
-        "summary": "Regenerate Recovery Codes",
+        "summary": "POST /api/v1/auth/2fa/recovery-codes/regenerate",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ],
@@ -20927,7 +20927,7 @@
     "/api/v1/auth/2fa/setup": {
       "post": {
         "description": "Requires a signed-in dashboard session.",
-        "operationId": "handleSetupTwoFactor",
+        "operationId": "Postapiv1auth2fasetup",
         "requestBody": {
           "content": {
             "application/json": {
@@ -20984,7 +20984,7 @@
             "sessionAuth": []
           }
         ],
-        "summary": "Setup Two Factor",
+        "summary": "POST /api/v1/auth/2fa/setup",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ],
@@ -20994,7 +20994,7 @@
     "/api/v1/auth/2fa/verify": {
       "post": {
         "description": "No authentication required.",
-        "operationId": "handleVerifyTwoFactor",
+        "operationId": "Postapiv1auth2faverify",
         "requestBody": {
           "content": {
             "application/json": {
@@ -21037,7 +21037,7 @@
           }
         },
         "security": [],
-        "summary": "Verify Two Factor",
+        "summary": "POST /api/v1/auth/2fa/verify",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ]
@@ -21740,7 +21740,7 @@
     "/api/v1/auth/passkey-login/begin": {
       "post": {
         "description": "No authentication required.",
-        "operationId": "handleBeginPasskeyLogin",
+        "operationId": "Postapiv1authpasskeyloginbegin",
         "requestBody": {
           "content": {
             "application/json": {
@@ -21783,7 +21783,7 @@
           }
         },
         "security": [],
-        "summary": "Begin Passkey Login",
+        "summary": "POST /api/v1/auth/passkey-login/begin",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ]
@@ -21792,7 +21792,7 @@
     "/api/v1/auth/passkey-login/finish": {
       "post": {
         "description": "No authentication required.",
-        "operationId": "handleFinishPasskeyLogin",
+        "operationId": "Postapiv1authpasskeyloginfinish",
         "requestBody": {
           "content": {
             "application/json": {
@@ -21835,7 +21835,7 @@
           }
         },
         "security": [],
-        "summary": "Finish Passkey Login",
+        "summary": "POST /api/v1/auth/passkey-login/finish",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ]
@@ -21844,7 +21844,7 @@
     "/api/v1/auth/passkeys": {
       "get": {
         "description": "Passkeys (WebAuthn, passkeys.go). Registration acts on the caller's own account, so requireAuth like the 2FA routes above. /passkey-login/... is the sign-in ceremony, necessarily public, same shape as /2fa/verify.\n\nRequires a signed-in dashboard session.",
-        "operationId": "handleListPasskeys",
+        "operationId": "Getapiv1authpasskeys",
         "responses": {
           "200": {
             "content": {
@@ -21900,7 +21900,7 @@
     "/api/v1/auth/passkeys/register/begin": {
       "post": {
         "description": "Requires a signed-in dashboard session.",
-        "operationId": "handleBeginPasskeyRegistration",
+        "operationId": "Postapiv1authpasskeysregisterbegin",
         "requestBody": {
           "content": {
             "application/json": {
@@ -21957,7 +21957,7 @@
             "sessionAuth": []
           }
         ],
-        "summary": "Begin Passkey Registration",
+        "summary": "POST /api/v1/auth/passkeys/register/begin",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ],
@@ -21967,7 +21967,7 @@
     "/api/v1/auth/passkeys/register/finish": {
       "post": {
         "description": "Requires a signed-in dashboard session.",
-        "operationId": "handleFinishPasskeyRegistration",
+        "operationId": "Postapiv1authpasskeysregisterfinish",
         "requestBody": {
           "content": {
             "application/json": {
@@ -22024,7 +22024,7 @@
             "sessionAuth": []
           }
         ],
-        "summary": "Finish Passkey Registration",
+        "summary": "POST /api/v1/auth/passkeys/register/finish",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ],
@@ -22034,7 +22034,7 @@
     "/api/v1/auth/passkeys/{id}": {
       "delete": {
         "description": "Requires a signed-in dashboard session.",
-        "operationId": "handleDeletePasskey",
+        "operationId": "Deleteapiv1authpasskeysid",
         "parameters": [
           {
             "in": "path",
@@ -22090,7 +22090,7 @@
             "sessionAuth": []
           }
         ],
-        "summary": "Delete Passkey",
+        "summary": "DELETE /api/v1/auth/passkeys/{id}",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ],

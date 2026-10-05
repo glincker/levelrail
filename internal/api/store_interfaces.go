@@ -382,31 +382,6 @@ type AuthStore interface {
 	ListUsers(ctx context.Context) ([]store.User, error)
 	DeleteUser(ctx context.Context, id string) error
 	UpdateUserAbilities(ctx context.Context, id string, abilities []string) error
-	EnableUserTOTP(ctx context.Context, id string, confirmedAt time.Time) error
-	DisableUserTOTP(ctx context.Context, id string) error
-}
-
-// RecoveryCodeStore is the store surface the 2FA handlers (twofactor.go)
-// need for single-use fallback codes: always set, part of the core
-// Store interface, the same "no secrets configuration needed" shape
-// AuthStore itself has (a recovery code's hash is an ordinary column,
-// unlike a TOTP secret which goes through TwoFactorSecrets below).
-type RecoveryCodeStore interface {
-	ReplaceUserRecoveryCodes(ctx context.Context, userID string, hashes []string) error
-	ConsumeUserRecoveryCode(ctx context.Context, userID, hash string) (bool, error)
-	CountUnusedUserRecoveryCodes(ctx context.Context, userID string) (int, error)
-	DeleteUserRecoveryCodes(ctx context.Context, userID string) error
-}
-
-// PasskeyStore is the store surface the passkey handlers (passkeys.go)
-// need: always set, part of the core Store interface, the same
-// "no secrets configuration needed" shape RecoveryCodeStore has (a
-// credential's public key is ordinary key material, not a secret).
-type PasskeyStore interface {
-	SavePasskeyCredential(ctx context.Context, c store.PasskeyCredential) error
-	ListPasskeyCredentialsForUser(ctx context.Context, userID string) ([]store.PasskeyCredential, error)
-	UpdatePasskeySignCountByCredentialID(ctx context.Context, credentialID string, signCount uint32, usedAt time.Time) error
-	DeletePasskeyCredential(ctx context.Context, id, userID string) error
 }
 
 // EmailSettingsStore is the store surface GET/PUT
@@ -464,14 +439,6 @@ type RegistryStore interface {
 type VaultSettingsStore interface {
 	GetVaultSettings(ctx context.Context) (store.VaultSettings, error)
 	UpdateVaultSettings(ctx context.Context, s store.VaultSettings) error
-}
-
-// PasswordResetTokenStore is the store surface the forgot-password flow
-// needs: always set, part of the core Store interface.
-type PasswordResetTokenStore interface {
-	SavePasswordResetToken(ctx context.Context, t store.PasswordResetToken) error
-	GetPasswordResetTokenByHash(ctx context.Context, hash string) (*store.PasswordResetToken, error)
-	ClaimPasswordResetToken(ctx context.Context, id string) error
 }
 
 // SessionLinkTokenStore is the store surface the session-link flow
@@ -609,11 +576,8 @@ type Store interface {
 	NodeProvisionStore
 	SSHNodeProvisionStore
 	VaultSettingsStore
-	PasswordResetTokenStore
 	SessionLinkTokenStore
 	InviteStore
-	RecoveryCodeStore
-	PasskeyStore
 	PushSubscriptions
 	AuditStore
 	ScheduledTaskStore
@@ -623,7 +587,6 @@ type Store interface {
 	OnboardingStore
 	WebhookDeliveryStore
 	PolicyStore
-	DeviceAuthStore
 	HookRunStore
 	DeployApprovalStore
 	AIAssistantSettingsStore

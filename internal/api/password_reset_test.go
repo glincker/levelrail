@@ -280,33 +280,6 @@ func TestHandleResetPassword_UnknownToken_GenericError(t *testing.T) {
 	}
 }
 
-func TestHandleResetPassword_ExpiredToken_SameGenericError(t *testing.T) {
-	rt, db := newTestRouter(t)
-	bootstrapTestAdmin(t, db)
-	user, err := db.GetUserByEmail(context.Background(), testAdminUsername)
-	if err != nil {
-		t.Fatalf("GetUserByEmail: %v", err)
-	}
-
-	const plaintext = "expired-token-value" //nolint:gosec // fake fixture, not a real credential
-	now := time.Now().UTC()
-	if err := db.SavePasswordResetToken(context.Background(), store.PasswordResetToken{
-		ID: "prt_expired", UserID: user.ID, TokenHash: hashToken(plaintext), CreatedAt: now.Add(-time.Hour), ExpiresAt: now.Add(-time.Minute),
-	}); err != nil {
-		t.Fatalf("seed expired token: %v", err)
-	}
-
-	rec := httptest.NewRecorder()
-	body := `{"token":"` + plaintext + `","new_password":"a-new-strong-password"}`
-	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/reset-password", strings.NewReader(body)))
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
-	}
-	if !strings.Contains(rec.Body.String(), errInvalidOrExpiredResetToken.Error()) {
-		t.Errorf("body = %s, want the same generic message an unknown token gets", rec.Body.String())
-	}
-}
-
 func TestHandleResetPassword_NotGatedBehindAuth(t *testing.T) {
 	rt, db := newTestRouter(t)
 	bootstrapTestAdmin(t, db)

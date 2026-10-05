@@ -72,15 +72,15 @@
 package api
 
 import (
+	"log/slog"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/statuspage"
-	"log/slog"
-	"net/http"
-	"sync"
-	"sync/atomic"
-	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
 	"github.com/GLINCKER/levelrail/internal/brand"
@@ -152,19 +152,13 @@ type Router struct {
 	statusLimiter          *apiRateLimiter
 	statusHost             statusHostCache
 	sessions               *sessionStore
-	logins                 *loginLimiter
-	recoveryCodes          RecoveryCodeStore     // always set, same "core Store interface" shape as auth above
-	twoFactorSecrets       TwoFactorSecrets      // nil is valid: POST /api/v1/auth/2fa/setup (and confirm/disable/regenerate) return 501, same "not configured" shape as githubAppSecrets above
-	mfaPending             *mfaPendingStore      // always set, same "always present, not an Option" shape sessions itself has
-	mfaVerify              *loginLimiter         // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
-	passkeys               PasskeyStore          // always set, same "core Store interface" shape as recoveryCodes above
-	passkeyRegSessions     *passkeyCeremonyStore // always set; short-TTL, single-use WebAuthn registration challenges (passkeys.go)
-	passkeyLoginSessions   *passkeyCeremonyStore // always set; short-TTL, single-use WebAuthn login challenges (passkeys.go)
-	passkeyLogin           *loginLimiter         // separate budget from logins/mfaVerify above, same reasoning: a distinct attack surface gets its own independent rate limit
-	sessionTTL             time.Duration         // 0 means "use defaultSessionTTL", set via WithSessionTTL
-	dataDir                string                // "" means "don't report disk usage", set via WithDataDir
-	localNodeID            string                // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
-	meshZone               string                // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
+	mfaPending             *mfaPendingStore // always set, same "always present, not an Option" shape sessions itself has
+	passkeyLogin           *loginLimiter
+	mfaVerify              *loginLimiter // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
+	sessionTTL             time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
+	dataDir                string        // "" means "don't report disk usage", set via WithDataDir
+	localNodeID            string        // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
+	meshZone               string        // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness              ReadinessProbes
 	dockerPinger           DockerPinger             // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
 	images                 ImageLister              // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
@@ -465,7 +459,6 @@ type Router struct {
 	registryCatalogSecrets       RegistryCatalogSecrets           // nil is valid: GET /api/v1/registry/repositories and /api/v1/registry/tags return 501, same shape as registrySecrets above
 	dockerHubClient              DockerHubClient                  // always set (NewRouter defaults it to a real *dockerhub.Client, unauthenticated so no secrets wiring needed), overridable in this package's own tests the same way registryCatalog is
 	emailSender                  email.Sender                     // nil is valid: forgot-password still returns its generic success response
-	passwordResetTokens          PasswordResetTokenStore          // always set, same shape as backupTargets above
 	sessionLinkTokens            SessionLinkTokenStore            // always set, same shape as passwordResetTokens above
 	forgotPasswordByIP           *loginLimiter                    // per-IP forgot-password budget, distinct from logins above
 	forgotPasswordByEmail        *loginLimiter                    // per-(IP,email) forgot-password budget; both this and forgotPasswordByIP must allow a request
@@ -502,7 +495,6 @@ type Router struct {
 	doctorHTTPSPort              int                              // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
 	webhookDeliveries            WebhookDeliveryStore             // always set, same "core Store interface" shape as deployAttempts above
 	policies                     PolicyStore                      // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
-	deviceAuth                   DeviceAuthStore                  // always set, same "core Store interface" shape as policies above: device_auth_requests always exists
 	deviceFlow                   *loginLimiter                    // per-IP device-login-start budget, distinct from logins/forgotPasswordByIP above
 	hookRuns                     HookRunStore                     // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
 	deployApprovals              DeployApprovalStore              // always set, same "core Store interface" shape as hookRuns above: deploy_approvals always exists, empty is a valid, non-error result
@@ -570,13 +562,12 @@ type Router struct {
 	cpBackupScheduleOff bool                      // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
 	cpDR                ControlPlaneDR            // nil is valid: /system/control-plane-dr routes return 501
 
-	authEnginePrefix string               // empty means the library auth engine is off, set via WithAuthEngine
-	authEngine       http.Handler         // nil when APP_AUTH_ENGINE is not "library"
-	libSessions      *authengine.Sessions // nil unless the sessions area is served by the library, set via WithAuthSessions
-	mfaLib           *authLibMFA          // nil unless the library serves AreaMFA
-	authLibOAuth     AuthLibOAuth         // nil keeps the in-house OAuth sign-in, see WithAuthLibOAuth
-	cpDRMaterial     EscrowMaterialReader
-	authLib          authLibState // library token, device and shadow hooks, zero in legacy mode
+	authEngine   *authengine.Engine // set by WithAuthEngine, or built by NewRouter when absent
+	libSessions  *authengine.Sessions
+	mfaLib       *authLibMFA
+	authLibOAuth AuthLibOAuth
+	cpDRMaterial EscrowMaterialReader
+	authLib      authLibState // the library engine behind token and device routes
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -648,15 +639,10 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		detect:                      build.Detect,
 		importFiles:                 func() importplan.FileSource { return importplan.NewHTTPFiles() },
 		gitSourceFetch:              gitCheckoutWithToken,
-		logins:                      newLoginLimiter(),
-		recoveryCodes:               s,
 		mfaPending:                  newMFAPendingStore(),
-		mfaVerify:                   newLoginLimiter(),
-		passkeys:                    s,
-		pushSubscriptions:           s,
-		passkeyRegSessions:          newPasskeyCeremonyStore(),
-		passkeyLoginSessions:        newPasskeyCeremonyStore(),
 		passkeyLogin:                newLoginLimiter(),
+		mfaVerify:                   newLoginLimiter(),
+		pushSubscriptions:           s,
 		oauthSettings:               s,
 		oauthIdentities:             s,
 		oauthState:                  newOAuthStateStore(),
@@ -674,11 +660,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		vault:                       s,
 		registryCatalog:             registrycatalog.NewClient(),
 		dockerHubClient:             dockerhub.NewClient(),
-		passwordResetTokens:         s,
 		sessionLinkTokens:           s,
 		forgotPasswordByIP:          newLoginLimiter(),
 		forgotPasswordByEmail:       newLoginLimiter(),
-		deviceAuth:                  s,
 		deviceFlow:                  newLoginLimiter(),
 		fetchLatestRelease:          defaultFetchLatestRelease,
 		updatesCache:                newUpdatesCache(),
@@ -722,6 +706,6 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	// sessionStore reads its TTL once at construction, it isn't a field
 	// re-read on every create() call.
 	rt.sessions = newSessionStore(rt.sessionTTL)
-	rt.attachLibSessions()
+	rt.attachAuthEngine(s)
 	return rt
 }

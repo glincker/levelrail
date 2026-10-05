@@ -16,7 +16,6 @@ import { useShortcuts } from '../hooks/useShortcuts'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { AppHeader } from '../components/shell/AppHeader'
 import { ShellBanner } from '../components/shell/ShellBanner'
-import { RecoveryCodesNotice } from '../components/RecoveryCodesNotice'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
 import { Toaster } from '../components/ui/toast'
 
@@ -115,9 +114,7 @@ function AppShell() {
         <ShellBanner />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="mx-auto w-full max-w-6xl">
-            <div className="mb-4 empty:hidden">
-              <RecoveryCodesNotice />
-            </div>
+            <div className="mb-4 empty:hidden"></div>
             <Outlet />
           </div>
           <p className="mx-auto mt-8 w-full max-w-6xl text-xs text-muted-foreground">

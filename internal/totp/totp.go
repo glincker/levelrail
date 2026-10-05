@@ -1,13 +1,6 @@
-// Package totp implements time-based one-time passwords (RFC 6238, the
-// algorithm every mainstream authenticator app speaks) plus the small
-// amount of supporting logic 2FA needs: secret generation, an
-// otpauth:// provisioning URI, and single-use recovery codes.
-//
-// No third-party dependency: the algorithm is HMAC-SHA1 (crypto/hmac,
-// crypto/sha1) over a big-endian 8-byte counter, base32-decoded key
-// (encoding/base32), all stdlib. Adding a library for this would be
-// adding a dependency for something the standard library already
-// covers completely.
+// Package totp holds the recovery-code format helpers and an RFC 6238 code
+// generator the auth engine and its tests share. Verification and secret
+// handling live in the auth library.
 package totp
 
 import (
@@ -17,8 +10,6 @@ import (
 	"encoding/base32"
 	"encoding/binary"
 	"fmt"
-	"net/url"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -41,52 +32,6 @@ const (
 )
 
 var base32Encoding = base32.StdEncoding.WithPadding(base32.NoPadding)
-
-// GenerateSecret returns a fresh random base32-encoded TOTP secret.
-func GenerateSecret() (string, error) {
-	buf := make([]byte, secretBytes)
-	if _, err := rand.Read(buf); err != nil {
-		return "", fmt.Errorf("totp: generate secret: %w", err)
-	}
-	return base32Encoding.EncodeToString(buf), nil
-}
-
-// Validate reports whether code is a currently valid 6-digit TOTP for
-// secretBase32 at now, tolerating +-skewSteps steps of clock drift.
-// Returns false on any malformed input rather than an error: every
-// caller treats "not a valid code right now" identically regardless of
-// why.
-func Validate(secretBase32, code string, now time.Time) bool {
-	_, ok := ValidateStep(secretBase32, code, now)
-	return ok
-}
-
-// ValidateStep is Validate that also returns the time step the code
-// matched, so a caller can refuse to accept that step a second time.
-func ValidateStep(secretBase32, code string, now time.Time) (int64, bool) {
-	code = strings.TrimSpace(code)
-	if len(code) != digits {
-		return 0, false
-	}
-	for _, r := range code {
-		if r < '0' || r > '9' {
-			return 0, false
-		}
-	}
-
-	key, err := decodeSecret(secretBase32)
-	if err != nil {
-		return 0, false
-	}
-
-	counter := now.Unix() / stepSeconds
-	for delta := int64(-skewSteps); delta <= skewSteps; delta++ {
-		if generate(key, counter+delta) == code {
-			return counter + delta, true
-		}
-	}
-	return 0, false
-}
 
 // GenerateCode returns the 6-digit TOTP for secretBase32 at the step
 // containing now, with no clock-skew tolerance (that's Validate's job,
@@ -127,24 +72,6 @@ func generate(key []byte, counter int64) string {
 func decodeSecret(secretBase32 string) ([]byte, error) {
 	normalized := strings.ToUpper(strings.TrimSpace(secretBase32))
 	return base32Encoding.DecodeString(normalized)
-}
-
-// ProvisioningURI builds the otpauth:// key URI most authenticator apps
-// accept either scanned as a QR code or pasted directly, per Google
-// Authenticator's key URI format. issuer and accountName are shown to
-// the user inside their authenticator app to distinguish this entry
-// from others, and both belong in the label and as an issuer query
-// param per that same format's own recommendation (some apps only read
-// one or the other).
-func ProvisioningURI(secretBase32, accountName, issuer string) string {
-	label := issuer + ":" + accountName
-	v := url.Values{}
-	v.Set("secret", secretBase32)
-	v.Set("issuer", issuer)
-	v.Set("algorithm", "SHA1")
-	v.Set("digits", strconv.Itoa(digits))
-	v.Set("period", strconv.Itoa(stepSeconds))
-	return "otpauth://totp/" + url.PathEscape(label) + "?" + v.Encode()
 }
 
 // GenerateRecoveryCode returns one single-use fallback code: 80 random

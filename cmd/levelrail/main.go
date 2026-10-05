@@ -331,13 +331,6 @@ func main() {
 		}
 		return
 	}
-	if len(os.Args) > 1 && os.Args[1] == "auth-backfill" {
-		if err := runAuthBackfill(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdout); err != nil {
-			logger.Error("auth-backfill failed", slog.String("error", err.Error()))
-			os.Exit(1)
-		}
-		return
-	}
 	if len(os.Args) > 1 && os.Args[1] == "restore-db" {
 		if err := runRestoreDB(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdout); err != nil {
 			logger.Error("restore-db failed", slog.String("error", err.Error()))
@@ -2313,7 +2306,12 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// like WithEmailSender above.
 		api.WithPushVAPIDPublicKey(pushVAPIDPublicKey),
 	}
-	opts = append(opts, authEngineOptions(context.Background(), logger, b, db.DB, secretsManager)...)
+	authOpts, err := authEngineOptions(context.Background(), logger, b, db.DB, secretsManager)
+	if err != nil {
+		logger.Error("auth engine setup failed", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	opts = append(opts, authOpts...)
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
 		opts = append(opts, api.WithMasterKeyRotation(secretsManager, masterKeyFilePath))
@@ -2510,10 +2508,6 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// Same nil-interface hazard as every other
 			// secretsManager-dependent option in this block.
 			api.WithGitHubAppSecrets(secretsManager),
-			// Per-user TOTP secrets (internal/api/twofactor.go): same
-			// secretsManager, same nil-interface hazard as everything else
-			// in this block.
-			api.WithTwoFactorSecrets(secretsManager),
 			// GitLab App connection: same secretsManager, same
 			// nil-interface hazard, the OAuth-Application counterpart of
 			// the GitHub App connection just above.

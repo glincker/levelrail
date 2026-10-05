@@ -53,19 +53,17 @@ type session struct {
 	pinnedDisplayName string
 }
 
-// sessionStore is a server-side, in-memory session table: the cookie
-// carries only an opaque token, this map is the sole place that token
-// resolves to a user ID. In-memory: a restart invalidates every session.
+// sessionStore resolves a session cookie to a user through the auth
+// library. Only sessions pinned to an API token (session links minted from a
+// token) live in memory, since the library ties sessions to users.
 type sessionStore struct {
 	mu       sync.Mutex
 	sessions map[string]session
 	ttl      time.Duration
-	lib      *authengine.Sessions // set when the sessions area is served by the library
+	lib      *authengine.Sessions
 }
 
-// newSessionStore builds a sessionStore. ttl <= 0 falls back to
-// defaultSessionTTL, so callers that construct one directly (existing
-// tests, primarily) don't need to know about the default themselves.
+// newSessionStore builds a sessionStore. ttl <= 0 falls back to defaultSessionTTL.
 func newSessionStore(ttl time.Duration) *sessionStore {
 	if ttl <= 0 {
 		ttl = defaultSessionTTL
@@ -73,22 +71,9 @@ func newSessionStore(ttl time.Duration) *sessionStore {
 	return &sessionStore{sessions: make(map[string]session), ttl: ttl}
 }
 
-func (s *sessionStore) create(userID string) (string, error) {
-	token, err := randomToken()
-	if err != nil {
-		return "", fmt.Errorf("api: generate session token: %w", err)
-	}
-	s.mu.Lock()
-	s.sessions[token] = session{userID: userID, expiresAt: time.Now().Add(s.ttl)}
-	s.mu.Unlock()
-	return token, nil
-}
-
-// createPinned is create's counterpart for a session minted from an API
-// token (consumeSessionLink's token-principal branch): principalID
-// names the originating token, not a users row, so abilities/displayName
-// are carried on the session itself rather than resolved from a user
-// record on every request.
+// createPinned mints a session for an API token principal: principalID names
+// the originating token, not a users row, so abilities and displayName are
+// carried on the session instead of resolved from a user record.
 func (s *sessionStore) createPinned(principalID string, abilities []string, displayName string) (string, error) {
 	token, err := randomToken()
 	if err != nil {
@@ -106,64 +91,22 @@ func (s *sessionStore) createPinned(principalID string, abilities []string, disp
 	return token, nil
 }
 
-// lookup resolves token to the real user ID it authenticates as. Only
-// ever true for an ordinary user session: a pinned session (see
-// createPinned) has no real user row, so every caller built on lookup
-// (requireAuth, currentSessionUserID, and everything downstream of
-// those) correctly treats it as "not signed in" rather than passing
-// along a userID that doesn't resolve to anything. requireAbilityDecided
-// recognizes a pinned session through getPinned instead.
+// lookup resolves token to the real user ID it authenticates as. A pinned
+// session has no user row, so it reads as "not signed in" here; getPinned
+// resolves that kind instead.
 func (s *sessionStore) lookup(token string) (string, bool) {
-	if s.lib != nil {
-		info, ok := s.lib.Lookup(context.Background(), token)
-		return info.LegacyUserID, ok
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	sess, ok := s.sessions[token]
-	if !ok {
-		return "", false
-	}
-	if time.Now().After(sess.expiresAt) {
-		delete(s.sessions, token)
-		return "", false
-	}
-	if sess.principalType == store.PrincipalTypeToken {
-		return "", false
-	}
-	return sess.userID, true
+	info, ok := s.lib.Lookup(context.Background(), token)
+	return info.LegacyUserID, ok
 }
 
-// get returns the full session record for token, used where a caller
-// needs more than lookup's user ID (e.g. handleGetSession also wants
-// expiresAt). Same liveness/expiry handling as lookup, and the same
-// "a pinned session isn't a real user session" filtering.
+// get returns the session record for token where a caller needs more than
+// the user ID (handleGetSession also wants expiresAt).
 func (s *sessionStore) get(token string) (session, bool) {
-	if s.lib != nil {
-		info, ok := s.lib.Lookup(context.Background(), token)
-		return session{userID: info.LegacyUserID, expiresAt: info.ExpiresAt}, ok
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	sess, ok := s.sessions[token]
-	if !ok {
-		return session{}, false
-	}
-	if time.Now().After(sess.expiresAt) {
-		delete(s.sessions, token)
-		return session{}, false
-	}
-	if sess.principalType == store.PrincipalTypeToken {
-		return session{}, false
-	}
-	return sess, true
+	info, ok := s.lib.Lookup(context.Background(), token)
+	return session{userID: info.LegacyUserID, expiresAt: info.ExpiresAt}, ok
 }
 
-// getPinned is lookup/get's counterpart for a session minted from an API
-// token (createPinned): returns ok only for that kind of session, the
-// mirror image of lookup/get's own filtering, so requireAbilityDecided
-// can resolve either kind from the same cookie without the two paths
-// overlapping.
+// getPinned is lookup's counterpart for a session minted from an API token.
 func (s *sessionStore) getPinned(token string) (session, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -182,36 +125,21 @@ func (s *sessionStore) getPinned(token string) (session, bool) {
 }
 
 func (s *sessionStore) revoke(token string) {
-	if s.lib != nil {
-		s.lib.Revoke(context.Background(), token)
-	}
+	s.lib.Revoke(context.Background(), token)
 	s.mu.Lock()
 	delete(s.sessions, token)
 	s.mu.Unlock()
 }
 
-// revokeAllExcept deletes every session belonging to userID other than
-// keepToken, scoped strictly to that one user: revoking their sessions
-// must never touch another user's.
+// revokeAllExcept ends every session of userID other than keepToken, never
+// touching another user's.
 func (s *sessionStore) revokeAllExcept(userID, keepToken string) {
-	if s.lib != nil {
-		_ = s.lib.RevokeAllExcept(context.Background(), userID, keepToken)
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for token, sess := range s.sessions {
-		if token != keepToken && sess.userID == userID {
-			delete(s.sessions, token)
-		}
-	}
+	_ = s.lib.RevokeAllExcept(context.Background(), userID, keepToken)
 }
 
-// revokeAll deletes every session belonging to userID, unlike
-// revokeAllExcept which always spares one token.
+// revokeAll ends every session of userID, library and pinned alike.
 func (s *sessionStore) revokeAll(userID string) {
-	if s.lib != nil {
-		_ = s.lib.RevokeAll(context.Background(), userID)
-	}
+	_ = s.lib.RevokeAll(context.Background(), userID)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for token, sess := range s.sessions {
@@ -267,92 +195,7 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if rt.refuseInsecureLogin(w, r) {
 		return
 	}
-	if rt.libSessions != nil {
-		rt.handleLibLogin(w, r)
-		return
-	}
-	var req loginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
-		return
-	}
-	if req.Email == "" || req.Password == "" {
-		writeError(w, http.StatusBadRequest, "username and password are required")
-		return
-	}
-
-	key := loginLimiterKey(r, req.Email)
-	if ok, retryAfter := rt.logins.allow(key); !ok {
-		w.Header().Set("Retry-After", fmt.Sprintf("%.0f", retryAfter.Seconds()))
-		writeError(w, http.StatusTooManyRequests, "too many failed attempts, try again later")
-		return
-	}
-
-	user, err := rt.auth.GetUserByEmail(r.Context(), req.Email)
-	if errors.Is(err, store.ErrUserNotFound) {
-		burnBcryptCompare(req.Password)
-		rt.logins.recordFailure(key)
-		writeError(w, http.StatusUnauthorized, "invalid credentials")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: login: load user failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	if user.PasswordHash == nil {
-		// No password to check against: treat like a wrong password so
-		// the response never reveals which sign-in methods an account has.
-		burnBcryptCompare(req.Password)
-		rt.logins.recordFailure(key)
-		writeError(w, http.StatusUnauthorized, "invalid credentials")
-		return
-	}
-	if err := bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(req.Password)); err != nil {
-		rt.logins.recordFailure(key)
-		writeError(w, http.StatusUnauthorized, "invalid credentials")
-		return
-	}
-	rt.logins.recordSuccess(key)
-
-	if user.TOTPEnabled {
-		token, err := rt.mfaPending.create(user.ID)
-		if err != nil {
-			rt.logger.Error("api: login: create mfa pending token failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-		writeJSON(w, http.StatusOK, loginResponse{MFARequired: true, MFAToken: token})
-		return
-	}
-
-	if err := rt.establishSession(w, r, *user); err != nil {
-		rt.logger.Error("api: login: establish session failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
-}
-
-// dummyPasswordHash is a bcrypt hash of random bytes nobody knows, at the
-// same cost real hashes use.
-var dummyPasswordHash = sync.OnceValue(func() []byte {
-	secret := make([]byte, 32)
-	_, _ = rand.Read(secret)
-	hash, err := bcrypt.GenerateFromPassword(secret, bcrypt.DefaultCost)
-	if err != nil {
-		return nil
-	}
-	return hash
-})
-
-// burnBcryptCompare spends one bcrypt comparison so a login for an unknown
-// or passwordless account takes as long as a wrong password, closing the
-// response-time oracle for which emails have an account.
-func burnBcryptCompare(password string) {
-	if hash := dummyPasswordHash(); hash != nil {
-		_ = bcrypt.CompareHashAndPassword(hash, []byte(password))
-	}
+	rt.handleLibLogin(w, r)
 }
 
 // establishSession is the one place a session cookie gets created and
@@ -360,22 +203,7 @@ func burnBcryptCompare(password string) {
 // callback handlers all funnel through this, so every sign-in path
 // shares identical session properties by construction.
 func (rt *Router) establishSession(w http.ResponseWriter, r *http.Request, user store.User) error {
-	if rt.libSessions != nil {
-		return rt.establishLibSession(w, r, user)
-	}
-	token, err := rt.sessions.create(user.ID)
-	if err != nil {
-		return fmt.Errorf("create session: %w", err)
-	}
-
-	// Best-effort: last_login_at is an observability nicety for the Users
-	// settings page, never something a sign-in should fail over.
-	if err := rt.auth.UpdateUserLastLogin(r.Context(), user.ID, time.Now()); err != nil {
-		rt.logger.Warn("api: update last_login_at failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))
-	}
-
-	setSessionCookie(w, r, token, time.Now().Add(rt.sessions.ttl))
-	return nil
+	return rt.establishLibSession(w, r, user)
 }
 
 // handleLogout revokes the session named by the request's cookie, if
@@ -546,8 +374,6 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 			writeError(w, http.StatusUnauthorized, "authentication required")
 			return
 		}
-
-		rt.observeShadow(token)
 
 		// Keyed by the token's own hash, not its DB record ID: this runs
 		// before the lookup below, so a leaked token gets throttled even
@@ -849,56 +675,7 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("password must be at least %d characters", minPasswordLength))
 		return
 	}
-	if rt.libSessions != nil {
-		rt.libRegister(w, r, req)
-		return
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		rt.logger.Error("api: register: hash password failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	id, err := randomOpaqueID("user_")
-	if err != nil {
-		rt.logger.Error("api: register: generate user id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	hashStr := string(hash)
-	user := store.User{
-		ID:           id,
-		Email:        req.Email,
-		DisplayName:  req.Email,
-		PasswordHash: &hashStr,
-		Abilities:    []string{AbilityRoot},
-		IsFirstUser:  true,
-		CreatedAt:    time.Now(),
-	}
-	if err := rt.auth.CreateUser(r.Context(), user); errors.Is(err, store.ErrFirstUserExists) {
-		writeError(w, http.StatusConflict, "an account already exists; sign in instead")
-		return
-	} else if errors.Is(err, store.ErrUserEmailExists) {
-		writeError(w, http.StatusConflict, "an account already exists; sign in instead")
-		return
-	} else if err != nil {
-		rt.logger.Error("api: register: save user failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	if err := removeSetupToken(rt.dataDir); err != nil {
-		rt.logger.Warn("api: register: remove setup token failed", slog.String("error", err.Error()))
-	}
-
-	if err := rt.establishSession(w, r, user); err != nil {
-		rt.logger.Error("api: register: establish session failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusCreated, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
+	rt.libRegister(w, r, req)
 }
 
 // minPasswordLength is a security floor, not a deployment preference,

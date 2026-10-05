@@ -1,29 +1,13 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"os"
 	"slices"
 	"strconv"
 	"time"
-
-	"github.com/GLINCKER/levelrail/internal/store"
 )
-
-// DeviceAuthStore is the store surface the device-login flow needs,
-// defined here next to the handlers that use it, the same
-// "single-file feature" shape PolicyStore/OnboardingStore already use.
-type DeviceAuthStore interface {
-	SaveDeviceAuthRequest(ctx context.Context, r store.DeviceAuthRequest) error
-	GetDeviceAuthRequestByDeviceCode(ctx context.Context, deviceCode string) (*store.DeviceAuthRequest, error)
-	GetDeviceAuthRequestByUserCode(ctx context.Context, userCode string) (*store.DeviceAuthRequest, error)
-	ListPendingDeviceAuthRequests(ctx context.Context, now time.Time) ([]store.DeviceAuthRequest, error)
-	SetDeviceAuthRequestStatus(ctx context.Context, userCode, status, approvedByUserID string) (int64, error)
-	RedeemDeviceAuthRequest(ctx context.Context, deviceCode, tokenID string, redeemedAt time.Time) error
-}
 
 // deviceAuthTTL is how long a device/user code pair stays valid before
 // a poll or an approval attempt gets "expired_token": long enough for
@@ -35,7 +19,6 @@ const deviceAuthTTL = 10 * time.Minute
 // returned as part of the start response, RFC 8628's own "interval"
 // field: a fixed value is enough here, this flow has no need for the
 // "slow_down"-response escalation real OAuth device grants define.
-const devicePollInterval = 5
 
 const (
 	envDeviceTokenTTLDays   = "APP_DEVICE_TOKEN_TTL_DAYS"   //nolint:gosec // env var name
@@ -103,50 +86,7 @@ func (rt *Router) handleDeviceAuthStart(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if rt.authLib.device != nil {
-		rt.libraryDeviceStart(w, r, req)
-		return
-	}
-
-	id, err := store.NewDeviceAuthRequestID()
-	if err != nil {
-		rt.internalError(w, "api: device auth start: generate id failed", err)
-		return
-	}
-	deviceCode, err := store.NewDeviceCode()
-	if err != nil {
-		rt.internalError(w, "api: device auth start: generate device code failed", err)
-		return
-	}
-	userCode, err := store.NewUserCode()
-	if err != nil {
-		rt.internalError(w, "api: device auth start: generate user code failed", err)
-		return
-	}
-
-	now := time.Now()
-	rec := store.DeviceAuthRequest{
-		ID:         id,
-		DeviceCode: deviceCode,
-		UserCode:   userCode,
-		ClientName: req.ClientName,
-		CreatedAt:  now,
-		ExpiresAt:  now.Add(deviceAuthTTL),
-	}
-	if err := rt.deviceAuth.SaveDeviceAuthRequest(r.Context(), rec); err != nil {
-		rt.internalError(w, "api: device auth start: save failed", err)
-		return
-	}
-
-	base := requestBaseURL(r)
-	writeJSON(w, http.StatusCreated, deviceStartResponse{
-		DeviceCode:              deviceCode,
-		UserCode:                userCode,
-		VerificationURI:         base + "/settings/cli-access",
-		VerificationURIComplete: base + "/settings/cli-access?user_code=" + userCode,
-		ExpiresIn:               int(deviceAuthTTL.Seconds()),
-		Interval:                devicePollInterval,
-	})
+	rt.libraryDeviceStart(w, r, req)
 }
 
 type deviceTokenRequest struct {
@@ -172,99 +112,7 @@ func (rt *Router) handleDeviceAuthToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if rt.authLib.device != nil {
-		rt.libraryDeviceToken(w, r, req.DeviceCode)
-		return
-	}
-
-	rec, err := rt.deviceAuth.GetDeviceAuthRequestByDeviceCode(r.Context(), req.DeviceCode)
-	if errors.Is(err, store.ErrDeviceAuthRequestNotFound) {
-		writeError(w, http.StatusBadRequest, "expired_token")
-		return
-	}
-	if err != nil {
-		rt.internalError(w, "api: device auth token: lookup failed", err)
-		return
-	}
-
-	if rec.RedeemedAt != nil {
-		writeError(w, http.StatusBadRequest, "expired_token")
-		return
-	}
-	if time.Now().After(rec.ExpiresAt) {
-		writeError(w, http.StatusBadRequest, "expired_token")
-		return
-	}
-
-	switch rec.Status {
-	case store.DeviceAuthStatusPending:
-		writeError(w, http.StatusBadRequest, "authorization_pending")
-		return
-	case store.DeviceAuthStatusDenied:
-		writeError(w, http.StatusBadRequest, "access_denied")
-		return
-	}
-
-	if rec.ApprovedByUserID == nil {
-		rt.internalError(w, "api: device auth token: approved request missing approver", errors.New("approved_by_user_id is nil"))
-		return
-	}
-	user, err := rt.auth.GetUserByID(r.Context(), *rec.ApprovedByUserID)
-	if errors.Is(err, store.ErrUserNotFound) {
-		writeError(w, http.StatusBadRequest, "access_denied")
-		return
-	}
-	if err != nil {
-		rt.internalError(w, "api: device auth token: load approving user failed", err)
-		return
-	}
-
-	plaintext, err := randomToken()
-	if err != nil {
-		rt.internalError(w, "api: device auth token: generate token failed", err)
-		return
-	}
-	tokenID, err := randomTokenID()
-	if err != nil {
-		rt.internalError(w, "api: device auth token: generate token id failed", err)
-		return
-	}
-
-	// Claim before minting: the atomic UPDATE is the single point
-	// concurrent polls race on, so exactly one proceeds to mint.
-	if err := rt.deviceAuth.RedeemDeviceAuthRequest(r.Context(), req.DeviceCode, tokenID, time.Now()); err != nil {
-		if errors.Is(err, store.ErrDeviceAuthRequestNotFound) {
-			writeError(w, http.StatusBadRequest, "expired_token")
-			return
-		}
-		rt.internalError(w, "api: device auth token: redeem failed", err)
-		return
-	}
-
-	tokenName := "cli login"
-	if rec.ClientName != "" {
-		tokenName = "cli login: " + rec.ClientName
-	}
-	now := time.Now()
-	expiresAt := now.Add(deviceTokenTTL())
-	tokenRec := store.APIToken{
-		ID:          tokenID,
-		Name:        tokenName,
-		TokenHash:   hashToken(plaintext),
-		Abilities:   capDeviceAbilities(user.Abilities),
-		CreatedAt:   now,
-		ExpiresAt:   &expiresAt,
-		OwnerUserID: user.ID,
-	}
-	if err := rt.tokens.SaveAPIToken(r.Context(), tokenRec); err != nil {
-		rt.internalError(w, "api: device auth token: save token failed", err)
-		return
-	}
-
-	writeJSON(w, http.StatusOK, createTokenResponse{
-		tokenResource: toTokenResource(tokenRec),
-		Token:         plaintext,
-	})
+	rt.libraryDeviceToken(w, r, req.DeviceCode)
 }
 
 type deviceAuthRequestResource struct {
@@ -281,40 +129,22 @@ type deviceAuthRequestResource struct {
 // device login, since approving one only ever grants a token scoped to
 // their own abilities.
 func (rt *Router) handleListDeviceAuthRequests(w http.ResponseWriter, r *http.Request) {
-	if rt.authLib.device != nil {
-		rt.libraryListDeviceRequests(w, r)
-		return
-	}
-	recs, err := rt.deviceAuth.ListPendingDeviceAuthRequests(r.Context(), time.Now())
-	if err != nil {
-		rt.internalError(w, "api: list device auth requests failed", err)
-		return
-	}
-	out := make([]deviceAuthRequestResource, 0, len(recs))
-	for _, rec := range recs {
-		out = append(out, deviceAuthRequestResource{
-			UserCode:   rec.UserCode,
-			ClientName: rec.ClientName,
-			CreatedAt:  rec.CreatedAt,
-			ExpiresAt:  rec.ExpiresAt,
-		})
-	}
-	writeJSON(w, http.StatusOK, out)
+	rt.libraryListDeviceRequests(w, r)
 }
 
 // handleApproveDeviceAuthRequest handles POST
 // /api/v1/auth/device/{user_code}/approve.
 func (rt *Router) handleApproveDeviceAuthRequest(w http.ResponseWriter, r *http.Request) {
-	rt.decideDeviceAuthRequest(w, r, store.DeviceAuthStatusApproved)
+	rt.decideDeviceAuthRequest(w, r, true)
 }
 
 // handleDenyDeviceAuthRequest handles POST
 // /api/v1/auth/device/{user_code}/deny.
 func (rt *Router) handleDenyDeviceAuthRequest(w http.ResponseWriter, r *http.Request) {
-	rt.decideDeviceAuthRequest(w, r, store.DeviceAuthStatusDenied)
+	rt.decideDeviceAuthRequest(w, r, false)
 }
 
-func (rt *Router) decideDeviceAuthRequest(w http.ResponseWriter, r *http.Request, status string) {
+func (rt *Router) decideDeviceAuthRequest(w http.ResponseWriter, r *http.Request, approve bool) {
 	userCode := r.PathValue("user_code")
 	userID, ok := rt.currentSessionUserID(r)
 	if !ok {
@@ -322,28 +152,7 @@ func (rt *Router) decideDeviceAuthRequest(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if rt.authLib.device != nil {
-		rt.libraryDecideDevice(w, r, userID, userCode, status == store.DeviceAuthStatusApproved)
-		return
-	}
-
-	approver := ""
-	if status == store.DeviceAuthStatusApproved {
-		approver = userID
-	}
-	n, err := rt.deviceAuth.SetDeviceAuthRequestStatus(r.Context(), userCode, status, approver)
-	if err != nil {
-		rt.internalError(w, "api: decide device auth request failed", err)
-		return
-	}
-	if n == 0 {
-		writeError(w, http.StatusNotFound, "no pending device login with this code")
-		return
-	}
-	if status == store.DeviceAuthStatusApproved {
-		rt.recordAudit(r.Context(), r, AbilityWrite, auditActorSession, userID, "", http.StatusNoContent)
-	}
-	w.WriteHeader(http.StatusNoContent)
+	rt.libraryDecideDevice(w, r, userID, userCode, approve)
 }
 
 // requestBaseURL builds this request's own scheme+host, the same

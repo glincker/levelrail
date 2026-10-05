@@ -1,0 +1,30 @@
+[
+  {
+    "Step": "dev session before",
+    "Status": 200,
+    "Body": "{\"display_name\":\"dev@example.test\",\"expires_at\":\"\\u003cvolatile\\u003e\",\"has_password\":true,\"username\":\"dev@example.test\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "delete",
+    "Status": 204,
+    "Body": "",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "dev session after delete",
+    "Status": 401,
+    "Body": "{\"error\":\"authentication required\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "dev login after delete",
+    "Status": 401,
+    "Body": "{\"error\":\"invalid credentials\"}",
+    "Cookies": null,
+    "Retry": false
+  }
+]

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -49,26 +48,25 @@ func runAuthEngineStatus(prog string, args []string, stdout, stderr io.Writer, l
 }
 
 func printAuthEngineStatus(w io.Writer, s apiclient.AuthEngineStatusResource) {
-	_, _ = fmt.Fprintf(w, "mode:             %s\n", s.Mode)
 	_, _ = fmt.Fprintf(w, "library version:  %s\n", s.LibraryVersion)
-	if len(s.Areas) > 0 {
-		_, _ = fmt.Fprintf(w, "library areas:    %s\n", strings.Join(s.Areas, ", "))
+	_, _ = fmt.Fprintf(w, "two-factor (TOTP): %s\n", availability(s.TOTP))
+	_, _ = fmt.Fprintf(w, "passkeys:         %s\n", availability(s.Passkeys))
+	_, _ = fmt.Fprintf(w, "oauth sign-in:    %s\n", availability(s.OAuth))
+}
+
+func availability(on bool) string {
+	if on {
+		return "available"
 	}
-	_, _ = fmt.Fprintf(w, "compared:         %d\n", s.Compared)
-	_, _ = fmt.Fprintf(w, "matched:          %d\n", s.Matched)
-	_, _ = fmt.Fprintf(w, "mismatched:       %d\n", s.Mismatched)
-	_, _ = fmt.Fprintf(w, "dropped:          %d\n", s.Dropped)
-	for _, m := range s.Mismatches {
-		_, _ = fmt.Fprintf(w, "  %s  %-9s token=%s legacy=%v library=%v\n", m.At.Format("2006-01-02 15:04:05"), m.Kind, m.TokenID, m.LegacyAbilities, m.LibraryAbilities)
-	}
+	return "unavailable"
 }
 
 func authEngineUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s auth-engine status [flags]
 
-Shows which auth engine is active, the areas served by the library, and the
-shadow comparison counters with the most recent mismatches. Needs a root token.
+Shows the auth library version and which optional sign-in features (two-factor,
+passkeys, OAuth) this control plane has available. Needs a root token.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

@@ -7,12 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"time"
-
-	"github.com/GLINCKER/levelrail/internal/store"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // passwordResetTokenTTL: upper end of the common 15-30 minute range,
@@ -82,67 +78,10 @@ func (rt *Router) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	rt.forgotPasswordByIP.recordFailure(ipKey)
 	rt.forgotPasswordByEmail.recordFailure(emailKey)
 
-	if rt.libSessions != nil {
-		go rt.requestLibPasswordReset(req.Email, clientIP(r))
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	go rt.sendPasswordResetEmail(context.Background(), req.Email)
-
+	go rt.requestLibPasswordReset(req.Email, clientIP(r))
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// sendPasswordResetEmail is handleForgotPassword's background half.
-// Every early return is a real, expected outcome, never surfaced to a
-// caller: the HTTP response was already written by the time this runs.
-func (rt *Router) sendPasswordResetEmail(ctx context.Context, email string) {
-	ctx, cancel := context.WithTimeout(ctx, passwordResetSendTimeout)
-	defer cancel()
-
-	user, err := rt.auth.GetUserByEmail(ctx, email)
-	if err != nil {
-		if !errors.Is(err, store.ErrUserNotFound) {
-			rt.logger.Error("api: forgot password: load user failed", slog.String("error", err.Error()))
-		}
-		return
-	}
-	if rt.emailSender == nil {
-		rt.logger.Warn("api: forgot password: no email capability configured on this control plane")
-		return
-	}
-
-	plaintext, err := randomToken()
-	if err != nil {
-		rt.logger.Error("api: forgot password: generate token failed", slog.String("error", err.Error()))
-		return
-	}
-	id, err := randomPasswordResetTokenID()
-	if err != nil {
-		rt.logger.Error("api: forgot password: generate token id failed", slog.String("error", err.Error()))
-		return
-	}
-
-	now := time.Now().UTC()
-	rec := store.PasswordResetToken{
-		ID:        id,
-		UserID:    user.ID,
-		TokenHash: hashToken(plaintext),
-		CreatedAt: now,
-		ExpiresAt: now.Add(passwordResetTokenTTL),
-	}
-	if err := rt.passwordResetTokens.SavePasswordResetToken(ctx, rec); err != nil {
-		rt.logger.Error("api: forgot password: save token failed", slog.String("error", err.Error()))
-		return
-	}
-
-	url := rt.passwordResetURL(ctx, plaintext)
-	subject, body := rt.passwordResetMessageFor(url)
-	if err := rt.emailSender.Send(ctx, user.Email, subject, body); err != nil {
-		rt.logger.Error("api: forgot password: send email failed", slog.String("error", err.Error()))
-	}
-}
-
-// passwordResetMessageFor builds the reset email subject and body for url.
 func (rt *Router) passwordResetMessageFor(url string) (subject, body string) {
 	subject = fmt.Sprintf("[%s] Reset your password", rt.brand.Name)
 	body = fmt.Sprintf(
@@ -195,52 +134,5 @@ func (rt *Router) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("new password must be at least %d characters", minPasswordLength))
 		return
 	}
-	if rt.libSessions != nil {
-		rt.resetLibPassword(w, r, req)
-		return
-	}
-
-	rec, err := rt.passwordResetTokens.GetPasswordResetTokenByHash(r.Context(), hashToken(req.Token))
-	if errors.Is(err, store.ErrPasswordResetTokenNotFound) {
-		writeError(w, http.StatusBadRequest, errInvalidOrExpiredResetToken.Error())
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: reset password: load token failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	if rec.UsedAt != nil || time.Now().After(rec.ExpiresAt) {
-		writeError(w, http.StatusBadRequest, errInvalidOrExpiredResetToken.Error())
-		return
-	}
-
-	// Claimed before the password changes, not after: this is the single
-	// atomic point two concurrent requests holding the same token race
-	// on, so at most one can proceed past it (see ClaimPasswordResetToken's
-	// own doc comment).
-	if err := rt.passwordResetTokens.ClaimPasswordResetToken(r.Context(), rec.ID); errors.Is(err, store.ErrPasswordResetTokenAlreadyUsed) {
-		writeError(w, http.StatusBadRequest, errInvalidOrExpiredResetToken.Error())
-		return
-	} else if err != nil {
-		rt.logger.Error("api: reset password: claim token failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	newHash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
-	if err != nil {
-		rt.logger.Error("api: reset password: hash new password failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	newHashStr := string(newHash)
-	if err := rt.auth.UpdateUserPasswordHash(r.Context(), rec.UserID, &newHashStr); err != nil {
-		rt.logger.Error("api: reset password: save failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	rt.sessions.revokeAll(rec.UserID)
-	w.WriteHeader(http.StatusNoContent)
+	rt.resetLibPassword(w, r, req)
 }

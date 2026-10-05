@@ -18,26 +18,10 @@ void testI18n.use(initReactI18next).init({
 })
 
 const base: AuthEngineStatus = {
-  mode: 'shadow',
-  library_version: 'v2.6.0',
-  areas: [],
-  compared: 12,
-  matched: 11,
-  mismatched: 1,
-  dropped: 0,
-  skipped: 0,
-  errors: 0,
-  mismatches: [
-    {
-      at: '2026-10-05T10:00:00Z',
-      kind: 'abilities',
-      token_id: 'tok_abc',
-      legacy_accepted: true,
-      library_accepted: true,
-      legacy_abilities: ['read', 'write'],
-      library_abilities: ['read'],
-    },
-  ],
+  library_version: 'v2.7.0',
+  totp: true,
+  passkeys: false,
+  oauth: true,
 }
 
 function stub(status: number, body: unknown) {
@@ -69,20 +53,12 @@ function renderCard() {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('AuthEngineCard', () => {
-  it('shows the mode, counters and a mismatch in shadow mode', async () => {
+  it('shows which sign-in features are available', async () => {
     stub(200, base)
     renderCard()
-    expect(await screen.findByText('Shadow')).toBeInTheDocument()
-    expect(screen.getByText('Mismatched')).toBeInTheDocument()
-    expect(screen.getByText('tok_abc')).toBeInTheDocument()
-    expect(screen.getByText('Abilities')).toBeInTheDocument()
-  })
-
-  it('hides the counters outside shadow mode', async () => {
-    stub(200, { ...base, mode: 'legacy', mismatches: [] })
-    renderCard()
-    expect(await screen.findByText('Built-in')).toBeInTheDocument()
-    expect(screen.queryByText('Compared')).not.toBeInTheDocument()
+    expect(await screen.findByText('Two-factor (TOTP)')).toBeInTheDocument()
+    expect(screen.getAllByText('Available')).toHaveLength(2)
+    expect(screen.getAllByText('Unavailable')).toHaveLength(1)
   })
 
   it('renders nothing for a non-root user', async () => {

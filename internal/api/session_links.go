@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -77,7 +76,7 @@ func (rt *Router) handleMintSessionLink(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if rt.libSessions != nil && principalType == store.PrincipalTypeUser {
+	if principalType == store.PrincipalTypeUser {
 		rt.mintLibSessionLink(w, r, principalID)
 		return
 	}
@@ -154,11 +153,7 @@ func (rt *Router) handleConsumeSessionLink(w http.ResponseWriter, r *http.Reques
 
 	rec, err := rt.sessionLinkTokens.GetSessionLinkTokenByHash(r.Context(), hashToken(token))
 	if errors.Is(err, store.ErrSessionLinkTokenNotFound) {
-		if rt.libSessions != nil {
-			rt.consumeLibSessionLink(w, r, token)
-			return
-		}
-		writeError(w, http.StatusBadRequest, errInvalidOrExpiredSessionLink.Error())
+		rt.consumeLibSessionLink(w, r, token)
 		return
 	}
 	if err != nil {
@@ -183,17 +178,7 @@ func (rt *Router) handleConsumeSessionLink(w http.ResponseWriter, r *http.Reques
 	}
 
 	if rec.PrincipalType == store.PrincipalTypeUser {
-		user, err := rt.auth.GetUserByID(r.Context(), rec.PrincipalID)
-		if err != nil {
-			rt.logger.Warn("api: consume session link: minting user no longer exists", slog.String("error", err.Error()), slog.String("user_id", rec.PrincipalID))
-			writeError(w, http.StatusBadRequest, errInvalidOrExpiredSessionLink.Error())
-			return
-		}
-		if err := rt.establishSession(w, r, *user); err != nil {
-			rt.internalError(w, "api: consume session link: establish session failed", err)
-			return
-		}
-		writeJSON(w, http.StatusOK, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
+		writeError(w, http.StatusBadRequest, errInvalidOrExpiredSessionLink.Error())
 		return
 	}
 

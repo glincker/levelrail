@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -19,36 +20,26 @@ type goldenStep struct {
 	Body   any
 }
 
-// goldenRouter builds a router in the given engine mode over a fresh database.
-func goldenRouter(t *testing.T, mode string) (*Router, *http.Cookie, *store.DB) {
+// goldenRouter builds a router over a fresh database.
+func goldenRouter(t *testing.T) (*Router, *http.Cookie, *store.DB) {
 	t.Helper()
-	return goldenRouterPoll(t, mode, "1ms")
+	return goldenRouterPoll(t, "1ms")
 }
 
-func goldenRouterPoll(t *testing.T, mode, pollInterval string) (*Router, *http.Cookie, *store.DB) {
+func goldenRouterPoll(t *testing.T, pollInterval string) (*Router, *http.Cookie, *store.DB) {
 	t.Helper()
-	t.Setenv(authengine.EnvEngine, mode)
-	t.Setenv(authengine.EnvAreas, "")
 	t.Setenv(authengine.EnvPollInterval, pollInterval)
 	db := openTestDB(t)
-	var opts []Option
-	if mode != authengine.EngineLegacy {
-		eng, err := authengine.New(db.DB, authengine.Config{
-			BaseURL: "http://golden.test", TokenPrefix: testBrand().ShortName, Directory: authengine.NewDirectory(db.DB),
-			DeviceTokenTTL: DeviceTokenTTL(), DeviceCodeTTL: DeviceCodeTTL(),
-		})
-		if err != nil {
-			t.Fatalf("authengine.New: %v", err)
-		}
-		t.Cleanup(eng.Close)
-		if mode == authengine.EngineShadow {
-			opts = append(opts, WithAuthEngineShadow(eng, authengine.ShadowConfig{QueueSize: 8, Workers: 1, MismatchLog: 5}))
-		} else {
-			opts = append(opts, WithAuthEngineLibrary(eng))
-		}
+	eng, err := authengine.New(db.DB, authengine.Config{
+		BaseURL: "http://golden.test", TokenPrefix: testBrand().ShortName, Directory: authengine.NewDirectory(db.DB),
+		DeviceTokenTTL: DeviceTokenTTL(), DeviceCodeTTL: DeviceCodeTTL(),
+		Sessions: authengine.SessionsHooks{Mail: &authengine.MailRelay{}},
+	})
+	if err != nil {
+		t.Fatalf("authengine.New: %v", err)
 	}
-	rt := NewRouter(discardLogger(), testBrand(), db, opts...)
-	t.Cleanup(rt.CloseAuthShadow)
+	t.Cleanup(eng.Close)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithAuthEngine(eng))
 	return rt, loginTestSession(t, rt, db), db
 }
 
@@ -112,8 +103,8 @@ func goldenBearer(method, token, body string) *http.Request {
 	return r
 }
 
-func goldenScenario(t *testing.T, mode string) []goldenStep {
-	rt, cookie, _ := goldenRouter(t, mode)
+func goldenScenario(t *testing.T) []goldenStep {
+	rt, cookie, _ := goldenRouter(t)
 	g := &goldenRun{t: t, rt: rt, cookie: cookie}
 
 	g.do("create rejects empty name", g.session(http.MethodPost, "/api/v1/auth/tokens", `{"name":"","abilities":["read"]}`))
@@ -151,7 +142,7 @@ func goldenScenario(t *testing.T, mode string) []goldenStep {
 	return g.steps
 }
 
-// Device token names differ by design ("cli login" vs "device login") and the test shortens the poll interval; only those fields are masked.
+// The test shortens the poll interval, so only that field and the device token name are masked.
 func maskDeviceName(steps []goldenStep) {
 	for _, s := range steps {
 		m, ok := s.Body.(map[string]any)
@@ -165,51 +156,54 @@ func maskDeviceName(steps []goldenStep) {
 	}
 }
 
+const goldenFile = "testdata/auth_engine_golden.json"
+
 func TestAuthEngineGoldenContract(t *testing.T) {
-	legacy := goldenScenario(t, authengine.EngineLegacy)
-	maskDeviceName(legacy)
-	for _, mode := range []string{authengine.EngineShadow, authengine.EngineLibrary} {
-		t.Run(mode, func(t *testing.T) {
-			got := goldenScenario(t, mode)
-			maskDeviceName(got)
-			if len(got) != len(legacy) {
-				t.Fatalf("steps = %d, want %d", len(got), len(legacy))
-			}
-			for i := range legacy {
-				if got[i].Status != legacy[i].Status || !reflect.DeepEqual(got[i].Body, legacy[i].Body) {
-					t.Errorf("%s: %s differs from legacy\n got  %d %v\n want %d %v", mode, legacy[i].Label, got[i].Status, got[i].Body, legacy[i].Status, legacy[i].Body)
-				}
-			}
-		})
+	got := goldenScenario(t)
+	maskDeviceName(got)
+	if os.Getenv("APP_UPDATE_GOLDEN") == "1" {
+		raw, err := json.MarshalIndent(got, "", "  ")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(goldenFile, append(raw, '\n'), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	raw, err := os.ReadFile(goldenFile)
+	if err != nil {
+		t.Fatalf("read golden: %v", err)
+	}
+	var want []goldenStep
+	if err := json.Unmarshal(raw, &want); err != nil {
+		t.Fatalf("decode golden: %v", err)
+	}
+	if len(got) != len(want) {
+		t.Fatalf("steps = %d, want %d", len(got), len(want))
+	}
+	for i := range want {
+		if got[i].Status != want[i].Status || !reflect.DeepEqual(got[i].Body, want[i].Body) {
+			t.Errorf("%s differs from the contract\n got  %d %v\n want %d %v", want[i].Label, got[i].Status, got[i].Body, want[i].Status, want[i].Body)
+		}
 	}
 }
 
 // Within the poll interval the library answers slow-down, which must not mask a redeemed code.
 func TestAuthEngineRedeemedDeviceCodeIsExpiredWithinInterval(t *testing.T) {
-	type outcome struct {
-		status int
-		body   string
+	rt, cookie, _ := goldenRouterPoll(t, "1h")
+	g := &goldenRun{t: t, rt: rt, cookie: cookie}
+	start := g.do("start", httptest.NewRequest(http.MethodPost, "/api/v1/auth/device/start", strings.NewReader(`{}`)))
+	code := fmt.Sprint(start["device_code"])
+	g.do("approve", g.session(http.MethodPost, "/api/v1/auth/device/"+fmt.Sprint(start["user_code"])+"/approve", ""))
+	var statuses []int
+	var bodies []string
+	for range 3 {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/device/token", strings.NewReader(`{"device_code":"`+code+`"}`)))
+		statuses = append(statuses, rec.Code)
+		bodies = append(bodies, rec.Body.String())
 	}
-	run := func(mode string) []outcome {
-		rt, cookie, _ := goldenRouterPoll(t, mode, "1h")
-		g := &goldenRun{t: t, rt: rt, cookie: cookie}
-		start := g.do("start", httptest.NewRequest(http.MethodPost, "/api/v1/auth/device/start", strings.NewReader(`{}`)))
-		code := fmt.Sprint(start["device_code"])
-		g.do("approve", g.session(http.MethodPost, "/api/v1/auth/device/"+fmt.Sprint(start["user_code"])+"/approve", ""))
-		var out []outcome
-		for range 3 {
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/device/token", strings.NewReader(`{"device_code":"`+code+`"}`)))
-			out = append(out, outcome{rec.Code, strings.TrimSpace(rec.Body.String())})
-		}
-		return out
-	}
-	legacy := run(authengine.EngineLegacy)
-	if legacy[0].status != http.StatusOK || legacy[1].status != http.StatusBadRequest || !strings.Contains(legacy[1].body, "expired_token") {
-		t.Fatalf("legacy baseline unexpected: %+v", legacy)
-	}
-	got := run(authengine.EngineLibrary)
-	if got[0].status != legacy[0].status || got[1] != legacy[1] || got[2] != legacy[2] {
-		t.Errorf("library = %+v, want legacy shape %+v", got[1:], legacy[1:])
+	if statuses[0] != http.StatusOK || statuses[1] != http.StatusBadRequest || !strings.Contains(bodies[1], "expired_token") || bodies[2] != bodies[1] {
+		t.Errorf("redeem sequence = %v %q, want 200 then expired_token twice", statuses, bodies)
 	}
 }

@@ -346,59 +346,6 @@ func TestMigration_LegacyAdminUserBecomesFirstUser(t *testing.T) {
 	}
 }
 
-func TestEnableAndDisableUserTOTP(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-
-	u := User{ID: "user_1", Email: "a@example.com", DisplayName: "A", CreatedAt: time.Now().UTC()}
-	if err := db.CreateUser(ctx, u); err != nil {
-		t.Fatalf("CreateUser() error = %v", err)
-	}
-
-	got, err := db.GetUserByID(ctx, u.ID)
-	if err != nil {
-		t.Fatalf("GetUserByID() error = %v", err)
-	}
-	if got.TOTPEnabled || got.TOTPConfirmedAt != nil {
-		t.Fatalf("new user TOTPEnabled = %v, TOTPConfirmedAt = %v, want false/nil", got.TOTPEnabled, got.TOTPConfirmedAt)
-	}
-
-	confirmedAt := time.Now().UTC().Truncate(time.Second)
-	if err := db.EnableUserTOTP(ctx, u.ID, confirmedAt); err != nil {
-		t.Fatalf("EnableUserTOTP() error = %v", err)
-	}
-	got, err = db.GetUserByID(ctx, u.ID)
-	if err != nil {
-		t.Fatalf("GetUserByID() error = %v", err)
-	}
-	if !got.TOTPEnabled {
-		t.Error("TOTPEnabled = false after EnableUserTOTP, want true")
-	}
-	if got.TOTPConfirmedAt == nil || !got.TOTPConfirmedAt.Equal(confirmedAt) {
-		t.Errorf("TOTPConfirmedAt = %v, want %v", got.TOTPConfirmedAt, confirmedAt)
-	}
-
-	if err := db.DisableUserTOTP(ctx, u.ID); err != nil {
-		t.Fatalf("DisableUserTOTP() error = %v", err)
-	}
-	got, err = db.GetUserByID(ctx, u.ID)
-	if err != nil {
-		t.Fatalf("GetUserByID() error = %v", err)
-	}
-	if got.TOTPEnabled || got.TOTPConfirmedAt != nil {
-		t.Errorf("after DisableUserTOTP: TOTPEnabled = %v, TOTPConfirmedAt = %v, want false/nil", got.TOTPEnabled, got.TOTPConfirmedAt)
-	}
-}
-
-func TestEnableUserTOTP_NotFound(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-
-	if err := db.EnableUserTOTP(ctx, "does-not-exist", time.Now()); !errors.Is(err, ErrUserNotFound) {
-		t.Errorf("EnableUserTOTP() error = %v, want ErrUserNotFound", err)
-	}
-}
-
 // TestMigration_NoLegacyAdmin_NoFirstUser proves the backfill is a
 // genuine no-op on a fresh install: no admin_user row means no row
 // inserted into users, leaving the very first real registration free to

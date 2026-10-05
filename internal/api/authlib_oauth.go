@@ -19,14 +19,8 @@ type AuthLibOAuth interface {
 	InvalidateProvider(name string)
 }
 
-// WithAuthLibOAuth serves OAuth and OIDC sign-in through the library engine when
-// APP_AUTH_ENGINE_AREAS includes oauth. A nil engine keeps the in-house flow.
-func WithAuthLibOAuth(e AuthLibOAuth) Option {
-	return func(rt *Router) { rt.authLibOAuth = e }
-}
-
 func (rt *Router) authLibOAuthActive() bool {
-	return rt.authLibOAuth != nil && rt.authLibOAuth.OAuthEnabled() && authengine.AreaActive(authengine.AreaOAuth)
+	return rt.authLibOAuth != nil && rt.authLibOAuth.OAuthEnabled()
 }
 
 func (rt *Router) authLibOAuthInvalidate(provider string) {
@@ -44,13 +38,6 @@ func (rt *Router) authLibOAuthMirrorLink(ctx context.Context, userID, provider, 
 	if err := rt.authLibOAuth.LinkOAuthIdentity(ctx, userID, provider, providerUserID); err != nil {
 		rt.logger.Warn("api: mirror linked oauth identity failed", slog.String("provider", provider), slog.String("user_id", userID), slog.String("error", err.Error()))
 	}
-}
-
-func (rt *Router) registerAuthLibOAuthRoutes(mux *http.ServeMux) {
-	if rt.authLibOAuth == nil || !rt.authLibOAuthActive() {
-		return
-	}
-	mux.HandleFunc("GET "+rt.authLibOAuth.Prefix()+"/providers/{provider}/callback", rt.authLibOAuthCallback)
 }
 
 // forwardOAuthCookies relays the library's flow cookies scoped to this provider's callback
@@ -104,19 +91,12 @@ func (rt *Router) authLibOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		redirectOAuthError(w, r, "internal_error")
 		return
 	}
-	if authengine.AreaActive(authengine.AreaSessions) {
-		http.SetCookie(w, out.SessionCookie) // NOSONAR: attributes come from the library session cookie
-		http.Redirect(w, r, "/oauth/complete", http.StatusFound)
-		return
-	}
 	user, err := rt.auth.GetUserByID(r.Context(), userID)
-	if err == nil {
-		err = rt.establishSession(w, r, *user)
-	}
 	if err != nil {
-		rt.logger.Error("api: oauth callback: establish session failed", slog.String("user_id", userID), slog.String("error", err.Error()))
+		rt.logger.Error("api: oauth callback: load user failed", slog.String("user_id", userID), slog.String("error", err.Error()))
 		redirectOAuthError(w, r, "internal_error")
 		return
 	}
+	rt.finishLibSession(w, r, *user, out.SessionCookie.Value)
 	http.Redirect(w, r, "/oauth/complete", http.StatusFound)
 }

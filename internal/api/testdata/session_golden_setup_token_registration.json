@@ -1,0 +1,62 @@
+[
+  {
+    "Step": "setup status before",
+    "Status": 200,
+    "Body": "{\"needs_setup\":true}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "bad token",
+    "Status": 403,
+    "Body": "{\"error\":\"a valid setup token is required; print it on the server with the setup-token subcommand\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "short password",
+    "Status": 400,
+    "Body": "{\"error\":\"password must be at least 8 characters\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "register",
+    "Status": 201,
+    "Body": "{\"display_name\":\"first@example.test\",\"username\":\"first@example.test\"}",
+    "Cookies": [
+      "session_token=set path=/ httponly=true secure=false samesite=2 expires=true maxage_neg=false"
+    ],
+    "Retry": false
+  },
+  {
+    "Step": "session",
+    "Status": 200,
+    "Body": "{\"display_name\":\"first@example.test\",\"expires_at\":\"\\u003cvolatile\\u003e\",\"has_password\":true,\"username\":\"first@example.test\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "second register",
+    "Status": 409,
+    "Body": "{\"error\":\"an account already exists; sign in instead\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "setup status after",
+    "Status": 200,
+    "Body": "{\"needs_setup\":false}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "login with new account",
+    "Status": 200,
+    "Body": "{\"display_name\":\"first@example.test\",\"username\":\"first@example.test\"}",
+    "Cookies": [
+      "session_token=set path=/ httponly=true secure=false samesite=2 expires=true maxage_neg=false"
+    ],
+    "Retry": false
+  }
+]

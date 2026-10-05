@@ -15,8 +15,6 @@ import (
 )
 
 func TestSessionsLoginWithEnrolledTOTPAsksForSecondFactor(t *testing.T) {
-	t.Setenv(authengine.EnvEngine, authengine.EngineLibrary)
-	t.Setenv(authengine.EnvAreas, "")
 	ctx := context.Background()
 	db, err := store.Open(ctx, filepath.Join(t.TempDir(), "levelrail.db"))
 	if err != nil {

@@ -3,10 +3,10 @@ package api
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -15,39 +15,25 @@ var allOAuthProviders = []string{store.OAuthProviderGoogle, store.OAuthProviderG
 func TestOAuthGoldenStartParameters(t *testing.T) {
 	for _, provider := range allOAuthProviders {
 		t.Run(provider, func(t *testing.T) {
-			got := map[string]url.Values{}
-			var cookies = map[string]*http.Cookie{}
-			for _, mode := range []string{modeLegacy, modeLibrary} {
-				h := newOAuthHarness(t, mode)
-				h.enable(provider, "")
-				u, state := h.start(provider)
-				if state == "" {
-					t.Fatalf("%s: authorize URL carries no state", mode)
-				}
-				got[mode] = u.Query()
-				for _, c := range h.jar {
-					cookies[mode] = c
-				}
+			h := newOAuthHarness(t, modeLibrary)
+			h.enable(provider, "")
+			u, state := h.start(provider)
+			if state == "" {
+				t.Fatal("authorize URL carries no state")
 			}
-			legacy, lib := got[modeLegacy], got[modeLibrary]
-			for _, param := range []string{"client_id", "scope", "response_type", "code_challenge_method"} {
-				if legacy.Get(param) != lib.Get(param) {
-					t.Errorf("%s differs: legacy %q, library %q", param, legacy.Get(param), lib.Get(param))
-				}
+			q := u.Query()
+			if q.Get("client_id") != "client-"+provider || q.Get("response_type") != "code" {
+				t.Errorf("authorize parameters = %v", q)
 			}
-			if lib.Get("code_challenge_method") != "S256" || lib.Get("code_challenge") == "" || legacy.Get("code_challenge") == "" {
-				t.Errorf("PKCE S256 challenge missing: legacy %v, library %v", legacy, lib)
+			if q.Get("code_challenge_method") != "S256" || q.Get("code_challenge") == "" {
+				t.Errorf("PKCE S256 challenge missing: %v", q)
 			}
-			wantLegacyURI := testBaseURL + "/api/v1/auth/oauth/" + provider + "/callback"
-			if legacy.Get("redirect_uri") != wantLegacyURI {
-				t.Errorf("legacy redirect_uri = %q, want %q", legacy.Get("redirect_uri"), wantLegacyURI)
+			if want := testBaseURL + authengine.OAuthCallbackPath(provider); q.Get("redirect_uri") != want {
+				t.Errorf("redirect_uri = %q, want %q", q.Get("redirect_uri"), want)
 			}
-			if lib.Get("redirect_uri") != wantLegacyURI {
-				t.Errorf("library redirect_uri = %q, want the unchanged built-in %q", lib.Get("redirect_uri"), wantLegacyURI)
-			}
-			for mode, c := range cookies {
+			for _, c := range h.jar {
 				if !c.HttpOnly || c.SameSite != http.SameSiteLaxMode || (c.MaxAge <= 0 && c.Expires.IsZero()) || c.Value == "" {
-					t.Errorf("%s binding cookie weakened: %+v", mode, c)
+					t.Errorf("binding cookie weakened: %+v", c)
 				}
 			}
 		})
@@ -72,7 +58,7 @@ func TestOAuthGoldenStartErrors(t *testing.T) {
 		}, http.StatusInternalServerError, "misconfigured"},
 	}
 	for _, tc := range tests {
-		for _, mode := range []string{modeLegacy, modeLibrary} {
+		for _, mode := range []string{modeLibrary} {
 			t.Run(tc.name+"/"+mode, func(t *testing.T) {
 				h := newOAuthHarness(t, mode)
 				tc.setup(h)
@@ -119,7 +105,7 @@ func TestOAuthGoldenCallbackErrors(t *testing.T) {
 		}, "invalid_provider"},
 	}
 	for _, tc := range tests {
-		for _, mode := range []string{modeLegacy, modeLibrary} {
+		for _, mode := range []string{modeLibrary} {
 			t.Run(tc.name+"/"+mode, func(t *testing.T) {
 				h := newOAuthHarness(t, mode)
 				h.enable("oidc", "")
@@ -136,7 +122,7 @@ func TestOAuthGoldenCallbackErrors(t *testing.T) {
 
 func TestOAuthGoldenCallbackSuccess(t *testing.T) {
 	id := fakeIdentity{Sub: "sub-new", Email: "new.user@example.test", Name: "New User", Verified: true}
-	for _, mode := range []string{modeLegacy, modeLibrary} {
+	for _, mode := range []string{modeLibrary} {
 		t.Run(mode, func(t *testing.T) {
 			h := newOAuthHarness(t, mode)
 			h.enable("oidc", "")

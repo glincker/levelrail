@@ -33,20 +33,3 @@ func TestHandleCreateToken_PrivilegeCap(t *testing.T) {
 		})
 	}
 }
-
-// TestHandleCreateToken_CallerAbilitiesLoadFailure covers the branch none
-// of TestHandleCreateToken_PrivilegeCap's cases reach: a session cookie
-// whose user no longer resolves (callerAbilities' GetUserByID error path),
-// which must fail closed with 500, not silently mint an uncapped token.
-func TestHandleCreateToken_CallerAbilitiesLoadFailure(t *testing.T) {
-	rt, db := newTestRouter(t)
-	bootstrapTestAdmin(t, db)
-	cookie := sessionCookieForTest(t, rt, "no-such-user-id")
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/auth/tokens", `{"name":"x","abilities":["read"]}`))
-
-	if rec.Code != http.StatusInternalServerError {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
-	}
-}
