@@ -49,7 +49,7 @@ As a practical starting point, not a hard requirement: 1 vCPU / 1 GB RAM / 10 GB
 
 - **Control-plane node:** `80/tcp` and `443/tcp`, inbound, reachable from the internet. Port 80 specifically is required for Let's Encrypt's HTTP-01 challenge during ACME issuance; both are what embedded Caddy binds for ingress, and `GET /api/v1/system/doctor` checks both are free to bind. See [Domains and ingress: firewall](domains-and-ingress.md#firewall-ports-80-and-443) if one is blocked.
 - **Agent-only nodes** (additional servers added later via [Multi-node](multi-node.md)): none. The agent dials *out* to the control plane and the control plane never initiates a connection, so a managed node needs no inbound ports open at all.
-- `install.sh` can configure `ufw` for you with `LEVELRAIL_CONFIGURE_UFW=1` (see the table below), or open `80/tcp` and `443/tcp` yourself via your cloud provider's firewall, `ufw`, or `iptables`.
+- `install.sh` can configure `ufw` for you with `LEVELRAIL_CONFIGURE_UFW=1` (see the table below), or open `80/tcp`, `443/tcp` and `443/udp` (HTTP/3) yourself via your cloud provider's firewall, `ufw`, or `iptables`.
 
 ## Option 1: install.sh (recommended)
 
@@ -103,7 +103,8 @@ AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel ar
 | `LEVELRAIL_SKIP_REACHABILITY` | unset | Set to `1` to skip the port 80/443 test |
 | `LEVELRAIL_MIN_RAM_MB` / `LEVELRAIL_MIN_DISK_GB` / `LEVELRAIL_MIN_DOCKER_MAJOR` | `1024` / `10` / `24` | Preflight thresholds |
 | `LEVELRAIL_HEALTH_WAIT` | `60` | Seconds to wait for the service to become healthy |
-| `LEVELRAIL_CONFIGURE_UFW` | unset (off) | Set to `1` to allow SSH, then 80/443, then enable `ufw` if it wasn't already active. The script never touches your firewall otherwise. |
+| `LEVELRAIL_SOCKET_ACTIVATION` | unset (off) | Set to `1` to let systemd hold ports 80/443, so restarting the control plane queues connections instead of refusing them. On `upgrade`, `1` switches an existing install over and `0` switches it back. See [Surviving a control plane restart](domains-and-ingress.md#surviving-a-control-plane-restart). |
+| `LEVELRAIL_CONFIGURE_UFW` | unset (off) | Set to `1` to allow SSH, then 80/443 (and 443/udp for HTTP/3), then enable `ufw` if it wasn't already active. The script never touches your firewall otherwise. |
 | `LEVELRAIL_DASHBOARD_PORT` | `8080` | Dashboard/API port. If this default is taken, the installer picks the next free port on its own (no action needed); set this to pin a specific one instead |
 | `LEVELRAIL_HTTP_PORT` / `LEVELRAIL_HTTPS_PORT` | `80` / `443` | Ingress ports. Unlike the dashboard port, the installer never moves these on its own: Let's Encrypt's HTTP-01 challenge only ever talks to 80/443, so if either is already taken (an existing reverse proxy, another Coolify/Dokploy instance, etc.) preflight fails with the fix spelled out. Set both explicitly once you've accepted that moving off 80/443 means no automatic ACME TLS |
 

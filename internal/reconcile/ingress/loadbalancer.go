@@ -227,7 +227,7 @@ func (c *Controller) discoverUpstreams(ctx context.Context, svc store.DesiredSer
 		case state == nil:
 			u.Note = "not created yet"
 		default:
-			u.Dial, u.Running, u.Note = upstreamDial(state, host, svc.NodeID != "")
+			u.Dial, u.Running, u.Note = upstreamDial(state, host, host != localUpstreamHost)
 		}
 		out = append(out, u)
 	}
@@ -279,7 +279,7 @@ func (c *Controller) previousReleaseUpstreams(ctx context.Context, rt docker.Run
 		if current[st.Name] || !application.OwnsContainer(svc.Name, st.Name) {
 			continue
 		}
-		dial, running, _ := upstreamDial(&st, host, svc.NodeID != "")
+		dial, running, _ := upstreamDial(&st, host, host != localUpstreamHost)
 		if !running {
 			continue
 		}
