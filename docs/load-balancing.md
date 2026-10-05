@@ -4,7 +4,7 @@ description: Balance traffic across an app's replicas with health checks, retrie
 
 # Load balancing across replicas
 
-Set `replicas: 3` and the control plane starts three containers. Without a load balancer, your domain only ever routes to one of them (the first replica); turn on load balancing from the app's Load balancer tab, the CLI, or `app.yaml`, and the domain routes to every running replica instead, with health checks, retries, and sticky sessions available out of the box. There's no extra container to run and no separate config surface to learn: it uses the same embedded Caddy that already terminates TLS for your domains.
+Set `replicas: 3` and the control plane starts three containers. Any app with more than one replica is balanced across all of them by default (round robin, a replica that fails a request is skipped for 30s, and a failed request is retried on another replica). Set `APP_INGRESS_IMPLICIT_LB=false` to restore the old behavior where only the first replica receives traffic. To tune the pool (health checks, sticky sessions, weights), use the app's Load balancer tab, the CLI, or `app.yaml`; an explicit configuration always replaces the default. There's no extra container to run and no separate config surface to learn: it uses the same embedded Caddy that already terminates TLS for your domains.
 
 ```mermaid
 flowchart LR

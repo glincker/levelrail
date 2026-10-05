@@ -1,6 +1,7 @@
 package ingress
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -52,6 +53,9 @@ import (
 	_ "github.com/mholt/caddy-l4/modules/l4proxy"
 )
 
+// loadConfig is caddy.Load, replaceable in tests.
+var loadConfig = caddy.Load
+
 // Driver drives an in-process Caddy instance through the same code path as
 // its HTTP admin API: caddy.Load calls the identical config-apply logic
 // the admin API's POST /load handler calls, without this package ever
@@ -64,6 +68,7 @@ type Driver struct {
 
 	mu          sync.Mutex
 	listenPorts map[int]bool
+	lastApplied []byte
 }
 
 // New builds a Driver. A nil logger falls back to slog.Default(), matching
@@ -93,12 +98,23 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 		return fmt.Errorf("ingress: apply: marshal config: %w", err)
 	}
 
-	if err := caddy.Load(payload, true); err != nil {
+	d.mu.Lock()
+	unchanged := d.lastApplied != nil && bytes.Equal(d.lastApplied, payload)
+	d.mu.Unlock()
+	if unchanged {
+		return nil
+	}
+
+	if err := loadConfig(payload, true); err != nil {
+		d.mu.Lock()
+		d.lastApplied = nil
+		d.mu.Unlock()
 		return fmt.Errorf("ingress: apply: load config: %w", err)
 	}
 
 	d.mu.Lock()
 	d.listenPorts = listenPortsOf(cfg)
+	d.lastApplied = payload
 	d.mu.Unlock()
 
 	d.logger.InfoContext(ctx, "ingress config applied",
@@ -115,6 +131,7 @@ func (d *Driver) Stop(ctx context.Context) error {
 	}
 	d.mu.Lock()
 	d.listenPorts = nil
+	d.lastApplied = nil
 	d.mu.Unlock()
 	d.logger.InfoContext(ctx, "ingress stopped")
 	return nil

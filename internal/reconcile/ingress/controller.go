@@ -351,6 +351,7 @@ type Controller struct {
 	publicHost string
 
 	lbSource      LoadBalancerSource // nil disables load balancing
+	implicitLB    bool               // see WithImplicitLoadBalancing
 	lbRegistry    *loadbalancer.Registry
 	nodeUpstreams NodeUpstreamResolver
 
@@ -650,6 +651,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancers: %w", err)
 	}
+	lbConfigs = c.withImplicitBalancers(services, lbConfigs)
 	lbAdmin, err := c.lbAdminStates(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancer admin states: %w", err)

@@ -254,6 +254,8 @@ type Controller struct {
 	lastHeldUntil       time.Time
 	unconfirmedMu       sync.Mutex
 	unconfirmed         map[string]*store.AppliedConfig // created but not yet proven ready, by container name
+	pinnedPortRetry     time.Duration                   // see WithPinnedPortRetry
+	handoffFailed       map[string]time.Time            // target name to the time its next pinned-port handoff may run
 }
 
 // Option configures optional Controller behavior.
@@ -771,7 +773,14 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 					}
 					return stale[i].Name < stale[j].Name
 				})
-				_ = c.removeContainers(ctx, stale[:1])
+				// An old release's replica 0 is what ingress still dials until
+				// this pass ends and the route moves, so it goes last.
+				for _, cs := range stale {
+					if releaseOf(cs.Name) != cs.Name {
+						_ = c.removeContainers(ctx, []docker.ContainerState{cs})
+						break
+					}
+				}
 			}
 		}
 	}
@@ -859,6 +868,14 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		return replicaOutcome{reason: "InspectFailed"}, fmt.Errorf("inspect %q: %w", target, err)
 	}
 
+	if pinnedPortUnbound(state, desired) {
+		if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+			return replicaOutcome{reason: reasonPinnedPortUnbound}, fmt.Errorf("remove %q running without its pinned host port %d: %w", target, *desired.HostPort, err)
+		}
+		state = nil
+	}
+
+	var released []docker.ContainerState
 	justDeployed := false
 	// created is narrower than justDeployed: true only when this pass
 	// actually built a brand new container for target (createAndStart
@@ -871,8 +888,17 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	created := false
 	switch {
 	case state == nil:
+		var relErr error
+		if released, relErr = c.releasePinnedPort(ctx, target, desired); relErr != nil {
+			reason := "PinnedPortReleaseFailed"
+			var backoff *pinnedPortBackoffError
+			if errors.As(relErr, &backoff) {
+				reason = reasonPinnedPortWait
+			}
+			return replicaOutcome{reason: reason}, relErr
+		}
 		if err := c.createAndStart(ctx, target, desired); err != nil {
-			return replicaOutcome{reason: "CreateFailed"}, err
+			return replicaOutcome{reason: createFailureReason(err)}, c.abortHandoff(ctx, target, released, err)
 		}
 		justDeployed = true
 		created = true
@@ -932,6 +958,12 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	if state == nil {
 		return replicaOutcome{reason: "VanishedAfterStart"}, fmt.Errorf("%q not found immediately after starting it", target)
 	}
+	if pinnedPortUnbound(state, desired) {
+		_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)
+		_ = c.runtime.Remove(ctx, state.ID, true)
+		cause := fmt.Errorf("%q started without publishing pinned host port %d", target, *desired.HostPort)
+		return replicaOutcome{reason: reasonPinnedPortUnbound}, c.abortHandoff(ctx, target, released, cause)
+	}
 
 	// Runs once per deploy, only against the primary replica (index 0):
 	// see this method's own "created is narrower than justDeployed"
@@ -954,14 +986,15 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			// a healthy deploy.
 			_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)
 			_ = c.runtime.Remove(ctx, state.ID, true)
-			return replicaOutcome{reason: "PreDeployHookFailed"}, fmt.Errorf("pre-deploy hook: %w", err)
+			return replicaOutcome{reason: "PreDeployHookFailed"}, c.abortHandoff(ctx, target, released, fmt.Errorf("pre-deploy hook: %w", err))
 		}
 	}
 
 	if err := c.waitReady(ctx, state, desired); err != nil {
 		c.recordRolloutFailure(ctx, desired, err)
-		return replicaOutcome{reason: readinessReason(err, "ReadinessFailed")}, err
+		return replicaOutcome{reason: readinessReason(err, "ReadinessFailed")}, c.abortHandoff(ctx, target, released, err)
 	}
+	delete(c.handoffFailed, target)
 	return c.confirmedOutcome(ctx, target, state, desired, true)
 }
 
@@ -1104,6 +1137,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	}
 	c.holdApplied(name, c.appliedSnapshot(ctx, name, desired))
 	if err := c.runtime.Start(ctx, id); err != nil {
+		// A container whose first start failed can be started again by Docker
+		// without its port bindings, so it is never left behind to retry.
+		_ = c.runtime.Remove(ctx, id, true)
 		return fmt.Errorf("start %q after create: %w", name, err)
 	}
 	return nil
@@ -1144,11 +1180,10 @@ func (c *Controller) streamPortBindings(ctx context.Context, serviceName string)
 // reconcile.Result.
 //
 // An unset optional ({ secret: true, required: false }) secret is
-// silently omitted from the container's environment, matching
-// spec.EnvVar.Required's documented meaning: internal/deploy.Pipeline
-// already rejects a deploy outright if a required secret has no value,
-// so by the time this runs, an unset secret still in desired.SecretEnv
-// can only be an optional one.
+// silently omitted from the container's environment. A required one with
+// no value fails the pass: internal/deploy.Pipeline only checks at spec
+// deploy time, so a value deleted later, or an image-only deploy, would
+// otherwise start a container missing it.
 //
 // Precedence when the same key appears in both desired.Env and
 // desired.SecretEnv: the secret-resolved value always wins. The literal
@@ -1270,6 +1305,9 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 				return nil, fmt.Errorf("check secret %q: %w", key, err)
 			}
 			if !exists {
+				if ref.Required {
+					return nil, &requiredSecretError{name: key}
+				}
 				continue
 			}
 			value, err := c.secretResolver.Resolve(ctx, c.serviceName, key)

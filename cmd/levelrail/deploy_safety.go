@@ -21,7 +21,33 @@ const (
 	previousReleaseHoldEnv      = "APP_DEPLOY_PREVIOUS_RELEASE_HOLD"
 	heldDeployReleaseIntervalEv = "APP_DEPLOY_HELD_RELEASE_INTERVAL"
 	deployMaxConcurrentEnv      = "APP_DEPLOY_MAX_CONCURRENT"
+	pinnedPortRetryEnv          = "APP_DEPLOY_PINNED_PORT_RETRY"
+	defaultPinnedPortRetry      = 5 * time.Minute
 )
+
+const implicitLoadBalancingEnv = "APP_INGRESS_IMPLICIT_LB"
+
+// implicitLoadBalancing reports whether multi-replica apps without an
+// explicit load balancer are balanced across every replica. On unless the
+// env var is a false value.
+func implicitLoadBalancing(logger *slog.Logger) bool {
+	raw := os.Getenv(implicitLoadBalancingEnv)
+	if raw == "" {
+		return true
+	}
+	on, err := strconv.ParseBool(raw)
+	if err != nil {
+		logger.Warn("invalid boolean, using default", slog.String("env", implicitLoadBalancingEnv), slog.String("value", raw))
+		return true
+	}
+	return on
+}
+
+// pinnedPortRetry is how long a failed pinned-host-port handoff waits
+// before the next attempt, since each attempt stops the serving release.
+func pinnedPortRetry(logger *slog.Logger) time.Duration {
+	return envDurationOr(logger, pinnedPortRetryEnv, defaultPinnedPortRetry)
+}
 
 // deployMaxConcurrent is how many deploys may run at once across all apps;
 // 0 (the default) means unlimited.
