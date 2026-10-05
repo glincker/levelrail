@@ -3417,6 +3417,9 @@ var (
 )
 
 func resolvedPublicHost() (host, source string) {
+	if v := strings.TrimSpace(os.Getenv("APP_PUBLIC_HOST")); v != "" {
+		return v, ingressdriver.PublicHostSourceEnv
+	}
 	publicHostOnce.Do(func() {
 		publicHostValue, publicHostOrigin = ingressdriver.ResolvePublicHost(context.Background())
 	})
