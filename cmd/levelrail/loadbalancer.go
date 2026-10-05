@@ -17,12 +17,16 @@ import (
 // lbNodeUpstreams resolves a remote node's runtime and the host its
 // published ports are reachable on (mesh address first, then its own address).
 type lbNodeUpstreams struct {
-	db       *store.DB
-	local    docker.Runtime
-	registry *agent.Registry
+	db          *store.DB
+	local       docker.Runtime
+	registry    *agent.Registry
+	localNodeID string
 }
 
 func (r lbNodeUpstreams) UpstreamHost(ctx context.Context, nodeID string) (docker.Runtime, string, error) {
+	if r.localNodeID != "" && nodeID == r.localNodeID {
+		return r.local, "127.0.0.1", nil
+	}
 	rt, err := resolveNodeTransport(r.local, r.registry, nodeID)
 	if err != nil {
 		return nil, "", fmt.Errorf("resolve node %q runtime: %w", nodeID, err)
