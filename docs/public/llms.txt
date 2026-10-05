@@ -93,6 +93,15 @@ Apache 2.0 licensed. Source at https://github.com/glincker/levelrail.
 - [Threat model](https://levelrail.com/threat-model): trust boundaries, assets, attackers, and today's mitigations and known gaps.
 - [Security alert verdicts](https://levelrail.com/security-alert-verdicts): verdict, evidence, and dismissal command for each open code scanning alert.
 - [Comparison](https://levelrail.com/comparison): how Levelrail differs from Coolify, Dokploy, CapRover, Dokku, and Kamal.
+- [Coolify alternative](https://levelrail.com/coolify-alternative): why and how to move from Coolify, with a read-only importer.
+- [Dokploy alternative](https://levelrail.com/dokploy-alternative): Levelrail without Docker Swarm, compared with Dokploy.
+- [Vercel alternative](https://levelrail.com/vercel-alternative): self-hosted git push deploys, previews and rollback instead of Vercel.
+- [Heroku alternative](https://levelrail.com/heroku-alternative): the Heroku workflow on your own servers.
+- [Railway alternative](https://levelrail.com/railway-alternative): Railway-style deploys on infrastructure you own.
+- [Pricing](https://levelrail.com/pricing): free, Apache 2.0, one edition with no paywalled features.
+- [Privacy and data handling](https://levelrail.com/privacy): what Levelrail stores, where, and what it connects to.
+- [Demo](https://levelrail.com/demo): screenshots and a terminal walkthrough from install to rollback.
+- [Case studies](https://levelrail.com/case-studies): measured results and what is not proven yet.
 
 ## Optional
 

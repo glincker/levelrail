@@ -219,35 +219,42 @@
   color: var(--vp-c-text-2);
 }
 
-/* Trust strip: license, live star count, and a data-ownership line right
-   under the hero CTAs. */
+/* Hero install command, next-step path and trust strip, right under the
+   hero CTAs. Muted colors come from the hero's fixed dark palette. */
+.hero-install {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 22px;
+  max-width: 100%;
+}
+
 .trust-strip {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
-  margin-top: 20px;
-}
-
-.trust-strip__item {
-  display: inline-flex;
-  align-items: center;
+  align-items: baseline;
+  gap: 4px 18px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
   font-size: 13px;
   color: var(--hero-text-muted);
 }
 
-a.trust-strip__item:hover {
-  color: var(--hero-accent);
+.trust-strip__item {
+  display: inline;
+  margin: 0;
+  line-height: 1.5;
 }
 
-/* --hero-text-muted, not --vp-c-text-2: this sits inside the hero, which
-   stays on its own fixed dark palette regardless of the site's light/dark
-   toggle (see the --hero-* token comment near the top of this file), so
-   it needs the hero's own always-dark-appropriate muted color instead of
-   the toggle-following page token. */
-.trust-strip__item--text {
-  color: var(--hero-text-muted);
-  max-width: 46ch;
+.trust-strip__item a {
+  color: var(--hero-text);
+  text-decoration: none;
+}
+
+.trust-strip__item a:hover {
+  color: var(--hero-accent);
 }
 
 .screenshot-grid {

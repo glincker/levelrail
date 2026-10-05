@@ -127,6 +127,8 @@ The same data is on Settings > Security (root only) and at `GET /api/v1/auth-eng
 | `APP_AUTH_ENGINE_SHADOW_WORKERS` | `2` | Comparison goroutines |
 | `APP_AUTH_ENGINE_SHADOW_MISMATCH_LOG` | `50` | Mismatches kept for the status view |
 
+Tokens created while shadow mode is on exist only in the built-in table, so each shows up as a `decision` mismatch until you run `levelrail auth-backfill` again.
+
 A library token's abilities are limited to what its owner holds right now, so a mismatch of kind `abilities` usually means a user lost an ability after minting the token. The built-in engine does not clamp.
 
 ### Cut tokens and device login over

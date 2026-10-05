@@ -27,7 +27,7 @@
   left: 50%;
   transform: translateX(-50%) scale(1);
   width: calc(100% - 32px);
-  max-width: 1040px;
+  max-width: 1160px;
   z-index: 30;
   height: 56px;
   overflow: hidden;
@@ -53,7 +53,7 @@
    recedes a little once you're reading content instead of staying at
    full landing-page prominence. */
 .custom-nav--scrolled {
-  max-width: 980px;
+  max-width: 1100px;
   transform: translateX(-50%) scale(0.97);
 }
 
@@ -150,7 +150,7 @@
 .custom-nav__inner {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   height: 100%;
   /* 16px right, not 10px: the theme toggle + GitHub icon were sitting
      too close to the pill's own curved edge (border-radius: full),
@@ -212,6 +212,7 @@
 
 .custom-nav__search {
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .custom-nav__search .VPNavBarSearch {
@@ -286,6 +287,33 @@
   flex-shrink: 0;
   gap: 4px;
   margin-left: 4px;
+}
+
+/* Secondary links (Troubleshooting, Roadmap, Changelog) drop out first so
+   the pill never clips its search box; the mobile menu still lists them. */
+@media (max-width: 1239px) {
+  .custom-nav__link--secondary {
+    display: none;
+  }
+}
+
+/* Landing pages render VitePress's own navbar; same priority rule there. */
+@media (max-width: 1239px) {
+  .VPNavBarMenu .VPLink[href^='/troubleshooting'],
+  .VPNavBarMenu .VPLink[href^='/roadmap'],
+  .VPNavBarMenu .VPLink[href^='/changelog'] {
+    display: none;
+  }
+}
+
+@media (max-width: 1099px) {
+  .custom-nav__inner {
+    gap: 10px;
+  }
+
+  .custom-nav__link {
+    padding: 7px 8px;
+  }
 }
 
 @media (max-width: 959px) {
