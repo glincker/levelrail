@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	meshnet "github.com/GLINCKER/levelrail/internal/network"
 	"io"
 	"net"
 	"net/http"
@@ -84,7 +85,7 @@ func (rt *Router) doctorRunNetworkChecks(ctx context.Context, httpPort, httpsPor
 
 	publicIPCheck, publicIP := rt.doctorCheckPublicIP(netCtx)
 
-	rest := make([]doctorCheckResource, 5)
+	rest := make([]doctorCheckResource, 6)
 	var wg sync.WaitGroup
 	wg.Add(len(rest))
 	go func() { defer wg.Done(); rest[0] = rt.doctorCheckExternalReachability(netCtx, publicIP, httpPort) }()
@@ -92,6 +93,7 @@ func (rt *Router) doctorRunNetworkChecks(ctx context.Context, httpPort, httpsPor
 	go func() { defer wg.Done(); rest[2] = rt.doctorCheckACMEReachability(netCtx) }()
 	go func() { defer wg.Done(); rest[3] = rt.doctorCheckClockSkew(netCtx) }()
 	go func() { defer wg.Done(); rest[4] = rt.doctorCheckAgentAdvertiseHost(netCtx) }()
+	go func() { defer wg.Done(); rest[5] = rt.doctorCheckMeshHubEndpoint(netCtx) }()
 	wg.Wait()
 
 	return append([]doctorCheckResource{publicIPCheck}, rest...)
@@ -344,4 +346,34 @@ func doctorFetchRemoteTime(ctx context.Context, client doctorHTTPDoer, endpoint 
 		return time.Time{}, fmt.Errorf("parse Date header %q: %w", dateHeader, err)
 	}
 	return t, nil
+}
+
+// doctorCheckMeshHubEndpoint covers the mesh hub: agents dial the control
+// plane's WireGuard port on the advertise host, which a loopback host or a
+// closed UDP port silently breaks (handshakes just never complete).
+func (rt *Router) doctorCheckMeshHubEndpoint(ctx context.Context) doctorCheckResource {
+	const code, name = "mesh_hub_endpoint", "Mesh hub endpoint"
+	const docsPath = "/multi-node#multi-node-mesh-requirements"
+	if rt.mesh == nil {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "mesh networking is not enabled on this control plane"}
+	}
+	host := rt.doctorAgentAdvertiseHost
+	if doctorIsLoopbackHost(host) {
+		nodes, err := rt.nodes.ListNodes(ctx)
+		if err == nil && len(nodes) > 0 {
+			return doctorCheckResource{
+				Code: code, Name: name, Status: doctorStatusFail,
+				Message:  fmt.Sprintf("mesh is enabled but APP_AGENT_ADVERTISE_HOST is %q (loopback), so agents have no endpoint to send WireGuard handshakes to", host),
+				Fix:      "Set APP_AGENT_ADVERTISE_HOST to this server's public host and restart the control plane.",
+				DocsPath: docsPath,
+			}
+		}
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "single-node mesh; set APP_AGENT_ADVERTISE_HOST before enrolling a remote node"}
+	}
+	return doctorCheckResource{
+		Code: code, Name: name, Status: doctorStatusOK,
+		Message:  fmt.Sprintf("agents will dial %s on UDP %d; this cannot be probed from the host itself", host, meshnet.DefaultListenPort),
+		Fix:      fmt.Sprintf("Allow inbound UDP %d on this server's firewall and cloud security group.", meshnet.DefaultListenPort),
+		DocsPath: docsPath,
+	}
 }

@@ -15,7 +15,7 @@ The `install.sh` one-liner (in the root [README](../README.md)) remains the defa
 
 ## Control plane
 
-Both images run as a non-root user (distroless's `nonroot`, uid/gid 65532). The `--group-add $(stat -c '%g' /var/run/docker.sock)` flag adds that user to the socket's host-side group at runtime, since the GID varies per system and cannot be baked into the image.
+The control plane image runs as a non-root user (distroless's `nonroot`, uid/gid 65532); the [agent image](#node-agent) runs as root. The `--group-add $(stat -c '%g' /var/run/docker.sock)` flag adds that user to the socket's host-side group at runtime, since the GID varies per system and cannot be baked into the image.
 
 ```bash
 docker run -d \
@@ -51,9 +51,12 @@ Granting access to `/var/run/docker.sock` allows this container to control every
 
 The agent dials out to the control plane (it does not accept inbound connections, see [architecture.md](architecture.md)). You need to provide Docker socket access and a one-time join token for enrollment on first run.
 
+Unlike the control plane image, the agent image runs as **root**. It needs `/var/run/docker.sock` (root-equivalent on the host regardless of the user inside the container) and, for the WireGuard mesh, `--cap-add NET_ADMIN --device /dev/net/tun -e APP_MESH_ENABLED=1`. Running as root also means a named volume or a Docker-created host directory for the identity file is writable with no `chown`. The agent additionally refuses to send its join token until it has proven it can write the identity file, so a permissions mistake never burns the token.
+
 ```bash
 docker run -d \
   --name levelrail-agent \
+  --network host \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v levelrail-agent-identity:/var/lib/levelrail-agent \
   -e APP_CONTROL_PLANE_ADDR=control-plane-host:9443 \

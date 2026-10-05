@@ -70,12 +70,36 @@ This calls `POST /api/v1/nodes/join-tokens`:
 
 ### Step 2: Run the agent on the new machine
 
+The agent image runs as root on purpose: it drives `/var/run/docker.sock` (which is root-equivalent on the host anyway) and, for the mesh, creates a WireGuard device. Because of that, a host directory that Docker creates for the identity file (root-owned) just works.
+
 ```bash
-APP_CONTROL_PLANE_ADDR=controlplane.example.com:9443 \
+sudo mkdir -p /var/lib/levelrail-agent-data && sudo chmod 700 /var/lib/levelrail-agent-data
+docker run -d --name levelrail-agent --restart unless-stopped --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /var/lib/levelrail-agent-data:/var/lib/levelrail-agent-data \
+  -e APP_CONTROL_PLANE_ADDR=controlplane.example.com:9443 \
+  -e APP_JOIN_TOKEN=<token from step 1> \
+  -e APP_CA_FINGERPRINT=<ca fingerprint from step 1> \
+  -e APP_NODE_NAME=worker-1 \
+  -e APP_AGENT_IDENTITY_FILE=/var/lib/levelrail-agent-data/identity.json \
+  ghcr.io/glincker/levelrail-agent:beta
+```
+
+Add `--user 0:0` if you are running an image older than `v0.2.0-beta.16`, which defaulted to a non-root user that could not write into a root-owned directory.
+
+Without Docker for the agent itself, install the `.deb` or `.rpm` attached to releases after `v0.2.0-beta.15` (see [Docker: without a container](docker.md#without-a-container)), or run the plain binary as root:
+
+```bash
+sudo APP_CONTROL_PLANE_ADDR=controlplane.example.com:9443 \
 APP_JOIN_TOKEN=<token from step 1> \
 APP_CA_FINGERPRINT=<ca fingerprint from step 1> \
-./levelrail-agent
+APP_AGENT_IDENTITY_FILE=/var/lib/levelrail-agent/identity.json \
+./levelrail-agent-linux-amd64
 ```
+
+The `v0.2.0-beta.15` release has no agent binary asset: use the image, or a later release.
+
+**The agent checks that the identity directory is writable before it sends the join token.** If it is not, it exits with a message naming the directory and tells you the token was not used, so you can fix the permissions and start it again with the same token. (Older agents sent the token first, failed to save the identity, and left a pending node with a spent token.)
 
 **Environment variables:**
 - `APP_CONTROL_PLANE_ADDR`: Control plane gRPC listener (default `:9443`).
@@ -96,7 +120,7 @@ levelrail-cli nodes list
 
 The node appears the moment enrollment is saved, with `status: pending` until its first heartbeat (then flips to `online`).
 
-There is no live "waiting for the agent" indicator in the dashboard, by design. Refresh the page once the agent connects.
+A node that stays `pending` for more than five minutes (`APP_NODE_PENDING_STALE_AFTER`) is flagged "Never connected" in the dashboard's Nodes list and detail page, and `levelrail-cli nodes list` prints `pending (never connected)` with the next step. It means the join token was spent but the agent never opened a session, so the token cannot be retried. Check the agent logs on the host, fix the cause (usually an unwritable identity directory or a wrong `APP_AGENT_ADVERTISE_HOST`), then delete the node (`levelrail-cli nodes delete <id>`) and enrol again with a new join token.
 
 ### Step 4: Use it for placement
 
@@ -446,7 +470,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 **Output includes:**
 - Backend: `kernel` (WireGuard kernel module), `userspace` (wireguard-go fallback), or `disabled`.
-- Interface: The WireGuard device name (e.g., `wg0`).
+- Interface: The WireGuard device name (derived from the brand short name, e.g., `levelrail0`, on the control plane and every agent).
 - Mesh address: The local node's assigned IP in the mesh.
 - Public key: The local node's WireGuard public key.
 - Last rotation: Timestamp and state if a key rotation is in progress (confirming or confirmed).
@@ -478,13 +502,13 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 **Limitation:** Only the node running the control plane itself can be rotated today. Rotating a remote node returns HTTP `501` (not implemented). The agent-side wire extension for remote key rotation does not exist yet, but is scoped future work.
 
-### What doesn't work yet: multi-node mesh
+### Multi-node mesh requirements
 
-`internal/network.ConfigSink` (the interface that carries mesh config to remote nodes over gRPC) is not built. Today only `LocalSink` exists, which configures only the process it runs in.
+The agent-side mesh arm exists: the control plane sends `ApplyMesh` and `RotateMeshKey` requests to each enrolled agent, and the agent applies them to its own WireGuard device when started with `APP_MESH_ENABLED=1`. It has been exercised against fakes and a single host with a real TUN device, so treat cross-host mesh as lightly proven. What it needs:
 
-**Result:** Enabling `APP_MESH_ENABLED` on a control plane with a second enrolled node does not mesh that node in. The control plane has its own device and can rotate its own key (both documented above), but there's no agent message to deliver config to remote nodes, and no agent-side code to apply it.
-
-**What's scoped:** One new agent request/response message, plus a case in `internal/agent.Execute` calling `Mesh.Apply`. It's defined work, not built.
+- **Privileges on every agent:** run as root with `--cap-add NET_ADMIN --device /dev/net/tun -e APP_MESH_ENABLED=1` (the image already runs as root). Nothing else: no extra sysctls, and no `ip` binary (addresses and routes are set with direct kernel calls, so the minimal agent image works). Without these the agent keeps serving containers and logs `mesh networking disabled on this node`. Nodes enrolled through the dashboard's SSH or cloud provisioning flows get all of this automatically when the control plane itself runs with `APP_MESH_ENABLED=1`.
+- **The control plane is the hub:** agents send WireGuard handshakes to `APP_AGENT_ADVERTISE_HOST` on UDP `51820`. Set that variable to the control plane's public host (it already has to be, for enrolment), and allow **inbound UDP 51820** on the control plane's firewall and cloud security group. A loopback advertise host leaves agents with no endpoint (`no known endpoint for peer`); `levelrail-cli doctor` reports this as `mesh_hub_endpoint`.
+- **Same brand on both sides:** the interface name comes from the brand short name. The agent image carries the default `brand.yaml`; override with `APP_BRAND_SHORT_NAME` (or mount your own at `APP_BRAND_FILE`) if you rebrand the control plane.
 
 This is the same gap the `::: danger` callout near the top of this page describes: until mesh spans nodes, a domain-routed app placed off the control-plane node is unreachable via its domain, and `levelrail-cli doctor`'s `cross_node_ingress` check exists to catch it. See [Domains and ingress: Traffic](domains-and-ingress.md#traffic-routing-status-for-every-domain-at-a-glance) for the dashboard page that surfaces exactly this, per domain, with a one-click fix.
 

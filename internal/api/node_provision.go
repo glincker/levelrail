@@ -508,6 +508,7 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		CAFingerprint:    rt.agentCAFingerprint,
 		NodeName:         req.Name,
 		AgentVersion:     version.Version,
+		MeshEnabled:      rt.mesh != nil,
 	})
 	if err != nil {
 		rt.logger.Error("api: node provision: render cloud-init failed", slog.String("error", err.Error()))

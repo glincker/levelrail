@@ -214,6 +214,7 @@ func (rt *Router) handleCreateSSHNodeProvision(w http.ResponseWriter, r *http.Re
 		CAFingerprint:    rt.agentCAFingerprint,
 		NodeName:         req.Name,
 		AgentImage:       sshProvisionAgentImage(),
+		MeshEnabled:      rt.mesh != nil,
 	}
 	go rt.runSSHNodeProvision(id, creds, params) //nolint:gosec // deliberate: the request context is gone by the time this goroutine finishes, runSSHNodeProvision derives its own bounded context (sshNodeProvisionTimeout) instead
 

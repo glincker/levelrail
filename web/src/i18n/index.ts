@@ -15,6 +15,7 @@ export const NAMESPACES = [
   'networkProxy',
   'databases',
   'https',
+  'nodes',
 ] as const
 
 void i18n

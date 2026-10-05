@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -78,6 +79,9 @@ type nodeResource struct {
 	// node_metrics.go), stamped by the caller since toNodeResource is a
 	// plain store.Node -> wire mapper with no Router access.
 	IsLocal bool `json:"is_local"`
+	// StatusReason is a machine-readable code explaining a status that
+	// needs operator action (nodeReason*), empty when nothing is wrong.
+	StatusReason string `json:"status_reason,omitempty"`
 	// GPU is set when the node has reported an NVIDIA GPU.
 	GPU *nodeGPUResource `json:"gpu,omitempty"`
 	// Cert and Agent are the agent certificate lifecycle and the agent's
@@ -100,6 +104,30 @@ func toNodeAlertStatusResource(s alerting.NodeAlertStatus) nodeAlertStatusResour
 		NodeDiskSpace:     string(s.NodeDiskSpace),
 		NodeResourceUsage: string(s.NodeResourceUsage),
 	}
+}
+
+// nodeReasonEnrolledNeverConnected marks a node whose join token was spent
+// but whose agent never opened a session (identity could not be saved, or
+// the agent died); the next action is to delete the node and re-enrol.
+const nodeReasonEnrolledNeverConnected = "enrolled_never_connected"
+
+const defaultNodePendingStaleAfter = 5 * time.Minute
+
+// nodePendingStaleAfter reads APP_NODE_PENDING_STALE_AFTER, how long an
+// enrolled node may stay pending before it is flagged as stuck.
+func nodePendingStaleAfter() time.Duration {
+	if d, err := time.ParseDuration(os.Getenv("APP_NODE_PENDING_STALE_AFTER")); err == nil && d > 0 {
+		return d
+	}
+	return defaultNodePendingStaleAfter
+}
+
+// nodeStatusReason returns the status reason code for n, or "".
+func nodeStatusReason(n store.Node, now time.Time, staleAfter time.Duration) string {
+	if n.Status == store.NodeStatusPending && n.LastSeenAt == nil && now.Sub(n.CreatedAt) > staleAfter {
+		return nodeReasonEnrolledNeverConnected
+	}
+	return ""
 }
 
 func toNodeResource(n store.Node) nodeResource {
@@ -204,6 +232,7 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 	for _, n := range nodes {
 		res := toNodeResource(n)
 		res.IsLocal = n.ID == rt.localNodeID
+		res.StatusReason = nodeStatusReason(n, now, nodePendingStaleAfter())
 		res.GPU = gpus[n.ID]
 		res.Cert, res.Agent = rt.nodeCertAndAgent(n, now)
 		out = append(out, res)
@@ -233,6 +262,7 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 
 	res := toNodeResource(*n)
 	res.IsLocal = n.ID == rt.localNodeID
+	res.StatusReason = nodeStatusReason(*n, time.Now(), nodePendingStaleAfter())
 	res.GPU = rt.nodeGPUResources(r.Context())[n.ID]
 	res.Cert, res.Agent = rt.nodeCertAndAgent(*n, time.Now())
 	if rt.telemetry != nil {

@@ -874,7 +874,31 @@ func printNodesTable(out io.Writer, nodes []nodeResource) {
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "ID\tNAME\tADDRESS\tSTATUS\tSCHEDULABLE\tGPU\tCERT\tAGENT\tCREATED")
 	for _, n := range nodes {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%t\t%s\t%s\t%s\t%s\n", n.ID, n.Name, n.Address, n.Status, n.Schedulable, nodeGPUColumn(n.GPU), nodeCertColumn(n.Cert), nodeAgentColumn(n.Agent), n.CreatedAt.Format(time.RFC3339))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%t\t%s\t%s\t%s\t%s\n", n.ID, n.Name, n.Address, nodeStatusColumn(n), n.Schedulable, nodeGPUColumn(n.GPU), nodeCertColumn(n.Cert), nodeAgentColumn(n.Agent), n.CreatedAt.Format(time.RFC3339))
 	}
 	_ = tw.Flush()
+	for _, n := range nodes {
+		if hint := nodeStatusHint(n); hint != "" {
+			_, _ = fmt.Fprintf(out, "%s: %s\n", n.Name, hint)
+		}
+	}
+}
+
+// nodeReasonEnrolledNeverConnected mirrors internal/api's status reason code.
+const nodeReasonEnrolledNeverConnected = "enrolled_never_connected"
+
+// nodeStatusColumn appends the reason to the status when one is set.
+func nodeStatusColumn(n nodeResource) string {
+	if n.StatusReason == nodeReasonEnrolledNeverConnected {
+		return n.Status + " (never connected)"
+	}
+	return n.Status
+}
+
+// nodeStatusHint is the next action for a node with a status reason.
+func nodeStatusHint(n nodeResource) string {
+	if n.StatusReason == nodeReasonEnrolledNeverConnected {
+		return "enrolled but its agent never connected (the join token is already used). Run `nodes delete " + n.ID + "`, then re-enrol with a new join token; check the agent logs on the host."
+	}
+	return ""
 }

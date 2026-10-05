@@ -16,6 +16,7 @@ import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { CordonNodeDialog } from '../../components/CordonNodeDialog'
 import { DrainNodeDialog } from '../../components/DrainNodeDialog'
 import { NodeAgentCard } from '../../components/NodeAgentCard'
+import { NodeNeverConnectedAlert } from '../../components/NodeNeverConnected'
 import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
 import { NodeCapacityForecastCard } from '../../components/NodeCapacityForecastCard'
 import { NodeGpuCard } from '../../components/NodeGpuCard'
@@ -270,6 +271,7 @@ function NodeDetailPage() {
         </CardContent>
       </Card>
 
+      <NodeNeverConnectedAlert node={node} />
       <NodeAlertStatusCard nodeId={id} />
 
       <NodeGpuCard gpu={node.gpu} />

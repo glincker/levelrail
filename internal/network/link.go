@@ -70,20 +70,6 @@ func setAddressDarwin(ctx context.Context, iface string, addr netip.Prefix) erro
 	return nil
 }
 
-// setAddressLinux uses ip(8)'s "replace" form rather than "add":
-// idempotent by construction (LinkConfigurator's own contract requires
-// it), where "ip address add" would instead fail the second time the
-// same address is applied on an unchanged reconcile pass.
-func setAddressLinux(ctx context.Context, iface string, addr netip.Prefix) error {
-	if out, err := exec.CommandContext(ctx, "ip", "address", "replace", addr.String(), "dev", iface).CombinedOutput(); err != nil { //nolint:gosec // addr/iface come from this node's own mesh CIDR and TUN device, not external input
-		return fmt.Errorf("network: ip address replace %s dev %s: %w: %s", addr, iface, err, out)
-	}
-	if out, err := exec.CommandContext(ctx, "ip", "link", "set", iface, "up").CombinedOutput(); err != nil { //nolint:gosec // iface comes from this node's own TUN device, not external input
-		return fmt.Errorf("network: ip link set %s up: %w: %s", iface, err, out)
-	}
-	return nil
-}
-
 // maskString renders a prefix length as a dotted-decimal IPv4 netmask
 // ("/16" -> "255.255.0.0"), the form ifconfig(8) requires and the one
 // value netip has no built-in conversion for (this package otherwise
