@@ -9,4 +9,4 @@ internal/network/link.go | ifconfig and ip on the node's own TUN device, args ar
 internal/telemetry/hostpatch.go | read-only package manager upgrade count, literal binary names and args, argv form
 internal/api/doctor_firewall.go | read-only ufw/firewalld status check, literal binary names and args, argv form
 internal/api/doctor_nas.go | exec.LookPath presence check for mount.nfs/mount.cifs, literal binary names, no args
-internal/firewall/firewall.go | ufw has no Go-native API, exec.CommandContext with literal "ufw" and validated argv, no shell
+kit/firewall/firewall.go | ufw has no Go-native API, exec.CommandContext with literal "ufw" and validated argv, no shell
