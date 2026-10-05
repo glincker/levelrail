@@ -67,6 +67,7 @@ type Config struct {
 	MinPasswordLen  int
 	Directory       *Directory
 	DeviceVerifyURL string
+	MFA             MFAConfig
 }
 
 // ConfigFromEnv applies the env overrides on top of base and fills defaults.
@@ -106,8 +107,10 @@ func ConfigFromEnv(base Config) Config {
 
 // Engine wraps one theauth instance.
 type Engine struct {
-	auth   *theauth.TheAuth
-	prefix string
+	auth     *theauth.TheAuth
+	prefix   string
+	totp     bool
+	passkeys bool
 }
 
 // New builds the engine over db. The library tables must exist already: they
@@ -163,11 +166,12 @@ func New(db *sql.DB, cfg Config) (*Engine, error) {
 		tcfg.EncryptionKey = cfg.EncryptionKey
 		tcfg.TOTP = &theauth.TOTPConfig{Issuer: cfg.TOTPIssuer}
 	}
+	applyMFA(&tcfg, cfg)
 	a, err := theauth.New(tcfg)
 	if err != nil {
 		return nil, fmt.Errorf("authengine: init: %w", err)
 	}
-	return &Engine{auth: a, prefix: cfg.PathPrefix}, nil
+	return &Engine{auth: a, prefix: cfg.PathPrefix, totp: tcfg.TOTP != nil, passkeys: tcfg.WebAuthn != nil}, nil
 }
 
 // Prefix is the route prefix Handler serves under.
