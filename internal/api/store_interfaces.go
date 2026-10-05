@@ -256,6 +256,15 @@ type DeployAttemptStore interface {
 	ListFailedDeploysSince(ctx context.Context, since time.Time) ([]store.FailedDeploy, error)
 }
 
+// ProbeAttemptStore is the store surface GET
+// /api/v1/apps/{name}/deploys/{deployId}/probes needs: the individual
+// readiness-probe attempts (migrations/0284_probe_attempts.sql,
+// internal/probe.WithOnAttempt) one deploy attempt's cutover made.
+// *store.DB satisfies this structurally.
+type ProbeAttemptStore interface {
+	ListProbeAttempts(ctx context.Context, deployID string) ([]store.ProbeAttempt, error)
+}
+
 // WebhookDeliveryStore is the store surface real inbound webhook
 // delivery history needs: row-per-delivery CRUD backing
 // GET /api/v1/apps/{name}/webhook-deliveries and its replay endpoint.
@@ -416,6 +425,14 @@ type CloudflareTunnelStore interface {
 	UpdateCloudflareTunnelSettings(ctx context.Context, s store.CloudflareTunnelSettings) error
 }
 
+// ObservabilityStore is the store surface GET/PUT
+// /api/v1/settings/observability need: the single platform-wide row,
+// always present, the same shape EmailSettingsStore has for its own row.
+type ObservabilityStore interface {
+	GetObservabilitySettings(ctx context.Context) (store.ObservabilitySettings, error)
+	UpdateObservabilitySettings(ctx context.Context, s store.ObservabilitySettings) error
+}
+
 // CloudflareDNSStore is the store surface GET/PUT
 // /api/v1/settings/cloudflare-dns need, the same "single platform-wide
 // row" shape CloudflareTunnelStore already establishes.
@@ -537,6 +554,7 @@ type Store interface {
 	CustomTemplateStore
 	DeployStore
 	DeployAttemptStore
+	ProbeAttemptStore
 	DatabaseStore
 	AuthStore
 	TokenStore
@@ -581,6 +599,7 @@ type Store interface {
 	OAuthSettingsStore
 	OAuthIdentityStore
 	EmailSettingsStore
+	ObservabilityStore
 	CloudflareTunnelStore
 	RegistryStore
 	CloudflareDNSStore
@@ -622,6 +641,10 @@ type SecretSetter interface {
 	ListKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
 	SetLocked(ctx context.Context, serviceName, envKey string, locked bool) error
 	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
+	// ExistsForServices is Exists batched over many service names in one
+	// call, used by databases.go's handleListDatabases to show every
+	// row's TLS status without an Exists call per database.
+	ExistsForServices(ctx context.Context, serviceNames []string, envKey string) (map[string]bool, error)
 	// Resolve decrypts and returns one secret's plaintext value, the same
 	// read internal/reconcile/application already does immediately before
 	// container creation. environment_clone.go's own explicit,

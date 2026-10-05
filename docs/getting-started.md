@@ -1,33 +1,60 @@
 ---
-description: Start self-hosted with install.sh, or build Levelrail from source for local development, then deploy your first app with app.yaml
+description: Install Levelrail on a Linux server, sign in, and deploy your first app in about ten minutes, from the dashboard or the CLI.
 ---
 
 # Getting started
 
-There are two ways to get a Levelrail control plane running:
+By the end of this page you have a Levelrail control plane on your own server and one app running on it with a health check, logs, and one-click rollback. Plan on about ten minutes.
 
-<CardGroup :cols="2">
-<Card title="Self-hosting on a real server" href="installing.html">
+```mermaid
+flowchart LR
+  A["Install<br/>one command"] --> B["Sign in<br/>setup token"]
+  B --> C["Setup wizard<br/>domain + git"]
+  C --> D["Deploy an app<br/>dashboard or CLI"]
+  D --> E["Live, with logs,<br/>metrics, rollback"]
+```
 
-With `install.sh`, covered right below and in full in [Installing](installing.md).
+## Before you start
 
-</Card>
-<Card title="Building from source" href="#building-from-source">
+- A Linux server, `amd64` or `arm64`, with systemd and root access. 1 vCPU and 1 GB of RAM boots the platform, but 2 vCPU and 2 GB is more comfortable once you build images on it.
+- Ports 80 and 443 reachable from the internet. Port 80 is what Let's Encrypt uses to issue certificates.
+- Optional but recommended: a domain you can point at the server.
 
-For contributing code, running an unreleased commit, or trying Levelrail out on your own machine without provisioning a server.
+The full requirements list, with what the installer checks, is in [Installing](installing.md#requirements).
 
-</Card>
-</CardGroup>
-
-Whichever one gets you a running control plane, [Deploy your first app](#deploy-your-first-app) below works the same either way.
-
-## Start self-hosted
+## Install
 
 ```
 curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
-This downloads the latest release binary, installs Docker if it's missing, and starts the control plane as a systemd service. Before running it on a real server, check the [requirements checklist](installing.md#requirements): supported OS, a practical RAM/CPU/disk starting point, and which ports need to be open. Every option (pinning a version, running as a Docker container instead, upgrading, uninstalling) is in [Installing](installing.md).
+The script checks the host, installs Docker if it is missing, downloads the newest release and verifies its checksum, starts a `levelrail` systemd service, and waits until it reports healthy. It ends by printing:
+
+- the dashboard URL, for example `http://203.0.113.10:8080`
+- a one-time **setup token** link for creating the first admin
+- a reminder to back up `master.key` in the data directory
+
+Use the port from your own output. If 8080 was taken, the installer picked the next free one.
+
+::: tip
+Pin a release with `LEVELRAIL_VERSION=v0.2.0-beta.14`, or run it as a container instead. Both are covered in [Installing](installing.md).
+:::
+
+## Sign in and run the setup wizard
+
+![Levelrail setup wizard with six steps from server check to done](assets/screenshots/setup-wizard.png)
+
+Open the printed setup link, choose a password, and you are the admin. The first sign-in opens a setup wizard, not an empty app list:
+
+1. **Server check** runs the same checks as `levelrail-cli doctor`. Each failure shows a command to fix it and a docs link. Only Docker, the database, or the data directory failing blocks you.
+2. **Dashboard domain** (optional, recommended) shows the exact DNS record to create, then watches DNS and the HTTPS certificate until both are green. Use a dedicated name such as `console.example.com`, not a domain an app will serve.
+3. **Git provider** (optional) connects GitHub, GitLab, Bitbucket, or Gitea.
+4. **First app** deploys a sample, a template, or your own repository, and waits until it is healthy. A failure shows the automatic diagnosis and a link to the logs.
+5. **Done** links to alerts, backup targets, and inviting teammates.
+
+Progress is saved on the server, so you can close the tab and resume from any browser. Reopen the wizard any time from **Settings, Setup wizard**.
+
+Lost the setup token? On the server run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token`.
 
 ## Deploy your first app
 
@@ -35,19 +62,29 @@ Once you are signed in, the dashboard home shows live stats, recent activity, an
 
 ![Levelrail dashboard home with app, request, and deploy stats and a Needs attention list](assets/screenshots/dashboard-home.png)
 
-Here's the path from local setup to a live app:
+Pick the route that matches what you have.
 
-```mermaid
-flowchart LR
-  A["Build binaries<br/>control plane + agent"] --> B["Start control plane<br/>on :8080"]
-  B --> C["Create admin account<br/>register or dev mode"]
-  C --> D["Write app.yaml<br/>in your repo"]
-  D --> E["Deploy via CLI<br/>or dashboard"]
-  E --> F["Live app<br/>with HTTPS + logs"]
-  style F fill:#90EE90
+### From a git repository
+
+In the dashboard choose **New app**, paste a repository URL, and review the deployment plan Levelrail shows before it creates anything: build method, port, environment variables, volumes, and warnings. Confirm and watch the build log stream live.
+
+From a terminal, the same flow is:
+
+```
+levelrail-cli import https://github.com/your-org/your-app --deploy
 ```
 
-The app spec is the one declarative file you write in your app's repo: `app.yaml` (also discovered as `app.yml`, `deploy.yaml`, or `deploy.yml`). A minimal one looks like this:
+Without `--deploy` it prints the plan and stops. Every accepted input, including `docker run` commands, compose files, and Dockerfiles, is listed in [Importing apps](importing-apps.md).
+
+### From an image you already built
+
+```
+levelrail-cli apps create --name web --image ghcr.io/your-org/web:1.0 --port 8080
+```
+
+### From a config file in your repo
+
+`levelrail-cli init` detects your stack and writes an `app.yaml` for it, validated by the platform's own validator. A minimal spec looks like this:
 
 ```yaml
 version: 1
@@ -56,265 +93,77 @@ services:
     build:
       type: dockerfile
     port: 8080
+    domains:
+      - app.example.com
+    health:
+      readiness: { path: /healthz, interval: 5s, timeout: 2s }
 ```
 
-### Example app
-
-`test/fixtures/hello-e2e/Dockerfile` in this repo is a real, working example: a tiny busybox image that listens on port 8080 and serves a static response. The end-to-end deploy test builds, deploys, and checks an HTTPS response against it. This is a genuine, exercised path, not hypothetical.
-
-The full spec, with domains, health checks, resource limits, env, replicas, and deploy strategy, is documented in [docs/app-spec-reference.md](app-spec-reference.md).
-
-### Setting up an admin account
-
-Before you can deploy anything, the control plane needs an admin account. Choose one of three options:
-
-1. Register through the frontend on first run, using the one-time setup token the control plane logs on first start (or print it with `levelrail setup-token`).
-2. Set `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` before starting.
-3. Start the control plane with `APP_DEV_MODE=1` (dev mode only, never production).
-
-Dev mode bootstraps a fixed `dev`/`dev` admin account and fixed API tokens from `dev-fixtures.yml` at the repo root. This lets you skip the register-then-mint-a-token steps. A release build (`-tags embedweb`) ignores `APP_DEV_MODE` outright, so it cannot run in dev mode.
-
-### The setup wizard
-
-![Levelrail setup wizard with six steps from server check to done](assets/screenshots/setup-wizard.png)
-
-The first time an admin signs in to a fresh instance, the dashboard opens a setup wizard instead of an empty app list:
-
-1. **Server check** runs the same checks as `levelrail-cli doctor` and **Settings, System status**. Every failing check shows a copyable fix command and a docs link. Only a hard failure (Docker, the database, or the data directory) blocks you; warnings do not.
-2. **Dashboard domain** (optional, recommended) asks for a domain and an email for certificate notices, shows the exact A or AAAA record to create using the server's detected public IP, then watches DNS resolve and the HTTPS certificate get issued. Continue stays disabled with the reason spelled out until both are green, or you can skip it.
-3. **Git provider** (optional) links to each provider's connect flow in a new tab and notices when one connects.
-4. **First app** deploys a one-click sample (`nginx:alpine` with a health check), a template, or your own repo, and waits until it is healthy. If it fails, the wizard shows the automatic diagnosis and a link to the logs.
-5. **Done** summarizes what you set up and links to alerts, backup targets, and inviting users.
-
-Progress is saved on the server, so reloading or signing in from another browser picks up where you left off. **Dismiss setup** hides it for good; reopen it any time from **Settings, Setup wizard**. Only admins see the wizard.
-
-### Creating an app from the CLI
-
-With the control plane running in dev mode and `levelrail-cli` built, create and deploy an app in one command:
+Then create the app from it:
 
 ```
-APP_API_TOKEN=dev-root-token ./levelrail-cli apps create \
-  --name your-app \
-  --file app.yaml \
-  --repo https://github.com/your-org/your-app \
-  --image-repo registry.example.com/your-org/your-app
+levelrail-cli apps create --file app.yaml --repo https://github.com/your-org/your-app --image-repo ghcr.io/your-org/your-app
 ```
 
-This creates the app and triggers a real BuildKit build from the git repository you point it at.
+Every field, including resources, environment, replicas, and deploy strategy, is in the [app spec reference](app-spec-reference.md).
 
-Check on it with:
+::: details Prefer a guided prompt?
+`levelrail-cli apps create --interactive` asks for the name, source, port, domain, health path, and limits, then either writes `app.yaml` or creates the app. `databases create --interactive` does the same for a managed database.
+:::
+
+### Check on it
 
 ```
-APP_API_TOKEN=dev-root-token ./levelrail-cli apps status your-app
+levelrail-cli apps status web
+levelrail-cli apps logs web --follow
 ```
 
-Once deployed, the dashboard shows live metrics and deploy history in one view:
+Status shows the reconciler's conditions, each with a reason string, so a failing deploy tells you why instead of spinning. In the dashboard the same app has live metrics with deploy markers on the charts, the deploy history with one-click rollback, and a log viewer with search.
 
 ![Levelrail app overview: live metrics and deploy history in one view](assets/screenshots/app-overview.png)
 
-### Using a prebuilt image
+To go back to the previous version, use the deploy history in the dashboard or `levelrail-cli apps rollback web`. Prior images are pinned, so garbage collection cannot remove a rollback target.
 
-If you already have a built image and don't need Levelrail to build it, skip `--file`/`--repo`/`--image-repo` and use the existing-image path instead:
+## Use the CLI from your laptop
 
-```
-APP_API_TOKEN=dev-root-token ./levelrail-cli apps create \
-  --name your-app --image registry.example.com/your-org/your-app:latest --port 8080
-```
+The dashboard shows these same steps under **Settings, CLI access**, with a copy button on each command:
 
-### Importing something you already have
+![Levelrail CLI access page with install, point-at-server, and device login steps](assets/screenshots/cli-access.png)
 
-You do not need an `app.yaml` to get started. Paste a GitHub, GitLab, Gitea or Bitbucket repo URL, a `docker run` command, an image reference, a `docker-compose.yml` or a Dockerfile into the "Import anything" box in the New app dialog and Levelrail shows a deployment plan (build method, port, environment variables, volumes, warnings) before creating anything. From the CLI:
+`levelrail-cli` is a small client you install on your own machine. It talks to the control plane over HTTPS, with no SSH key and no inbound port.
 
 ```
-./levelrail-cli import https://github.com/your-org/your-app
-./levelrail-cli import https://github.com/your-org/your-app --deploy --env API_TOKEN=abc
+curl -fsSL https://levelrail.com/install-cli.sh | sh
+export APP_API_URL=https://console.example.com
+levelrail-cli auth login --device
 ```
 
-See [importing-apps.md](importing-apps.md) for every input type and the list of unsupported `docker run` flags.
+`--device` prints a short code and asks you to approve it in the dashboard, the same model as `gh auth login`, so it inherits your two-factor setup. For CI, create an API token under **Settings, API tokens** and pass it as `APP_API_TOKEN`.
 
-### Other CLI commands
+## Finish setting up for real use
 
-Run `levelrail-cli apps create -h` for the full set of flags.
+The dashboard shows a **Get set up** card after your first sign-in, driven by live state:
 
-Other common commands:
+- connect a git provider
+- add a custom domain with a valid certificate
+- add a backup target and take a control plane backup
+- create a notification channel and an alert rule
+- turn on two-factor authentication
+- set the dashboard URL
 
-- `apps deploy` - deploy an app
-- `apps rollback` - revert to a previous version
-- `apps restart` - restart running containers
-- `apps logs` (add `--follow` or `-f` to tail live)
-- `apps metrics` - view app metrics
-- `databases create` - create a database
-- `databases metrics` - view database metrics
-- `nodes metrics` - view node metrics
+Do the backup step before anything else. Your control plane database and `master.key` are the two things you cannot recreate.
 
-Run `levelrail-cli -h` for the complete list of commands.
+## Where to go next
 
-### Guided setup for apps
+| I want to | Read |
+| --- | --- |
+| Run Postgres, Redis, or another database next to my app | [Managing databases](managing-databases.md) |
+| Deploy a pre-made service such as Plausible or Uptime Kuma | [Templates](templates-and-registry.md) |
+| Add custom domains and understand certificates | [Domains and ingress](domains-and-ingress.md) |
+| Deploy on every push, with previews per pull request | [Git integrations](git-integrations.md) |
+| Add a second server | [Multi-node quickstart](multi-node-quickstart.md) |
+| Get alerted when something breaks | [Observability](observability.md) |
+| Understand what is stable and what is beta | [Feature status](feature-status.md) |
+| Hit a problem | [Troubleshooting](troubleshooting.md) |
 
-Don't want to hand-write `app.yaml` or look up every flag first? Run the wizard instead:
-
-```
-./levelrail-cli apps create --interactive
-```
-
-The wizard prompts for:
-
-- App name
-- Source (git repository URL or existing Docker image reference)
-- Container port
-- Optional domain
-- Optional health check path (defaults to `/healthz`)
-- Optional memory/CPU limits
-- Whether to write to `app.yaml` or create the app directly against the control plane API
-
-Short form: `-i` (cannot be combined with `--name`/`--image`/`--repo`/`--file`).
-
-::: warning
-This wizard only creates single-service apps (exactly one entry under `services:`). For multi-service apps (a web process plus a worker sidecar under one `app.yaml`), hand-write multiple entries in `app.yaml`'s `services:` map, or use `POST /api/v1/apps/{name}/deploy-spec` (and its dashboard equivalent, an app's Services tab). See [docs/roadmap.md](roadmap.md) for current caveats.
-:::
-
-### Guided setup for databases
-
-`databases create` has the same guided mode:
-
-```
-./levelrail-cli databases create --interactive
-```
-
-The wizard prompts for:
-
-- Database name
-- Engine (from the live registry at `GET /api/v1/database-engines`; newly added engines appear automatically)
-- Version (defaults to the engine's suggested version)
-- Optional memory/CPU limits
-- Whether to expose it outside the Docker network
-- Optional backup schedule
-
-Unlike the apps wizard, this one always creates the database against the control plane API. `app.yaml`'s `databases:` block has no field for resource limits or public access, so there is no file-output mode.
-
-Short form: `-i` (cannot be combined with `--name`/`--engine`/`--version`).
-
-### Output formats and filtering
-
-Every command accepts `--output json|table|text` and `--query EXPR` alongside `--token`, `--api-url`, `--profile`, and `--json` flags.
-
-Output formats:
-
-- `table` (default, human-readable)
-- `text` (plain tab-separated, no headers, for piping through `awk`/`cut`)
-- `--json` (shorthand for `--output json`, preserved for backward compatibility)
-
-The `--query` flag takes a [JMESPath](https://jmespath.org) expression to filter or project results in any format (same feature AWS CLI users know):
-
-```
-# every app's name, whatever node it's running on
-./levelrail-cli apps list --query "[].name"
-
-# just the apps on a specific node
-./levelrail-cli apps list --query "[?node_id=='node-1'].name"
-
-# a single field off a single app, with no JSON wrapper
-./levelrail-cli apps get your-app --query image --output text
-```
-
-Note: `apps list` returns a bare JSON array (not wrapped in an `"apps"` key), so expressions index straight into it rather than starting with `apps[...]`.
-
-Run `levelrail-cli <command> -h` to see `--output` and `--query` flags for any command.
-
-### Shell completion
-
-`levelrail-cli` can generate completion scripts for bash, zsh, or fish. Coverage includes every command and subcommand plus global flags (`--token`, `--api-url`, `--json`, `--output`, `--query`, `--help`). It does not complete flag values or positional arguments like app names.
-
-To install completion for your shell:
-
-::: code-group
-```bash [Bash]
-source <(levelrail-cli completion bash)
-
-# To install permanently:
-levelrail-cli completion bash | sudo tee /etc/bash_completion.d/levelrail-cli > /dev/null
-```
-
-```zsh [Zsh]
-source <(levelrail-cli completion zsh)
-
-# To install permanently, save as `_levelrail-cli` somewhere on $fpath:
-levelrail-cli completion zsh > "${fpath[1]}/_levelrail-cli"
-```
-
-```fish [Fish]
-levelrail-cli completion fish | source
-
-# To install permanently:
-levelrail-cli completion fish > ~/.config/fish/completions/levelrail-cli.fish
-```
-:::
-
-Run `levelrail-cli completion -h` for the same instructions from the CLI itself.
-
-## Building from source
-
-Building from source is the path for contributing code, running an unreleased commit, or trying Levelrail out locally without provisioning a server. See the repo's [CONTRIBUTING.md](../CONTRIBUTING.md) for branch and commit conventions and how to run the test suite before opening a PR.
-
-### Requirements
-
-- Go 1.26+
-- Docker (a running daemon is required; the control plane and agent talk to the Docker Engine API directly and never shell out to the `docker` CLI)
-- Node.js and npm (only if building the frontend from source; a recent LTS release works, no pinned version)
-
-### Build the binaries
-
-The control plane and node agent are separate Go binaries:
-
-```
-# control plane
-go build ./cmd/levelrail
-
-# node agent
-go build ./cmd/levelrail-agent
-```
-
-There's also a CLI, a thin scriptable HTTP client for the control plane's API:
-
-```
-go build ./cmd/levelrail-cli
-```
-
-### Frontend
-
-The frontend lives in `web/` as a separate Vite project. It's embedded into the control plane binary via `embed.FS` at build time, so production deployments don't run a separate Node process.
-
-```
-cd web
-npm install
-npm run dev       # Vite dev server
-npm run build      # type-check and produce a production build in dist/
-```
-
-See `web/README.md` for lint, format, typecheck, preview, and other commands plus conventions.
-
-The control plane binary listens on `:8080` by default.
-
-## The "Get set up" checklist
-
-After your first login, the dashboard shows a "Get set up" card that walks you to a safe production setup. Each row reads live state from the control plane and links to the right page:
-
-- Connect a Git provider
-- Deploy your first app
-- Add a custom domain with a valid certificate
-- Add a backup target and create a control plane backup (`levelrail-cli control-plane-backups create`)
-- Create a notification channel and an alert rule
-- Enable two-factor authentication on the admin account
-- Set the dashboard URL
-
-A row that your account cannot see (for example a 403 or 404 from its endpoint) is shown as unavailable and left out of the progress bar. Dismiss the card with the X button (remembered in your browser), or let it hide itself once every available step is done. It is shown to root accounts only.
-
-## See also
-
-- [importing-apps.md](importing-apps.md) - import a repo, image, docker run command, compose file or Dockerfile with a plan preview
-- [app-spec-reference.md](app-spec-reference.md) - full `app.yaml` schema with all fields and options
-- [domains-and-ingress.md](domains-and-ingress.md) - setting up domains and HTTPS
-- [architecture.md](architecture.md) - how the control plane, agent, and reconciler work together
-- [comparison.md](comparison.md) - how Levelrail compares to Coolify, Dokploy, and CapRover
-- [roadmap.md](roadmap.md) - current status and what's planned
-- [master-key-rotation.md](master-key-rotation.md) - rotating encryption keys
+Every CLI command, output format (`--output`, `--query`), and shell completion option is in the [CLI reference](cli-reference.md). To build from source or run a development instance, see [Installing](installing.md#option-3-build-from-source).

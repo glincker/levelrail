@@ -23,6 +23,9 @@ type GitHubAppStore interface {
 	SaveGitHubAppConnection(ctx context.Context, c store.GitHubAppConnection) error
 	UpdateGitHubAppInstallation(ctx context.Context, installationID int64, accountLogin string) error
 	DeleteGitHubAppConnection(ctx context.Context) error
+	UpsertGitHubAppInstallation(ctx context.Context, installationID int64, accountLogin, accountType string) error
+	ListGitHubAppInstallations(ctx context.Context) ([]store.GitHubAppInstallation, error)
+	DeleteGitHubAppInstallation(ctx context.Context, id int64) error
 }
 
 // GitHubAppSecrets is the surface the GitHub App handlers need from

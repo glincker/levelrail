@@ -32,6 +32,7 @@ const sidebarGroups = [
     items: [
       { text: 'Installing', link: '/installing' },
       { text: 'Troubleshooting', link: '/troubleshooting' },
+      { text: 'Email notifications', link: '/email-notifications' },
       {
         text: 'Deploying',
         collapsed: true,

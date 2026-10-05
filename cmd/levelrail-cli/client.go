@@ -22,6 +22,8 @@ type (
 	appHealthResource                = apiclient.AppHealthResource
 	appHealthScoreResource           = apiclient.AppHealthScoreResource
 	appHealthScoreCategory           = apiclient.AppHealthScoreCategory
+	healthDiscoveryResponse          = apiclient.HealthDiscoveryResponse
+	healthDiscoveryAttempt           = apiclient.HealthDiscoveryAttempt
 	serviceHooks                     = apiclient.ServiceHooks
 	buildTriggerRequest              = apiclient.BuildTriggerRequest
 	buildTriggerRequestBuild         = apiclient.BuildTriggerRequestBuild
@@ -299,6 +301,10 @@ type (
 	gitLabAppStatusResource            = apiclient.GitLabAppStatusResource
 	bitbucketAppStatusResource         = apiclient.BitbucketAppStatusResource
 	gitHubAppRepoResource              = apiclient.GitHubAppRepoResource
+	gitHubAppRepoListResource          = apiclient.GitHubAppRepoListResource
+	gitHubAppRepoListErrResource       = apiclient.GitHubAppRepoListErrResource
+	gitHubAppInstallationResource      = apiclient.GitHubAppInstallationResource
+	gitHubAppInstallationListResource  = apiclient.GitHubAppInstallationListResource
 	gitAppBranchResource               = apiclient.GitAppBranchResource
 	useRepoAsSourceRequest             = apiclient.UseRepoAsSourceRequest
 	useGitHubRepoAsSourceResponse      = apiclient.UseGitHubRepoAsSourceResponse

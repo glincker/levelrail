@@ -8,8 +8,10 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -27,9 +29,55 @@ const (
 // internal/store's own tests use (internal/store/store_test.go), not a
 // mock: the project favors real behavior under test, and the store
 // package is fast and local enough that a mock buys nothing here.
+// migrationTemplateDB builds one fully-migrated file once per test
+// binary run; openTestDB copies it instead of replaying ~180 migrations
+// per test (store.Open's migrate() already no-ops on an up-to-date
+// schema, so copying one just makes that check cheap instead of slow).
+var (
+	migrationTemplateOnce sync.Once
+	migrationTemplatePath string
+	migrationTemplateErr  error
+)
+
+func migrationTemplateDB(t *testing.T) string {
+	t.Helper()
+	migrationTemplateOnce.Do(func() {
+		dir, err := os.MkdirTemp("", "levelrail-test-template-*")
+		if err != nil {
+			migrationTemplateErr = err
+			return
+		}
+		path := filepath.Join(dir, "template.db")
+		db, err := store.Open(context.Background(), path)
+		if err != nil {
+			migrationTemplateErr = err
+			return
+		}
+		// store.Open uses WAL mode; checkpoint so the single file below
+		// is self-contained, not dependent on a -wal sidecar.
+		if _, err := db.Exec(`PRAGMA wal_checkpoint(TRUNCATE)`); err != nil {
+			_ = db.Close()
+			migrationTemplateErr = err
+			return
+		}
+		if err := db.Close(); err != nil {
+			migrationTemplateErr = err
+			return
+		}
+		migrationTemplatePath = path
+	})
+	if migrationTemplateErr != nil {
+		t.Fatalf("build migration template db: %v", migrationTemplateErr)
+	}
+	return migrationTemplatePath
+}
+
 func openTestDB(t *testing.T) *store.DB {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "levelrail.db")
+	if err := copyFileContents(migrationTemplateDB(t), path); err != nil {
+		t.Fatalf("copy migration template db: %v", err)
+	}
 	db, err := store.Open(context.Background(), path)
 	if err != nil {
 		t.Fatalf("store.Open(%q) error = %v", path, err)
@@ -40,6 +88,14 @@ func openTestDB(t *testing.T) *store.DB {
 		}
 	})
 	return db
+}
+
+func copyFileContents(src, dst string) error {
+	data, err := os.ReadFile(src) //nolint:gosec // test-only, both paths built from t.TempDir()/os.MkdirTemp, never user input
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dst, data, 0o600) //nolint:gosec // same: test-only fixed paths
 }
 
 func testBrand() *brand.Brand {

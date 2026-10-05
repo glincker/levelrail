@@ -212,9 +212,26 @@ docker buildx imagetools inspect ghcr.io/glincker/levelrail:beta --format '{{ js
 
 ## Option 3: build from source
 
-See [Getting started: building from source](getting-started.md#build-the-binaries)
-for the `go build` commands. This is the path for contributors and anyone
-who wants to run an unreleased commit rather than a tagged version.
+The path for contributors, anyone running an unreleased commit, or trying Levelrail on a laptop without a server. See [CONTRIBUTING.md](../CONTRIBUTING.md) for branch and commit conventions and how to run the tests.
+
+**Requirements:** Go 1.26 or newer, a running Docker daemon, and Node.js with npm only if you build the frontend yourself.
+
+```
+go build ./cmd/levelrail          # control plane
+go build ./cmd/levelrail-agent    # node agent
+go build ./cmd/levelrail-cli      # CLI
+```
+
+The frontend is a separate Vite project in `web/`. It is embedded into the control plane binary at build time, so production runs no Node process.
+
+```
+cd web
+npm install
+npm run dev       # Vite dev server
+npm run build     # type-check and production build
+```
+
+The control plane listens on `:8080` by default. For a throwaway local instance, start it with `APP_DEV_MODE=1`. Dev mode creates a fixed `dev`/`dev` admin and fixed API tokens from `dev-fixtures.yml` so you can skip sign-up. A release build (`-tags embedweb`) ignores `APP_DEV_MODE`, so it can never run this way in production. See `web/README.md` for the frontend commands.
 
 ## Installing just the CLI
 
@@ -256,7 +273,7 @@ account already has, there is nothing extra to configure for this. See
 the dashboard itself for a copy-pasteable version of the steps above.
 
 Running from CI or a script instead of a person approving in a browser?
-Mint an [API token](getting-started.md#deploy-your-first-app) instead,
+Mint an [API token](getting-started.md#use-the-cli-from-your-laptop) instead,
 `--api-token` or `APP_API_TOKEN` skips the device flow entirely.
 
 ## Verifying the install
@@ -281,7 +298,7 @@ journalctl -u levelrail -f
 
 **Authenticated checks (after initial setup):**
 
-Once you've created an admin account and minted an API token (see [docs/getting-started.md](getting-started.md#deploy-your-first-app)), you can use `levelrail-cli` for deeper validation:
+Once you've created an admin account and minted an API token (see [docs/getting-started.md](getting-started.md#use-the-cli-from-your-laptop)), you can use `levelrail-cli` for deeper validation:
 
 ```bash
 levelrail-cli version   # compare running vs. latest published release

@@ -123,4 +123,28 @@ describe('StageOverlay', () => {
     const popup = document.querySelector('[data-slot="stage-overlay-popup"]')
     expect(popup?.className).toContain('animate-in')
   })
+
+  it('renders as a bottom-anchored strip, not a full-screen panel', () => {
+    render(<StageOverlay open onOpenChange={vi.fn()} />)
+    const popup = document.querySelector('[data-slot="stage-overlay-popup"]')
+    expect(popup?.className).toContain('bottom-6')
+    expect(popup?.className).toContain('left-1/2')
+    expect(popup?.className).not.toContain('inset-4')
+    expect(popup?.className).not.toContain('inset-8')
+  })
+
+  it('lists every tile inside a single horizontally scrollable row', () => {
+    render(<StageOverlay open onOpenChange={vi.fn()} />)
+    const group = screen.getByRole('group', { name: 'Go to' })
+    expect(group.className).toContain('overflow-x-auto')
+    expect(group.children).toHaveLength(7)
+  })
+
+  it('closes on Escape', async () => {
+    const onOpenChange = vi.fn()
+    const user = userEvent.setup()
+    render(<StageOverlay open onOpenChange={onOpenChange} />)
+    await user.keyboard('{Escape}')
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
 })
