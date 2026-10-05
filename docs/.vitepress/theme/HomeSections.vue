@@ -61,7 +61,7 @@ import { compare, gallery, switching } from './homeData'
       <LatestReleasesSection />
     </LpSection>
 
-    <LpSection heading="Frequently asked questions" narrow>
+    <LpSection heading="Frequently asked questions">
       <LpFaq :items="faqItems" />
     </LpSection>
 

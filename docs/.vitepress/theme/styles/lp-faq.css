@@ -1,0 +1,83 @@
+/* FAQ accordion shared by every landing page and the homepage (LpFaq.vue).
+   Selectors are doubled with .lp-faq so the home page's .vp-doc rules never win. */
+.lp,
+.lp-scope {
+  --lp-radius-faq: 32px;
+  --lp-faq-pad-x: clamp(20px, 4vw, 52px);
+  --lp-faq-q-size: clamp(18px, 2.1vw, 26px);
+}
+
+.lp-faq {
+  padding: 8px var(--lp-faq-pad-x);
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-radius-faq);
+  background:
+    radial-gradient(120% 60% at 0% 0%, var(--lp-accent-tint), transparent 60%),
+    linear-gradient(180deg, var(--lp-card-top), var(--lp-card-bottom));
+}
+
+.lp-faq .lp-faq__item {
+  border-bottom: 1px solid var(--lp-line);
+}
+
+.lp-faq .lp-faq__item:last-child {
+  border-bottom: 0;
+}
+
+.lp-faq .lp-faq__q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: clamp(20px, 3vw, 32px) 0;
+  list-style: none;
+  cursor: pointer;
+  color: var(--lp-text);
+  font-size: var(--lp-faq-q-size);
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  transition: color 0.15s;
+}
+
+.lp-faq .lp-faq__q::-webkit-details-marker {
+  display: none;
+}
+
+.lp-faq .lp-faq__q:hover {
+  color: var(--lp-accent);
+}
+
+.lp-faq .lp-faq__q:focus-visible {
+  outline: 2px solid var(--lp-accent);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.lp-faq .lp-faq__chev {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  color: var(--lp-muted);
+  transition: transform 0.2s ease;
+}
+
+.lp-faq .lp-faq__item[open] .lp-faq__chev {
+  transform: rotate(90deg);
+}
+
+.lp-faq .lp-faq__a {
+  max-width: 62ch;
+  margin: 0;
+  padding: 0 0 clamp(22px, 3vw, 34px);
+  color: var(--lp-muted);
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-faq .lp-faq__q,
+  .lp-faq .lp-faq__chev {
+    transition: none;
+  }
+}
