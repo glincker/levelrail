@@ -76,6 +76,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/statuspage"
 	"log/slog"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -567,7 +568,10 @@ type Router struct {
 	cpBackups           ControlPlaneBackupManager // nil is valid: /system/backups routes return 501
 	cpBackupScheduleOff bool                      // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
 	cpDR                ControlPlaneDR            // nil is valid: /system/control-plane-dr routes return 501
-	cpDRMaterial        EscrowMaterialReader
+
+	authEnginePrefix string       // empty means the library auth engine is off, set via WithAuthEngine
+	authEngine       http.Handler // nil when APP_AUTH_ENGINE is not "library"
+	cpDRMaterial     EscrowMaterialReader
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.

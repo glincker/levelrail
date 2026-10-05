@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -1117,3 +1118,15 @@ func WithDeleteTeardownTimeout(d time.Duration) Option {
 // SetAppTeardownOptions is WithAppTeardownOptions for callers that learn
 // the instance ID only after the router is built.
 func (rt *Router) SetAppTeardownOptions(opts ...application.Option) { rt.teardownOpts = opts }
+
+// WithAuthEngine mounts the library auth handler under prefix, beside the
+// in-house auth routes, which stay untouched. A nil handler is a no-op.
+func WithAuthEngine(prefix string, h http.Handler) Option {
+	return func(rt *Router) {
+		if h == nil || prefix == "" {
+			return
+		}
+		rt.authEnginePrefix = prefix
+		rt.authEngine = h
+	}
+}

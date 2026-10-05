@@ -331,6 +331,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "auth-backfill" {
+		if err := runAuthBackfill(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdout); err != nil {
+			logger.Error("auth-backfill failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "restore-db" {
 		if err := runRestoreDB(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdout); err != nil {
 			logger.Error("restore-db failed", slog.String("error", err.Error()))
@@ -2305,6 +2312,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// like WithEmailSender above.
 		api.WithPushVAPIDPublicKey(pushVAPIDPublicKey),
 	}
+	opts = append(opts, authEngineOptions(context.Background(), logger, b, db.DB, secretsManager)...)
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
 		opts = append(opts, api.WithMasterKeyRotation(secretsManager, masterKeyFilePath))
