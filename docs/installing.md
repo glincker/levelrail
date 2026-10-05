@@ -70,6 +70,10 @@ Requires `curl`, `systemd`, and root access.
 
 ### First sign-in
 
+![Levelrail setup wizard on a fresh install: server checks with a Continue button](assets/screenshots/setup-wizard.png)
+
+After you create the admin account, the setup wizard opens and runs the server checks shown above.
+
 Open one of the printed `http://<ip>:8080/login?setup=<token>` links from the install summary. **8080 is the default, not a guarantee**: if that port was already taken on the server, `install.sh` picks the next free one automatically (`LEVELRAIL_DASHBOARD_PORT`) and prints the real one it used, so always use the port from your own install's output, not the number in this doc. Lost the summary? Print the token again on the server (the dashboard port is also in the unit file, `systemctl cat levelrail | grep APP_HTTP_ADDR`):
 
 ```bash
@@ -213,6 +217,10 @@ for the `go build` commands. This is the path for contributors and anyone
 who wants to run an unreleased commit rather than a tagged version.
 
 ## Installing just the CLI
+
+The dashboard prints these same steps under **Settings, CLI access**, with a copy button on each command:
+
+![Levelrail CLI access page with install, point-at-server, and device login steps](assets/screenshots/cli-access.png)
 
 `install.sh` and the Docker/source paths above are for the **server**
 (the control plane). `levelrail-cli` is a separate, small client binary

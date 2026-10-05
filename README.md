@@ -1,33 +1,53 @@
-# Levelrail
+<div align="center">
 
-[![CI](https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg)](https://github.com/glincker/levelrail/actions/workflows/ci.yml)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/glincker/levelrail)](https://goreportcard.com/report/github.com/glincker/levelrail)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/glincker/levelrail)](go.mod)
-[![GitHub stars](https://img.shields.io/github/stars/glincker/levelrail?style=flat)](https://github.com/glincker/levelrail/stargazers)
-[![Last commit](https://img.shields.io/github/last-commit/glincker/levelrail)](https://github.com/glincker/levelrail/commits/main)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Discussions](https://img.shields.io/github/discussions/glincker/levelrail)](https://github.com/glincker/levelrail/discussions)
-[![Discord](https://img.shields.io/discord/829168897080557579?style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2)](https://discord.gg/Ar5pcaZB99)
-[![Status: pre-release](https://img.shields.io/badge/status-pre--release-orange.svg)](#status)
-[![Docs](https://img.shields.io/badge/docs-levelrail.com-f59e0b.svg)](https://levelrail.com)
+<h1>Levelrail</h1>
 
-**[Read the docs at levelrail.com](https://levelrail.com)**
+<p><strong>Push to git, get a running app with TLS, logs, metrics, and rollback, on your own Linux boxes.</strong></p>
+
+<p>
+  <a href="https://levelrail.com">Docs</a> ·
+  <a href="#quickstart">Quickstart</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#a-tour-of-the-dashboard">Screenshots</a> ·
+  <a href="docs/comparison.md">Compare</a> ·
+  <a href="https://discord.gg/Ar5pcaZB99">Discord</a>
+</p>
+
+<p>
+  [![CI](https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg)](https://github.com/glincker/levelrail/actions/workflows/ci.yml)
+  [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+  [![Go Report Card](https://goreportcard.com/badge/github.com/glincker/levelrail)](https://goreportcard.com/report/github.com/glincker/levelrail)
+  [![Go Version](https://img.shields.io/github/go-mod/go-version/glincker/levelrail)](go.mod)
+  [![GitHub stars](https://img.shields.io/github/stars/glincker/levelrail?style=flat)](https://github.com/glincker/levelrail/stargazers)
+  [![Last commit](https://img.shields.io/github/last-commit/glincker/levelrail)](https://github.com/glincker/levelrail/commits/main)
+  [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+  [![Discussions](https://img.shields.io/github/discussions/glincker/levelrail)](https://github.com/glincker/levelrail/discussions)
+  [![Discord](https://img.shields.io/discord/829168897080557579?style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2)](https://discord.gg/Ar5pcaZB99)
+  [![Status: pre-release](https://img.shields.io/badge/status-pre--release-orange.svg)](#status)
+  [![Docs](https://img.shields.io/badge/docs-levelrail.com-f59e0b.svg)](https://levelrail.com)
+</p>
+
+<img src="docs/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="900">
+
+</div>
+
+## What is Levelrail?
 
 Levelrail is a self-hosted, open-source PaaS: an alternative to Heroku,
-Vercel, and Railway for teams who'd rather run their own deployment
-platform on their own Linux boxes than rent one. Its agent talks to
-Docker's own Engine API directly instead of SSHing into your servers
-and shelling out `docker` commands, with metrics and log storage built
-into the core instead of a separately-installed extra. Point it at one
-or more Linux boxes and it turns them into a private cloud: push to a
-git repo, get a running app with TLS, logs, metrics, and rollback.
-Built for 3-50 services across 1-10 machines, not a Kubernetes
-competitor.
+Vercel, and Railway for teams who would rather run their own deployment
+platform than rent one. Point it at one or more Linux boxes and it
+turns them into a private cloud. Built for 3-50 services across 1-10
+machines, not a Kubernetes competitor.
 
-<p align="center">
-  <img src="docs/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="900">
-</p>
+- **No SSH, no shelling out.** An agent on each node talks to Docker's
+  Engine API directly, so there are no polling loops and no parsed `docker`
+  output.
+- **Observability is part of the core.** Metrics and log search ship in the
+  binary, with deploy markers drawn on the charts. No Grafana install.
+- **Small by design.** One Go binary for the control plane, one for the
+  agent, SQLite for state.
+- **AI-ready, not AI-driven.** The HTTP API that runs the dashboard also backs
+  an MCP server. AI reads and suggests; it is never in the reconcile path.
 
 If this solves a problem you have, a star helps other people building
 the same thing find it.
@@ -39,6 +59,28 @@ and ports 80/443/8080 free. Docker is installed for you if it's
 missing. Pick whichever fits how you run things. Full details, env var
 overrides, verifying the install, upgrading, and uninstalling are all
 in [docs/installing.md](docs/installing.md).
+
+### Your first five minutes
+
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <a href="docs/installing.md#first-sign-in"><img src="docs/assets/screenshots/setup-wizard.png" alt="Levelrail setup wizard running server checks on a fresh install"></a><br>
+      <b>1. Install and sign in</b><br>
+      <sub>One command, then the setup wizard checks the server and walks you to a first app.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <a href="docs/git-integrations.md"><img src="docs/assets/screenshots/app-source.png" alt="Levelrail Git source settings with GitHub, GitLab, Bitbucket, Gitea, and URL tabs"></a><br>
+      <b>2. Connect a repo</b><br>
+      <sub>Pick a provider, let auto-detect choose the build, deploy on every push.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <a href="docs/deployments-page.md"><img src="docs/assets/screenshots/deployments-all.png" alt="Levelrail Deployments page listing recent deploys and a rollback"></a><br>
+      <b>3. Watch it ship</b><br>
+      <sub>Every deploy is listed live, and rolling back is one click.</sub>
+    </td>
+  </tr>
+</table>
 
 **Linux server, recommended:**
 
@@ -264,30 +306,159 @@ entries against Coolify's 371 (an intentional curation-over-count bet,
 see [ADR 015](adr/015-service-template-catalog-reversal.md)), the one
 row in that matrix this project doesn't lead.
 
-## Screenshots
+## A tour of the dashboard
+
+Every image below is captured from a real, running control plane by
+[`scripts/screenshots/capture.sh`](scripts/screenshots/capture.sh), with real
+containers, metrics, and logs. Click one to open the guide for that screen.
+
+### Deploy and observe
 
 <table>
   <tr>
-    <td width="50%">
-      <img src="docs/assets/screenshots/apps-list.png" alt="Levelrail apps list showing all services across nodes at a glance" width="420"><br>
-      <sub>Apps list</sub>
+    <td width="50%" valign="top">
+      <a href="docs/managing-apps-at-scale.md"><img src="docs/assets/screenshots/apps-list.png" alt="Levelrail apps list showing all services at a glance"></a><br>
+      <b>Apps</b><br>
+      <sub>Every service, its status, and where it runs.</sub>
     </td>
-    <td width="50%">
-      <img src="docs/assets/screenshots/deploy-history.png" alt="Levelrail deploy history view with one-click rollback" width="420"><br>
-      <sub>Deploy history and rollback</sub>
+    <td width="50%" valign="top">
+      <a href="docs/deploy-safety.md"><img src="docs/assets/screenshots/deploy-history.png" alt="Levelrail deploy history with one-click rollback"></a><br>
+      <b>Deploy history and rollback</b><br>
+      <sub>Each release is pinned, so rollback is never a rebuild.</sub>
     </td>
   </tr>
   <tr>
-    <td width="50%">
-      <img src="docs/assets/screenshots/logs.png" alt="Levelrail live log viewer with full-text search" width="420"><br>
-      <sub>Live log viewer</sub>
+    <td width="50%" valign="top">
+      <a href="docs/deploying-apps.md"><img src="docs/assets/screenshots/app-deploy-settings.png" alt="Levelrail deploy settings showing blue-green strategy and replicas"></a><br>
+      <b>Deploy strategy</b><br>
+      <sub>Blue-green, rolling, or recreate, plus pre and post deploy hooks.</sub>
     </td>
-    <td width="50%">
-      <img src="docs/assets/screenshots/nodes.png" alt="Levelrail nodes list showing node health and placement" width="420"><br>
-      <sub>Nodes</sub>
+    <td width="50%" valign="top">
+      <a href="docs/observability.md"><img src="docs/assets/screenshots/app-overview-page.png" alt="Levelrail app overview page"></a><br>
+      <b>App overview</b><br>
+      <sub>Health, replicas, and recent activity for one app.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/observability.md"><img src="docs/assets/screenshots/logs.png" alt="Levelrail live log viewer with full-text search"></a><br>
+      <b>Live logs</b><br>
+      <sub>Full-text search and live tail, stored on the node.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/cost-estimate.md"><img src="docs/assets/screenshots/app-resources.png" alt="Levelrail resource suggestion and cost estimate for an app"></a><br>
+      <b>Right-sizing and cost</b><br>
+      <sub>Limits suggested from real usage, with a what-it-costs-elsewhere estimate.</sub>
     </td>
   </tr>
 </table>
+
+### Data and edge
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/managing-databases.md"><img src="docs/assets/screenshots/databases-list.png" alt="Levelrail databases list"></a><br>
+      <b>Managed databases</b><br>
+      <sub>Postgres, Redis, MySQL, and more, one registry.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/managing-databases.md"><img src="docs/assets/screenshots/database-overview.png" alt="Levelrail database overview with TLS and public access settings"></a><br>
+      <b>Database overview</b><br>
+      <sub>TLS, host-port exposure, and backups in one place.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/load-balancing.md"><img src="docs/assets/screenshots/load-balancer.png" alt="Levelrail load balancer view with upstream health"></a><br>
+      <b>Load balancer</b><br>
+      <sub>Per-upstream health once the ingress reconciler observes it.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/domains-and-ingress.md"><img src="docs/assets/screenshots/domains-list.png" alt="Levelrail Domains page with platform ingress settings"></a><br>
+      <b>Domains and TLS</b><br>
+      <sub>Primary domain, ACME certificates, and HSTS.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/deploying-apps.md"><img src="docs/assets/screenshots/app-environment.png" alt="Levelrail environment variables and write-only secrets"></a><br>
+      <b>Environment and secrets</b><br>
+      <sub>Secrets are write-only and show their age.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/backups-and-storage.md"><img src="docs/assets/screenshots/backups.png" alt="Levelrail Backups page prompting for a backup target"></a><br>
+      <b>Backups</b><br>
+      <sub>Connect an S3-compatible target, then schedule from any database.</sub>
+    </td>
+  </tr>
+</table>
+
+<details>
+<summary><b>Nodes, networking, and CI</b></summary>
+<br>
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/multi-node.md"><img src="docs/assets/screenshots/nodes.png" alt="Levelrail nodes list showing health and placement"></a><br>
+      <b>Nodes</b><br>
+      <sub>Node health and placement across machines.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/network-topology.md"><img src="docs/assets/screenshots/network-topology.png" alt="Levelrail network topology graph"></a><br>
+      <b>Network topology</b><br>
+      <sub>How apps and nodes connect.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/node-provisioning.md"><img src="docs/assets/screenshots/node-providers.png" alt="Levelrail cloud node providers settings"></a><br>
+      <b>Cloud node providers</b><br>
+      <sub>Create servers at Hetzner, DigitalOcean, AWS, or Azure from the Nodes page.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/pipelines.md"><img src="docs/assets/screenshots/pipelines.png" alt="Levelrail Pipelines first-run view with a sample pipeline file"></a><br>
+      <b>Pipelines</b><br>
+      <sub>CI/CD runs on your own nodes, defined in a YAML file.</sub>
+    </td>
+  </tr>
+</table>
+
+</details>
+
+<details>
+<summary><b>Getting started and operations</b></summary>
+<br>
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/template-catalog.md"><img src="docs/assets/screenshots/templates-catalog.png" alt="Levelrail service templates catalog with categories"></a><br>
+      <b>Template catalog</b><br>
+      <sub>One-click services from a searchable catalog.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/installing.md#installing-just-the-cli"><img src="docs/assets/screenshots/cli-access.png" alt="Levelrail CLI access page with install and login steps"></a><br>
+      <b>CLI access</b><br>
+      <sub>Install the CLI and log in with a device code, no SSH key.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/getting-started.md"><img src="docs/assets/screenshots/dashboard-home.png" alt="Levelrail dashboard home with stats and server checks"></a><br>
+      <b>Dashboard home</b><br>
+      <sub>Stats, recent activity, and a Needs attention list from the server checks.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/status-page.md"><img src="docs/assets/screenshots/status-page-settings.png" alt="Levelrail status page settings, switched off by default"></a><br>
+      <b>Public status page</b><br>
+      <sub>A read-only page with component status, off until you publish it.</sub>
+    </td>
+  </tr>
+</table>
+
+</details>
 
 ## Building and running locally
 
@@ -334,3 +505,33 @@ commit conventions, and how to run tests and the linter locally.
 ## License
 
 Apache 2.0, see [LICENSE](LICENSE).
+
+## Founding partners
+
+Founding partner sites and libraries, from the same studio:
+
+| | |
+| --- | --- |
+| [**theSVG**](https://thesvg.org) | A searchable library of brand SVG icons for developers and designers. |
+| [**theauth**](https://github.com/glincker/theauth) | Open-source auth for AI agents and humans, with MCP OAuth 2.1 and audit. |
+| [**AskVerdict AI**](https://askverdict.ai) | Structured multi-agent decisions for teams, with verdicts and action items. |
+
+## Meet the founder
+
+Levelrail is built by Gagan Deep Singh, founder of [GLINR STUDIOS](https://glinr.com)
+and [theSVG](https://thesvg.org). Say hello at [thegdsks.com](https://thegdsks.com).
+
+<div align="center">
+
+<br>
+
+<a href="https://glinr.com">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/glincker-light.svg">
+    <img src="docs/assets/brand/glincker-dark.svg" alt="GLINR STUDIOS" width="56">
+  </picture>
+</a>
+
+<sub>Powered by <a href="https://glinr.com"><b>GLINR STUDIOS</b></a> · icon from <a href="https://thesvg.org/icon/glincker">theSVG</a></sub>
+
+</div>

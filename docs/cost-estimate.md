@@ -9,6 +9,8 @@ few illustrative reference pricing profiles, alongside the resource
 limits editor. The CLI exposes the same number with `levelrail-cli apps
 cost <name>`, and the API with `GET /api/v1/apps/{name}/cost-estimate`.
 
+![Levelrail Resources tab with a resource suggestion and a what-this-would-cost-elsewhere estimate](assets/screenshots/app-resources.png)
+
 **This is an estimate, not a real bill.** It never calls a live pricing
 API and never reflects what your own hardware actually costs you. The
 point is comparative: showing roughly what the same CPU/memory envelope

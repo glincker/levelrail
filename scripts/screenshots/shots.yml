@@ -105,3 +105,45 @@
   width: 1280
   height: 800
   wait: 2000
+
+- output: docs/assets/screenshots/dashboard-home.png
+  url: __BASE_URL__/
+  width: 1280
+  height: 900
+  wait: 3000
+
+- output: docs/assets/screenshots/setup-wizard.png
+  url: __BASE_URL__/settings/setup-wizard
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/cli-access.png
+  url: __BASE_URL__/settings/cli-access
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/app-source.png
+  url: __BASE_URL__/apps/marketing-site/source
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/app-deploy-settings.png
+  url: __BASE_URL__/apps/marketing-site/deploy-settings
+  width: 1280
+  height: 900
+  wait: 2000
+
+- output: docs/assets/screenshots/app-resources.png
+  url: __BASE_URL__/apps/marketing-site/resources
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/status-page-settings.png
+  url: __BASE_URL__/settings/status-page
+  width: 1280
+  height: 800
+  wait: 2000

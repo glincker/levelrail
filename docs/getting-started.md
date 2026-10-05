@@ -31,6 +31,10 @@ This downloads the latest release binary, installs Docker if it's missing, and s
 
 ## Deploy your first app
 
+Once you are signed in, the dashboard home shows live stats, recent activity, and a **Needs attention** list built from the same server checks as the wizard:
+
+![Levelrail dashboard home with app, request, and deploy stats and a Needs attention list](assets/screenshots/dashboard-home.png)
+
 Here's the path from local setup to a live app:
 
 ```mermaid
@@ -71,6 +75,8 @@ Before you can deploy anything, the control plane needs an admin account. Choose
 Dev mode bootstraps a fixed `dev`/`dev` admin account and fixed API tokens from `dev-fixtures.yml` at the repo root. This lets you skip the register-then-mint-a-token steps. A release build (`-tags embedweb`) ignores `APP_DEV_MODE` outright, so it cannot run in dev mode.
 
 ### The setup wizard
+
+![Levelrail setup wizard with six steps from server check to done](assets/screenshots/setup-wizard.png)
 
 The first time an admin signs in to a fresh instance, the dashboard opens a setup wizard instead of an empty app list:
 
