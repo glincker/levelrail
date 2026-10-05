@@ -62,7 +62,7 @@
       },
       {
         "title": "Observability included",
-        "body": "Node-local metrics, full-text log search, crashloop detection and alerts to seventeen channels ship in the core, with deploy markers on the charts.",
+        "body": "Node-local metrics, full-text log search, crashloop detection and alerts to eighteen channels ship in the core, with deploy markers on the charts.",
         "visual": [
           {
             "k": "out",

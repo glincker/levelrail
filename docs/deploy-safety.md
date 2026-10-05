@@ -66,8 +66,8 @@ Each deploy in the history carries a digest and a reason:
 To refuse a cached fallback, deploy with pull:
 
 ```bash
-levelrail apps deploy web --pull              # re-resolve the current tag
-levelrail apps deploy web --image nginx:1.27 --pull
+levelrail-cli apps deploy web --pull              # re-resolve the current tag
+levelrail-cli apps deploy web --image nginx:1.27 --pull
 ```
 
 With `--pull` (API: `"pull": true`) a deploy fails with 502 when the
@@ -80,8 +80,7 @@ last observed (`serving` or `mismatch`) and any reason.
 
 History rows store the pinned reference, so rolling back to a row deploys
 exactly the content that row ran, even for a floating tag that has since
-moved. Rows recorded before this feature existed hold only a tag; rolling
-back to one re-resolves that tag.
+moved. Older rows that hold only a tag are re-resolved when you roll back to them.
 
 ## Stale-deploy guard
 
@@ -119,11 +118,11 @@ While a window is active:
   carry an override with a reason. The reason is recorded on the deploy.
 
 ```bash
-levelrail apps freeze set web --cron "0 17 * * 5" --duration 64h \
+levelrail-cli apps freeze set web --cron "0 17 * * 5" --duration 64h \
   --timezone Europe/Berlin --reason "weekend freeze"
-levelrail apps freeze show web
-levelrail apps deploy web --image app:hotfix --override-freeze --override-reason "CVE fix"
-levelrail apps freeze clear web
+levelrail-cli apps freeze show web
+levelrail-cli apps deploy web --image app:hotfix --override-freeze --override-reason "CVE fix"
+levelrail-cli apps freeze clear web
 ```
 
 In the dashboard, app **Deploy settings** has a **Deploy freeze** card, and
@@ -149,7 +148,7 @@ passes, the next reconcile removes it. Rolling deploys retire old replicas one a
 anything, since it stops the old release before starting the new one.
 
 `GET /api/v1/apps/{name}` reports `previous_release_held_until` (RFC3339)
-while a release is held, and `levelrail apps status <name>` prints it.
+while a release is held, and `levelrail-cli apps status <name>` prints it.
 
 ## What visitors see during a deploy
 
@@ -161,7 +160,7 @@ An app with a pinned host port (`--host-port`) cannot run two releases at once, 
 
 ## Required secrets
 
-A secret declared `required: true` that has no value now fails the deploy with reason `RequiredSecretMissing` and leaves the serving release untouched. Previously only spec deploys checked this, so deleting the value and then deploying an image started a container silently missing it.
+A secret declared `required: true` that has no value fails the deploy with reason `RequiredSecretMissing` and leaves the serving release untouched, whichever way the deploy was triggered.
 
 ## Queue, cancel and rollback to a release
 
@@ -199,9 +198,9 @@ image was garbage collected, `409` when its tag now points at other content or
 the row recorded no digest.
 
 ```bash
-levelrail apps deploys cancel web dep_abc123
-levelrail apps deploys rollback-to web dep_abc123
-levelrail apps cancel-superseded enable web
+levelrail-cli apps deploys cancel web dep_abc123
+levelrail-cli apps deploys rollback-to web dep_abc123
+levelrail-cli apps cancel-superseded enable web
 ```
 
 In the dashboard, the deploy history row menu has **Roll back to this** and

@@ -4,7 +4,7 @@ description: Read the whole-mesh network topology view, how nodes group into zon
 
 # Network topology view
 
-The **Network** page shows every node, app, database, and load-balanced service on the mesh at once, grouped by node, with a line drawn between each app and the database it connects to. It's a read-only picture built from the same data the rest of the dashboard already has: nothing here needs its own configuration to start working.
+The **Network** page shows every node, app, database, and load-balanced service on the mesh at once, grouped by node, with a line drawn between each app and the database it connects to. It is read-only and built from data the dashboard already has, so it needs no configuration. Find it under **Infrastructure > Network**.
 
 ![Levelrail network topology view showing a node zone with its apps, mesh addresses, and a load-balanced service](assets/screenshots/network-topology.png)
 
@@ -47,6 +47,10 @@ An app or database with no mesh address shows the legend's "No mesh address (unr
 - **Load balanced**: a service the reconciler is load-balancing across its own replicas (this platform balances a service's own replicas, not multiple distinct backends).
 - **App -> database connection**: a dashed line for each connection between an app and a database.
 - **No mesh address (unreachable)**: the resource has no mesh address yet.
+
+## From the CLI and API
+
+`levelrail-cli nodes topology` prints the same summary as a table, and `--json` prints the raw response. The API is `GET /api/v1/network/topology` (`read` ability), documented in the [API reference](api-reference.md).
 
 ## See also
 

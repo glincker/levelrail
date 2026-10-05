@@ -11,7 +11,7 @@ An agent talks to the platform the same way you do: through the CLI (`levelrail-
 
 Run this in the project root:
 
-```
+```bash
 levelrail-cli init
 ```
 
@@ -38,7 +38,7 @@ Flags:
 
 The repository ships an agent skill that covers the deploy, wait, diagnose and roll back loop, so an agent follows the safe path without you pasting instructions:
 
-```
+```bash
 npx skills add glincker/levelrail
 ```
 
@@ -50,10 +50,10 @@ The MCP server exposes a subset of its tools depending on the mode. Token counts
 
 | Mode | Tools | Estimated tokens | Use it for |
 | --- | --- | --- | --- |
-| `agent-core` (a tool profile, `--tool-profile agent-core`) | about 15 | about 2,500 | Shipping and debugging one app. The default for `init`. |
-| `read-only` | 109 | 41,600 | Observers that must not change anything. |
-| `standard` | 135 | 55,600 | Read and mutating tools, no destructive ones. |
-| `full` | 144 | 59,800 | Every tool, including destructive ones. |
+| `agent-core` (a tool profile, `--tool-profile agent-core`) | 15 | about 2,600 | Shipping and debugging one app. The default for `init`. |
+| `read-only` | 118 | about 46,200 | Observers that must not change anything. |
+| `standard` | 146 | about 61,200 | Read and mutating tools, no destructive ones. |
+| `full` | 156 | about 66,700 | Every tool, including destructive ones. |
 
 See [Agent tooling audit](agent-tooling-audit.md) for how the numbers are measured.
 
@@ -61,7 +61,7 @@ See [Agent tooling audit](agent-tooling-audit.md) for how the numbers are measur
 
 Give each agent its own token so its actions are attributable and it can be revoked alone.
 
-```
+```bash
 levelrail-cli tokens create --name ci-agent --preset deployer --agent "Claude Code"
 ```
 
@@ -79,13 +79,28 @@ The token is shown once, when it is created. Store it in your shell profile or s
 
 ## Read logs by level
 
-The app Logs page (Search tab) shows a chip per level (error, warn, info, debug) with the number of loaded lines at that level, and a "Showing N of total" line. Each row has a gutter with an icon and the level word, so the level does not depend on color. The search loads the newest 1,000 matches; the total counts every match in the range. Agents get the same view from `levelrail-cli logs query` or the MCP `query_logs` tool, which take a `level` and a `limit`.
+The app Logs page (Search tab) shows a chip per level (error, warn, info, debug) with the number of loaded lines at that level, and a "Showing N of total" line. Each row has a gutter with an icon and the level word, so the level does not depend on color. The search loads the newest 1,000 matches; the total counts every match in the range. Agents get a capped excerpt of the same data from `levelrail-cli logs query` or the MCP `query_logs` tool, which filter by `level`, time window and text.
 
 ## Dry run before changing anything
 
-- `plan_change` (MCP) previews a change to the declared resources without applying it, and `plan_apply` does the same for resource files. `levelrail-cli apply --dry-run` is the CLI form.
+- `plan_change` (MCP) previews a single mutating tool call without running it, and `plan_apply` previews a resource file. `levelrail-cli apply --dry-run` is the CLI form.
 - `levelrail-cli apps preflight NAME` checks DNS, ports, disk, the image and required env before a deploy.
 
 ## Wait for a deploy
 
 Agents should never assume a deploy worked. `wait_for_deploy` (MCP) or `levelrail-cli apps wait NAME` blocks until the deploy converges and reports success or the structured failure. On failure, read it with `levelrail-cli apps deploys show NAME DEPLOY_ID`, fix one thing, and retry. Roll back first if production is down.
+
+## Next steps
+
+<CardGroup :cols="2">
+<Card title="AI assistant integration" href="/ai-assistant">
+
+Run `levelrail-mcp` over stdio or HTTP and scope its token.
+
+</Card>
+<Card title="Agent tooling audit" href="/agent-tooling-audit">
+
+Token cost per mode and the budget tests.
+
+</Card>
+</CardGroup>

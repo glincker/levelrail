@@ -108,9 +108,12 @@ The signing key is ES256 (ECDSA P-256), generated once and persisted encrypted a
 
 ## JWKS
 
-`GET /.well-known/jwks.json` on the control plane serves the public key, unauthenticated (this is how every OIDC verifier discovers it) and rate-limited per IP. Point AWS, GCP, or Vault's OIDC configuration at the issuer URL above; each fetches this path itself.
+`GET /.well-known/jwks.json` on the control plane serves the public key, unauthenticated (this is how every OIDC verifier discovers it) and rate-limited per IP (`APP_OIDC_JWKS_RATE_LIMIT_PER_MINUTE` tunes the limit). Point AWS, GCP, or Vault's OIDC configuration at the issuer URL above; each fetches this path itself.
 
-## Wiring to AWS IAM
+## Wiring to a provider
+
+<Tabs :items="['AWS IAM', 'GCP', 'Vault']">
+<Tab value="AWS IAM">
 
 1. IAM > Identity providers > Add provider > OpenID Connect.
    - Provider URL: the issuer URL (`APP_OIDC_ISSUER_URL`).
@@ -136,17 +139,22 @@ The signing key is ES256 (ECDSA P-256), generated once and persisted encrypted a
 
 3. Set `AWS_ROLE_ARN` as a job env var (or a secret) to the role's ARN, and call `aws sts assume-role-with-web-identity` as in the example above.
 
-## Wiring to GCP workload identity federation
+</Tab>
+<Tab value="GCP">
 
 1. Create a workload identity pool and an OIDC provider inside it, issuer URI set to the issuer URL above, and an attribute mapping such as `google.subject=assertion.sub`.
 2. Grant the target service account `roles/iam.workloadIdentityUser` scoped to the pool, with an attribute condition matching `sub`, `repo`, or `ref`.
 3. Exchange the token for a Google access token via the STS `token` endpoint (`https://sts.googleapis.com/v1/token`) with `subject_token` set to `$PIPELINE_OIDC_TOKEN`, or use `gcloud auth login --cred-file` pointed at a generated credential config that references the token file path if the job writes it to disk first.
 
-## Wiring to Vault
+</Tab>
+<Tab value="Vault">
 
 1. Enable the JWT auth method and configure it with `oidc_discovery_url` set to the issuer URL (Vault fetches the JWKS from there automatically).
 2. Create a role with `bound_audiences` matching `oidc.audience`, and `bound_claims` matching `sub`, `repo`, or `ref` as needed.
 3. In the job, `vault write auth/jwt/login role=<role> jwt="$PIPELINE_OIDC_TOKEN"`.
+
+</Tab>
+</Tabs>
 
 ## Key rotation
 
@@ -159,9 +167,24 @@ levelrail-cli pipelines oidc rotate-key --retire-after=2h
 
 Or from the dashboard: the **Pipelines** page's OIDC card has a **Rotate signing key** control, with the same warning below.
 
-Rotation generates a fresh key and signs every new token with it immediately. The previous key is not removed: it stays published in `/.well-known/jwks.json` alongside the new one until `--retire-after` elapses (default 24 hours), so a token minted moments before rotation, and any provider still holding an unrefreshed copy of the JWKS document (AWS, GCP, and Vault all cache it), keeps verifying. Only once that window passes does the old key actually disappear from the published set; nothing removes it sooner. Rotating again before an earlier key's window elapses keeps both old keys published until each retires on its own schedule.
+Rotation generates a fresh key and signs every new token with it immediately. The previous key is not removed: it stays published in `/.well-known/jwks.json` alongside the new one until `--retire-after` elapses (default 24 hours, or set `APP_OIDC_KEY_RETIRE_GRACE`), so a token minted moments before rotation, and any provider still holding an unrefreshed copy of the JWKS document (AWS, GCP, and Vault all cache it), keeps verifying. Only once that window passes does the old key actually disappear from the published set; nothing removes it sooner. Rotating again before an earlier key's window elapses keeps both old keys published until each retires on its own schedule.
 
 ## What this does not cover
 
 - No UI to browse past-issued tokens or their claims; nothing is persisted beyond the signing key set itself, by design, since a token is meant to be short-lived and never logged.
 - No way to force-remove a retiring key before its `retire_after` deadline from the CLI or UI; that override exists internally for a genuinely compromised key but is not wired to an operator action yet.
+
+## Next steps
+
+<CardGroup :cols="2">
+<Card title="Pipelines" href="/pipelines">
+
+The pipeline format and how runs execute.
+
+</Card>
+<Card title="Security" href="/security">
+
+How secrets and credentials are handled.
+
+</Card>
+</CardGroup>

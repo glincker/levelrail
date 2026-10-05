@@ -1,82 +1,75 @@
 ---
-description: Verify real ACME certificate issuance against a live public domain using Let's Encrypt or custom CA
+description: Verify real ACME certificate issuance against a live public domain with Let's Encrypt or another RFC 8555 CA, including what to check, common failures, and a recorded run.
 ---
 
 # Verifying real ACME issuance against a live domain
 
-The Caddy ACME issuer, settings toggle, and form validation are all built, wired end to end, and covered by automated tests. Specifically: config-shape unit tests in `internal/ingress/acme_test.go`, and a real, local-CA end-to-end test in `internal/ingress/acme_live_test.go`.
+The ACME issuer, settings toggle and form validation are covered by automated tests: config-shape unit tests in `internal/ingress/acme_test.go` and an end-to-end test against a local CA in `internal/ingress/acme_live_test.go`. Those tests cannot prove issuance against a real public CA with real DNS and real reachability on ports 80 and 443. This runbook is that check.
 
-What those tests cannot prove from a sandbox is real issuance against a real public ACME directory (Let's Encrypt or otherwise), over a real domain, with real DNS and real port 80/443 reachability from the internet. ADR 005's "Verified" section names this explicitly.
+A first run is recorded [at the bottom of this page](#recorded-run-2026-10-05), so you do not need to repeat it before trusting the feature. Repeating it on your own host is the fastest way to confirm your firewall is right. For a version that needs no DNS, use the **Enable HTTPS** card described in [Domains and ingress](domains-and-ingress.md#zero-dns-setup-sslip-io-hostnames-and-one-click-https).
 
-This runbook is for that verification step. It assumes you have Levelrail installed and running. A first run has been recorded at the bottom of this page; you do not need to repeat it before trusting the feature, but repeating it on your own host is the fastest way to confirm your firewall is right. For a zero-DNS version of the same thing, use the **Enable HTTPS** card (see [domains-and-ingress.md](domains-and-ingress.md#zero-dns-setup-sslipio-hostnames-and-one-click-https)).
+<InlineToc default-open />
 
 ## Prerequisites
 
-- A domain name you control, with DNS access to create or edit an `A` or `AAAA` record.
-- A server running the control plane (via `install.sh`, `levelrail.service`, or Docker), reachable from the public internet.
-- DNS already pointed at the server's public IP and propagated (see the DNS failure mode section below for how to verify).
-- Ports 80 and 443 open and reachable from the internet on that server. Let's Encrypt's HTTP-01 challenge (the only automatically-solved type today; DNS-01 via Cloudflare is separate, see `docs/roadmap.md`) validates domain ownership on port 80. Cloud firewalls, home routers without port forwarding, or `ufw` in its default state will silently break this from the outside while appearing fine from inside.
-- Admin access to the Levelrail dashboard (or an API token with `root` or `ingress-settings` ability).
+- A domain you control, with access to create an `A` or `AAAA` record.
+- A control plane reachable from the public internet (installed with `install.sh`, as `levelrail.service`, or in Docker).
+- DNS already pointing at the server's public IP and propagated.
+- Ports 80 and 443 open from the internet. HTTP-01 validates ownership on port 80, so a cloud firewall, a router without port forwarding or `ufw` in default-deny will break issuance while looking fine from the server itself. Wildcards need [DNS-01](domains-and-ingress.md#wildcard-domains-dns-01-providers) instead.
+- A `root` API token or admin dashboard access, since saving ingress settings (`PUT /api/v1/settings/ingress`) needs the `root` ability.
 
 ## Steps
 
-1. **Point DNS at the server**, if you haven't already, and wait for
-   propagation. `dig +short your-domain.example.com` from a machine
-   outside your own network should return the server's public IP. Don't
-   proceed until it does: attempting ACME issuance before DNS has
-   propagated is the single most common failure mode below, and every
-   failed attempt burns a small amount of Let's Encrypt's per-domain rate
-   limit.
+<Steps>
+<Step title="Point DNS at the server">
 
-2. **Open the dashboard** and go to **Domains** (top-level nav item, or `/domains` directly). You can also find it in the settings hub under "Platform ingress". This is backed by the `IngressSettingsCard` component (`web/src/components/IngressSettingsCard.tsx`) and the `GET/PUT /api/v1/settings/ingress` endpoints.
+Wait for propagation. From a machine outside your network, `dig +short your-domain.example.com` should return the server's public IP. Do not continue until it does: issuing before DNS propagates is the most common failure, and each failed attempt counts against the CA's rate limit.
 
-3. **Set "Primary domain"** to your domain (e.g. `dashboard.example.com`).
+You can also ask the control plane directly:
 
-   Once saved, a "Certificate status" badge and a DNS check panel appear below the field. Use this panel now, before enabling ACME, to confirm the platform can resolve your DNS record correctly. The check shows whether the record is inferred from your own connection or genuinely configured, and whether it matches the server's expectations.
-
-4. **Toggle "Issue real ACME certificates" on.** Two fields appear:
-
-   - **Contact email**: Required. This is the email address the certificate authority uses to reach you about certificate issues (e.g. forced revocation). Use a real, monitored address.
-   - **Directory URL**: Optional. Leave blank for Let's Encrypt's production directory.
-
-   ::: tip
-   For your first verification run, use Let's Encrypt's staging directory instead (`https://acme-staging-v02.api.letsencrypt.org/directory`). This avoids burning production rate limits while you verify DNS and port reachability. Staging-issued certificates trigger browser warnings but work identically to production issuance for testing the mechanism. Once staging succeeds, flip back to blank and save again for a real, browser-trusted certificate.
-   :::
-
-5. **Save.** Saving does not immediately trigger issuance. Caddy's automatic-HTTPS reconciliation picks up the change the next time ingress reconciles for a route on that domain. In practice this happens within moments, since ingress reconciliation runs continuously and any routed domain qualifies for certificate management once ACME is enabled and a valid email is on file.
-
-6. **Watch it happen.** See "What to check" below for exactly where to
-   look and what success looks like.
-
-## What to check to confirm success
-
-**Dashboard**
-
-The "Certificate status" badge next to Primary domain on the Domains page should read **Healthy** (green). This comes from `GET /api/v1/certificates`, backed by `internal/api/certificates.go`.
-
-Click through to see the issuer field. For a real ACME certificate, this names your chosen CA (e.g. `Let's Encrypt` or an R-series intermediate like `R11` or `R12`), never Levelrail's internal issuer.
-
-**Expiry**
-
-The `not_after` field should be roughly 90 days out for Let's Encrypt (their standard lifetime). If it reads a few hours, you're still looking at the platform's internal (self-signed) issuer. The toggle likely didn't save, or you're viewing a stale cached page.
-
-**Auto-renewal state**
-
-Nothing to configure. Caddy's automatic-HTTPS management renews well before expiry, industry-standard practice being around 30 days before for a 90-day cert. No separate cron job, timer, or operator action needed.
-
-To confirm renewal is working (short of waiting 60 days), watch the logs for a `"renewing certificate"` or `"certificate obtained successfully"` line appearing before the current certificate's `not_after` date.
-
-**Logs**
-
-Run: `journalctl -u levelrail -n 200 --no-pager` (or your Docker image's log output). Caddy's structured logs go through the same process.
-
-Look for lines with `"logger":"tls.obtain"` and `"logger":"http.acme_client"`.
-
-::: details Expected log sequence for successful issuance
-
-A clean run looks like this sequence (from `internal/ingress/acme_live_test.go` against a local test CA, just with real Let's Encrypt account and identifier):
-
+```bash
+levelrail-cli domains check <app> your-domain.example.com
 ```
+
+</Step>
+<Step title="Set the primary domain">
+
+Open **Domains** (Infrastructure section of the sidebar, or `/domains`) and set **Primary domain** to your hostname, for example `dashboard.example.com`. After saving, a **Certificate status** badge and a DNS check panel appear. Use the panel to confirm the platform resolves your record before enabling ACME.
+
+</Step>
+<Step title="Turn on ACME, staging first">
+
+Switch on **Issue real ACME certificates** and fill in:
+
+- **Contact email**: required. The CA uses it to reach you about problems such as forced revocation. Use a monitored address.
+- **Directory URL (optional)**: leave blank for Let's Encrypt production.
+
+For a first run, set the directory URL to Let's Encrypt staging, `https://acme-staging-v02.api.letsencrypt.org/directory`. Staging certificates trigger browser warnings but exercise the same mechanism without touching production rate limits. When staging succeeds, clear the field and save again for a trusted certificate. Saving drops the previous issuer's stored certificates so the new CA re-issues them.
+
+From the CLI:
+
+```bash
+levelrail-cli settings ingress set --primary-domain dashboard.example.com \
+  --acme-enabled --acme-email you@example.com
+```
+
+</Step>
+<Step title="Wait for issuance">
+
+Saving does not issue immediately. Ingress reconciles continuously, and any routed domain qualifies for a certificate once ACME is on and an email is set, so issuance normally starts within moments. The next section says what success looks like.
+
+</Step>
+</Steps>
+
+## Confirm it worked
+
+- **Dashboard.** The **Certificate status** badge reads **Healthy**. The issuer names your CA (`Let's Encrypt`, or an intermediate such as `R11`), never Levelrail's internal issuer. The same data is at `GET /api/v1/certificates` and `levelrail-cli domains certificates`.
+- **Expiry.** `not_after` is about 90 days out for Let's Encrypt. A lifetime of a few hours means you are still on the internal self-signed issuer: the toggle did not save, or the page is stale.
+- **Renewal.** Nothing to configure. Caddy renews well before expiry (about 30 days out for a 90-day certificate). To see it work without waiting, look in the logs for `renewing certificate` or `certificate obtained successfully` before the current `not_after`.
+- **Logs.** `journalctl -u levelrail -n 200 --no-pager`, or your container's logs. Look for `"logger":"tls.obtain"` and `"logger":"http.acme_client"`.
+
+::: details Expected log sequence for a successful issuance
+```text
 "acquiring lock" -> "obtaining certificate" -> "registering account" (first
 time only) -> "trying to solve challenge","challenge_type":"http-01" ->
 "authorization finalized","authz_status":"valid" -> "finalizing order" ->
@@ -84,12 +77,10 @@ time only) -> "trying to solve challenge","challenge_type":"http-01" ->
 "certificate obtained successfully"
 ```
 
-Any error logged between "trying to solve challenge" and "authorization finalized" is almost always the DNS or port-80 failure modes below, not a bug in the issuer code itself.
-
+An error between "trying to solve challenge" and "authorization finalized" is almost always one of the DNS or port 80 failures below, not an issuer bug.
 :::
 
-
-## Common failure modes and what they look like
+## Common failures
 
 ```mermaid
 flowchart TD
@@ -104,31 +95,37 @@ flowchart TD
   B -->|No account/cert error| J["Verify email and directory URL<br/>Check form validation"]
 ```
 
-**DNS not propagated or wrong record**
+<AccordionGroup>
+<Accordion title="DNS not propagated or wrong record">
 
-ACME logs show challenge failure with `"error":"... connection ... timed out"` or `"... no such host"` right after "trying to solve challenge".
+The log shows a challenge failure such as `connection ... timed out` or `no such host` right after "trying to solve challenge".
 
-Fix: Verify with `dig +short your-domain.example.com` from outside your network. Wait for propagation (can take minutes to hours depending on DNS provider TTL), then retry.
+Check `dig +short your-domain.example.com` from outside your network, wait out the record's TTL, then retry.
 
-**Port 80 blocked**
+</Accordion>
+<Accordion title="Port 80 blocked">
 
-The log shows the challenge request timing out or refused. Unlike DNS issues, `dig` correctly resolves the domain but the ACME CA cannot reach it. This happens with cloud security groups, `ufw`, routers without port forwarding, or reverse proxies eating port 80.
+`dig` resolves correctly, but the log shows the challenge request timing out or being refused. Typical causes are cloud security groups, `ufw`, routers without port forwarding, and another proxy holding port 80.
 
-Fix: Open port 80 and 443 inbound. You can also run `levelrail-cli doctor` or check the dashboard's "System status" page, which includes firewall and `ufw` checks.
+Open ports 80 and 443 inbound. `levelrail-cli doctor` and the dashboard's status page include reachability checks. See [Firewall: ports 80 and 443](domains-and-ingress.md#firewall-ports-80-and-443).
 
-**Rate limited**
+</Accordion>
+<Accordion title="Rate limited">
 
-Let's Encrypt's production directory enforces per-domain and per-account limits. As of now, roughly 5 failed validations per account/hostname/hour, and 50 certificates per domain per week (check Let's Encrypt's current limits, they change). The log shows an explicit `rate limited` or `too many` error from the CA.
+Let's Encrypt production limits failed validations per account and hostname, and certificates per registered domain per week. Check their current limits, because they change. The log shows an explicit `rate limited` or `too many` error. Use staging for repeated attempts. Production enable attempts from the one-click flow are also capped by `APP_ACME_MAX_ATTEMPTS_PER_HOUR`.
 
-This is why step 4 recommends staging for your first run. Staging has much more permissive limits and is designed for repeated verification.
+</Accordion>
+<Accordion title="Missing or invalid contact email">
 
-**Missing or invalid contact email**
+The dashboard form rejects this before it reaches the API, and the backend rejects it the same way if you call the API directly.
 
-The dashboard's form validation catches this before it reaches the API (`ingressSettingsSchema` in `IngressSettingsCard.tsx`). You shouldn't be able to save without one. If you bypass it via raw API call, the backend's `validateIngressSettingsRequest` rejects it the same way.
+</Accordion>
+<Accordion title="Wrong issuer after switching CA">
 
-**Pre-existing certificate from the internal issuer or staging**
+Enabling ACME, or changing the directory URL (for example staging to production), drops the previous issuer's stored certificates when you save so the new CA re-issues them. If a domain still shows the wrong issuer, confirm an app actually routes that domain: ACME applies only to domains in active use by a route.
 
-Enabling ACME, or switching the directory URL (for example staging to production), now drops the stored certificates of the previous issuer when you save, so they are re-issued by the new CA. Before this was fixed, Caddy kept serving the old still-valid certificate indefinitely and never asked the new CA. If a domain still shows the wrong issuer, confirm the domain is actually routed by an app: ACME only applies to domains in active use by a route.
+</Accordion>
+</AccordionGroup>
 
 ## Recorded run (2026-10-05)
 
@@ -151,17 +148,9 @@ What the run found and fixed:
 
 Not covered by this run: the live capture of a CA error (item 5 is covered by unit tests only), renewal (certificates are 90 days old at best, so the renewal path ran only in tests and the `got renewal info` log lines), wildcard certificates through DNS-01, and a deliberately failing issuance against the production CA.
 
-## Once this succeeds: closing the gap
-
-A successful run against a real domain closed the gap this project carried since ADR 005's Phase 0 spike (see the recorded run above). The steps below stay as the checklist for your own host.
-
-When you've confirmed a real, browser-trusted (production, not staging) certificate is healthy and auto-renewal is credible (logs show the expected sequence, `not_after` is roughly 90 days), update `docs/roadmap.md`.
-
-For your own records, note the issuer, `not_after` and the date. The domain itself doesn't need to be named if it's private or internal. What matters is that it was a real public domain with real DNS and real port reachability.
-
 ## See also
 
-- [Installing Levelrail](installing.md) - initial setup and prerequisites
-- [Troubleshooting guide](troubleshooting.md) - broader platform diagnostics
-- [Git integrations](git-integrations.md) - webhook and domain setup for deployments
-- [ADR 005: Caddy embedded ingress](../adr/005-caddy-embedded-ingress.md) - architecture and design decisions
+- [Domains and ingress](domains-and-ingress.md): TLS options, DNS-01 wildcards and the one-click HTTPS flow.
+- [Installing Levelrail](installing.md): initial setup and prerequisites.
+- [Troubleshooting](troubleshooting.md): broader platform diagnostics.
+- [ADR 005: Caddy embedded ingress](../adr/005-caddy-embedded-ingress.md): the design decisions.

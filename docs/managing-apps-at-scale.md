@@ -36,10 +36,10 @@ Apps you may not read (an IAM Deny on `app:<name>`) are left out of both.
 Select apps in the list and use the bar that appears at the bottom, or from the CLI:
 
 ```bash
-levelrail apps bulk restart --tag tier:edge --dry-run
-levelrail apps bulk add-tag team:core --names web,api --yes
-levelrail apps bulk set-environment staging --env development
-levelrail apps bulk delete --tag scratch
+levelrail-cli apps bulk restart --tag tier:edge --dry-run
+levelrail-cli apps bulk add-tag team:core --names web,api --yes
+levelrail-cli apps bulk set-environment staging --env development
+levelrail-cli apps bulk delete --tag scratch
 ```
 
 Actions: `redeploy`, `restart`, `stop`, `start`, `add-tag`, `remove-tag`, `set-environment`, `move-to-project`, `delete`.
@@ -64,8 +64,8 @@ The MCP server exposes `bulk_apps` (mutating) and `bulk_delete_apps` (destructiv
 ## Clone an app
 
 ```bash
-levelrail apps clone web web-staging --preview
-levelrail apps clone web web-staging --domain-suffix stg --copy-secrets --environment env_abc
+levelrail-cli apps clone web web-staging --preview
+levelrail-cli apps clone web web-staging --domain-suffix stg --copy-secrets --environment env_abc
 ```
 
 A clone copies the image, port, command, plain env, secret names, vault references, replicas, strategy, resources, health checks, hooks, egress policy, volume definitions, and project.
@@ -78,8 +78,8 @@ A clone copies the image, port, command, plain env, secret names, vault referenc
 ## Promote a release
 
 ```bash
-levelrail apps promote web-staging --to env_prod --preview
-levelrail apps promote web-staging --to env_prod --include-env --confirm
+levelrail-cli apps promote web-staging --to env_prod --preview
+levelrail-cli apps promote web-staging --to env_prod --include-env --confirm
 ```
 
 The preview shows a diff before anything changes: image, replicas, resources, health, and the **names** (never values) of env keys that would be added, removed, or differ. Domains, ports, node placement, volumes and secret values are never touched. Applying promotes the source's deployed image reference to the destination and starts a deploy through the normal deploy path. With `--include-env`, env keys the source added or dropped are applied too; keys both apps have keep the destination's own value.
@@ -89,3 +89,18 @@ Guardrails:
 - Promoting into an environment named `production`, or any protected one, needs `--confirm`. Protected environments also go through deploy approval.
 - A source that is unhealthy or whose last deploy failed is refused. `--force` overrides.
 - Both apps get an audit log entry.
+
+## Related
+
+<CardGroup :cols="2">
+<Card title="Tags" href="/tags">
+
+Naming rules for the labels bulk actions select on.
+
+</Card>
+<Card title="Projects, organizations, and environments" href="/projects-and-organizations">
+
+Where environments live and how protection works.
+
+</Card>
+</CardGroup>

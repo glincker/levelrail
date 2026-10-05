@@ -109,7 +109,7 @@
       },
       {
         "title": "Observability and alerts",
-        "body": "Node-local metrics, full-text logs, crashloop detection and alerts across seventeen channels, all in the same binary.",
+        "body": "Node-local metrics, full-text logs, crashloop detection and alerts across 18 notification channel kinds, all in the same binary.",
         "link": {
           "text": "Observability",
           "href": "/observability"
@@ -204,7 +204,7 @@
       {
         "heading": "Why it stays this way",
         "paragraphs": [
-          "Levelrail has one edition by design. Features that other platforms reserve for paid tiers, such as SSO, audit logging and fine-grained roles, ship in the same free binary. The comparison page explains where that differs from other projects, and notes that their plans change over time."
+          "Levelrail has one edition by design. Features such as SSO, audit logging and fine-grained roles ship in the same free binary. The comparison page covers how Levelrail differs from other projects and notes that their plans change over time."
         ]
       }
     ],

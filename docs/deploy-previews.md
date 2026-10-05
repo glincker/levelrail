@@ -20,8 +20,6 @@ flowchart TD
   ShotOk -->|no, e.g. auth_wall, timeout| Skipped["No preview, reason recorded"]
 ```
 
-
-
 | Mode | What it does | Cost |
 | --- | --- | --- |
 | `off` | No preview. | None. |
@@ -32,17 +30,26 @@ New apps start in the server's default mode, `metadata`. Nothing runs while idle
 
 ## Choose a mode
 
-Open the app, then **Deploy settings**, then **Deploy previews**, and pick a mode. Or use the CLI:
+<Tabs :items="['UI','CLI']">
+<Tab value="UI">
+
+Open the app, then **Deploy settings**, then **Deploy previews**, and pick a mode.
+
+</Tab>
+<Tab value="CLI">
 
 ```bash
-levelrail preview enable web --mode metadata
-levelrail preview enable web --mode screenshot --path /pricing
-levelrail preview disable web
-levelrail preview status web
-levelrail preview capture web
+levelrail-cli preview enable web --mode metadata
+levelrail-cli preview enable web --mode screenshot --path /pricing
+levelrail-cli preview disable web
+levelrail-cli preview status web
+levelrail-cli preview capture web
 ```
 
-`preview enable` without `--mode` means `screenshot`, as `enabled: true` always did. The next successful deploy gets a thumbnail. **Recapture** in deploy history (or `levelrail preview capture`) redoes the current release on demand. Each thumbnail carries a badge saying where it came from: Screenshot, Site image or Card.
+</Tab>
+</Tabs>
+
+`preview enable` without `--mode` means `screenshot`, as `enabled: true` always did. The next successful deploy gets a thumbnail. **Recapture** in deploy history (or `levelrail-cli preview capture`) redoes the current release on demand. Each thumbnail carries a badge saying where it came from: Screenshot, Site image or Card.
 
 ## What the metadata mode does
 
@@ -76,16 +83,7 @@ A capture takes 2 to 15 seconds after the first one. It runs one at a time acros
 
 Screenshot captures are skipped, with the reason recorded, when the host has less than 768 MB of free memory or less than 2 GB of free disk. The metadata mode is not gated on either, because it needs neither.
 
-### Screenshot browser benchmark
-
-The screenshot tier uses `chromedp/headless-shell` (pinned). To see whether a smaller browser was worth shipping, a Chromium-only route was tried on 2026-09-26 as a time-boxed experiment, on Docker Desktop for macOS (Linux arm64 VM, 8 GB) with one trivial local page:
-
-- The Brotli `chromium` build from the `Sparticuz/chromium` releases (v153.0.0, arm64) is a 68,249,600 byte download that unpacks to a 199 MB binary, plus about 25 MB of SwiftShader libraries and 4 MB of support libraries.
-- It runs in a `debian:12-slim` image. It needed `socat` (the new headless mode ignores `--remote-debugging-address`, so the debug port is only on the container's loopback) and its bundled font config points at AWS Lambda paths, so no text rendered until the fonts were copied to `/opt/fonts`. Both are fixed in the test image.
-- With those fixes the existing CDP client took a correct screenshot. Start to screenshot took 1.2 seconds against 1.7 seconds for `headless-shell` (one run each, so treat the gap as noise).
-- Docker reported the image at 133,293,451 bytes against 146,147,349 for `headless-shell` on the same machine: about 9 percent smaller, not the 50 to 65 MB the binary alone suggests, because the base image, libraries and fonts make up the rest.
-
-That is not enough to justify a second browser code path, an extra image build to maintain and the Lambda-specific workarounds, so it was not shipped. To use your own smaller image, point `APP_PREVIEW_IMAGE` at it: it must expose the DevTools port on 9222 like `headless-shell` does. Memory was sampled once with `docker stats` after the screenshot (about 53 MiB for the Chromium route, about 85 MiB for `headless-shell`), which is not a peak, so no memory claim is made.
+To use a different browser image, point `APP_PREVIEW_IMAGE` at it. It must expose the DevTools port on 9222 like `headless-shell` does.
 
 ## Privacy
 
@@ -128,7 +126,7 @@ These rules apply to every source alike: screenshots, site images and cards.
 - Previews are deleted when the app is deleted.
 - Every capture container carries a role label. On startup and every hour, any older than twice the capture timeout (left by a crash) is removed.
 - The browser image is removed after 14 idle days, or at the next cleanup pass once the server switch is off, but only if this control plane pulled it and no container uses it. An image you pulled yourself is never touched.
-- **Prune now** (or `levelrail preview prune <app>`) applies these rules immediately. `--all` deletes every preview of the app.
+- **Prune now** (or `levelrail-cli preview prune <app>`) applies these rules immediately. `--all` deletes every preview of the app.
 
 ## Settings
 

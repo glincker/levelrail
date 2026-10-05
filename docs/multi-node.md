@@ -6,7 +6,9 @@ description: Enroll additional nodes, manage placement and health, migrate apps 
 
 Everything on this page is optional. A fresh install runs entirely on the control plane's own local node, and nothing here has to be touched to make it work.
 
-A second node is something you add when one box runs out of room, when you want to isolate builds from production containers, or when you want a dedicated database host - not something the platform makes you think about on day one.
+A second node is something you add when one box runs out of room, when you want to isolate builds from production containers, or when you want a dedicated database host. The platform never makes you think about it on day one.
+
+<InlineToc default-open />
 
 ::: tip Ingress listens on the control-plane node and reaches workers over the mesh
 The embedded Caddy ingress ([Domains and ingress](domains-and-ingress.md)) runs in the control plane's own process. A worker node has **no public listener**: nothing is bound to 80/443 there. When the WireGuard mesh is up, the ingress reaches an app on a worker through that node's mesh address, so its domains and its `<app>.<ip>.sslip.io` hostname work with normal TLS. See [Routing to apps on remote nodes](#routing-to-apps-on-remote-nodes).
@@ -31,11 +33,11 @@ This shows up in three ways:
 
 ## Enrolling a second node
 
-Enrollment uses a one-time join token exchanged for a client certificate (the agent dials out to the control plane; the control plane never initiates a connection).
+Enrollment exchanges a one-time join token for a client certificate. The agent dials out to the control plane, and the control plane never initiates a connection. For a cloud server created for you, see [Node provisioning](node-provisioning.md). To have the control plane set up a machine over SSH, see [Enrolling over SSH](#enrolling-over-ssh-instead-of-by-hand).
 
-Before enrolling a real (non-local) node, set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP a remote agent will actually use in `APP_CONTROL_PLANE_ADDR`. It defaults to `127.0.0.1`, which only ever matches a local, single-machine test. With a mismatched value, enrollment itself still succeeds (the initial certificate exchange pins by CA fingerprint, not hostname) and the node appears in `nodes list`, but its persistent session then fails TLS hostname verification on every connection attempt, and the node stays stuck at `status: pending` forever instead of flipping to `online`.
-
-### Enrollment flow
+::: warning Set the advertise host first
+Before enrolling a real (non-local) node, set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP the remote agent will use in `APP_CONTROL_PLANE_ADDR`. It defaults to `127.0.0.1`, which only matches a single-machine test. With a mismatch, enrollment still succeeds (the first certificate exchange pins the CA fingerprint, not the hostname) and the node appears in `nodes list`, but its persistent session then fails TLS hostname verification on every attempt and the node stays `pending` forever.
+:::
 
 ```mermaid
 graph LR
@@ -46,26 +48,38 @@ graph LR
     E --> F["Node<br/>online"]
 ```
 
-### Step 1: Mint a join token
+<Steps>
+<Step title="Mint a join token">
 
-::: code-group
-```bash [CLI]
+<Tabs :items="['Dashboard', 'CLI', 'API']">
+<Tab value="Dashboard">
+
+Open the Nodes page and click **Add node**.
+
+</Tab>
+<Tab value="CLI">
+
+```bash
 levelrail-cli nodes join-token
 ```
 
-```text [Dashboard]
-Navigate to the Nodes page and click "Add node"
+</Tab>
+<Tab value="API">
+
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  https://control-plane.example.com/api/v1/nodes/join-tokens
 ```
-:::
 
-This calls `POST /api/v1/nodes/join-tokens`:
-- Token is valid for 15 minutes.
-- Returned in plaintext exactly once. Server only stores its hash.
-- If expired unused, mint a new one. There is no renewal.
+</Tab>
+</Tabs>
 
-### Step 2: Run the agent on the new machine
+The token is valid for 15 minutes and is returned in plaintext exactly once, because the server stores only its hash. If it expires unused, mint a new one. Tokens cannot be renewed.
 
-The agent image runs as root on purpose: it drives `/var/run/docker.sock` (which is root-equivalent on the host anyway) and, for the mesh, creates a WireGuard device. Because of that, a host directory that Docker creates for the identity file (root-owned) just works.
+</Step>
+<Step title="Run the agent on the new machine">
+
+The agent image runs as root on purpose: it drives `/var/run/docker.sock`, which is root-equivalent on the host anyway, and it creates a WireGuard device for the mesh. That also means a root-owned host directory for the identity file just works.
 
 ```bash
 sudo mkdir -p /var/lib/levelrail-agent-data && sudo chmod 700 /var/lib/levelrail-agent-data
@@ -80,9 +94,9 @@ docker run -d --name levelrail-agent --restart unless-stopped --network host \
   ghcr.io/glincker/levelrail-agent:beta
 ```
 
-Add `--user 0:0` if you are running an image older than `v0.2.0-beta.16`, which defaulted to a non-root user that could not write into a root-owned directory.
+Add `--user 0:0` for images older than `v0.2.0-beta.16`, which defaulted to a non-root user that could not write into a root-owned directory.
 
-Without Docker for the agent itself, install the `.deb` or `.rpm` attached to releases after `v0.2.0-beta.15` (see [Docker: without a container](docker.md#without-a-container)), or run the plain binary as root:
+Without Docker for the agent itself, install the `.deb` or `.rpm` attached to releases after `v0.2.0-beta.15` (see [Docker: without a container](docker.md#without-a-container)), or run the binary as root. `v0.2.0-beta.15` has no agent binary asset, so use the image or a later release.
 
 ```bash
 sudo APP_CONTROL_PLANE_ADDR=controlplane.example.com:9443 \
@@ -92,70 +106,76 @@ APP_AGENT_IDENTITY_FILE=/var/lib/levelrail-agent/identity.json \
 ./levelrail-agent-linux-amd64
 ```
 
-The `v0.2.0-beta.15` release has no agent binary asset: use the image, or a later release.
+| Variable | Meaning |
+| --- | --- |
+| `APP_CONTROL_PLANE_ADDR` | `host:port` of the control plane's agent gRPC listener. Required. |
+| `APP_JOIN_TOKEN` | The token from step 1. Single use. |
+| `APP_CA_FINGERPRINT` | The control plane's CA fingerprint, shown next to the token. Recommended: the agent then refuses to enroll, and never sends the token, unless the control plane's certificate chains to this CA. Without it, the agent trusts whatever answers at the address on first use. |
+| `APP_NODE_NAME` | Optional. Defaults to the machine hostname. |
+| `APP_AGENT_IDENTITY_FILE` | Where to save the identity, mode `0600`. Default `./levelrail-agent-identity.json`. |
 
-**The agent checks that the identity directory is writable before it sends the join token.** If it is not, it exits with a message naming the directory and tells you the token was not used, so you can fix the permissions and start it again with the same token. (Older agents sent the token first, failed to save the identity, and left a pending node with a spent token.)
+On first run the agent generates its own private key, sends only a certificate signing request with the join token, and saves the signed certificate, its key and the control plane's CA certificate locally. The private key never leaves the machine. On later runs it skips enrollment and reconnects with the saved certificate, which it renews on its own (see [Agent certificates](#agent-certificates-renewal-and-re-enrollment)).
 
-**Environment variables:**
-- `APP_CONTROL_PLANE_ADDR`: Control plane gRPC listener (default `:9443`).
-- `APP_JOIN_TOKEN`: The token from step 1 (single-use).
-- `APP_CA_FINGERPRINT`: The control plane's CA fingerprint, shown next to the token in step 1. Recommended: the agent refuses to enroll (and never sends the token) unless the control plane's certificate chains to this CA. Without it, the agent trusts whatever answers at `APP_CONTROL_PLANE_ADDR` on first use.
-- `APP_NODE_NAME`: Optional, defaults to machine hostname.
-- `APP_AGENT_IDENTITY_FILE`: Where to save the identity (default `./levelrail-agent-identity.json`, mode `0600`).
+The agent checks that the identity directory is writable before it sends the token. If it is not, it exits naming the directory and says the token was not used, so you can fix permissions and start again with the same token.
 
-**On first run:** The agent generates its own private key, sends only a certificate signing request with the join token, and persists the signed certificate, its key and the control plane's CA cert locally. The private key never leaves the machine.
-
-**On subsequent runs:** The agent skips enrollment and reconnects using the saved certificate, which it renews on its own (see [Agent certificates](#agent-certificates-renewal-and-re-enrollment)). The join token is single-use.
-
-### Step 3: Confirm it registered
+</Step>
+<Step title="Confirm it registered">
 
 ```bash
 levelrail-cli nodes list
 ```
 
-The node appears the moment enrollment is saved, with `status: pending` until its first heartbeat (then flips to `online`).
+The node appears as soon as enrollment is saved, with `status: pending` until its first heartbeat, then `online`.
 
-A node that stays `pending` for more than five minutes (`APP_NODE_PENDING_STALE_AFTER`) is flagged "Never connected" in the dashboard's Nodes list and detail page, and `levelrail-cli nodes list` prints `pending (never connected)` with the next step. It means the join token was spent but the agent never opened a session, so the token cannot be retried. Check the agent logs on the host, fix the cause (usually an unwritable identity directory or a wrong `APP_AGENT_ADVERTISE_HOST`), then delete the node (`levelrail-cli nodes delete <id>`) and enrol again with a new join token.
+A node `pending` for more than five minutes (`APP_NODE_PENDING_STALE_AFTER`) is flagged "Never connected" in the dashboard, and `nodes list` prints `pending (never connected)` with the next step. The token was spent but the agent never opened a session, so it cannot be retried. Check the agent logs on the host and fix the cause (usually an unwritable identity directory or a wrong `APP_AGENT_ADVERTISE_HOST`), then delete the node with `levelrail-cli nodes delete <id>` and enroll again with a new token.
 
-### Step 4: Use it for placement
+</Step>
+<Step title="Use it for placement">
 
-Once connected, it is a normal placement target:
-- Pick it in the app or database create form's node picker.
-- Move an existing resource onto it.
-- Let auto-placement send new resources there.
+Once connected, the node is a normal placement target. Pick it in an app or database create form, move an existing resource onto it, or let [auto-placement](#simple-spread-placement-auto-placement) send new resources there.
 
-**Build workloads:** A node accepts app workloads by default but not build workloads. Explicitly enable `accepts_build_workloads` to dispatch builds there.
+A node accepts app workloads by default but not build workloads. See [Build node routing](build-node-routing.md) to enable builds.
+
+</Step>
+</Steps>
 
 ## Enrolling over SSH instead of by hand
 
 Steps 1 and 2 above can be automated: instead of minting a token and running the agent command yourself on the new machine, the control plane can SSH into it and do both for you.
 
-::: code-group
-```bash [CLI]
+<Tabs :items="['Dashboard', 'CLI']">
+<Tab value="Dashboard">
+
+Nodes page, **Add node**, then **Connect over SSH**.
+
+</Tab>
+<Tab value="CLI">
+
+```bash
 levelrail-cli nodes ssh-provision \
   --host 192.0.2.10 --user root --key-file ~/.ssh/id_ed25519 \
   --name home-server --control-plane-addr controlplane.example.com:9443
 ```
 
-```text [Dashboard]
-Nodes page -> "Add node" -> "Connect over SSH"
-```
-:::
+Use `--password` instead of `--key-file` for password auth (prompted without echo), `--port` for a non-default SSH port, and `--role build` for a build node.
 
-`POST /api/v1/nodes/ssh-provision` accepts a host, port (default 22), username, and either a private key (optionally passphrase-protected) or a password. It mints a join token the same way step 1 does, then in the background:
+</Tab>
+</Tabs>
+
+`POST /api/v1/nodes/ssh-provision` accepts a host, port (default 22), username, and either a private key (optionally passphrase-protected) or a password. It mints a join token the same way, then works in the background:
 
 1. Connects over SSH and detects the OS, kernel architecture, and whether Docker and systemd are already present. Only Linux with systemd is supported (the same requirement `install.sh` has); an unsupported host fails here with a clear reason before anything is changed.
 2. Installs Docker via `get.docker.com` if it's missing.
-3. Writes the agent's environment file and a systemd unit, then enables and starts it, the same shell steps cloud-init runs on a freshly created VM (see `docs/node-provisioning.md`), just executed directly over the SSH session instead of embedded in a cloud-init document.
+3. Writes the agent's environment file and a systemd unit, then enables and starts it, the same steps cloud-init runs on a freshly created VM (see [Node provisioning](node-provisioning.md)), executed over the SSH session instead.
 4. Confirms the service actually stays active, surfacing the last `journalctl` lines as the failure reason if it doesn't.
 
-The SSH credential (key or password) is held only in memory for this one call and is never written to the database or logged; the join token itself is written to a root-only (`0600`) environment file on the target host, the same handling `docs/node-provisioning.md`'s cloud-init path already uses and documents.
+The SSH credential (key or password) is held only in memory for this one call and is never written to the database or logged; the join token itself is written to a root-only (`0600`) environment file on the target host, the same handling the cloud-init path uses.
 
 Poll progress with `GET /api/v1/ssh-node-provisions/{id}` (CLI: `nodes ssh-provisions show <id>`), which also carries the accumulated install log and the detected OS/architecture. Status moves through `connecting` -> `detecting` -> `installing` -> `enrolling` -> `ready`, or `failed` with a reason. The dashboard wizard's SSH step shows the same stages plus a live log tail.
 
-### Known limitation: no host key verification
-
-There is no `known_hosts` store or trust-on-first-use pinning for an operator's own arbitrary machine yet: the client accepts whatever host key the target presents. This is a real gap versus a properly pinned SSH client, not an oversight; the mitigation is the same one this feature's own credential handling relies on, that the operator is connecting to a machine they already control, over a network path they already trust enough to type a password or paste a key into.
+::: warning No host key verification
+There is no `known_hosts` store or trust-on-first-use pinning yet: the client accepts whatever host key the target presents. Use this only against a machine you control, over a network path you trust enough to type a password or paste a key into.
+:::
 
 ## Node health and heartbeat
 
@@ -165,11 +185,11 @@ A connected agent sends an unprompted `Heartbeat` frame up its Session stream at
 
 The connection also carries an HTTP/2 PING keepalive in both directions (`APP_NODE_KEEPALIVE_TIME`/`APP_NODE_KEEPALIVE_TIMEOUT`, default 10s/10s on the control plane; the agent mirrors this with its own env vars of the same name). A process that stops running entirely, frozen or deadlocked rather than exited, cannot answer a PING any more than it can send a Heartbeat frame, so gRPC tears the connection down from underneath it, well within the timeout below, without waiting on the reconcile pass at all.
 
-**Graceful disconnect:** Agent process exits cleanly, node flips to `offline` immediately.
+**Graceful disconnect.** The agent process exits cleanly and the node flips to `offline` immediately.
 
-**Hard disconnect (clean, no keepalive):** No clean gRPC closure, so the control plane doesn't notice via the stream itself. The `internal/reconcile/nodehealth.Controller` detects this: every reconcile pass compares `last_seen_at` against `APP_NODE_HEARTBEAT_TIMEOUT` (default 45 seconds). If a node is past the timeout and still marked `online`, the controller flips it to `offline` and records a `Heartbeat` condition explaining why.
+**Hard disconnect.** With no clean gRPC close, the control plane does not notice through the stream. The `internal/reconcile/nodehealth` controller compares `last_seen_at` against `APP_NODE_HEARTBEAT_TIMEOUT` (default 45 seconds) on every pass. A node past the timeout that is still `online` is flipped to `offline`, with a `Heartbeat` condition explaining why.
 
-**Hard disconnect (frozen process, e.g. `SIGSTOP`):** The TCP/TLS connection can stay technically open indefinitely with nothing to close it. The keepalive PING above is the backstop for exactly this: the transport itself notices the peer stopped responding and ends the connection, which then follows the same path as any other hard disconnect (the node's `Status` update happens as soon as `Session` returns, without needing to wait for `nodehealth`'s own timeout).
+**Frozen process (for example `SIGSTOP`).** The TCP and TLS connection can stay open indefinitely. The keepalive PING is the backstop: the transport notices the peer stopped responding and ends the connection, which then follows the hard-disconnect path without waiting for the timeout.
 
 ### Checking node health
 
@@ -188,7 +208,7 @@ This calls `GET /api/v1/nodes/{id}/health`:
 
 The control plane's own local node uses the same health system: it heartbeats itself rather than through gRPC. It is never permanently `online` by fiat.
 
-**Note on cordoning:** `cordoned` is a defined status but nothing sets it. Cordon is tracked as a separate boolean field (`schedulable`). A node can be `online` and cordoned, or `offline` and schedulable.
+**Cordoning and status.** Cordon is tracked as a separate `schedulable` flag, not a status value. A node can be `online` and cordoned, or `offline` and schedulable.
 
 ## Agent certificates: renewal and re-enrollment
 
@@ -286,15 +306,12 @@ Effects:
 
 ## Viewing what's placed on a node
 
-There is no dedicated "workloads on this node" list endpoint yet. What exists instead:
+There is no dedicated "workloads on this node" list. These show it indirectly:
 
-**Dashboard app and database detail pages:** Show `node_id` directly with a move-to-node control next to it.
-
-**Drain preview:** Running a drain (or deleting a node) enumerates everything on the node server-side. This is why deleting a node with placements fails loudly rather than silently orphaning them.
-
-**Node metrics:** Report a `resource_count` - how many placed services contributed a sample in the queried time range. A rough live signal of occupancy without being a real inventory.
-
-A dedicated "list everything placed on node X" endpoint is scope for a future release (see Not built yet).
+- **Network page and `levelrail-cli nodes topology`:** every node with the apps and databases placed on it. See [Network topology](network-topology.md).
+- **App and database detail pages:** show `node_id`, with a move-to-node control next to it.
+- **Node metrics:** `resource_count` is how many placed services contributed a sample in the queried range, a rough occupancy signal.
+- **Drain and delete:** both enumerate everything on the node server-side, which is why deleting a node with placements fails instead of orphaning them.
 
 ## Node-level metrics
 
@@ -328,7 +345,7 @@ Databases placed on a node are excluded from the sum (only app services are incl
 levelrail-cli nodes resource-usage
 ```
 
-`GET /api/v1/nodes/resource-usage` is the fleet-wide counterpart to the per-node time series above: one snapshot with every node's latest CPU/memory/disk reading plus a rollup, read by the node list's CPU/Memory/Disk columns and the dashboard's fleet summary card. Same summed-not-host-read caveat for CPU/memory, same real-host-read caveat for disk (today, only ever populated for the node running the control plane). See `docs/observability.md`'s "Fleet utilization" section for the full response shape.
+`GET /api/v1/nodes/resource-usage` is the fleet-wide counterpart to the per-node time series above: one snapshot with every node's latest CPU/memory/disk reading plus a rollup, read by the node list's CPU/Memory/Disk columns and the dashboard's fleet summary card. The same caveats apply: CPU and memory are summed from containers, and disk is a real host reading that today is populated only for the node running the control plane. See [Observability](observability.md) for the response shape. `levelrail-cli nodes capacity-forecast <id>` projects when disk or memory runs out.
 
 ## OS patch status
 
@@ -336,29 +353,29 @@ levelrail-cli nodes resource-usage
 levelrail-cli nodes patch-status <id>
 ```
 
-`GET /api/v1/nodes/{id}/patch-status` reads the latest patch sample from `HostPatchCollector`.
-
-### Connection history
-
-Every node status change (online, offline, cordoned) is recorded, the newest 200 per node. See it on the node detail page's "Connection history" card, or from the CLI:
-
-```
-levelrail-cli nodes events <id> [--limit N]
-```
-
-`GET /api/v1/nodes/{id}/events?limit=N` returns the same list, newest first.
+`GET /api/v1/nodes/{id}/patch-status` reads the latest OS patch sample.
 
 **Collection details:**
 - Interval: `APP_OS_PATCH_CHECK_INTERVAL` (default 1 hour).
-- Lookback: Up to 48 hours (handles slow or just-restarted collectors).
+- Lookback: up to 48 hours, which covers slow or just-restarted collectors.
 
-**Response states (keep distinct):**
+**Response states:**
 
 - `checked: false` - No sample yet, no supported package manager detected, or collector hasn't run.
 - `checked: true, total: 0` - Genuinely up to date.
 - `checked: true, total: N` - Updates available, with a separate `security` count (the number worth acting on urgently).
 
 **Dashboard:** Rendered as a single status badge (not a chart), since it's one current fact, not a time series.
+
+## Connection history
+
+Every node status change (online, offline, cordoned) is recorded, the newest 200 per node. See it on the node detail page's "Connection history" card, or from the CLI:
+
+```bash
+levelrail-cli nodes events <id> [--limit N]
+```
+
+`GET /api/v1/nodes/{id}/events?limit=N` returns the same list, newest first.
 
 ## Simple spread placement (auto-placement)
 
@@ -372,11 +389,11 @@ When you create an app or database without specifying a node, the server decides
 
 **GPU apps:** a new app with `resources.gpu` is only auto-placed on a node with a working nvidia runtime and enough free GPUs (least loaded among those), falling back to the local host if it fits. If none fits, the create is refused with `409` and the reason per node; pass `node_id` to override. See [GPU scheduling](ai-models.md#gpu-scheduling).
 
-**Important:** This is simple spread counting, not bin-packing. It counts resources only, never CPU, memory, or disk headroom. See CLAUDE.md non-goals for v1.
+**Important:** This is simple spread counting, not bin-packing. It counts resources only, never CPU, memory, or disk headroom.
 
 **Explicit placement:** An explicit `node_id` (or explicit empty string meaning "local, on purpose") always overrides auto-placement and is validated against cordoned/unknown-node checks.
 
-**Dashboard visibility:** Create responses carry `auto_placed: true` with the `node_id` picked. A toast shows "Auto-placed on node ... (simple spread scheduling)" so it's never a silent decision.
+**Dashboard visibility:** Create responses carry `auto_placed: true` with the `node_id` picked. A toast shows "Auto-placed on node ... (simple spread scheduling)" so it is never a silent decision.
 
 ## Moving an app with its volumes
 
@@ -416,19 +433,17 @@ This is not atomic. If any step fails, the app is left suspended (stopped). `nod
 
 ## WireGuard mesh and internal DNS
 
-This section has two parts: what works today (viewing mesh status, key rotation on the control plane's node), and the incomplete multi-node arm that keeps the design scoped.
-
 ### Why it needs to exist
 
 An app's database connection string is baked into container environment at creation time. When a database moves to another node, the string doesn't rewrite itself.
 
-Solution: Use DNS names from the start. The name resolves to wherever the service currently lives. `internal/reconcile/mesh` keeps that mapping current: every pass it reads node and placement data, distributes WireGuard configuration, and rebuilds the internal DNS zone (`<brand-short-name>.internal`, e.g., `levelrail.internal`).
+The fix is to use DNS names from the start. The name resolves to wherever the service currently lives. `internal/reconcile/mesh` keeps that mapping current: every pass it reads node and placement data, distributes WireGuard configuration, and rebuilds the internal DNS zone (`<brand-short-name>.internal`, e.g., `levelrail.internal`).
 
 When mesh is enabled, database env vars (like `DATABASE_URL` or any field from an app.yaml `{ from: postgres.main.url }` reference) automatically resolve to the database's mesh DNS name, allowing an app on one node to connect to a database on another node. Without mesh, they resolve to the database container's Docker name, reachable only within that node's own Docker network. This happens automatically: no app-side changes needed when mesh is enabled.
 
-### What works today
+### Enabling the mesh on the control plane
 
-Enable with `APP_MESH_ENABLED=1` (default: off). Non-fatal to misconfigure, the control plane still starts if mesh setup fails.
+Set `APP_MESH_ENABLED=1` (default: off). A mesh setup failure is logged and the control plane still starts.
 
 This brings up:
 - The control plane's own WireGuard device, interface, and mesh address.
@@ -452,16 +467,23 @@ Without port 53, containers fall back to Docker's embedded resolver. Mesh failur
 
 Check the control plane's live WireGuard mesh state, interface details, and every peer:
 
-::: code-group
-```bash [CLI]
+<Tabs :items="['CLI', 'API']">
+<Tab value="CLI">
+
+```bash
 levelrail-cli nodes mesh
 ```
 
-```bash [API]
+</Tab>
+<Tab value="API">
+
+```bash
 curl -H "Authorization: Bearer $TOKEN" \
   https://control-plane.example.com/api/v1/mesh
 ```
-:::
+
+</Tab>
+</Tabs>
 
 **Output includes:**
 - Backend: `kernel` (WireGuard kernel module), `userspace` (wireguard-go fallback), or `disabled`.
@@ -473,33 +495,38 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 A peer with `live: false` is registered in the node inventory but the mesh device has no live entry yet (the reconciler has not reached it this pass, or peering hasn't converged yet).
 
-### Rotating the control plane's mesh key
+### Rotating a node's mesh key
 
-Generate a fresh WireGuard keypair for the control plane's node and make it the live mesh identity immediately:
+Generate a fresh WireGuard keypair for a node and make it that node's live mesh identity immediately. This works for any node with a live session, local or remote.
 
-::: code-group
-```bash [CLI]
-levelrail-cli nodes rotate-key <local-node-id>
+<Tabs :items="['CLI', 'API']">
+<Tab value="CLI">
+
+```bash
+levelrail-cli nodes rotate-key <node-id>
 ```
 
-```bash [API]
+</Tab>
+<Tab value="API">
+
+```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
-  https://control-plane.example.com/api/v1/nodes/<local-node-id>/mesh/rotate-key
+  https://control-plane.example.com/api/v1/nodes/<node-id>/mesh/rotate-key
 ```
-:::
 
-**What it does:**
-- Generates a fresh keypair immediately.
-- Updates the local node's mesh entry with the new public key.
-- The mesh reconciler propagates the new key to every peer on its next pass.
-- Watch `levelrail-cli nodes mesh` and its `rotation` field to see when every reachable peer has caught up.
-- A brief reconnect blip on mesh traffic is possible until all peers have the new key.
+</Tab>
+</Tabs>
 
-**Limitation:** Only the node running the control plane itself can be rotated today. Rotating a remote node returns HTTP `501` (not implemented). The agent-side wire extension for remote key rotation does not exist yet, but is scoped future work.
+- The new public key is recorded and the mesh reconciler propagates it to every peer on its next pass.
+- Watch the `rotation` field in `levelrail-cli nodes mesh` to see when every reachable peer has caught up. A brief reconnect blip on mesh traffic is possible until then.
+- A remote node with no live agent session fails the rotation.
+- Both routes return `501` when mesh networking is not enabled on the control plane.
+
+If a peer looks stuck, `levelrail-cli nodes rejoin-mesh <node-id>` (`POST /api/v1/nodes/{id}/mesh/rejoin`) forces an immediate mesh reconcile. It is a fleet-wide resync, not a per-node operation.
 
 ### Multi-node mesh requirements
 
-The agent-side mesh arm exists: the control plane sends `ApplyMesh` and `RotateMeshKey` requests to each enrolled agent, and the agent applies them to its own WireGuard device when started with `APP_MESH_ENABLED=1`. It has been exercised against fakes and a single host with a real TUN device, so treat cross-host mesh as lightly proven. What it needs:
+The control plane sends `ApplyMesh` and `RotateMeshKey` requests to each enrolled agent, and the agent applies them to its own WireGuard device when started with `APP_MESH_ENABLED=1`. This has been exercised against fakes and a single host with a real TUN device, not between two real hosts, so treat cross-host mesh as lightly proven. It needs:
 
 - **Privileges on every agent:** run as root with `--cap-add NET_ADMIN --device /dev/net/tun -e APP_MESH_ENABLED=1` (the image already runs as root). Nothing else: no extra sysctls, and no `ip` binary (addresses and routes are set with direct kernel calls, so the minimal agent image works). Without these the agent keeps serving containers and logs `mesh networking disabled on this node`. Nodes enrolled through the dashboard's SSH or cloud provisioning flows get all of this automatically when the control plane itself runs with `APP_MESH_ENABLED=1`.
 - **The control plane is the hub:** agents send WireGuard handshakes to `APP_AGENT_ADVERTISE_HOST` on UDP `51820`. Set that variable to the control plane's public host (it already has to be, for enrolment), and allow **inbound UDP 51820** on the control plane's firewall and cloud security group. A loopback advertise host leaves agents with no endpoint (`no known endpoint for peer`); `levelrail-cli doctor` reports this as `mesh_hub_endpoint`.
@@ -543,7 +570,11 @@ This does not move databases or app streams onto the mesh, and auto-placement st
 | `GET` | `/api/v1/nodes/{id}` | `root` |
 | `DELETE` | `/api/v1/nodes/{id}` | `root` |
 | `PUT` | `/api/v1/nodes/{id}/workloads` | `root` |
+| `PUT` | `/api/v1/nodes/{id}/region` | `root` |
 | `POST` | `/api/v1/nodes/join-tokens` | `root` |
+| `POST` | `/api/v1/nodes/provision` | `root` |
+| `GET` | `/api/v1/node-provisions` | `root` |
+| `GET` | `/api/v1/node-provisions/{id}` | `root` |
 | `POST` | `/api/v1/nodes/ssh-provision` | `root` |
 | `GET` | `/api/v1/ssh-node-provisions` | `root` |
 | `GET` | `/api/v1/ssh-node-provisions/{id}` | `root` |
@@ -555,6 +586,10 @@ This does not move databases or app streams onto the mesh, and auto-placement st
 | `GET` | `/api/v1/nodes/{id}/patch-status` | `root` |
 | `GET` | `/api/v1/nodes/{id}/events` | `root` |
 | `POST` | `/api/v1/nodes/{id}/mesh/rotate-key` | `root` |
+| `POST` | `/api/v1/nodes/{id}/mesh/rejoin` | `root` |
+| `GET` | `/api/v1/nodes/resource-usage` | `root` |
+| `GET` | `/api/v1/nodes/{id}/capacity-forecast` | `root` |
+| `GET` | `/api/v1/network/topology` | `read` |
 | `POST` | `/api/v1/nodes/{id}/reenroll-token` | `root` (scoped to `node:{id}`) |
 | `POST` | `/api/v1/nodes/{id}/revoke-cert` | `root` (scoped to `node:{id}`) |
 | `GET` | `/api/v1/mesh` | `root` |
@@ -563,15 +598,7 @@ This does not move databases or app streams onto the mesh, and auto-placement st
 | `GET` | `/api/v1/apps/{name}/moves` | `read` |
 | `GET` | `/api/v1/apps/{name}/moves/{id}` | `read` |
 
-Every node route requires the `root` ability specifically, not `read`
-or `write`: node management is treated as control-plane-level
-administration, not per-resource access. `GET /api/v1/nodes/{id}` also
-carries an `alert_status` field when telemetry is configured, a live
-re-evaluation of that node's patch-status/disk-space/resource-usage
-alert standing, not a stored value. The two app-scoped placement routes
-sit at the same `root` tier for the identical reason:
-`move-with-volumes` is both a placement change and an in-place,
-full-overwrite restore of every named volume.
+Node routes require the `root` ability, not `read` or `write`, because node management is control-plane administration. `GET /api/v1/nodes/{id}` also carries an `alert_status` field when telemetry is configured, a live re-evaluation of that node's patch status, disk space and resource usage alerts. `PUT /api/v1/apps/{name}/node` and `move-with-volumes` are also `root`, because `move-with-volumes` changes placement and does a full-overwrite restore of every named volume.
 
 ## CLI
 
@@ -582,6 +609,9 @@ levelrail-cli nodes delete <id> [flags]
 levelrail-cli nodes join-token [flags]
 levelrail-cli nodes ssh-provision --host ADDR --user NAME (--key-file PATH | --password) --name NAME [flags]
 levelrail-cli nodes ssh-provisions list|show <id> [flags]
+levelrail-cli nodes providers list|set-credential [flags]
+levelrail-cli nodes provision --provider NAME --region ID --size ID --name NAME [flags]
+levelrail-cli nodes provisions list|show <id> [flags]
 levelrail-cli nodes cordon <id> [flags]
 levelrail-cli nodes uncordon <id> [flags]
 levelrail-cli nodes drain <id> [--target <node-id>] [flags]
@@ -589,8 +619,14 @@ levelrail-cli nodes workloads <id> --accepts-app=BOOL --accepts-build=BOOL [flag
 levelrail-cli nodes health <id> [flags]
 levelrail-cli nodes patch-status <id> [flags]
 levelrail-cli nodes metrics <id> --metric NAME [--since DURATION | --from TIME --to TIME] [--step DURATION] [flags]
+levelrail-cli nodes events <id> [--limit N] [flags]
+levelrail-cli nodes resource-usage [flags]
+levelrail-cli nodes capacity-forecast <id> [flags]
+levelrail-cli nodes topology [flags]
+levelrail-cli nodes traffic [flags]
 levelrail-cli nodes mesh [flags]
 levelrail-cli nodes rotate-key <id> [flags]
+levelrail-cli nodes rejoin-mesh <id> [flags]
 levelrail-cli nodes reenroll-token <id> [flags]
 levelrail-cli nodes revoke-cert <id> [flags]
 levelrail-cli apps set-node <name> <node-id> [--with-volumes] [flags]
@@ -609,48 +645,44 @@ levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 
 `nodes workloads` is a full replace of both flags, not a per-field patch.
 
-- Both `--accepts-app` and `--accepts-build` are required on every call.
-- Prevents accidentally leaving one unset and having it silently reset to `false`.
-- `accepts_build_workloads` opts a node into dedicated build placement.
-- New nodes accept app workloads by default but not build workloads (explicit enable required).
+Both `--accepts-app` and `--accepts-build` are required on every call, so one flag can never silently reset to `false`. See [Build node routing](build-node-routing.md) for what `accepts_build_workloads` does.
 
 ## See also
 
-- [Backups and storage](backups-and-storage.md) - Move app volumes to another node using the volume migration API
-- [Observability](observability.md) - Monitor per-node metrics, resource usage, and OS patch status
-- [Deploying apps](deploying-apps.md) - Place apps on specific nodes or use auto-placement
+<CardGroup :cols="2">
+<Card title="Node provisioning" href="/node-provisioning">
 
-## Not built yet (deliberate follow-ups)
+Create nodes at a cloud provider.
 
-::: details The WireGuard mesh does not span nodes yet
-`ConfigSink`'s gRPC arm is scoped but not built (wire contract change plus agent-side `Mesh.Apply`).
-Enabling `APP_MESH_ENABLED` today only wires up the control plane's own node; you can view its status and rotate its key.
-Remote nodes cannot be meshed until the agent-side wire extension lands.
-:::
+</Card>
+<Card title="Build node routing" href="/build-node-routing">
 
-::: details No dedicated "what's placed on this node" endpoint
-Closest alternatives: drain's resource enumeration, each resource's `node_id` field on its detail page.
-No single list endpoint or dashboard panel that answers "show me everything running here" directly.
-:::
+Choose which node runs builds.
 
-::: details No resource-aware scheduling
-Auto-placement and drain's auto-spread count placements only, never CPU, memory, or disk.
-Real bin-packing or affinity rules are an explicit v1 non-goal.
-:::
+</Card>
+<Card title="Backups and storage" href="/backups-and-storage">
 
-::: details No per-build placement policy beyond the capability flag
-`accepts_build_workloads` marks a node eligible.
-The dispatch logic in `internal/build.SelectBuildNode` is built, but no per-build policy exists yet.
-:::
+Move app volumes to another node.
 
-::: details No node-scoped change history
-Cordon, drain, or workload toggle are captured by the generic platform audit log (`GET /api/v1/audit-log`).
-No node-specific history view beyond that.
-:::
+</Card>
+<Card title="Observability" href="/observability">
 
-## See also
+Per-node metrics, resource usage and patch status.
 
-- [Getting started](getting-started.md) - Deploy your first app after initial setup
-- [Architecture](architecture.md) - How the agent, control plane, and reconciler work
-- [Deploying apps](deploying-apps.md) - How apps are placed and orchestrated across nodes
-- [Identity and access](identity-and-access.md) - Node management requires appropriate permissions
+</Card>
+</CardGroup>
+
+## Not built yet
+
+<AccordionGroup>
+<Accordion title="Resource-aware scheduling">
+
+Auto-placement and drain's auto-spread count placements only, never CPU, memory or disk. Bin-packing and affinity rules are a deliberate non-goal.
+
+</Accordion>
+<Accordion title="Node-specific change history">
+
+Cordon, drain and workload changes appear in the platform audit log (`GET /api/v1/audit-log`). Only connection events (online, offline, cordoned) have a per-node history view.
+
+</Accordion>
+</AccordionGroup>

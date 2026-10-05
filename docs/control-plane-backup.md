@@ -34,7 +34,7 @@ Snapshots here stay on the same disk as the database; see [disaster recovery](/d
 | | **Alert rules, notification channels, silences, maintenance windows and alert history**, which live in a separate `alerting.db` |
 
 ::: warning Alerting configuration is not in a backup yet
-`alerting.db` sits next to `levelrail.db` in the data directory and holds every alert rule, notification channel (with its webhook URL or key), silence and maintenance window. Neither the local snapshots nor the off-box encrypted backup include it, so a restore on a new machine comes back with apps and users but no alerts. Until that is fixed, copy it yourself on a schedule, for example `sqlite3 <data dir>/alerting.db ".backup '/safe/place/alerting.db'"` (safe while the control plane runs), and put it back, with the control plane stopped, after a restore. The file holds channel credentials in plain text, so treat the copy like `master.key`. Verified locally: a snapshot taken with `levelrail-cli control-plane-backups create` contained only `levelrail.db`.
+`alerting.db` sits next to `levelrail.db` in the data directory and holds every alert rule, notification channel (with its webhook URL or key), silence and maintenance window. Neither the local snapshots nor the off-box encrypted backup include it, so a restore on a new machine comes back with apps and users but no alerts. Until that is fixed, copy it yourself on a schedule, for example `sqlite3 <data dir>/alerting.db ".backup '/safe/place/alerting.db'"` (safe while the control plane runs), and put it back, with the control plane stopped, after a restore. The file holds channel credentials in plain text, so treat the copy like `master.key`.
 :::
 
 ::: warning The master key is never in a backup
@@ -70,7 +70,7 @@ The doctor check only helps when someone looks. To be notified instead, create a
 levelrail-cli apps alerts create <app> --name "Control plane backup stale" --kind control_plane_backup_stale --channel-id CHANNEL
 ```
 
-It fires once the newest snapshot is older than 3 days and sends a resolved notice after the next snapshot lands. Set `--for-duration` (for example `48h`) to change the maximum age. The rule is platform-wide (the app only decides where it is listed), stays quiet when `APP_CONTROL_PLANE_BACKUP_INTERVAL=0`, and also stays quiet before the first snapshot exists. The dashboard's alert rule dialog and the alerting quick setup prompt offer it too. See [observability](/observability#alerting).
+It fires once the newest snapshot is older than 3 days and sends a resolved notice after the next snapshot lands. Set `--for-duration` (for example `48h`) to change the maximum age. The rule is platform-wide (the app only decides where it is listed), stays quiet when `APP_CONTROL_PLANE_BACKUP_INTERVAL=0`, and also stays quiet before the first snapshot exists. The dashboard's alert rule dialog and the alerting quick setup prompt offer it too. See [observability](/observability#alert-rules).
 
 ### Before an upgrade
 
@@ -84,7 +84,7 @@ If the database has a schema version newer than the binary understands, the serv
 
 ## Taking and managing backups
 
-```
+```bash
 levelrail-cli control-plane-backups create
 levelrail-cli control-plane-backups list
 levelrail-cli control-plane-backups download <name> --out backup.db
@@ -110,7 +110,7 @@ A backup you have never checked is a hope, not a backup. Verification proves a s
 2. **integrity**: SQLite opens the file read-only and runs `integrity_check`.
 3. **schema_version**: the snapshot's schema version must not be newer than this binary supports, otherwise a restore would be refused.
 
-```
+```bash
 levelrail-cli control-plane-backups verify levelrail-20260101T000000Z.db
 ```
 
@@ -122,16 +122,32 @@ The last result is kept in a small file next to the snapshot (no database change
 
 Restoring is an offline operation on the server, because the database cannot be swapped under a running control plane.
 
-1. Stop the control plane.
-2. Make sure the same master key is available to the restored server.
-3. Run the restore against the backup file:
+<Steps>
+<Step title="Stop the control plane">
 
-   ```
-   levelrail restore-db /path/to/levelrail-20260101T000000Z.db
-   ```
+The database cannot be swapped under a running process.
 
-   The command uses `APP_DATA_DIR` to find the live database.
-4. Start the control plane.
+</Step>
+<Step title="Make the master key available">
+
+The restored server must have the same master key, as `master.key` in the data directory or `APP_MASTER_KEY`.
+
+</Step>
+<Step title="Run the restore">
+
+```bash
+levelrail restore-db /path/to/levelrail-20260101T000000Z.db
+```
+
+The command uses `APP_DATA_DIR` to find the live database.
+
+</Step>
+<Step title="Start the control plane">
+
+The reconciler converges your containers toward the restored desired state.
+
+</Step>
+</Steps>
 
 `restore-db` first checks the file: `integrity_check` must pass and its schema version must not be newer than the binary. It then moves the current database aside as `levelrail.db.before-restore-<timestamp>` and puts the backup in place. Nothing is deleted, so a mistaken restore can be undone by moving that copy back.
 
@@ -141,14 +157,29 @@ Anything that changed after the snapshot was taken (new apps, tokens, deploys) i
 
 `levelrail restore-snapshot` is the friendlier form of the same offline restore for snapshots in the data directory, such as the one taken automatically before a migration:
 
-```
+```bash
 APP_DATA_DIR=/var/lib/levelrail-data levelrail restore-snapshot --list
 APP_DATA_DIR=/var/lib/levelrail-data levelrail restore-snapshot --dry-run latest
 APP_DATA_DIR=/var/lib/levelrail-data levelrail restore-snapshot --yes latest
 ```
 
-`--list` shows snapshots newest first, `--dry-run` verifies one and changes nothing, and the real run keeps the current database as a `.before-restore` copy. Verified on a copy of a real data directory: the listing, the dry run and the restore all behaved as described, and the restored database is the snapshot's (schema version included).
+`--list` shows snapshots newest first, `--dry-run` verifies one and changes nothing, and the real run keeps the current database as a `.before-restore` copy.
 
 ### Restoring on a new machine
 
 A local snapshot is on the dead machine's disk, so it is of no use there. For a machine that is gone you need the encrypted off-box backup and the escrow bundle: follow the [step by step runbook](/disaster-recovery#runbook-the-control-plane-machine-is-gone), which was run end to end against a real S3 server. The master key must come with you (escrow bundle or `APP_MASTER_KEY`); a trailing newline in a recovered `master.key` is accepted.
+
+## Next steps
+
+<CardGroup :cols="2">
+<Card title="Disaster recovery" href="/disaster-recovery">
+
+Encrypted off-box backups, key escrow, and restore drills.
+
+</Card>
+<Card title="Master key rotation" href="/master-key-rotation">
+
+Rotate the key that protects stored secrets.
+
+</Card>
+</CardGroup>

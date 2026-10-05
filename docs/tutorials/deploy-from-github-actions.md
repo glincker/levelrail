@@ -12,7 +12,8 @@ By the end of this tutorial every push to `main` builds your image, deploys it t
 - A container registry the server can pull from. This example uses GitHub's `ghcr.io`.
 - Permission to add secrets to your GitHub repository.
 
-## 1. Create a deploy-only token
+<Steps>
+<Step title="Create a deploy-only token">
 
 CI should not hold your admin credentials. Mint a token that can read and deploy, and nothing else:
 
@@ -22,7 +23,8 @@ levelrail-cli tokens create --name github-actions --preset deployer --expires-in
 
 The command asks for your admin username and password, because a token can only be created from a live session. The token prints once and cannot be shown again. `deployer` means the `read` and `deploy` abilities. See [Identity and access](../identity-and-access.md) for the full list.
 
-## 2. Store the URL and token as secrets
+</Step>
+<Step title="Store the URL and token as secrets">
 
 ```bash
 gh secret set LEVELRAIL_API_URL --body "https://console.example.com"
@@ -31,11 +33,13 @@ gh secret set LEVELRAIL_API_TOKEN
 
 The second command prompts for the value, so the token never lands in your shell history.
 
-## 3. Let the server pull your image
+</Step>
+<Step title="Let the server pull your image">
 
 If the image is public, skip this. For a private `ghcr.io` package, give Levelrail pull credentials once. See [Registry credentials](../backups-and-storage.md#registry-credentials), and test them with `levelrail-cli registry-credentials test <id>` before the first deploy.
 
-## 4. Add the workflow
+</Step>
+<Step title="Add the workflow">
 
 Create `.github/workflows/deploy.yml`:
 
@@ -81,7 +85,8 @@ The action installs the CLI (with its checksum verified), runs `apps deploy`, th
 
 Tag the image with the commit SHA, not `latest`. A SHA tag is immutable, so the deploy history tells you exactly which commit each release is, and rollback has a precise target.
 
-## 5. Push and watch
+</Step>
+<Step title="Push and watch">
 
 Push to `main`. The workflow's last step prints:
 
@@ -91,6 +96,9 @@ waiting for "my-app" to converge... (succeeded)
 ```
 
 and the deploy appears in `levelrail-cli apps deploys list my-app` and on the dashboard's Deployments page.
+
+</Step>
+</Steps>
 
 ## Useful inputs
 

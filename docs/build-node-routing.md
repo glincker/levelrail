@@ -1,60 +1,66 @@
 ---
-description: Which node a deploy's build runs on, how to mark a node build-only, and what to do when one node is under sustained load.
+description: Which node a deploy's build runs on, how to mark a node build-only, and what to do when a single node is under sustained load.
 ---
 
 # Build node routing
 
-On a single node, every build already runs locally, alongside the control plane and every running app. Nothing on this page needs deciding until you add a second node.
+On a single node, every build runs locally, alongside the control plane and every running app. Nothing on this page needs deciding until you add a second node.
 
-## What `accepts_build_workloads` does
+## The `accepts_build_workloads` flag
 
-Every node (including the local one, once you add a real second node) has
-an `accepts_build_workloads` flag, set from that node's own detail page in
-the dashboard, `PUT /api/v1/nodes/{id}/workloads`, or:
+Every node has an `accepts_build_workloads` flag. It is a routing preference, not a placement rule and not a guarantee. Set it from the node's detail page in the dashboard, with the CLI, or with `PUT /api/v1/nodes/{id}/workloads`:
 
-```
+```bash
 levelrail-cli nodes workloads <id> --accepts-app=BOOL --accepts-build=BOOL
 ```
 
-This is a routing preference, not a placement rule and not a guarantee:
+Both flags are required on every call, because the command replaces both values. A new node accepts app workloads but not build workloads until you enable it.
 
-- It does not move apps or databases already running on that node.
-- It does not stop a build from ever running on that node. If no node that
-  accepts builds is currently online, a build still runs on the primary
-  node rather than failing. A dedicated build node blipping offline should
-  never be the reason a deploy fails.
+What the flag does not do:
+
+- It does not move apps or databases already running on the node.
+- It does not stop a build from running on a node without it. If no node that accepts builds is online, the build runs on the primary node instead of failing, so a build node going offline never fails a deploy.
 
 ## How a build picks its node
 
-For each build, the control plane looks at every registered node that has
-`accepts_build_workloads` set:
+For each build, the control plane looks at every registered node with `accepts_build_workloads` set:
 
-1. If none has it set, the build runs locally, the same as a fresh
-   single-node install.
-2. If one or more do, and at least one of those is online right now, the
-   online one with the lexicographically smallest ID runs the build. This
-   is a deterministic tie-break, not load-based scheduling: real
-   scheduling (bin-packing, affinity, autoscaling) is out of scope, the
-   same non-goal that applies to app and database placement.
-3. If one or more have it set but none is currently online, the build
-   falls back to the primary node rather than failing.
+1. If none has it set, the build runs locally, as on a fresh single-node install.
+2. If at least one is online, the online one with the lexicographically smallest ID runs the build. This is a fixed tie-break, not load-based scheduling. Levelrail does not do bin-packing, affinity or autoscaling.
+3. If some have it set but none is online, the build falls back to the primary node.
 
-## When to mark a node build-only
+When a build runs on another node, the built image is streamed back and loaded into the control plane's own image store, so the rest of the deploy works the same as for a local build.
 
-Once you have more than one node, mark a secondary node's
-`accepts_build_workloads` on and, if you want builds to stay off the
-primary entirely, mark the primary's off. A build that runs on a node
-already serving traffic competes with that traffic for CPU and disk for
-the length of the build, so moving builds to a node that isn't serving
-anything keeps that competition off your production containers.
+## Mark a node build-only
 
-## The nodes page suggestion
+A build on a node that already serves traffic competes with that traffic for CPU and disk for as long as the build runs. To keep builds off your production containers:
 
-On a single-node install, the Nodes page can show a suggestion when that
-node's CPU or disk usage has been sustained high (the same threshold the
-node resource usage alert already uses, `APP_ALERT_NODE_CPU_THRESHOLD_PERCENT`
-and the disk-space alert's own threshold, no separate mechanism). It
-points at adding a second node, and once you have one, marking it (or the
-primary) build-only per the section above. It only appears when telemetry
-is configured and only for a single node; it has nothing new to say once
-node routing is already something you've configured.
+<Steps>
+<Step title="Enable builds on a secondary node">
+
+```bash
+levelrail-cli nodes workloads <build-node-id> --accepts-app=false --accepts-build=true
+```
+
+Use `--accepts-app=true` instead if the node should also run apps.
+
+</Step>
+<Step title="Optionally disable builds on the primary">
+
+```bash
+levelrail-cli nodes workloads <primary-node-id> --accepts-app=true --accepts-build=false
+```
+
+</Step>
+</Steps>
+
+A node created with `nodes provision --role build` or `nodes ssh-provision --role build` is set up as a build node when it enrolls. See [Node provisioning](node-provisioning.md).
+
+## The Nodes page suggestion
+
+On a single-node install, the Nodes page can suggest adding a second node when that node's CPU or disk use has been high for a sustained period. It reuses the existing node resource usage alert (`APP_ALERT_NODE_CPU_THRESHOLD_PERCENT`) and the disk space alert, with no separate threshold. It appears only when telemetry is configured and only while there is exactly one node.
+
+## See also
+
+- [Multi-node](multi-node.md): enrolling nodes and managing placement.
+- [Observability](observability.md): the node alerts behind the suggestion.

@@ -11,7 +11,8 @@ Vaultwarden is a lightweight server that works with the official Bitwarden apps 
 - A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
 - A domain you can point at the server. Bitwarden clients require HTTPS, so a plain `host:port` address is only good for a first check.
 
-## 1. Find the template
+<Steps>
+<Step title="Find the template">
 
 ```bash
 levelrail-cli templates list | grep -i vaultwarden
@@ -31,7 +32,8 @@ levelrail-cli templates get vaultwarden
 
 It prints the Compose file: the image, a persistent `vaultwarden_data` volume, a health check, and an `ADMIN_TOKEN` that Levelrail generates for you.
 
-## 2. Deploy it
+</Step>
+<Step title="Deploy it">
 
 ```bash
 levelrail-cli templates deploy vaultwarden
@@ -45,7 +47,8 @@ deployed 1 service(s):
 
 A template deploys as a project, and each service in it becomes an app named `<template>-<service>`. Here the app is `vaultwarden-vaultwarden`. Use that name in every command from now on. `levelrail-cli apps list` shows it.
 
-## 3. Check that it is alive
+</Step>
+<Step title="Check that it is alive">
 
 ```bash
 levelrail-cli apps wait vaultwarden-vaultwarden
@@ -66,7 +69,8 @@ curl -i http://127.0.0.1:62531/alive
 
 A `200` response with a timestamp means it is up.
 
-## 4. Put it on a domain
+</Step>
+<Step title="Put it on a domain">
 
 ```bash
 levelrail-cli apps domains add vaultwarden-vaultwarden vault.example.com
@@ -74,9 +78,10 @@ levelrail-cli apps domains add vaultwarden-vaultwarden vault.example.com
 
 Create an `A` record for `vault.example.com` pointing at your server, then check it with `levelrail-cli domains check vaultwarden-vaultwarden vault.example.com`.
 
-Every routed domain gets a TLS certificate. By default it is self-signed, which Bitwarden clients reject. For clients to connect you need a certificate they trust: either enable Let's Encrypt under **Settings, Domains**, or upload your own. Real ACME issuance is built but not yet verified against a public domain, so read [Domains and ingress](../domains-and-ingress.md#tls-what-s-actually-shipped-today) and the [ACME verification runbook](../acme-verification-runbook.md) first.
+Every routed domain gets a TLS certificate. By default it is self-signed, which Bitwarden clients reject. For clients to connect you need a certificate they trust: either enable Let's Encrypt under **Settings, Domains**, or upload your own. See [Domains and ingress](../domains-and-ingress.md#tls-what-s-actually-shipped-today) and the [ACME verification runbook](../acme-verification-runbook.md) if issuance fails.
 
-## 5. Read the admin token
+</Step>
+<Step title="Read the admin token">
 
 Levelrail generated the admin token when it deployed. Read it from the running container:
 
@@ -85,6 +90,9 @@ levelrail-cli apps exec vaultwarden-vaultwarden -- printenv ADMIN_TOKEN
 ```
 
 You will need it for the `/admin` page. Treat it like a password. Anyone with this token can administer your instance.
+
+</Step>
+</Steps>
 
 ## Back up the data
 
@@ -101,7 +109,7 @@ Resilience     warn   no backup schedule configured for volume(s): ...vaultwarde
 Observability  fail   no alert rules configured for this app
 ```
 
-Connect a bucket by following [Back up Postgres to S3](back-up-postgres-to-s3.md#_1-connect-the-bucket-as-a-backup-target), then back up the volume:
+Connect a bucket by following [Back up Postgres to S3](back-up-postgres-to-s3.md), then back up the volume:
 
 ```bash
 levelrail-cli app-volume-backups trigger vaultwarden-vaultwarden vaultwarden_data --target bkt_Ra-kILVUyJaw
@@ -124,7 +132,7 @@ levelrail-cli apps deploy vaultwarden-vaultwarden --image vaultwarden/server:<ne
 levelrail-cli apps wait vaultwarden-vaultwarden
 ```
 
-If the new version misbehaves, roll back with `levelrail-cli apps deploys rollback-to`. See [Deploy a Docker app](deploy-a-docker-app.md#_5-roll-back).
+If the new version misbehaves, roll back with `levelrail-cli apps deploys rollback-to`. See [Deploy a Docker app](deploy-a-docker-app.md).
 
 ## Clean up
 

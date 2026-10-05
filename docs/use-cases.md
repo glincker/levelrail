@@ -18,11 +18,11 @@ The three groups below are the ones that framing actually describes.
 
 - Every feature named below links to the doc page that covers it, and every
   maturity claim matches the label in [feature status](feature-status.md).
-  Most of this platform is labeled beta: tested, but without an end-to-end
-  test or a run against real infrastructure. Treat "it fits" as "the feature
-  exists and is tested," not as "it has survived production load."
-- Levelrail has no stable release yet. The only published image tag is
-  `:beta`. APIs, the app spec format, and the on-disk layout can still
+  Some areas are stable (backed by a live end-to-end test) and others are
+  beta or behind a flag. Treat "it fits" as "the feature exists and is
+  tested," not as "it has survived production load."
+- Levelrail has no stable release yet. There is no stable image tag yet: `:latest`
+  does not move, and prereleases publish as `:beta`. APIs, the app spec format, and the on-disk layout can still
   change without notice. None of the three audiences below should put a
   revenue-critical workload on it without a shadow run alongside whatever
   they use today, the same caution [migrating-from-vercel.md](migrating-from-vercel.md)
@@ -57,7 +57,7 @@ every time something new needs HTTPS and a database.
   ([architecture.md](architecture.md#observability)). A solo operator does
   not need to stand up a separate Grafana or log shipper to see why
   something was slow.
-- **A curated template catalog.** Postgres, Redis, and 200-plus other
+- **A template catalog.** Postgres, Redis, and about 300 other
   one-click services exist today for standing up the database or tool a
   side project needs ([templates-and-registry.md](templates-and-registry.md)).
 - **Nothing paywalled.** OAuth sign-in, two-factor auth, audit logging, and
@@ -71,18 +71,18 @@ every time something new needs HTTPS and a database.
   [performance.md](performance.md)) is from a macOS dev build on one
   developer's machine, not a Linux release binary. Expect different numbers
   on your actual VPS, and no containers were running in that benchmark.
-- TLS defaults to an internal, self-signed issuer. A real ACME issuer is
-  built and wired end to end, but it has only been unit-tested at the
-  config level, not yet verified against a live public domain
+- TLS defaults to an internal, self-signed issuer. The public ACME issuer
+  has one recorded live run against Let's Encrypt on a public VPS, but
+  renewal and DNS-01 wildcards are not yet verified
   ([architecture.md](architecture.md#ingress), [acme-verification-runbook.md](acme-verification-runbook.md)).
   If your side project needs a browser-trusted cert today, test that path
   yourself before depending on it.
-- Most individual features are beta, not stable, per
-  [feature-status.md](feature-status.md). Deploy approvals, PITR/database
-  backups for Postgres, and GitHub-based previews are the stable ones;
-  load balancing, platform-as-code, and the in-app AI chat are flagged
-  `hide-behind-flag` and should stay off unless you are deliberately trying
-  them.
+- Maturity varies by feature, per [feature-status.md](feature-status.md).
+  Deploy approvals, IAM, PITR and database backups for Postgres, pipelines,
+  deploy freeze and GitHub-based previews are labeled stable; load
+  balancing, platform-as-code, the in-app AI chat, AI models and Cloudflare
+  Tunnel are `hide-behind-flag` and stay off unless you enable them with
+  `APP_EXPERIMENTAL`.
 
 ## Small agencies and freelancers running several clients' apps
 
@@ -123,12 +123,11 @@ scoped access to only their own app, and keep a record of who deployed what.
 
 ### What to know before you rely on it
 
-- IAM is the strongest beta candidate in the feature-status audit: broad
-  unit coverage, but the only end-to-end test covers session login, not
-  whether a Deny policy actually blocks a real action
-  ([feature-status.md](feature-status.md#iam)). Verify a client's scoped
-  token actually cannot touch another client's app before trusting that
-  boundary in practice.
+- IAM is labeled stable: a live end-to-end test shows a Deny policy
+  blocking a real action and a token allow policy scoping one
+  ([feature-status.md](feature-status.md#iam)). Policy enforcement is wired
+  into specific app and database routes, so still verify a client's scoped
+  token cannot touch another client's app before trusting that boundary.
 - Multi-node enrollment (cordon, drain, container relocation) has been
   verified locally across two real Docker daemons, but the WireGuard mesh
   itself and the cross-host remote transport remain unverified, and this
@@ -173,25 +172,25 @@ avoids.
   Vercel's own AI integrations feel limited: the same HTTP API surface is
   exposed to AI agents, with AI explicitly never in the reconcile path
   ([comparison.md](comparison.md#where-levelrail-differs), labeled beta,
-  144 to 153 tools depending on mode, in
+  118 to 156 tools depending on mode, in
   [feature-status.md](feature-status.md#ai-assistant-mcp-server-and-in-app-chat)).
 
 ### What to know before you rely on it
 
-- Heroku has no dedicated migration doc in this repository today. Only
+- Heroku has no dedicated migration runbook. Only
   Coolify/Dokploy/CapRover (importer-backed) and Vercel (manual runbook)
-  are covered. A Heroku move would currently mean working from the general
+  are covered. [Heroku alternative](heroku-alternative.md) gives the
+  overview, and a move means working from the general
   [architecture](architecture.md) and [app spec reference](app-spec-reference.md)
-  docs rather than a tailored checklist.
-- Coolify in particular still has a larger one-click template catalog
-  (comparison.md does not claim parity: "Ten good templates" was the
-  original non-goal, reversed by ADR 015 toward a 339-template goal, with
-  311 shipped so far, see [templates-and-registry.md](templates-and-registry.md)
+  docs.
+- Template catalogs differ between platforms. Levelrail ships 311, and
+  only a sample is deployed by its end-to-end tests, so check that the
+  services you need exist and boot (see [templates-and-registry.md](templates-and-registry.md)
   and [feature-status.md](feature-status.md#templates)).
 - `docs/migrating-from-vercel.md` itself warns to run the new deployment in
   parallel and keep the old platform as the rollback path until a shadow
   run is clean, specifically because there is no stable release yet and
-  public ACME is unverified against a live domain. That caution applies to
+  public ACME renewal is unverified. That caution applies to
   anyone moving off any existing platform, not just Vercel.
 - Preview environments are stable for GitHub but beta for GitLab and
   Bitbucket ([feature-status.md](feature-status.md#previews)), so a team
@@ -230,4 +229,4 @@ apply to your actual setup.
   claim on this page
 - [Migrating from Coolify, Dokploy, or CapRover](migrating-from-coolify-dokploy-and-caprover.md)
 - [Migrating from Vercel](migrating-from-vercel.md)
-- [Roadmap](roadmap.md) - what is shipped, in progress, and not started
+- [Roadmap](roadmap.md) - what has shipped and what is open

@@ -21,7 +21,10 @@ Every reconcile pass writes a status condition with a reason, so `apps status` u
 
 ## Apps and deploys
 
-::: details My deploy is stuck or failed
+<AccordionGroup>
+
+<Accordion title="My deploy is stuck or failed" id="my-deploy-is-stuck-or-failed">
+
 <Steps>
 <Step title="Check the classified cause">
 
@@ -54,55 +57,91 @@ If this keeps happening on every deploy of a given app, consider turning on "Aut
 
 </Step>
 </Steps>
-:::
 
-::: details An app shows `CrashLoopBackOff`
+</Accordion>
+
+
+<Accordion title="An app shows CrashLoopBackOff" id="an-app-shows-crashloopbackoff">
+
 The container keeps exiting. Levelrail restarts it immediately once, then waits 5s, 10s, 20s and so on up to 2 minutes between restarts instead of restarting on every exit, so the host and the control plane stay calm. Read the cause first: `levelrail-cli apps logs <name> --tail 50`, and `levelrail-cli apps status <name>` for the countdown to the next restart. Fix the image or its configuration and redeploy; a new deploy starts with a fresh delay. If you need the old restart-immediately behavior, set `APP_RESTART_BACKOFF_BASE=0`. A `crashloop` alert rule sends the last 200 log lines with its notification. See [observability](observability.md#alert-rules).
-:::
 
-::: details Creating a notification channel fails with "points at an internal address"
+</Accordion>
+
+
+<Accordion title="Creating a notification channel fails with &quot;points at an internal address&quot;" id="creating-a-notification-channel-fails-with-points-at-an-inte">
+
 The webhook URL is a loopback, private or link-local address (or `localhost`), which the outbound SSRF guard would refuse on every send. Use a public URL, or if the receiver is on your own network set `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` in the control plane's environment, restart it, and create the channel again. See [security](security.md#outbound-requests-to-user-supplied-urls).
-:::
 
-::: details Invite or password reset emails contain a link with no host
+</Accordion>
+
+
+<Accordion title="Invite or password reset emails contain a link with no host" id="invite-or-password-reset-emails-contain-a-link-with-no-host">
+
 The link is built from the primary domain or, failing that, the dashboard URL. Set the dashboard URL (the Domains page, or `levelrail-cli settings dashboard-url set --url https://deploy.example.com`) and send the invite again.
-:::
 
-::: details I upgraded and want to go back
-The control plane snapshots its database before applying new migrations. Start the older binary against the newer data and it refuses with `database schema is newer than this binary supports: database is at version N`; nothing is modified. Stop the service, then `levelrail restore-snapshot --list`, `--dry-run latest`, `latest`, and start the older binary. Verified locally across a migration (`0350`): the snapshot reported schema version 290, the older binary started on it, and the newer binary migrated it forward again. Anything written after the snapshot is lost, and `alerting.db` and `telemetry.db` are not rolled back by `restore-snapshot`. See [Installing](installing.md#rolling-back).
-:::
+</Accordion>
 
-::: details A rollback target is missing
+
+<Accordion title="I upgraded and want to go back" id="i-upgraded-and-want-to-go-back">
+
+The control plane snapshots its database before applying new migrations. Start the older binary against the newer data and it refuses with `database schema is newer than this binary supports: database is at version N`; nothing is modified. Stop the service, then `levelrail restore-snapshot --list`, `--dry-run latest`, `latest`, and start the older binary. Anything written after the snapshot is lost, and `alerting.db` and `telemetry.db` are not rolled back by `restore-snapshot`. See [Installing](installing.md#rolling-back).
+
+</Accordion>
+
+
+<Accordion title="A rollback target is missing" id="a-rollback-target-is-missing">
+
 Levelrail pins the previous N images specifically so garbage collection can't orphan a rollback target. If one is still missing, check `levelrail-cli apps deploys list <name>` for what's actually retained, then see [Deploying apps](deploying-apps.md#roll-back).
-:::
 
-::: details A managed database won't accept connections
+</Accordion>
+
+
+<Accordion title="A managed database won't accept connections" id="a-managed-database-won-t-accept-connections">
+
 Check whether public access is actually enabled for that database. It's off by default; enabling it needs an explicit port and bind address. See [Managing databases](managing-databases.md#public-access).
-:::
+
+</Accordion>
+
+</AccordionGroup>
 
 ## Login, domains, and ports
 
-::: details I can't log in, or my session keeps dropping
+<AccordionGroup>
+
+<Accordion title="I can't log in, or my session keeps dropping" id="i-can-t-log-in-or-my-session-keeps-dropping">
+
 If sign-in fails with "sign-in over plain HTTP is disabled", an `https://` dashboard URL is configured: open that URL instead. If it no longer works, set `APP_ALLOW_INSECURE_LOGIN=true` on the control plane (for install.sh installs, add `Environment=APP_ALLOW_INSECURE_LOGIN=true` to the systemd unit), restart it, sign in over HTTP, and fix or clear the dashboard URL on the Domains page.
 
 On a fresh install the login page asks for a **setup token**. Print it with `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` on the server. Full detail: [Identity and access](identity-and-access.md#principals-a-session-or-a-token).
-:::
 
-::: details TLS certificate won't issue
+</Accordion>
+
+
+<Accordion title="TLS certificate won't issue" id="tls-certificate-won-t-issue">
+
 This has its own dedicated runbook: [ACME verification runbook](acme-verification-runbook.md). Start there; it covers DNS propagation, rate limits, and staging-vs-production ACME directories.
 
 To see whether renewal is failing, run `levelrail-cli domains certificates`. The `RENEWAL` column is `ok` or `stalled`, and the same value is the `renewal` field of `GET /api/v1/certificates`. The dashboard shows a "Renewal stalled" badge on the domain row and in the domain editor. A certificate is `stalled` when it has already expired, or when it has been `expiring_soon` with an unchanged expiry for longer than `APP_CERT_RENEWAL_STALLED_THRESHOLD` (default 6h, Go duration syntax). The second case needs a `cert_expiry` alert rule, since the rule's evaluations record how long the expiry has been stuck.
-:::
 
-::: details My domain won't resolve, or the setup wizard's DNS check stays red
+</Accordion>
+
+
+<Accordion title="My domain won't resolve, or the setup wizard's DNS check stays red" id="my-domain-won-t-resolve-or-the-setup-wizard-s-dns-check-stay">
+
 Create an A (or AAAA for IPv6) record pointing the domain at your server's public IP, then check it actually propagated: `dig +short yourdomain.com` from your own machine, or [dnschecker.org](https://dnschecker.org/) to see it from multiple regions at once. A record you just created can take a few minutes to show up everywhere. If it never resolves, double check you edited the zone your domain's registrar actually uses, not a leftover one. See [Domains and ingress: setting up DNS](domains-and-ingress.md#setting-up-dns). No domain yet? Use the zero-config `sslip.io` URL the dashboard already shows instead.
-:::
 
-::: details Port 80 or 443 is already in use
+</Accordion>
+
+
+<Accordion title="Port 80 or 443 is already in use" id="port-80-or-443-is-already-in-use">
+
 `levelrail-cli doctor`'s `port_80`/`port_443` checks fail when something other than this control plane's own embedded ingress already has the port bound. Find the culprit with `sudo ss -ltnp | grep -E ':80|:443'` (or `sudo lsof -i :80`). Common holders: an existing nginx, Apache, or standalone Caddy installation; a previous non-Docker install of this same platform still running; or a leftover process from a crashed prior instance. Stop or reconfigure that process, or move it off port 80/443, then re-run the check. This is a different problem from the port being blocked from the *outside*; see [Domains and ingress: firewall](domains-and-ingress.md#firewall-ports-80-and-443) for that case.
-:::
 
-::: details Ports 80/443 are open on the server but blocked by a firewall
+</Accordion>
+
+
+<Accordion title="Ports 80/443 are open on the server but blocked by a firewall" id="ports-80-443-are-open-on-the-server-but-blocked-by-a-firewal">
+
 `install.sh`'s own reachability self-test, and doctor's `external_reachability_80`/`external_reachability_443` checks, both warn rather than fail here, since a host firewall looks the same from outside as a closed port. Open both ports:
 
 <Tabs :items="['Ubuntu/Debian (ufw)', 'RHEL/Fedora/Rocky (firewalld)']">
@@ -125,11 +164,17 @@ sudo firewall-cmd --permanent --add-service=http --add-service=https && sudo fir
 </Tabs>
 
 Then also check your cloud provider's firewall or security group rules; a host firewall being open doesn't mean the provider's edge is.
-:::
+
+</Accordion>
+
+</AccordionGroup>
 
 ## The server and its nodes
 
-::: details "docker: permission denied" when the control plane starts
+<AccordionGroup>
+
+<Accordion title="&quot;docker: permission denied&quot; when the control plane starts" id="docker-permission-denied-when-the-control-plane-starts">
+
 The control plane needs access to the Docker socket. Add the user running it to the `docker` group, or run it as root if that's your deployment model. See [Docker](docker.md) for the exact socket path and permission model.
 
 Running via the committed `docker-compose.yml`, the same error (visible in `docker compose logs`, e.g. `permission denied while trying to connect to the Docker daemon socket`) means `DOCKER_GID` doesn't match your host's actual docker group. Fix it:
@@ -140,15 +185,24 @@ docker compose up -d
 ```
 
 The compose file falls back to `999` (the common Debian/Ubuntu default) if `DOCKER_GID` is unset, which is wrong on any host where the docker group has a different GID.
-:::
 
-::: details The data directory isn't writable
+</Accordion>
+
+
+<Accordion title="The data directory isn't writable" id="the-data-directory-isn-t-writable">
+
 `levelrail-cli doctor`'s `data_dir_writable` check fails when the user running the control plane can't create a file in `APP_DATA_DIR`. This is almost always ownership or permissions drift, most commonly after restoring a volume from a backup as a different user, or a manual `chown` on the host. Fix it with `chown -R <service user> <data dir>` for a systemd install, or check the volume's ownership matches the container's `nonroot` user (uid/gid 65532) for the Docker image; see [Docker](docker.md) for that image's exact user model.
-:::
 
-::: details A node shows offline or won't enroll
+</Accordion>
+
+
+<Accordion title="A node shows offline or won't enroll" id="a-node-shows-offline-or-won-t-enroll">
+
 The node agent dials **out** to the control plane, so check the *agent's* outbound connectivity first, not inbound firewall rules on the control plane. Confirm the join token hasn't expired and that the agent's clock isn't skewed (certificate validation is time-sensitive). See [Multi-node](multi-node.md#enrolling-a-second-node).
-:::
+
+</Accordion>
+
+</AccordionGroup>
 
 ## What each doctor finding means
 
@@ -178,7 +232,7 @@ The `mesh_hub_endpoint` check applies when `APP_MESH_ENABLED=1`: agents send Wir
 
 ### Node stuck pending: "join token already used"
 
-An agent that logs `join token already used` is retrying with a spent token. The node row stays `pending` and the dashboard and `levelrail-cli nodes list` flag it "Never connected" after five minutes. The token cannot be reused: delete the node, fix the cause the agent logged (an unwritable identity directory is the usual one; current agents check this before sending the token), and enrol again with a new join token. See [Multi-node](multi-node.md#step-3-confirm-it-registered).
+An agent that logs `join token already used` is retrying with a spent token. The node row stays `pending` and the dashboard and `levelrail-cli nodes list` flag it "Never connected" after five minutes. The token cannot be reused: delete the node, fix the cause the agent logged (an unwritable identity directory is the usual one; current agents check this before sending the token), and enrol again with a new join token. See [Multi-node](multi-node.md#enrolling-a-second-node).
 
 ### Registry reachability failed
 

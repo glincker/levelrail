@@ -4,7 +4,7 @@ description: Balance traffic across an app's replicas with health checks, retrie
 
 # Load balancing across replicas
 
-Set `replicas: 3` and the control plane starts three containers. Any app with more than one replica is balanced across all of them by default (round robin, a replica that fails a request is skipped for 30s, and a failed request is retried on another replica). Set `APP_INGRESS_IMPLICIT_LB=false` to restore the old behavior where only the first replica receives traffic. To tune the pool (health checks, sticky sessions, weights), use the app's Load balancer tab, the CLI, or `app.yaml`; an explicit configuration always replaces the default. There's no extra container to run and no separate config surface to learn: it uses the same embedded Caddy that already terminates TLS for your domains.
+Set `replicas: 3` and the control plane starts three containers. Any app with more than one replica is balanced across all of them by default: round robin, a replica that fails a request is skipped for 30s, and a failed request is retried on another replica. Set `APP_INGRESS_IMPLICIT_LB=false` to send traffic to the first replica only. To tune the pool (health checks, sticky sessions, weights), use the app's Load balancer tab, the CLI, or `app.yaml`; an explicit configuration replaces the default. Balancing uses the same embedded Caddy that terminates TLS for your domains, so there is no extra container to run.
 
 ```mermaid
 flowchart LR
@@ -17,30 +17,31 @@ flowchart LR
   Caddy --> Client
 ```
 
-::: details For contributors: where this lives in the source
-The ingress reconciler feeds Caddy's `reverse_proxy` upstream pool directly, in-process.
-:::
-
 ## Where to find it
 
 - **Dashboard, all apps:** the **Load balancers** page in the sidebar lists every configured balancer with its state (`balancing`, `degraded`, `none`) and healthy upstream count. With none configured it offers a **Configure a load balancer** button that lets you pick an app.
 - **Dashboard, one app:** the **Load balancer** tab inside an app holds the settings, the live upstream table and the export.
-- **CLI:** `levelrail lb list` for the overview, `levelrail lb show|set|status <app>` per app.
+- **CLI:** `levelrail-cli lb list` for the overview, `levelrail-cli lb show|set|clear|status <app>` per app.
 - **API and MCP:** `GET /api/v1/loadbalancers` and the `list_load_balancers` tool.
 
 ## Enable it
 
-Dashboard: open the app, then **Load balancer** in the sidebar, then **Set up load balancer**.
+<Tabs :items="['Dashboard', 'CLI', 'app.yaml']">
+<Tab value="Dashboard">
 
-CLI:
+Open the app, then **Load balancer** in the sidebar, then **Set up load balancer**.
+
+</Tab>
+<Tab value="CLI">
 
 ```bash
-levelrail lb set web --algorithm least_conn --health-path /healthz --retries 2
-levelrail lb show web
-levelrail lb status web
+levelrail-cli lb set web --algorithm least_conn --health-path /healthz --retries 2
+levelrail-cli lb show web
+levelrail-cli lb status web
 ```
 
-`app.yaml`:
+</Tab>
+<Tab value="app.yaml">
 
 ```yaml
 version: 1
@@ -58,7 +59,10 @@ services:
       drain_timeout: 15s
 ```
 
-A deploy that carries a `loadbalancer:` block saves it. A deploy without the block leaves any dashboard or CLI configured balancer alone. To remove one, use **Remove** in the dashboard or `levelrail lb clear web`.
+</Tab>
+</Tabs>
+
+A deploy that carries a `loadbalancer:` block saves it. A deploy without the block leaves any dashboard or CLI configured balancer alone. To remove one, use **Remove** in the dashboard or `levelrail-cli lb clear web`.
 
 ## Algorithms
 
@@ -97,7 +101,7 @@ The single node case and the multi-node case use the same code path. For a servi
 
 ![Levelrail load balancer view showing two healthy replicas behind a round robin proxy](assets/screenshots/load-balancer.png)
 
-**Load balancer** in the dashboard shows an upstream table refreshed every five seconds: state (`healthy`, `unhealthy`, `draining`), weight, active requests, recent failures, last check time and the reason a replica is out of the pool. The same data is available from `levelrail lb status web`, `GET /api/v1/apps/web/loadbalancer/status`, and the `get_app_load_balancer_status` MCP tool.
+**Load balancer** in the dashboard shows an upstream table refreshed every five seconds: state (`healthy`, `unhealthy`, `draining`), weight, active requests, recent failures, last check time and the reason a replica is out of the pool. The same data is available from `levelrail-cli lb status web`, `GET /api/v1/apps/web/loadbalancer/status`, and the `get_app_load_balancer_status` MCP tool.
 
 The ingress controller reports a `LoadBalancer` condition with these reasons:
 
@@ -117,8 +121,8 @@ Metrics `lb_upstreams_total`, `lb_upstreams_healthy` and `lb_active_requests` ar
 Every health probe result and every state change is recorded per upstream, so you can answer why an upstream went unhealthy after the fact:
 
 ```bash
-levelrail lb history web            # recent checks and state changes
-levelrail lb history web --json     # checks, transitions and 30 minute series
+levelrail-cli lb history web            # recent checks and state changes
+levelrail-cli lb history web --json     # checks, transitions and 30 minute series
 ```
 
 `GET /api/v1/apps/web/loadbalancer/history?limit=60` and the `get_load_balancer_history` MCP tool return the same. Each upstream has:
@@ -132,7 +136,7 @@ The history is held in memory and resets when the control plane restarts, which 
 ## Check now
 
 ```bash
-levelrail lb check web
+levelrail-cli lb check web
 ```
 
 `POST /api/v1/apps/web/loadbalancer/check` (and the `check_load_balancer` MCP tool) probes every running upstream once, in parallel, with the configured active health check and records the results in the history. When the balancer has no active health check, it probes `GET /` with a 2 second timeout (`APP_LB_CHECK_TIMEOUT`) and says so in a `note` field. Checks are limited to one per app per 2 seconds (`APP_LB_CHECK_MIN_INTERVAL`); a faster call gets `429` with `Retry-After`. A check changes no configuration.
@@ -140,9 +144,9 @@ levelrail lb check web
 ## Per-upstream admin state
 
 ```bash
-levelrail lb upstream web web#1 --state draining
-levelrail lb upstream web web#1 --state disabled
-levelrail lb upstream web web#1 --state active
+levelrail-cli lb upstream web web#1 --state draining
+levelrail-cli lb upstream web web#1 --state disabled
+levelrail-cli lb upstream web web#1 --state active
 ```
 
 `PUT /api/v1/apps/web/loadbalancer/upstreams/{id}` (and the `set_load_balancer_upstream_state` MCP tool) sets one replica to:
@@ -160,18 +164,23 @@ Caddy has no per-upstream drain flag, so both states work by leaving the upstrea
 **Export** in the dashboard, or:
 
 ```bash
-levelrail lb export web --format terraform --out web-lb.tf
-levelrail lb export web --format cdk
-levelrail lb export web --format cloudformation
-levelrail lb export web --format caddy
+levelrail-cli lb export web --format terraform --out web-lb.tf
+levelrail-cli lb export web --format cdk
+levelrail-cli lb export web --format cloudformation
+levelrail-cli lb export web --format caddy
 ```
 
 Formats: `terraform` (AWS ALB, target group, listener), `cdk` (AWS CDK TypeScript), `cloudformation` (YAML), `caddy` (Caddyfile) and `caddy-json`. Export is text generation only and never calls a cloud API. Settings that ALB cannot express (`ip_hash`, `uri_hash`, passive health, retries, rate limits) are printed as warnings rather than silently dropped. Values that ALB limits, such as health check intervals of 5 to 300 seconds, are clamped into range.
 
-`levelrail lb import web --file app.yaml` loads the `loadbalancer:` block of an `app.yaml` (from `--service` if the app name differs) into a running app.
+`levelrail-cli lb import web --file app.yaml` loads the `loadbalancer:` block of an `app.yaml` (from `--service` if the app name differs) into a running app.
 
 ## Not included
 
 - Layer 4 (TCP) balancing. This is HTTP only.
 - A separate balancer node in front of the control plane. The control plane's ingress is the balancer.
 - Autoscaling. Replica count is still yours to set.
+
+## See also
+
+- [Domains and ingress](domains-and-ingress.md): the embedded Caddy that does the balancing, and how a backend outage is handled.
+- [Multi-node](multi-node.md#routing-to-apps-on-remote-nodes): how replicas on other nodes are reached.

@@ -1,77 +1,81 @@
 ---
-description: Toggle app behavior at runtime without a redeploy using consistent-hash rollout bucketing.
+description: Toggle behavior in a running app without a redeploy, with per-app flags, percentage rollouts and a simple evaluate endpoint.
 ---
 
 # Feature flags
 
-Toggle behavior in a running app at runtime, with no redeploy or restart: create a flag, have your app call the evaluate endpoint, and flip it live from the dashboard or CLI whenever you want.
+Feature flags let you change behavior in a running app with no redeploy or restart. You create a flag, your app asks the control plane whether it is on, and you flip it from the dashboard or CLI whenever you like.
 
-::: details For contributors: where this lives in the source
-- `internal/api/feature_flags.go` - API handlers
-- `internal/store/feature_flag.go` - flag storage and rollout evaluation
-:::
+## Why not an env var
 
-## Why this isn't an env var
+Env vars are fixed when a container is created, so changing one needs a redeploy or restart. A feature flag is read at runtime: your app calls the control plane's HTTP API for the current value. It authenticates with an ordinary API token, so there is no separate auth system to set up.
 
-Env vars are baked into a container at create time and are not live-updatable: changing one requires a redeploy or restart. Feature flags toggle behavior without either. Instead, your app calls the control plane's HTTP API at runtime to read the current flag value, the same model as external services like LaunchDarkly or Unleash, but self-hosted.
+## How flags behave
 
-Authentication reuses the existing API token system. Create a token scoped to the `read` ability, inject it as a `{ secret: true }` env var, and have your app send it as a bearer token to the evaluate endpoint. No new auth surface needed.
+- **Scope.** A flag belongs to one app, and the dashboard and CLI manage it per app. Its `key`, the string your app looks up, is unique across the whole control plane, not just within the app. The evaluate endpoint is flat (`/api/v1/flags/evaluate/{key}`, no app in the path) because API tokens are not scoped to an app.
+- **Kill switch.** `enabled: false` turns the flag off for every caller.
+- **Rollout.** When `enabled` is true, `rollout_percentage` (0 to 100) decides which callers get it. Callers are bucketed by a consistent hash (FNV-1a) of the `identifier` query parameter, so the same identifier always lands on the same side of a partial rollout. Pass a stable per-user or per-device value. Callers that send no identifier all share one outcome.
 
-## Scope and key uniqueness
+## Set up a flag
 
-A flag is owned by one app (using the same `service_name` scoping as scheduled-tasks and alerts). The dashboard tabs and CLI commands are scoped by app.
+<Steps>
+<Step title="Create the flag">
 
-The flag's `key` (the string your app uses to look it up) is globally unique across the entire control plane, not just within that app. The evaluate endpoint is deliberately flat (`GET /api/v1/flags/evaluate/{key}`, no app name in the URL) because API tokens carry no app scoping.
+In the dashboard, open an app's **Feature flags** tab. From the CLI:
 
-## Rollout percentage
+```bash
+levelrail-cli flags create my-app --key new-checkout --name "New checkout" --rollout 25
+```
 
-`enabled` is a hard kill switch: `false` disables the flag for all callers.
+`--rollout` defaults to 100 and the flag starts enabled unless you pass `--disabled`.
 
-When `enabled` is `true`, `rollout_percentage` (0-100) buckets callers using consistent hashing (FNV-1a). The same identifier always lands on the same side of a partial rollout, never a fresh coin flip on each call.
+</Step>
+<Step title="Create a read-only token for your app">
 
-Pass a stable per-user or per-device value as the `identifier` query parameter for per-user rollouts. Omit it and all callers without an identifier share the same outcome.
+```bash
+levelrail-cli tokens create --name app-flags --abilities read
+```
 
-## Integration model
+Inject the token into your app as a secret env var such as `FLAGS_TOKEN` (`{ secret: true }` in [app.yaml](app-spec-reference.md#envvar-an-entry-under-env)).
 
-1. **Create a flag** (dashboard: an app's "Feature flags" tab, or the CLI):
+</Step>
+<Step title="Call the evaluate endpoint from your app">
 
-   :::code-group
-   ```bash [Create flag]
-   levelrail-cli flags create my-app --key new-checkout --name "New checkout" --rollout 25
-   ```
-   
-   ```bash [List flags]
-   levelrail-cli flags list my-app
-   ```
-   
-   ```bash [Update flag]
-   levelrail-cli flags set my-app <id> --rollout 50
-   ```
-   :::
+```bash
+curl -s \
+  -H "Authorization: Bearer $FLAGS_TOKEN" \
+  "https://your-control-plane/api/v1/flags/evaluate/new-checkout?identifier=user-123"
+```
 
-2. **Create a read-scoped API token** (Settings -> Tokens, or `levelrail-cli tokens create --abilities read`), then inject it into your app as a secret env var, e.g. `FLAGS_TOKEN`.
+```json
+{ "key": "new-checkout", "enabled": true }
+```
 
-3. **Call the evaluate endpoint from your app's own code**:
+That is the whole contract. No SDK exists, so any language can call it with a plain HTTP client.
 
-   ```bash
-   curl -s \
-     -H "Authorization: Bearer $FLAGS_TOKEN" \
-     "https://your-control-plane/api/v1/flags/evaluate/new-checkout?identifier=user-123"
-   ```
+</Step>
+<Step title="Change it live">
 
-   Response:
+Flip the switch or move the rollout slider in the dashboard, or use `flags set`. The next evaluate call reflects it.
 
-   ```json
-   { "key": "new-checkout", "enabled": true }
-   ```
+</Step>
+</Steps>
 
-   That's the entire contract: no SDK exists yet (see below), so any
-   language can call this with a plain HTTP client.
+## CLI
 
-4. **Toggle it live**: flip the enabled switch or adjust the rollout
-   slider in the dashboard (or `levelrail-cli flags set`), and the very
-   next call to the evaluate endpoint reflects it, with no redeploy or
-   restart of your app.
+```bash
+levelrail-cli flags create <app> --key KEY --name NAME [--description DESC] [--disabled] [--rollout PERCENT]
+levelrail-cli flags list <app>
+levelrail-cli flags get <app> <id>
+levelrail-cli flags set <app> <id> --name NAME [--description DESC] [--disabled] [--rollout PERCENT]
+levelrail-cli flags delete <app> <id>
+```
+
+`flags set` replaces the flag's settings. It requires `--name`, and any option you leave out returns to its default (enabled, rollout 100, empty description). To change only the rollout, repeat the others:
+
+```bash
+levelrail-cli flags set my-app <id> --name "New checkout" --rollout 50
+```
 
 ## API reference
 
@@ -84,30 +88,24 @@ Pass a stable per-user or per-device value as the `identifier` query parameter f
 | `DELETE` | `/api/v1/apps/{name}/flags/{id}` | `write` |
 | `GET` | `/api/v1/flags/evaluate/{key}?identifier=...` | `read` |
 
-The evaluate response is deliberately minimal (just `key` and `enabled`) because apps may call it on every request.
+The evaluate response is only `key` and `enabled`, because apps may call it on every request.
 
-## CLI
+## Not supported
 
-```bash
-levelrail-cli flags create <app> --key KEY --name NAME [--description DESC] [--disabled] [--rollout PERCENT]
-levelrail-cli flags list <app>
-levelrail-cli flags get <app> <id>
-levelrail-cli flags set <app> <id> --name NAME [--description DESC] [--disabled] [--rollout PERCENT]
-levelrail-cli flags delete <app> <id>
-```
+- **Targeting rules.** Rollout is a flat percentage by identifier. There is no targeting by user attribute such as plan.
+- **Flag history.** Create, update and delete show up in the generic audit log (`GET /api/v1/audit-log`), with no flag-specific history view.
 
-::: details Planned features (not yet built)
+## Next steps
 
-**No language-specific SDK.** The evaluate endpoint is plain HTTP. Wrapping it in language-specific clients (Go, Node, Python) is a separate piece of work.
+<CardGroup :cols="2">
+<Card title="Identity and access" href="/identity-and-access">
 
-**No targeting rules beyond flat rollout percentage.** No user-attribute-based targeting (e.g. "50% of users on plan X"), only identifier-based consistent-hash bucketing.
+Creating read-only tokens.
 
-**No dedicated flag change history.** Flag create/update/delete operations are captured by the platform's existing generic audit log (`GET /api/v1/audit-log`). There is no flag-specific history view beyond that.
-:::
+</Card>
+<Card title="Deploying apps" href="/deploying-apps">
 
-## See also
+Injecting a token as a secret env var.
 
-- [API reference](api-reference.md) for the full flag management endpoints
-- [CLI reference](cli-reference.md) for the `flags` command group
-- [Deploying apps](deploying-apps.md) for injecting tokens as secret env vars
-- [Identity and access](identity-and-access.md) for creating read-scoped tokens
+</Card>
+</CardGroup>

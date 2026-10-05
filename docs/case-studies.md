@@ -2,7 +2,7 @@
 {
   "layout": "landing",
   "title": "Case studies: measured results, not testimonials",
-  "description": "Real Levelrail measurements: idle CPU and memory on a production-test VPS, a 500-app benchmark, and multi-node verification against real Docker daemons, plus what is not proven yet.",
+  "description": "Real Levelrail measurements: a 500-app idle benchmark and multi-node verification against real Docker daemons, plus what is not proven yet.",
   "sidebar": false,
   "aside": false,
   "landing": {
@@ -19,16 +19,16 @@
     },
     "stats": [
       {
-        "value": "0.7%",
-        "label": "CPU at idle, production-test VPS"
+        "value": "68 MB",
+        "label": "RSS at 0 apps, dev build"
       },
       {
-        "value": "146 MB",
-        "label": "RAM at idle, same server"
+        "value": "91 MB",
+        "label": "RSS at 500 suspended apps"
       },
       {
-        "value": "0.06",
-        "label": "load average, same server"
+        "value": "1.6%",
+        "label": "CPU at 500 suspended apps"
       },
       {
         "value": "500",
@@ -38,27 +38,8 @@
     "cardsHeading": "What has been verified",
     "cards": [
       {
-        "title": "Light at idle on a real VPS",
-        "body": "On the production-test VPS, the control plane sat at 0.7% CPU, 146 MB of memory and a load average of 0.06, read from ps and uptime.",
-        "visual": [
-          {
-            "k": "out",
-            "t": "cpu     0.7%"
-          },
-          {
-            "k": "out",
-            "t": "memory  146 MB"
-          },
-          {
-            "k": "ok",
-            "t": "load    0.06"
-          }
-        ],
-        "icon": "gauge"
-      },
-      {
         "title": "Footprint as apps grow",
-        "body": "In the idle benchmark, going from 0 to 500 suspended apps moved resident memory from about 68 MB to about 91 MB and CPU from 0.03% to 1.6% on a development build. The method is reproducible.",
+        "body": "In the idle benchmark, going from 0 to 500 suspended apps moved resident memory from about 68 MB to about 91 MB and CPU from 0.03% to 1.6%. It ran on an Apple M4 Max with a development build and no containers running, so expect different numbers on a Linux VPS. The method is reproducible.",
         "link": {
           "text": "Performance method and numbers",
           "href": "/performance"
@@ -107,7 +88,7 @@
       {
         "heading": "What is not proven yet",
         "paragraphs": [
-          "Levelrail has no stable release, and single node is the best tested path. The WireGuard mesh and cross-host remote transport beyond the join flow are still unverified, and public ACME issuance has had less field verification than the rest of the ingress. The feature status page lists the evidence behind each area, area by area.",
+          "Levelrail has no stable release, and single node is the best tested path. The WireGuard mesh and cross-host remote transport beyond the join flow are still unverified, there is no Linux release-build idle measurement yet, and public ACME has one live run with renewal and wildcards unverified. The feature status page lists the evidence behind each area.",
           "Fewer real-world deployments also means less community knowledge than projects that have existed for years."
         ]
       },
@@ -125,7 +106,7 @@
       },
       {
         "q": "Where do the idle numbers come from?",
-        "a": "The VPS figures were read from ps and uptime on the production-test server. The 500-app figures come from a documented benchmark script you can run yourself."
+        "a": "From a documented benchmark script (`scripts/bench-idle.sh`) you can run yourself. The [performance page](/performance) lists the method, the machine and the caveats."
       },
       {
         "q": "Are these numbers comparable to other platforms?",

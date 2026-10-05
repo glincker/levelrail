@@ -23,7 +23,7 @@ flowchart TD
 
 Every owner of secrets (an app, a backup target, the email settings, and so on) gets its own random data encryption key (DEK), and each of its values (an app env var marked `secret: true`, email credentials, API tokens) is encrypted under that DEK with AES-256-GCM. Every DEK is wrapped under one master key held in memory by the control plane, never written to disk in plaintext.
 
-Each encrypted value is also bound to the slot it was written to: its owner and key name are sealed inside the ciphertext and checked on every read. Someone with write access to the database cannot copy one app's `DATABASE_URL` ciphertext into another app's `API_KEY` row and have it decrypt there; the read fails closed instead. Values written before this existed are "legacy" and should be bound once with `levelrail secrets rebind`, see [Binding secrets to their slot](master-key-rotation.md#binding-secrets-to-their-slot).
+Each encrypted value is also bound to the slot it was written to: its owner and key name are sealed inside the ciphertext and checked on every read. Someone with write access to the database cannot copy one app's `DATABASE_URL` ciphertext into another app's `API_KEY` row and have it decrypt there; the read fails closed instead. Values written before this existed are "legacy" and should be bound once with `levelrail-cli secrets rebind`, see [Binding secrets to their slot](master-key-rotation.md#binding-secrets-to-their-slot).
 
 ::: tip
 Rotating the master key re-wraps every DEK without ever exposing plaintext, then binds any legacy values. See [Master key rotation](master-key-rotation.md) for the full procedure and failure modes.
@@ -56,8 +56,8 @@ Evaluation order, the full ability list, and policy examples: [Identity and acce
 ## TLS and network exposure
 
 - Certificates are issued and renewed automatically through embedded Caddy's ACME client. See the [ACME verification runbook](acme-verification-runbook.md) if issuance fails.
-- HSTS (`Strict-Transport-Security`) is opt-in, not on by default, because turning it on for a domain that later loses TLS locks users out until the header expires. See [Domains and ingress](domains-and-ingress.md#tls).
-- WAF mode and rate limiting are configurable per domain, with a detect-only mode for testing rules before enforcing them. See [Domains and ingress](domains-and-ingress.md#waf-and-rate-limiting).
+- HSTS (`Strict-Transport-Security`) is opt-in, not on by default, because turning it on for a domain that later loses TLS locks users out until the header expires. See [Domains and ingress](domains-and-ingress.md#tls-what-s-actually-shipped-today).
+- WAF mode and rate limiting are configurable per domain, with a detect-only mode for testing rules before enforcing them. See [Domains and ingress](domains-and-ingress.md#opt-in-waf-and-rate-limiting).
 - The node agent dials **out** to the control plane. No inbound ports need to be open on a managed server for enrollment or day-to-day operation.
 - **Agent enrollment pins the control plane CA.** A join token is shown together with the agent CA's SHA-256 fingerprint; with `APP_CA_FINGERPRINT` set, the agent checks the control plane's certificate against that CA before it sends the token, so an attacker in the network path cannot capture the token or pose as the control plane. Without the fingerprint the agent falls back to trust on first use and logs a warning. After enrollment every connection is mutual TLS against the saved CA.
 - **Container installs bind plain HTTP to loopback.** The committed `docker-compose.yml` publishes `8080` on `127.0.0.1` only (override with `LEVELRAIL_HTTP_BIND`), see [Docker](docker.md#control-plane).
@@ -86,7 +86,7 @@ A short list for the server itself, independent of anything Levelrail configures
 - **SSH key auth only.** Disable password login (`PasswordAuthentication no` in `sshd_config`) before exposing the box to the internet. Neither `install.sh` nor the agent touch SSH configuration; this is standard server hygiene, not something Levelrail does for you.
 - **Only the control-plane node needs inbound ports.** `80/tcp` and `443/tcp` for ingress (the ACME HTTP-01 challenge plus HTTPS traffic), your SSH port, and nothing else. See [Installing: requirements](installing.md#requirements) for the full list and `install.sh`'s optional `ufw` setup.
 - **`levelrail-cli doctor`'s `firewall` check detects ufw, firewalld, and nftables/iptables**, whichever is actually installed on this host, and reports a concrete command to open 80/443 when it isn't. No supported tool installed is reported as informational, not a failure: this platform can't tell whether you're relying on something it can't introspect (a cloud security group, for example).
-- **Agent-only nodes should accept no inbound traffic at all.** The node agent dials out to the control plane over mTLS; the control plane never initiates a connection (see the root `CLAUDE.md` section 4.3). A server running only the agent has nothing that needs to accept a connection, so leave its firewall closed by default rather than opening anything speculatively.
+- **Agent-only nodes should accept no inbound traffic at all.** The node agent dials out to the control plane over mTLS; the control plane never initiates a connection. A server running only the agent has nothing that needs to accept a connection, so leave its firewall closed by default rather than opening anything speculatively.
 - **Don't expose anything Levelrail didn't ask you to.** Docker's daemon socket, the SQLite database file, and the mesh DNS listener (`:5390` by default, see [Multi-node](multi-node.md#wireguard-mesh-and-internal-dns)) are all meant to stay local to the box.
 - **Keep the OS patched.** The `patch_status` alert (see [Observability](observability.md)) can warn you about pending security patches on a managed node, but it only reports, it doesn't apply anything; that's still on you (`unattended-upgrades`, `dnf-automatic`, or your distro's equivalent).
 
@@ -101,10 +101,10 @@ Every container Levelrail creates (apps, databases, catalogue services, helpers)
 | Value | Behavior |
 | --- | --- |
 | `enforce` (default) | Applies the settings below to every container created from then on. Running containers pick them up on their next recreate (redeploy or restart of the resource). |
-| `warn` | Nothing is applied to containers. `GET /api/v1/system/doctor` (`levelrail doctor`) reports the exact settings `enforce` would apply. Use it to opt out while you work out which images need extra capabilities. |
+| `warn` | Nothing is applied to containers. `GET /api/v1/system/doctor` (`levelrail-cli doctor`) reports the exact settings `enforce` would apply. Use it to opt out while you work out which images need extra capabilities. |
 | `off` | Nothing applied, and the doctor warns that Docker's default capability set is in use. |
 
-`enforce` has been the default since the container hardening review: an image that needs a capability outside the minimal set fails when it starts, and the fix is `APP_CONTAINER_HARDENING_CAP_ADD` (or `APP_CONTAINER_HARDENING=warn` while you investigate). The stock nginx, postgres, mysql, mongo and redis images were verified to start under these settings.
+`enforce` is the default: an image that needs a capability outside the minimal set fails when it starts, and the fix is `APP_CONTAINER_HARDENING_CAP_ADD` (or `APP_CONTAINER_HARDENING=warn` while you investigate). The stock nginx, postgres, mysql, mongo and redis images were verified to start under these settings.
 
 What `enforce` sets:
 
@@ -117,9 +117,9 @@ What `enforce` sets:
 
 ## Rootless and Podman
 
-`GET /api/v1/system/doctor`'s `container_runtime` check (`levelrail doctor`) reports which container engine and privilege mode the control plane is talking to: Docker or Podman, rootful or rootless, and which setting decided the socket (`APP_CONTAINER_RUNTIME_SOCKET`, then the standard `DOCKER_HOST`, then a well-known rootless or Podman socket path, then the rootful default `/var/run/docker.sock`).
+`GET /api/v1/system/doctor`'s `container_runtime` check (`levelrail-cli doctor`) reports which container engine and privilege mode the control plane is talking to: Docker or Podman, rootful or rootless, and which setting decided the socket (`APP_CONTAINER_RUNTIME_SOCKET`, then the standard `DOCKER_HOST`, then a well-known rootless or Podman socket path, then the rootful default `/var/run/docker.sock`).
 
-Podman exposes a Docker-compatible Engine API socket, so the existing Docker Engine API client talks to it unchanged, no CLI shelling and no new client library, consistent with the root `CLAUDE.md`'s orchestration rules. `APP_CONTAINER_RUNTIME_SOCKET` pins the connection to a specific socket (for example `unix:///run/user/1000/podman/podman.sock`) ahead of `DOCKER_HOST`, for operators who would rather not export `DOCKER_HOST` into the whole process environment.
+Podman exposes a Docker-compatible Engine API socket, so the existing Docker Engine API client talks to it unchanged, no CLI shelling and no new client library, consistent with the rule that Levelrail never shells out to the Docker CLI. `APP_CONTAINER_RUNTIME_SOCKET` pins the connection to a specific socket (for example `unix:///run/user/1000/podman/podman.sock`) ahead of `DOCKER_HOST`, for operators who would rather not export `DOCKER_HOST` into the whole process environment.
 
 Container hardening (above) adjusts automatically under detected rootless: `PidsLimit` is disabled by default, because rootless Docker without a delegated cgroup v2 controller rejects a pids-limit `HostConfig` at container-create time. Set `APP_CONTAINER_PIDS_LIMIT` explicitly to override this. `CapDrop`, `CapAdd` and `no-new-privileges` are unaffected: those apply inside the container's own user namespace regardless of rootless mode, so nothing needed to come off the minimal capability list.
 
@@ -131,17 +131,55 @@ Container hardening (above) adjusts automatically under detected rootless: `Pids
 
 Treat single-container rootless or Podman hosts as best-effort, not fully verified, until tested against a real installation.
 
-## Hardening notes from the adversarial review
+## Other hardening details
 
-- **CSRF.** A cookie-authenticated state-changing request is refused when its `Origin` names another host, when `Origin` is `null`, when there is no `Origin` but `Sec-Fetch-Site` says `cross-site` or `same-site`, or when there is no `Origin` and the `Referer` names another host. Requests with a bearer token or no session cookie are not subject to the check.
-- **Static responses.** Redirect targets and custom error pages are written to the ingress with `{` and `}` escaped, so a placeholder such as `{env.NAME}` or `{file.path}` in operator text can never be expanded into a control plane secret.
-- **Certificates.** Stored certificates from other CAs are purged only when the configured CA changes, not on every start, so a restart never deletes valid certificates or spends Let's Encrypt rate limit. The sslip.io hostname is only offered for a publicly routable address (carrier-grade NAT, benchmarking and reserved ranges are refused).
-- **Bind mounts.** In addition to `/etc`, `/root` and the Docker socket, `/run`, `/dev`, the control plane and agent data directories, and any parent directory that would contain a protected path (`/var`, `/var/lib`) are refused. Paths are checked lexically: a symlink on the host that points into a protected path is not followed, so do not create such symlinks inside a directory you let apps mount.
-- **Registry port.** The built-in registry's plain HTTP port is published on loopback only. Remote nodes pull through the TLS route. An existing container published on all interfaces is recreated.
-- **Git fetches.** `repo_url` clones, branch listing and pipeline checkouts go through the same guarded HTTP client as webhooks: internal, loopback, link-local and metadata addresses are refused, including after redirects and DNS changes. A self-hosted Git server on a private address needs `APP_GIT_ALLOW_PRIVATE_NETWORKS=true`, which relaxes only git fetches. The older `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` still works for git but also relaxes notification webhooks, so prefer the git-specific one.
-- **Build logs.** Private keys, bearer tokens, token-shaped strings and credentials in URLs are masked before a build or clone log line is stored or streamed.
-- **Agent enrolment.** A node name must be 1 to 63 letters, digits, dot, underscore or hyphen, and `control_plane_addr` for provisioning must be `host:port`, so neither can inject lines into the agent's environment file.
-- **install.sh.** Data and install directories must be absolute, free of shell and unit metacharacters, and the data directory may not be a system directory (it is the target of `rm -rf` on `uninstall --purge`). Ports must be numbers in range and `LEVELRAIL_VERSION` is restricted to a safe character set.
+<AccordionGroup>
+<Accordion title="CSRF">
+
+A cookie-authenticated state-changing request is refused when its `Origin` names another host, when `Origin` is `null`, when there is no `Origin` but `Sec-Fetch-Site` says `cross-site` or `same-site`, or when there is no `Origin` and the `Referer` names another host. Requests with a bearer token or no session cookie are not subject to the check.
+
+</Accordion>
+<Accordion title="Static responses">
+
+Redirect targets and custom error pages are written to the ingress with `{` and `}` escaped, so a placeholder such as `{env.NAME}` or `{file.path}` in operator text can never be expanded into a control plane secret.
+
+</Accordion>
+<Accordion title="Certificates">
+
+Stored certificates from other CAs are purged only when the configured CA changes, not on every start, so a restart never deletes valid certificates or spends Let's Encrypt rate limit. The sslip.io hostname is only offered for a publicly routable address (carrier-grade NAT, benchmarking and reserved ranges are refused).
+
+</Accordion>
+<Accordion title="Bind mounts">
+
+In addition to `/etc`, `/root` and the Docker socket, `/run`, `/dev`, the control plane and agent data directories, and any parent directory that would contain a protected path (`/var`, `/var/lib`) are refused. Paths are checked lexically: a symlink on the host that points into a protected path is not followed, so do not create such symlinks inside a directory you let apps mount.
+
+</Accordion>
+<Accordion title="Registry port">
+
+The built-in registry's plain HTTP port is published on loopback only. Remote nodes pull through the TLS route. An existing container published on all interfaces is recreated.
+
+</Accordion>
+<Accordion title="Git fetches">
+
+`repo_url` clones, branch listing and pipeline checkouts go through the same guarded HTTP client as webhooks: internal, loopback, link-local and metadata addresses are refused, including after redirects and DNS changes. A self-hosted Git server on a private address needs `APP_GIT_ALLOW_PRIVATE_NETWORKS=true`, which relaxes only git fetches. The older `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` still works for git but also relaxes notification webhooks, so prefer the git-specific one.
+
+</Accordion>
+<Accordion title="Build logs">
+
+Private keys, bearer tokens, token-shaped strings and credentials in URLs are masked before a build or clone log line is stored or streamed.
+
+</Accordion>
+<Accordion title="Agent enrolment">
+
+A node name must be 1 to 63 letters, digits, dot, underscore or hyphen, and `control_plane_addr` for provisioning must be `host:port`, so neither can inject lines into the agent's environment file.
+
+</Accordion>
+<Accordion title="install.sh">
+
+Data and install directories must be absolute, free of shell and unit metacharacters, and the data directory may not be a system directory (it is the target of `rm -rf` on `uninstall --purge`). Ports must be numbers in range and `LEVELRAIL_VERSION` is restricted to a safe character set.
+
+</Accordion>
+</AccordionGroup>
 
 ## Reporting a vulnerability
 
@@ -149,19 +187,35 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 
 ## What this does not cover yet
 
-- No SSO/SAML, only local password auth and OAuth sign-in.
+- No SSO/SAML or SCIM. Sign-in is local password, passkey, or OAuth (Google, GitHub, Microsoft, generic OIDC).
 - No secret scanning of an app's own source repository.
 - Notification destinations (webhook URLs, Telegram bot tokens, PagerDuty and Opsgenie keys) are stored as plain text in `alerting.db`, not envelope encrypted. Treat that file as sensitive.
 - Sessions live in memory, so every control plane restart (including an upgrade) signs everyone out. API tokens are unaffected.
 - `GET /api/v1/system/containers` lists every container on the Docker host, including ones Levelrail does not manage, to any caller with `read`.
-- Passkey login was not exercised end to end here: it needs a real browser authenticator.
 - Container hardening is on by default but has no per-app override yet, and read-only root filesystems stay opt-in.
 - Rootless Docker and Podman detection and hardening adjustment ([above](#rootless-and-podman)) exist but are not verified against a real installation; bind-mount ownership and cgroup resource limits beyond `PidsLimit` are known gaps.
 
-## See also
+## Next steps
 
-- [Master key rotation](master-key-rotation.md) - How to rotate the encryption key that protects all secrets
-- [Identity and access](identity-and-access.md) - Users, tokens, roles, and IAM policies
-- [Domains and ingress](domains-and-ingress.md) - TLS certificates and domain configuration
-- [Threat model](threat-model.md) - Trust boundaries, mitigations with file references, and known gaps
-- [Architecture](architecture.md) - How security layers integrate with the core platform
+<CardGroup :cols="2">
+<Card title="Identity and access" href="/identity-and-access">
+
+Users, tokens, roles, and IAM policies.
+
+</Card>
+<Card title="Threat model" href="/threat-model">
+
+Trust boundaries, mitigations with file references, and known gaps.
+
+</Card>
+<Card title="Master key rotation" href="/master-key-rotation">
+
+Rotate the key that protects all secrets.
+
+</Card>
+<Card title="Domains and ingress" href="/domains-and-ingress">
+
+TLS certificates and domain configuration.
+
+</Card>
+</CardGroup>

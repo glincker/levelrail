@@ -4,67 +4,31 @@ description: Organize apps and databases into optional projects, organizations, 
 
 # Projects, organizations, and environments
 
-Group your apps and databases into projects, file projects under organizations, and tag app environments (staging, production, and so on) so they share config and get deployment gates, all optional and added only when you need the structure.
+Group your apps and databases into projects, file projects under organizations, and tag apps with an environment (staging, production, and so on) so they share config and get deployment gates. All of it is optional: add structure when you need it.
 
-::: details For contributors: where this lives in the source
-- `internal/api/projects.go`, `organizations.go`, `environments.go` - CRUD handlers
-- `project_env.go`, `organization_env.go`, `environment_env.go` - shared env var layering
-- `project_stop_start.go`, `project_restart.go` - project-wide lifecycle actions
-- `internal/reconcile/application/controller.go`'s `resolveEnv` - where the env layers actually merge
-:::
+<InlineToc default-open />
 
-## Why this exists
+## The model
 
-Apps and databases are real, running things with their own lifecycle.
+Apps and databases are the real, running things. Projects, organizations, and environments are labels on top of them.
 
-Projects, organizations, and environments are optional labels only. They have no owner, no member list, and no per-project permissions. The single admin user sees every project and app/database regardless of membership, exactly like everything else.
+- A **project** groups apps and databases.
+- An **organization** groups projects.
+- An **environment** belongs to one project and is applied to apps (not databases). It carries shared env vars and can be marked protected.
 
-This is deliberate. Projects and organizations are organizational labels arriving early; RBAC (Role-Based Access Control) is separate work coming later (Phase 4 in the repo plan).
-
-### The hierarchy
+An app or database can skip every level and belong to nothing, and nothing about how it runs depends on where it is filed. Deleting a project, organization, or environment never deletes or disrupts what is filed under it: members simply become unlabeled again.
 
 ```mermaid
 graph TD
-  A["Organization<br/>(optional)"]
-  B["Project<br/>(optional)"]
-  C["Environment<br/>(optional)<br/>staging, production, etc."]
-  D["App / Database<br/>(required)"]
-  
-  A -->|contains| B
-  B -->|contains| C
-  B -->|contains| D
-  C -->|tags apps| D
-  
-  E["Unlabeled<br/>App / Database<br/>(valid)"]
-  F["Orphaned after<br/>delete<br/>(valid)"]
-  
-  E -.->|also valid| D
-  F -.->|FK is NULL| D
-  
-  style A fill:#e8f4f8
-  style B fill:#e8f4f8
-  style C fill:#e8f4f8
-  style D fill:#f0e8f8
-  style E fill:#f8f0e8
-  style F fill:#f8f0e8
+  A["Organization (optional)"] -->|contains| B["Project (optional)"]
+  B -->|contains| D["App / Database"]
+  B -->|has| C["Environment (optional)<br/>staging, production, ..."]
+  C -->|tags| D
 ```
 
-An app or database can skip every level and belong to nothing. Nothing about how it runs changes based on where it's filed.
+Grouping is not an access boundary. Access is controlled by roles and IAM policies, which scope to individual resources and never to a project or organization. See [Identity and access](identity-and-access.md).
 
-Deleting a project, organization, or environment never deletes or disrupts what's filed under it. All foreign keys use `ON DELETE SET NULL`:
-
-- `desired_services.project_id`
-- `desired_databases.project_id`
-- `projects.org_id`
-- `desired_services.environment_id`
-
-Members just become unlabeled again.
-
-### Environments: scoped to projects, apps only
-
-Environments sit one level below a project, not an organization. Each environment is scoped to exactly one project (`GET/POST /api/v1/projects/{id}/environments`). Only apps can be tagged with an environment, not databases.
-
-This asymmetry is deliberate. Environments guard deploy/rollback/promote actions via the protected-environment gate. Databases have no deploy action, so environment tagging doesn't apply to them.
+Environments exist for the protected-environment gate, which guards deploy, rollback and promote. Databases have no such action, so only apps can be tagged with an environment.
 
 ## How the grouping actually works
 
@@ -95,17 +59,22 @@ Moves happen from the resource's own Overview page, not from the project/environ
 
 Project and environment detail pages are read-only for membership. They list what's filed there and link back to each member's Overview page to move it.
 
-### Server-side filtering: intentionally omitted
+### Moving from the CLI
 
-There is no `GET /api/v1/projects/{id}/apps` endpoint. The project detail page filters the full `GET /api/v1/apps` and `GET /api/v1/databases` responses client-side by each row's `project_id`. The organization detail page does the same with `GET /api/v1/projects` by `org_id`.
+Moving is the same `PUT .../project` call as the first assignment. The change is immediate, and nothing about the container, image or config changes.
 
-This keeps the "additive organization, not forced migration" principle honest. The `/apps`, `/databases`, and `/projects` endpoints don't change shape because grouping exists, and pages that already fetched the full list pay no second query.
+```bash
+levelrail-cli apps set-project my-app proj_abc123
+levelrail-cli databases set-project my-db proj_abc123
+levelrail-cli apps clear-project my-app
+levelrail-cli apps set-environment my-app env_prod123
+```
 
 ## Shared env var layering
 
 Projects, organizations, and environments can each hold shared env vars. These layer automatically into every app's effective environment. Each scope can hold a mix of plain and encrypted (secret) variables.
 
-They stack in a fixed order, lowest to highest:
+They stack in a fixed order, lowest to highest. [App integrations](integrations.md) sit at the same tier as the shared layers, below the app's own env.
 
 ```mermaid
 flowchart TD
@@ -131,7 +100,7 @@ An app with no project and no environment gets its own `env`/`secretEnv` (plus a
 
 ### Secret-marked shared env vars
 
-Any shared env var can be marked as a secret. Secret-marked variables are encrypted at rest using the same envelope-encryption path as per-app secrets (see [Security overview](./security.md#secrets)). Their values are never returned in plaintext from API endpoints or the dashboard; only the key name is shown.
+Any shared env var can be marked as a secret. Secret-marked variables are encrypted at rest using the same envelope-encryption path as per-app secrets (see [Security overview](./security.md#secrets-envelope-encryption)). Their values are never returned in plaintext from API endpoints or the dashboard; only the key name is shown.
 
 **Creating a secret shared env var via CLI:**
 
@@ -168,10 +137,6 @@ The same pattern applies for organizations and environments: use `/organizations
 
 When an app runs, secret-marked shared env vars are injected at container creation time the same way per-app secrets are (never persisted to container inspect or env listings). Changing a secret's value rolls apps forward the same way changing a per-app secret does: set the new value, and the app restarts on the next reconciliation pass or manual restart.
 
-### Why this structure
-
-Environments hang off a project, not directly off an organization. An environment's shared vars need the project's vars beneath them (to override), and the project's vars need the organization's beneath those. This hierarchy is the only order that makes sense.
-
 ### Comparing env vars across environments
 
 `GET /api/v1/projects/{id}/environments/compare?a={envId}&b={envId}` diffs two of a project's environments: which keys only one side has, and which plain keys both sides have with different values. Each side's `env` list is the same organization-then-project-then-environment resolved effective set described above, so the diff reflects what an app tagged with that environment would actually see, not just that environment's own raw rows.
@@ -190,18 +155,6 @@ levelrail-cli apps environments env-diff proj_abc123 env_staging env_prod
 ```
 
 **Dashboard:** the "Compare" action on a project's Environments panel, or on an environment's own detail page, opens a picker for two environments and shows the same diff table.
-
-## Moving a resource between projects
-
-Moving is the same `PUT .../project` call as initial assignment, just against a resource that already has one. No separate "move" endpoint.
-
-The store write is immediate. Nothing about the container, image, or config changes.
-
-```bash
-levelrail-cli apps set-project my-app proj_abc123
-levelrail-cli databases set-project my-db proj_abc123
-levelrail-cli apps clear-project my-app
-```
 
 ## Project-wide pause, resume, and restart
 
@@ -350,49 +303,25 @@ File a project into an organization from the project detail page, not from the o
 
 | Method | Path | Ability |
 | --- | --- | --- |
-| `GET` | `/api/v1/projects` | `read` |
-| `POST` | `/api/v1/projects` | `write` |
-| `GET` | `/api/v1/projects/{id}` | `read` |
-| `DELETE` | `/api/v1/projects/{id}` | `write` |
-| `POST` | `/api/v1/projects/{id}/stop` | `deploy` |
-| `POST` | `/api/v1/projects/{id}/start` | `deploy` |
-| `POST` | `/api/v1/projects/{id}/restart` | `deploy` |
-| `GET` | `/api/v1/projects/{id}/env` | `read` |
-| `PUT` | `/api/v1/projects/{id}/env` | `write` |
-| `PUT` | `/api/v1/apps/{name}/project` | `write` |
-| `PUT` | `/api/v1/databases/{name}/project` | `write` |
-| `GET` | `/api/v1/organizations` | `read` |
-| `POST` | `/api/v1/organizations` | `write` |
-| `GET` | `/api/v1/organizations/{id}` | `read` |
-| `DELETE` | `/api/v1/organizations/{id}` | `write` |
+| `GET`, `POST` | `/api/v1/projects` | `read`, `write` |
+| `GET`, `DELETE` | `/api/v1/projects/{id}` | `read`, `write` |
+| `POST` | `/api/v1/projects/{id}/stop`, `/start`, `/restart` | `deploy` |
+| `GET` | `/api/v1/projects/{id}/topology` | `read` |
 | `PUT` | `/api/v1/projects/{id}/organization` | `write` |
-| `GET` | `/api/v1/organizations/{id}/env` | `read` |
-| `PUT` | `/api/v1/organizations/{id}/env` | `write` |
-| `GET` | `/api/v1/organizations/{id}/env/all` | `read` | Plain and secret-marked shared vars combined |
-| `GET` | `/api/v1/organizations/{id}/env/secrets` | `read` | Secret-marked var keys only (values never returned) |
-| `PUT` | `/api/v1/organizations/{id}/env/secrets/{key}` | `write` | Create or update a secret-marked shared var |
-| `DELETE` | `/api/v1/organizations/{id}/env/secrets/{key}` | `write` | Delete a secret-marked shared var |
-| `GET` | `/api/v1/projects/{id}/environments` | `read` |
-| `POST` | `/api/v1/projects/{id}/environments` | `write` |
-| `PATCH` | `/api/v1/environments/{id}` | `write` |
-| `DELETE` | `/api/v1/environments/{id}` | `write` |
+| `GET`, `POST` | `/api/v1/organizations` | `read`, `write` |
+| `GET`, `DELETE` | `/api/v1/organizations/{id}` | `read`, `write` |
+| `GET`, `POST` | `/api/v1/projects/{id}/environments` | `read`, `write` |
+| `GET` | `/api/v1/projects/{id}/environments/compare?a=&b=` | `read` |
+| `PATCH`, `DELETE` | `/api/v1/environments/{id}` | `write` |
+| `GET` | `/api/v1/environments/{id}/clone/preview` | `read` |
+| `POST` | `/api/v1/environments/{id}/clone` | `deploy` |
+| `PUT` | `/api/v1/apps/{name}/project`, `/api/v1/databases/{name}/project` | `write` |
 | `PUT` | `/api/v1/apps/{name}/environment` | `write` |
-| `GET` | `/api/v1/environments/{id}/env` | `read` |
-| `PUT` | `/api/v1/environments/{id}/env` | `write` |
-| `GET` | `/api/v1/environments/{id}/env/all` | `read` | Plain and secret-marked shared vars combined |
-| `GET` | `/api/v1/environments/{id}/env/secrets` | `read` | Secret-marked var keys only (values never returned) |
-| `PUT` | `/api/v1/environments/{id}/env/secrets/{key}` | `write` | Create or update a secret-marked shared var |
-| `DELETE` | `/api/v1/environments/{id}/env/secrets/{key}` | `write` | Delete a secret-marked shared var |
-| `GET` | `/api/v1/environments/{id}/clone/preview` | `read` | Preview cloning a whole environment's app set |
-| `POST` | `/api/v1/environments/{id}/clone` | `deploy` | Clone a whole environment's app set into a new one |
-| `GET` | `/api/v1/projects/{id}/env` | `read` |
-| `PUT` | `/api/v1/projects/{id}/env` | `write` |
-| `GET` | `/api/v1/projects/{id}/env/all` | `read` | Plain and secret-marked shared vars combined |
-| `GET` | `/api/v1/projects/{id}/env/secrets` | `read` | Secret-marked var keys only (values never returned) |
-| `PUT` | `/api/v1/projects/{id}/env/secrets/{key}` | `write` | Create or update a secret-marked shared var |
-| `DELETE` | `/api/v1/projects/{id}/env/secrets/{key}` | `write` | Delete a secret-marked shared var |
-| `POST` | `/api/v1/apps/{name}/deploys` (needs `confirm: true` if protected) | `deploy` |
-| `POST` | `/api/v1/apps/{name}/promote` (needs `confirm: true` if protected) | `deploy` |
+| `GET`, `PUT` | `/api/v1/{projects,organizations,environments}/{id}/env` | `read`, `write` |
+| `GET` | `/api/v1/{projects,organizations,environments}/{id}/env/all` | `read` (plain and secret-marked vars combined) |
+| `GET` | `/api/v1/{projects,organizations,environments}/{id}/env/secrets` | `read` (secret keys only) |
+| `PUT`, `DELETE` | `/api/v1/{projects,organizations,environments}/{id}/env/secrets/{key}` | `write` |
+| `POST` | `/api/v1/apps/{name}/deploys`, `/promote` | `deploy` (`confirm: true` if the environment is protected) |
 | `GET` | `/api/v1/apps/{name}/promote/preview` | `read` |
 
 ## CLI
@@ -449,24 +378,35 @@ levelrail-cli apps rollback <name> --image IMAGE [--confirm] [flags]
 levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--confirm] [--preview] [flags]
 ```
 
-::: details Not built yet (deliberate follow-ups)
+## Limits
 
-- **No project-scoped or organization-scoped auth.** Grouping is a label, not a permission boundary. The single admin user sees and acts on everything regardless of grouping. Real membership and RBAC come later (Phase 4).
+- **Grouping is not a permission boundary.** Roles and IAM policies scope to individual resources, never to a project or organization.
+- **No bulk move.** Move apps and databases between projects or environments one at a time.
+- **No database environment tagging.** The protected-environment gate only guards deploy, rollback and promote.
+- **No per-project or per-organization audit view.** Changes appear in the generic audit log (`GET /api/v1/audit-log`).
+- **No server-side membership listing.** There is no `GET /api/v1/projects/{id}/apps`. The dashboard filters the full `/apps`, `/databases` and `/projects` lists by each row's `project_id` or `org_id`.
 
-- **No bulk move.** Move apps/databases between projects or environments one at a time. No "move every app in project A to project B" endpoint.
+## Next steps
 
-- **No database environment tagging.** Only apps can be tagged with an environment. Databases have no equivalent because the protected-environment gate only guards deploy/rollback/promote, which don't apply to databases.
+<CardGroup :cols="2">
+<Card title="Deploying apps" href="/deploying-apps">
 
-- **No project or organization-scoped deploy history or audit view.** Grouping members appear in the generic audit log (`GET /api/v1/audit-log`) like any other authenticated write, but no dedicated per-project or per-organization view exists.
+The apps being grouped, plus promote and clone.
 
-- **No server-side filtered listing.** `GET /api/v1/projects/{id}/apps` doesn't exist. The dashboard filters the full unfiltered list client-side. Revisit only if this becomes a scale problem for the 3-50-service target audience.
+</Card>
+<Card title="Managing databases" href="/managing-databases">
 
-:::
+The databases being grouped.
 
-## See also
+</Card>
+<Card title="Project topology graph" href="/service-topology-graph">
 
-- [Deploying apps](deploying-apps.md) and [Managing databases](managing-databases.md) - the core resources being grouped
-- [Project topology graph](service-topology-graph.md) - a project's apps, databases, and volumes drawn as a diagram
-- [Getting started](getting-started.md) - walkthrough for new deployments
-- [API reference](api-reference.md) - complete endpoint documentation
-- [Protected environments](projects-and-organizations.md#protected-environments) - deployment gates and protection rules
+A project's apps, databases and volumes as a diagram.
+
+</Card>
+<Card title="Identity and access" href="/identity-and-access">
+
+Roles and per-resource policies.
+
+</Card>
+</CardGroup>

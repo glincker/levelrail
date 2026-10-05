@@ -16,28 +16,47 @@ Nothing runs while idle. There is no resident scanner: a scan starts a container
 
 ## Turn it on
 
-1. Set `APP_BUILD_ATTEST=true` on the control plane and restart it. From then on each Dockerfile build records an SBOM.
-2. Open the app, then **Deploy settings**, then **Supply chain**, and turn on scanning. Or use the CLI:
+<Steps>
+<Step title="Record SBOMs">
+
+Set `APP_BUILD_ATTEST=true` on the control plane and restart it. From then on each Dockerfile build records an SBOM.
+
+</Step>
+<Step title="Turn on scanning for an app">
+
+<Tabs :items="['Dashboard', 'CLI']">
+<Tab value="Dashboard">
+
+Open the app, then **Deploy settings**, then **Supply chain**, and turn on scanning.
+
+</Tab>
+<Tab value="CLI">
 
 ```bash
-levelrail apps scan enable web
-levelrail apps scan gate web block_on_critical
-levelrail apps scan status web
-levelrail apps sbom web            # newest deploy that has an SBOM
-levelrail apps sbom web da_abc123 --download --file web.sbom.json
-levelrail apps scan run web da_abc123
-levelrail apps scan disable web
+levelrail-cli apps scan enable web
+levelrail-cli apps scan gate web block_on_critical
+levelrail-cli apps scan status web
+levelrail-cli apps sbom web            # newest deploy that has an SBOM
+levelrail-cli apps sbom web da_abc123 --download --file web.sbom.json
+levelrail-cli apps scan run web da_abc123
+levelrail-cli apps scan disable web
 ```
+
+</Tab>
+</Tabs>
+
+</Step>
+</Steps>
 
 Each deploy's **Supply chain** section (in the deployments drawer and on the per-app deploy page) shows the package count, the first packages, a license summary and vulnerability counts by severity, with a **Scan now** button and a download link for the SBOM.
 
 ## What a scan costs
 
-- **Scanner image.** The first scan pulls the scanner image (default `docker.io/aquasec/trivy:0.65.0`, or `docker.io/anchore/grype:v0.99.1` with `APP_SCANNER=grype`). These images are roughly 100 to 250 MB. The size was not measured for this release, so treat it as a rough range. The image stays on the host after the scan.
+- **Scanner image.** The first scan pulls the scanner image (default `docker.io/aquasec/trivy:0.65.0`, or `docker.io/anchore/grype:v0.99.1` with `APP_SCANNER=grype`). Expect each image to be on the order of hundreds of MB. The image stays on the host after the scan.
 - **Vulnerability database.** The scanner downloads its database on the first scan and refreshes it later. It is cached in a Docker volume named after the brand short name with a `-scanner-cache` suffix.
 - **Per scan.** One container with `APP_SCAN_MEMORY_MB` (default 1024) of memory, `APP_SCAN_CPUS` (default 1) CPUs and a 256 process limit, all capabilities dropped, `no-new-privileges`, removed afterwards. It has network access, because the database download needs it. Only the SBOM is copied into it: no app data, secrets or Docker socket.
 - **Deploy latency.** A deploy waits for the scan before it goes live, up to `APP_SCAN_TIMEOUT` (default 5 minutes). A scanner that fails or times out never blocks a release.
-- **Build time.** Attestations add work to every build (BuildKit runs a scanner image over the build result). This was not measured on the fixture app for this release, which is why `APP_BUILD_ATTEST` is off by default.
+- **Build time.** Attestations add work to every build (BuildKit runs a scanner image over the build result). That cost is why `APP_BUILD_ATTEST` is off by default.
 
 ## The gate
 
@@ -51,14 +70,13 @@ A blocked deploy fails with the reason, `desired state` is not changed and the p
 
 Every service of a multi-service deploy is gated on its own settings, and one blocked service does not let the others skip their gate. Changing scanning settings never arms, restores or extends an override: turning the gate away from `block_on_critical` disarms it.
 
-To let one blocked release through, an operator arms an override with a reason (**Deploy settings**, **Supply chain**, or `levelrail apps scan override web --reason "..."`). It applies to the next release only, expires after `APP_SCAN_OVERRIDE_TTL` (default 1 hour), and the reason is recorded in the app timeline and the audit log. A deploy freeze still applies as usual: the gate runs after a build, so it never releases a frozen deploy.
+To let one blocked release through, an operator arms an override with a reason (**Deploy settings**, **Supply chain**, or `levelrail-cli apps scan override web --reason "..."`). It applies to the next release only, expires after `APP_SCAN_OVERRIDE_TTL` (default 1 hour), and the reason is recorded in the app timeline and the audit log. A deploy freeze still applies as usual: the gate runs after a build, so it never releases a frozen deploy.
 
 ## What is not covered
 
 - Only Dockerfile builds get an SBOM. Railpack builds, image deploys, static sites and builds dispatched to a remote node record none. Those deploys show no supply chain section data.
 - Provenance is `mode=min` and is recorded, not signed or verified.
 - Scans run against the SBOM, so they find what the SBOM lists. They do not read the image.
-- The scanner image references and versions above were not pulled or run against a registry while building this feature.
 
 ## Retention
 

@@ -57,14 +57,14 @@ Levelrail has one edition. It is Apache 2.0 licensed, there is no license key, n
 - **Backups.** Scheduled database and volume backups with retention, automatic verification after each run, restore, and restore into a new resource. The control plane database gets automatic snapshots, a pre-migration snapshot, encrypted off-box backups and restore drills. See [Backups and storage](backups-and-storage.md) and [Control plane backup](control-plane-backup.md).
 - **Approvals and freezes.** Protected environments, deploy approvals and deploy freeze windows. See [Deploy safety](deploy-safety.md).
 
-Some other platforms in this list reserve features such as SSO, audit logging or fine-grained roles for a paid plan or hosted offering. We have not verified every project's current split, and it changes over time, so check each project's pricing and licensing pages if this matters to you.
+If SSO, audit logging or fine-grained roles matter to you, check each project's own pricing and licensing pages. We have not verified every project's current split, and it changes over time.
 
 ## What Levelrail does not do yet
 
 - **SAML and SCIM.** OAuth and OIDC are supported; SAML single sign-on and SCIM provisioning are not.
-- **The largest template catalog.** Levelrail ships 311 one-click templates, each a Compose file the platform deploys and manages. Coolify's catalog is larger, and the end-to-end suite live-deploys a sample of 16 of Levelrail's templates, not all of them. See [Templates and registry](templates-and-registry.md).
+- **The largest template catalog.** Levelrail ships 311 one-click templates, each a Compose file the platform deploys and manages. Other projects may list more, and the end-to-end suite live-deploys a sample of Levelrail's templates, not all of them. See [Templates and registry](templates-and-registry.md).
 - **Track record.** Fewer real-world deployments and less community knowledge than projects that have existed for years.
-- **Public ACME issuance is not yet proven against every environment.** TLS defaults to an internal issuer and a public ACME issuer is built, with less field verification than the rest of the ingress. See the [roadmap](roadmap.md) for current status.
+- **Public ACME has had one live run.** TLS defaults to an internal issuer. The public ACME issuer was verified once against Let's Encrypt on a public VPS. Renewal and DNS-01 wildcards are not yet exercised live. See the [roadmap](roadmap.md).
 - **No Windows or non-Linux nodes, and no Kubernetes compatibility layer.** These are deliberate non-goals.
 
 ## Choosing
@@ -78,7 +78,7 @@ To move an existing setup, see [Migrating from Coolify, Dokploy and CapRover](mi
 
 ## See also
 
-- [Coolify alternative](coolify-alternative.md), [Dokploy alternative](dokploy-alternative.md), [Vercel alternative](vercel-alternative.md), [Heroku alternative](heroku-alternative.md) and [Railway alternative](railway-alternative.md) - Focused guides for each switch
-- [Architecture](architecture.md) - How Levelrail is built internally
-- [Feature catalog](feature-catalog.md) - Complete inventory of routes, API, CLI
-- [Roadmap](roadmap.md) - Development status and what is coming next
+- [Coolify alternative](coolify-alternative.md), [Dokploy alternative](dokploy-alternative.md), [Vercel alternative](vercel-alternative.md), [Heroku alternative](heroku-alternative.md) and [Railway alternative](railway-alternative.md): focused guides for each switch
+- [Architecture](architecture.md): how Levelrail is built internally
+- [Feature catalog](feature-catalog.md): the dashboard pages by area
+- [Roadmap](roadmap.md): what has shipped and what is open

@@ -188,7 +188,7 @@ The cause is a heuristic match against a fixed rule table, not a diagnosis. It n
 
 `GET /api/v1/deployments` lists deploy attempts across every app the caller can read, newest first. It is cursor paginated (`limit` defaults to 50, maximum 200, pass `next_cursor` back as `cursor`). An IAM Deny on `app:web` hides web's deployments from the list, the summary, and the stream. The dashboard page is described in [Deployments page](deployments-page.md).
 
-- **Filters:** `status` (building, ready, failed, canceled, rolled_back, superseded, held; comma separated or repeated), `app`, `branch`, `trigger` (git push, manual, rollback, api, preview), `environment` (name or ID), `since` and `until` (RFC3339 or a duration such as `24h`, `7d`), `q` (commit message, SHA prefix, app name), `live=true` (only the release currently serving each app), and `pr` (previews of one pull request). `queued`, `awaiting_approval`, `schedule`, and `pipeline` are accepted values that match nothing today.
+- **Filters:** `status` (queued, held, awaiting_approval, building, ready, failed, canceled, rolled_back, superseded; comma separated or repeated), `app`, `branch`, `trigger` (git push, manual, rollback, api, preview, schedule, pipeline), `environment` (name or ID), `since` and `until` (RFC3339 or a duration such as `24h`, `7d`), `q` (commit message, SHA prefix, app name), `live=true` (only the release currently serving each app), and `pr` (previews of one pull request).
 - **How fields are derived:** `rolled_back` is a succeeded deploy that a later rollback replaced (`rolled_back_by`). A rollback carries `rollback_of`, the attempt whose image it re-deployed. `held` is a deploy parked by a freeze window. `canceled` is a failed attempt whose error is a canceled context. `image_ref` pins the tag to a digest only when the digest is registry verified, and `digest_reason` says why when it is not. Commit message, author, and branch are recorded for git push deploys only. `steps` and the failing step are known only while an attempt runs, because step history is not persisted.
 - **Summary:** `GET /api/v1/deployments/summary?window=24h` returns counts by status (window up to 30 days), `in_progress`, `needs_attention` (held plus digest mismatch), `failure_rate_24h`, median and p95 `duration`, and `per_day` for 14 days.
 - **Stream:** `GET /api/v1/deployments/stream` is server-sent events of `{type: created|step|finished, step?, deployment}`. Only deploys that run through the build recorder emit events. A plain image redeploy appears in the list but not on the stream.
@@ -207,13 +207,15 @@ The MCP tools `list_deployments` and `deployments_summary` are read-only.
 
 ## Roll back
 
-Roll back from the dashboard's deploy history, or from the CLI by naming the tag you want:
+Roll back from the dashboard's deploy history (one-click **Rollback** per row), or from the CLI:
 
 ```bash
-levelrail-cli apps rollback NAME --image IMAGE:OLDER_TAG
+levelrail-cli apps deploys list NAME
+levelrail-cli apps deploys rollback-to NAME DEPLOY_ID          # exact image of a past succeeded deploy, pinned by digest
+levelrail-cli apps rollback NAME --image IMAGE:OLDER_TAG       # or name the tag yourself
 ```
 
-Prior images are pinned, so garbage collection cannot remove a rollback target. Levelrail does not answer "what was the previous tag" on request. Take it from `GET /api/v1/apps/{name}/deploy-attempts`, which the dashboard lists with a one-click **Rollback** per row, or from your own build records.
+`rollback-to` is `POST /api/v1/apps/{name}/deploys/{deployId}/rollback`, described in [Deploy safety](deploy-safety.md#queue-cancel-and-rollback-to-a-release). Prior images are pinned, so garbage collection cannot remove a rollback target.
 
 Two related options:
 
@@ -349,11 +351,28 @@ By default only the image changes. Env vars, ports, domains, volumes, node place
 
 Deploying to or promoting into a protected environment needs a second person to approve it.
 
-1. The requester sends the deploy or promote with `confirm: true`. Without it the request fails with a 409. The CLI asks for an interactive "yes" when `--confirm` is missing. With it, nothing is applied yet: the call creates a pending approval and returns `202 Accepted` with `pending_approval` set instead of `app`.
-2. A different user or token holding the `deploy` ability approves it with `POST /api/v1/deploy-approvals/{id}/approve`. The requester cannot approve or reject its own request, and the server answers 403, comparing both the principal type (user or token) and its ID. A CI token's request must be approved by another token or a human.
-3. Approving runs the same path an unprotected deploy uses: desired state changes, an attempt is recorded, and the reconciler picks it up.
-4. Rejecting (`POST .../reject`, optional `{"reason": "..."}`) leaves desired state untouched.
-5. A request nobody decides expires after 24 hours (`APP_DEPLOY_APPROVAL_TTL`, a Go duration) and can no longer be decided. Expiry is applied lazily on read, and a background sweep marks expired rows for the UI.
+<Steps>
+<Step title="Request">
+
+The requester sends the deploy or promote with `confirm: true`. Without it the request fails with a 409. The CLI asks for an interactive "yes" when `--confirm` is missing. With it, nothing is applied yet: the call creates a pending approval and returns `202 Accepted` with `pending_approval` set instead of `app`.
+
+</Step>
+<Step title="Approve">
+
+A different user or token holding the `deploy` ability approves it with `POST /api/v1/deploy-approvals/{id}/approve`. The requester cannot approve or reject its own request, and the server answers 403, comparing both the principal type (user or token) and its ID. A CI token's request must be approved by another token or a human.
+
+</Step>
+<Step title="Run">
+
+Approving runs the same path an unprotected deploy uses: desired state changes, an attempt is recorded, and the reconciler picks it up.
+
+</Step>
+</Steps>
+
+A pending request can also end without being approved:
+
+- Rejecting (`POST .../reject`, optional `{"reason": "..."}`) leaves desired state untouched.
+- A request nobody decides expires after 24 hours (`APP_DEPLOY_APPROVAL_TTL`, a Go duration) and can no longer be decided. Expiry is applied lazily on read, and a background sweep marks expired rows for the UI.
 
 There is no dedicated approver role. The existing ability model decides, and `deploy`, directly or through the `operator` and `admin` roles, is enough.
 
@@ -402,15 +421,35 @@ The API is `GET /api/v1/environments/{id}/clone/preview?new_environment_name=NAM
 
 The `apps` array is optional. Omit it for auto-suggested names and no domains, or list only the apps you want to customize.
 
-::: details Troubleshooting a clone
-**Some apps were created and others were not.** The environment exists. Check `levelrail-cli apps list`, finish the rest by hand, or delete the partial environment with `levelrail-cli apps environments delete ENV_ID` and retry.
+#### Troubleshooting a clone
 
-**A domain assignment fails with "domain already taken".** Another app owns it. Pick a different domain or remove it from the other app first.
+<AccordionGroup>
 
-**Secrets have no value even with `--copy-secret-values`.** Only secrets that had a value in the source are copied. Set the rest by hand on the clone.
+<Accordion title="Some apps were created and others were not">
 
-**A cloned app stays pending.** Read `levelrail-cli apps deploys list CLONE` for the error. Usual causes are limits that are too tight, a failed image pull, or a readiness probe that times out.
-:::
+The environment exists. Check `levelrail-cli apps list`, finish the rest by hand, or delete the partial environment with `levelrail-cli apps environments delete ENV_ID` and retry.
+
+</Accordion>
+
+<Accordion title="A domain assignment fails with &quot;domain already taken&quot;">
+
+Another app owns it. Pick a different domain or remove it from the other app first.
+
+</Accordion>
+
+<Accordion title="Secrets have no value even with --copy-secret-values">
+
+Only secrets that had a value in the source are copied. Set the rest by hand on the clone.
+
+</Accordion>
+
+<Accordion title="A cloned app stays pending">
+
+Read `levelrail-cli apps deploys list CLONE` for the error. Usual causes are limits that are too tight, a failed image pull, or a readiness probe that times out.
+
+</Accordion>
+
+</AccordionGroup>
 
 To duplicate a single app instead, use `levelrail-cli apps clone NAME NEW_NAME`.
 
@@ -585,7 +624,7 @@ levelrail-cli deploy-approvals list | get | approve | reject
 
 ## Known limits
 
-- **No previous-tag lookup.** A manual rollback needs the tag from you. Only auto-rollback computes it, and it does not expose the lookup.
+- **`apps rollback` needs a tag.** Use `apps deploys rollback-to` with a deploy ID to roll back without knowing the tag.
 - **No per-service history for `deploy-spec`.** It writes no deploy attempt per service, only the synchronous response. A per-service log is a known, deferred schema change.
 - **`GET /apps/{name}/deploys` is current reconcile status, not a log.** It keeps only the latest condition per controller and type. `GET .../deploy-attempts` is the append-only history.
 - **Compose and `deploy-spec` are synchronous.** Neither streams build progress the way a single-service build does, so a large multi-service spec is a slow HTTP request.

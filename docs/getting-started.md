@@ -24,9 +24,7 @@ The full requirements list, with what the installer checks, is in [Installing](i
 
 ## Install
 
-```
-curl -fsSL https://levelrail.com/install.sh | sudo sh
-```
+<CopyCommand command="curl -fsSL https://levelrail.com/install.sh | sudo sh" />
 
 The script checks the host, installs Docker if it is missing, downloads the newest release and verifies its checksum, starts a `levelrail` systemd service, and waits until it reports healthy. It ends by printing:
 
@@ -45,10 +43,11 @@ Pin a release with `LEVELRAIL_VERSION=v0.2.0-beta.14`, or run it as a container 
 Open the printed setup link, choose a password, and you are the admin. The first sign-in opens a setup wizard, not an empty app list:
 
 1. **Server check** runs the same checks as `levelrail-cli doctor`. Each failure shows a command to fix it and a docs link. Only Docker, the database, or the data directory failing blocks you.
-2. **Dashboard domain** (optional, recommended) shows the exact DNS record to create, then watches DNS and the HTTPS certificate until both are green. Use a dedicated name such as `console.example.com`, not a domain an app will serve.
-3. **Git provider** (optional) connects GitHub, GitLab, Bitbucket, or Gitea.
-4. **First app** deploys a sample, a template, or your own repository, and waits until it is healthy. A failure shows the automatic diagnosis and a link to the logs.
-5. **Done** links to alerts, backup targets, and inviting teammates.
+2. **Topology** (optional) explains single node versus multi-node. Single node is the default and nothing needs deciding now.
+3. **Dashboard domain** (optional, recommended) shows the exact DNS record to create, then watches DNS and the HTTPS certificate until both are green. Use a dedicated name such as `console.example.com`, not a domain an app will serve.
+4. **Git provider** (optional) connects GitHub, GitLab, Bitbucket, or Gitea.
+5. **First app** deploys a sample, a template, or your own repository, and waits until it is healthy. A failure shows the automatic diagnosis and a link to the logs.
+6. **Done** links to alerts, backup targets, and inviting teammates.
 
 ![Levelrail setup wizard with six steps from server check to done](assets/screenshots/setup-wizard.png)
 
@@ -60,7 +59,8 @@ Lost the setup token? On the server run `sudo APP_DATA_DIR=/var/lib/levelrail-da
 
 Pick the route that matches what you have.
 
-### From a git repository
+<Tabs :items="['Git repository','Built image','Config file']">
+<Tab value="Git repository">
 
 In the dashboard choose **New app**, paste a repository URL, and review the deployment plan Levelrail shows before it creates anything: build method, port, environment variables, volumes, and warnings. Confirm and watch the build log stream live.
 
@@ -72,13 +72,15 @@ levelrail-cli import https://github.com/your-org/your-app --deploy
 
 Without `--deploy` it prints the plan and stops. Every accepted input, including `docker run` commands, compose files, and Dockerfiles, is listed in [Importing apps](importing-apps.md).
 
-### From an image you already built
+</Tab>
+<Tab value="Built image">
 
 ```
 levelrail-cli apps create --name web --image ghcr.io/your-org/web:1.0 --port 8080
 ```
 
-### From a config file in your repo
+</Tab>
+<Tab value="Config file">
 
 `levelrail-cli init` detects your stack and writes an `app.yaml` for it, validated by the platform's own validator. A minimal spec looks like this:
 
@@ -102,6 +104,9 @@ levelrail-cli apps create --file app.yaml --repo https://github.com/your-org/you
 ```
 
 Every field, including resources, environment, replicas, and deploy strategy, is in the [app spec reference](app-spec-reference.md).
+
+</Tab>
+</Tabs>
 
 ::: details Prefer a guided prompt?
 `levelrail-cli apps create --interactive` asks for the name, source, port, domain, health path, and limits, then either writes `app.yaml` or creates the app. `databases create --interactive` does the same for a managed database.
@@ -151,15 +156,39 @@ Do the backup step before anything else. Your control plane database and `master
 
 ## Where to go next
 
-| I want to | Read |
-| --- | --- |
-| Run Postgres, Redis, or another database next to my app | [Managing databases](managing-databases.md) |
-| Deploy a pre-made service such as Plausible or Uptime Kuma | [Templates](templates-and-registry.md) |
-| Add custom domains and understand certificates | [Domains and ingress](domains-and-ingress.md) |
-| Deploy on every push, with previews per pull request | [Git integrations](git-integrations.md) |
-| Add a second server | [Multi-node quickstart](multi-node-quickstart.md) |
-| Get alerted when something breaks | [Observability](observability.md) |
-| Understand what is stable and what is beta | [Feature status](feature-status.md) |
-| Hit a problem | [Troubleshooting](troubleshooting.md) |
+<CardGroup :cols="2">
+<Card title="Managing databases" href="/managing-databases">
+
+Run Postgres, Redis, or another database next to your app.
+
+</Card>
+<Card title="Templates" href="/templates-and-registry">
+
+Deploy a pre-made service such as Plausible or Uptime Kuma.
+
+</Card>
+<Card title="Domains and ingress" href="/domains-and-ingress">
+
+Add custom domains and understand certificates.
+
+</Card>
+<Card title="Git integrations" href="/git-integrations">
+
+Deploy on every push, with previews per pull request.
+
+</Card>
+<Card title="Multi-node quickstart" href="/multi-node-quickstart">
+
+Add a second server.
+
+</Card>
+<Card title="Observability" href="/observability">
+
+Get alerted when something breaks.
+
+</Card>
+</CardGroup>
+
+Not sure what is stable? See [Feature status](feature-status.md). Hit a problem? See [Troubleshooting](troubleshooting.md).
 
 Every CLI command, output format (`--output`, `--query`), and shell completion option is in the [CLI reference](cli-reference.md). To build from source or run a development instance, see [Installing](installing.md#option-3-build-from-source).

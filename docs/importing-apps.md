@@ -80,11 +80,15 @@ Flags that are not supported are listed as warnings and ignored, never dropped s
 | `--health-cmd` and other health flags | add an HTTP health check on the app afterwards |
 | `--runtime`, `--platform`, `--cpuset-cpus`, `--memory-swap`, `--pids-limit`, `--cpu-shares`, `--oom-score-adj`, `--kernel-memory`, `--storage-opt` | runtime and resource tuning |
 
-## From the dashboard
+## Run an import
+
+<Tabs :items="['UI','CLI','API']">
+<Tab value="UI">
 
 Open New app, paste into "Import anything" (or upload a compose file or Dockerfile), and choose Preview plan. The plan shows the source, the build method with its reason, an editable app name and container port, an env table with Required and Secret indicators and inline value inputs, volumes, a domain suggestion and warnings. Deploy stays disabled until every required variable has a value. Deploying a repo opens the live build log. The template, image, git and compose cards below the input remain available.
 
-## From the CLI
+</Tab>
+<Tab value="CLI">
 
 ```bash
 # preview only, creates nothing
@@ -102,6 +106,10 @@ levelrail-cli import nginx:1.27 --json
 
 When required variables have no value and no terminal is attached, `--deploy` fails and lists them. Other flags: `--port`, `--ref`.
 
-## From the API and MCP
+</Tab>
+<Tab value="API">
 
 `POST /api/v1/imports/plan` needs the write ability and returns the plan JSON. The body is `{"text": "...", "kind": "repo|docker_run|image|compose|dockerfile", "ref": "", "name": "", "port": 0, "env": {}}`; only `text` is required. Supplying `env` values satisfies required variables and injects them into a generated compose file. The `plan_import` MCP tool wraps the same call, is read-only, and its result carries repository text that should be treated as untrusted data.
+
+</Tab>
+</Tabs>

@@ -70,38 +70,56 @@ What the drill identity changes: if you set `APP_CONTROL_PLANE_DRILL_IDENTITY_FI
 
 ## Set it up
 
-The dashboard has a guided checklist under Settings, Control plane backup. The same steps on the CLI:
+The dashboard has a guided checklist under **Settings, Control plane backup**. The same steps on the CLI:
 
-1. Add a storage destination (Settings, Storage, or see [object storage](/object-storage)). Use a bucket with versioning enabled.
-2. Make a key pair on your own machine, not the server:
+<Steps>
+<Step title="Add a storage destination">
 
-   ```
-   levelrail-cli control-plane-backups keys generate --out backup-identity.txt
-   ```
+Connect a bucket under **Settings, Storage destinations** (see [object storage](/object-storage)). Use a bucket with versioning enabled.
 
-   The public key (starts with `age1`) is printed. The private key is written to the file with mode `0600` and never overwritten. Store it offline: password manager, hardware token, a printed copy in a safe. Repeat on a second person's machine and add both public keys, so either can restore.
-3. Point backups at the destination and your keys:
+</Step>
+<Step title="Make a key pair on your own machine, not the server">
 
-   ```
-   levelrail-cli control-plane-backups schedule set --enable --destination bkt_123 \
-     --recipient age1yourkey... --recipient age1secondkey...
-   ```
+```bash
+levelrail-cli control-plane-backups keys generate --out backup-identity.txt
+```
 
-4. Take the first backup and look at it:
+The public key (starts with `age1`) is printed. The private key is written to the file with mode `0600` and never overwritten. Store it offline: a password manager, a hardware token, or a printed copy in a safe. Repeat on a second person's machine and add both public keys, so either can restore.
 
-   ```
-   levelrail-cli control-plane-backups run-now
-   levelrail-cli control-plane-backups list --offbox
-   ```
+</Step>
+<Step title="Point backups at the destination and your keys">
 
-5. Write the escrow bundle and store it offline, then confirm:
+```bash
+levelrail-cli control-plane-backups schedule set --enable --destination bkt_123 \
+  --recipient age1yourkey... --recipient age1secondkey...
+```
 
-   ```
-   levelrail-cli control-plane-backups escrow --out escrow.age --ack
-   ```
+</Step>
+<Step title="Take the first backup and look at it">
 
-   This writes `escrow.age` (the master key and the agent CA files, encrypted to your recipients) and `escrow.age.instructions.txt`. Do not put them in the backup bucket.
-6. Run a drill: `levelrail-cli control-plane-backups drill run`.
+```bash
+levelrail-cli control-plane-backups run-now
+levelrail-cli control-plane-backups list --offbox
+```
+
+</Step>
+<Step title="Write the escrow bundle and store it offline">
+
+```bash
+levelrail-cli control-plane-backups escrow --out escrow.age --ack
+```
+
+This writes `escrow.age` (the master key and the agent CA files, encrypted to your recipients) and `escrow.age.instructions.txt`. Do not put them in the backup bucket.
+
+</Step>
+<Step title="Run a drill">
+
+```bash
+levelrail-cli control-plane-backups drill run
+```
+
+</Step>
+</Steps>
 
 `levelrail-cli doctor` then reports `control_plane_dr` as ok.
 
@@ -149,32 +167,13 @@ Secrets are bound to their storage slot (table, row and column), not to the mach
 
 ## Restore
 
-Restore is an offline command on the server, because a database cannot be swapped under a running control plane. It refuses to run while another process has the database open.
+Restore is an offline command on the server, because a database cannot be swapped under a running control plane. It refuses to run while another process has the database open. The full sequence for a lost machine (recover the key, rehearse, restore, start) is in the [runbook](#runbook-the-control-plane-machine-is-gone) below.
 
-1. Provision the new machine and install the same release (or newer). Stop the control plane if it is running.
-2. Recover the master key and the agent CA files from your escrow bundle and put them in the data directory:
+```bash
+levelrail restore --from s3://my-bucket/cp-backups/<install-id>/ --identity backup-identity.txt
+```
 
-   ```
-   levelrail-cli control-plane-backups escrow open escrow.age --identity backup-identity.txt --extract ./recovered
-   cp ./recovered/* /var/lib/levelrail-data/
-   ```
-
-   This writes `master.key`, `agent-ca.crt.pem` and `agent-ca.key.pem` with mode `0600` and never overwrites an existing file. Or set `APP_MASTER_KEY` instead of using the file. Without `--extract`, `escrow open` prints only the master key to stdout. Decryption happens on your machine.
-3. Rehearse first with `--dry-run`. It downloads, verifies and decrypts the backup and runs `integrity_check`, and leaves the live database alone:
-
-   ```
-   AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... levelrail restore --dry-run \
-     --from s3://my-bucket/cp-backups/<install-id>/ --identity backup-identity.txt \
-     --endpoint https://<account>.r2.cloudflarestorage.com
-   ```
-
-4. Restore for real. A `--from` ending in `/` picks the newest complete backup under that prefix; a full key restores that one; a local `.db.age` file (with its `.json` beside it) works too:
-
-   ```
-   levelrail restore --from s3://my-bucket/cp-backups/<install-id>/ --identity backup-identity.txt
-   ```
-
-5. Start the control plane. It applies any newer migrations (taking a pre-upgrade snapshot first) and the reconciler converges your containers toward the restored desired state.
+`--from` ending in `/` picks the newest complete backup under that prefix. A full key restores that one, and a local `.db.age` file (with its `.json` beside it) works too. Add `--dry-run` to download, verify, and decrypt the backup and run `integrity_check` without touching the live database.
 
 The command checks, in order: the manifest, the ciphertext SHA-256 and size against the manifest, decryption, the plaintext SHA-256, SQLite `integrity_check`, that the schema is not newer than this binary (otherwise it refuses, run a newer release), and that the backup's install id matches (this server's, if it has a database, and the one recorded inside the backup). It then writes the new database to a temporary file in the data directory, syncs it, keeps the current database as `levelrail.db.pre-restore` (and its `-wal` and `-shm` files) using hard links, and renames the new file over the live name in one step. A crash at any earlier point leaves the old database untouched. An earlier `.pre-restore` copy is kept under a timestamped name.
 
@@ -209,41 +208,54 @@ and the install id (the `cp-backups/<install-id>/` prefix in the bucket;
 `levelrail-cli control-plane-backups list --offbox` shows it while the old server
 still answers).
 
-1. **Provision the new machine** and install the same release (or a newer one).
-   Do not start the control plane. Docker must be installed.
-2. **Recover the master key and agent CA** on your own machine or the new one.
-   This needs no running server and no network:
+<Steps>
+<Step title="Provision the new machine">
 
-   ```
-   levelrail-cli control-plane-backups escrow open escrow.age \
-     --identity backup-identity.txt --extract ./recovered
-   mkdir -p /var/lib/levelrail-data
-   cp ./recovered/* /var/lib/levelrail-data/
-   ```
+Install the same release (or a newer one). Do not start the control plane. Docker must be installed.
 
-   You get `master.key`, `agent-ca.crt.pem` and `agent-ca.key.pem`, mode `0600`.
-   Delete `./recovered` afterwards.
-3. **Rehearse** (touches nothing; checks manifest, checksum, decryption,
-   `integrity_check`, schema and install id):
+</Step>
+<Step title="Recover the master key and agent CA">
 
-   ```
-   export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=...
-   APP_DATA_DIR=/var/lib/levelrail-data levelrail restore --dry-run \
-     --from s3://<bucket>/cp-backups/<install-id>/ --identity backup-identity.txt \
-     --endpoint https://<endpoint> --region <region> --path-style
-   ```
+This needs no running server and no network, and can run on your own machine or the new one:
 
-4. **Restore** (same command without `--dry-run`). It writes
-   `/var/lib/levelrail-data/levelrail.db` and keeps any database that was
-   already there as `levelrail.db.pre-restore`.
-5. **Start the control plane** with the same environment as before (the same
-   `APP_*` settings, in particular `APP_DATA_DIR`). The reconciler converges the
-   containers toward the restored desired state.
-6. **Check it worked:** `levelrail-cli databases list` and `apps list` show
-   everything; `levelrail-cli backups trigger <database> --target <id>` succeeds
-   (this proves the restored secrets decrypt with the recovered master key);
-   `levelrail-cli control-plane-backups run-now` uploads a new backup; then run
-   `control-plane-backups drill run`.
+```bash
+levelrail-cli control-plane-backups escrow open escrow.age \
+  --identity backup-identity.txt --extract ./recovered
+mkdir -p /var/lib/levelrail-data
+cp ./recovered/* /var/lib/levelrail-data/
+```
+
+You get `master.key`, `agent-ca.crt.pem`, and `agent-ca.key.pem`, mode `0600`, and an existing file is never overwritten. Delete `./recovered` afterwards. Alternatively set `APP_MASTER_KEY` instead of using the file. Without `--extract`, `escrow open` prints only the master key to stdout.
+
+</Step>
+<Step title="Rehearse">
+
+A dry run touches nothing and checks the manifest, checksum, decryption, `integrity_check`, schema, and install id:
+
+```bash
+export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=...
+APP_DATA_DIR=/var/lib/levelrail-data levelrail restore --dry-run \
+  --from s3://<bucket>/cp-backups/<install-id>/ --identity backup-identity.txt \
+  --endpoint https://<endpoint> --region <region> --path-style
+```
+
+</Step>
+<Step title="Restore">
+
+Run the same command without `--dry-run`. It writes `/var/lib/levelrail-data/levelrail.db` and keeps any database that was already there as `levelrail.db.pre-restore`.
+
+</Step>
+<Step title="Start the control plane">
+
+Use the same environment as before (the same `APP_*` settings, in particular `APP_DATA_DIR`). It applies any newer migrations (taking a pre-upgrade snapshot first), and the reconciler converges the containers toward the restored desired state.
+
+</Step>
+<Step title="Check it worked">
+
+`levelrail-cli databases list` and `levelrail-cli apps list` show everything. `levelrail-cli backups trigger <database> --target <id>` succeeds, which proves the restored secrets decrypt with the recovered master key. `levelrail-cli control-plane-backups run-now` uploads a new backup. Then run `levelrail-cli control-plane-backups drill run`.
+
+</Step>
+</Steps>
 
 What came back in the real run: all databases, backup targets and storage
 destinations, tokens and settings. Containers that were already running on the
@@ -262,52 +274,20 @@ Things this runbook cannot do, because they are not in the backup:
 - Without the agent CA files the restored control plane makes a new CA and every
   node agent must be re-enrolled with a new join token.
 
-### A bug this exercise found
-
-`escrow open --extract` wrote `master.key` with a trailing newline, and the
-server refused to load a key file with one (`malformed secret key`), so a
-restored control plane started with secrets disabled: backups, restores and
-every database credential reported "no master key". The key loader now ignores
-surrounding whitespace, so a key file or `APP_MASTER_KEY` with a trailing
-newline works. If you recovered a key with an older release, upgrade before
-starting the restored server.
-
 ### Local snapshots
 
-Verified the same way: `levelrail restore-snapshot --list`, `--dry-run latest`
-and `--yes latest` in a copy of a data directory (with `APP_DATA_DIR` set) listed
-the snapshots newest first, verified the snapshot, and replaced `levelrail.db`,
-keeping the old one as `.before-restore`. `levelrail restore-db <file>` is the
-same operation for a file you downloaded. A local snapshot never contains the
-master key.
+A local snapshot is on the dead machine's disk and never contains the master key. For a snapshot you still have (for example one downloaded earlier, or the pre-upgrade copy after a bad upgrade), `levelrail restore-snapshot` (`--list`, `--dry-run latest`, `--yes latest`) and `levelrail restore-db <file>` do the same offline swap and keep the old database as `.before-restore`. See [Control plane backup](/control-plane-backup#restoring).
 
 ## What has and has not been verified
 
-Verified for real, locally on one machine (a control plane built from this
-branch, real Docker, a SeaweedFS S3 bucket):
+The runbook above was run end to end on one machine: a control plane built from the release branch, real Docker, and a SeaweedFS S3 bucket, restoring into a second data directory. Off-box backups, escrow, a passing drill, `restore --dry-run`, the real restore from `s3://`, `restore-snapshot`, and `restore-db` were all exercised.
 
-- Off-box backups: `schedule set`, `run-now`, `list --offbox`, the encrypted
-  object and manifest in the bucket, `escrow`, a `drill run` that passed.
-- `levelrail restore --dry-run` and the real restore from `s3://` into a second
-  data directory, then starting the control plane on it (the runbook above).
-- `restore-snapshot` and `restore-db` (see above).
-- `control-plane-backups create` of a local snapshot.
+Not verified:
 
-Not verified by us:
-
-- A restore onto a physically different machine, and re-enrolling node agents
-  with a restored or regenerated CA.
-- Public ingress certificates and DNS after the move (the new machine has a new
-  address; update DNS yourself).
-- Provider specifics: AWS S3, R2 and B2 (the same code path with a different
-  endpoint, but only an S3-compatible server on localhost was used).
-- Restoring a backup made by an older release into a newer one across many
-  migrations (the schema check refuses a newer backup on an older binary).
-
-Two limits that are easy to miss:
-
-- A local snapshot holds the database only, never the master key. Restoring it on another machine without the master key (or the escrow bundle) gives you apps, domains and history but every stored secret is unreadable.
-- Managed databases and app volumes are not part of the control plane backup. Back them up separately with [database backups](/managing-databases) and [volume backups](/backups-and-storage).
+- A restore onto a physically different machine, and re-enrolling node agents with a restored or regenerated CA.
+- Public ingress certificates and DNS after the move (the new machine has a new address; update DNS yourself).
+- Provider specifics for AWS S3, R2, and B2. They use the same code path with a different endpoint, but only an S3-compatible server on localhost was used.
+- Restoring a backup made by an older release into a newer one across many migrations. The schema check refuses a newer backup on an older binary.
 
 ## Restore drills
 
@@ -322,7 +302,7 @@ The result (time, pass or fail, partial, duration) is stored and shown in the da
 
 Off-box failures and failed or overdue drills fire the existing `control_plane_backup_stale` alert rule, so if you already created that rule you are covered. Create it if you have not:
 
-```
+```bash
 levelrail-cli apps alerts create <app> --name "Control plane backup" --kind control_plane_backup_stale --channel-id CHANNEL
 ```
 
@@ -345,3 +325,18 @@ levelrail-cli apps alerts create <app> --name "Control plane backup" --kind cont
 | `POST` | `/api/v1/system/control-plane-dr/escrow/ack` | write:sensitive |
 
 Restore is intentionally not an API call. The escrow endpoint returns the bundle already encrypted to your public keys; the plaintext master key never leaves the server process. The read-only MCP tools are `get_control_plane_dr_status`, `list_control_plane_offbox_backups` and `get_control_plane_drill_status`. None returns key material.
+
+## Next steps
+
+<CardGroup :cols="2">
+<Card title="Control plane backup" href="/control-plane-backup">
+
+Local snapshots, verification, and the offline restore commands.
+
+</Card>
+<Card title="Master key rotation" href="/master-key-rotation">
+
+Rotate the key, then refresh your escrow bundle.
+
+</Card>
+</CardGroup>

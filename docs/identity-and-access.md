@@ -13,6 +13,8 @@ Create a teammate with a curated role, scope a CI token down to one app, turn on
 - OAuth sign-in decision logic: `completeOAuthSignin` in `internal/api/oauth.go`
 :::
 
+<InlineToc default-open />
+
 ## Why two permission models instead of one
 
 Most self-hosted platforms pick one of two shapes and live with the downside.
@@ -182,7 +184,7 @@ Details:
 
 Regenerating recovery codes invalidates the entire previous set.
 
-**Single-use codes.** A TOTP code is accepted once. The control plane remembers the newest time step it accepted for each user (`users.totp_last_step`, migration `0350`), so a code that was just used, shoulder-surfed or replayed inside its roughly 90 second validity window is refused with `invalid code`. The check is atomic, so two simultaneous logins presenting the same code cannot both pass. The step is claimed at login (`/2fa/verify`), not at `/2fa/confirm`, so the code you enrol with can still be used once to sign in. Recovery codes were already single-use. Verified locally: first login with a code `200`, same code again `401`; recovery code first use `200`, second use `401`; five wrong codes on one login attempt trigger `429`.
+**Single-use codes.** A TOTP code is accepted once. The control plane remembers the newest time step it accepted for each user (`users.totp_last_step`, migration `0350`), so a code that was just used, shoulder-surfed or replayed inside its roughly 90 second validity window is refused with `invalid code`. The check is atomic, so two simultaneous logins presenting the same code cannot both pass. The step is claimed at login (`/2fa/verify`), not at `/2fa/confirm`, so the code you enrol with can still be used once to sign in. Recovery codes were already single-use.
 
 **Rate limiting**
 
@@ -255,7 +257,7 @@ A non-root caller only sees invites they created themselves. A root caller sees 
 
 `GET /api/v1/users` follows the same idea: a `root` caller lists every account, any other caller (a `viewer`, an `operator`, a scoped token) gets only their own record, or an empty list for a token. Emails and ability sets of colleagues are not visible to read-tier callers.
 
-**IAM Deny and lists.** A Deny policy on `app:<name>` hides that app from `GET /api/v1/apps`, `apps-summary`, `apps-metrics`, deployments, certificates (including the auto-generated `sslip.io` hostname), `GET /api/v1/network/topology` (apps and databases) and the container names in `GET /api/v1/system/containers`, as well as returning `403` on every `/apps/{name}/...` route. Verified locally with an operator denied on one app: 22 app-scoped routes returned `403`, the global lists no longer named it.
+**IAM Deny and lists.** A Deny policy on `app:<name>` hides that app from `GET /api/v1/apps`, `apps-summary`, `apps-metrics`, deployments, certificates (including the auto-generated `sslip.io` hostname), `GET /api/v1/network/topology` (apps and databases) and the container names in `GET /api/v1/system/containers`, as well as returning `403` on every `/apps/{name}/...` route.
 
 ### API tokens
 
@@ -330,93 +332,109 @@ Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automati
 
 ## Integration walkthrough
 
-1. **Bootstrap the first admin** (once, before anyone can sign in):
+<Steps>
+<Step title="Bootstrap the first admin">
 
-   ::: code-group
-   ```bash [Environment]
-   export APP_ADMIN_USERNAME=admin@example.com
-   export APP_ADMIN_PASSWORD='a-real-password'
-   # restart the control plane
-   ```
-   ```bash [Verify with curl]
-   curl -s -c cookies.txt -X POST https://your-control-plane/api/v1/auth/login \
-     -H 'Content-Type: application/json' \
-     -d '{"username":"admin@example.com","password":"a-real-password"}'
-   ```
-   :::
+Do this once, before anyone can sign in.
 
-2. **Create a teammate with a curated role**, no hand-picked abilities
-   needed:
+::: code-group
+```bash [Environment]
+export APP_ADMIN_USERNAME=admin@example.com
+export APP_ADMIN_PASSWORD='a-real-password'
+# restart the control plane
+```
+```bash [Verify with curl]
+curl -s -c cookies.txt -X POST https://your-control-plane/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin@example.com","password":"a-real-password"}'
+```
+:::
 
-   ```bash
-   levelrail-cli users create --email ops@example.com --password 'temporary-pw' --role operator
-   ```
+</Step>
+<Step title="Create a teammate with a curated role">
 
-   ```json
-   { "id": "user_abc123", "email": "ops@example.com", "role": "operator", "abilities": ["read", "read:sensitive", "write", "deploy"], ... }
-   ```
+No hand-picked abilities needed.
 
-3. **Scope a CI token down to one app** with an IAM policy, tighter than
-   any flat role could express:
+```bash
+levelrail-cli users create --email ops@example.com --password 'temporary-pw' --role operator
+```
 
-   ::: code-group
-   ```bash [Create token]
-   levelrail-cli tokens create --name "ci-checkout" --abilities deploy
-   # → token tok_xyz, plaintext shown once
-   ```
-   ```bash [Create policy]
-   levelrail-cli iam policies create --name "checkout-only" \
-     --document '{"Statement":[{"Effect":"Allow","Action":["deploy"],"Resource":["app:checkout"]}]}'
-   # → policy pol_abc
-   ```
-   ```bash [Attach policy to token]
-   levelrail-cli iam policies attach pol_abc --principal-type token --principal-id tok_xyz
-   ```
-   :::
+```json
+{ "id": "user_abc123", "email": "ops@example.com", "role": "operator", "abilities": ["read", "read:sensitive", "write", "deploy"], ... }
+```
 
-   That token can now deploy `checkout` even without a global `deploy`
-   ability, or be explicitly denied a resource a broader role would
-   otherwise allow, by writing an `Effect: "Deny"` statement instead.
+</Step>
+<Step title="Scope a CI token down to one app">
 
-4. **Turn on two-factor auth** for the signed-in account:
+Use an IAM policy, which is tighter than any flat role can express.
 
-   ::: code-group
-   ```bash [Setup]
-   levelrail-cli auth 2fa setup
-   # → secret + otpauth:// provisioning URI, scan it into an authenticator app
-   ```
-   ```bash [Confirm with TOTP code]
-   levelrail-cli auth 2fa enable --code 123456
-   # → 10 recovery codes, shown once, store them somewhere safe
-   ```
-   :::
+::: code-group
+```bash [Create token]
+levelrail-cli tokens create --name "ci-checkout" --abilities deploy
+# → token tok_xyz, plaintext shown once
+```
+```bash [Create policy]
+levelrail-cli iam policies create --name "checkout-only" \
+  --document '{"Statement":[{"Effect":"Allow","Action":["deploy"],"Resource":["app:checkout"]}]}'
+# → policy pol_abc
+```
+```bash [Attach policy to token]
+levelrail-cli iam policies attach pol_abc --principal-type token --principal-id tok_xyz
+```
+:::
 
-5. **Invite a teammate by email** instead of creating their password
-   yourself:
+That token can now deploy `checkout` even without a global `deploy` ability. To block a resource a broader role would otherwise allow, write an `Effect: "Deny"` statement instead.
 
-   ```bash
-   levelrail-cli invites create --email priya@example.com --role viewer
-   ```
+</Step>
+<Step title="Turn on two-factor auth">
 
-   ```json
-   { "id": "inv_1", "email": "priya@example.com", "role": "viewer", "link": "https://your-control-plane/accept-invite?token=...", "expires_at": "..." }
-   ```
+Run this as the signed-in account.
 
-6. **Log the CLI in from a machine with no direct HTTPS access** to the
-   control plane (the device-code flow, works over plain HTTP):
+::: code-group
+```bash [Setup]
+levelrail-cli auth 2fa setup
+# → secret + otpauth:// provisioning URI, scan it into an authenticator app
+```
+```bash [Confirm with TOTP code]
+levelrail-cli auth 2fa enable --code 123456
+# → 10 recovery codes, shown once, store them somewhere safe
+```
+:::
 
-   ```bash
-   levelrail-cli auth login --device
-   # → prints a user_code and a URL; approve it from
-   #   /settings/cli-access on a browser that already has a session
-   ```
+</Step>
+<Step title="Invite a teammate by email">
 
-7. **Review who changed what**:
+The invitee sets their own password.
 
-   ```bash
-   levelrail-cli audit-log --client-kind cli --method POST
-   levelrail-cli audit-log --format csv --output-file audit-export.csv
-   ```
+```bash
+levelrail-cli invites create --email priya@example.com --role viewer
+```
+
+```json
+{ "id": "inv_1", "email": "priya@example.com", "role": "viewer", "link": "https://your-control-plane/accept-invite?token=...", "expires_at": "..." }
+```
+
+</Step>
+<Step title="Log the CLI in with the device-code flow">
+
+Use this from a machine with no direct HTTPS access to the control plane. It works over plain HTTP.
+
+```bash
+levelrail-cli auth login --device
+# → prints a user_code and a URL; approve it from
+#   /settings/cli-access on a browser that already has a session
+```
+
+</Step>
+<Step title="Review who changed what">
+
+```bash
+levelrail-cli audit-log --client-kind cli --method POST
+levelrail-cli audit-log --format csv --output-file audit-export.csv
+```
+
+</Step>
+</Steps>
 
 ## API reference
 
@@ -428,6 +446,7 @@ Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automati
 | `GET` | `/api/v1/auth/setup-status` | public |
 | `POST` | `/api/v1/auth/login` | public |
 | `POST` | `/api/v1/auth/logout` | session |
+| `GET` | `/api/v1/auth/whoami` | session or bearer token |
 | `GET` | `/api/v1/auth/session` | session |
 | `PUT` | `/api/v1/auth/password` | session |
 | `POST` | `/api/v1/auth/sessions/revoke-others` | session |
@@ -555,7 +574,7 @@ levelrail-cli invites list
 levelrail-cli invites revoke <id>
 
 # API tokens (session-only: prompts for --username/--password)
-levelrail-cli tokens create --name NAME --abilities LIST [--expires-in-days N]
+levelrail-cli tokens create --name NAME (--abilities LIST | --preset observer|deployer|operator) [--expires-in-days N] [--agent NAME]
 levelrail-cli tokens list
 levelrail-cli tokens revoke <id>
 
@@ -578,10 +597,7 @@ levelrail-cli audit-log [--limit N] [--before TIME] [--path PATH] [--method METH
 levelrail-cli audit-purge
 ```
 
-::: details Not built yet (deliberate follow-ups)
-
-- **`auth whoami` cannot work against a bearer token**
-  `GET /api/v1/auth/session` is session-cookie-only by design. The CLI only persists a bearer token, so `levelrail-cli auth whoami` returns `401` every time. No bearer-token-compatible identity endpoint exists yet.
+::: details Known limits
 
 - **No per-team or per-project access boundary**
   IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. There is no organization- or project-level grouping in the permission model. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.
@@ -594,8 +610,27 @@ levelrail-cli audit-purge
 
 :::
 
-## See also
+## Next steps
 
-- [Managing databases](managing-databases.md): Backup target credentials use envelope encryption, gated at ability tier `write:sensitive`.
-- [Deploying apps](deploying-apps.md): App deployment uses the `deploy` ability tier.
-- [CLI reference](cli-reference.md): API tokens and device-code authentication workflows.
+<CardGroup :cols="2">
+<Card title="Security overview" href="/security">
+
+How secrets, sessions, TLS and access control fit together.
+
+</Card>
+<Card title="AI assistant integration" href="/ai-assistant">
+
+Scope an API token for an MCP client or an AI agent.
+
+</Card>
+<Card title="CLI reference" href="/cli-reference">
+
+API tokens and device-code authentication workflows.
+
+</Card>
+<Card title="Managing databases" href="/managing-databases">
+
+Backup target credentials use envelope encryption, gated at `write:sensitive`.
+
+</Card>
+</CardGroup>
