@@ -1,30 +1,12 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
-export interface AuthEngineMismatch {
-  at: string
-  kind: string
-  token_id?: string
-  legacy_owner_id?: string
-  library_owner_id?: string
-  legacy_accepted: boolean
-  library_accepted: boolean
-  legacy_abilities: string[]
-  library_abilities: string[]
-}
-
 // Matches internal/api's authEngineStatusResponse.
 export interface AuthEngineStatus {
-  mode: 'legacy' | 'shadow' | 'library'
   library_version: string
-  areas: string[]
-  compared: number
-  matched: number
-  mismatched: number
-  dropped: number
-  skipped: number
-  errors: number
-  mismatches: AuthEngineMismatch[]
+  totp: boolean
+  passkeys: boolean
+  oauth: boolean
 }
 
 export const authEngineKeys = {
@@ -52,7 +34,6 @@ export function authEngineStatusQueryOptions() {
   return queryOptions({
     queryKey: authEngineKeys.status(),
     queryFn: fetchAuthEngineStatus,
-    refetchInterval: 15_000,
   })
 }
 

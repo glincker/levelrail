@@ -114,11 +114,8 @@ func appendUnique(list []string, v string) []string {
 	return append(list, v)
 }
 
-// applyMFA mutates tcfg for AreaMFA: WebAuthn relying party and MFA lockout policy.
+// applyMFA mutates tcfg for MFA: WebAuthn relying party and MFA lockout policy.
 func applyMFA(tcfg *theauth.Config, cfg Config) {
-	if !AreaActive(AreaMFA) {
-		return
-	}
 	m := MFAConfigFromEnv(cfg.MFA)
 	if m.RPDisplayName == "" {
 		m.RPDisplayName = cfg.TOTPIssuer

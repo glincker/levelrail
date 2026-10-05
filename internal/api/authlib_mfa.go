@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/totp"
 )
 
 // mfaLoginSeam is everything the library MFA handlers need from the sign-in
@@ -100,9 +98,8 @@ func (l *authLibMFA) status(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		resp = twoFactorStatusResponse{
-			Enabled:                       st.Enabled,
-			RecoveryCodesRemaining:        st.RecoveryCodesRemaining,
-			RecoveryCodesNeedRegeneration: st.NeedsRegeneration,
+			Enabled:                st.Enabled,
+			RecoveryCodesRemaining: st.RecoveryCodesRemaining,
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -130,11 +127,6 @@ func (l *authLibMFA) setup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		l.fail(w, "api: 2fa setup: begin enrollment failed", user.ID, err)
 		return
-	}
-	if l.rt.twoFactorSecrets != nil {
-		if err := l.rt.twoFactorSecrets.SetValue(r.Context(), store.UserTOTPSecretsKey(user.ID), totpSecretEnvKey, enroll.Secret); err != nil {
-			l.rt.logger.Warn("api: 2fa setup: mirror secret to built-in store failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))
-		}
 	}
 	writeJSON(w, http.StatusOK, twoFactorSetupResponse{Secret: enroll.Secret, ProvisioningURI: enroll.ProvisioningURI})
 }
@@ -177,24 +169,7 @@ func (l *authLibMFA) confirm(w http.ResponseWriter, r *http.Request) {
 		l.fail(w, "api: 2fa confirm: finish enrollment failed", user.ID, err)
 		return
 	}
-	if err := l.rt.auth.EnableUserTOTP(r.Context(), user.ID, time.Now()); err != nil {
-		l.rt.internalError(w, "api: 2fa confirm: enable failed", err, slog.String("user_id", user.ID))
-		return
-	}
-	l.mirrorRecoveryCodes(r, user.ID, codes)
 	writeJSON(w, http.StatusOK, twoFactorRecoveryCodesResponse{RecoveryCodes: codes})
-}
-
-// mirrorRecoveryCodes keeps the built-in recovery-code table in step so
-// switching the engine back to legacy leaves enrolled users able to sign in.
-func (l *authLibMFA) mirrorRecoveryCodes(r *http.Request, userID string, codes []string) {
-	hashes := make([]string, 0, len(codes))
-	for _, c := range codes {
-		hashes = append(hashes, hashToken(totp.NormalizeRecoveryCode(c)))
-	}
-	if err := l.rt.recoveryCodes.ReplaceUserRecoveryCodes(r.Context(), userID, hashes); err != nil {
-		l.rt.logger.Warn("api: mirror recovery codes to built-in store failed", slog.String("error", err.Error()), slog.String("user_id", userID))
-	}
 }
 
 // checkCode verifies a TOTP or recovery code and writes the failure response itself.
@@ -241,18 +216,6 @@ func (l *authLibMFA) disable(w http.ResponseWriter, r *http.Request) {
 		l.fail(w, "api: 2fa disable: library delete failed", user.ID, err)
 		return
 	}
-	if err := l.rt.auth.DisableUserTOTP(r.Context(), user.ID); err != nil {
-		l.rt.internalError(w, "api: 2fa disable: save failed", err, slog.String("user_id", user.ID))
-		return
-	}
-	if err := l.rt.recoveryCodes.DeleteUserRecoveryCodes(r.Context(), user.ID); err != nil {
-		l.rt.logger.Warn("api: 2fa disable: delete built-in recovery codes failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))
-	}
-	if l.rt.twoFactorSecrets != nil {
-		if err := l.rt.twoFactorSecrets.DeleteAll(r.Context(), store.UserTOTPSecretsKey(user.ID)); err != nil {
-			l.rt.logger.Warn("api: 2fa disable: delete built-in secret failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))
-		}
-	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -291,7 +254,6 @@ func (l *authLibMFA) regenerate(w http.ResponseWriter, r *http.Request) {
 		l.fail(w, "api: 2fa regenerate: library regenerate failed", user.ID, err)
 		return
 	}
-	l.mirrorRecoveryCodes(r, user.ID, codes)
 	writeJSON(w, http.StatusOK, twoFactorRecoveryCodesResponse{RecoveryCodes: codes})
 }
 

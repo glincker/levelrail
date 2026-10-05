@@ -16,6 +16,11 @@ const (
 	keyBytes   = 32
 )
 
+// SecretResolver reads a stored secret by service and key (internal/secrets.Manager).
+type SecretResolver interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
 // KeyStore is the slice of secrets.Manager the engine key needs.
 type KeyStore interface {
 	SecretResolver

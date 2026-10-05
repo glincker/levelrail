@@ -2,10 +2,10 @@ package api
 
 import (
 	"context"
-	"net/http"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/changelog"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/email"
@@ -207,15 +207,6 @@ func WithGitSourceSecrets(s GitSourceSecrets) Option {
 // /api/v1/github-app work regardless.
 func WithGitHubAppSecrets(s GitHubAppSecrets) Option {
 	return func(rt *Router) { rt.githubAppSecrets = s }
-}
-
-// WithTwoFactorSecrets enables the 2FA setup/confirm/disable/regenerate
-// routes (twofactor.go), which need to write and read back a user's
-// TOTP secret. Without one configured, those return 501; GET
-// /api/v1/auth/2fa (status) works regardless, since it only reads
-// store.User.TOTPEnabled.
-func WithTwoFactorSecrets(s TwoFactorSecrets) Option {
-	return func(rt *Router) { rt.twoFactorSecrets = s }
 }
 
 // WithGitLabAppSecrets enables the GitLab App routes that read or write
@@ -1119,14 +1110,8 @@ func WithDeleteTeardownTimeout(d time.Duration) Option {
 // the instance ID only after the router is built.
 func (rt *Router) SetAppTeardownOptions(opts ...application.Option) { rt.teardownOpts = opts }
 
-// WithAuthEngine mounts the library auth handler under prefix, beside the
-// in-house auth routes, which stay untouched. A nil handler is a no-op.
-func WithAuthEngine(prefix string, h http.Handler) Option {
-	return func(rt *Router) {
-		if h == nil || prefix == "" {
-			return
-		}
-		rt.authEnginePrefix = prefix
-		rt.authEngine = h
-	}
+// WithAuthEngine supplies the library auth engine. NewRouter builds a default
+// one over the store database when none is given.
+func WithAuthEngine(e *authengine.Engine) Option {
+	return func(rt *Router) { rt.authEngine = e }
 }

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
@@ -51,14 +52,8 @@ func (a *auditCollector) snapshot() []authengine.AuditRecord {
 	return append([]authengine.AuditRecord(nil), a.recs...)
 }
 
-func newGoldenEnv(t *testing.T, library bool) *goldenEnv {
+func newGoldenEnv(t *testing.T) *goldenEnv {
 	t.Helper()
-	if library {
-		t.Setenv(authengine.EnvEngine, authengine.EngineLibrary)
-		t.Setenv(authengine.EnvAreas, string(authengine.AreaSessions))
-	} else {
-		t.Setenv(authengine.EnvEngine, authengine.EngineLegacy)
-	}
 	db := openTestDB(t)
 	dataDir := t.TempDir()
 	token, _, err := EnsureSetupToken(context.Background(), db, dataDir)
@@ -66,20 +61,16 @@ func newGoldenEnv(t *testing.T, library bool) *goldenEnv {
 		t.Fatalf("EnsureSetupToken() error = %v", err)
 	}
 	env := &goldenEnv{db: db, dataDir: dataDir, token: token, audits: &auditCollector{}}
-	opts := []Option{WithDataDir(dataDir)}
-	if library {
-		eng, err := authengine.New(db.DB, authengine.Config{
-			BaseURL:   "http://example.test",
-			Directory: authengine.NewDirectory(db.DB),
-			Sessions:  authengine.SessionsHooks{Mail: &authengine.MailRelay{}, Audit: env.audits.add},
-		})
-		if err != nil {
-			t.Fatalf("authengine.New() error = %v", err)
-		}
-		t.Cleanup(eng.Close)
-		opts = append(opts, WithAuthEngine(eng.Prefix(), eng.Handler()), WithAuthSessions(eng.Sessions()))
+	eng, err := authengine.New(db.DB, authengine.Config{
+		BaseURL:   "http://example.test",
+		Directory: authengine.NewDirectory(db.DB),
+		Sessions:  authengine.SessionsHooks{Mail: &authengine.MailRelay{}, Audit: env.audits.add},
+	})
+	if err != nil {
+		t.Fatalf("authengine.New() error = %v", err)
 	}
-	env.rt = NewRouter(discardLogger(), testBrand(), db, opts...)
+	t.Cleanup(eng.Close)
+	env.rt = NewRouter(discardLogger(), testBrand(), db, WithDataDir(dataDir), WithAuthEngine(eng))
 	return env
 }
 
@@ -175,14 +166,31 @@ type scenario func(t *testing.T, e *goldenEnv) []exchange
 func runSessionGolden(t *testing.T, name string, sc scenario) {
 	t.Helper()
 	t.Run(name, func(t *testing.T) {
-		legacy := sc(t, newGoldenEnv(t, false))
-		library := sc(t, newGoldenEnv(t, true))
-		if len(legacy) != len(library) {
-			t.Fatalf("legacy produced %d exchanges, library %d", len(legacy), len(library))
+		got := sc(t, newGoldenEnv(t))
+		path := "testdata/session_golden_" + strings.ReplaceAll(name, " ", "_") + ".json"
+		if os.Getenv("APP_UPDATE_GOLDEN") == "1" {
+			raw, err := json.MarshalIndent(got, "", "  ")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(path, append(raw, '\n'), 0o600); err != nil {
+				t.Fatal(err)
+			}
 		}
-		for i := range legacy {
-			if !reflect.DeepEqual(legacy[i], library[i]) {
-				t.Errorf("step %q differs\n  legacy:  %+v\n  library: %+v", legacy[i].Step, legacy[i], library[i])
+		raw, err := os.ReadFile(path) //nolint:gosec // fixed testdata path
+		if err != nil {
+			t.Fatalf("read golden: %v", err)
+		}
+		var want []exchange
+		if err := json.Unmarshal(raw, &want); err != nil {
+			t.Fatalf("decode golden: %v", err)
+		}
+		if len(want) != len(got) {
+			t.Fatalf("produced %d exchanges, want %d", len(got), len(want))
+		}
+		for i := range want {
+			if !reflect.DeepEqual(want[i], got[i]) {
+				t.Errorf("step %q differs\n  got:  %+v\n  want: %+v", want[i].Step, got[i], want[i])
 			}
 		}
 	})

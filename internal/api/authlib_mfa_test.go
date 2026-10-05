@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/descope/virtualwebauthn"
-	"github.com/oklog/ulid/v2"
 )
 
 type mfaStep struct {
@@ -21,19 +20,46 @@ type mfaStep struct {
 	run  func(h *mfaHarness) *httptest.ResponseRecorder
 }
 
-func runGolden(t *testing.T, steps []mfaStep) {
+type mfaGoldenRow struct {
+	Step   string
+	Status int
+	Body   any
+}
+
+// runGolden replays steps against a fresh router and compares each status and
+// normalized body with testdata/mfa_golden_<name>.json (APP_UPDATE_GOLDEN=1 rewrites it).
+func runGolden(t *testing.T, name string, steps []mfaStep) {
 	t.Helper()
-	legacy := newMFAHarness(t, false, nil)
-	library := newMFAHarness(t, true, nil)
+	h := newMFAHarness(t)
+	got := make([]mfaGoldenRow, 0, len(steps))
 	for _, s := range steps {
-		l := s.run(legacy)
-		n := s.run(library)
-		if l.Code != n.Code {
-			t.Fatalf("%s: status legacy=%d library=%d\nlegacy=%s\nlibrary=%s", s.name, l.Code, n.Code, l.Body.String(), n.Body.String())
+		rec := s.run(h)
+		got = append(got, mfaGoldenRow{Step: s.name, Status: rec.Code, Body: normalizeBody(t, rec.Body.String())})
+	}
+	path := "testdata/mfa_golden_" + name + ".json"
+	if os.Getenv("APP_UPDATE_GOLDEN") == "1" {
+		raw, err := json.MarshalIndent(got, "", "  ")
+		if err != nil {
+			t.Fatal(err)
 		}
-		lb, nb := normalizeBody(t, l.Body.String()), normalizeBody(t, n.Body.String())
-		if !reflect.DeepEqual(lb, nb) {
-			t.Fatalf("%s: body differs\nlegacy=%s\nlibrary=%s", s.name, l.Body.String(), n.Body.String())
+		if err := os.WriteFile(path, append(raw, '\n'), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	raw, err := os.ReadFile(path) //nolint:gosec // fixed testdata path
+	if err != nil {
+		t.Fatalf("read golden: %v", err)
+	}
+	var want []mfaGoldenRow
+	if err := json.Unmarshal(raw, &want); err != nil {
+		t.Fatalf("decode golden: %v", err)
+	}
+	if len(want) != len(got) {
+		t.Fatalf("steps = %d, want %d", len(got), len(want))
+	}
+	for i := range want {
+		if got[i].Status != want[i].Status || !reflect.DeepEqual(got[i].Body, want[i].Body) {
+			t.Fatalf("%s differs from the contract\n got  %d %v\n want %d %v", want[i].Step, got[i].Status, got[i].Body, want[i].Status, want[i].Body)
 		}
 	}
 }
@@ -81,7 +107,7 @@ func TestMFAGoldenTOTPContract(t *testing.T) {
 		{"disable when not enabled", post("/api/v1/auth/2fa/disable", `{"code":"000000"}`)},
 		{"regenerate when not enabled", post("/api/v1/auth/2fa/recovery-codes/regenerate", `{"code":"000000"}`)},
 	}
-	runGolden(t, steps)
+	runGolden(t, "totp", steps)
 }
 
 func TestMFAGoldenLoginVerifyContract(t *testing.T) {
@@ -111,7 +137,7 @@ func TestMFAGoldenLoginVerifyContract(t *testing.T) {
 			return rec
 		}},
 	}
-	runGolden(t, steps)
+	runGolden(t, "login_verify", steps)
 }
 
 func TestMFAGoldenPasskeyContract(t *testing.T) {
@@ -156,11 +182,11 @@ func TestMFAGoldenPasskeyContract(t *testing.T) {
 			return doJSON(h.t, h.rt, http.MethodPost, "/api/v1/auth/passkey-login/finish", `{}`, nil)
 		}},
 	}
-	runGolden(t, steps)
+	runGolden(t, "passkey", steps)
 }
 
 func TestMFALibraryPasskeyCeremonies(t *testing.T) {
-	h := newMFAHarness(t, true, nil)
+	h := newMFAHarness(t)
 	k := h.registerPasskey("Laptop")
 
 	t.Run("discoverable login establishes a session and records the sign count", func(t *testing.T) {
@@ -243,46 +269,8 @@ func TestMFALibraryPasskeyCeremonies(t *testing.T) {
 	})
 }
 
-func TestMFALibraryBackfilledTOTPLoginReplayAndNotice(t *testing.T) {
-	const secret = "JBSWY3DPEHPK3PXP" //nolint:gosec // fixture value
-	h := newMFAHarness(t, true, func(h *mfaHarness) {
-		ctx := t.Context()
-		if err := h.secrets.SetValue(ctx, store.UserTOTPSecretsKey(h.userID), totpSecretEnvKey, secret); err != nil {
-			t.Fatal(err)
-		}
-		h.secret = secret
-		if err := h.db.EnableUserTOTP(ctx, h.userID, time.Now()); err != nil {
-			t.Fatal(err)
-		}
-	})
-	var st twoFactorStatusResponse
-	if err := json.Unmarshal(h.do(http.MethodGet, "/api/v1/auth/2fa", "").Body.Bytes(), &st); err != nil {
-		t.Fatal(err)
-	}
-	if !st.Enabled || st.RecoveryCodesRemaining != 0 || !st.RecoveryCodesNeedRegeneration {
-		t.Fatalf("status = %+v, want enabled, zero codes, regeneration flagged", st)
-	}
-
-	code := h.code(0)
-	if rec := h.verifyLogin(h.mfaToken(h.passwordLogin()), code); rec.Code != http.StatusOK || !hasSessionCookie(rec) {
-		t.Fatalf("a real code from the backfilled secret must sign in: %d %s", rec.Code, rec.Body.String())
-	}
-	if rec := h.verifyLogin(h.mfaToken(h.passwordLogin()), code); rec.Code != http.StatusUnauthorized {
-		t.Fatalf("replayed code: %d, want 401", rec.Code)
-	}
-
-	rec := h.do(http.MethodPost, "/api/v1/auth/2fa/recovery-codes/regenerate", `{"code":"`+h.code(30*time.Second)+`"}`)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("regenerate after cutover: %d %s", rec.Code, rec.Body.String())
-	}
-	st = twoFactorStatusResponse{}
-	if err := json.Unmarshal(h.do(http.MethodGet, "/api/v1/auth/2fa", "").Body.Bytes(), &st); err != nil || st.RecoveryCodesNeedRegeneration || st.RecoveryCodesRemaining != 10 {
-		t.Fatalf("status after regenerate = %+v (%v)", st, err)
-	}
-}
-
 func TestMFALibraryLockoutAfterRepeatedBadCodes(t *testing.T) {
-	h := newMFAHarness(t, true, nil)
+	h := newMFAHarness(t)
 	h.enrollTOTP()
 	for i := 0; i < 5; i++ {
 		if rec := h.do(http.MethodPost, "/api/v1/auth/2fa/disable", `{"code":"000000"}`); rec.Code != http.StatusBadRequest {
@@ -295,88 +283,26 @@ func TestMFALibraryLockoutAfterRepeatedBadCodes(t *testing.T) {
 	}
 }
 
-func TestMFALegacyModeKeepsBuiltInHandlers(t *testing.T) {
-	legacy := newMFAHarness(t, false, nil)
-	if rec := legacy.do(http.MethodPatch, "/api/v1/auth/passkeys/x", `{"label":"x"}`); rec.Code == http.StatusOK {
-		t.Fatalf("rename must not exist in legacy mode: %d", rec.Code)
-	}
-	if legacy.rt.mfaLib != nil {
-		t.Fatal("legacy mode must not install the library MFA handlers")
-	}
-}
-
-// TestMFALibraryBackfilledPasskey registers a passkey under the built-in engine, copies the
-// row across the backfill and signs in through the library.
-func TestMFALibraryBackfilledPasskey(t *testing.T) {
-	legacy := newMFAHarness(t, false, nil)
-	k := legacy.registerPasskey("Old laptop")
-	rows, err := legacy.db.ListPasskeyCredentialsForUser(t.Context(), legacy.userID)
-	if err != nil || len(rows) != 1 {
-		t.Fatalf("legacy rows = %d, %v", len(rows), err)
-	}
-	h := newMFAHarness(t, true, func(h *mfaHarness) {
-		row := rows[0]
-		row.UserID = h.userID
-		if err := h.db.SavePasskeyCredential(t.Context(), row); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	var list []passkeyResource
-	if err := json.Unmarshal(h.do(http.MethodGet, "/api/v1/auth/passkeys", "").Body.Bytes(), &list); err != nil || len(list) != 1 || list[0].Label != "Old laptop" {
-		t.Fatalf("backfilled passkey must be listed: %v (%v)", list, err)
-	}
-
-	var engineID string
-	if err := h.db.QueryRow(`SELECT engine_id FROM authengine_user_map WHERE legacy_id = ?`, h.userID).Scan(&engineID); err != nil {
-		t.Fatal(err)
-	}
-	uid, err := ulid.Parse(engineID)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Run("credential id, public key and sign count authenticate when the handle is the library id", func(t *testing.T) {
-		k := k
-		k.auth.Options.UserHandle = uid[:]
-		k.cred.Counter = 1
-		target, body := h.passkeyAssertion(k, h.rp())
-		if rec := h.finishLogin(target, body); rec.Code != http.StatusOK || !hasSessionCookie(rec) {
-			t.Fatalf("login: %d %s", rec.Code, rec.Body.String())
-		}
-	})
-
-	t.Run("the authenticator still holds the built-in user handle", func(t *testing.T) {
-		k := k
-		k.cred.Counter = 2
-		target, body := h.passkeyAssertion(k, h.rp())
-		rec := h.finishLogin(target, body)
-		if rec.Code != http.StatusOK {
-			t.Skipf("library gap: discoverable login rejects a user handle that is not a 16 byte ULID (status %d); passkeys registered before the cutover must be re-registered", rec.Code)
-		}
-	})
-}
-
-func TestMFARecoveryCodeFormatMatchesLegacy(t *testing.T) {
+func TestMFARecoveryCodeFormat(t *testing.T) {
 	format := regexp.MustCompile(`^[A-Z2-7]{4}(-[A-Z2-7]{4}){3}$`)
-	for _, library := range []bool{false, true} {
-		h := newMFAHarness(t, library, nil)
+	{
+		h := newMFAHarness(t)
 		h.enrollTOTP()
 		rec := h.do(http.MethodPost, "/api/v1/auth/2fa/recovery-codes/regenerate", `{"code":"`+h.code(30*time.Second)+`"}`)
 		var resp twoFactorRecoveryCodesResponse
 		if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &resp) != nil || len(resp.RecoveryCodes) != 10 {
-			t.Fatalf("library=%v regenerate: %d %s", library, rec.Code, rec.Body.String())
+			t.Fatalf("regenerate: %d %s", rec.Code, rec.Body.String())
 		}
 		for _, c := range resp.RecoveryCodes {
 			if !format.MatchString(c) {
-				t.Fatalf("library=%v code %q is not XXXX-XXXX-XXXX-XXXX", library, c)
+				t.Fatalf("code %q is not XXXX-XXXX-XXXX-XXXX", c)
 			}
 		}
 		spellings := []string{resp.RecoveryCodes[0], strings.ToLower(strings.ReplaceAll(resp.RecoveryCodes[1], "-", ""))}
 		for _, code := range spellings {
 			body := fmt.Sprintf(`{"mfa_token":%q,"recovery_code":%q}`, h.mfaToken(h.passwordLogin()), code)
 			if rec := doJSON(t, h.rt, http.MethodPost, "/api/v1/auth/2fa/verify", body, nil); rec.Code != http.StatusOK {
-				t.Fatalf("library=%v recovery code %q: %d %s", library, code, rec.Code, rec.Body.String())
+				t.Fatalf("recovery code %q: %d %s", code, rec.Code, rec.Body.String())
 			}
 		}
 	}

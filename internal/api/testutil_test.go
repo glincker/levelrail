@@ -269,9 +269,13 @@ func storeUserWithAbilitiesForTest(t *testing.T, db *store.DB, email string, abi
 // authedRequest expects.
 func sessionCookieForTest(t *testing.T, rt *Router, userID string) *http.Cookie {
 	t.Helper()
-	token, err := rt.sessions.create(userID)
+	user, err := rt.auth.GetUserByID(context.Background(), userID)
 	if err != nil {
-		t.Fatalf("sessions.create(%q) error = %v", userID, err)
+		t.Fatalf("GetUserByID(%q) error = %v", userID, err)
+	}
+	token, err := rt.libSessions.IssueSession(context.Background(), toLibUser(*user), "test", "198.51.100.1")
+	if err != nil {
+		t.Fatalf("IssueSession(%q) error = %v", userID, err)
 	}
 	return &http.Cookie{Name: sessionCookieName, Value: token} //nolint:gosec // request cookie, not a response Set-Cookie
 }

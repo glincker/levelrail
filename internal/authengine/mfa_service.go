@@ -63,8 +63,6 @@ type TOTPEnrollment struct {
 type MFAStatus struct {
 	Enabled                bool
 	RecoveryCodesRemaining int
-	// NeedsRegeneration is true for an enrolled user with no usable recovery code.
-	NeedsRegeneration bool
 }
 
 // Passkey is one registered credential, without key material.
@@ -197,8 +195,6 @@ func (m *MFA) TOTPStatus(ctx context.Context, legacyID string) (MFAStatus, error
 	out := MFAStatus{Enabled: st.Enrolled, RecoveryCodesRemaining: st.RecoveryCodesRemaining}
 	if out.RecoveryCodesRemaining < 0 {
 		out.RecoveryCodesRemaining = 0
-	} else if st.Enrolled && st.RecoveryCodesRemaining == 0 {
-		out.NeedsRegeneration = true
 	}
 	return out, nil
 }

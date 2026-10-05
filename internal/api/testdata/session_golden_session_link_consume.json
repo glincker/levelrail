@@ -1,0 +1,39 @@
+[
+  {
+    "Step": "mint",
+    "Status": 201,
+    "Body": "{\"token\":\"\\u003cvolatile\\u003e\",\"url\":\"\\u003cvolatile\\u003e\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "consume",
+    "Status": 200,
+    "Body": "{\"display_name\":\"root@example.test\",\"username\":\"root@example.test\"}",
+    "Cookies": [
+      "session_token=set path=/ httponly=true secure=false samesite=2 expires=true maxage_neg=false"
+    ],
+    "Retry": false
+  },
+  {
+    "Step": "linked session",
+    "Status": 200,
+    "Body": "{\"display_name\":\"root@example.test\",\"expires_at\":\"\\u003cvolatile\\u003e\",\"has_password\":true,\"username\":\"root@example.test\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "consume again",
+    "Status": 400,
+    "Body": "{\"error\":\"invalid or expired session link\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "consume unknown",
+    "Status": 400,
+    "Body": "{\"error\":\"invalid or expired session link\"}",
+    "Cookies": null,
+    "Retry": false
+  }
+]

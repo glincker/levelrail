@@ -198,21 +198,10 @@ func (s *Sessions) ensureSyncedByEmail(ctx context.Context, email string) error 
 	return nil
 }
 
-// ReconcileHashes refreshes library password rows that still hold a bcrypt
-// hash different from the platform's, which happens when a password changed
-// in legacy mode after the backfill. Rows already rehashed are left alone.
-func (s *Sessions) ReconcileHashes(ctx context.Context) (int64, error) {
-	res, err := s.db.ExecContext(ctx, `
-		UPDATE theauth_user_passwords SET password_hash = (
-			SELECT u.password_hash FROM users u JOIN authengine_user_map m ON m.legacy_id = u.id
-			WHERE m.engine_id = theauth_user_passwords.user_id)
-		WHERE password_hash LIKE '$2%'
-		AND EXISTS (SELECT 1 FROM users u JOIN authengine_user_map m ON m.legacy_id = u.id
-			WHERE m.engine_id = theauth_user_passwords.user_id
-			AND u.password_hash IS NOT NULL AND u.password_hash <> theauth_user_passwords.password_hash)`)
+func parseLegacyTime(s string) (time.Time, error) {
+	t, err := time.Parse(time.RFC3339Nano, s)
 	if err != nil {
-		return 0, fmt.Errorf("authengine: reconcile password hashes: %w", err)
+		return time.Time{}, fmt.Errorf("authengine: parse timestamp: %w", err)
 	}
-	n, _ := res.RowsAffected()
-	return n, nil
+	return t, nil
 }

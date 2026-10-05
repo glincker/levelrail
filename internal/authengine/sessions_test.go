@@ -28,8 +28,6 @@ type sessEnv struct {
 
 func newSessEnv(t *testing.T) *sessEnv {
 	t.Helper()
-	t.Setenv(authengine.EnvEngine, authengine.EngineLibrary)
-	t.Setenv(authengine.EnvAreas, string(authengine.AreaSessions))
 	db, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "levelrail.db"))
 	if err != nil {
 		t.Fatalf("store.Open: %v", err)

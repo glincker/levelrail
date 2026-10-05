@@ -1,0 +1,92 @@
+[
+  {
+    "Step": "list when empty",
+    "Status": 200,
+    "Body": []
+  },
+  {
+    "Step": "register begin without a session",
+    "Status": 401,
+    "Body": {
+      "error": "authentication required"
+    }
+  },
+  {
+    "Step": "register finish without session_id",
+    "Status": 400,
+    "Body": {
+      "error": "session_id is required"
+    }
+  },
+  {
+    "Step": "register",
+    "Status": 201,
+    "Body": {
+      "created_at": "\u003credacted\u003e",
+      "id": "\u003credacted\u003e",
+      "label": "Golden Key",
+      "transports": [
+        "internal"
+      ]
+    }
+  },
+  {
+    "Step": "list after register",
+    "Status": 200,
+    "Body": [
+      {
+        "created_at": "\u003credacted\u003e",
+        "id": "\u003credacted\u003e",
+        "label": "Golden Key",
+        "transports": [
+          "internal"
+        ]
+      }
+    ]
+  },
+  {
+    "Step": "delete an unknown passkey",
+    "Status": 404,
+    "Body": {
+      "error": "passkey not found"
+    }
+  },
+  {
+    "Step": "delete",
+    "Status": 204,
+    "Body": null
+  },
+  {
+    "Step": "list after delete",
+    "Status": 200,
+    "Body": []
+  },
+  {
+    "Step": "login begin for an unknown user",
+    "Status": 401,
+    "Body": {
+      "error": "no passkey available for this account"
+    }
+  },
+  {
+    "Step": "login begin with no passkey registered",
+    "Status": 401,
+    "Body": {
+      "error": "no passkey available for this account"
+    }
+  },
+  {
+    "Step": "login begin with no username",
+    "Status": 400,
+    "Body": {
+      "error": "username is required"
+    }
+  },
+  {
+    "Step": "login finish without session_id",
+    "Status": 400,
+    "Body": {
+      "error": "session_id is required"
+    }
+  }
+]

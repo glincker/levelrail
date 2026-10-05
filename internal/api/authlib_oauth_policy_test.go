@@ -31,7 +31,7 @@ func TestOAuthGoldenSignupPolicy(t *testing.T) {
 		{"unverified email is refused", "", fakeIdentity{Sub: "s5", Email: "u@example.test", Verified: false}, "", "/login?oauth_error=userinfo_failed"},
 	}
 	for _, tc := range tests {
-		for _, mode := range []string{modeLegacy, modeLibrary} {
+		for _, mode := range []string{modeLibrary} {
 			t.Run(tc.name+"/"+mode, func(t *testing.T) {
 				h := newOAuthHarness(t, mode)
 				h.enable("oidc", tc.domain)
@@ -48,7 +48,7 @@ func TestOAuthGoldenSignupPolicy(t *testing.T) {
 }
 
 func TestOAuthGoldenExchangeFailure(t *testing.T) {
-	for _, mode := range []string{modeLegacy, modeLibrary} {
+	for _, mode := range []string{modeLibrary} {
 		t.Run(mode, func(t *testing.T) {
 			h := newOAuthHarness(t, mode)
 			h.enable("oidc", "")
@@ -77,9 +77,6 @@ func TestOAuthLibraryLinksVerifiedEmailsOnly(t *testing.T) {
 			h := newOAuthHarness(t, modeLibrary)
 			h.enable(tc.provider, "")
 			owner := storeUserForTest(t, h.db, "owner@example.test")
-			if _, err := authengine.Backfill(context.Background(), h.db.DB, authengine.BackfillOptions{EncryptionKey: h.key}); err != nil {
-				t.Fatal(err)
-			}
 			rec := h.signIn(tc.provider, tc.id)
 			if got := oauthResult(rec); got != tc.want {
 				t.Fatalf("location = %q, want %q", got, tc.want)
@@ -97,19 +94,10 @@ func TestOAuthLibraryLinksVerifiedEmailsOnly(t *testing.T) {
 			}
 		})
 	}
-	t.Run("legacy refuses the same email", func(t *testing.T) {
-		h := newOAuthHarness(t, modeLegacy)
-		h.enable("oidc", "")
-		storeUserForTest(t, h.db, "owner@example.test")
-		rec := h.signIn("oidc", fakeIdentity{Sub: "new-sub", Email: "owner@example.test", Verified: true})
-		if got := oauthResult(rec); got != "/login?oauth_error=email_in_use" {
-			t.Errorf("location = %q, want email_in_use", got)
-		}
-	})
 }
 
-func TestOAuthIdentityBackfillParity(t *testing.T) {
-	for _, mode := range []string{modeLegacy, modeLibrary} {
+func TestOAuthExistingIdentitySignsIn(t *testing.T) {
+	for _, mode := range []string{modeLibrary} {
 		t.Run(mode, func(t *testing.T) {
 			h := newOAuthHarness(t, mode)
 			h.enable("oidc", "")
@@ -117,12 +105,6 @@ func TestOAuthIdentityBackfillParity(t *testing.T) {
 			owner := storeUserForTest(t, h.db, "linked@example.test")
 			if err := h.db.SaveOAuthIdentity(ctx, store.OAuthIdentity{ID: "oid_seed", UserID: owner.ID, Provider: "oidc", ProviderUserID: "sub-existing"}); err != nil {
 				t.Fatal(err)
-			}
-			if mode == modeLibrary {
-				rep, err := authengine.Backfill(ctx, h.db.DB, authengine.BackfillOptions{EncryptionKey: h.key})
-				if err != nil || rep.OAuthIdentities != 1 {
-					t.Fatalf("backfill %+v err %v", rep, err)
-				}
 			}
 			before := countUsers(t, h)
 			rec := h.signIn("oidc", fakeIdentity{Sub: "sub-existing", Email: "renamed@example.test", Verified: true})
@@ -184,16 +166,5 @@ func (h *oauthHarness) secretsDisable(t *testing.T, provider string) {
 	})
 	if err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestOAuthAreaGateKeepsLegacyWhenNotListed(t *testing.T) {
-	h := newOAuthHarness(t, modeLibrary)
-	h.enable("oidc", "")
-	t.Setenv(authengine.EnvAreas, string(authengine.AreaTokens))
-	u, _ := h.start("oidc")
-	want := testBaseURL + "/api/v1/auth/oauth/oidc/callback"
-	if got := u.Query().Get("redirect_uri"); got != want {
-		t.Errorf("redirect_uri = %q, want the legacy %q when oauth is not an active area", got, want)
 	}
 }

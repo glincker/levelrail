@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -52,10 +51,7 @@ func isValidOAuthProvider(p string) bool {
 
 // Sentinel errors completeOAuthSignin/completeOAuthLink return, mapped
 // to short, detail-free redirect codes by oauthErrorCode.
-var (
-	errEmailBelongsToExistingAccount = errors.New("api: oauth email belongs to an existing account")
-	errEmailDomainNotAllowed         = errors.New("api: oauth email domain not allowed")
-)
+var ()
 
 // oauthBindingCookieName ties an OAuth state to the browser that started
 // the flow, defeating login CSRF with an attacker-initiated state.
@@ -102,11 +98,11 @@ func (rt *Router) handleListPublicOAuthProviders(w http.ResponseWriter, r *http.
 // handleOAuthStart handles GET /api/v1/auth/oauth/{provider}/start: the
 // public, anonymous sign-in entry point.
 func (rt *Router) handleOAuthStart(w http.ResponseWriter, r *http.Request) {
-	if rt.authLibOAuthActive() {
-		rt.authLibOAuthStart(w, r)
+	if !rt.authLibOAuthActive() {
+		writeError(w, http.StatusNotImplemented, "oauth sign-in is not configured")
 		return
 	}
-	rt.beginOAuthFlow(w, r, oauthPurposeSignin, "")
+	rt.authLibOAuthStart(w, r)
 }
 
 // handleOAuthLinkStart handles GET /api/v1/auth/oauth/{provider}/link/start:
@@ -255,13 +251,11 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user store.User
-	switch st.purpose {
-	case oauthPurposeLink:
-		user, err = rt.completeOAuthLink(r.Context(), st.linkUserID, provider, info)
-	default:
-		user, err = rt.completeOAuthSignin(r.Context(), provider, settings, info)
+	if st.purpose != oauthPurposeLink {
+		redirectOAuthError(w, r, "invalid_state")
+		return
 	}
+	user, err := rt.completeOAuthLink(r.Context(), st.linkUserID, provider, info)
 	if err != nil {
 		rt.logger.Warn("api: oauth callback failed", slog.String("provider", provider), slog.String("purpose", st.purpose), slog.String("error", err.Error()))
 		redirectOAuthError(w, r, oauthErrorCode(err))
@@ -274,83 +268,6 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/oauth/complete", http.StatusFound)
-}
-
-// completeOAuthSignin resolves who is signing in: an already-linked
-// identity returns its owner; a genuinely new external account is
-// auto-provisioned if the provider is enabled and the email matches
-// AllowedEmailDomain (if set).
-//
-// It refuses one case outright: an email that already belongs to a
-// different, existing user. Auto-linking here would let an anonymous
-// sign-in attempt alone take over that account. Linking a new provider
-// to an existing account only ever happens through handleOAuthLinkStart,
-// which requires being signed in as that account first.
-func (rt *Router) completeOAuthSignin(ctx context.Context, provider string, settings store.OAuthProviderSettings, info oauthUserInfo) (store.User, error) {
-	identity, err := rt.oauthIdentities.GetOAuthIdentity(ctx, provider, info.ProviderUserID)
-	if err == nil {
-		user, uerr := rt.auth.GetUserByID(ctx, identity.UserID)
-		if uerr != nil {
-			return store.User{}, fmt.Errorf("load linked user: %w", uerr)
-		}
-		return *user, nil
-	}
-	if !errors.Is(err, store.ErrOAuthIdentityNotFound) {
-		return store.User{}, fmt.Errorf("lookup oauth identity: %w", err)
-	}
-
-	if _, err := rt.auth.GetUserByEmail(ctx, info.Email); err == nil {
-		return store.User{}, errEmailBelongsToExistingAccount
-	} else if !errors.Is(err, store.ErrUserNotFound) {
-		return store.User{}, fmt.Errorf("lookup existing user by email: %w", err)
-	}
-
-	if settings.AllowedEmailDomain != "" && !emailMatchesDomain(info.Email, settings.AllowedEmailDomain) {
-		return store.User{}, errEmailDomainNotAllowed
-	}
-
-	id, err := randomOpaqueID("user_")
-	if err != nil {
-		return store.User{}, err
-	}
-	// A brand new OAuth signup is never the first user (that path is
-	// exclusively BootstrapAdmin/handleRegister's job, both gated to
-	// run once). Least-privilege default: AbilityRead, not root and
-	// not empty: an empty Abilities value would fail every ability
-	// check including AbilityRead itself (hasAbility's own contract),
-	// locking a freshly auto-provisioned account out of the entire
-	// app rather than just out of anything sensitive. An existing root
-	// user grants more via PUT /api/v1/users/{id}/abilities.
-	user := store.User{
-		ID:          id,
-		Email:       info.Email,
-		DisplayName: info.DisplayName,
-		Abilities:   []string{AbilityRead},
-		CreatedAt:   time.Now(),
-	}
-	if err := rt.auth.CreateUser(ctx, user); err != nil {
-		if !errors.Is(err, store.ErrUserEmailExists) {
-			return store.User{}, fmt.Errorf("create user: %w", err)
-		}
-		// Lost a race against a concurrent signup for the same new email:
-		// reload and proceed as an ordinary existing-user sign-in.
-		existing, gerr := rt.auth.GetUserByEmail(ctx, info.Email)
-		if gerr != nil {
-			return store.User{}, fmt.Errorf("reload user after create race: %w", gerr)
-		}
-		user = *existing
-	}
-
-	identityID, err := randomOpaqueID("oid_")
-	if err != nil {
-		return store.User{}, err
-	}
-	if err := rt.oauthIdentities.SaveOAuthIdentity(ctx, store.OAuthIdentity{
-		ID: identityID, UserID: user.ID, Provider: provider, ProviderUserID: info.ProviderUserID, CreatedAt: time.Now(),
-	}); err != nil {
-		return store.User{}, fmt.Errorf("save oauth identity: %w", err)
-	}
-	return user, nil
 }
 
 // completeOAuthLink attaches a new external identity to the user who
@@ -381,30 +298,14 @@ func (rt *Router) completeOAuthLink(ctx context.Context, linkUserID, provider st
 }
 
 func oauthErrorCode(err error) string {
-	switch {
-	case errors.Is(err, errEmailBelongsToExistingAccount):
-		return "email_in_use"
-	case errors.Is(err, errEmailDomainNotAllowed):
-		return "domain_not_allowed"
-	case errors.Is(err, store.ErrOAuthIdentityAlreadyLinked):
+	if errors.Is(err, store.ErrOAuthIdentityAlreadyLinked) {
 		return "already_linked"
-	default:
-		return "signin_failed"
 	}
+	return "signin_failed"
 }
 
 func redirectOAuthError(w http.ResponseWriter, r *http.Request, code string) {
 	http.Redirect(w, r, "/login?oauth_error="+code, http.StatusFound)
-}
-
-// emailMatchesDomain reports whether email's domain part matches domain,
-// case-insensitively (email domains are case-insensitive per RFC 5321).
-func emailMatchesDomain(email, domain string) bool {
-	at := strings.LastIndex(email, "@")
-	if at < 0 {
-		return false
-	}
-	return strings.EqualFold(email[at+1:], domain)
 }
 
 // oauthRedirectURL builds this callback's own absolute URL from the

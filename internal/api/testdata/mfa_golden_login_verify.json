@@ -1,0 +1,41 @@
+[
+  {
+    "Step": "enroll",
+    "Status": 200,
+    "Body": null
+  },
+  {
+    "Step": "password login asks for the second factor",
+    "Status": 200,
+    "Body": null
+  },
+  {
+    "Step": "verify with an unknown token",
+    "Status": 401,
+    "Body": {
+      "error": "login session expired, sign in again"
+    }
+  },
+  {
+    "Step": "verify with a bad code",
+    "Status": 401,
+    "Body": {
+      "error": "invalid code"
+    }
+  },
+  {
+    "Step": "verify with a missing code",
+    "Status": 400,
+    "Body": {
+      "error": "mfa_token and code or recovery_code are required"
+    }
+  },
+  {
+    "Step": "verify",
+    "Status": 200,
+    "Body": {
+      "display_name": "admin",
+      "username": "admin"
+    }
+  }
+]

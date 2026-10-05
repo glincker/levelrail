@@ -17,16 +17,6 @@ import (
 )
 
 const (
-	// EnvEngine selects the auth engine; only EngineLibrary mounts the library.
-	EnvEngine = "APP_AUTH_ENGINE"
-	// EngineLegacy is the default EnvEngine value: nothing new is mounted.
-	EngineLegacy = "legacy"
-	// EngineLibrary is the EnvEngine value that mounts the library handler.
-	EngineLibrary = "library"
-	// EngineShadow is the EnvEngine value that serves from the legacy engine
-	// and compares bearer tokens against the library in the background.
-	EngineShadow = "shadow"
-
 	// EnvPathPrefix overrides DefaultPathPrefix.
 	EnvPathPrefix = "APP_AUTH_ENGINE_PATH_PREFIX"
 	// EnvBaseURL overrides the externally visible base URL.
@@ -45,23 +35,6 @@ const (
 	defaultPollInterval      = 5 * time.Second
 	cookieName               = "authx_session"
 )
-
-// Mode returns the engine selected by APP_AUTH_ENGINE: library, shadow, or legacy for anything else.
-func Mode() string {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv(EnvEngine))) {
-	case EngineLibrary:
-		return EngineLibrary
-	case EngineShadow:
-		return EngineShadow
-	}
-	return EngineLegacy
-}
-
-// ShadowEnabled reports whether shadow comparison is selected.
-func ShadowEnabled() bool { return Mode() == EngineShadow }
-
-// Enabled reports whether the library engine is selected.
-func Enabled() bool { return Mode() == EngineLibrary }
 
 // Config is everything New needs beyond the database.
 type Config struct {
@@ -187,11 +160,8 @@ func New(db *sql.DB, cfg Config) (*Engine, error) {
 		tcfg.EncryptionKey = cfg.EncryptionKey
 		tcfg.TOTP = &theauth.TOTPConfig{Issuer: cfg.TOTPIssuer}
 	}
-	var sess *Sessions
-	if AreaActive(AreaSessions) {
-		sess = newSessions(db, cfg.Sessions)
-		applySessionsConfig(&tcfg, sess, store.ThrottleStore())
-	}
+	sess := newSessions(db, cfg.Sessions)
+	applySessionsConfig(&tcfg, sess, store.ThrottleStore())
 	applyMFA(&tcfg, cfg)
 	oauthRT := applyOAuth(&tcfg, cfg, db)
 	a, err := theauth.New(tcfg)

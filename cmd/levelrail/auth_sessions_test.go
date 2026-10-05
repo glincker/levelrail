@@ -16,8 +16,6 @@ import (
 )
 
 func TestRecoverAdminLibraryEndsSessionsWithoutRestart(t *testing.T) {
-	t.Setenv(authengine.EnvEngine, authengine.EngineLibrary)
-	t.Setenv(authengine.EnvAreas, string(authengine.AreaSessions))
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "levelrail.db")
 	db, err := store.Open(ctx, path)

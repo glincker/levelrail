@@ -9,8 +9,7 @@ import (
 // anonymous flow (handleOAuthStart); link is the authenticated
 // "attach this provider to my account" flow (handleOAuthLinkStart).
 const (
-	oauthPurposeSignin = "signin"
-	oauthPurposeLink   = "link"
+	oauthPurposeLink = "link"
 )
 
 // oauthStateTTL bounds how long an operator has to complete the

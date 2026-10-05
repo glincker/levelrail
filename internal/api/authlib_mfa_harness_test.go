@@ -21,23 +21,20 @@ import (
 const mfaTestOrigin = "http://example.com" //nolint:gosec // test-fixture origin, not a credential
 
 type mfaHarness struct {
-	t       *testing.T
-	rt      *Router
-	db      *store.DB
-	secrets *fakeGitHubAppSecrets
-	key     []byte
-	library bool
-	cookie  *http.Cookie
-	userID  string
-	secret  string
+	t      *testing.T
+	rt     *Router
+	db     *store.DB
+	key    []byte
+	cookie *http.Cookie
+	userID string
+	secret string
 }
 
-// newMFAHarness builds a router in legacy or library mode over a fresh database holding the
-// bootstrap admin. prepare, when set, runs after the admin exists and before the backfill.
-func newMFAHarness(t *testing.T, library bool, prepare func(h *mfaHarness)) *mfaHarness {
+// newMFAHarness builds a router over a fresh database holding the bootstrap admin.
+func newMFAHarness(t *testing.T) *mfaHarness {
 	t.Helper()
 	db := openTestDB(t)
-	h := &mfaHarness{t: t, db: db, secrets: newFakeGitHubAppSecrets(), library: library, key: make([]byte, 32)}
+	h := &mfaHarness{t: t, db: db, key: make([]byte, 32)}
 	if _, err := rand.Read(h.key); err != nil {
 		t.Fatal(err)
 	}
@@ -47,48 +44,29 @@ func newMFAHarness(t *testing.T, library bool, prepare func(h *mfaHarness)) *mfa
 		t.Fatalf("load admin: %v", err)
 	}
 	h.userID = admin.ID
-	if prepare != nil {
-		prepare(h)
+	eng, err := authengine.New(db.DB, authengine.Config{
+		BaseURL: mfaTestOrigin, EncryptionKey: h.key, TOTPIssuer: "test", TokenPrefix: "tk",
+		Directory: authengine.NewDirectory(db.DB), MFA: authengine.MFAConfig{DashboardURL: mfaTestOrigin},
+		Sessions: authengine.SessionsHooks{Mail: &authengine.MailRelay{}},
+	})
+	if err != nil {
+		t.Fatalf("authengine.New: %v", err)
 	}
-	opts := []Option{WithTwoFactorSecrets(h.secrets)}
-	if library {
-		t.Setenv(authengine.EnvEngine, authengine.EngineLibrary)
-		t.Setenv(authengine.EnvAreas, "")
-		if _, err := authengine.Backfill(context.Background(), db.DB, authengine.BackfillOptions{
-			Secrets: h.secrets, EncryptionKey: h.key,
-			TOTPSecretService: store.UserTOTPSecretsKey, TOTPSecretKey: totpSecretEnvKey,
-		}); err != nil {
-			t.Fatalf("backfill: %v", err)
-		}
-		eng, err := authengine.New(db.DB, authengine.Config{
-			BaseURL: mfaTestOrigin, EncryptionKey: h.key, TOTPIssuer: "test", TokenPrefix: "tk",
-			Directory: authengine.NewDirectory(db.DB), MFA: authengine.MFAConfig{DashboardURL: mfaTestOrigin},
-		})
-		if err != nil {
-			t.Fatalf("authengine.New: %v", err)
-		}
-		t.Cleanup(eng.Close)
-		m, err := authengine.NewMFA(eng, db.DB)
-		if err != nil {
-			t.Fatalf("NewMFA: %v", err)
-		}
-		opts = append(opts, WithAuthEngineMFA(m))
-	}
-	h.rt = NewRouter(discardLogger(), testBrand(), db, opts...)
-	if h.secret != "" {
-		rec := h.verifyLogin(h.mfaToken(h.passwordLogin()), h.code(-30*time.Second))
-		for _, c := range rec.Result().Cookies() {
-			if c.Name == sessionCookieName {
-				h.cookie = c
-			}
-		}
-		if h.cookie == nil {
-			t.Fatalf("setup sign-in with a second factor failed: %d %s", rec.Code, rec.Body.String())
-		}
-		return h
-	}
+	t.Cleanup(eng.Close)
+	h.rt = NewRouter(discardLogger(), testBrand(), db, WithAuthEngine(eng))
 	h.cookie = loginTestSession(t, h.rt, db)
 	return h
+}
+
+func doJSON(t *testing.T, rt *Router, method, path, body string, cookie *http.Cookie) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(method, path, strings.NewReader(body))
+	if cookie != nil {
+		req.AddCookie(cookie)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	return rec
 }
 
 func (h *mfaHarness) do(method, path, body string) *httptest.ResponseRecorder {

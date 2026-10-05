@@ -2,35 +2,73 @@ package authengine_test
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/GLINCKER/levelrail/internal/authengine"
+	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/totp"
 )
 
-func newMFAForTest(t *testing.T, f *fixture) *authengine.MFA {
+type mfaEnv struct {
+	*authengine.MFA
+	secretA string
+}
+
+func newMFAForTest(t *testing.T) *mfaEnv {
 	t.Helper()
-	t.Setenv(authengine.EnvEngine, authengine.EngineLibrary)
-	t.Setenv(authengine.EnvAreas, "")
-	if _, err := authengine.Backfill(context.Background(), f.db.DB, f.opts(false)); err != nil {
-		t.Fatalf("Backfill: %v", err)
+	ctx := context.Background()
+	db, err := store.Open(ctx, filepath.Join(t.TempDir(), "levelrail.db"))
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
 	}
-	eng, err := authengine.New(f.db.DB, authengine.Config{
-		BaseURL: "https://levelrail.test", TokenPrefix: "tk", EncryptionKey: f.key, TOTPIssuer: "test",
-		Directory: authengine.NewDirectory(f.db.DB),
+	t.Cleanup(func() { _ = db.Close() })
+	key := make([]byte, 32)
+	if _, err := rand.Read(key); err != nil {
+		t.Fatal(err)
+	}
+	eng, err := authengine.New(db.DB, authengine.Config{
+		BaseURL: "https://levelrail.test", TokenPrefix: "tk", EncryptionKey: key, TOTPIssuer: "test",
+		Directory: authengine.NewDirectory(db.DB),
 		MFA:       authengine.MFAConfig{DashboardURL: "https://levelrail.test"},
 	})
 	if err != nil {
 		t.Fatalf("authengine.New: %v", err)
 	}
 	t.Cleanup(eng.Close)
-	m, err := authengine.NewMFA(eng, f.db.DB)
+	hash, err := bcrypt.GenerateFromPassword([]byte(sessPassword), bcrypt.MinCost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := string(hash)
+	for _, u := range []store.User{
+		{ID: "user_aaaa", Email: "admin@example.test", DisplayName: "Admin", PasswordHash: &h, Abilities: []string{"root"}, IsFirstUser: true, CreatedAt: time.Now()},
+		{ID: "user_bbbb", Email: "dev@example.test", DisplayName: "Dev", PasswordHash: &h, Abilities: []string{"read"}, CreatedAt: time.Now()},
+	} {
+		if err := db.CreateUser(ctx, u); err != nil {
+			t.Fatalf("CreateUser: %v", err)
+		}
+		if _, err := eng.Sessions().SyncUser(ctx, authengine.LegacyUser{ID: u.ID, Email: u.Email, DisplayName: u.DisplayName, PasswordHash: h, CreatedAt: u.CreatedAt}); err != nil {
+			t.Fatalf("SyncUser: %v", err)
+		}
+	}
+	m, err := authengine.NewMFA(eng, db.DB)
 	if err != nil {
 		t.Fatalf("NewMFA: %v", err)
 	}
-	return m
+	enr, err := m.TOTPBegin(ctx, "user_aaaa", "admin@example.test")
+	if err != nil {
+		t.Fatalf("TOTPBegin: %v", err)
+	}
+	if _, err := m.TOTPFinish(ctx, "user_aaaa", codeAt(t, enr.Secret, time.Now())); err != nil {
+		t.Fatalf("TOTPFinish: %v", err)
+	}
+	return &mfaEnv{MFA: m, secretA: enr.Secret}
 }
 
 func codeAt(t *testing.T, secret string, at time.Time) string {
@@ -42,22 +80,13 @@ func codeAt(t *testing.T, secret string, at time.Time) string {
 	return c
 }
 
-func TestMFABackfilledTOTPVerifiesAndReplayIsRejected(t *testing.T) {
+func TestMFAEnrolledTOTPVerifiesAndReplayIsRejected(t *testing.T) {
 	ctx := context.Background()
-	m := newMFAForTest(t, newFixture(t))
-	now := time.Now()
-
-	st, err := m.TOTPStatus(ctx, "user_aaaa")
-	if err != nil {
-		t.Fatalf("TOTPStatus: %v", err)
-	}
-	if !st.Enabled || st.RecoveryCodesRemaining != 0 || !st.NeedsRegeneration {
-		t.Fatalf("backfilled status = %+v, want enabled with no recovery codes and a regeneration flag", st)
-	}
-
-	code := codeAt(t, totpBase32, now)
+	env := newMFAForTest(t)
+	m := env.MFA
+	code := codeAt(t, env.secretA, time.Now())
 	if err := m.CheckSecondFactor(ctx, "user_aaaa", code, "", "ua", "203.0.113.5"); err != nil {
-		t.Fatalf("backfilled secret must verify a real code: %v", err)
+		t.Fatalf("enrolled secret must verify a real code: %v", err)
 	}
 	if err := m.CheckSecondFactor(ctx, "user_aaaa", code, "", "ua", "203.0.113.5"); !errors.Is(err, authengine.ErrInvalidCode) {
 		t.Fatalf("replayed code: err = %v, want ErrInvalidCode", err)
@@ -76,13 +105,14 @@ func TestMFALockoutAfterRepeatedBadCodes(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
-			m := newMFAForTest(t, newFixture(t))
+			env := newMFAForTest(t)
+			m := env.MFA
 			for i := 0; i < tc.bad; i++ {
 				if err := m.CheckSecondFactor(ctx, "user_aaaa", "000000", "", "ua", "203.0.113.5"); !errors.Is(err, authengine.ErrInvalidCode) {
 					t.Fatalf("bad attempt %d: err = %v, want ErrInvalidCode", i, err)
 				}
 			}
-			err := m.CheckSecondFactor(ctx, "user_aaaa", codeAt(t, totpBase32, time.Now()), "", "ua", "203.0.113.5")
+			err := m.CheckSecondFactor(ctx, "user_aaaa", codeAt(t, env.secretA, time.Now()), "", "ua", "203.0.113.5")
 			var locked *authengine.LockedError
 			if tc.wantLocked {
 				if !errors.As(err, &locked) || locked.RetryAfter <= 0 {
@@ -99,7 +129,7 @@ func TestMFALockoutAfterRepeatedBadCodes(t *testing.T) {
 
 func TestMFAEnrollRecoveryRegenerateDisable(t *testing.T) {
 	ctx := context.Background()
-	m := newMFAForTest(t, newFixture(t))
+	m := newMFAForTest(t).MFA
 	now := time.Now()
 
 	enroll, err := m.TOTPBegin(ctx, "user_bbbb", "dev@example.test")
@@ -124,7 +154,7 @@ func TestMFAEnrollRecoveryRegenerateDisable(t *testing.T) {
 		t.Fatalf("reused recovery code: err = %v, want ErrInvalidCode", err)
 	}
 	st, err := m.TOTPStatus(ctx, "user_bbbb")
-	if err != nil || !st.Enabled || st.RecoveryCodesRemaining != 9 || st.NeedsRegeneration {
+	if err != nil || !st.Enabled || st.RecoveryCodesRemaining != 9 {
 		t.Fatalf("status after one recovery use = %+v, %v", st, err)
 	}
 	fresh, err := m.RegenerateRecoveryCodes(ctx, "user_bbbb")
@@ -143,7 +173,7 @@ func TestMFAEnrollRecoveryRegenerateDisable(t *testing.T) {
 }
 
 func TestMFAUnmappedUser(t *testing.T) {
-	m := newMFAForTest(t, newFixture(t))
+	m := newMFAForTest(t).MFA
 	if _, err := m.TOTPStatus(context.Background(), "user_ghost"); !errors.Is(err, authengine.ErrNotMapped) {
 		t.Fatalf("err = %v, want ErrNotMapped", err)
 	}

@@ -1,0 +1,25 @@
+[
+  {
+    "Step": "login",
+    "Status": 200,
+    "Body": "{\"display_name\":\"root@example.test\",\"username\":\"root@example.test\"}",
+    "Cookies": [
+      "session_token=set path=/ httponly=true secure=false samesite=2 expires=true maxage_neg=false"
+    ],
+    "Retry": false
+  },
+  {
+    "Step": "session",
+    "Status": 200,
+    "Body": "{\"display_name\":\"root@example.test\",\"expires_at\":\"\\u003cvolatile\\u003e\",\"has_password\":true,\"username\":\"root@example.test\"}",
+    "Cookies": null,
+    "Retry": false
+  },
+  {
+    "Step": "whoami",
+    "Status": 200,
+    "Body": "{\"abilities\":[\"root\"],\"expires_at\":\"\\u003cvolatile\\u003e\",\"kind\":\"session\",\"name\":\"root@example.test\"}",
+    "Cookies": null,
+    "Retry": false
+  }
+]

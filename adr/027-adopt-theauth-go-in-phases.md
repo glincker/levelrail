@@ -1,6 +1,6 @@
 # ADR 027: Adopt theauth-go in phases, superseding ADR 010
 
-Status: Accepted
+Status: Accepted. Completed 2026-10-05: the library is the only auth engine.
 
 Date: 2026-10-05
 
@@ -46,3 +46,15 @@ Adopt the library in phases, each shippable on its own.
   The parity tests guard that coupling.
 - Both engines coexist until the final slice, so the binary carries the
   library's dependencies (SAML, XML) even with the flag off.
+
+## Outcome
+
+The app was not in production, so the phased rollout collapsed into one
+change: the library serves tokens, device login, sessions, TOTP, passkeys and
+OAuth sign-in unconditionally. `APP_AUTH_ENGINE`, `APP_AUTH_ENGINE_AREAS`,
+shadow comparison and `auth-backfill` are gone, along with the hand-rolled
+handlers, `internal/passkey` and the in-house second-factor, device and
+password-reset tables (migration 0373). Users, roles and API token records
+stay in the platform tables as the directory the library reads through
+`authengine.Directory`. Linking an OAuth identity from a profile still uses
+the in-house flow.

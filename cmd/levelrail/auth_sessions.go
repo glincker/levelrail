@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -37,20 +36,9 @@ func authSessionsHooks(db *sql.DB, logger *slog.Logger) authengine.SessionsHooks
 	}
 }
 
-// authSessionsOptions serves the sessions area through the library when it is active.
-func authSessionsOptions(eng *authengine.Engine) []api.Option {
-	if s := eng.Sessions(); s != nil {
-		return []api.Option{api.WithAuthSessions(s)}
-	}
-	return nil
-}
-
-// recoverAdminLibrary mirrors a recover-admin password reset into the library
-// (which also revokes sessions and clears lockouts) when its sessions area is active.
+// recoverAdminLibrary mirrors a recover-admin password reset into the library,
+// which also revokes sessions and clears lockouts.
 func recoverAdminLibrary(ctx context.Context, db *store.DB, username, password string, stdout io.Writer) error {
-	if !authengine.AreaActive(authengine.AreaSessions) {
-		return nil
-	}
 	user, err := db.GetUserByEmail(ctx, username)
 	if err != nil {
 		return fmt.Errorf("load recovered user: %w", err)

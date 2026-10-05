@@ -11,7 +11,7 @@ func TestAuthzMatrix_LibraryOnlyRoutesAreProtected(t *testing.T) {
 	for _, r := range loadMatrixRoutes(t) {
 		registered[r.key()] = true
 	}
-	h := newMFAHarness(t, true, nil)
+	h := newMFAHarness(t)
 	tok := seedMatrixToken(t, h.db, "ro", []string{AbilityRead})
 	for key, reason := range libraryOnlyRoutes {
 		if !registered[key] {
@@ -27,7 +27,7 @@ func TestAuthzMatrix_LibraryOnlyRoutesAreProtected(t *testing.T) {
 			t.Errorf("%s (%s): read-only token -> %d, want 401 or 403", key, reason, got)
 		}
 		if rec := doJSON(t, h.rt, method, path, "{}", h.cookie); rec.Code == http.StatusMethodNotAllowed {
-			t.Errorf("%s (%s): not served in library mode (405)", key, reason)
+			t.Errorf("%s (%s): not served (405)", key, reason)
 		}
 	}
 }

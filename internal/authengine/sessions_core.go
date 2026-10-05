@@ -309,19 +309,11 @@ func newCookieRequest(ctx context.Context, slot *sessionSlot, token string) (*ht
 	return req, nil
 }
 
-// Sessions returns the sessions-area facade, or nil when the area is not active.
+// Sessions returns the sessions facade.
 func (e *Engine) Sessions() *Sessions { return e.sessions }
 
 func bindSessions(s *Sessions, a *theauth.TheAuth, prefix string) {
-	if s == nil {
-		return
-	}
 	s.bind(a, prefix)
-	if n, err := s.ReconcileHashes(context.Background()); err != nil {
-		s.logger.Warn("authengine: reconcile password hashes failed", "error", err.Error())
-	} else if n > 0 {
-		s.logger.Info("authengine: refreshed stale password hashes", "count", n)
-	}
 }
 
 // Mail returns the relay that carries library email to the host, if any.

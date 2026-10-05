@@ -14,12 +14,11 @@ import (
 )
 
 const (
-	modeLegacy  = "legacy"
 	modeLibrary = "library"
 	testBaseURL = "http://app.test"
 )
 
-// oauthHarness runs the same sign-in requests against the in-house engine or the library engine.
+// oauthHarness runs sign-in requests against the library engine.
 type oauthHarness struct {
 	t       *testing.T
 	mode    string
@@ -34,37 +33,28 @@ type oauthHarness struct {
 
 func newOAuthHarness(t *testing.T, mode string) *oauthHarness {
 	t.Helper()
-	engineEnv, areas := "", ""
-	if mode == modeLibrary {
-		engineEnv, areas = authengine.EngineLibrary, string(authengine.AreaOAuth)
-	}
-	t.Setenv(authengine.EnvEngine, engineEnv)
-	t.Setenv(authengine.EnvAreas, areas)
 	if _, ok := os.LookupEnv(authengine.EnvOAuthProviderTTL); !ok {
 		t.Setenv(authengine.EnvOAuthProviderTTL, "0")
 	}
 	h := &oauthHarness{t: t, mode: mode, db: openTestDB(t), idp: newFakeIDP(t), secrets: newFakeOAuthSecrets(), jar: map[string]*http.Cookie{}}
-	opts := []Option{WithOAuthSecrets(h.secrets)}
-	if mode == modeLibrary {
-		h.key = make([]byte, 32)
-		if _, err := rand.Read(h.key); err != nil {
-			t.Fatal(err)
-		}
-		eng, err := authengine.New(h.db.DB, authengine.Config{
-			BaseURL: testBaseURL, TokenPrefix: "tk", TOTPIssuer: "test", EncryptionKey: h.key, RateLimitPerIP: 1000,
-			Directory: authengine.NewDirectory(h.db.DB),
-			OAuth: &authengine.OAuthWiring{
-				Settings: h.db, Secrets: h.secrets, Users: h.db, Endpoints: h.idp.endpoints(),
-			},
-		})
-		if err != nil {
-			t.Fatalf("authengine.New: %v", err)
-		}
-		t.Cleanup(eng.Close)
-		h.eng = eng
-		opts = append(opts, WithAuthEngine(eng.Prefix(), eng.Handler()), WithAuthLibOAuth(eng))
+	h.key = make([]byte, 32)
+	if _, err := rand.Read(h.key); err != nil {
+		t.Fatal(err)
 	}
-	h.rt = NewRouter(discardLogger(), testBrand(), h.db, opts...)
+	eng, err := authengine.New(h.db.DB, authengine.Config{
+		BaseURL: testBaseURL, TokenPrefix: "tk", TOTPIssuer: "test", EncryptionKey: h.key, RateLimitPerIP: 1000,
+		Directory: authengine.NewDirectory(h.db.DB),
+		Sessions:  authengine.SessionsHooks{Mail: &authengine.MailRelay{}},
+		OAuth: &authengine.OAuthWiring{
+			Settings: h.db, Secrets: h.secrets, Users: h.db, Endpoints: h.idp.endpoints(),
+		},
+	})
+	if err != nil {
+		t.Fatalf("authengine.New: %v", err)
+	}
+	t.Cleanup(eng.Close)
+	h.eng = eng
+	h.rt = NewRouter(discardLogger(), testBrand(), h.db, WithOAuthSecrets(h.secrets), WithAuthEngine(eng))
 	return h
 }
 
@@ -89,10 +79,7 @@ func (h *oauthHarness) startPath(provider string) string {
 }
 
 func (h *oauthHarness) callbackPath(provider string) string {
-	if h.mode == modeLibrary {
-		return h.eng.Prefix() + "/providers/" + provider + "/callback"
-	}
-	return "/api/v1/auth/oauth/" + provider + "/callback"
+	return h.eng.Prefix() + "/providers/" + provider + "/callback"
 }
 
 func (h *oauthHarness) get(target string, withJar bool) *httptest.ResponseRecorder {

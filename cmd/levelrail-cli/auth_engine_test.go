@@ -12,7 +12,7 @@ func TestRun_AuthEngineStatus(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotMethod, gotPath = r.Method, r.URL.Path
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"mode":"shadow","library_version":"v2.6.0","areas":[],"compared":10,"matched":9,"mismatched":1,"dropped":0,"skipped":0,"errors":0,"mismatches":[{"at":"2026-10-05T10:00:00Z","kind":"abilities","token_id":"tok_1","legacy_abilities":["read","write"],"library_abilities":["read"]}]}`))
+		_, _ = w.Write([]byte(`{"library_version":"v2.7.0","totp":true,"passkeys":false,"oauth":true}`))
 	}))
 	defer srv.Close()
 
@@ -20,7 +20,7 @@ func TestRun_AuthEngineStatus(t *testing.T) {
 	if gotMethod != http.MethodGet || gotPath != "/api/v1/auth-engine/status" {
 		t.Errorf("request = %s %s", gotMethod, gotPath)
 	}
-	for _, want := range []string{"mode:             shadow", "mismatched:       1", "abilities", "tok_1"} {
+	for _, want := range []string{"library version:  v2.7.0", "two-factor (TOTP): available", "passkeys:         unavailable", "oauth sign-in:    available"} {
 		if !strings.Contains(stdout, want) {
 			t.Errorf("stdout = %q, missing %q", stdout, want)
 		}

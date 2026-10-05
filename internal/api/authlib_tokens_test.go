@@ -27,11 +27,10 @@ func decodeStatus(t *testing.T, rt *Router, cookie *http.Cookie) authEngineStatu
 	return out
 }
 
-func TestAuthEngineStatus_RootOnlyAndMode(t *testing.T) {
-	rt, cookie, db := goldenRouter(t, authengine.EngineLegacy)
-	st := decodeStatus(t, rt, cookie)
-	if st.Mode != authengine.EngineLegacy || st.Compared != 0 || st.LibraryVersion == "" || st.Mismatches == nil {
-		t.Fatalf("legacy status = %+v", st)
+func TestAuthEngineStatus_RootOnly(t *testing.T) {
+	rt, cookie, db := goldenRouter(t)
+	if st := decodeStatus(t, rt, cookie); st.LibraryVersion == "" {
+		t.Fatalf("status = %+v", st)
 	}
 	reader := storeUserWithAbilitiesForTest(t, db, "reader@example.com", []string{AbilityRead})
 	rec := httptest.NewRecorder()
@@ -46,45 +45,7 @@ func TestAuthEngineStatus_RootOnlyAndMode(t *testing.T) {
 	}
 }
 
-func TestShadowMismatchIsCountedAndSurfaced(t *testing.T) {
-	rt, cookie, db := goldenRouter(t, authengine.EngineShadow)
-	admin, err := db.GetUserByEmail(context.Background(), testAdminUsername)
-	if err != nil {
-		t.Fatalf("load admin: %v", err)
-	}
-	raw, rec, err := MintAgentAPIToken(context.Background(), db, "legacy-only", []string{AbilityRead}, nil, agentIdentity{}, admin.ID)
-	if err != nil {
-		t.Fatalf("mint: %v", err)
-	}
-	out := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(out, goldenBearer(http.MethodGet, raw, ""))
-	if out.Code != http.StatusOK {
-		t.Fatalf("legacy must keep serving in shadow mode, got %d", out.Code)
-	}
-	deadline := time.Now().Add(3 * time.Second)
-	var st authEngineStatusResponse
-	for time.Now().Before(deadline) {
-		if st = decodeStatus(t, rt, cookie); st.Mismatched > 0 {
-			break
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-	if st.Mode != authengine.EngineShadow || st.Mismatched != 1 || st.Compared < 1 {
-		t.Fatalf("status = %+v", st)
-	}
-	m := st.Mismatches[0]
-	if m.Kind != authengine.MismatchDecision || m.TokenID != rec.ID || m.LegacyOwnerID != admin.ID {
-		t.Fatalf("mismatch = %+v", m)
-	}
-	body, _ := json.Marshal(st)
-	if strings.Contains(string(body), raw) {
-		t.Fatal("status must never contain the token secret")
-	}
-}
-
 func TestLibraryModeBearerAuthentication(t *testing.T) {
-	t.Setenv(authengine.EnvEngine, authengine.EngineLibrary)
-	t.Setenv(authengine.EnvAreas, "")
 	ctx := context.Background()
 	db := openTestDB(t)
 	bootstrapTestAdmin(t, db)
@@ -92,16 +53,9 @@ func TestLibraryModeBearerAuthentication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load admin: %v", err)
 	}
-	owned, _, err := MintAgentAPIToken(ctx, db, "owned", []string{AbilityRead}, nil, agentIdentity{}, admin.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
 	system, _, err := MintAPIToken(ctx, db, "system", []string{AbilityRead}, nil)
 	if err != nil {
 		t.Fatal(err)
-	}
-	if _, err := authengine.Backfill(ctx, db.DB, authengine.BackfillOptions{}); err != nil {
-		t.Fatalf("backfill: %v", err)
 	}
 	late, _, err := MintAgentAPIToken(ctx, db, "late", []string{AbilityRead}, nil, agentIdentity{}, admin.ID)
 	if err != nil {
@@ -114,7 +68,7 @@ func TestLibraryModeBearerAuthentication(t *testing.T) {
 		t.Fatalf("authengine.New: %v", err)
 	}
 	t.Cleanup(eng.Close)
-	rt := NewRouter(discardLogger(), testBrand(), db, WithAuthEngineLibrary(eng))
+	rt := NewRouter(discardLogger(), testBrand(), db, WithAuthEngine(eng))
 	cookie := loginTestSession(t, rt, db)
 
 	use := func(token string) int {
@@ -127,9 +81,8 @@ func TestLibraryModeBearerAuthentication(t *testing.T) {
 		token string
 		want  int
 	}{
-		{"backfilled unprefixed legacy token", owned, http.StatusOK},
 		{"ownerless system token", system, http.StatusOK},
-		{"owned token the backfill never saw", late, http.StatusUnauthorized},
+		{"owned token the library never saw", late, http.StatusUnauthorized},
 		{"unknown secret", "nope", http.StatusUnauthorized},
 	}
 	for _, tc := range tests {
@@ -171,7 +124,7 @@ func TestLibraryDeviceGrantRootCapAndTTL(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Setenv(envDeviceTokenAllowRoot, tc.allowRoot)
 			t.Setenv(envDeviceTokenTTLDays, "2")
-			rt, cookie, _ := goldenRouter(t, authengine.EngineLibrary)
+			rt, cookie, _ := goldenRouter(t)
 			g := &goldenRun{t: t, rt: rt, cookie: cookie}
 			start := g.do("start", httptest.NewRequest(http.MethodPost, "/api/v1/auth/device/start", strings.NewReader(`{}`)))
 			g.do("approve", g.session(http.MethodPost, "/api/v1/auth/device/"+start["user_code"].(string)+"/approve", ""))

@@ -35,37 +35,24 @@ func (c *capturedMail) last() (string, bool) {
 }
 
 func TestAuthLibSessionsAreInTheLibraryTables(t *testing.T) {
-	e := newGoldenEnv(t, true)
+	e := newGoldenEnv(t)
 	seedStandard(t, e)
 	_, cookie := e.do(t, call{step: "login", method: "POST", path: "/api/v1/auth/login", body: loginBody(goldenRootEmail, goldenRootPass)})
 	var n int
 	if err := e.db.QueryRow(`SELECT COUNT(*) FROM theauth_sessions WHERE revoked_at IS NULL`).Scan(&n); err != nil || n != 1 {
 		t.Fatalf("library sessions = %d, err %v; want 1", n, err)
 	}
-	if e.rt.sessions.lib == nil {
-		t.Fatal("session store is not library-backed")
-	}
 	e.rt.sessions.mu.Lock()
 	inMemory := len(e.rt.sessions.sessions)
 	e.rt.sessions.mu.Unlock()
 	if inMemory != 0 {
-		t.Errorf("in-memory sessions = %d, want 0 in library mode", inMemory)
+		t.Errorf("in-memory sessions = %d, want 0", inMemory)
 	}
 	e.do(t, call{step: "logout", method: "POST", path: "/api/v1/auth/logout", cookie: cookie})
 }
 
-func TestAuthLibSessionsLegacyModeUnchanged(t *testing.T) {
-	e := newGoldenEnv(t, false)
-	if e.rt.libSessions != nil || e.rt.sessions.lib != nil {
-		t.Fatal("legacy mode must not attach the library")
-	}
-	if _, ok := e.rt.auth.(*libSyncedAuth); ok {
-		t.Fatal("legacy mode must not wrap the user store")
-	}
-}
-
 func TestAuthLibSessionsAuditEvents(t *testing.T) {
-	e := newGoldenEnv(t, true)
+	e := newGoldenEnv(t)
 	seedStandard(t, e)
 	e.do(t, call{step: "bad", method: "POST", path: "/api/v1/auth/login", body: loginBody(goldenRootEmail, "nope-nope-1")})
 	_, cookie := e.do(t, call{step: "login", method: "POST", path: "/api/v1/auth/login", body: loginBody(goldenRootEmail, goldenRootPass)})
@@ -108,8 +95,7 @@ func hasAll(got, want []string) bool {
 }
 
 func TestAuthLibSessionsPasswordResetFlow(t *testing.T) {
-	t.Setenv(authengine.EnvEngine, authengine.EngineLibrary)
-	e := newGoldenEnv(t, true)
+	e := newGoldenEnv(t)
 	mail := &capturedMail{}
 	e.rt.emailSender = mail
 	seedStandard(t, e)
@@ -162,7 +148,7 @@ func TestAuthLibSessionsPasswordResetFlow(t *testing.T) {
 }
 
 func TestAuthLibSessionsPlainUsernameRegistration(t *testing.T) {
-	e := newGoldenEnv(t, true)
+	e := newGoldenEnv(t)
 	body := `{"username":"admin","password":"a-real-password","setup_token":"` + e.token + `"}`
 	ok, cookie := e.do(t, call{step: "register", method: "POST", path: "/api/v1/auth/register", body: body})
 	if ok.Status != http.StatusCreated || cookie == "" {
@@ -179,7 +165,7 @@ func TestAuthLibSessionsPlainUsernameRegistration(t *testing.T) {
 }
 
 func TestAuthLibSessionsUnknownUserTimingMatchesWrongPassword(t *testing.T) {
-	e := newGoldenEnv(t, true)
+	e := newGoldenEnv(t)
 	seedStandard(t, e)
 	median := func(email string) time.Duration {
 		var ds []time.Duration
@@ -202,7 +188,7 @@ func TestAuthLibSessionsUnknownUserTimingMatchesWrongPassword(t *testing.T) {
 }
 
 func TestAuthLibStreamWatchFiresWhenSessionRevoked(t *testing.T) {
-	e := newGoldenEnv(t, true)
+	e := newGoldenEnv(t)
 	t.Setenv(authengine.EnvStreamWatchInterval, "20ms")
 	seedStandard(t, e)
 	_, cookie := e.do(t, call{step: "login", method: "POST", path: "/api/v1/auth/login", body: loginBody(goldenRootEmail, goldenRootPass)})

@@ -17,18 +17,36 @@ import (
 
 const libMailTimeout = 30 * time.Second
 
-// WithAuthSessions serves login, sessions, session links and password reset
-// through the library. Nil leaves the legacy implementation in place.
-func WithAuthSessions(s *authengine.Sessions) Option {
-	return func(rt *Router) { rt.libSessions = s }
-}
-
-// attachLibSessions swaps the session store's backend and wraps the user
-// store so lifecycle changes reach the library. No-op when the area is off.
-func (rt *Router) attachLibSessions() {
-	if rt.libSessions == nil {
-		return
+// attachAuthEngine wires the library engine into the router: sessions, user
+// sync, tokens, device login, MFA and OAuth. Without a supplied engine it
+// builds a default one over the store database.
+func (rt *Router) attachAuthEngine(s Store) {
+	db, ok := s.(*store.DB)
+	if !ok {
+		panic("api: the auth engine needs a *store.DB")
 	}
+	if rt.authEngine == nil {
+		eng, err := authengine.New(db.DB, authengine.Config{
+			BaseURL:   "http://localhost",
+			Directory: authengine.NewDirectory(db.DB),
+			Sessions:  authengine.SessionsHooks{Mail: &authengine.MailRelay{}},
+		})
+		if err != nil {
+			panic(fmt.Sprintf("api: build auth engine: %v", err))
+		}
+		rt.authEngine = eng
+	}
+	eng := rt.authEngine
+	rt.libSessions = eng.Sessions()
+	rt.authLib = authLibState{tokens: eng, device: eng}
+	if eng.OAuthEnabled() {
+		rt.authLibOAuth = eng
+	}
+	m, err := authengine.NewMFA(eng, db.DB)
+	if err != nil {
+		panic(fmt.Sprintf("api: build auth mfa: %v", err))
+	}
+	rt.mfaLib = &authLibMFA{rt: rt, mfa: m, seam: legacyLoginSeam{rt: rt}}
 	rt.sessions.lib = rt.libSessions
 	rt.auth = &libSyncedAuth{AuthStore: rt.auth, sess: rt.libSessions, logger: rt.logger}
 	if relay := rt.libSessions.Mail(); relay != nil {
@@ -98,16 +116,6 @@ func (rt *Router) handleLibLogin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rt.libSessions.Revoke(r.Context(), token)
 		rt.internalError(w, "api: login: load user failed", err, slog.String("user_id", userID))
-		return
-	}
-	if user.TOTPEnabled {
-		rt.libSessions.Revoke(r.Context(), token)
-		pending, err := rt.mfaPending.create(user.ID)
-		if err != nil {
-			rt.internalError(w, "api: login: create mfa pending token failed", err, slog.String("user_id", user.ID))
-			return
-		}
-		writeJSON(w, http.StatusOK, loginResponse{MFARequired: true, MFAToken: pending})
 		return
 	}
 	rt.finishLibSession(w, r, *user, token)
