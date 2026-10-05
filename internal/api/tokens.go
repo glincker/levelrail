@@ -116,6 +116,10 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ownerID, _ := rt.currentSessionUserID(r)
+	if rt.authLib.tokens != nil {
+		rt.libraryCreateToken(w, r, req, agent, ownerID, expiresAt)
+		return
+	}
 	plaintext, rec, err := MintAgentAPIToken(r.Context(), rt.tokens, req.Name, req.Abilities, expiresAt, agent, ownerID)
 	if err != nil {
 		rt.logger.Error("api: create token failed", slog.String("error", err.Error()))
@@ -134,6 +138,17 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 // token secret, including for already-revoked rows: once a token is
 // minted, its plaintext is gone from this API's world entirely.
 func (rt *Router) handleListTokens(w http.ResponseWriter, r *http.Request) {
+	if rt.authLib.tokens != nil {
+		callerID, _ := rt.currentSessionUserID(r)
+		out, err := rt.libraryListTokens(r.Context(), callerID, rt.callerIsAdmin(r))
+		if err != nil {
+			rt.logger.Error("api: list tokens failed", slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		writeJSON(w, http.StatusOK, out)
+		return
+	}
 	recs, err := rt.tokens.ListAPITokens(r.Context())
 	if err != nil {
 		rt.logger.Error("api: list tokens failed", slog.String("error", err.Error()))
@@ -173,7 +188,12 @@ func (rt *Router) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	err := rt.tokens.RevokeAPIToken(r.Context(), id)
+	var err error
+	if rt.authLib.tokens != nil {
+		err = rt.libraryRevokeToken(r.Context(), id)
+	} else {
+		err = rt.tokens.RevokeAPIToken(r.Context(), id)
+	}
 	if errors.Is(err, store.ErrAPITokenNotFound) {
 		writeError(w, http.StatusNotFound, "token not found")
 		return

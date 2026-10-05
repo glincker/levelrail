@@ -89,6 +89,8 @@ func (s *mfaPendingStore) revoke(token string) {
 type twoFactorStatusResponse struct {
 	Enabled                bool `json:"enabled"`
 	RecoveryCodesRemaining int  `json:"recovery_codes_remaining"`
+	// RecoveryCodesNeedRegeneration is only ever true when the library engine serves MFA.
+	RecoveryCodesNeedRegeneration bool `json:"recovery_codes_need_regeneration,omitempty"`
 }
 
 // handleGetTwoFactorStatus handles GET /api/v1/auth/2fa: whether the
@@ -97,6 +99,10 @@ type twoFactorStatusResponse struct {
 // every other route in this file: it only ever reads store.User and
 // recovery-code rows, neither of which needs internal/secrets.
 func (rt *Router) handleGetTwoFactorStatus(w http.ResponseWriter, r *http.Request) {
+	if rt.mfaLib != nil {
+		rt.mfaLib.status(w, r)
+		return
+	}
 	userID, ok := rt.currentSessionUserID(r)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "authentication required")
@@ -133,6 +139,10 @@ type twoFactorSetupResponse struct {
 // Calling this again before confirming just overwrites the pending
 // secret; nothing reads the old one once a new one lands.
 func (rt *Router) handleSetupTwoFactor(w http.ResponseWriter, r *http.Request) {
+	if rt.mfaLib != nil {
+		rt.mfaLib.setup(w, r)
+		return
+	}
 	if rt.twoFactorSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "two-factor authentication requires a master key to be configured on this control plane")
 		return
@@ -185,6 +195,10 @@ type twoFactorRecoveryCodesResponse struct {
 // against it. On success this is the one moment recovery codes are ever
 // shown in plaintext.
 func (rt *Router) handleConfirmTwoFactor(w http.ResponseWriter, r *http.Request) {
+	if rt.mfaLib != nil {
+		rt.mfaLib.confirm(w, r)
+		return
+	}
 	if rt.twoFactorSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "two-factor authentication requires a master key to be configured on this control plane")
 		return
@@ -253,6 +267,10 @@ type twoFactorDisableRequest struct {
 // has the password, so letting a password re-check turn it off would
 // undermine the exact property it exists to provide.
 func (rt *Router) handleDisableTwoFactor(w http.ResponseWriter, r *http.Request) {
+	if rt.mfaLib != nil {
+		rt.mfaLib.disable(w, r)
+		return
+	}
 	userID, ok := rt.currentSessionUserID(r)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "authentication required")
@@ -313,6 +331,10 @@ func (rt *Router) handleDisableTwoFactor(w http.ResponseWriter, r *http.Request)
 // code specifically (not a recovery code), so regenerating never
 // consumes one of the codes it's about to throw away.
 func (rt *Router) handleRegenerateRecoveryCodes(w http.ResponseWriter, r *http.Request) {
+	if rt.mfaLib != nil {
+		rt.mfaLib.regenerate(w, r)
+		return
+	}
 	if rt.twoFactorSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "two-factor authentication requires a master key to be configured on this control plane")
 		return
@@ -380,6 +402,10 @@ type twoFactorVerifyRequest struct {
 // rt.logins, since brute-forcing a 6-digit code after a correct
 // password is a distinct attack surface from password guessing.
 func (rt *Router) handleVerifyTwoFactor(w http.ResponseWriter, r *http.Request) {
+	if rt.mfaLib != nil {
+		rt.mfaLib.verify(w, r)
+		return
+	}
 	if rt.refuseInsecureLogin(w, r) {
 		return
 	}

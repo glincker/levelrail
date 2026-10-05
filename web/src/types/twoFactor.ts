@@ -3,6 +3,8 @@
 export interface TwoFactorStatus {
   enabled: boolean
   recovery_codes_remaining: number
+  // Only present when the library engine serves MFA and no usable code is left.
+  recovery_codes_need_regeneration?: boolean
 }
 
 export interface TwoFactorSetup {

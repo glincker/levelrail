@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -51,7 +52,7 @@ func (rt *Router) resolveCaller(ctx context.Context, r *http.Request) (principal
 	if !ok {
 		return "", "", nil, errCallerGone
 	}
-	rec, terr := rt.tokens.GetAPITokenByHash(ctx, hashToken(token))
+	rec, terr := rt.lookupBearerToken(ctx, token)
 	if errors.Is(terr, store.ErrAPITokenNotFound) {
 		return "", "", nil, errCallerGone
 	}
@@ -73,6 +74,8 @@ func (rt *Router) resolveCaller(ctx context.Context, r *http.Request) (principal
 // calls revoked once when the gate stops passing. The returned stop ends
 // the watcher and must be called when the stream ends.
 func (rt *Router) watchAuthorization(r *http.Request, required string, resourceFn func(*http.Request) string, revoked func()) (stop func()) {
+	revoked = sync.OnceFunc(revoked)
+	stopLib := rt.watchLibSession(r, revoked)
 	probe := r.Clone(context.WithoutCancel(r.Context()))
 	resource := resourceFn(r)
 	done := make(chan struct{})
@@ -92,6 +95,7 @@ func (rt *Router) watchAuthorization(r *http.Request, required string, resourceF
 		}
 	}()
 	return func() {
+		stopLib()
 		select {
 		case <-done:
 		default:

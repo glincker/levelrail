@@ -27,6 +27,13 @@ var (
 	matrixParamRe = regexp.MustCompile(`\{[^}]+\}`)
 )
 
+// libraryOnlyRoutes are registered only when the library engine serves their
+// area, so the default-mode probes skip them. TestAuthzMatrix_LibraryOnlyRoutesAreProtected
+// checks the same guarantees in library mode.
+var libraryOnlyRoutes = map[string]string{
+	"PATCH /api/v1/auth/passkeys/{id}": "passkey rename, added by the library MFA area (authlib_mfa_passkeys.go)",
+}
+
 // publicRoutes are the only routes allowed to answer an anonymous caller
 // with something other than 401. Adding a route here needs a reason a
 // reviewer can challenge.
@@ -170,6 +177,9 @@ func TestAuthzMatrix_UnauthenticatedGets401(t *testing.T) {
 		if _, public := publicRoutes[r.key()]; public {
 			continue
 		}
+		if _, lib := libraryOnlyRoutes[r.key()]; lib {
+			continue
+		}
 		if got := matrixDo(rt, r.method, concretePath(r.pattern, "web"), nil); got != http.StatusUnauthorized {
 			bad = append(bad, r.key()+" -> "+http.StatusText(got))
 		}
@@ -193,6 +203,9 @@ func TestAuthzMatrix_ReadOnlyTokenCannotMutate(t *testing.T) {
 			continue
 		}
 		if _, ok := readOnlyMayMutate[r.key()]; ok {
+			continue
+		}
+		if _, lib := libraryOnlyRoutes[r.key()]; lib {
 			continue
 		}
 		// Session-only routes (requireAuth) answer a bearer token 401, not 403.

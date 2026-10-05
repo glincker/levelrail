@@ -14,6 +14,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -136,6 +137,10 @@ func runRecoverAdmin(ctx context.Context, logger *slog.Logger, args []string, st
 		return err
 	}
 
+	if err := recoverAdminLibrary(ctx, db, username, password, stdout); err != nil {
+		return err
+	}
+
 	logger.Warn("admin account recovered",
 		slog.String("username", username),
 		slog.Bool("password_generated", generated),
@@ -149,7 +154,9 @@ func runRecoverAdmin(ctx context.Context, logger *slog.Logger, args []string, st
 	if generated {
 		_, _ = fmt.Fprintf(stdout, "generated password: %s\n", password)
 	}
-	_, _ = fmt.Fprintln(stdout, "restart the container to invalidate sessions created under the old password.")
+	if !authengine.AreaActive(authengine.AreaSessions) {
+		_, _ = fmt.Fprintln(stdout, "restart the container to invalidate sessions created under the old password.")
+	}
 
 	return nil
 }
