@@ -114,6 +114,8 @@ type AppResource struct {
 	// PreviousReleaseHeldUntil mirrors internal/api's GET app payload: when
 	// the kept previous release, an instant rollback target, is removed.
 	PreviousReleaseHeldUntil string `json:"previous_release_held_until,omitempty"`
+	// FallbackURL is the automatic sslip.io URL of an app with no domain (GET only).
+	FallbackURL string `json:"fallback_url,omitempty"`
 	// Volumes mirrors internal/api's appResource.Volumes: this app's
 	// declared named Docker volumes, response-only (declared through
 	// app.yaml, not settable here).
@@ -405,6 +407,10 @@ type NetworkResource struct {
 	// plane's own APP_PUBLIC_HOST is a real, publicly routable IP; see
 	// internal/api's own networkResource.FallbackURL doc comment.
 	FallbackURL string `json:"fallback_url,omitempty"`
+	// FallbackEnabled is the platform-wide automatic hostname toggle.
+	FallbackEnabled bool `json:"fallback_enabled"`
+	// PublicHost is the server address the fallback hostname is built from.
+	PublicHost string `json:"public_host,omitempty"`
 }
 
 // LogEntryResource mirrors internal/api's logEntryResource
@@ -477,6 +483,8 @@ type ExecResponse struct {
 type DomainResource struct {
 	Domain      string `json:"domain"`
 	ServiceName string `json:"service_name"`
+	// Automatic marks a generated sslip.io hostname rather than a configured domain.
+	Automatic bool `json:"automatic,omitempty"`
 }
 
 // CloudflareDNSResource mirrors internal/api's cloudflareDNSResource
@@ -3273,6 +3281,33 @@ type IngressSettingsResource struct {
 	ACMEEmail        string `json:"acme_email,omitempty"`
 	ACMEDirectoryURL string `json:"acme_directory_url,omitempty"`
 	HSTSEnabled      bool   `json:"hsts_enabled"`
+	// FallbackDomainsEnabled toggles the automatic <app>.<dashed-ip>.sslip.io hostnames.
+	FallbackDomainsEnabled bool `json:"fallback_domains_enabled"`
+	// PublicHost and PublicHostSource are read-only (env, detected, disabled, none).
+	PublicHost       string `json:"public_host,omitempty"`
+	PublicHostSource string `json:"public_host_source,omitempty"`
+}
+
+// HTTPSStatusResource mirrors internal/api's httpsStatusResource (GET/POST
+// /api/v1/settings/ingress/https): state is off, pending, issued or failed.
+type HTTPSStatusResource struct {
+	State            string     `json:"state"`
+	Domain           string     `json:"domain,omitempty"`
+	PublicHost       string     `json:"public_host,omitempty"`
+	PublicHostSource string     `json:"public_host_source,omitempty"`
+	SuggestedDomain  string     `json:"suggested_domain,omitempty"`
+	Staging          bool       `json:"staging"`
+	Issuer           string     `json:"issuer,omitempty"`
+	NotAfter         *time.Time `json:"not_after,omitempty"`
+	Error            string     `json:"error,omitempty"`
+	Hint             string     `json:"hint,omitempty"`
+	DashboardURL     string     `json:"dashboard_url,omitempty"`
+}
+
+// EnableHTTPSRequest is POST /api/v1/settings/ingress/https's body.
+type EnableHTTPSRequest struct {
+	Email   string `json:"email"`
+	Staging bool   `json:"staging"`
 }
 
 // DashboardURLResource mirrors internal/api's dashboardURLResource (GET/PUT /api/v1/settings/dashboard-url).

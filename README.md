@@ -110,7 +110,7 @@ Images for `linux/amd64` and `linux/arm64` are published as `:beta` (use this un
 - **311 one-click templates** for self-hosted services, each a compose file the platform deploys and manages.
 - **Access control and audit.** Allow and Deny IAM policies scoped to a single app or database, with a full audit log and CSV export, in the free Apache 2.0 core.
 - **Alerting.** Threshold, crashloop, and certificate expiry rules delivered over 18 notification kinds, including Slack, Discord, email, Telegram, PagerDuty, ntfy, and a generic webhook.
-- **AI-ready.** The HTTP API the dashboard uses also backs an MCP server with 155 tools, so an AI assistant can list apps, read logs, and diagnose a crashloop. AI never sits in the reconciliation path.
+- **AI-ready.** The HTTP API the dashboard uses also backs an MCP server with 156 tools, so an AI assistant can list apps, read logs, and diagnose a crashloop. AI never sits in the reconciliation path.
 
 ## A tour of the dashboard
 

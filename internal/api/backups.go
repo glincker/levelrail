@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/cronexpr"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -73,6 +74,10 @@ func (rt *Router) prepareBackupTrigger(w http.ResponseWriter, r *http.Request, t
 		return "", false
 	}
 	if !rt.loadBackupTarget(w, r, targetID, logContext+": load backup target failed") {
+		return "", false
+	}
+	if err := backup.CheckWorkDirSpace(); err != nil {
+		writeError(w, http.StatusInsufficientStorage, err.Error())
 		return "", false
 	}
 	historyID, err := randomBackupHistoryID()

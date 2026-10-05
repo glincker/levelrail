@@ -89,6 +89,8 @@ type Apps struct {
 	// HTTP/TLS/PKI above: see layer4.go's own package doc comment for why
 	// a stream can't be a second, independently-applied Caddy config.
 	Layer4 *Layer4App `json:"layer4,omitempty"`
+	// Events feeds certificate success and failure events to DefaultACMEFailures.
+	Events *EventsApp `json:"events,omitempty"`
 }
 
 // HTTPApp is Caddy's "http" app: one or more named servers, each with its

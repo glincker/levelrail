@@ -2,6 +2,7 @@ package backup
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -20,6 +21,10 @@ const defaultCloneRestoreReadyTimeout = 10 * time.Minute
 // defaultCloneRestoreReadyPollInterval is how often RunCloneRestore
 // re-checks the new database's reported conditions while waiting.
 const defaultCloneRestoreReadyPollInterval = 2 * time.Second
+
+// defaultCloneRestoreSettleTimeout bounds how long a restore that fails
+// right after the database reports Ready keeps being retried.
+const defaultCloneRestoreSettleTimeout = 60 * time.Second
 
 // CloneRestoreStore is the narrow store surface CloneRestoreRunner needs:
 // backupResolver's two methods to resolve the source backup, the clone-
@@ -56,6 +61,8 @@ type CloneRestoreRunner struct {
 	// have to wait out the real default.
 	ReadyTimeout time.Duration
 	PollInterval time.Duration
+	// SettleTimeout overrides defaultCloneRestoreSettleTimeout when non-zero.
+	SettleTimeout time.Duration
 }
 
 func (r *CloneRestoreRunner) now() time.Time {
@@ -70,6 +77,13 @@ func (r *CloneRestoreRunner) readyTimeout() time.Duration {
 		return r.ReadyTimeout
 	}
 	return defaultCloneRestoreReadyTimeout
+}
+
+func (r *CloneRestoreRunner) settleTimeout() time.Duration {
+	if r.SettleTimeout > 0 {
+		return r.SettleTimeout
+	}
+	return defaultCloneRestoreSettleTimeout
 }
 
 func (r *CloneRestoreRunner) pollInterval() time.Duration {
@@ -122,7 +136,21 @@ func (r *CloneRestoreRunner) waitAndRestore(ctx context.Context, controllerName,
 	if err := r.waitUntilReady(ctx, controllerName); err != nil {
 		return fmt.Errorf("wait for database %q to become ready: %w", newDatabaseName, err)
 	}
-	return downloadAndRestore(ctx, r.Store, r.Secrets, r.Downloader, r.Restorer, newDatabaseName, backupHistoryID, engine, containerName)
+	// Ready only means the container started: the engine may still be
+	// creating its database, so a failure in this window is retried.
+	deadline := time.Now().Add(r.settleTimeout())
+	for {
+		err := downloadAndRestore(ctx, r.Store, r.Secrets, r.Downloader, r.Restorer, newDatabaseName, backupHistoryID, engine, containerName)
+		var restoreErr *restoreStepError
+		if err == nil || !errors.As(err, &restoreErr) || !time.Now().Before(deadline) {
+			return err
+		}
+		select {
+		case <-ctx.Done():
+			return err
+		case <-time.After(r.pollInterval()):
+		}
+	}
 }
 
 // waitUntilReady polls controllerName's stored reconcile conditions until

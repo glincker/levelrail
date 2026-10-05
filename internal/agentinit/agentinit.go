@@ -188,7 +188,7 @@ The exit code says whether it succeeded. MCP: ` + "`wait_for_deploy`" + `.
 ## Roll back
 
 ` + "```" + `
-{{.CLI}} apps rollback {{.App}}
+{{.CLI}} apps deploys list {{.App}}
 {{.CLI}} apps deploys rollback-to {{.App}} <deploy-id>
 ` + "```" + `
 

@@ -18,12 +18,11 @@ const props = withDefaults(
   {
     lines: () => [
       { kind: 'command', text: 'curl -fsSL https://levelrail.com/install.sh | sudo sh' },
-      { kind: 'output', text: 'checking host: docker, systemd, ports 80/443/8080 free' },
+      { kind: 'output', text: 'checking host: docker, systemd, ports 80 and 443' },
       { kind: 'output', text: 'installing control plane as a systemd service' },
-      { kind: 'output', text: 'dashboard ready: https://198.51.100.42:8080 (setup token printed above)' },
-      { kind: 'command', text: 'levelrail deploy myapp --image registry.example.com/acme/myapp:latest' },
-      { kind: 'output', text: 'build pushed to the registry, readiness probe passed' },
-      { kind: 'output', text: 'issuing TLS certificate' },
+      { kind: 'output', text: 'dashboard ready: http://198.51.100.42:8080 (setup token link printed above)' },
+      { kind: 'command', text: 'levelrail-cli deploy myapp --image registry.example.com/acme/myapp:1.0' },
+      { kind: 'output', text: 'readiness probe passed, traffic switched to the new container' },
       { kind: 'success', text: 'myapp is live at https://myapp.example.com' },
     ],
     title: 'install → deploy',

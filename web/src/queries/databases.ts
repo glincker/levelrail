@@ -188,14 +188,22 @@ export function useCreateDatabase() {
   })
 }
 
-// DELETE /api/v1/databases/{name} (internal/api/databases.go's
-// handleDeleteDatabase). Same known gap the backend doc comment names
-// for handleDeleteApp: removes desired state, does not itself stop or
-// remove a running container.
-export async function deleteDatabase(name: string): Promise<void> {
-  const res = await fetch(`/api/v1/databases/${encodeURIComponent(name)}`, {
-    method: 'DELETE',
-  })
+// DELETE /api/v1/databases/{name}: the API answers 409 while apps still use
+// the database unless force is set; the data volume is always kept.
+export interface DeleteDatabaseInput {
+  name: string
+  force?: boolean
+}
+
+export async function deleteDatabase({
+  name,
+  force,
+}: DeleteDatabaseInput): Promise<void> {
+  const query = force ? '?force=true' : ''
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}${query}`,
+    { method: 'DELETE' },
+  )
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -208,7 +216,7 @@ export function useDeleteDatabase() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteDatabase,
-    onSuccess: (_data, name) => {
+    onSuccess: (_data, { name }) => {
       queryClient.removeQueries({ queryKey: databaseKeys.detail(name) })
       void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
     },
@@ -222,9 +230,12 @@ export function useDeleteDatabase() {
 // request, is what actually removes or recreates the container. No
 // request body. Mirrors queries/apps.ts's stopApp/startApp.
 async function stopDatabase(name: string): Promise<DatabaseResource> {
-  const res = await fetch(`/api/v1/databases/${encodeURIComponent(name)}/stop`, {
-    method: 'POST',
-  })
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/stop`,
+    {
+      method: 'POST',
+    },
+  )
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -235,9 +246,12 @@ async function stopDatabase(name: string): Promise<DatabaseResource> {
 }
 
 async function startDatabase(name: string): Promise<DatabaseResource> {
-  const res = await fetch(`/api/v1/databases/${encodeURIComponent(name)}/start`, {
-    method: 'POST',
-  })
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/start`,
+    {
+      method: 'POST',
+    },
+  )
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -511,6 +525,41 @@ export function useSetDatabaseResources() {
       name: string
       resources: ServiceResources | null
     }) => setDatabaseResources(name, resources),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
+      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+    },
+  })
+}
+
+// PUT /api/v1/databases/{name}/version: minor or patch image change over the
+// same data volume; the API answers 409 with the reason for a major change.
+export async function setDatabaseVersion(
+  name: string,
+  version: string,
+): Promise<DatabaseResource> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/version`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ version }),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set database version failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DatabaseResource
+}
+
+export function useSetDatabaseVersion() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, version }: { name: string; version: string }) =>
+      setDatabaseVersion(name, version),
     onSuccess: (updated) => {
       queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
       void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })

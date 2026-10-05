@@ -74,7 +74,7 @@ func TestPrintAppNetworkHuman(t *testing.T) {
 	}
 
 	buf.Reset()
-	printAppNetworkHuman(&buf, networkResource{ContainerPort: 3000})
+	printAppNetworkHuman(&buf, networkResource{ContainerPort: 3000, FallbackEnabled: true, PublicHost: "203.0.113.5"})
 	out = buf.String()
 	if !strings.Contains(out, "not running") {
 		t.Errorf("stopped output = %q, want it to mention \"not running\"", out)
@@ -84,6 +84,17 @@ func TestPrintAppNetworkHuman(t *testing.T) {
 	}
 	if strings.Contains(out, "fallback url:") {
 		t.Errorf("output = %q, must not print a fallback url line when FallbackURL is empty", out)
+	}
+
+	buf.Reset()
+	printAppNetworkHuman(&buf, networkResource{ContainerPort: 3000})
+	if !strings.Contains(buf.String(), "automatic hostnames are off") {
+		t.Errorf("disabled toggle should be explained; got:\n%s", buf.String())
+	}
+	buf.Reset()
+	printAppNetworkHuman(&buf, networkResource{ContainerPort: 3000, FallbackEnabled: true})
+	if !strings.Contains(buf.String(), "APP_PUBLIC_HOST") {
+		t.Errorf("missing public host should be explained; got:\n%s", buf.String())
 	}
 
 	buf.Reset()

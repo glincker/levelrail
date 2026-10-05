@@ -106,6 +106,14 @@ const postgresWALArchivePath = "/var/lib/postgresql/wal_archive"
 // replaceContainer path an image change already does.
 const pitrLabelKey = "levelrail.pitr-enabled"
 
+// tlsCertLabelKey marks a container whose served certificate is the ECDSA
+// one. A TLS container without it carries a legacy ed25519 certificate that
+// libpq rejects, so the controller rewrites the certs volume and replaces it.
+const (
+	tlsCertLabelKey   = "levelrail.tls-cert"
+	tlsCertLabelValue = "ecdsa-p256"
+)
+
 func pitrLabelValue(enabled bool) string {
 	if enabled {
 		return "true"
@@ -545,6 +553,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		Labels:  map[string]string{pitrLabelKey: pitrLabelValue(pitrActive)},
 	}
 	if tlsMaterial != nil {
+		spec.Labels[tlsCertLabelKey] = tlsCertLabelValue
 		spec.Volumes = append(spec.Volumes, docker.VolumeMount{
 			Name: certsVolumeName(c.dbName), ContainerPath: certsMountPath, ReadOnly: true,
 		})
@@ -616,6 +625,15 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		// comment for why a database controller cannot use
 		// application.Controller's create-alongside-then-remove-old
 		// blue-green pattern.
+		if err := c.replaceContainer(ctx, state, spec); err != nil {
+			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+		}
+		justDeployed = true
+
+	case tlsMaterial != nil && state.Labels[tlsCertLabelKey] != tlsCertLabelValue:
+		if err := c.provisionCerts(ctx, c.dbName, tlsMaterial); err != nil {
+			return notReady("TLSProvisionFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+		}
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
 			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}

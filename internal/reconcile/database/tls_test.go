@@ -1,8 +1,12 @@
 package database
 
 import (
+	"crypto/ed25519"
+	"crypto/rand"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
+	"math/big"
 	"testing"
 	"time"
 )
@@ -125,4 +129,50 @@ func TestTLSContainerPort(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIsLegacyTLSCert(t *testing.T) {
+	current, _, err := GenerateSelfSignedCert("db-main")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert: %v", err)
+	}
+	block, _ := pem.Decode(current)
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if cert.PublicKeyAlgorithm != x509.ECDSA {
+		t.Fatalf("PublicKeyAlgorithm = %v, want ECDSA (ed25519 breaks libpq SCRAM channel binding)", cert.PublicKeyAlgorithm)
+	}
+
+	tests := []struct {
+		name string
+		pem  []byte
+		want bool
+	}{
+		{"current ecdsa cert", current, false},
+		{"garbage", []byte("not pem"), false},
+		{"ed25519 cert", legacyEd25519CertPEM(t), true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsLegacyTLSCert(tt.pem); got != tt.want {
+				t.Fatalf("IsLegacyTLSCert = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func legacyEd25519CertPEM(t *testing.T) []byte {
+	t.Helper()
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("ed25519 key: %v", err)
+	}
+	tmpl := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "legacy"}}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, pub, priv)
+	if err != nil {
+		t.Fatalf("create cert: %v", err)
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
 }

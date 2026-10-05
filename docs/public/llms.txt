@@ -14,6 +14,14 @@ Apache 2.0 licensed. Source at https://github.com/glincker/levelrail.
 ## Tutorials
 
 - [Getting started](https://levelrail.com/getting-started): install Levelrail and deploy your first app end to end.
+- [All tutorials](https://levelrail.com/tutorials/): step-by-step walkthroughs for self-hosting with Levelrail.
+- [Deploy a Docker app](https://levelrail.com/tutorials/deploy-a-docker-app): run any image on your own server with a custom domain, a second version, and instant rollback.
+- [Zero-downtime deploys with health checks](https://levelrail.com/tutorials/zero-downtime-deploys-with-health-checks): add a readiness check so a bad release fails before it takes over.
+- [Deploy from GitHub Actions](https://levelrail.com/tutorials/deploy-from-github-actions): build in CI and deploy to your own server on every push.
+- [Connect an app to Postgres](https://levelrail.com/tutorials/connect-an-app-to-postgres): create a managed database and inject its connection string into an app.
+- [Back up Postgres to S3](https://levelrail.com/tutorials/back-up-postgres-to-s3): schedule, verify, and restore database backups on an S3-compatible bucket.
+- [Self-host Vaultwarden](https://levelrail.com/tutorials/self-host-vaultwarden): deploy a Bitwarden-compatible password manager from the template catalog and back up its data.
+- [Debug with logs and metrics](https://levelrail.com/tutorials/debug-an-app-with-logs-and-metrics): search logs and read CPU and memory with no extra tooling.
 
 ## How-to guides
 

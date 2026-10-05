@@ -2,7 +2,10 @@ package backup
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -177,6 +180,10 @@ func downloadAndRestore(ctx context.Context, resolver backupResolver, secrets Se
 		SecretAccessKey: secretAccessKey,
 	}
 
+	if err := verifyObjectBeforeRestore(ctx, downloader, dest, bh); err != nil {
+		return err
+	}
+
 	dump, err := downloader.Download(ctx, dest, bh.ObjectKey)
 	if err != nil {
 		return fmt.Errorf("download backup %q object %q: %w", backupHistoryID, bh.ObjectKey, err)
@@ -186,10 +193,18 @@ func downloadAndRestore(ctx context.Context, resolver backupResolver, secrets Se
 	}()
 
 	if err := restorer.Restore(ctx, engine, containerName, dump); err != nil {
-		return fmt.Errorf("restore database %q from backup %q: %w", databaseName, backupHistoryID, err)
+		return &restoreStepError{fmt.Errorf("restore database %q from backup %q: %w", databaseName, backupHistoryID, err)}
 	}
 	return nil
 }
+
+// restoreStepError marks a failure of the engine-side restore itself, as
+// opposed to resolving or downloading the backup, so a caller can retry
+// only the case where the engine may simply not be accepting work yet.
+type restoreStepError struct{ err error }
+
+func (e *restoreStepError) Error() string { return e.err.Error() }
+func (e *restoreStepError) Unwrap() error { return e.err }
 
 // RunVolumeRestore downloads the object recorded by backupHistoryID and
 // applies it to dockerVolumeName (serviceName's Docker volume backing
@@ -288,6 +303,31 @@ func downloadAndRestoreVolume(ctx context.Context, resolver backupResolver, secr
 
 	if err := restorer.Restore(ctx, dockerVolumeName, archive); err != nil {
 		return fmt.Errorf("restore volume %q from backup %q: %w", dockerVolumeName, backupHistoryID, err)
+	}
+	return nil
+}
+
+// verifyObjectBeforeRestore hashes the stored object in a first pass and
+// compares it with the checksum recorded at backup time, so a corrupted
+// object is refused before any data is touched. The restore itself streams,
+// so it cannot check afterwards without having already applied the damage.
+// Rows from before checksums were recorded have nothing to compare.
+func verifyObjectBeforeRestore(ctx context.Context, downloader Downloader, dest Destination, bh store.BackupHistory) error {
+	if bh.ChecksumSHA256 == "" {
+		return nil
+	}
+	stream, err := downloader.Download(ctx, dest, bh.ObjectKey)
+	if err != nil {
+		return fmt.Errorf("download backup %q object %q for verification: %w", bh.ID, bh.ObjectKey, err)
+	}
+	defer func() { _ = stream.Close() }()
+	h := sha256.New()
+	n, err := io.Copy(h, stream)
+	if err != nil {
+		return fmt.Errorf("read backup %q object %q for verification: %w", bh.ID, bh.ObjectKey, err)
+	}
+	if got := hex.EncodeToString(h.Sum(nil)); got != bh.ChecksumSHA256 || (bh.SizeBytes != 0 && n != bh.SizeBytes) {
+		return fmt.Errorf("backup %q object is corrupted: checksum does not match the one recorded at backup time, refusing to restore", bh.ID)
 	}
 	return nil
 }

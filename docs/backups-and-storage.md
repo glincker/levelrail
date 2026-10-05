@@ -245,6 +245,27 @@ Repositories and tags are read from the running registry container's Docker Regi
 - Built-in registry: `GET /api/v1/registry/repositories` and `/api/v1/registry/tags?repository=...`
 - External registry credential: `GET /api/v1/registry-credentials/{id}/repositories` and `/api/v1/registry-credentials/{id}/tags?repository=...`
 
+## Verified behaviour and honest limits
+
+Exercised end to end against a real S3 compatible endpoint (SeaweedFS) and real database containers:
+
+| Check | Result |
+| --- | --- |
+| Backup and restore-as-new for Postgres, MySQL, MariaDB, MongoDB and Redis (TLS on) | Row and document counts match the source after restore |
+| Flip one byte of a stored backup, then verify | Verification fails with a checksum mismatch |
+| Restore from that corrupted object | Refused before the database is touched |
+| Restore-as-new into a database whose name contains a hyphen | Works (identifiers are quoted) |
+| Postgres point-in-time restore to a timestamp | Returns exactly the data from before that moment |
+| New named volume on an image that runs as a non-root user | Writable on first start (the volume is chowned to the image user once, while empty) |
+
+Limits you should know about:
+
+- A backup is a logical dump (`pg_dump`, `mysqldump`, `mongodump`, an RDB snapshot). It is consistent per database but is not a physical copy; for Postgres use point-in-time restore when you need to recover to an exact second.
+- Verification catches a damaged or truncated object. It does not prove the dump restores cleanly; a periodic restore-as-new into a scratch database is the only proof, and is cheap to do.
+- Deleting a database keeps its data volume and your backups. Recreating a database with the same name reuses that volume.
+- The storage endpoint must resolve to a public address unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` is set, which is needed for a MinIO on the same private network.
+- A manual backup is refused with `507` when the control plane's own data directory is nearly full.
+
 ## Integration walkthrough
 
 1. **Connect a backup target**:

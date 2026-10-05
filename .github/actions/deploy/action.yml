@@ -42,50 +42,25 @@ outputs:
 runs:
   using: composite
   steps:
-    # levelrail-cli ships prebuilt linux/darwin binaries as GitHub Release
-    # assets (see .github/workflows/release.yml's own build-cli-binaries
-    # job); this installs the one matching the runner rather than
-    # building from source, so a consumer's own workflow doesn't need Go
-    # installed just to deploy.
+    # Runs the install-cli.sh from the same ref as this action: it picks
+    # the newest release (pre-releases included, since GitHub's own
+    # "latest" URL skips them and 404s) and verifies the checksum.
     - name: Install levelrail-cli
       shell: bash
+      env:
+        REQUESTED_VERSION: ${{ inputs.cli-version }}
       run: |
         set -euo pipefail
-        os="$(uname -s | tr '[:upper:]' '[:lower:]')"
-        case "$os" in
-          linux|darwin) ;;
-          *)
-            echo "::error::unsupported runner OS \"$os\": levelrail-cli only ships linux and darwin binaries, matching this project's own non-goal of not supporting Windows nodes" >&2
-            exit 1
-            ;;
-        esac
-        arch="$(uname -m)"
-        case "$arch" in
-          x86_64|amd64) arch="amd64" ;;
-          aarch64|arm64) arch="arm64" ;;
-          *)
-            echo "::error::unsupported runner architecture: $arch" >&2
-            exit 1
-            ;;
-        esac
-
-        tag="${{ inputs.cli-version }}"
-        asset="levelrail-cli-${os}-${arch}"
-        if [ "$tag" = "latest" ]; then
-          url="https://github.com/glincker/levelrail/releases/latest/download/${asset}"
-        else
-          url="https://github.com/glincker/levelrail/releases/download/${tag}/${asset}"
-        fi
-
         install_dir="${RUNNER_TEMP:-/tmp}/levelrail-cli-bin"
-        mkdir -p "$install_dir"
-        curl -fsSL "$url" -o "$install_dir/levelrail-cli"
-        chmod +x "$install_dir/levelrail-cli"
+        if [ "$REQUESTED_VERSION" != "latest" ]; then
+          export LEVELRAIL_VERSION="$REQUESTED_VERSION"
+        fi
+        LEVELRAIL_CLI_INSTALL_DIR="$install_dir" sh "${GITHUB_ACTION_PATH}/../../../install-cli.sh"
         echo "$install_dir" >> "$GITHUB_PATH"
 
     - name: Verify levelrail-cli
       shell: bash
-      run: levelrail-cli version
+      run: levelrail-cli help > /dev/null
 
     - name: Deploy
       id: deploy

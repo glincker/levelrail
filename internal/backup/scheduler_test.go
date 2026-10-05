@@ -690,3 +690,49 @@ func TestScheduler_Tick_VerificationFailureDoesNotFailTick(t *testing.T) {
 		t.Fatalf("verify calls = %d, want 1 (attempted despite the eventual failure)", len(verifier.calls))
 	}
 }
+
+type fakeScheduledBaseBackups struct {
+	calls []string
+	err   error
+}
+
+func (f *fakeScheduledBaseBackups) RunBaseBackup(_ context.Context, _, databaseName, containerName, targetID string) error {
+	f.calls = append(f.calls, databaseName+"|"+containerName+"|"+targetID)
+	return f.err
+}
+
+func TestScheduler_Tick_TakesBaseBackupOnlyForPITRDatabases(t *testing.T) {
+	tests := []struct {
+		name      string
+		pitr      bool
+		baseErr   error
+		wantCalls int
+	}{
+		{"pitr enabled", true, nil, 1},
+		{"pitr disabled", false, nil, 0},
+		{"base backup failure does not fail the tick", true, errors.New("boom"), 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := scheduledDB("main", "0 3 * * *", 0)
+			d.PITREnabled = tt.pitr
+			runner := &fakeScheduledRunner{}
+			base := &fakeScheduledBaseBackups{err: tt.baseErr}
+			s := NewScheduler(&fakeScheduleStore{dbs: []store.DesiredDatabase{d}}, runner, nil, nil)
+			s.BaseBackups = base
+
+			s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
+			_ = s.Tick(context.Background())
+			s.Now = func() time.Time { return time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC) }
+			if err := s.Tick(context.Background()); err != nil {
+				t.Fatalf("Tick() error = %v", err)
+			}
+			if len(base.calls) != tt.wantCalls {
+				t.Fatalf("base backup calls = %v, want %d", base.calls, tt.wantCalls)
+			}
+			if tt.wantCalls == 1 && base.calls[0] != "main|db-main|bkt_1" {
+				t.Errorf("call = %q", base.calls[0])
+			}
+		})
+	}
+}

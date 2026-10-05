@@ -38,6 +38,25 @@ type githubRelease struct {
 	} `json:"assets"`
 }
 
+// latestPrereleaseFallback covers a project with no stable release yet:
+// report the newest pre-release instead of "none published".
+func latestPrereleaseFallback(ctx context.Context) (*githubRelease, error) {
+	pre, err := upgrade.FetchLatestBeta(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("api: github pre-release fallback: %w", err)
+	}
+	if pre == nil {
+		return nil, nil
+	}
+	rel := &githubRelease{TagName: pre.Tag, HTMLURL: pre.URL, PublishedAt: pre.PublishedAt, Body: pre.Body}
+	for _, n := range pre.AssetNames {
+		rel.Assets = append(rel.Assets, struct {
+			Name string `json:"name"`
+		}{Name: n})
+	}
+	return rel, nil
+}
+
 // fetchLatestReleaseFunc matches defaultFetchLatestRelease's signature;
 // overridable per-Router the same way lookupHost/fetch already are, so
 // tests never perform a real outbound call. A nil *githubRelease with a
@@ -60,7 +79,7 @@ func defaultFetchLatestRelease(ctx context.Context) (*githubRelease, error) {
 	}()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
+		return latestPrereleaseFallback(ctx)
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
@@ -155,7 +174,7 @@ func (rt *Router) handleGetUpdates(w http.ResponseWriter, r *http.Request) {
 			resp.LatestVersion = &tag
 			resp.ReleaseURL = &url
 			resp.PublishedAt = &published
-			resp.UpdateAvailable = version.Version != "dev" && tag != version.Version
+			resp.UpdateAvailable = upgrade.UpdateAvailable(version.Version, &upgrade.Release{Tag: tag})
 		}
 		writeJSON(w, http.StatusOK, resp)
 		return

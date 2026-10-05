@@ -36,7 +36,7 @@ func TestController_Reconcile_HalfSuccess_RedeployRecoversOnRetry(t *testing.T) 
 			name: "blue-green: create ok, start fails, old keeps serving", strategy: "blue-green", replicas: 1,
 			inject:        func(rt *fakeRuntime) { rt.startErr = errors.New("start failed") },
 			clear:         func(rt *fakeRuntime) { rt.startErr = nil },
-			wantAfterFail: func() []string { return []string{v1(0), v2(0)} },
+			wantAfterFail: func() []string { return []string{v1(0)} },
 		},
 		{
 			name: "recreate: stop of old fails, force remove still clears it", strategy: "recreate", replicas: 1,
@@ -54,22 +54,22 @@ func TestController_Reconcile_HalfSuccess_RedeployRecoversOnRetry(t *testing.T) 
 			name: "recreate: old removed, create ok, start fails", strategy: "recreate", replicas: 1,
 			inject:        func(rt *fakeRuntime) { rt.startErr = errors.New("start failed") },
 			clear:         func(rt *fakeRuntime) { rt.startErr = nil },
-			wantAfterFail: func() []string { return []string{v2(0)} },
+			wantAfterFail: func() []string { return nil },
 		},
 		{
-			name: "rolling: second replica create fails, first already replaced", strategy: "rolling", replicas: 2,
+			name: "rolling: second replica create fails, old replica 0 (the routed one) kept", strategy: "rolling", replicas: 2,
 			inject: func(rt *fakeRuntime) {
 				rt.createErrOnCall = errors.New("pull denied")
 				rt.createErrCallNo = 2
 			},
 			clear:         func(rt *fakeRuntime) { rt.createErrCallNo = 0 },
-			wantAfterFail: func() []string { return []string{v2(0), v1(1)} },
+			wantAfterFail: func() []string { return []string{v2(0), v1(0)} },
 		},
 		{
 			name: "rolling: first replica start fails, no old replica removed", strategy: "rolling", replicas: 2,
 			inject:        func(rt *fakeRuntime) { rt.startErr = errors.New("start failed") },
 			clear:         func(rt *fakeRuntime) { rt.startErr = nil },
-			wantAfterFail: func() []string { return []string{v1(0), v1(1), v2(0)} },
+			wantAfterFail: func() []string { return []string{v1(0), v1(1)} },
 		},
 	}
 
@@ -127,5 +127,37 @@ func assertNames(t *testing.T, when string, got, want []string) {
 		if !set[n] {
 			t.Fatalf("containers %s = %v, want %v", when, got, want)
 		}
+	}
+}
+
+func TestController_Reconcile_RequiredSecretMissing_OldReleaseKeepsServing(t *testing.T) {
+	v1 := replicaContainerName("web", "img:v1", "", 0)
+	rt := newFakeRuntime(0)
+	rt.seed(v1, true)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v2", Port: 80, Strategy: "blue-green", Replicas: 1,
+		SecretEnv: []store.SecretEnvRef{{Name: "API_KEY", Required: true}, {Name: "OPTIONAL"}},
+	}
+	secrets := newFakeSecretResolver(map[string]string{})
+	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(secrets))
+
+	res, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the missing required secret reported")
+	}
+	if cond := conditionOf(t, res); cond.Status != reconcile.ConditionFalse || cond.Reason != reasonRequiredSecretMissing {
+		t.Fatalf("condition = %+v, want False/%s", cond, reasonRequiredSecretMissing)
+	}
+	assertNames(t, "after failed pass", rt.names(), []string{v1})
+	if !rt.containers[v1].Running {
+		t.Fatal("old release stopped by a deploy that could never start")
+	}
+
+	secrets.values["web/API_KEY"] = "abc"
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("pass after the secret was set error = %v, want convergence", err)
+	}
+	if rt.lastCreateEnv["API_KEY"] != "abc" {
+		t.Fatalf("container env = %v, want API_KEY injected", rt.lastCreateEnv)
 	}
 }

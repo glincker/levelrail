@@ -197,6 +197,19 @@ Every step above, and the failure cases (an interrupted restore, a tampered back
 | Newer schema, other install | refusal | `TestRestore_NewerSchemaRefused`, `TestRestore_InstallIDGuard` |
 :::
 
+## What has and has not been verified
+
+Verified on a real server: `control-plane-backups create`, `verify` (checksum, `integrity_check` and schema version all report ok) and `download` produce a snapshot whose SHA-256 matches the one the server recorded.
+
+Also verified, into a second data directory on one machine: `levelrail restore-db` of a snapshot with the original master key and agent CA files copied in, then starting the control plane on that directory. Databases, backup targets and tokens were all back, and a new database backup through the restored target succeeded, which proves the restored secrets decrypt with the same master key.
+
+Not yet verified by us: the same restore onto a different machine, and the off-box encrypted path against a live bucket. Both are covered by automated tests (see the contributor table above) but treat them as unproven on your hardware until you have run the drill yourself: `control-plane-backups drill run`, then a real `levelrail restore --dry-run` on a spare machine.
+
+Two limits that are easy to miss:
+
+- A local snapshot holds the database only, never the master key. Restoring it on another machine without the master key (or the escrow bundle) gives you apps, domains and history but every stored secret is unreadable.
+- Managed databases and app volumes are not part of the control plane backup. Back them up separately with [database backups](/managing-databases) and [volume backups](/backups-and-storage).
+
 ## Restore drills
 
 A backup nobody has restored is a hope. The drill runs on its own schedule (weekly by default, and once right after the first backup), and on demand with `drill run` or the Run drill button. It downloads the newest complete backup and restores it into a temporary directory through the same code path as a real restore, then runs `integrity_check`, compares the applied migrations with the manifest, and counts tables and rows. It never touches the live database.

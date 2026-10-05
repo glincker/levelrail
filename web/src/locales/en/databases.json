@@ -1,0 +1,25 @@
+{
+  "delete": {
+    "trigger": "Delete",
+    "title": "Delete \"{{name}}\"?",
+    "description": "This stops the database and removes it from Levelrail. Its data volume and backups in your storage destination are kept, so the data can still be recovered by an operator. Apps that connect to it will lose the connection.",
+    "inUseTitle": "Apps still use this database",
+    "inUseDescription": "Delete anyway only if you have already moved or detached these apps.",
+    "cancel": "Cancel",
+    "confirm": "Delete database",
+    "confirmAnyway": "Delete anyway",
+    "deleting": "Deleting...",
+    "toast": "Database \"{{name}}\" deleted."
+  },
+  "version": {
+    "trigger": "Change",
+    "title": "Change version of \"{{name}}\"",
+    "description": "Minor and patch updates recreate the container over the same data. Major versions are refused: take a backup and restore it into a new database instead. Take a backup first.",
+    "label": "Version",
+    "placeholder": "16.4",
+    "cancel": "Cancel",
+    "submit": "Change version",
+    "submitting": "Changing...",
+    "toast": "Database \"{{name}}\" will be recreated on version {{version}}."
+  }
+}

@@ -115,7 +115,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"integrations":       {subs: map[string]*cmdNode{"catalog": nil, "list": nil, "add": nil, "remove": nil}},
 	}},
 	"models":    {subs: map[string]*cmdNode{"list": nil, "get": nil, "deploy": nil, "logs": nil, "delete": nil, "restart": nil, "rotate-key": nil, "metrics": nil, "fit": nil, "residency": nil, "swap-group": nil, "wake": nil, "sleep": nil, "gpus": nil, "preflight": nil, "cache": {subs: map[string]*cmdNode{"list": nil, "prune": nil}}, "keys": {subs: map[string]*cmdNode{"list": nil, "create": nil, "revoke": nil, "rotate": nil}}, "usage": nil}},
-	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "status": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "logs": nil, "slow-queries": nil, "set-project": nil, "clear-project": nil, "set-node": nil, "clear-node": nil, "set-resources": nil, "public-access": {subs: map[string]*cmdNode{"set": nil, "clear": nil}}}},
+	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "status": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "logs": nil, "slow-queries": nil, "set-project": nil, "clear-project": nil, "set-node": nil, "clear-node": nil, "set-resources": nil, "set-version": nil, "public-access": {subs: map[string]*cmdNode{"set": nil, "clear": nil}}}},
 	"auth": {subs: map[string]*cmdNode{"login": nil, "whoami": nil, "session-link": nil, "2fa": {subs: map[string]*cmdNode{
 		"status": nil, "setup": nil, "enable": nil, "disable": nil, "recovery-codes": nil,
 	}}}},
@@ -232,7 +232,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"settings": {subs: map[string]*cmdNode{
 		"oauth":         {subs: map[string]*cmdNode{"list": nil, "set": nil}},
 		"email":         {subs: map[string]*cmdNode{"get": nil, "set": nil}},
-		"ingress":       {subs: map[string]*cmdNode{"get": nil, "set": nil}},
+		"ingress":       {subs: map[string]*cmdNode{"get": nil, "set": nil, "https": {subs: map[string]*cmdNode{"status": nil, "enable": nil}}}},
 		"dashboard-url": {subs: map[string]*cmdNode{"get": nil, "set": nil}},
 		"ai-assistant":  {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"updates":       {subs: map[string]*cmdNode{"get": nil, "set": nil}},

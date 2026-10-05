@@ -64,6 +64,11 @@ type ScheduledBackupRunner interface {
 	ResolveDestination(ctx context.Context, targetID string) (Destination, error)
 }
 
+// ScheduledBaseBackupRunner is *BaseBackupRunner's RunBaseBackup.
+type ScheduledBaseBackupRunner interface {
+	RunBaseBackup(ctx context.Context, historyID, databaseName, containerName, targetID string) error
+}
+
 // ScheduledVerifier matches api.BackupVerifier's shape (internal/api/backup_verify.go);
 // *VerifyRunner satisfies both, so cmd/levelrail/main.go shares one instance.
 type ScheduledVerifier interface {
@@ -137,7 +142,11 @@ type Scheduler struct {
 	// below, not a constructor param, to keep NewScheduler's signature
 	// stable for existing call sites.
 	Verifier ScheduledVerifier
-	Logger   *slog.Logger
+	// BaseBackups, if set, takes a physical base backup after each scheduled
+	// logical backup of a PITR-enabled database, so point-in-time restore
+	// stays fresh without a second schedule. nil disables it.
+	BaseBackups ScheduledBaseBackupRunner
+	Logger      *slog.Logger
 	// Now returns the current time, the same testable-clock field
 	// Runner.Now already establishes in runner.go: production code
 	// leaves it nil and Tick falls back to time.Now, tests set it for
@@ -365,6 +374,10 @@ func (s *Scheduler) runScheduled(ctx context.Context, d store.DesiredDatabase) e
 		s.verifyScheduled(ctx, d.Name, historyID, d.Engine)
 	}
 
+	if d.PITREnabled && s.BaseBackups != nil {
+		s.runScheduledBaseBackup(ctx, d, containerName)
+	}
+
 	if d.BackupRetain > 0 || d.BackupRetainDays > 0 {
 		var olderThan time.Time
 		if d.BackupRetainDays > 0 {
@@ -384,6 +397,20 @@ func (s *Scheduler) runScheduled(ctx context.Context, d store.DesiredDatabase) e
 	}
 
 	return nil
+}
+
+// runScheduledBaseBackup logs a failed base backup rather than failing the
+// tick: the logical backup already succeeded and the failed attempt is
+// visible in base backup history.
+func (s *Scheduler) runScheduledBaseBackup(ctx context.Context, d store.DesiredDatabase, containerName string) {
+	id, err := randomScheduledBackupHistoryID()
+	if err != nil {
+		s.log().Error("backup: scheduled base backup: generate id failed", slog.String("database", d.Name), slog.String("error", err.Error()))
+		return
+	}
+	if err := s.BaseBackups.RunBaseBackup(ctx, id, d.Name, containerName, d.BackupTargetID); err != nil {
+		s.log().Error("backup: scheduled base backup failed", slog.String("database", d.Name), slog.String("id", id), slog.String("error", err.Error()))
+	}
 }
 
 // runScheduledVolume is runScheduled's exact volume counterpart:

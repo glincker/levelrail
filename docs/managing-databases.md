@@ -58,7 +58,7 @@ Omit `node_id` at creation to let simple spread scheduling pick a node. Pass `no
 **Stop, start, and delete**
 
 - **Stop and start**: Flip a `suspended` flag without touching desired state or the data volume. The reconciler removes or recreates the container on its next pass against the exact same volume.
-- **Delete**: `DELETE /api/v1/databases/{name}` removes the desired-state row but does not stop or remove the running container (same gap as `DELETE /api/v1/apps/{name}`).
+- **Delete**: `DELETE /api/v1/databases/{name}` stops and removes the container and the desired-state row. The data volume is kept, so a mistaken delete never destroys data (see [Stop, start, and delete](#stop-start-and-delete-dashboard-and-cli)). It answers `409` while an app still connects to the database, unless you pass `force=true`.
 
 ## TLS: on by default, for two engines, with no toggle
 
@@ -76,6 +76,8 @@ Mainstream client libraries honor these with zero app-side code changes.
 MySQL/MariaDB lack a driver-agnostic URI knob for this. MongoDB's equivalent exists but isn't wired up yet. KeyDB/Dragonfly fork Redis's TLS flags under unverified names.
 
 The certificate is self-signed and never distributed to a party that verifies its issuer. It is valid for ten years. Rotation is a deliberate future operator action, not forced by expiry.
+
+The certificate is ECDSA P-256, not ed25519: libpq's SCRAM channel binding fails on an ed25519 certificate (`could not find digest for NID UNDEF`), which broke `psql`, psycopg2 and every other libpq client using the default `sslmode=require` URL. Databases created by an earlier release are given a new certificate and recreated once, automatically, the next time the reconciler sees them.
 
 **In apps**
 
@@ -170,20 +172,40 @@ The **Database** card on an app's Overview page (`web/src/components/DatabaseAtt
 ```bash [CLI]
 levelrail-cli databases stop <name>
 levelrail-cli databases start <name>
-levelrail-cli databases delete <name>
+levelrail-cli databases delete <name> [--force]
 ```
 ```bash [API]
 POST /api/v1/databases/{name}/stop
 POST /api/v1/databases/{name}/start
-DELETE /api/v1/databases/{name}
+DELETE /api/v1/databases/{name}[?force=true]
 ```
 :::
 
 Stop and start are one-click actions on the database detail page's header
 (no confirmation, since neither is destructive: the data volume and
 desired state are untouched either way). Delete is a confirm dialog on the
-dashboard; the CLI has no `--confirm` flag for it today, matching
-`handleDeleteDatabase`'s own scope, it removes desired state only.
+dashboard. It stops and removes the container and the database record but
+**keeps the data volume** (`db-<name>-data`) and every backup in your storage
+destination. If apps still connect to the database it is refused with a `409`
+naming them; the dashboard then offers "Delete anyway" and the CLI takes
+`--force`. Creating a new database with the same name later reuses the old
+volume, so remove the volume yourself (`docker volume rm`) when you want a
+clean slate.
+
+### Changing the version
+
+```bash
+levelrail-cli databases set-version <name> 16.4
+```
+
+`PUT /api/v1/databases/{name}/version` (dashboard: "Change" next to the
+version on the Overview tab) swaps the image tag. The container is stopped
+and recreated over the same data volume, so take a backup first. Only minor
+and patch changes are accepted for Postgres, MySQL, MariaDB, MongoDB and
+ClickHouse: a major change would corrupt the data directory and is refused
+with a `409`. Redis, KeyDB and Dragonfly may move to a newer major but never
+back. For a major upgrade, back up, then restore into a new database on the
+new version with `backups restore-as-new`.
 
 ## The backup story
 
@@ -380,6 +402,24 @@ discipline the ordinary restore endpoint already follows: a request
 naming a timestamp before your oldest base backup, or after what's
 actually been archived, never reaches the live database at all.
 
+**Retention and disk use**
+
+Archived WAL lives in the database's `wal-archive` Docker volume on the same
+host, not in your bucket: only base backups go to the bucket. Left alone it
+would grow forever, so after every successful base backup the control plane
+keeps the newest `APP_PITR_BASE_BACKUP_KEEP` (default 3) base backups, deletes
+older ones and their bucket objects, and removes archived WAL older than the
+oldest base backup that remains, since a restore can never start earlier. A
+base backup that a PITR restore record references is kept. When a database has
+a backup schedule, each scheduled backup of a PITR-enabled database is followed
+by a base backup, so there is no second schedule to set up. The local WAL
+archive is still a single copy on the database's host: if that disk is lost,
+point-in-time restore is lost with it, though logical backups and base backups
+in the bucket remain.
+
+Verified live on Postgres 16: enable, base backup, insert rows, restore to a
+timestamp between two inserts returned exactly the rows from before it.
+
 **CLI**
 
 ```bash
@@ -424,6 +464,20 @@ List past point-in-time restore attempts with
 `levelrail pitr restores <database>` (`GET /api/v1/databases/{name}/pitr-restores`).
 Ordinary restore attempts are listed with `levelrail backups restores <database>`.
 
+### Restore safety checks
+
+Before any restore (in place or restore-as-new) the stored object is hashed in
+a first pass and compared with the checksum recorded at backup time. A
+corrupted object is refused with `object is corrupted` and the database is
+not touched. Restore-as-new, and in-place restore into a freshly created
+container, also wait until the server accepts TCP connections, so a restore
+no longer races a database that is still initialising. Backups taken before
+checksums were recorded skip the first pass.
+
+Disk space: a manual backup is refused with `507` when the control plane's
+data directory has less than `APP_MIN_BACKUP_DISK_MB` free (default 256),
+because the backup history row itself is written there.
+
 ### Backup verification: re-download and re-hash
 
 ```bash
@@ -436,7 +490,9 @@ levelrail-cli backups verifications <database> --backup <backup-history-id>
 ::: details Checks performed
 - Checksum match
 - Size match
-- Lightweight structural check (`internal/backup.VerifyRunner`)
+- Lightweight structural check (`internal/backup.VerifyRunner`): the RDB header for Redis-family engines, and the completion trailer `pg_dump`, `mysqldump` and `mariadb-dump` write last, so a truncated dump fails
+
+Verified live: flipping one byte of a stored Postgres dump makes the next verification fail with `CHECKSUM FAIL`.
 
 The verification deliberately never attempts a live restore against a running database. That risk is out of scope for an automated check by design.
 :::

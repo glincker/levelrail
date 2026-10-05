@@ -7,7 +7,7 @@ description: Status of Levelrail by phase - what is shipped, in progress, and pl
 
 There is no stable release yet. For per-feature maturity (stable, beta, hidden behind a flag) and the evidence behind each label, see [feature status](feature-status.md). "Shipped" on this page means built and merged, not proven in production.
 
-Status as of 2026-09-24 (refreshed against current `main`), not the aspirational plan. See `/adr` for the phase-by-phase architectural decisions behind this build order.
+Status as of 2026-10-04 (counts re-verified against `main`), not the aspirational plan. See `/adr` for the phase-by-phase architectural decisions behind this build order.
 
 The build has moved further and less linearly than the phase plan implies: parts of Phase 3 (multi-node, the WireGuard mesh) ship while some Phase 1 items (real public ACME against a live domain) remain open. This page describes what is actually true today.
 
@@ -88,8 +88,8 @@ flowchart LR
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
   from the creation wizard, with a category-specific icon per card.
-  Every template's Compose body is written fresh for this platform, not
-  copied from another project's dataset.
+  Each template's Compose body is adapted to the Compose subset this
+  platform supports.
 - Git webhook receiver with HMAC-SHA256 signature verification, branch
   gating, and SHA-pinned fetch (no `git` CLI shelling).
 - Persisted per-app git source and multi-app GitHub webhook support,
@@ -168,17 +168,21 @@ flowchart LR
   and in `apps previews list`'s own output.
 - Embedded Caddy ingress with automatic TLS and domain routing. TLS
   defaults to an internal, self-signed issuer. A public ACME issuer exists
-  and is toggleable but unverified against a live domain (see In progress).
+  and is toggleable and was verified against Let's Encrypt on a live
+  public VPS on 2026-10-05 (see In progress for what is still open).
   
   Ingress HTTP and HTTPS listen ports are configurable via
   `APP_INGRESS_HTTP_PORT` and `APP_INGRESS_HTTPS_PORT`, wired into
   Settings > Ingress for dashboard control.
   
   A service with no configured domain gets a zero-config, publicly
-  resolvable fallback URL (`<app>.<public-ip-dash-encoded>.sslip.io`,
-  real HTTPS via Caddy, no DNS setup) whenever `APP_PUBLIC_HOST` is a
-  genuine public IP. Surfaced in the dashboard's Network tab and `apps
-  network` in the CLI.
+  resolvable hostname (`<app>.<public-ip-dash-encoded>.sslip.io`, real
+  HTTPS via Caddy, no DNS setup). The server finds its own public IP at
+  startup (`APP_PUBLIC_HOST` overrides, `APP_PUBLIC_IP_DETECT=off`
+  disables), the hostnames can be turned off in Settings > Domains, and
+  they show in the Network tab, `apps network` and `domains list`. The
+  dashboard gets the same treatment with a one-click Enable HTTPS card
+  and `settings ingress https enable` in the CLI.
   
   Per-domain BYO (bring your own) certificate upload lets an operator
   supply certificate/key pairs for domains ACME cannot reach (internal-only
@@ -331,10 +335,10 @@ flowchart LR
   RFC-8628-shaped): prints a short code and URL, operator approves from
   "CLI access" settings page, CLI polls until a token is minted. Works over
   plain HTTP since no password crosses the wire.
-- Migration CLI: `levelrail migrate coolify`, `dokploy`, `caprover`
+- Migration CLI: `levelrail-cli migrate coolify`, `dokploy`, `caprover`
   pulls every app off a live source and either writes app.yaml files or
   applies them directly to a target Levelrail instance.
-- `levelrail apps create --interactive` (`-i`): step-by-step wizard for
+- `levelrail-cli apps create --interactive` (`-i`): step-by-step wizard for
   creating an app without hand-writing app.yaml or knowing every flag,
   ends in either written app.yaml or direct API call, operator's choice.
 - An MCP server (`cmd/levelrail-mcp`), wrapping the same versioned REST
@@ -342,7 +346,7 @@ flowchart LR
   abilities than a tool needs gets the same 403 the REST API itself
   returns.
   
-  144 registered tools today (see [MCP tool surface](mcp-tool-surface.md)
+  156 registered tools in full mode today, 146 in the default standard mode (see [MCP tool surface](mcp-tool-surface.md)
   for the per-toolset count, and [feature status](feature-status.md) for
   maturity: the MCP server is beta). The list below is a partial summary
   of the areas covered:
@@ -379,11 +383,10 @@ flowchart LR
   multi-service fan-out (see Multi-service apps, above).
   
   Does not yet exercise a full multi-node mesh or real ACME against a live
-  domain. Also does not deploy any service template: the 311-entry
-  catalog (up from the 206 counted when this note was first written;
-  Coolify's own catalog is around 371 for comparison) is checked for
-  shape and a floor of 180 entries, not for whether any one template
-  actually deploys.
+  domain. Also does not deploy every service template: a sample of 16
+  from the 311-entry catalog is live-deployed (`test/e2e/template_fleet_test.go`),
+  and the rest are checked for shape and a floor of 180 entries, not for
+  whether each one actually deploys.
 
 **Observability**
 
@@ -396,7 +399,7 @@ flowchart LR
 - Federated query API across nodes with time range, filtering, and aggregation.
 - Frontend metrics dashboard: range selector, historical log search, and
   deploy markers overlaid on metric charts.
-- Alerting over nine rule kinds:
+- Alerting over fourteen rule kinds:
   
   - Threshold and crashloop detection (original)
   - Certificate expiry
@@ -406,6 +409,11 @@ flowchart LR
   - Node resource usage (per-node CPU/memory)
   - Domain health (periodic DNS check against every domain, catches silently repointed CNAMEs)
   - Backup missing (when scheduled backup trails its cron schedule, catches silently stopped backups)
+  - Control plane backup stale (newest control plane snapshot is too old)
+  - Node offline
+  - Node certificate expiring (an agent certificate is close to expiry)
+  - Log archive stale (a log archive policy fails or stops succeeding)
+  - Version skew (the running build is behind the update channel's latest release)
   
   Each evaluator is independent. Eighteen notification channel kinds supported: webhook, Slack, Discord, email, Telegram, Pushover, PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark, Rocket.Chat, Opsgenie, Webex, Google Chat, and browser push, plus separate deploy-outcome notifications.
   
@@ -418,7 +426,7 @@ flowchart LR
 - Live app log streaming over SSE, separate from historical search.
 - Per-node metrics dashboard.
 - Per-node OS package-update status via a periodic collector, surfaced
-  on the node detail page and via `levelrail nodes patch-status`. Not an
+  on the node detail page and via `levelrail-cli nodes patch-status`. Not an
   automatic patcher.
 - TLS certificate renewal visibility in the UI, including a `renewal`
   state (`ok` or `stalled`) on `GET /api/v1/certificates`, a RENEWAL
@@ -728,15 +736,14 @@ flowchart LR
 
 - **Database backup-schedule UI.** Shipped (`BackupScheduleForm`,
   see Done); kept as a pointer in case a gap surfaces on real use.
-- **Real public ACME.** The Caddy ACME issuer type, settings toggle,
-  and form validation are built and wired end to end (Settings >
-  Domains).
-
-  ::: warning Not yet verified against a live domain
-  Unit-tested against the config shape only, not spot-checked against
-  a real domain issuing a real certificate. This is the exact gap
-  ADR 005 named at Phase 0.
-  :::
+- **Real public ACME: first live run done, renewal and wildcards open.**
+  Let's Encrypt issued real certificates for `<dashed-ip>.sslip.io` hosts
+  on a public VPS, with a trusted handshake and an HTTP to HTTPS
+  redirect (recorded in `docs/acme-verification-runbook.md`). The run
+  also found and fixed certificates not being stored in the database,
+  a closed port 80, a CA switch that never re-issued, and missing HSTS
+  on the dashboard page. Not yet exercised live: renewal close to expiry,
+  DNS-01 wildcards, and a deliberate failure against the production CA.
 
 ## Not started
 

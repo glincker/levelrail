@@ -55,6 +55,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesPublicAccess(prog, rest, stdout, stderr, lookupEnv)
 	case "set-resources":
 		return runDatabasesSetResources(prog, rest, stdout, stderr, lookupEnv)
+	case "set-version":
+		return runDatabasesSetVersion(prog, rest, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown databases subcommand %q\n\n", prog, sub)
 		_, _ = fmt.Fprint(stderr, databasesUsage(prog))
@@ -69,7 +71,7 @@ func databasesUsage(prog string) string {
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
   %[1]s databases status <name> [flags]   show a database's current reconcile conditions
-  %[1]s databases delete <name> [flags]  remove a database's desired state
+  %[1]s databases delete <name> [flags]  stop and remove a database, keep its data volume (--force if apps use it)
   %[1]s databases stop <name> [flags]     stop a database's container, keep its data
   %[1]s databases start <name> [flags]    bring a stopped database's container back
   %[1]s databases resource-recommendation <name> [flags]  suggest memory/CPU limits from historical usage
@@ -83,6 +85,7 @@ func databasesUsage(prog string) string {
   %[1]s databases public-access set <name> [flags]    expose a database on a host port
   %[1]s databases public-access clear <name> [flags]  return a database to internal-network-only
   %[1]s databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]  apply memory/CPU limits
+  %[1]s databases set-version <name> <version> [flags]  minor or patch image change, same data
 
 Run "%[1]s databases <subcommand> -h" for a subcommand's own flags.
 `, prog)

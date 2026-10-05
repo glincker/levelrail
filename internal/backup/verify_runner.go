@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -172,13 +173,14 @@ func (r *VerifyRunner) runVerify(ctx context.Context, backupHistoryID, engine st
 
 	hasher := sha256.New()
 	header := newHeaderCapture(headerCaptureBytes)
-	n, err := io.Copy(io.MultiWriter(hasher, header), stream)
+	tail := &tailCapture{maxBytes: tailCaptureBytes}
+	n, err := io.Copy(io.MultiWriter(hasher, header, tail), stream)
 	if err != nil {
 		return verifyResult{}, fmt.Errorf("read backup %q object %q: %w", backupHistoryID, h.ObjectKey, err)
 	}
 
 	checksum := hex.EncodeToString(hasher.Sum(nil))
-	formatValid, formatError := validateFormat(engine, header.bytes, n)
+	formatValid, formatError := validateFormat(engine, header.bytes, tail.bytes(), n)
 
 	return verifyResult{
 		// h.ChecksumSHA256 is empty for a backup taken before
@@ -235,7 +237,7 @@ func (c *headerCapture) Write(p []byte) (int, error) {
 // magic-byte check available, so for those this only confirms the
 // downloaded object is non-empty: a real, if smaller, signal, not a
 // fabricated one.
-func validateFormat(engine string, header []byte, totalBytes int64) (bool, string) {
+func validateFormat(engine string, header, tail []byte, totalBytes int64) (bool, string) {
 	if totalBytes == 0 {
 		return false, "downloaded object is empty"
 	}
@@ -244,6 +246,34 @@ func validateFormat(engine string, header []byte, totalBytes int64) (bool, strin
 		if len(header) < 5 || string(header[:5]) != "REDIS" {
 			return false, "RDB header magic (\"REDIS\") not found at the start of the downloaded object"
 		}
+	case store.EnginePostgres:
+		if !bytes.Contains(tail, []byte("PostgreSQL database dump complete")) {
+			return false, "pg_dump completion trailer not found at the end of the downloaded object: the dump is truncated"
+		}
+	case store.EngineMySQL, store.EngineMariaDB:
+		if !bytes.Contains(tail, []byte("-- Dump completed")) {
+			return false, "dump completion trailer not found at the end of the downloaded object: the dump is truncated"
+		}
 	}
 	return true, ""
 }
+
+// tailCaptureBytes covers the completion trailer pg_dump, mysqldump and
+// mariadb-dump write last, including pg_dump's trailing \unrestrict line.
+const tailCaptureBytes = 1024
+
+// tailCapture is an io.Writer that retains only the last maxBytes written.
+type tailCapture struct {
+	buf      []byte
+	maxBytes int
+}
+
+func (c *tailCapture) Write(p []byte) (int, error) {
+	c.buf = append(c.buf, p...)
+	if over := len(c.buf) - c.maxBytes; over > 0 {
+		c.buf = append(c.buf[:0], c.buf[over:]...)
+	}
+	return len(p), nil
+}
+
+func (c *tailCapture) bytes() []byte { return c.buf }

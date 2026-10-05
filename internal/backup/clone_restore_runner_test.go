@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"errors"
+	"io"
 	"testing"
 	"time"
 
@@ -224,11 +225,12 @@ func TestCloneRestoreRunner_RunCloneRestore_BackupNotSucceeded_RefusesAndRecords
 func TestCloneRestoreRunner_RunCloneRestore_RestoreFails_RecordsFailure(t *testing.T) {
 	hs := newReadyCloneRestoreStore()
 	cr := &CloneRestoreRunner{
-		Store:        hs,
-		Secrets:      newTestSecrets(),
-		Downloader:   &fakeDownloader{content: "dump-bytes"},
-		Restorer:     &fakeRestorer{err: errors.New("psql: syntax error")},
-		PollInterval: time.Millisecond,
+		Store:         hs,
+		Secrets:       newTestSecrets(),
+		Downloader:    &fakeDownloader{content: "dump-bytes"},
+		Restorer:      &fakeRestorer{err: errors.New("psql: syntax error")},
+		PollInterval:  time.Millisecond,
+		SettleTimeout: 5 * time.Millisecond,
 	}
 
 	err := cr.RunCloneRestore(context.Background(), "clr_1", "mydb", "mydb-staging", "bkh_1", "postgres", "db-mydb-staging", "database/mydb-staging")
@@ -237,5 +239,44 @@ func TestCloneRestoreRunner_RunCloneRestore_RestoreFails_RecordsFailure(t *testi
 	}
 	if len(hs.finished) != 1 || hs.finished[0].status != store.BackupStatusFailed {
 		t.Fatalf("finish calls = %+v, want exactly one BackupStatusFailed", hs.finished)
+	}
+}
+
+// flakyRestorer fails its first failures calls, the way a restore against
+// a database whose engine is still initializing does.
+type flakyRestorer struct {
+	failures, calls int
+}
+
+func (f *flakyRestorer) Restore(_ context.Context, _, _ string, dump io.Reader) error {
+	f.calls++
+	_, _ = io.Copy(io.Discard, dump)
+	if f.calls <= f.failures {
+		return errors.New("database does not exist yet")
+	}
+	return nil
+}
+
+func TestCloneRestoreRunner_RunCloneRestore_RetriesWhileEngineSettles(t *testing.T) {
+	hs := newReadyCloneRestoreStore()
+	restorer := &flakyRestorer{failures: 2}
+	cr := &CloneRestoreRunner{
+		Store:         hs,
+		Secrets:       newTestSecrets(),
+		Downloader:    &fakeDownloader{content: "dump-bytes"},
+		Restorer:      restorer,
+		PollInterval:  time.Millisecond,
+		SettleTimeout: time.Second,
+	}
+
+	err := cr.RunCloneRestore(context.Background(), "clr_1", "mydb", "mydb-staging", "bkh_1", "postgres", "db-mydb-staging", "database/mydb-staging")
+	if err != nil {
+		t.Fatalf("RunCloneRestore() error = %v, want success once the engine settles", err)
+	}
+	if restorer.calls != 3 {
+		t.Errorf("Restore calls = %d, want 3 (2 failures then success)", restorer.calls)
+	}
+	if len(hs.finished) != 1 || hs.finished[0].status != store.BackupStatusSucceeded {
+		t.Fatalf("finish calls = %+v, want exactly one BackupStatusSucceeded", hs.finished)
 	}
 }

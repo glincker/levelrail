@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDatabase, useDatabaseStatus } from '../../../queries/databases'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
+import { ChangeDatabaseVersionDialog } from '../../../components/ChangeDatabaseVersionDialog'
 import { MoveToNodeDialog } from '../../../components/MoveToNodeDialog'
 import { MoveToProjectDialog } from '../../../components/MoveToProjectDialog'
 import { BackupsSection } from '../../../components/BackupsSection'
@@ -59,8 +60,12 @@ function OverviewSection() {
               <dt className="text-xs text-muted-foreground uppercase">
                 Version
               </dt>
-              <dd className="mt-1 font-mono text-sm text-foreground">
+              <dd className="mt-1 flex items-center gap-2 font-mono text-sm text-foreground">
                 {database.version}
+                <ChangeDatabaseVersionDialog
+                  name={database.name}
+                  currentVersion={database.version}
+                />
               </dd>
             </div>
             <div>
