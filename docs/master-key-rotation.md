@@ -34,9 +34,15 @@ Always read the CLI's output (or the JSON response's `warning`/`persistedToFile`
 
 ## How to rotate
 
-1. Generate a new master key. Any valid `filippo.io/age` identity works. The simplest way: let the control plane generate one in a throwaway data directory, or use any tool that emits an age identity.
+1. Generate a new master key on the machine you run the CLI from:
 
-2. Save the key to a file with mode `600`. Never paste it on the command line, as it will leak into shell history and process listings.
+   ```sh
+   levelrail-cli secrets generate-master-key --out /path/to/new.key
+   ```
+
+   This writes the key with mode `600` and refuses to overwrite an existing file. The key must be a post-quantum hybrid age identity (it starts with `AGE-SECRET-KEY-PQ-`), which only this command, or a control plane's own `master.key`, produces. A key made with plain `age-keygen` (`AGE-SECRET-KEY-1...`) is rejected with a `400` pointing back at this command, and nothing is changed.
+
+2. Never paste the key on the command line, as it will leak into shell history and process listings. Keep it in the file.
 3. Run:
 
    ```sh
@@ -50,6 +56,8 @@ Always read the CLI's output (or the JSON response's `warning`/`persistedToFile`
    ```
 
 4. Read the output carefully. You will see `rotated_at` and `persisted_to_file` fields. If a `WARNING` line appears, act on it immediately. Update `APP_MASTER_KEY` in your systemd unit or Docker config before the next restart. A `rebound` line reports the slot-binding pass that runs right after the rotation (see [Binding secrets to their slot](#binding-secrets-to-their-slot)).
+
+   Verified locally on a file-sourced key: the command reported `persisted_to_file: true`, `master.key` was rewritten, the control plane was restarted, and an app with a secret env var was recreated and started with the secret intact. `binding-status` still reported every value bound.
 
 5. Securely delete the temporary key file once you've confirmed the rotation succeeded (or keep it safe if you still need to update `APP_MASTER_KEY` manually).
 

@@ -1,6 +1,11 @@
 package secrets
 
-import "testing"
+import (
+	"strings"
+	"testing"
+
+	"filippo.io/age"
+)
 
 func TestGenerateMasterKey_ProducesUsableKey(t *testing.T) {
 	mk, err := GenerateMasterKey()
@@ -72,5 +77,16 @@ func TestLoadMasterKey_ToleratesSurroundingWhitespace(t *testing.T) {
 		if got.String() != mk.String() {
 			t.Errorf("suffix %q: loaded a different key", suffix)
 		}
+	}
+}
+
+func TestLoadMasterKey_ClassicIdentityGetsHint(t *testing.T) {
+	classic, err := age.GenerateX25519Identity()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = LoadMasterKey(classic.String())
+	if err == nil || !strings.Contains(err.Error(), "generate-master-key") {
+		t.Errorf("LoadMasterKey(classic) = %v, want an error pointing at generate-master-key", err)
 	}
 }

@@ -59,6 +59,9 @@ func GenerateMasterKey() (*MasterKey, error) {
 func LoadMasterKey(serialized string) (*MasterKey, error) {
 	id, err := age.ParseHybridIdentity(strings.TrimSpace(serialized))
 	if err != nil {
+		if strings.HasPrefix(strings.TrimSpace(serialized), "AGE-SECRET-KEY-1") {
+			return nil, fmt.Errorf("secrets: parse master key: a classic age identity is not accepted, generate one with \"secrets generate-master-key\": %w", err)
+		}
 		return nil, fmt.Errorf("secrets: parse master key: %w", err)
 	}
 	return &MasterKey{identity: id, recipient: id.Recipient()}, nil

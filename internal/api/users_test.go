@@ -447,3 +447,50 @@ func TestHandleUpdateUserAbilities_CustomAbilitiesReportNoRole(t *testing.T) {
 		t.Errorf("Role = %q, want empty for a custom ability set", got.Role)
 	}
 }
+
+func TestHandleListUsers_NonRootSeesOnlyItself(t *testing.T) {
+	rt, db := newTestRouter(t)
+	_ = loginTestSession(t, rt, db)
+	storeUserForTest(t, db, "colleague@example.com")
+
+	req := requestWithReadScopedToken(t, db, httptest.NewRequest(http.MethodGet, "/api/v1/users", nil))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var got []userResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("read-scoped token listed %d users, want 0", len(got))
+	}
+	if strings.Contains(rec.Body.String(), "colleague@example.com") {
+		t.Error("response leaked another user's email")
+	}
+}
+
+func TestHandleListUsers_RootSeesEveryone(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	storeUserForTest(t, db, "colleague@example.com")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/users", ""))
+	if !strings.Contains(rec.Body.String(), "colleague@example.com") {
+		t.Errorf("root caller did not see colleague: %s", rec.Body.String())
+	}
+}
+
+func requestWithReadScopedToken(t *testing.T, db *store.DB, req *http.Request) *http.Request {
+	t.Helper()
+	const plaintext = "read-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
+		ID: "tok_read_check", Name: "reader", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	return req
+}

@@ -821,6 +821,7 @@ func run(logger *slog.Logger) error {
 		networkPrefix:                b.ShortName,
 		instanceID:                   instanceID,
 		livenessTracker:              application.NewLivenessTracker(),
+		restartBackoff:               newRestartBackoff(logger),
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),
 		ingressHTTPAddr:              ingressHTTPAddr(),
@@ -3486,6 +3487,8 @@ type dynamicSourceDeps struct {
 	// livenessTracker outlives the per-pass controllers below, which is
 	// the whole point: see application.WithLivenessTracker.
 	livenessTracker *application.LivenessTracker
+	// restartBackoff is shared for the same reason as livenessTracker.
+	restartBackoff *application.RestartBackoff
 	// publicHost is APP_PUBLIC_HOST, threaded to the ingress controller
 	// for the zero-config fallback domain feature; see
 	// ingressreconcile.WithPublicHost's own doc comment.
@@ -3668,6 +3671,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithNetworkPrefix(deps.networkPrefix),
 		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),
+		application.WithRestartBackoff(deps.restartBackoff),
 		application.WithRolloutRecorder(rolloutRecorderFor(deps.db, deps.previewNotifier)),
 		application.WithAppliedConfigRecorder(deps.db),
 		application.WithPreviousReleaseHold(previousReleaseHold(deps.logger)),

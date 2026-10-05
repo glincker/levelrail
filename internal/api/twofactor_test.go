@@ -334,3 +334,30 @@ func TestTwoFactorRegenerateRecoveryCodes_InvalidatesOldSet(t *testing.T) {
 		t.Fatalf("verify with a code from the replaced set: status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
 }
+
+func TestVerifyTwoFactor_TOTPCodeIsSingleUse(t *testing.T) {
+	rt, db := newTestRouterWithTwoFactorSecrets(t)
+	cookie := loginTestSession(t, rt, db)
+	secret, _ := setUpConfirmedTwoFactor(t, rt, cookie)
+	code, err := totp.GenerateCode(secret, time.Now())
+	if err != nil {
+		t.Fatalf("totp.GenerateCode: %v", err)
+	}
+
+	loginBody := `{"username":"` + testAdminUsername + `","password":"` + testAdminPassword + `"}`
+	verify := func() int {
+		rec := doJSON(t, rt, http.MethodPost, "/api/v1/auth/login", loginBody, nil)
+		var lr loginResponse
+		if err := json.Unmarshal(rec.Body.Bytes(), &lr); err != nil || lr.MFAToken == "" {
+			t.Fatalf("login: %v, body = %s", err, rec.Body.String())
+		}
+		rec = doJSON(t, rt, http.MethodPost, "/api/v1/auth/2fa/verify", `{"mfa_token":"`+lr.MFAToken+`","code":"`+code+`"}`, nil)
+		return rec.Code
+	}
+	if got := verify(); got != http.StatusOK {
+		t.Fatalf("first use: status = %d, want 200", got)
+	}
+	if got := verify(); got != http.StatusUnauthorized {
+		t.Errorf("replayed code: status = %d, want 401", got)
+	}
+}

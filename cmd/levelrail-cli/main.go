@@ -296,6 +296,7 @@ Usage:
   %[1]s users list|create|set-abilities|delete|roles [flags]   manage users and their abilities, directly or via a curated role
   %[1]s invites create|list|revoke [flags]                     invite a teammate by email, list or revoke pending invites
   %[1]s iam policies create|list|get|update|delete|attach|detach|attachments [flags]   resource-scoped Allow/Deny policies, additive on top of --abilities
+  %[1]s secrets generate-master-key --out PATH   write a new master key file (local, no API call)
   %[1]s secrets rotate-master-key --new-key-file PATH [flags]   rotate the envelope-encryption master key
   %[1]s secrets binding-status|rebind [flags]   count and bind secret values not yet bound to their slot
   %[1]s auth login [flags]             authenticate and persist a new API token
