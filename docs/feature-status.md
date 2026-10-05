@@ -35,7 +35,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Pipelines | beta | Live Docker test exists (`internal/pipeline/live_test.go`), no e2e. |
 | Deploy freeze | beta | Unit, API and CLI tests, documented in `docs/deploy-safety.md`, no e2e. |
 | Feature flags | beta | Unit, API, CLI, MCP tests and a doc page, no e2e. |
-| Templates | beta | 206 catalog entries, the unit tests check shape and a floor of 180, none is deployed in any test. |
+| Templates | beta | 311 catalog entries, the unit tests check shape and a floor of 180, none is deployed in any test. |
 | Log archive | beta | Unit and e2e tests (`test/e2e/log_archive_test.go`), dedicated doc page (`docs/log-archive.md`). |
 | Supply chain | beta | Off by default (`docs/supply-chain.md`), unit tests, no e2e. |
 | Status page | beta | Off by default, one internal package test file plus API tests, no e2e. |
@@ -175,7 +175,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: none. `test/e2e/compose_healthcheck_test.go` covers Compose readiness generally, not any template.
 - Docs: `docs/templates-and-registry.md` (209 lines).
 - Real infra: none found. No template is deployed in any test, so "works" is unverified per entry. `docs/templates-and-registry.md` also notes GPU passthrough is not translated for GPU templates.
-- Count: 206 `ID:` entries across `internal/catalog/templates_*.go`. The roadmap and ADR 015 cite a 339-template goal, which is not yet the shipped catalog.
+- Count: 311 `ID:` entries across `internal/catalog/templates_*.go`. The roadmap and ADR 015 cite a 339-template goal, which is not yet the shipped catalog.
 - Label: **beta**.
 
 ### IAM
@@ -214,7 +214,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 | "Low idle footprint" | `README.md` "Why not Coolify" | Measured only on an Apple M4 Max dev build: 58 to 96 MB RSS from 0 to 500 apps (`docs/performance.md`). No Linux production-build number. |
 | "Notification channels: 17 kinds against Dokploy's 12" | `README.md` | The 17 is correct (`internal/alerting/rules.go:82-98`). The Dokploy 12 is not checkable here. |
 | "eight managed database engines with backup/restore/verification" | `README.md` Status section | Eight engines are defined (`internal/store/database.go:16-23`). Live restore evidence exists for Postgres via PITR e2e, and the only database e2e is Redis reconcile. |
-| Template catalog size | `docs/roadmap.md`, ADR 015 (339-template goal) | 206 catalog entries shipped. The test only enforces a floor of 180 (`internal/catalog/catalog_test.go:67`). |
+| Template catalog size | `docs/roadmap.md`, ADR 015 (339-template goal) | 311 catalog entries shipped. The test only enforces a floor of 180 (`internal/catalog/catalog_test.go:67`). |
 | "Real public ACME" toggleable | `docs/roadmap.md` "In progress" | Correctly flagged as unverified. Keep the warning until `docs/acme-verification-runbook.md` has a recorded run. |
 
 ## Proposed README and docs edits (not applied)
@@ -229,5 +229,5 @@ These are proposals only. `README.md` is not edited in this change.
 6. `README.md` "Low idle footprint": add the measured numbers with their conditions, or link `docs/performance.md`. Re-measure on a Linux release build before quoting them as a headline.
 7. `README.md` feature list and `docs/index.md`: mark load balancer, platform as code, AI models, in-app AI chat and Cloudflare tunnel as beta or experimental, matching the labels above once a hiding mechanism exists.
 8. `README.md` "Where the feature depth shows": add "17 channel kinds, unit-tested against mock endpoints" or similar, so the claim matches the evidence tier.
-9. `docs/roadmap.md` e2e note: add the templates gap (no template is deployed in tests) and the 206 versus 339 template counts.
+9. `docs/roadmap.md` e2e note: add the templates gap (no template is deployed in tests) and the 311 versus 339 template counts.
 10. Add a docs sidebar entry for this page.

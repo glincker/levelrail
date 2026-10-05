@@ -107,7 +107,7 @@ Images for `linux/amd64` and `linux/arm64` are published as `:beta` (use this un
 - **Databases that verify their own backups.** Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse, with scheduled backups, restore, and an automatic re-download and checksum after every backup.
 - **Many servers, no open ports.** Add nodes with a one-time token. Agents dial out over mTLS, with WireGuard mesh networking, internal DNS, cordon, and drain.
 - **Git-native.** GitHub, GitLab, Bitbucket, and Gitea webhooks, preview environments per pull request, and an import box that accepts a repo URL, an image, a `docker run` command, or a compose file.
-- **301 one-click templates** for self-hosted services, each a compose file the platform deploys and manages.
+- **311 one-click templates** for self-hosted services, each a compose file the platform deploys and manages.
 - **Access control and audit.** Allow and Deny IAM policies scoped to a single app or database, with a full audit log and CSV export, in the free Apache 2.0 core.
 - **Alerting.** Threshold, crashloop, and certificate expiry rules delivered over 18 notification kinds, including Slack, Discord, email, Telegram, PagerDuty, ntfy, and a generic webhook.
 - **AI-ready.** The HTTP API the dashboard uses also backs an MCP server with 155 tools, so an AI assistant can list apps, read logs, and diagnose a crashloop. AI never sits in the reconciliation path.
@@ -288,7 +288,7 @@ Most self-hosted platforms in this category manage servers by SSHing in and shel
 | Rollback | Pinned images, readiness-gated | Health check off by default | Swarm rollback | Manual | Default scheduler: none | Proxy health gate |
 | Backup verification | Automatic, all 8 engines | Non-empty check | None | None | No backups | No backups |
 
-This is positioning, not a ranking. All of them are worth using. The one area where Levelrail trails is breadth of templates: 301 curated entries against Coolify's roughly 370, an intentional bet on curation (see [ADR 015](adr/015-service-template-catalog-reversal.md)). The full, sourced comparison is in [Comparison](docs/comparison.md).
+This is positioning, not a ranking. All of them are worth using. The one area where Levelrail trails is breadth of templates: 311 curated entries against Coolify's roughly 370, an intentional bet on curation (see [ADR 015](adr/015-service-template-catalog-reversal.md)). The full, sourced comparison is in [Comparison](docs/comparison.md).
 
 ## How it is built
 

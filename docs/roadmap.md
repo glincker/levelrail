@@ -84,7 +84,7 @@ flowchart LR
   services built from one shared checkout, each scoped to its own
   `build.baseDirectory`, linked under one `store.App`, and
   independently reachable over HTTPS.
-- A curated 265-entry service template catalog (ADR 015: reverses the
+- A curated 311-entry service template catalog (ADR 015: reverses the
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
   from the creation wizard, with a category-specific icon per card.
@@ -379,7 +379,7 @@ flowchart LR
   multi-service fan-out (see Multi-service apps, above).
   
   Does not yet exercise a full multi-node mesh or real ACME against a live
-  domain. Also does not deploy any service template: the 265-entry
+  domain. Also does not deploy any service template: the 311-entry
   catalog (up from the 206 counted when this note was first written;
   Coolify's own catalog is around 371 for comparison) is checked for
   shape and a floor of 180 entries, not for whether any one template

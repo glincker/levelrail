@@ -186,7 +186,7 @@ avoids.
 - Coolify in particular still has a larger one-click template catalog
   (comparison.md does not claim parity: "Ten good templates" was the
   original non-goal, reversed by ADR 015 toward a 339-template goal, with
-  206 shipped so far, see [templates-and-registry.md](templates-and-registry.md)
+  311 shipped so far, see [templates-and-registry.md](templates-and-registry.md)
   and [feature-status.md](feature-status.md#templates)).
 - `docs/migrating-from-vercel.md` itself warns to run the new deployment in
   parallel and keep the old platform as the rollback path until a shadow
