@@ -71,3 +71,11 @@ func (s *oauthStateStore) consume(token string) (oauthState, bool) {
 	}
 	return st, true
 }
+
+// has reports whether token is a live in-house state without consuming it.
+func (s *oauthStateStore) has(token string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	st, ok := s.states[token]
+	return ok && !time.Now().After(st.expiresAt)
+}
