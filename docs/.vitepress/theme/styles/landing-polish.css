@@ -1,0 +1,204 @@
+/* Shared Lp* additions: frame chrome, stats link, statement, focus and
+   hover states. Surfaces read from landing-tokens.css so both themes work. */
+
+.lp-frame__chrome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 10px;
+}
+.lp-frame__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--lp-line-strong);
+}
+.lp-frame__url {
+  margin-left: 8px;
+  padding: 2px 10px;
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-radius-pill);
+  font-family: var(--lp-font-mono);
+  font-size: 11px;
+  color: var(--lp-muted);
+}
+.lp-figure .lp-frame {
+  transition: border-color 0.2s, transform 0.2s;
+}
+.lp-figure .lp-frame:hover {
+  border-color: var(--lp-hover-border);
+  transform: translateY(-2px);
+}
+
+.lp-stats__link {
+  display: block;
+  margin-top: 14px;
+  text-align: center;
+}
+.lp-stat {
+  background: var(--lp-card);
+}
+
+.lp-statement {
+  max-width: var(--lp-content-width);
+  margin: 0 auto;
+  padding: var(--lp-section-gap) 0 0;
+  text-align: center;
+}
+/* Doubled with the section class: .vp-doc p outranks a lone class selector. */
+.lp-statement .lp-statement__text {
+  max-width: 24ch;
+  margin: 0 auto;
+  font-size: clamp(28px, 4.4vw, 46px);
+  font-weight: var(--lp-weight-heading);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--lp-text);
+  text-wrap: balance;
+}
+.lp-statement .lp-statement__context {
+  max-width: 54ch;
+  margin: 18px auto 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--lp-body);
+}
+
+.lp-section .lp-note {
+  margin: 20px 0 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--lp-body);
+}
+.lp-note code {
+  font-family: var(--lp-font-mono);
+  font-size: 13px;
+  color: var(--lp-text);
+}
+.lp-note a,
+.lp-more {
+  color: var(--lp-accent);
+  text-underline-offset: 3px;
+}
+.lp-more:hover,
+.lp-note a:hover {
+  text-decoration: underline;
+}
+.lp-related--left {
+  justify-content: flex-start;
+  align-items: center;
+  max-width: none;
+  margin: 24px 0 0;
+  padding-bottom: 0;
+}
+.lp-related__label {
+  color: var(--lp-text);
+}
+.lp-related a,
+.lp-more {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.lp-related a {
+  text-decoration: underline;
+  text-decoration-color: var(--lp-line-strong);
+  text-underline-offset: 3px;
+}
+
+.lp-faq__item summary {
+  min-height: 44px;
+  border-radius: 8px;
+  transition: color 0.2s;
+}
+.lp-faq__item summary:hover {
+  color: var(--lp-accent);
+}
+.lp-btn {
+  min-height: 44px;
+}
+
+.lp a:focus-visible,
+.lp-scope a:focus-visible,
+.lp-scope summary:focus-visible,
+.lp-scope button:focus-visible {
+  outline: 2px solid var(--lp-focus);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+.lp-card:focus-within {
+  border-color: var(--lp-focus);
+}
+.lp-card:has(.lp-card__link:focus-visible) {
+  outline: 2px solid var(--lp-focus);
+  outline-offset: 3px;
+}
+.lp-card__link:focus-visible {
+  outline: 0;
+}
+.lp-card__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.lp-card__visual--terminal .lp-vline.lp-vline--ok::before {
+  content: '\2713';
+  color: var(--lp-success);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-card,
+  .lp-figure .lp-frame,
+  .lp-btn,
+  .lp-card__arrow,
+  .lp-faq__item summary,
+  .lp-faq__item summary::after {
+    transition: none;
+  }
+  .lp-card:hover,
+  .lp-figure .lp-frame:hover {
+    transform: none;
+  }
+}
+
+.lp-card__visual--routes::after {
+  background: linear-gradient(to bottom, transparent 45%, var(--lp-card-bottom) 96%);
+}
+
+/* Home sits inside .vp-doc, whose h2/p/a rules outrank single-class Lp rules. */
+.lp-scope .lp-cta .lp-cta__title {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.lp-scope .lp-cta .lp-cta__sub {
+  max-width: 520px;
+  margin: 14px auto 0;
+  text-align: center;
+}
+.lp-scope .lp-btn {
+  text-decoration: none;
+}
+.lp-scope .lp-btn--primary {
+  color: var(--lp-btn-fg);
+}
+.lp-scope .lp-btn--ghost {
+  color: var(--lp-text);
+}
+.lp-scope .lp-card__title {
+  margin: 0 0 8px;
+  font-family: var(--lp-font-sans);
+}
+.lp-scope .lp-card .lp-card__body,
+.lp-scope .lp-lead {
+  line-height: 1.6;
+}
+.lp-scope .lp-card__link,
+.lp-scope .lp-card__link:hover {
+  text-decoration: none;
+}
+.lp-scope .lp-step__title,
+.lp-scope .lp-h2 {
+  font-family: var(--lp-font-sans);
+}

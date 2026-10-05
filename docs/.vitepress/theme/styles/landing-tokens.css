@@ -19,6 +19,27 @@
   --lp-method-put: #e8b04a;
   --lp-method-delete: #ef7a7a;
 
+  --lp-bg-glow-a: rgba(88, 177, 206, 0.18);
+  --lp-bg-glow-b: rgba(120, 90, 255, 0.1);
+  --lp-grid-line: rgba(255, 255, 255, 0.045);
+  --lp-pill-bg: rgba(255, 255, 255, 0.03);
+  --lp-title-top: #ffffff;
+  --lp-title-bottom: #8d8d96;
+  --lp-btn-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4), 0 8px 30px var(--lp-accent-glow);
+  --lp-frame-shadow: 0 40px 120px -30px rgba(88, 177, 206, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  --lp-card-shadow: none;
+  --lp-hover-border: rgba(88, 177, 206, 0.35);
+  --lp-icon-top: #16181d;
+  --lp-icon-bottom: #0b0c0f;
+  --lp-icon-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --lp-visual-bg: #060607;
+  --lp-us-tint: rgba(88, 177, 206, 0.05);
+  --lp-cta-glow: rgba(88, 177, 206, 0.12);
+  --lp-bullet: #e8b04a;
+  --lp-focus: #7cc8e2;
+  --lp-body: var(--lp-muted);
+  --lp-divider-glow: rgba(88, 177, 206, 0.35);
+
   --lp-radius-card: 28px;
   --lp-radius-frame: 24px;
   --lp-radius-inner: 12px;
@@ -37,4 +58,50 @@
   --lp-section-gap: 88px;
   --lp-content-width: 1100px;
   --lp-narrow-width: 780px;
+}
+
+/* Light theme: hairline borders and a double ring instead of glows. */
+html:not(.dark) .lp,
+html:not(.dark) .lp-scope {
+  --lp-bg: #fafafa;
+  --lp-card: #ffffff;
+  --lp-card-top: #ffffff;
+  --lp-card-bottom: #ffffff;
+  --lp-line: #ebebeb;
+  --lp-line-strong: #d4d4d4;
+  --lp-text: #171717;
+  --lp-muted: #666666;
+  --lp-accent: #0a6a86;
+  --lp-accent-glow: transparent;
+  --lp-accent-tint: transparent;
+  --lp-success: #297a3a;
+  --lp-method-get: #297a3a;
+  --lp-method-post: #0b61a8;
+  --lp-method-put: #8a5a00;
+  --lp-method-delete: #b42318;
+
+  --lp-btn-bg: #171717;
+  --lp-btn-bg-hover: #333333;
+  --lp-btn-fg: #ffffff;
+
+  --lp-bg-glow-a: transparent;
+  --lp-bg-glow-b: transparent;
+  --lp-grid-line: transparent;
+  --lp-pill-bg: #ffffff;
+  --lp-title-top: #171717;
+  --lp-title-bottom: #4d4d4d;
+  --lp-btn-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 0 0 2px #fafafa;
+  --lp-frame-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 0 0 2px #fafafa;
+  --lp-card-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 0 0 2px #fafafa;
+  --lp-hover-border: #b8b8b8;
+  --lp-icon-top: #fafafa;
+  --lp-icon-bottom: #f2f2f2;
+  --lp-icon-shadow: none;
+  --lp-visual-bg: #fafafa;
+  --lp-us-tint: #f5f5f5;
+  --lp-cta-glow: transparent;
+  --lp-bullet: #8a5a00;
+  --lp-focus: #0a6a86;
+  --lp-divider-glow: transparent;
+  --lp-body: #4d4d4d;
 }

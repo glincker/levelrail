@@ -10,6 +10,7 @@ import CopyCommand from './CopyCommand.vue'
 import HeroShowcase from './HeroShowcase.vue'
 import AnnouncementPill from './AnnouncementPill.vue'
 import HomeFeatures from './HomeFeatures.vue'
+import HomeProof from './HomeProof.vue'
 
 const INSTALL_COMMAND = 'curl -fsSL https://levelrail.com/install.sh | sudo sh'
 
@@ -59,6 +60,7 @@ const { hasSidebar } = useSidebar()
       </ul>
     </template>
     <template #home-hero-after>
+      <HomeProof />
       <HomeFeatures />
     </template>
     <template #layout-bottom>
