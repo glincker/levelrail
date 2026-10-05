@@ -9,7 +9,7 @@ import (
 	sqlitestore "github.com/glincker/theauth-go/storage/sqlite"
 )
 
-const migrationFile = "../store/migrations/0292_authengine_tables.sql"
+const migrationFile = "../store/migrations/0372_authengine_tables.sql"
 
 func TestMigrationMatchesLibrary(t *testing.T) {
 	got, err := os.ReadFile(filepath.FromSlash(migrationFile))
@@ -26,7 +26,7 @@ func TestMigrationMatchesLibrary(t *testing.T) {
 		want.WriteString("\n")
 	}
 	if !strings.HasPrefix(string(got), want.String()) {
-		t.Fatal("0292_authengine_tables.sql drifted from the library migrations; regenerate its library section")
+		t.Fatal("0372_authengine_tables.sql drifted from the library migrations; regenerate its library section")
 	}
 	rest := strings.TrimPrefix(string(got), want.String())
 	for _, table := range []string{"authengine_user_map", "authengine_token_map"} {

@@ -1,4 +1,4 @@
-# ADR 025: Adopt theauth-go in phases, superseding ADR 010
+# ADR 026: Adopt theauth-go in phases, superseding ADR 010
 
 Status: Accepted
 
@@ -20,7 +20,7 @@ Adopt the library in phases, each shippable on its own.
 
 1. Slice 1 (this ADR's first PR): `internal/authengine` behind
    `APP_AUTH_ENGINE` (`legacy` default, `library`). Library tables arrive in
-   migration 0292 and stay empty while the flag is off. When on, the library
+   migration 0372 and stay empty while the flag is off. When on, the library
    handler mounts on a separate prefix and the legacy routes are untouched.
    `auth-backfill` copies users, bcrypt hashes, API tokens, passkeys and TOTP
    secrets with an id map. Parity tests prove legacy credentials work through
