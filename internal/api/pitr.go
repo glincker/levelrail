@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -96,7 +97,37 @@ type pitrStatusResource struct {
 	WindowStart   string `json:"window_start,omitempty"`
 	WindowEnd     string `json:"window_end,omitempty"`
 	WindowError   string `json:"window_error,omitempty"`
+	// WALShip reports shipping of the WAL archive to the backup target; nil
+	// when no shipping pass has run yet for this database.
+	WALShip *walShipResource `json:"wal_ship,omitempty"`
 }
+
+type walShipResource struct {
+	LastAttemptAt string `json:"last_attempt_at,omitempty"`
+	LastSuccessAt string `json:"last_success_at,omitempty"`
+	LastError     string `json:"last_error,omitempty"`
+	Shipped       int    `json:"shipped"`
+	TargetID      string `json:"target_id,omitempty"`
+}
+
+// WALShipStatusSource reports the last WAL shipping outcome per database.
+type WALShipStatusSource interface {
+	WALShipStatus(databaseName string) (backup.WALShipStatus, bool)
+}
+
+func toWALShipResource(st backup.WALShipStatus) *walShipResource {
+	res := &walShipResource{LastError: st.LastError, Shipped: st.Shipped, TargetID: st.TargetID}
+	if !st.LastAttemptAt.IsZero() {
+		res.LastAttemptAt = st.LastAttemptAt.UTC().Format(time.RFC3339)
+	}
+	if !st.LastSuccessAt.IsZero() {
+		res.LastSuccessAt = st.LastSuccessAt.UTC().Format(time.RFC3339)
+	}
+	return res
+}
+
+// SetWALShipStatus attaches the source "pitr status" reads shipping state from.
+func (rt *Router) SetWALShipStatus(src WALShipStatusSource) { rt.walShipStatus = src }
 
 type pitrRestoreHistoryResource struct {
 	ID                  string `json:"id"`
@@ -193,6 +224,12 @@ func (rt *Router) handleGetPITRStatus(w http.ResponseWriter, r *http.Request) {
 			resource.HasBaseBackup = hasBaseBackup
 			resource.WindowStart = start.UTC().Format(time.RFC3339)
 			resource.WindowEnd = end.UTC().Format(time.RFC3339)
+		}
+	}
+
+	if db.PITREnabled && rt.walShipStatus != nil {
+		if st, ok := rt.walShipStatus.WALShipStatus(name); ok {
+			resource.WALShip = toWALShipResource(st)
 		}
 	}
 

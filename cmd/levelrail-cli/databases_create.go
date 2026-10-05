@@ -47,6 +47,9 @@ type createDatabaseFlags struct {
 	// auto-placement" reasoning.
 	nodeID    string
 	nodeIDSet bool
+	// existingVolume is "", "reuse" or "discard": what to do with the data
+	// volume a deleted database of the same name left behind.
+	existingVolume string
 }
 
 // planDatabaseCreate validates f and builds the exact databaseResource
@@ -70,7 +73,10 @@ func planDatabaseCreate(f createDatabaseFlags) (databaseResource, error) {
 	if !slices.Contains(supportedEngineParams, f.engine) {
 		return databaseResource{}, newValidationError("--engine must be one of %s", strings.Join(supportedEngineParams, ", "))
 	}
-	plan := databaseResource{Name: f.name, Engine: f.engine, Version: f.version}
+	if f.existingVolume != "" && f.existingVolume != "reuse" && f.existingVolume != "discard" {
+		return databaseResource{}, newValidationError("--existing-volume must be reuse or discard")
+	}
+	plan := databaseResource{Name: f.name, Engine: f.engine, Version: f.version, ExistingVolume: f.existingVolume}
 	// --node-id is an explicit override; left unset, NodeID stays "" and,
 	// since DatabaseResource.NodeID carries `omitempty`, is
 	// indistinguishable on the wire from an explicit --node-id "": the
@@ -95,12 +101,13 @@ func planDatabaseCreate(f createDatabaseFlags) (databaseResource, error) {
 func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs := flag.NewFlagSet(prog+" databases create", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, profileFlag, name, engine, version, nodeID string
+	var tokenFlag, apiURLFlag, profileFlag, name, engine, version, nodeID, existingVolume string
 	var jsonOut, interactive bool
 	fs.StringVar(&name, "name", "", "database name (required)")
 	fs.StringVar(&engine, "engine", "", "database engine: "+strings.Join(supportedEngineParams, ", ")+" (required)")
 	fs.StringVar(&version, "version", "", "engine version, e.g. \"16\" (required)")
 	fs.StringVar(&nodeID, "node-id", "", "node to place this database on (default: auto-placed on the least-loaded registered node, or the local node if only one exists)")
+	fs.StringVar(&existingVolume, "existing-volume", "", "when a deleted database of this name left its data volume behind: reuse (attach the old data) or discard (delete it, start empty); required if one exists")
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
 	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
@@ -137,7 +144,7 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 		}
 	})
 
-	plan, err := planDatabaseCreate(createDatabaseFlags{name: name, engine: engine, version: version, nodeID: nodeID, nodeIDSet: nodeIDSet})
+	plan, err := planDatabaseCreate(createDatabaseFlags{name: name, engine: engine, version: version, nodeID: nodeID, nodeIDSet: nodeIDSet, existingVolume: existingVolume})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
@@ -180,6 +187,8 @@ Flags:
   --version string      engine version, e.g. "16" (required)
   --node-id string        node to place this database on; omitted auto-places it on the
                                     least-loaded registered node (or the local node if only one exists)
+  --existing-volume string  reuse or discard the data volume a deleted database of this name
+                                    left behind (create is refused until you choose, when one exists)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")

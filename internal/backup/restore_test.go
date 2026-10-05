@@ -28,7 +28,7 @@ func TestContainerRestorer_Restore_Postgres(t *testing.T) {
 	if rt.gotStdin != dump {
 		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
 	}
-	wantCmd := []string{"sh", "-c", `psql --no-password -U "$POSTGRES_USER" "$POSTGRES_USER" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" && exec psql --no-password -U "$POSTGRES_USER" "$POSTGRES_USER"`}
+	wantCmd := []string{"sh", "-c", `{ echo "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"; cat; } | psql --no-password -v ON_ERROR_STOP=1 --single-transaction -U "$POSTGRES_USER" "$POSTGRES_USER"`}
 	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
 		t.Errorf("cmd = %v, want %v", rt.gotInputCmd, wantCmd)
 	}

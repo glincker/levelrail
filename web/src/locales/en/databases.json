@@ -21,5 +21,19 @@
     "submit": "Change version",
     "submitting": "Changing...",
     "toast": "Database \"{{name}}\" will be recreated on version {{version}}."
+  },
+  "existingVolume": {
+    "title": "A deleted database with this name left its data behind",
+    "description": "Choose what to do with the old data volume ({{size}}). Reusing it brings the old data back; discarding it deletes it permanently and starts empty.",
+    "reuse": "Reuse old data",
+    "discard": "Discard and start empty",
+    "working": "Working..."
+  },
+  "walShip": {
+    "label": "WAL copy in bucket",
+    "never": "not shipped yet",
+    "ok": "last shipped {{when}}",
+    "failing": "failing since {{when}}: {{error}}",
+    "hint": "Archived WAL is copied to the backup target so point-in-time restore survives losing this host's disk."
   }
 }

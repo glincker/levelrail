@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runPITRStatus implements "pitr status <database>": GET
@@ -45,6 +47,7 @@ func runPITRStatus(prog string, args []string, stdout, stderr io.Writer, lookupE
 		default:
 			_, _ = fmt.Fprintln(stdout, "no succeeded base backup yet; take one with \"pitr base-backups trigger\"")
 		}
+		printWALShip(stdout, status.WALShip)
 	})
 }
 
@@ -65,4 +68,15 @@ Flags:
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+func printWALShip(w io.Writer, ship *apiclient.WALShipResource) {
+	switch {
+	case ship == nil:
+		_, _ = fmt.Fprintln(w, "wal copy in bucket: not shipped yet")
+	case ship.LastError != "":
+		_, _ = fmt.Fprintf(w, "wal copy in bucket: FAILING since %s: %s\n", ship.LastAttemptAt, ship.LastError)
+	default:
+		_, _ = fmt.Fprintf(w, "wal copy in bucket: last shipped %s (%d segments since start)\n", ship.LastSuccessAt, ship.Shipped)
+	}
 }

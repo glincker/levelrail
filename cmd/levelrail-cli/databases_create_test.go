@@ -105,3 +105,19 @@ func TestPlanDatabaseCreate_ValidEngines(t *testing.T) {
 		})
 	}
 }
+
+func TestPlanDatabaseCreate_ExistingVolume(t *testing.T) {
+	tests := []struct {
+		choice  string
+		wantErr bool
+	}{{"", false}, {"reuse", false}, {"discard", false}, {"maybe", true}}
+	for _, tt := range tests {
+		plan, err := planDatabaseCreate(createDatabaseFlags{name: "main", engine: "postgres", version: "16", existingVolume: tt.choice})
+		if (err != nil) != tt.wantErr {
+			t.Fatalf("choice %q: err = %v, wantErr %v", tt.choice, err, tt.wantErr)
+		}
+		if err == nil && plan.ExistingVolume != tt.choice {
+			t.Errorf("choice %q: ExistingVolume = %q", tt.choice, plan.ExistingVolume)
+		}
+	}
+}

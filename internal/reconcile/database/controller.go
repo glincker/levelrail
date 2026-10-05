@@ -44,6 +44,7 @@ import (
 	"io"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
@@ -214,6 +215,18 @@ type MariaDBCredentials struct {
 type ClickHouseCredentials struct {
 	Username string
 	Password string
+}
+
+// ClickHouseIdent maps a database name to a ClickHouse identifier the image
+// entrypoint can use: it interpolates CLICKHOUSE_DB and CLICKHOUSE_USER into
+// unquoted SQL, so a hyphen fails the CREATE and leaves no database.
+func ClickHouseIdent(name string) string {
+	return strings.Map(func(r rune) rune {
+		if r == '-' || r == '.' {
+			return '_'
+		}
+		return r
+	}, name)
 }
 
 // Controller converges one named database's desired state (read fresh
@@ -467,8 +480,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			return credentialsBlockedResult(), nil
 		}
 		env := map[string]string{
-			"CLICKHOUSE_DB":                        c.dbName,
-			"CLICKHOUSE_USER":                      c.clickhouseCreds.Username,
+			"CLICKHOUSE_DB":                        ClickHouseIdent(c.dbName),
+			"CLICKHOUSE_USER":                      ClickHouseIdent(c.clickhouseCreds.Username),
 			"CLICKHOUSE_PASSWORD":                  c.clickhouseCreds.Password,
 			"CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT": "1",
 		}

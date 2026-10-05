@@ -37,3 +37,21 @@ export async function readErrorMessage(
   const body = (await res.json().catch(() => null)) as { error?: string } | null
   return body?.error ?? fallback
 }
+
+export interface ExistingVolumeInfo {
+  name: string
+  size_bytes: number
+  mounted: boolean
+}
+
+// Thrown by createDatabase when a deleted database of the same name left its
+// data volume behind, so the form can ask reuse or discard instead of failing.
+export class ExistingVolumeError extends ApiError {
+  readonly volumes: ExistingVolumeInfo[]
+
+  constructor(message: string, volumes: ExistingVolumeInfo[]) {
+    super(409, message)
+    this.name = 'ExistingVolumeError'
+    this.volumes = volumes
+  }
+}

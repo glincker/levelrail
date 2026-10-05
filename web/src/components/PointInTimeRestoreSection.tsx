@@ -28,6 +28,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
 import { formatDate } from '../lib/format'
+import { WalShipStatusItem } from './WalShipStatusItem'
 import { ApiError } from '../lib/apiError'
 import { StatusBadge } from './backupAttemptStatus'
 import { TriggerBackupRowView } from './BackupsSection'
@@ -196,6 +197,7 @@ function EnabledPITRContent({ databaseName }: { databaseName: string }) {
             )}
           </dd>
         </div>
+        <WalShipStatusItem ship={pitrWindow?.wal_ship} />
       </dl>
 
       <div className="flex flex-col gap-2">
