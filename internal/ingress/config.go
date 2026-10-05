@@ -40,6 +40,10 @@ type Config struct {
 	// Storage leaves Caddy's own OS-specific default in place.
 	Storage any  `json:"storage,omitempty"`
 	Apps    Apps `json:"apps"`
+
+	// ownedPorts are ports bound through inherited sockets, which listenPortsOf
+	// cannot read from an fd address.
+	ownedPorts []int
 }
 
 // AdminConfig configures Caddy's admin API endpoint. Leaving Listen empty
@@ -102,6 +106,9 @@ type HTTPApp struct {
 	// challenge with no AlternatePort set) fall back to. 0 (omitempty)
 	// keeps Caddy's compiled-in default, port 80.
 	HTTPPort int `json:"http_port,omitempty"`
+	// GracePeriod mirrors Caddy's grace_period: how long in-flight requests
+	// get to finish on shutdown or config replacement.
+	GracePeriod string `json:"grace_period,omitempty"`
 }
 
 // Server is a single HTTP(S) listener plus the routes it serves.
@@ -116,6 +123,17 @@ type Server struct {
 	// spike run under a normal user, so the standalone TLS demo makes
 	// that trade-off explicit instead of silently trying to grab port 80.
 	AutomaticHTTPS *AutoHTTPSConfig `json:"automatic_https,omitempty"`
+
+	ReadHeaderTimeout    string                `json:"read_header_timeout,omitempty"`
+	ReadTimeout          string                `json:"read_timeout,omitempty"`
+	WriteTimeout         string                `json:"write_timeout,omitempty"`
+	IdleTimeout          string                `json:"idle_timeout,omitempty"`
+	MaxHeaderBytes       int                   `json:"max_header_bytes,omitempty"`
+	Protocols            []string              `json:"protocols,omitempty"`
+	TrustedProxies       *TrustedProxiesConfig `json:"trusted_proxies,omitempty"`
+	TrustedProxiesStrict int                   `json:"trusted_proxies_strict,omitempty"`
+	ClientIPHeaders      []string              `json:"client_ip_headers,omitempty"`
+	Errors               *ErrorsConfig         `json:"errors,omitempty"`
 }
 
 // AutoHTTPSConfig mirrors Caddy's automatic_https server field. See the
@@ -145,6 +163,9 @@ type Matcher struct {
 // CEL expression evaluated with Caddy's placeholders expanded first.
 type ExpressionMatcher struct {
 	Expr string `json:"expr"`
+	// Name is always emitted: Caddy 2.11's MatchExpression.UnmarshalJSON
+	// type-asserts it and panics the whole process when it is absent.
+	Name string `json:"name"`
 }
 
 // ReverseProxyHandler is Caddy's "reverse_proxy" handler
@@ -165,6 +186,7 @@ type ReverseProxyHandler struct {
 	HealthChecks     *HealthChecks  `json:"health_checks,omitempty"`
 	Transport        *HTTPTransport `json:"transport,omitempty"`
 	StreamCloseDelay string         `json:"stream_close_delay,omitempty"`
+	Headers          *ProxyHeaders  `json:"headers,omitempty"`
 }
 
 // ResponseMatcher mirrors Caddy's reverse_proxy response matcher: a
@@ -500,7 +522,8 @@ type ChallengesConfig struct {
 // stands up that server). AlternatePort redirects that bind to whatever
 // port this control plane's own ingress is actually configured for.
 type HTTPChallengeConfig struct {
-	AlternatePort int `json:"alternate_port,omitempty"`
+	AlternatePort int  `json:"alternate_port,omitempty"`
+	Disabled      bool `json:"disabled,omitempty"`
 }
 
 // DNSChallengeConfig mirrors Caddy's caddytls.DNSChallengeConfig, scoped

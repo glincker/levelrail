@@ -277,6 +277,10 @@ type Controller struct {
 	adminListen    string
 	storageDir     string
 
+	hardening *ingress.Hardening
+	inherited *ingress.InheritedSockets
+	holds     *ingress.HoldTracker
+
 	modelHosts ModelHostSource // nil is valid: no model routes, see WithModelHosts
 
 	// dashboardDial is the control plane's own dashboard bind address
@@ -373,6 +377,23 @@ type Option func(*Controller)
 // per-app request metrics.
 func WithRequestStats() Option {
 	return func(ctrl *Controller) { ctrl.requestStats = true }
+}
+
+// WithHardening applies edge limits, failover defaults and the friendly 503
+// page to every proxied route.
+func WithHardening(h ingress.Hardening) Option {
+	return func(c *Controller) { c.hardening = &h }
+}
+
+// WithInheritedSockets serves ingress from systemd passed listeners.
+func WithInheritedSockets(s *ingress.InheritedSockets) Option {
+	return func(c *Controller) { c.inherited = s }
+}
+
+// WithHoldTracker keeps a host answering a friendly 503 for the tracker's
+// window after its backend disappears. The tracker must outlive this controller.
+func WithHoldTracker(t *ingress.HoldTracker) Option {
+	return func(c *Controller) { c.holds = t }
 }
 
 // WithServerName overrides the name Caddy's config keys the shared server
@@ -669,6 +690,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	var routes []ingress.ProxyRoute
 	var maintenanceRoutes []ingress.MaintenanceRoute
 	var redirectRoutes []ingress.RedirectRoute
+	var holdRoutes []ingress.HoldRoute
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
 	for _, svc := range services {
 		hosts := svc.Domains
@@ -767,10 +789,23 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			dial, ok = c.dialForService(ctx, svc, readyByService[svc.Name])
 		}
 		if !ok {
+			if len(svc.Domains) > 0 {
+				var held []string
+				for _, host := range activeHosts {
+					if c.holds.Held(host, now) {
+						held = append(held, host)
+						claimedHosts[host] = svc.Name
+					}
+				}
+				if len(held) > 0 {
+					holdRoutes = append(holdRoutes, ingress.HoldRoute{Hosts: held})
+				}
+			}
 			continue
 		}
 		for _, host := range activeHosts {
 			claimedHosts[host] = svc.Name
+			c.holds.Routed(host, now)
 		}
 		svcRoutes := c.routesForService(ctx, activeHosts, dial, authByDomain, wafByDomain, errorPagesByDomain)
 		for i := range svcRoutes {
@@ -886,6 +921,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		Routes:            routes,
 		StaticRoutes:      staticRoutes,
 		MaintenanceRoutes: maintenanceRoutes,
+		HoldRoutes:        holdRoutes,
+		Inherited:         c.inherited,
+		Hardening:         c.hardening,
 		RedirectRoutes:    redirectRoutes,
 		TLS:               true,
 		AdminListen:       c.adminListen,
@@ -912,11 +950,15 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 	total := len(routes) + len(staticRoutes) + len(maintenanceRoutes) + len(redirectRoutes)
 	reason := fmt.Sprintf("Routed%dServices", total)
+	message := fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly, %d in maintenance mode, %d redirected)", total, len(routes), len(staticRoutes), len(maintenanceRoutes), len(redirectRoutes))
+	if len(holdRoutes) > 0 {
+		message += fmt.Sprintf(", %d answering 503 while their backend restarts", len(holdRoutes))
+	}
 	conditions := []reconcile.Condition{{
 		Type:    reconcile.ConditionTypeReady,
 		Status:  reconcile.ConditionTrue,
 		Reason:  reason,
-		Message: fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly, %d in maintenance mode, %d redirected)", total, len(routes), len(staticRoutes), len(maintenanceRoutes), len(redirectRoutes)),
+		Message: message,
 	}}
 	if cond := lbCondition(lbPlans); cond != nil {
 		conditions = append(conditions, *cond)
