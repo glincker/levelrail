@@ -67,6 +67,8 @@ docker run -d \
 
 **`APP_NODE_NAME`** is optional and defaults to the container's hostname (which Docker randomizes). Set it explicitly for a recognizable name in the dashboard.
 
+Releases after `v0.2.0-beta.15` also attach `levelrail-agent-linux-amd64` and `levelrail-agent-linux-arm64`, listed in the signed `checksums.txt`. The image is just that binary, so it reads the same environment variables; run it under your own process manager on a host that already has Docker.
+
 ## See also
 
 - [Installing](installing.md) for `install.sh` and other installation methods
