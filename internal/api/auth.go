@@ -442,6 +442,11 @@ func (rt *Router) requireAbilityForResource(required string, resourceFn func(*ht
 func (rt *Router) requireAbilityDecided(required string, decide authzDecision, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if pinned, ok := rt.currentPinnedSession(r); ok {
+			if !rt.pinnedOriginUsable(r.Context(), pinned) {
+				rt.sessions.revokeAll(pinned.userID)
+				writeError(w, http.StatusUnauthorized, "session link token revoked or expired")
+				return
+			}
 			if rt.apiRateLimit != nil {
 				if allowed, retryAfter := rt.apiRateLimit.allow(required, "session:"+pinned.userID); !allowed {
 					writeRateLimited(w, retryAfter)
@@ -544,6 +549,14 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 			writeError(w, http.StatusUnauthorized, "token expired")
 			return
 		}
+		if gone, oerr := rt.tokenOwnerGone(r.Context(), rec); oerr != nil {
+			rt.logger.Error("api: token owner lookup failed", slog.String("error", oerr.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		} else if gone {
+			writeError(w, http.StatusUnauthorized, "invalid token")
+			return
+		}
 		allowed, err := decide(r.Context(), store.PrincipalTypeToken, rec.ID, rec.Abilities)
 		if err != nil {
 			rt.logger.Error("api: token ability decision failed", slog.String("error", err.Error()))
@@ -564,6 +577,36 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		r = r.WithContext(withTokenIdentity(withAgentName(r.Context(), rec.AgentName), rec))
 		rt.callAudited(w, r, required, "token", rec.ID, rec.Name, next)
 	}
+}
+
+// tokenOwnerGone reports whether rec belongs to a user who no longer
+// exists. Tokens with no owner (system-minted) are never gone.
+func (rt *Router) tokenOwnerGone(ctx context.Context, rec *store.APIToken) (bool, error) {
+	if rec.OwnerUserID == "" {
+		return false, nil
+	}
+	_, err := rt.auth.GetUserByID(ctx, rec.OwnerUserID)
+	if errors.Is(err, store.ErrUserNotFound) {
+		return true, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("api: load token owner %q: %w", rec.OwnerUserID, err)
+	}
+	return false, nil
+}
+
+// pinnedOriginUsable re-checks the API token a pinned session was minted
+// from, so revoking or expiring that token also ends the session.
+func (rt *Router) pinnedOriginUsable(ctx context.Context, pinned session) bool {
+	rec, err := rt.tokens.GetAPITokenByID(ctx, pinned.userID)
+	if err != nil {
+		return false
+	}
+	if rec.RevokedAt != nil || (rec.ExpiresAt != nil && time.Now().After(*rec.ExpiresAt)) {
+		return false
+	}
+	gone, err := rt.tokenOwnerGone(ctx, rec)
+	return err == nil && !gone
 }
 
 // callAudited runs next and, for every ability above AbilityRead
@@ -615,6 +658,9 @@ func (rt *Router) callerHasAbility(r *http.Request, ability string) bool {
 		return false
 	}
 	if rec.RevokedAt != nil || (rec.ExpiresAt != nil && time.Now().After(*rec.ExpiresAt)) {
+		return false
+	}
+	if gone, oerr := rt.tokenOwnerGone(r.Context(), rec); oerr != nil || gone {
 		return false
 	}
 	return hasAbility(rec.Abilities, ability)
