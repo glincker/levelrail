@@ -131,6 +131,9 @@ Endpoints for:
 | PUT | /api/v1/users/{id}/environment-grants | AbilityRoot | handlePutEnvironmentGrants |
 | GET | /api/v1/iam/policy-templates | AbilityRead | handleListPolicyTemplates |
 | POST | /api/v1/iam/policy-templates/{id}/apply | AbilityRoot | handleApplyPolicyTemplate |
+| GET | /api/v1/settings/ai-control | AbilityRead | handleGetAIControl |
+| PUT | /api/v1/settings/ai-control | AbilityRoot | handleUpdateAIControl |
+| POST | /api/v1/settings/ai-control/revoke-agent-tokens | AbilityRoot | handleRevokeAgentTokens |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -144,9 +147,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/settings/ai-control | AbilityRead | handleGetAIControl |
-| PUT | /api/v1/settings/ai-control | AbilityRoot | handleUpdateAIControl |
-| POST | /api/v1/settings/ai-control/revoke-agent-tokens | AbilityRoot | handleRevokeAgentTokens |
 
 :::
 
@@ -899,6 +899,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/templates/custom | AbilityRead | handleListCustomTemplates |
 | DELETE | /api/v1/templates/custom/{id} | AbilityWrite | handleDeleteCustomTemplate |
 | GET | /api/v1/network/proxy | AbilityRead | handleGetNetworkProxy |
+| GET | /api/v1/firewall/host | AbilityRead | handleHostFirewallStatus |
+| POST | /api/v1/firewall/host/enable | AbilityRoot | handleEnableHostFirewall |
+| POST | /api/v1/firewall/host/disable | AbilityRoot | handleDisableHostFirewall |
 
 ## See also
 

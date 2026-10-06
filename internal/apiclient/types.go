@@ -1793,6 +1793,26 @@ type FirewallRuleResource struct {
 	CreatedAt  string `json:"created_at"`
 }
 
+// HostFirewallPort mirrors internal/api's hostFirewallPort.
+type HostFirewallPort struct {
+	Port     int    `json:"port"`
+	Protocol string `json:"protocol"`
+}
+
+// HostFirewallResource mirrors internal/api's hostFirewallResource.
+type HostFirewallResource struct {
+	Installed       bool               `json:"installed"`
+	Active          bool               `json:"active"`
+	DefaultIncoming string             `json:"default_incoming,omitempty"`
+	Required        []HostFirewallPort `json:"required"`
+	Commands        []string           `json:"commands"`
+}
+
+// HostFirewallActionRequest mirrors internal/api's hostFirewallActionRequest.
+type HostFirewallActionRequest struct {
+	DryRun bool `json:"dry_run"`
+}
+
 // CreateFirewallRuleRequest mirrors internal/api's
 // createFirewallRuleRequest.
 type CreateFirewallRuleRequest struct {

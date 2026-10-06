@@ -22,6 +22,10 @@ const SOURCE_ACTOR: Record<DeployAttemptSource, string> = {
   webhook: 'git push',
   manual: 'dashboard',
   image: 'image deploy',
+  compose: 'template or compose',
+  promote: 'promotion',
+  clone: 'clone',
+  schedule: 'schedule',
   auto_rollback: 'auto rollback',
 }
 

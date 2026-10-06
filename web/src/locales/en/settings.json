@@ -176,5 +176,70 @@
       "done_other": "{{count}} agent tokens revoked."
     },
     "loadFailed": "Could not load AI control settings."
+  },
+  "tokens": {
+    "emptyTitle": "No tokens yet",
+    "emptyBody": "Create a scoped, revocable credential for the CLI, CI, or an MCP integration.",
+    "name": "Name",
+    "agent": "Agent",
+    "abilities": "Abilities",
+    "created": "Created",
+    "lastUsed": "Last used",
+    "expires": "Expires",
+    "status": "Status",
+    "actions": "Actions",
+    "none": "None",
+    "never": "Never",
+    "active": "Active",
+    "activeNow": "Active now",
+    "revoked": "Revoked"
+  },
+  "hostFirewall": {
+    "title": "Host firewall",
+    "description": "Turns this server's ufw firewall on or off. Turning it on first allows SSH, the control plane ports and HTTP/3, so you cannot lock yourself out.",
+    "statusOn": "On",
+    "statusOff": "Off",
+    "statusMissing": "ufw not installed",
+    "defaultIncoming": "Default for incoming traffic: {{policy}}",
+    "required": "Ports kept open",
+    "turnOn": "Turn on firewall",
+    "turnOff": "Turn off firewall",
+    "confirmOnTitle": "Turn on the firewall?",
+    "confirmOnBody": "These commands will run on this server, in order. SSH is allowed before the firewall is switched on.",
+    "confirmOffTitle": "Turn off the firewall?",
+    "confirmOffBody": "All ports on this server will be reachable again. This runs:",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "enabledToast": "Firewall is on",
+    "disabledToast": "Firewall is off",
+    "failedToast": "Could not change the firewall",
+    "missingHelp": "Install ufw on this server to manage its firewall from here, or use your cloud provider's firewall.",
+    "sshNote": "SSH is on a different port? Set APP_FIREWALL_SSH_PORTS on the control plane before turning this on."
+  },
+  "setupNext": {
+    "heading": "Next steps",
+    "email": {
+      "title": "Set up outgoing email",
+      "description": "Password resets and alert emails need an SMTP server. Pick your provider, then send a test."
+    },
+    "alerts": {
+      "title": "Set up alerts",
+      "description": "Get a Slack, Discord, email, or webhook message when a deploy fails."
+    },
+    "backups": {
+      "title": "Add a backup target",
+      "description": "Point database and volume backups at S3-compatible storage."
+    },
+    "team": {
+      "title": "Invite your team",
+      "description": "Give teammates their own accounts instead of sharing yours."
+    }
+  },
+  "githubApp": {
+    "manageAccess": "Manage repository access",
+    "manageAccessHint": "Missing a repository? Choose which repositories this app can see on GitHub, then come back.",
+    "personal": "Personal account",
+    "organization": "Organization",
+    "connected": "connected"
   }
 }

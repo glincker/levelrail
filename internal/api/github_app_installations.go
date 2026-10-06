@@ -19,6 +19,25 @@ type gitHubAppInstallationResource struct {
 	AccountLogin   string `json:"account_login"`
 	AccountType    string `json:"account_type"`
 	ConnectedAt    string `json:"connected_at"`
+	// SettingsURL opens this installation on GitHub, where the repository
+	// access list is changed ("Missing a repository?"). Empty when the
+	// connection has no instance URL.
+	SettingsURL string `json:"settings_url,omitempty"`
+}
+
+// installationSettingsURL is where GitHub lets an account owner change which
+// repositories one installation can see. A personal account and an
+// organization have different settings roots.
+func installationSettingsURL(instanceURL, accountType, login string, installationID int64) string {
+	base := strings.TrimSuffix(instanceURL, "/")
+	if base == "" || installationID <= 0 {
+		return ""
+	}
+	id := strconv.FormatInt(installationID, 10)
+	if accountType == "organization" {
+		return base + "/organizations/" + url.PathEscape(login) + "/settings/installations/" + id
+	}
+	return base + "/settings/installations/" + id
 }
 
 // gitHubAppInstallationListResource adds AddOrgURL alongside the
@@ -50,9 +69,16 @@ func (rt *Router) handleListGitHubAppInstallations(w http.ResponseWriter, r *htt
 		return
 	}
 
+	conn, connErr := rt.githubApp.GetGitHubAppConnection(ctx)
+	instanceURL := ""
+	if connErr == nil {
+		instanceURL = conn.InstanceURL
+	}
+
 	out := make([]gitHubAppInstallationResource, 0, len(installations))
 	for _, inst := range installations {
 		out = append(out, gitHubAppInstallationResource{
+			SettingsURL:    installationSettingsURL(instanceURL, inst.AccountType, inst.AccountLogin, inst.InstallationID),
 			ID:             inst.ID,
 			InstallationID: inst.InstallationID,
 			AccountLogin:   inst.AccountLogin,
@@ -62,8 +88,7 @@ func (rt *Router) handleListGitHubAppInstallations(w http.ResponseWriter, r *htt
 	}
 
 	resp := gitHubAppInstallationListResource{Installations: out}
-	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
-	if err == nil && conn.Slug != nil && *conn.Slug != "" {
+	if connErr == nil && conn.Slug != nil && *conn.Slug != "" {
 		resp.AddOrgURL = strings.TrimSuffix(conn.InstanceURL, "/") + "/apps/" + url.PathEscape(*conn.Slug) + "/installations/new"
 	}
 	writeJSON(w, http.StatusOK, resp)

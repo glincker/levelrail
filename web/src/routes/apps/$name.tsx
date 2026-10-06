@@ -137,7 +137,10 @@ function AppDetailLayout() {
             status={
               <>
                 <Badge variant={status.variant}>{status.label}</Badge>
-                <ConvergenceIndicator conditions={conditions} />
+                <ConvergenceIndicator
+                  conditions={conditions}
+                  healthy={status.label === 'Healthy'}
+                />
               </>
             }
             actions={

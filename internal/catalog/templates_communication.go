@@ -12,10 +12,14 @@ var communicationTemplates = []Template{
   listmonk:
     image: listmonk/listmonk:v6.0.0
     ports: ["9000:9000"]
+    command: ["sh", "-c", "./listmonk --install --idempotent --yes --config '' && ./listmonk --config ''"]
     environment:
       LISTMONK_ADMIN_USER: $SERVICE_USER_ADMIN
       LISTMONK_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      LISTMONK_app__address: 0.0.0.0:9000
       LISTMONK_db__host: db
+      LISTMONK_db__port: "5432"
+      LISTMONK_db__ssl_mode: disable
       LISTMONK_db__user: listmonk
       LISTMONK_db__password: $SERVICE_PASSWORD_DB
       LISTMONK_db__database: listmonk

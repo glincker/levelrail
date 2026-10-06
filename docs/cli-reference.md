@@ -912,6 +912,9 @@ levelrail-cli network-shares test <id>
 Declarative host firewall rules, reconciled onto the control plane's local `ufw`. See [Host firewall](host-firewall.md).
 
 ```
+levelrail-cli firewall status [flags]
+levelrail-cli firewall enable [--dry-run] [flags]
+levelrail-cli firewall disable [--dry-run] [flags]
 levelrail-cli firewall list [flags]
 levelrail-cli firewall allow --port N [--protocol tcp|udp] [--source-cidr CIDR] [--label TEXT] [flags]
 levelrail-cli firewall deny --port N [--protocol tcp|udp] [--source-cidr CIDR] [--label TEXT] [flags]

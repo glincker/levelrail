@@ -13,10 +13,11 @@ import { useAppTraffic } from '../../queries/appTraffic'
 import { useDiagnosis } from '../../queries/diagnosis'
 import { useDomainCheck } from '../../queries/domainCheck'
 import { useGitSource } from '../../queries/gitSources'
+import { useImageUpdate } from '../../queries/imageUpdate'
 import type { AppDetail } from '../../types/appDetail'
 import type { DeployAttempt } from '../../types/deployAttempt'
 import { DiagnosisFixes } from '../DiagnosisFixes'
-import { computeSuggestions } from './suggestions'
+import { computeSuggestions, isImageDeploy } from './suggestions'
 import type { ResourceReading } from './useResourceReading'
 import { toSuggestionItems, useSuggestionActions } from './useSuggestionActions'
 import { useDismissed } from './useDismissed'
@@ -42,6 +43,7 @@ export function OverviewSuggestions({
   const domainCheck = useDomainCheck(app.name, domain)
   const git = useGitSource(app.name)
   const actions = useSuggestionActions(app, latest)
+  const imageUpdate = useImageUpdate(app.image)
 
   const gitKnown =
     git.isSuccess ||
@@ -61,6 +63,8 @@ export function OverviewSuggestions({
     domainStatus: domain ? domainCheck.data?.status : undefined,
     gitSourceKnown: gitKnown,
     hasGitSource: Boolean(git.data),
+    imageDeployed: isImageDeploy(latest?.source),
+    imageUpdate,
     dismissed,
   })
 

@@ -331,6 +331,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "emergency-token" {
+		if err := runEmergencyToken(context.Background(), logger, os.Args[2:], os.Stdout, openStore); err != nil {
+			logger.Error("emergency-token failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "restore-db" {
 		if err := runRestoreDB(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdout); err != nil {
 			logger.Error("restore-db failed", slog.String("error", err.Error()))

@@ -32,6 +32,7 @@ func baseInputs() Inputs {
 		Now:           now,
 		AssetNames:    []string{ChecksumsAsset, SignatureAsset, "acme-linux-amd64"},
 		ReleaseKnown:  true,
+		LookPath:      func(string) (string, error) { return "/usr/bin/cosign", nil },
 	}
 }
 
@@ -69,6 +70,10 @@ func TestRunFailures(t *testing.T) {
 			in.Lookup = env(map[string]string{envMinFreeBytes: "1048576"})
 		}, "disk_space", StatusOK},
 		{"missing signature", func(in *Inputs) { in.AssetNames = []string{ChecksumsAsset} }, "release_signature", StatusFail},
+		{"no cosign on host", func(in *Inputs) {
+			in.LookPath = func(string) (string, error) { return "", errors.New("not found") }
+		}, "release_verifier", StatusWarn},
+		{"verifier lookup unavailable", func(in *Inputs) { in.LookPath = nil }, "release_verifier", StatusUnknown},
 		{"release unknown", func(in *Inputs) { in.ReleaseKnown = false }, "release_signature", StatusUnknown},
 		{"stale backup", func(in *Inputs) {
 			in.NewestBackup = func() (time.Time, bool, error) { return in.Now.Add(-72 * time.Hour), true, nil }

@@ -1115,3 +1115,12 @@ func (rt *Router) SetAppTeardownOptions(opts ...application.Option) { rt.teardow
 func WithAuthEngine(e *authengine.Engine) Option {
 	return func(rt *Router) { rt.authEngine = e }
 }
+
+// WithHostFirewallRunner replaces how the host firewall endpoints run and find
+// ufw, so tests never touch the real firewall.
+func WithHostFirewallRunner(run func(ctx context.Context, name string, args ...string) ([]byte, error), lookPath func(string) (string, error)) Option {
+	return func(rt *Router) {
+		rt.hostFirewallRun = run
+		rt.hostFirewallLookPath = lookPath
+	}
+}

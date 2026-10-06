@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   CheckCircleIcon,
   GithubLogoIcon,
+  ArrowSquareOutIcon,
   PlusIcon,
   WarningIcon,
   XCircleIcon,
@@ -20,7 +22,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatDate } from '../lib/format'
+import { RelativeTime } from '@/components/kit'
 import { useIngressSettings } from '../queries/domains'
 import {
   useConnectGitHubAppManually,
@@ -247,9 +249,10 @@ function GitHubAppInstallationsSection() {
   )
 }
 
-function GitHubAppInstallationRow({
+export function GitHubAppInstallationRow({
   installation,
 }: Readonly<{ installation: GitHubAppInstallation }>) {
+  const { t } = useTranslation('settings')
   const [confirmOpen, setConfirmOpen] = useState(false)
   const remove = useDeleteGitHubAppInstallation()
 
@@ -260,11 +263,26 @@ function GitHubAppInstallationRow({
           {installation.account_login}
         </p>
         <p className="text-xs text-muted-foreground">
-          {installation.account_type === 'user'
-            ? 'Personal account'
-            : 'Organization'}
-          , connected {formatDate(installation.connected_at, 'unknown')}
+          {t(
+            installation.account_type === 'user'
+              ? 'githubApp.personal'
+              : 'githubApp.organization',
+          )}
+          , {t('githubApp.connected')}{' '}
+          <RelativeTime at={installation.connected_at} />
         </p>
+        {installation.settings_url ? (
+          <a
+            href={installation.settings_url}
+            target="_blank"
+            rel="noreferrer"
+            title={t('githubApp.manageAccessHint')}
+            className="inline-flex items-center gap-1 text-xs underline"
+          >
+            {t('githubApp.manageAccess')}
+            <ArrowSquareOutIcon className="size-3" aria-hidden="true" />
+          </a>
+        ) : null}
       </div>
       <DisconnectConnectionDialog
         open={confirmOpen}

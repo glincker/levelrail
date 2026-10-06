@@ -92,6 +92,35 @@ describe('SignInFlow', () => {
     expect(screen.queryByLabelText('Username')).not.toBeInTheDocument()
   })
 
+  it.each([
+    ['passkeys are not configured on this server', 501],
+    ['the server errored', 500],
+    ['the request was rate limited', 429],
+  ])('still offers the password when %s', async (_name, status) => {
+    // @ts-expect-error minimal stub, only presence is checked
+    window.PublicKeyCredential = class {}
+    const user = userEvent.setup()
+    mockFetch((url) =>
+      url.includes('/passkey-login/begin')
+        ? json(
+            {
+              error:
+                'passkeys are not available: set the dashboard URL or the WebAuthn relying party override',
+            },
+            status,
+          )
+        : json({}, 404),
+    )
+    renderFlow('gdsks')
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    await waitFor(() => {
+      expect(screen.getByLabelText('Password')).toBeInTheDocument()
+    })
+    expect(
+      screen.queryByText(/passkeys are not available/),
+    ).not.toBeInTheDocument()
+  })
+
   it('does not call the passkey endpoint when the browser has no WebAuthn support', async () => {
     // jsdom has no WebAuthn implementation by default, this is the real baseline.
     delete (window as { PublicKeyCredential?: unknown }).PublicKeyCredential

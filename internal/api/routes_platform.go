@@ -703,6 +703,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/firewall-rules", rt.requireAbility(AbilityRead, rt.handleListFirewallRules))
 	mux.HandleFunc("POST /api/v1/firewall-rules", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateFirewallRule))
 	mux.HandleFunc("DELETE /api/v1/firewall-rules/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteFirewallRule))
+	mux.HandleFunc("GET /api/v1/firewall/host", rt.requireAbility(AbilityRead, rt.handleHostFirewallStatus))
+	mux.HandleFunc("POST /api/v1/firewall/host/enable", rt.requireAbility(AbilityRoot, rt.handleEnableHostFirewall))
+	mux.HandleFunc("POST /api/v1/firewall/host/disable", rt.requireAbility(AbilityRoot, rt.handleDisableHostFirewall))
 
 	// Registry credential browsing (registry_catalog.go): repository/tag
 	// lookup for a stored external credential, the same generic catalog

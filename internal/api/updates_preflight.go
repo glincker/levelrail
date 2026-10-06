@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"syscall"
 	"time"
@@ -37,17 +38,18 @@ type updatePreflightResource struct {
 func (rt *Router) handleUpdatePreflight(w http.ResponseWriter, r *http.Request) {
 	out := updatePreflightResource{
 		CurrentVersion:  version.Version,
-		UpgradeCommand:  upgradeCommand(""),
+		UpgradeCommand:  upgradeCommand("", false),
 		RollbackCommand: "levelrail restore-snapshot --list",
 	}
 	release, _, known := rt.latestReleaseForCurrentChannel(r.Context())
 	var assets []string
+	var upgradeTag string
 	if known && release != nil {
 		tag, url := release.Tag, release.URL
 		out.LatestVersion, out.ReleaseURL = &tag, &url
 		out.UpdateAvailable = upgrade.UpdateAvailable(version.Version, release)
 		out.ReleaseNotes = truncateRunes(strings.TrimSpace(release.Body), releaseNotesMaxRunes)
-		out.UpgradeCommand = upgradeCommand(tag)
+		upgradeTag = tag
 		assets = release.AssetNames
 	}
 	out.Checks = upgrade.Run(r.Context(), upgrade.Inputs{
@@ -58,7 +60,10 @@ func (rt *Router) handleUpdatePreflight(w http.ResponseWriter, r *http.Request) 
 		Now:           time.Now(),
 		AssetNames:    assets,
 		ReleaseKnown:  known && release != nil,
+		LookPath:      exec.LookPath,
 	})
+	verified := checkStatus(out.Checks, "release_verifier") == upgrade.StatusOK
+	out.UpgradeCommand = upgradeCommand(upgradeTag, verified)
 	out.Blocked = upgrade.Blocked(out.Checks)
 	writeJSON(w, http.StatusOK, out)
 }
@@ -151,11 +156,26 @@ func (rt *Router) newestCPBackup() func() (time.Time, bool, error) {
 	}
 }
 
-func upgradeCommand(tag string) string {
-	if tag == "" {
-		return "curl -fsSL https://raw.githubusercontent.com/" + githubRepo + "/main/install.sh | sudo sh -s upgrade"
+// upgradeCommand is the command an operator runs. With verify set it also
+// tells the installer to refuse a release whose signature does not check out.
+func upgradeCommand(tag string, verify bool) string {
+	env := ""
+	if tag != "" {
+		env += " LEVELRAIL_VERSION=" + tag
 	}
-	return "curl -fsSL https://raw.githubusercontent.com/" + githubRepo + "/main/install.sh | sudo LEVELRAIL_VERSION=" + tag + " sh -s upgrade"
+	if verify {
+		env += " APP_INSTALL_VERIFY=require"
+	}
+	return "curl -fsSL https://raw.githubusercontent.com/" + githubRepo + "/main/install.sh | sudo" + env + " sh -s upgrade"
+}
+
+func checkStatus(checks []upgrade.Check, code string) string {
+	for _, c := range checks {
+		if c.Code == code {
+			return c.Status
+		}
+	}
+	return ""
 }
 
 func truncateRunes(s string, n int) string {

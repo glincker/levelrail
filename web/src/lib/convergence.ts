@@ -1,4 +1,5 @@
 import type { ReconcileCondition } from '../types/deploy'
+import { isOptionalFeatureUnconfigured } from './appStatus'
 
 export type ConvergenceState = 'converged' | 'reconciling' | 'error' | 'unknown'
 
@@ -10,8 +11,11 @@ export type ConvergenceState = 'converged' | 'reconciling' | 'error' | 'unknown'
 // Status: 'Unknown', since neither case supports claiming convergence or
 // an active failure.
 export function deriveConvergence(
-  conditions: ReconcileCondition[],
+  allConditions: ReconcileCondition[],
 ): ConvergenceState {
+  const conditions = allConditions.filter(
+    (c) => !isOptionalFeatureUnconfigured(c),
+  )
   if (conditions.length === 0) {
     return 'unknown'
   }

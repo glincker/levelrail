@@ -73,6 +73,7 @@ package api
 
 import (
 	"log/slog"
+	"os/exec"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -359,22 +360,25 @@ type Router struct {
 	// window. 0 means "use the default", set via
 	// WithCapacityForecastLookback.
 	capacityForecastLookback     time.Duration
-	builder                      Builder                          // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
-	fetch                        fetchFunc                        // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
-	listBranches                 listBranchesFunc                 // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
-	importFiles                  func() importplan.FileSource     // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
-	detect                       detectFunc                       // framework pre-flight detector for handleDetectFramework; always non-nil, defaulted to build.Detect in NewRouter, overridable in this package's own tests
-	staticSites                  StaticSiteStore                  // always set, same "core Store interface, not an optional plug-in" shape as certs above
-	backupTargets                BackupTargetStore                // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
-	storage                      *StorageDeps                     // nil is valid: /api/v1/storage and /api/v1/log-archive routes return 501
-	backupSecrets                BackupSecretsSetter              // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
-	registryCredentials          RegistryCredentialStore          // always set, same "core Store interface" shape as backupTargets above
-	registryCredentialSecrets    RegistryCredentialSecretsSetter  // nil is valid: POST /api/v1/registry-credentials returns 501, same shape as backupSecrets above
-	networkShares                NetworkShareStore                // always set, same "core Store interface" shape as registryCredentials above
-	networkShareSecrets          NetworkShareSecretsSetter        // nil is valid: POST /api/v1/network-shares (for a cifs share) returns 501, same shape as registryCredentialSecrets above
-	firewallRules                FirewallRuleStore                // always set, same "core Store interface" shape as backupTargets above
-	appStreams                   AppStreamStore                   // always set, same "core Store interface" shape as firewallRules above
-	firewallRequiredPorts        []int                            // defaults to firewall.DefaultRequiredPorts in NewRouter; WithFirewallRequiredPorts overrides with this instance's actually configured ports
+	builder                      Builder                         // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
+	fetch                        fetchFunc                       // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
+	listBranches                 listBranchesFunc                // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
+	importFiles                  func() importplan.FileSource    // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
+	detect                       detectFunc                      // framework pre-flight detector for handleDetectFramework; always non-nil, defaulted to build.Detect in NewRouter, overridable in this package's own tests
+	staticSites                  StaticSiteStore                 // always set, same "core Store interface, not an optional plug-in" shape as certs above
+	backupTargets                BackupTargetStore               // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
+	storage                      *StorageDeps                    // nil is valid: /api/v1/storage and /api/v1/log-archive routes return 501
+	backupSecrets                BackupSecretsSetter             // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
+	registryCredentials          RegistryCredentialStore         // always set, same "core Store interface" shape as backupTargets above
+	registryCredentialSecrets    RegistryCredentialSecretsSetter // nil is valid: POST /api/v1/registry-credentials returns 501, same shape as backupSecrets above
+	networkShares                NetworkShareStore               // always set, same "core Store interface" shape as registryCredentials above
+	networkShareSecrets          NetworkShareSecretsSetter       // nil is valid: POST /api/v1/network-shares (for a cifs share) returns 501, same shape as registryCredentialSecrets above
+	firewallRules                FirewallRuleStore               // always set, same "core Store interface" shape as backupTargets above
+	appStreams                   AppStreamStore                  // always set, same "core Store interface" shape as firewallRules above
+	firewallRequiredPorts        []int                           // defaults to firewall.DefaultRequiredPorts in NewRouter; WithFirewallRequiredPorts overrides with this instance's actually configured ports
+	hostFirewallRun              firewallCommandRunner
+	hostFirewallLookPath         func(string) (string, error)
+	hostFirewallSSHPorts         []int
 	backupHistory                BackupHistoryStore               // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
 	backupRunner                 BackupRunner                     // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
 	backupDownloader             BackupDownloader                 // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
@@ -618,6 +622,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		firewallRules:               s,
 		appStreams:                  s,
 		firewallRequiredPorts:       firewall.DefaultRequiredPorts,
+		hostFirewallRun:             execFirewallCommand,
+		hostFirewallLookPath:        exec.LookPath,
+		hostFirewallSSHPorts:        hostFirewallSSHPorts(),
 		backupHistory:               s,
 		backupVerifications:         s,
 		restoreHistory:              s,

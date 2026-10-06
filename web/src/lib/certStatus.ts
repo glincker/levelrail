@@ -12,6 +12,18 @@ export const certStatusMeta: Record<
   expired: { label: 'Expired', variant: 'destructive' },
 }
 
+// isInternalCert is true for a certificate Caddy's built-in CA signed: it
+// lives about half a day and Caddy renews it unattended, so its expiry is
+// never a warning. Browsers do not trust it until HTTPS is enabled.
+export function isInternalCert(
+  cert: Pick<CertificateStatus, 'issuer' | 'source'>,
+): boolean {
+  return (
+    cert.source === 'acme' &&
+    /local authority|internal/i.test(cert.issuer ?? '')
+  )
+}
+
 export const CERT_RENEWAL_STALLED_HINT =
   'Renewal appears stalled: this certificate is expired, or has been expiring with no renewal for hours. Check that the domain resolves to this server and that ports 80 and 443 are reachable, then look at the ingress logs.'
 
@@ -30,6 +42,9 @@ export function certRenewalBadge(
 // non-healthy status, healthy or missing certs last.
 export function certAttentionRank(cert?: CertificateStatus): number {
   if (!cert || cert.status === 'healthy') {
+    return 2
+  }
+  if (isInternalCert(cert) && cert.status !== 'expired') {
     return 2
   }
   return certRenewalBadge(cert) ? 0 : 1

@@ -20,6 +20,7 @@ import { OverviewSuggestions } from './OverviewSuggestions'
 import { ResourceTiles } from './ResourceTiles'
 import { useResourceReading } from './useResourceReading'
 import { SetupRing } from './SetupRing'
+import { isImageDeploy } from './suggestions'
 import { TrafficTiles } from './TrafficTiles'
 import { useAppUrl } from './useAppUrl'
 import { useOverviewActions } from './useOverviewActions'
@@ -96,7 +97,11 @@ export function OverviewPage({
         url={url}
         onDeploy={setDeployTab}
       />
-      <SetupRing app={app} hasGitSource={Boolean(git.data)} />
+      <SetupRing
+        app={app}
+        hasGitSource={Boolean(git.data)}
+        imageDeployed={isImageDeploy(latest?.source)}
+      />
       <OverviewSuggestions
         app={app}
         reading={reading}

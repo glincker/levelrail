@@ -43,6 +43,9 @@ export interface SuggestionInput {
   domainStatus?: DomainCheckStatus
   gitSourceKnown: boolean
   hasGitSource: boolean
+  /** Deployed from an image or template, so a git source does not apply. */
+  imageDeployed?: boolean
+  imageUpdate?: { current: string; latest: string } | null
   dismissed: ReadonlySet<string>
 }
 
@@ -169,7 +172,18 @@ export function computeSuggestions(
     })
   }
 
-  if (input.gitSourceKnown && !input.hasGitSource) {
+  if (input.imageUpdate) {
+    out.push({
+      id: `image_update_${input.imageUpdate.latest}`,
+      priority: 35,
+      tone: 'info',
+      title: 'A newer version of this image is available',
+      detail: `${input.imageUpdate.current} to ${input.imageUpdate.latest}`,
+      action: { kind: 'open_deploy', label: 'Review update' },
+    })
+  }
+
+  if (input.gitSourceKnown && !input.hasGitSource && !input.imageDeployed) {
     out.push({
       id: 'no_git_source',
       priority: 10,
@@ -196,6 +210,7 @@ export interface SetupItem {
 export function computeSetup(input: {
   app: Pick<AppDetail, 'health' | 'resources' | 'domains'>
   hasGitSource: boolean
+  imageDeployed?: boolean
 }): { items: SetupItem[]; done: number } {
   const { app } = input
   const items: SetupItem[] = [
@@ -209,7 +224,15 @@ export function computeSetup(input: {
       label: 'Add a health check',
       done: Boolean(app.health?.readiness || app.health?.liveness),
     },
-    { id: 'git', label: 'Connect a git source', done: input.hasGitSource },
+    ...(input.imageDeployed
+      ? []
+      : [
+          {
+            id: 'git' as const,
+            label: 'Connect a git source',
+            done: input.hasGitSource,
+          },
+        ]),
     {
       id: 'limits',
       label: 'Set resource limits',
@@ -217,4 +240,9 @@ export function computeSetup(input: {
     },
   ]
   return { items, done: items.filter((i) => i.done).length }
+}
+
+/** isImageDeploy is true when the latest deploy came from an image or template rather than a git build. */
+export function isImageDeploy(source?: string): boolean {
+  return source === 'image' || source === 'compose'
 }

@@ -49,6 +49,16 @@ All optional.
 | `APP_AUTH_ENGINE_OAUTH_ALLOWED_HOSTS` | empty | Extra hosts allowed in an OAuth redirect URI once a dashboard URL is set |
 | `APP_AUTH_ENGINE_OAUTH_PROVIDER_TTL` | `30s` | How long a resolved OAuth provider is cached. Saving provider settings drops it at once |
 
+## Upgrading from a release before the auth library
+
+The auth library replaced the built-in sign-in in a release that is a breaking change for existing installs, because the platform had no production users when it landed. After upgrading from `v0.2.0-beta.18` or earlier:
+
+- Everyone is signed out. Sign in again with your existing username and password: accounts and password hashes carry over.
+- API tokens created before the upgrade stop working (they answer 401). Create new ones in **Settings, CLI Access**, or run `levelrail-cli auth login --device`, and update CI secrets.
+- Two-factor codes, passkeys and recovery codes are not carried over. Re-enroll them after signing in.
+
+Take a backup of the data directory before upgrading, as the installer's upgrade notes recommend. Each start also writes a pre-migration database snapshot you can restore with `levelrail restore-db`.
+
 ## Things to know
 
 - API tokens carry the `tk_` style prefix of the product. A token's effective abilities never exceed its owner's current abilities.
@@ -57,4 +67,4 @@ All optional.
 - Sign-in is case-insensitive on the username. Usernames that are not an email address (for example `admin`) are still accepted at first-run and by invites.
 - OAuth callback URL: register `https://<your-host>/api/v1/auth/oauth/<provider>/callback` at each identity provider. Sign-in and profile linking share it, and Levelrail tells them apart by the state value. Once a dashboard URL is set, redirect hosts are limited to it and the base URL host, plus any in `APP_AUTH_ENGINE_OAUTH_ALLOWED_HOSTS`.
 - An existing account is linked on OAuth sign-in only when the provider reports the email as verified. A provider's allowed email domain gates new accounts only.
-- `recover-admin` sets the password through the library, which also ends that account's sessions and clears its lockout. No restart is needed.
+- `recover-admin` sets the password through the library, which also ends that account's sessions and clears its lockout. No restart is needed. Locked out another way? See [Emergency access](emergency-access.md).

@@ -208,7 +208,7 @@ func (rt *Router) healthScoreSecurity(ctx context.Context, svc store.DesiredServ
 
 func (rt *Router) healthScoreTLS(ctx context.Context, domains []string) (status, reason string) {
 	if len(domains) == 0 {
-		return HealthScoreStatusPass, "no public domains configured"
+		return HealthScoreStatusPass, "no custom domains configured"
 	}
 
 	warningWindow := rt.certExpiryWarningWindow
@@ -382,7 +382,7 @@ func (rt *Router) healthScoreObservability(ctx context.Context, name string) hea
 	}
 
 	if len(rules) == 0 {
-		cat.Status = HealthScoreStatusFail
+		cat.Status = HealthScoreStatusWarn
 		cat.Reason = "no alert rules configured for this app"
 		return cat
 	}
