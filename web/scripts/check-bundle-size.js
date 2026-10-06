@@ -12,8 +12,10 @@ const distAssets = path.join(distDir, 'assets')
 // into its own chunk, so the growth here is the shared route table and
 // new icon/i18n registrations, not unsplit feature code. Fulfills the
 // per-chunk assertion vite.config.ts's visualizer comment calls
-// deferred.
-const DEFAULT_BUDGET_BYTES = 700_000
+// deferred. Raised to 720 kB (2026-10-06) for roles, global environments, the
+// environment switcher in the app shell and AI control: the new pages are
+// route-split, the growth is the shell, route table and registrations.
+const DEFAULT_BUDGET_BYTES = 720_000
 const budgetBytes = Number(process.env.BUNDLE_SIZE_BUDGET_BYTES) || DEFAULT_BUDGET_BYTES
 
 function toKb(bytes) {
