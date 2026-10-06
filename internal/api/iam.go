@@ -97,6 +97,9 @@ func validateStatement(s Statement) error {
 		if strings.TrimSpace(r) == "" {
 			return errStatementNoResource
 		}
+		if err := validateEnvironmentResource(r); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -149,7 +152,7 @@ func statementMatches(s Statement, ability, resource string) bool {
 // (matched, allowed): matched is false when no statement in any policy
 // mentions this (ability, resource) pair at all, letting the caller
 // fall back to the base ability check unchanged.
-func evaluatePolicies(policies []store.Policy, ability, resource string) (matched, allowed bool) {
+func evaluatePolicies(policies []store.Policy, ability, resource string, extra ...string) (matched, allowed bool) {
 	sawAllow := false
 	for _, p := range policies {
 		doc, err := ParseDocument(p.Document)
@@ -159,7 +162,7 @@ func evaluatePolicies(policies []store.Policy, ability, resource string) (matche
 			continue
 		}
 		for _, s := range doc.Statement {
-			if !statementMatches(s, ability, resource) {
+			if !statementMatchesAny(s, ability, resource, extra) {
 				continue
 			}
 			if s.Effect == EffectDeny {
@@ -180,8 +183,8 @@ func evaluatePolicies(policies []store.Policy, ability, resource string) (matche
 // attached policies is completely unaffected; (3) otherwise an explicit
 // Allow in an attached policy can still grant an ability scoped to this
 // resource that baseAbilities does not grant globally.
-func authorizeResource(baseAbilities []string, policies []store.Policy, ability, resource string) bool {
-	matched, allowed := evaluatePolicies(policies, ability, resource)
+func authorizeResource(baseAbilities []string, policies []store.Policy, ability, resource string, envResources ...string) bool {
+	matched, allowed := evaluatePolicies(policies, ability, resource, envResources...)
 	if matched && !allowed {
 		return false
 	}

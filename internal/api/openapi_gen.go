@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 668 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 670 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -273,6 +273,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/iam/policies/{id}/attachments", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListPolicyAttachments", Description: ""},
 	{Method: "POST", Path: "/api/v1/iam/policies/{id}/attachments", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleAttachPolicy", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/iam/policies/{id}/attachments/{principal_type}/{principal_id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDetachPolicy", Description: ""},
+	{Method: "GET", Path: "/api/v1/iam/policy-templates", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListPolicyTemplates", Description: ""},
+	{Method: "POST", Path: "/api/v1/iam/policy-templates/{id}/apply", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleApplyPolicyTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/invites", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListInvites", Description: ""},
 	{Method: "POST", Path: "/api/v1/invites", Ability: "AbilityWrite", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateInvite", Description: "Team invites (invites.go): unlike POST /api/v1/auth/users above, create/revoke are AbilityWrite, not AbilityRoot: handleCreateInvite itself caps the abilities an invite can carry at the caller's own resolved abilities, so a write-level caller can never hand out more than they hold, closing off the escalation risk without needing a root gate. Revoke additionally requires the caller be either root or the invite's own creator (handleRevokeInvite). Listing stays AbilityRead, same tier as the user list, but scopes non-root callers to invites they created (handleListInvites). Accept is necessarily public, gated by possession of the emailed token instead of a session or ability, the same shape as reset-password below."},
 	{Method: "POST", Path: "/api/v1/invites/accept", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleAcceptInvite", Description: ""},

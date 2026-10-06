@@ -29,6 +29,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerStatusPageRoutes(mux)
 	rt.registerPreviewRoutes(mux)
 	rt.registerSupplyChainRoutes(mux)
+	rt.registerIAMTemplateRoutes(mux)
 
 	var h http.Handler = mux
 	h = experimentalGateMiddleware(h)

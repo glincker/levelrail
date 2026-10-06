@@ -303,6 +303,7 @@ Usage:
   %[1]s users grants get|set <user> [--environment ID ...]     the environments a guest user can see
   %[1]s invites create|list|revoke [flags]                     invite a teammate by email, list or revoke pending invites
   %[1]s iam policies create|list|get|update|delete|attach|detach|attachments [flags]   resource-scoped Allow/Deny policies, additive on top of --abilities
+  %[1]s iam templates list|apply <id> [--param KEY=VALUE] [--attach-user ID|--attach-token ID]   ready-made policies (read-only, guest-one-environment, deployer-nonprod, ...)
   %[1]s secrets generate-master-key --out PATH   write a new master key file (local, no API call)
   %[1]s secrets rotate-master-key --new-key-file PATH [flags]   rotate the envelope-encryption master key
   %[1]s secrets binding-status|rebind [flags]   count and bind secret values not yet bound to their slot

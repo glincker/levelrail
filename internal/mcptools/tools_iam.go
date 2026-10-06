@@ -30,6 +30,17 @@ func registerIAMTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, policy, nil
 	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "list_policy_templates",
+		Description: "List ready-made IAM policy templates (read-only, guest-one-environment, deployer-nonprod, ai-operator-nonprod, production-approver) with their parameters and documents. Read-only; does not create or attach a policy.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.PolicyTemplateList, error) {
+		list, err := client.ListPolicyTemplates(ctx)
+		if err != nil {
+			return nil, apiclient.PolicyTemplateList{}, fmt.Errorf("list policy templates: %w", err)
+		}
+		return nil, list, nil
+	})
 }
 
 type policyIDInput struct {

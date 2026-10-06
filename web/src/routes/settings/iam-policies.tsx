@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/shell/PageHeader'
 import { policyListQueryOptions } from '../../queries/iamPolicies'
 import { PolicyTable } from '../../components/PolicyTable'
 import { PolicyFormDialog } from '../../components/PolicyFormDialog'
+import { PolicyTemplateDialog } from '../../components/PolicyTemplateDialog'
 import { Button } from '@/components/ui/button'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 
@@ -37,7 +38,10 @@ function IamPoliciesPage() {
             title="IAM policies"
             description="A policy is additive on top of a token or user's existing abilities: an explicit Deny always overrides, an explicit Allow can grant access narrower than a token's global scope without widening it."
             actions={
-              <PolicyFormDialog trigger={<Button>Create policy</Button>} />
+              <div className="flex gap-2">
+                <PolicyTemplateDialog />
+                <PolicyFormDialog trigger={<Button>Create policy</Button>} />
+              </div>
             }
           />
         </div>

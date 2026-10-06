@@ -88,9 +88,13 @@ type bulkPrincipal struct {
 	actorType, actorID string
 	abilities          []string
 	policies           []store.Policy
+	scope              *resourceScope
 }
 
 func (p bulkPrincipal) allowed(ability, app string) bool {
+	if p.scope != nil {
+		return p.scope.authorize(p.abilities, p.policies, ability, resourcePrefixApp, app)
+	}
 	return authorizeResource(p.abilities, p.policies, ability, "app:"+app)
 }
 
@@ -210,11 +214,15 @@ func (rt *Router) bulkPrincipal(r *http.Request) (bulkPrincipal, error) {
 	if err != nil {
 		return bulkPrincipal{}, fmt.Errorf("list caller policies: %w", err)
 	}
+	scope, err := rt.newResourceScope(r.Context(), pt, pid, policies)
+	if err != nil {
+		return bulkPrincipal{}, err
+	}
 	actorType := "session"
 	if pt == store.PrincipalTypeToken {
 		actorType = "token"
 	}
-	return bulkPrincipal{actorType: actorType, actorID: pid, abilities: abilities, policies: policies}, nil
+	return bulkPrincipal{actorType: actorType, actorID: pid, abilities: abilities, policies: policies, scope: scope}, nil
 }
 
 func (rt *Router) applyBulkOne(ctx context.Context, r *http.Request, p bulkPrincipal, ability string, req bulkAppsRequest, name string) bulkAppResult {
