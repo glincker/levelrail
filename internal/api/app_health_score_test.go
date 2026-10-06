@@ -165,3 +165,13 @@ func TestHandleGetAppHealthScore_CrashloopFiringFailsDeployCategory(t *testing.T
 	}
 	t.Fatal("no deploy category in response")
 }
+
+func TestHealthScoreObservability_NoRulesIsAWarningNotAFailure(t *testing.T) {
+	db := openTestDB(t)
+	adb := newTestAlertingDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithAlertRules(adb), WithNotificationChannels(adb))
+	cat := rt.healthScoreObservability(context.Background(), "demo")
+	if cat.Status != HealthScoreStatusWarn {
+		t.Errorf("status = %q, want %q so a healthy new app is not red (reason: %q)", cat.Status, HealthScoreStatusWarn, cat.Reason)
+	}
+}

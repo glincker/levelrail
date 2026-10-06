@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -32,6 +33,26 @@ import (
 // chatty container could still produce an oversized burst within even
 // this 5-minute window without that second cap.
 const liveLogBackfillWindow = 5 * time.Minute
+
+// liveLogBackfillWidenedWindows are tried in order when the recent window is
+// empty, so a quiet container still shows its last output instead of a blank
+// view. A chatty container returns from the first window and never widens.
+var liveLogBackfillWidenedWindows = []time.Duration{time.Hour, 24 * time.Hour, 7 * 24 * time.Hour}
+
+// queryLiveBackfill returns the log entries to show before the live tail,
+// widening the look-back only while nothing has been found.
+func queryLiveBackfill(ctx context.Context, q TelemetryQuerier, resourceID string, now time.Time) ([]telemetry.LogEntry, error) {
+	windows := append([]time.Duration{liveLogBackfillWindow}, liveLogBackfillWidenedWindows...)
+	var entries []telemetry.LogEntry
+	for _, w := range windows {
+		var err error
+		entries, err = q.QueryLogs(ctx, resourceID, now.Add(-w), now, "")
+		if err != nil || len(entries) > 0 {
+			return entries, err
+		}
+	}
+	return entries, nil
+}
 
 // liveLogBackfillMaxLines caps the backfill burst to the most recent N
 // lines within liveLogBackfillWindow, oldest first: the same "last
@@ -116,7 +137,7 @@ func (rt *Router) streamResourceLogs(w http.ResponseWriter, r *http.Request, loo
 	// around a deploy cutover.
 	containerFilter := newCurrentContainerFilter(r.Context(), currentLookup, name)
 
-	entries, err := rt.telemetry.QueryLogs(r.Context(), resourceID, subscribeTime.Add(-liveLogBackfillWindow), subscribeTime, "")
+	entries, err := queryLiveBackfill(r.Context(), rt.telemetry, resourceID, subscribeTime)
 	if err != nil {
 		// Unlike handleQueryLogs, a partial result here isn't treated as
 		// a soft warning: this is a small, bounded backfill read, not a

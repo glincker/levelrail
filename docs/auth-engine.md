@@ -49,6 +49,16 @@ All optional.
 | `APP_AUTH_ENGINE_OAUTH_ALLOWED_HOSTS` | empty | Extra hosts allowed in an OAuth redirect URI once a dashboard URL is set |
 | `APP_AUTH_ENGINE_OAUTH_PROVIDER_TTL` | `30s` | How long a resolved OAuth provider is cached. Saving provider settings drops it at once |
 
+## Upgrading from a release before the auth library
+
+The auth library replaced the built-in sign-in in a release that is a breaking change for existing installs, because the platform had no production users when it landed. After upgrading from `v0.2.0-beta.18` or earlier:
+
+- Everyone is signed out. Sign in again with your existing username and password: accounts and password hashes carry over.
+- API tokens created before the upgrade stop working (they answer 401). Create new ones in **Settings, CLI Access**, or run `levelrail-cli auth login --device`, and update CI secrets.
+- Two-factor codes, passkeys and recovery codes are not carried over. Re-enroll them after signing in.
+
+Take a backup of the data directory before upgrading, as the installer's upgrade notes recommend. Each start also writes a pre-migration database snapshot you can restore with `levelrail restore-db`.
+
 ## Things to know
 
 - API tokens carry the `tk_` style prefix of the product. A token's effective abilities never exceed its owner's current abilities.

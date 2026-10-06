@@ -39,11 +39,14 @@ const ICON: Record<Exclude<ConvergenceState, 'unknown'>, Icon> = {
 // status yet" badge already covers that case.
 export function ConvergenceIndicator({
   conditions,
+  healthy = false,
 }: {
   conditions: ReconcileCondition[]
+  /** The header already says Healthy, so a "Reconciling" badge beside it would contradict it. */
+  healthy?: boolean
 }) {
   const state = deriveConvergence(conditions)
-  if (state === 'unknown') {
+  if (state === 'unknown' || (healthy && state === 'reconciling')) {
     return null
   }
   const ConvergenceIcon = ICON[state]
