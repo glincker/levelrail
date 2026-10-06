@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
 import {
   Table,
   TableBody,
@@ -127,7 +128,7 @@ export function StatusComponentsPanel() {
     <div className="space-y-4">
       <AddComponentForm />
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <TableSkeleton columnCount={4} rowCount={3} />
       ) : error ? (
         <p className="text-sm text-destructive">{error.message}</p>
       ) : components.length === 0 ? (
