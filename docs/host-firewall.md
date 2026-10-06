@@ -13,7 +13,7 @@ This is opt-in and narrow by design. If you never add a rule, nothing is changed
 ## What it does and does not touch
 
 - **Only tagged rules.** Every rule the platform creates carries a `ufw` comment prefix derived from the brand short name (`levelrail:` by default, see [White-labeling](white-labeling.md)). Sync only adds and removes rules carrying that prefix. Rules you created yourself with `ufw` are never changed or deleted.
-- **Never enables the firewall.** The platform does not run `ufw enable` and does not change the default policy. If `ufw` is installed but inactive, rules are stored but not applied, and the reconciler reports that no rules are managed until you enable it.
+- **Enables the firewall only when you ask.** Nothing is switched on automatically. Use **Settings, Firewall, Turn on firewall** (or `levelrail-cli firewall enable`) and the platform allows SSH first, then the control plane ports and HTTP/3, and only then runs `ufw --force enable`. It never changes the default policy by itself, and if any allow step fails, the firewall stays off. If `ufw` is installed but inactive, rules are stored but not applied until you turn it on.
 - **Only `ufw`, only the local host.** If `ufw` is not installed (you use firewalld, nftables, iptables or a cloud security group), nothing is applied and the reconciler reports that as informational, not a failure. Rules are stored for the control plane host. Per-node rules for remote nodes are not supported yet, and a rule pinned to a remote node would be skipped and logged.
 - **Not the installer's firewall step.** `install.sh` can allow SSH, 80 and 443 once with `LEVELRAIL_CONFIGURE_UFW=1` (see [Installing](installing.md)). That is a one-time script action. This page covers the ongoing, managed rules.
 
@@ -27,6 +27,21 @@ A deny rule, or an allow rule restricted to a source CIDR, on a port the control
 - the ingress HTTPS address (`APP_INGRESS_HTTPS_ADDR`).
 
 With defaults these are 8080, 9443, 80 and 443. An unrestricted allow on a protected port is accepted. The check runs when you create the rule (the API returns a validation error) and again in the reconciler as a second line of defense. A control plane that has locked itself out cannot reopen itself, which is why this is refused unconditionally.
+
+## Turn the firewall on or off
+
+The switch needs the root ability and is audit logged. Turning it on first shows the exact commands, then runs them in order: SSH, the management, agent and ingress ports, and 443/udp for HTTP/3, followed by `ufw --force enable`. The onboarding Server check offers the same button, so a new server never needs a command pasted into a terminal.
+
+SSH is assumed to be on port 22. If yours is not, set `APP_FIREWALL_SSH_PORTS` (comma separated) on the control plane before turning the firewall on.
+
+```bash
+levelrail-cli firewall status
+levelrail-cli firewall enable --dry-run   # print the commands, change nothing
+levelrail-cli firewall enable
+levelrail-cli firewall disable
+```
+
+The API is `GET /api/v1/firewall/host`, `POST /api/v1/firewall/host/enable` and `POST /api/v1/firewall/host/disable`, where both POSTs accept `{"dry_run": true}`.
 
 ## Add and remove rules
 

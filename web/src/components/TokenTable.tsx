@@ -7,7 +7,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
+import { RelativeTime } from './kit/RelativeTime'
 import { RevokeTokenDialog } from './RevokeTokenDialog'
 import { ABILITY_BADGE_VARIANT } from '../types/token'
 import type { TokenResource } from '../types/token'
@@ -17,11 +19,14 @@ import type { TokenResource } from '../types/token'
 // handleListTokens), so "revoked" is a row state this table renders
 // distinctly, not a filter it applies.
 
-function formatDate(iso: string | undefined, fallback: string): string {
-  return iso ? new Date(iso).toLocaleString() : fallback
+const ACTIVE_NOW_MS = 5 * 60 * 1000
+
+function isActiveNow(lastUsed: string | undefined): boolean {
+  return lastUsed ? Date.now() - Date.parse(lastUsed) < ACTIVE_NOW_MS : false
 }
 
 export function TokenTable({ tokens }: { tokens: TokenResource[] }) {
+  const { t } = useTranslation('settings')
   if (tokens.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
@@ -29,10 +34,11 @@ export function TokenTable({ tokens }: { tokens: TokenResource[] }) {
           <KeyIcon className="size-5" />
         </div>
         <div className="space-y-1">
-          <p className="text-sm font-medium text-foreground">No tokens yet</p>
+          <p className="text-sm font-medium text-foreground">
+            {t('tokens.emptyTitle')}
+          </p>
           <p className="text-sm text-muted-foreground">
-            Create a scoped, revocable credential for the CLI, CI, or an MCP
-            integration.
+            {t('tokens.emptyBody')}
           </p>
         </div>
       </div>
@@ -44,14 +50,14 @@ export function TokenTable({ tokens }: { tokens: TokenResource[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Agent</TableHead>
-            <TableHead>Abilities</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead>Last used</TableHead>
-            <TableHead>Expires</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>{t('tokens.name')}</TableHead>
+            <TableHead>{t('tokens.agent')}</TableHead>
+            <TableHead>{t('tokens.abilities')}</TableHead>
+            <TableHead>{t('tokens.created')}</TableHead>
+            <TableHead>{t('tokens.lastUsed')}</TableHead>
+            <TableHead>{t('tokens.expires')}</TableHead>
+            <TableHead>{t('tokens.status')}</TableHead>
+            <TableHead className="text-right">{t('tokens.actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -78,7 +84,9 @@ export function TokenTable({ tokens }: { tokens: TokenResource[] }) {
                       {token.agent.name}
                     </span>
                   ) : (
-                    <span className="text-muted-foreground">None</span>
+                    <span className="text-muted-foreground">
+                      {t('tokens.none')}
+                    </span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -94,21 +102,45 @@ export function TokenTable({ tokens }: { tokens: TokenResource[] }) {
                   </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {formatDate(token.created_at, '')}
+                  <RelativeTime at={token.created_at} />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {formatDate(token.last_used_at, 'Never')}
+                  {token.last_used_at ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      {isActiveNow(token.last_used_at) ? (
+                        <span
+                          className="size-1.5 rounded-full bg-green-500"
+                          role="img"
+                          aria-label={t('tokens.activeNow')}
+                        />
+                      ) : null}
+                      <RelativeTime at={token.last_used_at} live />
+                    </span>
+                  ) : (
+                    t('tokens.never')
+                  )}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {formatDate(token.expires_at, 'Never')}
+                  {token.expires_at ? (
+                    <RelativeTime at={token.expires_at} />
+                  ) : (
+                    t('tokens.never')
+                  )}
                 </TableCell>
                 <TableCell>
                   {revoked ? (
                     <Badge variant="destructive">
-                      Revoked {formatDate(token.revoked_at, '')}
+                      {t('tokens.revoked')}{' '}
+                      {token.revoked_at ? (
+                        <RelativeTime at={token.revoked_at} />
+                      ) : null}
                     </Badge>
                   ) : (
-                    <Badge variant="muted">Active</Badge>
+                    <Badge variant="success">
+                      {isActiveNow(token.last_used_at)
+                        ? t('tokens.activeNow')
+                        : t('tokens.active')}
+                    </Badge>
                   )}
                 </TableCell>
                 <TableCell className="text-right">

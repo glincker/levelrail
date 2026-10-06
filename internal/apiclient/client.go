@@ -2008,6 +2008,24 @@ func (c *Client) DeleteFirewallRule(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, firewallRulePath(id), nil, nil)
 }
 
+// HostFirewallStatus calls GET /api/v1/firewall/host.
+func (c *Client) HostFirewallStatus(ctx context.Context) (HostFirewallResource, error) {
+	var out HostFirewallResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/firewall/host", nil, &out)
+	return out, err
+}
+
+// SetHostFirewall calls POST /api/v1/firewall/host/enable or /disable.
+func (c *Client) SetHostFirewall(ctx context.Context, enable bool, dryRun bool) (HostFirewallResource, error) {
+	var out HostFirewallResource
+	verb := "disable"
+	if enable {
+		verb = "enable"
+	}
+	err := c.do(ctx, http.MethodPost, "/api/v1/firewall/host/"+verb, HostFirewallActionRequest{DryRun: dryRun}, &out)
+	return out, err
+}
+
 // appStreamsCollectionPath builds /api/v1/apps/{name}/streams, and
 // appStreamPath builds that same path plus /{id}.
 func appStreamsCollectionPath(name string) string {

@@ -885,6 +885,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/templates/custom | AbilityRead | handleListCustomTemplates |
 | DELETE | /api/v1/templates/custom/{id} | AbilityWrite | handleDeleteCustomTemplate |
 | GET | /api/v1/network/proxy | AbilityRead | handleGetNetworkProxy |
+| GET | /api/v1/firewall/host | AbilityRead | handleHostFirewallStatus |
+| POST | /api/v1/firewall/host/enable | AbilityRoot | handleEnableHostFirewall |
+| POST | /api/v1/firewall/host/disable | AbilityRoot | handleDisableHostFirewall |
 
 ## See also
 

@@ -71,6 +71,7 @@ var devtools1Templates = []Template{
   plausible:
     image: ghcr.io/plausible/community-edition:v3.0.1
     ports: ["8000:8000"]
+    command: ["sh", "-c", "/entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"]
     environment:
       BASE_URL: ${SERVICE_FQDN_PLAUSIBLE:-http://localhost:8000}
       SECRET_KEY_BASE: $SERVICE_BASE64_64_SECRETKEYBASE
@@ -91,6 +92,8 @@ var devtools1Templates = []Template{
       - plausible_db_data:/var/lib/postgresql/data
   clickhouse:
     image: clickhouse/clickhouse-server:24.12-alpine
+    environment:
+      CLICKHOUSE_SKIP_USER_SETUP: "1"
     volumes:
       - plausible_clickhouse_data:/var/lib/clickhouse
 `,

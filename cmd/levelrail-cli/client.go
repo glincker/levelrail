@@ -156,6 +156,8 @@ type (
 	projectTopologyEdgeResource     = apiclient.ProjectTopologyEdgeResource
 	claimOrphanedContainerRequest   = apiclient.ClaimOrphanedContainerRequest
 	firewallRuleResource            = apiclient.FirewallRuleResource
+	hostFirewallResource            = apiclient.HostFirewallResource
+	apiclientHostFirewallPort       = apiclient.HostFirewallPort
 	createFirewallRuleRequest       = apiclient.CreateFirewallRuleRequest
 	appStreamResource               = apiclient.AppStreamResource
 	createAppStreamRequest          = apiclient.CreateAppStreamRequest

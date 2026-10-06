@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 662 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 665 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -485,6 +485,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/firewall-rules", Ability: "AbilityRead", Group: "Other", Handler: "handleListFirewallRules", Description: "Firewall rules (firewall_rules.go): declarative host firewall rules internal/reconcile/firewall converges onto ufw. AbilityWriteSensitive for create/delete, same tier as a backup target: a rule here changes what inbound traffic this host accepts. List is ordinary AbilityRead."},
 	{Method: "POST", Path: "/api/v1/firewall-rules", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateFirewallRule", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/firewall-rules/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteFirewallRule", Description: ""},
+	{Method: "GET", Path: "/api/v1/firewall/host", Ability: "AbilityRead", Group: "Other", Handler: "handleHostFirewallStatus", Description: ""},
+	{Method: "POST", Path: "/api/v1/firewall/host/disable", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisableHostFirewall", Description: ""},
+	{Method: "POST", Path: "/api/v1/firewall/host/enable", Ability: "AbilityRoot", Group: "Other", Handler: "handleEnableHostFirewall", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/gitea-app", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisconnectGiteaApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/gitea-app", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetGiteaAppStatus", Description: "Gitea App: the OAuth-Application counterpart of the GitLab App routes above, same ability tiers and self-hosted instance_url shape (Gitea is almost always self-hosted). Repos are addressed by an \"owner/repo\" path pair like Bitbucket's workspace/repoSlug, not a numeric id like GitLab's."},
 	{Method: "PUT", Path: "/api/v1/gitea-app", Ability: "AbilityRoot", Group: "Other", Handler: "handleConnectGiteaApp", Description: ""},

@@ -1,19 +1,10 @@
+import { useTranslation } from 'react-i18next'
 import { PackageIcon } from '@phosphor-icons/react/dist/ssr'
 import { RelativeTime, InfoTip } from '@/components/kit'
 import { shortDigest, unpinnedImage } from '../../lib/imageDigest'
 import { imageTagOf } from './imageTag'
 import type { AppDetail } from '../../types/appDetail'
-import type {
-  DeployAttempt,
-  DeployAttemptSource,
-} from '../../types/deployAttempt'
-
-const SOURCE_LABEL: Record<DeployAttemptSource, string> = {
-  webhook: 'a git push',
-  manual: 'the dashboard',
-  image: 'an image deploy',
-  auto_rollback: 'an automatic rollback',
-}
+import type { DeployAttempt } from '../../types/deployAttempt'
 
 export function ReleaseLine({
   app,
@@ -22,6 +13,7 @@ export function ReleaseLine({
   app: Pick<AppDetail, 'image' | 'image_digest'>
   latest?: DeployAttempt
 }) {
+  const { t } = useTranslation('deploys')
   const digest = app.image_digest ?? latest?.image_digest
   return (
     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
@@ -34,8 +26,11 @@ export function ReleaseLine({
       ) : null}
       {latest ? (
         <span>
-          deployed <RelativeTime at={latest.started_at} live />
-          {latest.source ? ` from ${SOURCE_LABEL[latest.source]}` : ''}
+          {t('releaseLine.deployed')}{' '}
+          <RelativeTime at={latest.started_at} live />
+          {latest.source && t(`releaseLine.source.${latest.source}`, '')
+            ? ` ${t('releaseLine.from')} ${t(`releaseLine.source.${latest.source}`)}`
+            : ''}
         </span>
       ) : null}
       <InfoTip label="Full image reference">

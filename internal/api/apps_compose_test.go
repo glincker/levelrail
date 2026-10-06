@@ -286,6 +286,39 @@ func TestHandleDeployCompose_Redeploy_ReusesSameApp(t *testing.T) {
 	}
 }
 
+func TestHandleDeployCompose_Redeploy_RecreatesOnlyWhenConfigChanged(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	deploy := func(env string) {
+		t.Helper()
+		body := "services:\n  web:\n    image: nginx:1.27\n    ports: [\"8080:80\"]\n    environment:\n      MODE: " + env + "\n"
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", body))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("env %s: status = %d, body = %s", env, rec.Code, rec.Body.String())
+		}
+	}
+	nonce := func() string {
+		t.Helper()
+		svc, err := db.GetDesiredService(context.Background(), "myapp-web")
+		if err != nil {
+			t.Fatalf("GetDesiredService() error = %v", err)
+		}
+		return svc.RestartNonce
+	}
+
+	deploy("a")
+	first := nonce()
+	deploy("a")
+	if got := nonce(); got != first {
+		t.Errorf("identical redeploy changed RestartNonce %q -> %q, want no recreate", first, got)
+	}
+	deploy("b")
+	if got := nonce(); got == first {
+		t.Errorf("env change left RestartNonce %q, want the container recreated", got)
+	}
+}
+
 // TestHandleDeployCompose_Redeploy_PrunesRemovedService covers the real
 // gap that motivated pruneStaleComposeServices: a redeploy dropping a
 // service (here "redis") from the compose file must delete that
