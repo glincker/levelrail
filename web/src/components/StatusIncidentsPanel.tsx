@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 import {
   INCIDENT_STATUSES,
   useCreateStatusIncident,
@@ -310,7 +311,7 @@ export function StatusIncidentsPanel() {
     <div className="space-y-4">
       <CreateIncidentForm />
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <ListSkeleton rows={3} />
       ) : error ? (
         <p className="text-sm text-destructive">{error.message}</p>
       ) : (data ?? []).length === 0 ? (
