@@ -613,6 +613,16 @@ levelrail-cli audit-purge
 ## Next steps
 
 <CardGroup :cols="2">
+<Card title="Access control" href="/access-control">
+
+Custom roles, IAM policies and environment grants.
+
+</Card>
+<Card title="Environments" href="/environments">
+
+Global environments, kinds and protected moves.
+
+</Card>
 <Card title="Security overview" href="/security">
 
 How secrets, sessions, TLS and access control fit together.

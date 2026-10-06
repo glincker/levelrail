@@ -1082,6 +1082,22 @@ levelrail-cli ai chat "why did the last deploy of web fail?"
 levelrail-cli ai sessions resolve <session-id> <confirmation-id> --approve
 ```
 
+## AI control
+
+Control what AI agents can do on your platform.
+
+```
+levelrail-cli ai-control status [flags]
+levelrail-cli ai-control set --mode off|observe|operate|admin [--env-kinds K,K,...] [flags]
+levelrail-cli ai-control revoke-agents --yes [flags]
+```
+
+- `status` shows the current mode, allowed environment kinds, and when it was last changed.
+- `set` changes the mode or allowed environment kinds. Agent tokens cannot approve deploy or pipeline approvals, and cannot change this setting.
+- `revoke-agents` revokes every labeled agent token.
+
+See [AI control](ai-control.md).
+
 ## Audit log
 
 ```
@@ -1172,14 +1188,28 @@ Named Docker volumes (an app's storage attachment, a database's data volume) sur
 levelrail-cli users list [flags]
 levelrail-cli users create --email EMAIL --password PASSWORD (--role ROLE | --abilities LIST) [flags]
 levelrail-cli users set-abilities <id> (--role ROLE | --abilities LIST) [flags]
-levelrail-cli users delete <id> [flags]
 levelrail-cli users roles [flags]
+levelrail-cli users role set <id> <role> [flags]
+levelrail-cli users grants get <id> [flags]
+levelrail-cli users grants set <id> [--environment ID ...] [flags]
+levelrail-cli users delete <id> [flags]
 levelrail-cli invites create --email EMAIL (--role ROLE | --abilities LIST) [flags]
 levelrail-cli invites list [flags]
 levelrail-cli invites revoke <id> [flags]
 ```
 
-`--role` is a curated preset (`admin`, `operator` or `viewer`; `users roles` lists what your server accepts); `--abilities` is a comma separated list from `read`, `read:sensitive`, `write`, `write:sensitive`, `deploy`, `root`. `set-abilities` replaces a user's abilities. `invites create` invites a teammate by email; `invites list` and `invites revoke` manage pending invites.
+`--role` is a curated preset (`admin`, `operator`, `viewer`, `guest`, or a custom role by name; `users roles` lists the curated presets and `roles list` lists every stored role); `--abilities` is a comma separated list from `read`, `read:sensitive`, `write`, `write:sensitive`, `deploy`, `root`. `users role set` changes a user's role; `users grants` manages which environments a guest can see. `invites create` invites a teammate by email; `invites list` and `invites revoke` manage pending invites. See [Access control](access-control.md) for details.
+
+## Roles
+
+```
+levelrail-cli roles list [flags]
+levelrail-cli roles create <name> --abilities LIST [--visibility all|granted] [--description TEXT] [flags]
+levelrail-cli roles update <role> [--name N] [--abilities LIST] [--visibility V] [--description T] [flags]
+levelrail-cli roles delete <role> [flags]
+```
+
+Custom roles are presets over an ability list. Updating a role applies the new abilities to every user holding it, immediately. A role cannot be deleted if any user holds it. See [Access control](access-control.md).
 
 ## IAM
 
@@ -1192,6 +1222,8 @@ levelrail-cli iam policies delete <id> [flags]
 levelrail-cli iam policies attach <id> --principal-type user|token --principal-id ID [flags]
 levelrail-cli iam policies detach <id> --principal-type user|token --principal-id ID [flags]
 levelrail-cli iam policies attachments <id> [flags]
+levelrail-cli iam templates list [flags]
+levelrail-cli iam templates apply <id> [--param KEY=VALUE ...] [--name N] [--attach-user U | --attach-token T] [flags]
 ```
 
 Resource scoped Allow and Deny policies, additive on top of `--abilities`. `DOC` is a policy document JSON string, passed inline or as `file://path/to/policy.json`:
@@ -1200,7 +1232,20 @@ Resource scoped Allow and Deny policies, additive on top of `--abilities`. `DOC`
 levelrail-cli iam policies create --name read-web --document '{"Statement":[{"Effect":"Allow","Action":["read"],"Resource":["app:web"]}]}'
 ```
 
-`update` replaces the policy's name, description and document. `attachments` lists a policy's attached principals.
+`update` replaces the policy's name, description and document. `attachments` lists a policy's attached principals. `templates` shows built-in policy templates and `apply` instantiates one, optionally attaching it to a principal. See [Access control](access-control.md).
+
+## Environments
+
+```
+levelrail-cli environments list [flags]
+levelrail-cli environments create --name NAME [--kind dev|test|uat|production|custom] [--protected] [--sort-order N] [flags]
+levelrail-cli environments update <id> [--name N] [--kind K] [--protected[=false]] [--sort-order N] [flags]
+levelrail-cli environments delete <id> [--move-to ID] [flags]
+levelrail-cli apps move-env <app> <environment> [--confirm] [flags]
+levelrail-cli databases move-env <db> <environment> [--confirm] [flags]
+```
+
+Global environments exist across the entire instance (Development, Test, UAT, Production). Kinds control which environment a resource has and what policies apply. Moving into or out of a protected environment requires confirmation and approval from another user. See [Environments](environments.md).
 
 ## Secrets
 
