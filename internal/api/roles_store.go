@@ -27,6 +27,7 @@ type RoleStore interface {
 	CountRootUsersExcept(ctx context.Context, userID string) (int, error)
 	CountRootUsersOutsideRole(ctx context.Context, roleID string) (int, error)
 	SyncRoleAbilities(ctx context.Context, roleID string) error
+	UpdateRoleAndSync(ctx context.Context, r store.Role) error
 }
 
 const maxRoleNameLength = 64

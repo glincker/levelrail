@@ -143,15 +143,16 @@ func (db *DB) UpdateUserPasswordHash(ctx context.Context, id string, hash *strin
 // UpdateUserAbilities replaces a user's Abilities wholesale, the same
 // "fixed at mint time except this one field" shape api_tokens uses for
 // LastUsedAt/RevokedAt. Validation (validateAbilities) is the caller's
-// job (internal/api), not this layer's. Returns ErrUserNotFound if id
-// doesn't exist.
+// job (internal/api), not this layer's. It also clears the user's role, since
+// hand-edited abilities no longer match any stored role. Returns
+// ErrUserNotFound if id doesn't exist.
 func (db *DB) UpdateUserAbilities(ctx context.Context, id string, abilities []string) error {
 	abilitiesJSON, err := json.Marshal(nonNilSlice(abilities))
 	if err != nil {
 		return fmt.Errorf("store: marshal abilities for user %q: %w", id, err)
 	}
 	res, err := db.ExecContext(ctx, `
-		UPDATE users SET abilities = ? WHERE id = ?
+		UPDATE users SET abilities = ?, role_id = NULL WHERE id = ?
 	`, string(abilitiesJSON), id)
 	if err != nil {
 		return fmt.Errorf("store: update user %q abilities: %w", id, err)

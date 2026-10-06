@@ -125,12 +125,8 @@ func (rt *Router) handleUpdateRole(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	role := store.Role{ID: id, Name: name, Description: req.Description, Abilities: req.Abilities, Visibility: visibility}
-	if err := rt.roles.UpdateRole(r.Context(), role); err != nil {
+	if err := rt.roles.UpdateRoleAndSync(r.Context(), role); err != nil {
 		rt.writeRoleStoreError(w, "update role", err)
-		return
-	}
-	if err := rt.roles.SyncRoleAbilities(r.Context(), id); err != nil {
-		rt.writeRoleStoreError(w, "sync role abilities", err)
 		return
 	}
 	updated, err := rt.roles.GetRole(r.Context(), id)
