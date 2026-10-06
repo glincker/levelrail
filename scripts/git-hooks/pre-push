@@ -159,6 +159,20 @@ if [ "$fail" -eq 0 ] && git rev-parse --verify --quiet origin/main >/dev/null \
 	rm -f "$kit_cov"
 fi
 
+# Web tests related to the changed files: vitest's related mode runs every test
+# that imports them, which catches a sibling test the change broke. A
+# name-filtered run cannot, and CI's Web job was the first to see it.
+if [ "$fail" -eq 0 ] && git rev-parse --verify --quiet origin/main >/dev/null && [ -d web/node_modules ]; then
+	web_files="$(git diff --name-only --diff-filter=ACMR origin/main...HEAD -- 'web/src/*.ts' 'web/src/*.tsx' 2>/dev/null | sed 's#^web/##' | grep -v 'routeTree.gen')"
+	if [ -n "$web_files" ]; then
+		echo "pre-push: vitest related (changed web files)"
+		# shellcheck disable=SC2086 # web_files is a newline-joined list of repo paths, word-splitting is intended
+		if ! (cd web && npx vitest related --run $web_files 2>&1); then
+			fail=1
+		fi
+	fi
+fi
+
 if [ "$fail" -ne 0 ]; then
 	echo ""
 	echo "pre-push checks failed, push aborted."

@@ -94,6 +94,18 @@ var templateFleetSample = []templateFleetCase{
 	{id: "wikijs", serviceOrder: []string{"db", "wiki"}, readyBudget: 90 * time.Second, serviceTimeout: 4 * time.Minute},
 	{id: "node-postgres-starter", serviceOrder: []string{"db", "web"}},
 	{id: "redis-cache-starter", serviceOrder: []string{"cache", "web"}},
+	{id: "mailpit", serviceOrder: []string{"mailpit"}},
+	{id: "pocketbase", serviceOrder: []string{"pocketbase"}},
+	{id: "minio", serviceOrder: []string{"minio"}},
+	{id: "grafana", serviceOrder: []string{"grafana"}},
+	{id: "metabase", serviceOrder: []string{"metabase"}, readyBudget: 120 * time.Second, serviceTimeout: 5 * time.Minute},
+	{id: "nextcloud", serviceOrder: []string{"nextcloud"}, readyBudget: 120 * time.Second, serviceTimeout: 5 * time.Minute},
+	{id: "ghost", serviceOrder: []string{"db", "ghost"}, readyBudget: 120 * time.Second, serviceTimeout: 5 * time.Minute},
+	{id: "wordpress", serviceOrder: []string{"db", "wordpress"}, readyBudget: 120 * time.Second, serviceTimeout: 5 * time.Minute},
+	{id: "listmonk", serviceOrder: []string{"db", "listmonk"}, serviceTimeout: 4 * time.Minute},
+	{id: "documenso", serviceOrder: []string{"database", "documenso"}, readyBudget: 120 * time.Second, serviceTimeout: 5 * time.Minute},
+	{id: "plausible", serviceOrder: []string{"db", "clickhouse", "plausible"}, readyBudget: 120 * time.Second, serviceTimeout: 6 * time.Minute},
+	{id: "linkwarden", serviceOrder: []string{"db", "meilisearch", "linkwarden"}, readyBudget: 120 * time.Second, serviceTimeout: 6 * time.Minute},
 }
 
 // templateFleetDeployResponse mirrors internal/api's own (unexported)
