@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"net/http"
 	"slices"
 )
 
@@ -15,6 +14,10 @@ type Role struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	Abilities   []string `json:"abilities"`
+	ID          string   `json:"id,omitempty"`
+	Visibility  string   `json:"visibility,omitempty"`
+	Builtin     bool     `json:"builtin"`
+	UserCount   int      `json:"user_count"`
 }
 
 // Curated role names, roles's own Name values.
@@ -104,11 +107,4 @@ func resolveAbilities(role string, abilities []string) ([]string, error) {
 		return nil, &unknownRoleError{role: role}
 	}
 	return set, nil
-}
-
-// handleListRoles handles GET /api/v1/roles: the curated role presets
-// available to apply on user create/update, AbilityRead-gated like the
-// user list itself, since this is static, non-sensitive metadata.
-func (rt *Router) handleListRoles(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, roles)
 }

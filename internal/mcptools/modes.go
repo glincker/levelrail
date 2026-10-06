@@ -127,6 +127,8 @@ func experimentalFeature(name string, m Meta) (experimental.Feature, bool) {
 		return experimental.IaC, true
 	case name == "get_cloudflare_tunnel_status":
 		return experimental.CloudflareTunnel, true
+	case name == "list_roles":
+		return experimental.AccessRoles, true
 	}
 	return "", false
 }

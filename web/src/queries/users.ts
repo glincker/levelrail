@@ -21,6 +21,7 @@ export interface UserResource {
   // Abilities exactly matches, e.g. "operator"; absent when Abilities
   // doesn't match any preset (the "Custom" case).
   role?: string
+  role_id?: string
   is_first_user: boolean
   created_at: string
   last_login_at?: string
@@ -143,7 +144,10 @@ export async function updateUserAbilities(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `update user abilities failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `update user abilities failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as UserResource

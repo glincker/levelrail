@@ -35,6 +35,8 @@ import {
 } from '@/components/ui/field'
 import { useCreateInvite } from '../queries/invites'
 import { useRoles } from '../queries/roles'
+import { useExperimentalFeatures } from '../hooks/useExperimental'
+import { isFeatureVisible } from '../lib/experimental'
 import { hasAbility } from '../types/token'
 import type { Ability } from '../types/token'
 import type { CreateInviteResponse } from '../queries/invites'
@@ -52,7 +54,7 @@ const inviteMemberSchema = z.object({
     .trim()
     .min(1, 'Email is required')
     .email('Enter a valid email'),
-  role: z.enum(['admin', 'operator', 'viewer']),
+  role: z.string().min(1),
 })
 
 type InviteMemberFormValues = z.infer<typeof inviteMemberSchema>
@@ -80,13 +82,24 @@ export function InviteMemberDialog({
   const [copied, setCopied] = useState(false)
   const createInvite = useCreateInvite()
   const { data: roles } = useRoles()
-  const grantableRoles = roles.filter((role) =>
-    role.abilities.every((a) => hasAbility(callerAbilities, a)),
+  const accessRoles = isFeatureVisible(
+    'access-roles',
+    useExperimentalFeatures(),
   )
+  const grantableRoles = roles
+    .filter(
+      (role) =>
+        accessRoles ||
+        (role.builtin !== false && role.visibility !== 'granted'),
+    )
+    .filter((role) =>
+      role.abilities.every((a) => hasAbility(callerAbilities, a)),
+    )
   // Prefer 'operator' as the default, same as before this cap existed,
   // falling back to whatever the caller can actually grant.
-  const defaultRole = (grantableRoles.find((r) => r.name === 'operator') ??
-    grantableRoles[0])?.name as InviteMemberFormValues['role'] | undefined
+  const defaultRole = (
+    grantableRoles.find((r) => r.name === 'operator') ?? grantableRoles[0]
+  )?.name
   const { control, register, handleSubmit, formState, reset } =
     useForm<InviteMemberFormValues>({
       resolver: zodResolver(inviteMemberSchema),

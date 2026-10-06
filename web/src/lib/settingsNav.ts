@@ -32,6 +32,7 @@ import {
   SparkleIcon,
   FileCodeIcon,
   ChartLineIcon,
+  IdentificationBadgeIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { filterByFeature, type ExperimentalFeature } from './experimental'
 
@@ -113,6 +114,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: UsersIcon,
         title: 'Users',
         description: 'Everyone with access to this platform.',
+      },
+      {
+        to: '/settings/roles',
+        icon: IdentificationBadgeIcon,
+        title: 'Roles',
+        description: 'Named ability sets, including the guest role.',
+        feature: 'access-roles',
       },
       {
         to: '/settings/oauth',

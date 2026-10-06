@@ -29,6 +29,9 @@ func TestExperimentalCommandsGated(t *testing.T) {
 		{[]string{"export"}, experimental.IaC, "export [--project"},
 		{[]string{"cloudflare-tunnel", "get"}, experimental.CloudflareTunnel, "cloudflare-tunnel get"},
 		{[]string{"settings", "ai-assistant", "get"}, experimental.AIChat, "and the BYOK AI assistant"},
+		{[]string{"roles", "list"}, experimental.AccessRoles, "roles list|create"},
+		{[]string{"users", "role", "set", "u", "r"}, experimental.AccessRoles, "users role set"},
+		{[]string{"users", "grants", "get", "u"}, experimental.AccessRoles, "users grants get|set"},
 	}
 	defer experimental.Set(experimental.All()...)
 	for _, tc := range tests {

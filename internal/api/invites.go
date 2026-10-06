@@ -71,6 +71,8 @@ type createInviteRequest struct {
 	// instead of Abilities, same precedence as createUserRequest.Role.
 	Role      string   `json:"role,omitempty"`
 	Abilities []string `json:"abilities,omitempty"`
+	// RoleID names a stored role and wins over Role and Abilities.
+	RoleID string `json:"role_id,omitempty"`
 }
 
 // createInviteResponse is handleCreateInvite's own response shape: the
@@ -109,10 +111,16 @@ func (rt *Router) handleCreateInvite(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "email must be a single valid email address")
 		return
 	}
-	abilities, err := resolveAbilities(req.Role, req.Abilities)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+	if req.RoleID != "" && !requireAccessRolesFeature(w) {
 		return
+	}
+	abilities, role, err := rt.resolveStoredAbilities(r.Context(), req.RoleID, req.Role, req.Abilities)
+	if err != nil {
+		rt.writeResolveError(w, "create invite", err)
+		return
+	}
+	if role != nil {
+		req.Role = role.Name
 	}
 
 	callerAbilities, err := rt.callerAbilities(r)
@@ -373,10 +381,26 @@ func (rt *Router) handleAcceptInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.assignInviteRole(r.Context(), user.ID, inv)
+
 	if err := rt.establishSession(w, r, user); err != nil {
 		rt.logger.Error("api: accept invite: establish session failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 	writeJSON(w, http.StatusCreated, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
+}
+
+// assignInviteRole links the new user to the invite's stored role, only while the role still grants exactly what the invite promised.
+func (rt *Router) assignInviteRole(ctx context.Context, userID string, inv *store.Invite) {
+	if inv.Role == "" {
+		return
+	}
+	role, ok, err := rt.resolveRoleSelection(ctx, "", inv.Role)
+	if err != nil || !ok || !abilitySetsEqual(role.Abilities, inv.Abilities) {
+		return
+	}
+	if err := rt.roles.SetUserRole(ctx, userID, role.ID); err != nil {
+		rt.logger.Warn("api: accept invite: assign role failed", slog.String("user_id", userID), slog.String("error", err.Error()))
+	}
 }

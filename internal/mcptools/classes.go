@@ -181,6 +181,7 @@ var toolTable = map[string]Meta{
 	"list_audit_log":                        {clsR, "audit", unt},
 	"list_iam_policies":                     {clsR, "iam", 0},
 	"get_iam_policy":                        {clsR, "iam", 0},
+	"list_roles":                            {clsR, "iam", 0},
 	"list_organizations":                    {clsR, "orgs", 0},
 	"list_projects":                         {clsR, "orgs", 0},
 	"list_registry_credentials":             {clsR, "registry", sens},

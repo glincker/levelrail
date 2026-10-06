@@ -16,6 +16,7 @@ export const NAMESPACES = [
   'databases',
   'https',
   'nodes',
+  'access',
 ] as const
 
 void i18n

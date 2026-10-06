@@ -213,7 +213,8 @@ var cliCommandTree = map[string]*cmdNode{
 	"system-prune":             nil,
 	"volumes-orphaned":         nil,
 	"volumes-orphaned-cleanup": nil,
-	"users":                    {subs: map[string]*cmdNode{"list": nil, "create": nil, "set-abilities": nil, "delete": nil, "roles": nil}},
+	"users":                    {subs: map[string]*cmdNode{"list": nil, "create": nil, "set-abilities": nil, "delete": nil, "roles": nil, "role": {subs: map[string]*cmdNode{"set": nil}}, "grants": {subs: map[string]*cmdNode{"get": nil, "set": nil}}}},
+	"roles":                    {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil}},
 	"invites":                  {subs: map[string]*cmdNode{"create": nil, "list": nil, "revoke": nil}},
 	"iam": {subs: map[string]*cmdNode{
 		"policies": {subs: map[string]*cmdNode{

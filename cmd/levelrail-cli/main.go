@@ -182,6 +182,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runVolumesOrphaned(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned-cleanup":
 		return runVolumesOrphanedCleanup(prog, args[1:], stdout, stderr, lookupEnv)
+	case "roles":
+		return runRoles(prog, args[1:], stdout, stderr, lookupEnv)
 	case "users":
 		return runUsers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "invites":
@@ -296,6 +298,9 @@ Usage:
   %[1]s volumes-orphaned [flags]                              list this instance's named volumes no app or database references any more
   %[1]s volumes-orphaned-cleanup --names name1,name2 [flags]   remove exactly the named orphaned volumes, after re-confirming each is still orphaned
   %[1]s users list|create|set-abilities|delete|roles [flags]   manage users and their abilities, directly or via a curated role
+  %[1]s roles list|create|update|delete [flags]                stored roles, including the guest role and custom roles
+  %[1]s users role set <user> <role> [flags]                   assign a stored role to a user
+  %[1]s users grants get|set <user> [--environment ID ...]     the environments a guest user can see
   %[1]s invites create|list|revoke [flags]                     invite a teammate by email, list or revoke pending invites
   %[1]s iam policies create|list|get|update|delete|attach|detach|attachments [flags]   resource-scoped Allow/Deny policies, additive on top of --abilities
   %[1]s secrets generate-master-key --out PATH   write a new master key file (local, no API call)

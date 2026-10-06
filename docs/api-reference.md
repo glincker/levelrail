@@ -57,7 +57,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 67 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 73 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -123,6 +123,12 @@ Endpoints for:
 | POST | /api/v1/auth/session-links | AbilityRoot | handleMintSessionLink |
 | GET | /api/v1/auth/session-links/{token}/consume | Public | handleConsumeSessionLink |
 | GET | /api/v1/auth/whoami | Public | handleWhoami |
+| POST | /api/v1/roles | AbilityRoot | handleCreateRole |
+| PUT | /api/v1/roles/{id} | AbilityRoot | handleUpdateRole |
+| DELETE | /api/v1/roles/{id} | AbilityRoot | handleDeleteRole |
+| PUT | /api/v1/users/{id}/role | AbilityRoot | handleSetUserRole |
+| GET | /api/v1/users/{id}/environment-grants | AbilityRoot | handleGetEnvironmentGrants |
+| PUT | /api/v1/users/{id}/environment-grants | AbilityRoot | handlePutEnvironmentGrants |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

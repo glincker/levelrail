@@ -1,0 +1,68 @@
+{
+  "roles": {
+    "title": "Roles",
+    "description": "Named sets of abilities you can assign to people. Built-in roles are fixed; create your own for anything in between.",
+    "create": "Create role",
+    "empty": {
+      "title": "No roles found",
+      "description": "Create a role to give people a named set of abilities."
+    },
+    "table": {
+      "name": "Name",
+      "abilities": "Abilities",
+      "visibility": "Sees",
+      "users": "Users",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "badge": {
+      "builtin": "Built-in",
+      "visibilityAll": "Everything",
+      "visibilityGranted": "Granted environments only"
+    },
+    "form": {
+      "createTitle": "Create role",
+      "editTitle": "Edit {{name}}",
+      "description": "Pick the abilities this role carries and what its holders can see.",
+      "name": "Name",
+      "namePlaceholder": "e.g. qa-reviewer",
+      "nameRequired": "Name is required",
+      "descriptionLabel": "Description",
+      "visibility": "Visibility",
+      "visibilityAll": "Everything the abilities allow",
+      "visibilityGranted": "Only environments granted to each person",
+      "visibilityGrantedHint": "A role limited to granted environments can only hold the read ability.",
+      "abilitiesRequired": "Pick at least one ability",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving..."
+    },
+    "deleteDialog": {
+      "title": "Delete {{name}}?",
+      "description": "People can no longer be given this role. A role that still has people assigned cannot be deleted.",
+      "inUse": "{{count}} people hold this role. Reassign them first.",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    },
+    "toast": {
+      "created": "Role {{name}} created.",
+      "updated": "Role {{name}} updated.",
+      "deleted": "Role {{name}} deleted."
+    }
+  },
+  "userRole": {
+    "trigger": "Change role",
+    "title": "Role for {{email}}",
+    "description": "Choosing a role replaces this person's abilities with the role's.",
+    "label": "Role",
+    "grantsTitle": "Environments this person can see",
+    "grantsHint": "People with a granted-visibility role see only these environments.",
+    "grantsEmpty": "No environments exist yet.",
+    "grantsLoading": "Loading environments...",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "toast": "{{email}} is now {{role}}."
+  }
+}

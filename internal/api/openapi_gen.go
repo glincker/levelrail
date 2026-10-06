@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 662 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 668 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -278,6 +278,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/invites/accept", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleAcceptInvite", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/invites/{id}", Ability: "AbilityWrite", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeInvite", Description: ""},
 	{Method: "GET", Path: "/api/v1/roles", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListRoles", Description: "Curated role presets (roles.go): static, non-sensitive metadata, AbilityRead like the user list itself, so any signed-in caller can populate a role picker even without AbilityRoot."},
+	{Method: "POST", Path: "/api/v1/roles", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateRole", Description: "Stored roles, role assignment and environment grants: root, and the handlers answer the experimental-disabled error while access-roles is off."},
+	{Method: "DELETE", Path: "/api/v1/roles/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteRole", Description: ""},
+	{Method: "PUT", Path: "/api/v1/roles/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateRole", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteAIAssistantSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetAIAssistantSettings", Description: "BYOK AI assistant settings (ai_settings.go): GET is AbilityRead; PUT/DELETE are AbilityRoot, the same tier PUT /api/v1/settings/ email uses for any other platform-wide credential-bearing config."},
 	{Method: "PUT", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateAIAssistantSettings", Description: ""},
@@ -294,6 +297,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/users", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListUsers", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/users/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteUser", Description: ""},
 	{Method: "PUT", Path: "/api/v1/users/{id}/abilities", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateUserAbilities", Description: "PUT .../abilities is AbilityRoot like the delete route above, and refuses self-edits inside the handler (self-lockout guard): a root caller may change any other user's abilities, never their own."},
+	{Method: "GET", Path: "/api/v1/users/{id}/environment-grants", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetEnvironmentGrants", Description: ""},
+	{Method: "PUT", Path: "/api/v1/users/{id}/environment-grants", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutEnvironmentGrants", Description: ""},
+	{Method: "PUT", Path: "/api/v1/users/{id}/role", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetUserRole", Description: ""},
 	{Method: "GET", Path: "/api/v1/dockerhub/repositories/{namespace}/{repo}/tags", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleDockerHubTags", Description: ""},
 	{Method: "GET", Path: "/api/v1/dockerhub/search", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleDockerHubSearch", Description: "Public Docker Hub search (dockerhub_search.go): the same picker's third source, for a well-known public image that isn't in the built-in registry or a connected credential. AbilityRead, same tier as the built-in catalog just above: a read of a public, unauthenticated upstream, proxied server-side only to avoid a browser-to-hub.docker.com CORS call."},
 	{Method: "GET", Path: "/api/v1/registry/repositories", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleListRegistryRepositories", Description: "Built-in registry catalog (registry_catalog.go): read-only browsing for the app-creation \"existing image\" step's repository/tag picker. AbilityRead, same tier as the settings GET just above: no secret is ever returned, the resolved password is only used server-side to authenticate the upstream catalog query."},

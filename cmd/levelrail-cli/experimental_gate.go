@@ -16,6 +16,7 @@ var experimentalCommands = map[string]experimental.Feature{
 	"diff":              experimental.IaC,
 	"export":            experimental.IaC,
 	"cloudflare-tunnel": experimental.CloudflareTunnel,
+	"roles":             experimental.AccessRoles,
 }
 
 // experimentalFeatureFor returns the gated feature a command line invokes.
@@ -28,6 +29,9 @@ func experimentalFeatureFor(args []string) (experimental.Feature, bool) {
 	}
 	if args[0] == "settings" && len(args) > 1 && args[1] == "ai-assistant" {
 		return experimental.AIChat, true
+	}
+	if args[0] == "users" && len(args) > 1 && (args[1] == "role" || args[1] == "grants") {
+		return experimental.AccessRoles, true
 	}
 	return "", false
 }

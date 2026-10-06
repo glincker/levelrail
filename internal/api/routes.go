@@ -206,6 +206,14 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// AbilityRead like the user list itself, so any signed-in caller can
 	// populate a role picker even without AbilityRoot.
 	mux.HandleFunc("GET /api/v1/roles", rt.requireAbility(AbilityRead, rt.handleListRoles))
+	// Stored roles, role assignment and environment grants: root, and the
+	// handlers answer the experimental-disabled error while access-roles is off.
+	mux.HandleFunc("POST /api/v1/roles", rt.requireAbility(AbilityRoot, rt.handleCreateRole))
+	mux.HandleFunc("PUT /api/v1/roles/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdateRole))
+	mux.HandleFunc("DELETE /api/v1/roles/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteRole))
+	mux.HandleFunc("PUT /api/v1/users/{id}/role", rt.requireAbility(AbilityRoot, rt.handleSetUserRole))
+	mux.HandleFunc("GET /api/v1/users/{id}/environment-grants", rt.requireAbility(AbilityRoot, rt.handleGetEnvironmentGrants))
+	mux.HandleFunc("PUT /api/v1/users/{id}/environment-grants", rt.requireAbility(AbilityRoot, rt.handlePutEnvironmentGrants))
 
 	// Team invites (invites.go): unlike POST /api/v1/auth/users above,
 	// create/revoke are AbilityWrite, not AbilityRoot: handleCreateInvite

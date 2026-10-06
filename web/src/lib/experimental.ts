@@ -3,7 +3,12 @@ import type { QueryClient } from '@tanstack/react-query'
 import { devModeQueryOptions } from '../queries/devMode'
 
 export type ExperimentalFeature =
-  'ai-chat' | 'ai-models' | 'load-balancer' | 'iac' | 'cloudflare-tunnel'
+  | 'ai-chat'
+  | 'ai-models'
+  | 'load-balancer'
+  | 'iac'
+  | 'cloudflare-tunnel'
+  | 'access-roles'
 
 export function isFeatureVisible(
   feature: ExperimentalFeature | undefined,

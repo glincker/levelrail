@@ -505,6 +505,8 @@ type Router struct {
 	aiSecrets                    AIAssistantSecrets               // nil is valid: PUT/DELETE /api/v1/settings/ai-assistant return 501, same shape as emailSecrets above
 	aiChat                       AIChatStore                      // always set, same "core Store interface" shape as backupTargets above
 	aiEngine                     AIEngine                         // nil is valid: every /api/v1/ai/... session route returns 501, same shape as builder above
+
+	roles RoleStore
 	// mesh is this node's live network.Mesh handle (GET /api/v1/mesh's
 	// real, UAPI-backed half). nil is valid: APP_MESH_ENABLED defaults
 	// off (cmd/levelrail/mesh.go's own doc comment), and the route
@@ -687,6 +689,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		appVolumeMoves:              s,
 		policies:                    s,
 		invites:                     s,
+		roles:                       s,
 		aiSettings:                  s,
 		aiChat:                      s,
 		autoPlacementEnabled:        true,
