@@ -78,16 +78,12 @@ func summarizeLoadBalancer(row store.LoadBalancerRow, cfg loadbalancer.Config, o
 }
 
 func (rt *Router) readableAppFilter(r *http.Request) (func(app string) bool, error) {
-	principalType, principalID, abilities, err := rt.callerPrincipal(r)
-	if err != nil {
-		return nil, err
-	}
-	policies, err := rt.policies.ListPoliciesForPrincipal(r.Context(), principalType, principalID)
+	abilities, policies, scope, err := rt.callerScope(r)
 	if err != nil {
 		return nil, err
 	}
 	return func(app string) bool {
-		return authorizeResource(abilities, policies, AbilityRead, "app:"+app)
+		return scope.authorize(abilities, policies, AbilityRead, resourcePrefixApp, app)
 	}, nil
 }
 

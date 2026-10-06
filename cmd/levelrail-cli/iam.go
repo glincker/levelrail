@@ -24,6 +24,8 @@ func runIAM(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 		return exitOK
 	case "policies":
 		return runIAMPolicies(prog, args[1:], stdout, stderr, lookupEnv)
+	case "templates":
+		return runIAMTemplates(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown iam subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, iamUsage(prog))
@@ -34,6 +36,8 @@ func runIAM(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 func iamUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s iam policies <verb> [flags]
+
+  %[1]s iam templates list|apply [flags]
 
 Run "%[1]s iam policies -h" for the full set of policy subcommands.
 `, prog)

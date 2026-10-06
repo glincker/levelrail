@@ -93,5 +93,32 @@
     "totp": "Two-factor (TOTP)",
     "passkeys": "Passkeys",
     "oauth": "OAuth sign-in"
+  },
+  "iamTemplates": {
+    "trigger": "Add from template",
+    "title": "Add a policy from a template",
+    "description": "Pick a ready-made policy. You can attach it to a user or token now, or later from the policy list.",
+    "loading": "Loading templates.",
+    "loadError": "Could not load policy templates.",
+    "templateLabel": "Template",
+    "paramLabel": "{{name}}",
+    "paramPlaceholder": "e.g. env_dev",
+    "effectTitle": "What this policy does",
+    "effectLine": "{{effect}} {{actions}} on {{resources}}",
+    "allow": "Allow",
+    "deny": "Deny",
+    "previewTitle": "Policy document",
+    "attachTitle": "Attach to",
+    "attachNone": "Nothing yet",
+    "attachUser": "A user",
+    "attachToken": "A token",
+    "attachIdLabel": "User or token ID",
+    "attachIdRequired": "Enter the ID to attach to, or choose Nothing yet.",
+    "paramRequired": "{{name}} is required.",
+    "apply": "Create policy",
+    "applying": "Creating.",
+    "cancel": "Cancel",
+    "toastCreated": "Policy \"{{name}}\" created.",
+    "toastCreatedAttached": "Policy \"{{name}}\" created and attached."
   }
 }

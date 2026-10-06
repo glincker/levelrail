@@ -50,17 +50,13 @@ func parseAppListFilter(r *http.Request) store.AppListFilter {
 // caller has any IAM policies at all (none means every app is visible
 // to a caller holding the base read ability, so DB paging is exact).
 func (rt *Router) callerAppVisibility(r *http.Request) (canRead func(string) bool, filtered bool, err error) {
-	principalType, principalID, abilities, err := rt.callerPrincipal(r)
-	if err != nil {
-		return nil, false, err
-	}
-	policies, err := rt.policies.ListPoliciesForPrincipal(r.Context(), principalType, principalID)
+	abilities, policies, scope, err := rt.callerScope(r)
 	if err != nil {
 		return nil, false, err
 	}
 	return func(app string) bool {
-		return authorizeResource(abilities, policies, AbilityRead, "app:"+app)
-	}, len(policies) > 0, nil
+		return scope.authorize(abilities, policies, AbilityRead, resourcePrefixApp, app)
+	}, len(policies) > 0 || scope.restricted(), nil
 }
 
 // handleListApps handles GET /api/v1/apps with optional q, project,

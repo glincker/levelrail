@@ -265,14 +265,24 @@ func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.Ha
 func (rt *Router) requireAbilityForResource(required string, resourceFn func(*http.Request) string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		resource := resourceFn(r)
+		var hidden bool
 		decision := func(ctx context.Context, principalType, principalID string, abilities []string) (bool, error) {
 			policies, err := rt.policies.ListPoliciesForPrincipal(ctx, principalType, principalID)
 			if err != nil {
 				return false, err
 			}
-			return authorizeResource(abilities, policies, required, resource), nil
+			allowed, notVisible, err := rt.authorizeResourceInEnvironment(ctx, principalType, principalID, abilities, policies, required, resource)
+			hidden = notVisible
+			return allowed, err
 		}
-		rt.requireAbilityDecided(required, decision, next)(w, r)
+		hideFromRestricted := func(w http.ResponseWriter, r *http.Request) {
+			if hidden {
+				writeError(w, http.StatusNotFound, hiddenResourceMessage(resource))
+				return
+			}
+			next(w, r)
+		}
+		rt.requireAbilityDecided(required, decision, hideFromRestricted)(w, r)
 	}
 }
 

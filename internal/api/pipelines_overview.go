@@ -87,9 +87,13 @@ type pipelineSummaryResource struct {
 type callerAccess struct {
 	abilities []string
 	policies  []store.Policy
+	scope     *resourceScope
 }
 
 func (a callerAccess) can(ability, app string) bool {
+	if a.scope != nil {
+		return a.scope.authorize(a.abilities, a.policies, ability, resourcePrefixApp, app)
+	}
 	return authorizeResource(a.abilities, a.policies, ability, "app:"+app)
 }
 
@@ -115,7 +119,11 @@ func (rt *Router) resolveCallerAccess(r *http.Request) (callerAccess, error) {
 	if err != nil {
 		return callerAccess{}, fmt.Errorf("api: load caller policies: %w", err)
 	}
-	return callerAccess{abilities: abilities, policies: policies}, nil
+	scope, err := rt.newResourceScope(r.Context(), principalType, principalID, policies)
+	if err != nil {
+		return callerAccess{}, err
+	}
+	return callerAccess{abilities: abilities, policies: policies, scope: scope}, nil
 }
 
 func (rt *Router) overviewStore(w http.ResponseWriter) (PipelineOverviewStore, bool) {
