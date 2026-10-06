@@ -41,9 +41,11 @@ func TestAIControlHidesToolsByMode(t *testing.T) {
 		wantTotal1 bool
 	}{
 		{"off by 403", http.StatusForbidden, map[string]string{"error": "agent access is disabled by an administrator"}, false, false, true},
-		{"observe", 200, map[string]string{"mode": "observe"}, false, true, false},
-		{"operate", 200, map[string]string{"mode": "operate"}, true, true, false},
-		{"admin", 200, map[string]string{"mode": "admin"}, true, true, false},
+		{"observe", 200, map[string]any{"mode": "observe", "caller_is_agent": true}, false, true, false},
+		{"operate", 200, map[string]any{"mode": "operate", "caller_is_agent": true}, true, true, false},
+		{"admin", 200, map[string]any{"mode": "admin", "caller_is_agent": true}, true, true, false},
+		{"off, but the token is not an agent, so nothing is hidden", 200, map[string]any{"mode": "off", "caller_is_agent": false}, true, true, false},
+		{"observe, but the token is not an agent, so nothing is hidden", 200, map[string]any{"mode": "observe", "caller_is_agent": false}, true, true, false},
 		{"unreadable mode leaves list alone", http.StatusInternalServerError, map[string]string{"error": "x"}, true, true, false},
 		{"unrelated 403 leaves list alone", http.StatusForbidden, map[string]string{"error": "token lacks the required ability"}, true, true, false},
 	}

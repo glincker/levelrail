@@ -31,7 +31,7 @@ func registerAIControlTools(server *mcp.Server, client *apiclient.Client) {
 		Name:        aiControlStatusTool,
 		Description: "Show the AI control mode an administrator set for agents on this instance (off, observe, operate, admin) and what it allows. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, aiControlStatusOutput, error) {
-		mode, kinds, err := fetchAIControl(ctx, client)
+		mode, kinds, _, err := fetchAIControl(ctx, client)
 		if err != nil {
 			return nil, aiControlStatusOutput{}, fmt.Errorf("get ai control: %w", err)
 		}
@@ -52,19 +52,19 @@ func aiControlExplanation(mode string) string {
 	}
 }
 
-// fetchAIControl reads the mode from the server. The disabled-agents 403 means off.
-func fetchAIControl(ctx context.Context, client *apiclient.Client) (string, []string, error) {
+// fetchAIControl reads the mode and whether this token is an agent. The disabled-agents 403 means an agent and off.
+func fetchAIControl(ctx context.Context, client *apiclient.Client) (mode string, kinds []string, callerIsAgent bool, err error) {
 	ctx, cancel := context.WithTimeout(ctx, aiControlTimeout)
 	defer cancel()
 	res, err := client.GetAIControl(ctx)
 	var apiErr *apiclient.APIError
 	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusForbidden && strings.Contains(apiErr.Message, aiDisabledMessage) {
-		return aiModeOff, nil, nil
+		return aiModeOff, nil, true, nil
 	}
 	if err != nil {
-		return "", nil, err
+		return "", nil, false, err
 	}
-	return res.Mode, res.AllowedEnvKinds, nil
+	return res.Mode, res.AllowedEnvKinds, res.CallerIsAgent, nil
 }
 
 // aiControlAllows reports whether the mode lets the tool be listed or called. This only trims what the model sees: the server enforces the mode on every request.
@@ -83,15 +83,15 @@ func aiControlAllows(mode, tool string) bool {
 	}
 }
 
-// aiControlMiddleware hides tools above the current AI control mode. When the mode cannot be read it leaves the list alone, since the server still gates every call.
+// aiControlMiddleware hides tools above the current AI control mode, but only for an agent token, the only kind the server governs. When the mode cannot be read it leaves the list alone, since the server still gates every call.
 func aiControlMiddleware(client *apiclient.Client) mcp.Middleware {
 	return func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 			if method != "tools/list" {
 				return next(ctx, method, req)
 			}
-			mode, _, err := fetchAIControl(ctx, client)
-			if err != nil {
+			mode, _, isAgent, err := fetchAIControl(ctx, client)
+			if err != nil || !isAgent {
 				return next(ctx, method, req)
 			}
 			res, err := next(ctx, method, req)

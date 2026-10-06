@@ -18,6 +18,7 @@ type aiControlResource struct {
 	EnvKinds        []string `json:"env_kinds"`
 	AdminAvailable  bool     `json:"admin_available"`
 	AgentTokenCount int      `json:"agent_token_count"`
+	CallerIsAgent   bool     `json:"caller_is_agent"`
 	UpdatedAt       string   `json:"updated_at"`
 	UpdatedBy       string   `json:"updated_by"`
 }
@@ -43,8 +44,18 @@ func (rt *Router) aiControlResource(r *http.Request, s store.AIControlSettings) 
 	return aiControlResource{
 		Mode: s.Mode, AllowedEnvKinds: kinds, EnvKinds: store.EnvironmentKinds,
 		AdminAvailable:  experimental.Enabled(experimental.AIControl),
-		AgentTokenCount: count, UpdatedAt: s.UpdatedAt, UpdatedBy: s.UpdatedBy,
+		AgentTokenCount: count, CallerIsAgent: rt.callerIsAgent(r), UpdatedAt: s.UpdatedAt, UpdatedBy: s.UpdatedBy,
 	}, nil
+}
+
+// callerIsAgent reports whether the request carries a labeled agent token, the only kind the AI control mode governs.
+func (rt *Router) callerIsAgent(r *http.Request) bool {
+	token, ok := bearerToken(r)
+	if !ok {
+		return false
+	}
+	rec, err := rt.lookupBearerToken(r.Context(), token)
+	return err == nil && rec.AgentName != ""
 }
 
 // handleGetAIControl handles GET /api/v1/settings/ai-control.

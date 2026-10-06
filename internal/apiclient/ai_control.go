@@ -12,6 +12,7 @@ type AIControlResource struct {
 	EnvKinds        []string `json:"env_kinds"`
 	AdminAvailable  bool     `json:"admin_available"`
 	AgentTokenCount int      `json:"agent_token_count"`
+	CallerIsAgent   bool     `json:"caller_is_agent"`
 	UpdatedAt       string   `json:"updated_at"`
 	UpdatedBy       string   `json:"updated_by"`
 }

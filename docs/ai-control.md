@@ -80,7 +80,7 @@ The AI control page also links to the audit log filtered by agent.
 
 ## MCP
 
-The MCP server reads the mode each time a client asks for its tool list and hides what the mode would refuse: `off` shows only `ai_control_status`, `observe` shows read tools, `operate` and `admin` show everything. This only tidies the list. The control plane enforces the mode whatever the client does.
+The MCP server reads the mode each time a client asks for its tool list, and hides what the mode would refuse, **but only when its own token is an agent**: `off` shows only `ai_control_status`, `observe` shows read tools, `operate` and `admin` show everything. A token with no agent name is not governed by this switch, so its tool list is never trimmed. This only tidies the list. The control plane enforces the mode whatever the client does.
 
 ## Error messages
 
@@ -100,7 +100,7 @@ The MCP server reads the mode each time a client asks for its tool list and hide
 | `PUT` | `/api/v1/settings/ai-control` | `root` |
 | `POST` | `/api/v1/settings/ai-control/revoke-agent-tokens` | `root` |
 
-`PUT` takes `{"mode": "...", "allowed_env_kinds": [...]}` and answers 400 for `admin` unless the `ai-control` flag is on.
+`GET` also reports `caller_is_agent`, whether the token making the request is an agent. `PUT` takes `{"mode": "...", "allowed_env_kinds": [...]}` and answers 400 for `admin` unless the `ai-control` flag is on.
 
 ## Next steps
 
