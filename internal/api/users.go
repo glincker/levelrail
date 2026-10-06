@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -23,6 +24,7 @@ type userResource struct {
 	Providers   []string   `json:"providers"`
 	Abilities   []string   `json:"abilities"`
 	Role        string     `json:"role,omitempty"`
+	RoleID      string     `json:"role_id,omitempty"`
 	IsFirstUser bool       `json:"is_first_user"`
 	CreatedAt   time.Time  `json:"created_at"`
 	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
@@ -86,9 +88,28 @@ func (rt *Router) handleListUsers(w http.ResponseWriter, r *http.Request) {
 		for _, i := range identities {
 			providers = append(providers, i.Provider)
 		}
-		out = append(out, toUserResource(u, providers))
+		out = append(out, rt.userResourceFor(r.Context(), u, providers))
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// userResourceFor adds the stored role to toUserResource. A role whose abilities
+// no longer match the user's (edited by hand since) is reported as Custom.
+func (rt *Router) userResourceFor(ctx context.Context, u store.User, providers []string) userResource {
+	res := toUserResource(u, providers)
+	roleID, err := rt.roles.UserRoleID(ctx, u.ID)
+	if err != nil || roleID == "" {
+		return res
+	}
+	role, err := rt.roles.GetRole(ctx, roleID)
+	if err != nil {
+		return res
+	}
+	res.RoleID = role.ID
+	if abilitySetsEqual(role.Abilities, u.Abilities) {
+		res.Role = role.Name
+	}
+	return res
 }
 
 type createUserRequest struct {
@@ -101,6 +122,8 @@ type createUserRequest struct {
 	// second permission model. Abilities is still required when Role is
 	// empty, unchanged from before this field existed.
 	Role string `json:"role,omitempty"`
+	// RoleID names a stored role and wins over Role and Abilities.
+	RoleID string `json:"role_id,omitempty"`
 }
 
 // handleCreateUser handles POST /api/v1/auth/users: how every user after
@@ -125,9 +148,12 @@ func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "password must be at least 8 characters")
 		return
 	}
-	abilities, err := resolveAbilities(req.Role, req.Abilities)
+	if req.RoleID != "" && !requireAccessRolesFeature(w) {
+		return
+	}
+	abilities, role, err := rt.resolveStoredAbilities(r.Context(), req.RoleID, req.Role, req.Abilities)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		rt.writeResolveError(w, "create user", err)
 		return
 	}
 	displayName := req.DisplayName
@@ -145,7 +171,24 @@ func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, toUserResource(user, nil))
+	if role != nil {
+		if err := rt.roles.SetUserRole(r.Context(), user.ID, role.ID); err != nil {
+			rt.logger.Error("api: create user: assign role failed", slog.String("user_id", user.ID), slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
+	writeJSON(w, http.StatusCreated, rt.userResourceFor(r.Context(), user, nil))
+}
+
+// writeResolveError answers a role or ability resolution failure: 400 for the caller's mistakes, 500 for store errors.
+func (rt *Router) writeResolveError(w http.ResponseWriter, op string, err error) {
+	if isRoleSelectionError(err) {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	rt.logger.Error("api: "+op+": resolve role failed", slog.String("error", err.Error()))
+	writeError(w, http.StatusInternalServerError, "internal error")
 }
 
 // createLocalUser inserts a new local-password user: hash the password,
@@ -250,6 +293,18 @@ func (rt *Router) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	if n <= 1 {
 		writeError(w, http.StatusBadRequest, "cannot remove the last remaining user")
 		return
+	}
+	if target, err := rt.auth.GetUserByID(r.Context(), id); err == nil && slices.Contains(target.Abilities, AbilityRoot) {
+		others, err := rt.roles.CountRootUsersExcept(r.Context(), id)
+		if err != nil {
+			rt.logger.Error("api: delete user: count root users failed", slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		if others == 0 {
+			writeError(w, http.StatusConflict, "cannot remove the last remaining root user")
+			return
+		}
 	}
 
 	if err := rt.auth.DeleteUser(r.Context(), id); errors.Is(err, store.ErrUserNotFound) {

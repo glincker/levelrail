@@ -591,6 +591,8 @@ type Store interface {
 	DeployApprovalStore
 	AIAssistantSettingsStore
 	AIChatStore
+	RoleStore
+	AIControlStore
 }
 
 // SecretSetter is the surface the secrets handlers need from

@@ -17,6 +17,10 @@ import (
 // mcp.NewInMemoryTransports wiring cmd/levelrail-mcp's own tests use.
 func TestToolCaller_InProcess(t *testing.T) {
 	apiSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/settings/ai-control" {
+			_, _ = w.Write([]byte(`{"mode":"operate"}`))
+			return
+		}
 		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/apps" {
 			t.Errorf("request = %s %s, want GET /api/v1/apps", r.Method, r.URL.Path)
 		}

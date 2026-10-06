@@ -19,6 +19,7 @@ import {
   type DeploymentFilters,
 } from '../lib/deploymentFilters'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { getEnvironmentScope } from '../lib/environmentScope'
 import { applyTriggerDeployResult, triggerDeploy } from './deploys'
 import type { TriggerDeployResult } from './deploys'
 import { postJson } from './deployControl'
@@ -62,7 +63,10 @@ export function fetchDeploymentPage(
   )
 }
 
-export function deploymentsInfiniteOptions(filters: DeploymentFilters) {
+export function deploymentsInfiniteOptions(base: DeploymentFilters) {
+  const filters = base.environment
+    ? base
+    : { ...base, environment: getEnvironmentScope() }
   return infiniteQueryOptions({
     queryKey: deploymentKeys.list(filters),
     queryFn: ({ pageParam }) => fetchDeploymentPage(filters, pageParam),

@@ -13,16 +13,12 @@ import (
 
 // databaseVisibilityFilter reports whether the caller can read a database.
 func (rt *Router) databaseVisibilityFilter(r *http.Request) (func(name string) bool, error) {
-	principalType, principalID, abilities, err := rt.callerPrincipal(r)
+	abilities, policies, scope, err := rt.callerScope(r)
 	if err != nil {
-		return nil, fmt.Errorf("resolve caller: %w", err)
-	}
-	policies, err := rt.policies.ListPoliciesForPrincipal(r.Context(), principalType, principalID)
-	if err != nil {
-		return nil, fmt.Errorf("list caller policies: %w", err)
+		return nil, err
 	}
 	return func(name string) bool {
-		return authorizeResource(abilities, policies, AbilityRead, "database:"+name)
+		return scope.authorize(abilities, policies, AbilityRead, resourcePrefixDatabase, name)
 	}, nil
 }
 

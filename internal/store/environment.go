@@ -25,14 +25,43 @@ type Environment struct {
 	Name      string
 	Protected bool
 	CreatedAt string
+	// Kind, Scope and SortOrder come from migrations/0375: Kind is one of
+	// the EnvironmentKind* constants, Scope is project or global.
+	Kind      string
+	Scope     string
+	SortOrder int
+}
+
+// Environment kinds, Environment.Kind's valid values.
+const (
+	EnvironmentKindDev        = "dev"
+	EnvironmentKindTest       = "test"
+	EnvironmentKindUAT        = "uat"
+	EnvironmentKindProduction = "production"
+	EnvironmentKindPreview    = "preview"
+	EnvironmentKindCustom     = "custom"
+)
+
+// Environment scopes, Environment.Scope's valid values.
+const (
+	EnvironmentScopeProject = "project"
+	EnvironmentScopeGlobal  = "global"
+)
+
+const environmentColumns = "id, project_id, name, protected, created_at, kind, scope, sort_order"
+
+func scanEnvironment(scan func(dest ...any) error) (Environment, error) {
+	var e Environment
+	err := scan(&e.ID, &e.ProjectID, &e.Name, &e.Protected, &e.CreatedAt, &e.Kind, &e.Scope, &e.SortOrder)
+	return e, err
 }
 
 // SaveEnvironment inserts a new environment row, insert-only.
 func (db *DB) SaveEnvironment(ctx context.Context, e Environment) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO environments (id, project_id, name, protected, created_at)
-		VALUES (?, ?, ?, ?, ?)
-	`, e.ID, e.ProjectID, e.Name, e.Protected, e.CreatedAt)
+		INSERT INTO environments (id, project_id, name, protected, created_at, kind, scope, sort_order)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, e.ID, e.ProjectID, e.Name, e.Protected, e.CreatedAt, kindOrCustom(e.Kind), scopeOrProject(e.Scope), e.SortOrder)
 	if err != nil {
 		return fmt.Errorf("store: save environment %q: %w", e.ID, err)
 	}
@@ -42,12 +71,11 @@ func (db *DB) SaveEnvironment(ctx context.Context, e Environment) error {
 // GetEnvironment returns the environment with this ID, or
 // ErrEnvironmentNotFound.
 func (db *DB) GetEnvironment(ctx context.Context, id string) (Environment, error) {
-	var e Environment
-	err := db.QueryRowContext(ctx, `
-		SELECT id, project_id, name, protected, created_at
+	e, err := scanEnvironment(db.QueryRowContext(ctx, `
+		SELECT `+environmentColumns+`
 		FROM environments
 		WHERE id = ?
-	`, id).Scan(&e.ID, &e.ProjectID, &e.Name, &e.Protected, &e.CreatedAt)
+	`, id).Scan)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Environment{}, ErrEnvironmentNotFound
 	}
@@ -73,7 +101,7 @@ func (db *DB) GetEnvironmentsByIDs(ctx context.Context, ids []string) (map[strin
 		return nil, fmt.Errorf("store: marshal batched environment ids: %w", err)
 	}
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, project_id, name, protected, created_at
+		SELECT `+environmentColumns+`
 		FROM environments
 		WHERE id IN (SELECT value FROM json_each(?))
 	`, string(idsJSON))
@@ -84,8 +112,8 @@ func (db *DB) GetEnvironmentsByIDs(ctx context.Context, ids []string) (map[strin
 		_ = rows.Close()
 	}()
 	for rows.Next() {
-		var e Environment
-		if err := rows.Scan(&e.ID, &e.ProjectID, &e.Name, &e.Protected, &e.CreatedAt); err != nil {
+		e, err := scanEnvironment(rows.Scan)
+		if err != nil {
 			return nil, fmt.Errorf("store: scan batched environment row: %w", err)
 		}
 		result[e.ID] = e
@@ -100,10 +128,10 @@ func (db *DB) GetEnvironmentsByIDs(ctx context.Context, ids []string) (map[strin
 // oldest first.
 func (db *DB) ListEnvironmentsByProject(ctx context.Context, projectID string) ([]Environment, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, project_id, name, protected, created_at
+		SELECT `+environmentColumns+`
 		FROM environments
 		WHERE project_id = ?
-		ORDER BY created_at
+		ORDER BY sort_order, created_at
 	`, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("store: list environments for project %q: %w", projectID, err)
@@ -114,8 +142,8 @@ func (db *DB) ListEnvironmentsByProject(ctx context.Context, projectID string) (
 
 	var out []Environment
 	for rows.Next() {
-		var e Environment
-		if err := rows.Scan(&e.ID, &e.ProjectID, &e.Name, &e.Protected, &e.CreatedAt); err != nil {
+		e, err := scanEnvironment(rows.Scan)
+		if err != nil {
 			return nil, fmt.Errorf("store: scan environment row: %w", err)
 		}
 		out = append(out, e)
@@ -178,4 +206,18 @@ func (db *DB) SetServiceEnvironment(ctx context.Context, serviceName, envID stri
 		return ErrServiceNotFound
 	}
 	return nil
+}
+
+func kindOrCustom(k string) string {
+	if k == "" {
+		return EnvironmentKindCustom
+	}
+	return k
+}
+
+func scopeOrProject(s string) string {
+	if s == "" {
+		return EnvironmentScopeProject
+	}
+	return s
 }

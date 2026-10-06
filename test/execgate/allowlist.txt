@@ -10,3 +10,6 @@ internal/telemetry/hostpatch.go | read-only package manager upgrade count, liter
 internal/api/doctor_firewall.go | read-only ufw/firewalld status check, literal binary names and args, argv form
 internal/api/doctor_nas.go | exec.LookPath presence check for mount.nfs/mount.cifs, literal binary names, no args
 kit/firewall/firewall.go | ufw has no Go-native API, exec.CommandContext with literal "ufw" and validated argv, no shell
+internal/api/firewall_host.go | host ufw allow/enable/disable for the firewall switch, literal "ufw", args are fixed verbs plus port numbers from config and the validated SSH port setting, argv form, no shell
+internal/api/router.go | exec.LookPath default for the ufw presence check, literal binary name, no args, nothing is run
+internal/api/updates_preflight.go | exec.LookPath presence check for cosign, literal binary name, no args, nothing is run

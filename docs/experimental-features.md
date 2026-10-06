@@ -16,6 +16,9 @@ The value is a comma separated list of feature keys. Unknown keys are logged at 
 | --- | --- |
 | `ai-chat` | In-app AI assistant chat and its settings |
 | `ai-models` | AI models on GPU nodes |
+| `ai-control` | Full control over AI agent access (admin mode) |
+| `access-roles` | Custom roles, guest users, environment grants and role storage |
+| `global-environments` | Global environments, environment kinds and switcher |
 | `load-balancer` | Load balancer across an app's replicas |
 | `iac` | Platform as code: `apply`, `diff`, `export` |
 | `cloudflare-tunnel` | Cloudflare Tunnel |

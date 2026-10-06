@@ -160,6 +160,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
 	case "changelog":
 		return runChangelog(prog, args[1:], stdout, stderr, lookupEnv)
+	case "ai-control":
+		return runAIControl(prog, args[1:], stdout, stderr, lookupEnv)
 	case "audit-log":
 		return runAuditLog(prog, args[1:], stdout, stderr, lookupEnv)
 	case "audit-purge":
@@ -182,6 +184,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runVolumesOrphaned(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned-cleanup":
 		return runVolumesOrphanedCleanup(prog, args[1:], stdout, stderr, lookupEnv)
+	case "roles":
+		return runRoles(prog, args[1:], stdout, stderr, lookupEnv)
 	case "users":
 		return runUsers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "invites":
@@ -218,6 +222,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runBuild(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ai":
 		return runAI(prog, args[1:], stdout, stderr, lookupEnv)
+	case "environments":
+		return runEnvironments(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, rootUsage(prog))
@@ -250,6 +256,9 @@ Usage:
   %[1]s domains list [flags]           list every app's domains in one call
   %[1]s preview status|enable|disable|capture|prune <app> [flags]   deploy preview screenshots (opt-in per app)
   %[1]s deployments list|summary|watch [flags]   deploys across all apps, filterable, with live stream
+  %[1]s environments list|create|update|delete [flags]   instance-wide dev, test, uat, production and custom environments
+  %[1]s apps move-env <name> <environment-id> [--confirm]   move an app to another environment
+  %[1]s databases move-env <name> <environment-id> [--confirm]   move a database to another environment
   %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
   %[1]s pitr enable|disable|status|base-backups|restore <database> [flags]   point-in-time restore (postgres only)
   %[1]s app-volume-backups list|trigger|restore <app> <volume> [flags]   app volume backup history, manual trigger, and restore
@@ -284,6 +293,7 @@ Usage:
   %[1]s upgrade [--no-backup] [flags]                          preflight checks, backup, and the command that upgrades (never upgrades itself)
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
   %[1]s changelog [--limit N] [flags]                         recent release notes from the control plane's own CHANGELOG.md
+  %[1]s ai-control status|set|revoke-agents [flags]           what agents and AI may do: off, observe, operate, admin
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
   %[1]s audit-purge [flags]                                   delete audit log entries past the retention window now
   %[1]s attention [flags]                                     everything failing right now: apps, nodes, certificates, doctor checks
@@ -296,8 +306,12 @@ Usage:
   %[1]s volumes-orphaned [flags]                              list this instance's named volumes no app or database references any more
   %[1]s volumes-orphaned-cleanup --names name1,name2 [flags]   remove exactly the named orphaned volumes, after re-confirming each is still orphaned
   %[1]s users list|create|set-abilities|delete|roles [flags]   manage users and their abilities, directly or via a curated role
+  %[1]s roles list|create|update|delete [flags]                stored roles, including the guest role and custom roles
+  %[1]s users role set <user> <role> [flags]                   assign a stored role to a user
+  %[1]s users grants get|set <user> [--environment ID ...]     the environments a guest user can see
   %[1]s invites create|list|revoke [flags]                     invite a teammate by email, list or revoke pending invites
   %[1]s iam policies create|list|get|update|delete|attach|detach|attachments [flags]   resource-scoped Allow/Deny policies, additive on top of --abilities
+  %[1]s iam templates list|apply <id> [--param KEY=VALUE] [--attach-user ID|--attach-token ID]   ready-made policies (read-only, guest-one-environment, deployer-nonprod, ...)
   %[1]s secrets generate-master-key --out PATH   write a new master key file (local, no API call)
   %[1]s secrets rotate-master-key --new-key-file PATH [flags]   rotate the envelope-encryption master key
   %[1]s secrets binding-status|rebind [flags]   count and bind secret values not yet bound to their slot

@@ -118,6 +118,8 @@ const sidebarGroups = [
           { text: 'Host firewall', link: '/host-firewall' },
           { text: 'Emergency access', link: '/emergency-access' },
           { text: 'Master key rotation', link: '/master-key-rotation' },
+          { text: 'Access control', link: '/access-control' },
+          { text: 'Environments', link: '/environments' },
           { text: 'Identity and access', link: '/identity-and-access' },
           {
             text: 'Projects and organizations',
@@ -149,6 +151,7 @@ const sidebarGroups = [
           { text: 'Working with AI agents', link: '/agents' },
           { text: 'AI assistant integration', link: '/ai-assistant' },
           { text: 'In-app AI assistant chat', link: '/ai-assistant-chat' },
+          { text: 'AI control', link: '/ai-control' },
         ],
       },
       {

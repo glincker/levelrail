@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useEnvironmentScope } from '../../lib/environmentScope'
 import { useState } from 'react'
 import { GavelIcon } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -76,6 +77,7 @@ function formatDate(iso: string): string {
 }
 
 function DeployApprovalsPage() {
+  useEnvironmentScope()
   const [status, setStatus] = useState('pending')
   const { data: approvals } = useDeployApprovals(status)
   const approve = useApproveDeployApproval()

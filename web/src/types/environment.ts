@@ -13,3 +13,16 @@ export interface EnvironmentResource {
   protected: boolean
   created_at: string
 }
+
+// One row of GET /api/v1/environments (internal/api/environments_global.go's
+// environmentListResource): global and project environments together.
+export type EnvironmentKind =
+  'dev' | 'test' | 'uat' | 'production' | 'preview' | 'custom'
+
+export interface GlobalEnvironment extends EnvironmentResource {
+  kind: EnvironmentKind
+  scope: 'project' | 'global'
+  sort_order: number
+  app_count: number
+  database_count: number
+}

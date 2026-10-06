@@ -23,6 +23,12 @@ const (
 	IaC Feature = "iac"
 	// CloudflareTunnel is the Cloudflare tunnel integration.
 	CloudflareTunnel Feature = "cloudflare-tunnel"
+	// AccessRoles is stored roles, the guest role and per-environment grants.
+	AccessRoles Feature = "access-roles"
+	// GlobalEnvironments is instance-wide typed environments and the environment switcher.
+	GlobalEnvironments Feature = "global-environments"
+	// AIControl is the Settings switch that governs agent and AI access.
+	AIControl Feature = "ai-control"
 )
 
 // EnvVar names the env var holding the comma separated enabled features.
@@ -30,7 +36,7 @@ const EnvVar = "APP_EXPERIMENTAL"
 
 // All returns every gated feature, sorted.
 func All() []Feature {
-	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel}
+	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl}
 	sort.Slice(fs, func(i, j int) bool { return fs[i] < fs[j] })
 	return fs
 }

@@ -25,6 +25,8 @@ func TestExperimentalToolsHiddenByDefault(t *testing.T) {
 		{experimental.LoadBalancer, []string{"list_load_balancers", "set_app_load_balancer"}},
 		{experimental.IaC, []string{"plan_apply", "apply_resources"}},
 		{experimental.CloudflareTunnel, []string{"get_cloudflare_tunnel_status"}},
+		{experimental.AccessRoles, []string{"list_roles"}},
+		{experimental.GlobalEnvironments, []string{"list_global_environments", "move_app_environment"}},
 	}
 	for _, tc := range tests {
 		t.Run(string(tc.feature), func(t *testing.T) {

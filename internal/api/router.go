@@ -507,8 +507,12 @@ type Router struct {
 	inviteTTL                    time.Duration                    // 0 means "use defaultInviteTTL", set via WithInviteTTL
 	aiSettings                   AIAssistantSettingsStore         // always set, same shape as emailSettings above: the provider/model row always exists (migrations/0106's own seeded row)
 	aiSecrets                    AIAssistantSecrets               // nil is valid: PUT/DELETE /api/v1/settings/ai-assistant return 501, same shape as emailSecrets above
+	aiControl                    AIControlStore                   // always set: the AI control gate (ai_control_gate.go) and /settings/ai-control routes
+	aiControlCache               aiControlCache                   // short lived per process copy of the AI control row, invalidated on PUT
 	aiChat                       AIChatStore                      // always set, same "core Store interface" shape as backupTargets above
 	aiEngine                     AIEngine                         // nil is valid: every /api/v1/ai/... session route returns 501, same shape as builder above
+
+	roles RoleStore
 	// mesh is this node's live network.Mesh handle (GET /api/v1/mesh's
 	// real, UAPI-backed half). nil is valid: APP_MESH_ENABLED defaults
 	// off (cmd/levelrail/mesh.go's own doc comment), and the route
@@ -694,8 +698,10 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		appVolumeMoves:              s,
 		policies:                    s,
 		invites:                     s,
+		roles:                       s,
 		aiSettings:                  s,
 		aiChat:                      s,
+		aiControl:                   s,
 		autoPlacementEnabled:        true,
 	}
 	// Bound method values, so they must be assigned after rt exists

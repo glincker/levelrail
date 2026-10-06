@@ -18,7 +18,7 @@ func TestSaveAndGetEnvironment(t *testing.T) {
 	ctx := context.Background()
 	seedTestProject(t, db)
 
-	want := Environment{ID: "env_test1", ProjectID: "proj_1", Name: "staging", CreatedAt: "2026-08-20T00:00:00Z"}
+	want := Environment{ID: "env_test1", ProjectID: "proj_1", Name: "staging", CreatedAt: "2026-08-20T00:00:00Z", Kind: EnvironmentKindCustom, Scope: EnvironmentScopeProject}
 	if err := db.SaveEnvironment(ctx, want); err != nil {
 		t.Fatalf("SaveEnvironment() error = %v", err)
 	}
@@ -48,8 +48,8 @@ func TestGetEnvironmentsByIDs(t *testing.T) {
 	ctx := context.Background()
 	seedTestProject(t, db)
 
-	envA := Environment{ID: "env_a", ProjectID: "proj_1", Name: "staging", CreatedAt: "2026-08-20T00:00:00Z"}
-	envB := Environment{ID: "env_b", ProjectID: "proj_1", Name: "production", CreatedAt: "2026-08-20T00:00:00Z"}
+	envA := Environment{ID: "env_a", ProjectID: "proj_1", Name: "staging", CreatedAt: "2026-08-20T00:00:00Z", Kind: EnvironmentKindCustom, Scope: EnvironmentScopeProject}
+	envB := Environment{ID: "env_b", ProjectID: "proj_1", Name: "production", CreatedAt: "2026-08-20T00:00:00Z", Kind: EnvironmentKindCustom, Scope: EnvironmentScopeProject}
 	if err := db.SaveEnvironment(ctx, envA); err != nil {
 		t.Fatalf("seed env_a: %v", err)
 	}

@@ -32,7 +32,12 @@ func (rt *Router) stillAuthorized(ctx context.Context, r *http.Request, required
 		rt.logger.Warn("api: stream re-authorization policy lookup failed", slog.String("error", err.Error()))
 		return false
 	}
-	return authorizeResource(abilities, policies, required, resource)
+	allowed, hidden, err := rt.authorizeResourceInEnvironment(ctx, principalType, principalID, abilities, policies, required, resource)
+	if err != nil {
+		rt.logger.Warn("api: stream re-authorization environment lookup failed", slog.String("error", err.Error()))
+		return false
+	}
+	return allowed && !hidden
 }
 
 var errCallerGone = errors.New("caller is no longer valid")

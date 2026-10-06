@@ -32,6 +32,10 @@ func runUsers(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runUsersDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "roles":
 		return runUsersRoles(prog, args[1:], stdout, stderr, lookupEnv)
+	case "role":
+		return runUsersRole(prog, args[1:], stdout, stderr, lookupEnv)
+	case "grants":
+		return runUsersGrants(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown users subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, usersUsage(prog))
@@ -46,6 +50,8 @@ func usersUsage(prog string) string {
   %[1]s users set-abilities <id> (--role ROLE | --abilities LIST) [flags]                          replace a user's abilities, directly or via a curated role
   %[1]s users delete <id> [flags]                                    remove a user
   %[1]s users roles [flags]                                          list the curated role presets --role accepts
+  %[1]s users role set <user> <role> [flags]                         assign a stored role (id or name)
+  %[1]s users grants get|set <user> [--environment ID ...] [flags]   read or replace a guest's environment grants
 
 Run "%[1]s users <subcommand> -h" for a subcommand's own flags.
 `, prog)

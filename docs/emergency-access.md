@@ -1,5 +1,5 @@
 ---
-description: Get back into a control plane you cannot sign in to: reset the admin password, mint a short-lived root token from the host, or use a break-glass token you made in advance, and what keeps each of them safe.
+description: Get back into a control plane you cannot sign in to by resetting the admin password, minting a short-lived root token from the host, or using a break-glass token made in advance, and what keeps each safe.
 ---
 
 # Emergency access
@@ -51,3 +51,7 @@ While you can still sign in, create a token in **Settings, CLI Access** named `b
 ## Passkeys and HTTPS
 
 Passkeys only work on an HTTPS dashboard URL. On a fresh server without HTTPS, sign-in falls back to the password automatically. Enable HTTPS under **Domains** and passkeys become available.
+
+## See also
+
+Learn about roles and access control in [Access control](/access-control).

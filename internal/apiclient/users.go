@@ -15,6 +15,7 @@ type UserResource struct {
 	Providers   []string   `json:"providers"`
 	Abilities   []string   `json:"abilities"`
 	Role        string     `json:"role,omitempty"`
+	RoleID      string     `json:"role_id,omitempty"`
 	IsFirstUser bool       `json:"is_first_user"`
 	CreatedAt   time.Time  `json:"created_at"`
 	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
@@ -44,6 +45,10 @@ type RoleResource struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	Abilities   []string `json:"abilities"`
+	ID          string   `json:"id,omitempty"`
+	Visibility  string   `json:"visibility,omitempty"`
+	Builtin     bool     `json:"builtin"`
+	UserCount   int      `json:"user_count"`
 }
 
 // CreateUser calls POST /api/v1/auth/users.

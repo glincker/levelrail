@@ -12,6 +12,10 @@ import { Button } from './ui/button'
 import { EmptyState } from './ui/empty-state'
 import { RemoveUserDialog } from './RemoveUserDialog'
 import { EditUserAbilitiesDialog } from './EditUserAbilitiesDialog'
+import { UserRoleDialog } from './access/UserRoleDialog'
+import { useExperimentalFeatures } from '../hooks/useExperimental'
+import { useIsRoot } from '../hooks/useIsRoot'
+import { isFeatureVisible } from '../lib/experimental'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { ABILITY_BADGE_VARIANT } from '../types/token'
 import type { UserResource } from '../queries/users'
@@ -34,6 +38,9 @@ export function UserTable({ users }: { users: UserResource[] }) {
   // control, since PUT .../abilities enforces the real self-lockout rule
   // server-side regardless of what this heuristic gets wrong.
   const ownEmail = useAuthUsername()
+  const isRoot = useIsRoot()
+  const features = useExperimentalFeatures()
+  const canAssignRoles = isRoot && isFeatureVisible('access-roles', features)
 
   if (users.length === 0) {
     return (
@@ -121,7 +128,10 @@ export function UserTable({ users }: { users: UserResource[] }) {
                         Edit abilities
                       </Button>
                     ) : (
-                      <EditUserAbilitiesDialog user={user} />
+                      <>
+                        {canAssignRoles ? <UserRoleDialog user={user} /> : null}
+                        <EditUserAbilitiesDialog user={user} />
+                      </>
                     )}
                     <RemoveUserDialog user={user} />
                   </div>

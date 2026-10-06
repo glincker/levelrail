@@ -15,15 +15,16 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | alerts | 10 | 1265 |
 | apps | 16 | 2124 |
 | audit | 1 | 309 |
+| ai-control | 1 | 164 |
 | backups | 11 | 1031 |
 | databases | 3 | 167 |
 | deploys | 25 | 3891 |
 | diagnostics | 3 | 328 |
 | domains | 10 | 1145 |
-| environments | 3 | 556 |
+| environments | 5 | 728 |
 | flags | 2 | 165 |
 | iac | 2 | 800 |
-| iam | 2 | 149 |
+| iam | 3 | 219 |
 | loadbalancer | 9 | 1347 |
 | logs | 12 | 1663 |
 | metrics | 4 | 626 |
@@ -34,12 +35,13 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | pipelines | 3 | 457 |
 | previews | 2 | 214 |
 | registry | 3 | 325 |
+| roles | 1 | 103 |
 | scheduled | 2 | 200 |
 | settings | 2 | 187 |
 | system | 4 | 284 |
 | templates | 2 | 126 |
 | webhooks | 1 | 155 |
-| **total** | **156** | **20566** |
+| **total** | **162** | **21673** |
 
 ## agent-core profile
 

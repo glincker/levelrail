@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useEnvironmentScope } from '../../lib/environmentScope'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import {
@@ -60,6 +61,7 @@ export const Route = createFileRoute('/apps/')({
 })
 
 function AppListPage() {
+  useEnvironmentScope()
   const { data: apps } = useSuspenseQuery({
     ...appListQueryOptions(),
     refetchInterval: 15_000,

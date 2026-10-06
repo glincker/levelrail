@@ -105,8 +105,8 @@ func TestHandleListRoles(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got) != 3 {
-		t.Fatalf("len(roles) = %d, want 3", len(got))
+	if len(got) != 4 {
+		t.Fatalf("len(roles) = %d, want 4 built-ins", len(got))
 	}
 	names := map[string]bool{}
 	for _, r := range got {
@@ -118,7 +118,7 @@ func TestHandleListRoles(t *testing.T) {
 			t.Errorf("role %q has no description", r.Name)
 		}
 	}
-	for _, want := range []string{RoleAdmin, RoleOperator, RoleViewer} {
+	for _, want := range []string{RoleAdmin, RoleOperator, RoleViewer, "guest"} {
 		if !names[want] {
 			t.Errorf("roles response missing %q", want)
 		}

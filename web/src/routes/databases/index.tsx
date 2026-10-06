@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useEnvironmentScope } from '../../lib/environmentScope'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
@@ -47,6 +48,7 @@ function ListHeader() {
 }
 
 function DatabaseListPage() {
+  useEnvironmentScope()
   const { data: databases } = useSuspenseQuery(databaseListQueryOptions())
   const parentRef = useRef<HTMLDivElement>(null)
 

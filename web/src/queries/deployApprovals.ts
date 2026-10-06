@@ -20,21 +20,32 @@ import { appKeys } from './apps'
 import { deployKeys } from './deploys'
 import { deployAttemptKeys } from './deployAttempts'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { getEnvironmentScope } from '../lib/environmentScope'
 
 export const deployApprovalKeys = {
   all: ['deploy-approvals'] as const,
-  list: (status: string, service?: string) =>
-    [...deployApprovalKeys.all, 'list', status, service ?? ''] as const,
+  list: (status: string, service?: string, environment = '') =>
+    [
+      ...deployApprovalKeys.all,
+      'list',
+      status,
+      service ?? '',
+      environment,
+    ] as const,
   detail: (id: string) => [...deployApprovalKeys.all, 'detail', id] as const,
 }
 
 export async function fetchDeployApprovals(
   status = 'pending',
   service?: string,
+  environment = '',
 ): Promise<DeployApprovalResource[]> {
   const params = new URLSearchParams({ status })
   if (service) {
     params.set('service', service)
+  }
+  if (environment) {
+    params.set('environment', environment)
   }
   const res = await fetch(`/api/v1/deploy-approvals?${params.toString()}`)
   if (!res.ok) {
@@ -54,9 +65,10 @@ export function deployApprovalListQueryOptions(
   status = 'pending',
   service?: string,
 ) {
+  const environment = getEnvironmentScope()
   return queryOptions({
-    queryKey: deployApprovalKeys.list(status, service),
-    queryFn: () => fetchDeployApprovals(status, service),
+    queryKey: deployApprovalKeys.list(status, service, environment),
+    queryFn: () => fetchDeployApprovals(status, service, environment),
   })
 }
 

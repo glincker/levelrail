@@ -53,6 +53,7 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerNotificationTools(server, client)
 	registerAuditTools(server, client)
 	registerIAMTools(server, client)
+	registerRoleTools(server, client)
 	registerOrganizationTools(server, client)
 	registerRegistryCredentialTools(server, client)
 	registerAppConfigTools(server, client)
@@ -62,6 +63,7 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerVolumeBackupTools(server, client)
 	registerScheduledTaskTools(server, client)
 	registerEnvironmentTools(server, client)
+	registerGlobalEnvironmentTools(server, client)
 	registerDomainTools(server, client)
 	registerImportTools(server, client)
 	registerCloudflareTools(server, client)
@@ -84,7 +86,9 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerModelServingTools(server, client)
 	registerLoadBalancerTools(server, client)
 	registerIaCTools(server, client)
+	registerAIControlTools(server, client)
 
 	summary := applyOptions(server, opts)
+	server.AddReceivingMiddleware(aiControlMiddleware(client))
 	return server, summary
 }
