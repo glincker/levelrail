@@ -4,6 +4,7 @@ import {
   certAttentionRank,
   certExpiryLabel,
   certRenewalBadge,
+  isInternalCert,
   sortByCertAttention,
 } from './certStatus'
 import type { CertificateStatus } from '../queries/certificates'
@@ -104,5 +105,45 @@ describe('sortByCertAttention', () => {
       'healthy',
       'nocert',
     ])
+  })
+})
+
+describe('isInternalCert', () => {
+  it("flags the built-in CA but not Let's Encrypt or custom uploads", () => {
+    const base = { not_before: '', not_after: '', status: 'healthy' as const }
+    expect(
+      isInternalCert({
+        ...base,
+        issuer: 'CN=Caddy Local Authority - ECC Intermediate',
+        source: 'acme',
+      }),
+    ).toBe(true)
+    expect(
+      isInternalCert({
+        ...base,
+        issuer: "CN=R11,O=Let's Encrypt",
+        source: 'acme',
+      }),
+    ).toBe(false)
+    expect(
+      isInternalCert({
+        ...base,
+        issuer: 'CN=Caddy Local Authority',
+        source: 'custom',
+      }),
+    ).toBe(false)
+  })
+
+  it('does not rank an expiring internal certificate as needing attention', () => {
+    expect(
+      certAttentionRank({
+        domain: 'a.example',
+        not_before: '',
+        not_after: '',
+        status: 'expiring_soon',
+        issuer: 'CN=Caddy Local Authority',
+        source: 'acme',
+      }),
+    ).toBe(2)
   })
 })

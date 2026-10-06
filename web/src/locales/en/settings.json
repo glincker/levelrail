@@ -132,5 +132,24 @@
     "failedToast": "Could not change the firewall",
     "missingHelp": "Install ufw on this server to manage its firewall from here, or use your cloud provider's firewall.",
     "sshNote": "SSH is on a different port? Set APP_FIREWALL_SSH_PORTS on the control plane before turning this on."
+  },
+  "setupNext": {
+    "heading": "Next steps",
+    "email": {
+      "title": "Set up outgoing email",
+      "description": "Password resets and alert emails need an SMTP server. Pick your provider, then send a test."
+    },
+    "alerts": {
+      "title": "Set up alerts",
+      "description": "Get a Slack, Discord, email, or webhook message when a deploy fails."
+    },
+    "backups": {
+      "title": "Add a backup target",
+      "description": "Point database and volume backups at S3-compatible storage."
+    },
+    "team": {
+      "title": "Invite your team",
+      "description": "Give teammates their own accounts instead of sharing yours."
+    }
   }
 }

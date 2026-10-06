@@ -1,9 +1,10 @@
-import type { ComponentType } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   BellRingingIcon,
   CheckCircleIcon,
   CloudArrowUpIcon,
+  EnvelopeSimpleIcon,
   MinusCircleIcon,
   UsersIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -11,32 +12,32 @@ import { Button } from '@/components/ui/button'
 import { SETUP_STEPS, SETUP_STEP_META } from '../../lib/setupWizard'
 import type { SetupStepId, SetupStepMap } from '../../lib/setupWizard'
 
-const NEXT_STEPS: {
-  to: string
-  title: string
-  description: string
-  icon: ComponentType<{ className?: string }>
-}[] = [
+const NEXT_STEPS = [
+  {
+    to: '/settings/email',
+    title: 'setupNext.email.title',
+    description: 'setupNext.email.description',
+    icon: EnvelopeSimpleIcon,
+  },
   {
     to: '/settings/notification-channels',
-    title: 'Set up alerts',
-    description:
-      'Get a Slack, Discord, email, or webhook message when a deploy fails.',
+    title: 'setupNext.alerts.title',
+    description: 'setupNext.alerts.description',
     icon: BellRingingIcon,
   },
   {
     to: '/settings/backup-targets',
-    title: 'Add a backup target',
-    description: 'Point database and volume backups at S3-compatible storage.',
+    title: 'setupNext.backups.title',
+    description: 'setupNext.backups.description',
     icon: CloudArrowUpIcon,
   },
   {
     to: '/settings/users',
-    title: 'Invite your team',
-    description: 'Give teammates their own accounts instead of sharing yours.',
+    title: 'setupNext.team.title',
+    description: 'setupNext.team.description',
     icon: UsersIcon,
   },
-]
+] as const
 
 /** DoneStep summarizes what was set up and links to the next things worth doing. */
 export function DoneStep({
@@ -50,6 +51,7 @@ export function DoneStep({
   onFinish: () => void
   pending: boolean
 }) {
+  const { t } = useTranslation('settings')
   const reviewable = SETUP_STEPS.filter((id) => id !== 'done')
 
   return (
@@ -88,8 +90,10 @@ export function DoneStep({
       </ul>
 
       <div className="space-y-2">
-        <p className="text-sm font-medium text-foreground">Next steps</p>
-        <div className="grid gap-2 sm:grid-cols-3">
+        <p className="text-sm font-medium text-foreground">
+          {t('setupNext.heading')}
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
           {NEXT_STEPS.map((n) => {
             const NextIcon = n.icon
             return (
@@ -99,8 +103,12 @@ export function DoneStep({
                 className="space-y-1 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
               >
                 <NextIcon className="size-5 text-muted-foreground" />
-                <p className="text-sm font-medium text-foreground">{n.title}</p>
-                <p className="text-xs text-muted-foreground">{n.description}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {t(n.title)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t(n.description)}
+                </p>
               </Link>
             )
           })}
