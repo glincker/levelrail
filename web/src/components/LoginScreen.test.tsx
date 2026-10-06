@@ -126,4 +126,31 @@ describe('LoginScreen', () => {
     )
     expect(screen.getByText(/sudo testbin setup-token/)).toBeInTheDocument()
   })
+
+  it('tells a locked-out user how to recover from the server', async () => {
+    vi.mocked(useBrand).mockReturnValue({
+      ...brand,
+      DocsURL: 'https://docs.test.example',
+    })
+    mockFetch(false)
+    renderScreen()
+    expect(await findTitle('Sign in')).toBeInTheDocument()
+    expect(screen.getByText('sudo testbin recover-admin')).toBeInTheDocument()
+    const link = screen.getByRole('link', {
+      name: /Emergency access|emergencyDocs/,
+    })
+    expect(link).toHaveAttribute(
+      'href',
+      'https://docs.test.example/emergency-access',
+    )
+  })
+
+  it('does not show the recovery hint while setting up the first admin', async () => {
+    mockFetch(true)
+    renderScreen()
+    expect(await findTitle('Set up the admin account')).toBeInTheDocument()
+    expect(
+      screen.queryByText('sudo testbin recover-admin'),
+    ).not.toBeInTheDocument()
+  })
 })

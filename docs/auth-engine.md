@@ -67,4 +67,4 @@ Take a backup of the data directory before upgrading, as the installer's upgrade
 - Sign-in is case-insensitive on the username. Usernames that are not an email address (for example `admin`) are still accepted at first-run and by invites.
 - OAuth callback URL: register `https://<your-host>/api/v1/auth/oauth/<provider>/callback` at each identity provider. Sign-in and profile linking share it, and Levelrail tells them apart by the state value. Once a dashboard URL is set, redirect hosts are limited to it and the base URL host, plus any in `APP_AUTH_ENGINE_OAUTH_ALLOWED_HOSTS`.
 - An existing account is linked on OAuth sign-in only when the provider reports the email as verified. A provider's allowed email domain gates new accounts only.
-- `recover-admin` sets the password through the library, which also ends that account's sessions and clears its lockout. No restart is needed.
+- `recover-admin` sets the password through the library, which also ends that account's sessions and clears its lockout. No restart is needed. Locked out another way? See [Emergency access](emergency-access.md).
