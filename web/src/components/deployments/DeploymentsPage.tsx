@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEnvironmentScope } from '../../lib/environmentScope'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
   ArrowUpIcon,
@@ -72,6 +73,7 @@ export function DeploymentsPage({
 }: DeploymentsPageProps) {
   const filters = filtersOf(search)
   const openId = search.d
+  useEnvironmentScope()
   const listQuery = useInfiniteQuery(deploymentsInfiniteOptions(filters))
   const lane = useQuery(deploymentsLaneOptions())
   const summary = useQuery(deploymentsSummaryOptions())

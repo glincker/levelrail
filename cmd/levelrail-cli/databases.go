@@ -43,6 +43,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesLogs(prog, rest, stdout, stderr, lookupEnv)
 	case "slow-queries":
 		return runDatabasesSlowQueries(prog, rest, stdout, stderr, lookupEnv)
+	case "move-env":
+		return runDatabasesMoveEnv(prog, rest, stdout, stderr, lookupEnv)
 	case "set-project":
 		return runDatabasesSetProject(prog, rest, stdout, stderr, lookupEnv)
 	case "clear-project":
@@ -87,6 +89,7 @@ func databasesUsage(prog string) string {
   %[1]s databases logs <name> [flags]     search a database's stored log entries
   %[1]s databases slow-queries <name> [flags]  list a Postgres/MySQL database's slow query log
   %[1]s databases set-project <name> <project-id> [flags]  move a database into a project
+  %[1]s databases move-env <name> <environment-id> [--confirm] [flags]  move a database to another environment
   %[1]s databases clear-project <name> [flags]  remove a database's project assignment
   %[1]s databases set-node <name> <node-id> [flags]  move a database to another node
   %[1]s databases clear-node <name> [flags]  move a database back to the local node

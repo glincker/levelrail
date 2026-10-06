@@ -218,6 +218,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runBuild(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ai":
 		return runAI(prog, args[1:], stdout, stderr, lookupEnv)
+	case "environments":
+		return runEnvironments(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, rootUsage(prog))
@@ -250,6 +252,9 @@ Usage:
   %[1]s domains list [flags]           list every app's domains in one call
   %[1]s preview status|enable|disable|capture|prune <app> [flags]   deploy preview screenshots (opt-in per app)
   %[1]s deployments list|summary|watch [flags]   deploys across all apps, filterable, with live stream
+  %[1]s environments list|create|update|delete [flags]   instance-wide dev, test, uat, production and custom environments
+  %[1]s apps move-env <name> <environment-id> [--confirm]   move an app to another environment
+  %[1]s databases move-env <name> <environment-id> [--confirm]   move a database to another environment
   %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
   %[1]s pitr enable|disable|status|base-backups|restore <database> [flags]   point-in-time restore (postgres only)
   %[1]s app-volume-backups list|trigger|restore <app> <volume> [flags]   app volume backup history, manual trigger, and restore

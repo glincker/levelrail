@@ -187,6 +187,8 @@ var toolTable = map[string]Meta{
 	"list_registry_credential_repositories": {clsR, "registry", sens | outb},
 	"list_registry_credential_tags":         {clsR, "registry", sens | outb},
 	"list_environments":                     {clsR, "environments", 0},
+	"list_global_environments":              {clsR, "global-environments", 0},
+	"move_app_environment":                  {clsM, "global-environments", 0},
 	"preview_clone_environment":             {clsR, "environments", 0},
 	"clone_environment":                     {clsM, "environments", 0},
 	"list_domains":                          {clsR, "domains", 0},

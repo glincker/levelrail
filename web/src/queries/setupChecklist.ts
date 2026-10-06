@@ -44,7 +44,7 @@ export function useSetupChecklistInput(
   ] = useQueries({
     queries: [
       { queryKey: [KEY, 'sources'], queryFn: fetchGitProviders, ...opts },
-      { queryKey: [KEY, 'apps'], queryFn: fetchApps, ...opts },
+      { queryKey: [KEY, 'apps'], queryFn: () => fetchApps(), ...opts },
       { queryKey: [KEY, 'domains'], queryFn: fetchDomains, ...opts },
       { queryKey: [KEY, 'certs'], queryFn: fetchCertificates, ...opts },
       { queryKey: [KEY, 'targets'], queryFn: fetchBackupTargets, ...opts },

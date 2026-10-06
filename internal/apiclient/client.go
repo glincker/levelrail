@@ -201,6 +201,7 @@ func (c *Client) ListApps(ctx context.Context) ([]AppResource, error) {
 // ListApps's own unpaged behavior.
 type ListAppsOptions struct {
 	Limit, Offset int
+	Environment   string
 }
 
 // AppsPage is one page of GET /api/v1/apps, returned by ListAppsPage.
@@ -224,6 +225,9 @@ func (c *Client) ListAppsPage(ctx context.Context, opts ListAppsOptions) (AppsPa
 	}
 	if opts.Offset > 0 {
 		q.Set("offset", strconv.Itoa(opts.Offset))
+	}
+	if opts.Environment != "" {
+		q.Set("environment", opts.Environment)
 	}
 	if enc := q.Encode(); enc != "" {
 		path += "?" + enc

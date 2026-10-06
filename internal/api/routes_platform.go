@@ -1074,4 +1074,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/ai/sessions/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteAIChatSession))
 	mux.HandleFunc("POST /api/v1/ai/sessions/{id}/messages", rt.requireAbility(AbilityRoot, rt.handleCreateAIChatMessage))
 	mux.HandleFunc("POST /api/v1/ai/sessions/{id}/confirmations/{confirmation_id}", rt.requireAbility(AbilityRoot, rt.handleResolveAIChatConfirmation))
+
+	// Global typed environments (environments_global.go, environment_move.go),
+	// behind the global-environments experimental feature.
+	mux.HandleFunc("GET /api/v1/environments", rt.requireAbility(AbilityRead, rt.handleListAllEnvironments))
+	mux.HandleFunc("POST /api/v1/environments", rt.requireAbility(AbilityWrite, rt.handleCreateGlobalEnvironment))
+	mux.HandleFunc("PUT /api/v1/databases/{name}/environment", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleSetDatabaseEnvironment))
 }

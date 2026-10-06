@@ -33,6 +33,7 @@ type appsListPage struct {
 func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps list", "print apps as a JSON array to stdout and nothing else", stderr)
 	maxItemsFlag := fs.Int("max-items", 0, "cap the number of apps returned by this call (server-side limit, AWS CLI's own --max-items); 0 means every app, same as omitting it")
+	environmentFlag := fs.String("environment", "", "only apps in this environment (name or id)")
 	startingTokenFlag := fs.String("starting-token", "", "resume from the next_token a previous --max-items call printed, to fetch the next page")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps list [flags]\n\nLists every app the caller's token can read. With --max-items or\n--starting-token, prints {items, next_token, total_count} instead of a\nbare array, so a script can page through a large fleet instead of\nfetching it all in one call.\n\nFlags:\n", prog)
@@ -47,7 +48,13 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	if *maxItemsFlag == 0 && *startingTokenFlag == "" {
-		apps, err := client.ListApps(context.Background())
+		listApps := client.ListApps
+		if *environmentFlag != "" {
+			listApps = func(ctx context.Context) ([]appResource, error) {
+				return client.ListAppsInEnvironment(ctx, *environmentFlag)
+			}
+		}
+		apps, err := listApps(context.Background())
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list apps: %w", err))
 		}
@@ -74,7 +81,7 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		offset = n
 	}
 
-	page, err := client.ListAppsPage(context.Background(), apiclient.ListAppsOptions{Limit: *maxItemsFlag, Offset: offset})
+	page, err := client.ListAppsPage(context.Background(), apiclient.ListAppsOptions{Limit: *maxItemsFlag, Offset: offset, Environment: *environmentFlag})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list apps: %w", err))
 	}

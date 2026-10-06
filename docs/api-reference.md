@@ -410,6 +410,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/major-upgrades | AbilityRead | handleListMajorUpgrades |
 | POST | /api/v1/databases/{name}/major-upgrades/{id}/rollback | AbilityRoot | handleRollbackMajorUpgrade |
 | DELETE | /api/v1/databases/{name}/major-upgrades/{id}/snapshot | AbilityRoot | handleDiscardMajorUpgradeSnapshot |
+| PUT | /api/v1/databases/{name}/environment | AbilityWrite | handleSetDatabaseEnvironment |
 
 ## Projects / Organizations / Environments
 
@@ -463,6 +464,8 @@ Endpoints for:
 | DELETE | /api/v1/projects/{id}/env/secrets/{key} | AbilityWrite | handleDeleteProjectEnvSecret |
 | GET | /api/v1/projects/{id}/environments/compare | AbilityRead | handleCompareEnvironmentEnv |
 | GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
+| GET | /api/v1/environments | AbilityRead | handleListAllEnvironments |
+| POST | /api/v1/environments | AbilityWrite | handleCreateGlobalEnvironment |
 
 ## Nodes
 

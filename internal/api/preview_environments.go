@@ -458,7 +458,7 @@ func (rt *Router) ensurePreviewEnvironmentTier(ctx context.Context, appName stri
 
 	environmentID = "preview-env-" + appName
 	if _, getErr := rt.environments.GetEnvironment(ctx, environmentID); errors.Is(getErr, store.ErrEnvironmentNotFound) {
-		if saveErr := rt.environments.SaveEnvironment(ctx, store.Environment{ID: environmentID, ProjectID: projectID, Name: "Preview", CreatedAt: time.Now().UTC().Format(time.RFC3339Nano)}); saveErr != nil {
+		if saveErr := rt.environments.SaveEnvironment(ctx, store.Environment{ID: environmentID, ProjectID: projectID, Name: "Preview", Kind: store.EnvironmentKindPreview, CreatedAt: time.Now().UTC().Format(time.RFC3339Nano)}); saveErr != nil {
 			return "", "", fmt.Errorf("ensure preview environment: %w", saveErr)
 		}
 	} else if getErr != nil {

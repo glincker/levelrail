@@ -180,6 +180,7 @@ func (rt *Router) handleListDeployApprovals(w http.ResponseWriter, r *http.Reque
 		status = ""
 	}
 	service := r.URL.Query().Get("service")
+	environment := r.URL.Query().Get("environment")
 
 	approvals, err := rt.deployApprovals.ListDeployApprovals(r.Context(), status, service)
 	if err != nil {
@@ -193,7 +194,7 @@ func (rt *Router) handleListDeployApprovals(w http.ResponseWriter, r *http.Reque
 	}
 	out := make([]deployApprovalResource, 0, len(approvals))
 	for _, a := range approvals {
-		if !canSee(a.ServiceName) {
+		if !canSee(a.ServiceName) || (environment != "" && a.EnvironmentID != environment) {
 			continue
 		}
 		if status == store.DeployApprovalStatusPending {
@@ -338,6 +339,9 @@ func (rt *Router) handleApproveDeployApproval(w http.ResponseWriter, r *http.Req
 // dashboard click and a verified Slack/Discord click can never apply an
 // approval differently.
 func (rt *Router) applyAndDecideApproval(ctx context.Context, a store.DeployApproval, deciderType, deciderID, deciderName string) (deployApprovalDecisionResponse, error) {
+	if a.Action == store.DeployApprovalActionMoveApp || a.Action == store.DeployApprovalActionMoveDatabase {
+		return rt.applyMoveApproval(ctx, a, deciderType, deciderID, deciderName)
+	}
 	svc, err := rt.apps.GetDesiredService(ctx, a.ServiceName)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		return deployApprovalDecisionResponse{}, &deployApprovalDecisionError{http.StatusConflict, "app " + a.ServiceName + " no longer exists"}

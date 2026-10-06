@@ -17,6 +17,8 @@ type experimentalError struct {
 	Feature string `json:"feature"`
 }
 
+var databaseEnvironmentPath = regexp.MustCompile(`^/api/v1/databases/[^/]+/environment$`)
+
 var lbAppPath = regexp.MustCompile(`^/api/v1/apps/[^/]+/loadbalancer(/|$)`)
 
 // featureForPath maps a request path to the experimental feature guarding it.
@@ -33,6 +35,8 @@ func featureForPath(p string) (experimental.Feature, bool) {
 		return experimental.IaC, true
 	case p == "/api/v1/settings/cloudflare-tunnel":
 		return experimental.CloudflareTunnel, true
+	case p == "/api/v1/environments", databaseEnvironmentPath.MatchString(p):
+		return experimental.GlobalEnvironments, true
 	}
 	return "", false
 }
