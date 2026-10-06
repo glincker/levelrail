@@ -129,6 +129,8 @@ Endpoints for:
 | PUT | /api/v1/users/{id}/role | AbilityRoot | handleSetUserRole |
 | GET | /api/v1/users/{id}/environment-grants | AbilityRoot | handleGetEnvironmentGrants |
 | PUT | /api/v1/users/{id}/environment-grants | AbilityRoot | handlePutEnvironmentGrants |
+| GET | /api/v1/iam/policy-templates | AbilityRead | handleListPolicyTemplates |
+| POST | /api/v1/iam/policy-templates/{id}/apply | AbilityRoot | handleApplyPolicyTemplate |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -142,8 +144,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/iam/policy-templates | AbilityRead | handleListPolicyTemplates |
-| POST | /api/v1/iam/policy-templates/{id}/apply | AbilityRoot | handleApplyPolicyTemplate |
 
 :::
 
@@ -418,6 +418,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/major-upgrades | AbilityRead | handleListMajorUpgrades |
 | POST | /api/v1/databases/{name}/major-upgrades/{id}/rollback | AbilityRoot | handleRollbackMajorUpgrade |
 | DELETE | /api/v1/databases/{name}/major-upgrades/{id}/snapshot | AbilityRoot | handleDiscardMajorUpgradeSnapshot |
+| PUT | /api/v1/databases/{name}/environment | AbilityWrite | handleSetDatabaseEnvironment |
 
 ## Projects / Organizations / Environments
 
@@ -471,6 +472,8 @@ Endpoints for:
 | DELETE | /api/v1/projects/{id}/env/secrets/{key} | AbilityWrite | handleDeleteProjectEnvSecret |
 | GET | /api/v1/projects/{id}/environments/compare | AbilityRead | handleCompareEnvironmentEnv |
 | GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
+| GET | /api/v1/environments | AbilityRead | handleListAllEnvironments |
+| POST | /api/v1/environments | AbilityWrite | handleCreateGlobalEnvironment |
 
 ## Nodes
 

@@ -121,6 +121,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsProjects(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "environments":
 		return runAppsEnvironments(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // args is non-empty here: the len(args)==0 guard above already returned, same as every other case in this switch
+	case "move-env":
+		return runAppsMoveEnv(prog, args[1:], stdout, stderr, lookupEnv)
 	case "set-environment":
 		return runAppsSetEnvironment(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "clear-environment":
@@ -250,6 +252,7 @@ func appsUsage(prog string) string {
   %[1]s apps projects <verb> [flags]   manage projects, which group apps and databases
   %[1]s apps environments <verb> [flags]   manage a project's environments (staging, production, ...)
   %[1]s apps set-environment <name> <environment-id> [flags]   tag an app with an environment
+  %[1]s apps move-env <name> <environment-id> [--confirm] [flags]   move an app to another environment (protected ones need approval)
   %[1]s apps clear-environment <name> [flags]   remove an app's environment tag
   %[1]s apps set-project <name> <project-id> [flags]   move an app into a project
   %[1]s apps clear-project <name> [flags]   remove an app's project assignment

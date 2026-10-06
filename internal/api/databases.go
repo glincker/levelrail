@@ -239,6 +239,10 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	dbs = visibleDBs
+	if dbs, err = rt.filterDatabasesByEnvironment(r, dbs); err != nil {
+		rt.internalError(w, "api: list databases: environment filter", err)
+		return
+	}
 
 	controllerNames := make([]string, len(dbs))
 	for i, d := range dbs {

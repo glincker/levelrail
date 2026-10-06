@@ -134,6 +134,14 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'Organizations',
         description: 'Group related projects under an organization.',
       },
+      {
+        to: '/settings/environments',
+        icon: StackIcon,
+        title: 'Environments',
+        description:
+          'Dev, test, UAT and production environments, and which are protected.',
+        feature: 'global-environments',
+      },
     ],
   },
   {

@@ -9,6 +9,7 @@ export type ExperimentalFeature =
   | 'iac'
   | 'cloudflare-tunnel'
   | 'access-roles'
+  | 'global-environments'
 
 export function isFeatureVisible(
   feature: ExperimentalFeature | undefined,

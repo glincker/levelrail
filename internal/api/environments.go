@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -21,10 +22,13 @@ type environmentResource struct {
 	Name      string `json:"name"`
 	Protected bool   `json:"protected"`
 	CreatedAt string `json:"created_at"`
+	Kind      string `json:"kind"`
+	Scope     string `json:"scope"`
+	SortOrder int    `json:"sort_order"`
 }
 
 func toEnvironmentResource(e store.Environment) environmentResource {
-	return environmentResource{ID: e.ID, ProjectID: e.ProjectID, Name: e.Name, Protected: e.Protected, CreatedAt: e.CreatedAt}
+	return environmentResource{ID: e.ID, ProjectID: e.ProjectID, Name: e.Name, Protected: e.Protected, CreatedAt: e.CreatedAt, Kind: e.Kind, Scope: e.Scope, SortOrder: e.SortOrder}
 }
 
 type createEnvironmentRequest struct {
@@ -33,7 +37,10 @@ type createEnvironmentRequest struct {
 }
 
 type updateEnvironmentRequest struct {
-	Protected bool `json:"protected"`
+	Protected *bool   `json:"protected"`
+	Name      *string `json:"name"`
+	Kind      *string `json:"kind"`
+	SortOrder *int    `json:"sort_order"`
 }
 
 // handleListEnvironments handles GET /api/v1/projects/{id}/environments.
@@ -90,11 +97,9 @@ func (rt *Router) handleCreateEnvironment(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusCreated, toEnvironmentResource(e))
 }
 
-// handleUpdateEnvironment handles PATCH /api/v1/environments/{id}: today
-// this only ever changes protected, since name/project have no other
-// caller-facing edit path either (an environment is otherwise
-// create-or-delete, matching how a project's own name is immutable
-// too).
+// handleUpdateEnvironment handles PATCH /api/v1/environments/{id}. The
+// protected flag is always editable; name, kind and sort_order belong to
+// the global-environments feature.
 func (rt *Router) handleUpdateEnvironment(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
@@ -103,33 +108,58 @@ func (rt *Router) handleUpdateEnvironment(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-
-	err := rt.environments.SetEnvironmentProtected(r.Context(), id, req.Protected)
+	if (req.Name != nil || req.Kind != nil || req.SortOrder != nil) && !requireExperimentalOn(w, experimental.GlobalEnvironments) {
+		return
+	}
+	current, err := rt.environments.GetEnvironment(r.Context(), id)
 	if errors.Is(err, store.ErrEnvironmentNotFound) {
 		writeError(w, http.StatusNotFound, "environment not found")
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: update environment failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update environment: load failed", err, slog.String("id", id))
+		return
+	}
+	if msg := validateEnvironmentPatch(current, req); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+
+	err = rt.environments.UpdateEnvironment(r.Context(), id, store.EnvironmentPatch{Name: req.Name, Kind: req.Kind, SortOrder: req.SortOrder, Protected: req.Protected})
+	if errors.Is(err, store.ErrEnvironmentNotFound) {
+		writeError(w, http.StatusNotFound, "environment not found")
+		return
+	}
+	if err != nil {
+		rt.internalError(w, "api: update environment failed", err, slog.String("id", id))
 		return
 	}
 
 	e, err := rt.environments.GetEnvironment(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: update environment: reload failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update environment: reload failed", err, slog.String("id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toEnvironmentResource(e))
 }
 
-// handleDeleteEnvironment handles DELETE /api/v1/environments/{id}. By
-// default tagged services survive, simply untagged again
-// (desired_services.environment_id is ON DELETE SET NULL). cascade=true tears
-// them down first, see deleteWithMembers.
+// handleDeleteEnvironment handles DELETE /api/v1/environments/{id}. A
+// global environment is refused while apps or databases are tagged unless
+// move_to names where they go; a project one keeps its older behavior
+// (tagged services are untagged, or torn down with cascade=true).
 func (rt *Router) handleDeleteEnvironment(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if reservedEnvironmentIDs[id] {
+		writeError(w, http.StatusForbidden, "this environment is built in and cannot be deleted")
+		return
+	}
+	moveTo := r.URL.Query().Get("move_to")
+	if moveTo != "" && !rt.moveMembersBeforeDelete(w, r, id, moveTo) {
+		return
+	}
+	if moveTo == "" && !rt.refuseDeleteWithMembers(w, r, id) {
+		return
+	}
 	rt.deleteWithMembers(w, r, "environment", func(ctx context.Context) (cascadeScope, error) {
 		return rt.environmentScope(ctx, id)
 	}, func(ctx context.Context, _ cascadeScope) error {
@@ -139,10 +169,13 @@ func (rt *Router) handleDeleteEnvironment(w http.ResponseWriter, r *http.Request
 
 type setAppEnvironmentRequest struct {
 	EnvironmentID string `json:"environment_id"`
+	Confirm       bool   `json:"confirm,omitempty"`
+	freezeOverride
 }
 
 // handleSetAppEnvironment handles PUT /api/v1/apps/{name}/environment.
-// environment_id "" clears the assignment.
+// environment_id "" clears the assignment. See moveToEnvironment for the
+// protection, freeze and approval rules.
 func (rt *Router) handleSetAppEnvironment(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -151,25 +184,19 @@ func (rt *Router) handleSetAppEnvironment(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.EnvironmentID != "" {
-		if _, err := rt.environments.GetEnvironment(r.Context(), req.EnvironmentID); err != nil {
-			writeError(w, http.StatusBadRequest, "unknown environment_id")
-			return
-		}
-	}
-
-	err := rt.environments.SetServiceEnvironment(r.Context(), name, req.EnvironmentID)
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: set app environment failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: set app environment: load failed", err, slog.String("name", name))
 		return
 	}
-
-	rt.reloadAndWriteApp(w, r, name, "set app environment")
+	rt.moveToEnvironment(w, r, environmentMove{
+		kind: environmentMoveApp, name: name, currentID: svc.EnvironmentID,
+		targetID: req.EnvironmentID, confirm: req.Confirm, freeze: req.freezeOverride,
+	})
 }
 
 // environmentNeedsConfirmation reports whether env is protected and
@@ -235,6 +262,11 @@ type EnvironmentStore interface {
 	ListEnvironmentsByProject(ctx context.Context, projectID string) ([]store.Environment, error)
 	DeleteEnvironment(ctx context.Context, id string) error
 	SetEnvironmentProtected(ctx context.Context, id string, protected bool) error
+	UpdateEnvironment(ctx context.Context, id string, patch store.EnvironmentPatch) error
+	ListAllEnvironments(ctx context.Context) ([]store.EnvironmentWithCounts, error)
+	EnvironmentMemberCounts(ctx context.Context, envID string) (apps, databases int, err error)
+	MoveEnvironmentMembers(ctx context.Context, fromID, toID string) error
+	EnvironmentOfDatabase(ctx context.Context, databaseName string) (*store.EnvironmentRef, error)
 	SetServiceEnvironment(ctx context.Context, serviceName, envID string) error
 	// SetEnvironmentEnvVars/ListEnvironmentEnvVars back GET/PUT
 	// /api/v1/environments/{id}/env (environment_env.go): shared env vars

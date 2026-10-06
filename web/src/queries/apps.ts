@@ -18,10 +18,14 @@ import type {
   ServiceHealth,
 } from '../types/appDetail'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { getEnvironmentScope } from '../lib/environmentScope'
 
 export const appKeys = {
   all: ['apps'] as const,
-  list: () => [...appKeys.all, 'list'] as const,
+  list: (environment = '') =>
+    environment === ''
+      ? ([...appKeys.all, 'list'] as const)
+      : ([...appKeys.all, 'list', { environment }] as const),
   detail: (appId: string) => [...appKeys.all, 'detail', appId] as const,
 }
 
@@ -31,8 +35,12 @@ export const appKeys = {
 // AppListEntry's own doc comment), no cursor, so this is the one list
 // fetcher, not a page-at-a-time one: there's nothing server-side yet to
 // paginate against.
-export async function fetchApps(): Promise<AppListEntry[]> {
-  const res = await fetch('/api/v1/apps')
+export async function fetchApps(environment = ''): Promise<AppListEntry[]> {
+  const res = await fetch(
+    environment === ''
+      ? '/api/v1/apps'
+      : `/api/v1/apps?environment=${encodeURIComponent(environment)}`,
+  )
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -46,9 +54,10 @@ export async function fetchApps(): Promise<AppListEntry[]> {
 // queryClient.ensureQueryData call and the component's useSuspenseQuery
 // call, the same pattern appDetailQueryOptions below uses.
 export function appListQueryOptions() {
+  const environment = getEnvironmentScope()
   return queryOptions({
-    queryKey: appKeys.list(),
-    queryFn: fetchApps,
+    queryKey: appKeys.list(environment),
+    queryFn: () => fetchApps(environment),
   })
 }
 

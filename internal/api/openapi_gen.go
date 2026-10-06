@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 670 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 673 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -333,6 +333,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabase", Description: "Resource-scoped, same reasoning as the apps routes above."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/base-backups", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListBaseBackupHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/base-backups", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleTriggerBaseBackup", Description: ""},
+	{Method: "PUT", Path: "/api/v1/databases/{name}/environment", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseEnvironment", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/logs", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleQueryDatabaseLogs", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/logs/stream", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleLiveDatabaseLogStream", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/major-upgrade", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleMajorUpgrade", Description: ""},
@@ -572,6 +573,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/project", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetAppProject", Description: "Move an app/database into (or out of, with project_id: \"\") a project: the project-kind counterpart to PUT /apps/{name}/node and PUT /databases/{name}/node above, same narrow-dedicated- mutation shape those routes establish (appResource/ databaseResource's own ProjectID field is response-only, exactly like NodeID, see handleSetAppProject's own doc comment for why). AbilityWrite, not AbilityRoot: project membership is an ordinary organizational edit, not infrastructure placement, so it sits at the same sensitivity as the rest of apps/databases CRUD rather than the node routes' fleet-level boundary."},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/project", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetDatabaseProject", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/resources", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetDatabaseResources", Description: "Set (or clear, with a nil body field) a database's resource limits: databaseResource's own Resources field doc comment explains why this is a dedicated route rather than folded into handleUpdateApp's general-PUT equivalent, which has no database counterpart. AbilityWrite, the same ordinary-config-edit sensitivity as the project routes just above, not AbilityRoot: a resource cap is not fleet-level placement."},
+	{Method: "GET", Path: "/api/v1/environments", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleListAllEnvironments", Description: "Global typed environments (environments_global.go, environment_move.go), behind the global-environments experimental feature."},
+	{Method: "POST", Path: "/api/v1/environments", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleCreateGlobalEnvironment", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/environments/{id}", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleDeleteEnvironment", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/environments/{id}", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleUpdateEnvironment", Description: ""},
 	{Method: "POST", Path: "/api/v1/environments/{id}/clone", Ability: "AbilityDeploy", Group: "Projects / Organizations / Environments", Handler: "handleEnvironmentClone", Description: ""},

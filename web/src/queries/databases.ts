@@ -22,10 +22,14 @@ import {
   type ExistingVolumeInfo,
   readErrorMessage,
 } from '../lib/apiError'
+import { getEnvironmentScope } from '../lib/environmentScope'
 
 export const databaseKeys = {
   all: ['databases'] as const,
-  list: () => [...databaseKeys.all, 'list'] as const,
+  list: (environment = '') =>
+    environment === ''
+      ? ([...databaseKeys.all, 'list'] as const)
+      : ([...databaseKeys.all, 'list', { environment }] as const),
   detail: (name: string) => [...databaseKeys.all, 'detail', name] as const,
   status: (name: string) => [...databaseKeys.detail(name), 'status'] as const,
 }
@@ -34,8 +38,14 @@ export const databaseKeys = {
 // /api/v1/databases (internal/api/databases.go's handleListDatabases)
 // returns databaseListResource, databaseResource plus a batched status
 // summary, no cursor, matching fetchApps's own reasoning.
-export async function fetchDatabases(): Promise<DatabaseListEntry[]> {
-  const res = await fetch('/api/v1/databases')
+export async function fetchDatabases(
+  environment = '',
+): Promise<DatabaseListEntry[]> {
+  const res = await fetch(
+    environment === ''
+      ? '/api/v1/databases'
+      : `/api/v1/databases?environment=${encodeURIComponent(environment)}`,
+  )
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -49,9 +59,10 @@ export async function fetchDatabases(): Promise<DatabaseListEntry[]> {
 // queryClient.ensureQueryData call and the component's useSuspenseQuery
 // call, the same pattern databaseDetailQueryOptions below uses.
 export function databaseListQueryOptions() {
+  const environment = getEnvironmentScope()
   return queryOptions({
-    queryKey: databaseKeys.list(),
-    queryFn: fetchDatabases,
+    queryKey: databaseKeys.list(environment),
+    queryFn: () => fetchDatabases(environment),
   })
 }
 

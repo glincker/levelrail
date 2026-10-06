@@ -18,6 +18,11 @@ var ErrDeployApprovalNotFound = errors.New("store: deploy approval not found")
 const (
 	DeployApprovalActionDeploy  = "deploy"
 	DeployApprovalActionPromote = "promote"
+	// DeployApprovalActionMoveApp and DeployApprovalActionMoveDatabase gate
+	// retagging a resource into or out of a protected environment; Image
+	// then carries the target environment id.
+	DeployApprovalActionMoveApp      = "move_app_environment"
+	DeployApprovalActionMoveDatabase = "move_database_environment"
 )
 
 // Deploy approval statuses, DeployApproval.Status's valid values.

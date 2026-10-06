@@ -9,6 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MoveToNodeDialog } from './MoveToNodeDialog'
 import { MoveToProjectDialog } from './MoveToProjectDialog'
 import { MoveToEnvironmentDialog } from './MoveToEnvironmentDialog'
+import { MoveEnvironmentDialog } from './environments/MoveEnvironmentDialog'
+import { useGlobalEnvironments } from '../queries/globalEnvironments'
+import { useExperimentalFeatures } from '../hooks/useExperimental'
+import { isFeatureVisible } from '../lib/experimental'
 import { useProjectListOptional } from '../queries/projects'
 import { useEnvironmentListOptional } from '../queries/environments'
 
@@ -40,9 +44,14 @@ export function AppOverview({ app }: { app: AppDetail }) {
   // empty projectId disables the underlying query, same reasoning
   // MoveToEnvironmentDialog's own doc comment gives.
   const environmentList = useEnvironmentListOptional(app.project_id ?? '')
-  const environmentName = environmentList.data?.find(
-    (e) => e.id === app.environment_id,
-  )?.name
+  const globalEnvironments = isFeatureVisible(
+    'global-environments',
+    useExperimentalFeatures(),
+  )
+  const globalList = useGlobalEnvironments(globalEnvironments)
+  const environmentName = (
+    globalEnvironments ? globalList.data : environmentList.data
+  )?.find((e) => e.id === app.environment_id)?.name
 
   return (
     <Card>
@@ -138,11 +147,19 @@ export function AppOverview({ app }: { app: AppDetail }) {
                   no environment
                 </span>
               )}
-              <MoveToEnvironmentDialog
-                appName={app.name}
-                projectId={app.project_id}
-                currentEnvironmentId={app.environment_id}
-              />
+              {globalEnvironments ? (
+                <MoveEnvironmentDialog
+                  kind="apps"
+                  name={app.name}
+                  currentEnvironmentId={app.environment_id}
+                />
+              ) : (
+                <MoveToEnvironmentDialog
+                  appName={app.name}
+                  projectId={app.project_id}
+                  currentEnvironmentId={app.environment_id}
+                />
+              )}
             </dd>
           </div>
         </dl>

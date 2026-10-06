@@ -9,6 +9,7 @@ import type databases from '../locales/en/databases.json'
 import type https from '../locales/en/https.json'
 import type nodes from '../locales/en/nodes.json'
 import type access from '../locales/en/access.json'
+import type environments from '../locales/en/environments.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -26,6 +27,7 @@ declare module 'i18next' {
       https: typeof https
       nodes: typeof nodes
       access: typeof access
+      environments: typeof environments
     }
   }
 }

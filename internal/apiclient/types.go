@@ -2066,6 +2066,9 @@ type EnvironmentResource struct {
 	Name      string `json:"name"`
 	Protected bool   `json:"protected"`
 	CreatedAt string `json:"created_at"`
+	Kind      string `json:"kind,omitempty"`
+	Scope     string `json:"scope,omitempty"`
+	SortOrder int    `json:"sort_order,omitempty"`
 }
 
 // CreateEnvironmentRequest mirrors internal/api's

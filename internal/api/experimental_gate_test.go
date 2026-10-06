@@ -51,6 +51,9 @@ func TestExperimentalGateMiddleware(t *testing.T) {
 		{http.MethodPost, "/api/v1/apply/plan", experimental.IaC},
 		{http.MethodGet, "/api/v1/export", experimental.IaC},
 		{http.MethodGet, "/api/v1/settings/cloudflare-tunnel", experimental.CloudflareTunnel},
+		{http.MethodGet, "/api/v1/environments", experimental.GlobalEnvironments},
+		{http.MethodPost, "/api/v1/environments", experimental.GlobalEnvironments},
+		{http.MethodPut, "/api/v1/databases/pg/environment", experimental.GlobalEnvironments},
 	}
 	for _, tc := range tests {
 		t.Run(tc.path, func(t *testing.T) {
