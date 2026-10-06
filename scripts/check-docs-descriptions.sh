@@ -20,4 +20,24 @@ if [[ ${#missing[@]} -gt 0 ]]; then
   exit 1
 fi
 
+# An unquoted YAML scalar containing ": " (or " #") does not parse and fails the
+# whole VitePress build, so a description that exists is not enough.
+unparseable=()
+for f in docs/*.md; do
+  line="$(grep -m1 -E '^description:' "$f" || true)"
+  [[ -z "$line" ]] && continue
+  value="${line#description:}"
+  value="${value# }"
+  case "$value" in \"* | \'*) continue ;; esac
+  if [[ "$value" == *": "* || "$value" == *" #"* ]]; then
+    unparseable+=("$f")
+  fi
+done
+
+if [[ ${#unparseable[@]} -gt 0 ]]; then
+  echo "Unquoted description contains \": \" or \" #\" (invalid YAML), quote it or reword in:"
+  printf '  %s\n' "${unparseable[@]}"
+  exit 1
+fi
+
 echo "All docs pages have a description tag."
