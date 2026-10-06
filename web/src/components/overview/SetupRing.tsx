@@ -36,12 +36,14 @@ function readDismissed(app: string): boolean {
 export function SetupRing({
   app,
   hasGitSource,
+  imageDeployed = false,
 }: {
   app: Pick<AppDetail, 'name' | 'health' | 'resources' | 'domains'>
   hasGitSource: boolean
+  imageDeployed?: boolean
 }) {
   const [dismissed, setDismissed] = useState(() => readDismissed(app.name))
-  const { items, done } = computeSetup({ app, hasGitSource })
+  const { items, done } = computeSetup({ app, hasGitSource, imageDeployed })
   if (dismissed || done === items.length) return null
 
   const dismiss = () => {
