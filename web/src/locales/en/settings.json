@@ -151,5 +151,12 @@
       "title": "Invite your team",
       "description": "Give teammates their own accounts instead of sharing yours."
     }
+  },
+  "githubApp": {
+    "manageAccess": "Manage repository access",
+    "manageAccessHint": "Missing a repository? Choose which repositories this app can see on GitHub, then come back.",
+    "personal": "Personal account",
+    "organization": "Organization",
+    "connected": "connected"
   }
 }

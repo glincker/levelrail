@@ -91,6 +91,8 @@ export interface GitHubAppInstallation {
   account_login: string
   account_type: 'user' | 'organization'
   connected_at: string
+  // settings_url opens this installation on GitHub to change its repository access.
+  settings_url?: string
 }
 
 // GitHubAppInstallationListResponse mirrors
