@@ -11,6 +11,14 @@ import (
 // doesn't match any row.
 var ErrProjectNotFound = errors.New("store: project not found")
 
+// GlobalProjectID is the reserved project that owns the instance-wide
+// environments (migration 0375). It is never listed as a project and never
+// deletable, since deleting it would cascade away every global environment.
+const GlobalProjectID = "proj_global"
+
+// ErrReservedProject is returned when a caller tries to delete GlobalProjectID.
+var ErrReservedProject = errors.New("store: the global project is reserved")
+
 // Project is a lightweight, non-auth organizational grouping (see
 // migrations/0022_projects.sql's own comment for the "why" and its
 // explicit boundary against the deferred teams/RBAC work): a name an
@@ -74,8 +82,9 @@ func (db *DB) ListProjects(ctx context.Context) ([]Project, error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT id, name, created_at, org_id
 		FROM projects
+		WHERE id != ?
 		ORDER BY created_at
-	`)
+	`, GlobalProjectID)
 	if err != nil {
 		return nil, fmt.Errorf("store: list projects: %w", err)
 	}
@@ -115,6 +124,9 @@ func (db *DB) ListProjects(ctx context.Context) ([]Project, error) {
 // deleting the label must never delete the real resources it labeled.
 // Returns ErrProjectNotFound if id doesn't exist.
 func (db *DB) DeleteProject(ctx context.Context, id string) error {
+	if id == GlobalProjectID {
+		return ErrReservedProject
+	}
 	res, err := db.ExecContext(ctx, `DELETE FROM projects WHERE id = ?`, id)
 	if err != nil {
 		return fmt.Errorf("store: delete project %q: %w", id, err)
