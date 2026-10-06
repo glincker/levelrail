@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { FingerprintIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
-  NoPasskeyForAccountError,
   isPasskeySupported,
   useBeginPasskeyLogin,
   useFinishPasskeyLogin,
@@ -30,7 +29,6 @@ export function SignInFlow({
   onUsernameChange: (value: string) => void
 }) {
   const [step, setStep] = useState<Step>({ kind: 'username' })
-  const [detectError, setDetectError] = useState<string | null>(null)
   const begin = useBeginPasskeyLogin()
   const finish = useFinishPasskeyLogin()
 
@@ -39,7 +37,6 @@ export function SignInFlow({
     if (trimmed === '') {
       return
     }
-    setDetectError(null)
     if (!isPasskeySupported()) {
       setStep({ kind: 'password' })
       return
@@ -48,19 +45,17 @@ export function SignInFlow({
       onSuccess: (challenge) => {
         setStep({ kind: 'passkey', challenge })
       },
-      onError: (error) => {
-        if (error instanceof NoPasskeyForAccountError) {
-          setStep({ kind: 'password' })
-          return
-        }
-        setDetectError(error.message)
+      // Any failure of the passkey check (no passkey, passkeys not configured
+      // on this server, a network error) falls back to the password: a
+      // passkey must never be the only way in.
+      onError: () => {
+        setStep({ kind: 'password' })
       },
     })
   }
 
   function backToUsername() {
     setStep({ kind: 'username' })
-    setDetectError(null)
   }
 
   if (step.kind === 'username') {
@@ -83,12 +78,6 @@ export function SignInFlow({
             }}
           />
         </Field>
-        {detectError ? (
-          <Alert variant="destructive">
-            <WarningIcon />
-            <AlertDescription>{detectError}</AlertDescription>
-          </Alert>
-        ) : null}
         <Button
           type="button"
           className="w-full"
