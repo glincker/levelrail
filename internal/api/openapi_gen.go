@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 662 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 665 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -281,6 +281,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteAIAssistantSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetAIAssistantSettings", Description: "BYOK AI assistant settings (ai_settings.go): GET is AbilityRead; PUT/DELETE are AbilityRoot, the same tier PUT /api/v1/settings/ email uses for any other platform-wide credential-bearing config."},
 	{Method: "PUT", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateAIAssistantSettings", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/ai-control", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetAIControl", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/ai-control", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateAIControl", Description: ""},
+	{Method: "POST", Path: "/api/v1/settings/ai-control/revoke-agent-tokens", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeAgentTokens", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetGlobalDeployFreeze", Description: "OAuth settings: GET is AbilityRead, PUT is AbilityRoot, matching /api/v1/settings/ingress's own tiers. Global deploy freeze windows apply to every app, so writing them is root-only."},
 	{Method: "PUT", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutGlobalDeployFreeze", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/oauth", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListOAuthSettings", Description: ""},

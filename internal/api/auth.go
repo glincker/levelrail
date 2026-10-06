@@ -308,6 +308,9 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 				}
 			}
 			gated := func(w http.ResponseWriter, r *http.Request) {
+				if rt.aiControlRejectsPinned(w, r, pinned.userID, required) {
+					return
+				}
 				allowed, err := decide(r.Context(), store.PrincipalTypeToken, pinned.userID, pinned.pinnedAbilities)
 				if err != nil {
 					rt.logger.Error("api: pinned session ability decision failed", slog.String("error", err.Error()))
@@ -409,6 +412,9 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 			return
 		} else if gone {
 			writeError(w, http.StatusUnauthorized, "invalid token")
+			return
+		}
+		if rt.aiControlRejects(w, r, rec, required) {
 			return
 		}
 		allowed, err := decide(r.Context(), store.PrincipalTypeToken, rec.ID, rec.Abilities)

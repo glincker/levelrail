@@ -202,6 +202,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"version":                  nil,
 	"changelog":                nil,
 	"upgrade":                  nil,
+	"ai-control":               {subs: map[string]*cmdNode{"status": nil, "set": nil, "revoke-agents": nil}},
 	"audit-log":                nil,
 	"audit-purge":              nil,
 	"attention":                nil,

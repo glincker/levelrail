@@ -31,6 +31,10 @@ func setupAIAssistantEngine(ctx context.Context, db *store.DB, secretsManager *s
 		return nil, fmt.Errorf("check ai assistant internal token: %w", err)
 	}
 
+	if err := db.LabelUnlabeledTokensByName(ctx, api.AIAssistantTokenName, api.AIAssistantAgentName); err != nil {
+		return nil, fmt.Errorf("label ai assistant internal token: %w", err)
+	}
+
 	var plaintext string
 	if exists {
 		plaintext, err = secretsManager.Resolve(ctx, key, aiInternalTokenEnvKey)
@@ -38,7 +42,7 @@ func setupAIAssistantEngine(ctx context.Context, db *store.DB, secretsManager *s
 			return nil, fmt.Errorf("resolve ai assistant internal token: %w", err)
 		}
 	} else {
-		plaintext, _, err = api.MintAPIToken(ctx, db, "AI Assistant (internal)", []string{api.AbilityRoot}, nil)
+		plaintext, err = api.MintAIAssistantToken(ctx, db)
 		if err != nil {
 			return nil, fmt.Errorf("mint ai assistant internal token: %w", err)
 		}

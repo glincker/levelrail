@@ -1062,6 +1062,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/settings/ai-assistant", rt.requireAbility(AbilityRead, rt.handleGetAIAssistantSettings))
 	mux.HandleFunc("PUT /api/v1/settings/ai-assistant", rt.requireAbility(AbilityRoot, rt.handleUpdateAIAssistantSettings))
 	mux.HandleFunc("DELETE /api/v1/settings/ai-assistant", rt.requireAbility(AbilityRoot, rt.handleDeleteAIAssistantSettings))
+	mux.HandleFunc("GET /api/v1/settings/ai-control", rt.requireAbility(AbilityRead, rt.handleGetAIControl))
+	mux.HandleFunc("PUT /api/v1/settings/ai-control", rt.requireAbility(AbilityRoot, rt.handleUpdateAIControl))
+	mux.HandleFunc("POST /api/v1/settings/ai-control/revoke-agent-tokens", rt.requireAbility(AbilityRoot, rt.handleRevokeAgentTokens))
 
 	// AI assistant chat sessions (ai_chat.go): AbilityRoot throughout,
 	// not a lower tier, because a confirmed message can execute any
