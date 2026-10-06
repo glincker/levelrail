@@ -76,6 +76,13 @@ func doctorFirewallExitErrorUnknown(name, statusCmd string, err error) doctorChe
 	return doctorCheckResource{Code: "firewall", Name: name, Status: doctorStatusUnknown, Message: err.Error()}
 }
 
+// SSH is allowed first so enabling ufw or denying by default never locks the operator out.
+const (
+	doctorUFWAllowPorts = "sudo ufw allow 22/tcp && sudo ufw allow 80,443/tcp && sudo ufw allow 443/udp"
+	doctorUFWEnableFix  = doctorUFWAllowPorts + " && sudo ufw enable"
+	doctorUFWDenyFix    = doctorUFWAllowPorts + " && sudo ufw default deny incoming"
+)
+
 func doctorCheckUFW(ctx context.Context, lookPath func(string) (string, error), run firewallCommandRunner) (doctorCheckResource, bool) {
 	const name = "Firewall (ufw)"
 	if _, err := lookPath("ufw"); err != nil {
@@ -92,7 +99,7 @@ func doctorCheckUFW(ctx context.Context, lookPath func(string) (string, error), 
 		return doctorCheckResource{
 			Code: "firewall", Name: name, Status: doctorStatusWarn,
 			Message:  "ufw installed but inactive",
-			Fix:      "sudo ufw allow 80,443/tcp && sudo ufw enable",
+			Fix:      doctorUFWEnableFix,
 			DocsPath: doctorFirewallDocsPath,
 		}, true
 	}
@@ -115,7 +122,7 @@ func doctorCheckUFW(ctx context.Context, lookPath func(string) (string, error), 
 		return doctorCheckResource{
 			Code: "firewall", Name: name, Status: doctorStatusWarn,
 			Message:  "active, but default incoming policy is \"" + defaultIncoming + "\", not deny/reject",
-			Fix:      "sudo ufw default deny incoming && sudo ufw allow 80,443/tcp",
+			Fix:      doctorUFWDenyFix,
 			DocsPath: doctorFirewallDocsPath,
 		}, true
 	}

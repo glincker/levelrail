@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   computeSuggestions,
   computeSetup,
+  isImageDeploy,
   type SuggestionInput,
 } from './suggestions'
 import type { TrafficStats } from '../../queries/appTraffic'
@@ -122,6 +123,37 @@ describe('computeSuggestions', () => {
     expect(
       ids({ ...healthy, hasGitSource: false, gitSourceKnown: false }),
     ).toEqual([])
+  })
+
+  it('does not ask an image or template deploy to connect git', () => {
+    expect(
+      ids({ ...healthy, hasGitSource: false, imageDeployed: true }),
+    ).toEqual([])
+    expect(isImageDeploy('image')).toBe(true)
+    expect(isImageDeploy('compose')).toBe(true)
+    expect(isImageDeploy('webhook')).toBe(false)
+    expect(isImageDeploy(undefined)).toBe(false)
+  })
+
+  it('offers an image update with both versions and a per-version dismissal id', () => {
+    const [s] = computeSuggestions({
+      ...healthy,
+      imageUpdate: { current: 'v1.21.8', latest: 'v1.22.0' },
+    })
+    expect(s?.id).toBe('image_update_v1.22.0')
+    expect(s?.detail).toBe('v1.21.8 to v1.22.0')
+    expect(s?.action.kind).toBe('open_deploy')
+  })
+
+  it('drops the git item from setup progress for image deploys', () => {
+    const git = (imageDeployed: boolean) =>
+      computeSetup({
+        app: healthy.app,
+        hasGitSource: false,
+        imageDeployed,
+      }).items.some((i) => i.id === 'git')
+    expect(git(false)).toBe(true)
+    expect(git(true)).toBe(false)
   })
 
   it('caps at three, highest priority first, and honours dismissals', () => {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -49,6 +50,30 @@ func TestDoctorCheckFirewall_InstalledButInactive(t *testing.T) {
 	got := doctorCheckFirewall(context.Background(), lookPath, run)
 	if got.Status != doctorStatusWarn {
 		t.Errorf("Status = %q, want %q, message = %q", got.Status, doctorStatusWarn, got.Message)
+	}
+}
+
+func TestDoctorCheckFirewall_UFWFixAllowsSSHBeforeEnabling(t *testing.T) {
+	lookPath := func(string) (string, error) { return "/usr/sbin/ufw", nil }
+	for name, status := range map[string]string{
+		"inactive":       "Status: inactive\n",
+		"allow incoming": "Status: active\nDefault: allow (incoming), allow (outgoing), disabled (routed)\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			run := func(context.Context, string, ...string) ([]byte, error) { return []byte(status), nil }
+			got := doctorCheckFirewall(context.Background(), lookPath, run)
+			ssh := strings.Index(got.Fix, "22/tcp")
+			lockout := strings.Index(got.Fix, "ufw enable")
+			if lockout < 0 {
+				lockout = strings.Index(got.Fix, "default deny")
+			}
+			if ssh < 0 || lockout < 0 || ssh > lockout {
+				t.Errorf("Fix = %q, want SSH allowed before the step that can lock the operator out", got.Fix)
+			}
+			if !strings.Contains(got.Fix, "443/udp") {
+				t.Errorf("Fix = %q, want 443/udp (HTTP/3) allowed", got.Fix)
+			}
+		})
 	}
 }
 

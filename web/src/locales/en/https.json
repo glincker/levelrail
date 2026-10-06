@@ -4,7 +4,7 @@
     "description": "Serve this dashboard at {{domain}} over HTTPS with a real Let's Encrypt certificate. The hostname resolves to this server on its own, so there is nothing to configure at a registrar.",
     "noPublicIp": "This server's public IP address is not known, so a zero-DNS hostname cannot be built. Set APP_PUBLIC_HOST to the IP on the control plane and restart it, or use your own domain below.",
     "emailLabel": "Email for certificate notices",
-    "emailHelp": "Let's Encrypt contacts this address if a certificate has a problem.",
+    "emailHelp": "Any inbox you read works. Certificates are free and renew on their own: Let's Encrypt only emails you if one is about to expire and could not renew.",
     "stagingLabel": "Test with Let's Encrypt staging first",
     "stagingHelp": "Staging certificates are not trusted by browsers, but it has no meaningful rate limits. Use it to prove ports 80 and 443 are reachable.",
     "enable": "Enable HTTPS",
@@ -53,5 +53,13 @@
   "wizard": {
     "ownDomainTitle": "Or use your own domain",
     "sslipReady": "HTTPS is ready on the free hostname. You can continue, or set up your own domain too."
+  },
+  "certTable": {
+    "internalBadge": "Internal CA",
+    "internalHint": "Signed by this server's own short-lived CA and renewed automatically. Browsers show a warning until you enable HTTPS.",
+    "internalRenews": "Renews automatically",
+    "acmeBadge": "Let's Encrypt",
+    "custom": "Custom",
+    "getTrusted": "Get a trusted certificate"
   }
 }

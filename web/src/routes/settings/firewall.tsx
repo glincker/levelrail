@@ -23,6 +23,7 @@ import type {
   FirewallRuleProtocol,
 } from '../../types/firewallRule'
 import { DoctorCheckRow } from '@/components/DoctorCheckRow'
+import { HostFirewallCard } from '@/components/HostFirewallCard'
 import {
   Table,
   TableBody,
@@ -87,6 +88,8 @@ function FirewallPage() {
         description="Declarative host firewall rules, reconciled onto this node's firewall (ufw)."
         actions={<AddFirewallRuleDialog />}
       />
+
+      <HostFirewallCard />
 
       {firewallCheck ? (
         <Card>

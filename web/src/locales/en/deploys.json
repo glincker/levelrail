@@ -54,5 +54,19 @@
       "disabled": "Deploy status badge disabled.",
       "errorTitle": "Could not update the deploy status badge."
     }
+  },
+  "releaseLine": {
+    "deployed": "deployed",
+    "from": "from",
+    "source": {
+      "webhook": "a git push",
+      "manual": "the dashboard",
+      "image": "an image deploy",
+      "compose": "a template or compose file",
+      "promote": "a promotion",
+      "clone": "a clone",
+      "schedule": "a schedule",
+      "auto_rollback": "an automatic rollback"
+    }
   }
 }

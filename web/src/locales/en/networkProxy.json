@@ -28,5 +28,11 @@
   "empty": {
     "title": "No domains routed yet",
     "description": "Connect a domain from an app's Domains tab to see its traffic path here."
+  },
+  "automaticDomain": {
+    "badge": "Automatic",
+    "hint": "Assigned by Levelrail from this server's IP so the app works with no DNS setup. Add your own domain below to replace it.",
+    "open": "Open",
+    "tlsNote": "Uses a self-signed certificate until HTTPS is enabled under Domains."
   }
 }

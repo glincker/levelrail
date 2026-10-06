@@ -69,5 +69,9 @@ export const DEPLOY_ATTEMPT_SOURCE_LABEL: Record<DeployAttemptSource, string> =
     webhook: 'Webhook',
     manual: 'Manual build',
     image: 'Image',
+    compose: 'Template or compose',
+    promote: 'Promotion',
+    clone: 'Clone',
+    schedule: 'Schedule',
     auto_rollback: 'Auto-rollback',
   }

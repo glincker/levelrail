@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 import { CheckDetail } from '../CheckDetail'
+import { HostFirewallToggle } from '../HostFirewallToggle'
 import { groupServerChecks } from '../../lib/setupWizard'
 import type { DoctorCheck, DoctorReport } from '../../queries/systemDoctor'
 
@@ -57,6 +58,11 @@ function CheckRow({
         <div className="px-2.5 pb-2.5 pl-9">
           <p className="text-xs text-muted-foreground">{check.message}</p>
           <CheckDetail check={check} />
+          {check.code === 'firewall' ? (
+            <div className="mt-2">
+              <HostFirewallToggle />
+            </div>
+          ) : null}
         </div>
       </CollapsiblePanel>
     </Collapsible>

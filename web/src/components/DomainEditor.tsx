@@ -8,6 +8,7 @@ import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { useCertificates } from '../queries/certificates'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { AutomaticDomainRow } from './AutomaticDomainRow'
 import { DomainDnsCheck } from './DomainDnsCheck'
 import { DomainDnsRecordsControl } from './DomainDnsRecordsControl'
 import { DomainBasicAuthControl } from './DomainBasicAuthControl'
@@ -130,6 +131,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
             its hostname), then a TLS certificate is issued automatically once
             it resolves.
           </FieldHint>
+          <AutomaticDomainRow appName={app.name} />
           {fields.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No domains configured.

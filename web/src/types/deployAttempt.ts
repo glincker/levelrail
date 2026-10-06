@@ -29,7 +29,14 @@ export type DeployAttemptStatus =
 // once a crashloop alert fires (also no commit_sha: it's the same
 // image-tag path as 'image', just driven automatically).
 export type DeployAttemptSource =
-  'webhook' | 'manual' | 'image' | 'auto_rollback'
+  | 'webhook'
+  | 'manual'
+  | 'image'
+  | 'compose'
+  | 'promote'
+  | 'clone'
+  | 'schedule'
+  | 'auto_rollback'
 
 export interface DeployAttempt {
   id: string

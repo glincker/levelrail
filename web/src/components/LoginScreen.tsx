@@ -193,6 +193,27 @@ export function LoginScreen({
           <OAuthButtons />
         </CardContent>
       </Card>
+      {isRegister ? null : (
+        <p className="max-w-sm text-center text-xs text-muted-foreground">
+          {t('loginHelp.lockedOut')}{' '}
+          <code className="rounded bg-muted px-1 py-0.5 font-mono">
+            {brand.BinaryName ? `sudo ${brand.BinaryName} ` : ''}recover-admin
+          </code>
+          {brand.DocsURL ? (
+            <>
+              {' '}
+              <a
+                href={`${brand.DocsURL}/emergency-access`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                {t('loginHelp.emergencyDocs')}
+              </a>
+            </>
+          ) : null}
+        </p>
+      )}
       {devMode.data?.enabled ? (
         <div className="w-full max-w-sm space-y-2">
           <Button

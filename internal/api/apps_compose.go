@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -147,6 +149,7 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 			return composeDeployResponse{}, false
 		}
 		rt.recordInstantDeployAttempt(r.Context(), svc, svc.Image, store.DeployAttemptSourceCompose)
+		rt.recreateIfConfigChanged(r.Context(), previousServices, svc)
 		out = append(out, toAppResource(svc))
 	}
 
@@ -160,6 +163,42 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 
 	rt.nudgeReconciler()
 	return composeDeployResponse{AppID: name, Services: out, Notices: notices}, true
+}
+
+// composeConfigChanged reports whether next differs from prev in a field that
+// only takes effect when the container is recreated.
+func composeConfigChanged(prev, next store.DesiredService) bool {
+	return !maps.Equal(prev.Env, next.Env) ||
+		!maps.Equal(prev.Labels, next.Labels) ||
+		!slices.Equal(prev.Command, next.Command) ||
+		!slices.Equal(prev.Entrypoint, next.Entrypoint) ||
+		prev.Port != next.Port ||
+		!ptrIntEqual(prev.HostPort, next.HostPort)
+}
+
+func ptrIntEqual(a, b *int) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return *a == *b
+}
+
+// recreateIfConfigChanged makes a redeploy apply its own edits: an existing
+// member whose config changed is recreated now, since the pending-changes
+// snapshot only exists for releases that went live and a broken one never did.
+func (rt *Router) recreateIfConfigChanged(ctx context.Context, previous []store.DesiredService, next store.DesiredService) {
+	if rt.apps == nil {
+		return
+	}
+	for _, prev := range previous {
+		if prev.Name != next.Name || !composeConfigChanged(prev, next) {
+			continue
+		}
+		if err := rt.apps.RestartService(ctx, next.Name); err != nil {
+			slog.Error("api: deploy compose: recreate changed service failed", "service", next.Name, "error", err)
+		}
+		return
+	}
 }
 
 // pruneStaleComposeServices deletes every member of appName's previous

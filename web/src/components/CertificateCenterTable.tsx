@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -6,13 +8,16 @@ import {
   certExpiryLabel,
   certRenewalBadge,
   certStatusMeta,
+  isInternalCert,
 } from '../lib/certStatus'
 import type { CertificateCenterRow } from '../lib/certificateCenter'
 import { DomainTLSCertControl } from './DomainTLSCertControl'
 import { RenewCertificateButton } from './RenewCertificateButton'
 
 function CertificateRow({ row }: { row: CertificateCenterRow }) {
+  const { t } = useTranslation('https')
   const { domain, appName, cert } = row
+  const internal = cert ? isInternalCert(cert) : false
   const renewalBadge = cert ? certRenewalBadge(cert) : null
 
   return (
@@ -29,7 +34,9 @@ function CertificateRow({ row }: { row: CertificateCenterRow }) {
           </div>
           <p className="text-xs text-muted-foreground">
             {cert
-              ? certExpiryLabel(cert.not_after)
+              ? internal
+                ? t('certTable.internalRenews')
+                : certExpiryLabel(cert.not_after)
               : appName
                 ? 'Not yet issued'
                 : 'Certificate remains from a domain no longer configured on any app'}
@@ -37,11 +44,18 @@ function CertificateRow({ row }: { row: CertificateCenterRow }) {
         </div>
         <div className="flex items-center gap-2">
           {cert ? (
-            <Badge variant={cert.source === 'custom' ? 'outline' : 'muted'}>
-              {cert.source === 'custom' ? 'Custom' : 'ACME / internal'}
+            <Badge
+              variant={cert.source === 'custom' ? 'outline' : 'muted'}
+              title={internal ? t('certTable.internalHint') : undefined}
+            >
+              {cert.source === 'custom'
+                ? t('certTable.custom')
+                : internal
+                  ? t('certTable.internalBadge')
+                  : t('certTable.acmeBadge')}
             </Badge>
           ) : null}
-          {cert ? (
+          {cert && !(internal && cert.status !== 'expired') ? (
             <Badge variant={certStatusMeta[cert.status].variant}>
               {certStatusMeta[cert.status].label}
             </Badge>
@@ -50,6 +64,11 @@ function CertificateRow({ row }: { row: CertificateCenterRow }) {
             <Badge variant="destructive" title={CERT_RENEWAL_STALLED_HINT}>
               {renewalBadge.label}
             </Badge>
+          ) : null}
+          {internal ? (
+            <Link to="/domains" className="text-xs underline">
+              {t('certTable.getTrusted')}
+            </Link>
           ) : null}
           {appName && (!cert || cert.source === 'acme') ? (
             <RenewCertificateButton appName={appName} domain={domain} />

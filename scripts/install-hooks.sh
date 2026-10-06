@@ -1,10 +1,10 @@
 #!/bin/bash
-# Installs scripts/git-hooks/* into .git/hooks/ and symlinks CLAUDE.md
-# into the current worktree. .git/hooks is shared across all worktrees of
-# a repo (this repo never sets core.hooksPath, so there's no per-worktree
-# override), so re-running this after editing a hook updates every
-# worktree at once. Run this once per clone, and again after editing a
-# hook script.
+# Installs a stub for each scripts/git-hooks/* into .git/hooks/ and symlinks
+# CLAUDE.md into the current worktree. .git/hooks is shared across all
+# worktrees of a repo (this repo never sets core.hooksPath). Each stub runs
+# the hook script of whichever checkout fires it, so editing a hook takes
+# effect at once with no reinstall, and removing a worktree leaves nothing
+# dangling. Run this once per clone.
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
@@ -13,7 +13,16 @@ mkdir -p "$hooks_dir"
 
 for hook in "$repo_root"/scripts/git-hooks/*; do
 	name="$(basename "$hook")"
-	cp "$hook" "$hooks_dir/$name"
+	cat >"$hooks_dir/$name" <<STUB
+#!/bin/bash
+# Installed by scripts/install-hooks.sh: runs this checkout's own hook script.
+hook="\$(git rev-parse --show-toplevel)/scripts/git-hooks/$name"
+if [ ! -x "\$hook" ]; then
+	echo "$name: \$hook not found, skipping" >&2
+	exit 0
+fi
+exec "\$hook" "\$@"
+STUB
 	chmod +x "$hooks_dir/$name"
 	echo "installed $name"
 done

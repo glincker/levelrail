@@ -79,12 +79,15 @@ type Inputs struct {
 	Now           time.Time
 	AssetNames    []string
 	ReleaseKnown  bool
+	// LookPath finds the signature verifier (cosign) on the host; nil reports unknown.
+	LookPath func(string) (string, error)
 }
 
 // Run evaluates every preflight check. It never changes anything.
 func Run(ctx context.Context, in Inputs) []Check {
 	return []Check{
 		releaseAssetsCheck(in),
+		verifierCheck(in),
 		dockerCheck(ctx, in),
 		diskCheck(in),
 		backupCheck(in),
@@ -121,7 +124,25 @@ func releaseAssetsCheck(in Inputs) Check {
 		c.Status, c.Message = StatusFail, "release is missing "+strings.Join(missing, ", ")
 		return c
 	}
-	c.Status, c.Message = StatusOK, "checksums.txt and its signature are published; the installer verifies both"
+	c.Status, c.Message = StatusOK, "checksums.txt and its signature are published"
+	return c
+}
+
+// VerifierTool is the program the installer uses to check the release signature.
+const VerifierTool = "cosign"
+
+func verifierCheck(in Inputs) Check {
+	c := Check{Code: "release_verifier", Name: "Signature verification tool"}
+	if in.LookPath == nil {
+		c.Status, c.Message = StatusUnknown, "could not look for "+VerifierTool
+		return c
+	}
+	if _, err := in.LookPath(VerifierTool); err != nil {
+		c.Status = StatusWarn
+		c.Message = VerifierTool + " is not installed on this host, so an upgrade can only check the SHA-256 checksum, not the release signature. Install " + VerifierTool + " to verify both."
+		return c
+	}
+	c.Status, c.Message = StatusOK, VerifierTool+" is installed: the upgrade command below refuses a release whose signature does not verify"
 	return c
 }
 
