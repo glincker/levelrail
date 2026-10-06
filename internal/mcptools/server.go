@@ -86,7 +86,9 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerModelServingTools(server, client)
 	registerLoadBalancerTools(server, client)
 	registerIaCTools(server, client)
+	registerAIControlTools(server, client)
 
 	summary := applyOptions(server, opts)
+	server.AddReceivingMiddleware(aiControlMiddleware(client))
 	return server, summary
 }

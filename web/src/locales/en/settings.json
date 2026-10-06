@@ -120,5 +120,61 @@
     "cancel": "Cancel",
     "toastCreated": "Policy \"{{name}}\" created.",
     "toastCreatedAttached": "Policy \"{{name}}\" created and attached."
+  },
+  "aiControl": {
+    "title": "AI control",
+    "description": "Decide what agents and the built-in assistant may do on this instance. The server enforces this on every request, whatever the token allows.",
+    "navDescription": "Turn agent access off, read-only or on, and limit it to chosen environments.",
+    "modeLabel": "Agent access",
+    "modes": {
+      "off": {
+        "label": "Off",
+        "description": "Every agent request is refused. Humans are not affected."
+      },
+      "observe": {
+        "label": "Observe",
+        "description": "Agents can read apps, logs and metrics, but not secrets, and change nothing."
+      },
+      "operate": {
+        "label": "Operate",
+        "description": "Agents can read, write and deploy in the environments below. They cannot use root, change secrets, backups or instance settings."
+      },
+      "admin": {
+        "label": "Admin",
+        "description": "Agents can use any ability their token holds in the environments below. A person must still approve protected deploys."
+      }
+    },
+    "adminUnavailable": "Admin mode needs the experimental feature ai-control to be enabled on the server.",
+    "envKindsLabel": "Environments agents may act in",
+    "envKindsDescription": "Applies to operate and admin. Apps with no environment count as custom.",
+    "kinds": {
+      "dev": "Dev",
+      "test": "Test",
+      "uat": "UAT",
+      "production": "Production",
+      "preview": "Preview",
+      "custom": "Custom"
+    },
+    "save": "Save changes",
+    "saving": "Saving...",
+    "saved": "AI control saved.",
+    "pause": "Pause all agents",
+    "paused": "All agents paused.",
+    "agentTokens": "Agent tokens",
+    "agentTokensCount_one": "{{count}} agent token exists.",
+    "agentTokensCount_other": "{{count}} agent tokens exist.",
+    "updatedBy": "Last changed by {{name}}.",
+    "viewAudit": "View agent activity in the audit log",
+    "revoke": {
+      "button": "Revoke all agent tokens",
+      "title": "Revoke every agent token?",
+      "description": "Every token with an agent label stops working immediately. This cannot be undone. The built-in assistant keeps working.",
+      "cancel": "Cancel",
+      "confirm": "Revoke tokens",
+      "revoking": "Revoking...",
+      "done_one": "{{count}} agent token revoked.",
+      "done_other": "{{count}} agent tokens revoked."
+    },
+    "loadFailed": "Could not load AI control settings."
   }
 }

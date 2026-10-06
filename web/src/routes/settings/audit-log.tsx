@@ -49,6 +49,10 @@ const SEARCH_DEBOUNCE_MS = 300
 // every session and API token. Same sensitivity tier as the node and
 // GitHub App settings pages, not an ordinary read like Users.
 export const Route = createFileRoute('/settings/audit-log')({
+  validateSearch: (search: Record<string, unknown>): { agent?: string } =>
+    typeof search.agent === 'string' && search.agent !== ''
+      ? { agent: search.agent }
+      : {},
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(auditLogQueryOptions()),
   component: AuditLogSettingsPage,
@@ -95,7 +99,10 @@ function AuditLogSettingsPage() {
   const [filterLoading, setFilterLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [failedOnly, setFailedOnly] = useState(false)
-  const [agentFilter, setAgentFilter] = useState<string | undefined>()
+  const { agent: agentFromLink } = Route.useSearch()
+  const [agentFilter, setAgentFilter] = useState<string | undefined>(
+    agentFromLink,
+  )
   const { data: tokens = [] } = useQuery({
     ...tokenListQueryOptions(),
     retry: false,

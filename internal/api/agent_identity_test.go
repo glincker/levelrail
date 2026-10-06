@@ -44,6 +44,9 @@ func auditEntriesFor(t *testing.T, rt *Router, cookieReq func(string) *http.Requ
 func TestAgentTokens_ScopeAndAudit(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
+	if err := db.UpdateAIControlSettings(context.Background(), "operate", []string{"custom"}, "test"); err != nil {
+		t.Fatal(err)
+	}
 	cookieReq := func(path string) *http.Request { return authedRequest(t, cookie, http.MethodGet, path, "") }
 
 	reader := mintAgent(t, rt, "reader", []string{AbilityRead}, agentIdentity{Name: "reader-bot", Description: "read only"})

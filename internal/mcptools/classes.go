@@ -214,6 +214,7 @@ var toolTable = map[string]Meta{
 	"set_build_cache":                       {clsM, "logs", outb},
 	"get_oauth_providers":                   {clsR, "settings", sens},
 	"get_email_settings":                    {clsR, "settings", sens},
+	"ai_control_status":                     {clsR, "settings", 0},
 	"list_scheduled_tasks":                  {clsR, "scheduled", 0},
 	"get_scheduled_task":                    {clsR, "scheduled", 0},
 	"list_models":                           {clsR, "models", 0},

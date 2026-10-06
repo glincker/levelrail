@@ -91,6 +91,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         description: 'Connect an AI agent over MCP and manage its tokens.',
       },
       {
+        to: '/settings/ai-control',
+        icon: ShieldCheckIcon,
+        title: 'AI control',
+        description:
+          'Turn agent access off, read-only or on, and limit it to chosen environments.',
+      },
+      {
         to: '/settings/cli-access',
         icon: TerminalWindowIcon,
         title: 'CLI access',
