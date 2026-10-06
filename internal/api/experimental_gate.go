@@ -41,10 +41,16 @@ func featureForPath(p string) (experimental.Feature, bool) {
 	return "", false
 }
 
+// environmentListForRoles lets the guest grants editor read the environment
+// list when only access-roles is on. Creating environments stays gated.
+func environmentListForRoles(r *http.Request) bool {
+	return r.Method == http.MethodGet && r.URL.Path == "/api/v1/environments" && experimental.Enabled(experimental.AccessRoles)
+}
+
 // experimentalGateMiddleware answers 404 for routes of features that are off.
 func experimentalGateMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if f, gated := featureForPath(r.URL.Path); gated && !experimental.Enabled(f) {
+		if f, gated := featureForPath(r.URL.Path); gated && !experimental.Enabled(f) && !environmentListForRoles(r) {
 			writeJSON(w, http.StatusNotFound, experimentalError{
 				Error:   experimental.DisabledMessage(f),
 				Code:    ExperimentalDisabledCode,

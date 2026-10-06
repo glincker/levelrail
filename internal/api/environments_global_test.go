@@ -103,6 +103,19 @@ func TestEnvironmentsDisabledWhenFlagOff(t *testing.T) {
 	}
 }
 
+func TestEnvironmentList_ReadableWithOnlyAccessRoles(t *testing.T) {
+	defer experimental.Set(experimental.All()...)
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	experimental.Set(experimental.AccessRoles)
+	if rec := envReq(rt, cookie, http.MethodGet, "/api/v1/environments", ""); rec.Code != http.StatusOK {
+		t.Errorf("list with only access-roles = %d, want 200 so the grants editor works", rec.Code)
+	}
+	if rec := envReq(rt, cookie, http.MethodPost, "/api/v1/environments", `{"name":"qa","kind":"custom"}`); rec.Code != http.StatusNotFound {
+		t.Errorf("create with only access-roles = %d, want 404 (still gated)", rec.Code)
+	}
+}
+
 func TestPatchEnvironment(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
