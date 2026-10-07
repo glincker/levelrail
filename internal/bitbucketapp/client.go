@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gitprovider"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 const (
@@ -44,7 +45,9 @@ type Client struct {
 // NewClient returns a Client with a bounded per-request timeout, the
 // same reasoning internal/githubapp.NewClient's own doc comment gives.
 func NewClient() *Client {
-	return &Client{HTTP: &http.Client{Timeout: 20 * time.Second}}
+	client := netguard.NewClient()
+	client.Timeout = 20 * time.Second
+	return &Client{HTTP: client}
 }
 
 func (c *Client) tokenURL() string {

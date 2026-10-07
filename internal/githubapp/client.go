@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gitprovider"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // defaultBaseURL is api.github.com's REST API root. Overridable
@@ -80,8 +81,10 @@ type Client struct {
 // fixed timeout (rather than relying solely on ctx) guards against a
 // hung connection blocking an HTTP handler indefinitely.
 func NewClient() *Client {
+	client := netguard.NewClient()
+	client.Timeout = 20 * time.Second
 	return &Client{
-		HTTP:    &http.Client{Timeout: 20 * time.Second},
+		HTTP:    client,
 		BaseURL: defaultBaseURL,
 	}
 }
