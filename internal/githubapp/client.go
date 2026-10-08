@@ -80,8 +80,9 @@ type Client struct {
 // fixed timeout (rather than relying solely on ctx) guards against a
 // hung connection blocking an HTTP handler indefinitely.
 func NewClient() *Client {
+	client := gitprovider.NewGuardedClient()
 	return &Client{
-		HTTP:    &http.Client{Timeout: 20 * time.Second},
+		HTTP:    client,
 		BaseURL: defaultBaseURL,
 	}
 }
