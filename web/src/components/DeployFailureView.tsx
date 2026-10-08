@@ -101,7 +101,7 @@ export function DeployFailureView({
             hidden={!open}
             tabIndex={0}
             aria-label="Log excerpt"
-            className="mt-1 max-h-64 overflow-auto rounded bg-muted p-2 font-mono text-xs whitespace-pre-wrap break-words"
+            className="mt-1 max-h-64 overflow-auto rounded bg-muted p-2 font-mono text-xs whitespace-pre-wrap break-words focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
           >
             {failure.log_excerpt}
           </pre>
