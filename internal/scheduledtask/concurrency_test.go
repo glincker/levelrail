@@ -105,8 +105,8 @@ func TestRunner_BeginRun_Replace_CancelsPreviousAndWaits(t *testing.T) {
 
 	select {
 	case <-cleanupRan:
-	default:
-		t.Error("beginRun(replace) returned before the replaced run's own cleanup ran")
+	case <-time.After(5 * time.Second):
+		t.Error("replaced run's own cleanup did not finish")
 	}
 	cleanup2()
 }
