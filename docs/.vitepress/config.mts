@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
+import { feedHead, writeFeeds } from './feeds.mts'
 import { buildEnd, changelogHead, changelogPageData } from './changelog.mts'
 import { galleryHead, galleryPageData } from './templates.mts'
 import { buildLlmsFullTxt } from './llmsFull.mts'
@@ -36,6 +37,13 @@ const sidebarGroups = [
       { text: 'Back up Postgres to S3', link: '/tutorials/back-up-postgres-to-s3' },
       { text: 'Self-host Vaultwarden', link: '/tutorials/self-host-vaultwarden' },
       { text: 'Debug with logs and metrics', link: '/tutorials/debug-an-app-with-logs-and-metrics' },
+    ],
+  },
+  {
+    text: 'Announcements',
+    items: [
+      { text: 'All announcements', link: '/announcements/' },
+      { text: 'Template gallery and guides', link: '/announcements/self-host-template-gallery-and-guides' },
     ],
   },
   {
@@ -348,6 +356,7 @@ export default withMermaid({
   },
 
   head: [
+    ...feedHead(siteUrl),
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'theme-color', content: '#0b0e14' }],
     ['link', { rel: 'icon', href: `/favicon.svg?v=${faviconVersion}`, type: 'image/svg+xml' }],
@@ -475,6 +484,7 @@ export default withMermaid({
 
   buildEnd: async (config) => {
     await buildEnd(config, siteUrl)
+    await writeFeeds(config, siteUrl)
     buildLlmsFullTxt(config, siteUrl)
     writeRawMarkdown(config)
   },

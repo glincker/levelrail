@@ -42,6 +42,10 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Self-host Vaultwarden](https://levelrail.com/tutorials/self-host-vaultwarden): deploy a Bitwarden-compatible password manager from the template catalog and back up its data.
 - [Debug with logs and metrics](https://levelrail.com/tutorials/debug-an-app-with-logs-and-metrics): search logs and read CPU and memory with no extra tooling.
 
+## Announcements
+
+- [Announcements](https://levelrail.com/announcements/): product news. Feeds: https://levelrail.com/feed.xml (RSS), https://levelrail.com/atom.xml, https://levelrail.com/feed.json.
+
 ## Guides
 
 - [Guides](https://levelrail.com/guides/): task-focused guides that answer one question end to end.
