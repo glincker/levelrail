@@ -68,5 +68,22 @@
       "schedule": "a schedule",
       "auto_rollback": "an automatic rollback"
     }
+  },
+  "imageAutoUpdate": {
+    "title": "Update when the image changes",
+    "infoTipLabel": "About image auto-update",
+    "description": "Checks this app's image tag against its registry on a schedule and redeploys when the tag points at a new digest. Apps built from source, stopped apps, apps in a deploy freeze and apps in a protected environment are skipped.",
+    "enabledLabel": "Redeploy automatically when the tag moves",
+    "switchAriaLabel": "Image auto-update enabled",
+    "checkNow": "Check now",
+    "checking": "Checking...",
+    "lastCheck": "Last check ({{when}}): {{result}}",
+    "neverChecked": "Not checked yet.",
+    "toast": {
+      "enabled": "Image auto-update enabled.",
+      "disabled": "Image auto-update disabled.",
+      "errorTitle": "Could not update image auto-update.",
+      "checkFailed": "Image check failed."
+    }
   }
 }

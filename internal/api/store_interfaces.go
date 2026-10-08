@@ -560,6 +560,7 @@ type Store interface {
 	DomainErrorPagesStore
 	GitSourceStore
 	AppScheduleStore
+	ImageAutoUpdateStore
 	PreviewEnvironmentStore
 	GitHubAppStore
 	GitLabAppStore

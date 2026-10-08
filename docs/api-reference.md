@@ -152,7 +152,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 134 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 137 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -298,6 +298,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/streams | AbilityWriteSensitive | handleCreateAppStream |
 | DELETE | /api/v1/apps/{name}/streams/{id} | AbilityWriteSensitive | handleDeleteAppStream |
 | GET | /api/v1/apps/git-sources | AbilityRead | handleListGitSources |
+| GET | /api/v1/apps/{name}/auto-update | AbilityRead | handleGetImageAutoUpdate |
+| PUT | /api/v1/apps/{name}/auto-update | AbilityDeploy | handleSetImageAutoUpdate |
+| POST | /api/v1/apps/{name}/auto-update/check | AbilityDeploy | handleCheckImageAutoUpdate |
 
 :::
 

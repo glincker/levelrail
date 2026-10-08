@@ -3073,6 +3073,260 @@
         "x-required-ability": "deploy"
       }
     },
+    "/api/v1/apps/{name}/auto-update": {
+      "get": {
+        "description": "Restart (handleRestartApp's own doc comment): AbilityDeploy, the same boundary as the deploy trigger above, since forcing a container recreation is the same class of action as triggering a deploy, just without a new image.\n\nRequires the `read` ability.",
+        "operationId": "handleGetImageAutoUpdate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "Restart (handleRestartApp's own doc comment): AbilityDeploy, the same boundary as the deploy trigger above, since forcing a container recreation is the same class of action as triggering a deploy, just without a new image.",
+        "tags": [
+          "Apps CRUD / Lifecycle / Deploy"
+        ],
+        "x-required-ability": "read"
+      },
+      "put": {
+        "description": "Requires the `deploy` ability.",
+        "operationId": "handleSetImageAutoUpdate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "deploy"
+            ]
+          }
+        ],
+        "summary": "Set Image Auto Update",
+        "tags": [
+          "Apps CRUD / Lifecycle / Deploy"
+        ],
+        "x-required-ability": "deploy"
+      }
+    },
+    "/api/v1/apps/{name}/auto-update/check": {
+      "post": {
+        "description": "Requires the `deploy` ability.",
+        "operationId": "handleCheckImageAutoUpdate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "deploy"
+            ]
+          }
+        ],
+        "summary": "Check Image Auto Update",
+        "tags": [
+          "Apps CRUD / Lifecycle / Deploy"
+        ],
+        "x-required-ability": "deploy"
+      }
+    },
     "/api/v1/apps/{name}/badge": {
       "get": {
         "description": "Deploy status badge opt-in (app_badge.go): same GET-is-AbilityRead, PUT-is-AbilityRoot split as exec-access just above, since enabling it hands out an unauthenticated public view of this app's deploy status. GET .../badge.svg itself is registered unauthenticated on purpose (see publicRoutes in authz_matrix_test.go); it 404s on its own when the per-app flag is off, so it never needs this file's own IAM wrapper.\n\nRequires the `read` ability.",
@@ -16152,7 +16406,7 @@
     },
     "/api/v1/apps/{name}/restart": {
       "post": {
-        "description": "Restart (handleRestartApp's own doc comment): AbilityDeploy, the same boundary as the deploy trigger above, since forcing a container recreation is the same class of action as triggering a deploy, just without a new image.\n\nRequires the `deploy` ability.",
+        "description": "Requires the `deploy` ability.",
         "operationId": "handleRestartApp",
         "parameters": [
           {
@@ -16232,7 +16486,7 @@
             ]
           }
         ],
-        "summary": "Restart (handleRestartApp's own doc comment): AbilityDeploy, the same boundary as the deploy trigger above, since forcing a container recreation is the same class of action as triggering a deploy, just without a new image.",
+        "summary": "Restart App",
         "tags": [
           "Apps CRUD / Lifecycle / Deploy"
         ],

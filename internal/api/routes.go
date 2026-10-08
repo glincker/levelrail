@@ -412,6 +412,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// same boundary as the deploy trigger above, since forcing a
 	// container recreation is the same class of action as triggering a
 	// deploy, just without a new image.
+	mux.HandleFunc("GET /api/v1/apps/{name}/auto-update", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetImageAutoUpdate))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/auto-update", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetImageAutoUpdate))
+	mux.HandleFunc("POST /api/v1/apps/{name}/auto-update/check", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCheckImageAutoUpdate))
 	mux.HandleFunc("POST /api/v1/apps/{name}/restart", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRestartApp))
 
 	// Stop/start (handleStopApp/handleStartApp's own doc comments): same

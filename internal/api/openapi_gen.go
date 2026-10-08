@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 679 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 682 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -101,6 +101,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/auto-rollback", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAutoRollback", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/auto-rollback-slo-burn", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAutoRollbackSLOBurn", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/auto-rollback-slo-burn", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAutoRollbackSLOBurn", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/auto-update", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetImageAutoUpdate", Description: "Restart (handleRestartApp's own doc comment): AbilityDeploy, the same boundary as the deploy trigger above, since forcing a container recreation is the same class of action as triggering a deploy, just without a new image."},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/auto-update", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetImageAutoUpdate", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/auto-update/check", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCheckImageAutoUpdate", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/badge", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetBadgeSettings", Description: "Deploy status badge opt-in (app_badge.go): same GET-is-AbilityRead, PUT-is-AbilityRoot split as exec-access just above, since enabling it hands out an unauthenticated public view of this app's deploy status. GET .../badge.svg itself is registered unauthenticated on purpose (see publicRoutes in authz_matrix_test.go); it 404s on its own when the per-app flag is off, so it never needs this file's own IAM wrapper."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/badge", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetBadgeSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/badge.svg", Ability: "Public", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePublicAppBadge", Description: ""},
@@ -197,7 +200,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/promote/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePromotePreview", Description: "Promotion (promote.go): move a known-good image from this app to a sibling app tagged with another environment in the same project, through the exact same deploy path a plain trigger uses. Preview is AbilityRead like the comparison view above; the trigger itself is AbilityDeploy, matching POST .../deploys."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/requests", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleQueryRequests", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/resource-recommendation", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppResourceRecommendation", Description: "Read-only resource right-sizing suggestion (resource_recommendation.go): synthesizes the app's historical CPU/memory usage and current limits into a deterministic raise/lower/keep suggestion per dimension. AbilityRead, same sensitivity as diagnose above; never writes anything, never applied automatically."},
-	{Method: "POST", Path: "/api/v1/apps/{name}/restart", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRestartApp", Description: "Restart (handleRestartApp's own doc comment): AbilityDeploy, the same boundary as the deploy trigger above, since forcing a container recreation is the same class of action as triggering a deploy, just without a new image."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/restart", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRestartApp", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/save-as-template", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSaveAppAsTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSchedule", Description: "Scheduled deploys (app_schedule.go): a per-app cron schedule that redeploys the latest commit on a branch, checked by internal/scheduledeploy.Scheduler. Same GET=Read/PUT=WriteSensitive split as git-source just above."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppSchedule", Description: ""},
