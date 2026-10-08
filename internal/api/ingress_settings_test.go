@@ -690,3 +690,20 @@ func TestHandleListDomains_Empty(t *testing.T) {
 		t.Errorf("GET /domains = %+v, want empty for a control plane with no domains claimed", got)
 	}
 }
+
+func TestFirstAdminAddress(t *testing.T) {
+	for name, tc := range map[string]struct{ username, want string }{
+		"address":        {"owner@example.com", "owner@example.com"},
+		"plain username": {"admin", ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			if err := BootstrapAdmin(context.Background(), db, tc.username, testAdminPassword); err != nil {
+				t.Fatalf("bootstrap: %v", err)
+			}
+			if got := rt.firstAdminAddress(context.Background()); got != tc.want {
+				t.Errorf("firstAdminAddress = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

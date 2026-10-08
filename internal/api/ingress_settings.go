@@ -47,6 +47,9 @@ type ingressSettingsResource struct {
 	// reachable at and how it was found (env, detected, disabled, none).
 	PublicHost       string `json:"public_host,omitempty"`
 	PublicHostSource string `json:"public_host_source,omitempty"`
+	// SuggestedACMEEmail is the first admin's address, offered as the form
+	// default only; it is never sent to the CA until the operator saves it.
+	SuggestedACMEEmail string `json:"suggested_acme_email,omitempty"`
 }
 
 func (rt *Router) toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource {
@@ -88,7 +91,28 @@ func (rt *Router) handleGetIngressSettings(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.toIngressSettingsResource(settings))
+	res := rt.toIngressSettingsResource(settings)
+	if settings.ACMEEmail == "" {
+		res.SuggestedACMEEmail = rt.firstAdminAddress(r.Context())
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+// firstAdminAddress returns the first user's email when it is a real address, else "".
+func (rt *Router) firstAdminAddress(ctx context.Context) string {
+	users, err := rt.auth.ListUsers(ctx)
+	if err != nil {
+		return ""
+	}
+	for _, u := range users {
+		if !u.IsFirstUser {
+			continue
+		}
+		if a, err := mail.ParseAddress(u.Email); err == nil && a.Address == u.Email {
+			return u.Email
+		}
+	}
+	return ""
 }
 
 // errACMEEmailRequired and errACMEEmailInvalid are validateIngressSettingsRequest's

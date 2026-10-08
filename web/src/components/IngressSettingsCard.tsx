@@ -132,7 +132,7 @@ function toFieldValues(settings: IngressSettings): IngressSettingsFormValues {
   return {
     primaryDomain: settings.primary_domain ?? '',
     acmeEnabled: settings.acme_enabled,
-    acmeEmail: settings.acme_email ?? '',
+    acmeEmail: settings.acme_email ?? settings.suggested_acme_email ?? '',
     acmeDirectoryUrl: settings.acme_directory_url ?? '',
     hstsEnabled: settings.hsts_enabled,
   }
