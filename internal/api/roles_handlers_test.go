@@ -15,7 +15,7 @@ import (
 func enableAccessRoles(t *testing.T) {
 	t.Helper()
 	experimental.Set(experimental.AccessRoles)
-	t.Cleanup(experimental.Reset)
+	t.Cleanup(enableAllExperimental)
 }
 
 func roleReq(t *testing.T, rt *Router, cookie *http.Cookie, method, target, body string) *httptest.ResponseRecorder {
@@ -71,7 +71,7 @@ func TestRoleWriteRoutes_RequireRoot(t *testing.T) {
 
 func TestRoleWriteRoutes_GatedByFlag(t *testing.T) {
 	experimental.Set()
-	t.Cleanup(experimental.Reset)
+	t.Cleanup(enableAllExperimental)
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -387,7 +387,7 @@ func TestInviteAndCreateUserWithStoredRoles(t *testing.T) {
 
 func TestRoleIDRequiresFlag(t *testing.T) {
 	experimental.Set()
-	t.Cleanup(experimental.Reset)
+	t.Cleanup(enableAllExperimental)
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rec := roleReq(t, rt, cookie, http.MethodPost, "/api/v1/invites", `{"email":"x@example.com","role_id":"role_viewer"}`)
