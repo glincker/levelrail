@@ -45,11 +45,12 @@ Open the printed setup link, choose a password, and you are the admin. The first
 1. **Server check** runs the same checks as `levelrail-cli doctor`. Each failure shows a command to fix it and a docs link. Only Docker, the database, or the data directory failing blocks you.
 2. **Topology** (optional) explains single node versus multi-node. Single node is the default and nothing needs deciding now.
 3. **Dashboard domain** (optional, recommended) shows the exact DNS record to create, then watches DNS and the HTTPS certificate until both are green. Use a dedicated name such as `console.example.com`, not a domain an app will serve.
-4. **Git provider** (optional) connects GitHub, GitLab, Bitbucket, or Gitea.
-5. **First app** deploys a sample, a template, or your own repository, and waits until it is healthy. A failure shows the automatic diagnosis and a link to the logs.
-6. **Done** links to alerts, backup targets, and inviting teammates.
+4. **Email** (optional) saves an SMTP server and sends a test message, so password resets and alert emails work. SES and Resend are set up under **Settings, Email**.
+5. **Git provider** (optional) connects GitHub, GitLab, Bitbucket, or Gitea.
+6. **First app** deploys a sample, a template, or your own repository, and waits until it is healthy. A failure shows the automatic diagnosis and a link to the logs.
+7. **Done** links to alerts, backup targets, and inviting teammates.
 
-![Levelrail setup wizard with six steps from server check to done](assets/screenshots/setup-wizard.png)
+![Levelrail setup wizard with the steps from server check to done](assets/screenshots/setup-wizard.png)
 
 Progress is saved on the server, so you can close the tab and resume from any browser. Reopen the wizard any time from **Settings, Setup wizard**.
 
