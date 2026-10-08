@@ -192,7 +192,7 @@
 * **web:** add brand logos for 5 of the selfhosted4 templates ([#812](https://github.com/glincker/levelrail/issues/812)) ([4a73fe2](https://github.com/glincker/levelrail/commit/4a73fe2706251405360edab05d1f5a6d003ad102))
 * weekly GHCR cleanup for orphaned untagged image versions ([#864](https://github.com/glincker/levelrail/issues/864)) ([001a5c9](https://github.com/glincker/levelrail/commit/001a5c95ae6795a6993f243a6df5f51e5d322c5f))
 * wire queue, cancel and digest rollback into the deployments page ([#750](https://github.com/glincker/levelrail/issues/750)) ([42018aa](https://github.com/glincker/levelrail/commit/42018aacb754d18cccf93302630462d94827a90e))
-* wire up support@levelrail.com and support@glincker.com contacts ([#827](https://github.com/glincker/levelrail/issues/827)) ([e4a6f1d](https://github.com/glincker/levelrail/commit/e4a6f1d384dc036e834ce14212618efb81a070ce))
+* wire up support@levelrail.com and support@glinr.com contacts ([#827](https://github.com/glincker/levelrail/issues/827)) ([e4a6f1d](https://github.com/glincker/levelrail/commit/e4a6f1d384dc036e834ce14212618efb81a070ce))
 
 
 ### Bug Fixes

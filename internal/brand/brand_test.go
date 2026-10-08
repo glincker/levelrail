@@ -68,10 +68,10 @@ docs_url: https://glinr.com/levelrail/docs
 		{
 			name: "support email env override wins over file",
 			yaml: valid,
-			env:  map[string]string{"APP_BRAND_SUPPORT_EMAIL": "support@glincker.com"},
+			env:  map[string]string{"APP_BRAND_SUPPORT_EMAIL": "support@glinr.com"},
 			check: func(t *testing.T, b *Brand) {
-				if b.SupportEmail != "support@glincker.com" {
-					t.Errorf("SupportEmail = %q, want support@glincker.com", b.SupportEmail)
+				if b.SupportEmail != "support@glinr.com" {
+					t.Errorf("SupportEmail = %q, want support@glinr.com", b.SupportEmail)
 				}
 			},
 		},
