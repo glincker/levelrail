@@ -22693,7 +22693,7 @@
         "x-required-ability": "session"
       },
       "post": {
-        "description": "API tokens: session-only, deliberately never bearer-token authenticated. A token cannot mint or revoke another token on its own behalf; only an interactive human session can manage the token set, the same boundary that stops a leaked scoped token from escalating itself by minting a broader one.\n\nRequires a signed-in dashboard session.",
+        "description": "API tokens: create/revoke are session-only, deliberately never bearer-token authenticated (list also takes a root token). A token cannot mint or revoke another token on its own behalf; only an interactive human session can manage the token set, the same boundary that stops a leaked scoped token from escalating itself by minting a broader one.\n\nRequires a signed-in dashboard session.",
         "operationId": "handleCreateToken",
         "requestBody": {
           "content": {
@@ -22751,7 +22751,7 @@
             "sessionAuth": []
           }
         ],
-        "summary": "API tokens: session-only, deliberately never bearer-token authenticated.",
+        "summary": "API tokens: create/revoke are session-only, deliberately never bearer-token authenticated (list also takes a root token).",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ],

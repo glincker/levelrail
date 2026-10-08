@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 // includes a token secret, matching the server's own contract.
 func runTokensList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "tokens list", "print tokens as a JSON array to stdout and nothing else", stderr)
+	tokenFlagP := fs.String("token", "", "API token with root ability (skips the password prompt; overrides "+envAPIToken+" and the credentials file)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensListUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -31,6 +33,18 @@ func runTokensList(prog string, args []string, stdout, stderr io.Writer, lookupE
 	of := outputFlags{format, *queryFlagP}
 
 	ctx := context.Background()
+	if tok := listTokenAuth(*tokenFlagP, *usernameP, *passwordP, *profileFlagP, prog, lookupEnv); tok != "" {
+		client := NewClient(resolveAPIURL(*apiURLFlagP, lookupEnv, prog, resolveProfile(*profileFlagP, lookupEnv)), tok)
+		raw, err := client.ListTokensRaw(ctx)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list tokens: %w", err))
+		}
+		var tokens []tokenResource
+		if err := json.Unmarshal(raw, &tokens); err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list tokens: decode: %w", err))
+		}
+		return writeScheduledTaskResult(stdout, stderr, of, tokens, func() { printTokensTable(stdout, tokens) })
+	}
 	sessionClient, _, err := loggedInSessionClient(ctx, sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}, prog, lookupEnv, stdin, stderr)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
@@ -42,6 +56,19 @@ func runTokensList(prog string, args []string, stdout, stderr io.Writer, lookupE
 	}
 
 	return writeScheduledTaskResult(stdout, stderr, of, tokens, func() { printTokensTable(stdout, tokens) })
+}
+
+// listTokenAuth returns the bearer token to list with, or "" to fall back to
+// a session login: an explicit --token wins, then a stored token unless the
+// caller passed session credentials.
+func listTokenAuth(flagToken, username, password, profileFlag, prog string, lookupEnv func(string) (string, bool)) string {
+	if flagToken != "" {
+		return flagToken
+	}
+	if username != "" || password != "" {
+		return ""
+	}
+	return resolveToken("", lookupEnv, prog, resolveProfile(profileFlag, lookupEnv))
 }
 
 // printTokensTable prints a compact, aligned table of tokens, never a
@@ -72,10 +99,12 @@ func tokensListUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s tokens list [flags]
 
-Lists every API token (never a secret value). Requires a live session:
---username/--password (prompted if omitted).
+Lists every API token (never a secret value). Authenticates with a stored
+or --token API token holding root, else a session login (--username/--password,
+prompted if omitted).
 
 Flags:
+  --token string             API token with root ability (skips the password prompt)
   --username string          admin username (prompted if omitted)
   --password string          admin password (prompted without echo if omitted)
   --api-url string             control plane base URL (default: %[2]s env var, then %[3]s)

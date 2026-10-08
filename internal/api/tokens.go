@@ -119,6 +119,20 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 	rt.libraryCreateToken(w, r, req, agent, ownerID, expiresAt)
 }
 
+// sessionOrRootToken serves read-only token metadata to a session or to a
+// bearer token holding root; creating and revoking stay session-only.
+func (rt *Router) sessionOrRootToken(next http.HandlerFunc) http.HandlerFunc {
+	session := rt.requireAuth(next)
+	root := rt.requireAbility(AbilityRoot, next)
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := bearerToken(r); ok {
+			root(w, r)
+			return
+		}
+		session(w, r)
+	}
+}
+
 // handleListTokens handles GET /api/v1/auth/tokens. Never returns a
 // token secret, including for already-revoked rows: once a token is
 // minted, its plaintext is gone from this API's world entirely.

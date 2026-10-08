@@ -282,13 +282,13 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/forgot-password", rt.handleForgotPassword)
 	mux.HandleFunc("POST /api/v1/auth/reset-password", rt.handleResetPassword)
 
-	// API tokens: session-only, deliberately never bearer-token
-	// authenticated. A token cannot mint or revoke another token on its
+	// API tokens: create/revoke are session-only, deliberately never
+	// bearer-token authenticated (list also takes a root token). A token cannot mint or revoke another token on its
 	// own behalf; only an interactive human session can manage the
 	// token set, the same boundary that stops a leaked scoped token from
 	// escalating itself by minting a broader one.
 	mux.HandleFunc("POST /api/v1/auth/tokens", rt.requireAuth(rt.handleCreateToken))
-	mux.HandleFunc("GET /api/v1/auth/tokens", rt.requireAuth(rt.handleListTokens))
+	mux.HandleFunc("GET /api/v1/auth/tokens", rt.sessionOrRootToken(rt.handleListTokens))
 	mux.HandleFunc("DELETE /api/v1/auth/tokens/{id}", rt.requireAuth(rt.handleRevokeToken))
 
 	// Apps CRUD. requireAbility accepts either a session (implicitly
