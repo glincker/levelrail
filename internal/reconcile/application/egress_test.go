@@ -119,8 +119,8 @@ func TestReconcileEgress_CreatesSidecarAttachedToAppContainer(t *testing.T) {
 	if spec.Image != egressImage {
 		t.Errorf("sidecar Image = %q, want %q", spec.Image, egressImage)
 	}
-	if len(spec.CapAdd) != 1 || spec.CapAdd[0] != "NET_ADMIN" {
-		t.Errorf("sidecar CapAdd = %v, want [NET_ADMIN]", spec.CapAdd)
+	if len(spec.CapAdd) != 2 || spec.CapAdd[0] != "NET_ADMIN" || spec.CapAdd[1] != "NET_RAW" {
+		t.Errorf("sidecar CapAdd = %v, want [NET_ADMIN NET_RAW]", spec.CapAdd)
 	}
 	wantNetworkMode := "container:" + appState.ID
 	if spec.NetworkMode != wantNetworkMode {
