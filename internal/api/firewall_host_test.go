@@ -6,9 +6,13 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/bindaddr"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 type fakeUFW struct {
@@ -139,9 +143,30 @@ func TestDisableHostFirewall(t *testing.T) {
 
 func TestHostFirewallRequired_SkipsInvalidPorts(t *testing.T) {
 	rt := NewRouter(discardLogger(), testBrand(), openTestDB(t), WithFirewallRequiredPorts([]int{0, 8080, 70000}))
-	for _, p := range rt.hostFirewallRequired() {
+	for _, p := range rt.hostFirewallRequired(t.Context()) {
 		if p.Port < 1 || p.Port > 65535 {
 			t.Errorf("required ports include %d, want only valid ports", p.Port)
 		}
+	}
+}
+
+func TestHostFirewallRequired_IncludesPublishedPorts(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db)
+	pub, priv := 25565, 9999
+	for _, svc := range []store.DesiredService{
+		{Name: "game", Image: "img", Port: 25565, HostPort: &pub, BindAddress: bindaddr.Public},
+		{Name: "dbgate", Image: "img", Port: 5432, HostPort: &priv, BindAddress: bindaddr.Private},
+	} {
+		if err := db.SaveDesiredService(t.Context(), svc); err != nil {
+			t.Fatalf("save %s: %v", svc.Name, err)
+		}
+	}
+	var got []int
+	for _, p := range rt.hostFirewallRequired(t.Context()) {
+		got = append(got, p.Port)
+	}
+	if !slices.Contains(got, 25565) || slices.Contains(got, 9999) {
+		t.Errorf("required ports = %v, want 25565 (public) and not 9999 (loopback)", got)
 	}
 }
