@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 import { buildEnd, changelogHead, changelogPageData } from './changelog.mts'
+import { galleryHead, galleryPageData } from './templates.mts'
 import { buildLlmsFullTxt } from './llmsFull.mts'
 import { writeRawMarkdown } from './rawMarkdown.mts'
 import { faqItems } from './theme/faqData'
@@ -310,6 +311,7 @@ function sitemapPriority(url: string): number {
   if (landingSlugs.has(url)) return 0.9
   if (url === 'getting-started') return 0.9
   if (url.startsWith('changelog/') && url !== 'changelog/') return 0.3
+  if (url.startsWith('self-host/')) return url === 'self-host/' ? 0.7 : 0.5
   const section = pageToSection.get(url)
   if (!section) return 0.4
   const base = sectionPriority[section] ?? 0.5
@@ -453,6 +455,7 @@ export default withMermaid({
   // meaningful breadcrumb) and any page pageToSection doesn't
   // recognize (docs/README.md, ADRs reached via ../adr, etc.).
   transformPageData(pageData) {
+    galleryPageData(pageData)
     return changelogPageData(pageData)
   },
 
@@ -481,6 +484,7 @@ export default withMermaid({
       ['meta', { name: 'twitter:description', content: pageDescription }],
       ['meta', { name: 'twitter:image', content: ogImage }],
       ...changelogHead(pageData, siteUrl),
+      ...galleryHead(pageData, siteUrl),
     ]
 
     // FAQPage structured data for Google's FAQ rich-result eligibility.
