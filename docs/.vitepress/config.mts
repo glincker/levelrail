@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
+import { feedHead, writeFeeds } from './feeds.mts'
 import { buildEnd, changelogHead, changelogPageData } from './changelog.mts'
+import { galleryHead, galleryPageData } from './templates.mts'
 import { buildLlmsFullTxt } from './llmsFull.mts'
 import { writeRawMarkdown } from './rawMarkdown.mts'
 import { faqItems } from './theme/faqData'
@@ -35,6 +37,22 @@ const sidebarGroups = [
       { text: 'Back up Postgres to S3', link: '/tutorials/back-up-postgres-to-s3' },
       { text: 'Self-host Vaultwarden', link: '/tutorials/self-host-vaultwarden' },
       { text: 'Debug with logs and metrics', link: '/tutorials/debug-an-app-with-logs-and-metrics' },
+    ],
+  },
+  {
+    text: 'Announcements',
+    items: [
+      { text: 'All announcements', link: '/announcements/' },
+      { text: 'Template gallery and guides', link: '/announcements/self-host-template-gallery-and-guides' },
+    ],
+  },
+  {
+    text: 'Guides',
+    items: [
+      { text: 'All guides', link: '/guides/' },
+      { text: 'Coolify vs Levelrail', link: '/guides/coolify-vs-levelrail' },
+      { text: 'Self-host Postgres with backups', link: '/guides/self-host-postgres-with-backups' },
+      { text: 'Zero-downtime without Kubernetes', link: '/guides/zero-downtime-deploys-without-kubernetes' },
     ],
   },
   {
@@ -275,6 +293,7 @@ for (const group of sidebarGroups) {
 // more collapsed subgroups deep gets a small penalty on top of this.
 const sectionPriority: Record<string, number> = {
   Tutorials: 0.9,
+  Guides: 0.8,
   'How-to guides': 0.7,
   Reference: 0.6,
   Explanation: 0.6,
@@ -310,6 +329,7 @@ function sitemapPriority(url: string): number {
   if (landingSlugs.has(url)) return 0.9
   if (url === 'getting-started') return 0.9
   if (url.startsWith('changelog/') && url !== 'changelog/') return 0.3
+  if (url.startsWith('self-host/')) return url === 'self-host/' ? 0.7 : 0.5
   const section = pageToSection.get(url)
   if (!section) return 0.4
   const base = sectionPriority[section] ?? 0.5
@@ -336,9 +356,14 @@ export default withMermaid({
   },
 
   head: [
+    ...feedHead(siteUrl),
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'theme-color', content: '#0b0e14' }],
     ['link', { rel: 'icon', href: `/favicon.svg?v=${faviconVersion}`, type: 'image/svg+xml' }],
+    ['link', { rel: 'icon', href: `/favicon.ico?v=${faviconVersion}`, sizes: '48x48' }],
+    ['link', { rel: 'icon', href: `/favicon-48x48.png?v=${faviconVersion}`, type: 'image/png', sizes: '48x48' }],
+    ['link', { rel: 'icon', href: `/favicon-32x32.png?v=${faviconVersion}`, type: 'image/png', sizes: '32x32' }],
+    ['link', { rel: 'apple-touch-icon', href: `/apple-touch-icon.png?v=${faviconVersion}`, sizes: '180x180' }],
     [
       'script',
       { type: 'application/ld+json' },
@@ -453,11 +478,13 @@ export default withMermaid({
   // meaningful breadcrumb) and any page pageToSection doesn't
   // recognize (docs/README.md, ADRs reached via ../adr, etc.).
   transformPageData(pageData) {
+    galleryPageData(pageData)
     return changelogPageData(pageData)
   },
 
   buildEnd: async (config) => {
     await buildEnd(config, siteUrl)
+    await writeFeeds(config, siteUrl)
     buildLlmsFullTxt(config, siteUrl)
     writeRawMarkdown(config)
   },
@@ -481,6 +508,7 @@ export default withMermaid({
       ['meta', { name: 'twitter:description', content: pageDescription }],
       ['meta', { name: 'twitter:image', content: ogImage }],
       ...changelogHead(pageData, siteUrl),
+      ...galleryHead(pageData, siteUrl),
     ]
 
     // FAQPage structured data for Google's FAQ rich-result eligibility.
