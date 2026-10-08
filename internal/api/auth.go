@@ -328,7 +328,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 					return
 				}
 				if !allowed {
-					writeError(w, http.StatusForbidden, "this session link lacks the required ability")
+					writeError(w, http.StatusForbidden, "this session link lacks the required ability (needs "+required+")")
 					return
 				}
 				next(w, r)
@@ -352,7 +352,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 			gated := func(w http.ResponseWriter, r *http.Request) {
 				user, err := rt.auth.GetUserByID(r.Context(), userID)
 				if errors.Is(err, store.ErrUserNotFound) {
-					writeError(w, http.StatusForbidden, "your account lacks the required ability")
+					writeError(w, http.StatusForbidden, "your account lacks the required ability (needs "+required+")")
 					return
 				}
 				if err != nil {
@@ -367,7 +367,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 					return
 				}
 				if !allowed {
-					writeError(w, http.StatusForbidden, "your account lacks the required ability")
+					writeError(w, http.StatusForbidden, "your account lacks the required ability (needs "+required+")")
 					return
 				}
 				next(w, r)
@@ -434,7 +434,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 			return
 		}
 		if !allowed {
-			writeError(w, http.StatusForbidden, "token lacks the required ability")
+			writeError(w, http.StatusForbidden, "token lacks the required ability (needs "+required+")")
 			return
 		}
 
