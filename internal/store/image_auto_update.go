@@ -15,6 +15,8 @@ type ImageAutoUpdate struct {
 	Enabled       bool
 	LastCheckedAt *time.Time
 	LastResult    string
+	// WebhookHash is the hash of the registry webhook token, empty when none is set.
+	WebhookHash string
 }
 
 // SetImageAutoUpdate enables or disables auto-update for serviceName.
@@ -35,8 +37,8 @@ func (db *DB) GetImageAutoUpdate(ctx context.Context, serviceName string) (Image
 	var enabled int
 	var checked sql.NullString
 	err := db.QueryRowContext(ctx, `
-		SELECT enabled, last_checked_at, last_result FROM image_auto_updates WHERE service_name = ?
-	`, serviceName).Scan(&enabled, &checked, &u.LastResult)
+		SELECT enabled, last_checked_at, last_result, webhook_hash FROM image_auto_updates WHERE service_name = ?
+	`, serviceName).Scan(&enabled, &checked, &u.LastResult, &u.WebhookHash)
 	if errors.Is(err, sql.ErrNoRows) {
 		return u, nil
 	}
@@ -79,6 +81,18 @@ func (db *DB) RecordImageAutoUpdateCheck(ctx context.Context, serviceName, resul
 	`, serviceName, at.UTC().Format(time.RFC3339), result, at.UTC().Format(time.RFC3339))
 	if err != nil {
 		return fmt.Errorf("store: record image auto-update check for %q: %w", serviceName, err)
+	}
+	return nil
+}
+
+// SetImageAutoUpdateWebhookHash stores the hash of serviceName's registry webhook token; empty clears it.
+func (db *DB) SetImageAutoUpdateWebhookHash(ctx context.Context, serviceName, hash string) error {
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO image_auto_updates (service_name, enabled, webhook_hash, updated_at) VALUES (?, 0, ?, ?)
+		ON CONFLICT(service_name) DO UPDATE SET webhook_hash = excluded.webhook_hash, updated_at = excluded.updated_at
+	`, serviceName, hash, time.Now().UTC().Format(time.RFC3339))
+	if err != nil {
+		return fmt.Errorf("store: set image auto-update webhook for %q: %w", serviceName, err)
 	}
 	return nil
 }

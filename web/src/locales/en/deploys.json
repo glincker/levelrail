@@ -84,6 +84,12 @@
       "disabled": "Image auto-update disabled.",
       "errorTitle": "Could not update image auto-update.",
       "checkFailed": "Image check failed."
-    }
+    },
+    "webhookHelp": "Registry push webhook: update on push instead of waiting for the next interval.",
+    "webhookSet": "A registry push webhook is set. Creating a new one replaces it.",
+    "webhookCreate": "Create webhook URL",
+    "webhookRotate": "Replace webhook URL",
+    "webhookUrlLabel": "Registry webhook URL",
+    "webhookShownOnce": "Copy this now, it is not shown again. Paste it as a webhook (POST) in your registry; the URL itself is the secret."
   }
 }

@@ -26,6 +26,12 @@ func TestImageAutoUpdate(t *testing.T) {
 	if err != nil || !u.Enabled || u.LastResult != "up to date" || u.LastCheckedAt == nil || !u.LastCheckedAt.Equal(at) {
 		t.Fatalf("web = %+v, %v", u, err)
 	}
+	if err := db.SetImageAutoUpdateWebhookHash(ctx, "web", "h1"); err != nil {
+		t.Fatal(err)
+	}
+	if u, _ := db.GetImageAutoUpdate(ctx, "web"); u.WebhookHash != "h1" || !u.Enabled {
+		t.Fatalf("webhook set must keep enabled: %+v", u)
+	}
 	list, err := db.ListEnabledImageAutoUpdates(ctx)
 	if err != nil || len(list) != 1 || list[0].ServiceName != "web" {
 		t.Fatalf("enabled = %+v, %v; want only web", list, err)

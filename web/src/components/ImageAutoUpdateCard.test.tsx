@@ -134,4 +134,31 @@ describe('ImageAutoUpdateCard', () => {
       })
     })
   })
+
+  it('shows the new webhook URL once after creating it', async () => {
+    fetchMock.mockImplementation(
+      (input: RequestInfo | URL, init?: RequestInit) =>
+        Promise.resolve(
+          init?.method === 'POST' &&
+            typeof input === 'string' &&
+            input.endsWith('/webhook')
+            ? json({
+                path: '/api/v1/hooks/image-update/demo-app/tok',
+                token: 'tok',
+              })
+            : json({ enabled: true, has_webhook: false }),
+        ),
+    )
+
+    const user = userEvent.setup()
+    renderCard()
+    await user.click(
+      await screen.findByRole('button', { name: 'Create webhook URL' }),
+    )
+
+    const field = await screen.findByLabelText('Registry webhook URL')
+    expect(field).toHaveValue(
+      `${window.location.origin}/api/v1/hooks/image-update/demo-app/tok`,
+    )
+  })
 })

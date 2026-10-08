@@ -14,6 +14,12 @@ export interface ImageAutoUpdate {
   enabled: boolean
   last_checked_at?: string
   last_result?: string
+  has_webhook: boolean
+}
+
+export interface ImageUpdateWebhook {
+  path: string
+  token: string
 }
 
 export const imageAutoUpdateKeys = {
@@ -88,6 +94,27 @@ export function useCheckImageUpdate(appName: string) {
       void queryClient.invalidateQueries({
         queryKey: appKeys.detail(appName),
         exact: true,
+      })
+    },
+  })
+}
+
+export function useRotateImageUpdateWebhook(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<ImageUpdateWebhook, ApiError, void>({
+    mutationFn: async () => {
+      const res = await fetch(url(appName, '/webhook'), { method: 'POST' })
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `create webhook failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as ImageUpdateWebhook
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: imageAutoUpdateKeys.detail(appName),
       })
     },
   })

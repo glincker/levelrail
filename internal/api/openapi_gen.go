@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 682 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 684 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -104,6 +104,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/auto-update", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetImageAutoUpdate", Description: "Restart (handleRestartApp's own doc comment): AbilityDeploy, the same boundary as the deploy trigger above, since forcing a container recreation is the same class of action as triggering a deploy, just without a new image."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/auto-update", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetImageAutoUpdate", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/auto-update/check", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCheckImageAutoUpdate", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/auto-update/webhook", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRotateImageUpdateWebhook", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/badge", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetBadgeSettings", Description: "Deploy status badge opt-in (app_badge.go): same GET-is-AbilityRead, PUT-is-AbilityRoot split as exec-access just above, since enabling it hands out an unauthenticated public view of this app's deploy status. GET .../badge.svg itself is registered unauthenticated on purpose (see publicRoutes in authz_matrix_test.go); it 404s on its own when the per-app flag is off, so it never needs this file's own IAM wrapper."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/badge", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetBadgeSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/badge.svg", Ability: "Public", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePublicAppBadge", Description: ""},
@@ -511,6 +512,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/gitea-app/repos", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleListGiteaAppRepos", Description: ""},
 	{Method: "GET", Path: "/api/v1/gitea-app/repos/{owner}/{repo}/branches", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleListGiteaAppBranches", Description: ""},
 	{Method: "POST", Path: "/api/v1/gitea-app/repos/{owner}/{repo}/use-as-source", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleUseGiteaRepoAsSource", Description: ""},
+	{Method: "POST", Path: "/api/v1/hooks/image-update/{name}/{token}", Ability: "Public", Group: "Other", Handler: "handleImageUpdateWebhook", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/plan", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportPlan", Description: "Import front door: classifies pasted input and returns a plan preview, creating nothing. AbilityWrite because it makes outbound fetches."},
 	{Method: "POST", Path: "/api/v1/imports/platform/apply", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleApplyPlatformImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/platform/discover", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDiscoverPlatformImport", Description: ""},

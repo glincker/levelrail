@@ -1,12 +1,14 @@
 import { useTranslation } from 'react-i18next'
 import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { InfoTip } from '@/components/kit'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import {
   useCheckImageUpdate,
+  useRotateImageUpdateWebhook,
   useImageAutoUpdate,
   useSetImageAutoUpdate,
 } from '../queries/imageAutoUpdate'
@@ -17,6 +19,7 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
   const setting = useImageAutoUpdate(appName)
   const setEnabled = useSetImageAutoUpdate(appName)
   const check = useCheckImageUpdate(appName)
+  const rotate = useRotateImageUpdateWebhook(appName)
 
   function toggle(next: boolean) {
     setEnabled.mutate(next, {
@@ -47,6 +50,9 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
     })
   }
 
+  const webhookUrl = rotate.data
+    ? `${window.location.origin}${rotate.data.path}`
+    : ''
   const { last_result: lastResult, last_checked_at: lastChecked } = setting.data
 
   return (
@@ -94,6 +100,39 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
               ? t('imageAutoUpdate.checking')
               : t('imageAutoUpdate.checkNow')}
           </Button>
+        </div>
+        <div className="space-y-1.5 border-t border-border pt-3">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-xs text-muted-foreground">
+              {setting.data.has_webhook
+                ? t('imageAutoUpdate.webhookSet')
+                : t('imageAutoUpdate.webhookHelp')}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => rotate.mutate()}
+              disabled={rotate.isPending}
+            >
+              {setting.data.has_webhook
+                ? t('imageAutoUpdate.webhookRotate')
+                : t('imageAutoUpdate.webhookCreate')}
+            </Button>
+          </div>
+          {webhookUrl ? (
+            <div className="space-y-1">
+              <Input
+                readOnly
+                value={webhookUrl}
+                aria-label={t('imageAutoUpdate.webhookUrlLabel')}
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('imageAutoUpdate.webhookShownOnce')}
+              </p>
+            </div>
+          ) : null}
         </div>
       </CardContent>
     </Card>

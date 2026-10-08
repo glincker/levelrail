@@ -42,8 +42,18 @@ API: `GET` and `PUT /api/v1/apps/{name}/auto-update`, and `POST
 /api/v1/apps/{name}/auto-update/check`. Reading needs `read`, changing or
 checking needs `deploy`.
 
-## Not included
+## Update on push
 
-Registry push webhooks are not wired yet; checks are interval-driven. A
-tag pinned by digest (`image@sha256:...`) never moves, so there is nothing to
-update.
+Instead of waiting for the interval, point your registry's push webhook at a
+URL the control plane mints for the app. Dashboard: **Create webhook URL** on
+the same card. CLI: `levelrail-cli apps auto-update webhook web`. The URL is
+shown once and a new one replaces the old; the URL itself is the secret, so
+treat it like a password. It must be reachable by your registry (Docker Hub,
+Harbor and most others just POST to it).
+
+A webhook for an app that has not opted in, or with a wrong token, answers
+`404`. Repeat deliveries within 30 seconds of a check are acknowledged and
+skipped. The check runs in the background and follows the same skip rules.
+
+A tag pinned by digest (`image@sha256:...`) never moves, so there is nothing
+to update.

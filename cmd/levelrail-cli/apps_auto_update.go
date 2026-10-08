@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 )
 
@@ -18,7 +19,7 @@ func runAppsAutoUpdate(prog string, args []string, stdout, stderr io.Writer, loo
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, appsAutoUpdateUsage(prog))
 		return exitOK
-	case "enable", "disable", "status", "check":
+	case "enable", "disable", "status", "check", "webhook":
 		return runAppsAutoUpdateVerb(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps auto-update subcommand %q\n\n", prog, args[0])
@@ -33,6 +34,10 @@ func appsAutoUpdateUsage(prog string) string {
   %[1]s apps auto-update disable <app-name> [flags]   opt back out
   %[1]s apps auto-update status <app-name> [flags]    show the setting and the last check
   %[1]s apps auto-update check <app-name> [flags]     check the registry now, redeploying if it moved
+  %[1]s apps auto-update webhook <app-name> [flags]   mint a registry push webhook URL (shown once)
+
+Point your registry's push webhook (Docker Hub, Harbor, any POST) at the
+webhook URL to update on push instead of waiting for the interval.
 
 Off by default. Enabled apps are checked on the control plane's interval
 (APP_IMAGE_UPDATE_INTERVAL, default 1h). Apps built from source, stopped,
@@ -57,6 +62,15 @@ func runAppsAutoUpdateVerb(prog, verb string, args []string, stdout, stderr io.W
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
+	if verb == "webhook" {
+		hook, err := client.RotateImageUpdateWebhook(ctx, appName)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("auto-update webhook for app %q: %w", appName, err))
+		}
+		return writeScheduledTaskResult(stdout, stderr, of, hook, func() {
+			_, _ = fmt.Fprintf(stdout, "webhook URL (shown once, replaces any earlier one):\n  POST %s%s\n", strings.TrimRight(resolveAPIURL(apiURLFlag, lookupEnv, prog, resolveProfile(profileFlag, lookupEnv)), "/"), hook.Path)
+		})
+	}
 	var (
 		result imageAutoUpdateResource
 		err    error
@@ -79,6 +93,7 @@ func runAppsAutoUpdateVerb(prog, verb string, args []string, stdout, stderr io.W
 
 func printImageAutoUpdate(out io.Writer, r imageAutoUpdateResource) {
 	_, _ = fmt.Fprintf(out, "auto-update: %t\n", r.Enabled)
+	_, _ = fmt.Fprintf(out, "webhook:     %t\n", r.HasWebhook)
 	if r.LastCheckedAt != nil {
 		_, _ = fmt.Fprintf(out, "last check:  %s\n", r.LastCheckedAt.Format(time.RFC3339))
 	}

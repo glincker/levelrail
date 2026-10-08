@@ -6,5 +6,6 @@ CREATE TABLE IF NOT EXISTS image_auto_updates (
     enabled         INTEGER NOT NULL DEFAULT 0,
     last_checked_at TEXT,
     last_result     TEXT NOT NULL DEFAULT '',
+    webhook_hash    TEXT NOT NULL DEFAULT '',
     updated_at      TEXT NOT NULL
 );

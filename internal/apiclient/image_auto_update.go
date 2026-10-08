@@ -11,6 +11,7 @@ type ImageAutoUpdateResource struct {
 	Enabled       bool       `json:"enabled"`
 	LastCheckedAt *time.Time `json:"last_checked_at,omitempty"`
 	LastResult    string     `json:"last_result,omitempty"`
+	HasWebhook    bool       `json:"has_webhook"`
 }
 
 // GetImageAutoUpdate calls GET /api/v1/apps/{name}/auto-update.
@@ -32,5 +33,18 @@ func (c *Client) SetImageAutoUpdate(ctx context.Context, appName string, enabled
 func (c *Client) CheckImageAutoUpdate(ctx context.Context, appName string) (ImageAutoUpdateResource, error) {
 	var out ImageAutoUpdateResource
 	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/auto-update/check", nil, &out)
+	return out, err
+}
+
+// ImageUpdateWebhookResource is the freshly minted webhook; Token is shown once.
+type ImageUpdateWebhookResource struct {
+	Path  string `json:"path"`
+	Token string `json:"token"`
+}
+
+// RotateImageUpdateWebhook calls POST /api/v1/apps/{name}/auto-update/webhook.
+func (c *Client) RotateImageUpdateWebhook(ctx context.Context, appName string) (ImageUpdateWebhookResource, error) {
+	var out ImageUpdateWebhookResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/auto-update/webhook", nil, &out)
 	return out, err
 }

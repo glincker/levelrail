@@ -38,3 +38,20 @@ func TestRun_AppsAutoUpdate(t *testing.T) {
 		}
 	}
 }
+
+func TestRun_AppsAutoUpdateWebhook(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/apps/web/auto-update/webhook" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte(`{"path":"/api/v1/hooks/image-update/web/tok","token":"tok"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "auto-update", "webhook", "web", "--token", "t", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitOK || !strings.Contains(stdout.String(), srv.URL+"/api/v1/hooks/image-update/web/tok") {
+		t.Fatalf("exit = %d, stdout = %q, stderr = %q", got, stdout.String(), stderr.String())
+	}
+}

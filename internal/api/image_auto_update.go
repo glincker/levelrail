@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ type ImageAutoUpdateStore interface {
 	SetImageAutoUpdate(ctx context.Context, serviceName string, enabled bool) error
 	GetImageAutoUpdate(ctx context.Context, serviceName string) (store.ImageAutoUpdate, error)
 	RecordImageAutoUpdateCheck(ctx context.Context, serviceName, result string, at time.Time) error
+	SetImageAutoUpdateWebhookHash(ctx context.Context, serviceName, hash string) error
 }
 
 // Results CheckImageUpdate records; the UI and CLI show them verbatim.
@@ -31,6 +33,7 @@ type imageAutoUpdateResource struct {
 	Enabled       bool       `json:"enabled"`
 	LastCheckedAt *time.Time `json:"last_checked_at,omitempty"`
 	LastResult    string     `json:"last_result,omitempty"`
+	HasWebhook    bool       `json:"has_webhook"`
 }
 
 type setImageAutoUpdateRequest struct {
@@ -38,7 +41,7 @@ type setImageAutoUpdateRequest struct {
 }
 
 func toImageAutoUpdateResource(u store.ImageAutoUpdate) imageAutoUpdateResource {
-	return imageAutoUpdateResource{Enabled: u.Enabled, LastCheckedAt: u.LastCheckedAt, LastResult: u.LastResult}
+	return imageAutoUpdateResource{Enabled: u.Enabled, LastCheckedAt: u.LastCheckedAt, LastResult: u.LastResult, HasWebhook: u.WebhookHash != ""}
 }
 
 func (rt *Router) handleGetImageAutoUpdate(w http.ResponseWriter, r *http.Request) {
@@ -175,4 +178,63 @@ func (rt *Router) imageUpdateSkipReason(ctx context.Context, svc store.DesiredSe
 		}
 	}
 	return ""
+}
+
+// Registry webhooks redeliver on retries; this keeps them from hammering the registry.
+const imageUpdateWebhookDebounce = 30 * time.Second
+
+const imageUpdateWebhookTimeout = 2 * time.Minute
+
+type imageUpdateWebhookResource struct {
+	Path  string `json:"path"`
+	Token string `json:"token"`
+}
+
+// handleRotateImageUpdateWebhook mints a fresh webhook token, shown once.
+func (rt *Router) handleRotateImageUpdateWebhook(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: rotate image update webhook: load app", err, slog.String("name", name))
+		return
+	}
+	token, err := randomToken()
+	if err != nil {
+		rt.internalError(w, "api: rotate image update webhook: mint token", err)
+		return
+	}
+	if err := rt.imageAutoUpdates.SetImageAutoUpdateWebhookHash(r.Context(), name, hashToken(token)); err != nil {
+		rt.internalError(w, "api: rotate image update webhook", err, slog.String("name", name))
+		return
+	}
+	writeJSON(w, http.StatusOK, imageUpdateWebhookResource{Path: "/api/v1/hooks/image-update/" + name + "/" + token, Token: token})
+}
+
+// handleImageUpdateWebhook is the public registry push hook. Unknown app,
+// wrong token and opted-out all answer the same 404 so the URL leaks nothing.
+func (rt *Router) handleImageUpdateWebhook(w http.ResponseWriter, r *http.Request) {
+	name, token := r.PathValue("name"), r.PathValue("token")
+	u, err := rt.imageAutoUpdates.GetImageAutoUpdate(r.Context(), name)
+	if err != nil {
+		rt.internalError(w, "api: image update webhook", err, slog.String("name", name))
+		return
+	}
+	if !u.Enabled || u.WebhookHash == "" || subtle.ConstantTimeCompare([]byte(hashToken(token)), []byte(u.WebhookHash)) != 1 {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+	if u.LastCheckedAt != nil && time.Since(*u.LastCheckedAt) < imageUpdateWebhookDebounce {
+		writeJSON(w, http.StatusAccepted, map[string]string{"status": "checked recently"})
+		return
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), imageUpdateWebhookTimeout)
+		defer cancel()
+		if _, err := rt.CheckImageUpdate(ctx, name); err != nil {
+			rt.logger.Warn("api: image update webhook check failed", slog.String("name", name), slog.String("error", err.Error()))
+		}
+	}()
+	writeJSON(w, http.StatusAccepted, map[string]string{"status": "check started"})
 }

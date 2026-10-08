@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -63,5 +64,46 @@ func TestCheckImageUpdate_UnknownApp(t *testing.T) {
 	rt, _, _ := newSafetyRouter(t, stubResolver{digest: newDigest})
 	if _, err := rt.CheckImageUpdate(context.Background(), "ghost"); err == nil {
 		t.Fatal("want a not-found error")
+	}
+}
+
+func TestLoggablePath_RedactsWebhookToken(t *testing.T) {
+	if got := loggablePath("/api/v1/hooks/image-update/web/s3cret"); strings.Contains(got, "s3cret") || got != "/api/v1/hooks/image-update/web/redacted" {
+		t.Errorf("loggablePath = %q", got)
+	}
+	if got := loggablePath("/api/v1/apps/web"); got != "/api/v1/apps/web" {
+		t.Errorf("unrelated path changed: %q", got)
+	}
+}
+
+func TestImageUpdateWebhook(t *testing.T) {
+	rt, db, cookie := newSafetyRouter(t, stubResolver{digest: newDigest})
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "nginx:1@" + oldDigest, Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	post := func(path string) int {
+		rec := serve(rt, authedRequest(t, cookie, "POST", path, ""))
+		return rec.Code
+	}
+	if post("/api/v1/apps/web/auto-update/webhook") != 200 {
+		t.Fatal("rotate must succeed")
+	}
+	rec := serve(rt, authedRequest(t, cookie, "POST", "/api/v1/apps/web/auto-update/webhook", ""))
+	var hook imageUpdateWebhookResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &hook); err != nil || hook.Token == "" {
+		t.Fatalf("rotate body = %s, %v", rec.Body.String(), err)
+	}
+	if code := post(hook.Path); code != 404 {
+		t.Errorf("webhook before opt-in = %d, want 404", code)
+	}
+	if err := db.SetImageAutoUpdate(ctx, "web", true); err != nil {
+		t.Fatal(err)
+	}
+	if code := post("/api/v1/hooks/image-update/web/wrong"); code != 404 {
+		t.Errorf("wrong token = %d, want 404", code)
+	}
+	if code := post(hook.Path); code != 202 {
+		t.Errorf("valid webhook = %d, want 202", code)
 	}
 }
