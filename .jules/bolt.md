@@ -8,6 +8,7 @@
 | `internal/store` ListAppEvents | 2023-10-24 | 385868 ns/op | 384418 ns/op |
 | `internal/store` ListDeployFreezeWindows | 2023-10-24 | 325603 ns/op | 312775 ns/op |
 | `internal/store` UpsertConditions | 2026-10-05 | 2524228 ns/op, 25576 B/op, 757 allocs/op | 628789 ns/op, 10265 B/op, 21 allocs/op |
+| `internal/compose` joinErrors | 2026-10-08 | 5779 ns/op, 7105 B/op, 10 allocs/op | 3369 ns/op, 4115 B/op, 3 allocs/op |
 
 ## Rejected
 
