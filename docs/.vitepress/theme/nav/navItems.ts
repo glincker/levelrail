@@ -110,6 +110,7 @@ export const navEntries: NavEntry[] = [
       ],
     },
   },
+  { kind: 'link', link: { text: 'Guides', link: '/guides/' } },
   { kind: 'link', link: { text: 'Pricing', link: '/pricing' } },
 ]
 

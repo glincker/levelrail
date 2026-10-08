@@ -38,6 +38,15 @@ const sidebarGroups = [
     ],
   },
   {
+    text: 'Guides',
+    items: [
+      { text: 'All guides', link: '/guides/' },
+      { text: 'Coolify vs Levelrail', link: '/guides/coolify-vs-levelrail' },
+      { text: 'Self-host Postgres with backups', link: '/guides/self-host-postgres-with-backups' },
+      { text: 'Zero-downtime without Kubernetes', link: '/guides/zero-downtime-deploys-without-kubernetes' },
+    ],
+  },
+  {
     text: 'How-to guides',
     collapsed: true,
     items: [
@@ -275,6 +284,7 @@ for (const group of sidebarGroups) {
 // more collapsed subgroups deep gets a small penalty on top of this.
 const sectionPriority: Record<string, number> = {
   Tutorials: 0.9,
+  Guides: 0.8,
   'How-to guides': 0.7,
   Reference: 0.6,
   Explanation: 0.6,
