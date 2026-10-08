@@ -1,7 +1,7 @@
 {
   "card": {
     "title": "Free HTTPS, no DNS setup",
-    "description": "Serve this dashboard at {{domain}} over HTTPS with a real Let's Encrypt certificate. The hostname resolves to this server on its own, so there is nothing to configure at a registrar.",
+    "description": "Serve this dashboard at {{domain}} over HTTPS with a real Let's Encrypt certificate. The hostname resolves to this server on its own, so there is nothing to configure at a registrar. Until it is enabled, opening that https address shows a browser certificate warning, which is expected.",
     "noPublicIp": "This server's public IP address is not known, so a zero-DNS hostname cannot be built. Set APP_PUBLIC_HOST to the IP on the control plane and restart it, or use your own domain below.",
     "emailLabel": "Email for certificate notices",
     "emailHelp": "Any inbox you read works. Certificates are free and renew on their own: Let's Encrypt only emails you if one is about to expire and could not renew.",
