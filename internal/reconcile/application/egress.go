@@ -200,7 +200,8 @@ func egressAllowEnvValue(allow []store.ServiceEgressAllow) string {
 }
 
 // egressSidecarSpec builds the sidecar's desired container spec: NET_ADMIN
-// to install iptables/ipset rules, and NetworkMode pointing at
+// to install iptables/ipset rules (plus NET_RAW, which ipset's raw socket
+// needs and the drop-all hardening otherwise removes), and NetworkMode pointing at
 // appContainerID so those rules apply to the app container's own traffic,
 // not the sidecar's (a sidecar on its own netns would only restrict
 // itself).
@@ -210,7 +211,7 @@ func egressSidecarSpec(target, appContainerID string, policy *store.ServiceEgres
 		Image:       egressImage,
 		Entrypoint:  []string{"sh", "-c"},
 		Command:     []string{egressBootScript},
-		CapAdd:      []string{"NET_ADMIN"},
+		CapAdd:      []string{"NET_ADMIN", "NET_RAW"},
 		NetworkMode: "container:" + appContainerID,
 		Env: map[string]string{
 			egressAllowEnv:           egressAllowEnvValue(policy.Allow),

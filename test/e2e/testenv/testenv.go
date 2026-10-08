@@ -136,6 +136,26 @@ func CleanupContainers(ctx context.Context, t *testing.T, rt docker.Runtime, ser
 		_ = rt.Stop(ctx, cs.ID, 3*time.Second)
 		_ = rt.Remove(ctx, cs.ID, true)
 	}
+	removeServiceVolumes(ctx, rt, serviceName)
+}
+
+// removeServiceVolumes drops the service's named volumes: a leaked Postgres
+// volume keeps the previous run's password, so the next run fails auth.
+func removeServiceVolumes(ctx context.Context, rt docker.Runtime, serviceName string) {
+	vr, ok := rt.(interface {
+		ListVolumesByPrefix(context.Context, string) ([]docker.NamedVolume, error)
+		RemoveVolume(context.Context, string) error
+	})
+	if !ok {
+		return
+	}
+	vols, err := vr.ListVolumesByPrefix(ctx, "app-"+serviceName+"-")
+	if err != nil {
+		return
+	}
+	for _, v := range vols {
+		_ = vr.RemoveVolume(ctx, v.Name)
+	}
 }
 
 // FreePort asks the OS for an unused TCP port on 127.0.0.1. There's an
