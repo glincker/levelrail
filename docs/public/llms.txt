@@ -42,6 +42,13 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Self-host Vaultwarden](https://levelrail.com/tutorials/self-host-vaultwarden): deploy a Bitwarden-compatible password manager from the template catalog and back up its data.
 - [Debug with logs and metrics](https://levelrail.com/tutorials/debug-an-app-with-logs-and-metrics): search logs and read CPU and memory with no extra tooling.
 
+## Guides
+
+- [Guides](https://levelrail.com/guides/): task-focused guides that answer one question end to end.
+- [Coolify vs Levelrail for self-hosters](https://levelrail.com/guides/coolify-vs-levelrail): how they differ, when each fits, and what Levelrail does not do yet.
+- [Self-host Postgres with verified backups](https://levelrail.com/guides/self-host-postgres-with-backups): create a database, schedule S3 backups, and rehearse a restore.
+- [Zero-downtime deploys without Kubernetes](https://levelrail.com/guides/zero-downtime-deploys-without-kubernetes): readiness gating, digest-pinned images, rollback, and freeze windows on plain Docker.
+
 ## How-to guides
 
 - [Installing](https://levelrail.com/installing): install the control plane and node agent on a Linux server.
