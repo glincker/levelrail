@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gitprovider"
-	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // Client is a small, purpose-built Gitea REST/OAuth client, not a
@@ -33,9 +32,7 @@ type Client struct {
 // NewClient returns a Client with a bounded per-request timeout, the
 // same reasoning internal/githubapp.NewClient's own doc comment gives.
 func NewClient() *Client {
-	client := netguard.NewClient()
-	client.Timeout = 20 * time.Second
-	return &Client{HTTP: client}
+	return &Client{HTTP: &http.Client{Timeout: 20 * time.Second}}
 }
 
 // apiError is giteaapp's own name for the shared gitprovider.APIError,
