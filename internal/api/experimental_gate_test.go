@@ -92,3 +92,7 @@ func TestExperimentalGateLeavesOtherRoutes(t *testing.T) {
 		}
 	}
 }
+
+// enableAllExperimental restores TestMain's state; experimental.Reset would
+// fall back to the empty env default and break gated tests that run later.
+func enableAllExperimental() { experimental.Set(experimental.All()...) }

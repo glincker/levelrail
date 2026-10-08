@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 )
@@ -13,18 +14,29 @@ import (
 // record passed to it, so a test can assert on the level and attrs
 // requestLoggingMiddleware produced without parsing formatted text.
 type capturingHandler struct {
+	mu      sync.Mutex
 	records []slog.Record
 }
 
 func (h *capturingHandler) Enabled(context.Context, slog.Level) bool { return true }
 func (h *capturingHandler) Handle(_ context.Context, r slog.Record) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	h.records = append(h.records, r)
 	return nil
 }
 func (h *capturingHandler) WithAttrs([]slog.Attr) slog.Handler { return h }
 func (h *capturingHandler) WithGroup(string) slog.Handler      { return h }
 
+func (h *capturingHandler) all() []slog.Record {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return append([]slog.Record(nil), h.records...)
+}
+
 func (h *capturingHandler) attr(name string) (slog.Value, bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	if len(h.records) == 0 {
 		return slog.Value{}, false
 	}
@@ -128,11 +140,11 @@ func TestRequestLoggingMiddleware_ExplicitStatusCaptured(t *testing.T) {
 	if !ok || status.Int64() != http.StatusNotFound {
 		t.Errorf("status attr = %v (ok=%v), want %d", status, ok, http.StatusNotFound)
 	}
-	if len(handler.records) != 1 {
-		t.Fatalf("got %d log records, want 1", len(handler.records))
+	if len(handler.all()) != 1 {
+		t.Fatalf("got %d log records, want 1", len(handler.all()))
 	}
-	if handler.records[0].Level != slog.LevelWarn && handler.records[0].Level != slog.LevelError && handler.records[0].Level != slog.LevelDebug {
-		t.Errorf("unexpected level %v", handler.records[0].Level)
+	if handler.all()[0].Level != slog.LevelWarn && handler.all()[0].Level != slog.LevelError && handler.all()[0].Level != slog.LevelDebug {
+		t.Errorf("unexpected level %v", handler.all()[0].Level)
 	}
 }
 
@@ -155,10 +167,10 @@ func TestRequestLoggingMiddleware_SSEResponseStaysDebugRegardlessOfDuration(t *t
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/apps/demo/logs/stream", nil)
 	requestLoggingMiddleware(logger, tiny)(inner).ServeHTTP(rec, req)
 
-	if len(handler.records) != 1 {
-		t.Fatalf("got %d log records, want 1", len(handler.records))
+	if len(handler.all()) != 1 {
+		t.Fatalf("got %d log records, want 1", len(handler.all()))
 	}
-	if got := handler.records[0].Level; got != slog.LevelDebug {
+	if got := handler.all()[0].Level; got != slog.LevelDebug {
 		t.Errorf("level = %v, want %v for an SSE response", got, slog.LevelDebug)
 	}
 }
@@ -186,10 +198,10 @@ func TestRequestLoggingMiddleware_HijackedConnectionStaysDebug(t *testing.T) {
 		_ = resp.Body.Close()
 	}
 
-	if len(handler.records) != 1 {
-		t.Fatalf("got %d log records, want 1", len(handler.records))
+	if len(handler.all()) != 1 {
+		t.Fatalf("got %d log records, want 1", len(handler.all()))
 	}
-	if got := handler.records[0].Level; got != slog.LevelDebug {
+	if got := handler.all()[0].Level; got != slog.LevelDebug {
 		t.Errorf("level = %v, want %v for a hijacked connection", got, slog.LevelDebug)
 	}
 }
