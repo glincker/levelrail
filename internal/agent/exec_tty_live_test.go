@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -177,6 +178,9 @@ func TestLive_ExecTTY_RemoteInteractiveShell(t *testing.T) {
 // terminal ends the shell on the node rather than leaking it there,
 // which is the failure mode a browser tab closing would otherwise cause
 // once per session.
+// shellLine matches the exec'd shell only, not nginx's docker-entrypoint.sh.
+var shellLine = regexp.MustCompile(`(?m)^sh$`)
+
 func TestLive_ExecTTY_RemoteCloseStopsProcess(t *testing.T) {
 	transport, containerID := liveRemoteTransport(t, "levelrail-test-agent-live-tty-close")
 
@@ -213,7 +217,7 @@ func TestLive_ExecTTY_RemoteCloseStopsProcess(t *testing.T) {
 		}
 		out, _ := io.ReadAll(rc)
 		_ = rc.Close()
-		if !strings.Contains(string(out), "sh\n") {
+		if !shellLine.MatchString(string(out)) {
 			return
 		}
 		if time.Now().After(deadline) {
