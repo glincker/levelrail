@@ -18,7 +18,9 @@
     "dashboardUrlSaved": "Dashboard URL set to {{url}}.",
     "dashboardUrlFailed": "Could not save the dashboard URL.",
     "failedTitle": "Could not get a certificate",
-    "enableFailed": "Could not enable HTTPS."
+    "enableFailed": "Could not enable HTTPS.",
+    "preflightTitle": "Ports 80 or 443 may be closed",
+    "preflightBody": "This server could not reach itself on port {{ports}} at its public address. Let's Encrypt must reach port 80 (and 443 for renewals) from the internet. Open them in your cloud firewall or run the firewall step in setup. This check can be wrong behind some routers, so wait for the certificate before changing anything."
   },
   "hint": {
     "unreachable": "Let's Encrypt could not reach this server on port 80. Open ports 80 and 443 in your firewall and your cloud provider's security group, then try again.",

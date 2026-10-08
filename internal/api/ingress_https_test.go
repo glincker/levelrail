@@ -1,9 +1,13 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -106,6 +110,13 @@ func TestHandleEnableHTTPS(t *testing.T) {
 	t.Run("sets primary domain and acme with staging directory", func(t *testing.T) {
 		db := openTestDB(t)
 		rt := NewRouter(discardLogger(), testBrand(), db, WithPublicHost("203.0.113.5"), WithPublicHostSource("detected"))
+		rt.doctorDialContext = func(_ context.Context, _, addr string) (net.Conn, error) {
+			if strings.HasSuffix(addr, ":80") {
+				c, _ := net.Pipe()
+				return c, nil
+			}
+			return nil, errors.New("closed")
+		}
 		cookie := loginTestSession(t, rt, db)
 		rec := post(rt, cookie, `{"email":"a@example.com","staging":true}`)
 		if rec.Code != http.StatusAccepted {
@@ -118,6 +129,10 @@ func TestHandleEnableHTTPS(t *testing.T) {
 		if got.Domain != "203-0-113-5.sslip.io" || !got.Staging || got.State != httpsStatePending {
 			t.Fatalf("unexpected status %+v", got)
 		}
+		wantPre := []httpsPreflightPort{{Port: 80, Reachable: true}, {Port: 443}}
+		if !slices.Equal(got.Preflight, wantPre) {
+			t.Fatalf("preflight = %+v, want %+v", got.Preflight, wantPre)
+		}
 		s, err := db.GetIngressSettings(t.Context())
 		if err != nil || !s.ACMEEnabled || s.ACMEDirectoryURL != ACMEStagingDirectoryURL || s.ACMEEmail != "a@example.com" {
 			t.Fatalf("settings = %+v, %v", s, err)
@@ -127,6 +142,7 @@ func TestHandleEnableHTTPS(t *testing.T) {
 	t.Run("rejects bad email and rate limits production", func(t *testing.T) {
 		db := openTestDB(t)
 		rt := NewRouter(discardLogger(), testBrand(), db, WithPublicHost("203.0.113.5"), WithHTTPSEnableLimits(1, 0))
+		rt.doctorDialContext = fakeDoctorOfflineDialContext
 		cookie := loginTestSession(t, rt, db)
 		if rec := post(rt, cookie, `{"email":"nope"}`); rec.Code != http.StatusBadRequest {
 			t.Fatalf("bad email: %d", rec.Code)
