@@ -96,6 +96,8 @@ export interface AppDetail {
   bind_address: string
   domains?: string[]
   env?: Record<string, string>
+  /** Names of env vars backed by encrypted secret storage (values never returned). */
+  secret_env?: string[]
   resources?: ServiceResources | null
   // resources_applied_live is response-only (internal/api/apps.go's
   // handleUpdateApp): whether the resources value just saved was already

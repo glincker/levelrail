@@ -176,6 +176,7 @@ levelrail-cli apps schedule get <app> [flags]
 levelrail-cli apps schedule history <app> [flags]
 levelrail-cli apps cancel-superseded enable|disable|status <app-name> [flags]
 levelrail-cli apps auto-rollback enable|disable|status <app-name> [flags]
+levelrail-cli apps canary start|status|weight|promote|abort <app-name> [flags]
 levelrail-cli apps auto-update enable|disable|status|check <app-name> [flags]
 levelrail-cli apps auto-rollback-slo-burn set <app-name> off|auto|dry_run|pause_for_human [flags]
 levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
@@ -191,6 +192,7 @@ levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
 - `apps freeze` manages deploy freeze windows: a window starts at every match of a 5 field cron expression, evaluated in `--timezone` (default UTC), and lasts `--duration`. While one is active, webhook, pipeline and released deploys are held and run when the window ends; a manual deploy needs `apps deploy --override-freeze --override-reason TEXT`. `set` replaces the app's windows with the one given. Fleet-wide windows are under `settings deploy-freeze`.
 - `apps schedule` configures a recurring redeploy of a branch's latest commit on a cron schedule.
 - `apps cancel-superseded` lets a newer queued deploy replace older queued ones of the same branch. Only queued deploys are replaced; a deploy that already started building is never canceled automatically.
+- `apps canary` runs a new image beside the app and sends it a share of traffic until you promote or abort it (see [Canary deploys](canary-deploys.md)).
 - `apps auto-update` redeploys an app automatically when its image tag moves to a new digest (see [Image auto-update](image-auto-update.md)).
 - `apps auto-rollback` opts an app into or out of automatic rollback when a crashloop alert fires. `apps auto-rollback-slo-burn` sets how the app reacts when an SLO burn rate alert fires.
 
@@ -294,6 +296,7 @@ levelrail-cli apps build-cache remove <name>|--global
 ```
 levelrail-cli apps env import <name> --file .env [--dry-run] [--keep-existing] [--apply] [flags]
 levelrail-cli apps env export <name> [--out FILE] [flags]
+levelrail-cli apps env diff <app-a> <app-b> [flags]
 levelrail-cli apps secrets list <name> [flags]
 levelrail-cli apps secrets set <name> <key> <value> [--apply] [flags]
 levelrail-cli apps secrets set <name> --env-file <path> [flags]
@@ -309,6 +312,7 @@ levelrail-cli apps branch-env clear <name> <id> [flags]
 ```
 
 - `apps env import` merges a .env file into an app's plain env vars and prints which keys are new, changed or unchanged. Keys that are already secrets are skipped. It reports how many changes are pending, or restarts the app right away with `--apply`.
+- `apps env diff` compares two apps' env vars, for example staging against production. Secret values are never read: secrets are compared by key only, and the dashboard has the same comparison on an app's Environment page.
 - `apps env export` writes plain env vars as .env text; secret keys are written empty with a comment, never with a value.
 - `apps secrets set` sets or rotates one secret's encrypted value and declares the key as secret backed so it is injected; `--apply` restarts the app now. With `--env-file` it bulk imports every key in a .env format file as its own secret. Values are never returned: `list` shows key names and locked state only. `lock` toggles a secret's overwrite guard.
 - `apps vault-env` declares an env var resolved live from the configured external Vault (see [Vault](#vault)); only the reference is stored.

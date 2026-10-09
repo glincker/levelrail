@@ -91,5 +91,35 @@
     "webhookRotate": "Replace webhook URL",
     "webhookUrlLabel": "Registry webhook URL",
     "webhookShownOnce": "Copy this now, it is not shown again. Paste it as a webhook (POST) in your registry; the URL itself is the secret."
+  },
+  "canary": {
+    "title": "Canary release",
+    "infoTipLabel": "About canary releases",
+    "description": "Run a new image next to the current release and send it a share of requests. Promote it when it looks healthy, or abort and all traffic stays on the current release. A canary that is not ready gets no traffic. Needs a single-replica image app.",
+    "imageLabel": "Canary image",
+    "imagePlaceholder": "registry/app:next",
+    "weightLabel": "Traffic %",
+    "start": "Start canary",
+    "running": "Canary {{image}} is receiving {{weight}}% of requests.",
+    "setWeight": "Set share",
+    "promote": "Promote",
+    "abort": "Abort",
+    "toast": {
+      "started": "Canary started.",
+      "weightSet": "Traffic share updated.",
+      "promoted": "Canary promoted, deploying.",
+      "aborted": "Canary removed.",
+      "errorTitle": "Canary action failed"
+    }
+  },
+  "envCompare": {
+    "title": "Compare env with another app",
+    "pick": "Compare against",
+    "none": "Choose an app",
+    "onlyIn": "Only in {{app}}:",
+    "differs": "Differs:",
+    "secret": "(secret)",
+    "secretOneSide": "(secret on one side only)",
+    "summary": "{{count}} keys identical. Secret values are never read, secrets match by key only."
   }
 }
