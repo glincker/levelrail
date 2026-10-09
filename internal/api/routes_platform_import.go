@@ -13,5 +13,5 @@ func (rt *Router) registerPlatformImportRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/imports/platform/databases/{name}/copy", rt.requireAbility(AbilityWriteSensitive, rt.handleCopyDatabaseData))
 	mux.HandleFunc("GET /api/v1/migration/volumes", rt.requireAbility(AbilityRead, rt.handleVolumeGuide))
 	mux.HandleFunc("GET /api/v1/migration/cutover", rt.requireAbility(AbilityRead, rt.handleCutoverReport))
-	mux.HandleFunc("GET /api/v1/migration/cutover/verify", rt.requireAbility(AbilityRead, rt.handleCutoverVerify))
+	mux.HandleFunc("GET /api/v1/migration/cutover/verify", rt.requireAbility(AbilityWriteSensitive, rt.handleCutoverVerify))
 }

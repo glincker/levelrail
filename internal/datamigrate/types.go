@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/netip"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -117,10 +118,13 @@ func (s *Source) Validate(engine string) error {
 	return nil
 }
 
-// Scrub replaces the source password found in text with a placeholder.
+// Scrub replaces the source password, raw or URL-escaped, with a placeholder.
 func (s Source) Scrub(text string) string {
-	if s.Password != "" {
-		text = strings.ReplaceAll(text, s.Password, "[redacted]")
+	if s.Password == "" {
+		return text
+	}
+	for _, form := range []string{s.Password, url.QueryEscape(s.Password), url.PathEscape(s.Password)} {
+		text = strings.ReplaceAll(text, form, "[redacted]")
 	}
 	return text
 }

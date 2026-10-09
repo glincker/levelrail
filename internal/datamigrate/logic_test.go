@@ -189,3 +189,27 @@ func TestGuideVolumes(t *testing.T) {
 		}
 	}
 }
+
+func TestSourceScrub(t *testing.T) {
+	src := Source{Password: "p@ss w/rd"}
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"raw", "auth failed for p@ss w/rd", "auth failed for [redacted]"},
+		{"query escaped", "dial postgres://u:p%40ss+w%2Frd@h/db", "dial postgres://u:[redacted]@h/db"},
+		{"path escaped", "uri p@ss%20w%2Frd end", "uri [redacted] end"},
+		{"absent", "connection refused", "connection refused"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := src.Scrub(tc.in); got != tc.want {
+				t.Fatalf("Scrub(%q) = %q, want %q", tc.in, got, tc.want)
+			}
+		})
+	}
+	if got := (Source{}).Scrub("keep p@ss"); got != "keep p@ss" {
+		t.Fatalf("empty password must not alter text, got %q", got)
+	}
+}
