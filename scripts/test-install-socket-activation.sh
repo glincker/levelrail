@@ -1,5 +1,5 @@
 #!/bin/sh
-# Verifies LEVELRAIL_SOCKET_ACTIVATION=1 inside a systemd container:
+# Verifies the default socket-activated install inside a systemd container:
 #   scripts/test-install-socket-activation.sh <base-image> <path-to-linux-binary>
 # systemd must own 80/443, and restarting the control plane must not refuse a
 # single TCP connection to them.
@@ -43,8 +43,8 @@ docker cp "$repo_root/install.sh" "$name:/root/install.sh"
 docker cp "$binary" "$name:/root/levelrail"
 env_args="LEVELRAIL_BINARY_FILE=/root/levelrail LEVELRAIL_PUBLIC_IP=127.0.0.1 LEVELRAIL_MIN_DISK_GB=1 LEVELRAIL_SKIP_REACHABILITY=1"
 
-echo "== install with socket activation"
-docker exec "$name" timeout "$wait_secs" env $env_args LEVELRAIL_SOCKET_ACTIVATION=1 sh /root/install.sh >/dev/null
+echo "== default install uses socket activation"
+docker exec "$name" timeout "$wait_secs" env $env_args sh /root/install.sh >/dev/null
 in_ct 'systemctl is-active --quiet levelrail-http.socket && systemctl is-active --quiet levelrail-https.socket' ||
 	{ echo "socket units are not active"; exit 1; }
 in_ct 'curl -fsS --max-time 5 http://127.0.0.1:8080/healthz' >/dev/null || { echo "control plane unhealthy"; exit 1; }

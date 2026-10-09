@@ -14,8 +14,8 @@ accept that on every upgrade.
 
 ## Decision
 
-Let systemd own the listening sockets. `install.sh` (opt-in with
-`LEVELRAIL_SOCKET_ACTIVATION=1`) writes `levelrail-http.socket` and
+Let systemd own the listening sockets. `install.sh` (on by default for new installs, opt out with
+`LEVELRAIL_SOCKET_ACTIVATION=0`) writes `levelrail-http.socket` and
 `levelrail-https.socket`. The control plane reads `LISTEN_FDS` and
 `LISTEN_FDNAMES`, configures Caddy with `fd/N` listen addresses, serves the
 HTTP to HTTPS redirect from its own server on the inherited port 80, and gives

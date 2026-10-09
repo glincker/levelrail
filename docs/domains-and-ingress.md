@@ -451,13 +451,16 @@ A domain whose app was routed in the last `APP_INGRESS_HOLD_WINDOW` (default `10
 
 ### Surviving a control plane restart
 
-The embedded Caddy lives in the control plane process, so by default a restart closes ports 80 and 443 for the length of the restart. To close that gap, let systemd own the listening sockets:
+The embedded Caddy lives in the control plane process, so a restart would close ports 80 and 443 for its length. New installs close that gap by default: systemd owns the listening sockets.
 
 ```bash
-LEVELRAIL_SOCKET_ACTIVATION=1 ./install.sh            # new install
+./install.sh                                          # new install, socket activation on
+LEVELRAIL_SOCKET_ACTIVATION=0 ./install.sh            # new install, opt out
 LEVELRAIL_SOCKET_ACTIVATION=1 ./install.sh upgrade    # switch an existing install (one short stop)
 LEVELRAIL_SOCKET_ACTIVATION=0 ./install.sh upgrade    # switch back
 ```
+
+An `upgrade` with the variable unset keeps whichever mode the install is already in. Docker Compose deployments are unchanged: they do not use systemd and bind the ports themselves.
 
 The installer writes `levelrail-http.socket` and `levelrail-https.socket`. The control plane detects the inherited sockets (`LISTEN_FDS`, named `http` and `https`) on its own; no extra setting is needed. While the process is down the kernel queues new connections, and the new process serves them when it is up, so visitors see a slower response instead of a refused connection. The measured numbers are on the [resilience](resilience.md#ingress-availability-windows-measured) page, and the decision is in [ADR 025](../adr/025-ingress-restart-gap-socket-activation.md). Trade-offs: HTTP/3 and ACME HTTP-01 are not available in this mode (TLS-ALPN-01 on 443 and DNS-01 still issue certificates), and the sockets stay open while the service is stopped on purpose.
 
