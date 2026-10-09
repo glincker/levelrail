@@ -139,6 +139,7 @@ func (rt *Router) handleStartCanary(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: start canary: record", err, slog.String("name", name))
 		return
 	}
+	rt.nudgeReconciler()
 	rel, _, _ = rt.canaries.GetCanaryRelease(r.Context(), name)
 	writeJSON(w, http.StatusCreated, toCanaryResource(rel, true))
 }
@@ -183,6 +184,7 @@ func (rt *Router) handleSetCanaryWeight(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: set canary weight: save", err, slog.String("name", name))
 		return
 	}
+	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, toCanaryResource(c, true))
 }
 
@@ -247,5 +249,6 @@ func (rt *Router) removeCanary(ctx context.Context, name string) error {
 		return err
 	}
 	rt.rollbackClone(ctx, store.CanaryServiceName(name))
+	rt.nudgeReconciler()
 	return nil
 }

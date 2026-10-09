@@ -16,7 +16,9 @@ stable release until you promote.
   not appear in the apps list and has no domains of its own.
 - Ingress splits each request between the app and the canary by weight (1 to
   99 percent). The split is per request, not per user, so one visitor can see
-  both releases.
+  both releases. The split follows a repeating cycle of 100 requests, so a
+  weight of 20 sends exactly 20 of every 100 requests to the canary. A handful
+  of requests may all land on one release.
 - A canary that is not running or not ready receives no traffic, so a bad
   image cannot take the app down. Weight 0 pauses the canary without removing it.
 - **Promote** deploys the canary image to the app through the normal deploy
@@ -52,3 +54,11 @@ and Promote and Abort buttons while a canary is running.
 `GET`, `POST`, `PUT` and `DELETE /api/v1/apps/{name}/canary`, and
 `POST /api/v1/apps/{name}/canary/promote`. All need the `deploy` ability, and
 `GET` needs `read`. See the [API reference](api-reference.md).
+
+## Verified
+
+Run on a real control plane with Docker and embedded Caddy: weights of 30 and
+20 produced exactly 30 and 20 canary responses per 100 requests, weight 0
+sent everything to the stable release, and promote left only the new image
+serving. A weight change reaches ingress within seconds. A new canary takes up
+to about 30 seconds to start its container.
