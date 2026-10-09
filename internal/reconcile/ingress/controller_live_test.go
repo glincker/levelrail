@@ -18,6 +18,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -115,6 +116,16 @@ func TestController_Reconcile_Live(t *testing.T) {
 
 	startAndWaitRunning(longCtx, t, rt, application.ContainerName(serviceA, imageA, ""), imageA)
 	startAndWaitRunning(longCtx, t, rt, application.ContainerName(serviceB, imageB, ""), imageB)
+
+	// Ingress routes only services whose application controller reports Ready
+	// (F-002); this test starts the containers itself, so record what that
+	// controller would have.
+	ready := []reconcile.Condition{{Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue}}
+	for _, name := range []string{serviceA, serviceB} {
+		if err := db.UpsertConditions(longCtx, application.ControllerName(name), ready); err != nil {
+			t.Fatalf("UpsertConditions(%s) error = %v", name, err)
+		}
+	}
 
 	caddyPort := freePort(t)
 	caddyAddr := fmt.Sprintf("127.0.0.1:%d", caddyPort)

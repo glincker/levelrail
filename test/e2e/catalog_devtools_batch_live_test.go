@@ -105,12 +105,11 @@ func TestServiceTemplates_Live_DevtoolsBatchBoots(t *testing.T) {
 					application.WithReadyBudget(tt.readyBudget),
 					application.WithSecretResolver(secretsManager),
 				)
-				result, err := ctrl.Reconcile(deployCtx)
-				if err != nil {
-					t.Fatalf("service %q: Reconcile() error = %v, result = %+v", svc.Name, err, result)
-				}
-				if len(result.Conditions) == 0 || result.Conditions[0].Status != "True" {
-					t.Fatalf("service %q: Reconcile() result = %+v, want a True Ready condition", svc.Name, result)
+				// One Reconcile is not enough on a cold runner: the image pull and
+				// first start can outlast a single pass. Retry until Ready or twice
+				// the ready budget has passed.
+				if result, err := reconcileUntilReady(deployCtx, ctrl, 2*tt.readyBudget); err != nil {
+					t.Fatalf("service %q: %v (result = %+v)", svc.Name, err, result)
 				}
 
 				target := application.ContainerName(svc.Name, svc.Image, "")

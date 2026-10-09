@@ -91,8 +91,10 @@ func countingUpstream(t *testing.T, hits *atomic.Int32, lastBody *atomic.Value) 
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hits.Add(1)
-		b, _ := io.ReadAll(r.Body)
-		if lastBody != nil {
+		b, err := io.ReadAll(r.Body)
+		// An aborted upload (body cut by the gateway's size cap) finishes late
+		// with a truncated body; recording it would overwrite the next request's.
+		if lastBody != nil && err == nil {
 			lastBody.Store(string(b))
 		}
 		_, _ = io.WriteString(w, "{}")
