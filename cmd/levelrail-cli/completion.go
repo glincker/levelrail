@@ -270,6 +270,9 @@ var cliCommandTree = map[string]*cmdNode{
 // completions at every command depth.
 var globalFlags = []string{"--json", "--output", "--query", "--token", "--api-url", "--debug", "-h", "--help"}
 
+// db is the short alias for databases and shares its subtree.
+func init() { cliCommandTree["db"] = cliCommandTree["databases"] }
+
 // treeEntry is cliCommandTree flattened to one entry per node that has
 // children: path is the space-joined verb sequence leading to that node
 // ("" for the root, "apps" for apps' own verbs, "apps log-drain" for its
