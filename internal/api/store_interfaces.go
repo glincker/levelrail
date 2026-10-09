@@ -564,6 +564,7 @@ type Store interface {
 	AppSleepStore
 	DataImportStore
 	CanaryStore
+	DatabaseQueryStore
 	PreviewEnvironmentStore
 	GitHubAppStore
 	GitLabAppStore

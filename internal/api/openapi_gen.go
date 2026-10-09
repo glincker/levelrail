@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 702 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 714 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -351,6 +351,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/base-backups", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListBaseBackupHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/base-backups", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleTriggerBaseBackup", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/environment", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseEnvironment", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/explain", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseExplain", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/key", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseKey", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/keys", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleScanDatabaseKeys", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/logs", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleQueryDatabaseLogs", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/logs/stream", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleLiveDatabaseLogStream", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/major-upgrade", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleMajorUpgrade", Description: ""},
@@ -364,9 +367,18 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/databases/{name}/pitr", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleEnablePITR", Description: "Point-in-time restore (pitr.go): enabling/disabling PITR is AbilityWriteSensitive, the same tier creating a backup target or triggering an ordinary backup already uses; base backups are the physical counterpart of an ordinary backup, same tier again. Triggering an actual PITR restore is AbilityRoot, matching the ordinary restore route above for the identical reason: it overwrites a live database's actual data with no way back."},
 	{Method: "POST", Path: "/api/v1/databases/{name}/pitr-restore", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleTriggerPITRRestore", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/pitr-restores", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListPITRRestoreHistory", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/query", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseQuery", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/databases/{name}/query-history", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleClearDatabaseQueryHistory", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/query-history", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseQueryHistory", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/query/write", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseQueryWrite", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/resource-recommendation", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseResourceRecommendation", Description: "Resource right-sizing, the database counterpart to GET /apps/{name}/resource-recommendation above (database_resource_recommendation.go)."},
+	{Method: "GET", Path: "/api/v1/databases/{name}/saved-queries", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseSavedQueries", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/saved-queries", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleSaveDatabaseQuery", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/databases/{name}/saved-queries/{id}", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDeleteDatabaseSavedQuery", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/schema", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseSchema", Description: "Database viewer: row data and SQL are sensitive, so reads are AbilityReadSensitive; the write console is AbilityRoot (admin only)."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/slow-queries", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleQueryDatabaseSlowQueries", Description: "Slow query log, Postgres/MySQL only (database_slow_queries.go's own doc comment explains why Redis and every other engine return 400): parses the same stored container log lines the routes above expose, rather than a new telemetry source."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/status", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseStatus", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/tables/{schema}/{table}/rows", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseTableRows", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/version", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseVersion", Description: "Minor and patch image change for a database, same data volume. AbilityWriteSensitive: it restarts the database container."},
 	{Method: "DELETE", Path: "/api/v1/bitbucket-app", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleDisconnectBitbucketApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/bitbucket-app", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleGetBitbucketAppStatus", Description: "Bitbucket App: the OAuth-consumer counterpart of the GitLab App routes above, same ability tiers for the same reasons, same two-step \"configure, then authorize\" shape. Cloud only, no instance_url (docs/design/git-provider-integrations.md section 3)."},

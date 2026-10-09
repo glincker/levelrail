@@ -84,7 +84,7 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAliasedDeploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
 		return runAliasedRollback(prog, args[1:], stdout, stderr, lookupEnv)
-	case "databases":
+	case "databases", "db":
 		return runDatabases(prog, args[1:], stdout, stderr, lookupEnv)
 	case "functions":
 		return runFunctions(prog, args[1:], stdout, stderr, lookupEnv)

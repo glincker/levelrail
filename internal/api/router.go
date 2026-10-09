@@ -430,6 +430,7 @@ type Router struct {
 	dnsResolver                  datamigrate.Resolver             // nil means the real resolver
 	wakeToken                    string                           // empty disables the wake hook
 	canaries                     CanaryStore                      // always set, in-flight canary releases
+	dbQueries                    DatabaseQueryStore               // always set, console history and saved queries
 	appSchedules                 AppScheduleStore                 // always set, same "core Store interface" shape as gitSources above
 	resolveBranchSHA             resolveBranchSHAFunc             // remote branch head resolver for TriggerScheduledDeploy; always non-nil, defaulted to resolveRemoteBranchSHA in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape listBranches above already uses
 	previewEnvironments          PreviewEnvironmentStore          // always set, same "core Store interface" shape as gitSources above: listing/tearing down a preview needs no extra secrets configuration, deploying a new one reuses gitSourceSecrets/gitSourceFetch/builder already above
@@ -647,6 +648,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		appSleep:                    s,
 		dataImports:                 s,
 		canaries:                    s,
+		dbQueries:                   s,
 		resolveBranchSHA:            resolveRemoteBranchSHA,
 		previewEnvironments:         s,
 		githubApp:                   s,
