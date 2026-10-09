@@ -252,6 +252,7 @@ Plain variables can be bulk loaded from a `.env` file and exported again:
 levelrail-cli apps env import NAME --file local.env --dry-run   # preview only
 levelrail-cli apps env import NAME --file local.env
 levelrail-cli apps env export NAME --out backup.env             # stdout without --out
+levelrail-cli apps env diff staging production                  # keys only in one app, and changed values
 ```
 
 - The parser handles comments, an `export ` prefix, single and double quotes, multiline quoted values, inline ` # comments` on unquoted values, `=` inside values, empty values, and Windows line endings. When a key appears twice, the last one wins.

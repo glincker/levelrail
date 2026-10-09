@@ -1088,6 +1088,13 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 			rt.logger.Error("api: delete app: teardown pending", slog.String("error", teardownErr.Error()), slog.String("name", name))
 		}
 	}
+	if rt.canaries != nil && !store.IsCanaryService(name) {
+		if _, ok, err := rt.canaries.GetCanaryRelease(ctx, name); err == nil && ok {
+			if err := rt.removeCanary(ctx, name); err != nil {
+				rt.logger.Warn("api: delete app: remove canary failed", slog.String("error", err.Error()), slog.String("name", name))
+			}
+		}
+	}
 	if rt.preview != nil {
 		if err := rt.preview.DeleteApp(ctx, name); err != nil {
 			rt.logger.Warn("api: delete app: remove previews failed", slog.String("error", err.Error()), slog.String("name", name))
