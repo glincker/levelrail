@@ -51,7 +51,7 @@ func (db *DB) AddModelUsage(ctx context.Context, rows []ModelUsage) error {
 	if err != nil {
 		return fmt.Errorf("store: prepare add model usage: %w", err)
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	for _, u := range rows {
 		if _, err := stmt.ExecContext(ctx, u.ModelName, u.KeyID, u.HourStart.Unix(), u.Requests, u.Status2xx, u.Status4xx, u.Status5xx, u.RateLimited, u.UsageRequests, u.InputTokens, u.OutputTokens, u.BytesOut, u.DurationMsSum, u.TTFTMsSum, u.TTFTCount); err != nil {

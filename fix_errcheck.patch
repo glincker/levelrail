@@ -1,0 +1,9 @@
+<<<<<<< SEARCH
+	defer stmt.Close()
+
+	for _, u := range rows {
+=======
+	defer func() { _ = stmt.Close() }()
+
+	for _, u := range rows {
+>>>>>>> REPLACE
