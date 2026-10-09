@@ -416,6 +416,11 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/auto-update", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetImageAutoUpdate))
 	mux.HandleFunc("POST /api/v1/apps/{name}/auto-update/check", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCheckImageAutoUpdate))
 	mux.HandleFunc("POST /api/v1/apps/{name}/auto-update/webhook", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateImageUpdateWebhook))
+	mux.HandleFunc("GET /api/v1/apps/{name}/canary", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetCanary))
+	mux.HandleFunc("POST /api/v1/apps/{name}/canary", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleStartCanary))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/canary", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetCanaryWeight))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/canary", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleAbortCanary))
+	mux.HandleFunc("POST /api/v1/apps/{name}/canary/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePromoteCanary))
 	mux.HandleFunc("POST /api/v1/hooks/image-update/{name}/{token}", rt.handleImageUpdateWebhook)
 	mux.HandleFunc("POST /api/v1/apps/{name}/restart", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRestartApp))
 

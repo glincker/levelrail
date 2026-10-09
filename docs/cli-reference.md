@@ -176,6 +176,7 @@ levelrail-cli apps schedule get <app> [flags]
 levelrail-cli apps schedule history <app> [flags]
 levelrail-cli apps cancel-superseded enable|disable|status <app-name> [flags]
 levelrail-cli apps auto-rollback enable|disable|status <app-name> [flags]
+levelrail-cli apps canary start|status|weight|promote|abort <app-name> [flags]
 levelrail-cli apps auto-update enable|disable|status|check <app-name> [flags]
 levelrail-cli apps auto-rollback-slo-burn set <app-name> off|auto|dry_run|pause_for_human [flags]
 levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
@@ -191,6 +192,7 @@ levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
 - `apps freeze` manages deploy freeze windows: a window starts at every match of a 5 field cron expression, evaluated in `--timezone` (default UTC), and lasts `--duration`. While one is active, webhook, pipeline and released deploys are held and run when the window ends; a manual deploy needs `apps deploy --override-freeze --override-reason TEXT`. `set` replaces the app's windows with the one given. Fleet-wide windows are under `settings deploy-freeze`.
 - `apps schedule` configures a recurring redeploy of a branch's latest commit on a cron schedule.
 - `apps cancel-superseded` lets a newer queued deploy replace older queued ones of the same branch. Only queued deploys are replaced; a deploy that already started building is never canceled automatically.
+- `apps canary` runs a new image beside the app and sends it a share of traffic until you promote or abort it (see [Canary deploys](canary-deploys.md)).
 - `apps auto-update` redeploys an app automatically when its image tag moves to a new digest (see [Image auto-update](image-auto-update.md)).
 - `apps auto-rollback` opts an app into or out of automatic rollback when a crashloop alert fires. `apps auto-rollback-slo-burn` sets how the app reacts when an SLO burn rate alert fires.
 

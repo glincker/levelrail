@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 684 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 689 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -109,6 +109,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/badge", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetBadgeSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/badge.svg", Ability: "Public", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePublicAppBadge", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/builds", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerBuild", Description: "Manual build trigger (see Builder/WithBuilder above and handleTriggerBuild's own doc comment): builds an image from a git source through the same internal/deploy.Pipeline the webhook receiver uses, for an operator with no working git webhook configured. AbilityDeploy, the same boundary as the image-tag trigger above: this also ultimately writes desired state."},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/canary", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAbortCanary", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/canary", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetCanary", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/canary", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartCanary", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/canary", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetCanaryWeight", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/canary/promote", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePromoteCanary", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/cancel-superseded", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetCancelSuperseded", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/cancel-superseded", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetCancelSuperseded", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/changes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppChanges", Description: ""},

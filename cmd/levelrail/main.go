@@ -3615,6 +3615,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		if experimental.Enabled(experimental.LoadBalancer) {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithLoadBalancers(deps.db, deps.lbRegistry))
 		}
+		ingressOpts = append(ingressOpts, ingressreconcile.WithCanaries(deps.db))
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 
 		// Local runtime unconditionally, same reasoning as the ingress
