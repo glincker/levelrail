@@ -190,8 +190,8 @@ function WindowDialog({
               />
             </Field>
           ) : null}
-          <label className="flex items-center gap-2 text-sm">
-            <Switch checked={enabled} onCheckedChange={setEnabled} />
+          <label className="flex items-center gap-2 text-sm" htmlFor="mw-enabled">
+            <Switch id="mw-enabled" checked={enabled} onCheckedChange={setEnabled} />
             Enabled
           </label>
           {save.isError ? (
