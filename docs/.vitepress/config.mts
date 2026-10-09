@@ -494,9 +494,9 @@ export default withMermaid({
     const canonicalUrl = `${siteUrl}/${path}`
     const title = pageData.frontmatter.title || pageData.title || 'Levelrail'
     const pageDescription = pageData.frontmatter.description || pageData.description || description
-    // Homepage keeps its own product screenshot; every other page gets one
+    // Homepage gets the branded value-prop card; every other page gets one
     // shared generic docs card rather than all pages sharing the homepage's.
-    const ogImage = `${siteUrl}/assets/${path === '' ? 'screenshots/app-overview.png' : 'og-docs.png'}`
+    const ogImage = `${siteUrl}/assets/${path === '' ? 'og-home.png' : 'og-docs.png'}`
     const head: [string, Record<string, string>, string?][] = [
       ['link', { rel: 'canonical', href: canonicalUrl }],
       ['meta', { property: 'og:type', content: pageData.params?.tag ? 'article' : 'website' }],

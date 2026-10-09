@@ -14,21 +14,18 @@
   <a href="#what-you-get">Features</a> ·
   <a href="#a-tour-of-the-dashboard">Screenshots</a> ·
   <a href="docs/comparison.md">Compare</a> ·
+  <a href="docs/roadmap.md">Roadmap</a> ·
+  <a href="SECURITY.md">Security</a> ·
   <a href="https://discord.gg/Ar5pcaZB99">Discord</a>
 </p>
 
 <p>
   <a href="https://github.com/glincker/levelrail/actions/workflows/ci.yml"><img src="https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/glincker/levelrail/releases"><img src="https://img.shields.io/github/v/release/glincker/levelrail?include_prereleases&label=release" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0"></a>
-  <a href="https://goreportcard.com/report/github.com/glincker/levelrail"><img src="https://goreportcard.com/badge/github.com/glincker/levelrail" alt="Go Report Card"></a>
-  <a href="go.mod"><img src="https://img.shields.io/github/go-mod/go-version/glincker/levelrail" alt="Go Version"></a>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat" alt="GitHub stars"></a>
-  <a href="https://github.com/glincker/levelrail/commits/main"><img src="https://img.shields.io/github/last-commit/glincker/levelrail" alt="Last commit"></a>
-  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome"></a>
-  <a href="https://github.com/glincker/levelrail/discussions"><img src="https://img.shields.io/github/discussions/glincker/levelrail" alt="Discussions"></a>
   <a href="https://discord.gg/Ar5pcaZB99"><img src="https://img.shields.io/discord/829168897080557579?style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2" alt="Discord"></a>
   <a href="#status-pre-release"><img src="https://img.shields.io/badge/status-pre--release-orange.svg" alt="Status: pre-release"></a>
-  <a href="https://levelrail.com"><img src="https://img.shields.io/badge/docs-levelrail.com-f59e0b.svg" alt="Docs"></a>
 </p>
 
 <img src="docs/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="900">
@@ -322,6 +319,9 @@ The frontend is a Vite project in `web/` that is embedded into the control plane
 - [GitHub Discussions](https://github.com/glincker/levelrail/discussions) -- questions, ideas, show and tell
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99) -- live chat with maintainers and other users, with a dedicated `#levelrail` forum channel for questions and support
 - [support@levelrail.com](mailto:support@levelrail.com) -- direct email support
+- [Security policy](SECURITY.md) -- report a vulnerability privately
+
+If Levelrail saves you a weekend, a [star on GitHub](https://github.com/glincker/levelrail) helps other self-hosters find it. Bug reports and honest feedback help more.
 
 <a href="https://discord.gg/Ar5pcaZB99"><img src="https://discord.com/api/guilds/829168897080557579/widget.png?style=banner2" alt="Join the GLINR Discord" /></a>
 

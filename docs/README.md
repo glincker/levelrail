@@ -8,6 +8,14 @@ This directory is the source of truth for Levelrail's user-facing and contributo
 
 **It ships with the repo, not the binary.** Nothing under `/docs` is embedded into the control plane or Docker image. The same files are published at [levelrail.com](https://levelrail.com) and render on GitHub too.
 
+| Start here | |
+| --- | --- |
+| [Install in one command](installing.md) | Linux server to dashboard in about ten minutes |
+| [Deploy a first app](getting-started.md) | From the dashboard or the CLI |
+| [Compare with Coolify and Dokploy](comparison.md) | Sourced, honest, includes where Levelrail trails |
+| [Feature status](feature-status.md) and [roadmap](roadmap.md) | What is stable, beta, or planned |
+| [Security policy](../SECURITY.md) | Report a vulnerability privately |
+
 **New here?** Read [Getting started](getting-started.md), then [Installing](installing.md) if you want the details behind the one-line install.
 
 ## How this index is organized
