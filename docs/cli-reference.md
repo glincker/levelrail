@@ -520,6 +520,8 @@ levelrail-cli databases stop <name> [flags]
 levelrail-cli databases metrics <name> --metric NAME [flags]
 levelrail-cli databases logs <name> [flags]
 levelrail-cli databases slow-queries <name> [flags]
+levelrail-cli databases schema <name> [--columns] [flags]
+levelrail-cli databases query <name> --sql "select ..." [--explain] [--write --confirm <name>] [flags]
 levelrail-cli databases resource-recommendation <name> [flags]
 levelrail-cli databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]
 levelrail-cli databases set-project <name> <project-id> [flags]
@@ -538,6 +540,7 @@ levelrail-cli databases major-upgrade-discard <name> <id> [flags]
 - `status` shows a database's current reconcile conditions (useful when it exists but is not running yet).
 - `delete` stops and removes a database but keeps its data volume; `--force` is needed if apps use it.
 - `slow-queries` lists a Postgres or MySQL database's slow query log.
+- `schema` lists a SQL database's tables with row estimates and sizes; `query` runs one statement through the control plane, read-only by default. See [Database viewer](database-viewer.md). `db` is a short alias for `databases`.
 - `set-resources` applies memory and CPU limits to an already created database, replacing whatever was set before (a full replace, not a patch).
 - `public-access set` exposes a database on a host port; `--bind-address` is `private` (the default), `public`, or a literal IP.
 - `set-version` is a minor or patch image change on the same data. `major-upgrade` is a guarded Postgres major upgrade with a rollback snapshot; `major-upgrades` lists the attempts, `major-upgrade-rollback` restores the pre upgrade data, and `major-upgrade-discard` deletes a rollback snapshot to free disk.

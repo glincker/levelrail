@@ -642,6 +642,20 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// parses the same stored container log lines the routes above expose,
 	// rather than a new telemetry source.
 	mux.HandleFunc("GET /api/v1/databases/{name}/slow-queries", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseSlowQueries))
+	// Database viewer: row data and SQL are sensitive, so reads are
+	// AbilityReadSensitive; the write console is AbilityRoot (admin only).
+	mux.HandleFunc("GET /api/v1/databases/{name}/schema", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseSchema))
+	mux.HandleFunc("GET /api/v1/databases/{name}/tables/{schema}/{table}/rows", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseTableRows))
+	mux.HandleFunc("POST /api/v1/databases/{name}/query", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDatabaseQuery))
+	mux.HandleFunc("POST /api/v1/databases/{name}/query/write", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleDatabaseQueryWrite))
+	mux.HandleFunc("POST /api/v1/databases/{name}/explain", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDatabaseExplain))
+	mux.HandleFunc("GET /api/v1/databases/{name}/keys", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleScanDatabaseKeys))
+	mux.HandleFunc("GET /api/v1/databases/{name}/key", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseKey))
+	mux.HandleFunc("GET /api/v1/databases/{name}/query-history", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleListDatabaseQueryHistory))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/query-history", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleClearDatabaseQueryHistory))
+	mux.HandleFunc("GET /api/v1/databases/{name}/saved-queries", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleListDatabaseSavedQueries))
+	mux.HandleFunc("POST /api/v1/databases/{name}/saved-queries", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleSaveDatabaseQuery))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/saved-queries/{id}", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDeleteDatabaseSavedQuery))
 
 	// Resource right-sizing, the database counterpart to
 	// GET /apps/{name}/resource-recommendation above

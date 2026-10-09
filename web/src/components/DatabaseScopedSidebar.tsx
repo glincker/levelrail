@@ -1,4 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowLeftIcon,
   SquaresFourIcon,
@@ -6,6 +7,8 @@ import {
   PulseIcon,
   ScrollIcon,
   GaugeIcon,
+  TableIcon,
+  TerminalWindowIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   SidebarGroup,
@@ -39,6 +42,7 @@ import { summarizeDatabaseStatus } from '../lib/databaseStatus'
 // loaders finish before their component tree renders" guarantee
 // AppScopedSidebar relies on.
 export function DatabaseScopedSidebar({ name }: { name: string }) {
+  const { t } = useTranslation('databases')
   const { data: database } = useDatabase(name)
   const { data: conditions } = useDatabaseStatus(name)
   const status = summarizeDatabaseStatus(conditions)
@@ -129,6 +133,30 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
               >
                 <GaugeIcon />
                 <span>Slow Queries</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/databases/$name/explorer" params={{ name }} />
+                }
+                isActive={pathname.endsWith('/explorer')}
+                tooltip={t('viewer.nav.explorer')}
+              >
+                <TableIcon />
+                <span>{t('viewer.nav.explorer')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/databases/$name/console" params={{ name }} />
+                }
+                isActive={pathname.endsWith('/console')}
+                tooltip={t('viewer.nav.console')}
+              >
+                <TerminalWindowIcon />
+                <span>{t('viewer.nav.console')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

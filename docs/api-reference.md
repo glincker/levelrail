@@ -434,6 +434,18 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/major-upgrades/{id}/rollback | AbilityRoot | handleRollbackMajorUpgrade |
 | DELETE | /api/v1/databases/{name}/major-upgrades/{id}/snapshot | AbilityRoot | handleDiscardMajorUpgradeSnapshot |
 | PUT | /api/v1/databases/{name}/environment | AbilityWrite | handleSetDatabaseEnvironment |
+| GET | /api/v1/databases/{name}/schema | AbilityReadSensitive | handleGetDatabaseSchema |
+| GET | /api/v1/databases/{name}/tables/{schema}/{table}/rows | AbilityReadSensitive | handleGetDatabaseTableRows |
+| POST | /api/v1/databases/{name}/query | AbilityReadSensitive | handleDatabaseQuery |
+| POST | /api/v1/databases/{name}/query/write | AbilityRoot | handleDatabaseQueryWrite |
+| POST | /api/v1/databases/{name}/explain | AbilityReadSensitive | handleDatabaseExplain |
+| GET | /api/v1/databases/{name}/keys | AbilityReadSensitive | handleScanDatabaseKeys |
+| GET | /api/v1/databases/{name}/key | AbilityReadSensitive | handleGetDatabaseKey |
+| GET | /api/v1/databases/{name}/query-history | AbilityReadSensitive | handleListDatabaseQueryHistory |
+| DELETE | /api/v1/databases/{name}/query-history | AbilityReadSensitive | handleClearDatabaseQueryHistory |
+| GET | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleListDatabaseSavedQueries |
+| POST | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleSaveDatabaseQuery |
+| DELETE | /api/v1/databases/{name}/saved-queries/{id} | AbilityReadSensitive | handleDeleteDatabaseSavedQuery |
 
 ## Projects / Organizations / Environments
 
