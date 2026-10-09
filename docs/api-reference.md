@@ -152,7 +152,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 143 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 146 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -307,6 +307,9 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/canary | AbilityDeploy | handleSetCanaryWeight |
 | DELETE | /api/v1/apps/{name}/canary | AbilityDeploy | handleAbortCanary |
 | POST | /api/v1/apps/{name}/canary/promote | AbilityDeploy | handlePromoteCanary |
+| GET | /api/v1/apps/{name}/sleep | AbilityRead | handleGetAppSleep |
+| PUT | /api/v1/apps/{name}/sleep | AbilityDeploy | handleSetAppSleep |
+| POST | /api/v1/apps/{name}/sleep/wake | AbilityDeploy | handleWakeApp |
 
 :::
 
@@ -912,6 +915,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/firewall/host/enable | AbilityRoot | handleEnableHostFirewall |
 | POST | /api/v1/firewall/host/disable | AbilityRoot | handleDisableHostFirewall |
 | POST | /api/v1/hooks/image-update/{name}/{token} | Public | handleImageUpdateWebhook |
+| GET | /api/v1/hooks/wake | Public | handleWakeHook |
 
 ## See also
 

@@ -357,8 +357,11 @@ type Controller struct {
 	publicHost string
 
 	lbSource      LoadBalancerSource // nil disables load balancing
-	canarySource  CanarySource       // nil disables canary traffic splitting
-	implicitLB    bool               // see WithImplicitLoadBalancing
+	sleepSource   SleepSource        // nil disables wake routes for sleeping apps
+	wakeDial      string
+	wakeToken     string
+	canarySource  CanarySource // nil disables canary traffic splitting
+	implicitLB    bool         // see WithImplicitLoadBalancing
 	lbRegistry    *loadbalancer.Registry
 	nodeUpstreams NodeUpstreamResolver
 	meshPaths     meshpath.Resolver
@@ -704,6 +707,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	var maintenanceRoutes []ingress.MaintenanceRoute
 	var redirectRoutes []ingress.RedirectRoute
 	var holdRoutes []ingress.HoldRoute
+	var wakeRoutes []ingress.WakeRoute
+	sleeping := c.sleepingApps(ctx)
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
 	canaries := c.activeCanaries(ctx, services)
 	for _, svc := range services {
@@ -785,6 +790,14 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		}
 		activeHosts := excludeRedirectedHosts(remainingHosts, redirectByDomain)
 		if len(activeHosts) == 0 {
+			continue
+		}
+
+		if sleeping[svc.Name] && svc.Suspended {
+			for _, host := range activeHosts {
+				claimedHosts[host] = svc.Name
+			}
+			wakeRoutes = append(wakeRoutes, c.wakeRoute(svc.Name, activeHosts))
 			continue
 		}
 
@@ -942,6 +955,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		StaticRoutes:      staticRoutes,
 		MaintenanceRoutes: maintenanceRoutes,
 		HoldRoutes:        holdRoutes,
+		WakeRoutes:        wakeRoutes,
 		Inherited:         c.inherited,
 		Hardening:         c.hardening,
 		RedirectRoutes:    redirectRoutes,

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 689 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 693 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -211,6 +211,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSchedule", Description: "Scheduled deploys (app_schedule.go): a per-app cron schedule that redeploys the latest commit on a branch, checked by internal/scheduledeploy.Scheduler. Same GET=Read/PUT=WriteSensitive split as git-source just above."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppSchedule", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/schedule/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppScheduleHistory", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/sleep", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSleep", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/sleep", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppSleep", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/sleep/wake", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleWakeApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/slo-preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSLOPreview", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/start", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartApp", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/stop", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStopApp", Description: "Stop/start (handleStopApp/handleStartApp's own doc comments): same AbilityDeploy tier as restart above, the same class of lifecycle action."},
@@ -518,6 +521,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/gitea-app/repos/{owner}/{repo}/branches", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleListGiteaAppBranches", Description: ""},
 	{Method: "POST", Path: "/api/v1/gitea-app/repos/{owner}/{repo}/use-as-source", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleUseGiteaRepoAsSource", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/image-update/{name}/{token}", Ability: "Public", Group: "Other", Handler: "handleImageUpdateWebhook", Description: ""},
+	{Method: "GET", Path: "/api/v1/hooks/wake", Ability: "Public", Group: "Other", Handler: "handleWakeHook", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/plan", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportPlan", Description: "Import front door: classifies pasted input and returns a plan preview, creating nothing. AbilityWrite because it makes outbound fetches."},
 	{Method: "POST", Path: "/api/v1/imports/platform/apply", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleApplyPlatformImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/platform/discover", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDiscoverPlatformImport", Description: ""},

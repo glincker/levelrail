@@ -424,6 +424,8 @@ type Router struct {
 	pushVAPIDPublicKey           string                           // "" means browser push is not configured on this control plane (no master key set), same nil-secretsManager hazard as every Secrets-flavored dependency
 	gitSources                   GitSourceStore                   // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
 	imageAutoUpdates             ImageAutoUpdateStore             // always set, per-app registry auto-update opt-in
+	appSleep                     AppSleepStore                    // always set, sleep-when-idle settings
+	wakeToken                    string                           // empty disables the wake hook
 	canaries                     CanaryStore                      // always set, in-flight canary releases
 	appSchedules                 AppScheduleStore                 // always set, same "core Store interface" shape as gitSources above
 	resolveBranchSHA             resolveBranchSHAFunc             // remote branch head resolver for TriggerScheduledDeploy; always non-nil, defaulted to resolveRemoteBranchSHA in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape listBranches above already uses
@@ -639,6 +641,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		gitSources:                  s,
 		appSchedules:                s,
 		imageAutoUpdates:            s,
+		appSleep:                    s,
 		canaries:                    s,
 		resolveBranchSHA:            resolveRemoteBranchSHA,
 		previewEnvironments:         s,
