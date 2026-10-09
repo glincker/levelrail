@@ -136,7 +136,11 @@
       "enabled": "Sleep when idle enabled.",
       "disabled": "Sleep when idle disabled.",
       "updated": "Idle time updated.",
-      "errorTitle": "Sleep setting failed"
-    }
+      "errorTitle": "Sleep setting failed",
+      "holdUpdated": "Function mode updated."
+    },
+    "holdLabel": "Hold requests while waking (function mode)",
+    "holdHelp": "A request that arrives while the app is asleep waits for it to start and is then replayed, instead of showing a waking-up page. Use for API callers.",
+    "holdAriaLabel": "Hold requests while waking"
   }
 }

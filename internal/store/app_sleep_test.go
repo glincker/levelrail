@@ -26,6 +26,15 @@ func TestAppSleep(t *testing.T) {
 	if err != nil || !a.Sleeping || a.IdleMinutes != 30 || !a.Since.Equal(t0.Add(time.Hour)) {
 		t.Fatalf("web = %+v, %v", a, err)
 	}
+	if err := db.SetAppSleepHold(ctx, "web", true, t0); err != nil {
+		t.Fatal(err)
+	}
+	if a, _ := db.GetAppSleep(ctx, "web"); !a.HoldRequests || !a.Sleeping {
+		t.Fatalf("hold = %+v, want hold on and sleeping kept", a)
+	}
+	if err := db.SetAppSleepHold(ctx, "ghost", true, t0); err == nil {
+		t.Fatal("hold on an app with no sleep setting must fail")
+	}
 	if err := db.SetAppSleepIdle(ctx, "off", 0, t0); err != nil {
 		t.Fatal(err)
 	}

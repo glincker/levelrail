@@ -23,6 +23,10 @@ again. Off by default, per app.
 - Starting the app by hand clears the sleeping state. Turning sleep off wakes
   the app first.
 
+For API callers that cannot retry an error page, turn on **hold requests while
+waking** (`apps sleep enable --hold`): the request waits for the start and is
+replayed. See [Functions](functions.md).
+
 ## Limits
 
 - Needs request traffic through the built-in ingress. An app that is only

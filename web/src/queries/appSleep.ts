@@ -14,6 +14,7 @@ export interface AppSleep {
   enabled: boolean
   idle_minutes: number
   sleeping: boolean
+  hold_requests: boolean
 }
 
 export const appSleepKeys = {
@@ -63,8 +64,12 @@ export function useAppSleepActions(appName: string) {
       exact: true,
     })
   }
-  const setIdle = useMutation<AppSleep, ApiError, number>({
-    mutationFn: (idle_minutes) => request(appName, 'PUT', '', { idle_minutes }),
+  const setIdle = useMutation<
+    AppSleep,
+    ApiError,
+    { idle_minutes: number; hold_requests?: boolean }
+  >({
+    mutationFn: (body) => request(appName, 'PUT', '', body),
     onSuccess,
   })
   const wake = useMutation<AppSleep, ApiError, void>({

@@ -20,16 +20,19 @@ export function AppSleepCard({ appName }: { appName: string }) {
     String(sleep.enabled ? sleep.idle_minutes : DEFAULT_IDLE_MINUTES),
   )
 
-  function save(value: number, success: string) {
-    setIdle.mutate(value, {
-      onSuccess: () => toast.add({ title: success, type: 'success' }),
-      onError: (error) =>
-        toast.add({
-          title: t('appSleep.toast.errorTitle'),
-          description: error.message,
-          type: 'error',
-        }),
-    })
+  function save(value: number, success: string, hold?: boolean) {
+    setIdle.mutate(
+      { idle_minutes: value, hold_requests: hold },
+      {
+        onSuccess: () => toast.add({ title: success, type: 'success' }),
+        onError: (error) =>
+          toast.add({
+            title: t('appSleep.toast.errorTitle'),
+            description: error.message,
+            type: 'error',
+          }),
+      },
+    )
   }
 
   return (
@@ -86,6 +89,26 @@ export function AppSleepCard({ appName }: { appName: string }) {
             </Button>
           ) : null}
         </div>
+        {sleep.enabled ? (
+          <div className="flex items-center justify-between gap-4 border-t border-border pt-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                {t('appSleep.holdLabel')}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t('appSleep.holdHelp')}
+              </p>
+            </div>
+            <Switch
+              checked={sleep.hold_requests}
+              disabled={setIdle.isPending}
+              aria-label={t('appSleep.holdAriaLabel')}
+              onCheckedChange={(next) =>
+                save(sleep.idle_minutes, t('appSleep.toast.holdUpdated'), next)
+              }
+            />
+          </div>
+        ) : null}
         {sleep.sleeping ? (
           <div className="flex items-center justify-between gap-4 border-t border-border pt-3">
             <p className="text-sm text-foreground" role="status">
