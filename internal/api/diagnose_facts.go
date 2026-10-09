@@ -8,6 +8,7 @@ import (
 	goruntime "runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/diagnose"
@@ -92,7 +93,7 @@ func (rt *Router) readListeningPorts(ctx context.Context, runtime docker.Runtime
 		}
 		b, _ := io.ReadAll(io.LimitReader(out, maxProcNetBytes))
 		_ = out.Close()
-		if len(b) == 0 {
+		if !strings.Contains(string(b), "local_address") {
 			continue
 		}
 		tables = append(tables, string(b))

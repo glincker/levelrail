@@ -71,6 +71,15 @@ func TestHandleAppListeningPorts_ProbeOutcomes(t *testing.T) {
 			wantReason:  listenReasonProbeFailed,
 		},
 		{
+			name: "runtime error text on the stream is not a table",
+			fake: &fakeExecAppRuntime{
+				inspectState: &docker.ContainerState{ID: "c1", Name: "web", Running: true},
+				execReader:   io.NopCloser(strings.NewReader(`OCI runtime exec failed: exec: "cat": executable file not found in $PATH`)),
+			},
+			wantVerdict: listenVerdictUnknown,
+			wantReason:  listenReasonProbeFailed,
+		},
+		{
 			name: "readable table with the port is listening",
 			fake: &fakeExecAppRuntime{
 				inspectState: &docker.ContainerState{ID: "c1", Name: "web", Running: true},
