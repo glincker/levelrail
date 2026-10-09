@@ -37,21 +37,24 @@ func (db *DB) AddModelUsage(ctx context.Context, rows []ModelUsage) error {
 		return fmt.Errorf("store: begin add model usage: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
+	stmt, err := tx.PrepareContext(ctx, `
+		INSERT INTO model_usage_hourly (model_name, key_id, hour_start, requests, status_2xx, status_4xx, status_5xx, rate_limited,
+			usage_requests, input_tokens, output_tokens, bytes_out, duration_ms_sum, ttft_ms_sum, ttft_count)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT (model_name, key_id, hour_start) DO UPDATE SET
+			requests = requests + excluded.requests, status_2xx = status_2xx + excluded.status_2xx,
+			status_4xx = status_4xx + excluded.status_4xx, status_5xx = status_5xx + excluded.status_5xx,
+			rate_limited = rate_limited + excluded.rate_limited, usage_requests = usage_requests + excluded.usage_requests,
+			input_tokens = input_tokens + excluded.input_tokens, output_tokens = output_tokens + excluded.output_tokens,
+			bytes_out = bytes_out + excluded.bytes_out, duration_ms_sum = duration_ms_sum + excluded.duration_ms_sum,
+			ttft_ms_sum = ttft_ms_sum + excluded.ttft_ms_sum, ttft_count = ttft_count + excluded.ttft_count`)
+	if err != nil {
+		return fmt.Errorf("store: prepare add model usage: %w", err)
+	}
+	defer stmt.Close()
+
 	for _, u := range rows {
-		_, err := tx.ExecContext(ctx, `
-			INSERT INTO model_usage_hourly (model_name, key_id, hour_start, requests, status_2xx, status_4xx, status_5xx, rate_limited,
-				usage_requests, input_tokens, output_tokens, bytes_out, duration_ms_sum, ttft_ms_sum, ttft_count)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-			ON CONFLICT (model_name, key_id, hour_start) DO UPDATE SET
-				requests = requests + excluded.requests, status_2xx = status_2xx + excluded.status_2xx,
-				status_4xx = status_4xx + excluded.status_4xx, status_5xx = status_5xx + excluded.status_5xx,
-				rate_limited = rate_limited + excluded.rate_limited, usage_requests = usage_requests + excluded.usage_requests,
-				input_tokens = input_tokens + excluded.input_tokens, output_tokens = output_tokens + excluded.output_tokens,
-				bytes_out = bytes_out + excluded.bytes_out, duration_ms_sum = duration_ms_sum + excluded.duration_ms_sum,
-				ttft_ms_sum = ttft_ms_sum + excluded.ttft_ms_sum, ttft_count = ttft_count + excluded.ttft_count`,
-			u.ModelName, u.KeyID, u.HourStart.Unix(), u.Requests, u.Status2xx, u.Status4xx, u.Status5xx, u.RateLimited,
-			u.UsageRequests, u.InputTokens, u.OutputTokens, u.BytesOut, u.DurationMsSum, u.TTFTMsSum, u.TTFTCount)
-		if err != nil {
+		if _, err := stmt.ExecContext(ctx, u.ModelName, u.KeyID, u.HourStart.Unix(), u.Requests, u.Status2xx, u.Status4xx, u.Status5xx, u.RateLimited, u.UsageRequests, u.InputTokens, u.OutputTokens, u.BytesOut, u.DurationMsSum, u.TTFTMsSum, u.TTFTCount); err != nil {
 			return fmt.Errorf("store: add usage of model %q: %w", u.ModelName, err)
 		}
 	}
