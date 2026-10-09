@@ -6,6 +6,13 @@ description: Import apps, databases, env vars, domains and volumes from Coolify,
 
 The platform importer reads a live Coolify, Dokploy or CapRover instance through its own HTTP API and creates the matching apps and databases here. It is read-only against the source: it never stops, changes or deletes anything there, and a test asserts it issues nothing but GET requests (CapRover's one login POST aside).
 
+A migration of live apps is four steps, and the source keeps serving traffic through the first three:
+
+1. [Import](#quick-start) the apps and databases (empty).
+2. [Copy the data](#step-2-copy-database-data) in and let it verify row counts.
+3. [Copy volumes](#step-3-copy-volumes), then run the app here in parallel with the source.
+4. [Check the cutover](#step-4-cutover) and switch DNS one domain at a time.
+
 You can run it three ways, all backed by the same two API routes:
 
 - Dashboard: Settings, then Import from another platform.
@@ -140,16 +147,101 @@ A database whose engine or version cannot be determined is reported as unsupport
 
 The importer package can also map a plain Docker Compose file (one app per service with an image, database-looking images as managed databases) and a `dokku config:export` style environment dump, without contacting anything. These two file sources are not yet exposed through the API, CLI or dashboard, so today they are only reachable from Go code. Live Dokku over SSH is not supported.
 
+## Step 2: copy database data
+
+The import creates each database empty. The data copy step fills it from the live source and proves it arrived. It works for PostgreSQL, MySQL, MariaDB, MongoDB and Redis.
+
+```bash
+# password from the environment (or --password-stdin), never the command line
+export APP_MIGRATE_SOURCE_DB_PASSWORD=...
+levelrail-cli migrate db-copy main --host db.old-server.example.com --user app --database app
+levelrail-cli migrate db-status
+```
+
+The same step is in the dashboard, under Settings, Import from another platform, "Copy database data".
+
+How it works and what it guarantees:
+
+- The control plane starts a short-lived helper container on the database's node, from the same engine image. It streams `pg_dump`, `mysqldump`/`mariadb-dump`, `mongodump` or an RDB snapshot from the source and pipes it straight into the managed database. Nothing is written to disk on the control plane and no `docker` CLI is involved.
+- The source is only read. Source credentials are held in memory for the copy and passed to the helper as environment variables. They are never stored, logged or returned, and any error text is scrubbed of the password.
+- After the restore, row counts per table (collection counts for MongoDB, key count for Redis) are compared between source and target. The status is `verified` only when every source table matches, otherwise `failed` with the tables that differ.
+- It is idempotent. The restore replaces the target's contents in one transaction, so a failed or interrupted copy is fixed by running the same command again. A copy that was started and never finished (for example the control plane restarted) can be retried after `APP_MIGRATE_COPY_TIMEOUT` (default `2h`).
+- Per-database status is `pending`, `copying`, `verified`, `failed` (with the reason) or `unsupported` (with the next step).
+
+Practical notes:
+
+- Create the target with the same or a newer major version than the source. `pg_dump` refuses to read a server newer than itself.
+- The dump is a point in time. For a database that keeps taking writes, copy once now to prove the path, then again right before the DNS switch (see [cutover](#step-4-cutover)), ideally with the source app stopped or read-only for that last run.
+- The source host must be reachable from the node that runs the database. Link-local and metadata addresses are refused.
+- ClickHouse, KeyDB and Dragonfly are reported `unsupported`. Take a dump with the source's own tools and restore it with the backup and restore tools.
+- Redis is copied as an RDB snapshot and the target restarts to load it. Keys that expire during the copy can make the key counts differ slightly, in which case the status is `failed` with both numbers shown. Re-run it.
+
+## Step 3: copy volumes
+
+Volume contents are not moved by the control plane, because that needs root on the source host. The CLI and the dashboard print the exact command per volume instead:
+
+```bash
+levelrail-cli migrate volumes --source root@old-server.example.com
+```
+
+Run the printed commands as root on the node that hosts the app. Each one creates the volume if needed and runs `rsync -aHAX --numeric-ids --delete` over SSH. Run it once while the source is live to move the bulk, then again right before the DNS switch to pick up the last changes. A bind mount uses the same host path on both sides.
+
+## Step 4: cutover
+
+Do not point DNS at this platform until the app is healthy here. The cutover check reads app status and public DNS and gives a go or no-go per domain. It changes nothing.
+
+```bash
+levelrail-cli migrate cutover                 # before the switch
+levelrail-cli migrate cutover --verify        # after the switch
+```
+
+The dashboard has the same two buttons under "Cutover check". The command exits non-zero unless every domain is `go` or `switched`, so a script can gate on it.
+
+For each domain of each imported app it checks:
+
+| Check | What it tells you |
+| --- | --- |
+| Readiness | The app's readiness probe passes here. Not ready is a hard no-go. |
+| DNS TTL | How long clients keep the old address. Above 300 seconds the verdict is `wait`, with the exact TTL to set and how long to wait. |
+| DNS target | Where the domain resolves now, and whether it already points at this node. |
+
+The verdicts are:
+
+| Verdict | Meaning |
+| --- | --- |
+| `go` | Healthy here, TTL is low. Make the record change shown. |
+| `wait` | Healthy, but the TTL is too high. Lower it first and wait it out. |
+| `no-go` | The app is not healthy here yet. Fix that first. |
+| `switched` | The domain already resolves to this node. |
+
+### DNS TTL guidance
+
+1. A day or more before the switch, lower the TTL of each domain's record to 300 seconds (60 if your provider allows) at your DNS provider. Leave the value alone for now.
+2. Wait at least the old TTL. If it was 3600, wait an hour. Run `migrate cutover` again: the TTL check turns to pass when the resolvers see the low value. The TTL shown is read from the domain's authoritative servers, and falls back to a caching resolver (marked as such) if they cannot be reached.
+3. Only then change the record. The check prints it exactly, for example `set A app.example.com to 203.0.113.10 (TTL 300)`. If the name currently holds a CNAME, remove it first: a name cannot hold a CNAME and an address.
+4. After the move is verified and stable, raise the TTL back up.
+
+### Parallel run
+
+The source keeps serving until you change DNS, and keeps serving the clients whose resolvers still cache the old address after you do. Use that:
+
+1. Run the imported app here with the data copied in and test it directly, for example `curl --resolve app.example.com:443:203.0.113.10 https://app.example.com/healthz`.
+2. Do the final data and volume copy, then switch one domain at a time.
+3. Run `migrate cutover --verify`. It checks, against this node with the domain as the TLS server name, that a trusted certificate is served and that the app's health path answers 200, and separately that public DNS resolves to this node. The certificate is issued on first use, so allow a minute after the first request.
+4. To roll back, point the record at the source again. Because the TTL is low, that takes minutes. Keep the source running for at least a full traffic cycle before stopping it.
+
+Writes accepted by the source after the final copy and before clients move are not carried over. For databases with steady writes, put the source app in maintenance mode for the last copy and the switch.
+
 ## What does not migrate
 
-- Database contents. Databases are created empty. Dump each source database and restore it with the backup and restore tools, then update the app's connection settings. The report and the dashboard both say so.
-- Volume contents. Volumes are created empty, copy the data across before starting the app. Bind mounts need the same host path on the target node and the root ability; without root they are skipped and reported.
+- Databases the copy step does not support (ClickHouse, KeyDB, Dragonfly), and any database you did not run the copy for. They stay empty.
+- Volume contents are only moved by running the commands from step 3. Bind mounts need the same host path on the target node and the root ability; without root they are skipped and reported.
 - Git-built apps do not build automatically. They are created with a pending image so nothing runs, and the report names the repository and branch. Connect the repository (with credentials for a private one) and run a build.
 - CapRover apps have no recoverable image, because CapRover builds locally. Connect a repository or push an image to a registry, then set it as the source.
 - Compose stacks, Coolify one-click services and Dokploy compose apps. They are multi-service and are reported as unsupported, deploy their compose file with the compose deploy command.
 - Dokploy apps uploaded as an archive (`drop`), and file mounts. Unsupported.
 - Health checks that are shell commands, pre and post deploy commands, extra ports and raw host port mappings, Coolify preview variables. Called out as needs attention where relevant.
-- TLS certificates, DNS records, deploy history, logs and metrics. Re-point DNS only after the app is healthy here.
+- TLS certificates, DNS records, deploy history, logs and metrics. Certificates are issued here on first use. Re-point DNS only after the cutover check says `go`.
 - Cron jobs are reported with the schedule and command so you can recreate them as scheduled tasks.
 
 ## Rollback
@@ -160,15 +252,19 @@ The importer only ever adds resources here and never touches the source, so the 
 2. Delete those apps (`levelrail-cli apps delete <name>`) and the databases the report listed.
 3. Delete any projects the import created if they are empty.
 
-Because nothing on the source changed, no source-side rollback is needed. Keep DNS pointing at the source until the imported app is healthy.
+Because nothing on the source changed, no source-side rollback is needed. Keep DNS pointing at the source until the cutover check says `go`. If you already switched a domain, point its record back at the source (the check printed the old value as "replaces").
 
 ## Manual checklist after an import
 
 - [ ] Read every "needs attention" and "not supported" row and its suggested step.
-- [ ] Restore database dumps and copy volume data.
+- [ ] Run `migrate db-copy` for every database and confirm each is `verified`.
+- [ ] Run the `migrate volumes` commands and copy volume data.
+- [ ] Update each app's connection settings to the managed database.
 - [ ] Connect repositories and run builds for git-based apps.
 - [ ] Confirm secrets landed (the Secrets card on each app) and re-enter any that were skipped.
-- [ ] Check domains, then re-point DNS.
+- [ ] Lower DNS TTLs to 300 and wait out the old value.
+- [ ] Run `migrate cutover` and switch only domains that are `go`.
+- [ ] Run `migrate cutover --verify` after each switch.
 - [ ] Re-add health checks and cron jobs the report listed.
 
 ## The older `migrate` commands
@@ -179,6 +275,6 @@ Because nothing on the source changed, no source-side rollback is needed. Keep D
 
 - [Getting started](getting-started.md): deploying your first app
 - [App spec reference](app-spec-reference.md): full app.yaml schema
-- [Backups and storage](backups-and-storage.md): dump and restore tools for moving data
+- [Backups and storage](backups-and-storage.md): dump and restore tools for engines the copy step does not cover
 - [Comparison](comparison.md): architectural differences between platforms
 - [Coolify alternative](coolify-alternative.md) and [Dokploy alternative](dokploy-alternative.md): why people switch

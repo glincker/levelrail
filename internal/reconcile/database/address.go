@@ -19,6 +19,11 @@ const (
 	ClickHousePasswordEnvKey = "clickhouse_password"
 )
 
+// ImageRef is the image:tag a database of engine and version runs.
+func ImageRef(engine, version string) string {
+	return dockerImageFor(engine) + ":" + versionOrDefault(version)
+}
+
 // ContainerName exports containerName: the Docker container name dbName's
 // managed database reconciles to, also the host part of a resolved
 // { from: ... } env var (internal/reconcile/application's

@@ -87,6 +87,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/changelog"
+	"github.com/GLINCKER/levelrail/internal/datamigrate"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -425,6 +426,8 @@ type Router struct {
 	gitSources                   GitSourceStore                   // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
 	imageAutoUpdates             ImageAutoUpdateStore             // always set, per-app registry auto-update opt-in
 	appSleep                     AppSleepStore                    // always set, sleep-when-idle settings
+	dataImports                  DataImportStore                  // always set, live data copy status
+	dnsResolver                  datamigrate.Resolver             // nil means the real resolver
 	wakeToken                    string                           // empty disables the wake hook
 	canaries                     CanaryStore                      // always set, in-flight canary releases
 	appSchedules                 AppScheduleStore                 // always set, same "core Store interface" shape as gitSources above
@@ -642,6 +645,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		appSchedules:                s,
 		imageAutoUpdates:            s,
 		appSleep:                    s,
+		dataImports:                 s,
 		canaries:                    s,
 		resolveBranchSHA:            resolveRemoteBranchSHA,
 		previewEnvironments:         s,

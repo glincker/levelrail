@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 693 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 699 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -524,6 +524,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/hooks/wake", Ability: "Public", Group: "Other", Handler: "handleWakeHook", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/plan", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportPlan", Description: "Import front door: classifies pasted input and returns a plan preview, creating nothing. AbilityWrite because it makes outbound fetches."},
 	{Method: "POST", Path: "/api/v1/imports/platform/apply", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleApplyPlatformImport", Description: ""},
+	{Method: "GET", Path: "/api/v1/imports/platform/databases", Ability: "AbilityRead", Group: "Other", Handler: "handleListDatabaseDataCopies", Description: ""},
+	{Method: "GET", Path: "/api/v1/imports/platform/databases/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDatabaseDataCopy", Description: ""},
+	{Method: "POST", Path: "/api/v1/imports/platform/databases/{name}/copy", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCopyDatabaseData", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/platform/discover", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDiscoverPlatformImport", Description: ""},
 	{Method: "GET", Path: "/api/v1/integrations", Ability: "AbilityRead", Group: "Other", Handler: "handleListIntegrationCatalog", Description: "Integrations (app_integrations.go): the curated internal/integrations catalog (PostHog, Sentry, etc), env-var injection only. The catalog itself is global and read-only (AbilityRead, no store involved, same shape service-templates uses); attach/detach store a field value through the app's own secrets namespace, AbilityWriteSensitive like PUT .../secrets/{key} above."},
 	{Method: "GET", Path: "/api/v1/loadbalancers", Ability: "AbilityRead", Group: "Other", Handler: "handleListLoadBalancers", Description: ""},
@@ -535,6 +538,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/log-archive/policy", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetLogArchivePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/log-archive/runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListLogArchiveRuns", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
+	{Method: "GET", Path: "/api/v1/migration/cutover", Ability: "AbilityRead", Group: "Other", Handler: "handleCutoverReport", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/cutover/verify", Ability: "AbilityRead", Group: "Other", Handler: "handleCutoverVerify", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/volumes", Ability: "AbilityRead", Group: "Other", Handler: "handleVolumeGuide", Description: ""},
 	{Method: "GET", Path: "/api/v1/model-cache", Ability: "AbilityRead", Group: "Other", Handler: "handleListModelCache", Description: ""},
 	{Method: "POST", Path: "/api/v1/model-cache/prune", Ability: "AbilityRoot", Group: "Other", Handler: "handlePruneModelCache", Description: ""},
 	{Method: "GET", Path: "/api/v1/network-shares", Ability: "AbilityRead", Group: "Other", Handler: "handleListNetworkShares", Description: "Network shares (network_shares.go): an NFS/CIFS export mountable as a Docker local-driver volume. Same ability tiers as registry credentials just above: POST/PUT/DELETE handle a live CIFS password, test is a read-only reachability dial."},

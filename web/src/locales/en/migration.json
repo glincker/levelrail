@@ -1,0 +1,69 @@
+{
+  "title": "After the import: data and cutover",
+  "description": "Imported databases and volumes start empty. Copy the data in, check each domain is safe to switch, then change DNS. The source keeps serving until you do.",
+  "data": {
+    "title": "Copy database data",
+    "description": "Streams a dump from the source database into the managed one and compares row counts. Repeating it replaces the target's contents, so a failed copy is safe to retry.",
+    "empty": "No managed databases yet. Import from a platform first.",
+    "copy": "Copy data",
+    "cancel": "Cancel",
+    "start": "Start copy",
+    "starting": "Starting",
+    "loadError": "Could not load database copy status.",
+    "startError": "Could not start the copy",
+    "tablesChecked": "{{count}} tables checked, {{bad}} differ",
+    "differs": "{{name}}: source {{source}}, target {{target}}",
+    "passwordHelp": "Held in memory for the copy and never stored.",
+    "fields": {
+      "host": "Source host",
+      "port": "Port",
+      "user": "User",
+      "password": "Password",
+      "database": "Database name",
+      "authDatabase": "Auth database (MongoDB)",
+      "tls": "Require TLS to the source"
+    },
+    "status": {
+      "pending": "Not copied",
+      "copying": "Copying",
+      "verified": "Verified",
+      "failed": "Failed",
+      "unsupported": "Unsupported"
+    }
+  },
+  "volumes": {
+    "title": "Copy volumes",
+    "description": "Volume contents are not moved by the control plane, because that needs root on the source host. This prints the commands to run on this node.",
+    "source": "Source SSH login",
+    "sourcePlaceholder": "root@old-server.example.com",
+    "show": "Show commands",
+    "loading": "Building commands",
+    "none": "No imported app has a persistent volume or bind mount.",
+    "copyCommand": "Copy command",
+    "loadError": "Could not build the commands"
+  },
+  "cutover": {
+    "title": "Cutover check",
+    "description": "For each imported domain: is the app healthy here, how long clients cache the old address, and where DNS points now. Nothing is switched for you.",
+    "targetIp": "This node's public IP",
+    "targetIpHelp": "Detected when left empty.",
+    "check": "Run the check",
+    "verify": "Verify after the switch",
+    "running": "Checking",
+    "noDomains": "No imported app has a domain to check.",
+    "loadError": "Could not run the check",
+    "thisNode": "This node: {{ips}}",
+    "change": "Set {{type}} {{name}} to {{value}} (TTL {{ttl}})",
+    "replaces": "Replaces {{what}}",
+    "verdict": {
+      "go": "Go",
+      "wait": "Wait",
+      "no-go": "No-go",
+      "switched": "Switched"
+    },
+    "phase": {
+      "pre-switch": "Before the switch",
+      "post-switch": "After the switch"
+    }
+  }
+}
