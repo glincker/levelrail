@@ -95,7 +95,12 @@ func (rt *Router) probeListening(ctx context.Context, svc *store.DesiredService,
 		out.Reason = listenReasonNotRunning
 		return
 	}
-	if ports := rt.listeningPorts(pctx, runtime, container); ports != nil {
+	ports, ok := rt.readListeningPorts(pctx, runtime, container)
+	if !ok {
+		out.Reason = listenReasonProbeFailed
+		return
+	}
+	if ports != nil {
 		out.Listening = ports
 	}
 	out.Probed = true
