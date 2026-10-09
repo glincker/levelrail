@@ -104,6 +104,14 @@ func (rt *Router) handleStartCanary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if rt.imageResolver != nil {
+		auth := rt.imageTrigger(r.Context(), *source, true, "canary start").Auth
+		if _, err := rt.imageResolver.ResolveImage(r.Context(), req.Image, auth, true); err != nil {
+			writeError(w, http.StatusBadRequest, "cannot resolve image "+req.Image+": "+err.Error())
+			return
+		}
+	}
+
 	canaryName := store.CanaryServiceName(name)
 	clone := cloneDesiredService(*source, canaryName, nil)
 	clone.Image = req.Image

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -117,5 +118,19 @@ func TestCanaryRemovedWithApp(t *testing.T) {
 	}
 	if _, ok, _ := db.GetCanaryRelease(ctx, "web"); ok {
 		t.Error("canary row outlived its app")
+	}
+}
+
+func TestCanaryStartRejectsUnresolvableImage(t *testing.T) {
+	rt, db, _ := newSafetyRouter(t, stubResolver{err: errors.New("manifest unknown")})
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "nginx:1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	if rec := canaryCall(t, rt.handleStartCanary, http.MethodPost, `{"image":"nginx:nope"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("start = %d %s, want 400", rec.Code, rec.Body)
+	}
+	if _, err := db.GetDesiredService(ctx, "web--canary"); err == nil {
+		t.Error("clone created for an unresolvable image")
 	}
 }
