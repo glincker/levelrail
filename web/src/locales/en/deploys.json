@@ -111,5 +111,15 @@
       "aborted": "Canary removed.",
       "errorTitle": "Canary action failed"
     }
+  },
+  "envCompare": {
+    "title": "Compare env with another app",
+    "pick": "Compare against",
+    "none": "Choose an app",
+    "onlyIn": "Only in {{app}}:",
+    "differs": "Differs:",
+    "secret": "(secret)",
+    "secretOneSide": "(secret on one side only)",
+    "summary": "{{count}} keys identical. Secret values are never read, secrets match by key only."
   }
 }
