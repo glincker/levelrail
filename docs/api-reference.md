@@ -916,6 +916,12 @@ Routes that do not fit an existing group.
 | POST | /api/v1/firewall/host/disable | AbilityRoot | handleDisableHostFirewall |
 | POST | /api/v1/hooks/image-update/{name}/{token} | Public | handleImageUpdateWebhook |
 | GET | /api/v1/hooks/wake | Public | handleWakeHook |
+| GET | /api/v1/imports/platform/databases | AbilityRead | handleListDatabaseDataCopies |
+| GET | /api/v1/imports/platform/databases/{name} | AbilityRead | handleGetDatabaseDataCopy |
+| POST | /api/v1/imports/platform/databases/{name}/copy | AbilityWriteSensitive | handleCopyDatabaseData |
+| GET | /api/v1/migration/volumes | AbilityRead | handleVolumeGuide |
+| GET | /api/v1/migration/cutover | AbilityRead | handleCutoverReport |
+| GET | /api/v1/migration/cutover/verify | AbilityRead | handleCutoverVerify |
 
 ## See also
 

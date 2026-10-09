@@ -237,7 +237,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"templates": {subs: map[string]*cmdNode{"list": nil, "apply": nil}},
 	}},
 	"secrets":    {subs: map[string]*cmdNode{"generate-master-key": nil, "rotate-master-key": nil, "binding-status": nil, "rebind": nil}},
-	"migrate":    {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}},
+	"migrate":    {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil, "db-copy": nil, "db-status": nil, "volumes": nil, "cutover": nil}},
 	"apply":      nil,
 	"diff":       nil,
 	"import":     {subs: map[string]*cmdNode{"platform": {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}}}},

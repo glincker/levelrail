@@ -562,6 +562,7 @@ type Store interface {
 	AppScheduleStore
 	ImageAutoUpdateStore
 	AppSleepStore
+	DataImportStore
 	CanaryStore
 	PreviewEnvironmentStore
 	GitHubAppStore

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 )
 
 // runMigrate dispatches "migrate <source> [flags]".
@@ -23,6 +24,14 @@ func runMigrate(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runMigrateDokploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "caprover":
 		return runMigrateCaprover(prog, args[1:], stdout, stderr, lookupEnv)
+	case "db-copy":
+		return runMigrateDbCopy(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
+	case "db-status":
+		return runMigrateDbStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "volumes":
+		return runMigrateVolumes(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cutover":
+		return runMigrateCutover(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown migrate source %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, migrateUsage(prog))
@@ -36,6 +45,8 @@ func migrateUsage(prog string) string {
   %[1]s migrate dokploy --url URL --token TOKEN [flags]    migrate apps from a Dokploy instance
   %[1]s migrate caprover --url URL --token TOKEN [flags]   migrate apps from a CapRover instance
 
+Data and cutover steps, after "import platform":
+`+migrateDataUsage(prog)+`
 Run "%[1]s migrate <source> -h" for a source's own flags.
 `, prog)
 }
