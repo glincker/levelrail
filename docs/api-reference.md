@@ -152,7 +152,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 134 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 138 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -298,6 +298,10 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/streams | AbilityWriteSensitive | handleCreateAppStream |
 | DELETE | /api/v1/apps/{name}/streams/{id} | AbilityWriteSensitive | handleDeleteAppStream |
 | GET | /api/v1/apps/git-sources | AbilityRead | handleListGitSources |
+| GET | /api/v1/apps/{name}/auto-update | AbilityRead | handleGetImageAutoUpdate |
+| PUT | /api/v1/apps/{name}/auto-update | AbilityDeploy | handleSetImageAutoUpdate |
+| POST | /api/v1/apps/{name}/auto-update/check | AbilityDeploy | handleCheckImageAutoUpdate |
+| POST | /api/v1/apps/{name}/auto-update/webhook | AbilityWriteSensitive | handleRotateImageUpdateWebhook |
 
 :::
 
@@ -902,6 +906,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/firewall/host | AbilityRead | handleHostFirewallStatus |
 | POST | /api/v1/firewall/host/enable | AbilityRoot | handleEnableHostFirewall |
 | POST | /api/v1/firewall/host/disable | AbilityRoot | handleDisableHostFirewall |
+| POST | /api/v1/hooks/image-update/{name}/{token} | Public | handleImageUpdateWebhook |
 
 ## See also
 

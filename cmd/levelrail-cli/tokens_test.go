@@ -140,3 +140,21 @@ func TestRun_Tokens_Help(t *testing.T) {
 		t.Errorf("stdout = %q, want usage text", stdout.String())
 	}
 }
+
+func TestRun_TokensList_WithToken(t *testing.T) {
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		_ = json.NewEncoder(w).Encode([]tokenResource{{ID: "tok_9", Name: "ci", CreatedAt: time.Now()}})
+	}))
+	t.Cleanup(srv.Close)
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"tokens", "list", "--token", "root-tok", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d (stdout=%q stderr=%q)", got, stdout.String(), stderr.String())
+	}
+	if gotAuth != "Bearer root-tok" || !strings.Contains(stdout.String(), "tok_9") {
+		t.Errorf("auth = %q, stdout = %q", gotAuth, stdout.String())
+	}
+}

@@ -82,7 +82,7 @@
     "Label": "read token cannot write",
     "Status": 403,
     "Body": {
-      "error": "token lacks the required ability"
+      "error": "token lacks the required ability (needs write)"
     }
   },
   {

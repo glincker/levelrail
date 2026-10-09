@@ -88,6 +88,11 @@ func printHTTPSStatusHuman(out io.Writer, s httpsStatusResource) {
 			_, _ = fmt.Fprintf(out, "dashboard:  https://%s\n", s.Domain)
 		}
 	}
+	for _, p := range s.Preflight {
+		if !p.Reachable {
+			_, _ = fmt.Fprintf(out, "warning:    port %d did not answer on the public address; open it in your firewall (can be a false alarm behind some routers)\n", p.Port)
+		}
+	}
 	if s.Error != "" {
 		_, _ = fmt.Fprintf(out, "error:      %s\n", s.Error)
 		_, _ = fmt.Fprintf(out, "hint:       %s\n", httpsHintText(s.Hint))

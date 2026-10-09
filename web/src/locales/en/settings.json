@@ -45,7 +45,13 @@
     },
     "comingSoon": "More notification options are coming here: custom email templates, send-rate limiting, and per-alert frequency controls.",
     "channelsCta": "Looking for Slack, Discord, or webhook notifications instead?",
-    "channelsLink": "Notification channels"
+    "channelsLink": "Notification channels",
+    "wizard": {
+      "intro": "Password resets and alert emails go out through an SMTP server. Enter yours, save, then send a test to a real inbox before moving on.",
+      "configured": "Saved backend: {{backend}}.",
+      "others": "Using AWS SES or Resend instead?",
+      "othersLink": "Open the full email settings."
+    }
   },
   "orphans": {
     "title": "Leftover resources",

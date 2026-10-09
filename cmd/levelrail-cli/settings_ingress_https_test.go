@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 func TestRun_SettingsIngressHTTPS(t *testing.T) {
@@ -51,5 +54,14 @@ func TestRun_SettingsIngressSet_FallbackDomains(t *testing.T) {
 	runCLIExpectOK(t, []string{"settings", "ingress", "set", "--fallback-domains=false", "--api-url", srv.URL})
 	if gotBody.FallbackDomainsEnabled {
 		t.Error("--fallback-domains=false must send fallback_domains_enabled=false")
+	}
+}
+
+func TestPrintHTTPSStatusHuman_PreflightWarning(t *testing.T) {
+	var out bytes.Buffer
+	printHTTPSStatusHuman(&out, httpsStatusResource{State: "pending", Preflight: []apiclient.HTTPSPreflightPort{{Port: 80, Reachable: true}, {Port: 443}}})
+	got := out.String()
+	if !strings.Contains(got, "port 443 did not answer") || strings.Contains(got, "port 80 did not") {
+		t.Errorf("output = %q", got)
 	}
 }

@@ -59,6 +59,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /api/v1/auth/session-links/{token}/consume": "authenticated by the single-use session-link token, rate limited",
 	"GET /.well-known/jwks.json":                     "pipeline OIDC verification key set, meant to be fetched by AWS/GCP/Vault with no session; answers 404 rather than 401 when OIDC is unconfigured (router.go's oidcJWKS is nil), which leaks nothing either",
 	"POST /api/v1/webhooks/github/{name}":            "authenticated by the HMAC signature of the app's webhook secret",
+	"POST /api/v1/hooks/image-update/{name}/{token}": "authenticated by the per-app secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
 	"POST /api/v1/webhooks/slack/interactions":       "authenticated by the X-Slack-Signature HMAC of the channel's own interactive secret",
 	"POST /api/v1/webhooks/discord/interactions":     "authenticated by the Ed25519 signature of the channel's own Discord application public key",
 	"GET /public/status":                             "opt-in public status page, serves only operator-chosen names and statuses, rate limited and cacheable",

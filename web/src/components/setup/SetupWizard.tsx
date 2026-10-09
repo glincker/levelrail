@@ -32,6 +32,7 @@ import type {
 import { ServerCheckStep } from './ServerCheckStep'
 import { TopologyStep } from './TopologyStep'
 import { DomainStep } from './DomainStep'
+import { EmailStep } from './EmailStep'
 import { GitProviderStep } from './GitProviderStep'
 import { FirstAppStep } from './FirstAppStep'
 import { DoneStep } from './DoneStep'
@@ -154,6 +155,7 @@ export function SetupWizard() {
         {step === 'server' ? <ServerCheckStep {...stepProps} /> : null}
         {step === 'topology' ? <TopologyStep {...stepProps} /> : null}
         {step === 'domain' ? <DomainStep {...stepProps} /> : null}
+        {step === 'email' ? <EmailStep {...stepProps} /> : null}
         {step === 'git' ? <GitProviderStep {...stepProps} /> : null}
         {step === 'app' ? <FirstAppStep {...stepProps} /> : null}
         {step === 'done' ? (

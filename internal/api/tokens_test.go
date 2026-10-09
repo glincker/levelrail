@@ -451,3 +451,24 @@ func TestBearerToken_ValidHeader(t *testing.T) {
 		t.Errorf("bearerToken() = (%q, %v), want (my-real-token, true)", got, ok)
 	}
 }
+
+func TestHandleListTokens_BearerNeedsRoot(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+	for id, ab := range map[string]string{"tok_root": AbilityRoot, "tok_read": AbilityRead} {
+		if err := db.SaveAPIToken(ctx, store.APIToken{
+			ID: id, Name: id, TokenHash: hashToken("pt-" + id), Abilities: []string{ab}, CreatedAt: time.Now(),
+		}); err != nil {
+			t.Fatalf("seed: %v", err)
+		}
+	}
+	for id, want := range map[string]int{"tok_root": http.StatusOK, "tok_read": http.StatusForbidden} {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/tokens", nil)
+		req.Header.Set("Authorization", "Bearer pt-"+id)
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		if rec.Code != want {
+			t.Errorf("%s: status = %d, want %d", id, rec.Code, want)
+		}
+	}
+}

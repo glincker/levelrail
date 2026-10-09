@@ -744,6 +744,8 @@ Free HTTPS with no DNS setup: https://${dashed}.sslip.io already points at
 this server. In the dashboard, open Domains and click "Enable HTTPS" to get
 a real Let's Encrypt certificate for it (ports 80 and 443 must be open), or:
   levelrail-cli settings ingress https enable --email you@example.com
+Until then that https address shows a browser certificate warning. That is
+expected, not an attack: keep using the http link above until it is enabled.
 EOF
 }
 

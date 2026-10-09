@@ -11,6 +11,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/bindaddr"
 )
 
 const (
@@ -63,7 +65,7 @@ func hostFirewallSSHPorts() []int {
 
 // hostFirewallRequired lists SSH first, then the ports the control plane itself
 // needs, then 443/udp for HTTP/3.
-func (rt *Router) hostFirewallRequired() []hostFirewallPort {
+func (rt *Router) hostFirewallRequired(ctx context.Context) []hostFirewallPort {
 	var out []hostFirewallPort
 	seen := map[hostFirewallPort]bool{}
 	add := func(p hostFirewallPort) {
@@ -84,7 +86,35 @@ func (rt *Router) hostFirewallRequired() []hostFirewallPort {
 		add(hostFirewallPort{Port: p, Protocol: "tcp"})
 	}
 	add(hostFirewallPort{Port: httpsUDPPort, Protocol: "udp"})
+	for _, p := range rt.publishedFirewallPorts(ctx) {
+		add(hostFirewallPort{Port: p, Protocol: "tcp"})
+	}
 	return out
+}
+
+// publishedFirewallPorts lists pinned host ports of apps bound beyond loopback,
+// plus raw TCP stream ports, so enabling ufw never cuts off a running app.
+func (rt *Router) publishedFirewallPorts(ctx context.Context) []int {
+	services, err := rt.apps.ListDesiredServices(ctx)
+	if err != nil {
+		rt.logger.Warn("api: firewall: list services for published ports failed", slog.String("error", err.Error()))
+		return nil
+	}
+	var ports []int
+	for _, svc := range services {
+		if svc.HostPort != nil && svc.BindAddress != bindaddr.Private && svc.BindAddress != "" {
+			ports = append(ports, *svc.HostPort)
+		}
+		streams, err := rt.apps.ListAppStreamsForService(ctx, svc.Name)
+		if err != nil {
+			continue
+		}
+		for _, st := range streams {
+			ports = append(ports, st.HostPort)
+		}
+	}
+	slices.Sort(ports)
+	return slices.DeleteFunc(slices.Compact(ports), func(p int) bool { return p < 1 || p > 65535 })
 }
 
 func allowArgs(p hostFirewallPort) []string {
@@ -92,7 +122,7 @@ func allowArgs(p hostFirewallPort) []string {
 }
 
 func (rt *Router) hostFirewallStatus(ctx context.Context) hostFirewallResource {
-	res := hostFirewallResource{Required: rt.hostFirewallRequired(), Commands: []string{}}
+	res := hostFirewallResource{Required: rt.hostFirewallRequired(ctx), Commands: []string{}}
 	for _, p := range res.Required {
 		res.Commands = append(res.Commands, "ufw "+strings.Join(allowArgs(p), " "))
 	}

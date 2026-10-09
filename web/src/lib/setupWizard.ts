@@ -12,6 +12,7 @@ export const SETUP_STEPS = [
   'server',
   'topology',
   'domain',
+  'email',
   'git',
   'app',
   'done',
@@ -27,6 +28,7 @@ export const SETUP_STEP_META: Record<
   server: { title: 'Server check', optional: false },
   topology: { title: 'Single or multi-node', optional: true },
   domain: { title: 'Dashboard domain', optional: true },
+  email: { title: 'Email', optional: true },
   git: { title: 'Git provider', optional: true },
   app: { title: 'First app', optional: true },
   done: { title: 'Done', optional: false },
@@ -249,6 +251,13 @@ export function pollInterval(
   if (done) return false
   if (now - startedAt >= maxMs) return false
   return intervalMs
+}
+
+/** emailGate allows Continue once an email backend is saved. */
+export function emailGate(backend: string | undefined): StepGate {
+  return backend
+    ? OPEN
+    : blocked('No email backend is saved yet. Save one, or skip this step.')
 }
 
 /** gitGate allows Continue once any provider is connected. */

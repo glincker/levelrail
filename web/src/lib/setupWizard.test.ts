@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   appGate,
   domainGate,
+  emailGate,
   domainProgress,
   firstAppPhase,
   gitGate,
@@ -70,7 +71,7 @@ describe('resumeStep', () => {
         topology: 'skipped' as const,
         domain: 'skipped' as const,
       },
-      want: 'git',
+      want: 'email',
     },
     {
       name: 'everything finished lands on done',
@@ -79,6 +80,7 @@ describe('resumeStep', () => {
         server: 'completed' as const,
         topology: 'skipped' as const,
         domain: 'skipped' as const,
+        email: 'skipped' as const,
         git: 'skipped' as const,
         app: 'completed' as const,
         done: 'completed' as const,
@@ -92,6 +94,8 @@ describe('resumeStep', () => {
   it('nextStep advances and stops at done', () => {
     expect(nextStep('server')).toBe('topology')
     expect(nextStep('topology')).toBe('domain')
+    expect(nextStep('domain')).toBe('email')
+    expect(nextStep('email')).toBe('git')
     expect(nextStep('app')).toBe('done')
     expect(nextStep('done')).toBe('done')
   })
@@ -431,5 +435,13 @@ describe('first app state machine', () => {
         '203.0.113.7',
       ),
     ).toBeUndefined()
+  })
+})
+
+describe('emailGate', () => {
+  it('blocks until a backend is saved', () => {
+    expect(emailGate('').canContinue).toBe(false)
+    expect(emailGate(undefined).canContinue).toBe(false)
+    expect(emailGate('smtp').canContinue).toBe(true)
   })
 })

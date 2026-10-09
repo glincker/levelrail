@@ -18,7 +18,7 @@ type OnboardingStore interface {
 }
 
 // onboardingSteps are the setup wizard's step ids, in order.
-var onboardingSteps = []string{"server", "topology", "domain", "git", "app", "done"}
+var onboardingSteps = []string{"server", "topology", "domain", "email", "git", "app", "done"}
 
 const (
 	onboardingStepCompleted = "completed"

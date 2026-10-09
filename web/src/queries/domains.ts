@@ -73,6 +73,8 @@ export interface IngressSettings {
   primary_domain?: string
   acme_enabled: boolean
   acme_email?: string
+  // First admin's address, offered as a form default only.
+  suggested_acme_email?: string
   acme_directory_url?: string
   hsts_enabled: boolean
   // Toggle for automatic <app>.<dashed-ip>.sslip.io hostnames.

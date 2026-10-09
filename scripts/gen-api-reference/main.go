@@ -25,7 +25,7 @@ func (r route) key() string { return r.method + " " + r.path }
 var (
 	regFull    = regexp.MustCompile(`mux\.HandleFunc\("([A-Z]+) ([^"]+)",\s*(.+)\)\s*$`)
 	regAbil    = regexp.MustCompile(`^rt\.requireAbility(?:ForResource)?\((Ability\w+),`)
-	regAuth    = regexp.MustCompile(`^rt\.requireAuth\(`)
+	regAuth    = regexp.MustCompile(`^rt\.(?:requireAuth|sessionOrRootToken)\(`)
 	regHndl    = regexp.MustCompile(`(handle\w+)`)
 	regCnt     = regexp.MustCompile(`\d+ endpoints`)
 	regComment = regexp.MustCompile(`^//\s?(.*)$`)

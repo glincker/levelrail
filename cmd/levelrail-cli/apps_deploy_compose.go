@@ -63,6 +63,7 @@ func printComposeDeployResultHuman(out io.Writer, r composeDeployResult) {
 	for _, svc := range r.Services {
 		_, _ = fmt.Fprintf(out, "  %s\t%s\n", svc.Name, svc.Image)
 	}
+	_, _ = fmt.Fprintln(out, "app_id is the group; pass a service name above to apps get, logs or deploys")
 }
 
 func appsDeployComposeUsage(prog string) string {

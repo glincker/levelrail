@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"net"
 	"net/http"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -52,6 +55,44 @@ type httpsStatusResource struct {
 	Error            string     `json:"error,omitempty"`
 	Hint             string     `json:"hint,omitempty"`
 	DashboardURL     string     `json:"dashboard_url,omitempty"`
+	// Preflight is set on the enable response only: a non-blocking dial of
+	// ports 80 and 443 on the public IP, so a closed firewall shows up now
+	// instead of as a failed issuance minutes later.
+	Preflight []httpsPreflightPort `json:"preflight,omitempty"`
+}
+
+// httpsPreflightPort is one port's self-dial result; false is only a hint,
+// since hairpin NAT can fail this dial while the port is open to the internet.
+type httpsPreflightPort struct {
+	Port      int  `json:"port"`
+	Reachable bool `json:"reachable"`
+}
+
+const httpsPreflightTimeout = 3 * time.Second
+
+func (rt *Router) httpsPreflight(ctx context.Context, host string) []httpsPreflightPort {
+	if net.ParseIP(host) == nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, httpsPreflightTimeout)
+	defer cancel()
+	ports := []int{80, 443}
+	out := make([]httpsPreflightPort, len(ports))
+	var wg sync.WaitGroup
+	for i, port := range ports {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			out[i] = httpsPreflightPort{Port: port}
+			conn, err := rt.doctorDialContextOrDefault()(ctx, "tcp", net.JoinHostPort(host, strconv.Itoa(port)))
+			if err == nil {
+				_ = conn.Close()
+				out[i].Reachable = true
+			}
+		}()
+	}
+	wg.Wait()
+	return out
 }
 
 type enableHTTPSRequest struct {
@@ -268,6 +309,7 @@ func (rt *Router) handleEnableHTTPS(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: enable https: status", err)
 		return
 	}
+	out.Preflight = rt.httpsPreflight(r.Context(), rt.publicHost)
 	writeJSON(w, http.StatusAccepted, out)
 }
 

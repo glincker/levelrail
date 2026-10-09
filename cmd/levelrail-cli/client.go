@@ -309,6 +309,7 @@ type (
 	emailSettingsResource              = apiclient.EmailSettingsResource
 	ingressSettingsResource            = apiclient.IngressSettingsResource
 	httpsStatusResource                = apiclient.HTTPSStatusResource
+	imageAutoUpdateResource            = apiclient.ImageAutoUpdateResource
 	enableHTTPSRequest                 = apiclient.EnableHTTPSRequest
 	dashboardURLResource               = apiclient.DashboardURLResource
 	updateSettingsResource             = apiclient.UpdateSettingsResource

@@ -423,6 +423,7 @@ type Router struct {
 	pushSubscriptions            PushSubscriptions                // always set, same "core Store interface" shape as passkeys below: registering/listing/deleting a browser subscription needs no secrets configuration, only actually sending to one does
 	pushVAPIDPublicKey           string                           // "" means browser push is not configured on this control plane (no master key set), same nil-secretsManager hazard as every Secrets-flavored dependency
 	gitSources                   GitSourceStore                   // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
+	imageAutoUpdates             ImageAutoUpdateStore             // always set, per-app registry auto-update opt-in
 	appSchedules                 AppScheduleStore                 // always set, same "core Store interface" shape as gitSources above
 	resolveBranchSHA             resolveBranchSHAFunc             // remote branch head resolver for TriggerScheduledDeploy; always non-nil, defaulted to resolveRemoteBranchSHA in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape listBranches above already uses
 	previewEnvironments          PreviewEnvironmentStore          // always set, same "core Store interface" shape as gitSources above: listing/tearing down a preview needs no extra secrets configuration, deploying a new one reuses gitSourceSecrets/gitSourceFetch/builder already above
@@ -636,6 +637,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		serviceVolumeRestoreHistory: s,
 		gitSources:                  s,
 		appSchedules:                s,
+		imageAutoUpdates:            s,
 		resolveBranchSHA:            resolveRemoteBranchSHA,
 		previewEnvironments:         s,
 		githubApp:                   s,

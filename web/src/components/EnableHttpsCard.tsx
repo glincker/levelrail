@@ -118,18 +118,34 @@ function EnableForm({
 
 function StatusBody({
   status,
+  preflight,
   onRetry,
 }: {
   status: HttpsStatus
+  preflight?: HttpsStatus['preflight']
   onRetry: () => void
 }) {
   const { t } = useTranslation('https')
   if (status.state === 'pending') {
+    const closed = (preflight ?? []).filter((p) => !p.reachable)
     return (
-      <p className="flex items-center gap-2 text-sm" role="status">
-        <SpinnerGapIcon className="size-4 animate-spin" />
-        {t('card.pending', { domain: status.domain })}
-      </p>
+      <div className="space-y-3">
+        <p className="flex items-center gap-2 text-sm" role="status">
+          <SpinnerGapIcon className="size-4 animate-spin" />
+          {t('card.pending', { domain: status.domain })}
+        </p>
+        {closed.length > 0 ? (
+          <Alert>
+            <WarningIcon />
+            <AlertTitle>{t('card.preflightTitle')}</AlertTitle>
+            <AlertDescription>
+              {t('card.preflightBody', {
+                ports: closed.map((p) => p.port).join(', '),
+              })}
+            </AlertDescription>
+          </Alert>
+        ) : null}
+      </div>
     )
   }
   if (status.state === 'issued') {
@@ -219,7 +235,11 @@ export function EnableHttpsCard() {
           />
         ) : null}
         {status && !showForm && status.state !== 'off' ? (
-          <StatusBody status={status} onRetry={() => setRetrying(true)} />
+          <StatusBody
+            status={status}
+            preflight={enable.data?.preflight}
+            onRetry={() => setRetrying(true)}
+          />
         ) : null}
       </CardContent>
     </Card>

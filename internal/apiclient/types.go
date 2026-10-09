@@ -3348,6 +3348,14 @@ type HTTPSStatusResource struct {
 	Error            string     `json:"error,omitempty"`
 	Hint             string     `json:"hint,omitempty"`
 	DashboardURL     string     `json:"dashboard_url,omitempty"`
+	// Preflight is set on the enable response only.
+	Preflight []HTTPSPreflightPort `json:"preflight,omitempty"`
+}
+
+// HTTPSPreflightPort is one self-dial result; false is a hint, not proof.
+type HTTPSPreflightPort struct {
+	Port      int  `json:"port"`
+	Reachable bool `json:"reachable"`
 }
 
 // EnableHTTPSRequest is POST /api/v1/settings/ingress/https's body.

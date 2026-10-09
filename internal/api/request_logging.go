@@ -60,7 +60,7 @@ func requestLoggingMiddleware(logger *slog.Logger, thresholds requestLogThreshol
 			attrs := []slog.Attr{
 				slog.String("request_id", requestIDFromContext(r.Context())),
 				slog.String("method", r.Method),
-				slog.String("path", r.URL.Path),
+				slog.String("path", loggablePath(r.URL.Path)),
 				slog.Int("status", rec.status),
 				slog.Duration("duration", duration),
 			}
@@ -99,4 +99,16 @@ func isStreamingResponse(rec *statusRecorder) bool {
 		return true
 	}
 	return strings.HasPrefix(rec.Header().Get("Content-Type"), "text/event-stream")
+}
+
+const imageUpdateHookPrefix = "/api/v1/hooks/image-update/"
+
+// loggablePath hides the secret in a webhook URL (/hooks/image-update/{name}/{token}) before it reaches a log line.
+func loggablePath(path string) string {
+	rest, ok := strings.CutPrefix(path, imageUpdateHookPrefix)
+	if !ok {
+		return path
+	}
+	name, _, _ := strings.Cut(rest, "/")
+	return imageUpdateHookPrefix + name + "/redacted"
 }

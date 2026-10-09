@@ -45,6 +45,7 @@ export function DomainStep({ onContinue, onSkip, pending }: StepProps) {
   const emailValue =
     emailInput ??
     settings?.acme_email ??
+    settings?.suggested_acme_email ??
     (username?.includes('@') ? username : '')
   const domain = normalizeDomain(domainValue)
   const saved = domain !== '' && domain === savedDomain

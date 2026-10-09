@@ -45,6 +45,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback":
 		return runAppsAutoRollback(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "auto-update":
+		return runAppsAutoUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback-slo-burn":
 		return runAppsAutoRollbackSLOBurn(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "cancel-superseded":
@@ -211,6 +213,7 @@ func appsUsage(prog string) string {
   %[1]s apps schedule set|get|history <name> [flags]   recurring redeploy of a branch's latest commit on a cron schedule
   %[1]s apps cancel-superseded enable|disable|status <name> [flags]   let a newer queued deploy replace older queued ones of the same branch
   %[1]s apps auto-rollback enable|disable|status <name> [flags]   opt an app into (or out of) automatic rollback when a crashloop alert fires
+  %[1]s apps auto-update enable|disable|status|check <name> [flags]   redeploy automatically when the image tag moves to a new digest
   %[1]s apps auto-rollback-slo-burn set|status <name> [mode] [flags]   how an app reacts when an SLO burn-rate alert fires: off, auto, dry_run, pause_for_human
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state

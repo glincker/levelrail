@@ -44,6 +44,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gpu"
+	"github.com/GLINCKER/levelrail/internal/imageupdate"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/models"
@@ -1042,6 +1043,13 @@ func run(logger *slog.Logger) error {
 	go func() {
 		if err := appScheduleScheduler.Run(ctx, appScheduleSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("scheduled deploy scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	imageUpdateScheduler := &imageupdate.Scheduler{Store: db, Checker: apiRouter, Logger: logger}
+	go func() {
+		if err := imageUpdateScheduler.Run(ctx, imageupdate.IntervalFromEnv(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("image update scheduler stopped", slog.String("error", err.Error()))
 		}
 	}()
 
