@@ -91,5 +91,22 @@
     "webhookRotate": "Replace webhook URL",
     "webhookUrlLabel": "Registry webhook URL",
     "webhookShownOnce": "Copy this now, it is not shown again. Paste it as a webhook (POST) in your registry; the URL itself is the secret."
+  },
+  "appSleep": {
+    "title": "Sleep when idle",
+    "infoTipLabel": "About sleeping apps",
+    "description": "Stop this app after it has had no requests for a while, so it uses no memory or CPU. The next request to its domain starts it and shows a short waking-up page that retries on its own, so the first visitor waits for the cold start.",
+    "enabledLabel": "Sleep when idle",
+    "switchAriaLabel": "Sleep when idle enabled",
+    "minutesLabel": "Idle minutes (5 to 10080)",
+    "save": "Save",
+    "asleep": "This app is asleep.",
+    "wakeNow": "Wake now",
+    "toast": {
+      "enabled": "Sleep when idle enabled.",
+      "disabled": "Sleep when idle disabled.",
+      "updated": "Idle time updated.",
+      "errorTitle": "Sleep setting failed"
+    }
   }
 }

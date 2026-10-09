@@ -446,6 +446,9 @@ type RoutesOptions struct {
 	Inherited *InheritedSockets
 	// HoldRoutes answer 503 for hosts whose backend is momentarily absent.
 	HoldRoutes []HoldRoute
+	// WakeRoutes serve a "waking up" page for sleeping apps and ask the
+	// control plane to start them.
+	WakeRoutes []WakeRoute
 	// Streams is every raw TCP port forward to proxy, each on its own
 	// dedicated listener (apps.layer4.servers), applied in this same
 	// Config/caddy.Load call: see layer4.go's package doc comment for
@@ -598,6 +601,21 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
 			Handle: []any{hold.UnavailableResponse("Updating", "This site is being updated and will be back in a moment. This page will retry on its own.")},
+		})
+		allHosts = append(allHosts, r.Hosts...)
+	}
+
+	for i, r := range opts.WakeRoutes {
+		if len(r.Hosts) == 0 || r.Dial == "" {
+			return nil, fmt.Errorf("ingress: build routes config: wake route %d needs hosts and a dial", i)
+		}
+		hold := DefaultHardening()
+		if opts.Hardening != nil {
+			hold = *opts.Hardening
+		}
+		routes = append(routes, Route{
+			Match:  []Matcher{{Host: r.Hosts}},
+			Handle: r.handlers(hold),
 		})
 		allHosts = append(allHosts, r.Hosts...)
 	}

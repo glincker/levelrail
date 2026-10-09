@@ -417,6 +417,10 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/auto-update/check", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCheckImageAutoUpdate))
 	mux.HandleFunc("POST /api/v1/apps/{name}/auto-update/webhook", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateImageUpdateWebhook))
 	mux.HandleFunc("POST /api/v1/hooks/image-update/{name}/{token}", rt.handleImageUpdateWebhook)
+	mux.HandleFunc("GET /api/v1/hooks/wake", rt.handleWakeHook)
+	mux.HandleFunc("GET /api/v1/apps/{name}/sleep", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppSleep))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/sleep", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAppSleep))
+	mux.HandleFunc("POST /api/v1/apps/{name}/sleep/wake", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleWakeApp))
 	mux.HandleFunc("POST /api/v1/apps/{name}/restart", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRestartApp))
 
 	// Stop/start (handleStopApp/handleStartApp's own doc comments): same

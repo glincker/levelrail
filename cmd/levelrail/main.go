@@ -31,6 +31,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -1043,6 +1044,13 @@ func run(logger *slog.Logger) error {
 	go func() {
 		if err := appScheduleScheduler.Run(ctx, appScheduleSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("scheduled deploy scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	appSleepScheduler := &appsleep.Scheduler{Sleep: db, Apps: db, Traffic: telemetryDB, Nudger: engine, Logger: logger}
+	go func() {
+		if err := appSleepScheduler.Run(ctx, appsleep.DefaultInterval); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("app sleep scheduler stopped", slog.String("error", err.Error()))
 		}
 	}()
 
@@ -2310,6 +2318,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDeployRecorder(deployRecorder),
 		api.WithDeploySafety(db, client),
 		api.WithDeployMaxConcurrent(deployMaxConcurrent(logger)),
+		api.WithWakeToken(appWakeToken()),
 		api.WithLogBroadcaster(logBroadcaster),
 		// emailSender is always non-nil (run() builds it unconditionally):
 		// forgot-password always exists, it just fails clearly at send
@@ -3615,6 +3624,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		if experimental.Enabled(experimental.LoadBalancer) {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithLoadBalancers(deps.db, deps.lbRegistry))
 		}
+		ingressOpts = append(ingressOpts, ingressreconcile.WithAppWake(deps.db, dashboardDialAddr(httpAddr()), appWakeToken()))
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 
 		// Local runtime unconditionally, same reasoning as the ingress
