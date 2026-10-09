@@ -4,7 +4,6 @@ import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
-  CERT_RENEWAL_STALLED_HINT,
   certExpiryLabel,
   certRenewalBadge,
   certStatusMeta,
@@ -61,7 +60,7 @@ function CertificateRow({ row }: { row: CertificateCenterRow }) {
             </Badge>
           ) : null}
           {renewalBadge ? (
-            <Badge variant="destructive" title={CERT_RENEWAL_STALLED_HINT}>
+            <Badge variant="destructive" title={renewalBadge.hint}>
               {renewalBadge.label}
             </Badge>
           ) : null}

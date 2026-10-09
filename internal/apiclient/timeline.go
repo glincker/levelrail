@@ -51,13 +51,30 @@ type EditDomainsRequest struct {
 	Set    *[]string `json:"set,omitempty"`
 	Add    []string  `json:"add,omitempty"`
 	Remove []string  `json:"remove,omitempty"`
+	// Environment (ID, name or kind) targets that environment's own set.
+	Environment string `json:"environment,omitempty"`
 }
 
 // EditDomainsResult mirrors internal/api's editDomainsResponse.
 type EditDomainsResult struct {
-	App     string   `json:"app"`
-	Domains []string `json:"domains"`
-	Changed bool     `json:"changed"`
+	App           string   `json:"app"`
+	Domains       []string `json:"domains"`
+	Changed       bool     `json:"changed"`
+	EnvironmentID string   `json:"environment_id,omitempty"`
+}
+
+// GetAppEnvironmentDomains calls GET /api/v1/apps/{name}/environment-domains.
+func (c *Client) GetAppEnvironmentDomains(ctx context.Context, name string) (AppEnvironmentDomains, error) {
+	var out AppEnvironmentDomains
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/environment-domains", nil, &out)
+	return out, err
+}
+
+// GetIngressConnectivity calls GET /api/v1/ingress/connectivity.
+func (c *Client) GetIngressConnectivity(ctx context.Context) (IngressConnectivity, error) {
+	var out IngressConnectivity
+	err := c.do(ctx, http.MethodGet, "/api/v1/ingress/connectivity", nil, &out)
+	return out, err
 }
 
 // EditAppDomains calls PATCH /api/v1/apps/{name}/domains, which changes only

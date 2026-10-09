@@ -787,6 +787,58 @@ type DomainCheckResource struct {
 	Status        string   `json:"status"`
 	ExpectedIPv4  []string `json:"expected_ipv4,omitempty"`
 	ExpectedIPv6  []string `json:"expected_ipv6,omitempty"`
+	// ExpectedPrivate is true when the node address is private/LAN.
+	ExpectedPrivate bool `json:"expected_private,omitempty"`
+	// Challenge is "http-01" or "dns-01-required".
+	Challenge   string       `json:"challenge,omitempty"`
+	DNSProvider string       `json:"dns_provider,omitempty"`
+	ACMEFailure *ACMEFailure `json:"acme_failure,omitempty"`
+}
+
+// ACMEFailure mirrors internal/api's acmeFailureResource.
+type ACMEFailure struct {
+	Error   string `json:"error"`
+	Renewal bool   `json:"renewal"`
+	At      string `json:"at"`
+	Reason  string `json:"reason"`
+	Action  string `json:"action"`
+}
+
+// IngressConnectivityPort is one probed ingress port.
+type IngressConnectivityPort struct {
+	Port      int    `json:"port"`
+	Address   string `json:"address"`
+	Reachable bool   `json:"reachable"`
+}
+
+// IngressConnectivity mirrors internal/api's ingressConnectivityResource.
+type IngressConnectivity struct {
+	Host           string                    `json:"host,omitempty"`
+	HostInferred   bool                      `json:"host_inferred,omitempty"`
+	Addresses      []string                  `json:"addresses"`
+	Private        bool                      `json:"private"`
+	Ports          []IngressConnectivityPort `json:"ports"`
+	HTTP01Possible bool                      `json:"http01_possible"`
+	DNSProvider    string                    `json:"dns_provider"`
+	Guidance       string                    `json:"guidance"`
+}
+
+// EnvironmentDomainSet is one environment's domain set for an app.
+type EnvironmentDomainSet struct {
+	EnvironmentID string   `json:"environment_id"`
+	Name          string   `json:"name"`
+	Kind          string   `json:"kind"`
+	Active        bool     `json:"active"`
+	Domains       []string `json:"domains"`
+}
+
+// AppEnvironmentDomains mirrors internal/api's appEnvironmentDomainsResource.
+type AppEnvironmentDomains struct {
+	App                 string                 `json:"app"`
+	ActiveEnvironmentID string                 `json:"active_environment_id,omitempty"`
+	DefaultDomains      []string               `json:"default_domains"`
+	RoutedDomains       []string               `json:"routed_domains"`
+	Environments        []EnvironmentDomainSet `json:"environments"`
 }
 
 // CloneAppRequest mirrors internal/api's cloneAppRequest
@@ -2150,6 +2202,17 @@ type EnvironmentCloneRequest struct {
 	NewEnvironmentName string                     `json:"new_environment_name"`
 	CopySecretValues   bool                       `json:"copy_secret_values,omitempty"`
 	Apps               []EnvironmentCloneAppInput `json:"apps,omitempty"`
+	CopyDomains        bool                       `json:"copy_domains,omitempty"`
+	DomainRewrite      *DomainRewrite             `json:"domain_rewrite,omitempty"`
+}
+
+// DomainRewrite mirrors store.DomainRewrite: Prefix is prepended to every
+// copied hostname, or Find (a hostname or parent domain) is swapped for
+// Replace.
+type DomainRewrite struct {
+	Prefix  string `json:"prefix,omitempty"`
+	Find    string `json:"find,omitempty"`
+	Replace string `json:"replace,omitempty"`
 }
 
 // EnvironmentCloneAppResult mirrors internal/api's

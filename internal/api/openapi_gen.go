@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 693 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 696 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -147,6 +147,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppEgressPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppEgressPolicy", Description: "Outbound network allowlist, per app (apps_egress.go): AbilityWriteSensitive for PUT/DELETE, the same tier PUT/DELETE .../storage above uses, since this changes an app's own network-exfiltration surface, the identical sensitivity class as which live bucket credentials it receives. GET is a real route here (unlike storage's reuse of handleGetApp), since an unconfigured policy is common enough (every app before this feature existed) to be worth its own explicit, ordinary AbilityRead response rather than folding it into the general app resource."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppEgressPolicy", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/environment-domains", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppEnvironmentDomains", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/exec", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExecApp", Description: "One-off exec (handleExecApp's own doc comment): AbilityRoot, not AbilityDeploy. Secrets are injected as plaintext env vars into a container at create time and this package deliberately never decrypts one back into a response body anywhere else, see the secrets route above: \"never decrypts a value for a response body.\" Exec is the one route that can read them anyway, by running `env` inside the container, so it must sit behind the same tier that boundary already implies it needs, not the deploy tier. AbilityRoot is this project's existing \"breaks an assumption other tiers rely on\" boundary (see restore's own reasoning below)."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/exec-access", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetExecAccess", Description: "Exec access opt-out (exec.go's requireExecAccess): a second, independent gate the two routes just above both check before attempting to reach a container, on top of (not instead of) their own AbilityRoot check. GET is AbilityRead, matching every other passive per-app setting view (e.g. GET .../auto-rollback above). PUT is AbilityRoot, the same tier exec/terminal themselves sit behind: flipping this back on hands back a root-tier capability, so re-enabling it needs the same tier as using it, an explicit, auditable, two-step action even for an already-root token."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/exec-access", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetExecAccess", Description: ""},
@@ -161,6 +162,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/integrations", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppIntegrations", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/integrations", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAttachAppIntegration", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/integrations/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDetachAppIntegration", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/listening-ports", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppListeningPorts", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/loadbalancer", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteLoadBalancer", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/loadbalancer", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetLoadBalancer", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/loadbalancer", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetLoadBalancer", Description: ""},
@@ -525,6 +527,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/imports/plan", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportPlan", Description: "Import front door: classifies pasted input and returns a plan preview, creating nothing. AbilityWrite because it makes outbound fetches."},
 	{Method: "POST", Path: "/api/v1/imports/platform/apply", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleApplyPlatformImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/platform/discover", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDiscoverPlatformImport", Description: ""},
+	{Method: "GET", Path: "/api/v1/ingress/connectivity", Ability: "AbilityRead", Group: "Other", Handler: "handleIngressConnectivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/integrations", Ability: "AbilityRead", Group: "Other", Handler: "handleListIntegrationCatalog", Description: "Integrations (app_integrations.go): the curated internal/integrations catalog (PostHog, Sentry, etc), env-var injection only. The catalog itself is global and read-only (AbilityRead, no store involved, same shape service-templates uses); attach/detach store a field value through the app's own secrets namespace, AbilityWriteSensitive like PUT .../secrets/{key} above."},
 	{Method: "GET", Path: "/api/v1/loadbalancers", Ability: "AbilityRead", Group: "Other", Handler: "handleListLoadBalancers", Description: ""},
 	{Method: "POST", Path: "/api/v1/log-archive/dump", Ability: "AbilityWrite", Group: "Other", Handler: "handleLogArchiveDump", Description: ""},

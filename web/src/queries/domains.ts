@@ -17,7 +17,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
-import type { DomainCheckStatus } from './domainCheck'
+import type { AcmeFailure, DomainCheckStatus } from './domainCheck'
 
 export const domainKeys = {
   all: ['domains'] as const,
@@ -35,6 +35,8 @@ export interface Domain {
   has_basic_auth: boolean
   // automatic marks a generated <app>.<dashed-ip>.sslip.io hostname.
   automatic?: boolean
+  // acme_failure is the CA's last error for this hostname, if any.
+  acme_failure?: AcmeFailure
 }
 
 export async function fetchDomains(): Promise<Domain[]> {

@@ -52,6 +52,9 @@ func FallbackDomain(publicHost, serviceName string) (domain string, ok bool) {
 	return label + "." + dashEncodeIP(ip) + "." + fallbackDomainSuffix, true
 }
 
+// IsPubliclyRoutable is isPubliclyRoutable for callers outside this package.
+func IsPubliclyRoutable(ip net.IP) bool { return isPubliclyRoutable(ip) }
+
 // isPubliclyRoutable reports whether ip is a real, internet-reachable
 // address: not private (RFC 1918 / ULA), not loopback, not link-local,
 // not the unspecified address.

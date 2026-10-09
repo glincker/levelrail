@@ -139,6 +139,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"tls-cert":       {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil, "renew": nil}},
 		"check":          nil,
 		"certificates":   nil,
+		"connectivity":   nil,
 		"waf":            {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"error-pages":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"dns":            {subs: map[string]*cmdNode{"list": nil, "add": nil, "remove": nil}},

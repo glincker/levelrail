@@ -8,6 +8,7 @@
 
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { AcmeFailure } from './domainCheck'
 
 export const certificatesKeys = {
   all: ['certificates'] as const,
@@ -35,6 +36,9 @@ export interface CertificateStatus {
   // (setDomainTLSCert), "acme" for Caddy's automatic ACME/internal
   // issuance.
   source: 'acme' | 'custom'
+  // acme_failure is the CA's last error for this hostname, when its most
+  // recent issue or renewal attempt failed.
+  acme_failure?: AcmeFailure
 }
 
 export async function fetchCertificates(): Promise<CertificateStatus[]> {

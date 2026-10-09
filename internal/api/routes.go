@@ -398,6 +398,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/pending-changes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePendingChanges))
 	mux.HandleFunc("POST /api/v1/apps/{name}/apply-pending", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleApplyPending))
 	mux.HandleFunc("PATCH /api/v1/apps/{name}/domains", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleEditAppDomains))
+	mux.HandleFunc("GET /api/v1/apps/{name}/environment-domains", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppEnvironmentDomains))
+	mux.HandleFunc("GET /api/v1/apps/{name}/listening-ports", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppListeningPorts))
+	mux.HandleFunc("GET /api/v1/ingress/connectivity", rt.requireAbility(AbilityRead, rt.handleIngressConnectivity))
 
 	// Streams (app_streams.go): raw TCP port forwards, host port to one
 	// container port, proxied by Caddy's layer4 app

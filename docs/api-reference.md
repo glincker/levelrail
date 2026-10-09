@@ -152,7 +152,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 146 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 148 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -310,6 +310,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/sleep | AbilityRead | handleGetAppSleep |
 | PUT | /api/v1/apps/{name}/sleep | AbilityDeploy | handleSetAppSleep |
 | POST | /api/v1/apps/{name}/sleep/wake | AbilityDeploy | handleWakeApp |
+| GET | /api/v1/apps/{name}/environment-domains | AbilityRead | handleGetAppEnvironmentDomains |
+| GET | /api/v1/apps/{name}/listening-ports | AbilityRead | handleAppListeningPorts |
 
 :::
 
@@ -916,6 +918,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/firewall/host/disable | AbilityRoot | handleDisableHostFirewall |
 | POST | /api/v1/hooks/image-update/{name}/{token} | Public | handleImageUpdateWebhook |
 | GET | /api/v1/hooks/wake | Public | handleWakeHook |
+| GET | /api/v1/ingress/connectivity | AbilityRead | handleIngressConnectivity |
 
 ## See also
 

@@ -53,7 +53,7 @@ import (
 // the POST request. See internal/api/promote.go's own
 // promotePreviewUnsnapshottedFields doc comment for the precedent this
 // follows: being careful about what crosses a tier boundary unprompted.
-const environmentClonePreviewNote = "Domains are never copied: a domain can only ever belong to one service, so every cloned app starts with none unless you assign new ones (either here or afterward). Host port pins are cleared for the same reason. Database attachments, app.yaml database env references, git build source, and node placement are not cloned either. Secret values (per-app and environment-wide alike) are declared on the clone with no value set unless you opt in with copy_secret_values: true on the actual clone request; every declared secret otherwise behaves like a brand-new required secret until you set it."
+const environmentClonePreviewNote = "Domains are not copied by default: a domain can only ever belong to one service, so every cloned app starts with none unless you assign new ones, or set copy_domains with a domain_rewrite to copy every domain set under new hostnames. Host port pins are cleared for the same reason. Database attachments, app.yaml database env references, git build source, and node placement are not cloned either. Secret values (per-app and environment-wide alike) are declared on the clone with no value set unless you opt in with copy_secret_values: true on the actual clone request; every declared secret otherwise behaves like a brand-new required secret until you set it."
 
 // environmentCloneUnclonedFields lists what a clone never carries over
 // regardless of flags, the read-only-preview counterpart to
@@ -189,6 +189,11 @@ type environmentCloneRequest struct {
 	// default.
 	CopySecretValues bool                       `json:"copy_secret_values,omitempty"`
 	Apps             []environmentCloneAppInput `json:"apps,omitempty"`
+	// CopyDomains copies each source app's domain sets onto its clone,
+	// rewritten through DomainRewrite (a hostname can belong to only one
+	// app, so copying verbatim would always conflict).
+	CopyDomains   bool                 `json:"copy_domains,omitempty"`
+	DomainRewrite *store.DomainRewrite `json:"domain_rewrite,omitempty"`
 }
 
 // environmentCloneAppResult is one cloned app's own entry inside POST
@@ -246,6 +251,14 @@ func (rt *Router) handleEnvironmentClone(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set); omit copy_secret_values or set a master key first")
 		return
 	}
+	var rewrite store.DomainRewrite
+	if req.DomainRewrite != nil {
+		rewrite = *req.DomainRewrite
+	}
+	if req.CopyDomains && rewrite.Empty() {
+		writeError(w, http.StatusBadRequest, "copy_domains needs domain_rewrite (prefix, or find and replace): a hostname can belong to only one app")
+		return
+	}
 
 	source, err := rt.appsInEnvironment(r.Context(), env)
 	if err != nil {
@@ -291,7 +304,19 @@ func (rt *Router) handleEnvironmentClone(w http.ResponseWriter, r *http.Request)
 	results := make([]environmentCloneAppResult, 0, len(source))
 	for _, svc := range source {
 		newName := newNames[svc.Name]
-		final, err := rt.cloneOneApp(r.Context(), svc, newName, newEnvID, overrides[svc.Name].Domains, req.CopySecretValues)
+		domains := overrides[svc.Name].Domains
+		var extraSets map[string][]string
+		if req.CopyDomains && domains == nil {
+			domains, extraSets, err = rt.cloneDomainSets(r.Context(), svc, rewrite)
+			if err != nil {
+				rt.internalError(w, "api: clone environment: read domain sets failed", err, slog.String("source", svc.Name))
+				return
+			}
+		}
+		final, err := rt.cloneOneApp(r.Context(), svc, newName, newEnvID, domains, req.CopySecretValues)
+		if err == nil {
+			err = rt.copyEnvironmentDomainSets(r.Context(), newName, extraSets)
+		}
 		if err != nil {
 			var domainTaken *store.ErrDomainTaken
 			if errors.As(err, &domainTaken) {

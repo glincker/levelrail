@@ -6,6 +6,8 @@ import (
 	"io"
 	"sort"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runAppsEnvironmentsClonePreview implements "apps environments
@@ -104,6 +106,12 @@ func runAppsEnvironmentsClone(prog string, args []string, stdout, stderr io.Writ
 	fs.BoolVar(&copySecretValues, "copy-secret-values", false, "also copy real secret values (per-app and shared) onto the clone; without this flag every secret is declared but left unset, the safe default")
 	fs.Var(renames, "app-rename", "override a cloned app's own new name, as SOURCE=NEWNAME, repeatable")
 	fs.Var(domains, "domain", "assign domains to a cloned app, as SOURCE=domain1,domain2,..., repeatable")
+	var copyDomains bool
+	var rewrite apiclient.DomainRewrite
+	fs.BoolVar(&copyDomains, "copy-domains", false, "copy every app's domain sets onto its clone, rewritten by --domain-prefix or --domain-find/--domain-replace")
+	fs.StringVar(&rewrite.Prefix, "domain-prefix", "", "prepend this to every copied hostname, e.g. uat.")
+	fs.StringVar(&rewrite.Find, "domain-find", "", "hostname or parent domain to swap in copied hostnames, e.g. example.com")
+	fs.StringVar(&rewrite.Replace, "domain-replace", "", "replacement for --domain-find, e.g. uat.example.com")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsCloneUsage(prog)) }
 
 	id, tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments clone", apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP})
@@ -113,6 +121,13 @@ func runAppsEnvironmentsClone(prog string, args []string, stdout, stderr io.Writ
 	if newName == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--new-name is required"))
 	}
+	if copyDomains && rewrite.Prefix == "" && rewrite.Find == "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--copy-domains needs --domain-prefix, or --domain-find with --domain-replace"))
+	}
+	var rewritePtr *apiclient.DomainRewrite
+	if copyDomains {
+		rewritePtr = &rewrite
+	}
 
 	apps := clonedAppInputsFromFlags(renames, domains)
 
@@ -121,6 +136,8 @@ func runAppsEnvironmentsClone(prog string, args []string, stdout, stderr io.Writ
 		NewEnvironmentName: newName,
 		CopySecretValues:   copySecretValues,
 		Apps:               apps,
+		CopyDomains:        copyDomains,
+		DomainRewrite:      rewritePtr,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clone environment %q: %w", id, err))
@@ -179,6 +196,12 @@ Flags:
   --new-name string          name for the new environment (required)
   --app-rename SOURCE=NEWNAME  override a cloned app's own new name, repeatable
   --domain SOURCE=D1,D2,...    assign domains to a cloned app, repeatable
+  --copy-domains                copy every app's domain sets under rewritten
+                                     hostnames (needs one of the rewrite flags)
+  --domain-prefix P            prepend P to each copied hostname (uat.)
+  --domain-find F --domain-replace R
+                                     swap parent domain F for R (example.com
+                                     becomes uat.example.com)
   --copy-secret-values          also copy real secret values (per-app and shared)
                                      onto the clone; without this every secret is
                                      declared but left unset (the safe default)
