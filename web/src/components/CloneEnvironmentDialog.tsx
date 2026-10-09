@@ -23,6 +23,12 @@ import {
 } from '../queries/environmentClone'
 import type { EnvironmentCloneAppInput } from '../types/environmentClone'
 import { ApiError } from '../lib/apiError'
+import {
+  EMPTY_DOMAIN_REWRITE,
+  domainRewritePayload,
+  type CloneDomainRewrite,
+} from '../lib/cloneDomainRewrite'
+import { CloneDomainRewriteFields } from './CloneDomainRewriteFields'
 
 // Per-app override state, keyed by source app name: an empty newName
 // means "use the server's own auto-suggested name", an empty
@@ -64,6 +70,8 @@ export function CloneEnvironmentDialog({
   const [newName, setNewName] = useState('')
   const [copySecretValues, setCopySecretValues] = useState(false)
   const [overrides, setOverrides] = useState<Record<string, AppOverride>>({})
+  const [domainRewrite, setDomainRewrite] =
+    useState<CloneDomainRewrite>(EMPTY_DOMAIN_REWRITE)
   const navigate = useNavigate()
 
   const preview = useEnvironmentClonePreview(environmentId, newName)
@@ -75,6 +83,7 @@ export function CloneEnvironmentDialog({
       setNewName('')
       setCopySecretValues(false)
       setOverrides({})
+      setDomainRewrite(EMPTY_DOMAIN_REWRITE)
       clone.reset()
     }
   }
@@ -102,7 +111,12 @@ export function CloneEnvironmentDialog({
     clone.mutate(
       {
         id: environmentId,
-        input: { newEnvironmentName: newName.trim(), copySecretValues, apps },
+        input: {
+          newEnvironmentName: newName.trim(),
+          copySecretValues,
+          apps,
+          domainRewrite: domainRewritePayload(domainRewrite) ?? undefined,
+        },
       },
       {
         onSuccess: (result) => {
@@ -264,6 +278,13 @@ export function CloneEnvironmentDialog({
                 a brand-new required secret.
               </span>
             </label>
+          ) : null}
+
+          {preview.data ? (
+            <CloneDomainRewriteFields
+              value={domainRewrite}
+              onChange={setDomainRewrite}
+            />
           ) : null}
 
           {preview.data ? <FieldHint>{preview.data.note}</FieldHint> : null}

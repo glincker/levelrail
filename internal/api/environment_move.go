@@ -120,7 +120,12 @@ func (rt *Router) applyEnvironmentMove(ctx context.Context, kind environmentMove
 		}
 		return ds.SetDatabaseEnvironment(ctx, name, targetID)
 	}
-	return rt.environments.SetServiceEnvironment(ctx, name, targetID)
+	if err := rt.environments.SetServiceEnvironment(ctx, name, targetID); err != nil {
+		return err
+	}
+	// The active environment picks the routed domain set.
+	rt.nudgeReconciler()
+	return nil
 }
 
 func (rt *Router) writeMoveError(w http.ResponseWriter, m environmentMove, err error) {

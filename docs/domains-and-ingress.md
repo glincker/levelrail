@@ -106,6 +106,45 @@ Edit `domains:` in `app.yaml` and redeploy.
 
 ![Levelrail Domains page with the platform ingress settings: primary domain, ACME certificates, and HSTS](assets/screenshots/domains-list.png)
 
+### Guided setup: domain, DNS, port, certificate
+
+The **Guided setup** button on an app's Domains tab walks one domain through four checks before anything is saved:
+
+1. **Domain.** Pick the environment it belongs to, and optionally route the `www` or apex twin with a redirect to the one you typed.
+2. **DNS record.** The exact A, AAAA or CNAME record to add, re-checked live. DNS changes usually appear within minutes but can take a few hours depending on the record's TTL.
+3. **Container port.** Whether the running container really listens on the app's port. This reads the container's socket table, so it needs exec access enabled for the app; without it the step says it could not verify.
+4. **Certificate.** Which challenge applies. HTTP-01 needs the internet to reach port 80 on this server. If this server sits on a private (LAN, NAT, NAS) address, or the domain is a wildcard, only DNS-01 can work, and the step says which provider is connected (Cloudflare, Route53 or none) and where to connect one.
+
+When a certificate request fails, the dashboard shows the certificate authority's own error next to the one step that usually fixes it: open ports 80 and 443, fix the DNS record, wait out a rate limit, or correct a CAA record. The same reason appears on the Domains list and in `domains check`.
+
+```bash
+levelrail-cli domains check <app> <domain>   # DNS, challenge, DNS-01 provider, last CA error
+levelrail-cli domains connectivity           # do ports 80 and 443 answer here, is the address private
+```
+
+`domains connectivity` dials this server's advertised address from the control plane. It cannot prove a port is open to the whole internet, but a private address is decisive: HTTP-01 cannot work there.
+
+### One app, one domain set per environment
+
+An app can carry a separate set of domains for each environment, so you do not duplicate the app for dev, UAT and production. The app routes the set of the environment it is tagged with. An environment without its own set falls back to the app's default domains, which is why existing apps keep working unchanged.
+
+```bash
+levelrail-cli apps domains add --env dev <app> dev.example.com
+levelrail-cli apps domains add --env uat <app> uat.example.com
+levelrail-cli apps domains list --env all <app>
+```
+
+`--env` takes an environment id, name or kind. In the dashboard, the Domains tab shows one tab per environment, with the active one marked. Moving the app to another environment switches the routed set on the next reconcile. A hostname still belongs to exactly one app across all sets.
+
+Cloning an environment can copy every app's domain sets under rewritten hostnames, since a hostname cannot be shared:
+
+```bash
+levelrail-cli apps environments clone <id> --new-name uat \
+  --copy-domains --domain-find example.com --domain-replace uat.example.com
+```
+
+Use `--domain-prefix uat.` instead to prepend a label to every copied hostname.
+
 ### The dashboard's own domain
 
 **Infrastructure > Domains** sets the control plane's own `primary_domain`, the one the dashboard itself is reachable at, separate from any app's `domains:` in `app.yaml`. Give it its own dedicated subdomain rather than reusing one an app already serves, the same convention CapRover uses for its panel (`captain.<domain>`): something like `console.example.com` or `panel.example.com`.

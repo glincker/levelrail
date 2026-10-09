@@ -22,6 +22,7 @@ import { certAttentionRank, sortByCertAttention } from '../../lib/certStatus'
 import { CloudflareDnsCard } from '../../components/CloudflareDnsCard'
 import { Route53DnsCard } from '../../components/Route53DnsCard'
 import { IngressSettingsCard } from '../../components/IngressSettingsCard'
+import { IngressConnectivityCard } from '../../components/IngressConnectivityCard'
 import { Button } from '../../components/ui/button'
 import { DashboardUrlCard } from '../../components/DashboardUrlCard'
 import { EnableHttpsCard } from '../../components/EnableHttpsCard'
@@ -111,6 +112,8 @@ function DomainsPage() {
         const cert = certByDomain.get(domain.domain)
         if (cert && certAttentionRank(cert) < 2) {
           entries.push({ domain, cert })
+        } else if (!cert && domain.acme_failure) {
+          entries.push({ domain })
         }
         return entries
       }, []),
@@ -152,6 +155,8 @@ function DomainsPage() {
       <DashboardUrlCard />
 
       <FallbackDomainsCard />
+
+      <IngressConnectivityCard />
 
       <CloudflareDnsCard settings={cloudflareDns} />
 

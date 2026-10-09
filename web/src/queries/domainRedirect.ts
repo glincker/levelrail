@@ -67,7 +67,7 @@ export function useDomainRedirect(appName: string, domain: string) {
   return useQuery(domainRedirectQueryOptions(appName, domain))
 }
 
-async function setDomainRedirect(
+export async function setDomainRedirect(
   appName: string,
   domain: string,
   req: SetDomainRedirectRequest,

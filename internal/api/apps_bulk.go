@@ -314,6 +314,7 @@ func (rt *Router) bulkSetEnvironment(ctx context.Context, value string, svc stor
 		rt.logger.Error("api: bulk apps: set environment failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
 		return bulkStatusError, "set environment failed"
 	}
+	rt.nudgeReconciler()
 	return bulkStatusOK, ""
 }
 

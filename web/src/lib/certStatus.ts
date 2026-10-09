@@ -30,11 +30,18 @@ export const CERT_RENEWAL_STALLED_HINT =
 // certRenewalBadge returns badge props only for a stalled renewal, so a
 // healthy certificate keeps its single status badge.
 export function certRenewalBadge(
-  cert: Pick<CertificateStatus, 'renewal'>,
+  cert: Pick<CertificateStatus, 'renewal' | 'acme_failure'>,
 ): { label: string; hint: string } | null {
-  return cert.renewal === 'stalled'
-    ? { label: 'Renewal stalled', hint: CERT_RENEWAL_STALLED_HINT }
-    : null
+  if (cert.renewal !== 'stalled') {
+    return null
+  }
+  const reason = cert.acme_failure?.error
+  return {
+    label: 'Renewal stalled',
+    hint: reason
+      ? `${CERT_RENEWAL_STALLED_HINT} The certificate authority said: ${reason}`
+      : CERT_RENEWAL_STALLED_HINT,
+  }
 }
 
 // certAttentionRank orders certificates for the "needs attention first"

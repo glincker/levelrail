@@ -9,10 +9,22 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export type DomainCheckStatus =
-  | 'connected'
-  | 'not_resolving'
-  | 'resolves_elsewhere'
-  | 'unconfigured'
+  'connected' | 'not_resolving' | 'resolves_elsewhere' | 'unconfigured'
+
+export type AcmeAction =
+  'open_port_80' | 'fix_dns' | 'wait_rate_limit' | 'fix_caa' | 'check_logs'
+
+// Mirrors internal/api's acmeFailureResource: the CA's last error for a
+// hostname, classified into one concrete next step.
+export interface AcmeFailure {
+  error: string
+  renewal: boolean
+  at: string
+  reason: string
+  action: AcmeAction
+}
+
+export type DnsProvider = 'cloudflare' | 'route53' | 'none'
 
 // Mirrors internal/api/domain_check.go's domainCheckResponse wire shape
 // exactly.
@@ -25,6 +37,10 @@ export interface DomainCheckResult {
   resolved: boolean
   resolved_hosts?: string[]
   status: DomainCheckStatus
+  expected_private?: boolean
+  challenge?: 'http-01' | 'dns-01-required'
+  dns_provider?: DnsProvider
+  acme_failure?: AcmeFailure
 }
 
 export const domainCheckKeys = {

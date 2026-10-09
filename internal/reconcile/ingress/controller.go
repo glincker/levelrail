@@ -711,11 +711,13 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	sleeping := c.sleepingApps(ctx)
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
 	canaries := c.activeCanaries(ctx, services)
+	envDomainSets := c.environmentDomainSets(ctx)
 	for _, svc := range services {
 		if store.IsCanaryService(svc.Name) {
 			continue
 		}
-		hosts := svc.Domains
+		configuredHosts := routedDomains(svc, envDomainSets)
+		hosts := configuredHosts
 		if len(hosts) == 0 {
 			// No operator-configured domain: fall back to a zero-config
 			// sslip.io URL when this control plane's own APP_PUBLIC_HOST
@@ -819,7 +821,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			dial, ok = c.dialForService(ctx, svc, readyByService[svc.Name])
 		}
 		if !ok {
-			if len(svc.Domains) > 0 {
+			if len(configuredHosts) > 0 {
 				var held []string
 				for _, host := range activeHosts {
 					if c.holds.Held(host, now) {
