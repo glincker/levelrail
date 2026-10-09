@@ -8,7 +8,7 @@ import (
 )
 
 func TestHandlerFromFS_NoDist_Returns501(t *testing.T) {
-	h := handlerFromFS(fstest.MapFS{}) // no "dist" entry at all: the stub-build shape
+	h := handlerFromFS(fstest.MapFS{}, nil) // no "dist" entry at all: the stub-build shape
 
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
@@ -23,7 +23,7 @@ func TestHandlerFromFS_ServesRealAsset(t *testing.T) {
 		"dist/index.html":         &fstest.MapFile{Data: []byte("<html>shell</html>")},
 		"dist/assets/app-123.js":  &fstest.MapFile{Data: []byte("console.log(1)")},
 		"dist/assets/app-123.css": &fstest.MapFile{Data: []byte("body{}")},
-	})
+	}, nil)
 
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/assets/app-123.js", nil))
@@ -39,7 +39,7 @@ func TestHandlerFromFS_ServesRealAsset(t *testing.T) {
 func TestHandlerFromFS_UnknownPath_FallsBackToIndex(t *testing.T) {
 	h := handlerFromFS(fstest.MapFS{
 		"dist/index.html": &fstest.MapFile{Data: []byte("<html>shell</html>")},
-	})
+	}, nil)
 
 	tests := []string{"/", "/apps", "/apps/myapp/env", "/apps/myapp/deploys/42/logs"}
 	for _, path := range tests {
@@ -61,7 +61,7 @@ func TestHandlerFromFS_SetsSecurityHeaders(t *testing.T) {
 	h := handlerFromFS(fstest.MapFS{
 		"dist/index.html":        &fstest.MapFile{Data: []byte("<html>shell</html>")},
 		"dist/assets/app-123.js": &fstest.MapFile{Data: []byte("console.log(1)")},
-	})
+	}, nil)
 	want := map[string]string{
 		"X-Content-Type-Options":  "nosniff",
 		"X-Frame-Options":         "DENY",
