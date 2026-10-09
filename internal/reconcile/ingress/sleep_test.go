@@ -24,12 +24,15 @@ func TestController_Sleep_SleepingAppGetsWakeRoute(t *testing.T) {
 	if len(routes) != 1 || len(routes[0].Handle) != 2 {
 		t.Fatalf("routes = %+v, want one wake route", routes)
 	}
-	if rw, ok := routes[0].Handle[0].(ingress.RewriteHandler); !ok || rw.URI != ingress.WakePath {
+	if rw, ok := routes[0].Handle[0].(ingress.RewriteHandler); !ok || rw.URI != ingress.WakePath || rw.Method != "GET" {
 		t.Errorf("first handler = %+v", routes[0].Handle[0])
 	}
 	rp, ok := routes[0].Handle[1].(ingress.ReverseProxyHandler)
 	if !ok || rp.Upstreams[0].Dial != "127.0.0.1:8080" {
 		t.Fatalf("second handler = %+v", routes[0].Handle[1])
+	}
+	if len(rp.HandleResponse) != 1 || rp.HandleResponse[0].Match == nil || len(rp.HandleResponse[0].Match.StatusCode) != 1 || rp.HandleResponse[0].Match.StatusCode[0] != 204 {
+		t.Errorf("the waking page must replace only the 204, a 307 replay must pass through: %+v", rp.HandleResponse)
 	}
 	set := rp.Headers.Request.Set
 	if set[ingress.WakeTokenHeader][0] != "tok" || set[ingress.WakeAppHeader][0] != "web" {

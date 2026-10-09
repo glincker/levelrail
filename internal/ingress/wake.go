@@ -7,6 +7,7 @@ const WakePath = "/api/v1/hooks/wake"
 const (
 	WakeTokenHeader = "X-Wake-Token" //nolint:gosec // header name, not a credential
 	WakeAppHeader   = "X-Wake-App"
+	WakeURIHeader   = "X-Wake-Uri"
 )
 
 // WakeRoute is a sleeping app's domains: any request starts the app and gets
@@ -19,10 +20,12 @@ type WakeRoute struct {
 	App   string
 }
 
-// RewriteHandler is Caddy's "rewrite" handler: it replaces the request URI.
+// RewriteHandler is Caddy's "rewrite" handler: it replaces the request URI
+// and, when set, the method. The wake hook is GET-only whatever the client sent.
 type RewriteHandler struct {
 	Handler string `json:"handler"`
 	URI     string `json:"uri"`
+	Method  string `json:"method,omitempty"`
 }
 
 func (r WakeRoute) handlers(h Hardening) []any {
@@ -31,7 +34,11 @@ func (r WakeRoute) handlers(h Hardening) []any {
 	proxy.Headers = &ProxyHeaders{Request: &HeaderOps{Set: map[string][]string{
 		WakeTokenHeader: {r.Token},
 		WakeAppHeader:   {r.App},
+		// Caddy fills this per request; the rewrite above replaced the path.
+		WakeURIHeader: {"{http.request.orig_uri}"},
 	}}}
-	proxy.HandleResponse = []ResponseHandler{{Routes: []Route{{Handle: []any{page}}}}}
-	return []any{RewriteHandler{Handler: "rewrite", URI: WakePath}, proxy}
+	// Only the 204 (not asleep or no hold) becomes the retrying page; the hook's
+	// 307 replay must reach the client untouched.
+	proxy.HandleResponse = []ResponseHandler{{Match: &ResponseMatcher{StatusCode: []int{204}}, Routes: []Route{{Handle: []any{page}}}}}
+	return []any{RewriteHandler{Handler: "rewrite", URI: WakePath, Method: "GET"}, proxy}
 }

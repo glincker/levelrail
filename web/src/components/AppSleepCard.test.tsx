@@ -83,8 +83,18 @@ describe('AppSleepCard', () => {
       (_input: RequestInfo | URL, init?: RequestInit) =>
         Promise.resolve(
           init?.method === 'PUT'
-            ? json({ enabled: true, idle_minutes: 30, sleeping: false })
-            : json({ enabled: false, idle_minutes: 0, sleeping: false }),
+            ? json({
+                enabled: true,
+                idle_minutes: 30,
+                sleeping: false,
+                hold_requests: false,
+              })
+            : json({
+                enabled: false,
+                idle_minutes: 0,
+                sleeping: false,
+                hold_requests: false,
+              }),
         ),
     )
 
@@ -108,13 +118,57 @@ describe('AppSleepCard', () => {
     })
   })
 
+  it('turns function mode on for an enabled app', async () => {
+    fetchMock.mockImplementation(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        Promise.resolve(
+          json({
+            enabled: true,
+            idle_minutes: 30,
+            sleeping: false,
+            hold_requests: init?.method === 'PUT',
+          }),
+        ),
+    )
+
+    const user = userEvent.setup()
+    renderCard()
+    await user.click(
+      await screen.findByRole('switch', { name: 'Hold requests while waking' }),
+    )
+
+    await waitFor(() => {
+      expect(toast.add).toHaveBeenCalledWith({
+        title: 'Function mode updated.',
+        type: 'success',
+      })
+    })
+    const put = fetchMock.mock.calls.find(
+      ([, init]) => (init as RequestInit | undefined)?.method === 'PUT',
+    )
+    expect(JSON.parse((put?.[1] as RequestInit).body as string)).toEqual({
+      idle_minutes: 30,
+      hold_requests: true,
+    })
+  })
+
   it('offers wake now for a sleeping app', async () => {
     fetchMock.mockImplementation(
       (_input: RequestInfo | URL, init?: RequestInit) =>
         Promise.resolve(
           init?.method === 'POST'
-            ? json({ enabled: true, idle_minutes: 30, sleeping: false })
-            : json({ enabled: true, idle_minutes: 30, sleeping: true }),
+            ? json({
+                enabled: true,
+                idle_minutes: 30,
+                sleeping: false,
+                hold_requests: false,
+              })
+            : json({
+                enabled: true,
+                idle_minutes: 30,
+                sleeping: true,
+                hold_requests: false,
+              }),
         ),
     )
 
