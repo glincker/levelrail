@@ -74,6 +74,7 @@ const sidebarGroups = [
           { text: 'Image auto-update', link: '/image-auto-update' },
           { text: 'Sleep when idle', link: '/sleep-when-idle' },
           { text: 'Functions', link: '/functions' },
+          { text: 'Canary deploys', link: '/canary-deploys' },
           { text: 'Deployments page', link: '/deployments-page' },
           { text: 'Deploy previews', link: '/deploy-previews' },
           { text: 'Chat deploy approvals', link: '/chat-deploy-approvals' },

@@ -360,7 +360,8 @@ type Controller struct {
 	sleepSource   SleepSource        // nil disables wake routes for sleeping apps
 	wakeDial      string
 	wakeToken     string
-	implicitLB    bool // see WithImplicitLoadBalancing
+	canarySource  CanarySource // nil disables canary traffic splitting
+	implicitLB    bool         // see WithImplicitLoadBalancing
 	lbRegistry    *loadbalancer.Registry
 	nodeUpstreams NodeUpstreamResolver
 	meshPaths     meshpath.Resolver
@@ -709,7 +710,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	var wakeRoutes []ingress.WakeRoute
 	sleeping := c.sleepingApps(ctx)
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
+	canaries := c.activeCanaries(ctx, services)
 	for _, svc := range services {
+		if store.IsCanaryService(svc.Name) {
+			continue
+		}
 		hosts := svc.Domains
 		if len(hosts) == 0 {
 			// No operator-configured domain: fall back to a zero-config
@@ -827,6 +832,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 				}
 			}
 			continue
+		}
+		if lb == nil {
+			lb = c.canaryRoute(ctx, dial, canaries[svc.Name], readyByService)
 		}
 		for _, host := range activeHosts {
 			claimedHosts[host] = svc.Name

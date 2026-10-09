@@ -311,6 +311,7 @@ type (
 	httpsStatusResource                = apiclient.HTTPSStatusResource
 	imageAutoUpdateResource            = apiclient.ImageAutoUpdateResource
 	appSleepResource                   = apiclient.AppSleepResource
+	canaryResource                     = apiclient.CanaryResource
 	enableHTTPSRequest                 = apiclient.EnableHTTPSRequest
 	dashboardURLResource               = apiclient.DashboardURLResource
 	updateSettingsResource             = apiclient.UpdateSettingsResource

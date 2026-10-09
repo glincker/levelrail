@@ -22,6 +22,8 @@ func runAppsEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runAppsEnvImport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "export":
 		return runAppsEnvExport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "diff":
+		return runAppsEnvDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps env subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsEnvUsage(prog))
@@ -33,6 +35,7 @@ func appsEnvUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps env import <name> --file .env [--dry-run] [--keep-existing] [flags]   merge a .env file into an app's plain env vars
   %[1]s apps env export <name> [--out FILE] [flags]                               write an app's env vars as .env text
+  %[1]s apps env diff <app-a> <app-b> [flags]                                     compare two apps' env vars (secrets by key only)
 
 Export never includes secret values: secret keys are written empty with a
 comment. Import never writes secrets either: a key that is already a secret
