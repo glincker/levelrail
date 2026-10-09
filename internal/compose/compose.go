@@ -30,6 +30,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/bindmount"
@@ -384,7 +385,9 @@ func sortedServiceNames(f *File) []string {
 
 func joinErrors(errs []error) error {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%d service(s) failed validation:", len(errs))
+	b.Grow(35 + len(errs)*40)
+	b.WriteString(strconv.Itoa(len(errs)))
+	b.WriteString(" service(s) failed validation:")
 	for _, err := range errs {
 		b.WriteString("\n  - ")
 		b.WriteString(err.Error())
