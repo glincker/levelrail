@@ -323,8 +323,8 @@ github.com/glincker/theauth-go/mcpresource v0.0.0-20260622181835-520da3c8360d h1
 github.com/glincker/theauth-go/mcpresource v0.0.0-20260622181835-520da3c8360d/go.mod h1:VY/t7oCkMZ7V0ORrjlrKvmjt4CvmZn3fSuhGqnEIxJE=
 github.com/glincker/theauth-go/storage/sqlite v0.1.0 h1:brpOmgQihadqMUz5TLJaqo6JsuM73HQtyLsIuZkripQ=
 github.com/glincker/theauth-go/storage/sqlite v0.1.0/go.mod h1:9iKcImS60vkMnMEQaP0x2T4NrO6hj4zBZZb742oyn7A=
-github.com/glincker/theauth-go/v2 v2.7.0 h1:1Z1t7a6NI4FMWVbqQDrtDZfDGNvWO9u0vi76DACPmYc=
-github.com/glincker/theauth-go/v2 v2.7.0/go.mod h1:Rv8LSD9tdN9FwrRoYZqKxz+KU3yiHJH1DxH5x3OwG84=
+github.com/glincker/theauth-go/v2 v2.7.1 h1:kWVTrqhlBZKVcLkfsJuU10scqu1hHtkDXsVWmas3PzM=
+github.com/glincker/theauth-go/v2 v2.7.1/go.mod h1:Rv8LSD9tdN9FwrRoYZqKxz+KU3yiHJH1DxH5x3OwG84=
 github.com/go-chi/chi/v5 v5.3.2 h1:5YQkICvTCSZ25hoRsyJazN0scjzKGiu4VAUc7H1o1nY=
 github.com/go-chi/chi/v5 v5.3.2/go.mod h1:R+tYY2hNuVUUjxoPtqUdgBqevM9s9njzkTLutVsOCto=
 github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 h1:+zs/tPmkDkHx3U66DAb0lQFJrpS6731Oaa12ikc+DiI=
