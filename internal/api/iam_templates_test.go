@@ -33,8 +33,8 @@ func TestPolicyTemplates_AllValidate(t *testing.T) {
 			renderedTemplatePolicy(t, tpl.ID, tpl.placeholderParams())
 		})
 	}
-	if len(policyTemplates) != 8 {
-		t.Fatalf("templates = %d, want 8", len(policyTemplates))
+	if len(policyTemplates) != 10 {
+		t.Fatalf("templates = %d, want 10", len(policyTemplates))
 	}
 }
 
