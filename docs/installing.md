@@ -108,7 +108,11 @@ AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel ar
 | `LEVELRAIL_SOCKET_ACTIVATION` | unset (on for a new install) | systemd holds ports 80/443, so restarting the control plane queues connections instead of refusing them. Set `0` to opt out and let the control plane bind the ports itself. On `upgrade`, unset keeps the current mode, `1` switches an existing install over and `0` switches it back. See [Surviving a control plane restart](domains-and-ingress.md#surviving-a-control-plane-restart). |
 | `LEVELRAIL_CONFIGURE_UFW` | unset (off) | Set to `1` to allow SSH, then 80/443 (and 443/udp for HTTP/3), then enable `ufw` if it wasn't already active. The script never touches your firewall otherwise. |
 | `LEVELRAIL_DASHBOARD_PORT` | `8080` | Dashboard/API port. If this default is taken, the installer picks the next free port on its own (no action needed); set this to pin a specific one instead |
-| `LEVELRAIL_HTTP_PORT` / `LEVELRAIL_HTTPS_PORT` | `80` / `443` | Ingress ports. Unlike the dashboard port, the installer never moves these on its own: Let's Encrypt's HTTP-01 challenge only ever talks to 80/443, so if either is already taken (an existing reverse proxy, another Coolify/Dokploy instance, etc.) preflight fails with the fix spelled out. Set both explicitly once you've accepted that moving off 80/443 means no automatic ACME TLS |
+| `LEVELRAIL_HTTP_PORT` / `LEVELRAIL_HTTPS_PORT` | `80` / `443` | Ingress ports. Unlike the dashboard port, the installer never moves these without consent: Let's Encrypt's HTTP-01 challenge only ever talks to 80/443, so if either is already taken (an existing reverse proxy, another Coolify/Dokploy instance, etc.) preflight names the holder and offers [coexist mode](#server-already-runs-a-proxy), or fails with the fix spelled out when it cannot ask. Set both explicitly once you've accepted that moving off 80/443 means no automatic ACME TLS |
+| `LEVELRAIL_COEXIST` | unset | Set to `1` (or pass `--coexist`) to run behind an existing proxy: ingress on 8088/8443, dashboard on loopback |
+| `LEVELRAIL_COEXIST_HTTP_PORT` / `LEVELRAIL_COEXIST_HTTPS_PORT` | `8088` / `8443` | Ingress ports coexist mode uses |
+| `APP_PUBLIC_HOST` | unset | Written to the systemd drop-in so the control plane knows its public address |
+| `LEVELRAIL_DOMAIN` | unset | Same as `--domain`: only used to print the exact `levelrail-cli proxy` command |
 
 :::
 
@@ -135,6 +139,43 @@ curl -fsSL https://levelrail.com/install.sh \
   | sudo sh -s -- --force
 ```
 :::
+
+### Server already runs a proxy
+
+Coolify, Traefik, nginx or Caddy on the same box already hold ports 80 and 443, so a default install would start but never serve or issue certificates. The installer checks this before it changes anything. It reads who listens on 80 and 443 (`ss`, and `docker ps --filter publish=<port>` to name a container and its image) and says so plainly:
+
+```
+Ports 80 443 are already in use on this server:
+  80: container coolify-proxy (image traefik:v3.1)
+  443: container coolify-proxy (image traefik:v3.1)
+Levelrail can run alongside it: ingress on 8088/8443, dashboard on loopback only, ...
+```
+
+If both are free nothing changes. If they are taken, the installer offers **coexist mode**:
+
+| Setting | Coexist value |
+| --- | --- |
+| Ingress HTTP / HTTPS | `8088` / `8443` (override with `--http-port`/`--https-port` or `LEVELRAIL_COEXIST_HTTP_PORT`/`LEVELRAIL_COEXIST_HTTPS_PORT`) |
+| Dashboard | `127.0.0.1:<port>`, reachable by SSH tunnel until your proxy fronts it |
+| `ufw` | left alone, even with `LEVELRAIL_CONFIGURE_UFW=1` |
+
+In a terminal it asks `[Y/n]`. Unattended (no usable `/dev/tty`, or `CI` set) it never decides for you: preflight fails and names the flags. Pass `--coexist` (or `LEVELRAIL_COEXIST=1`) to choose it up front, or `--yes` to accept the offer without a prompt:
+
+```bash
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --yes --domain apps.example.com
+```
+
+`--domain` only fills in the next command, which the installer prints at the end:
+
+```bash
+levelrail-cli proxy --domain apps.example.com --verify
+```
+
+See [Behind an existing proxy](https://levelrail.com/behind-an-existing-proxy) for the proxy side. Because Let's Encrypt only validates on 80/443, certificates for these domains are issued by your existing proxy, not Levelrail.
+
+**Where the settings live.** Every address the installer chooses (`APP_HTTP_ADDR`, `APP_INGRESS_HTTP_ADDR`, `APP_INGRESS_HTTPS_ADDR`, and `APP_PUBLIC_HOST` when you set it) is written to a systemd drop-in, `/etc/systemd/system/levelrail.service.d/10-install.conf`, never into the main unit. `install.sh upgrade` reads it back and does not rewrite it, so custom ports survive upgrades, including the socket-activation switch that regenerates the main unit. Installs made before the drop-in existed are migrated on their next upgrade (their ports are read from the old main unit). If the main unit no longer matches what the installer would write (hand edits or an older installer), `upgrade` warns and, if it has to regenerate the unit, keeps a copy at `levelrail.service.pre-upgrade`. Keep your own overrides in a later-sorting drop-in such as `override.conf` (`systemctl edit levelrail`).
+
+To move an existing install behind a proxy later: `sudo sh install.sh upgrade --coexist`.
 
 ### Verifying release binaries
 
@@ -335,13 +376,13 @@ The CLI also takes a fresh control plane backup unless you pass `--no-backup`, t
 
 **If you used install.sh:**
 
-Run the `upgrade` subcommand. It replaces the binary with the newest release, keeps your unit file (and any `systemctl edit` overrides) and data, restarts the service, and waits for it to come back healthy.
+Run the `upgrade` subcommand. It replaces the binary with the newest release, keeps your unit file, your chosen ports (stored in the `10-install.conf` drop-in, see [Server already runs a proxy](#server-already-runs-a-proxy)), any `systemctl edit` overrides and data, restarts the service, and waits for it to come back healthy.
 
 ```bash
 curl -fsSL https://levelrail.com/install.sh | sudo sh -s upgrade
 ```
 
-Re-running the installer without arguments also works: it repairs the installation and rewrites the unit file.
+Re-running the installer without arguments also works: it repairs the installation and rewrites the unit file, still keeping the ports in the drop-in.
 
 To pin a specific release instead of the latest:
 

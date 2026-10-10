@@ -86,6 +86,8 @@ in_ct 'grep -q "fails=0" /tmp/probe.out' || { echo "connections were refused dur
 echo "== upgrade back to a self-bound ingress"
 docker exec "$name" timeout 300 env $env_args LEVELRAIL_SOCKET_ACTIVATION=0 sh /root/install.sh upgrade >/dev/null
 if in_ct 'systemctl is-active --quiet levelrail-https.socket'; then echo "socket unit still active"; exit 1; fi
+in_ct 'grep -qx "Environment=APP_INGRESS_HTTPS_ADDR=:443" /etc/systemd/system/levelrail.service.d/10-install.conf' ||
+	{ echo "switching socket mode must keep the ports in the drop-in"; exit 1; }
 in_ct 'ss -ltnp "sport = :443"' | grep -q levelrail || { echo "control plane does not bind 443 itself after switching back"; exit 1; }
 
 echo "== uninstall removes the socket units"
