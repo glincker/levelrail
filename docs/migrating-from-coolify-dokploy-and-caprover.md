@@ -176,6 +176,45 @@ Practical notes:
 - ClickHouse, KeyDB and Dragonfly are reported `unsupported`. Take a dump with the source's own tools and restore it with the backup and restore tools.
 - Redis is copied as an RDB snapshot and the target restarts to load it. Keys that expire during the copy can make the key counts differ slightly, in which case the status is `failed` with both numbers shown. Re-run it.
 
+## Migrating a whole database server (Migration hub)
+
+When the source is a database server with many databases, use the Migration
+hub under Settings, Import from another platform. It is one guided run:
+Connect, Inventory, Preflight, Copy, Verify, Cutover. The plan is stored on
+the control plane, so you can leave and come back.
+
+- **Connect**: host, port, user and password once. The password is held in
+  memory for the session (`APP_MIGRATE_HUB_PASSWORD_TTL`, default 2h) and is
+  never stored or logged. Postgres, MySQL, MariaDB and MongoDB are supported.
+- **Inventory**: every database with size, table count and extensions.
+  Choose which to copy and edit the name of each new managed database.
+- **Preflight**: nothing is written until it passes. It checks extensions
+  against what the managed image provides (an extension no image ships blocks
+  that database, it is never dropped silently), major version, free disk with a
+  margin (`APP_MIGRATE_DISK_MARGIN`, default 1.5), name collisions and an
+  estimated copy time (`APP_MIGRATE_ASSUMED_MBPS`).
+- **Copy**: one managed database per selected source database, copied with
+  bounded concurrency (`APP_MIGRATE_HUB_CONCURRENCY`, default 2). One failure
+  never stops the others and repeating a copy is safe.
+- **Verify**: exact per-table row counts. A receipt (JSON, no secrets) records
+  each verified database and that the source was only read.
+- **Cutover**: the connection details and environment variables each app
+  needs. The secret is hidden until you click reveal, which is audited.
+
+The source is only read: sessions run with `default_transaction_read_only=on`
+and only dump tools and catalog queries.
+
+The same flow from the CLI:
+
+```sh
+levelrail-cli migrate server --engine postgres --host db.old.example.com --user admin --password-stdin --list
+levelrail-cli migrate server --engine postgres --host db.old.example.com --user admin --password-stdin --plan
+levelrail-cli migrate server --engine postgres --host db.old.example.com --user admin --password-stdin --apply
+```
+
+The MCP server exposes `get_migration_plan` read-only. Starting a copy needs
+the source password and is deliberately not available to agents.
+
 ## Step 3: copy volumes
 
 Volume contents are not moved by the control plane, because that needs root on the source host. The CLI and the dashboard print the exact command per volume instead:

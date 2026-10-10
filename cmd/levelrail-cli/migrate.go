@@ -24,6 +24,8 @@ func runMigrate(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runMigrateDokploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "caprover":
 		return runMigrateCaprover(prog, args[1:], stdout, stderr, lookupEnv)
+	case "server":
+		return runMigrateServer(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
 	case "db-copy":
 		return runMigrateDbCopy(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
 	case "db-status":
