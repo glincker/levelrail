@@ -49,6 +49,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsWAF(prog, args[1:], stdout, stderr, lookupEnv)
 	case "error-pages":
 		return runDomainsErrorPages(prog, args[1:], stdout, stderr, lookupEnv)
+	case "search-visibility":
+		return runDomainsSearchVisibility(prog, args[1:], stdout, stderr, lookupEnv)
 	case "dns":
 		return runDomainsDNS(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -72,6 +74,7 @@ func domainsUsage(prog string) string {
   %[1]s domains certificates [flags]            list every certificate in certmagic storage, healthy or not
   %[1]s domains waf <verb> [flags]              configure a domain's opt-in WAF and rate limiting
   %[1]s domains error-pages <verb> [flags]      configure a domain's custom error pages (404, 500, 502, 503)
+  %[1]s domains search-visibility <app> <domain> [--hide|--show]  hide a domain from search engines
   %[1]s domains dns <verb> [flags]              list/add/remove the real DNS records in a domain's zone
 
 Run "%[1]s domains <subcommand> -h" for a subcommand's own flags.

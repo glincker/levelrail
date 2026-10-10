@@ -694,6 +694,11 @@ func WithIngressPortOwner(o IngressPortOwner) Option {
 	return func(rt *Router) { rt.ingressPortOwner = o }
 }
 
+// WithDashboardListenAddr tells the reverse proxy guide where the dashboard listens.
+func WithDashboardListenAddr(addr string) Option {
+	return func(rt *Router) { rt.dashboardListenAddr = addr }
+}
+
 // WithDoctorIngressPorts overrides the two ports GET /api/v1/system/
 // doctor's port_<n> checks probe, in place of the literal 80/443
 // defaultDoctorHTTPPort/defaultDoctorHTTPSPort ports. cmd/levelrail/

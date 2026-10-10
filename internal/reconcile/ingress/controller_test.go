@@ -198,6 +198,8 @@ func (f *fakeStore) ListDomainRedirects(_ context.Context) ([]store.DomainRedire
 	return f.redirects, nil
 }
 
+func (f *fakeStore) ListHiddenDomains(_ context.Context) ([]string, error) { return nil, nil }
+
 func (f *fakeStore) ListAllDomainErrorPages(_ context.Context) ([]store.DomainErrorPage, error) {
 	if f.errorPagesErr != nil {
 		return nil, f.errorPagesErr

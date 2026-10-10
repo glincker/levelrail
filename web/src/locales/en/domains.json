@@ -114,5 +114,30 @@
     "private": "This server is on a private address. HTTP-01 cannot work here, use DNS-01 with a wildcard domain.",
     "closed": "Port 80 or 443 does not answer. Open them in your firewall or forward them from your router.",
     "ok": "Ports 80 and 443 answer from this server."
+  },
+  "searchVisibility": {
+    "hiddenBadge": "Hidden from search engines",
+    "visibleBadge": "Open to search engines",
+    "hide": "Hide from search engines",
+    "show": "Allow indexing",
+    "hiddenHelp": "{{domain}} sends a noindex header on every response and serves a disallow-all robots.txt. This is a request well-behaved crawlers honour, not access control: use basic auth to keep people out.",
+    "visibleHelp": "Search engines can index this domain. Hide it to keep consoles, staging and internal tools out of results."
+  },
+  "reverseProxy": {
+    "title": "Put the dashboard behind your existing proxy",
+    "description": "Something else already owns ports 80 and 443 on this server. Enter the domain you want for the dashboard and copy the exact configuration for that proxy.",
+    "holder": "Port {{port}} is published by {{container}} ({{image}}).",
+    "none": "Nothing else publishes port 80 or 443 on this server, so Levelrail's own ingress can serve the dashboard directly.",
+    "domain": "Dashboard domain",
+    "domainPlaceholder": "console.example.com",
+    "proxy": "Proxy",
+    "build": "Show configuration",
+    "verify": "Check it works",
+    "steps": "Steps",
+    "copy": "Copy",
+    "copied": "Copied",
+    "reachable": "Reachable: this domain serves the dashboard.",
+    "notReachable": "Not reachable yet.",
+    "error": "Could not build the configuration"
   }
 }

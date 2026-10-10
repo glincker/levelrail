@@ -252,6 +252,7 @@ const sidebarGroups = [
       { text: 'White-labeling', link: '/white-labeling' },
       { text: 'Brand kit', link: '/brand' },
       { text: 'glinr-bot', link: '/glinr-bot' },
+      { text: 'Run behind an existing proxy', link: '/behind-an-existing-proxy' },
     ],
   },
   {

@@ -558,6 +558,7 @@ type Store interface {
 	DomainWAFStore
 	DomainRedirectStore
 	DomainErrorPagesStore
+	DomainSearchVisibilityStore
 	GitSourceStore
 	AppScheduleStore
 	ImageAutoUpdateStore

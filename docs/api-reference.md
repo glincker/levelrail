@@ -58,6 +58,7 @@ System endpoints for:
 | GET | /api/v1/updates/rollback-plan | AbilityRoot | handleRollbackPlan |
 | GET | /api/v1/updates/history | AbilityRead | handleUpgradeHistory |
 | POST | /api/v1/updates/history/{id}/ack | AbilityWrite | handleAckUpgrade |
+| GET | /api/v1/system/reverse-proxy | AbilityRead | handleReverseProxyGuide |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -140,6 +141,17 @@ Endpoints for:
 | POST | /api/v1/settings/ai-control/revoke-agent-tokens | AbilityRoot | handleRevokeAgentTokens |
 | GET | /api/v1/auth/device/pending-summary | AbilityRead | handleDevicePendingSummary |
 | GET | /api/v1/auth/device/activity | AbilityRead | handleDeviceActivity |
+| GET | /api/v1/iam/catalog | AbilityRead | handleIAMCatalog |
+| GET | /api/v1/iam/resources | AbilityRead | handleIAMResources |
+| POST | /api/v1/iam/resources/match | AbilityRead | handleIAMMatch |
+| GET | /api/v1/iam/principals | AbilityRead | handleIAMPrincipals |
+| GET | /api/v1/iam/principals/{principal_type}/{principal_id}/effective | AbilityRead | handleIAMEffective |
+| GET | /api/v1/iam/simulate | AbilityRead | handleIAMSimulate |
+| GET | /api/v1/iam/analyze | AbilityRead | handleIAMAnalyze |
+| POST | /api/v1/iam/policies/validate | AbilityRead | handleValidatePolicy |
+| POST | /api/v1/iam/preview | AbilityRead | handleIAMPreview |
+| GET | /api/v1/iam/policies/{id}/versions | AbilityRead | handleListPolicyVersions |
+| POST | /api/v1/iam/policy-templates/{id}/render | AbilityRead | handleRenderPolicyTemplate |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -153,17 +165,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/iam/catalog | AbilityRead | handleIAMCatalog |
-| GET | /api/v1/iam/resources | AbilityRead | handleIAMResources |
-| POST | /api/v1/iam/resources/match | AbilityRead | handleIAMMatch |
-| GET | /api/v1/iam/principals | AbilityRead | handleIAMPrincipals |
-| GET | /api/v1/iam/principals/{principal_type}/{principal_id}/effective | AbilityRead | handleIAMEffective |
-| GET | /api/v1/iam/simulate | AbilityRead | handleIAMSimulate |
-| GET | /api/v1/iam/analyze | AbilityRead | handleIAMAnalyze |
-| POST | /api/v1/iam/policies/validate | AbilityRead | handleValidatePolicy |
-| POST | /api/v1/iam/preview | AbilityRead | handleIAMPreview |
-| GET | /api/v1/iam/policies/{id}/versions | AbilityRead | handleListPolicyVersions |
-| POST | /api/v1/iam/policy-templates/{id}/render | AbilityRead | handleRenderPolicyTemplate |
 
 :::
 
@@ -577,7 +578,7 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 55 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+::: details 57 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -645,6 +646,8 @@ Endpoints for:
 | POST | /api/v1/settings/email/test | AbilityWrite | handleTestEmail |
 | GET | /api/v1/settings/ingress/https | AbilityRead | handleGetHTTPSStatus |
 | POST | /api/v1/settings/ingress/https | AbilityRoot | handleEnableHTTPS |
+| GET | /api/v1/apps/{name}/domains/{domain}/search-visibility | AbilityRead | handleGetDomainSearchVisibility |
+| PUT | /api/v1/apps/{name}/domains/{domain}/search-visibility | AbilityDeploy | handleSetDomainSearchVisibility |
 
 :::
 

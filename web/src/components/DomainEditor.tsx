@@ -19,6 +19,7 @@ import { DomainBasicAuthControl } from './DomainBasicAuthControl'
 import { DomainErrorPagesControl } from './DomainErrorPagesControl'
 import { DomainMaintenanceControl } from './DomainMaintenanceControl'
 import { DomainRedirectControl } from './DomainRedirectControl'
+import { DomainSearchVisibilityControl } from './DomainSearchVisibilityControl'
 import { DomainTLSCertControl } from './DomainTLSCertControl'
 import { DomainWafControl } from './DomainWafControl'
 import { certRenewalBadge, certStatusMeta } from '../lib/certStatus'
@@ -242,6 +243,10 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                                 domain={domain}
                               />
                               <DomainErrorPagesControl
+                                appName={app.name}
+                                domain={domain}
+                              />
+                              <DomainSearchVisibilityControl
                                 appName={app.name}
                                 domain={domain}
                               />

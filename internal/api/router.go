@@ -175,25 +175,26 @@ type Router struct {
 	registryAuthTester     RegistryAuthTester       // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
 	teardownOpts           []application.Option
 	deleteTimeout          time.Duration
-	execRuntime            NodeRuntimeResolver    // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
-	models                 ModelService           // nil is valid: /api/v1/models routes return 501, see WithModels
-	gpuHostDiagnoser       GPUHostDiagnoser       // nil is valid: doctor skips the detailed host GPU checks
-	deploySafety           DeploySafetyStore      // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
-	imageResolver          docker.ImageResolver   // nil deploys image tags unresolved, see WithDeploySafety
-	reconcileNudger        ReconcileNudger        // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
-	certs                  CertStore              // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
-	ingressSettings        IngressSettingsStore   // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
-	domains                DomainStore            // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
-	domainBasicAuth        DomainBasicAuthStore   // always set, same "core Store interface" shape as domains above
-	domainBasicAuthSecrets DomainBasicAuthSecrets // nil is valid: PUT/DELETE .../domains/{domain}/auth return 501, same shape as cloudflareTunnelSecrets above
-	domainMaintenance      DomainMaintenanceStore // always set, same "core Store interface" shape as domainBasicAuth above; unlike it, no secrets dependency at all, so no nil/501 case
-	domainTLSCert          DomainTLSCertStore     // always set, same "core Store interface" shape as domainBasicAuth above
-	domainTLSCertSecrets   DomainTLSCertSecrets   // nil is valid: PUT/DELETE .../domains/{domain}/tls-cert return 501, same shape as domainBasicAuthSecrets above
-	domainWAF              DomainWAFStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
-	domainRedirect         DomainRedirectStore    // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
-	domainErrorPages       DomainErrorPagesStore  // always set, same "core Store interface" shape as domainWAF above; no secrets dependency either
-	masterKeyRotator       MasterKeyRotator       // nil is valid: POST /system/master-key/rotate returns 501, same shape as domainBasicAuthSecrets above
-	secretBinder           SecretBinder           // nil is valid: the secrets binding routes return 501
+	execRuntime            NodeRuntimeResolver         // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
+	models                 ModelService                // nil is valid: /api/v1/models routes return 501, see WithModels
+	gpuHostDiagnoser       GPUHostDiagnoser            // nil is valid: doctor skips the detailed host GPU checks
+	deploySafety           DeploySafetyStore           // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
+	imageResolver          docker.ImageResolver        // nil deploys image tags unresolved, see WithDeploySafety
+	reconcileNudger        ReconcileNudger             // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
+	certs                  CertStore                   // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
+	ingressSettings        IngressSettingsStore        // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
+	domains                DomainStore                 // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
+	domainBasicAuth        DomainBasicAuthStore        // always set, same "core Store interface" shape as domains above
+	domainBasicAuthSecrets DomainBasicAuthSecrets      // nil is valid: PUT/DELETE .../domains/{domain}/auth return 501, same shape as cloudflareTunnelSecrets above
+	domainMaintenance      DomainMaintenanceStore      // always set, same "core Store interface" shape as domainBasicAuth above; unlike it, no secrets dependency at all, so no nil/501 case
+	domainTLSCert          DomainTLSCertStore          // always set, same "core Store interface" shape as domainBasicAuth above
+	domainTLSCertSecrets   DomainTLSCertSecrets        // nil is valid: PUT/DELETE .../domains/{domain}/tls-cert return 501, same shape as domainBasicAuthSecrets above
+	domainWAF              DomainWAFStore              // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
+	domainRedirect         DomainRedirectStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
+	domainSearchVisibility DomainSearchVisibilityStore // always set, core Store
+	domainErrorPages       DomainErrorPagesStore       // always set, same "core Store interface" shape as domainWAF above; no secrets dependency either
+	masterKeyRotator       MasterKeyRotator            // nil is valid: POST /system/master-key/rotate returns 501, same shape as domainBasicAuthSecrets above
+	secretBinder           SecretBinder                // nil is valid: the secrets binding routes return 501
 	// masterKeyFilePath is where the currently active master key came
 	// from on disk, "" if it was sourced from APP_MASTER_KEY instead
 	// (see cmd/levelrail/main.go's loadSecretsManager). A successful
@@ -212,6 +213,7 @@ type Router struct {
 	// handleCheckDomain (domain_check.go) falls back to the request's own
 	// Host header in that case, see advertisedHost's own doc comment.
 	publicHost              string
+	dashboardListenAddr     string // APP_HTTP_ADDR, so the reverse proxy guide can build an upstream
 	httpsMu                 sync.Mutex
 	httpsAttempts           []time.Time
 	httpsStartedAt          time.Time
@@ -642,6 +644,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainWAF:                   s,
 		domainRedirect:              s,
 		domainErrorPages:            s,
+		domainSearchVisibility:      s,
 		lookupHost:                  defaultLookupHost,
 		domainChecks:                newDomainCheckCache(),
 		backupTargets:               s,

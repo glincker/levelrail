@@ -174,6 +174,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runInit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "proxy":
+		return runProxy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth-engine":
 		return runAuthEngine(prog, args[1:], stdout, stderr, lookupEnv)
 	case "api-docs":
@@ -305,6 +307,7 @@ Usage:
   %[1]s attention [flags]                                     everything failing right now: apps, nodes, certificates, doctor checks
   %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
+  %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database

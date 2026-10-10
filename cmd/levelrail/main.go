@@ -2313,6 +2313,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDoctorDiskWarningBytes(doctorDiskWarningBytes(logger)),
 		api.WithIngressPortOwner(ingressDriver),
 		api.WithDoctorIngressPorts(ingressPortFromAddr(ingressHTTPAddr()), ingressPortFromAddr(ingressHTTPSAddr())),
+		api.WithDashboardListenAddr(httpAddr()),
 		api.WithDoctorNetworkTimeout(doctorNetworkTimeout(logger)),
 		api.WithDoctorPublicIPEndpoint(os.Getenv("APP_DOCTOR_PUBLIC_IP_ENDPOINT")),
 		api.WithDoctorClockSkewWarnAge(doctorClockSkewWarnAge(logger)),

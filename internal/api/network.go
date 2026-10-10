@@ -72,7 +72,7 @@ func (rt *Router) handleGetAppNetwork(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(svc.Domains) == 0 && resp.FallbackEnabled {
 		if fallback, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
-			resp.FallbackURL = "https://" + fallback
+			resp.FallbackURL = rt.ingressHTTPSURL(fallback)
 		}
 	}
 
