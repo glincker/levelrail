@@ -62,7 +62,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 91 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 103 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -152,6 +152,18 @@ Endpoints for:
 | POST | /api/v1/iam/preview | AbilityRead | handleIAMPreview |
 | GET | /api/v1/iam/policies/{id}/versions | AbilityRead | handleListPolicyVersions |
 | POST | /api/v1/iam/policy-templates/{id}/render | AbilityRead | handleRenderPolicyTemplate |
+| GET | /api/v1/auth/login-options | Public | handleLoginOptions |
+| POST | /api/v1/auth/login-code/request | Public | handleRequestLoginCode |
+| POST | /api/v1/auth/login-code/redeem | Public | handleRedeemLoginCode |
+| POST | /api/v1/auth/login-approval/poll | Public | handlePollLoginApproval |
+| GET | /api/v1/auth/sign-in-requests | Public | handleListSignInRequests |
+| POST | /api/v1/auth/sign-in-requests/codes/{id}/reveal | Public | handleRevealLoginCode |
+| POST | /api/v1/auth/login-approvals/{id}/approve | Public | handleApproveLoginApproval |
+| POST | /api/v1/auth/login-approvals/{id}/deny | Public | handleDenyLoginApproval |
+| GET | /api/v1/auth/trusted-devices | Public | handleListTrustedDevices |
+| DELETE | /api/v1/auth/trusted-devices/{id} | Public | handleRevokeTrustedDevice |
+| GET | /api/v1/settings/auth/code-login | AbilityRead | handleGetCodeLoginSettings |
+| PUT | /api/v1/settings/auth/code-login | AbilityRoot | handlePutCodeLoginSettings |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

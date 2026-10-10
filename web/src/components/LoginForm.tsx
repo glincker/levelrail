@@ -4,7 +4,13 @@ import { z } from 'zod'
 import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { ClockIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
-import { RateLimitError, useLogin } from '../queries/auth'
+import {
+  isApprovalRequired,
+  RateLimitError,
+  useLogin,
+  type ApprovalRequiredResponse,
+} from '../queries/auth'
+import { NewDeviceApprovalWait } from './NewDeviceApprovalWait'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Field, FieldError, FieldGroup, FieldLabel } from './ui/field'
@@ -30,13 +36,18 @@ export function LoginForm({
   username,
   onUsernameChange,
   showUsernameField = true,
+  onUseCode,
 }: {
   username: string
   onUsernameChange: (value: string) => void
   showUsernameField?: boolean
+  onUseCode?: () => void
 }) {
   const login = useLogin()
   const [mfaToken, setMfaToken] = useState<string | null>(null)
+  const [approval, setApproval] = useState<ApprovalRequiredResponse | null>(
+    null,
+  )
   const [usernameTouched, setUsernameTouched] = useState(false)
   const { register, handleSubmit, formState } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -86,6 +97,8 @@ export function LoginForm({
         onSuccess: (result) => {
           if ('mfa_required' in result && result.mfa_required) {
             setMfaToken(result.mfa_token)
+          } else if (isApprovalRequired(result)) {
+            setApproval(result)
           }
         },
         onError: (error) => {
@@ -96,6 +109,22 @@ export function LoginForm({
       },
     )
   })
+
+  if (approval) {
+    return (
+      <NewDeviceApprovalWait
+        approvalId={approval.approval_id}
+        expiresAt={approval.approval_expires_at}
+        onBack={() => {
+          setApproval(null)
+        }}
+        onUseCode={() => {
+          setApproval(null)
+          onUseCode?.()
+        }}
+      />
+    )
+  }
 
   if (mfaToken) {
     return (

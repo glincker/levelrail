@@ -59,6 +59,10 @@ Every state change writes exactly one audit entry with a stable action name, sho
 
 A background sweeper records expiry whether or not the CLI ever polls again. It is idempotent and safe across restarts: an expiry is claimed once in the same transaction that writes its audit entry. Entries carry the request id, never the code. Set the sweep interval with `APP_DEVICE_EXPIRY_SWEEP_INTERVAL` (default 30s) and how long resolved requests are kept with `APP_DEVICE_HISTORY_RETENTION` (default 30 days; audit entries follow the audit log retention instead).
 
+## Sign-in codes and new browsers
+
+When someone asks for a sign-in code for your account, or signs in with your password from a browser you have not trusted while you are signed in here, a banner appears on every page and the attention center lists a `login_code` or `login_approval` item with the requester's IP address, browser and time. Items and the banner never carry the code: **Show code** fetches it on demand, and each reveal is audited. Approve or deny a new browser from the banner or from **Settings > Security**. The same requests are available from the terminal with `levelrail-cli auth code`. See [Identity and access](identity-and-access.md#sign-in-with-a-code).
+
 ## Running the CLI through a tunnel or proxy
 
 The link printed by `auth login --device` is built from the address the CLI actually reached, so it works behind an SSH tunnel, a reverse proxy, or a custom port. A few rules apply.

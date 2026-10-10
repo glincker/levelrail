@@ -204,13 +204,30 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
             expired: p.expired ?? '0',
           }),
         }
+      case 'login_code':
+        return {
+          ...base,
+          title: t('items.loginCodeTitle', { ip: p.ip ?? f.subject }),
+          detail: t('items.loginCodeDetail', { agent: p.user_agent ?? '' }),
+        }
+      case 'login_approval':
+        return {
+          ...base,
+          title: t('items.loginApprovalTitle', { ip: p.ip ?? f.subject }),
+          detail: t('items.loginApprovalDetail', { agent: p.user_agent ?? '' }),
+        }
       default:
         return { ...base, title: f.title || f.subject, detail: f.detail }
     }
   })
 }
 
-const WAITING_ID_PREFIXES = ['device:', 'approval:']
+const WAITING_ID_PREFIXES = [
+  'device:',
+  'approval:',
+  'login_code:',
+  'login_approval:',
+]
 
 // Critical first, then items waiting on a person ahead of the rest. The
 // sort is stable, so ties keep their source order.

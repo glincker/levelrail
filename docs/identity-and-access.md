@@ -307,6 +307,38 @@ levelrail-cli auth session-link
 - **Can't escalate.** The resulting session carries exactly the minting identity's own abilities, snapshotted at mint time, never more. Minting one already requires `root`; it's a convenience for an identity that could already do anything, not a way to grant new access.
 - **Minting a link on behalf of an API token** (rather than a logged-in user) produces a session pinned to that token's ability snapshot, since there's no user row to attach an ordinary session to. Revoking the underlying token afterward doesn't retroactively end a session already established from it, the same way revoking a token never ends sessions a user already has open.
 
+### Sign in with a code
+
+The sign-in page offers **Sign in with a code instead**. You type your username or email and get a one-time code you type back in, no password.
+
+1. `POST /api/v1/auth/login-code/request` always answers `202` with the same message and takes at least `APP_LOGIN_CODE_MIN_RESPONSE` (default 300ms), whether the account exists, may use codes, or not. An account that cannot get a code still gets a decoy challenge, so redeeming behaves the same way too.
+2. The response sets an httpOnly, `SameSite=Strict` cookie bound to that browser. The code only works together with that cookie, so a code read over someone's shoulder is useless in another browser.
+3. The code goes to the account's own open dashboard sessions (a banner on every page, the attention center, and **Settings > Security**), each showing the requester's IP address, browser and time, and to the account's email address when email is set up. Run `levelrail-cli auth code` to print it from a terminal.
+4. `POST /api/v1/auth/login-code/redeem` with the code signs the browser in. If the account has two-factor authentication on, the code replaces only the password: the response asks for the TOTP or a recovery code next, exactly like a password sign-in.
+
+Properties:
+
+- 8 characters from a 32 symbol alphabet with no lookalikes (Crockford base32), from `crypto/rand`. Dashes, spaces, lower case and `O`, `I`, `L` typed for `0`, `1`, `1` are accepted.
+- Valid for `APP_LOGIN_CODE_TTL` (default 10 minutes), single use, stored only as a salted HMAC and compared in constant time. The plaintext lives in control plane memory until it is used or expires; after a restart a waiting code can no longer be shown, so ask for a new one.
+- `APP_LOGIN_CODE_MAX_ATTEMPTS` (default 5) wrong tries kill the challenge. Attempts are reserved before the comparison, so parallel guesses cannot exceed the limit.
+- Rate limits per minute: `APP_LOGIN_CODE_RATE_PER_IP_PER_MINUTE` (5), `APP_LOGIN_CODE_RATE_PER_ACCOUNT_PER_MINUTE` (3, keyed by the typed name), `APP_LOGIN_CODE_RATE_GLOBAL_PER_MINUTE` (60), and `APP_LOGIN_CODE_REDEEM_RATE_PER_IP_PER_MINUTE` (10).
+- Codes never appear in logs, the audit log, the attention feed or any list endpoint. The only route that returns one is `POST /api/v1/auth/sign-in-requests/codes/{id}/reveal`, for the account's own session or for a token owned by that user with `write:sensitive`, and each reveal is audited.
+
+The `auth.code_login` setting decides who may use codes: **Settings > Security**, `levelrail-cli auth code-login`, or `PUT /api/v1/settings/auth/code-login` (root). It is off for admin (root) accounts and on for everyone else until an admin saves it; `APP_AUTH_CODE_LOGIN_ADMINS` and `APP_AUTH_CODE_LOGIN_OTHERS` change those defaults.
+
+### New-browser approval
+
+When a password sign-in is correct but comes from a browser without a trusted-device cookie, and the account already has a live session somewhere else, the sign-in pauses. The new browser shows a waiting screen; every other session of that account sees a banner and an attention item with the requester's IP address, browser and time, and can **Approve** or **Deny**. A token owned by the user with `write:sensitive` can decide too: `levelrail-cli auth code` lists the request, `levelrail-cli auth approve <id>` or `auth deny <id>` decides it.
+
+- Approval lasts `APP_AUTH_DEVICE_APPROVAL_TTL` (default 10 minutes). Once approved, the waiting browser gets its session exactly once (`POST /api/v1/auth/login-approval/poll`, bound to that browser's cookie).
+- An approved browser, or one that signed in with a code or a TOTP code, gets a trusted-device cookie: a random token stored only as a hash, valid `APP_AUTH_TRUSTED_DEVICE_TTL` (default 90 days). Its next password sign-in goes straight through. Revoke it under **Settings > Security > Trusted browsers** or with `levelrail-cli auth devices revoke <id>`.
+- Accounts with two-factor authentication on are not paused: the TOTP step already proves the person, and passing it trusts the browser.
+- An account with no other live session signs in as before, so the last way in is never blocked. Passkey and OAuth sign-ins are not affected.
+
+**Break-glass.** If you are stuck waiting for an approval no one can give: sign in with a code sent to your email, approve from the CLI with a device-login token, sign out the other session, or wait for it to expire. As a last resort set `APP_AUTH_NEW_DEVICE_APPROVAL=false` on the control plane and restart it, which turns the pause off for everyone. `recover-admin` on the server still works as it always has.
+
+**Audit events.** Every step writes one audit row with a stable action, never the code: `login_code.requested`, `login_code.delivered` (email at send time, dashboard or CLI at each reveal), `login_code.redeemed`, `login_code.failed`, `login_code.locked`, `login_code.expired`, `new_device.requested`, `new_device.approved`, `new_device.denied`, `new_device.expired` and `new_device.trust_revoked`. Requests from someone who is not signed in are recorded with the actor `Sign-in` and the target user id when the account exists.
+
 ### Audit log
 
 Every request gated above `AbilityRead` (write, deploy, root-tier, and `read:sensitive`) gets one row:
@@ -582,6 +614,11 @@ levelrail-cli tokens revoke <id>
 levelrail-cli auth login [--device] [--token-name NAME] [--abilities LIST] [--expires-in-days N]
 levelrail-cli auth whoami
 levelrail-cli auth session-link
+levelrail-cli auth code                       # waiting sign-in codes and new-browser sign-ins
+levelrail-cli auth approve <id>               # approve a new-browser sign-in
+levelrail-cli auth deny <id>
+levelrail-cli auth devices [revoke <id>]      # trusted browsers
+levelrail-cli auth code-login [--admins true|false] [--others true|false]
 levelrail-cli auth 2fa status
 levelrail-cli auth 2fa setup
 levelrail-cli auth 2fa enable --code CODE

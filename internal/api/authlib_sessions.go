@@ -119,6 +119,9 @@ func (rt *Router) handleLibLogin(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: login: load user failed", err, slog.String("user_id", userID))
 		return
 	}
+	if rt.pauseForDeviceApproval(w, r, *user, token) {
+		return
+	}
 	rt.finishLibSession(w, r, *user, token)
 	writeJSON(w, http.StatusOK, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
 }

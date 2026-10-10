@@ -209,6 +209,40 @@ func (s *Sessions) RevokeAllExcept(ctx context.Context, legacyUserID, keepToken 
 	return nil
 }
 
+// OtherSessionCount counts a platform user's live, fully signed-in sessions
+// other than the one exceptToken names (which may be empty).
+func (s *Sessions) OtherSessionCount(ctx context.Context, legacyUserID, exceptToken string) (int, error) {
+	engine, err := s.engineID(ctx, legacyUserID)
+	if err != nil {
+		return 0, err
+	}
+	if engine == "" {
+		return 0, nil
+	}
+	id, err := parseULID(engine)
+	if err != nil {
+		return 0, fmt.Errorf("authengine: parse engine user id: %w", err)
+	}
+	var current theauth.ULID
+	if exceptToken != "" {
+		current, _, _ = s.lookupSession(ctx, exceptToken)
+	}
+	s.mu.RLock()
+	a := s.auth
+	s.mu.RUnlock()
+	list, err := a.ListSessions(ctx, id, current)
+	if err != nil {
+		return 0, fmt.Errorf("authengine: list sessions: %w", err)
+	}
+	n := 0
+	for _, si := range list {
+		if !si.Current {
+			n++
+		}
+	}
+	return n, nil
+}
+
 // Watch cancels the returned context once token stops validating. Call the
 // cancel func when the stream ends.
 func (s *Sessions) Watch(ctx context.Context, token string, interval time.Duration) (context.Context, context.CancelCauseFunc) {

@@ -1,0 +1,67 @@
+{
+  "code": {
+    "useCode": "Sign in with a code instead",
+    "usePassword": "Use your password instead",
+    "requestTitle": "Get a sign-in code",
+    "requestHint": "We send a code to your open dashboard sessions and, when email is set up, to your email address. It only works in this browser.",
+    "username": "Username or email",
+    "usernameRequired": "Enter your username or email",
+    "send": "Send code",
+    "sending": "Sending...",
+    "enterTitle": "Enter the code",
+    "codeLabel": "Code",
+    "codePlaceholder": "XXXX-XXXX",
+    "codeRequired": "Enter the 8 character code",
+    "verify": "Sign in",
+    "verifying": "Checking...",
+    "resend": "Send a new code",
+    "where": "Find it in the banner of any dashboard you are signed in to, with {{cli}}, or in your email."
+  },
+  "approval": {
+    "waitingTitle": "Approve this sign-in",
+    "waitingHint": "Your password was right, but this browser is new. Open the dashboard where you are already signed in and approve the request, or run {{cli}} there.",
+    "reference": "Request {{id}}",
+    "expires": "Waiting until {{time}}.",
+    "denied": "The sign-in was denied from another session.",
+    "expired": "Nobody approved the sign-in in time. Sign in again.",
+    "alternative": "No other device at hand? Sign in with a code sent to your email instead.",
+    "back": "Back to sign in"
+  },
+  "requests": {
+    "bannerTitle": "Someone is signing in to your account",
+    "codeTitle": "Sign-in code requested",
+    "approvalTitle": "Sign-in from a new browser",
+    "context": "From {{ip}}, {{agent}}, at {{time}}.",
+    "warning": "Only continue if you started this sign-in yourself.",
+    "show": "Show code",
+    "hide": "Hide",
+    "notRevealable": "The code is no longer available here. Ask for a new one from the sign-in page.",
+    "approve": "Approve",
+    "deny": "Deny",
+    "approved": "Sign-in approved",
+    "denied": "Sign-in denied",
+    "actionFailed": "Could not update the sign-in request",
+    "empty": "No sign-in is waiting for you."
+  },
+  "devices": {
+    "title": "Trusted browsers",
+    "description": "Browsers that can sign in with your password without asking another session for approval. Revoke one you no longer use.",
+    "empty": "No trusted browsers yet.",
+    "current": "This browser",
+    "lastUsed": "Last used {{time}} from {{ip}}",
+    "revoke": "Revoke",
+    "revoked": "Browser trust revoked",
+    "revokeFailed": "Could not revoke the browser"
+  },
+  "settings": {
+    "title": "Sign in with a code",
+    "description": "Let people sign in with a one-time code instead of a password. Two-factor authentication is still required where it is on.",
+    "admins": "Admin accounts",
+    "adminsHint": "Off by default: an admin code is worth full control of the instance.",
+    "others": "All other accounts",
+    "saved": "Setting saved",
+    "saveFailed": "Could not save the setting",
+    "approvalOn": "New-browser approval is on for password sign-in.",
+    "approvalOff": "New-browser approval is off on this control plane."
+  }
+}

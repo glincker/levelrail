@@ -184,6 +184,11 @@ type loginResponse struct {
 	DisplayName string `json:"display_name,omitempty"`
 	MFARequired bool   `json:"mfa_required,omitempty"`
 	MFAToken    string `json:"mfa_token,omitempty"`
+	// ApprovalRequired means the password was right but this browser is new
+	// and another session must approve it (login_approval.go).
+	ApprovalRequired  bool       `json:"approval_required,omitempty"`
+	ApprovalID        string     `json:"approval_id,omitempty"`
+	ApprovalExpiresAt *time.Time `json:"approval_expires_at,omitempty"`
 }
 
 // handleLogin verifies an email/password against the users table and,

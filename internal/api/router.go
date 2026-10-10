@@ -526,6 +526,9 @@ type Router struct {
 	webhookDeliveries            WebhookDeliveryStore             // always set, same "core Store interface" shape as deployAttempts above
 	policies                     PolicyStore                      // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
 	deviceFlow                   *apiRateLimiter                  // per-IP device-login-start token bucket
+	loginCodes                   LoginCodeStore                   // always set, sign in with a code, new-device approval, trusted devices
+	codeLogin                    *codeLoginState                  // always set, limiters and in-memory plaintext codes
+	newDeviceApproval            bool                             // off unless WithNewDeviceApproval turns it on
 	deviceNotifier               DeviceLoginNotifier              // nil is valid: no outbound notice for a waiting CLI login
 	deviceNotices                deviceNoticeGate
 	deviceExpiryNotices          deviceNoticeGate
@@ -716,6 +719,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		forgotPasswordByIP:          newLoginLimiter(),
 		forgotPasswordByEmail:       newLoginLimiter(),
 		deviceFlow:                  newAPIRateLimiter(deviceStartRatePerMinute()),
+		loginCodes:                  s,
+		codeLogin:                   newCodeLoginState(),
 		fetchLatestRelease:          defaultFetchLatestRelease,
 		updatesCache:                newUpdatesCache(),
 		updateSettings:              s,
