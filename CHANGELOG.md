@@ -1,5 +1,72 @@
 # Changelog
 
+## [0.2.0-beta.19](https://github.com/glincker/levelrail/compare/v0.2.0-beta.18...v0.2.0-beta.19) (2026-10-10)
+
+
+### Features
+
+* **api:** publish an OpenAPI 3.1 spec generated from the route table ([#1037](https://github.com/glincker/levelrail/issues/1037)) ([5b7b48b](https://github.com/glincker/levelrail/commit/5b7b48bcad6690b4e00ebcba8461c38fa2105625))
+* attention center, device login approval, setup redesign, release rollback ([#1077](https://github.com/glincker/levelrail/issues/1077)) ([3e5571d](https://github.com/glincker/levelrail/commit/3e5571d8ec1ae38b1ed1174ca89970ba46845291))
+* brand kit page, headline variants and per-page social cards ([#1094](https://github.com/glincker/levelrail/issues/1094)) ([5fa8ad3](https://github.com/glincker/levelrail/commit/5fa8ad37635f3718c6ab2969c190f95ba5e5ff40))
+* canary deploys with weighted traffic ([#1065](https://github.com/glincker/levelrail/issues/1065)) ([1173645](https://github.com/glincker/levelrail/commit/117364550c0df141d7983327c5d365321dab9860))
+* claim containers from a docker inspect snapshot (no platform token) ([#1092](https://github.com/glincker/levelrail/issues/1092)) ([bab26aa](https://github.com/glincker/levelrail/commit/bab26aa0bbc3649639267c7acd13ce1956e5b48c))
+* CLI insights commands, reconciler half-success tests, 19 catalog templates ([#1033](https://github.com/glincker/levelrail/issues/1033)) ([7b4fcb2](https://github.com/glincker/levelrail/commit/7b4fcb2f97083eff49127388cc913cee7d0c0add))
+* coolify migration data path, domain wizard, environment domains, db viewer ([#1074](https://github.com/glincker/levelrail/issues/1074)) ([4d4f55e](https://github.com/glincker/levelrail/commit/4d4f55e1259fb2a67b36b590dbc388461a390ebf))
+* database access and network, IAM policy builder, app import wizard ([#1091](https://github.com/glincker/levelrail/issues/1091)) ([261852f](https://github.com/glincker/levelrail/commit/261852f22eb6971bc955662ce31ab784ee92822c))
+* **docs:** animate the product mock, add mock carousel, scroll reveal and stats strip ([#1041](https://github.com/glincker/levelrail/issues/1041)) ([363dd66](https://github.com/glincker/levelrail/commit/363dd666333f2bc4a1d91558c733c54ea800a96b))
+* **docs:** favicons, guides, template gallery, announcements feeds ([#1060](https://github.com/glincker/levelrail/issues/1060)) ([281f201](https://github.com/glincker/levelrail/commit/281f201d408ac2336617b42d55c2234aa25497f9))
+* **docs:** flat full-window hero mock, seam fix and Mastra-style FAQ ([#1038](https://github.com/glincker/levelrail/issues/1038)) ([0aa0e4d](https://github.com/glincker/levelrail/commit/0aa0e4d499f899993e4a9b64fe3ca459b2d784c8))
+* **docs:** hero uses the product mock, .well-known ships, light-mode fix ([#1035](https://github.com/glincker/levelrail/issues/1035)) ([367a042](https://github.com/glincker/levelrail/commit/367a042404387733434be19738b9a8031e1b4a23))
+* **docs:** homepage hero, feature cards, install chip, nav fixes ([#1024](https://github.com/glincker/levelrail/issues/1024)) ([d09533f](https://github.com/glincker/levelrail/commit/d09533fcbd947567acf7d3ea9df286b2abd8574c))
+* **docs:** site overhaul with new landing pages, grouped nav, mock kit, legal and agent-readiness ([#1034](https://github.com/glincker/levelrail/issues/1034)) ([07ce93c](https://github.com/glincker/levelrail/commit/07ce93c78ca833ab52695a3ec2a7091135740f38))
+* extract generic packages into a nested kit module ([#1014](https://github.com/glincker/levelrail/issues/1014)) ([6c6ddda](https://github.com/glincker/levelrail/commit/6c6dddaf16fbbc9e5f02ffef8cda10056293886d))
+* functions, requests that wake a sleeping app wait and are replayed ([#1068](https://github.com/glincker/levelrail/issues/1068)) ([ea10f20](https://github.com/glincker/levelrail/commit/ea10f20eaa23b5b56ae62d93c527d3953429fea6))
+* legacy passkeys sign in and OAuth keeps built-in callback URLs under the library engine ([#1029](https://github.com/glincker/levelrail/issues/1029)) ([89dc5e7](https://github.com/glincker/levelrail/commit/89dc5e7c491893d81c75d1efa36c820e02048694))
+* library auth engine behind APP_AUTH_ENGINE with backfill ([#1015](https://github.com/glincker/levelrail/issues/1015)) ([30de820](https://github.com/glincker/levelrail/commit/30de820bfab943b7173ed86a2aea44a9b5c1e9dc))
+* list case-duplicate email groups in auth-backfill, add go/no-go checklist ([#1023](https://github.com/glincker/levelrail/issues/1023)) ([7201368](https://github.com/glincker/levelrail/commit/72013680f478dfe3d2145021ad9dcbe354e7c8d1))
+* managed postgres pgvector variant ([#1078](https://github.com/glincker/levelrail/issues/1078)) ([1821625](https://github.com/glincker/levelrail/commit/1821625756c8010893f4c5cfc4247d9a65e10a2c))
+* migrate auth to the theauth library behind default-off flags ([#1021](https://github.com/glincker/levelrail/issues/1021)) ([35709ed](https://github.com/glincker/levelrail/commit/35709ed245c1abcfd40a7ca7216da9997f971bf2))
+* move upgrade into kit and brand-drive agent provisioning names ([#1020](https://github.com/glincker/levelrail/issues/1020)) ([63d654e](https://github.com/glincker/levelrail/commit/63d654e72d4e231772cca3880f9a0863d47a39dc))
+* perf, exposure audit, migration hub, upgrade history, external databases, attention v2, fleet overview ([#1087](https://github.com/glincker/levelrail/issues/1087)) ([b53d560](https://github.com/glincker/levelrail/commit/b53d560a48ca183918717284f804f53b2d533997))
+* regenerate OG and social images on the petrol brand ([#1093](https://github.com/glincker/levelrail/issues/1093)) ([57ad3b7](https://github.com/glincker/levelrail/commit/57ad3b7a19e363b9205dd4f173fa2779ba6d046a))
+* roles and guest access, global environments, environment-aware IAM and AI control ([#1048](https://github.com/glincker/levelrail/issues/1048)) ([1ad266a](https://github.com/glincker/levelrail/commit/1ad266a67889f06dcb13901810d823e1e9f5edd6))
+* setup, HTTPS, token and image auto-update improvements ([#1062](https://github.com/glincker/levelrail/issues/1062)) ([f950623](https://github.com/glincker/levelrail/commit/f95062375a2dea9b8ddf0d0d5d260923509b41f9))
+* sleep idle apps and wake them on the next request ([#1066](https://github.com/glincker/levelrail/issues/1066)) ([a6ac9b2](https://github.com/glincker/levelrail/commit/a6ac9b28463ec61e4f6707abe0c281666be00a07))
+
+
+### Bug Fixes
+
+* [HIGH] Server-Side Request Forgery (SSRF) in Git provider integrations ([#1051](https://github.com/glincker/levelrail/issues/1051)) ([383fa03](https://github.com/glincker/levelrail/commit/383fa0365c7c8e2f3ea9c4da11c9d2b19155abba))
+* bump the mealie template to v3.28.0 ([#1019](https://github.com/glincker/levelrail/issues/1019)) ([68b8b94](https://github.com/glincker/levelrail/commit/68b8b94ab5abc0da75a9970552f63501733a558c))
+* database explorer schema for large databases, mark explorer beta ([#1080](https://github.com/glincker/levelrail/issues/1080)) ([c9aa45c](https://github.com/glincker/levelrail/commit/c9aa45cb891c5f9e55eaa70dd7a1beb42912bc7f))
+* deflake scheduledtask replace and agent TTY close tests ([#1053](https://github.com/glincker/levelrail/issues/1053)) ([28c9c24](https://github.com/glincker/levelrail/commit/28c9c248407ee8290bac7e7a5620209943cab3c7))
+* docker snapshot apps stay image apps with a load hint, neutral secret hint ([#1096](https://github.com/glincker/levelrail/issues/1096)) ([11f518a](https://github.com/glincker/levelrail/commit/11f518a3b5fe025f10af748188fd6ac9a187f7a9))
+* **docs:** code block copy button back in the corner, inline code tint only inline ([#1042](https://github.com/glincker/levelrail/issues/1042)) ([fc680c8](https://github.com/glincker/levelrail/commit/fc680c8ed1a7e96fa0ee6833942b112aa72f6112))
+* **docs:** readable light-mode nav panel and a balanced footer ([#1040](https://github.com/glincker/levelrail/issues/1040)) ([3eb84b5](https://github.com/glincker/levelrail/commit/3eb84b5df4c18225bbc7da20cec45f3bb7c1617b))
+* **docs:** use the app metrics screenshot in the home hero ([#1026](https://github.com/glincker/levelrail/issues/1026)) ([f30aec4](https://github.com/glincker/levelrail/commit/f30aec4b641ac8f7e02fc4972b435165cff9c06c))
+* egress sidecar gets NET_RAW, e2e cleanup removes service volumes ([#1059](https://github.com/glincker/levelrail/issues/1059)) ([c7423ef](https://github.com/glincker/levelrail/commit/c7423ef38f1f53cc057bafc3f6887aeeedf40f08))
+* exact 1200x630 social cards with a CTA, og:site_name, short descriptions, bolder favicon ([#1097](https://github.com/glincker/levelrail/issues/1097)) ([5ca01e7](https://github.com/glincker/levelrail/commit/5ca01e77306e7ab1e5449c7cb843457bdb62d5ab))
+* fall back to the embedded default logo and colors when brand.yaml leaves them empty ([#1075](https://github.com/glincker/levelrail/issues/1075)) ([a7d7a8b](https://github.com/glincker/levelrail/commit/a7d7a8b126deeaa77c5fcb8125df89cba6aed55c))
+* findings from real-server QA (sign-in, firewall, redeploy, templates, status UI) ([#1043](https://github.com/glincker/levelrail/issues/1043)) ([037b89d](https://github.com/glincker/levelrail/commit/037b89d10bf34889cf97f18b59069f30c49d7953))
+* library sign-in returns the second-factor step for users with TOTP ([#1025](https://github.com/glincker/levelrail/issues/1025)) ([09ce968](https://github.com/glincker/levelrail/commit/09ce9682d2d3522e189734c31064e5b106e25dd5))
+* match legacy device and recovery code behavior in library auth mode ([#1027](https://github.com/glincker/levelrail/issues/1027)) ([651e98b](https://github.com/glincker/levelrail/commit/651e98bb2addd9d71b28476f64c8346c46581f28))
+* README typing banner on the petrol brand with the new headline ([#1095](https://github.com/glincker/levelrail/issues/1095)) ([a21053c](https://github.com/glincker/levelrail/commit/a21053c98d464b615656b1ee39849fb517e85149))
+* repair 7 catalog image pins that no longer resolve ([#1031](https://github.com/glincker/levelrail/issues/1031)) ([0e4d6c2](https://github.com/glincker/levelrail/commit/0e4d6c2d8e5304ed711ee32a30fd1a7c0f305dc6))
+
+
+### Performance
+
+* cut PR CI wall time (live suite gate, parallel fleet, plan job) ([#1090](https://github.com/glincker/levelrail/issues/1090)) ([4b74e4b](https://github.com/glincker/levelrail/commit/4b74e4be41dc828253b51edc7b16e41aa0c01645))
+* optimize string concatenation in joinErrors ([#1061](https://github.com/glincker/levelrail/issues/1061)) ([e0a8f73](https://github.com/glincker/levelrail/commit/e0a8f735dd816256ba16253b4b50c92a60756bed))
+
+
+### Documentation
+
+* add see-also sections to multi-node and cli-reference pages ([#1030](https://github.com/glincker/levelrail/issues/1030)) ([cc1456a](https://github.com/glincker/levelrail/commit/cc1456af772feef92fc41c25af0d10fbbd6847ed))
+* full pass for accuracy, components and coverage ([#1036](https://github.com/glincker/levelrail/issues/1036)) ([a4c776a](https://github.com/glincker/levelrail/commit/a4c776a96c904241536392eb8298e854790438bd))
+* polish code blocks, tables, callouts and doc components ([#1028](https://github.com/glincker/levelrail/issues/1028)) ([56ea1d7](https://github.com/glincker/levelrail/commit/56ea1d7133623049bfb50e21ec62a330ef8aa337))
+* README and social card tuned for conversion ([#1063](https://github.com/glincker/levelrail/issues/1063)) ([0622504](https://github.com/glincker/levelrail/commit/0622504df54a51d07615a82b7012f5a544465bd1))
+
 ## [0.2.0-beta.18](https://github.com/glincker/levelrail/compare/v0.2.0-beta.17...v0.2.0-beta.18) (2026-10-05)
 
 
