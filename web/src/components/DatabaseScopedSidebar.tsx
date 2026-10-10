@@ -7,6 +7,8 @@ import {
   PulseIcon,
   ScrollIcon,
   GaugeIcon,
+  KeyIcon,
+  ShareNetworkIcon,
   TableIcon,
   TerminalWindowIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -43,6 +45,7 @@ import { summarizeDatabaseStatus } from '../lib/databaseStatus'
 // AppScopedSidebar relies on.
 export function DatabaseScopedSidebar({ name }: { name: string }) {
   const { t } = useTranslation('databases')
+  const { t: tAccess } = useTranslation('databaseAccess')
   const { data: database } = useDatabase(name)
   const { data: conditions } = useDatabaseStatus(name)
   const status = summarizeDatabaseStatus(conditions)
@@ -157,6 +160,28 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
               >
                 <TerminalWindowIcon />
                 <span>{t('viewer.nav.console')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link to="/databases/$name/access" params={{ name }} />}
+                isActive={pathname.endsWith('/access')}
+                tooltip={tAccess('nav.access')}
+              >
+                <KeyIcon />
+                <span>{tAccess('nav.access')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/databases/$name/network" params={{ name }} />
+                }
+                isActive={pathname.endsWith('/network')}
+                tooltip={tAccess('nav.network')}
+              >
+                <ShareNetworkIcon />
+                <span>{tAccess('nav.network')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

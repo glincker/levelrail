@@ -38,6 +38,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/changelog"
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
+	"github.com/GLINCKER/levelrail/internal/dbaccess"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -1056,6 +1057,13 @@ func run(logger *slog.Logger) error {
 	go func() {
 		if err := appSleepScheduler.Run(ctx, appsleep.DefaultInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("app sleep scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	dbAccessSweeper := &dbaccess.Sweeper{Store: dbaccess.StoreAdapter{DB: db}, Revoker: apiRouter, Auditor: apiRouter, Logger: logger}
+	go func() {
+		if err := dbAccessSweeper.Run(ctx, dbaccess.SweepIntervalFromEnv(os.Getenv)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("database temporary credential sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
 
@@ -2262,6 +2270,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDashboardURL(dashboardBaseURL()),
 		api.WithFirewallRequiredPorts(platformRequiredPorts()),
 		api.WithExposure(newExposureManager(b.RuleCommentPrefix()), db),
+		api.WithDatabaseAccess(db, dbaccess.TTLLimitsFromEnv(os.Getenv)),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithRequestLogThresholds(slowRequestThreshold(logger), criticalRequestThreshold(logger)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
@@ -3727,6 +3736,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithProbeAttemptRecorder(deps.db),
 		application.WithStorageTargets(deps.db),
 		application.WithDatabaseAttachments(deps.db),
+		application.WithDatabaseScope(deps.db),
 		application.WithVaultSettings(deps.db),
 		application.WithVaultResolver(vault.NewResolver()),
 		application.WithRegistryCredentials(deps.db),

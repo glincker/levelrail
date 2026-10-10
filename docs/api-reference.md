@@ -451,6 +451,25 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleListDatabaseSavedQueries |
 | POST | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleSaveDatabaseQuery |
 | DELETE | /api/v1/databases/{name}/saved-queries/{id} | AbilityReadSensitive | handleDeleteDatabaseSavedQuery |
+| GET | /api/v1/databases/{name}/users | AbilityReadSensitive | handleListDatabaseUsers |
+| POST | /api/v1/databases/{name}/users | AbilityRoot | handleCreateDatabaseUser |
+| POST | /api/v1/databases/{name}/users/{role}/rotate | AbilityRoot | handleRotateDatabaseUser |
+| POST | /api/v1/databases/{name}/users/{role}/disable | AbilityRoot | handleDisableDatabaseUser |
+| POST | /api/v1/databases/{name}/users/{role}/enable | AbilityRoot | handleEnableDatabaseUser |
+| DELETE | /api/v1/databases/{name}/users/{role} | AbilityRoot | handleDeleteDatabaseUser |
+| GET | /api/v1/databases/{name}/access/temp | AbilityReadSensitive | handleListDatabaseTempCredentials |
+| POST | /api/v1/databases/{name}/access/temp | AbilityRoot | handleIssueDatabaseTempCredential |
+| DELETE | /api/v1/databases/{name}/access/temp/{id} | AbilityRoot | handleRevokeDatabaseTempCredential |
+| GET | /api/v1/databases/{name}/access/principals | AbilityReadSensitive | handleDatabaseWhoCanAccess |
+| POST | /api/v1/databases/{name}/access/grants | AbilityRoot | handleGrantDatabaseAccess |
+| DELETE | /api/v1/databases/{name}/access/grants/{policy_id}/{principal_type}/{principal_id} | AbilityRoot | handleRevokeDatabaseGrant |
+| GET | /api/v1/databases/{name}/network | AbilityRead | handleGetDatabaseNetwork |
+| POST | /api/v1/databases/{name}/network/rules/preview | AbilityRoot | handlePreviewDatabaseRules |
+| PUT | /api/v1/databases/{name}/network/rules | AbilityRoot | handleApplyDatabaseRules |
+| DELETE | /api/v1/databases/{name}/network/rules | AbilityRoot | handleRemoveDatabaseRules |
+| POST | /api/v1/databases/{name}/network/make-private | AbilityRoot | handleMakeDatabasePrivate |
+| PUT | /api/v1/databases/{name}/network/scope | AbilityRoot | handleSetDatabaseScope |
+| PUT | /api/v1/databases/{name}/network/tls | AbilityRoot | handleSetDatabaseTLS |
 
 ## Projects / Organizations / Environments
 

@@ -273,15 +273,34 @@ func toContainerState(s container.Summary) *ContainerState {
 		created = time.Unix(s.Created, 0).UTC()
 	}
 	return &ContainerState{
-		ID:      s.ID,
-		Name:    name,
-		Image:   s.Image,
-		ImageID: s.ImageID,
-		Created: created,
-		Running: s.State == "running",
-		Ports:   observedPorts(s.Ports),
-		Labels:  s.Labels,
+		ID:       s.ID,
+		Name:     name,
+		Image:    s.Image,
+		ImageID:  s.ImageID,
+		Created:  created,
+		Running:  s.State == "running",
+		Ports:    observedPorts(s.Ports),
+		Labels:   s.Labels,
+		Networks: observedNetworks(s.NetworkSettings),
 	}
+}
+
+// observedNetworks lists a container's network attachments by name, sorted
+// so repeated observations compare equal.
+func observedNetworks(ns *container.NetworkSettingsSummary) []NetworkEndpoint {
+	if ns == nil || len(ns.Networks) == 0 {
+		return nil
+	}
+	out := make([]NetworkEndpoint, 0, len(ns.Networks))
+	for name, ep := range ns.Networks {
+		e := NetworkEndpoint{Name: name}
+		if ep != nil {
+			e.IPAddress = ep.IPAddress
+		}
+		out = append(out, e)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out
 }
 
 func observedPorts(ports []container.Port) []PortBinding {

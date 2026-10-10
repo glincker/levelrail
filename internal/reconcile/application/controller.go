@@ -231,6 +231,7 @@ type Controller struct {
 	appIntegrations AppIntegrationStore     // nil is valid: attached-integration env vars are just skipped, see WithAppIntegrations
 	networkPrefix   string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
 	registryCreds   RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
+	databaseScope   DatabaseScopeStore      // nil is valid: every referenced database is attached, see WithDatabaseScope
 	databases       DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
 	vaultSettings   VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
 	vaultResolver   VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
@@ -1077,6 +1078,13 @@ func (c *Controller) connectReferencedDatabases(ctx context.Context, desired *st
 		names[att.DatabaseName] = true
 	}
 	for dbName := range names {
+		allowed, why, err := c.databaseScopeAllows(ctx, desired, dbName)
+		if err != nil {
+			return err
+		}
+		if !allowed {
+			return c.enforceDatabaseScope(ctx, networkName, dbName, why)
+		}
 		containerName := database.ContainerName(dbName)
 		state, err := c.runtime.InspectByName(ctx, containerName)
 		if err != nil {
