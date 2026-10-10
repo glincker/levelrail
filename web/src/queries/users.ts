@@ -8,6 +8,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { DEDUPE_STALE_MS } from '../lib/queryStale'
 import type { Ability } from '../types/token'
 
 export interface UserResource {
@@ -55,7 +56,11 @@ export async function fetchUsers(): Promise<UserResource[]> {
 }
 
 export function userListQueryOptions() {
-  return queryOptions({ queryKey: userKeys.list(), queryFn: fetchUsers })
+  return queryOptions({
+    queryKey: userKeys.list(),
+    queryFn: fetchUsers,
+    staleTime: DEDUPE_STALE_MS,
+  })
 }
 
 export function useUsers() {

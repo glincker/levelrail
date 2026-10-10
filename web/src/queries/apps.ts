@@ -19,6 +19,7 @@ import type {
 } from '../types/appDetail'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { getEnvironmentScope } from '../lib/environmentScope'
+import { DEDUPE_STALE_MS } from '../lib/queryStale'
 
 export const appKeys = {
   all: ['apps'] as const,
@@ -58,6 +59,7 @@ export function appListQueryOptions() {
   return queryOptions({
     queryKey: appKeys.list(environment),
     queryFn: () => fetchApps(environment),
+    staleTime: DEDUPE_STALE_MS,
   })
 }
 

@@ -8,6 +8,7 @@
 
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { DEDUPE_STALE_MS } from '../lib/queryStale'
 
 export type DoctorCheckStatus = 'ok' | 'warn' | 'fail' | 'unknown'
 
@@ -46,6 +47,7 @@ export function systemDoctorQueryOptions() {
   return queryOptions({
     queryKey: systemDoctorKeys.all,
     queryFn: fetchSystemDoctor,
+    staleTime: DEDUPE_STALE_MS,
   })
 }
 
