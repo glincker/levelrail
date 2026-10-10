@@ -212,7 +212,7 @@ func validateDatabaseResource(d databaseResource) error {
 	if d.Version == "" {
 		return errors.New("version is required")
 	}
-	return nil
+	return database.ValidateEngineVersion(d.Engine, d.Version)
 }
 
 // handleListDatabases handles GET /api/v1/databases. Status is computed

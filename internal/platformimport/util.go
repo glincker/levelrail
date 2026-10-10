@@ -87,6 +87,10 @@ func firstPort(list string) int {
 	return 0
 }
 
+// pgvectorTagPattern matches the Postgres major in pgvector image tags such as
+// "pg17", "pg17-bookworm" and "0.8.0-pg17". Majors below 13 have no variant.
+var pgvectorTagPattern = regexp.MustCompile(`(?:^|-)pg(1[3-9]|[2-9]\d)(?:-|$)`)
+
 // engineFromImage guesses the database engine and a major version from an
 // image reference such as "postgres:16-alpine".
 func engineFromImage(image string) (engine, version string) {
@@ -99,6 +103,12 @@ func engineFromImage(image string) (engine, version string) {
 		name, tag = ref[:i], ref[i+1:]
 	}
 	name = strings.ToLower(name)
+	if name == "pgvector" {
+		if m := pgvectorTagPattern.FindStringSubmatch(tag); m != nil {
+			return "postgres", m[1] + "-pgvector"
+		}
+		return "postgres", ""
+	}
 	switch {
 	case strings.Contains(name, "postgres"), strings.Contains(name, "postgis"):
 		engine = "postgres"

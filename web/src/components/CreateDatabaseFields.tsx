@@ -8,6 +8,8 @@ import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { useTranslation } from 'react-i18next'
 import {
   Field,
   FieldError,
@@ -79,6 +81,21 @@ const DOCKER_HUB_OFFICIAL_IMAGE: Record<string, string> = {
   mariadb: 'mariadb',
 }
 
+const PGVECTOR_SUFFIX = '-pgvector'
+
+// The API accepts only "<major>-pgvector", so toggling keeps the leading
+// major digits and drops any minor part.
+function togglePgvector(version: string, on: boolean): string {
+  const trimmed = version.trim()
+  if (!on) {
+    return trimmed.endsWith(PGVECTOR_SUFFIX)
+      ? trimmed.slice(0, -PGVECTOR_SUFFIX.length)
+      : trimmed
+  }
+  const major = /^\d+/.exec(trimmed)?.[0] ?? '17'
+  return major + PGVECTOR_SUFFIX
+}
+
 // Matches validateDatabaseResource (internal/api/databases.go): name/
 // engine/version all required. engine is a plain non-empty string, not
 // a fixed literal union: the real set of valid engines lives in
@@ -148,6 +165,7 @@ export function CreateDatabaseFields({
    *  engine. */
   engine?: string
 }) {
+  const { t } = useTranslation('databases')
   const navigate = useNavigate()
   const createDatabase = useCreateDatabase()
   // Optional convenience only, see useNodeListOptional's own doc
@@ -198,6 +216,7 @@ export function CreateDatabaseFields({
     defaultValues,
   })
   const watchedEngine = watch('engine')
+  const watchedVersion = watch('version')
 
   useEffect(() => {
     if (!open) {
@@ -385,6 +404,31 @@ export function CreateDatabaseFields({
           ) : null}
           <FieldError errors={[formState.errors.version]} />
         </Field>
+
+        {watchedEngine === 'postgres' ? (
+          <Field>
+            <label
+              htmlFor="database-pgvector"
+              className="flex items-start gap-2 text-sm font-medium"
+            >
+              <Checkbox
+                id="database-pgvector"
+                checked={watchedVersion.trim().endsWith(PGVECTOR_SUFFIX)}
+                onCheckedChange={(checked) => {
+                  setValue('version', togglePgvector(watchedVersion, checked), {
+                    shouldDirty: true,
+                  })
+                }}
+              />
+              <span>{t('createPgvector.label')}</span>
+            </label>
+            <FieldHint>
+              {t('createPgvector.hint', {
+                version: togglePgvector(watchedVersion, true),
+              })}
+            </FieldHint>
+          </Field>
+        ) : null}
       </div>
 
       {nodes.length > 0 || projects.length > 0 ? (

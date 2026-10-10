@@ -20,7 +20,8 @@
     "cancel": "Cancel",
     "submit": "Change version",
     "submitting": "Changing...",
-    "toast": "Database \"{{name}}\" will be recreated on version {{version}}."
+    "toast": "Database \"{{name}}\" will be recreated on version {{version}}.",
+    "pgvectorHint": "A pgvector database uses a version like \"17-pgvector\". Switching between plain and pgvector in place is refused: use the guarded major upgrade below, or restore a backup into a new database."
   },
   "existingVolume": {
     "title": "A deleted database with this name left its data behind",
@@ -63,7 +64,8 @@
     "discard": "Discard snapshot",
     "discardConfirm": "Delete the rollback snapshot? You can no longer roll back this upgrade.",
     "discarded": "Snapshot discarded.",
-    "pitrBlocked": "Disable point-in-time restore before upgrading: its base backups cannot be replayed on another major version."
+    "pitrBlocked": "Disable point-in-time restore before upgrading: its base backups cannot be replayed on another major version.",
+    "pgvectorHint": "Use a version like \"17-pgvector\" to move a plain database onto the pgvector image. Moving back to plain Postgres is not supported."
   },
   "viewer": {
     "nav": {
@@ -72,6 +74,10 @@
     },
     "unsupported": "The viewer supports Postgres, MySQL, MariaDB, and Redis-compatible engines. This database is {{engine}}.",
     "notRunning": "The viewer needs a running database. Start the database and try again.",
+    "beta": {
+      "label": "Beta",
+      "hint": "Beta: not tuned for large databases or heavy load yet. We improve it every release."
+    },
     "explorer": {
       "title": "Explorer",
       "refresh": "Refresh",
@@ -190,5 +196,9 @@
       "truncated": "Value cut at the server limit.",
       "readOnlyNote": "Read-only. Values are fetched with SCAN, TYPE, TTL, and a type-specific read."
     }
+  },
+  "createPgvector": {
+    "label": "Include pgvector",
+    "hint": "Runs the pgvector image so CREATE EXTENSION vector works. The version is stored as {{version}}."
   }
 }

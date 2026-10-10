@@ -23,7 +23,17 @@ func (t Target) Run(ctx context.Context, st Statement, write bool) (Result, erro
 // RunTrusted executes SQL the control plane built itself (introspection,
 // table pages). It still runs in a read-only transaction.
 func (t Target) RunTrusted(ctx context.Context, sql string) (Result, error) {
+	t.Limits = trustedLimits(t.Limits)
 	return t.run(ctx, sql, KindQuery, false)
+}
+
+// trustedLimits lifts the per-cell cap for internal introspection: its result
+// is one large JSON cell, and truncating it mid-document makes it undecodable.
+func trustedLimits(l Limits) Limits {
+	if l.MaxCellBytes < l.MaxBytes {
+		l.MaxCellBytes = l.MaxBytes
+	}
+	return l
 }
 
 // Explain returns the plan for a read statement as text lines (Postgres,
