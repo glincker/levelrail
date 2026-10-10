@@ -526,9 +526,13 @@ export default withMermaid({
       ['meta', { property: 'og:description', content: pageDescription }],
       ['meta', { property: 'og:url', content: canonicalUrl }],
       ['meta', { property: 'og:image', content: ogImage }],
+      ['meta', { property: 'og:image:width', content: '2400' }],
+      ['meta', { property: 'og:image:height', content: '1260' }],
+      ['meta', { property: 'og:image:alt', content: `${title}, Levelrail social card` }],
       ['meta', { name: 'twitter:title', content: title }],
       ['meta', { name: 'twitter:description', content: pageDescription }],
       ['meta', { name: 'twitter:image', content: ogImage }],
+      ['meta', { name: 'twitter:image:alt', content: `${title}, Levelrail social card` }],
       ...changelogHead(pageData, siteUrl),
       ...galleryHead(pageData, siteUrl),
     ]
