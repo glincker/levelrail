@@ -19,7 +19,25 @@
     "confirmBody": "Look at the terminal that ran the login command. Approve only if it shows exactly this code.",
     "confirmApprove": "The codes match, approve",
     "cancel": "Cancel",
-    "agentHint": "Only a person signed in here can approve. An AI agent cannot do it for you."
+    "agentHint": "Only a person signed in here can approve. An AI agent cannot do it for you.",
+    "state": {
+      "waiting": "Waiting",
+      "expired": "Expired",
+      "denied": "Denied",
+      "approved": "Approved"
+    },
+    "resolvedExpired": "CLI login from {{name}} expired before it was approved",
+    "resolvedDenied": "CLI login from {{name}} was denied",
+    "resolvedMeta": "{{ip}}, {{age}}",
+    "resolvedMore_one": "{{count}} more login needs a look on the Status page.",
+    "resolvedMore_other": "{{count}} more logins need a look on the Status page.",
+    "startOver": "Start over",
+    "startOverHint": "Run this in your terminal to request a new login:",
+    "copy": "Copy command",
+    "copied": "Command copied",
+    "dismiss": "Dismiss",
+    "dismissed": "Dismissed. The audit log keeps the record.",
+    "viewAudit": "View audit entries"
   },
   "panel": {
     "title": "Needs attention",
@@ -32,6 +50,10 @@
   "items": {
     "deviceLoginTitle": "CLI login from {{name}} is waiting",
     "deviceLoginDetail": "Expires in {{time}}. Open CLI access to compare the code and approve.",
+    "deviceExpiredTitle": "CLI login from {{name}} expired",
+    "deviceExpiredDetail": "Nobody approved it in time. Run the login command again if you still need it.",
+    "deviceDeniedTitle": "CLI login from {{name}} was denied",
+    "deviceDeniedDetail": "Someone denied this request. Run the login command again if you still need it.",
     "certRenewalTitle": "Certificate renewal for {{domain}} looks stalled",
     "certRenewalDetail": "Expires {{date}}.",
     "certRenewalFailure": "Expires {{date}}. Last CA error: {{reason}}",
@@ -39,11 +61,25 @@
     "nodeEnrollDetail": "Check the agent logs and that it can reach this control plane.",
     "approvalTitle": "{{service}} awaits deploy approval",
     "approvalDetail": "Requested by {{who}}.",
+    "tokenExpiringTitle": "API token {{name}} expires soon",
+    "tokenExpiringDetail": "Expires {{date}}. Anything using it will stop working.",
+    "tokenExpiredTitle": "API token {{name}} has expired",
+    "tokenExpiredDetail": "Expired {{date}}. Requests using it are rejected.",
+    "dataCopyFailedTitle": "Data copy into {{name}} failed",
+    "dataCopyStalledTitle": "Data copy into {{name}} looks stalled",
+    "dataCopyReason": "{{reason}}",
+    "backupOverdueTitle": "Backup of {{name}} is overdue",
+    "backupOverdueDetail": "No successful backup since {{date}}.",
+    "invitesTitle": "Invitations are waiting",
+    "invitesDetail": "{{pending}} waiting to be accepted, {{expired}} expired without being accepted.",
     "openCliAccess": "Review login",
-    "openApprovals": "Review approvals"
+    "openApprovals": "Review approvals",
+    "openItem": "Open"
   },
   "channel": {
     "notifyDeviceLogin": "Notify when a CLI login is waiting",
-    "notifyDeviceLoginHint": "Sends a link only, never the code. Turn on a dashboard URL so the link can open this page."
+    "notifyDeviceLoginHint": "Sends a link only, never the code. Turn on a dashboard URL so the link can open this page.",
+    "notifyDeviceLoginExpired": "Notify when a CLI login expires",
+    "notifyDeviceLoginExpiredHint": "Sends a link only, never the code, when a login request runs out of time unapproved."
   }
 }

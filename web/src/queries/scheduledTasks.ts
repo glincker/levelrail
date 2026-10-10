@@ -12,21 +12,33 @@ import {
   useQueryClient,
   type QueryClient,
 } from '@tanstack/react-query'
-import type { ScheduledTask, ScheduledTaskRequest } from '../types/scheduledTasks'
+import type {
+  ScheduledTask,
+  ScheduledTaskRequest,
+} from '../types/scheduledTasks'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const scheduledTaskKeys = {
-  all: (appName: string) => [...appKeys.detail(appName), 'scheduled-tasks'] as const,
-  list: (appName: string) => [...scheduledTaskKeys.all(appName), 'list'] as const,
+  all: (appName: string) =>
+    [...appKeys.detail(appName), 'scheduled-tasks'] as const,
+  list: (appName: string) =>
+    [...scheduledTaskKeys.all(appName), 'list'] as const,
 }
 
-export async function fetchScheduledTasks(appName: string): Promise<ScheduledTask[]> {
-  const res = await fetch(`/api/v1/apps/${encodeURIComponent(appName)}/scheduled-tasks`)
+export async function fetchScheduledTasks(
+  appName: string,
+): Promise<ScheduledTask[]> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(appName)}/scheduled-tasks`,
+  )
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch scheduled tasks failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch scheduled tasks failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as ScheduledTask[]
@@ -58,7 +70,10 @@ export async function createScheduledTask(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `create scheduled task failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `create scheduled task failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as ScheduledTask
@@ -67,9 +82,12 @@ export async function createScheduledTask(
 export function useCreateScheduledTask(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (req: ScheduledTaskRequest) => createScheduledTask(appName, req),
+    mutationFn: (req: ScheduledTaskRequest) =>
+      createScheduledTask(appName, req),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: scheduledTaskKeys.list(appName) })
+      void queryClient.invalidateQueries({
+        queryKey: scheduledTaskKeys.list(appName),
+      })
     },
   })
 }
@@ -90,7 +108,10 @@ export async function updateScheduledTask(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `update scheduled task failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `update scheduled task failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as ScheduledTask
@@ -102,12 +123,17 @@ export function useUpdateScheduledTask(appName: string) {
     mutationFn: ({ id, req }: { id: string; req: ScheduledTaskRequest }) =>
       updateScheduledTask(appName, id, req),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: scheduledTaskKeys.list(appName) })
+      void queryClient.invalidateQueries({
+        queryKey: scheduledTaskKeys.list(appName),
+      })
     },
   })
 }
 
-export async function deleteScheduledTask(appName: string, id: string): Promise<void> {
+export async function deleteScheduledTask(
+  appName: string,
+  id: string,
+): Promise<void> {
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/scheduled-tasks/${encodeURIComponent(id)}`,
     { method: 'DELETE' },
@@ -115,7 +141,10 @@ export async function deleteScheduledTask(appName: string, id: string): Promise<
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `delete scheduled task failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `delete scheduled task failed: ${res.status}`,
+      ),
     )
   }
 }
@@ -125,7 +154,9 @@ export function useDeleteScheduledTask(appName: string) {
   return useMutation({
     mutationFn: (id: string) => deleteScheduledTask(appName, id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: scheduledTaskKeys.list(appName) })
+      void queryClient.invalidateQueries({
+        queryKey: scheduledTaskKeys.list(appName),
+      })
     },
   })
 }
@@ -149,13 +180,19 @@ function pollAfterRun(queryClient: QueryClient, appName: string) {
   }
 }
 
-export async function runScheduledTaskNow(appName: string, id: string): Promise<ScheduledTask> {
+export async function runScheduledTaskNow(
+  appName: string,
+  id: string,
+): Promise<ScheduledTask> {
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/scheduled-tasks/${encodeURIComponent(id)}/run`,
     { method: 'POST' },
   )
   if (res.status === 501) {
-    throw new ApiError(501, 'scheduled task execution is not configured on this control plane')
+    throw new ApiError(
+      501,
+      'scheduled task execution is not configured on this control plane',
+    )
   }
   if (!res.ok) {
     throw new ApiError(
@@ -171,7 +208,9 @@ export function useRunScheduledTaskNow(appName: string) {
   return useMutation({
     mutationFn: (id: string) => runScheduledTaskNow(appName, id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: scheduledTaskKeys.list(appName) })
+      void queryClient.invalidateQueries({
+        queryKey: scheduledTaskKeys.list(appName),
+      })
       pollAfterRun(queryClient, appName)
     },
   })

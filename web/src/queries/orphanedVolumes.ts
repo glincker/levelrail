@@ -39,7 +39,10 @@ async function fetchOrphanedVolumes(): Promise<OrphanedVolume[]> {
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `list orphaned volumes failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `list orphaned volumes failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as OrphanedVolume[]

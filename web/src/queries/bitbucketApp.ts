@@ -40,7 +40,10 @@ export async function fetchBitbucketAppStatus(): Promise<BitbucketAppStatus> {
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch bitbucket app status failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch bitbucket app status failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as BitbucketAppStatus
@@ -72,7 +75,10 @@ export async function connectBitbucketApp(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `connect bitbucket app failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `connect bitbucket app failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as BitbucketAppStatus
@@ -97,7 +103,10 @@ export async function disconnectBitbucketApp(): Promise<void> {
   }
   throw new ApiError(
     res.status,
-    await readErrorMessage(res, `disconnect bitbucket app failed: ${res.status}`),
+    await readErrorMessage(
+      res,
+      `disconnect bitbucket app failed: ${res.status}`,
+    ),
   )
 }
 
@@ -120,7 +129,10 @@ export async function fetchBitbucketAppRepos(): Promise<BitbucketAppRepo[]> {
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch bitbucket app repos failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch bitbucket app repos failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as BitbucketAppRepo[]
@@ -146,7 +158,10 @@ export async function fetchBitbucketAppBranches(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch bitbucket app branches failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch bitbucket app branches failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as BitbucketAppBranch[]
@@ -186,7 +201,10 @@ export async function connectBitbucketRepoAsSource(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `use bitbucket repo as source failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `use bitbucket repo as source failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as GitSourceResource
@@ -197,12 +215,19 @@ export function useConnectBitbucketRepoAsSource() {
   return useMutation<
     GitSourceResource,
     ApiError,
-    { workspace: string; repoSlug: string; req: BitbucketAppUseRepoAsSourceRequest }
+    {
+      workspace: string
+      repoSlug: string
+      req: BitbucketAppUseRepoAsSourceRequest
+    }
   >({
     mutationFn: ({ workspace, repoSlug, req }) =>
       connectBitbucketRepoAsSource(workspace, repoSlug, req),
     onSuccess: (resource, variables) => {
-      queryClient.setQueryData(gitSourceKeys.detail(variables.req.app_name), resource)
+      queryClient.setQueryData(
+        gitSourceKeys.detail(variables.req.app_name),
+        resource,
+      )
     },
   })
 }

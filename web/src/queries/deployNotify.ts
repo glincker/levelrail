@@ -23,8 +23,10 @@ import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const deployNotifyTargetKeys = {
-  all: (appName: string) => [...appKeys.detail(appName), 'deploy-notify-targets'] as const,
-  list: (appName: string) => [...deployNotifyTargetKeys.all(appName), 'list'] as const,
+  all: (appName: string) =>
+    [...appKeys.detail(appName), 'deploy-notify-targets'] as const,
+  list: (appName: string) =>
+    [...deployNotifyTargetKeys.all(appName), 'list'] as const,
 }
 
 // GET /api/v1/apps/{name}/deploy-notify-targets. Returns every target
@@ -46,7 +48,10 @@ export async function fetchDeployNotifyTargets(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch deploy notify targets failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch deploy notify targets failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as DeployNotifyTarget[]
@@ -83,7 +88,10 @@ export async function createDeployNotifyTarget(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `create deploy notify target failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `create deploy notify target failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as DeployNotifyTarget
@@ -115,7 +123,10 @@ export async function deleteDeployNotifyTarget(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `delete deploy notify target failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `delete deploy notify target failed: ${res.status}`,
+      ),
     )
   }
 }

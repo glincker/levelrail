@@ -65,6 +65,7 @@ const editChannelSchema = z
     interactiveApprovals: z.boolean(),
     interactiveSecret: z.string().trim(),
     notifyDeviceLogin: z.boolean(),
+    notifyDeviceLoginExpired: z.boolean(),
   })
   .superRefine((data, ctx) => {
     // webpush has no destination to edit: every registered browser
@@ -119,6 +120,7 @@ function defaultsFromChannel(channel: NotificationChannel): EditChannelForm {
     // internal/api/notification_channels.go).
     interactiveSecret: '',
     notifyDeviceLogin: channel.notify_device_login,
+    notifyDeviceLoginExpired: channel.notify_device_login_expired,
   }
 }
 
@@ -192,6 +194,7 @@ export function EditNotificationChannelDialog({
           interactive_approvals: values.interactiveApprovals,
           interactive_secret: values.interactiveSecret.trim(),
           notify_device_login: values.notifyDeviceLogin,
+          notify_device_login_expired: values.notifyDeviceLoginExpired,
         },
       },
       {
@@ -362,6 +365,24 @@ export function EditNotificationChannelDialog({
             </FieldLabel>
           </Field>
           <FieldHint>{t('channel.notifyDeviceLoginHint')}</FieldHint>
+
+          <Field orientation="horizontal">
+            <Controller
+              control={control}
+              name="notifyDeviceLoginExpired"
+              render={({ field }) => (
+                <Switch
+                  id="edit-channel-notify-device-login-expired"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
+            <FieldLabel htmlFor="edit-channel-notify-device-login-expired">
+              {t('channel.notifyDeviceLoginExpired')}
+            </FieldLabel>
+          </Field>
+          <FieldHint>{t('channel.notifyDeviceLoginExpiredHint')}</FieldHint>
 
           {isInteractiveKind ? (
             <>

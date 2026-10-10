@@ -26,7 +26,10 @@ export async function fetchWebhookDeliveries(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch webhook deliveries failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch webhook deliveries failed: ${res.status}`,
+      ),
     )
   }
   const body = (await res.json()) as WebhookDelivery[] | null
@@ -51,7 +54,10 @@ export async function replayWebhookDelivery(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `replay webhook delivery failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `replay webhook delivery failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as ReplayWebhookDeliveryResult
@@ -62,7 +68,9 @@ export function useReplayWebhookDelivery(appName: string) {
   return useMutation<ReplayWebhookDeliveryResult, ApiError, string>({
     mutationFn: (deliveryId) => replayWebhookDelivery(appName, deliveryId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: webhookDeliveryKeys.list(appName) })
+      void queryClient.invalidateQueries({
+        queryKey: webhookDeliveryKeys.list(appName),
+      })
     },
   })
 }

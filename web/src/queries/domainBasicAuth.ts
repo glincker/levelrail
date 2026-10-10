@@ -45,7 +45,10 @@ export async function fetchDomainBasicAuth(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch domain basic auth failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch domain basic auth failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as DomainBasicAuth
@@ -87,7 +90,10 @@ export async function setDomainBasicAuth(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `set domain basic auth failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `set domain basic auth failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as DomainBasicAuth
@@ -98,7 +104,10 @@ export function useSetDomainBasicAuth(appName: string, domain: string) {
   return useMutation<DomainBasicAuth, ApiError, SetDomainBasicAuthRequest>({
     mutationFn: (req) => setDomainBasicAuth(appName, domain, req),
     onSuccess: (updated) => {
-      queryClient.setQueryData(domainBasicAuthKeys.detail(appName, domain), updated)
+      queryClient.setQueryData(
+        domainBasicAuthKeys.detail(appName, domain),
+        updated,
+      )
     },
   })
 }
@@ -117,7 +126,10 @@ export async function clearDomainBasicAuth(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `clear domain basic auth failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `clear domain basic auth failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as DomainBasicAuth
@@ -128,7 +140,10 @@ export function useClearDomainBasicAuth(appName: string, domain: string) {
   return useMutation<DomainBasicAuth, ApiError, void>({
     mutationFn: () => clearDomainBasicAuth(appName, domain),
     onSuccess: (updated) => {
-      queryClient.setQueryData(domainBasicAuthKeys.detail(appName, domain), updated)
+      queryClient.setQueryData(
+        domainBasicAuthKeys.detail(appName, domain),
+        updated,
+      )
     },
   })
 }

@@ -49,7 +49,10 @@ export async function moveAppWithVolumes(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `move app with volumes failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `move app with volumes failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as AppVolumeMove
@@ -57,7 +60,8 @@ export async function moveAppWithVolumes(
 
 export function useMoveAppWithVolumes(name: string) {
   return useMutation({
-    mutationFn: (req: MoveAppWithVolumesRequest) => moveAppWithVolumes(name, req),
+    mutationFn: (req: MoveAppWithVolumesRequest) =>
+      moveAppWithVolumes(name, req),
   })
 }
 
@@ -73,7 +77,10 @@ export async function fetchAppVolumeMove(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch app volume move failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch app volume move failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as AppVolumeMove

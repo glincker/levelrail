@@ -40,7 +40,10 @@ export async function fetchRegistrySettings(): Promise<RegistrySettings> {
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch registry settings failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch registry settings failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as RegistrySettings
@@ -86,7 +89,10 @@ export async function updateRegistrySettings(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `update registry settings failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `update registry settings failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as RegistrySettings
@@ -94,12 +100,14 @@ export async function updateRegistrySettings(
 
 export function useUpdateRegistrySettings() {
   const queryClient = useQueryClient()
-  return useMutation<RegistrySettings, ApiError, UpdateRegistrySettingsRequest>({
-    mutationFn: updateRegistrySettings,
-    onSuccess: (updated) => {
-      queryClient.setQueryData(registryKeys.all, updated)
+  return useMutation<RegistrySettings, ApiError, UpdateRegistrySettingsRequest>(
+    {
+      mutationFn: updateRegistrySettings,
+      onSuccess: (updated) => {
+        queryClient.setQueryData(registryKeys.all, updated)
+      },
     },
-  })
+  )
 }
 
 // DELETE /api/v1/settings/registry: disables the registry and clears its

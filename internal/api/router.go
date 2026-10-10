@@ -513,6 +513,7 @@ type Router struct {
 	deviceFlow                   *apiRateLimiter                  // per-IP device-login-start token bucket
 	deviceNotifier               DeviceLoginNotifier              // nil is valid: no outbound notice for a waiting CLI login
 	deviceNotices                deviceNoticeGate
+	deviceExpiryNotices          deviceNoticeGate
 	publicDashboardURL           string                   // configured dashboard base URL for notice links; empty means no link
 	hookRuns                     HookRunStore             // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
 	deployApprovals              DeployApprovalStore      // always set, same "core Store interface" shape as hookRuns above: deploy_approvals always exists, empty is a valid, non-error result

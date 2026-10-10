@@ -1109,6 +1109,14 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	// Device login expiry sweep (api.Router.RunDeviceLoginExpirySweeper):
+	// audits each lapsed CLI login exactly once, even when no CLI polls.
+	go func() {
+		if err := apiRouter.RunDeviceLoginExpirySweeper(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("device login expiry sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	// Webhook delivery retention sweep (api.Router.RunWebhookDeliverySweeper,
 	// internal/api/webhook_delivery_retention.go): deletes
 	// webhook_deliveries rows past the retention window on its own tick,

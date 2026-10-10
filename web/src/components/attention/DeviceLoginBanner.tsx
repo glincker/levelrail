@@ -16,20 +16,26 @@ import {
   type DeviceAuthRequest,
 } from '../../queries/deviceAuth'
 import { DeviceLoginConfirmDialog } from './DeviceLoginConfirmDialog'
+import { ResolvedLoginStrips } from './ResolvedLoginStrips'
 import { useNow } from '../../hooks/useNow'
 
 // Shown on every page while a CLI login waits. There is deliberately no
 // dismiss button: it disappears only when the request is approved, denied
-// or expires, so an operator cannot lose track of it.
+// or expires, so an operator cannot lose track of it. Logins that then
+// expired or were denied stay below as dismissable informational strips.
 export function DeviceLoginBanner() {
   const { data } = useLiveDeviceAuthRequests()
   const now = useNow()
   const live = liveDeviceRequests(data, now)
   const first = live.at(0)
-  if (!first) {
-    return null
-  }
-  return <BannerBody request={first} others={live.length - 1} now={now} />
+  return (
+    <>
+      {first ? (
+        <BannerBody request={first} others={live.length - 1} now={now} />
+      ) : null}
+      <ResolvedLoginStrips />
+    </>
+  )
 }
 
 function BannerBody({
