@@ -84,6 +84,11 @@ export interface IngressSettings {
   // Read-only: the server address apps are reachable at and how it was found.
   public_host?: string
   public_host_source?: 'env' | 'detected' | 'disabled' | 'none'
+  // Set when real certificates are on but cannot work: the ingress does not
+  // listen on 80 and 443 and there is no DNS-01 provider.
+  acme_blocked?: 'non_standard_ports'
+  ingress_http_port?: number
+  ingress_https_port?: number
 }
 
 export async function fetchIngressSettings(): Promise<IngressSettings> {

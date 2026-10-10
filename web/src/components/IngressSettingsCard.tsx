@@ -9,6 +9,7 @@ import {
   useUpdateIngressSettings,
 } from '../queries/domains'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
+import { AcmeBlockedNotice } from './AcmeBlockedNotice'
 import { DomainCheckPanel } from './DomainDnsCheck'
 import { InfoTip } from './kit/InfoTip'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -208,6 +209,7 @@ export function IngressSettingsCard({
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <AcmeBlockedNotice settings={settings} />
         <form
           onSubmit={(e) => {
             void onSubmit(e)
