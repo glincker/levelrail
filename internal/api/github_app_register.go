@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +38,61 @@ func normalizeGitHubInstanceURL(raw string) (string, error) {
 		return "", fmt.Errorf("instance_url must be a bare https URL like https://ghe.example.com")
 	}
 	return raw, nil
+}
+
+// githubOrgLoginPattern is GitHub's own org login shape (alphanumerics
+// and hyphens, 1 to 39 characters, no leading hyphen).
+var githubOrgLoginPattern = regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$`)
+
+// normalizeGitHubAppOwner validates the optional owner query parameter:
+// "" means the operator's personal account, anything else must be an org
+// login, since it is interpolated into a URL path on the GitHub host.
+func normalizeGitHubAppOwner(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", nil
+	}
+	if !githubOrgLoginPattern.MatchString(raw) {
+		return "", fmt.Errorf("owner must be a github organization login (letters, digits and hyphens, up to 39 characters)")
+	}
+	return raw, nil
+}
+
+// parseGitHubAppPublic reads the optional public query parameter,
+// defaulting to false (a private App) when absent or empty.
+func parseGitHubAppPublic(raw string) (bool, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return false, nil
+	}
+	v, err := strconv.ParseBool(raw)
+	if err != nil {
+		return false, fmt.Errorf("public must be true or false")
+	}
+	return v, nil
+}
+
+// githubAppRegistrationTarget parses and validates the owner and public
+// query parameters shared by register/start and register/preview.
+func githubAppRegistrationTarget(r *http.Request) (owner string, public bool, err error) {
+	q := r.URL.Query()
+	if owner, err = normalizeGitHubAppOwner(q.Get("owner")); err != nil {
+		return "", false, err
+	}
+	if public, err = parseGitHubAppPublic(q.Get("public")); err != nil {
+		return "", false, err
+	}
+	return owner, public, nil
+}
+
+// githubAppManifestActionURL is where the manifest form posts: the
+// org-scoped create page when owner is set, the personal one otherwise.
+func githubAppManifestActionURL(instanceURL, owner, state string) string {
+	base := instanceURL + "/settings/apps/new"
+	if owner != "" {
+		base = instanceURL + "/organizations/" + url.PathEscape(owner) + "/settings/apps/new"
+	}
+	return base + "?state=" + url.QueryEscape(state)
 }
 
 // handleStartGitHubAppRegistration handles
@@ -97,6 +153,12 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 		}
 	}
 
+	owner, public, err := githubAppRegistrationTarget(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	state, err := rt.githubAppState.begin(instanceURL)
 	if err != nil {
 		rt.logger.Error("api: begin github app registration failed", slog.String("error", err.Error()))
@@ -108,7 +170,9 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 	if appName == "" {
 		appName = githubapp.AppDisplayName(rt.brand.Name, strings.TrimPrefix(baseURL, "https://"))
 	}
-	manifestJSON, err := json.Marshal(githubapp.BuildManifest(appName, baseURL, rt.githubAppManifestConfig))
+	manifest := githubapp.BuildManifest(appName, baseURL, rt.githubAppManifestConfig)
+	manifest.Public = public
+	manifestJSON, err := json.Marshal(manifest)
 	if err != nil {
 		rt.logger.Error("api: marshal github app manifest failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -122,7 +186,7 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 		return
 	}
 
-	writeGitHubAppManifestForm(w, instanceURL, state, nonce, manifestJSON)
+	writeGitHubAppManifestForm(w, instanceURL, owner, state, nonce, manifestJSON)
 }
 
 // githubAppManifestPreviewResource is the wire shape for
@@ -135,6 +199,7 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 // sources of truth.
 type githubAppManifestPreviewResource struct {
 	InstanceURL           string            `json:"instance_url"`
+	Owner                 string            `json:"owner"`
 	AppName               string            `json:"app_name"`
 	HomepageURL           string            `json:"homepage_url"`
 	CallbackURL           string            `json:"callback_url"`
@@ -190,10 +255,18 @@ func (rt *Router) handleGetGitHubAppManifestPreview(w http.ResponseWriter, r *ht
 		return
 	}
 
+	owner, public, err := githubAppRegistrationTarget(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	appName := githubapp.AppDisplayName(rt.brand.Name, strings.TrimPrefix(baseURL, "https://"))
 	manifest := githubapp.BuildManifest(appName, baseURL, rt.githubAppManifestConfig)
+	manifest.Public = public
 	writeJSON(w, http.StatusOK, githubAppManifestPreviewResource{
 		InstanceURL:           instanceURL,
+		Owner:                 owner,
 		AppName:               manifest.Name,
 		HomepageURL:           manifest.URL,
 		CallbackURL:           manifest.RedirectURL,
@@ -218,19 +291,20 @@ func randomNonce() (string, error) {
 }
 
 // writeGitHubAppManifestForm renders the auto-submitting form GitHub's
-// manifest flow expects, posted to <instanceURL>/settings/apps/new.
+// manifest flow expects, posted to <instanceURL>/settings/apps/new, or
+// <instanceURL>/organizations/<owner>/settings/apps/new for an org.
 // Overrides the global CSP for this response only: script-src 'self'
 // and form-action 'self' silently block this page's inline auto-submit
 // and its cross-origin POST (confirmed live: hangs forever, no visible
 // error). nonce permits only this one script; form-action widens only
 // to instanceURL's own already-validated origin.
-func writeGitHubAppManifestForm(w http.ResponseWriter, instanceURL, state, nonce string, manifestJSON []byte) {
+func writeGitHubAppManifestForm(w http.ResponseWriter, instanceURL, owner, state, nonce string, manifestJSON []byte) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Security-Policy", fmt.Sprintf(
 		"default-src 'self'; script-src 'nonce-%s'; style-src 'self'; form-action %s; base-uri 'self'; object-src 'none'; frame-ancestors 'none'",
 		nonce, instanceURL))
 	w.WriteHeader(http.StatusOK)
-	actionURL := instanceURL + "/settings/apps/new?state=" + url.QueryEscape(state)
+	actionURL := githubAppManifestActionURL(instanceURL, owner, state)
 	_, err := fmt.Fprintf(w, `<!doctype html>
 <html>
 <head><meta charset="utf-8"><title>Connecting GitHub App</title></head>

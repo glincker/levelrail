@@ -41,7 +41,24 @@ All four need a master key configured on the control plane, the same one that en
 
 Open the GitHub App settings page (`/settings/github-app`).
 
-**Manifest flow (recommended).** The dashboard previews the App's name, permissions, and webhook URL, then redirects your browser to github.com to create the App. The credentials come back automatically.
+**Manifest flow (recommended).** The dashboard previews the App's name, permissions, and webhook URL, lets you choose who owns the App, then redirects your browser to github.com to create the App. The credentials come back automatically.
+
+Choose the owner before you continue:
+
+| Owner | Where GitHub creates the App | Query parameter |
+| --- | --- | --- |
+| **My personal account** (default) | `github.com/settings/apps/new` | none |
+| **An organization** | `github.com/organizations/<login>/settings/apps/new` | `owner=<login>` |
+
+"Allow other accounts and organizations to install it" makes the App public (`public=true`). Leave it off for a private App, which GitHub only lets the owning account or organization install. A private App owned by your personal account therefore never offers an organization on the install page. To deploy from an organization, either own the App from that organization or make the App public.
+
+GitHub Enterprise Server works the same way: set `instance_url` and the form posts to `<instance_url>/organizations/<login>/settings/apps/new`. `owner` must be a GitHub organization login (letters, digits and hyphens, up to 39 characters); anything else is a `400`.
+
+After GitHub creates the App, Levelrail sends you to `/apps/<slug>/installations/new`, GitHub's account chooser, so you pick the account or organization there. You need to be an owner of the organization, or its owners must approve the install request.
+
+`levelrail-cli github-app register-url --owner <org> [--public]` prints the registration link for the same choice. Open it in a browser signed in to the dashboard.
+
+**Installing on an organization.** Create the App with the organization as owner (or make it public), then on GitHub's account chooser pick the organization and the repositories to grant. Use "Add organization" in the connected accounts list to install the same App on another account later.
 
 **Manual.** If the control plane has no publicly reachable primary domain yet, create the App at `github.com/settings/apps` yourself and connect it with `PUT /api/v1/github-app/manual`, giving the app ID, client ID, client secret, webhook secret, and the private key PEM.
 
