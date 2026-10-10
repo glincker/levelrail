@@ -81,6 +81,10 @@ type App struct {
 	PrivateRepo bool
 	Kind        SourceKind
 	Image       string
+	// ImageID is the source host's local image ID, set by snapshot sources.
+	ImageID string
+	// HostBuilt marks an image built on the source host and absent from any registry.
+	HostBuilt   bool
 	GitURL      string
 	GitBranch   string
 	BuildMethod string

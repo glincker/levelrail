@@ -376,6 +376,7 @@ func (rt *Router) handleDeleteAppImportSession(w http.ResponseWriter, r *http.Re
 		return
 	}
 	rt.appImportLive.forget(id)
+	rt.appImportLive.forgetMove(id)
 	w.WriteHeader(http.StatusNoContent)
 }
 

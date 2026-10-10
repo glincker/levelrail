@@ -230,6 +230,9 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 // full readiness budget.
 var ErrExitStateUnsupported = errors.New("agent: this node's container runtime cannot inspect container exit state")
 
+// ErrImageLoadUnsupported is returned when the node runtime cannot load an image archive.
+var ErrImageLoadUnsupported = errors.New("agent: this node's container runtime cannot load an image archive")
+
 // ErrStatsUnsupported is what a Stats request gets when this node's
 // runtime cannot report container resource usage.
 var ErrStatsUnsupported = errors.New("agent: this node's container runtime cannot report container stats")

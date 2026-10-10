@@ -30,6 +30,14 @@ func TestDockerSourceDiscover(t *testing.T) {
 	if web.Kind != SourceImage || len(web.Notes) == 0 || !strings.Contains(web.Notes[0].Manual, "docker save") {
 		t.Errorf("a host-built image stays an image with a load hint, kind=%s notes=%+v", web.Kind, web.Notes)
 	}
+	if !web.HostBuilt {
+		t.Errorf("a host-built image is not flagged HostBuilt")
+	}
+	for name, a := range apps {
+		if a.HostBuilt && name != "web" {
+			t.Errorf("%s flagged host-built with image %q", name, a.Image)
+		}
+	}
 	if web.Port != 3000 || len(web.Domains) != 1 || web.Domains[0] != "app.example.com" {
 		t.Errorf("routing: port=%d domains=%v", web.Port, web.Domains)
 	}
@@ -57,6 +65,18 @@ func TestDockerSourceDiscover(t *testing.T) {
 	db := d.Databases[0]
 	if db.Engine != "postgres" || db.Version != "17" || db.Name != "main-db" {
 		t.Errorf("db: %+v", db)
+	}
+}
+
+func TestDockerSourceKeepsImageID(t *testing.T) {
+	id := "sha256:" + strings.Repeat("ab", 32)
+	raw := `[{"Id":"c1","Name":"/web","Image":"` + id + `","Config":{"Image":"abcdefghijklmnopqrstuvwx:latest","ExposedPorts":{"3000/tcp":{}}},"State":{"Running":true}}]`
+	d, err := DockerSource{Data: []byte(raw)}.Discover(context.Background())
+	if err != nil || len(d.Apps) != 1 {
+		t.Fatalf("discover: %v %+v", err, d)
+	}
+	if a := d.Apps[0]; a.ImageID != id || !a.HostBuilt {
+		t.Fatalf("app = %+v", a)
 	}
 }
 
