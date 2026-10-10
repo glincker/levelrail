@@ -246,6 +246,36 @@
     "manageAccessHint": "Missing a repository? Choose which repositories this app can see on GitHub, then come back.",
     "personal": "Personal account",
     "organization": "Organization",
-    "connected": "connected"
+    "connected": "connected",
+    "owner": {
+      "legend": "Who owns the App on GitHub",
+      "personal": "My personal account",
+      "organization": "An organization",
+      "orgLogin": "Organization login",
+      "orgPlaceholder": "acme-inc",
+      "orgHelp": "The organization you want to deploy from. You need permission to create GitHub Apps there.",
+      "orgInvalid": "Use the organization's login: letters, numbers and hyphens, up to 39 characters.",
+      "allowOthers": "Allow other accounts and organizations to install it",
+      "publicHelp": "Any GitHub account or organization can install this App. Pick this when you deploy from several organizations.",
+      "privatePersonalHelp": "Private: the App can only be installed on your personal account. Choose an organization above, or allow other accounts, to deploy from an organization.",
+      "privateOrgHelp": "Private: the App can only be installed on this organization. Allow other accounts to also install it on your personal account or other organizations."
+    },
+    "preview": {
+      "title": "Review before connecting to GitHub",
+      "description": "GitHub's own confirmation page only lets you rename the App; everything else below is fixed before your browser leaves this page.",
+      "loadError": "Could not load a preview.",
+      "instance": "GitHub instance",
+      "instanceHelp": "Leave blank for github.com. Self-hosted GitHub Enterprise Server instances work too, e.g. https://github.example.com.",
+      "appName": "App name",
+      "appNameHelp": "The one field GitHub itself lets you change on its own confirmation page too.",
+      "homepage": "Homepage",
+      "callback": "Callback",
+      "setup": "Setup",
+      "webhook": "Webhook",
+      "webhookInactive": "declared, not yet active",
+      "permissions": "Permissions requested",
+      "continue": "Continue to GitHub"
+    },
+    "notInstalled": "The App was created but has not been installed on an account or organization yet. Finish installing it on GitHub to pick repositories. A private App can only be installed on the account or organization that owns it."
   }
 }

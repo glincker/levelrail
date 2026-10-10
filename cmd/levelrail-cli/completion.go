@@ -258,7 +258,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"deploy-freeze": {subs: map[string]*cmdNode{"show": nil, "set": nil, "clear": nil}},
 	}},
 	"git-providers": nil,
-	"github-app": {subs: map[string]*cmdNode{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil, "installations": {subs: map[string]*cmdNode{
+	"github-app": {subs: map[string]*cmdNode{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil, "register-url": nil, "installations": {subs: map[string]*cmdNode{
 		"list": nil, "add": nil, "remove": nil,
 	}}}},
 	"gitlab-app":       {subs: map[string]*cmdNode{"status": nil, "disconnect": nil, "projects": nil, "branches": nil, "use-as-source": nil}},
