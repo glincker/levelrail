@@ -421,6 +421,8 @@ The named volume holding `/var/lib/levelrail-data` persists across recreation.
 
 **If you replace the binary by hand** (a package, your own CI, `scp`), tell the control plane who did it so upgrade history does not show an unknown initiator. Run `upgrade-note` after replacing the file and before starting the service:
 
+Build the binary from a checkout with the version stamped (`scripts/build-linux.sh [amd64|arm64]`, output `dist/levelrail`), then swap it:
+
 ```bash
 sudo systemctl stop levelrail
 sudo install -m 0755 ./levelrail-linux-amd64 /usr/local/bin/levelrail
