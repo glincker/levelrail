@@ -16,7 +16,7 @@ outputs:
     value: ${{ steps.go.outputs.go-version }}
   cache-hit:
     description: Exact match on the day-keyed cache.
-    value: ${{ steps.cache.outputs.cache-hit }}
+    value: ${{ steps.cache.outputs.cache-hit || steps.cache-ro.outputs.cache-hit }}
 
 runs:
   using: composite
@@ -33,9 +33,14 @@ runs:
       shell: bash
       run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
 
-    - name: Restore Go cache
+    # actions/cache saves in its post step, at the end of the job, so the
+    # saved cache holds what the job actually compiled. A split restore
+    # followed by an inline save ran before any go command and saved an
+    # empty cache every day.
+    - name: Go cache (restore and save at job end)
       id: cache
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      if: inputs.save == 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
           ~/.cache/go-build
@@ -45,11 +50,15 @@ runs:
           ${{ inputs.cache-prefix }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
           ${{ inputs.cache-prefix }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
 
-    - name: Save Go cache
-      if: inputs.save == 'true' && steps.cache.outputs.cache-hit != 'true'
-      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    - name: Go cache (restore only)
+      id: cache-ro
+      if: inputs.save != 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ steps.cache.outputs.cache-primary-key }}
+        key: ${{ inputs.cache-prefix }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ steps.day.outputs.day }}
+        restore-keys: |
+          ${{ inputs.cache-prefix }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
+          ${{ inputs.cache-prefix }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-

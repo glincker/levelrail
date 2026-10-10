@@ -106,7 +106,12 @@ entries=()
 api_checks=()
 rest_checks=()
 lanes=()
+# All test lanes share one Go cache (their dependency compile is the bulk of
+# it); the first lane planned saves it at job end, on push events only.
 lane() { # name packages shard flags cache save_cache name_filter name_skip
+	save_flag=false
+	[ "${#entries[@]}" -eq 0 ] && save_flag=true
+	set -- "$1" "$2" "$3" "$4" all "$save_flag" "${7:-}" "${8:-}"
 	entries+=("$(jq -nc --arg lane "$1" --arg packages "$2" --arg shard "$3" --arg flags "$4" \
 		--arg cache "$5" --argjson save "$6" --arg name_filter "${7:-}" --arg name_skip "${8:-}" --arg live "$live" \
 		'{lane: $lane, packages: $packages, shard: $shard, flags: $flags, cache: $cache, save_cache: $save, name_filter: $name_filter, name_skip: $name_skip, live: $live}')")

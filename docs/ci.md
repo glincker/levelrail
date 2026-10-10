@@ -257,7 +257,10 @@ An `NPM_TOKEN` secret, including one set at the organization level, is not used 
 
 - Go: `~/.cache/go-build` and `~/go/pkg/mod`, one cache per job kind (build,
   lint, and each test lane group), keyed on the Go version and `go.sum` plus
-  `tools/go.sum`. Pushes to `main` save one fresh cache per day. PR runs only
+  `tools/go.sum`. Pushes to `main` save one fresh cache per day, in the job's
+  post step so it holds what the job compiled (the save used to run before
+  any `go` command and stored an empty cache). All test lanes share one cache
+  (`go-test-all`, saved by the first lane). PR runs only
   restore, so they cannot churn the repository's 10 GB cache quota. Every
   job that needs this shares `.github/actions/setup-go-cached` rather than
   repeating setup-go plus restore/save inline (five jobs did, byte-for-byte

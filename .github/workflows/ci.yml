@@ -129,9 +129,6 @@ jobs:
         with:
           cache-prefix: go-build
 
-      - name: Planner table tests
-        run: scripts/test-ci-go-plan.sh
-
       # A re-run replays the original event payload, so the label is read
       # live: add ci:live to the PR, then re-run all jobs.
       - name: Live-suite label (ci:live)
@@ -185,6 +182,10 @@ jobs:
         with:
           cache-prefix: go-build
           save: ${{ github.event_name == 'push' }}
+
+      - name: Planner table tests
+        if: needs.plan.outputs.scope != 'none'
+        run: scripts/test-ci-go-plan.sh
 
       - name: go build
         if: needs.plan.outputs.scope != 'none'
@@ -362,7 +363,7 @@ jobs:
       - name: Set up Go (cached)
         uses: ./.github/actions/setup-go-cached
         with:
-          cache-prefix: go-test-rest
+          cache-prefix: go-test-all
 
       # Version and checksums locked by tools/go.mod and tools/go.sum.
       - name: Install gotestsum
