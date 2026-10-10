@@ -50,12 +50,35 @@ type ingressSettingsResource struct {
 	// SuggestedACMEEmail is the first admin's address, offered as the form
 	// default only; it is never sent to the CA until the operator saves it.
 	SuggestedACMEEmail string `json:"suggested_acme_email,omitempty"`
+	// ACMEBlocked is set when real certificates are on but cannot succeed
+	// here: certificate authorities validate on ports 80 and 443, and this
+	// ingress listens elsewhere with no DNS-01 provider to fall back on.
+	ACMEBlocked string `json:"acme_blocked,omitempty"`
+	// IngressHTTPPort and IngressHTTPSPort are the ports this ingress listens on.
+	IngressHTTPPort  int `json:"ingress_http_port,omitempty"`
+	IngressHTTPSPort int `json:"ingress_https_port,omitempty"`
 }
+
+// acmeBlockedNonStandardPorts is the ACMEBlocked value for an ingress that
+// does not listen on 80 and 443.
+const acmeBlockedNonStandardPorts = "non_standard_ports"
 
 func (rt *Router) toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource {
 	res := toIngressSettingsResource(s)
 	res.PublicHost = rt.publicHost
 	res.PublicHostSource = rt.publicHostSource
+	httpPort, httpsPort := rt.doctorHTTPPort, rt.doctorHTTPSPort
+	if httpPort == 0 {
+		httpPort = defaultDoctorHTTPPort
+	}
+	if httpsPort == 0 {
+		httpsPort = defaultDoctorHTTPSPort
+	}
+	if s.ACMEEnabled && (httpPort != defaultDoctorHTTPPort || httpsPort != defaultDoctorHTTPSPort) &&
+		rt.activeDNSProvider(context.Background()) == dnsProviderNone {
+		res.ACMEBlocked = acmeBlockedNonStandardPorts
+		res.IngressHTTPPort, res.IngressHTTPSPort = httpPort, httpsPort
+	}
 	return res
 }
 
