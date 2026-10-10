@@ -36,8 +36,8 @@ const defaultPublicIPProbeTimeout = 4 * time.Second
 
 // ResolvePublicHost returns the address apps are reachable at and where it
 // came from: APP_PUBLIC_HOST wins, APP_PUBLIC_IP_DETECT=off disables
-// probing, otherwise the first public IPv4/IPv6 literal any probe URL
-// returns. Never blocks longer than APP_PUBLIC_IP_PROBE_TIMEOUT.
+// probing, otherwise the first public IPv4 literal any probe URL returns,
+// falling back to IPv6 only when no IPv4 answer arrives. Never blocks longer than APP_PUBLIC_IP_PROBE_TIMEOUT.
 func ResolvePublicHost(ctx context.Context) (host, source string) {
 	if v := strings.TrimSpace(os.Getenv(envPublicHost)); v != "" {
 		return v, PublicHostSourceEnv
@@ -54,8 +54,12 @@ func ResolvePublicHost(ctx context.Context) (host, source string) {
 	if d, err := time.ParseDuration(strings.TrimSpace(os.Getenv(envPublicIPProbeLimit))); err == nil && d > 0 {
 		timeout = d
 	}
-	if ip := probePublicIP(ctx, urls, timeout); ip != "" {
-		return ip, PublicHostSourceDetected
+	// IPv4 first: an sslip.io name built from an IPv6 literal has no A record,
+	// and ACME validators then have no IPv4 address to fall back to.
+	for _, network := range []string{"tcp4", "tcp"} {
+		if ip := probePublicIP(ctx, urls, timeout, network); ip != "" {
+			return ip, PublicHostSourceDetected
+		}
 	}
 	return "", PublicHostSourceNone
 }
@@ -71,12 +75,13 @@ func splitNonEmpty(s string) []string {
 }
 
 // probePublicIP races every URL; the first valid public IP wins.
-func probePublicIP(ctx context.Context, urls []string, timeout time.Duration) string {
+func probePublicIP(ctx context.Context, urls []string, timeout time.Duration, network string) string {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	found := make(chan string, len(urls))
+	client := newProbeClient(network)
 	for _, u := range urls {
-		go func(u string) { found <- fetchPublicIP(ctx, u) }(u)
+		go func(u string) { found <- fetchPublicIP(ctx, client, u) }(u)
 	}
 	for range urls {
 		select {
@@ -91,12 +96,22 @@ func probePublicIP(ctx context.Context, urls []string, timeout time.Duration) st
 	return ""
 }
 
-func fetchPublicIP(ctx context.Context, url string) string {
+// newProbeClient dials only over network ("tcp4" forces IPv4).
+func newProbeClient(network string) *http.Client {
+	dialer := &net.Dialer{}
+	return &http.Client{Transport: &http.Transport{
+		DialContext: func(ctx context.Context, _, addr string) (net.Conn, error) {
+			return dialer.DialContext(ctx, network, addr)
+		},
+	}}
+}
+
+func fetchPublicIP(ctx context.Context, client *http.Client, url string) string {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return ""
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return ""
 	}

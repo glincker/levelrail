@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -57,5 +58,19 @@ func TestResolvePublicHost(t *testing.T) {
 				t.Fatalf("got %q/%q, want %q/%q", host, source, tc.wantHost, tc.wantSource)
 			}
 		})
+	}
+}
+
+func TestNewProbeClient_IPv4OnlyRefusesIPv6(t *testing.T) {
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	l, err := net.Listen("tcp6", "[::1]:0")
+	if err != nil {
+		t.Skip("no IPv6 loopback on this host")
+	}
+	srv.Listener = l
+	srv.Start()
+	defer srv.Close()
+	if ip := fetchPublicIP(context.Background(), newProbeClient("tcp4"), srv.URL); ip != "" {
+		t.Errorf("tcp4 client reached an IPv6-only server: %q", ip)
 	}
 }

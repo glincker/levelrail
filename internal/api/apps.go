@@ -10,6 +10,7 @@ import (
 	"maps"
 	"net/http"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
@@ -728,9 +729,19 @@ func (rt *Router) fallbackURLFor(ctx context.Context, svc store.DesiredService) 
 		return ""
 	}
 	if d, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
-		return "https://" + d
+		return rt.ingressHTTPSURL(d)
 	}
 	return ""
+}
+
+// ingressHTTPSURL is "https://host", with ":port" when the ingress listens
+// on a non-default HTTPS port, so a link built from it reaches this ingress
+// and not whatever owns 443 on the host.
+func (rt *Router) ingressHTTPSURL(host string) string {
+	if p := rt.doctorHTTPSPort; p != 0 && p != defaultDoctorHTTPSPort {
+		return "https://" + host + ":" + strconv.Itoa(p)
+	}
+	return "https://" + host
 }
 
 // handleUpdateApp handles PUT /api/v1/apps/{name}. Full replace, same as
