@@ -43,6 +43,7 @@ jobs:
         id: scope
         env:
           GH_TOKEN: ${{ github.token }}
+          NIGHTLY_LIVE_ALWAYS: 'true'
         run: |
           base=ALL
           if [ "${{ github.event_name }}" = "schedule" ]; then

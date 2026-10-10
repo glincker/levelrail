@@ -86,14 +86,17 @@ jobs:
           QUARANTINE_AGE: warn
         run: scripts/check-flaky-tests.sh
 
-  build-vet:
-    name: Build, vet
+  # Planning is its own job so the test lanes start as soon as the plan is
+  # known instead of waiting behind go build and go vet.
+  plan:
+    name: Plan Go work
     needs: changes
     if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.go == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
       scope: ${{ steps.plan.outputs.scope }}
+      packages: ${{ steps.plan.outputs.packages }}
       has_tests: ${{ steps.plan.outputs.has_tests }}
       matrix: ${{ steps.plan.outputs.matrix }}
       lanes: ${{ steps.plan.outputs.lanes }}
@@ -101,6 +104,11 @@ jobs:
       rest_checks: ${{ steps.plan.outputs.rest_checks }}
       coverage: ${{ steps.plan.outputs.coverage }}
       quarantine: ${{ steps.plan.outputs.quarantine }}
+      live: ${{ steps.plan.outputs.live }}
+      live_reason: ${{ steps.plan.outputs.live_reason }}
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - name: Change detection passed
         if: needs.changes.result != 'success'
@@ -120,13 +128,33 @@ jobs:
         uses: ./.github/actions/setup-go-cached
         with:
           cache-prefix: go-build
-          save: ${{ github.event_name == 'push' }}
+
+      - name: Planner table tests
+        run: scripts/test-ci-go-plan.sh
+
+      # A re-run replays the original event payload, so the label is read
+      # live: add ci:live to the PR, then re-run all jobs.
+      - name: Live-suite label (ci:live)
+        id: label
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAYLOAD_HAS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:live') }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if labels="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/labels" --jq '.[].name')"; then
+            if grep -qxF 'ci:live' <<<"$labels"; then echo "live_label=true" >> "$GITHUB_OUTPUT"; fi
+          else
+            echo "::warning::could not read PR labels, using the event payload"
+            echo "live_label=$PAYLOAD_HAS_LABEL" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Plan affected packages and test lanes
         id: plan
         env:
           GO_FULL: ${{ needs.changes.outputs.go_full }}
           BASE: ${{ needs.changes.outputs.base }}
+          CI_LIVE_LABEL: ${{ steps.label.outputs.live_label }}
         run: |
           if [ "$GO_FULL" = true ]; then
             scripts/ci-go-plan.sh --full 2>summary.txt | tee -a "$GITHUB_OUTPUT"
@@ -135,18 +163,41 @@ jobs:
           fi
           { echo '### Go plan'; echo '```'; cat summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
+  build-vet:
+    name: Build, vet
+    needs: [changes, plan]
+    if: ${{ !cancelled() && needs.plan.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Planning passed
+        if: needs.plan.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Plan Go work: ${{ needs.plan.result }}"
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go (cached)
+        if: needs.plan.outputs.scope != 'none' || needs.changes.outputs.tools == 'true'
+        uses: ./.github/actions/setup-go-cached
+        with:
+          cache-prefix: go-build
+          save: ${{ github.event_name == 'push' }}
+
       - name: go build
-        if: steps.plan.outputs.scope != 'none'
+        if: needs.plan.outputs.scope != 'none'
         env:
-          PACKAGES: ${{ steps.plan.outputs.packages }}
+          PACKAGES: ${{ needs.plan.outputs.packages }}
         run: |
           read -r -a packages <<<"$PACKAGES"
           go build "${packages[@]}"
 
       - name: go vet
-        if: steps.plan.outputs.scope != 'none'
+        if: needs.plan.outputs.scope != 'none'
         env:
-          PACKAGES: ${{ steps.plan.outputs.packages }}
+          PACKAGES: ${{ needs.plan.outputs.packages }}
         run: |
           read -r -a packages <<<"$PACKAGES"
           go vet "${packages[@]}"
@@ -163,19 +214,19 @@ jobs:
   # thorough run. scripts/ci-go-test.sh reruns failed tests at most twice.
   test-go:
     name: Test (${{ matrix.lane }})
-    needs: [changes, build-vet]
+    needs: [changes, plan]
     # Also runs on push to main (no merge queue verifies the tree first),
     # scoped by the same impact detection as a PR. See docs/ci.md.
     if: >-
-      needs.build-vet.result == 'success'
-      && needs.build-vet.outputs.has_tests == 'true'
+      needs.plan.result == 'success'
+      && needs.plan.outputs.has_tests == 'true'
     runs-on: ubuntu-latest
     # 5 min above the docker/rest lanes' own -timeout=27m (scripts/ci-go-plan.sh):
     # enough slack for checkout/setup/teardown/upload around go test's own budget.
     timeout-minutes: 32
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.build-vet.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -203,6 +254,8 @@ jobs:
           GO_TEST_FLAGS: ${{ matrix.flags }}
           SHARD: ${{ matrix.shard }}
           TEST_NAME_FILTER: ${{ matrix.name_filter }}
+          TEST_NAME_SKIP: ${{ matrix.name_skip }}
+          LEVELRAIL_LIVE_SUITE: ${{ matrix.live }}
           COVERPROFILE: coverage-${{ matrix.lane }}.out
           LANE: ${{ matrix.lane }}
           PACKAGES: ${{ matrix.packages }}
@@ -234,10 +287,10 @@ jobs:
   # if its planned lanes passed.
   test-api:
     name: Test (internal/api)
-    needs: [changes, build-vet, test-go]
+    needs: [changes, plan, test-go]
     if: >-
       !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
-      && (needs.build-vet.result != 'success' || contains(needs.build-vet.outputs.api_checks, 'Test ('))))
+      && (needs.plan.result != 'success' || contains(needs.plan.outputs.api_checks, 'Test ('))))
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -245,9 +298,9 @@ jobs:
     timeout-minutes: 3
     steps:
       - name: Upstream jobs passed
-        if: needs.changes.result != 'success' || needs.build-vet.result != 'success'
+        if: needs.changes.result != 'success' || needs.plan.result != 'success'
         run: |
-          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Build, vet: ${{ needs.build-vet.result }}"
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Plan Go work: ${{ needs.plan.result }}"
           exit 1
 
       - name: Checkout
@@ -256,17 +309,17 @@ jobs:
       - name: Check lanes
         env:
           GH_TOKEN: ${{ github.token }}
-          CHECKS: ${{ needs.build-vet.outputs.api_checks }}
+          CHECKS: ${{ needs.plan.outputs.api_checks }}
         run: |
           mapfile -t names < <(jq -r '.[]' <<<"$CHECKS")
           scripts/check-lane-results.sh "${names[@]}"
 
   test-rest:
     name: Test (everything else)
-    needs: [changes, build-vet, test-go]
+    needs: [changes, plan, test-go]
     if: >-
       !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
-      && (needs.build-vet.result != 'success' || contains(needs.build-vet.outputs.rest_checks, 'Test ('))))
+      && (needs.plan.result != 'success' || contains(needs.plan.outputs.rest_checks, 'Test ('))))
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -274,9 +327,9 @@ jobs:
     timeout-minutes: 3
     steps:
       - name: Upstream jobs passed
-        if: needs.changes.result != 'success' || needs.build-vet.result != 'success'
+        if: needs.changes.result != 'success' || needs.plan.result != 'success'
         run: |
-          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Build, vet: ${{ needs.build-vet.result }}"
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Plan Go work: ${{ needs.plan.result }}"
           exit 1
 
       - name: Checkout
@@ -285,7 +338,7 @@ jobs:
       - name: Check lanes
         env:
           GH_TOKEN: ${{ github.token }}
-          CHECKS: ${{ needs.build-vet.outputs.rest_checks }}
+          CHECKS: ${{ needs.plan.outputs.rest_checks }}
         run: |
           mapfile -t names < <(jq -r '.[]' <<<"$CHECKS")
           scripts/check-lane-results.sh "${names[@]}"
@@ -294,11 +347,11 @@ jobs:
   # when one of their packages is affected.
   test-quarantined:
     name: Test (quarantined, non-blocking)
-    needs: [changes, build-vet]
+    needs: [changes, plan]
     # Not a required check, but still a real test run.
     if: >-
-      needs.build-vet.result == 'success'
-      && needs.build-vet.outputs.quarantine == 'true'
+      needs.plan.result == 'success'
+      && needs.plan.outputs.quarantine == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 15
@@ -324,21 +377,21 @@ jobs:
 
   coverage-gate:
     name: Coverage gate
-    needs: [changes, build-vet, test-go]
+    needs: [changes, plan, test-go]
     if: >-
       !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
-      && (needs.build-vet.result != 'success' || needs.build-vet.outputs.has_tests == 'true')))
+      && (needs.plan.result != 'success' || needs.plan.outputs.has_tests == 'true')))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      COVERAGE: ${{ needs.build-vet.outputs.coverage }}
-      LANES: ${{ needs.build-vet.outputs.lanes }}
+      COVERAGE: ${{ needs.plan.outputs.coverage }}
+      LANES: ${{ needs.plan.outputs.lanes }}
       BASE: ${{ needs.changes.outputs.base }}
     steps:
       - name: Upstream jobs passed
-        if: needs.changes.result != 'success' || needs.build-vet.result != 'success' || needs.test-go.result != 'success'
+        if: needs.changes.result != 'success' || needs.plan.result != 'success' || needs.test-go.result != 'success'
         run: |
-          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Build, vet: ${{ needs.build-vet.result }}, test lanes: ${{ needs.test-go.result }}"
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Plan Go work: ${{ needs.plan.result }}, test lanes: ${{ needs.test-go.result }}"
           exit 1
 
       # Full history: the changed-line gate needs a real merge-base.
@@ -643,7 +696,7 @@ jobs:
   # failed or was cancelled. A skipped job had no work for this change.
   ci-required:
     name: CI required
-    needs: [changes, build-vet, lint, kit, test-go, test-api, test-rest, coverage-gate, web-check, install-sh]
+    needs: [changes, plan, build-vet, lint, kit, test-go, test-api, test-rest, coverage-gate, web-check, install-sh]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 3

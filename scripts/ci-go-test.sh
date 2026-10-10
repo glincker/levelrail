@@ -13,6 +13,8 @@
 #   SHARD               "i/n": run only every n-th top-level test (single package only)
 #   TEST_NAME_FILTER    "|"-joined regex: shard only tests matching this,
 #                       from scripts/ci-go-plan.sh's internal/api narrowing
+#   TEST_NAME_SKIP     "|"-joined top-level test names to leave out of this
+#                       lane (a sibling lane runs them alone)
 #   QUARANTINE          "skip" (default) skips .github/flaky-tests.txt entries,
 #                       "only" runs just those entries
 #   RESULTS_DIR         output directory (default test-results)
@@ -63,7 +65,17 @@ fi
 
 case "$quarantine_mode" in
 skip)
-	[ -n "$quarantine_re" ] && flags+=("-skip=$quarantine_re")
+	skip_names=""
+	if [ "${#quarantined[@]}" -gt 0 ]; then
+		skip_names="$(
+			IFS='|'
+			echo "${quarantined[*]}"
+		)"
+	fi
+	if [ -n "${TEST_NAME_SKIP:-}" ]; then
+		skip_names="${skip_names:+$skip_names|}$TEST_NAME_SKIP"
+	fi
+	[ -n "$skip_names" ] && flags+=("-skip=^($skip_names)\$")
 	;;
 only)
 	if [ -z "$quarantine_re" ]; then
@@ -182,6 +194,14 @@ done
 		echo "Failed on every attempt:"
 		echo
 		awk '{printf "- `%s` `%s`\n", $1, $2}' "$out/failed.txt"
+	fi
+	by_design="$(jq -rs '[.[] | select(.Action == "output" and .Test != null and (.Output | contains("skipped by design")))
+		| .Package + " " + .Test] | unique | .[]' "$out/events.json" 2>/dev/null || true)"
+	if [ -n "$by_design" ]; then
+		echo
+		echo "Skipped by design (live gate: runs in full on live-path changes, the ci:live label and nightly):"
+		echo
+		awk '{printf "- `%s` `%s`\n", $1, $2}' <<<"$by_design"
 	fi
 	if [ ! -s "$out/flaky.txt" ] && [ ! -s "$out/failed.txt" ]; then
 		echo

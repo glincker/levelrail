@@ -14,9 +14,11 @@ import (
 	"github.com/GLINCKER/levelrail/internal/compose"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/test/e2e/testenv"
 )
 
 func TestCatalogAutomationBatch_Live(t *testing.T) {
+	testenv.RequireFullLive(t)
 	env := newLiveBuildEnv(t)
 	runtime := env.Runtime
 	dockerCli := env.DockerCli

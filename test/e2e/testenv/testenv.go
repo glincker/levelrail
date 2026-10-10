@@ -261,6 +261,22 @@ func SignHMAC(secret string, payload []byte) string {
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
+// LiveSuiteEnv selects the live suite size: "smoke" runs the PR subset,
+// anything else (unset locally and in nightly) runs everything.
+const LiveSuiteEnv = "LEVELRAIL_LIVE_SUITE"
+
+// LiveSmokeOnly reports whether this run is the PR smoke subset.
+func LiveSmokeOnly() bool { return os.Getenv(LiveSuiteEnv) == "smoke" }
+
+// RequireFullLive skips a heavy live suite in smoke runs. The skip message
+// is what the CI job summary reports as skipped by design.
+func RequireFullLive(t testing.TB) {
+	t.Helper()
+	if LiveSmokeOnly() {
+		t.Skipf("skipped by design: %s=smoke (heavy live suite, see docs/ci.md)", LiveSuiteEnv)
+	}
+}
+
 // WriteFile writes content to dir/name with 0o600 permissions.
 func WriteFile(dir, name, content string) error {
 	return os.WriteFile(filepath.Join(dir, name), []byte(content), 0o600)

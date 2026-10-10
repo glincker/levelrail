@@ -23,6 +23,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/test/e2e/testenv"
 )
 
 func waitNodeStatus(t *testing.T, client *apiclient.Client, nodeID, want string, timeout time.Duration) {
@@ -47,6 +48,7 @@ func waitNodeStatus(t *testing.T, client *apiclient.Client, nodeID, want string,
 }
 
 func TestBreakGlass_Live_AgentSurvivesControlPlaneDeath(t *testing.T) {
+	testenv.RequireFullLive(t)
 	env := newLiveBuildEnv(t)
 
 	const serviceName = "levelrail-breakglass-agent"

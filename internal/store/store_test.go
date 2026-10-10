@@ -2,13 +2,57 @@ package store
 
 import (
 	"context"
+	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 )
 
+var (
+	templateOnce  sync.Once
+	templateBytes []byte
+	templateErr   error
+)
+
+// migratedTemplate applies the whole migration chain once per test binary;
+// openTestDB starts each test from a copy, which Open then finds up to date.
+func migratedTemplate() ([]byte, error) {
+	templateOnce.Do(func() {
+		dir, err := os.MkdirTemp("", "store-template-")
+		if err != nil {
+			templateErr = err
+			return
+		}
+		defer func() { _ = os.RemoveAll(dir) }()
+		path := filepath.Join(dir, "template.db")
+		db, err := Open(context.Background(), path)
+		if err != nil {
+			templateErr = err
+			return
+		}
+		if _, err := db.ExecContext(context.Background(), `PRAGMA wal_checkpoint(TRUNCATE)`); err != nil {
+			templateErr = err
+		}
+		if err := db.Close(); err != nil && templateErr == nil {
+			templateErr = err
+		}
+		if templateErr == nil {
+			templateBytes, templateErr = os.ReadFile(path) //nolint:gosec // test-only path from os.MkdirTemp
+		}
+	})
+	return templateBytes, templateErr
+}
+
 func openTestDB(t *testing.T) *DB {
 	t.Helper()
+	tmpl, err := migratedTemplate()
+	if err != nil {
+		t.Fatalf("migrated template: %v", err)
+	}
 	path := filepath.Join(t.TempDir(), "levelrail.db")
+	if err := os.WriteFile(path, tmpl, 0o600); err != nil {
+		t.Fatalf("write template copy: %v", err)
+	}
 	db, err := Open(context.Background(), path)
 	if err != nil {
 		t.Fatalf("Open(%q) error = %v", path, err)

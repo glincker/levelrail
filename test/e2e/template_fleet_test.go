@@ -11,6 +11,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -25,6 +27,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/test/e2e/testenv"
 )
 
 const (
@@ -108,6 +111,32 @@ var templateFleetSample = []templateFleetCase{
 	{id: "linkwarden", serviceOrder: []string{"db", "meilisearch", "linkwarden"}, readyBudget: 120 * time.Second, serviceTimeout: 6 * time.Minute},
 }
 
+// templateFleetSmokeIDs is the PR subset: one single-service template, one
+// tiny one, and one db-backed multi-service template.
+var templateFleetSmokeIDs = map[string]bool{"uptime-kuma": true, "mailpit": true, "gitea": true}
+
+// templateFleetParallelism is how many templates deploy at once, from
+// LEVELRAIL_FLEET_PARALLEL (default 3, 1 runs them one at a time).
+func templateFleetParallelism() int {
+	if n, err := strconv.Atoi(os.Getenv("LEVELRAIL_FLEET_PARALLEL")); err == nil && n >= 1 {
+		return n
+	}
+	return 3
+}
+
+func templateFleetCases() []templateFleetCase {
+	if !testenv.LiveSmokeOnly() {
+		return templateFleetSample
+	}
+	var out []templateFleetCase
+	for _, tc := range templateFleetSample {
+		if templateFleetSmokeIDs[tc.id] {
+			out = append(out, tc)
+		}
+	}
+	return out
+}
+
 // templateFleetDeployResponse mirrors internal/api's own (unexported)
 // composeDeployResponse wire shape: only the fields this test needs to
 // drive the rest of the deploy.
@@ -166,9 +195,16 @@ func TestTemplateFleet_Live_DeploysAndTearsDownCleanly(t *testing.T) {
 	}
 	client := loginE2EClient(t, ts.URL, templateFleetAdminUsername, templateFleetAdminPassword)
 
-	for _, tc := range templateFleetSample {
+	limit := templateFleetParallelism()
+	sem := make(chan struct{}, limit)
+	for _, tc := range templateFleetCases() {
 		tc := tc
 		t.Run(tc.id, func(t *testing.T) {
+			if limit > 1 {
+				t.Parallel()
+				sem <- struct{}{}
+				defer func() { <-sem }()
+			}
 			runTemplateFleetCase(t, client, ts.URL, svcStore, runtime, dockerCli, secretsManager, tc)
 		})
 	}

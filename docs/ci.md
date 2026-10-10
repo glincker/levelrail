@@ -57,7 +57,7 @@ Go toolchain) sorts changed files into areas:
 | `.github/flaky-tests.txt` | The packages named in the changed lines, plus the quarantine lane |
 | Anything else (`adr/`, `LICENSE`, other `.github/` files) | Nothing beyond the always-on checks |
 
-`scripts/ci-go-plan.sh <base> [head]` (inside **Build, vet**) turns the Go
+`scripts/ci-go-plan.sh <base> [head]` (inside **Plan Go work**) turns the Go
 side into packages and test lanes through `scripts/affected-go-packages.sh`,
 the same dependency-graph walk the pre-push hook uses. A change only a
 package's own tests can see (`_test.go`, `testdata/`, a doc a test reads)
@@ -65,10 +65,33 @@ selects that package alone, not its dependents. Lanes:
 
 - `internal/api` in four shards by test name whenever it is affected. It is
   the slowest package by far, and most backend changes reach it.
+- `test/e2e` always gets its own `e2e` lane when it is affected, so the
+  heaviest package sets the floor alone. On a full live run
+  (see [Live suites](#live-suites)) the template fleet test gets its own
+  `e2e-fleet` lane, `e2e` runs everything else in that package, and
+  `test/e2e/reconcile` gets an `e2e-reconcile` lane.
 - Up to `CI_SMALL_LANE_MAX` (default 8) other affected packages share one
   `rest` lane. Above that, Docker-backed packages get their own `docker`
   lane with bounded `-p` and the rest share `rest`.
 - No lane at all when nothing Go-related is affected.
+
+The lanes and the checks that gate them:
+
+| Lane | Packages | Present when | Required check name |
+| --- | --- | --- | --- |
+| `api-1` to `api-4` | `internal/api`, sharded by test name | `internal/api` affected | `Test (api-N)`, aggregated as `Test (internal/api)` |
+| `e2e-fleet` | `test/e2e`, template fleet test only | full live run | `Test (e2e-fleet)` |
+| `e2e` | `test/e2e` (minus the fleet test on a full live run) | `test/e2e` affected | `Test (e2e)` |
+| `e2e-reconcile` | `test/e2e/reconcile` | full live run, package affected | `Test (e2e-reconcile)` |
+| `docker` | other Docker-backed packages, `-p 2` | many packages affected | `Test (docker)` |
+| `rest` | everything else (and the Docker ones on a small diff) | any other package affected | `Test (rest)` |
+
+Every planned lane is listed in `rest_checks` or `api_checks`, which the
+`Test (everything else)` and `Test (internal/api)` aggregators wait on, and
+`scripts/test-ci-go-plan.sh` asserts that for each case, so a lane cannot be
+added without a check that fails when it fails or goes missing. Planning runs
+in its own **Plan Go work** job, so the test lanes start as soon as the plan
+exists instead of waiting behind `go build` and `go vet`.
 
 `test/e2e` is split from `test/e2e/reconcile` along one dependency: only the
 former constructs a live `api.Router`. Since `internal/api` is the package
@@ -76,6 +99,51 @@ most PRs touch, this keeps a one-file fix there from selecting the whole
 end-to-end suite through the test-import walk. The reconciler and Docker-only
 tests in `test/e2e/reconcile` run only when a PR's diff reaches something they
 import.
+
+## Live suites
+
+The heaviest tests pull real upstream images and run real container
+lifecycles: the template fleet (`TestTemplateFleet_Live_DeploysAndTearsDownCleanly`,
+about 1,000 s when run one template at a time), the catalog batch live tests
+and the break-glass tests. They are the only tests the PR gate trims. Every
+other `test/e2e` and `test/e2e/reconcile` test, and every unit test, runs on
+every PR the same as before.
+
+`scripts/ci-go-plan.sh` decides `live=full` or `live=smoke` for the PR, in one
+place, and prints the reason in the **Go plan** job summary:
+
+| `live` | When | What runs |
+| --- | --- | --- |
+| `full` | The diff touches `internal/catalog`, `internal/compose`, `internal/registrycatalog`, `internal/reconcile`, `internal/docker`, `internal/dockertest`, `internal/agent`, `internal/build`, `internal/pipeline`, `internal/ingress`, `test/e2e`, `ci.yml`, `nightly.yml`, `.github/actions`, or the planner, lane runner or group scripts | The whole fleet (28 templates), every catalog batch, both break-glass tests |
+| `full` | The PR has the `ci:live` label | Same |
+| `full` | A full run (`go.mod`, migrations, pipeline scripts, push with no base) | Same |
+| `smoke` | Anything else | Fleet limited to `uptime-kuma`, `mailpit` and `gitea` (one single-service, one tiny, one db-backed multi-service template); the catalog batch and break-glass tests skip |
+
+A skipped heavy test is never silent. It skips with the message
+`skipped by design: LEVELRAIL_LIVE_SUITE=smoke`, and the lane's job summary
+lists every test skipped that way under "Skipped by design". The mechanism is
+`LEVELRAIL_LIVE_SUITE` in `test/e2e/testenv`; unset (local runs and
+`nightly.yml`) means everything runs.
+
+To force the full set on a PR: add the `ci:live` label (create it once with
+`gh label create ci:live`), then re-run all jobs or push. The plan job reads
+the labels live, because a re-run replays the original event payload.
+
+`nightly.yml` always keeps the docker lane in its matrix
+(`NIGHTLY_LIVE_ALWAYS`), so the full live set runs every night even on a day
+with no commits, which is when an upstream image change would otherwise go
+unnoticed.
+
+Run the full set on a developer machine with one command:
+
+```sh
+scripts/live-tests.sh                       # all of test/e2e and test/e2e/reconcile
+scripts/live-tests.sh -run TestBreakGlass   # one suite
+```
+
+The fleet test deploys `LEVELRAIL_FLEET_PARALLEL` templates at once (default
+3, `1` for strictly sequential). Each template gets its own app id, network
+and volumes, and teardown asserts nothing leaked per template.
 
 The coverage gate follows the plan: a full run checks the 70% aggregate
 for `internal/`, a scoped run checks the changed-line gate only, at a
@@ -108,9 +176,9 @@ never reach it. It has its own lane instead:
 
 ## Required checks
 
-**CI required** is the aggregator and the one check meant to gate a merge. It always runs and needs `changes`, `build-vet`, `lint`, `kit`, the Go test jobs, `coverage-gate`, `web-check` and `install-sh`. It fails if change detection did not succeed or any job it needs failed or was cancelled, and a job that was skipped because its area had no work counts as passing. Because branch protection can name just this one context, the job set can be split or renamed without touching the ruleset. Branch protection itself is configured in GitHub, not in this repository.
+**CI required** is the aggregator and the one check meant to gate a merge. It always runs and needs `changes`, `plan`, `build-vet`, `lint`, `kit`, the Go test jobs, `coverage-gate`, `web-check` and `install-sh`. It fails if change detection did not succeed or any job it needs failed or was cancelled, and a job that was skipped because its area had no work counts as passing. Because branch protection can name just this one context, the job set can be split or renamed without touching the ruleset. Branch protection itself is configured in GitHub, not in this repository.
 
-Six jobs also never skip because of an upstream failure: `Build, vet`, `Lint`, `Test (internal/api)`, `Test (everything else)`, `Coverage gate` and `Web (tsc, eslint)`. Each runs, and fails, whenever an upstream job failed or was cancelled, and is skipped only when its area has no work for the diff. GitHub reports a job skipped by its own `if` as success for a required check, so auto-merge does not wait on it.
+Seven jobs also never skip because of an upstream failure: `Plan Go work`, `Build, vet`, `Lint`, `Test (internal/api)`, `Test (everything else)`, `Coverage gate` and `Web (tsc, eslint)`. Each runs, and fails, whenever an upstream job failed or was cancelled, and is skipped only when its area has no work for the diff. GitHub reports a job skipped by its own `if` as success for a required check, so auto-merge does not wait on it.
 
 ## Other workflows on a PR
 
@@ -236,9 +304,11 @@ scripts/ci-go-plan.sh <base-sha> <head-sha>
 - To force the full suite on a PR, change `.github/workflows/ci.yml` or one
   of the pipeline scripts, or run the nightly workflow on the branch with
   `workflow_dispatch`.
-- The docker/rest lane's `go test -timeout` (27m, job `timeout-minutes: 32`)
-  has headroom above `test/e2e`'s own cost. `test/e2e` runs a fixed template
-  fleet plus a growing set of per-batch catalog live tests sequentially in
-  one binary (no `t.Parallel()`), so its floor rises independent of any one
-  PR's diff size. Raising the ceiling again later means that floor has
-  grown. Parallelizing those subtests is the real fix, and has not been done.
+- The e2e and docker lanes' `go test -timeout` (27m, job `timeout-minutes: 32`)
+  has headroom above the fleet test's cost. The fleet test now runs its
+  templates in bounded parallel (`LEVELRAIL_FLEET_PARALLEL`), and the PR
+  smoke subset keeps the typical `test/e2e` lane in the low minutes.
+- Test databases: `internal/store`, `internal/pipeline` and `internal/api`
+  tests start from a copy of one migrated template database instead of
+  replaying every migration per test. New test helpers that open a store in
+  a hot path should do the same.
