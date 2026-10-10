@@ -16,6 +16,7 @@ import { useShortcuts } from '../hooks/useShortcuts'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { AppHeader } from '../components/shell/AppHeader'
 import { ShellBanner } from '../components/shell/ShellBanner'
+import { DeviceLoginBanner } from '../components/attention/DeviceLoginBanner'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
 import { Toaster } from '../components/ui/toast'
 
@@ -112,6 +113,7 @@ function AppShell() {
       <SidebarInset>
         <AppHeader onSearch={() => setCommandPaletteOpen(true)} />
         <ShellBanner />
+        <DeviceLoginBanner />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="mx-auto w-full max-w-6xl">
             <div className="mb-4 empty:hidden"></div>

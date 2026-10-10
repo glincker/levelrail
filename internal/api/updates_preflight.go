@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"strings"
 	"syscall"
 	"time"
 
@@ -48,7 +47,7 @@ func (rt *Router) handleUpdatePreflight(w http.ResponseWriter, r *http.Request) 
 		tag, url := release.Tag, release.URL
 		out.LatestVersion, out.ReleaseURL = &tag, &url
 		out.UpdateAvailable = upgrade.UpdateAvailable(version.Version, release)
-		out.ReleaseNotes = truncateRunes(strings.TrimSpace(release.Body), releaseNotesMaxRunes)
+		out.ReleaseNotes = truncateRunes(cleanReleaseNotes(release.Body), releaseNotesMaxRunes)
 		upgradeTag = tag
 		assets = release.AssetNames
 	}

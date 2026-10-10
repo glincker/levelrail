@@ -168,6 +168,9 @@
         "client_name": "laptop",
         "created_at": "\u003ccreated_at\u003e",
         "expires_at": "\u003cexpires_at\u003e",
+        "ip_mismatch": false,
+        "requester_ip": "192.0.2.1",
+        "user_agent": "",
         "user_code": "\u003cuser_code\u003e"
       }
     ]

@@ -1,7 +1,3 @@
----
-description: Estimated model context cost of the MCP tool list, by toolset, and the agent-core tool profile.
----
-
 # MCP tool surface
 
 Estimated model context cost of the MCP tool list. Tokens are estimated as characters divided by 4 over each tool's name, description and input schema JSON.
@@ -15,16 +11,16 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | alerts | 10 | 1265 |
 | apps | 16 | 2124 |
 | audit | 1 | 309 |
-| ai-control | 1 | 164 |
 | backups | 11 | 1031 |
 | databases | 3 | 167 |
 | deploys | 25 | 3891 |
 | diagnostics | 3 | 328 |
 | domains | 10 | 1145 |
-| environments | 5 | 728 |
+| environments | 3 | 556 |
 | flags | 2 | 165 |
+| global-environments | 2 | 206 |
 | iac | 2 | 800 |
-| iam | 3 | 219 |
+| iam | 4 | 258 |
 | loadbalancer | 9 | 1347 |
 | logs | 12 | 1663 |
 | metrics | 4 | 626 |
@@ -35,13 +31,12 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | pipelines | 3 | 457 |
 | previews | 2 | 214 |
 | registry | 3 | 325 |
-| roles | 1 | 103 |
 | scheduled | 2 | 200 |
-| settings | 2 | 187 |
-| system | 4 | 284 |
+| settings | 3 | 236 |
+| system | 6 | 407 |
 | templates | 2 | 126 |
 | webhooks | 1 | 155 |
-| **total** | **162** | **21673** |
+| **total** | **163** | **21053** |
 
 ## agent-core profile
 

@@ -1,8 +1,21 @@
 import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import i18next from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
+import updatesEn from '../../locales/en/updates.json'
 import { UpgradePreflight } from './UpgradePreflight'
 import type { UpdatePreflight } from '../../queries/updates'
+
+const testI18n = i18next.createInstance()
+void testI18n.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  ns: ['updates'],
+  defaultNS: 'updates',
+  resources: { en: { updates: updatesEn } },
+  interpolation: { escapeValue: false },
+})
 
 const base: UpdatePreflight = {
   current_version: 'v1.0.0',
@@ -36,9 +49,11 @@ function renderWith(data: UpdatePreflight) {
   )
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
-    <QueryClientProvider client={qc}>
-      <UpgradePreflight />
-    </QueryClientProvider>,
+    <I18nextProvider i18n={testI18n}>
+      <QueryClientProvider client={qc}>
+        <UpgradePreflight />
+      </QueryClientProvider>
+    </I18nextProvider>,
   )
 }
 

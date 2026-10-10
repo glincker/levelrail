@@ -32,6 +32,8 @@ export interface NotificationChannel {
   // stored; the secret itself is write-only and never echoed back.
   interactive_approvals: boolean
   has_interactive_secret: boolean
+  // Opt-in link-only notice when a CLI login is waiting for approval.
+  notify_device_login: boolean
   created_at: string
   updated_at: string
 }
@@ -46,6 +48,7 @@ export interface CreateNotificationChannelRequest {
   // own convention above, not a partial patch.
   interactive_approvals?: boolean
   interactive_secret?: string
+  notify_device_login?: boolean
 }
 
 export interface TestNotificationChannelRequest {

@@ -326,6 +326,9 @@ const (
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
+	if len(os.Args) > 1 && runReleaseCommand(os.Args[1], os.Args[2:]) {
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "recover-admin" {
 		if err := runRecoverAdmin(context.Background(), logger, os.Args[2:], os.Stdout, openStore); err != nil {
 			logger.Error("recover-admin failed", slog.String("error", err.Error()))
@@ -2253,6 +2256,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithNotificationChannelTester(deployDispatcher),
 		api.WithNotificationDeliveries(alertingDB),
 		api.WithApprovalChatNotifier(deployDispatcher),
+		api.WithDeviceLoginNotifier(deployDispatcher),
+		api.WithDashboardURL(dashboardBaseURL()),
 		api.WithFirewallRequiredPorts(platformRequiredPorts()),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithRequestLogThresholds(slowRequestThreshold(logger), criticalRequestThreshold(logger)),

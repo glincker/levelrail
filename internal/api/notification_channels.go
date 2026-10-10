@@ -56,10 +56,13 @@ type notificationChannelResource struct {
 	// Slack/Discord-only opt-in (chat_interactions.go): the secret
 	// itself is write-only, the same "never echo a credential back"
 	// rule WebhookSecret's own doc comment establishes for git sources.
-	InteractiveApprovals bool   `json:"interactive_approvals"`
-	HasInteractiveSecret bool   `json:"has_interactive_secret"`
-	CreatedAt            string `json:"created_at"`
-	UpdatedAt            string `json:"updated_at"`
+	InteractiveApprovals bool `json:"interactive_approvals"`
+	HasInteractiveSecret bool `json:"has_interactive_secret"`
+	// NotifyDeviceLogin opts the channel into a link-only notice when a
+	// CLI device login is waiting for approval.
+	NotifyDeviceLogin bool   `json:"notify_device_login"`
+	CreatedAt         string `json:"created_at"`
+	UpdatedAt         string `json:"updated_at"`
 }
 
 func toNotificationChannelResource(c alerting.NotificationChannel) notificationChannelResource {
@@ -67,6 +70,7 @@ func toNotificationChannelResource(c alerting.NotificationChannel) notificationC
 		ID: c.ID, Name: c.Name, Kind: string(c.Kind), NotifyURL: c.NotifyURL,
 		Enabled: c.Enabled, InteractiveApprovals: c.InteractiveApprovals,
 		HasInteractiveSecret: c.InteractiveSecret != "",
+		NotifyDeviceLogin:    c.NotifyDeviceLogin,
 		CreatedAt:            c.CreatedAt, UpdatedAt: c.UpdatedAt,
 	}
 }
@@ -85,6 +89,7 @@ type createNotificationChannelRequest struct {
 	// one rather than clearing it: see toChannel's own doc comment.
 	InteractiveApprovals bool   `json:"interactive_approvals,omitempty"`
 	InteractiveSecret    string `json:"interactive_secret,omitempty"`
+	NotifyDeviceLogin    bool   `json:"notify_device_login,omitempty"`
 }
 
 // notificationChannelsSupportingInteractiveApprovals is InteractiveApprovals'
@@ -183,6 +188,7 @@ func (req createNotificationChannelRequest) toChannel(id, existingSecret string)
 	return alerting.NotificationChannel{
 		ID: id, Name: req.Name, Kind: kind, NotifyURL: req.NotifyURL, Enabled: enabled,
 		InteractiveApprovals: req.InteractiveApprovals, InteractiveSecret: secret,
+		NotifyDeviceLogin: req.NotifyDeviceLogin,
 	}, nil
 }
 

@@ -17,6 +17,10 @@ import (
 // auditActorSession is the audit actor type for a cookie-session caller.
 const auditActorSession = "session"
 
+// auditActorDevice labels audit rows for events no signed-in actor caused,
+// such as a device login code expiring unapproved.
+const auditActorDevice = "device"
+
 // tokenResource is the wire shape for a token in list responses: never
 // the token secret itself (that's returned exactly once, by
 // handleCreateToken's response, and never again), only enough for an

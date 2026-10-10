@@ -54,10 +54,12 @@ System endpoints for:
 | PUT | /api/v1/updates/settings | AbilityRoot | handleUpdateSettings |
 | GET | /api/v1/system/orphans | AbilityRead | handleListOrphans |
 | POST | /api/v1/system/orphans/reap | AbilityRoot | handleReapOrphans |
+| GET | /api/v1/updates/releases | AbilityRead | handleReleaseHistory |
+| GET | /api/v1/updates/rollback-plan | AbilityRoot | handleRollbackPlan |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 78 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 79 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -134,6 +136,7 @@ Endpoints for:
 | GET | /api/v1/settings/ai-control | AbilityRead | handleGetAIControl |
 | PUT | /api/v1/settings/ai-control | AbilityRoot | handleUpdateAIControl |
 | POST | /api/v1/settings/ai-control/revoke-agent-tokens | AbilityRoot | handleRevokeAgentTokens |
+| GET | /api/v1/auth/device/pending-summary | AbilityRead | handleDevicePendingSummary |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -935,7 +938,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/imports/platform/databases/{name}/copy | AbilityWriteSensitive | handleCopyDatabaseData |
 | GET | /api/v1/migration/volumes | AbilityRead | handleVolumeGuide |
 | GET | /api/v1/migration/cutover | AbilityRead | handleCutoverReport |
-| GET | /api/v1/migration/cutover/verify | AbilityRead | handleCutoverVerify |
+| GET | /api/v1/migration/cutover/verify | AbilityWriteSensitive | handleCutoverVerify |
 | GET | /api/v1/ingress/connectivity | AbilityRead | handleIngressConnectivity |
 
 ## See also

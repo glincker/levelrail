@@ -298,6 +298,9 @@ type Router struct {
 	// constructed in NewRouter. Separate from updatesCache above so the
 	// stable channel's existing cache/behavior stays untouched.
 	channelUpdatesCache *upgrade.Cache
+	// releaseHist lists recent releases and their schema versions for the
+	// rollback view (updates_releases.go); always non-nil.
+	releaseHist *releaseHistorySource
 	// certExpiryWarningWindow overrides alerting.DefaultCertExpiryWarningWindow
 	// for GET /api/v1/certificates's "expiring_soon" threshold, and for a
 	// kind=cert_expiry alert rule's own evaluation (cmd/levelrail/main.go
@@ -507,18 +510,21 @@ type Router struct {
 	doctorHTTPSPort              int                              // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
 	webhookDeliveries            WebhookDeliveryStore             // always set, same "core Store interface" shape as deployAttempts above
 	policies                     PolicyStore                      // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
-	deviceFlow                   *loginLimiter                    // per-IP device-login-start budget, distinct from logins/forgotPasswordByIP above
-	hookRuns                     HookRunStore                     // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
-	deployApprovals              DeployApprovalStore              // always set, same "core Store interface" shape as hookRuns above: deploy_approvals always exists, empty is a valid, non-error result
-	deployApprovalTTL            time.Duration                    // 0 means "use defaultDeployApprovalTTL", set via WithDeployApprovalTTL
-	invites                      InviteStore                      // always set, same "core Store interface" shape as passwordResetTokens above
-	inviteTTL                    time.Duration                    // 0 means "use defaultInviteTTL", set via WithInviteTTL
-	aiSettings                   AIAssistantSettingsStore         // always set, same shape as emailSettings above: the provider/model row always exists (migrations/0106's own seeded row)
-	aiSecrets                    AIAssistantSecrets               // nil is valid: PUT/DELETE /api/v1/settings/ai-assistant return 501, same shape as emailSecrets above
-	aiControl                    AIControlStore                   // always set: the AI control gate (ai_control_gate.go) and /settings/ai-control routes
-	aiControlCache               aiControlCache                   // short lived per process copy of the AI control row, invalidated on PUT
-	aiChat                       AIChatStore                      // always set, same "core Store interface" shape as backupTargets above
-	aiEngine                     AIEngine                         // nil is valid: every /api/v1/ai/... session route returns 501, same shape as builder above
+	deviceFlow                   *apiRateLimiter                  // per-IP device-login-start token bucket
+	deviceNotifier               DeviceLoginNotifier              // nil is valid: no outbound notice for a waiting CLI login
+	deviceNotices                deviceNoticeGate
+	publicDashboardURL           string                   // configured dashboard base URL for notice links; empty means no link
+	hookRuns                     HookRunStore             // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
+	deployApprovals              DeployApprovalStore      // always set, same "core Store interface" shape as hookRuns above: deploy_approvals always exists, empty is a valid, non-error result
+	deployApprovalTTL            time.Duration            // 0 means "use defaultDeployApprovalTTL", set via WithDeployApprovalTTL
+	invites                      InviteStore              // always set, same "core Store interface" shape as passwordResetTokens above
+	inviteTTL                    time.Duration            // 0 means "use defaultInviteTTL", set via WithInviteTTL
+	aiSettings                   AIAssistantSettingsStore // always set, same shape as emailSettings above: the provider/model row always exists (migrations/0106's own seeded row)
+	aiSecrets                    AIAssistantSecrets       // nil is valid: PUT/DELETE /api/v1/settings/ai-assistant return 501, same shape as emailSecrets above
+	aiControl                    AIControlStore           // always set: the AI control gate (ai_control_gate.go) and /settings/ai-control routes
+	aiControlCache               aiControlCache           // short lived per process copy of the AI control row, invalidated on PUT
+	aiChat                       AIChatStore              // always set, same "core Store interface" shape as backupTargets above
+	aiEngine                     AIEngine                 // nil is valid: every /api/v1/ai/... session route returns 501, same shape as builder above
 
 	roles RoleStore
 	// mesh is this node's live network.Mesh handle (GET /api/v1/mesh's
@@ -687,12 +693,13 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		sessionLinkTokens:           s,
 		forgotPasswordByIP:          newLoginLimiter(),
 		forgotPasswordByEmail:       newLoginLimiter(),
-		deviceFlow:                  newLoginLimiter(),
+		deviceFlow:                  newAPIRateLimiter(deviceStartRatePerMinute()),
 		fetchLatestRelease:          defaultFetchLatestRelease,
 		updatesCache:                newUpdatesCache(),
 		updateSettings:              s,
 		upgradeFetchers:             upgrade.DefaultFetchers(b.RepoSlug()),
 		channelUpdatesCache:         upgrade.NewCache(),
+		releaseHist:                 newReleaseHistorySource(b.RepoSlug()),
 		auditLog:                    s,
 		scheduledTasks:              s,
 		featureFlags:                s,

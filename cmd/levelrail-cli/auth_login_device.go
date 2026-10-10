@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -49,7 +50,17 @@ func runAuthLoginDevice(prog, apiURLFlag, profileFlag, clientNameFlag string, st
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("start device login: %w", err))
 	}
 
-	_, _ = fmt.Fprintf(stderr, "To finish logging in, open:\n\n  %s\n\nand enter this code: %s\n\nWaiting for approval...\n", started.VerificationURI, started.UserCode)
+	approvalURL := started.VerificationURIComplete
+	if approvalURL == "" {
+		approvalURL = started.VerificationURI
+	}
+	expiresAt := time.Now().UTC().Add(time.Duration(started.ExpiresIn) * time.Second)
+	if jsonOut || of.Format == outputJSON {
+		if err := writeDevicePendingLine(stdout, approvalURL, started, expiresAt); err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("write pending line: %w", err))
+		}
+	}
+	_, _ = fmt.Fprintf(stderr, "To finish logging in, open:\n\n  %s\n\nand confirm this code matches: %s\n\nThe code expires in %d minutes. Waiting for approval...\n", approvalURL, started.UserCode, (started.ExpiresIn+59)/60)
 
 	interval := time.Duration(started.Interval) * time.Second
 	if interval <= 0 {
@@ -108,4 +119,26 @@ func pollDeviceAuthUntilGranted(ctx context.Context, client *Client, deviceCode 
 		}
 		return deviceTokenResponse{}, fmt.Errorf("poll device login: %w", err)
 	}
+}
+
+// devicePendingLine is the single machine-readable line "--json" prints
+// before blocking, so an agent can relay the approval link to its user.
+type devicePendingLine struct {
+	Event           string    `json:"event"`
+	VerificationURL string    `json:"verification_url"`
+	UserCode        string    `json:"user_code"`
+	ExpiresIn       int       `json:"expires_in"`
+	ExpiresAt       time.Time `json:"expires_at"`
+}
+
+func writeDevicePendingLine(w io.Writer, approvalURL string, started deviceStartResponse, expiresAt time.Time) error {
+	b, err := json.Marshal(devicePendingLine{
+		Event: "device_login_pending", VerificationURL: approvalURL, UserCode: started.UserCode,
+		ExpiresIn: started.ExpiresIn, ExpiresAt: expiresAt,
+	})
+	if err != nil {
+		return fmt.Errorf("encode pending line: %w", err)
+	}
+	_, err = fmt.Fprintf(w, "%s\n", b)
+	return err
 }

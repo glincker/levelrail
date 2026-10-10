@@ -21,10 +21,21 @@ const deviceAuthTTL = 10 * time.Minute
 // "slow_down"-response escalation real OAuth device grants define.
 
 const (
+	envDeviceStartRate      = "APP_DEVICE_START_RATE_PER_MINUTE" //nolint:gosec // env var name
+	defaultDeviceStartRate  = 6
 	envDeviceTokenTTLDays   = "APP_DEVICE_TOKEN_TTL_DAYS"   //nolint:gosec // env var name
 	envDeviceTokenAllowRoot = "APP_DEVICE_TOKEN_ALLOW_ROOT" //nolint:gosec // env var name
 	defaultDeviceTokenDays  = 30
 )
+
+// deviceStartRatePerMinute is the per-IP budget for unauthenticated device
+// login starts, env-overridable; 0 or less disables the limit.
+func deviceStartRatePerMinute() int {
+	if n, err := strconv.Atoi(os.Getenv(envDeviceStartRate)); err == nil {
+		return n
+	}
+	return defaultDeviceStartRate
+}
 
 // deviceTokenTTL is how long a device-flow token lives, env-overridable.
 func deviceTokenTTL() time.Duration {
@@ -71,13 +82,11 @@ type deviceStartResponse struct {
 // CLI's first call, fully unauthenticated (there is no credential yet).
 // Public, but per-IP rate limited (deviceFlow) since it's a free write.
 func (rt *Router) handleDeviceAuthStart(w http.ResponseWriter, r *http.Request) {
-	ipKey := clientIP(r)
 	if rt.deviceFlow != nil {
-		if ok, retryAfter := rt.deviceFlow.allow(ipKey); !ok {
+		if ok, retryAfter := rt.deviceFlow.allow(clientIP(r)); !ok {
 			writeRateLimited(w, retryAfter)
 			return
 		}
-		rt.deviceFlow.recordFailure(ipKey)
 	}
 
 	var req deviceStartRequest
@@ -116,10 +125,15 @@ func (rt *Router) handleDeviceAuthToken(w http.ResponseWriter, r *http.Request) 
 }
 
 type deviceAuthRequestResource struct {
-	UserCode   string    `json:"user_code"`
-	ClientName string    `json:"client_name"`
-	CreatedAt  time.Time `json:"created_at"`
-	ExpiresAt  time.Time `json:"expires_at"`
+	UserCode    string    `json:"user_code"`
+	ClientName  string    `json:"client_name"`
+	CreatedAt   time.Time `json:"created_at"`
+	ExpiresAt   time.Time `json:"expires_at"`
+	RequesterIP string    `json:"requester_ip"`
+	UserAgent   string    `json:"user_agent"`
+	// IPMismatch is true when the requesting IP differs from the IP this
+	// listing session came from, a hint the login may not be the operator's own.
+	IPMismatch bool `json:"ip_mismatch"`
 }
 
 // handleListDeviceAuthRequests handles GET /api/v1/auth/device/requests:
@@ -153,18 +167,4 @@ func (rt *Router) decideDeviceAuthRequest(w http.ResponseWriter, r *http.Request
 	}
 
 	rt.libraryDecideDevice(w, r, userID, userCode, approve)
-}
-
-// requestBaseURL builds this request's own scheme+host, the same
-// X-Forwarded-Proto-aware pattern oauthRedirectURL (oauth.go) already
-// establishes: correct for whatever domain the operator is actually
-// reaching this control plane through, never a fixed setting.
-func requestBaseURL(r *http.Request) string {
-	scheme := "http"
-	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
-		scheme = proto
-	} else if r.TLS != nil {
-		scheme = "https"
-	}
-	return scheme + "://" + r.Host
 }

@@ -12,9 +12,12 @@ import (
 
 // Device grant outcomes, in the vocabulary the platform's device routes already use.
 var (
-	ErrDevicePending   = errors.New("authengine: authorization_pending")
-	ErrDeviceDenied    = errors.New("authengine: access_denied")
-	ErrDeviceExpired   = errors.New("authengine: expired_token")
+	ErrDevicePending = errors.New("authengine: authorization_pending")
+	ErrDeviceDenied  = errors.New("authengine: access_denied")
+	ErrDeviceExpired = errors.New("authengine: expired_token")
+	// ErrDeviceLapsed marks, alongside ErrDeviceExpired, a real request whose
+	// time ran out, as opposed to an unknown or garbage code.
+	ErrDeviceLapsed    = errors.New("authengine: device request lapsed")
 	ErrDeviceNotFound  = errors.New("authengine: no pending device login with this code")
 	ErrDeviceThrottled = errors.New("authengine: too many failed device code attempts")
 	ErrDeviceAbilities = errors.New("authengine: approver holds none of the requested abilities")
@@ -41,6 +44,10 @@ type PendingDevice struct {
 	ClientName string
 	CreatedAt  time.Time
 	ExpiresAt  time.Time
+	// RequesterIP and UserAgent are what the unauthenticated start call
+	// presented, shown to the approver so they can spot a stranger's request.
+	RequesterIP string
+	UserAgent   string
 }
 
 // DeviceDecision is an approver's verdict. Abilities are legacy names already
@@ -76,7 +83,9 @@ func (e *Engine) RedeemDevice(ctx context.Context, deviceCode string) (string, T
 		return "", TokenRecord{}, ErrDevicePending
 	case errors.Is(err, theauth.ErrDeviceDenied):
 		return "", TokenRecord{}, ErrDeviceDenied
-	case errors.Is(err, theauth.ErrDeviceExpired), errors.Is(err, theauth.ErrDeviceInvalid):
+	case errors.Is(err, theauth.ErrDeviceExpired):
+		return "", TokenRecord{}, errors.Join(ErrDeviceExpired, ErrDeviceLapsed)
+	case errors.Is(err, theauth.ErrDeviceInvalid):
 		return "", TokenRecord{}, ErrDeviceExpired
 	case err != nil:
 		return "", TokenRecord{}, fmt.Errorf("authengine: redeem device code: %w", err)
@@ -172,6 +181,7 @@ func (e *Engine) PendingDevices(ctx context.Context) ([]PendingDevice, error) {
 	for _, r := range rows {
 		out = append(out, PendingDevice{
 			UserCode: theauth.FormatUserCode(r.UserCode), ClientName: r.ClientName, CreatedAt: r.CreatedAt, ExpiresAt: r.ExpiresAt,
+			RequesterIP: r.RequesterIP, UserAgent: r.RequesterUA,
 		})
 	}
 	return out, nil

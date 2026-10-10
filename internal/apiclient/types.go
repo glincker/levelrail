@@ -1605,8 +1605,11 @@ type NotificationChannelResource struct {
 	Kind      string `json:"kind"`
 	NotifyURL string `json:"notify_url"`
 	Enabled   bool   `json:"enabled"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	// NotifyDeviceLogin is true when the channel gets a link-only notice
+	// while a CLI login awaits approval.
+	NotifyDeviceLogin bool   `json:"notify_device_login"`
+	CreatedAt         string `json:"created_at"`
+	UpdatedAt         string `json:"updated_at"`
 }
 
 // CreateNotificationChannelRequest mirrors internal/api's
@@ -1616,6 +1619,8 @@ type CreateNotificationChannelRequest struct {
 	Kind      string `json:"kind"`
 	NotifyURL string `json:"notify_url"`
 	Enabled   *bool  `json:"enabled,omitempty"`
+	// NotifyDeviceLogin opts the channel into the CLI-login-waiting notice.
+	NotifyDeviceLogin bool `json:"notify_device_login,omitempty"`
 }
 
 // TestNotificationChannelRequest mirrors internal/api's
