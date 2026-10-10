@@ -18,12 +18,15 @@ const charsPerToken = 4
 
 // modeTokenBudgets are the default ceilings on a mode's tools/list size in
 // estimated tokens. Raised once for the access features (roles, global
-// environments, policy templates, AI control add six tools, about 1.9k tokens). Override one with APP_MCP_TOKEN_BUDGET_<MODE>, where
-// MODE is upper case with dashes as underscores (e.g. READ_ONLY).
+// environments, policy templates, AI control add six tools, about 1.9k tokens)
+// and again for the migration, external database, exposure, upgrade history and
+// attention read-only tools (about 1.2k tokens). Override one with
+// APP_MCP_TOKEN_BUDGET_<MODE>, where MODE is upper case with dashes as
+// underscores (e.g. READ_ONLY).
 var modeTokenBudgets = map[Mode]int{
-	ModeReadOnly: 48000,
-	ModeStandard: 63500,
-	ModeFull:     69500,
+	ModeReadOnly: 49500,
+	ModeStandard: 65000,
+	ModeFull:     71000,
 }
 
 func budgetEnvKey(mode Mode) string {
