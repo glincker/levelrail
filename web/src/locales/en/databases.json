@@ -74,6 +74,10 @@
     },
     "unsupported": "The viewer supports Postgres, MySQL, MariaDB, and Redis-compatible engines. This database is {{engine}}.",
     "notRunning": "The viewer needs a running database. Start the database and try again.",
+    "beta": {
+      "label": "Beta",
+      "hint": "Beta: not tuned for large databases or heavy load yet. We improve it every release."
+    },
     "explorer": {
       "title": "Explorer",
       "refresh": "Refresh",

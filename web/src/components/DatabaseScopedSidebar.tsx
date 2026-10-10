@@ -19,6 +19,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { Badge } from '@/components/ui/badge'
+import { BetaBadge } from './BetaBadge'
 import { useDatabase, useDatabaseStatus } from '../queries/databases'
 import { summarizeDatabaseStatus } from '../lib/databaseStatus'
 
@@ -145,6 +146,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
               >
                 <TableIcon />
                 <span>{t('viewer.nav.explorer')}</span>
+                <BetaBadge className="ml-auto" />
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
@@ -157,6 +159,7 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
               >
                 <TerminalWindowIcon />
                 <span>{t('viewer.nav.console')}</span>
+                <BetaBadge className="ml-auto" />
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
