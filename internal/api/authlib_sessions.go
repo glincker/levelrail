@@ -282,6 +282,7 @@ func (rt *Router) resetLibPassword(w http.ResponseWriter, r *http.Request, req r
 		rt.internalError(w, "api: reset password: save failed", err)
 		return
 	}
+	rt.revokeTrustedDevices(r.Context(), r, anonymousSignIn(owner), owner, "password_reset")
 	w.WriteHeader(http.StatusNoContent)
 }
 

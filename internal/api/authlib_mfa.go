@@ -307,6 +307,8 @@ func (l *authLibMFA) verify(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: 2fa verify: establish session failed", err, slog.String("user_id", userID))
 		return
 	}
-	rt.trustDevice(w, r, user.ID)
+	if req.RememberDevice {
+		rt.trustDevice(w, r, user.ID)
+	}
 	writeJSON(w, http.StatusOK, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
 }

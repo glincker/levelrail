@@ -529,6 +529,7 @@ type Router struct {
 	loginCodes                   LoginCodeStore                   // always set, sign in with a code, new-device approval, trusted devices
 	codeLogin                    *codeLoginState                  // always set, limiters and in-memory plaintext codes
 	newDeviceApproval            bool                             // off unless WithNewDeviceApproval turns it on
+	approvalSessionsOverride     approvalSessions                 // nil uses libSessions; tests inject failures
 	deviceNotifier               DeviceLoginNotifier              // nil is valid: no outbound notice for a waiting CLI login
 	deviceNotices                deviceNoticeGate
 	deviceExpiryNotices          deviceNoticeGate

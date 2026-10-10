@@ -1,9 +1,11 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -37,16 +39,31 @@ func TestNewDeviceApproval(t *testing.T) {
 		wantPoll   string
 		wantAudit  string
 	}{
-		{"existing session approves", func(h *codeHarness, id string, s *http.Cookie) int {
-			return h.send(http.MethodPost, "/api/v1/auth/login-approvals/"+id+"/approve", "", "", s).Code
+		{"existing session approves with the matching number", func(h *codeHarness, id string, s *http.Cookie) int {
+			return h.approve(id, s).Code
 		}, http.StatusNoContent, approvalPollApproved, store.AuditActionNewDeviceApprove},
 		{"existing session denies", func(h *codeHarness, id string, s *http.Cookie) int {
 			return h.send(http.MethodPost, "/api/v1/auth/login-approvals/"+id+"/deny", "", "", s).Code
 		}, http.StatusNoContent, approvalPollDenied, store.AuditActionNewDeviceDeny},
 		{"another account cannot approve", func(h *codeHarness, id string, _ *http.Cookie) int {
 			admin := loginTestSession(h.t, h.rt, h.db)
-			return h.send(http.MethodPost, "/api/v1/auth/login-approvals/"+id+"/approve", "", "", admin).Code
+			return h.approve(id, admin).Code
 		}, http.StatusNotFound, approvalPollPending, ""},
+		{"approve without a number is refused and leaves it pending", func(h *codeHarness, id string, s *http.Cookie) int {
+			return h.send(http.MethodPost, "/api/v1/auth/login-approvals/"+id+"/approve", "{}", "", s).Code
+		}, http.StatusBadRequest, approvalPollPending, ""},
+		{"a wrong number denies the sign-in", func(h *codeHarness, id string, s *http.Cookie) int {
+			a, err := h.db.GetLoginApproval(context.Background(), id)
+			if err != nil {
+				h.t.Fatal(err)
+			}
+			want, options := approvalMatch(a.BrowserHash)
+			wrong := options[0]
+			if wrong == want {
+				wrong = options[1]
+			}
+			return h.send(http.MethodPost, "/api/v1/auth/login-approvals/"+id+"/approve", `{"match":`+strconv.Itoa(wrong)+`}`, "", s).Code
+		}, http.StatusConflict, approvalPollDenied, store.AuditActionNewDeviceDeny},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -84,7 +101,7 @@ func TestTrustedDeviceSkipsApprovalUntilRevoked(t *testing.T) {
 	h := newCodeHarness(t, true)
 	existing := responseCookie(h.passwordLogin(), sessionCookieName)
 	id, binding := h.pendingApproval(h.passwordLogin())
-	if rec := h.send(http.MethodPost, "/api/v1/auth/login-approvals/"+id+"/approve", "", "", existing); rec.Code != http.StatusNoContent {
+	if rec := h.approve(id, existing); rec.Code != http.StatusNoContent {
 		t.Fatalf("approve = %d", rec.Code)
 	}
 	_, rec := h.poll(binding)

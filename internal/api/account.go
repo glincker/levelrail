@@ -70,6 +70,7 @@ func (rt *Router) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rt.sessions.revokeAllExcept(userID, cookie.Value)
+	rt.revokeTrustedDevices(r.Context(), r, anonymousSignIn(userID), userID, "password_changed")
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -124,5 +125,6 @@ func (rt *Router) handleRevokeOtherSessions(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	rt.sessions.revokeAllExcept(userID, cookie.Value)
+	rt.revokeTrustedDevices(r.Context(), r, anonymousSignIn(userID), userID, "sessions_revoked")
 	w.WriteHeader(http.StatusNoContent)
 }

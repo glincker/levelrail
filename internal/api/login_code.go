@@ -33,7 +33,7 @@ type loginCodeRedeemRequest struct {
 // account exists or may use codes; an ineligible request stores a decoy.
 func (rt *Router) handleRequestLoginCode(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
-	if rt.refuseInsecureLogin(w, r) {
+	if rt.refuseInsecureLogin(w, r) || refuseUnsafeSignInPOST(w, r) {
 		return
 	}
 	var req loginCodeRequest
@@ -73,9 +73,10 @@ func (rt *Router) handleRequestLoginCode(w http.ResponseWriter, r *http.Request)
 	}
 	st := rt.codeLogin
 	now := time.Now()
+	eligible, sendEmail := rt.loginCodeCapacity(ctx, user, eligible, now)
 	c := store.LoginCodeChallenge{
-		ID: id, BrowserHash: hashToken(binding), CodeHash: hashLoginCode(salt, code), Salt: salt,
-		RequesterIP: clientIP(r), UserAgent: truncateUA(r.UserAgent()), CreatedAt: now, ExpiresAt: now.Add(st.ttl),
+		ID: id, BrowserHash: hashToken(binding), CodeHash: hashLoginCode(st.pepper, salt, code), Salt: salt,
+		RequesterIP: clientIP(r), UserAgent: browserLabel(r.UserAgent()), CreatedAt: now, ExpiresAt: now.Add(st.ttl),
 	}
 	if eligible {
 		c.UserID = user.ID
@@ -87,7 +88,9 @@ func (rt *Router) handleRequestLoginCode(w http.ResponseWriter, r *http.Request)
 	rt.auditSignIn(ctx, r, anonymousSignIn(c.UserID), store.AuditActionLoginCodeRequest, loginCodeAuditPrefix+c.ID, http.StatusAccepted)
 	if eligible {
 		st.remember(c.ID, pendingPlainCode{userID: user.ID, code: code, expires: c.ExpiresAt})
-		go rt.emailLoginCode(context.WithoutCancel(ctx), *user, c, code)
+		if sendEmail {
+			go rt.emailLoginCode(context.WithoutCancel(ctx), *user, c, code)
+		}
 	}
 	waitUntil(ctx, start.Add(st.minResponse))
 	setBindingCookie(w, r, loginCodeCookie, loginCodeCookiePth, binding, st.ttl)
@@ -107,33 +110,65 @@ func waitUntil(ctx context.Context, deadline time.Time) {
 	}
 }
 
-func truncateUA(ua string) string {
-	const maxUA = 300
-	if len(ua) > maxUA {
-		return ua[:maxUA]
+// loginCodeCapacity caps live codes per account: past the cap the request
+// stores a decoy, and an email goes out only when no other code is live and
+// the account's hourly email budget allows. Failures read as ineligible.
+func (rt *Router) loginCodeCapacity(ctx context.Context, user *store.User, eligible bool, now time.Time) (ok, sendEmail bool) {
+	if !eligible {
+		return false, false
 	}
-	return ua
+	st := rt.codeLogin
+	live, err := rt.loginCodes.ListLiveLoginCodesForUser(ctx, user.ID, now)
+	if err != nil {
+		rt.logger.Warn("api: login code request: count live codes failed", slog.String("user_id", user.ID), slog.String("error", err.Error()))
+		return false, false
+	}
+	if len(live) >= st.maxLive {
+		rt.logger.Info("api: login code request: live code cap reached", slog.String("user_id", user.ID))
+		return false, false
+	}
+	if len(live) > 0 {
+		return true, false
+	}
+	allowed, _ := st.emailByUser.allow(user.ID)
+	return true, allowed
 }
 
-// allowLoginCodeRequest applies the global, per-IP and per-account budgets.
-// The account key is the typed name, so it reveals nothing about existence.
+// allowLoginCodeRequest applies the per-IP, per-account and global budgets,
+// spending from none unless all have room. The account key is the typed
+// name, so it reveals nothing about existence; a requester proven to be the
+// owner draws from a bucket strangers cannot drain.
 func (rt *Router) allowLoginCodeRequest(w http.ResponseWriter, r *http.Request, username string) bool {
 	st := rt.codeLogin
-	checks := []struct {
-		l   *apiRateLimiter
-		key string
-	}{
-		{st.global, "global"},
-		{st.byIP, clientIP(r)},
-		{st.byAccount, strings.ToLower(username)},
+	account := limiterCheck{st.byAccount, strings.ToLower(username)}
+	if owner, ok := rt.requesterOwns(r, username); ok {
+		account = limiterCheck{st.byOwner, owner}
 	}
-	for _, c := range checks {
-		if ok, retry := c.l.allow(c.key); !ok {
-			writeRateLimited(w, retry)
-			return false
-		}
+	if ok, retry := allowAll(limiterCheck{st.byIP, clientIP(r)}, account, limiterCheck{st.global, "global"}); !ok {
+		writeRateLimited(w, retry)
+		return false
 	}
 	return true
+}
+
+// requesterOwns reports the account username names when the request already
+// proves it belongs to that account: a live session or a trusted browser.
+func (rt *Router) requesterOwns(r *http.Request, username string) (string, bool) {
+	var ids []string
+	if id, ok := rt.currentSessionUserID(r); ok {
+		ids = append(ids, id)
+	}
+	if h, ok := cookieHash(r, trustedCookie); ok {
+		if d, err := rt.loginCodes.GetTrustedDeviceByHash(r.Context(), h, time.Now()); err == nil {
+			ids = append(ids, d.UserID)
+		}
+	}
+	for _, id := range ids {
+		if u, err := rt.auth.GetUserByID(r.Context(), id); err == nil && strings.EqualFold(u.Email, strings.TrimSpace(username)) {
+			return id, true
+		}
+	}
+	return "", false
 }
 
 // loginCodeTarget resolves the account a code may be sent for. Any failure
@@ -179,7 +214,7 @@ func (rt *Router) loginCodeMessage(c store.LoginCodeChallenge, code string) (sub
 	subject = fmt.Sprintf("[%s] Your sign-in code", rt.brand.Name)
 	body = fmt.Sprintf(
 		"Someone asked to sign in to your %s account.\n\nCode: %s\n\nRequested from %s (%s) at %s. The code expires in %d minutes and only works in the browser that asked for it.\n\nIf this was not you, ignore this email and consider changing your password.",
-		rt.brand.Name, formatLoginCode(code), c.RequesterIP, c.UserAgent, c.CreatedAt.UTC().Format(time.RFC1123),
+		rt.brand.Name, formatLoginCode(code), safeSignInIP(c.RequesterIP), safeSignInText(c.UserAgent), c.CreatedAt.UTC().Format(time.RFC1123),
 		int(c.ExpiresAt.Sub(c.CreatedAt).Minutes()))
 	return subject, body
 }
@@ -188,7 +223,7 @@ func (rt *Router) loginCodeMessage(c store.LoginCodeChallenge, code string) (sub
 // the browser holding the challenge's binding cookie can redeem it. Every
 // failure reads the same, so a guesser learns nothing about the account.
 func (rt *Router) handleRedeemLoginCode(w http.ResponseWriter, r *http.Request) {
-	if rt.refuseInsecureLogin(w, r) {
+	if rt.refuseInsecureLogin(w, r) || refuseUnsafeSignInPOST(w, r) {
 		return
 	}
 	st := rt.codeLogin
@@ -227,7 +262,7 @@ func (rt *Router) handleRedeemLoginCode(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusUnauthorized, msgLoginCodeInvalid)
 		return
 	}
-	if c.UserID == "" || !loginCodeMatches(c, code) {
+	if c.UserID == "" || !loginCodeMatches(st.pepper, c, code) {
 		rt.failLoginCode(ctx, r, c, attempt)
 		writeError(w, http.StatusUnauthorized, msgLoginCodeInvalid)
 		return

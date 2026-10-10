@@ -14,6 +14,9 @@ const (
 	AbilityWriteSensitive = "write:sensitive"
 	AbilityDeploy         = "deploy"
 	AbilityRoot           = "root"
+	// AbilitySignInApprove is token-only: every user holds it for their own
+	// account, but no device login or library mint may request it.
+	AbilitySignInApprove = "signin:approve"
 )
 
 // legacyToLibrary maps each legacy ability to its library ability. All but
@@ -26,6 +29,7 @@ var legacyToLibrary = map[string]string{
 	AbilityWriteSensitive: "write:sensitive",
 	AbilityDeploy:         "deploy",
 	AbilityRoot:           theauth.AbilityRoot,
+	AbilitySignInApprove:  AbilitySignInApprove,
 }
 
 // EngineAbilities lists the caller-defined abilities the library may mint (root is implicit).

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -71,10 +72,29 @@ func printAuthCode(w io.Writer, prog string, out authCodeOutput) {
 			c.CreatedAt.Local().Format(time.Kitchen), c.ExpiresAt.Local().Format(time.Kitchen))
 	}
 	for _, a := range out.Approvals {
-		_, _ = fmt.Fprintf(w, "new browser %s  from %s  %s  requested %s  (approve: %s auth approve %s, deny: %s auth deny %s)\n",
-			a.ID, a.RequesterIP, a.UserAgent, a.CreatedAt.Local().Format(time.Kitchen), prog, a.ID, prog, a.ID)
+		_, _ = fmt.Fprintf(w, "new browser %s  from %s  %s  requested %s  number shown there is one of %s  (approve: %s auth approve %s --match N, deny: %s auth deny %s)\n",
+			a.ID, a.RequesterIP, a.UserAgent, a.CreatedAt.Local().Format(time.Kitchen), joinInts(a.MatchOptions), prog, a.ID, prog, a.ID)
 	}
 	_, _ = fmt.Fprintln(w, "Only use a code or approve a browser if you started that sign-in yourself.")
+}
+
+func joinInts(ns []int) string {
+	parts := make([]string, 0, len(ns))
+	for _, n := range ns {
+		parts = append(parts, strconv.Itoa(n))
+	}
+	return strings.Join(parts, ", ")
+}
+
+// signInApproveHelp says how to get a token that may reveal codes and
+// approve browsers; a device login token never can.
+func signInApproveHelp(prog string) string {
+	return fmt.Sprintf(`Revealing a code or approving a browser needs a token that belongs to your
+user and holds signin:approve. No device login token, root token or
+write:sensitive token carries it. Mint one while signed in with your
+password, or use the dashboard instead:
+  %s tokens create --name approver --abilities signin:approve --expires-in-days 30
+`, prog)
 }
 
 func authCodeUsage(prog string) string {
@@ -83,8 +103,10 @@ func authCodeUsage(prog string) string {
 
 Prints the sign-in codes waiting for your account, with the IP address,
 browser and time of each request, plus password sign-ins from new browsers
-that wait for your approval. The token must belong to your user and hold
-write:sensitive (a device login token does).
+that wait for your approval. Listing needs write:sensitive or signin:approve;
+showing a code needs signin:approve.
+
+`+signInApproveHelp(prog)+`
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
@@ -104,8 +126,13 @@ func runAuthDecide(prog string, args []string, approve bool, stdout, stderr io.W
 		verb = "approve"
 	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "auth "+verb, "print the result as JSON", stderr)
+	match := 0
+	if approve {
+		fs.IntVar(&match, "match", 0, "the two digit number the waiting browser shows (required); a wrong number denies the sign-in")
+	}
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s auth %s <approval-id> [flags]\n\n%s a password sign-in from a new browser. Find the id with \"%s auth code\".\n\nFlags:\n", prog, verb, verb, prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s auth %s <approval-id> [flags]\n\n%s a password sign-in from a new browser. Find the id with \"%s auth code\".\n\n%s\nFlags:\n",
+			prog, verb, verb, prog, signInApproveHelp(prog))
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, _, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -116,8 +143,12 @@ func runAuthDecide(prog string, args []string, approve bool, stdout, stderr io.W
 		_, _ = fmt.Fprintf(stderr, "%s: auth %s takes exactly one approval id\n", prog, verb)
 		return exitUsage
 	}
+	if approve && (match < 10 || match > 99) {
+		_, _ = fmt.Fprintf(stderr, "%s: auth approve needs --match with the two digit number the waiting browser shows\n", prog)
+		return exitValidation
+	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	if err := client.DecideLoginApproval(context.Background(), fs.Arg(0), approve); err != nil {
+	if err := client.DecideLoginApproval(context.Background(), fs.Arg(0), approve, match); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s sign-in: %w", verb, err))
 	}
 	done := "denied"

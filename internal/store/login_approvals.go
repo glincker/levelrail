@@ -18,7 +18,31 @@ const (
 	LoginApprovalDenied   = "denied"
 	LoginApprovalExpired  = "expired"
 	LoginApprovalConsumed = "consumed"
+	// LoginApprovalSuperseded marks a request retired by a newer one.
+	LoginApprovalSuperseded = "superseded"
 )
+
+// SupersedeLoginApprovals retires every pending approval of userID, so at
+// most one waits per account, and returns the ones this call moved.
+func (db *DB) SupersedeLoginApprovals(ctx context.Context, userID string, now time.Time) ([]LoginApproval, error) {
+	pending, err := db.queryLoginApprovals(ctx, `SELECT `+loginApprovalColumns+` FROM login_approvals
+		WHERE user_id = ? AND status = ?`, userID, LoginApprovalPending)
+	if err != nil {
+		return nil, err
+	}
+	var moved []LoginApproval
+	for _, a := range pending {
+		res, err := db.ExecContext(ctx, `UPDATE login_approvals SET status = ?, resolved_at = ? WHERE id = ? AND status = ?`,
+			LoginApprovalSuperseded, FormatAuditTime(now), a.ID, LoginApprovalPending)
+		if err != nil {
+			return moved, fmt.Errorf("store: supersede login approval %q: %w", a.ID, err)
+		}
+		if n, _ := res.RowsAffected(); n == 1 {
+			moved = append(moved, a)
+		}
+	}
+	return moved, nil
+}
 
 // LoginApproval is a password sign-in from an unrecognized browser, paused
 // until one of the account's existing sessions approves or denies it.

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"mime"
 	"net/http"
 	"net/url"
 	"strings"
@@ -30,6 +31,25 @@ func csrfCrossOrigin(r *http.Request) bool {
 	if _, err := r.Cookie(sessionCookieName); err != nil {
 		return false
 	}
+	return crossOriginRequest(r)
+}
+
+// refuseUnsafeSignInPOST guards the public sign-in POSTs whether or not a
+// session cookie is present: JSON only, which a plain cross-site form cannot
+// send, and never from another origin.
+func refuseUnsafeSignInPOST(w http.ResponseWriter, r *http.Request) bool {
+	if mt, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil || mt != "application/json" {
+		writeError(w, http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return true
+	}
+	if crossOriginRequest(r) {
+		writeError(w, http.StatusForbidden, "cross-origin request rejected")
+		return true
+	}
+	return false
+}
+
+func crossOriginRequest(r *http.Request) bool {
 	if origin := r.Header.Get("Origin"); origin != "" {
 		return !sameHost(origin, r.Host)
 	}

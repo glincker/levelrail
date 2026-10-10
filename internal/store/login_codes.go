@@ -33,6 +33,7 @@ const (
 	AuditActionNewDeviceApprove  = AuditActionFamilyNewDevice + ".approved"
 	AuditActionNewDeviceDeny     = AuditActionFamilyNewDevice + ".denied"
 	AuditActionNewDeviceExpire   = AuditActionFamilyNewDevice + ".expired"
+	AuditActionNewDeviceReplace  = AuditActionFamilyNewDevice + ".superseded"
 	AuditActionTrustedDeviceDrop = AuditActionFamilyNewDevice + ".trust_revoked"
 )
 

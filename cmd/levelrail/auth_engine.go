@@ -43,5 +43,9 @@ func authEngineOptions(ctx context.Context, logger *slog.Logger, b *brand.Brand,
 		return nil, err
 	}
 	logger.Info("auth engine ready", slog.String("prefix", eng.Prefix()))
-	return []api.Option{api.WithAuthEngine(eng)}, nil
+	opts := []api.Option{api.WithAuthEngine(eng)}
+	if len(cfg.EncryptionKey) > 0 {
+		opts = append(opts, api.WithLoginCodeKey(cfg.EncryptionKey))
+	}
+	return opts, nil
 }

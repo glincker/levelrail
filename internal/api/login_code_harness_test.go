@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -90,6 +91,9 @@ func newCodeHarness(t *testing.T, approval bool) *codeHarness {
 func (h *codeHarness) send(method, path, body, remote string, cookies ...*http.Cookie) *httptest.ResponseRecorder {
 	h.t.Helper()
 	req := httptest.NewRequest(method, path, strings.NewReader(body))
+	if method == http.MethodPost {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	if remote != "" {
 		req.RemoteAddr = remote
 	}
@@ -167,6 +171,18 @@ func (h *codeHarness) auditActions() []string {
 		out = append(out, a)
 	}
 	return out
+}
+
+// approve approves id through session, picking the number the waiting
+// browser shows, which the test reads from the approval's own binding.
+func (h *codeHarness) approve(id string, session *http.Cookie) *httptest.ResponseRecorder {
+	h.t.Helper()
+	a, err := h.db.GetLoginApproval(context.Background(), id)
+	if err != nil {
+		h.t.Fatal(err)
+	}
+	match, _ := approvalMatch(a.BrowserHash)
+	return h.send(http.MethodPost, "/api/v1/auth/login-approvals/"+id+"/approve", `{"match":`+strconv.Itoa(match)+`}`, "", session)
 }
 
 func httptestRequestWithToken(method, path string, rec *store.APIToken) *http.Request {

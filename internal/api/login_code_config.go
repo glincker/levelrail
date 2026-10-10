@@ -31,6 +31,12 @@ const (
 	envDeviceApprovalTTL     = "APP_AUTH_DEVICE_APPROVAL_TTL"
 	envTrustedDeviceTTL      = "APP_AUTH_TRUSTED_DEVICE_TTL"
 	envNewDeviceApproval     = "APP_AUTH_NEW_DEVICE_APPROVAL"
+	envLoginCodeMaxLive      = "APP_LOGIN_CODE_MAX_LIVE"
+	envLoginCodeEmailRate    = "APP_LOGIN_CODE_EMAILS_PER_ACCOUNT_PER_HOUR"
+	envDeviceApprovalRate    = "APP_AUTH_DEVICE_APPROVAL_RATE_PER_ACCOUNT_PER_HOUR"
+	defaultLoginCodeMaxLive  = 3
+	defaultLoginCodeEmails   = 4
+	defaultApprovalRate      = 6
 	defaultLoginCodeTTL      = 10 * time.Minute
 	defaultLoginCodeAttempts = 5
 	defaultLoginCodeIPRate   = 5
@@ -78,6 +84,10 @@ type LoginCodeStore interface {
 	TouchTrustedDevice(ctx context.Context, id string, now time.Time) error
 	ListTrustedDevices(ctx context.Context, userID string, now time.Time) ([]store.TrustedDevice, error)
 	RevokeTrustedDevice(ctx context.Context, userID, id string, now time.Time) (bool, error)
+	RevokeAllTrustedDevices(ctx context.Context, userID string, now time.Time) (int, error)
+	ExtendTrustedDevice(ctx context.Context, id string, expiresAt, now time.Time) error
+	PruneTrustedDevices(ctx context.Context, cutoff time.Time) error
+	SupersedeLoginApprovals(ctx context.Context, userID string, now time.Time) ([]store.LoginApproval, error)
 	GetCodeLoginSettings(ctx context.Context) (store.CodeLoginSettings, bool, error)
 	SaveCodeLoginSettings(ctx context.Context, s store.CodeLoginSettings) error
 }
@@ -93,30 +103,54 @@ type pendingPlainCode struct {
 type codeLoginState struct {
 	ttl         time.Duration
 	maxAttempts int
+	maxLive     int
 	minResponse time.Duration
 	approvalTTL time.Duration
 	trustTTL    time.Duration
 	byIP        *apiRateLimiter
 	byAccount   *apiRateLimiter
+	byOwner     *apiRateLimiter
 	global      *apiRateLimiter
 	redeemByIP  *apiRateLimiter
+	emailByUser *apiRateLimiter
+	approvals   *apiRateLimiter
+	pepper      []byte
 
 	mu    sync.Mutex
 	plain map[string]pendingPlainCode
 }
 
 func newCodeLoginState() *codeLoginState {
+	accountRate := envInt(envLoginCodeAccountRate, defaultLoginCodeAcctRate)
 	return &codeLoginState{
 		ttl:         envDuration(envLoginCodeTTL, defaultLoginCodeTTL),
 		maxAttempts: envInt(envLoginCodeMaxAttempts, defaultLoginCodeAttempts),
+		maxLive:     envInt(envLoginCodeMaxLive, defaultLoginCodeMaxLive),
 		minResponse: envDuration(envLoginCodeMinResponse, defaultLoginCodeMinResp),
 		approvalTTL: envDuration(envDeviceApprovalTTL, defaultDeviceApprovalTTL),
 		trustTTL:    envDuration(envTrustedDeviceTTL, defaultTrustedDeviceTTL),
 		byIP:        newAPIRateLimiter(envInt(envLoginCodeIPRate, defaultLoginCodeIPRate)),
-		byAccount:   newAPIRateLimiter(envInt(envLoginCodeAccountRate, defaultLoginCodeAcctRate)),
+		byAccount:   newAPIRateLimiter(accountRate),
+		byOwner:     newAPIRateLimiter(accountRate),
 		global:      newAPIRateLimiter(envInt(envLoginCodeGlobalRate, defaultLoginCodeGlobal)),
 		redeemByIP:  newAPIRateLimiter(envInt(envLoginCodeRedeemRate, defaultLoginCodeRedeem)),
+		emailByUser: newWindowRateLimiter(envInt(envLoginCodeEmailRate, defaultLoginCodeEmails), time.Hour),
+		approvals:   newWindowRateLimiter(envInt(envDeviceApprovalRate, defaultApprovalRate), time.Hour),
 		plain:       make(map[string]pendingPlainCode),
+	}
+}
+
+// WithLoginCodeKey peppers stored sign-in code hashes with a key derived
+// from the control plane's own secret, so a database copy alone cannot
+// brute-force a live code.
+func WithLoginCodeKey(key []byte) Option {
+	return func(rt *Router) {
+		if len(key) == 0 {
+			return
+		}
+		m := hmac.New(sha256.New, key)
+		m.Write([]byte("sign-in-code-pepper-v1"))
+		rt.codeLogin.pepper = m.Sum(nil)
 	}
 }
 
@@ -214,14 +248,23 @@ func newSalt() (string, error) {
 	return hex.EncodeToString(buf), nil
 }
 
-func hashLoginCode(salt, code string) string {
-	m := hmac.New(sha256.New, []byte(salt))
+// hashLoginCode is HMAC(salt, code), and with a pepper HMAC(pepper, salt
+// NUL code), so a stolen row is useless without the control plane's key.
+func hashLoginCode(pepper []byte, salt, code string) string {
+	if len(pepper) == 0 {
+		m := hmac.New(sha256.New, []byte(salt))
+		m.Write([]byte(code))
+		return hex.EncodeToString(m.Sum(nil))
+	}
+	m := hmac.New(sha256.New, pepper)
+	m.Write([]byte(salt))
+	m.Write([]byte{0})
 	m.Write([]byte(code))
 	return hex.EncodeToString(m.Sum(nil))
 }
 
-func loginCodeMatches(c store.LoginCodeChallenge, code string) bool {
-	got := hashLoginCode(c.Salt, code)
+func loginCodeMatches(pepper []byte, c store.LoginCodeChallenge, code string) bool {
+	got := hashLoginCode(pepper, c.Salt, code)
 	return subtle.ConstantTimeCompare([]byte(got), []byte(c.CodeHash)) == 1
 }
 

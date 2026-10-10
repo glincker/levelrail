@@ -43,12 +43,12 @@ func (s *Sessions) Login(ctx context.Context, in LoginInput) (token, legacyUserI
 	if !ok {
 		if _, uid, pending := s.lookupSession(ctx, token); pending {
 			legacy, lerr := s.legacyID(ctx, uid.String())
-			s.revokeToken(ctx, token)
+			s.Revoke(ctx, token)
 			if lerr == nil && legacy != "" {
 				return "", legacy, ErrSecondFactorRequired
 			}
 		} else {
-			s.revokeToken(ctx, token)
+			s.Revoke(ctx, token)
 		}
 		return "", "", &Error{Status: 401, Code: CodeInvalidCredentials, Message: "invalid email or password"}
 	}
@@ -131,21 +131,30 @@ func (s *Sessions) IssueSession(ctx context.Context, u LegacyUser, userAgent, ip
 
 // Revoke ends the session named by token. Unknown tokens are not an error.
 func (s *Sessions) Revoke(ctx context.Context, token string) {
-	s.revokeToken(ctx, token)
+	if err := s.revokeToken(ctx, token); err != nil {
+		s.logger.Warn("authengine: revoke session failed", "error", err.Error())
+	}
 }
 
-func (s *Sessions) revokeToken(ctx context.Context, token string) {
+// RevokeChecked is Revoke for a caller that must not continue when the
+// session may still be live. Unknown tokens are not an error.
+func (s *Sessions) RevokeChecked(ctx context.Context, token string) error {
+	return s.revokeToken(ctx, token)
+}
+
+func (s *Sessions) revokeToken(ctx context.Context, token string) error {
 	sid, uid, ok := s.lookupSession(ctx, token)
 	if !ok {
-		return
+		return nil
 	}
 	s.mu.RLock()
 	a := s.auth
 	s.mu.RUnlock()
 	ctx = theauth.WithAuditMetadata(ctx, theauth.AuditMetadata{ActorUserID: &uid})
 	if err := a.RevokeSession(ctx, sid); err != nil {
-		s.logger.Warn("authengine: revoke session failed", "error", err.Error())
+		return fmt.Errorf("authengine: revoke session: %w", err)
 	}
+	return nil
 }
 
 func (s *Sessions) lookupSession(ctx context.Context, token string) (sessionID, userID theauth.ULID, ok bool) {
@@ -291,7 +300,7 @@ func (s *Sessions) ConsumeLink(ctx context.Context, link, userAgent, ip string) 
 		return "", "", false, err
 	}
 	if legacy == "" {
-		s.revokeToken(ctx, tok)
+		s.Revoke(ctx, tok)
 		return "", "", false, nil
 	}
 	return tok, legacy, true, nil

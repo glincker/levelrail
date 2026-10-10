@@ -169,6 +169,88 @@ func TestTrustedDeviceRevoke(t *testing.T) {
 	}
 }
 
+func TestSupersedeLoginApprovals_OnlyOwnPending(t *testing.T) {
+	ctx := context.Background()
+	db := openTestDB(t)
+	now := time.Now()
+	for _, a := range []LoginApproval{
+		{ID: "a1", UserID: "u1", BrowserHash: "b1", CreatedAt: now, ExpiresAt: now.Add(time.Hour)},
+		{ID: "a2", UserID: "u1", BrowserHash: "b2", CreatedAt: now, ExpiresAt: now.Add(time.Hour)},
+		{ID: "a3", UserID: "u2", BrowserHash: "b3", CreatedAt: now, ExpiresAt: now.Add(time.Hour)},
+	} {
+		if err := db.CreateLoginApproval(ctx, a); err != nil {
+			t.Fatal(err)
+		}
+	}
+	moved, err := db.SupersedeLoginApprovals(ctx, "u1", now)
+	if err != nil || len(moved) != 2 {
+		t.Fatalf("superseded = %d, %v, want 2", len(moved), err)
+	}
+	for _, tc := range []struct{ user, want string }{{"u1", ""}, {"u2", "a3"}} {
+		list, _ := db.ListPendingLoginApprovalsForUser(ctx, tc.user, now)
+		got := ""
+		if len(list) > 0 {
+			got = list[0].ID
+		}
+		if got != tc.want {
+			t.Fatalf("pending for %s = %q, want %q", tc.user, got, tc.want)
+		}
+	}
+}
+
+func TestTrustedDeviceBulkRevokeExtendPrune(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+	seed := func(t *testing.T, db *DB) {
+		for _, d := range []TrustedDevice{
+			{ID: "td1", UserID: "u1", TokenHash: "h1", CreatedAt: now, LastUsedAt: now, ExpiresAt: now.Add(time.Hour)},
+			{ID: "td2", UserID: "u1", TokenHash: "h2", CreatedAt: now, LastUsedAt: now, ExpiresAt: now.Add(time.Hour)},
+			{ID: "td3", UserID: "u2", TokenHash: "h3", CreatedAt: now, LastUsedAt: now, ExpiresAt: now.Add(-time.Minute)},
+		} {
+			if err := db.CreateTrustedDevice(ctx, d); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	tests := []struct {
+		name string
+		run  func(t *testing.T, db *DB)
+	}{
+		{"revoke all touches one user only", func(t *testing.T, db *DB) {
+			if n, err := db.RevokeAllTrustedDevices(ctx, "u1", now); err != nil || n != 2 {
+				t.Fatalf("revoked = %d, %v", n, err)
+			}
+			if _, err := db.GetTrustedDeviceByHash(ctx, "h1", now); !errors.Is(err, ErrTrustedDeviceNotFound) {
+				t.Fatalf("u1 device still trusted: %v", err)
+			}
+		}},
+		{"extend pushes expiry", func(t *testing.T, db *DB) {
+			if err := db.ExtendTrustedDevice(ctx, "td1", now.Add(48*time.Hour), now); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := db.GetTrustedDeviceByHash(ctx, "h1", now.Add(24*time.Hour)); err != nil {
+				t.Fatalf("extended device not live tomorrow: %v", err)
+			}
+		}},
+		{"prune deletes expired rows only", func(t *testing.T, db *DB) {
+			if err := db.PruneTrustedDevices(ctx, now); err != nil {
+				t.Fatal(err)
+			}
+			var n int
+			if err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM trusted_devices`).Scan(&n); err != nil || n != 2 {
+				t.Fatalf("rows = %d, %v, want 2", n, err)
+			}
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := openTestDB(t)
+			seed(t, db)
+			tt.run(t, db)
+		})
+	}
+}
+
 func TestCodeLoginSettingsRoundTrip(t *testing.T) {
 	ctx := context.Background()
 	db := openTestDB(t)

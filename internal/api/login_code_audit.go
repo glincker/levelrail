@@ -70,5 +70,8 @@ func (rt *Router) SweepSignInExpiry(ctx context.Context, now time.Time) error {
 		return err
 	}
 	rt.codeLogin.purgeExpired(now)
+	if err := rt.loginCodes.PruneTrustedDevices(ctx, now); err != nil {
+		return err
+	}
 	return rt.loginCodes.PruneLoginCodes(ctx, now.Add(-deviceHistoryRetention()))
 }

@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/attention"
@@ -20,7 +21,8 @@ type codeLoginSettingsRequest struct {
 }
 
 type loginOptionsResponse struct {
-	CodeLogin bool `json:"code_login"`
+	CodeLogin         bool `json:"code_login"`
+	TrustedDeviceDays int  `json:"trusted_device_days"`
 }
 
 // handleGetCodeLoginSettings handles GET /api/v1/settings/auth/code-login,
@@ -75,11 +77,16 @@ func (rt *Router) handleLoginOptions(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: login options failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, loginOptionsResponse{CodeLogin: s.Admins || s.Others})
+	out := loginOptionsResponse{CodeLogin: s.Admins || s.Others}
+	if rt.newDeviceApproval {
+		out.TrustedDeviceDays = max(1, int(rt.codeLogin.trustTTL.Hours()/24))
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
-// signInAttentionItems lists the session user's own waiting codes and
-// new-device approvals. Items carry requester context only, never a code.
+// signInAttentionItems is at most one item per kind for the session user:
+// a flood of requests collapses into a count with the newest requester's
+// context, never one item each, and never a code.
 func (rt *Router) signInAttentionItems(r *http.Request, now time.Time) []attention.Item {
 	userID, ok := rt.currentSessionUserID(r)
 	if !ok || rt.loginCodes == nil {
@@ -87,28 +94,24 @@ func (rt *Router) signInAttentionItems(r *http.Request, now time.Time) []attenti
 	}
 	ctx := r.Context()
 	var items []attention.Item
-	if codes, err := rt.loginCodes.ListLiveLoginCodesForUser(ctx, userID, now); err == nil {
-		for _, c := range codes {
-			it := feedItem(attention.Warning, attention.KindLoginCode, c.RequesterIP,
-				"a sign-in code was requested from "+c.RequesterIP+" ("+c.UserAgent+")", signInParams(c.RequesterIP, c.UserAgent, c.CreatedAt, c.ExpiresAt))
-			it.ID += ":" + c.ID
-			items = append(items, it)
-		}
+	if codes, err := rt.loginCodes.ListLiveLoginCodesForUser(ctx, userID, now); err == nil && len(codes) > 0 {
+		c := codes[0]
+		ip, ua := safeSignInIP(c.RequesterIP), safeSignInText(c.UserAgent)
+		items = append(items, feedItem(attention.Warning, attention.KindLoginCode, "account",
+			strconv.Itoa(len(codes))+" sign-in code request(s), newest from "+ip+" ("+ua+")", signInParams(ip, ua, len(codes), c.CreatedAt, c.ExpiresAt)))
 	}
-	if approvals, err := rt.loginCodes.ListPendingLoginApprovalsForUser(ctx, userID, now); err == nil {
-		for _, a := range approvals {
-			it := feedItem(attention.Warning, attention.KindLoginApproval, a.RequesterIP,
-				"a password sign-in from a new browser at "+a.RequesterIP+" ("+a.UserAgent+") waits for approval", signInParams(a.RequesterIP, a.UserAgent, a.CreatedAt, a.ExpiresAt))
-			it.ID += ":" + a.ID
-			items = append(items, it)
-		}
+	if approvals, err := rt.loginCodes.ListPendingLoginApprovalsForUser(ctx, userID, now); err == nil && len(approvals) > 0 {
+		a := approvals[0]
+		ip, ua := safeSignInIP(a.RequesterIP), safeSignInText(a.UserAgent)
+		items = append(items, feedItem(attention.Warning, attention.KindLoginApproval, "account",
+			"a password sign-in from a new browser at "+ip+" ("+ua+") waits for approval", signInParams(ip, ua, len(approvals), a.CreatedAt, a.ExpiresAt)))
 	}
 	return items
 }
 
-func signInParams(ip, ua string, created, expires time.Time) map[string]string {
+func signInParams(ip, ua string, count int, created, expires time.Time) map[string]string {
 	return map[string]string{
-		"ip": ip, "user_agent": ua,
+		"ip": ip, "user_agent": ua, "count": strconv.Itoa(count),
 		"at": created.UTC().Format(time.RFC3339), "expires_at": expires.UTC().Format(time.RFC3339),
 	}
 }

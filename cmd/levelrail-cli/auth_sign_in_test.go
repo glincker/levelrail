@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -30,10 +31,13 @@ func TestSessionLogin_WaitsForNewDeviceApproval(t *testing.T) {
 				switch r.URL.Path {
 				case "/api/v1/auth/login":
 					http.SetCookie(w, &http.Cookie{Name: "login_approval_binding", Value: "b", Path: "/api/v1/auth/login-approval", HttpOnly: true}) //nolint:gosec // plain HTTP test server, Secure would stop the jar resending it
-					_, _ = w.Write([]byte(`{"approval_required":true,"approval_id":"la_1"}`))
+					_, _ = w.Write([]byte(`{"approval_required":true,"approval_id":"la_1","approval_match":37}`))
 				case "/api/v1/auth/login-approval/poll":
 					if c, err := r.Cookie("login_approval_binding"); err != nil || c.Value != "b" {
 						t.Errorf("poll without the approval cookie")
+					}
+					if r.Header.Get("Content-Type") != "application/json" {
+						t.Errorf("poll Content-Type = %q, want application/json", r.Header.Get("Content-Type"))
 					}
 					polls++
 					if polls == 1 {
@@ -54,8 +58,8 @@ func TestSessionLogin_WaitsForNewDeviceApproval(t *testing.T) {
 			if got != tt.wantExit {
 				t.Fatalf("exit = %d, want %d (stderr=%q)", got, tt.wantExit, stderr.String())
 			}
-			if !strings.Contains(stderr.String(), "la_1") {
-				t.Errorf("stderr = %q, want the approval id", stderr.String())
+			if !strings.Contains(stderr.String(), "la_1") || !strings.Contains(stderr.String(), "37") {
+				t.Errorf("stderr = %q, want the approval id and number", stderr.String())
 			}
 			if tt.wantErr != "" && !strings.Contains(stderr.String(), tt.wantErr) {
 				t.Errorf("stderr = %q, want %q", stderr.String(), tt.wantErr)
@@ -81,9 +85,10 @@ func TestRun_AuthSignIn(t *testing.T) {
 			"GET /api/v1/auth/sign-in-requests":                    list,
 			"POST /api/v1/auth/sign-in-requests/codes/lc_1/reveal": `{"code":"ABCD-EF12","expires_at":"2026-10-10T10:10:00Z"}`,
 		}, exitOK, []string{`"code": "ABCD-EF12"`, `"approvals"`}},
-		{"approve", []string{"auth", "approve", "la_1"}, map[string]string{
+		{"approve with the matching number", []string{"auth", "approve", "la_1", "--match", "42"}, map[string]string{
 			"POST /api/v1/auth/login-approvals/la_1/approve": "",
 		}, exitOK, []string{"approved sign-in la_1"}},
+		{"approve without a number is refused", []string{"auth", "approve", "la_1"}, nil, exitValidation, nil},
 		{"deny", []string{"auth", "deny", "la_1"}, map[string]string{
 			"POST /api/v1/auth/login-approvals/la_1/deny": "",
 		}, exitOK, []string{"denied sign-in la_1"}},
@@ -102,6 +107,14 @@ func TestRun_AuthSignIn(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, ok := tt.routes[r.Method+" "+r.URL.Path]
+				if strings.HasSuffix(r.URL.Path, "/approve") {
+					var got struct {
+						Match int `json:"match"`
+					}
+					if err := json.NewDecoder(r.Body).Decode(&got); err != nil || got.Match != 42 {
+						t.Errorf("approve body match = %d (%v), want 42", got.Match, err)
+					}
+				}
 				if !ok {
 					t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
 					w.WriteHeader(http.StatusNotFound)

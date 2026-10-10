@@ -121,6 +121,7 @@ type loginResponse struct {
 	Username         string `json:"username"`
 	ApprovalRequired bool   `json:"approval_required,omitempty"`
 	ApprovalID       string `json:"approval_id,omitempty"`
+	ApprovalMatch    int    `json:"approval_match,omitempty"`
 }
 
 // approvalPollInterval is how often a paused login checks for a decision.
@@ -134,8 +135,9 @@ type approvalPollResponse struct {
 
 // awaitApproval waits for another session of the account to approve this
 // new sign-in; the poll carries the approval cookie the login response set.
-func (c *authSessionClient) awaitApproval(ctx context.Context, prog, id string, stderr io.Writer) (loginResponse, error) {
-	_, _ = fmt.Fprintf(stderr, "This sign-in comes from a new device. Approve request %s in a dashboard where you are signed in, or run \"%s auth approve %s\" with another token. Waiting...\n", id, prog, id)
+func (c *authSessionClient) awaitApproval(ctx context.Context, prog, id string, match int, stderr io.Writer) (loginResponse, error) {
+	_, _ = fmt.Fprintf(stderr, "This sign-in comes from a new device. Approve request %s in a dashboard where you are signed in and pick the number %d, or run \"%s auth approve %s --match %d\" with a token that holds signin:approve. Waiting...\n",
+		id, match, prog, id, match)
 	t := time.NewTicker(approvalPollInterval)
 	defer t.Stop()
 	for {
@@ -145,7 +147,7 @@ func (c *authSessionClient) awaitApproval(ctx context.Context, prog, id string, 
 		case <-t.C:
 		}
 		var poll approvalPollResponse
-		if err := c.do(ctx, http.MethodPost, "/api/v1/auth/login-approval/poll", nil, &poll); err != nil {
+		if err := c.do(ctx, http.MethodPost, "/api/v1/auth/login-approval/poll", struct{}{}, &poll); err != nil {
 			return loginResponse{}, err
 		}
 		switch poll.Status {

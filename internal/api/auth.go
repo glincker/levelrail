@@ -189,6 +189,8 @@ type loginResponse struct {
 	ApprovalRequired  bool       `json:"approval_required,omitempty"`
 	ApprovalID        string     `json:"approval_id,omitempty"`
 	ApprovalExpiresAt *time.Time `json:"approval_expires_at,omitempty"`
+	// ApprovalMatch is the number the approving session must pick.
+	ApprovalMatch int `json:"approval_match,omitempty"`
 }
 
 // handleLogin verifies an email/password against the users table and,

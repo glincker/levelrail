@@ -104,6 +104,39 @@ func (db *DB) RevokeTrustedDevice(ctx context.Context, userID, id string, now ti
 	return n == 1, nil
 }
 
+// RevokeAllTrustedDevices revokes every live device of userID and reports
+// how many it revoked.
+func (db *DB) RevokeAllTrustedDevices(ctx context.Context, userID string, now time.Time) (int, error) {
+	res, err := db.ExecContext(ctx, `UPDATE trusted_devices SET revoked_at = ? WHERE user_id = ? AND revoked_at = ''`,
+		FormatAuditTime(now), userID)
+	if err != nil {
+		return 0, fmt.Errorf("store: revoke trusted devices of %q: %w", userID, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("store: revoke trusted devices of %q: rows: %w", userID, err)
+	}
+	return int(n), nil
+}
+
+// ExtendTrustedDevice records a sign-in and pushes a live device's expiry.
+func (db *DB) ExtendTrustedDevice(ctx context.Context, id string, expiresAt, now time.Time) error {
+	if _, err := db.ExecContext(ctx, `UPDATE trusted_devices SET last_used_at = ?, expires_at = ? WHERE id = ? AND revoked_at = ''`,
+		FormatAuditTime(now), FormatAuditTime(expiresAt), id); err != nil {
+		return fmt.Errorf("store: extend trusted device %q: %w", id, err)
+	}
+	return nil
+}
+
+// PruneTrustedDevices deletes devices that expired or were revoked before cutoff.
+func (db *DB) PruneTrustedDevices(ctx context.Context, cutoff time.Time) error {
+	ts := FormatAuditTime(cutoff)
+	if _, err := db.ExecContext(ctx, `DELETE FROM trusted_devices WHERE expires_at < ? OR (revoked_at != '' AND revoked_at < ?)`, ts, ts); err != nil {
+		return fmt.Errorf("store: prune trusted devices: %w", err)
+	}
+	return nil
+}
+
 // CodeLoginSettings says whether sign in with a code is offered to admin
 // (root) accounts and to every other account.
 type CodeLoginSettings struct {
