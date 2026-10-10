@@ -229,11 +229,11 @@ func (r *MajorUpgradeRunner) upgrade(ctx context.Context, run *upgradeRun, desir
 // a version that does not exist fails before the database is taken offline.
 func (r *MajorUpgradeRunner) checkTargetImage(ctx context.Context, run *upgradeRun) error {
 	id, err := r.Runtime.Create(ctx, docker.ContainerSpec{
-		Name: fmt.Sprintf("db-%s-upgrade-img-%s", run.name, shortID(run.id)), Image: "postgres:" + run.to,
+		Name: fmt.Sprintf("db-%s-upgrade-img-%s", run.name, shortID(run.id)), Image: database.ImageRef(store.EnginePostgres, run.to),
 		Command: []string{"true"},
 	})
 	if err != nil {
-		return fmt.Errorf("target image postgres:%s is not available: %w", run.to, err)
+		return fmt.Errorf("target image %s is not available: %w", database.ImageRef(store.EnginePostgres, run.to), err)
 	}
 	if err := r.Runtime.Remove(ctx, id, true); err != nil {
 		return fmt.Errorf("remove image check container: %w", err)
@@ -378,7 +378,7 @@ func (r *MajorUpgradeRunner) dumpFromSnapshot(ctx context.Context, run *upgradeR
 		env["PGDATA"] = postgresDataMount
 	}
 	id, err := r.Runtime.Create(ctx, docker.ContainerSpec{
-		Name: srcName, Image: "postgres:" + run.from, Env: env,
+		Name: srcName, Image: database.ImageRef(store.EnginePostgres, run.from), Env: env,
 		Volumes: []docker.VolumeMount{{Name: run.snapshot, ContainerPath: postgresDataMount}},
 	})
 	if err != nil {
@@ -556,7 +556,7 @@ func (r *MajorUpgradeRunner) waitContainerRunning(ctx context.Context, name, ver
 	deadline := time.Now().Add(r.wait())
 	for {
 		state, err := r.Runtime.InspectByName(ctx, name)
-		if err == nil && state != nil && state.Running && strings.HasSuffix(state.Image, ":"+version) {
+		if err == nil && state != nil && state.Running && strings.HasSuffix(state.Image, ":"+database.ImageTag(store.EnginePostgres, version)) {
 			return r.waitSQL(ctx, name)
 		}
 		if !time.Now().Before(deadline) {

@@ -105,7 +105,7 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 	var jsonOut, interactive bool
 	fs.StringVar(&name, "name", "", "database name (required)")
 	fs.StringVar(&engine, "engine", "", "database engine: "+strings.Join(supportedEngineParams, ", ")+" (required)")
-	fs.StringVar(&version, "version", "", "engine version, e.g. \"16\" (required)")
+	fs.StringVar(&version, "version", "", "engine version, e.g. \"16\"; postgres also takes \"<major>-pgvector\", e.g. \"17-pgvector\" (required)")
 	fs.StringVar(&nodeID, "node-id", "", "node to place this database on (default: auto-placed on the least-loaded registered node, or the local node if only one exists)")
 	fs.StringVar(&existingVolume, "existing-volume", "", "when a deleted database of this name left its data volume behind: reuse (attach the old data) or discard (delete it, start empty); required if one exists")
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
@@ -184,7 +184,8 @@ directly.
 Flags:
   --name string           database name (required)
   --engine string        database engine: %[5]s (required)
-  --version string      engine version, e.g. "16" (required)
+  --version string      engine version, e.g. "16" (required). postgres also takes
+                                    "<major>-pgvector", e.g. "17-pgvector", to run with the pgvector extension
   --node-id string        node to place this database on; omitted auto-places it on the
                                     least-loaded registered node (or the local node if only one exists)
   --existing-volume string  reuse or discard the data volume a deleted database of this name

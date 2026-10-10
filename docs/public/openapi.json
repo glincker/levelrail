@@ -37642,7 +37642,7 @@
     },
     "/api/v1/migration/cutover/verify": {
       "get": {
-        "description": "Requires the `read` ability.",
+        "description": "Requires the `write:sensitive` ability.",
         "operationId": "handleCutoverVerify",
         "responses": {
           "200": {
@@ -37697,7 +37697,7 @@
         "security": [
           {
             "bearerAuth": [
-              "read"
+              "write:sensitive"
             ]
           }
         ],
@@ -37705,7 +37705,7 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "read"
+        "x-required-ability": "write:sensitive"
       }
     },
     "/api/v1/migration/volumes": {

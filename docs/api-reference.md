@@ -935,7 +935,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/imports/platform/databases/{name}/copy | AbilityWriteSensitive | handleCopyDatabaseData |
 | GET | /api/v1/migration/volumes | AbilityRead | handleVolumeGuide |
 | GET | /api/v1/migration/cutover | AbilityRead | handleCutoverReport |
-| GET | /api/v1/migration/cutover/verify | AbilityRead | handleCutoverVerify |
+| GET | /api/v1/migration/cutover/verify | AbilityWriteSensitive | handleCutoverVerify |
 | GET | /api/v1/ingress/connectivity | AbilityRead | handleIngressConnectivity |
 
 ## See also

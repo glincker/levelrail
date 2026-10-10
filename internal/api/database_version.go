@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -65,8 +66,16 @@ func checkVersionChange(engine, from, to string) error {
 	if !databaseVersionPattern.MatchString(to) {
 		return errors.New("version must be an image tag such as \"16.4\"")
 	}
+	if err := database.ValidateEngineVersion(engine, to); err != nil {
+		return err
+	}
 	if to == from {
 		return nil
+	}
+	_, fromVariant, _ := database.ParsePgvectorVersion(from)
+	_, toVariant, _ := database.ParsePgvectorVersion(to)
+	if fromVariant != toVariant {
+		return errors.New("switching between the plain and pgvector images in place is refused: they are built on different Debian releases, and a glibc collation change can silently corrupt indexes. Use the guarded major upgrade (dump and restore) or restore a backup into a new database")
 	}
 	fromMajor, fromOK := majorVersion(from)
 	toMajor, toOK := majorVersion(to)

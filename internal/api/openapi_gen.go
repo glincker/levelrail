@@ -554,7 +554,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/log-archive/runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListLogArchiveRuns", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
 	{Method: "GET", Path: "/api/v1/migration/cutover", Ability: "AbilityRead", Group: "Other", Handler: "handleCutoverReport", Description: ""},
-	{Method: "GET", Path: "/api/v1/migration/cutover/verify", Ability: "AbilityRead", Group: "Other", Handler: "handleCutoverVerify", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/cutover/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCutoverVerify", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/volumes", Ability: "AbilityRead", Group: "Other", Handler: "handleVolumeGuide", Description: ""},
 	{Method: "GET", Path: "/api/v1/model-cache", Ability: "AbilityRead", Group: "Other", Handler: "handleListModelCache", Description: ""},
 	{Method: "POST", Path: "/api/v1/model-cache/prune", Ability: "AbilityRoot", Group: "Other", Handler: "handlePruneModelCache", Description: ""},

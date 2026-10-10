@@ -550,7 +550,7 @@ func (c *Controller) Teardown(ctx context.Context) error {
 // it read-only at certsMountPath and, on a brand new container, writes
 // it into that volume first (see the state == nil case below).
 func (c *Controller) reconcileEngine(ctx context.Context, desired *store.DesiredDatabase, env map[string]string, command []string, dataPath string, containerPort int, tlsMaterial *TLSMaterial) (reconcile.Result, error) {
-	image := dockerImageFor(desired.Engine) + ":" + versionOrDefault(desired.Version)
+	image := ImageRef(desired.Engine, desired.Version)
 	target := containerName(c.dbName)
 	volName := dataVolumeName(c.dbName)
 	// pitrActive gates every PITR-specific step below: only Postgres
