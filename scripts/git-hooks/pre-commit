@@ -185,6 +185,29 @@ if [ -n "$lucide_hits" ]; then
 	fail=1
 fi
 
+# The installer CI job runs this exact shellcheck command and fails on info-level
+# findings, which cost a full CI cycle to discover. Keep the file list in sync
+# with the install.sh job in .github/workflows/ci.yml.
+echo "pre-commit: shellcheck (installer scripts)"
+install_scripts="install.sh install-cli.sh scripts/test-install-sh.sh scripts/test-install-cli.sh"
+staged_install_scripts=""
+for f in $install_scripts; do
+	if git diff --cached --name-only --diff-filter=ACM -- "$f" | grep -q .; then
+		staged_install_scripts="$staged_install_scripts $f"
+	fi
+done
+if [ -n "$staged_install_scripts" ]; then
+	if command -v shellcheck >/dev/null 2>&1; then
+		# shellcheck disable=SC2086
+		if ! shellcheck -s sh $install_scripts; then
+			echo "shellcheck findings in the installer scripts (CI fails on these too)"
+			fail=1
+		fi
+	else
+		echo "shellcheck is not installed: skipping (CI will run it; brew install shellcheck)"
+	fi
+fi
+
 if [ "$fail" -ne 0 ]; then
 	echo ""
 	echo "pre-commit checks failed, commit aborted."
