@@ -80,9 +80,9 @@ The lanes and the checks that gate them:
 | Lane | Packages | Present when | Required check name |
 | --- | --- | --- | --- |
 | `api-1` to `api-4` | `internal/api`, sharded by test name | `internal/api` affected | `Test (api-N)`, aggregated as `Test (internal/api)` |
-| `e2e-fleet` | `test/e2e`, template fleet test only | full live run | `Test (e2e-fleet)` |
-| `e2e` | `test/e2e` (minus the fleet test on a full live run) | `test/e2e` affected | `Test (e2e)` |
-| `e2e-reconcile` | `test/e2e/reconcile` | full live run, package affected | `Test (e2e-reconcile)` |
+| `e2e-fleet` | `test/e2e`, template fleet test only | `test/e2e` affected and a fleet path changed ([below](#which-e2e-lanes-run)) | `Test (e2e-fleet)` |
+| `e2e` | `test/e2e` (minus the fleet test on a full live run) | `test/e2e` affected and an e2e path changed | `Test (e2e)` |
+| `e2e-reconcile` | `test/e2e/reconcile` | package affected and a fleet path changed | `Test (e2e-reconcile)` |
 | `docker` | other Docker-backed packages, `-p 2` | many packages affected | `Test (docker)` |
 | `rest` | everything else (and the Docker ones on a small diff) | any other package affected | `Test (rest)` |
 
@@ -100,6 +100,29 @@ end-to-end suite through the test-import walk. The reconciler and Docker-only
 tests in `test/e2e/reconcile` run only when a PR's diff reaches something they
 import.
 
+## Which e2e lanes run
+
+The three live-Docker lanes are the most expensive jobs on a PR (each about
+6 to 7 minutes of runner time, often all three at once). The plan only
+schedules a lane when the diff can reach what it exercises. A lane that is
+not planned is not in `rest_checks`, so `Test (everything else)` does not wait
+on it and `CI required` passes without it.
+
+| Lane | Runs when the diff touches |
+| --- | --- |
+| `e2e-fleet`, `e2e-reconcile` | `internal/reconcile/` (a diff confined to `internal/reconcile/ingress/` does not count), `internal/agent/`, `internal/network/`, `test/e2e/` |
+| `e2e` | `internal/ingress/`, `internal/reconcile/` (including `ingress/`), `internal/docker/`, `internal/deploy/`, `test/e2e/` |
+| all three | The `ci:live` label, a full run, or a change to `ci.yml`, `nightly.yml`, `.github/actions/` or the planner, lane runner or group scripts (alongside a diff that reaches `test/e2e`) |
+
+`nightly.yml` is unchanged and runs every lane and the full live set, so a
+change this table skips is still verified within a day. Add `ci:live` to a PR
+that changes something the table does not list but that a template deploy
+depends on (for example `internal/catalog`).
+
+`scripts/test-ci-go-plan.sh` holds the table cases: an ingress-only diff
+plans `e2e` and neither `e2e-fleet` nor `e2e-reconcile`, a reconcile diff
+plans all three, a docs-only diff plans none, and `ci:live` plans all.
+
 ## Live suites
 
 The heaviest tests pull real upstream images and run real container
@@ -114,7 +137,7 @@ place, and prints the reason in the **Go plan** job summary:
 
 | `live` | When | What runs |
 | --- | --- | --- |
-| `full` | The diff touches `internal/catalog`, `internal/compose`, `internal/registrycatalog`, `internal/reconcile`, `internal/docker`, `internal/dockertest`, `internal/agent`, `internal/build`, `internal/pipeline`, `internal/ingress`, `test/e2e`, `ci.yml`, `nightly.yml`, `.github/actions`, or the planner, lane runner or group scripts | The whole fleet (28 templates), every catalog batch, both break-glass tests |
+| `full` | The diff touches `internal/catalog`, `internal/compose`, `internal/registrycatalog`, `internal/reconcile`, `internal/docker`, `internal/dockertest`, `internal/agent`, `internal/network`, `internal/build`, `internal/pipeline`, `internal/ingress`, `test/e2e`, `ci.yml`, `nightly.yml`, `.github/actions`, or the planner, lane runner or group scripts | The whole fleet (28 templates) when `e2e-fleet` is planned, every catalog batch, both break-glass tests |
 | `full` | The PR has the `ci:live` label | Same |
 | `full` | A full run (`go.mod`, migrations, pipeline scripts, push with no base) | Same |
 | `smoke` | Anything else | Fleet limited to `uptime-kuma`, `mailpit` and `gitea` (one single-service, one tiny, one db-backed multi-service template); the catalog batch and break-glass tests skip |
