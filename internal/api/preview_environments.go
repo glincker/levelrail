@@ -113,7 +113,7 @@ func (rt *Router) handlePullRequestWebhookEvent(ctx context.Context, appName str
 func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, gs store.GitSource, ev webhook.PullRequestEvent, approved bool) (int, string) {
 	envURL := ""
 	if d := rt.previewDomain(ctx, appName, ev.Number); d != "" {
-		envURL = "https://" + d
+		envURL = rt.publicHTTPSURL(ctx, d)
 	}
 	dep := rt.beginForgeDeployment(ctx, appName, gs, ev.HeadSHA, forgeEnvPreview, previewScope(ev.Number), envURL)
 	status, message := rt.deployPreviewEnvironmentInner(ctx, appName, gs, ev, approved)
@@ -232,15 +232,15 @@ type previewEnvVars struct {
 
 // injectPreviewEnv sets PREVIEW_PR_NUMBER and PREVIEW_BRANCH, plus
 // PREVIEW_URL when domain is known, on a copy of env.
-func injectPreviewEnv(env map[string]spec.EnvVar, vars previewEnvVars, domain string) map[string]spec.EnvVar {
+func injectPreviewEnv(env map[string]spec.EnvVar, vars previewEnvVars, previewURL string) map[string]spec.EnvVar {
 	out := make(map[string]spec.EnvVar, len(env)+3)
 	for k, v := range env {
 		out[k] = v
 	}
 	out["PREVIEW_PR_NUMBER"] = spec.EnvVar{Value: strconv.Itoa(vars.PRNumber)}
 	out["PREVIEW_BRANCH"] = spec.EnvVar{Value: vars.Branch}
-	if domain != "" {
-		out["PREVIEW_URL"] = spec.EnvVar{Value: "https://" + domain}
+	if previewURL != "" {
+		out["PREVIEW_URL"] = spec.EnvVar{Value: previewURL}
 	} else {
 		delete(out, "PREVIEW_URL")
 	}
@@ -303,7 +303,7 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 		return "", false, fmt.Errorf("apply branch env overrides for %q: %w", appName, err)
 	}
 	svcSpec.Domains = domainSlice(wantDomain)
-	svcSpec.Env = injectPreviewEnv(svcSpec.Env, vars, wantDomain)
+	svcSpec.Env = injectPreviewEnv(svcSpec.Env, vars, rt.previewURLFor(ctx, wantDomain))
 	req := deploy.Request{ServiceName: previewName, Service: svcSpec, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepo: previewName}
 
 	_, deployErr := rt.builder.Deploy(ctx, req, build.SlogProgress(rt.logger))
@@ -346,7 +346,7 @@ func (rt *Router) deployPreviewMulti(ctx context.Context, previewName string, gs
 		if len(svc.Domains) > 0 {
 			domain = svc.Domains[0]
 		}
-		svc.Env = injectPreviewEnv(svc.Env, vars, domain)
+		svc.Env = injectPreviewEnv(svc.Env, vars, rt.previewURLFor(ctx, domain))
 		services[k] = svc
 	}
 

@@ -195,7 +195,7 @@ func (rt *Router) doctorCheckACMEReachability(ctx context.Context) doctorCheckRe
 	acmeEnabled := false
 	if rt.ingressSettings != nil {
 		if settings, err := rt.ingressSettings.GetIngressSettings(ctx); err == nil {
-			acmeEnabled = settings.ACMEEnabled
+			acmeEnabled = settings.EffectiveACMEEnabled()
 			if settings.ACMEDirectoryURL != "" {
 				directoryURL = settings.ACMEDirectoryURL
 			}

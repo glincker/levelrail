@@ -725,23 +725,52 @@ func (rt *Router) fallbackURLFor(ctx context.Context, svc store.DesiredService) 
 	if len(svc.Domains) > 0 {
 		return ""
 	}
-	if s, err := rt.ingressSettings.GetIngressSettings(ctx); err != nil || s.FallbackDomainsDisabled {
+	s, err := rt.ingressSettings.GetIngressSettings(ctx)
+	if err != nil || s.FallbackDomainsDisabled {
 		return ""
 	}
 	if d, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
-		return rt.ingressHTTPSURL(d)
+		return rt.ingressHTTPSURL(s, d)
 	}
 	return ""
 }
 
-// ingressHTTPSURL is "https://host", with ":port" when the ingress listens
-// on a non-default HTTPS port, so a link built from it reaches this ingress
-// and not whatever owns 443 on the host.
-func (rt *Router) ingressHTTPSURL(host string) string {
-	if p := rt.doctorHTTPSPort; p != 0 && p != defaultDoctorHTTPSPort {
-		return "https://" + host + ":" + strconv.Itoa(p)
+// ingressHTTPSURL is "https://host" with the port clients actually use: the
+// public HTTPS port setting when set (or 443 behind an upstream TLS proxy),
+// else the ingress listen port, so a link reaches this ingress and not
+// whatever owns 443 on the host.
+func (rt *Router) ingressHTTPSURL(s store.IngressSettings, host string) string {
+	port := s.PublicLinkPort()
+	if port == 0 {
+		port = rt.doctorHTTPSPort
 	}
-	return "https://" + host
+	return httpsURL(host, port)
+}
+
+// publicHTTPSURL is "https://host" for a hostname served by this platform,
+// carrying the explicit public port only when one is configured.
+func (rt *Router) publicHTTPSURL(ctx context.Context, host string) string {
+	s, err := rt.ingressSettings.GetIngressSettings(ctx)
+	if err != nil {
+		return httpsURL(host, 0)
+	}
+	return httpsURL(host, s.PublicLinkPort())
+}
+
+// previewURLFor is publicHTTPSURL for a possibly empty preview domain.
+func (rt *Router) previewURLFor(ctx context.Context, domain string) string {
+	if domain == "" {
+		return ""
+	}
+	return rt.publicHTTPSURL(ctx, domain)
+}
+
+// httpsURL omits the port when it is unset or the scheme default.
+func httpsURL(host string, port int) string {
+	if port == 0 || port == defaultDoctorHTTPSPort {
+		return "https://" + host
+	}
+	return "https://" + host + ":" + strconv.Itoa(port)
 }
 
 // handleUpdateApp handles PUT /api/v1/apps/{name}. Full replace, same as

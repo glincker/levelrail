@@ -49,6 +49,43 @@ type IngressSettings struct {
 	// <app>.<dashed-ip>.sslip.io hostname apps without a domain get
 	// (migrations/0290). Default false: the hostname is on.
 	FallbackDomainsDisabled bool
+	// PublicHTTPSPort is the port clients use to reach this ingress when a
+	// proxy fronts it (migrations/0416). 0 means the ingress listen port.
+	PublicHTTPSPort int
+	// TLSTerminatedUpstream marks a proxy in front as the TLS owner: no ACME
+	// here and links use the public port (migrations/0416).
+	TLSTerminatedUpstream bool
+}
+
+// MaxPublicHTTPSPort is the highest valid PublicHTTPSPort.
+const MaxPublicHTTPSPort = 65535
+
+// ValidatePublicHTTPSPort rejects ports outside 0..MaxPublicHTTPSPort.
+func ValidatePublicHTTPSPort(p int) error {
+	if p < 0 || p > MaxPublicHTTPSPort {
+		return fmt.Errorf("store: public_https_port %d is out of range 0-%d", p, MaxPublicHTTPSPort)
+	}
+	return nil
+}
+
+// EffectiveACMEEnabled is false whenever TLS is terminated upstream, so a
+// stored acme_enabled is kept but never acted on.
+func (s IngressSettings) EffectiveACMEEnabled() bool {
+	return s.ACMEEnabled && !s.TLSTerminatedUpstream
+}
+
+// PublicLinkPort is the explicit port generated links must carry: the
+// configured public port, 443 when TLS is upstream without one, else 0
+// (the caller's own default applies).
+func (s IngressSettings) PublicLinkPort() int {
+	switch {
+	case s.PublicHTTPSPort != 0:
+		return s.PublicHTTPSPort
+	case s.TLSTerminatedUpstream:
+		return 443
+	default:
+		return 0
+	}
 }
 
 // GetIngressSettings returns the single ingress_settings row. Always
@@ -64,12 +101,14 @@ func (db *DB) GetIngressSettings(ctx context.Context) (IngressSettings, error) {
 		acmeDirectoryURL sql.NullString
 		hstsEnabled      int
 		fallbackDisabled int
+		publicHTTPSPort  int
+		tlsUpstream      int
 	)
 	err := db.QueryRowContext(ctx, `
-		SELECT primary_domain, acme_enabled, acme_email, acme_directory_url, hsts_enabled, fallback_domains_disabled
+		SELECT primary_domain, acme_enabled, acme_email, acme_directory_url, hsts_enabled, fallback_domains_disabled, public_https_port, tls_terminated_upstream
 		FROM ingress_settings
 		WHERE id = 1
-	`).Scan(&primaryDomain, &acmeEnabled, &acmeEmail, &acmeDirectoryURL, &hstsEnabled, &fallbackDisabled)
+	`).Scan(&primaryDomain, &acmeEnabled, &acmeEmail, &acmeDirectoryURL, &hstsEnabled, &fallbackDisabled, &publicHTTPSPort, &tlsUpstream)
 	if err != nil {
 		return IngressSettings{}, fmt.Errorf("store: get ingress settings: %w", err)
 	}
@@ -80,6 +119,8 @@ func (db *DB) GetIngressSettings(ctx context.Context) (IngressSettings, error) {
 	s.ACMEDirectoryURL = acmeDirectoryURL.String
 	s.HSTSEnabled = hstsEnabled != 0
 	s.FallbackDomainsDisabled = fallbackDisabled != 0
+	s.PublicHTTPSPort = publicHTTPSPort
+	s.TLSTerminatedUpstream = tlsUpstream != 0
 	return s, nil
 }
 
@@ -97,6 +138,13 @@ func (db *DB) GetIngressSettings(ctx context.Context) (IngressSettings, error) {
 // SaveDesiredService's own domain-uniqueness enforcement is the
 // exception to, not the rule.
 func (db *DB) UpdateIngressSettings(ctx context.Context, s IngressSettings) error {
+	if err := ValidatePublicHTTPSPort(s.PublicHTTPSPort); err != nil {
+		return err
+	}
+	tlsUpstream := 0
+	if s.TLSTerminatedUpstream {
+		tlsUpstream = 1
+	}
 	acmeEnabled := 0
 	if s.ACMEEnabled {
 		acmeEnabled = 1
@@ -113,7 +161,7 @@ func (db *DB) UpdateIngressSettings(ctx context.Context, s IngressSettings) erro
 
 	_, err := db.ExecContext(ctx, `
 		UPDATE ingress_settings
-		SET primary_domain = ?, acme_enabled = ?, acme_email = ?, acme_directory_url = ?, hsts_enabled = ?, fallback_domains_disabled = ?
+		SET primary_domain = ?, acme_enabled = ?, acme_email = ?, acme_directory_url = ?, hsts_enabled = ?, fallback_domains_disabled = ?, public_https_port = ?, tls_terminated_upstream = ?
 		WHERE id = 1
 	`,
 		sql.NullString{String: s.PrimaryDomain, Valid: s.PrimaryDomain != ""},
@@ -122,6 +170,8 @@ func (db *DB) UpdateIngressSettings(ctx context.Context, s IngressSettings) erro
 		sql.NullString{String: s.ACMEDirectoryURL, Valid: s.ACMEDirectoryURL != ""},
 		hstsEnabled,
 		fallbackDisabled,
+		s.PublicHTTPSPort,
+		tlsUpstream,
 	)
 	if err != nil {
 		return fmt.Errorf("store: update ingress settings: %w", err)

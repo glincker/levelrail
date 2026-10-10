@@ -102,7 +102,7 @@ func (rt *Router) notifyPreviewSuccessGitHub(ctx context.Context, appName string
 	description := "Preview deployed"
 	targetURL := ""
 	if previewURL != "" {
-		targetURL = "https://" + previewURL
+		targetURL = rt.publicHTTPSURL(ctx, previewURL)
 		description = "Preview deployed: " + previewURL
 	}
 

@@ -11,6 +11,8 @@ import {
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import { DomainCheckPanel } from './DomainDnsCheck'
 import { InfoTip } from './kit/InfoTip'
+import { IngressUpstreamFields } from './IngressUpstreamFields'
+import { isValidPublicPort, publicPortError } from '../lib/publicPort'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -47,6 +49,11 @@ const ingressSettingsSchema = z
     acmeEmail: z.string().trim(),
     acmeDirectoryUrl: z.string().trim(),
     hstsEnabled: z.boolean(),
+    tlsTerminatedUpstream: z.boolean(),
+    publicHttpsPort: z
+      .string()
+      .trim()
+      .refine(isValidPublicPort, { message: publicPortError }),
   })
   .superRefine((data, ctx) => {
     if (data.primaryDomain && !domainPattern.test(data.primaryDomain)) {
@@ -135,6 +142,10 @@ function toFieldValues(settings: IngressSettings): IngressSettingsFormValues {
     acmeEmail: settings.acme_email ?? settings.suggested_acme_email ?? '',
     acmeDirectoryUrl: settings.acme_directory_url ?? '',
     hstsEnabled: settings.hsts_enabled,
+    tlsTerminatedUpstream: settings.tls_terminated_upstream ?? false,
+    publicHttpsPort: settings.public_https_port
+      ? String(settings.public_https_port)
+      : '',
   }
 }
 
@@ -145,6 +156,10 @@ function toIngressSettings(values: IngressSettingsFormValues): IngressSettings {
     acme_email: values.acmeEmail,
     acme_directory_url: values.acmeDirectoryUrl,
     hsts_enabled: values.hstsEnabled,
+    tls_terminated_upstream: values.tlsTerminatedUpstream,
+    public_https_port: values.publicHttpsPort
+      ? Number(values.publicHttpsPort)
+      : 0,
   }
 }
 
@@ -179,7 +194,7 @@ export function IngressSettingsCard({
   primaryCert?: CertificateStatus
 }) {
   const updateSettings = useUpdateIngressSettings()
-  const { control, register, handleSubmit, formState } =
+  const { control, register, handleSubmit, formState, watch, setValue } =
     useForm<IngressSettingsFormValues>({
       resolver: zodResolver(ingressSettingsSchema),
       values: toFieldValues(settings),
@@ -354,6 +369,22 @@ export function IngressSettingsCard({
               Off by default. Sent for 180 days at a time once enabled.
             </FieldDescription>
           </div>
+
+          <IngressUpstreamFields
+            settings={settings}
+            upstream={watch('tlsTerminatedUpstream')}
+            onUpstreamChange={(next) => {
+              setValue('tlsTerminatedUpstream', next, { shouldDirty: true })
+            }}
+            port={watch('publicHttpsPort')}
+            onPortChange={(next) => {
+              setValue('publicHttpsPort', next, {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+            }}
+            invalid={Boolean(formState.errors.publicHttpsPort)}
+          />
 
           <div className="flex items-center gap-2">
             <Button type="submit" size="sm" disabled={updateSettings.isPending}>
