@@ -196,12 +196,13 @@ func TestSSHSaverNeedsCredentials(t *testing.T) {
 
 func TestSSHTransferEndToEnd(t *testing.T) {
 	key, pub := newKeyPEM(t)
-	d := &fakeSSHD{stdout: bytes.Repeat([]byte("l"), 10000)}
+	archive := dockerArchive(t, testConfig(t, testLayers))
+	d := &fakeSSHD{stdout: archive}
 	startFakeSSHD(t, pub, d)
 	s := &SSHSaver{Target: fakeTarget(t, d.addr), Creds: Credentials{PrivateKey: key}, HostKeys: &HostKeys{}}
-	rt := &fakeRuntime{loadID: srcID}
+	rt := &fakeRuntime{loadID: srcID, layers: testLayers}
 	res, err := Transfer(context.Background(), s, rt, Request{Ref: "myapp:abc", WantID: srcID})
-	if err != nil || !res.Verified || res.Bytes != 10000 || len(rt.loaded) != 10000 {
+	if err != nil || !res.Verified || res.Bytes != int64(len(archive)) || len(rt.loaded) != len(archive) {
 		t.Fatalf("res = %+v, err = %v, loaded = %d", res, err, len(rt.loaded))
 	}
 }

@@ -104,6 +104,19 @@ func (l Local) InspectImageID(ctx context.Context, ref string) (string, error) {
 	return id, nil
 }
 
+// InspectImageLayers implements docker.ImageLayerInspector by forwarding.
+func (l Local) InspectImageLayers(ctx context.Context, ref string) ([]string, error) {
+	inspector, ok := l.Runtime.(docker.ImageLayerInspector)
+	if !ok {
+		return nil, ErrImageLoadUnsupported
+	}
+	layers, err := inspector.InspectImageLayers(ctx, ref)
+	if err != nil {
+		return nil, fmt.Errorf("agent: local inspect image layers: %w", err)
+	}
+	return layers, nil
+}
+
 // LoadImage implements docker.ImageLoader by forwarding to the wrapped runtime.
 func (l Local) LoadImage(ctx context.Context, r io.Reader) error {
 	loader, ok := l.Runtime.(docker.ImageLoader)

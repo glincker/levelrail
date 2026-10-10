@@ -75,6 +75,10 @@ func TestClient_LoadImage_Live_RoundTripKeepsImageID(t *testing.T) {
 		t.Fatalf("loaded ID = %q, %v, want %q", got, err, wantID)
 	}
 
+	if layers, err := c.InspectImageLayers(ctx, tag); err != nil || len(layers) == 0 {
+		t.Fatalf("loaded layers = %v, %v", layers, err)
+	}
+
 	if err := c.LoadImage(ctx, strings.NewReader("not a tar archive")); err == nil {
 		t.Fatal("loading garbage succeeded")
 	}
