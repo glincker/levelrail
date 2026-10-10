@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/upgradehistory"
 )
 
 const (
@@ -49,12 +50,25 @@ func controlPlaneBackupRetain(logger *slog.Logger) int {
 // migrations run. A failed snapshot is logged, not fatal, so a full disk
 // cannot stop an upgrade the operator asked for.
 func preMigrateSnapshotHook(dataDir string) store.PreMigrateHook {
+	return observedPreMigrateSnapshotHook(dataDir, nil)
+}
+
+// observedPreMigrateSnapshotHook is preMigrateSnapshotHook that also reports
+// the schema it migrated from and the snapshot it took into obs, for the
+// upgrade history row of this boot.
+func observedPreMigrateSnapshotHook(dataDir string, obs *upgradehistory.Observed) store.PreMigrateHook {
 	return func(ctx context.Context, db *store.DB, from, to int) {
+		if obs != nil {
+			obs.SchemaBefore = from
+		}
 		logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 		info, err := cpbackup.NewManager(db, dataDir).Create(ctx)
 		if err != nil {
 			logger.Error("pre-migration snapshot failed, continuing with migration", slog.Int("from_version", from), slog.Int("to_version", to), slog.String("error", err.Error()))
 			return
+		}
+		if obs != nil {
+			obs.BackupName = info.Name
 		}
 		logger.Info("pre-migration snapshot taken", slog.String("name", info.Name), slog.Int("from_version", from), slog.Int("to_version", to))
 	}

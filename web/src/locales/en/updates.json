@@ -134,5 +134,53 @@
     "failPlural": "Not healthy: {{count}} checks failed.",
     "error": "Verification could not run: {{message}}",
     "checkedAt": "Checked {{time}}"
+  },
+  "upgradeHistory": {
+    "title": "Upgrade history",
+    "description": "Every version this control plane has run, recorded when it started, however it was installed. Nothing upgrades silently: acknowledge each change once you have seen it.",
+    "loading": "Loading upgrade history...",
+    "loadError": "Could not load upgrade history: {{message}}",
+    "empty": "No upgrades recorded yet: the first one will appear here.",
+    "emptyHint": "A new row is added whenever the control plane starts on a different version.",
+    "pendingTitle_one": "{{count}} change to review",
+    "pendingTitle_other": "{{count}} changes to review",
+    "pendingBody": "These version changes have not been acknowledged by anyone yet. Check what changed, then acknowledge each one.",
+    "unacknowledged": "Not acknowledged yet. Someone should confirm this change was expected.",
+    "acknowledge": "Acknowledge",
+    "acknowledgedToast": "Upgrade acknowledged.",
+    "ackedBy": "Acknowledged by {{who}} on {{when}}.",
+    "kind": {
+      "installed": "Installed",
+      "adopted": "History starts here",
+      "upgraded": "Upgraded",
+      "rolled_back": "Rolled back",
+      "rebuilt": "Rebuilt",
+      "development": "Development build",
+      "changed": "Version changed"
+    },
+    "initiator": "By {{who}} using {{method}}.",
+    "initiatorUnknown": "Initiator unknown: nothing recorded who changed the version (no installer note was left).",
+    "initiatorUnknownShort": "an operator",
+    "methodUnknown": "an unrecorded method",
+    "schemaDelta": "Database schema {{before}} to {{after}}",
+    "schemaUnknown": "Database schema change not recorded",
+    "schemaMoved": "The database schema changed. Returning to the previous version needs a database restore, which loses data written since.",
+    "backup": "Backup: {{name}}",
+    "noBackup": "No backup recorded",
+    "health": {
+      "booted": "Started and migrated cleanly",
+      "unknown": "Health not recorded"
+    },
+    "releasePage": "Release page",
+    "noReleasePage": "Development build: no release page",
+    "compare": "Compare changes",
+    "rollbackTo": "Roll back to {{version}}",
+    "notes": "Release notes at the time",
+    "notesPending": "Release notes are being fetched",
+    "notesUnavailable": "Release notes were not available at the time",
+    "agents": {
+      "title": "Node agent versions",
+      "first": "first report"
+    }
   }
 }

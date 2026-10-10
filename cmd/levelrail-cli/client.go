@@ -195,6 +195,8 @@ type (
 	updatesResource             = apiclient.UpdatesResource
 	updatePreflight             = apiclient.UpdatePreflight
 	releaseHistory              = apiclient.ReleaseHistory
+	upgradeHistory              = apiclient.UpgradeHistory
+	upgradeHistoryEntry         = apiclient.UpgradeHistoryItem
 	releaseHistoryItem          = apiclient.ReleaseHistoryItem
 	rollbackPlan                = apiclient.RollbackPlan
 	changelogResource           = apiclient.ChangelogResource

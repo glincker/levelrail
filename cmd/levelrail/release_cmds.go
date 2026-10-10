@@ -22,6 +22,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/rollback"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/upgradehistory"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
 
@@ -331,14 +332,24 @@ func hostDeps(f rollbackFlags, exe, name, relDir, dataDir, live, healthBase stri
 		},
 		UndoRestoreDB: func(_ context.Context, kept string) error { return rollback.UndoSwap(live, kept) },
 		Audit: func(ctx context.Context, detail string) error {
-			actor := "root"
-			if u, err := user.Current(); err == nil {
-				actor = u.Username
-			}
-			return rollback.WriteAudit(ctx, live, actor, "host rollback: "+detail, time.Now())
+			return rollback.WriteAudit(ctx, live, hostActor(), "host rollback: "+detail, time.Now())
 		},
-		Now: time.Now,
+		WriteMarker: func(_ context.Context, backup string) error {
+			return upgradehistory.WriteMarker(dataDir, upgradehistory.Marker{
+				ToVersion: f.to, Initiator: hostActor(), Method: upgradehistory.MethodRollback,
+				BackupName: backup, WrittenAt: time.Now().UTC(),
+			})
+		},
+		ClearMarker: func() { upgradehistory.ClearMarker(dataDir) },
+		Now:         time.Now,
 	}
+}
+
+func hostActor() string {
+	if u, err := user.Current(); err == nil {
+		return u.Username
+	}
+	return "root"
 }
 
 // runReleaseCommand handles the host-side release subcommands and reports

@@ -69,6 +69,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/updatecheck"
+	"github.com/GLINCKER/levelrail/internal/upgradehistory"
 	"github.com/GLINCKER/levelrail/internal/vault"
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/internal/webhook"
@@ -396,7 +397,8 @@ func run(logger *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	db, err := openStore(ctx)
+	obs := upgradehistory.Observed{SchemaBefore: -1}
+	db, err := openStoreObserved(ctx, &obs)
 	if err != nil {
 		return err
 	}
@@ -405,6 +407,7 @@ func run(logger *slog.Logger) error {
 			logger.Error("closing store", slog.String("error", cerr.Error()))
 		}
 	}()
+	recordUpgradeHistory(ctx, db, obs, logger)
 
 	// instanceID must be resolved before the Docker client is
 	// constructed below, so every container/network/volume this process
@@ -1197,6 +1200,11 @@ func stopAgentGRPCServer(server gracefulStopper, logger *slog.Logger, timeout ti
 }
 
 func openStore(ctx context.Context) (*store.DB, error) {
+	return openStoreObserved(ctx, nil)
+}
+
+// openStoreObserved is openStore that reports pre-migration facts into obs.
+func openStoreObserved(ctx context.Context, obs *upgradehistory.Observed) (*store.DB, error) {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1207,7 +1215,7 @@ func openStore(ctx context.Context) (*store.DB, error) {
 	if err := os.MkdirAll(dataDir, 0o750); err != nil { //nolint:gosec // operator-controlled startup config, not user input
 		return nil, err
 	}
-	return store.Open(ctx, filepath.Join(dataDir, storeFilename), store.WithPreMigrateHook(preMigrateSnapshotHook(dataDir)))
+	return store.Open(ctx, filepath.Join(dataDir, storeFilename), store.WithPreMigrateHook(observedPreMigrateSnapshotHook(dataDir, obs)))
 }
 
 // openTelemetryStore opens the metrics store on its own
@@ -2584,7 +2592,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	} else {
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
-	opts = append(opts, api.WithChangelog(loadChangelog(logger)))
+	opts = append(opts, api.WithChangelog(loadChangelog(logger)), api.WithUpgradeHistory(db))
 
 	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
 	wireModelPreflight(modelSvc, client, b.ShortName, logger)
