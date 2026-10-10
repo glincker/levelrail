@@ -41,7 +41,7 @@ function socialDescription(text: string): string {
 // redeploy alone doesn't guarantee a visitor sees the new file. Bump this
 // whenever favicon.svg's actual content changes; it's appended everywhere
 // the file is referenced below.
-const faviconVersion = 3
+const faviconVersion = 4
 
 // Defined once and reused for both the sidebar itself and
 // pageToSection below (canonicalUrl/BreadcrumbList in transformHead),
@@ -392,11 +392,14 @@ export default withMermaid({
     ...feedHead(siteUrl),
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'theme-color', content: '#0b0e14' }],
-    ['link', { rel: 'icon', href: `/favicon-plate.svg?v=${faviconVersion}`, type: 'image/svg+xml' }],
+    ['link', { rel: 'icon', href: `/favicon.svg?v=${faviconVersion}`, type: 'image/svg+xml' }],
+    ['link', { rel: 'icon', href: `/favicon-96x96.png?v=${faviconVersion}`, type: 'image/png', sizes: '96x96' }],
     ['link', { rel: 'icon', href: `/favicon.ico?v=${faviconVersion}`, sizes: '48x48' }],
     ['link', { rel: 'icon', href: `/favicon-48x48.png?v=${faviconVersion}`, type: 'image/png', sizes: '48x48' }],
     ['link', { rel: 'icon', href: `/favicon-32x32.png?v=${faviconVersion}`, type: 'image/png', sizes: '32x32' }],
     ['link', { rel: 'apple-touch-icon', href: `/apple-touch-icon.png?v=${faviconVersion}`, sizes: '180x180' }],
+    ['meta', { name: 'apple-mobile-web-app-title', content: 'Levelrail' }],
+    ['link', { rel: 'manifest', href: `/site.webmanifest?v=${faviconVersion}` }],
     [
       'script',
       { type: 'application/ld+json' },
