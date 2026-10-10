@@ -264,6 +264,18 @@ An `NPM_TOKEN` secret, including one set at the organization level, is not used 
   identical except the cache-key prefix).
 - golangci-lint: the action's own analysis cache, saved on `main` only.
 - npm: `actions/setup-node`'s npm cache, keyed on `web/package-lock.json`.
+- tsc: `web/node_modules/.tmp` (the `tsc -b` build info), restored on PRs and
+  saved on `main` pushes. A stale build info is safe: tsc compares file hashes.
+
+## Web jobs
+
+`Web (tsc, eslint)` builds, checks the bundle budget, lints changed files and
+runs the related vitest tests. When the whole vitest suite is selected
+(config, lockfile or test-setup changes), it runs separately as
+`Web tests (1/4)` to `Web tests (4/4)` with `vitest --shard`, because vitest
+runs files serially (`fileParallelism: false`, to avoid jsdom contention
+flakes) and one job would be the suite's whole wall time. A skipped shard job
+passes `CI required` the same way a skipped area does.
 
 ## Concurrency and merge queue
 

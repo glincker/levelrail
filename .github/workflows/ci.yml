@@ -597,6 +597,18 @@ jobs:
         working-directory: web
         run: npm ci --ignore-scripts
 
+      # tsc validates a restored build info by file hash, so a stale one is
+      # safe; saved on main pushes only, like the Go caches.
+      - name: Restore tsc build info
+        id: tsbuild
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: web/node_modules/.tmp
+          key: tsbuildinfo-${{ hashFiles('web/package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            tsbuildinfo-${{ hashFiles('web/package-lock.json') }}-
+            tsbuildinfo-
+
       # Same command release.yml runs: vite build (which also generates
       # routeTree.gen.ts) then `tsc -b`, which type-checks test files too.
       - name: Build (vite build && tsc -b)
@@ -632,11 +644,6 @@ jobs:
             echo "no changed web/*.ts(x) files"
           fi
 
-      - name: vitest
-        if: env.WEB == 'full' && env.VITEST == 'full'
-        working-directory: web
-        run: npm test
-
       # Tests whose module graph reaches a changed file. Config, lockfile
       # and setup changes force the full run above instead.
       - name: vitest (related to changed files)
@@ -654,6 +661,46 @@ jobs:
             exit 0
           fi
           npm exec --no -- vitest related --run --passWithNoTests "${sources[@]}"
+
+      - name: Save tsc build info
+        if: github.event_name == 'push' && env.WEB == 'full' && steps.tsbuild.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: web/node_modules/.tmp
+          key: ${{ steps.tsbuild.outputs.cache-primary-key }}
+
+  # The full vitest suite, sharded: vitest runs files serially (see
+  # web/vitest.config.ts), so one job is the whole suite's wall time.
+  web-test:
+    name: Web tests (${{ matrix.shard }}/4)
+    needs: changes
+    if: >-
+      ${{ !cancelled() && needs.changes.result == 'success'
+      && needs.changes.outputs.web == 'full' && needs.changes.outputs.vitest == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci --ignore-scripts
+
+      - name: vitest (shard)
+        working-directory: web
+        run: npm exec --no -- vitest run --shard=${{ matrix.shard }}/4
 
   # Runs install.sh end to end (install, re-run, upgrade, uninstall) in
   # systemd containers against a binary built from this commit.
@@ -696,7 +743,7 @@ jobs:
   # failed or was cancelled. A skipped job had no work for this change.
   ci-required:
     name: CI required
-    needs: [changes, plan, build-vet, lint, kit, test-go, test-api, test-rest, coverage-gate, web-check, install-sh]
+    needs: [changes, plan, build-vet, lint, kit, test-go, test-api, test-rest, coverage-gate, web-check, web-test, install-sh]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 3
