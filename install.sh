@@ -802,7 +802,7 @@ write_upgrade_marker() {
 	method="$1"
 	who="${SUDO_USER:-$(id -un 2>/dev/null || echo unknown)}"
 	who="$(printf '%s' "$who" | tr -cd 'A-Za-z0-9._@-')"
-	chan="$(printf '%s' "${LEVELRAIL_CHANNEL:-}" | tr -cd 'a-z')"
+	chan="$(printf '%s' "${LEVELRAIL_CHANNEL:-}" | tr -cd '[:lower:]')"
 	when="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 	mkdir -p "$DATA_DIR" 2>/dev/null || return 0
 	(
