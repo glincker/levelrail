@@ -5,6 +5,8 @@ import { TONE } from '../kit/tone'
 import type { Tone } from '../kit/tone'
 import {
   ESTIMATE_APP_BYTES,
+  ESTIMATE_APP_DISK_BYTES,
+  ESTIMATE_DISK_RESERVED_BYTES,
   ESTIMATE_RESERVED_BYTES,
   estimateSmallApps,
 } from '../../lib/setupReadiness'
@@ -52,6 +54,22 @@ export function CapacityPanel({
 }) {
   const { t } = useTranslation('setup')
   const apps = estimateSmallApps(capacity)
+  const allClear = ['ram', 'cpu', 'disk_space', 'disk_io_latency'].every(
+    (code) => {
+      const status = report.checks.find((c) => c.code === code)?.status
+      return status === undefined || status === 'ok'
+    },
+  )
+  let estimateLine = ''
+  if (apps) {
+    if (apps.limitedBy === 'disk') {
+      estimateLine = t('capacity.estimateLimitedDisk', { count: apps.count })
+    } else if (allClear) {
+      estimateLine = t('capacity.estimateComfortable', { count: apps.count })
+    } else {
+      estimateLine = t('capacity.estimate', { count: apps.count })
+    }
+  }
   const readouts: Array<{
     key: string
     label: string
@@ -111,15 +129,20 @@ export function CapacityPanel({
         ))}
       </dl>
       <p className="text-sm text-foreground">
-        {apps === null
-          ? t('capacity.noEstimate')
-          : t('capacity.estimate', { count: apps })}
+        {apps === null ? t('capacity.noEstimate') : estimateLine}
         {apps === null ? null : (
           <span className="mt-0.5 block text-xs text-muted-foreground">
-            {t('capacity.assumption', {
-              app: formatBytes(ESTIMATE_APP_BYTES),
-              reserve: formatBytes(ESTIMATE_RESERVED_BYTES),
-            })}
+            {apps.usedDisk
+              ? t('capacity.assumptionDisk', {
+                  app: formatBytes(ESTIMATE_APP_BYTES),
+                  reserve: formatBytes(ESTIMATE_RESERVED_BYTES),
+                  disk: formatBytes(ESTIMATE_APP_DISK_BYTES),
+                  diskReserve: formatBytes(ESTIMATE_DISK_RESERVED_BYTES),
+                })
+              : t('capacity.assumption', {
+                  app: formatBytes(ESTIMATE_APP_BYTES),
+                  reserve: formatBytes(ESTIMATE_RESERVED_BYTES),
+                })}
           </span>
         )}
       </p>

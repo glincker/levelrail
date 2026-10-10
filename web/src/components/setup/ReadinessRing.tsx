@@ -54,7 +54,7 @@ export function ReadinessRing({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-semibold tabular-nums tracking-tight text-foreground">
+        <span className="text-3xl font-light tabular-nums tracking-tight text-foreground">
           {score === null ? '-' : score}
         </span>
         {score === null ? null : (

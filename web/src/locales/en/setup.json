@@ -3,6 +3,7 @@
     "title": "Set up {{name}}",
     "subtitle": "From a fresh server to a live app in a few checks and choices.",
     "railLabel": "Setup steps",
+    "stepOf": "Step {{current}} of {{total}}",
     "progress": "{{done}} of {{total}} steps settled",
     "saved": "Progress saved. You can leave and come back.",
     "saving": "Saving your progress",
@@ -105,7 +106,11 @@
     "ifIgnored": "If you ignore it",
     "showDetails": "Show technical details",
     "hideDetails": "Hide technical details",
-    "explainerOpen": "Why is this unreachable?",
+    "groupReachability": "External reachability, ports {{ports}}",
+    "groupPort": "Port conflict, ports {{ports}}",
+    "showMore": "Show {{count}} more",
+    "showFewer": "Show fewer",
+    "openStatus": "Open system status",
     "explainerClose": "Hide explanation",
     "guidance": {
       "firewall": {
@@ -119,15 +124,20 @@
         "action": "Add a backup target"
       },
       "port": {
-        "why": "The ingress needs this port to receive traffic. Something else on this host has it.",
+        "why": "The ingress needs port {{ports}} to receive traffic, and something else on this host already holds it.",
         "ifIgnored": "Apps will deploy but visitors will reach the other process, not your app.",
         "action": "Diagnose the port conflict"
       },
       "reachability": {
-        "why": "From the internet, port {{port}} did not answer. Visitors and the certificate authority both need it.",
-        "ifIgnored": "Certificates will not issue and public domains will not load. Private use on a local network still works.",
-        "action": "Why is {{port}} unreachable?",
-        "explainer": "Check three things in order. First, the cloud firewall or security group for this server must allow inbound TCP {{port}}. Second, the host firewall must allow it too, for example: ufw allow {{port}}/tcp. Third, behind a home router, forward TCP {{port}} to this machine's LAN address."
+        "why": "We could not confirm from this host that port {{ports}} can be reached from the internet. Visitors and the certificate authority both need it.",
+        "ifIgnored": "If it is blocked, certificates will not issue and public domains will not load. Private use on a local network still works.",
+        "action": "Why might {{ports}} be unreachable?",
+        "explainer": "Check three things in order. First, the cloud firewall or security group for this server must allow inbound TCP {{ports}}. Second, the host firewall must allow it too, for example: ufw allow {{first}}/tcp. Third, behind a home router, forward TCP {{ports}} to this machine's LAN address. A router that blocks hairpin NAT can fail this check from inside your own network even when the port is open, so try from a different network."
+      },
+      "runtime": {
+        "why": "Rootless Docker and Podman work, but support is best-effort. Bind-mount ownership and user ID mapping can behave differently from a standard Docker install.",
+        "ifIgnored": "Apps usually run fine. Volumes may show permission errors that a standard install would not.",
+        "action": "Read the rootless and Podman notes"
       },
       "registry": {
         "why": "Builds and deploys pull images over HTTPS from this registry, and this host could not reach it.",
@@ -173,11 +183,6 @@
         "why": "Remote servers dial this address to join the control plane. It is not set, so there is nothing for them to dial.",
         "ifIgnored": "Single-server setups are unaffected. Adding a second server later will fail with a confusing connection error.",
         "action": "Set the agent address"
-      },
-      "generic": {
-        "why": "This check reported a problem that is worth a look.",
-        "ifIgnored": "It does not block deploys, but it may cause surprises later.",
-        "action": "Open system status"
       }
     }
   },
@@ -189,14 +194,20 @@
     "disk": "Free disk",
     "latency": "Disk write",
     "latencyValue": "{{ms}} ms for 1 MiB",
-    "estimate": "This server comfortably runs about {{count}} small apps.",
+    "estimate": "This server runs about {{count}} small apps.",
+    "estimateComfortable": "This server comfortably runs about {{count}} small apps.",
+    "estimateLimitedDisk": "About {{count}} small apps, limited by free disk.",
+    "estimateLimitedMemory": "About {{count}} small apps, limited by memory.",
+    "assumptionDisk": "Assumes {{app}} of memory and {{disk}} of disk per app, with {{reserve}} of memory and {{diskReserve}} of disk kept for the control plane and system.",
     "assumption": "Assumes {{app}} per app and {{reserve}} kept for the control plane and system.",
     "noEstimate": "We could not read this server's memory, so there is no app estimate yet."
   },
   "done": {
-    "eyebrow": "Setup complete",
-    "title": "{{name}} is ready",
-    "titleSkipped": "{{name}} is ready, with a few things left",
+    "eyebrow": "Setup summary",
+    "title": "Setup finished",
+    "titleSkipped_one": "Setup finished, {{count}} optional step skipped",
+    "titleSkipped_other": "Setup finished, {{count}} optional steps skipped",
+    "reviewed": "Reviewed",
     "subtitle": "Here is what you configured and where to go next.",
     "summaryHeading": "What you set up",
     "completed": "Done",

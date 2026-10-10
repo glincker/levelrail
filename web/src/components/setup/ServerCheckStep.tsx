@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
@@ -9,18 +9,22 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { systemDoctorQueryOptions } from '../../queries/systemDoctor'
 import { serverCheckGate } from '../../lib/setupWizard'
+import { groupWarnings } from '../../lib/setupGuidance'
 import {
   READINESS_CATEGORIES,
   buildReadiness,
   parseCapacity,
 } from '../../lib/setupReadiness'
 import { StepFooter } from './StepChrome'
+import { Eyebrow } from './Eyebrow'
 import { ReadinessRing } from './ReadinessRing'
 import { CategoryRow } from './CategoryRow'
 import { WarningCard } from './WarningCard'
 import { CapacityPanel } from './CapacityPanel'
 import { useStaggeredReveal } from './useStaggeredReveal'
 import type { StepProps } from './types'
+
+const WARNING_PREVIEW = 3
 
 /** ServerCheckStep runs the doctor bundle and presents it as a readiness story; it blocks only on checks nothing can deploy without. */
 export function ServerCheckStep({ onContinue, pending }: StepProps) {
@@ -32,6 +36,19 @@ export function ServerCheckStep({ onContinue, pending }: StepProps) {
   const readiness = useMemo(() => (data ? buildReadiness(data) : null), [data])
   const capacity = useMemo(() => (data ? parseCapacity(data) : null), [data])
 
+  const warningGroups = useMemo(
+    () => groupWarnings(readiness?.warnings ?? []),
+    [readiness],
+  )
+  const blockingGroups = useMemo(
+    () => groupWarnings(readiness?.blocking ?? []),
+    [readiness],
+  )
+  const [showAll, setShowAll] = useState(false)
+  const visibleWarnings = showAll
+    ? warningGroups
+    : warningGroups.slice(0, WARNING_PREVIEW)
+
   const rowCount = readiness?.categories.length ?? READINESS_CATEGORIES.length
   const revealed = useStaggeredReveal(rowCount, Boolean(data) && !isFetching)
   const running = isFetching || (Boolean(data) && revealed < rowCount)
@@ -40,8 +57,8 @@ export function ServerCheckStep({ onContinue, pending }: StepProps) {
   let headline = t('server.running')
   let note = t('server.runningNote')
   if (shown) {
-    const warnCount = readiness.warnings.length
-    const blockCount = readiness.blocking.length
+    const warnCount = warningGroups.length
+    const blockCount = blockingGroups.length
     if (readiness.verdict === 'ready') {
       headline = t('server.headline.ready')
     } else if (readiness.verdict === 'attention') {
@@ -87,17 +104,15 @@ export function ServerCheckStep({ onContinue, pending }: StepProps) {
           </AlertDescription>
         </Alert>
       ) : (
-        <div className="flex flex-col gap-5 rounded-xl border border-border bg-gradient-to-b from-tone-accent-soft/40 to-transparent p-4 sm:flex-row sm:items-center">
+        <div className="setup-hero flex flex-col gap-5 rounded-2xl border border-border p-5 sm:flex-row sm:items-center">
           <ReadinessRing
             score={shown ? readiness.score : null}
             verdict={shown ? readiness.verdict : 'attention'}
             label={ringLabel}
           />
           <div className="min-w-0 flex-1 space-y-1" aria-live="polite">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              {t('server.scoreLabel')}
-            </p>
-            <h3 className="text-xl font-semibold tracking-tight text-foreground">
+            <Eyebrow>{t('server.scoreLabel')}</Eyebrow>
+            <h3 className="text-2xl font-light tracking-tight text-foreground sm:text-3xl">
               {headline}
             </h3>
             <p className="text-sm text-muted-foreground">{note}</p>
@@ -137,8 +152,8 @@ export function ServerCheckStep({ onContinue, pending }: StepProps) {
           <h3 className="text-sm font-medium text-foreground">
             {t('warnings.blockingHeading')}
           </h3>
-          {readiness.blocking.map((c) => (
-            <WarningCard key={c.code} check={c} blocking />
+          {blockingGroups.map((g) => (
+            <WarningCard key={g.id} group={g} blocking />
           ))}
         </section>
       ) : null}
@@ -148,9 +163,24 @@ export function ServerCheckStep({ onContinue, pending }: StepProps) {
           <h3 className="text-sm font-medium text-foreground">
             {t('warnings.heading')}
           </h3>
-          {readiness.warnings.map((c) => (
-            <WarningCard key={c.code} check={c} blocking={false} />
+          {visibleWarnings.map((g) => (
+            <WarningCard key={g.id} group={g} blocking={false} />
           ))}
+          {warningGroups.length > WARNING_PREVIEW ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-expanded={showAll}
+              onClick={() => setShowAll((v) => !v)}
+            >
+              {showAll
+                ? t('warnings.showFewer')
+                : t('warnings.showMore', {
+                    count: warningGroups.length - WARNING_PREVIEW,
+                  })}
+            </Button>
+          ) : null}
         </section>
       ) : null}
 

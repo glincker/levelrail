@@ -92,7 +92,19 @@ describe('parseCapacity and estimateSmallApps', () => {
   })
 
   it('estimates from RAM after the reserve', () => {
-    expect(estimateSmallApps(parseCapacity(full))).toBe(12)
+    expect(estimateSmallApps(parseCapacity(full))).toEqual({
+      count: 12,
+      limitedBy: 'memory',
+      usedDisk: true,
+    })
+  })
+
+  it('is limited by disk when free disk is the smaller number', () => {
+    const e = estimateSmallApps({
+      ramBytes: 36 * 1024 ** 3,
+      diskFreeBytes: 32 * 1024 ** 3,
+    })
+    expect(e).toEqual({ count: 27, limitedBy: 'disk', usedDisk: true })
   })
 
   it('does not fabricate an estimate without RAM or on a tiny host', () => {

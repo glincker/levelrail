@@ -8,6 +8,7 @@ import { useBrand } from '../../hooks/useBrand'
 import { BrandMarkGlyph } from '../BrandMarkGlyph'
 import { SETUP_STEPS } from '../../lib/setupWizard'
 import type { SetupStepId } from '../../lib/setupWizard'
+import { Eyebrow } from './Eyebrow'
 import { SaveIndicator } from './SaveIndicator'
 
 /** SetupShell is the onboarding frame: brand header, a progress rail beside one focused card, and the save indicator. */
@@ -103,15 +104,18 @@ export function SetupShell({
 
         <section
           aria-labelledby="setup-step-title"
-          className="min-w-0 rounded-xl border border-border bg-card p-5 sm:p-6"
+          className="min-w-0 rounded-2xl border border-border bg-card p-5 sm:p-6"
         >
           <div className="mb-5 space-y-1">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              {index + 1} / {SETUP_STEPS.length}
-            </p>
+            <Eyebrow>
+              {t('shell.stepOf', {
+                current: index + 1,
+                total: SETUP_STEPS.length,
+              })}
+            </Eyebrow>
             <h2
               id="setup-step-title"
-              className="text-lg font-semibold tracking-tight text-foreground"
+              className="text-2xl font-light tracking-tight text-foreground"
             >
               {t(`steps.${current}.title`)}
             </h2>

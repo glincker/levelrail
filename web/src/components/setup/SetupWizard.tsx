@@ -1,4 +1,4 @@
-import { useMemo, useReducer } from 'react'
+import { useMemo, useReducer, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import {
@@ -7,7 +7,12 @@ import {
   useUpdateOnboardingProgress,
 } from '../../queries/onboarding'
 import { systemDoctorQueryOptions } from '../../queries/systemDoctor'
-import { nextStep, resumeStep, withStepStatus } from '../../lib/setupWizard'
+import {
+  SETUP_STEPS,
+  nextStep,
+  resumeStep,
+  withStepStatus,
+} from '../../lib/setupWizard'
 import { railProgress, setupNavReducer } from '../../lib/setupRail'
 import { buildReadiness } from '../../lib/setupReadiness'
 import type {
@@ -33,6 +38,9 @@ export function SetupWizard() {
     current: resumeStep(state.current_step, state.steps),
   }))
   const step = nav.current
+  const [seen, setSeen] = useState<ReadonlySet<SetupStepId>>(
+    () => new Set(SETUP_STEPS.slice(0, SETUP_STEPS.indexOf(nav.current) + 1)),
+  )
   const saveProgress = useUpdateOnboardingProgress()
   const complete = useCompleteOnboarding()
   const pending = saveProgress.isPending || complete.isPending
@@ -50,6 +58,7 @@ export function SetupWizard() {
 
   function goTo(id: SetupStepId, steps: SetupStepMap = state.steps) {
     dispatch({ type: 'goto', id })
+    setSeen((prev) => new Set([...prev, id]))
     saveProgress.mutate({ current_step: id, steps })
   }
 
@@ -103,6 +112,7 @@ export function SetupWizard() {
       {step === 'done' ? (
         <DoneStep
           steps={state.steps}
+          visited={seen}
           onGoToStep={(id) => goTo(id)}
           onFinish={finishWizard}
           pending={pending}

@@ -14,10 +14,10 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { useBrand } from '../../hooks/useBrand'
 import { dashboardUrlQueryOptions } from '../../queries/dashboardUrl'
 import { SETUP_STEPS } from '../../lib/setupWizard'
 import type { SetupStepId, SetupStepMap } from '../../lib/setupWizard'
+import { Eyebrow } from './Eyebrow'
 import { CopyValue } from './StepChrome'
 
 interface NextAction {
@@ -44,21 +44,24 @@ const NEXT_ACTIONS: readonly NextAction[] = [
 /** DoneStep is the completion moment: what was configured, the dashboard address, and three concrete next actions. */
 export function DoneStep({
   steps,
+  visited,
   onGoToStep,
   onFinish,
   pending,
 }: {
   steps: SetupStepMap
+  visited: ReadonlySet<SetupStepId>
   onGoToStep: (id: SetupStepId) => void
   onFinish: () => void
   pending: boolean
 }) {
   const { t } = useTranslation('setup')
   const { t: ts } = useTranslation('settings')
-  const brand = useBrand()
   const { data: dashboard } = useQuery(dashboardUrlQueryOptions())
   const reviewable = SETUP_STEPS.filter((id) => id !== 'done')
-  const skipped = reviewable.filter((id) => steps[id] !== 'completed').length
+  const skipped = reviewable.filter(
+    (id) => id !== 'server' && steps[id] !== 'completed',
+  ).length
   const address = dashboard?.dashboard_url || window.location.origin
 
   // Email is only worth suggesting when it was skipped; otherwise the first three remaining.
@@ -69,14 +72,11 @@ export function DoneStep({
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-tone-success">
-          <CheckCircleIcon className="size-4" aria-hidden="true" />
-          {t('done.eyebrow')}
-        </p>
-        <h3 className="text-xl font-semibold tracking-tight text-foreground">
+        <Eyebrow>{t('done.eyebrow')}</Eyebrow>
+        <h3 className="text-2xl font-light tracking-tight text-foreground">
           {skipped === 0
-            ? t('done.title', { name: brand.Name })
-            : t('done.titleSkipped', { name: brand.Name })}
+            ? t('done.title')
+            : t('done.titleSkipped', { count: skipped })}
         </h3>
         <p className="text-sm text-muted-foreground">{t('done.subtitle')}</p>
       </div>
@@ -111,7 +111,9 @@ export function DoneStep({
                       ? t('done.completed')
                       : steps[id] === 'skipped'
                         ? t('done.skipped')
-                        : t('done.notStarted')}
+                        : visited.has(id)
+                          ? t('done.reviewed')
+                          : t('done.notStarted')}
                   </span>
                 </span>
                 {done ? null : (

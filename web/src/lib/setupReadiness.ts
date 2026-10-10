@@ -162,12 +162,33 @@ export function parseCapacity(report: DoctorReport): Capacity {
 // Planning assumptions behind the app estimate, shown to the operator next to the number.
 export const ESTIMATE_RESERVED_BYTES = 1024 ** 3
 export const ESTIMATE_APP_BYTES = 256 * 1024 ** 2
+export const ESTIMATE_DISK_RESERVED_BYTES = 5 * 1024 ** 3
+export const ESTIMATE_APP_DISK_BYTES = 1024 ** 3
 
-/** estimateSmallApps returns how many small apps fit in RAM after a reserve, or null when RAM is unknown or too small to say. */
-export function estimateSmallApps(capacity: Capacity): number | null {
+export interface AppEstimate {
+  count: number
+  limitedBy: 'memory' | 'disk'
+  usedDisk: boolean
+}
+
+/** estimateSmallApps returns how many small apps fit given memory and, when known, free disk; null when memory is unknown or too small to say. */
+export function estimateSmallApps(capacity: Capacity): AppEstimate | null {
   if (capacity.ramBytes === undefined) return null
-  const n = Math.floor(
+  const byMemory = Math.floor(
     (capacity.ramBytes - ESTIMATE_RESERVED_BYTES) / ESTIMATE_APP_BYTES,
   )
-  return n >= 1 ? n : null
+  if (byMemory < 1) return null
+  if (capacity.diskFreeBytes === undefined) {
+    return { count: byMemory, limitedBy: 'memory', usedDisk: false }
+  }
+  const byDisk = Math.max(
+    0,
+    Math.floor(
+      (capacity.diskFreeBytes - ESTIMATE_DISK_RESERVED_BYTES) /
+        ESTIMATE_APP_DISK_BYTES,
+    ),
+  )
+  return byDisk < byMemory
+    ? { count: byDisk, limitedBy: 'disk', usedDisk: true }
+    : { count: byMemory, limitedBy: 'memory', usedDisk: true }
 }
