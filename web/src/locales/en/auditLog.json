@@ -7,6 +7,14 @@
     "certRenewed": "Renewed Certificate",
     "certRenewalRequested": "Requested Certificate Renewal",
     "certUploaded": "Uploaded Certificate",
-    "certRemoved": "Removed Certificate"
+    "certRemoved": "Removed Certificate",
+    "deviceLoginApproved": "Approved CLI login",
+    "deviceLoginDenied": "Denied CLI login",
+    "deviceLoginExpired": "CLI login expired",
+    "deviceLoginDismissed": "Dismissed CLI login notice"
+  },
+  "filters": {
+    "deviceLogin": "Device login",
+    "clearPath": "Showing one login request. Clear"
   }
 }

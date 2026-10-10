@@ -11,7 +11,13 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const deployCompareKeys = {
   compare: (appName: string, from: string, to: string | undefined) =>
-    [...appKeys.detail(appName), 'deploys', 'compare', from, to ?? 'current'] as const,
+    [
+      ...appKeys.detail(appName),
+      'deploys',
+      'compare',
+      from,
+      to ?? 'current',
+    ] as const,
 }
 
 export async function fetchDeployCompare(
@@ -29,7 +35,10 @@ export async function fetchDeployCompare(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch deploy comparison failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch deploy comparison failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as DeployCompare

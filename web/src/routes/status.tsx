@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   CheckCircleIcon,
+  InfoIcon,
   WarningCircleIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -13,6 +14,7 @@ import { useAttentionItems } from '../queries/attention'
 import { useRestartApp } from '../queries/apps'
 import { useTriggerDeploy } from '../queries/deploys'
 import type { AttentionItem } from '../lib/attention'
+import { ResolvedLoginControls } from '../components/attention/ResolvedLoginControls'
 
 export const Route = createFileRoute('/status')({
   component: StatusPage,
@@ -143,6 +145,21 @@ function ItemActions({ item }: { item: AttentionItem }) {
       </Button>
     )
   }
+  if (item.device?.dismissKey && item.device.auditPath) {
+    return (
+      <ResolvedLoginControls
+        dismissKey={item.device.dismissKey}
+        auditPath={item.device.auditPath}
+      />
+    )
+  }
+  if (target.kind === 'path') {
+    return (
+      <Button size="sm" variant="outline" render={<Link to={target.to} />}>
+        {t('items.openItem')}
+      </Button>
+    )
+  }
   if (target.kind === 'route') {
     return (
       <Button size="sm" variant="outline" render={<Link to={target.to} />}>
@@ -170,8 +187,14 @@ function ItemActions({ item }: { item: AttentionItem }) {
   )
 }
 
+function severityIcon(severity: AttentionItem['severity']) {
+  if (severity === 'critical') return WarningCircleIcon
+  return severity === 'info' ? InfoIcon : WarningIcon
+}
+
 export function StatusPage() {
   const { items, isLoading } = useAttentionItems()
+  const { t } = useTranslation('attention')
 
   return (
     <div className="space-y-4">
@@ -197,8 +220,7 @@ export function StatusPage() {
       ) : (
         <ul className="space-y-2">
           {items.map((item) => {
-            const Icon =
-              item.severity === 'critical' ? WarningCircleIcon : WarningIcon
+            const Icon = severityIcon(item.severity)
             return (
               <li
                 key={item.id}
@@ -206,7 +228,7 @@ export function StatusPage() {
               >
                 <div className="flex min-w-0 items-start gap-2.5">
                   <Icon
-                    className={`mt-0.5 size-4 shrink-0 ${item.severity === 'critical' ? 'text-destructive' : 'text-amber-600 dark:text-amber-400'}`}
+                    className={`mt-0.5 size-4 shrink-0 ${item.severity === 'critical' ? 'text-destructive' : item.severity === 'info' ? 'text-muted-foreground' : 'text-amber-600 dark:text-amber-400'}`}
                     aria-hidden="true"
                   />
                   <div className="min-w-0">
@@ -217,12 +239,22 @@ export function StatusPage() {
                           item.severity === 'critical' ? 'destructive' : 'muted'
                         }
                       >
-                        {item.severity}
+                        {item.device
+                          ? t(`deviceLogin.state.${item.device.state}`)
+                          : item.severity}
                       </Badge>
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {item.detail}
+                      {item.device?.requesterIp
+                        ? ` (${item.device.requesterIp})`
+                        : ''}
                     </p>
+                    {item.action ? (
+                      <p className="text-xs text-muted-foreground">
+                        {item.action}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
                 <ItemActions item={item} />

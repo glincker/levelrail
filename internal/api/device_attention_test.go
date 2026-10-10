@@ -174,14 +174,16 @@ func TestDeviceDecisions_AreAudited(t *testing.T) {
 	}
 	seen := map[string]bool{}
 	for _, e := range entries {
-		switch {
-		case strings.HasSuffix(e.Path, "/approve"):
+		switch e.Action {
+		case store.AuditActionDeviceLoginApproved:
 			seen["approve"] = true
-		case strings.HasSuffix(e.Path, "/deny"):
+		case store.AuditActionDeviceLoginDenied:
 			seen["deny"] = true
 		}
-		if strings.Contains(e.Path, approved.DeviceCode) || strings.Contains(e.Path, denied.DeviceCode) {
-			t.Errorf("audit path leaked a device code: %s", e.Path)
+		for _, secret := range []string{approved.DeviceCode, denied.DeviceCode, approved.UserCode, denied.UserCode} {
+			if strings.Contains(e.Path, secret) || strings.Contains(e.ActorName, secret) {
+				t.Errorf("audit entry leaked a code: %+v", e)
+			}
 		}
 	}
 	if !seen["approve"] || !seen["deny"] {

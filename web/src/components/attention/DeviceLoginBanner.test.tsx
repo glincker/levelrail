@@ -5,7 +5,10 @@ import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { DeviceLoginBanner } from './DeviceLoginBanner'
 import attentionEn from '../../locales/en/attention.json'
-import type { DeviceAuthRequest } from '../../queries/deviceAuth'
+import type {
+  DeviceActivityItem,
+  DeviceAuthRequest,
+} from '../../queries/deviceAuth'
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
@@ -20,9 +23,16 @@ void testI18n.use(initReactI18next).init({
 const approveMutate = vi.fn()
 const denyMutate = vi.fn()
 let requests: DeviceAuthRequest[] | undefined
+let activity: DeviceActivityItem[] | undefined
+const dismissMutate = vi.fn()
 
 vi.mock('../../queries/deviceAuth', () => ({
   useLiveDeviceAuthRequests: () => ({ data: requests }),
+  useDeviceActivity: () => ({ data: activity }),
+  useDismissAttentionItem: () => ({
+    mutate: dismissMutate,
+    isPending: false,
+  }),
   useApproveDeviceAuthRequest: () => ({
     mutate: approveMutate,
     isPending: false,
@@ -71,6 +81,8 @@ function renderBanner() {
 
 afterEach(() => {
   requests = undefined
+  activity = undefined
+  dismissMutate.mockReset()
   approveMutate.mockReset()
   denyMutate.mockReset()
 })
@@ -131,5 +143,53 @@ describe('DeviceLoginBanner', () => {
     renderBanner()
     fireEvent.click(screen.getByRole('button', { name: 'Deny' }))
     expect(denyMutate).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows an expired login as a dismissable strip with the start over command', () => {
+    requests = []
+    activity = [
+      {
+        id: 'r1',
+        state: 'expired',
+        client_name: 'ci-box',
+        requester_ip: '203.0.113.9',
+        user_agent: '',
+        created_at: new Date(Date.now() - 3_600_000).toISOString(),
+        expires_at: new Date(Date.now() - 3_000_000).toISOString(),
+        ip_mismatch: false,
+        dismissible: true,
+        dismissed: false,
+        item_key: 'device_login:r1:expired',
+        audit_path: '/api/v1/auth/device/requests/r1',
+      },
+    ]
+    renderBanner()
+    expect(screen.getByText(/ci-box expired/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Start over' }))
+    expect(
+      screen.getByText('levelrail-cli auth login --device'),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(dismissMutate.mock.calls[0]?.[0]).toBe('device_login:r1:expired')
+  })
+
+  it('hides a dismissed login and never shows approved ones', () => {
+    requests = []
+    const base = {
+      client_name: 'x',
+      requester_ip: '',
+      user_agent: '',
+      created_at: new Date().toISOString(),
+      expires_at: new Date().toISOString(),
+      ip_mismatch: false,
+      dismissible: true,
+      audit_path: '/p',
+    }
+    activity = [
+      { ...base, id: 'a', state: 'expired', dismissed: true, item_key: 'k1' },
+      { ...base, id: 'b', state: 'approved', dismissed: false, item_key: 'k2' },
+    ]
+    const { container } = renderBanner()
+    expect(container).toBeEmptyDOMElement()
   })
 })

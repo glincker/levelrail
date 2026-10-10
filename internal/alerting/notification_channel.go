@@ -38,8 +38,11 @@ type NotificationChannel struct {
 	// NotifyDeviceLogin opts this channel into a link-only notice when a CLI
 	// device login awaits approval. The notice never carries the code.
 	NotifyDeviceLogin bool
-	CreatedAt         string
-	UpdatedAt         string
+	// NotifyDeviceLoginExpired opts this channel into a link-only notice when
+	// a pending CLI login lapses unapproved.
+	NotifyDeviceLoginExpired bool
+	CreatedAt                string
+	UpdatedAt                string
 }
 
 // ErrNotificationChannelNotFound is returned by GetNotificationChannel
@@ -64,9 +67,9 @@ func (db *DB) SaveNotificationChannel(ctx context.Context, c NotificationChannel
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO notification_channels (
 			id, name, kind, notify_url, enabled,
-			interactive_approvals, interactive_secret, notify_device_login, created_at, updated_at
+			interactive_approvals, interactive_secret, notify_device_login, notify_device_login_expired, created_at, updated_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET
 			name = excluded.name,
 			kind = excluded.kind,
@@ -75,9 +78,10 @@ func (db *DB) SaveNotificationChannel(ctx context.Context, c NotificationChannel
 			interactive_approvals = excluded.interactive_approvals,
 			interactive_secret = excluded.interactive_secret,
 			notify_device_login = excluded.notify_device_login,
+			notify_device_login_expired = excluded.notify_device_login_expired,
 			updated_at = excluded.updated_at
 	`, c.ID, c.Name, string(c.Kind), c.NotifyURL, boolToInt(c.Enabled),
-		boolToInt(c.InteractiveApprovals), c.InteractiveSecret, boolToInt(c.NotifyDeviceLogin), now, now)
+		boolToInt(c.InteractiveApprovals), c.InteractiveSecret, boolToInt(c.NotifyDeviceLogin), boolToInt(c.NotifyDeviceLoginExpired), now, now)
 	if err != nil {
 		return fmt.Errorf("alerting: save notification channel %q: %w", c.ID, err)
 	}
@@ -141,25 +145,27 @@ func (db *DB) DeleteNotificationChannel(ctx context.Context, id string) error {
 
 const notificationChannelSelectColumns = `
 	SELECT id, name, kind, notify_url, enabled,
-		interactive_approvals, interactive_secret, notify_device_login, created_at, updated_at
+		interactive_approvals, interactive_secret, notify_device_login, notify_device_login_expired, created_at, updated_at
 	FROM notification_channels`
 
 func scanNotificationChannel(scan func(dest ...any) error) (*NotificationChannel, error) {
 	var (
-		c              NotificationChannel
-		kind           string
-		enabledInt     int
-		interactiveInt int
-		deviceLoginInt int
+		c                NotificationChannel
+		kind             string
+		enabledInt       int
+		interactiveInt   int
+		deviceLoginInt   int
+		deviceExpiredInt int
 	)
 	if err := scan(&c.ID, &c.Name, &kind, &c.NotifyURL, &enabledInt,
-		&interactiveInt, &c.InteractiveSecret, &deviceLoginInt, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		&interactiveInt, &c.InteractiveSecret, &deviceLoginInt, &deviceExpiredInt, &c.CreatedAt, &c.UpdatedAt); err != nil {
 		return nil, err
 	}
 	c.Kind = NotifyKind(kind)
 	c.Enabled = enabledInt != 0
 	c.InteractiveApprovals = interactiveInt != 0
 	c.NotifyDeviceLogin = deviceLoginInt != 0
+	c.NotifyDeviceLoginExpired = deviceExpiredInt != 0
 	return &c, nil
 }
 

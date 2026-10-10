@@ -26,6 +26,8 @@ export interface AuditLogEntry {
   // Set when the request used a token labeled as an AI agent.
   agent_name?: string
   agent_client?: string
+  // Stable event name such as device_login.expired, set on lifecycle rows.
+  action?: string
 }
 
 export const auditLogKeys = {
@@ -45,6 +47,8 @@ export interface AuditLogQueryOptions {
   search?: string
   failedOnly?: boolean
   agent?: string
+  // Event name or family, for example device_login.
+  action?: string
 }
 
 // buildAuditLogParams is the one place that turns AuditLogQueryOptions
@@ -64,6 +68,7 @@ export function buildAuditLogParams(
   if (search) params.set('q', search)
   if (opts.failedOnly) params.set('status', 'failed')
   if (opts.agent) params.set('agent', opts.agent)
+  if (opts.action) params.set('action', opts.action)
   return params
 }
 

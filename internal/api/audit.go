@@ -149,6 +149,9 @@ type auditLogEntryResource struct {
 	// self-reported MCP client name and version.
 	AgentName   string `json:"agent_name,omitempty"`
 	AgentClient string `json:"agent_client,omitempty"`
+	// Action is the stable event name for lifecycle rows such as
+	// device_login.expired, empty for plain request rows.
+	Action string `json:"action,omitempty"`
 }
 
 func toAuditLogEntryResource(e store.AuditEntry) auditLogEntryResource {
@@ -164,7 +167,7 @@ func toAuditLogEntryResource(e store.AuditEntry) auditLogEntryResource {
 		RemoteAddr: e.RemoteAddr,
 		CreatedAt:  e.CreatedAt,
 		ClientKind: e.ClientKind,
-		AgentName:  e.AgentName, AgentClient: e.AgentClient,
+		AgentName:  e.AgentName, AgentClient: e.AgentClient, Action: e.Action,
 	}
 }
 
@@ -206,6 +209,7 @@ func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, befo
 		ClientKind: r.URL.Query().Get("client_kind"),
 		Search:     strings.TrimSpace(r.URL.Query().Get("q")),
 		AgentName:  strings.TrimSpace(r.URL.Query().Get("agent")),
+		Action:     strings.TrimSpace(r.URL.Query().Get("action")),
 	}
 	switch status := r.URL.Query().Get("status"); status {
 	case "":

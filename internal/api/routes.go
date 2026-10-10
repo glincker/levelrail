@@ -263,6 +263,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/device/token", rt.handleDeviceAuthToken)
 	mux.HandleFunc("GET /api/v1/auth/device/requests", rt.requireAuth(rt.handleListDeviceAuthRequests))
 	mux.HandleFunc("GET /api/v1/auth/device/pending-summary", rt.requireAbility(AbilityRead, rt.handleDevicePendingSummary))
+	mux.HandleFunc("GET /api/v1/auth/device/activity", rt.requireAbility(AbilityRead, rt.handleDeviceActivity))
+	mux.HandleFunc("GET /api/v1/attention/feed", rt.requireAbility(AbilityRead, rt.handleAttentionFeed))
+	mux.HandleFunc("POST /api/v1/attention/dismiss", rt.requireAuth(rt.handleAttentionDismiss))
 	mux.HandleFunc("POST /api/v1/auth/device/{user_code}/approve", rt.requireAuth(rt.handleApproveDeviceAuthRequest))
 	mux.HandleFunc("POST /api/v1/auth/device/{user_code}/deny", rt.requireAuth(rt.handleDenyDeviceAuthRequest))
 

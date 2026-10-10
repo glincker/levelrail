@@ -38,7 +38,10 @@ export async function fetchDomainMaintenance(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch domain maintenance failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch domain maintenance failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as DomainMaintenance
@@ -65,7 +68,10 @@ async function setDomainMaintenance(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `enable domain maintenance failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `enable domain maintenance failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as DomainMaintenance
@@ -76,7 +82,10 @@ export function useSetDomainMaintenance(appName: string, domain: string) {
   return useMutation<DomainMaintenance, ApiError, void>({
     mutationFn: () => setDomainMaintenance(appName, domain),
     onSuccess: (updated) => {
-      queryClient.setQueryData(domainMaintenanceKeys.detail(appName, domain), updated)
+      queryClient.setQueryData(
+        domainMaintenanceKeys.detail(appName, domain),
+        updated,
+      )
     },
   })
 }
@@ -85,11 +94,16 @@ async function clearDomainMaintenance(
   appName: string,
   domain: string,
 ): Promise<DomainMaintenance> {
-  const res = await fetch(maintenancePath(appName, domain), { method: 'DELETE' })
+  const res = await fetch(maintenancePath(appName, domain), {
+    method: 'DELETE',
+  })
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `disable domain maintenance failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `disable domain maintenance failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as DomainMaintenance
@@ -100,7 +114,10 @@ export function useClearDomainMaintenance(appName: string, domain: string) {
   return useMutation<DomainMaintenance, ApiError, void>({
     mutationFn: () => clearDomainMaintenance(appName, domain),
     onSuccess: (updated) => {
-      queryClient.setQueryData(domainMaintenanceKeys.detail(appName, domain), updated)
+      queryClient.setQueryData(
+        domainMaintenanceKeys.detail(appName, domain),
+        updated,
+      )
     },
   })
 }

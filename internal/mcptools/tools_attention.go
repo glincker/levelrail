@@ -17,7 +17,7 @@ type attentionOutput struct {
 func registerAttentionTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_attention",
-		Description: "List everything needing attention now, critical first: failing apps, offline nodes, expiring or stalled certificates, doctor warnings, and items waiting on a person (a CLI login, pending deploy approvals). Those must be approved by an operator in the dashboard, never through this server. Empty items means healthy. Read-only.",
+		Description: "List everything needing attention now, critical first: failing apps, offline nodes, certificates, doctor warnings, expiring API tokens, failed data copies, overdue backups, invitations, and items waiting on a person (CLI logins, deploy approvals). Only items the token may read are returned. Decisions stay in the dashboard. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, attentionOutput, error) {
 		items, err := attention.Collect(ctx, client)
 		if err != nil {

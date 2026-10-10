@@ -34,6 +34,8 @@ export interface NotificationChannel {
   has_interactive_secret: boolean
   // Opt-in link-only notice when a CLI login is waiting for approval.
   notify_device_login: boolean
+  // Opt-in link-only notice when a pending CLI login expires unapproved.
+  notify_device_login_expired: boolean
   created_at: string
   updated_at: string
 }
@@ -49,6 +51,7 @@ export interface CreateNotificationChannelRequest {
   interactive_approvals?: boolean
   interactive_secret?: string
   notify_device_login?: boolean
+  notify_device_login_expired?: boolean
 }
 
 export interface TestNotificationChannelRequest {

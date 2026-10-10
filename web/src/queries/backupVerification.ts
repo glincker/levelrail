@@ -6,19 +6,24 @@
 // staying separate from queries/backupHistory.ts: a genuinely different
 // resource, scoped under a backup attempt rather than a database.
 
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { BackupVerificationRecord } from '../types/backupVerification'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const backupVerificationKeys = {
   all: (databaseName: string, backupHistoryId: string) =>
-    ['databases', databaseName, 'backups', backupHistoryId, 'verifications'] as const,
+    [
+      'databases',
+      databaseName,
+      'backups',
+      backupHistoryId,
+      'verifications',
+    ] as const,
   list: (databaseName: string, backupHistoryId: string) =>
-    [...backupVerificationKeys.all(databaseName, backupHistoryId), 'list'] as const,
+    [
+      ...backupVerificationKeys.all(databaseName, backupHistoryId),
+      'list',
+    ] as const,
 }
 
 // Same polling cadence as useBackupHistory's own RUNNING_POLL_INTERVAL_MS

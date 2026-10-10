@@ -1,6 +1,11 @@
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { BellIcon, CheckCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
+import {
+  BellIcon,
+  CheckCircleIcon,
+  XIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -15,6 +20,7 @@ import { useActivityEvents } from '../../queries/activity'
 import { useDeployApprovalsOptional } from '../../queries/deployApprovals'
 import { failedDeploysQueryOptions } from '../../queries/failedDeploys'
 import { useAttentionItems } from '../../queries/attention'
+import { useDismissAttentionItem } from '../../queries/deviceAuth'
 import {
   buildNotifications,
   groupNotifications,
@@ -39,6 +45,8 @@ export function NotificationCenter() {
     refetchInterval: pollUnlessMissing(30_000),
   })
   const attention = useAttentionItems()
+  const dismiss = useDismissAttentionItem()
+  const { t } = useTranslation('attention', { useSuspense: false })
   const { ids, set } = useReadIds()
   const list = buildNotifications({
     failedDeploys: failed.data,
@@ -109,13 +117,13 @@ export function NotificationCenter() {
                 </h3>
                 <ul>
                   {g.items.map((n) => (
-                    <li key={n.id}>
+                    <li key={n.id} className="flex items-start">
                       <Link
                         to={n.href}
                         onClick={() =>
                           setReadIds(markAllRead(new Set(ids), [n]))
                         }
-                        className="flex items-start gap-2.5 rounded-lg px-2 py-2 hover:bg-muted"
+                        className="flex min-w-0 flex-1 items-start gap-2.5 rounded-lg px-2 py-2 hover:bg-muted"
                       >
                         <span
                           aria-hidden="true"
@@ -142,6 +150,22 @@ export function NotificationCenter() {
                           </span>
                         </span>
                       </Link>
+                      {n.dismissKey ? (
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={t('deviceLogin.dismiss')}
+                          disabled={dismiss.isPending}
+                          onClick={() => {
+                            if (n.dismissKey) {
+                              dismiss.mutate(n.dismissKey)
+                            }
+                          }}
+                        >
+                          <XIcon />
+                        </Button>
+                      ) : null}
                     </li>
                   ))}
                 </ul>

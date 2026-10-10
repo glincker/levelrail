@@ -100,6 +100,8 @@ function actionsFor(
             true,
           ),
         ]
+      case 'path':
+        return []
       case 'system':
         return item.id === 'disk'
           ? [act('Clean up Docker', { kind: 'cleanup' }, true)]
@@ -123,7 +125,10 @@ export function attentionToSuggestions(
   items: AttentionItem[],
   t: DashboardT,
 ): SuggestionSpec[] {
-  return items.map((item) => ({
+  const actionable = items.filter(
+    (i) => i.severity !== 'info' && i.target.kind !== 'path',
+  )
+  return actionable.map((item) => ({
     id: item.id,
     tone: item.severity === 'critical' ? 'danger' : 'warning',
     title: titleFor(item),

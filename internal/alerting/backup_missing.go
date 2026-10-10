@@ -90,26 +90,11 @@ func EvaluateBackupMissing(ctx context.Context, source BackupSource, r Rule, def
 		return next, "", nil
 	}
 
-	sched, perr := cronexpr.Parse(schedule)
-	if perr != nil {
-		return r, "", fmt.Errorf("alerting: evaluate rule %q: parse backup schedule %q: %w", r.ID, schedule, perr)
+	overdue, anchor, anchorIsSuccess, err := BackupOverdue(history, schedule, gracePeriod, now)
+	if err != nil {
+		return r, "", fmt.Errorf("alerting: evaluate rule %q: %w", r.ID, err)
 	}
-
-	anchor, anchorIsSuccess := latestSucceededBackupTime(history)
-	if anchor.IsZero() {
-		// No success anywhere in the lookback window: anchor on the
-		// oldest known attempt instead, so this still reads as overdue
-		// rather than never firing.
-		anchor, err = parseBackupHistoryTime(history[len(history)-1].StartedAt)
-		if err != nil {
-			return r, "", fmt.Errorf("alerting: evaluate rule %q: parse backup history started_at: %w", r.ID, err)
-		}
-	}
-
-	t1 := sched.Next(anchor)
-	interval := sched.Next(t1).Sub(t1)
-	deadline := anchor.Add(interval).Add(gracePeriod)
-	firing := now.After(deadline)
+	firing := overdue
 
 	v := now.Sub(anchor).Hours()
 	next.LastValue = &v
@@ -120,6 +105,26 @@ func EvaluateBackupMissing(ctx context.Context, source BackupSource, r Rule, def
 	}
 
 	return advanceState(next, r, firing, 0, now), notice, nil
+}
+
+// BackupOverdue reports whether the newest history (newest first, non-empty)
+// trails its cron schedule by more than one expected interval plus grace. A
+// target that never succeeded anchors on its oldest attempt.
+func BackupOverdue(history []store.BackupHistory, schedule string, grace time.Duration, now time.Time) (overdue bool, anchor time.Time, anchorIsSuccess bool, err error) {
+	sched, perr := cronexpr.Parse(schedule)
+	if perr != nil {
+		return false, time.Time{}, false, fmt.Errorf("parse backup schedule %q: %w", schedule, perr)
+	}
+	anchor, anchorIsSuccess = latestSucceededBackupTime(history)
+	if anchor.IsZero() {
+		anchor, err = parseBackupHistoryTime(history[len(history)-1].StartedAt)
+		if err != nil {
+			return false, time.Time{}, false, fmt.Errorf("parse backup history started_at: %w", err)
+		}
+	}
+	t1 := sched.Next(anchor)
+	interval := sched.Next(t1).Sub(t1)
+	return now.After(anchor.Add(interval).Add(grace)), anchor, anchorIsSuccess, nil
 }
 
 // loadBackupMissingTarget resolves r's watched database or service

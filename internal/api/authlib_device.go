@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
@@ -12,8 +13,14 @@ import (
 // DeviceTokenTTL is the lifetime of a device-login token (APP_DEVICE_TOKEN_TTL_DAYS).
 func DeviceTokenTTL() time.Duration { return deviceTokenTTL() }
 
-// DeviceCodeTTL is how long a device login request stays approvable.
-func DeviceCodeTTL() time.Duration { return deviceAuthTTL }
+// DeviceCodeTTL is how long a device login request stays approvable,
+// APP_DEVICE_CODE_TTL as a Go duration when set.
+func DeviceCodeTTL() time.Duration {
+	if d, err := time.ParseDuration(os.Getenv(envDeviceCodeTTL)); err == nil && d > 0 {
+		return d
+	}
+	return deviceAuthTTL
+}
 
 func (rt *Router) libraryDeviceStart(w http.ResponseWriter, r *http.Request, req deviceStartRequest) {
 	res, err := rt.authLib.device.StartDevice(r.Context(), authengine.DeviceStartInput{
@@ -51,7 +58,7 @@ func (rt *Router) libraryDeviceToken(w http.ResponseWriter, r *http.Request, dev
 		return
 	case errors.Is(err, authengine.ErrDeviceExpired):
 		if errors.Is(err, authengine.ErrDeviceLapsed) {
-			rt.recordAudit(r.Context(), r, AbilityRead, auditActorDevice, "", "device login expired", http.StatusBadRequest)
+			rt.expireDeviceRequestByDeviceCode(r.Context(), deviceCode)
 		}
 		writeError(w, http.StatusBadRequest, "expired_token")
 		return
@@ -102,6 +109,7 @@ func (rt *Router) libraryDecideDevice(w http.ResponseWriter, r *http.Request, us
 		}
 		abilities = capDeviceAbilities(user.Abilities)
 	}
+	req, lookupErr := rt.authLib.device.DeviceRequestByCode(r.Context(), userCode, time.Now())
 	err := rt.authLib.device.DecideDevice(r.Context(), authengine.DeviceDecision{
 		ApproverLegacyID: userID, IP: clientIP(r), UserCode: userCode, Approve: approve, Abilities: abilities,
 	})
@@ -119,6 +127,12 @@ func (rt *Router) libraryDecideDevice(w http.ResponseWriter, r *http.Request, us
 		rt.internalError(w, "api: decide device auth request failed", err)
 		return
 	}
-	rt.recordAudit(r.Context(), r, AbilityWrite, auditActorSession, userID, "", http.StatusNoContent)
+	if lookupErr == nil {
+		action := store.AuditActionDeviceLoginDenied
+		if approve {
+			action = store.AuditActionDeviceLoginApproved
+		}
+		rt.recordDeviceLoginAudit(r.Context(), r, action, userID, req.ID)
+	}
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -42,6 +42,9 @@ import { PageHeader } from '@/components/shell/PageHeader'
 // LOCAL_NODE_VALUE sentinel documents.
 const ALL_CLIENT_KINDS = '__all__'
 
+// The audit log's shared event family for CLI device logins.
+const DEVICE_LOGIN_ACTION = 'device_login'
+
 const AUDIT_PAGE_SIZE = 50
 const SEARCH_DEBOUNCE_MS = 300
 
@@ -49,10 +52,19 @@ const SEARCH_DEBOUNCE_MS = 300
 // every session and API token. Same sensitivity tier as the node and
 // GitHub App settings pages, not an ordinary read like Users.
 export const Route = createFileRoute('/settings/audit-log')({
-  validateSearch: (search: Record<string, unknown>): { agent?: string } =>
-    typeof search.agent === 'string' && search.agent !== ''
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { agent?: string; action?: string; path?: string } => ({
+    ...(typeof search.agent === 'string' && search.agent !== ''
       ? { agent: search.agent }
-      : {},
+      : {}),
+    ...(typeof search.action === 'string' && search.action !== ''
+      ? { action: search.action }
+      : {}),
+    ...(typeof search.path === 'string' && search.path !== ''
+      ? { path: search.path }
+      : {}),
+  }),
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(auditLogQueryOptions()),
   component: AuditLogSettingsPage,
@@ -71,15 +83,26 @@ function ExportAuditLogLink({
   search,
   failedOnly,
   agent,
+  action,
+  path,
 }: {
   clientKind?: string
   search?: string
   failedOnly?: boolean
   agent?: string
+  action?: string
+  path?: string
 }) {
   return (
     <a
-      href={auditLogExportURL({ clientKind, search, failedOnly, agent })}
+      href={auditLogExportURL({
+        clientKind,
+        search,
+        failedOnly,
+        agent,
+        action,
+        path,
+      })}
       download
       className={buttonVariants({ variant: 'outline', size: 'sm' })}
     >
@@ -99,10 +122,18 @@ function AuditLogSettingsPage() {
   const [filterLoading, setFilterLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [failedOnly, setFailedOnly] = useState(false)
-  const { agent: agentFromLink } = Route.useSearch()
+  const {
+    agent: agentFromLink,
+    action: actionFromLink,
+    path: pathFromLink,
+  } = Route.useSearch()
   const [agentFilter, setAgentFilter] = useState<string | undefined>(
     agentFromLink,
   )
+  const [actionFilter, setActionFilter] = useState<string | undefined>(
+    actionFromLink,
+  )
+  const [pathFilter, setPathFilter] = useState<string | undefined>(pathFromLink)
   const { data: tokens = [] } = useQuery({
     ...tokenListQueryOptions(),
     retry: false,
@@ -130,11 +161,18 @@ function AuditLogSettingsPage() {
     activeClientKind !== undefined ||
     activeSearch !== undefined ||
     failedOnly ||
-    agentFilter !== undefined
+    agentFilter !== undefined ||
+    actionFilter !== undefined ||
+    pathFilter !== undefined
 
   // Server-driven: any filter change refetches the first page. The first
-  // run is skipped because the route loader already supplied it.
-  const firstRun = useRef(true)
+  // run is skipped because the route loader already supplied it, unless a
+  // link opened the page already filtered.
+  const firstRun = useRef(
+    agentFromLink === undefined &&
+      actionFromLink === undefined &&
+      pathFromLink === undefined,
+  )
   useEffect(() => {
     if (firstRun.current) {
       firstRun.current = false
@@ -148,6 +186,8 @@ function AuditLogSettingsPage() {
       search: activeSearch,
       failedOnly,
       agent: agentFilter,
+      action: actionFilter,
+      path: pathFilter,
     })
       .then((next) => {
         if (cancelled) return
@@ -166,7 +206,14 @@ function AuditLogSettingsPage() {
     return () => {
       cancelled = true
     }
-  }, [activeClientKind, activeSearch, failedOnly, agentFilter])
+  }, [
+    activeClientKind,
+    activeSearch,
+    failedOnly,
+    agentFilter,
+    actionFilter,
+    pathFilter,
+  ])
 
   async function handleLoadMore() {
     const last = entries[entries.length - 1]
@@ -180,6 +227,8 @@ function AuditLogSettingsPage() {
         search: activeSearch,
         failedOnly,
         agent: agentFilter,
+        action: actionFilter,
+        path: pathFilter,
       })
       setEntries((prev) => [...prev, ...next])
       if (next.length < AUDIT_PAGE_SIZE) {
@@ -231,6 +280,8 @@ function AuditLogSettingsPage() {
               search={activeSearch}
               failedOnly={failedOnly}
               agent={agentFilter}
+              action={actionFilter}
+              path={pathFilter}
             />
           ) : null}
         </div>
@@ -257,6 +308,31 @@ function AuditLogSettingsPage() {
         >
           Failed only
         </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={actionFilter === DEVICE_LOGIN_ACTION ? 'default' : 'outline'}
+          aria-pressed={actionFilter === DEVICE_LOGIN_ACTION}
+          onClick={() => {
+            setActionFilter((prev) =>
+              prev === DEVICE_LOGIN_ACTION ? undefined : DEVICE_LOGIN_ACTION,
+            )
+          }}
+        >
+          {t('filters.deviceLogin')}
+        </Button>
+        {pathFilter ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setPathFilter(undefined)
+            }}
+          >
+            {t('filters.clearPath')}
+          </Button>
+        ) : null}
         <AgentFilterChips
           agents={collectAgentNames(tokens, entries, agentFilter)}
           active={agentFilter}

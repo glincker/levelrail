@@ -61,7 +61,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 79 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 80 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -152,6 +152,7 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
+| GET | /api/v1/auth/device/activity | AbilityRead | handleDeviceActivity |
 
 :::
 
@@ -967,6 +968,8 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/external-databases/{name} | AbilityWrite | handleDeleteExternalDatabase |
 | POST | /api/v1/external-databases/{name}/probe | AbilityWrite | handleProbeExternalDatabase |
 | GET | /api/v1/external-databases/{name}/password | AbilityRoot | handleRevealExternalDatabasePassword |
+| GET | /api/v1/attention/feed | AbilityRead | handleAttentionFeed |
+| POST | /api/v1/attention/dismiss | Session | handleAttentionDismiss |
 
 ## See also
 
