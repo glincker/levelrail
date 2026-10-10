@@ -178,7 +178,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"push-subscriptions":   {subs: map[string]*cmdNode{"list": nil, "revoke": nil}},
 	"shared-env":           {subs: map[string]*cmdNode{"list": nil, "set": nil, "delete": nil}},
 	"backup-targets":       {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
-	"firewall":             {subs: map[string]*cmdNode{"list": nil, "allow": nil, "deny": nil, "delete": nil}},
+	"firewall":             {subs: map[string]*cmdNode{"list": nil, "allow": nil, "deny": nil, "delete": nil, "exposure": nil, "restrict": nil, "unrestrict": nil}},
 	"storage":              {subs: map[string]*cmdNode{"providers": nil, "list": nil, "add": nil, "test": nil, "delete": nil}},
 	"logs":                 {subs: map[string]*cmdNode{"archive": {subs: map[string]*cmdNode{"set": nil, "status": nil, "remove": nil}}, "dump": nil, "ls": nil, "fetch": nil, "query": nil}},
 	"registry-credentials": {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "repositories": nil, "tags": nil}},

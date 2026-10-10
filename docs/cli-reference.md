@@ -923,12 +923,15 @@ levelrail-cli network-shares test <id>
 
 ## Firewall
 
-Declarative host firewall rules, reconciled onto the control plane's local `ufw`. See [Host firewall](host-firewall.md).
+Declarative host firewall rules, reconciled onto the control plane's local `ufw`. See [Host firewall](host-firewall.md). `exposure`, `restrict` and `unrestrict` are covered in [Exposure audit](exposure-audit.md).
 
 ```
 levelrail-cli firewall status [flags]
 levelrail-cli firewall enable [--dry-run] [flags]
 levelrail-cli firewall disable [--dry-run] [flags]
+levelrail-cli firewall exposure [--node N] [--probe] [flags]
+levelrail-cli firewall restrict --port N --allow CIDR[,CIDR] [--local-containers] --dry-run|--apply [flags]
+levelrail-cli firewall unrestrict --port N [--protocol tcp|udp] [flags]
 levelrail-cli firewall list [flags]
 levelrail-cli firewall allow --port N [--protocol tcp|udp] [--source-cidr CIDR] [--label TEXT] [flags]
 levelrail-cli firewall deny --port N [--protocol tcp|udp] [--source-cidr CIDR] [--label TEXT] [flags]

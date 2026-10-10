@@ -23,6 +23,8 @@ describe('categoryOf', () => {
   it.each([
     ['docker', 'runtime'],
     ['port_8088', 'network'],
+    ['exposure', 'network'],
+    ['exposure_local_tcp_8108', 'network'],
     ['registry_reachability_ghcr.io', 'network'],
     ['master_key_rotation', 'security'],
     ['control_plane_backup', 'storage'],

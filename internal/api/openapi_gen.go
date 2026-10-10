@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 717 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 721 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -524,6 +524,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/firewall-rules", Ability: "AbilityRead", Group: "Other", Handler: "handleListFirewallRules", Description: "Firewall rules (firewall_rules.go): declarative host firewall rules internal/reconcile/firewall converges onto ufw. AbilityWriteSensitive for create/delete, same tier as a backup target: a rule here changes what inbound traffic this host accepts. List is ordinary AbilityRead."},
 	{Method: "POST", Path: "/api/v1/firewall-rules", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateFirewallRule", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/firewall-rules/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteFirewallRule", Description: ""},
+	{Method: "GET", Path: "/api/v1/firewall/exposure", Ability: "AbilityRead", Group: "Other", Handler: "handleExposureReport", Description: "Exposure audit (exposure.go): read-only list of published container ports and how reachable each is; preview is a pure computation. Restricting and unrestricting change the host's DOCKER-USER chain, so they are AbilityRoot like the ufw switch above."},
+	{Method: "POST", Path: "/api/v1/firewall/exposure/preview", Ability: "AbilityRead", Group: "Other", Handler: "handleExposurePreview", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/firewall/exposure/restrictions/{protocol}/{port}", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposureUnrestrict", Description: ""},
+	{Method: "PUT", Path: "/api/v1/firewall/exposure/restrictions/{protocol}/{port}", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposureRestrict", Description: ""},
 	{Method: "GET", Path: "/api/v1/firewall/host", Ability: "AbilityRead", Group: "Other", Handler: "handleHostFirewallStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/firewall/host/disable", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisableHostFirewall", Description: ""},
 	{Method: "POST", Path: "/api/v1/firewall/host/enable", Ability: "AbilityRoot", Group: "Other", Handler: "handleEnableHostFirewall", Description: ""},

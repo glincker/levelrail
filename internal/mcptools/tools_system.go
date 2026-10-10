@@ -43,6 +43,17 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 	})
 
 	addTool(server, &mcp.Tool{
+		Name:        "get_firewall_exposure",
+		Description: "Published container ports reachable from outside, per node, with severity and a plain explanation. Docker bypasses ufw for these. Read-only; no MCP tool can apply a rule.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, exposureSummary, error) {
+		report, err := client.GetExposure(ctx, "", false)
+		if err != nil {
+			return nil, exposureSummary{}, fmt.Errorf("get firewall exposure: %w", err)
+		}
+		return nil, summarizeExposure(report), nil
+	})
+
+	addTool(server, &mcp.Tool{
 		Name:        "prune_system",
 		Description: "Remove every stopped container, dangling image, and unused volume or build cache the reconciler's current desired state doesn't need, fleet-wide. A routine day-2 cleanup action, same one 'levelrail-cli system-prune' runs; never touches a container, image, or volume any app or database still desires. Mutating.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.SystemPruneResult, error) {
@@ -52,4 +63,31 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, result, nil
 	})
+}
+
+type exposureSummaryItem struct {
+	Node        string `json:"node"`
+	Container   string `json:"container"`
+	Port        int    `json:"port"`
+	Protocol    string `json:"protocol"`
+	Class       string `json:"class"`
+	Severity    string `json:"severity"`
+	Explanation string `json:"explanation"`
+}
+
+type exposureSummary struct {
+	Exposed int                   `json:"exposed"`
+	Items   []exposureSummaryItem `json:"items"`
+}
+
+func summarizeExposure(r apiclient.ExposureReport) exposureSummary {
+	out := exposureSummary{Exposed: r.Exposed, Items: []exposureSummaryItem{}}
+	for _, n := range r.Nodes {
+		for _, f := range n.Findings {
+			if f.Class == "exposed" || f.Class == "unknown" {
+				out.Items = append(out.Items, exposureSummaryItem{n.NodeName, f.Container, f.HostPort, f.Protocol, f.Class, f.Severity, f.Explanation})
+			}
+		}
+	}
+	return out
 }
