@@ -89,7 +89,7 @@ fi
 # A change confined to internal/reconcile/ingress does not need the fleet.
 pipeline_re='^(\.github/workflows/(ci|nightly)\.yml$|\.github/actions/|scripts/(ci-go-plan|ci-go-test|go-test-groups)\.sh$)'
 fleet_re='^(internal/reconcile/|internal/agent/|internal/network/|test/e2e/)'
-e2e_re='^(internal/ingress/|internal/reconcile/|internal/docker/|internal/deploy/|test/e2e/)'
+e2e_re='^(internal/api/|internal/ingress/|internal/reconcile/|internal/docker/|internal/deploy/|test/e2e/)'
 fleet_run=false
 e2e_run=false
 if [ "$scope" = all ] || [ "${CI_LIVE_LABEL:-}" = true ] ||
