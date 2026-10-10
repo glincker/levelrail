@@ -222,9 +222,8 @@ func dockerApp(id, name, project string, c dockerContainer, domains []string, po
 		app.Notes = append(app.Notes, Note{Reason: "no container of this app was running in the snapshot", Manual: "confirm it is meant to run before cutover"})
 	}
 	if dockerBuiltLocally(c.Config.Image) {
-		app.Kind = SourceUnknown
 		app.Notes = append(app.Notes, Note{Reason: "the image was built on the source host and is not in a registry",
-			Manual: "create the app from its git repository, or move the image with: docker save " + c.Config.Image + " | ssh <target> docker load"})
+			Manual: "load it on the target before the build step: docker save " + c.Config.Image + " | ssh <target> docker load"})
 	}
 	dropped := 0
 	for _, kv := range c.Config.Env {
