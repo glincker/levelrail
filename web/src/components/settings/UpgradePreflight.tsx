@@ -50,11 +50,21 @@ export function UpgradePreflight() {
               label={t(`preflight.status.${c.status}`)}
               size="sm"
             />
-            <span>
+            <span className="min-w-0 flex-1">
               <span className="font-medium text-foreground">{c.name}</span>
               <span className="block text-xs text-muted-foreground">
                 {c.message}
               </span>
+              {c.code === 'release_verifier' &&
+              c.status === 'warn' &&
+              data.cosign_command ? (
+                <span className="mt-2 block">
+                  <CopyCommand
+                    label={t('preflight.cosignCommand')}
+                    command={data.cosign_command}
+                  />
+                </span>
+              ) : null}
             </span>
           </li>
         ))}

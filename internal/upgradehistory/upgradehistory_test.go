@@ -3,6 +3,7 @@ package upgradehistory
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -164,6 +165,22 @@ func TestRecorderUsesMarker(t *testing.T) {
 	e, ok := h.boot(t, "v0.0.2", 11, Observed{SchemaBefore: 10, BackupName: "pre-migrate"})
 	if !ok || e.Initiator != "gagan" || e.Health != HealthBooted || e.BackupName != "b1" || e.Method != MethodInstallScript {
 		t.Fatalf("entry = %+v ok=%v", e, ok)
+	}
+}
+
+func TestRecorderManualMarkerConsumedOnce(t *testing.T) {
+	h := newHarness(t)
+	h.boot(t, "v0.0.1", 10, Observed{SchemaBefore: -1})
+	m := Marker{ToVersion: "v0.0.2", Initiator: "gagan", Method: MethodManual, Reason: "hand swap", WrittenAt: time.Now()}
+	if err := WriteMarker(h.dir, m); err != nil {
+		t.Fatal(err)
+	}
+	e, ok := h.boot(t, "v0.0.2", 10, Observed{SchemaBefore: -1})
+	if !ok || e.Initiator != "gagan" || e.Method != MethodManual {
+		t.Fatalf("entry = %+v ok=%v", e, ok)
+	}
+	if _, err := os.Stat(filepath.Join(h.dir, MarkerFile)); !os.IsNotExist(err) {
+		t.Fatalf("marker still present after boot: %v", err)
 	}
 }
 

@@ -6,7 +6,7 @@ description: Complete reference of all Levelrail CLI commands, organized by grou
 
 `levelrail-cli` is a scriptable client for the control plane's HTTP API. Everything it does goes through `/api/v1`, with the same tokens and permissions as the dashboard, so it needs no SSH key and no open port on your servers. This page lists every command group with its subcommands and the flags that matter most. Run `levelrail-cli` with no arguments for the command list, or `levelrail-cli <command> <subcommand> -h` for any command's own flags.
 
-Commands are shown as `levelrail-cli ...`. If you rename the binary, the command name follows it (the CLI reads its name from `os.Args[0]`). The server is a separate binary, `levelrail`, which also has a few maintenance commands such as `setup-token`, `restore-snapshot`, `restore-db`, `recover-admin`, and `healthcheck`. Those are covered in [Installing](installing.md) and [Disaster recovery](/disaster-recovery).
+Commands are shown as `levelrail-cli ...`. If you rename the binary, the command name follows it (the CLI reads its name from `os.Args[0]`). The server is a separate binary, `levelrail`, which also has a few maintenance commands such as `setup-token`, `restore-snapshot`, `restore-db`, `recover-admin`, `upgrade-note` (record who swapped the binary by hand), and `healthcheck`. Those are covered in [Installing](installing.md) and [Disaster recovery](/disaster-recovery).
 
 ## Install and sign in
 

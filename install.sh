@@ -4,8 +4,9 @@
 # Installs the levelrail control plane binary, a systemd unit, and Docker
 # (if missing) on a single Linux host.
 #
-# Usage: install.sh [install|upgrade|retain|uninstall] [--force] [--purge]
-#                   [--coexist] [--yes] [--http-port N] [--https-port N] [--domain HOST]
+# Usage: install.sh [install|upgrade|retain|install-cosign|uninstall] [--force] [--purge]
+#                   [--coexist] [--yes] [--no-cosign] [--http-port N] [--https-port N]
+#                   [--domain HOST]
 #   install    (default) preflight checks, then install or repair. Safe to re-run.
 #   upgrade    replace the binary with a newer release and restart, keeping
 #              the unit file and data. The previous binaries (last 3) are
@@ -13,6 +14,9 @@
 #   retain     download and verify LEVELRAIL_VERSION and keep it beside the
 #              installed binary, without installing it. Then run
 #              `sudo levelrail rollback --to <version>` to switch to it.
+#   install-cosign  install the pinned cosign release to /usr/local/bin/cosign
+#              so release signatures can be verified. install and upgrade do
+#              this on their own when cosign is missing.
 #   uninstall  remove the service, unit, and binary. Data is kept unless
 #              --purge is given.
 #   --force    continue even if a preflight check fails.
@@ -20,6 +24,8 @@
 #              8088/8443, dashboard on loopback only. Offered automatically
 #              when 80/443 are taken; --yes accepts that offer unattended.
 #   --yes, -y  answer yes to prompts (also accepts the coexist offer).
+#   --no-cosign  do not install cosign (same as LEVELRAIL_NO_COSIGN=1). Releases
+#              are then verified by SHA-256 checksum only.
 #   --http-port / --https-port  ingress ports (override the LEVELRAIL_* env).
 #   --domain   your domain, only used to print the exact proxy command.
 #
@@ -39,6 +45,11 @@
 #                            GitHub release (no checksum verification)
 #   LEVELRAIL_SKIP_CHECKSUM=1  install even when checksums.txt is missing or
 #                            does not list the binary (unverified; opt-out only)
+#   LEVELRAIL_NO_COSIGN=1    never install cosign (see --no-cosign)
+#   LEVELRAIL_COSIGN_URL     download cosign from this URL instead of the pinned
+#                            sigstore release (needs LEVELRAIL_COSIGN_SHA256;
+#                            for tests and air-gapped mirrors)
+#   LEVELRAIL_COSIGN_BIN     where cosign is installed (default: /usr/local/bin/cosign)
 #   APP_INSTALL_VERIFY       signature check on checksums.txt (cosign keyless):
 #                            auto (default) verifies when cosign is installed
 #                            and the release ships a signature; require fails
@@ -126,6 +137,13 @@ HEALTH_WAIT="${LEVELRAIL_HEALTH_WAIT:-60}"
 VERIFY_MODE="${APP_INSTALL_VERIFY:-auto}"
 COSIGN_IDENTITY_REGEXP="https://github.com/${REPO}/\\.github/workflows/release\\.yml@.*"
 COSIGN_OIDC_ISSUER="https://token.actions.githubusercontent.com"
+COSIGN_VERSION="v3.1.3"
+# SHA-256 of sigstore/cosign ${COSIGN_VERSION} cosign-linux-<arch>, from the release's cosign_checksums.txt.
+COSIGN_SHA256_AMD64="4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71"
+COSIGN_SHA256_ARM64="c5d324e091826b0d7a78eb16fef316450b4eb9aaec045611c08ba06f5e73220a"
+COSIGN_BIN="${LEVELRAIL_COSIGN_BIN:-/usr/local/bin/cosign}"
+NO_COSIGN=0
+[ "${LEVELRAIL_NO_COSIGN:-0}" != "1" ] || NO_COSIGN=1
 
 log() { printf '%s\n' "$*"; }
 warn() { printf 'warning: %s\n' "$*" >&2; }
@@ -136,16 +154,19 @@ fatal() {
 
 usage() {
 	cat <<'EOF'
-Usage: install.sh [install|upgrade|retain|uninstall] [--force] [--purge]
-                  [--coexist] [--yes] [--http-port N] [--https-port N] [--domain HOST]
+Usage: install.sh [install|upgrade|retain|install-cosign|uninstall] [--force] [--purge]
+                  [--coexist] [--yes] [--no-cosign] [--http-port N] [--https-port N]
+                  [--domain HOST]
   install    (default) preflight checks, then install or repair
   upgrade    replace the binary with a newer release and restart
   retain     download and verify LEVELRAIL_VERSION and keep it for rollback
+  install-cosign  install cosign so release signatures can be verified
   uninstall  remove the service, unit, and binary (data kept unless --purge)
   --force    continue even if a preflight check fails
   --coexist  ingress on 8088/8443 and dashboard on loopback, for a server
              whose ports 80/443 an existing proxy already holds
   --yes      answer yes to prompts, including the coexist offer
+  --no-cosign  do not install cosign (checksum-only verification)
 EOF
 }
 
@@ -163,7 +184,8 @@ while [ "$#" -gt 0 ]; do
 		;;
 	esac
 	case "$arg" in
-	install | upgrade | retain | uninstall) MODE="$arg" ;;
+	install | upgrade | retain | install-cosign | uninstall) MODE="$arg" ;;
+	--no-cosign) NO_COSIGN=1 ;;
 	--force) FORCE=1 ;;
 	--purge) PURGE=1 ;;
 	--coexist) COEXIST=1 ;;
@@ -580,6 +602,7 @@ fetch_binary() {
 		return
 	fi
 
+	[ "$NO_COSIGN" -eq 1 ] || [ "$VERIFY_MODE" = "off" ] || ensure_cosign
 	resolve_version
 	asset="levelrail-linux-${GOARCH}"
 	base_url="${LEVELRAIL_RELEASE_BASE_URL:-https://github.com/${REPO}/releases/download/${VERSION}}"
@@ -610,6 +633,77 @@ fetch_binary() {
 	else
 		checksum_unavailable "no checksums.txt published for ${VERSION}"
 	fi
+}
+
+# ensure_cosign installs the pinned cosign release when none is on PATH, so
+# the release signature can be checked. Unless $1 is "strict" a failure only
+# warns: the SHA-256 checksum is still verified and the install carries on.
+ensure_cosign() {
+	strict="${1:-}"
+	if command -v cosign >/dev/null 2>&1; then
+		log "cosign already installed ($(command -v cosign))."
+		return 0
+	fi
+	cosign_url="${LEVELRAIL_COSIGN_URL:-}"
+	cosign_proto="$HTTPS_ONLY"
+	if [ -n "$cosign_url" ]; then
+		cosign_sha="${LEVELRAIL_COSIGN_SHA256:-}"
+		if [ -z "$cosign_sha" ]; then
+			cosign_unavailable "$strict" "LEVELRAIL_COSIGN_URL needs LEVELRAIL_COSIGN_SHA256"
+			return 0
+		fi
+		case "$cosign_url" in
+		https://*) ;;
+		http://*)
+			if [ "${LEVELRAIL_INSECURE_MIRROR:-}" != "1" ]; then
+				cosign_unavailable "$strict" "LEVELRAIL_COSIGN_URL must be https"
+				return 0
+			fi
+			cosign_proto="=http"
+			;;
+		*)
+			cosign_unavailable "$strict" "LEVELRAIL_COSIGN_URL must start with https://"
+			return 0
+			;;
+		esac
+	else
+		case "$GOARCH" in
+		amd64) cosign_sha="$COSIGN_SHA256_AMD64" ;;
+		arm64) cosign_sha="$COSIGN_SHA256_ARM64" ;;
+		*)
+			cosign_unavailable "$strict" "no pinned cosign for $(uname -m)"
+			return 0
+			;;
+		esac
+		cosign_url="https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-${GOARCH}"
+	fi
+	cosign_tmp="$(mktemp)"
+	log "Installing cosign ${COSIGN_VERSION} to ${COSIGN_BIN}..."
+	if ! curl -fsSL --proto "$cosign_proto" --tlsv1.2 --connect-timeout 10 --max-time 120 -o "$cosign_tmp" "$cosign_url" 2>/dev/null; then
+		rm -f "$cosign_tmp"
+		cosign_unavailable "$strict" "could not download cosign from ${cosign_url}"
+		return 0
+	fi
+	cosign_actual="$(sha256sum "$cosign_tmp" | awk '{ print $1 }')"
+	if [ "$cosign_actual" != "$cosign_sha" ]; then
+		rm -f "$cosign_tmp"
+		cosign_unavailable "$strict" "cosign checksum mismatch: expected ${cosign_sha}, got ${cosign_actual}"
+		return 0
+	fi
+	if ! install -m 0755 "$cosign_tmp" "$COSIGN_BIN" 2>/dev/null; then
+		rm -f "$cosign_tmp"
+		cosign_unavailable "$strict" "could not write ${COSIGN_BIN}"
+		return 0
+	fi
+	rm -f "$cosign_tmp"
+	log "Installed cosign ${COSIGN_VERSION}."
+}
+
+cosign_unavailable() {
+	if [ "$1" = "strict" ]; then
+		fatal "$2"
+	fi
+	warn "$2. Continuing with SHA-256 checksum verification only (LEVELRAIL_NO_COSIGN=1 skips this step)."
 }
 
 # verify_signature checks the cosign keyless bundle over checksums.txt. A
@@ -1187,6 +1281,12 @@ do_retain() {
 	log "Next, on this host: sudo ${BINARY_NAME} rollback --to ${VERSION}"
 }
 
+do_install_cosign() {
+	detect_arch
+	[ -n "$GOARCH" ] || fatal "unsupported architecture: $(uname -m)"
+	ensure_cosign strict
+}
+
 do_uninstall() {
 	if [ -f "$UNIT_PATH" ]; then
 		systemctl disable --now "$SERVICE_NAME" >/dev/null 2>&1 || true
@@ -1213,5 +1313,6 @@ case "$MODE" in
 install) do_install ;;
 upgrade) do_upgrade ;;
 retain) do_retain ;;
+install-cosign) do_install_cosign ;;
 uninstall) do_uninstall ;;
 esac

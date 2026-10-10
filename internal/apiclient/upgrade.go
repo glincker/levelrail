@@ -25,6 +25,7 @@ type UpdatePreflight struct {
 	Blocked         bool           `json:"blocked"`
 	UpgradeCommand  string         `json:"upgrade_command"`
 	RollbackCommand string         `json:"rollback_command"`
+	CosignCommand   string         `json:"cosign_command"`
 }
 
 // GetUpdatePreflight calls GET /api/v1/updates/preflight.
