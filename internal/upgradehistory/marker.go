@@ -22,6 +22,9 @@ const markerMaxBytes = 4096
 const (
 	MethodInstallScript = "install.sh"
 	MethodRollback      = "rollback"
+	MethodManual        = "manual"
+	MethodPackage       = "package"
+	MethodCI            = "ci"
 )
 
 // Marker is who changed the binary and how. It never holds secrets.
@@ -31,6 +34,7 @@ type Marker struct {
 	Method     string    `json:"method"`
 	Channel    string    `json:"channel,omitempty"`
 	BackupName string    `json:"backup_name,omitempty"`
+	Reason     string    `json:"reason,omitempty"`
 	WrittenAt  time.Time `json:"written_at"`
 }
 
@@ -83,6 +87,6 @@ func ConsumeMarker(dir, running string, now time.Time) (Marker, bool) {
 	}
 	_ = os.Remove(claimed)
 	m.Initiator, m.Method, m.Channel = clean(m.Initiator), clean(m.Method), clean(m.Channel)
-	m.BackupName = clean(m.BackupName)
+	m.BackupName, m.Reason = clean(m.BackupName), clean(m.Reason)
 	return m, true
 }

@@ -34,6 +34,7 @@ const base: UpdatePreflight = {
   blocked: false,
   upgrade_command: 'sh -s upgrade',
   rollback_command: 'restore-snapshot --list',
+  cosign_command: 'sh -s -- install-cosign',
 }
 
 function renderWith(data: UpdatePreflight) {
@@ -86,5 +87,40 @@ describe('UpgradePreflight', () => {
     expect(await screen.findByText('Blocked')).toBeInTheDocument()
     expect(screen.getByText(/Upgrade blocked/)).toBeInTheDocument()
     expect(screen.queryByText('sh -s upgrade')).not.toBeInTheDocument()
+  })
+
+  it('shows the cosign install command only when the verifier is missing', async () => {
+    const view = renderWith({
+      ...base,
+      checks: [
+        {
+          code: 'release_verifier',
+          name: 'Signature verification tool',
+          status: 'warn',
+          message: 'cosign is not installed',
+        },
+      ],
+    })
+    expect(
+      await screen.findByText('sh -s -- install-cosign'),
+    ).toBeInTheDocument()
+    view.unmount()
+    renderWith({
+      ...base,
+      checks: [
+        {
+          code: 'release_verifier',
+          name: 'Signature verification tool',
+          status: 'ok',
+          message: 'cosign is installed',
+        },
+      ],
+    })
+    expect(
+      await screen.findByText('Signature verification tool'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('sh -s -- install-cosign'),
+    ).not.toBeInTheDocument()
   })
 })

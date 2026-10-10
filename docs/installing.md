@@ -181,7 +181,17 @@ To move an existing install behind a proxy later: `sudo sh install.sh upgrade --
 
 Each release publishes `checksums.txt` (SHA-256 of every CLI, agent and control plane binary), a keyless [cosign](https://docs.sigstore.dev/cosign/overview/) signature bundle for it (`checksums.txt.sigstore.json`), and a GitHub build provenance attestation for the binaries. Releases cut before signing was added carry no bundle.
 
-`install.sh` always verifies the SHA-256 checksum and refuses to install on a mismatch. It also verifies the signature when `cosign` is installed and the release ships a bundle. Set `APP_INSTALL_VERIFY=require` to fail unless the signature verifies (no cosign, no bundle, or a bad signature all abort), or `APP_INSTALL_VERIFY=off` to skip only the signature step.
+`install.sh` always verifies the SHA-256 checksum and refuses to install on a mismatch. It also verifies the signature when `cosign` is installed and the release ships a bundle.
+
+**cosign is installed for you.** When `cosign` is not on `PATH`, `install` and `upgrade` download a pinned cosign release (v3.1.3, `linux/amd64` or `linux/arm64`) from the official sigstore GitHub releases, check it against a SHA-256 pinned inside `install.sh`, and place it at `/usr/local/bin/cosign`. An existing cosign is never touched. If the download fails (offline host, blocked GitHub, wrong checksum) the installer warns and carries on with checksum-only verification; it never aborts for this. Opt out with `--no-cosign` or `LEVELRAIL_NO_COSIGN=1`. To install it on its own, for example to clear the Settings > Updates warning:
+
+```bash
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- install-cosign
+```
+
+The explicit `install-cosign` subcommand does fail loudly if it cannot install.
+
+Set `APP_INSTALL_VERIFY=require` to fail unless the signature verifies (no cosign, no bundle, or a bad signature all abort), or `APP_INSTALL_VERIFY=off` to skip only the signature step.
 
 ```bash
 curl -fsSL https://levelrail.com/install.sh \
@@ -408,6 +418,17 @@ docker rm -f levelrail
 ```
 
 The named volume holding `/var/lib/levelrail-data` persists across recreation.
+
+**If you replace the binary by hand** (a package, your own CI, `scp`), tell the control plane who did it so upgrade history does not show an unknown initiator. Run `upgrade-note` after replacing the file and before starting the service:
+
+```bash
+sudo systemctl stop levelrail
+sudo install -m 0755 ./levelrail-linux-amd64 /usr/local/bin/levelrail
+sudo levelrail upgrade-note --by "$USER" --reason "manual swap"
+sudo systemctl start levelrail
+```
+
+`--method` is `manual` (default), `package` or `ci`; `--data-dir` defaults to `APP_DATA_DIR`. The note names the version of the binary that runs it, so it must be the new binary. See [Upgrade history](upgrade-history.md).
 
 ### Rolling back
 

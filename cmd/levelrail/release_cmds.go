@@ -376,6 +376,8 @@ func runReleaseCommand(name string, args []string) bool {
 		err = runVersion(args, os.Stdout)
 	case "retain":
 		err = runRetain(args, os.Stdout)
+	case "upgrade-note":
+		err = runUpgradeNote(args, os.Stdout, time.Now())
 	case "rollback":
 		err = runRollback(context.Background(), args, dataDirFromEnv(), os.Stdin, os.Stdout)
 	default:

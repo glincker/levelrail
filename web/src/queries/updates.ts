@@ -61,6 +61,7 @@ export interface UpdatePreflight {
   blocked: boolean
   upgrade_command: string
   rollback_command: string
+  cosign_command: string
 }
 
 // UpdateChannel mirrors internal/upgrade's Channel constants.

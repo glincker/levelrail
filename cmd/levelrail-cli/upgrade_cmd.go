@@ -76,6 +76,11 @@ func printUpgradeHuman(out io.Writer, p updatePreflight, backupNote string) {
 		_, _ = fmt.Fprintf(out, "[%s] %s: %s\n", c.Status, c.Name, c.Message)
 	}
 	_, _ = fmt.Fprintf(out, "control plane backup: %s\n", backupNote)
+	for _, c := range p.Checks {
+		if c.Code == "release_verifier" && c.Status == "warn" && p.CosignCommand != "" {
+			_, _ = fmt.Fprintf(out, "\nInstall cosign to verify release signatures too:\n  %s\n", p.CosignCommand)
+		}
+	}
 	switch {
 	case p.Blocked:
 		_, _ = fmt.Fprintln(out, "\nUpgrade blocked: fix the failing checks above first.")
