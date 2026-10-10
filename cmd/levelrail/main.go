@@ -750,6 +750,7 @@ func run(logger *slog.Logger) error {
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
 	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
+	startExternalDatabaseMonitor(ctx, logger, db, secretsManager, client, agentRegistry)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
 		Handler:           apiHandler,

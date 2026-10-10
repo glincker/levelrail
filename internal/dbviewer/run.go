@@ -55,9 +55,15 @@ func (t Target) run(ctx context.Context, sql, kind string, write bool) (Result, 
 	case DialectPostgres:
 		sentinel = nullSentinel()
 		cmd = postgresCmd(t.Limits, write)
+		if t.External {
+			cmd = postgresExternalCmd(t.Limits, write)
+		}
 		script = postgresScript(sql, kind, write, t.Limits.MaxRows, sentinel)
 	case DialectMySQL, DialectMariaDB:
 		cmd = mysqlCmd()
+		if t.External {
+			cmd = mysqlExternalCmd(t.Dialect == DialectMariaDB)
+		}
 		script = mysqlScript(sql, write, t.Limits.Timeout, t.Dialect == DialectMariaDB)
 	default:
 		return Result{}, fmt.Errorf("dbviewer: unsupported dialect %q", t.Dialect)

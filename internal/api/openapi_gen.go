@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 717 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 727 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -521,6 +521,16 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/deployments/stream", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsStream", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsSummary", Description: ""},
 	{Method: "GET", Path: "/api/v1/export", Ability: "AbilityRead", Group: "Other", Handler: "handleIaCExport", Description: ""},
+	{Method: "GET", Path: "/api/v1/external-databases", Ability: "AbilityRead", Group: "Other", Handler: "handleListExternalDatabases", Description: "External databases: connected, never run, by this platform. Anything that dials out or reveals a credential is admin only."},
+	{Method: "POST", Path: "/api/v1/external-databases", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateExternalDatabase", Description: ""},
+	{Method: "POST", Path: "/api/v1/external-databases/adopt", Ability: "AbilityRoot", Group: "Other", Handler: "handleAdoptExternalDatabase", Description: ""},
+	{Method: "GET", Path: "/api/v1/external-databases/candidates", Ability: "AbilityRoot", Group: "Other", Handler: "handleListExternalDatabaseCandidates", Description: ""},
+	{Method: "POST", Path: "/api/v1/external-databases/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestExternalDatabase", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/external-databases/{name}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteExternalDatabase", Description: ""},
+	{Method: "GET", Path: "/api/v1/external-databases/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetExternalDatabase", Description: ""},
+	{Method: "PUT", Path: "/api/v1/external-databases/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateExternalDatabase", Description: ""},
+	{Method: "GET", Path: "/api/v1/external-databases/{name}/password", Ability: "AbilityRoot", Group: "Other", Handler: "handleRevealExternalDatabasePassword", Description: ""},
+	{Method: "POST", Path: "/api/v1/external-databases/{name}/probe", Ability: "AbilityWrite", Group: "Other", Handler: "handleProbeExternalDatabase", Description: ""},
 	{Method: "GET", Path: "/api/v1/firewall-rules", Ability: "AbilityRead", Group: "Other", Handler: "handleListFirewallRules", Description: "Firewall rules (firewall_rules.go): declarative host firewall rules internal/reconcile/firewall converges onto ufw. AbilityWriteSensitive for create/delete, same tier as a backup target: a rule here changes what inbound traffic this host accepts. List is ordinary AbilityRead."},
 	{Method: "POST", Path: "/api/v1/firewall-rules", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateFirewallRule", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/firewall-rules/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteFirewallRule", Description: ""},

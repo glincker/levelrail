@@ -89,52 +89,63 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 <span>Overview</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={
-                  <Link to="/databases/$name/resources" params={{ name }} />
-                }
-                isActive={pathname.endsWith('/resources')}
-                tooltip="Resources"
-              >
-                <CpuIcon />
-                <span>Resources</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={
-                  <Link to="/databases/$name/metrics" params={{ name }} />
-                }
-                isActive={pathname.endsWith('/metrics')}
-                tooltip="Metrics"
-              >
-                <PulseIcon />
-                <span>Metrics</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={<Link to="/databases/$name/logs" params={{ name }} />}
-                isActive={pathname.endsWith('/logs')}
-                tooltip="Logs"
-              >
-                <ScrollIcon />
-                <span>Logs</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={
-                  <Link to="/databases/$name/slow-queries" params={{ name }} />
-                }
-                isActive={pathname.endsWith('/slow-queries')}
-                tooltip="Slow Queries"
-              >
-                <GaugeIcon />
-                <span>Slow Queries</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {!database.external ? (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={
+                    <Link to="/databases/$name/resources" params={{ name }} />
+                  }
+                  isActive={pathname.endsWith('/resources')}
+                  tooltip="Resources"
+                >
+                  <CpuIcon />
+                  <span>Resources</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ) : null}
+            {!database.external ? (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={
+                    <Link to="/databases/$name/metrics" params={{ name }} />
+                  }
+                  isActive={pathname.endsWith('/metrics')}
+                  tooltip="Metrics"
+                >
+                  <PulseIcon />
+                  <span>Metrics</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ) : null}
+            {!database.external ? (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link to="/databases/$name/logs" params={{ name }} />}
+                  isActive={pathname.endsWith('/logs')}
+                  tooltip="Logs"
+                >
+                  <ScrollIcon />
+                  <span>Logs</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ) : null}
+            {!database.external ? (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={
+                    <Link
+                      to="/databases/$name/slow-queries"
+                      params={{ name }}
+                    />
+                  }
+                  isActive={pathname.endsWith('/slow-queries')}
+                  tooltip="Slow Queries"
+                >
+                  <GaugeIcon />
+                  <span>Slow Queries</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ) : null}
             <SidebarMenuItem>
               <SidebarMenuButton
                 render={

@@ -940,6 +940,16 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/cutover | AbilityRead | handleCutoverReport |
 | GET | /api/v1/migration/cutover/verify | AbilityWriteSensitive | handleCutoverVerify |
 | GET | /api/v1/ingress/connectivity | AbilityRead | handleIngressConnectivity |
+| GET | /api/v1/external-databases | AbilityRead | handleListExternalDatabases |
+| POST | /api/v1/external-databases | AbilityRoot | handleCreateExternalDatabase |
+| POST | /api/v1/external-databases/test | AbilityRoot | handleTestExternalDatabase |
+| GET | /api/v1/external-databases/candidates | AbilityRoot | handleListExternalDatabaseCandidates |
+| POST | /api/v1/external-databases/adopt | AbilityRoot | handleAdoptExternalDatabase |
+| GET | /api/v1/external-databases/{name} | AbilityRead | handleGetExternalDatabase |
+| PUT | /api/v1/external-databases/{name} | AbilityRoot | handleUpdateExternalDatabase |
+| DELETE | /api/v1/external-databases/{name} | AbilityWrite | handleDeleteExternalDatabase |
+| POST | /api/v1/external-databases/{name}/probe | AbilityWrite | handleProbeExternalDatabase |
+| GET | /api/v1/external-databases/{name}/password | AbilityRoot | handleRevealExternalDatabasePassword |
 
 ## See also
 

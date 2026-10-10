@@ -273,15 +273,32 @@ func toContainerState(s container.Summary) *ContainerState {
 		created = time.Unix(s.Created, 0).UTC()
 	}
 	return &ContainerState{
-		ID:      s.ID,
-		Name:    name,
-		Image:   s.Image,
-		ImageID: s.ImageID,
-		Created: created,
-		Running: s.State == "running",
-		Ports:   observedPorts(s.Ports),
-		Labels:  s.Labels,
+		ID:       s.ID,
+		Name:     name,
+		Image:    s.Image,
+		ImageID:  s.ImageID,
+		Created:  created,
+		Running:  s.State == "running",
+		Ports:    observedPorts(s.Ports),
+		Labels:   s.Labels,
+		Networks: summaryNetworks(s),
 	}
+}
+
+func summaryNetworks(s container.Summary) []ContainerNetwork {
+	if s.NetworkSettings == nil || len(s.NetworkSettings.Networks) == 0 {
+		return nil
+	}
+	out := make([]ContainerNetwork, 0, len(s.NetworkSettings.Networks))
+	for name, ep := range s.NetworkSettings.Networks {
+		n := ContainerNetwork{Name: name}
+		if ep != nil {
+			n.IPAddress = ep.IPAddress
+		}
+		out = append(out, n)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out
 }
 
 func observedPorts(ports []container.Port) []PortBinding {

@@ -184,7 +184,8 @@ func (d databaseResource) toDesiredDatabase() store.DesiredDatabase {
 // to render a status dot without an N+1 GetConditions call per database.
 type databaseListResource struct {
 	databaseResource
-	Status appStatusSummary `json:"status"`
+	Status   appStatusSummary          `json:"status"`
+	External *externalDatabaseResource `json:"external,omitempty"`
 }
 
 // validateDatabaseResource checks d.Engine against
@@ -266,6 +267,7 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 			Status:           summarizeAppConditions(conditionsByController[databaseControllerName(d.Name)]),
 		})
 	}
+	out = rt.appendExternalDatabases(r, canSee, out)
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -395,6 +397,14 @@ func (rt *Router) handleGetDatabase(w http.ResponseWriter, r *http.Request) {
 
 	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
+		if ext, eerr := rt.externalDatabases.GetExternalDatabase(r.Context(), name); eerr == nil {
+			writeJSON(w, http.StatusOK, databaseListResource{
+				databaseResource: databaseResource{Name: ext.Name, Engine: ext.Engine, NodeID: ext.NodeID, ProjectID: ext.ProjectID},
+				Status:           externalStatusSummary(ext.HealthStatus),
+				External:         ptrTo(rt.toExternalDatabaseResource(r.Context(), *ext)),
+			})
+			return
+		}
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	}
@@ -677,6 +687,10 @@ func (rt *Router) handleDatabaseStatus(w http.ResponseWriter, r *http.Request) {
 
 	_, err := rt.databases.GetDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
+		if ext, eerr := rt.externalDatabases.GetExternalDatabase(r.Context(), name); eerr == nil {
+			writeJSON(w, http.StatusOK, externalConditions(*ext))
+			return
+		}
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	}

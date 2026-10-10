@@ -430,6 +430,7 @@ type Router struct {
 	imageAutoUpdates             ImageAutoUpdateStore             // always set, per-app registry auto-update opt-in
 	appSleep                     AppSleepStore                    // always set, sleep-when-idle settings
 	dataImports                  DataImportStore                  // always set, live data copy status
+	externalDatabases            ExternalDatabaseStore            // always set, databases connected but not run
 	dnsResolver                  datamigrate.Resolver             // nil means the real resolver
 	wakeToken                    string                           // empty disables the wake hook
 	canaries                     CanaryStore                      // always set, in-flight canary releases
@@ -653,6 +654,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		imageAutoUpdates:            s,
 		appSleep:                    s,
 		dataImports:                 s,
+		externalDatabases:           s,
 		canaries:                    s,
 		dbQueries:                   s,
 		resolveBranchSHA:            resolveRemoteBranchSHA,
