@@ -361,7 +361,7 @@ func (rt *Router) handleCheckIngressDomain(w http.ResponseWriter, r *http.Reques
 	}
 
 	expectedHost, inferred := advertisedHost(r, rt.publicHost)
-	resp := rt.runDomainCheck(r.Context(), domain, expectedHost, inferred)
+	resp := rt.runDomainCheckOpts(r.Context(), domain, expectedHost, inferred, r.URL.Query().Get("refresh") == "true")
 	rt.enrichDomainCheck(r.Context(), &resp)
 	writeJSON(w, http.StatusOK, ingressDomainCheckResponse{Configured: true, domainCheckResponse: resp})
 }

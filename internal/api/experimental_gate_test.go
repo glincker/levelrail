@@ -24,6 +24,7 @@ func TestMain(m *testing.M) {
 	experimental.Set(experimental.All()...)
 	// No test may probe the real network for this machine's public address.
 	_ = os.Setenv("APP_PUBLIC_IP_DETECT", "off")
+	_ = os.Setenv("APP_DNS_PUBLIC_RESOLVERS", "off")
 	warmupDir, err := os.MkdirTemp("", "levelrail-sqlite-warmup")
 	if err != nil {
 		panic("sqlite warmup: " + err.Error())

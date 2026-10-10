@@ -8,6 +8,7 @@ const VARIANT: Record<
   VariantProps<typeof badgeVariants>['variant']
 > = {
   connected: 'success',
+  propagating: 'warning',
   not_resolving: 'warning',
   resolves_elsewhere: 'destructive',
   unconfigured: 'muted',

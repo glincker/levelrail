@@ -17,7 +17,11 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
-import type { AcmeFailure, DomainCheckStatus } from './domainCheck'
+import type {
+  AcmeFailure,
+  DomainCheckStatus,
+  DomainResolver,
+} from './domainCheck'
 
 export const domainKeys = {
   all: ['domains'] as const,
@@ -183,10 +187,12 @@ export type IngressDomainCheckResult =
       resolved: boolean
       resolved_hosts?: string[]
       status: DomainCheckStatus
+      checked_at?: string
+      resolvers?: DomainResolver[]
     }
 
 export async function fetchIngressDomainCheck(): Promise<IngressDomainCheckResult> {
-  const res = await fetch('/api/v1/settings/ingress/check')
+  const res = await fetch('/api/v1/settings/ingress/check?refresh=true')
   if (!res.ok) {
     throw new ApiError(
       res.status,
