@@ -152,7 +152,20 @@ func (rt *Router) checkDomainReachesDashboard(ctx context.Context, domain string
 		res.Detail = "invalid domain"
 		return res
 	}
-	client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12}}}
+	// Dial this host's own address regardless of what DNS says now, so a
+	// rebinding answer between the lookup above and this request cannot
+	// redirect the probe elsewhere.
+	dialer := &net.Dialer{}
+	client := &http.Client{
+		Timeout: 8 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, ServerName: domain},
+			DialContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
+				return dialer.DialContext(ctx, network, net.JoinHostPort(rt.publicHost, "443"))
+			},
+		},
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}
 	resp, err := client.Do(req) //nolint:gosec // same request, see above
 	if err != nil {
 		res.Detail = "https://" + domain + " is not reachable yet: " + err.Error()
