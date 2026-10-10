@@ -28,12 +28,20 @@ const PAGE_OG: Record<string, string> = {
 
 const siteUrl = 'https://levelrail.com'
 
+// Social cards show about 125 characters; cut at a word boundary instead of mid-word.
+function socialDescription(text: string): string {
+  const t = String(text).replace(/\s+/g, ' ').trim()
+  if (t.length <= 125) return t
+  const cut = t.slice(0, 122)
+  return cut.slice(0, cut.lastIndexOf(' ')).replace(/[,;:.]$/, '') + '...'
+}
+
 // public/favicon.svg is served byte-for-byte at a fixed path (no content
 // hash), behind GitHub Pages' CDN on top of the browser's own cache, so a
 // redeploy alone doesn't guarantee a visitor sees the new file. Bump this
 // whenever favicon.svg's actual content changes; it's appended everywhere
 // the file is referenced below.
-const faviconVersion = 2
+const faviconVersion = 3
 
 // Defined once and reused for both the sidebar itself and
 // pageToSection below (canonicalUrl/BreadcrumbList in transformHead),
@@ -382,7 +390,7 @@ export default withMermaid({
     ...feedHead(siteUrl),
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'theme-color', content: '#0b0e14' }],
-    ['link', { rel: 'icon', href: `/favicon.svg?v=${faviconVersion}`, type: 'image/svg+xml' }],
+    ['link', { rel: 'icon', href: `/favicon-plate.svg?v=${faviconVersion}`, type: 'image/svg+xml' }],
     ['link', { rel: 'icon', href: `/favicon.ico?v=${faviconVersion}`, sizes: '48x48' }],
     ['link', { rel: 'icon', href: `/favicon-48x48.png?v=${faviconVersion}`, type: 'image/png', sizes: '48x48' }],
     ['link', { rel: 'icon', href: `/favicon-32x32.png?v=${faviconVersion}`, type: 'image/png', sizes: '32x32' }],
@@ -516,18 +524,19 @@ export default withMermaid({
     const path = pageData.relativePath.replace(/\.md$/, '').replace(/(^|\/)index$/, '$1')
     const canonicalUrl = `${siteUrl}/${path}`
     const title = pageData.frontmatter.title || pageData.title || 'Levelrail'
-    const pageDescription = pageData.frontmatter.description || pageData.description || description
+    const pageDescription = socialDescription(pageData.frontmatter.description || pageData.description || description)
     // Homepage gets the value-prop card, key pages their own, the rest the docs card.
     const ogImage = `${siteUrl}/assets/${path === '' ? 'og-home.png' : (PAGE_OG[path] ?? 'og-docs.png')}`
     const head: [string, Record<string, string>, string?][] = [
       ['link', { rel: 'canonical', href: canonicalUrl }],
+      ['meta', { property: 'og:site_name', content: 'Levelrail' }],
       ['meta', { property: 'og:type', content: pageData.params?.tag ? 'article' : 'website' }],
       ['meta', { property: 'og:title', content: title }],
       ['meta', { property: 'og:description', content: pageDescription }],
       ['meta', { property: 'og:url', content: canonicalUrl }],
       ['meta', { property: 'og:image', content: ogImage }],
-      ['meta', { property: 'og:image:width', content: '2400' }],
-      ['meta', { property: 'og:image:height', content: '1260' }],
+      ['meta', { property: 'og:image:width', content: '1200' }],
+      ['meta', { property: 'og:image:height', content: '630' }],
       ['meta', { property: 'og:image:alt', content: `${title}, Levelrail social card` }],
       ['meta', { name: 'twitter:title', content: title }],
       ['meta', { name: 'twitter:description', content: pageDescription }],
