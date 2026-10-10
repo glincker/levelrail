@@ -4,10 +4,14 @@
 # Installs the levelrail control plane binary, a systemd unit, and Docker
 # (if missing) on a single Linux host.
 #
-# Usage: install.sh [install|upgrade|uninstall] [--force] [--purge]
+# Usage: install.sh [install|upgrade|retain|uninstall] [--force] [--purge]
 #   install    (default) preflight checks, then install or repair. Safe to re-run.
 #   upgrade    replace the binary with a newer release and restart, keeping
-#              the unit file and data.
+#              the unit file and data. The previous binaries (last 3) are
+#              kept in ${LEVELRAIL_INSTALL_DIR}/levelrail.releases for rollback.
+#   retain     download and verify LEVELRAIL_VERSION and keep it beside the
+#              installed binary, without installing it. Then run
+#              `sudo levelrail rollback --to <version>` to switch to it.
 #   uninstall  remove the service, unit, and binary. Data is kept unless
 #              --purge is given.
 #   --force    continue even if a preflight check fails.
@@ -72,6 +76,7 @@ SOCKET_ACTIVATION="${LEVELRAIL_SOCKET_ACTIVATION:-}"
 HTTP_SOCKET_UNIT="${SERVICE_NAME}-http.socket"
 HTTPS_SOCKET_UNIT="${SERVICE_NAME}-https.socket"
 BIN_PATH="${INSTALL_DIR}/${BINARY_NAME}"
+RELEASES_DIR="${LEVELRAIL_RELEASES_DIR:-${INSTALL_DIR}/${BINARY_NAME}.releases}"
 DASHBOARD_PORT="${LEVELRAIL_DASHBOARD_PORT:-8080}"
 DASHBOARD_PORT_PINNED=0
 [ -z "${LEVELRAIL_DASHBOARD_PORT:-}" ] || DASHBOARD_PORT_PINNED=1
@@ -97,9 +102,10 @@ fatal() {
 
 usage() {
 	cat <<'EOF'
-Usage: install.sh [install|upgrade|uninstall] [--force] [--purge]
+Usage: install.sh [install|upgrade|retain|uninstall] [--force] [--purge]
   install    (default) preflight checks, then install or repair
   upgrade    replace the binary with a newer release and restart
+  retain     download and verify LEVELRAIL_VERSION and keep it for rollback
   uninstall  remove the service, unit, and binary (data kept unless --purge)
   --force    continue even if a preflight check fails
 EOF
@@ -110,7 +116,7 @@ FORCE=0
 PURGE=0
 for arg in "$@"; do
 	case "$arg" in
-	install | upgrade | uninstall) MODE="$arg" ;;
+	install | upgrade | retain | uninstall) MODE="$arg" ;;
 	--force) FORCE=1 ;;
 	--purge) PURGE=1 ;;
 	-h | --help)
@@ -450,12 +456,48 @@ checksum_unavailable() {
 	fatal "$1, refusing to install an unverified binary. Pick another release with LEVELRAIL_VERSION, or set LEVELRAIL_SKIP_CHECKSUM=1 to install without verification."
 }
 
+# supports_retain is true when the binary at $1 has the retain subcommand. It
+# greps for the usage text rather than running the binary: an older release
+# would ignore an unknown argument and start serving.
+supports_retain() {
+	[ -f "$1" ] && grep -aq 'retain --version <tag> --file <binary>' "$1"
+}
+
+# retain_releases keeps the previous and the new binary for rollback. It never
+# fails an install: rollback is a convenience, not a precondition.
+retain_releases() {
+	previous="$1"
+	supports_retain "$BIN_PATH" || return 0
+	mkdir -p "$RELEASES_DIR" 2>/dev/null || return 0
+	marker="${RELEASES_DIR}/.current"
+	if [ -n "$previous" ] && [ -f "$marker" ]; then
+		old="$(cat "$marker")"
+		"$BIN_PATH" retain --version "$old" --file "$previous" --releases-dir "$RELEASES_DIR" >/dev/null 2>&1 ||
+			warn "could not keep the previous binary (${old}) for rollback"
+	fi
+	case "$VERSION" in
+	v[0-9]*)
+		if "$BIN_PATH" retain --version "$VERSION" --file "$BIN_PATH" --releases-dir "$RELEASES_DIR" >/dev/null 2>&1; then
+			printf '%s\n' "$VERSION" >"$marker"
+		else
+			warn "could not keep ${VERSION} for rollback"
+		fi
+		;;
+	esac
+}
+
 install_binary() {
 	tmp_dir="$(mktemp -d)"
 	trap 'rm -rf "$tmp_dir"' EXIT
 	fetch_binary "$tmp_dir/$BINARY_NAME"
 	mkdir -p "$INSTALL_DIR"
+	previous=""
+	if [ -x "$BIN_PATH" ]; then
+		cp -p "$BIN_PATH" "$tmp_dir/previous"
+		previous="$tmp_dir/previous"
+	fi
 	install -m 0755 "$tmp_dir/$BINARY_NAME" "$BIN_PATH"
+	retain_releases "$previous"
 }
 
 write_brand() {
@@ -799,6 +841,26 @@ do_upgrade() {
 	log "Upgraded to ${VERSION}."
 }
 
+do_retain() {
+	[ -x "$BIN_PATH" ] || fatal "${BIN_PATH} not found. Run the installer without arguments first."
+	supports_retain "$BIN_PATH" || fatal "the installed ${BINARY_NAME} predates release retention. Upgrade it first (install.sh upgrade), then retain."
+	[ -n "${LEVELRAIL_VERSION:-}" ] || fatal "set LEVELRAIL_VERSION=vX.Y.Z to the release you want to roll back to"
+	detect_arch
+	[ -n "$GOARCH" ] || fatal "unsupported architecture: $(uname -m)"
+	tmp_dir="$(mktemp -d)"
+	trap 'rm -rf "$tmp_dir"' EXIT
+	fetch_binary "$tmp_dir/$BINARY_NAME"
+	schema=-1
+	if [ -z "${LEVELRAIL_BINARY_FILE:-}${LEVELRAIL_BINARY_URL:-}" ] &&
+		curl -fsSL --proto "$proto" --tlsv1.2 --connect-timeout 10 --max-time 30 -o "$tmp_dir/manifest.json" "${base_url}/release-manifest.json" 2>/dev/null; then
+		found="$(sed -n 's/.*"schema_version": *\([0-9][0-9]*\).*/\1/p' "$tmp_dir/manifest.json" | head -n 1)"
+		[ -z "$found" ] || schema="$found"
+	fi
+	mkdir -p "$RELEASES_DIR"
+	"$BIN_PATH" retain --version "$VERSION" --file "$tmp_dir/$BINARY_NAME" --schema-version "$schema" --releases-dir "$RELEASES_DIR"
+	log "Next, on this host: sudo ${BINARY_NAME} rollback --to ${VERSION}"
+}
+
 do_uninstall() {
 	if [ -f "$UNIT_PATH" ]; then
 		systemctl disable --now "$SERVICE_NAME" >/dev/null 2>&1 || true
@@ -823,5 +885,6 @@ do_uninstall() {
 case "$MODE" in
 install) do_install ;;
 upgrade) do_upgrade ;;
+retain) do_retain ;;
 uninstall) do_uninstall ;;
 esac

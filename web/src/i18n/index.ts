@@ -20,6 +20,7 @@ export const NAMESPACES = [
   'environments',
   'migration',
   'domains',
+  'updates',
 ] as const
 
 void i18n

@@ -1,12 +1,12 @@
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
 import { StatusPill, type Tone } from '@/components/kit'
-import { Button } from '../ui/button'
 import {
   preflightQueryOptions,
   type UpgradeCheckStatus,
 } from '../../queries/updates'
+import { CopyCommand } from './CopyCommand'
+import { ReleaseNotes } from './ReleaseNotes'
 
 const STATUS_TONE: Record<UpgradeCheckStatus, Tone> = {
   ok: 'success',
@@ -15,56 +15,18 @@ const STATUS_TONE: Record<UpgradeCheckStatus, Tone> = {
   unknown: 'neutral',
 }
 
-const STATUS_LABEL: Record<UpgradeCheckStatus, string> = {
-  ok: 'Pass',
-  warn: 'Warning',
-  fail: 'Blocked',
-  unknown: 'Unknown',
-}
-
-function CopyCommand({ label, command }: { label: string; command: string }) {
-  const [copied, setCopied] = useState(false)
-  return (
-    <div className="space-y-1.5">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <div className="flex items-center gap-2">
-        <code className="min-w-0 flex-1 overflow-x-auto rounded-md bg-muted px-3 py-2 font-mono text-xs whitespace-nowrap">
-          {command}
-        </code>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            void navigator.clipboard.writeText(command).then(() => {
-              setCopied(true)
-              setTimeout(() => {
-                setCopied(false)
-              }, 2000)
-            })
-          }}
-        >
-          {copied ? <CheckIcon /> : <CopyIcon />}
-          {copied ? 'Copied' : 'Copy'}
-        </Button>
-      </div>
-    </div>
-  )
-}
-
 export function UpgradePreflight() {
+  const { t } = useTranslation('updates')
   const { data, isPending, isError } = useQuery(preflightQueryOptions())
   if (isPending) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Running preflight checks...
-      </p>
+      <p className="text-sm text-muted-foreground">{t('preflight.running')}</p>
     )
   }
   if (isError) {
     return (
       <p className="text-sm text-muted-foreground">
-        Preflight checks are unavailable right now.
+        {t('preflight.unavailable')}
       </p>
     )
   }
@@ -73,19 +35,19 @@ export function UpgradePreflight() {
       {data.release_notes ? (
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-muted-foreground">
-            Release notes
+            {t('notes.title')}
           </p>
-          <pre className="max-h-48 overflow-auto rounded-md bg-muted px-3 py-2 font-sans text-xs whitespace-pre-wrap">
-            {data.release_notes}
-          </pre>
+          <div className="max-h-48 overflow-auto rounded-md bg-muted px-3 py-2">
+            <ReleaseNotes markdown={data.release_notes} />
+          </div>
         </div>
       ) : null}
-      <ul className="space-y-2" aria-label="Upgrade preflight checks">
+      <ul className="space-y-2" aria-label={t('preflight.checksLabel')}>
         {data.checks.map((c) => (
           <li key={c.code} className="flex items-start gap-3 text-sm">
             <StatusPill
               tone={STATUS_TONE[c.status]}
-              label={STATUS_LABEL[c.status]}
+              label={t(`preflight.status.${c.status}`)}
               size="sm"
             />
             <span>
@@ -98,17 +60,15 @@ export function UpgradePreflight() {
         ))}
       </ul>
       {data.blocked ? (
-        <p className="text-sm text-destructive">
-          Upgrade blocked: fix the failing checks first.
-        </p>
+        <p className="text-sm text-destructive">{t('preflight.blocked')}</p>
       ) : data.update_available ? (
         <div className="space-y-3">
           <CopyCommand
-            label="Run this on the server (never runs automatically)"
+            label={t('preflight.upgradeCommand')}
             command={data.upgrade_command}
           />
           <CopyCommand
-            label="To roll back the database after a bad upgrade"
+            label={t('preflight.rollbackCommand')}
             command={data.rollback_command}
           />
         </div>

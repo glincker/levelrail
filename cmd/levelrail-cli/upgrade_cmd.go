@@ -12,8 +12,11 @@ import (
 func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "upgrade", "print the preflight as JSON to stdout and nothing else", stderr)
 	noBackup := fs.Bool("no-backup", false, "skip the automatic control plane backup")
+	list := fs.Bool("list", false, "list the last 5 releases with a schema compatibility verdict")
+	channel := fs.String("channel", "", "with --list: stable, beta or all (default: the configured channel)")
+	planVersion := fs.String("rollback-plan", "", "preview a rollback to `version` (read-only; applying happens on the host)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade [flags]\n\nChecks the running version against the latest release, runs the preflight\n(release signature, Docker Engine, free disk, backup), takes a control plane\nbackup, and prints the command that upgrades. It never upgrades by itself.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade [flags]\n\nChecks the running version against the latest release, runs the preflight\n(release signature, Docker Engine, free disk, backup), takes a control plane\nbackup, and prints the command that upgrades. It never upgrades by itself.\n\n--list shows recent releases; --rollback-plan <version> previews returning to\none. Rolling back is applied on the host with `sudo <control plane binary> rollback`.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -22,6 +25,13 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
+
+	if *list {
+		return runUpgradeList(ctx, client, *channel, jsonOut, of, stdout, stderr)
+	}
+	if *planVersion != "" {
+		return runUpgradeRollbackPlan(ctx, client, *planVersion, jsonOut, of, stdout, stderr)
+	}
 
 	pre, err := client.GetUpdatePreflight(ctx)
 	if err != nil {

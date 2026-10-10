@@ -158,6 +158,7 @@ const sidebarGroups = [
           { text: 'Command palette', link: '/command-palette' },
           { text: 'Cost estimate', link: '/cost-estimate' },
           { text: 'Integrations', link: '/integrations' },
+          { text: 'Rolling back a release', link: '/rollback' },
           { text: 'Resilience', link: '/resilience' },
           { text: 'Resilience, in short', link: '/resilience-summary' },
           { text: 'Observability', link: '/observability' },

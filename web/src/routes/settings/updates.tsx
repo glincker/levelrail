@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import {
   ArrowSquareOutIcon,
@@ -32,6 +33,8 @@ import {
 } from '../../queries/updates'
 import type { UpdateChannel, UpdateStatus } from '../../queries/updates'
 import { UpgradePreflight } from '../../components/settings/UpgradePreflight'
+import { ReleaseHistory } from '../../components/settings/ReleaseHistory'
+import { PostUpgradeVerify } from '../../components/settings/PostUpgradeVerify'
 import { PageHeader } from '../../components/shell/PageHeader'
 import {
   SettingsCardSkeleton,
@@ -67,6 +70,7 @@ const CHANNEL_LABELS: Record<UpdateChannel, string> = {
 function UpdatesSettingsPage() {
   const { data: status } = useSuspenseQuery(updatesQueryOptions())
   const { data: settings } = useSuspenseQuery(updateSettingsQueryOptions())
+  const { t } = useTranslation('updates')
   const queryClient = useQueryClient()
   const setSettings = useSetUpdateSettings()
   const [channel, setChannel] = useState<UpdateChannel>(settings.channel)
@@ -213,6 +217,26 @@ function UpdatesSettingsPage() {
         </CardHeader>
         <CardContent>
           <UpgradePreflight />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('history.title')}</CardTitle>
+          <CardDescription>{t('history.description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ReleaseHistory />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('verify.title')}</CardTitle>
+          <CardDescription>{t('verify.description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PostUpgradeVerify />
         </CardContent>
       </Card>
     </div>
