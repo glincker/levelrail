@@ -27,7 +27,7 @@ const UNIT_LABEL: Record<DurationUnit, string> = {
 // into *some* amount+unit pair instead of being dropped.
 const SUFFIX_TO_SECONDS: Record<string, number> = {
   ns: 1e-9,
-  'µs': 1e-6,
+  µs: 1e-6,
   us: 1e-6,
   ms: 1e-3,
   s: 1,

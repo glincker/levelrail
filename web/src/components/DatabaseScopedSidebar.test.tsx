@@ -10,8 +10,7 @@ import { SidebarProvider } from '@/components/ui/sidebar'
 // instead of only checking the visible highlight class.
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('@tanstack/react-router')>()
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
   return {
     ...actual,
     // Forwards every prop (aria-current included) onto the rendered <a>,
@@ -22,7 +21,10 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
       children,
       to,
       ...rest
-    }: { children?: ReactNode; to?: string } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    }: {
+      children?: ReactNode
+      to?: string
+    } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
       <a href={to} {...rest}>
         {children}
       </a>
@@ -61,9 +63,11 @@ describe('DatabaseScopedSidebar active nav state', () => {
       </SidebarProvider>,
     )
 
-    expect(screen.getByRole('link', { name: /Metrics/, current: 'page' })).toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: /Overview/ }),
-    ).not.toHaveAttribute('aria-current')
+      screen.getByRole('link', { name: /Metrics/, current: 'page' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Overview/ })).not.toHaveAttribute(
+      'aria-current',
+    )
   })
 })

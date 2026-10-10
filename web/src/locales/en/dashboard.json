@@ -40,7 +40,8 @@
       "subtitle": "Configured limits of {{active}} running apps and databases, replicas included. {{suspended}} stopped are left out.",
       "cpu": "CPU",
       "memory": "Memory",
-      "cores": "cores",
+      "cores_one": "core",
+      "cores_other": "cores",
       "reserved": "Reserved",
       "used": "Used now",
       "capacity": "Capacity",
@@ -97,6 +98,7 @@
       "largestVolumes": "Largest volumes",
       "largestBackups": "Largest backup sets",
       "noVolumes": "No volume sizes reported.",
+      "notReported": "Size not reported.",
       "noBackups": "No successful backups yet."
     }
   }

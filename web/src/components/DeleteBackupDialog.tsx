@@ -56,10 +56,9 @@ export function ConfirmDeleteBackupDialog({
             Delete this backup?
           </DialogTitle>
           <DialogDescription>
-            This permanently deletes this one archived backup, both the
-            stored file and its history entry. The rest of this backup
-            history and any recurring schedule are untouched. This cannot
-            be undone.
+            This permanently deletes this one archived backup, both the stored
+            file and its history entry. The rest of this backup history and any
+            recurring schedule are untouched. This cannot be undone.
           </DialogDescription>
         </DialogHeader>
         {deleteBackup.isError ? (
@@ -117,7 +116,10 @@ export function DeleteBackupDialog({
 }) {
   const deleteBackup = useDeleteBackup(databaseName)
   return (
-    <ConfirmDeleteBackupDialog backupId={backup.id} deleteBackup={deleteBackup} />
+    <ConfirmDeleteBackupDialog
+      backupId={backup.id}
+      deleteBackup={deleteBackup}
+    />
   )
 }
 
@@ -132,6 +134,9 @@ export function DeleteVolumeBackupDialog({
 }) {
   const deleteBackup = useDeleteVolumeBackup(appName, volumeName)
   return (
-    <ConfirmDeleteBackupDialog backupId={backup.id} deleteBackup={deleteBackup} />
+    <ConfirmDeleteBackupDialog
+      backupId={backup.id}
+      deleteBackup={deleteBackup}
+    />
   )
 }

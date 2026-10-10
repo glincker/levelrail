@@ -1,4 +1,7 @@
-import { ArrowClockwiseIcon, WebhooksLogoIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ArrowClockwiseIcon,
+  WebhooksLogoIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,7 +19,13 @@ import type { AppDetail } from '../types/appDetail'
 // of any stored delivery, the same "recent deliveries" feature GitHub's
 // own webhook settings page offers for its own webhooks.
 
-function DeliveryRow({ appName, delivery }: { appName: string; delivery: WebhookDelivery }) {
+function DeliveryRow({
+  appName,
+  delivery,
+}: {
+  appName: string
+  delivery: WebhookDelivery
+}) {
   const replay = useReplayWebhookDelivery(appName)
 
   function handleReplay() {
@@ -29,7 +38,11 @@ function DeliveryRow({ appName, delivery }: { appName: string; delivery: Webhook
         })
       },
       onError: (error) => {
-        toast.add({ title: 'Could not replay delivery.', description: error.message, type: 'error' })
+        toast.add({
+          title: 'Could not replay delivery.',
+          description: error.message,
+          type: 'error',
+        })
       },
     })
   }
@@ -38,16 +51,30 @@ function DeliveryRow({ appName, delivery }: { appName: string; delivery: Webhook
     <li className="rounded-lg border border-border p-2.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-mono text-xs text-muted-foreground">{delivery.id}</span>
-          <Badge variant="muted" className="rounded-full">{delivery.provider}</Badge>
-          <span className="text-xs text-muted-foreground">{delivery.event_type}</span>
-          <Badge variant={delivery.signature_valid ? 'success' : 'destructive'} className="rounded-full">
+          <span className="font-mono text-xs text-muted-foreground">
+            {delivery.id}
+          </span>
+          <Badge variant="muted" className="rounded-full">
+            {delivery.provider}
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            {delivery.event_type}
+          </span>
+          <Badge
+            variant={delivery.signature_valid ? 'success' : 'destructive'}
+            className="rounded-full"
+          >
             {delivery.signature_valid ? 'verified' : 'unverified'}
           </Badge>
           {!delivery.matched ? (
-            <Badge variant="warning" className="rounded-full">no git source</Badge>
+            <Badge variant="warning" className="rounded-full">
+              no git source
+            </Badge>
           ) : null}
-          <Badge variant={delivery.status_code < 400 ? 'success' : 'destructive'} className="rounded-full">
+          <Badge
+            variant={delivery.status_code < 400 ? 'success' : 'destructive'}
+            className="rounded-full"
+          >
             {delivery.status_code}
           </Badge>
         </div>
@@ -89,14 +116,18 @@ export function WebhookDeliveriesPanel({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <WebhooksLogoIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+          <WebhooksLogoIcon
+            className="size-4 text-muted-foreground"
+            aria-hidden="true"
+          />
           Recent deliveries
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Every inbound webhook request this app&apos;s webhook URL has received, verified or
-          not, deployed or not. Replay re-runs a stored delivery&apos;s exact payload.
+          Every inbound webhook request this app&apos;s webhook URL has
+          received, verified or not, deployed or not. Replay re-runs a stored
+          delivery&apos;s exact payload.
         </p>
 
         {deliveries.isLoading ? (
@@ -106,13 +137,17 @@ export function WebhookDeliveriesPanel({ app }: { app: AppDetail }) {
         ) : deliveries.data && deliveries.data.length > 0 ? (
           <ul className="space-y-2">
             {deliveries.data.map((delivery) => (
-              <DeliveryRow key={delivery.id} appName={app.name} delivery={delivery} />
+              <DeliveryRow
+                key={delivery.id}
+                appName={app.name}
+                delivery={delivery}
+              />
             ))}
           </ul>
         ) : (
           <p className="text-sm text-muted-foreground">
-            No webhook deliveries recorded yet. They&apos;ll show up here the first time the
-            connected provider sends one.
+            No webhook deliveries recorded yet. They&apos;ll show up here the
+            first time the connected provider sends one.
           </p>
         )}
       </CardContent>

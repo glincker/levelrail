@@ -2,7 +2,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { CpuIcon } from '@phosphor-icons/react/dist/ssr'
-import type { DatabaseResource, ServiceResources } from '../types/databaseDetail'
+import type {
+  DatabaseResource,
+  ServiceResources,
+} from '../types/databaseDetail'
 import { useSetDatabaseResources } from '../queries/databases'
 import { formatBytes, formatNanoCpus } from '../lib/format'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -206,8 +209,8 @@ export function DatabaseResourceLimitsEditor({
           Resource limits
         </CardTitle>
         <CardDescription>
-          Memory, CPU, swap, and CPU pinning limits applied to the container
-          at create time. Leave a limit off to run unbounded.
+          Memory, CPU, swap, and CPU pinning limits applied to the container at
+          create time. Leave a limit off to run unbounded.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -379,9 +382,7 @@ export function DatabaseResourceLimitsEditor({
                     />
                   )}
                 />
-                <FieldLabel htmlFor="db-cpuset-enabled">
-                  CPU pinning
-                </FieldLabel>
+                <FieldLabel htmlFor="db-cpuset-enabled">CPU pinning</FieldLabel>
               </Field>
               <FieldDescription className="mt-1">
                 Currently:{' '}

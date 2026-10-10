@@ -50,13 +50,20 @@ const pgSystemFilter = `n.nspname NOT IN ('pg_catalog','information_schema') AND
 
 const pgEmptyJSONArray = `'[]'::json`
 
+// Tables are aggregated in chunks, one result row per chunk, so no single
+// cell approaches the per-cell byte cap however many tables there are.
+const (
+	pgOutlineChunk = 200
+	pgDetailChunk  = 20
+)
+
 func pgSchemaSQL(limit int, outline bool) string {
-	cols, idx := pgSchemaColumnsSQL, pgSchemaIndexesSQL
+	cols, idx, chunk := pgSchemaColumnsSQL, pgSchemaIndexesSQL, pgDetailChunk
 	if outline {
-		cols, idx = pgEmptyJSONArray, pgEmptyJSONArray
+		cols, idx, chunk = pgEmptyJSONArray, pgEmptyJSONArray, pgOutlineChunk
 	}
-	return `SELECT COALESCE(json_agg(t ORDER BY t.schema, t.name), '[]'::json) FROM (
-SELECT n.nspname AS schema, c.relname AS name,
+	return `SELECT json_agg(t ORDER BY t.schema, t.name) FROM (
+SELECT (row_number() OVER (ORDER BY n.nspname, c.relname) - 1) / ` + strconv.Itoa(chunk) + ` AS chunk, n.nspname AS schema, c.relname AS name,
   CASE c.relkind WHEN 'r' THEN 'table' WHEN 'p' THEN 'table' WHEN 'v' THEN 'view' WHEN 'm' THEN 'materialized_view' ELSE 'foreign_table' END AS kind,
   GREATEST(c.reltuples, 0)::bigint AS row_estimate,
   CASE WHEN c.relkind IN ('r','p','m') THEN pg_total_relation_size(c.oid) ELSE 0 END::bigint AS size_bytes,
@@ -64,7 +71,7 @@ SELECT n.nspname AS schema, c.relname AS name,
   ` + idx + ` AS indexes
 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE c.relkind IN ('r','p','v','m','f') AND ` + pgSystemFilter + `
-ORDER BY n.nspname, c.relname LIMIT ` + strconv.Itoa(limit) + `) t`
+ORDER BY n.nspname, c.relname LIMIT ` + strconv.Itoa(limit) + `) t GROUP BY t.chunk ORDER BY t.chunk`
 }
 
 const pgSchemaColumnsSQL = `(SELECT COALESCE(json_agg(json_build_object('name', a.attname, 'type', format_type(a.atttypid, a.atttypmod),
@@ -110,12 +117,19 @@ func (t Target) postgresSchema(ctx context.Context, outline bool) ([]SchemaNode,
 	if err != nil {
 		return nil, err
 	}
-	if len(res.Rows) == 0 || len(res.Rows[0]) == 0 || res.Rows[0][0] == nil {
-		return []SchemaNode{}, nil
-	}
 	var rows []pgSchemaRow
-	if err := json.Unmarshal([]byte(*res.Rows[0][0]), &rows); err != nil {
-		return nil, fmt.Errorf("dbviewer: decode schema: %w", err)
+	for _, r := range res.Rows {
+		if len(r) == 0 || r[0] == nil {
+			continue
+		}
+		var part []pgSchemaRow
+		if err := json.Unmarshal([]byte(*r[0]), &part); err != nil {
+			return nil, fmt.Errorf("dbviewer: decode schema: %w", err)
+		}
+		rows = append(rows, part...)
+	}
+	if len(rows) == 0 {
+		return []SchemaNode{}, nil
 	}
 	nodes := map[string]*SchemaNode{}
 	var order []string

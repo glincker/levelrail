@@ -76,7 +76,10 @@ function formatChangeValue(field: string, value: string): string {
   if (!value) {
     return '(none)'
   }
-  if (field === 'resources.memory_bytes' || field === 'resources.swap_memory_bytes') {
+  if (
+    field === 'resources.memory_bytes' ||
+    field === 'resources.swap_memory_bytes'
+  ) {
     return formatBytes(Number(value))
   }
   if (field === 'resources.nano_cpus') {
@@ -88,7 +91,10 @@ function formatChangeValue(field: string, value: string): string {
   return value
 }
 
-const ENV_CHANGE_STATUS_LABEL: Record<DeployCompareEnvChange['status'], string> = {
+const ENV_CHANGE_STATUS_LABEL: Record<
+  DeployCompareEnvChange['status'],
+  string
+> = {
   added: 'Added',
   removed: 'Removed',
   changed: 'Changed',
@@ -316,9 +322,7 @@ function DeployCompareSideCard({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-        <CardTitle className="text-sm text-muted-foreground">
-          {label}
-        </CardTitle>
+        <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
         {side.is_current ? (
           <Badge variant="outline">Currently running</Badge>
         ) : side.status ? (
@@ -337,8 +341,9 @@ function DeployCompareSideCard({
           ) : null}
           {side.source ? (
             <Badge variant="outline" className="shrink-0">
-              {DEPLOY_ATTEMPT_SOURCE_LABEL[side.source as DeployAttemptSource] ??
-                side.source}
+              {DEPLOY_ATTEMPT_SOURCE_LABEL[
+                side.source as DeployAttemptSource
+              ] ?? side.source}
             </Badge>
           ) : null}
         </div>
@@ -366,7 +371,9 @@ function DeployCompareSideCard({
               className="size-3.5"
               data-icon="inline-start"
             />
-            {triggerDeploy.isPending ? 'Rolling back...' : 'Roll back to this build'}
+            {triggerDeploy.isPending
+              ? 'Rolling back...'
+              : 'Roll back to this build'}
           </Button>
         ) : null}
       </CardContent>

@@ -127,21 +127,23 @@ export function ChangePasswordCard() {
         >
           <FieldGroup>
             {session.has_password ? (
-            <Field
-              data-invalid={formState.errors.currentPassword ? true : undefined}
-            >
-              <FieldLabel htmlFor="account-current-password">
-                Current password
-              </FieldLabel>
-              <Input
-                id="account-current-password"
-                type="password"
-                autoComplete="current-password"
-                aria-invalid={!!formState.errors.currentPassword}
-                {...register('currentPassword')}
-              />
-              <FieldError errors={[formState.errors.currentPassword]} />
-            </Field>
+              <Field
+                data-invalid={
+                  formState.errors.currentPassword ? true : undefined
+                }
+              >
+                <FieldLabel htmlFor="account-current-password">
+                  Current password
+                </FieldLabel>
+                <Input
+                  id="account-current-password"
+                  type="password"
+                  autoComplete="current-password"
+                  aria-invalid={!!formState.errors.currentPassword}
+                  {...register('currentPassword')}
+                />
+                <FieldError errors={[formState.errors.currentPassword]} />
+              </Field>
             ) : null}
             <Field
               data-invalid={formState.errors.newPassword ? true : undefined}

@@ -15,10 +15,7 @@ import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 import { useTriggerCloneRestore } from '../queries/cloneRestore'
 import { useProjectListOptional } from '../queries/projects'
-import {
-  NO_PROJECT_VALUE,
-  ProjectSelectField,
-} from './PlacementFields'
+import { NO_PROJECT_VALUE, ProjectSelectField } from './PlacementFields'
 import type { BackupHistoryRecord } from '../types/backupHistory'
 
 // One succeeded backup's "restore as new database" action, the safe
@@ -68,8 +65,7 @@ export function CloneRestoreDialog({
           <DialogTitle>Restore as a new database</DialogTitle>
           <DialogDescription>
             Creates a brand-new database and restores this backup into it.
-            &ldquo;{databaseName}&rdquo;&apos;s own live data is never
-            touched.
+            &ldquo;{databaseName}&rdquo;&apos;s own live data is never touched.
           </DialogDescription>
         </DialogHeader>
         <Field>

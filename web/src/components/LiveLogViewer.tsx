@@ -41,7 +41,10 @@ export function LiveLogViewer({
 }) {
   const url = buildLiveLogStreamUrl(appName)
   const { lines, connectionState, isPaused, pause, resume } = useLogStream(url)
-  const problem = lines.length === 0 ? conditions?.find((c) => c.Status === 'False') : undefined
+  const problem =
+    lines.length === 0
+      ? conditions?.find((c) => c.Status === 'False')
+      : undefined
 
   return (
     <div className="flex h-full flex-col gap-2">

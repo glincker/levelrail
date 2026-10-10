@@ -77,7 +77,8 @@ export function CloudflareTunnelCard({
     settings,
     updateMutation: updateSettings,
     disconnectMutation: disconnect,
-    requiredTokenMessage: 'A tunnel token is required to enable Cloudflare Tunnel.',
+    requiredTokenMessage:
+      'A tunnel token is required to enable Cloudflare Tunnel.',
     saveSuccessTitle: 'Cloudflare Tunnel settings saved.',
     disconnectSuccessTitle: 'Cloudflare Tunnel disconnected.',
   })
@@ -96,9 +97,9 @@ export function CloudflareTunnelCard({
         </CardTitle>
         <CardDescription>
           Expose this control plane through a Cloudflare Tunnel instead of
-          opening an inbound port. Paste the tunnel token generated in your
-          own Cloudflare Zero Trust dashboard; hostname routing stays
-          configured on Cloudflare&apos;s side.
+          opening an inbound port. Paste the tunnel token generated in your own
+          Cloudflare Zero Trust dashboard; hostname routing stays configured on
+          Cloudflare&apos;s side.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -124,7 +125,9 @@ export function CloudflareTunnelCard({
                 setToken(e.target.value)
               }}
               disabled={pending}
-              placeholder={settings.has_token ? '••••••••••••' : 'Paste your tunnel token'}
+              placeholder={
+                settings.has_token ? '••••••••••••' : 'Paste your tunnel token'
+              }
             />
             <FieldDescription>
               {settings.has_token

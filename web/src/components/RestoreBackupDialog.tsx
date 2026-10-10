@@ -101,10 +101,9 @@ export function ConfirmRestoreDialog({
             Restore &ldquo;{target}&rdquo;?
           </DialogTitle>
           <DialogDescription>
-            This overwrites &ldquo;{target}&rdquo;&apos;s current{' '}
-            {subjectLabel} with this backup&apos;s contents. Anything written
-            since this backup was taken is permanently lost. This cannot be
-            undone.
+            This overwrites &ldquo;{target}&rdquo;&apos;s current {subjectLabel}{' '}
+            with this backup&apos;s contents. Anything written since this backup
+            was taken is permanently lost. This cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <Field>

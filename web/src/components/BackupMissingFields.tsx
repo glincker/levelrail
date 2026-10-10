@@ -6,13 +6,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field'
 import { DurationInput } from '@/components/ui/duration-input'
 import type { BackupResourceKind } from '../types/alerts'
 import type { AppVolume } from '../types/appDetail'
 import type { DatabaseResource } from '../types/databaseDetail'
 
-const BACKUP_RESOURCE_KIND_OPTIONS: { value: BackupResourceKind; label: string }[] = [
+const BACKUP_RESOURCE_KIND_OPTIONS: {
+  value: BackupResourceKind
+  label: string
+}[] = [
   { value: 'database', label: 'Database' },
   { value: 'volume', label: 'App volume' },
 ]
@@ -50,13 +58,18 @@ export function BackupMissingFields({
   return (
     <>
       <Field>
-        <FieldLabel htmlFor={`${idPrefix}-backup-resource-kind`}>Watches</FieldLabel>
+        <FieldLabel htmlFor={`${idPrefix}-backup-resource-kind`}>
+          Watches
+        </FieldLabel>
         <Controller
           control={control}
           name="backupResourceKind"
           render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id={`${idPrefix}-backup-resource-kind`} className="w-full">
+              <SelectTrigger
+                id={`${idPrefix}-backup-resource-kind`}
+                className="w-full"
+              >
                 <SelectValue placeholder="Choose what to watch" />
               </SelectTrigger>
               <SelectContent>
@@ -74,7 +87,9 @@ export function BackupMissingFields({
 
       {backupResourceKind === 'database' ? (
         <Field>
-          <FieldLabel htmlFor={`${idPrefix}-backup-database`}>Database</FieldLabel>
+          <FieldLabel htmlFor={`${idPrefix}-backup-database`}>
+            Database
+          </FieldLabel>
           {databases.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No databases yet. Create one from the Databases page first.
@@ -85,7 +100,10 @@ export function BackupMissingFields({
               name="backupDatabaseName"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id={`${idPrefix}-backup-database`} className="w-full">
+                  <SelectTrigger
+                    id={`${idPrefix}-backup-database`}
+                    className="w-full"
+                  >
                     <SelectValue placeholder="Choose a database" />
                   </SelectTrigger>
                   <SelectContent>
@@ -114,7 +132,10 @@ export function BackupMissingFields({
               name="backupVolumeName"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id={`${idPrefix}-backup-volume`} className="w-full">
+                  <SelectTrigger
+                    id={`${idPrefix}-backup-volume`}
+                    className="w-full"
+                  >
                     <SelectValue placeholder="Choose a volume" />
                   </SelectTrigger>
                   <SelectContent>
@@ -149,9 +170,8 @@ export function BackupMissingFields({
           )}
         />
         <FieldDescription>
-          How long the last successful backup can trail its own schedule
-          before this fires. Leave blank to use the control plane&apos;s
-          default (6h).
+          How long the last successful backup can trail its own schedule before
+          this fires. Leave blank to use the control plane&apos;s default (6h).
         </FieldDescription>
         <FieldError errors={[errors.forDuration]} />
       </Field>

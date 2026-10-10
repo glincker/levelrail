@@ -64,6 +64,8 @@ export function StorageUsageCard() {
   const dbBytes = owned
     .filter((o) => o.kind === 'database')
     .reduce((sum, o) => sum + o.bytes, 0)
+  const dbSized = owned.some((o) => o.kind === 'database')
+  const appSized = owned.some((o) => o.kind === 'app')
   const appBytes = owned
     .filter((o) => o.kind === 'app')
     .reduce((sum, o) => sum + o.bytes, 0)
@@ -86,17 +88,20 @@ export function StorageUsageCard() {
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Readout
             label={t('fleet.storage.databaseVolumes')}
-            value={formatSize(dbBytes)}
+            value={dbSized ? formatSize(dbBytes) : '-'}
+            hint={dbSized ? undefined : t('fleet.storage.notReported')}
           />
           <Readout
             label={t('fleet.storage.appVolumes')}
-            value={formatSize(appBytes)}
+            value={appSized ? formatSize(appBytes) : '-'}
             hint={
-              volumes.unknown_count > 0
-                ? t('fleet.storage.unknownSizes', {
-                    count: volumes.unknown_count,
-                  })
-                : undefined
+              !appSized
+                ? t('fleet.storage.notReported')
+                : volumes.unknown_count > 0
+                  ? t('fleet.storage.unknownSizes', {
+                      count: volumes.unknown_count,
+                    })
+                  : undefined
             }
           />
           <Readout

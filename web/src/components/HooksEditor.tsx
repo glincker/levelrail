@@ -59,7 +59,10 @@ export function HooksEditor({ app }: { app: AppDetail }) {
         ...app,
         hooks:
           preDeploy || postDeploy
-            ? { pre_deploy: preDeploy || undefined, post_deploy: postDeploy || undefined }
+            ? {
+                pre_deploy: preDeploy || undefined,
+                post_deploy: postDeploy || undefined,
+              }
             : null,
       },
       {
@@ -78,10 +81,9 @@ export function HooksEditor({ app }: { app: AppDetail }) {
           Deploy hooks
         </CardTitle>
         <CardDescription>
-          Shell commands run inside the container at deploy time. A
-          failing pre-deploy hook blocks cutover; a failing post-deploy
-          hook is reported but does not roll back an already-healthy
-          deploy.
+          Shell commands run inside the container at deploy time. A failing
+          pre-deploy hook blocks cutover; a failing post-deploy hook is reported
+          but does not roll back an already-healthy deploy.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -102,11 +104,14 @@ export function HooksEditor({ app }: { app: AppDetail }) {
               placeholder="rails db:migrate"
             />
             <FieldDescription>
-              Runs before the new container receives traffic. A nonzero
-              exit code blocks the deploy.
+              Runs before the new container receives traffic. A nonzero exit
+              code blocks the deploy.
             </FieldDescription>
             {hasHooks ? (
-              <HookRunSummary label="Last pre-deploy run" run={hookRuns?.pre_deploy} />
+              <HookRunSummary
+                label="Last pre-deploy run"
+                run={hookRuns?.pre_deploy}
+              />
             ) : null}
           </Field>
 
@@ -121,11 +126,14 @@ export function HooksEditor({ app }: { app: AppDetail }) {
               placeholder="curl -f https://hooks.example.com/deployed"
             />
             <FieldDescription>
-              Runs once the new container is fully live. A nonzero exit
-              code is reported but never undoes the deploy.
+              Runs once the new container is fully live. A nonzero exit code is
+              reported but never undoes the deploy.
             </FieldDescription>
             {hasHooks ? (
-              <HookRunSummary label="Last post-deploy run" run={hookRuns?.post_deploy} />
+              <HookRunSummary
+                label="Last post-deploy run"
+                run={hookRuns?.post_deploy}
+              />
             ) : null}
           </Field>
 

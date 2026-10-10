@@ -20,7 +20,12 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -33,7 +38,8 @@ import { ApiError } from '../lib/apiError'
 import { useBrand } from '../hooks/useBrand'
 import { useCreateRegistryCredential } from '../queries/registryCredentials'
 
-type RegistryHostPreset = 'docker-hub' | 'ghcr' | 'gcr' | 'ecr' | 'acr' | 'custom'
+type RegistryHostPreset =
+  'docker-hub' | 'ghcr' | 'gcr' | 'ecr' | 'acr' | 'custom'
 
 // Fixed-host presets fill registry_host directly; account-specific ones
 // (gcr/ecr/acr) instead clear it and fall back to the free-text input
@@ -42,7 +48,11 @@ const REGISTRY_HOST_PRESETS: Record<
   Exclude<RegistryHostPreset, 'custom'>,
   { label: string; host?: string; placeholder: string; hint?: string }
 > = {
-  'docker-hub': { label: 'Docker Hub', host: 'docker.io', placeholder: 'docker.io' },
+  'docker-hub': {
+    label: 'Docker Hub',
+    host: 'docker.io',
+    placeholder: 'docker.io',
+  },
   ghcr: {
     label: 'GitHub Container Registry (GHCR)',
     host: 'ghcr.io',
@@ -111,11 +121,13 @@ export function CreateRegistryCredentialDialog() {
       defaultValues,
     })
 
-  const selectedPreset = hostPreset === 'custom' ? undefined : REGISTRY_HOST_PRESETS[hostPreset]
+  const selectedPreset =
+    hostPreset === 'custom' ? undefined : REGISTRY_HOST_PRESETS[hostPreset]
 
   function handleHostPresetChange(preset: RegistryHostPreset) {
     setHostPreset(preset)
-    const known = preset === 'custom' ? undefined : REGISTRY_HOST_PRESETS[preset]
+    const known =
+      preset === 'custom' ? undefined : REGISTRY_HOST_PRESETS[preset]
     setValue('registry_host', known?.host ?? '', {
       shouldValidate: true,
       shouldDirty: true,
@@ -182,9 +194,9 @@ export function CreateRegistryCredentialDialog() {
                 Registry credentials are not configured on this server
               </AlertTitle>
               <AlertDescription>
-                The control plane was started without APP_MASTER_KEY set, so
-                it cannot encrypt or store registry passwords. Set
-                APP_MASTER_KEY and restart the control plane to enable this.
+                The control plane was started without APP_MASTER_KEY set, so it
+                cannot encrypt or store registry passwords. Set APP_MASTER_KEY
+                and restart the control plane to enable this.
               </AlertDescription>
             </Alert>
             <DialogFooter>
@@ -217,9 +229,7 @@ export function CreateRegistryCredentialDialog() {
               className="space-y-4"
             >
               <Field>
-                <FieldLabel htmlFor="registry-credential-name">
-                  Name
-                </FieldLabel>
+                <FieldLabel htmlFor="registry-credential-name">Name</FieldLabel>
                 <Input
                   id="registry-credential-name"
                   placeholder="e.g. ghcr-bot"
@@ -240,15 +250,28 @@ export function CreateRegistryCredentialDialog() {
                     }
                   }}
                 >
-                  <SelectTrigger id="registry-credential-host-preset" className="w-full">
+                  <SelectTrigger
+                    id="registry-credential-host-preset"
+                    className="w-full"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="docker-hub">{REGISTRY_HOST_PRESETS['docker-hub'].label}</SelectItem>
-                    <SelectItem value="ghcr">{REGISTRY_HOST_PRESETS.ghcr.label}</SelectItem>
-                    <SelectItem value="gcr">{REGISTRY_HOST_PRESETS.gcr.label}</SelectItem>
-                    <SelectItem value="ecr">{REGISTRY_HOST_PRESETS.ecr.label}</SelectItem>
-                    <SelectItem value="acr">{REGISTRY_HOST_PRESETS.acr.label}</SelectItem>
+                    <SelectItem value="docker-hub">
+                      {REGISTRY_HOST_PRESETS['docker-hub'].label}
+                    </SelectItem>
+                    <SelectItem value="ghcr">
+                      {REGISTRY_HOST_PRESETS.ghcr.label}
+                    </SelectItem>
+                    <SelectItem value="gcr">
+                      {REGISTRY_HOST_PRESETS.gcr.label}
+                    </SelectItem>
+                    <SelectItem value="ecr">
+                      {REGISTRY_HOST_PRESETS.ecr.label}
+                    </SelectItem>
+                    <SelectItem value="acr">
+                      {REGISTRY_HOST_PRESETS.acr.label}
+                    </SelectItem>
                     <SelectItem value="custom">Custom</SelectItem>
                   </SelectContent>
                 </Select>
@@ -325,8 +348,8 @@ export function CreateRegistryCredentialDialog() {
                 />
                 <p className="text-xs text-muted-foreground">
                   Only if you already know the expiry, e.g. a GitHub PAT or a
-                  cloud registry's short-lived token. {displayName} can't
-                  detect this on its own.
+                  cloud registry's short-lived token. {displayName} can't detect
+                  this on its own.
                 </p>
                 <FieldError errors={[formState.errors.expires_at]} />
               </Field>

@@ -65,9 +65,9 @@ export function CloudflareDnsCard({
         <CardDescription>
           A wildcard domain like <code>*.example.com</code> needs the ACME
           DNS-01 challenge to get a real certificate; the default HTTP-01
-          challenge cannot prove control of one. Paste a Cloudflare API
-          token scoped to Zone:DNS:Edit for the zone your wildcard
-          domains live under. Requires ACME to also be enabled above.
+          challenge cannot prove control of one. Paste a Cloudflare API token
+          scoped to Zone:DNS:Edit for the zone your wildcard domains live under.
+          Requires ACME to also be enabled above.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -94,7 +94,9 @@ export function CloudflareDnsCard({
               }}
               disabled={pending}
               placeholder={
-                settings.has_token ? '••••••••••••' : 'Paste your Cloudflare API token'
+                settings.has_token
+                  ? '••••••••••••'
+                  : 'Paste your Cloudflare API token'
               }
             />
             <FieldDescription>

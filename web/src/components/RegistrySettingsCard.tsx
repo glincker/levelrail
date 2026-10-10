@@ -28,7 +28,11 @@ import {
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
-import { SettingsEnabledRow, SettingsFormActions, SettingsFormAlerts } from './SettingsCard'
+import {
+  SettingsEnabledRow,
+  SettingsFormActions,
+  SettingsFormAlerts,
+} from './SettingsCard'
 
 const STATUS_VARIANT: Record<
   RegistrySettings['status'],
@@ -129,9 +133,9 @@ export function RegistrySettingsCard({
         <CardDescription>
           Levelrail&apos;s own built-in image registry: a build cache and
           distribution backend for multi-node deployments with no external
-          registry to sign up for. Fronted by TLS through the embedded
-          ingress; the registry enforces its own login, so credentials are
-          required even if the published port is reached directly.
+          registry to sign up for. Fronted by TLS through the embedded ingress;
+          the registry enforces its own login, so credentials are required even
+          if the published port is reached directly.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -161,9 +165,9 @@ export function RegistrySettingsCard({
               placeholder="registry.internal.example.com"
             />
             <FieldDescription>
-              For a single node, any hostname that resolves to this
-              machine works. For multi-node, use a WireGuard mesh-resolvable
-              name so every node can reach it.
+              For a single node, any hostname that resolves to this machine
+              works. For multi-node, use a WireGuard mesh-resolvable name so
+              every node can reach it.
             </FieldDescription>
           </Field>
 
@@ -198,7 +202,8 @@ export function RegistrySettingsCard({
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                docker login {host || 'HOST'} -u {settings.username ?? 'levelrail'}
+                docker login {host || 'HOST'} -u{' '}
+                {settings.username ?? 'levelrail'}
               </p>
             </div>
           ) : null}
@@ -212,7 +217,9 @@ export function RegistrySettingsCard({
               updateSettings.isError
                 ? { key: 'update', message: updateSettings.error.message }
                 : null,
-              disable.isError ? { key: 'disable', message: disable.error.message } : null,
+              disable.isError
+                ? { key: 'disable', message: disable.error.message }
+                : null,
             ]}
           />
 

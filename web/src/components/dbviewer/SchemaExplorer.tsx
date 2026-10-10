@@ -163,12 +163,13 @@ export function SchemaExplorer({ databaseName }: { databaseName: string }) {
                 {selected.schema}.{table.name}
               </h2>
               <p className="text-xs text-muted-foreground">
-                {table.kind} |{' '}
-                {t('viewer.explorer.estimate', {
-                  count: table.row_estimate,
-                  short: formatRowEstimate(table.row_estimate),
-                })}{' '}
-                | {formatSize(table.size_bytes)}
+                {table.kind}
+                {table.kind === 'table'
+                  ? ` | ${t('viewer.explorer.estimate', {
+                      count: table.row_estimate,
+                      short: formatRowEstimate(table.row_estimate),
+                    })} | ${formatSize(table.size_bytes)}`
+                  : ''}
               </p>
             </div>
             <Tabs value={tab} onValueChange={setTab}>

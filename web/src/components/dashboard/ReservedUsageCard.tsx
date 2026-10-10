@@ -138,7 +138,9 @@ export function ReservedUsageCard({ apps }: { apps: AppListEntry[] }) {
           <ReservedResourceColumn
             label={t('fleet.reserved.cpu')}
             totals={summary.cpu}
-            format={(n) => `${formatCores(n)} ${t('fleet.reserved.cores')}`}
+            format={(n) =>
+              `${formatCores(n)} ${t('fleet.reserved.cores', { count: n === 1 ? 1 : 2 })}`
+            }
             capacityHint={t('fleet.reserved.cpuCapacityScope')}
             noLimitKey="cpu"
           />

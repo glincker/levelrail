@@ -214,8 +214,8 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
           Resource limits
         </CardTitle>
         <CardDescription>
-          Memory, CPU, swap, and CPU pinning limits applied to the container
-          at create time. Leave a limit off to run unbounded.
+          Memory, CPU, swap, and CPU pinning limits applied to the container at
+          create time. Leave a limit off to run unbounded.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -311,7 +311,10 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
                           placeholder="0.5"
                         />
                         <FieldError errors={[formState.errors.cpuCores]} />
-                        <NodeCapacityHint nodeId={app.node_id} dimension="cpu" />
+                        <NodeCapacityHint
+                          nodeId={app.node_id}
+                          dimension="cpu"
+                        />
                       </Field>
                     </FieldGroup>
                   ) : (

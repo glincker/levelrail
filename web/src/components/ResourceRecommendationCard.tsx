@@ -46,13 +46,20 @@ type ResourceRecommendationCardProps =
   | { appName: string; databaseName?: never }
   | { appName?: never; databaseName: string }
 
-export function ResourceRecommendationCard(props: ResourceRecommendationCardProps) {
-  const appQuery = useResourceRecommendation(props.appName ?? '', !!props.appName)
+export function ResourceRecommendationCard(
+  props: ResourceRecommendationCardProps,
+) {
+  const appQuery = useResourceRecommendation(
+    props.appName ?? '',
+    !!props.appName,
+  )
   const databaseQuery = useDatabaseResourceRecommendation(
     props.databaseName ?? '',
     !!props.databaseName,
   )
-  const { data, isLoading, isError, error } = props.appName ? appQuery : databaseQuery
+  const { data, isLoading, isError, error } = props.appName
+    ? appQuery
+    : databaseQuery
 
   if (isLoading) {
     return null
@@ -102,11 +109,14 @@ export function ResourceRecommendationCard(props: ResourceRecommendationCardProp
           rec={data.memory}
           format={formatBytes}
         />
-        <DimensionSuggestion label="CPU" rec={data.cpu} format={formatNanoCpus} />
+        <DimensionSuggestion
+          label="CPU"
+          rec={data.cpu}
+          format={formatNanoCpus}
+        />
         <p className="text-xs text-muted-foreground">
-          Based on the last {data.lookback_window}. This is only a
-          suggestion: nothing is changed automatically, apply it below if
-          you agree with it.
+          Based on the last {data.lookback_window}. This is only a suggestion:
+          nothing is changed automatically, apply it below if you agree with it.
         </p>
       </CardContent>
     </Card>

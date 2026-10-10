@@ -242,7 +242,7 @@
     "states": {
       "loading": "Reading the schema from the database...",
       "errorTitle": "Could not read this database",
-      "errorNote": "Nothing here means your data is gone. The explorer simply could not read it right now.",
+      "errorNote": "This does not mean your data is gone. The explorer could not read it right now.",
       "retry": "Retry",
       "details": "Show the raw error",
       "reason": {
