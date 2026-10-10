@@ -15,6 +15,8 @@ const (
 	CapRover Platform = "caprover"
 	Compose  Platform = "compose"
 	Dokku    Platform = "dokku"
+	// Docker is a docker inspect snapshot of one host, no platform API.
+	Docker Platform = "docker"
 )
 
 // Source discovers the neutral model from one source platform.

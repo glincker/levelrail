@@ -239,7 +239,15 @@
       "readOnly": "Reading the inventory creates nothing here.",
       "error": "Could not read the source",
       "submit": "Read inventory",
-      "submitting": "Reading..."
+      "submitting": "Reading...",
+      "modeApi": "Coolify API",
+      "modeDocker": "Docker snapshot",
+      "dockerTitle": "Claim containers from a Docker host",
+      "dockerDescription": "No API token needed. Paste the output of the command below, run on the old server. It reads container settings and environment variables, and changes nothing there.",
+      "dockerCommand": "docker inspect $(docker ps -aq)",
+      "snapshot": "docker inspect output",
+      "snapshotHelp": "Contains environment variables, including secrets. It is held in memory for this session only, sent in the request body, never stored or logged.",
+      "snapshotFile": "Or load it from a file"
     },
     "inventory": {
       "title": "Applications found",

@@ -23,9 +23,12 @@ const maxPlatformImportBody = 64 << 10
 // platformImportRequest carries the source credential in the body only.
 // It is never logged, audited or echoed back.
 type platformImportRequest struct {
-	Platform      string   `json:"platform"`
-	URL           string   `json:"url"`
-	Token         string   `json:"token"`
+	Platform string `json:"platform"`
+	URL      string `json:"url"`
+	Token    string `json:"token"`
+	// Snapshot is a docker inspect JSON array, used by the docker platform
+	// in place of a URL and token. It holds container env, so treat it like Token.
+	Snapshot      string   `json:"snapshot,omitempty"`
 	InsecureTLS   bool     `json:"insecure_tls,omitempty"`
 	AllowPrivate  bool     `json:"allow_private,omitempty"`
 	AllowLoopback bool     `json:"allow_loopback,omitempty"`
@@ -71,6 +74,13 @@ func (rt *Router) openImportSource(w http.ResponseWriter, req platformImportRequ
 	if req.Collision != "" && req.Collision != platformimport.CollisionSuffix && req.Collision != platformimport.CollisionSkip {
 		writeError(w, http.StatusBadRequest, "collision must be suffix or skip")
 		return nil, false
+	}
+	if platform == platformimport.Docker {
+		if strings.TrimSpace(req.Snapshot) == "" {
+			writeError(w, http.StatusBadRequest, "snapshot is required for the docker platform (docker inspect output)")
+			return nil, false
+		}
+		return platformimport.DockerSource{Data: []byte(req.Snapshot)}, true
 	}
 	policy, err := platformImportPolicy(req)
 	if err != nil {

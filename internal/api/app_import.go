@@ -31,7 +31,7 @@ var appImportSteps = []string{appImportStepInventory, appImportStepPreflight, ap
 
 const (
 	envAppImportReadyTimeout = "APP_MIGRATE_APP_READY_TIMEOUT"
-	maxAppImportBody         = 64 << 10
+	maxAppImportBody         = 8 << 20
 	appImportIDPrefix        = "appimp-"
 	appImportSourceNoneID    = "\x00none"
 )

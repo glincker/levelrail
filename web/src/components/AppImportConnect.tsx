@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import {
   useConnectAppImportSession,
@@ -23,6 +24,8 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
   const connect = useConnectAppImportSession()
   const [url, setUrl] = useState(reconnect?.url ?? '')
   const [token, setToken] = useState('')
+  const [docker, setDocker] = useState(reconnect?.platform === 'docker')
+  const [snapshot, setSnapshot] = useState('')
   const [loopback, setLoopback] = useState(false)
   const [priv, setPriv] = useState(false)
   const [insecure, setInsecure] = useState(false)
@@ -32,15 +35,17 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
   function onSubmit(e: FormEvent) {
     e.preventDefault()
     const source: AppImportSource = {
-      platform: reconnect?.platform ?? 'coolify',
-      url: url.trim(),
-      token,
+      platform: docker ? 'docker' : (reconnect?.platform ?? 'coolify'),
+      url: docker ? 'docker://snapshot' : url.trim(),
+      token: docker ? '' : token,
+      snapshot: docker ? snapshot : undefined,
       allow_loopback: loopback || undefined,
       allow_private: priv || undefined,
       insecure_tls: insecure || undefined,
     }
     const done = (id: string) => {
       setToken('')
+      setSnapshot('')
       onCreated(id)
     }
     if (reconnect) {
@@ -65,36 +70,93 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
           {t('appImport.connect.description')}
         </p>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="appimport-url">{t('appImport.connect.url')}</Label>
-          <Input
-            id="appimport-url"
-            required
-            type="url"
-            readOnly={!!reconnect}
-            placeholder="https://coolify.example.com"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-          />
+      {reconnect ? null : (
+        <div className="flex gap-2" role="group">
+          <Button
+            type="button"
+            size="sm"
+            variant={docker ? 'outline' : 'default'}
+            aria-pressed={!docker}
+            onClick={() => setDocker(false)}
+          >
+            {t('appImport.connect.modeApi')}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={docker ? 'default' : 'outline'}
+            aria-pressed={docker}
+            onClick={() => setDocker(true)}
+          >
+            {t('appImport.connect.modeDocker')}
+          </Button>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="appimport-token">
-            {t('appImport.connect.token')}
+      )}
+      {docker ? (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            {t('appImport.connect.dockerDescription')}
+          </p>
+          <code className="block rounded-md bg-muted px-3 py-2 text-sm">
+            {t('appImport.connect.dockerCommand')}
+          </code>
+          <Label htmlFor="appimport-snapshot">
+            {t('appImport.connect.snapshot')}
           </Label>
-          <Input
-            id="appimport-token"
+          <Textarea
+            id="appimport-snapshot"
             required
-            type="password"
+            rows={8}
             autoComplete="off"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
+            spellCheck={false}
+            className="font-mono text-xs"
+            value={snapshot}
+            onChange={(e) => setSnapshot(e.target.value)}
+          />
+          <Input
+            type="file"
+            accept="application/json,.json"
+            aria-label={t('appImport.connect.snapshotFile')}
+            onChange={(e) => {
+              void e.target.files?.[0]?.text().then(setSnapshot)
+            }}
           />
           <p className="text-xs text-muted-foreground">
-            {t('appImport.connect.tokenHelp')}
+            {t('appImport.connect.snapshotHelp')}
           </p>
         </div>
-      </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="appimport-url">{t('appImport.connect.url')}</Label>
+            <Input
+              id="appimport-url"
+              required
+              type="url"
+              readOnly={!!reconnect}
+              placeholder="https://coolify.example.com"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="appimport-token">
+              {t('appImport.connect.token')}
+            </Label>
+            <Input
+              id="appimport-token"
+              required
+              type="password"
+              autoComplete="off"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t('appImport.connect.tokenHelp')}
+            </p>
+          </div>
+        </div>
+      )}
       <details>
         <summary className="cursor-pointer text-sm text-muted-foreground">
           {t('appImport.connect.network')}

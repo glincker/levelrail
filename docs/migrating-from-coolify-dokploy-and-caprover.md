@@ -95,6 +95,33 @@ Either alone is rejected with a 400. Use of the opt-in is logged with the source
 
 Other limits: 30 second request timeout, 8 MiB per response, bounded project and page walks, TLS verification on unless `--insecure-tls` is set, credentials embedded in the URL are rejected.
 
+## No API token: claim containers from a Docker snapshot
+
+When you cannot or do not want to hand over a Coolify, Dokploy or CapRover
+token, the Docker host itself is enough. On the old server run:
+
+```bash
+docker inspect $(docker ps -aq) > inspect.json
+```
+
+Then plan and stage from the file (or paste it into the Docker snapshot tab
+of the import wizard):
+
+```bash
+levelrail import apps --from docker --snapshot inspect.json --plan
+levelrail import apps --from docker --snapshot inspect.json --apply
+```
+
+Read-only, nothing runs on or changes the old server. Platform containers
+(the Coolify control plane, its proxy, Levelrail itself) are skipped, databases
+are recognized by image, domains are read from Traefik Host rules, and
+containers of the same app are grouped so an old exited copy never wins.
+Things a snapshot cannot carry are flagged per app: an image built on the old
+host (not in a registry) is marked with a `docker save | ssh | docker load`
+hint, the Docker socket mount is dropped, and `COOLIFY_*` variables are left
+out. The snapshot holds environment variables including secrets, so delete
+the file once the session is staged.
+
 ## What the report tells you
 
 Every discovered item gets one row with a status:
