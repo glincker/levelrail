@@ -1,0 +1,63 @@
+{
+  "title": "Published ports",
+  "description": "Container ports published on a server's network interfaces. Docker bypasses ufw for these, so a firewall that looks active does not cover them.",
+  "probe": "Check from outside",
+  "probing": "Checking",
+  "probeNote": "A failed check is reported as could not confirm, never as closed: many routers block a server from dialling its own public address.",
+  "emptyTitle": "Nothing of yours is published to the internet",
+  "emptyBody": "No container on this server listens on a public address without a restriction.",
+  "nodeUnreachable": "Could not audit this node: {{error}}",
+  "rulesUnreadable": "The host firewall chain could not be read: {{reason}}",
+  "columns": {
+    "severity": "Severity",
+    "port": "Port",
+    "container": "Container",
+    "owner": "Owner",
+    "bind": "Listens on",
+    "state": "State"
+  },
+  "severity": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "info": "Info"
+  },
+  "class": {
+    "loopback": "This server only",
+    "private": "Private network",
+    "restricted": "Restricted",
+    "exposed": "Exposed",
+    "unknown": "Unknown"
+  },
+  "owner": {
+    "database": "Database {{name}}",
+    "app": "App {{name}}",
+    "unmanaged": "Not managed"
+  },
+  "outside": {
+    "answers": "Answered from outside this host",
+    "could_not_confirm": "Could not confirm from this host"
+  },
+  "restrictedTo": "Only allowed from: {{sources}}",
+  "details": "Details",
+  "hideDetails": "Hide details",
+  "restrict": "Allow only these sources",
+  "remove": "Remove restriction",
+  "removedToast": "Restriction removed",
+  "appliedToast": "Restriction applied",
+  "failedToast": "Could not change the firewall",
+  "dialog": {
+    "title": "Restrict port {{port}}",
+    "description": "Only the sources you list can connect. Everyone else is dropped, including the internet.",
+    "sources": "Allowed sources",
+    "sourcesHint": "One IP or CIDR per line, for example your other servers",
+    "localContainers": "Also allow containers on this server",
+    "preview": "Preview rules",
+    "previewTitle": "Exact rules",
+    "effect": "What will be dropped",
+    "apply": "Apply restriction",
+    "cancel": "Cancel",
+    "confirm": "I understand this traffic will be dropped",
+    "persistence": "Persistence"
+  }
+}

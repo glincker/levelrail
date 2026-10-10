@@ -92,6 +92,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/exposure"
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
@@ -383,6 +384,8 @@ type Router struct {
 	hostFirewallRun              firewallCommandRunner
 	hostFirewallLookPath         func(string) (string, error)
 	hostFirewallSSHPorts         []int
+	exposure                     *exposure.Manager // nil is valid: /api/v1/firewall/exposure returns 501, see WithExposure
+	exposureStore                ExposureStore
 	backupHistory                BackupHistoryStore               // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
 	backupRunner                 BackupRunner                     // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
 	backupDownloader             BackupDownloader                 // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above

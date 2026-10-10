@@ -161,6 +161,7 @@ var toolTable = map[string]Meta{
 	"get_feature_flag":                      {clsR, "flags", 0},
 	"get_system_doctor":                     {clsR, "system", 0},
 	"get_system_status":                     {clsR, "system", 0},
+	"get_firewall_exposure":                 {clsR, "system", 0},
 	"list_releases":                         {clsR, "system", unt | outb},
 	"get_rollback_plan":                     {clsR, "system", unt},
 	"get_onboarding_status":                 {clsR, "system", 0},

@@ -43,6 +43,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/GLINCKER/levelrail/internal/exposure"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	"github.com/GLINCKER/levelrail/internal/imageupdate"
@@ -55,6 +56,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	exposurereconcile "github.com/GLINCKER/levelrail/internal/reconcile/exposure"
 	firewallreconcile "github.com/GLINCKER/levelrail/internal/reconcile/firewall"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
@@ -2259,6 +2261,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDeviceLoginNotifier(deployDispatcher),
 		api.WithDashboardURL(dashboardBaseURL()),
 		api.WithFirewallRequiredPorts(platformRequiredPorts()),
+		api.WithExposure(newExposureManager(b.RuleCommentPrefix()), db),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithRequestLogThresholds(slowRequestThreshold(logger), criticalRequestThreshold(logger)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
@@ -2737,6 +2740,12 @@ func ingressPortFromAddr(addr string) int {
 // APP_INGRESS_HTTPS_ADDR. ingressPortFromAddr's own "0 on unparseable"
 // degrade is harmless here: Validate's port-match loop simply never
 // matches 0.
+// newExposureManager guards the platform ports and SSH from any restriction.
+func newExposureManager(prefix string) *exposure.Manager {
+	protected := append(platformRequiredPorts(), api.HostFirewallSSHPorts()...)
+	return exposure.NewManager(prefix, protected)
+}
+
 func platformRequiredPorts() []int {
 	return []int{
 		ingressPortFromAddr(httpAddr()),
@@ -3685,6 +3694,9 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// the write-time refusal and this reconcile-time, defense-in-depth
 		// skip never disagree about what counts as "required."
 		controllers = append(controllers, firewallreconcile.New(deps.db, firewall.New(deps.firewallRulePrefix), firewallreconcile.WithRequiredPorts(platformRequiredPorts()), firewallreconcile.WithLogger(deps.logger)))
+
+		// Exposure restrictions re-assert DOCKER-USER rules after a reboot or Docker restart.
+		controllers = append(controllers, exposurereconcile.New(deps.db, newExposureManager(deps.firewallRulePrefix), deps.logger))
 
 		if deps.meshCfg != nil {
 			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger)))

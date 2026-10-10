@@ -707,6 +707,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/firewall/host/enable", rt.requireAbility(AbilityRoot, rt.handleEnableHostFirewall))
 	mux.HandleFunc("POST /api/v1/firewall/host/disable", rt.requireAbility(AbilityRoot, rt.handleDisableHostFirewall))
 
+	// Exposure audit (exposure.go): read-only list of published container
+	// ports and how reachable each is; preview is a pure computation.
+	// Restricting and unrestricting change the host's DOCKER-USER chain,
+	// so they are AbilityRoot like the ufw switch above.
+	mux.HandleFunc("GET /api/v1/firewall/exposure", rt.requireAbility(AbilityRead, rt.handleExposureReport))
+	mux.HandleFunc("POST /api/v1/firewall/exposure/preview", rt.requireAbility(AbilityRead, rt.handleExposurePreview))
+	mux.HandleFunc("PUT /api/v1/firewall/exposure/restrictions/{protocol}/{port}", rt.requireAbility(AbilityRoot, rt.handleExposureRestrict))
+	mux.HandleFunc("DELETE /api/v1/firewall/exposure/restrictions/{protocol}/{port}", rt.requireAbility(AbilityRoot, rt.handleExposureUnrestrict))
+
 	// Registry credential browsing (registry_catalog.go): repository/tag
 	// lookup for a stored external credential, the same generic catalog
 	// client GET /api/v1/registry/repositories and /api/v1/registry/tags
