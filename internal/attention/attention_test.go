@@ -1,6 +1,7 @@
 package attention
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -87,5 +88,47 @@ func TestBuild_DiskAndFailedDeploys(t *testing.T) {
 	got := Build(Input{Failed: failed})
 	if len(got) != 1 || got[0].Kind != "deploy" || got[0].Subject != "api" || got[0].Detail != "build failed" {
 		t.Errorf("failed deploy item = %+v", got)
+	}
+}
+
+func TestBuild_RankingAndWaitingItems(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
+	notAfter := now.Add(72 * time.Hour)
+	tests := []struct {
+		name string
+		in   Input
+		want []string
+	}{
+		{"expired login is dropped", Input{Now: now, Devices: []apiclient.DevicePendingLogin{{ClientName: "old", ExpiresAt: now.Add(-time.Minute)}}}, []string{}},
+		{"waiting items lead their severity", Input{
+			Now:       now,
+			Devices:   []apiclient.DevicePendingLogin{{ClientName: "laptop", RequesterIP: "10.0.0.9", ExpiresAt: now.Add(5 * time.Minute)}},
+			Approvals: []apiclient.DeployApprovalResource{{ServiceName: "web", Action: "deploy", Image: "web:2", RequestedBy: "u1"}},
+			Certs:     []apiclient.CertificateResource{{Domain: "a.example", Status: "healthy", Renewal: "stalled", NotAfter: notAfter}},
+			Doctor:    apiclient.SystemDoctorResource{Checks: []apiclient.DoctorCheckResource{{Name: "docker", Status: "fail"}, {Name: "disk", Status: "warn"}}},
+		}, []string{"critical:doctor", "warning:device_login", "warning:approval", "warning:cert_renewal", "warning:doctor"}},
+		{"never connected node", Input{Now: now, Nodes: []apiclient.NodeResource{{Name: "n1", Status: "pending", StatusReason: "enrolled_never_connected"}}},
+			[]string{"warning:node_enroll"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := []string{}
+			for _, it := range Build(tc.in) {
+				got = append(got, it.Severity+":"+it.Kind)
+			}
+			if strings.Join(got, ",") != strings.Join(tc.want, ",") {
+				t.Errorf("items = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestDeviceLoginDetail_NeverCarriesACode(t *testing.T) {
+	t.Parallel()
+	now := time.Now()
+	items := Build(Input{Now: now, Devices: []apiclient.DevicePendingLogin{{ClientName: "laptop", ExpiresAt: now.Add(3 * time.Minute)}}})
+	if len(items) != 1 || !strings.Contains(items[0].Detail, "Settings > CLI access") || !strings.Contains(items[0].Detail, "expires in") {
+		t.Fatalf("items = %+v", items)
 	}
 }

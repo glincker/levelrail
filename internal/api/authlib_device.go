@@ -23,12 +23,13 @@ func (rt *Router) libraryDeviceStart(w http.ResponseWriter, r *http.Request, req
 		rt.internalError(w, "api: device auth start: library start failed", err)
 		return
 	}
-	base := requestBaseURL(r)
+	base := deviceVerificationBase(r)
+	rt.notifyDeviceLoginWaiting()
 	writeJSON(w, http.StatusCreated, deviceStartResponse{
 		DeviceCode:              res.DeviceCode,
 		UserCode:                res.UserCode,
-		VerificationURI:         base + "/settings/cli-access",
-		VerificationURIComplete: base + "/settings/cli-access?user_code=" + res.UserCode,
+		VerificationURI:         base + deviceCLIPath,
+		VerificationURIComplete: base + deviceCLIPath + "?user_code=" + res.UserCode,
 		ExpiresIn:               int(res.ExpiresIn.Seconds()),
 		Interval:                int(res.Interval.Seconds()),
 	})
@@ -49,6 +50,9 @@ func (rt *Router) libraryDeviceToken(w http.ResponseWriter, r *http.Request, dev
 		writeError(w, http.StatusBadRequest, "access_denied")
 		return
 	case errors.Is(err, authengine.ErrDeviceExpired):
+		if errors.Is(err, authengine.ErrDeviceLapsed) {
+			rt.recordAudit(r.Context(), r, AbilityRead, auditActorDevice, "", "device login expired", http.StatusBadRequest)
+		}
 		writeError(w, http.StatusBadRequest, "expired_token")
 		return
 	case err != nil:
@@ -77,9 +81,13 @@ func (rt *Router) libraryListDeviceRequests(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: list device auth requests failed", err)
 		return
 	}
+	viewer := clientIP(r)
 	out := make([]deviceAuthRequestResource, 0, len(pending))
 	for _, p := range pending {
-		out = append(out, deviceAuthRequestResource{UserCode: p.UserCode, ClientName: p.ClientName, CreatedAt: p.CreatedAt, ExpiresAt: p.ExpiresAt})
+		out = append(out, deviceAuthRequestResource{
+			UserCode: p.UserCode, ClientName: p.ClientName, CreatedAt: p.CreatedAt, ExpiresAt: p.ExpiresAt,
+			RequesterIP: p.RequesterIP, UserAgent: p.UserAgent, IPMismatch: p.RequesterIP != "" && p.RequesterIP != viewer,
+		})
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -111,8 +119,6 @@ func (rt *Router) libraryDecideDevice(w http.ResponseWriter, r *http.Request, us
 		rt.internalError(w, "api: decide device auth request failed", err)
 		return
 	}
-	if approve {
-		rt.recordAudit(r.Context(), r, AbilityWrite, auditActorSession, userID, "", http.StatusNoContent)
-	}
+	rt.recordAudit(r.Context(), r, AbilityWrite, auditActorSession, userID, "", http.StatusNoContent)
 	w.WriteHeader(http.StatusNoContent)
 }

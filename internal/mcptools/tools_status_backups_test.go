@@ -31,6 +31,10 @@ func TestGetAttention(t *testing.T) {
 			_, _ = w.Write([]byte(`{"confidence":"none","fixable":false}`))
 		case "/api/v1/updates":
 			_, _ = w.Write([]byte(`{"current_version":"v1.0.0"}`))
+		case "/api/v1/auth/device/pending-summary":
+			_, _ = w.Write([]byte(`{"pending":[{"client_name":"laptop","requester_ip":"10.0.0.9","created_at":"2026-10-09T10:00:00Z","expires_at":"2999-01-01T00:00:00Z"}]}`))
+		case "/api/v1/deploy-approvals":
+			_, _ = w.Write([]byte(`{"approvals":[{"id":"a1","service_name":"web","action":"deploy","image":"web:2","requested_by":"u1"}]}`))
 		default:
 			t.Errorf("unexpected path %q", r.URL.Path)
 		}
@@ -46,7 +50,7 @@ func TestGetAttention(t *testing.T) {
 	for _, it := range out.Items {
 		kinds = append(kinds, it.Severity+":"+it.Kind)
 	}
-	want := []string{"critical:disk", "critical:deploy", "critical:app", "warning:doctor"}
+	want := []string{"critical:disk", "critical:deploy", "critical:app", "warning:device_login", "warning:approval", "warning:doctor"}
 	if strings.Join(kinds, ",") != strings.Join(want, ",") {
 		t.Errorf("items = %v, want %v", kinds, want)
 	}

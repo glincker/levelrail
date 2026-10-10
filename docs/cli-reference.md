@@ -593,6 +593,7 @@ levelrail-cli auth 2fa recovery-codes --code CODE [flags]
 ```
 
 - `login` authenticates and persists a new API token; with `--profile NAME` it saves under a named profile instead of overwriting `default`.
+- `login --device --json` prints one JSON line first (`verification_url`, `user_code`, `expires_in`, `expires_at`) so an agent can relay it, then the token resource once approved. See [Attention center](attention-center.md).
 - `session-link` mints a short lived (about 2 minutes), single use login link that signs in as whoever minted it, meant for browser automation. It needs a token with the root ability.
 - Every `2fa` subcommand needs a live session: `--username` and `--password` (prompted if omitted), never the CLI's saved bearer token. `setup` starts enrollment and returns a secret and provisioning URI; `enable` confirms it and returns recovery codes once; `recovery-codes` regenerates them and invalidates the old set.
 
@@ -752,7 +753,7 @@ levelrail-cli channels delete <id> [flags]
 levelrail-cli channels test <id> [flags]
 levelrail-cli channels deliveries <id> [flags]
 ```
-Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`. `update` fully replaces a channel's configuration. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](email-notifications.md).
+Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`. `update` fully replaces a channel's configuration. `--notify-device-login` opts a channel into a link-only notice when a CLI login is waiting. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](email-notifications.md).
 
 ## Push subscriptions
 

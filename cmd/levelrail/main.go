@@ -2253,6 +2253,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithNotificationChannelTester(deployDispatcher),
 		api.WithNotificationDeliveries(alertingDB),
 		api.WithApprovalChatNotifier(deployDispatcher),
+		api.WithDeviceLoginNotifier(deployDispatcher),
+		api.WithDashboardURL(dashboardBaseURL()),
 		api.WithFirewallRequiredPorts(platformRequiredPorts()),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithRequestLogThresholds(slowRequestThreshold(logger), criticalRequestThreshold(logger)),

@@ -7,17 +7,24 @@ import (
 	"strings"
 )
 
-// alertDashboardLink maps an app to its alerts page for notification links.
-// APP_DASHBOARD_URL wins; otherwise APP_PUBLIC_HOST plus the dashboard port
-// is used, and with neither set no link is added.
-func alertDashboardLink() func(app string) string {
+// dashboardBaseURL is APP_DASHBOARD_URL, else APP_PUBLIC_HOST plus the
+// dashboard port, else empty (no links are added).
+func dashboardBaseURL() string {
 	base := strings.TrimRight(strings.TrimSpace(os.Getenv("APP_DASHBOARD_URL")), "/")
+	if base != "" {
+		return base
+	}
+	if host := publicHost(); host != "" {
+		return "http://" + net.JoinHostPort(host, dashboardPort())
+	}
+	return ""
+}
+
+// alertDashboardLink maps an app to its alerts page for notification links.
+func alertDashboardLink() func(app string) string {
+	base := dashboardBaseURL()
 	if base == "" {
-		host := publicHost()
-		if host == "" {
-			return nil
-		}
-		base = "http://" + net.JoinHostPort(host, dashboardPort())
+		return nil
 	}
 	return func(app string) string {
 		return base + "/apps/" + url.PathEscape(app) + "/alerts"

@@ -9,6 +9,7 @@
 import {
   queryOptions,
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
@@ -22,6 +23,10 @@ export interface DeviceAuthRequest {
   client_name: string
   created_at: string
   expires_at: string
+  requester_ip: string
+  user_agent: string
+  // True when the requesting IP differs from this session's own IP.
+  ip_mismatch: boolean
 }
 
 export const deviceAuthKeys = {
@@ -34,10 +39,14 @@ export async function fetchDeviceAuthRequests(): Promise<DeviceAuthRequest[]> {
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch device login requests failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch device login requests failed: ${res.status}`,
+      ),
     )
   }
-  return (await res.json()) as DeviceAuthRequest[]
+  const body: unknown = await res.json()
+  return Array.isArray(body) ? (body as DeviceAuthRequest[]) : []
 }
 
 export function deviceAuthRequestsQueryOptions() {
@@ -60,6 +69,25 @@ export function useDeviceAuthRequests() {
   })
 }
 
+// Shell-wide live view for the attention bell and banner. A failing
+// endpoint (signed out, token-only session) just yields no requests, and
+// TanStack Query pauses interval refetching while the tab is hidden.
+export function useLiveDeviceAuthRequests() {
+  return useQuery({
+    ...deviceAuthRequestsQueryOptions(),
+    retry: false,
+    refetchInterval: DEVICE_AUTH_POLL_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+  })
+}
+
+export function isDeviceRequestLive(
+  request: DeviceAuthRequest,
+  now: number,
+): boolean {
+  return new Date(request.expires_at).getTime() > now
+}
+
 async function decideDeviceAuthRequest(
   userCode: string,
   action: 'approve' | 'deny',
@@ -71,7 +99,10 @@ async function decideDeviceAuthRequest(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `${action} device login failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `${action} device login failed: ${res.status}`,
+      ),
     )
   }
 }
@@ -90,8 +121,7 @@ export function useApproveDeviceAuthRequest() {
 export function useDenyDeviceAuthRequest() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (userCode: string) =>
-      decideDeviceAuthRequest(userCode, 'deny'),
+    mutationFn: (userCode: string) => decideDeviceAuthRequest(userCode, 'deny'),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: deviceAuthKeys.list() })
     },

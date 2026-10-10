@@ -35,6 +35,9 @@ type NotificationChannel struct {
 	// application's Ed25519 public key (hex) for NotifyDiscord. Empty
 	// for every other kind.
 	InteractiveSecret string
+	// NotifyDeviceLogin opts this channel into a link-only notice when a CLI
+	// device login awaits approval. The notice never carries the code.
+	NotifyDeviceLogin bool
 	CreatedAt         string
 	UpdatedAt         string
 }
@@ -61,9 +64,9 @@ func (db *DB) SaveNotificationChannel(ctx context.Context, c NotificationChannel
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO notification_channels (
 			id, name, kind, notify_url, enabled,
-			interactive_approvals, interactive_secret, created_at, updated_at
+			interactive_approvals, interactive_secret, notify_device_login, created_at, updated_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET
 			name = excluded.name,
 			kind = excluded.kind,
@@ -71,9 +74,10 @@ func (db *DB) SaveNotificationChannel(ctx context.Context, c NotificationChannel
 			enabled = excluded.enabled,
 			interactive_approvals = excluded.interactive_approvals,
 			interactive_secret = excluded.interactive_secret,
+			notify_device_login = excluded.notify_device_login,
 			updated_at = excluded.updated_at
 	`, c.ID, c.Name, string(c.Kind), c.NotifyURL, boolToInt(c.Enabled),
-		boolToInt(c.InteractiveApprovals), c.InteractiveSecret, now, now)
+		boolToInt(c.InteractiveApprovals), c.InteractiveSecret, boolToInt(c.NotifyDeviceLogin), now, now)
 	if err != nil {
 		return fmt.Errorf("alerting: save notification channel %q: %w", c.ID, err)
 	}
@@ -137,7 +141,7 @@ func (db *DB) DeleteNotificationChannel(ctx context.Context, id string) error {
 
 const notificationChannelSelectColumns = `
 	SELECT id, name, kind, notify_url, enabled,
-		interactive_approvals, interactive_secret, created_at, updated_at
+		interactive_approvals, interactive_secret, notify_device_login, created_at, updated_at
 	FROM notification_channels`
 
 func scanNotificationChannel(scan func(dest ...any) error) (*NotificationChannel, error) {
@@ -146,24 +150,29 @@ func scanNotificationChannel(scan func(dest ...any) error) (*NotificationChannel
 		kind           string
 		enabledInt     int
 		interactiveInt int
+		deviceLoginInt int
 	)
 	if err := scan(&c.ID, &c.Name, &kind, &c.NotifyURL, &enabledInt,
-		&interactiveInt, &c.InteractiveSecret, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		&interactiveInt, &c.InteractiveSecret, &deviceLoginInt, &c.CreatedAt, &c.UpdatedAt); err != nil {
 		return nil, err
 	}
 	c.Kind = NotifyKind(kind)
 	c.Enabled = enabledInt != 0
 	c.InteractiveApprovals = interactiveInt != 0
+	c.NotifyDeviceLogin = deviceLoginInt != 0
 	return &c, nil
 }
 
 // sendTestNotification sends a fixed connectivity-check message via
 // kind, reusing sendDeployOutcome's own per-channel payload logic.
 func sendTestNotification(ctx context.Context, client *http.Client, sender email.Sender, pushSender PushSender, kind NotifyKind, notifyURL string) error {
+	return sendTextNotification(ctx, client, sender, pushSender, kind, notifyURL, "Levelrail test notification. If you can see this, the connection works.")
+}
+
+func sendTextNotification(ctx context.Context, client *http.Client, sender email.Sender, pushSender PushSender, kind NotifyKind, notifyURL, testText string) error {
 	if client == nil {
 		client = netguard.NewClient()
 	}
-	const testText = "Levelrail test notification. If you can see this, the connection works."
 
 	switch kind {
 	case NotifySlack:
@@ -260,4 +269,10 @@ func sendTestNotification(ctx context.Context, client *http.Client, sender email
 // way.
 func (d *DeployDispatcher) SendTest(ctx context.Context, kind NotifyKind, notifyURL string) error {
 	return sendTestNotification(ctx, d.client, d.sender, d.pushSender, kind, notifyURL)
+}
+
+// SendNotice sends a plain-text notice through kind/notifyURL, using the
+// same per-kind payload logic and SSRF-guarded client as SendTest.
+func (d *DeployDispatcher) SendNotice(ctx context.Context, kind NotifyKind, notifyURL, text string) error {
+	return sendTextNotification(ctx, d.client, d.sender, d.pushSender, kind, notifyURL, text)
 }

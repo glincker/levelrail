@@ -153,7 +153,8 @@ approve it from the web dashboard's CLI Access page, then saves the
 resulting token the same way. Works over plain http; --username/
 --password/--token-name/--abilities/--expires-in-days are ignored in
 this mode (the minted token's abilities always match the approving
-operator's own session, the CLI never gets to choose).
+operator's own session, the CLI never gets to choose). The printed link
+uses the address this CLI actually reached, with the code pre-filled.
 
 Flags:
   --username string          admin username (prompted if omitted)
@@ -165,7 +166,7 @@ Flags:
   --expires-in-days int      token lifetime in days (default: 0, never expires)
   --device                       log in via the device code flow instead of username/password
   --client-name string       optional label for the device request shown in the approval UI, --device only (default: local hostname)
-  --json                          print the new token resource as JSON to stdout, nothing else
+  --json                          print the new token resource as JSON to stdout; with --device, the first stdout line is a JSON object with the approval URL, code and expiry
   --output string                output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string                 JMESPath expression to filter the result before printing
   -h, --help                    show this help

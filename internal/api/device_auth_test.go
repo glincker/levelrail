@@ -195,11 +195,11 @@ func TestDeviceAuthRoutes_RequireAuth(t *testing.T) {
 func TestHandleDeviceAuthStart_RateLimited(t *testing.T) {
 	rt, _ := newTestRouter(t)
 	var lastRec *httptest.ResponseRecorder
-	for i := 0; i < loginGraceFailures+2; i++ {
+	for i := 0; i < defaultDeviceStartRate+1; i++ {
 		lastRec = httptest.NewRecorder()
 		rt.Handler().ServeHTTP(lastRec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/device/start", strings.NewReader(`{}`)))
 	}
 	if lastRec.Code != http.StatusTooManyRequests {
-		t.Errorf("status after %d rapid starts = %d, want %d", loginGraceFailures+2, lastRec.Code, http.StatusTooManyRequests)
+		t.Errorf("status after %d rapid starts = %d, want %d", defaultDeviceStartRate+1, lastRec.Code, http.StatusTooManyRequests)
 	}
 }

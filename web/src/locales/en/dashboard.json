@@ -2,6 +2,7 @@
   "needsAttention": {
     "title": "Needs attention",
     "seeAll": "See all {{count}}",
-    "askAi": "Ask AI"
+    "askAi": "Ask AI",
+    "review": "Review"
   }
 }
