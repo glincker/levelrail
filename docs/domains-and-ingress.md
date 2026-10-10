@@ -151,6 +151,24 @@ Use `--domain-prefix uat.` instead to prepend a label to every copied hostname.
 
 Setting the primary domain to a domain an app already owns is rejected with a `409` naming the conflicting app, so this is a real guardrail, not just a convention. Pick a domain no app uses from the start and there's nothing to collide with later.
 
+## Hide a domain from search engines
+
+Consoles, staging sites and internal tools should not show up in search
+results. Per domain, **Hide from search engines** (domain editor), `levelrail-cli
+domains search-visibility <app> <domain> --hide`, or
+`PUT /api/v1/apps/{name}/domains/{domain}/search-visibility` with
+`{"hidden": true}` makes the ingress:
+
+- send `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet` on every
+  response, overriding the app's own value;
+- answer `/robots.txt` itself with a disallow-all file, even if the app serves
+  its own.
+
+This is a request that well-behaved crawlers honour. It is not access control:
+use basic auth to keep people out. The setting takes effect on the next ingress
+reconcile pass, and a crawler that already indexed the page drops it on its next
+visit. Domains are open to search engines by default.
+
 ## Zero DNS setup: sslip.io hostnames and one-click HTTPS
 
 [sslip.io](https://sslip.io) is a public DNS service that resolves any dash-encoded IP straight to that IP, so `134-209-118-96.sslip.io` is `134.209.118.96` with no record to create and nothing to wait for. Levelrail builds on it so a fresh install gets working HTTPS URLs with no DNS setup at all.

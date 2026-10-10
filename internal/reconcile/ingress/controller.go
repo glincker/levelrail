@@ -162,6 +162,9 @@ type ServiceStore interface {
 	// /api/v1/apps/{name}/domains/{domain}/error-pages (internal/api)
 	// must take effect on this controller's very next pass.
 	ListAllDomainErrorPages(ctx context.Context) ([]store.DomainErrorPage, error)
+	// ListHiddenDomains returns domains that ask search engines to stay
+	// away (migrations/0409), read fresh every pass.
+	ListHiddenDomains(ctx context.Context) ([]string, error)
 	// Batched application-controller readiness lookup, used by dialForService.
 	GetConditionsForControllers(ctx context.Context, controllerNames []string) (map[string][]reconcile.Condition, error)
 	// ListAllAppStreams returns every raw TCP stream
@@ -686,6 +689,14 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain error pages: %w", err)
 	}
+	hiddenList, err := c.store.ListHiddenDomains(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list hidden domains: %w", err)
+	}
+	hiddenByDomain := make(map[string]bool, len(hiddenList))
+	for _, d := range hiddenList {
+		hiddenByDomain[d] = true
+	}
 	lbConfigs, err := c.loadBalancerConfigs(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancers: %w", err)
@@ -842,7 +853,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			claimedHosts[host] = svc.Name
 			c.holds.Routed(host, now)
 		}
-		svcRoutes := c.routesForService(ctx, activeHosts, dial, authByDomain, wafByDomain, errorPagesByDomain)
+		svcRoutes := c.routesForService(ctx, activeHosts, dial, authByDomain, wafByDomain, errorPagesByDomain, hiddenByDomain)
 		for i := range svcRoutes {
 			svcRoutes[i].LB = lb
 		}
@@ -1353,7 +1364,7 @@ func excludeRedirectedHosts(hosts []string, redirectByDomain map[string]store.Do
 // of the service's own domains (Reconcile excludes any domain in
 // maintenance mode before calling this), not necessarily svc.Domains
 // verbatim.
-func (c *Controller) routesForService(ctx context.Context, hosts []string, dial string, authByDomain map[string]store.DomainBasicAuth, wafByDomain map[string]store.DomainWAF, errorPagesByDomain map[string][]store.DomainErrorPage) []ingress.ProxyRoute {
+func (c *Controller) routesForService(ctx context.Context, hosts []string, dial string, authByDomain map[string]store.DomainBasicAuth, wafByDomain map[string]store.DomainWAF, errorPagesByDomain map[string][]store.DomainErrorPage, hiddenByDomain map[string]bool) []ingress.ProxyRoute {
 	var open []string
 	var routes []ingress.ProxyRoute
 	for _, host := range hosts {
@@ -1376,11 +1387,11 @@ func (c *Controller) routesForService(ctx context.Context, hosts []string, dial 
 
 		waf := domainWAFConfig(wafByDomain[host])
 		errorPages := domainErrorPagesConfig(errorPagesByDomain[host])
-		if account == nil && waf == nil && len(errorPages) == 0 {
+		if account == nil && waf == nil && len(errorPages) == 0 && !hiddenByDomain[host] {
 			open = append(open, host)
 			continue
 		}
-		routes = append(routes, ingress.ProxyRoute{Hosts: []string{host}, BackendDial: dial, BasicAuth: account, WAF: waf, ErrorPages: errorPages})
+		routes = append(routes, ingress.ProxyRoute{Hosts: []string{host}, BackendDial: dial, BasicAuth: account, WAF: waf, ErrorPages: errorPages, Hidden: hiddenByDomain[host]})
 	}
 	if len(open) > 0 {
 		routes = append(routes, ingress.ProxyRoute{Hosts: open, BackendDial: dial})

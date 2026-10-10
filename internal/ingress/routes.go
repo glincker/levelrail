@@ -69,6 +69,9 @@ type ProxyRoute struct {
 	// (via a wrapping SubrouteHandler.Errors). Empty (the default)
 	// reproduces this package's prior behavior exactly.
 	ErrorPages []ErrorPage
+	// Hidden asks search engines to stay away: X-Robots-Tag on every
+	// response and an ingress-served /robots.txt that disallows everything.
+	Hidden bool
 	// LB, if non-nil, replaces BackendDial with a multi-upstream pool.
 	LB *LBRoute
 }
@@ -538,6 +541,13 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 				wafHandle = append(wafHandle, NewCorazaWAFHandler(r.WAF.Blocking))
 			}
 			handle = append(wafHandle, handle...)
+		}
+		if r.Hidden {
+			handle = append([]any{NewNoIndexHeadersHandler()}, handle...)
+			routes = append(routes, Route{
+				Match:  []Matcher{{Host: r.Hosts, Path: []string{"/robots.txt"}}},
+				Handle: []any{NewHiddenRobotsResponse()},
+			})
 		}
 		if len(r.ErrorPages) > 0 {
 			// The reverse_proxy handler is always handle's last element

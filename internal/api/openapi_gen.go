@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 779 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 781 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -464,6 +464,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/redirect", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainRedirect", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/redirect", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainRedirect", Description: "Domain redirect (domain_redirect.go): points one app-owned domain at an arbitrary target URL, enforced by Caddy's static_response handler on the next ingress reconcile pass. GET is AbilityRead, matching the auth/maintenance/waf routes' own passive-visibility tier. PUT/DELETE are AbilityDeploy, the same \"app lifecycle, runtime routing behavior, not a credential\" tier PUT/DELETE .../maintenance and .../waf already use."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/redirect", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainRedirect", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/search-visibility", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainSearchVisibility", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/search-visibility", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainSearchVisibility", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/tls-cert", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainTLSCert", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/tls-cert", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainTLSCert", Description: "BYO TLS certificate upload (domain_tls_cert.go): an operator- supplied certificate/key pair used in place of Caddy's automatic ACME/internal issuance for one app-owned domain, enforced on the next ingress reconcile pass. GET is AbilityRead, matching the auth routes' own passive-visibility tier. PUT/DELETE are AbilityRoot, the same \"real infrastructure, high blast radius\" tier PUT/DELETE .../domains/{domain}/auth already reserves for a credential-bearing change."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/tls-cert", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainTLSCert", Description: ""},

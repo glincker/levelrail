@@ -156,6 +156,7 @@ type Route struct {
 // kind here can express.
 type Matcher struct {
 	Host       []string           `json:"host,omitempty"`
+	Path       []string           `json:"path,omitempty"`
 	Expression *ExpressionMatcher `json:"expression,omitempty"`
 }
 
@@ -382,6 +383,45 @@ func NewErrorPageResponse(statusCode int, body string) StaticResponseHandler {
 		StatusCode: statusCode,
 		Body:       escapePlaceholders(body),
 		Headers:    map[string][]string{"Content-Type": {"text/html; charset=utf-8"}},
+	}
+}
+
+// HeadersHandler mirrors Caddy's headers handler, response side only.
+type HeadersHandler struct {
+	Handler  string          `json:"handler"`
+	Response *HeaderResponse `json:"response,omitempty"`
+}
+
+// HeaderResponse sets response headers; Deferred applies them after the
+// upstream answered, so they win over the backend's own value.
+type HeaderResponse struct {
+	Set      map[string][]string `json:"set,omitempty"`
+	Deferred bool                `json:"deferred,omitempty"`
+}
+
+const (
+	// NoIndexHeaderValue is what a hidden domain sends on every response.
+	NoIndexHeaderValue = "noindex, nofollow, noarchive, nosnippet"
+	hiddenRobotsBody   = "User-agent: *\nDisallow: /\n"
+)
+
+// NewNoIndexHeadersHandler sets X-Robots-Tag on every response.
+func NewNoIndexHeadersHandler() HeadersHandler {
+	return HeadersHandler{Handler: "headers", Response: &HeaderResponse{
+		Set: map[string][]string{"X-Robots-Tag": {NoIndexHeaderValue}}, Deferred: true,
+	}}
+}
+
+// NewHiddenRobotsResponse answers /robots.txt for a hidden domain.
+func NewHiddenRobotsResponse() StaticResponseHandler {
+	return StaticResponseHandler{
+		Handler:    "static_response",
+		StatusCode: 200,
+		Body:       hiddenRobotsBody,
+		Headers: map[string][]string{
+			"Content-Type": {"text/plain; charset=utf-8"},
+			"X-Robots-Tag": {NoIndexHeaderValue},
+		},
 	}
 }
 
