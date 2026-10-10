@@ -17,6 +17,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/GLINCKER/levelrail/test/e2e/testenv"
 )
 
 const (
@@ -33,6 +34,7 @@ const (
 // docker-registry-auth entry), and matrix-synapse-postgres, the
 // heaviest and most config-generation-reliant entry in the wave.
 func TestServiceTemplates_Live_Batch2Boots(t *testing.T) {
+	testenv.RequireFullLive(t)
 	env := newLiveBuildEnv(t)
 	runtime := env.Runtime
 

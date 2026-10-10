@@ -31,6 +31,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/test/e2e/testenv"
 )
 
 const breakGlassToken = "dev-root-token" //nolint:gosec // dev-mode fixture token from dev-fixtures.yml
@@ -243,6 +244,7 @@ func breakGlassCaddyClient(caddyAddr string) *http.Client {
 // Skips cleanly if Docker or BuildKit aren't reachable, matching this
 // package's other live tests.
 func TestBreakGlass_Live_ControlPlaneDeath_WorkloadAndIngress(t *testing.T) {
+	testenv.RequireFullLive(t)
 	env := newLiveBuildEnv(t)
 
 	const (
