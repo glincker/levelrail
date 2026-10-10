@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/volume"
 )
 
@@ -79,6 +80,17 @@ func (c *Client) ListNamedVolumes(ctx context.Context) ([]NamedVolume, error) {
 		return nil, err
 	}
 
+	// VolumeList carries no sizes; the disk usage call does. A failure
+	// leaves sizes unknown (-1), never zero.
+	sizes := map[string]int64{}
+	if du, duErr := c.cli.DiskUsage(ctx, dockertypes.DiskUsageOptions{Types: []dockertypes.DiskUsageObject{dockertypes.VolumeObject}}); duErr == nil {
+		for _, v := range du.Volumes {
+			if v != nil {
+				sizes[v.Name] = volumeSize(v)
+			}
+		}
+	}
+
 	out := make([]NamedVolume, 0, len(vols.Volumes))
 	for _, v := range vols.Volumes {
 		if v == nil || !isProjectNamedVolume(v.Name) {
@@ -89,7 +101,7 @@ func (c *Client) ListNamedVolumes(ctx context.Context) ([]NamedVolume, error) {
 		}
 		out = append(out, NamedVolume{
 			Name:      v.Name,
-			SizeBytes: volumeSize(v),
+			SizeBytes: sizeOr(sizes, v),
 			CreatedAt: v.CreatedAt,
 			Mounted:   inUse[v.Name],
 		})
@@ -108,4 +120,11 @@ func (c *Client) RemoveVolume(ctx context.Context, name string) error {
 		return fmt.Errorf("docker: remove volume %q: %w", name, err)
 	}
 	return nil
+}
+
+func sizeOr(sizes map[string]int64, v *volume.Volume) int64 {
+	if s, ok := sizes[v.Name]; ok {
+		return s
+	}
+	return volumeSize(v)
 }

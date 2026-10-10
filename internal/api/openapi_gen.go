@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 747 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 749 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -381,6 +381,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/slow-queries", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleQueryDatabaseSlowQueries", Description: "Slow query log, Postgres/MySQL only (database_slow_queries.go's own doc comment explains why Redis and every other engine return 400): parses the same stored container log lines the routes above expose, rather than a new telemetry source."},
 	{Method: "GET", Path: "/api/v1/databases/{name}/status", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseStatus", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/tables/{schema}/{table}/rows", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseTableRows", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/tables/{schema}/{table}/structure", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseTableStructure", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/version", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseVersion", Description: "Minor and patch image change for a database, same data volume. AbilityWriteSensitive: it restarts the database container."},
 	{Method: "DELETE", Path: "/api/v1/bitbucket-app", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleDisconnectBitbucketApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/bitbucket-app", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleGetBitbucketAppStatus", Description: "Bitbucket App: the OAuth-consumer counterpart of the GitLab App routes above, same ability tiers for the same reasons, same two-step \"configure, then authorize\" shape. Cloud only, no instance_url (docs/design/git-provider-integrations.md section 3)."},
@@ -636,6 +637,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/tags/{id}/apps", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppsByTag", Description: ""},
 	{Method: "GET", Path: "/api/v1/templates/custom", Ability: "AbilityRead", Group: "Other", Handler: "handleListCustomTemplates", Description: "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app. Deploy reuses the service-templates/{id}/deploy route above, no second deploy path."},
 	{Method: "DELETE", Path: "/api/v1/templates/custom/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteCustomTemplate", Description: ""},
+	{Method: "GET", Path: "/api/v1/usage/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleUsageSummary", Description: ""},
 	{Method: "GET", Path: "/public/status", Ability: "Public", Group: "Other", Handler: "handlePublicStatusHTML", Description: ""},
 	{Method: "GET", Path: "/public/status.json", Ability: "Public", Group: "Other", Handler: "handlePublicStatusJSON", Description: ""},
 	{Method: "GET", Path: "/public/status.rss", Ability: "Public", Group: "Other", Handler: "handlePublicStatusRSS", Description: ""},

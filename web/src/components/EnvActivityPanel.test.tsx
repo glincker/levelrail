@@ -5,15 +5,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EnvActivityPanel } from './EnvActivityPanel'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('@tanstack/react-router')>()
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
   return {
     ...actual,
     Link: ({
       children,
       to,
       ...rest
-    }: { children?: ReactNode; to?: string } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    }: {
+      children?: ReactNode
+      to?: string
+    } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
       <a href={to} {...rest}>
         {children}
       </a>
@@ -101,11 +103,15 @@ describe('EnvActivityPanel', () => {
   it('fails quietly (renders nothing) when the audit log is unreachable, e.g. a non-root actor', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => Promise.resolve(fakeJsonResponse({ error: 'forbidden' }, 403))),
+      vi.fn(() =>
+        Promise.resolve(fakeJsonResponse({ error: 'forbidden' }, 403)),
+      ),
     )
     const { container } = render(
       <QueryClientProvider
-        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
       >
         <EnvActivityPanel appName="demo-app" />
       </QueryClientProvider>,

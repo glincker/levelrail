@@ -199,7 +199,10 @@ export function TriggerBackupRowView({
 function TriggerBackupRow({ databaseName }: { databaseName: string }) {
   const triggerBackup = useTriggerBackup(databaseName)
   return (
-    <TriggerBackupRowView pickerId="backup-target-picker" trigger={triggerBackup} />
+    <TriggerBackupRowView
+      pickerId="backup-target-picker"
+      trigger={triggerBackup}
+    />
   )
 }
 
@@ -384,7 +387,9 @@ export function BackupHistoryTableView({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    {record.status === 'succeeded' ? renderActions(record) : null}
+                    {record.status === 'succeeded'
+                      ? renderActions(record)
+                      : null}
                     {record.status !== 'running'
                       ? renderDeleteAction(record)
                       : null}

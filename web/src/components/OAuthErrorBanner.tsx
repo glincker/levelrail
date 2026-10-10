@@ -9,10 +9,12 @@ const MESSAGES: Record<string, string> = {
   invalid_state: 'That sign-in link expired or was already used. Try again.',
   exchange_failed: 'Sign-in with the provider failed. Try again.',
   userinfo_failed: 'Could not read your account details from the provider.',
-  domain_not_allowed: 'Sign-in is restricted to a specific email domain, and your account does not match it.',
+  domain_not_allowed:
+    'Sign-in is restricted to a specific email domain, and your account does not match it.',
   email_in_use:
     'An account with this email already exists. Sign in with your password, then connect this provider from Settings.',
-  already_linked: 'That provider account is already linked to a different user.',
+  already_linked:
+    'That provider account is already linked to a different user.',
 }
 
 // Reads oauth_error directly from window.location.search rather than

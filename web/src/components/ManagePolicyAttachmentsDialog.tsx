@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { LinkIcon, TrashIcon, UsersIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  LinkIcon,
+  TrashIcon,
+  UsersIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -79,7 +84,11 @@ export function ManagePolicyAttachmentsDialog({
     }
     setFormError(null)
     attach.mutate(
-      { policyId: policy.id, principal_type: principalType, principal_id: trimmed },
+      {
+        policyId: policy.id,
+        principal_type: principalType,
+        principal_id: trimmed,
+      },
       {
         onSuccess: () => {
           setPrincipalId('')
@@ -143,7 +152,9 @@ export function ManagePolicyAttachmentsDialog({
                 {attach.isPending ? 'Attaching...' : 'Attach'}
               </Button>
             </div>
-            <FieldError errors={[formError ? { message: formError } : undefined]} />
+            <FieldError
+              errors={[formError ? { message: formError } : undefined]}
+            />
           </Field>
           {attach.isError ? (
             <Alert variant="destructive">
@@ -155,7 +166,9 @@ export function ManagePolicyAttachmentsDialog({
 
         <div className="space-y-2">
           {attachments.isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading attachments...</p>
+            <p className="text-sm text-muted-foreground">
+              Loading attachments...
+            </p>
           ) : attachments.isError ? (
             <Alert variant="destructive">
               <WarningIcon />
@@ -172,7 +185,8 @@ export function ManagePolicyAttachmentsDialog({
               {(attachments.data ?? []).map((attachment) => {
                 const isDetaching =
                   detach.isPending &&
-                  detach.variables?.principal_type === attachment.principal_type &&
+                  detach.variables?.principal_type ===
+                    attachment.principal_type &&
                   detach.variables?.principal_id === attachment.principal_id
                 return (
                   <li

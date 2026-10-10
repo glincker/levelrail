@@ -4,7 +4,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
-import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   useConnectGitLabApp,
   useDisconnectGitLabApp,
@@ -106,7 +111,11 @@ export function GitLabAppConnectionCard() {
               />
             </div>
           ) : (
-            <Button type="button" size="sm" onClick={() => setConfigureOpen(true)}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setConfigureOpen(true)}
+            >
               <GitlabLogoIcon className="size-4" />
               Configure
             </Button>
@@ -149,7 +158,9 @@ function ConfigureDialog({
   }
 
   const canSubmit =
-    instanceURL.trim() !== '' && clientID.trim() !== '' && clientSecret.trim() !== ''
+    instanceURL.trim() !== '' &&
+    clientID.trim() !== '' &&
+    clientSecret.trim() !== ''
 
   function handleSubmit() {
     if (!canSubmit) {
@@ -173,15 +184,21 @@ function ConfigureDialog({
   }
 
   return (
-    <ResettableDialog open={open} onOpenChange={onOpenChange} onReset={resetForm}>
+    <ResettableDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      onReset={resetForm}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Configure a GitLab OAuth Application</DialogTitle>
           <DialogDescription>
-            Create one in your GitLab instance under Applications, with
-            redirect URI{' '}
+            Create one in your GitLab instance under Applications, with redirect
+            URI{' '}
             {baseURL ? (
-              <code className="text-xs">{baseURL}/api/v1/gitlab-app/callback</code>
+              <code className="text-xs">
+                {baseURL}/api/v1/gitlab-app/callback
+              </code>
             ) : (
               <span className="text-amber-700 dark:text-amber-400">
                 set a primary domain in domain settings first

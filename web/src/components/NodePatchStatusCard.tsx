@@ -22,7 +22,7 @@ type PatchStatusConfig = {
 function resolvePatchState(
   isPending: boolean,
   isError: boolean,
-  data: NodePatchStatusResource | undefined
+  data: NodePatchStatusResource | undefined,
 ): PatchState {
   if (isPending) return 'loading'
   if (isError || !data?.checked) return 'unknown'
@@ -50,19 +50,31 @@ function securityLabel(data: NodePatchStatusResource | undefined): string {
 // generic /metrics time-series query NodeMetricsDashboard uses.
 function patchStatusConfig(
   state: PatchState,
-  data: NodePatchStatusResource | undefined
+  data: NodePatchStatusResource | undefined,
 ): PatchStatusConfig {
   switch (state) {
     case 'loading':
       return { icon: QuestionIcon, variant: 'muted', label: 'Checking...' }
     case 'unknown':
-      return { icon: QuestionIcon, variant: 'muted', label: 'Unknown, not checked' }
+      return {
+        icon: QuestionIcon,
+        variant: 'muted',
+        label: 'Unknown, not checked',
+      }
     case 'up-to-date':
       return { icon: CheckCircleIcon, variant: 'success', label: 'Up to date' }
     case 'security':
-      return { icon: WarningCircleIcon, variant: 'destructive', label: securityLabel(data) }
+      return {
+        icon: WarningCircleIcon,
+        variant: 'destructive',
+        label: securityLabel(data),
+      }
     default:
-      return { icon: WarningIcon, variant: 'warning', label: updatesLabel(data) }
+      return {
+        icon: WarningIcon,
+        variant: 'warning',
+        label: updatesLabel(data),
+      }
   }
 }
 

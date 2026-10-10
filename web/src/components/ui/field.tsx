@@ -186,7 +186,10 @@ function FieldHint({
 // form (e.g. "Source", "Networking", "Health check"), matching the
 // tracking-wide muted style CreateResourceWizard.tsx already uses for its
 // own step-1 "Applications"/"Databases" groupings.
-function FieldSectionLabel({ className, ...props }: React.ComponentProps<'h3'>) {
+function FieldSectionLabel({
+  className,
+  ...props
+}: React.ComponentProps<'h3'>) {
   return (
     <h3
       data-slot="field-section-label"

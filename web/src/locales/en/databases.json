@@ -184,8 +184,17 @@
       "selectTable": "Select a table to browse its data, columns, and indexes.",
       "tabData": "Data",
       "tabStructure": "Structure",
-      "kind": "Kind",
-      "estimate": "{{count}} rows (estimate)",
+      "kind": {
+        "number": "Number",
+        "text": "Text",
+        "boolean": "Boolean",
+        "datetime": "Date or time",
+        "json": "JSON",
+        "uuid": "UUID",
+        "binary": "Binary",
+        "other": "Other"
+      },
+      "estimate": "about {{short}} rows",
       "size": "Size",
       "columns": "Columns",
       "indexes": "Indexes",
@@ -196,26 +205,36 @@
       "primaryKey": "Primary key",
       "noIndexes": "No indexes.",
       "unique": "unique",
-      "searchTables": "Filter tables"
+      "searchTables": "Search tables",
+      "beta": "Beta",
+      "tableCount_one": "{{count}} table",
+      "tableCount_other": "{{count}} tables",
+      "matches": "{{count}} of {{total}} tables match",
+      "view": "view",
+      "truncated": "Showing the first {{count}} tables only. Narrow the search or raise the server limit."
     },
     "data": {
-      "filterColumn": "Column",
-      "filterOp": "Operator",
-      "filterValue": "Value",
-      "ops": {
-        "contains": "contains",
-        "equals": "equals",
-        "is_null": "is null",
-        "not_null": "is not null"
-      },
-      "apply": "Apply filter",
-      "clear": "Clear",
       "previous": "Previous",
       "next": "Next",
-      "rowRange": "Rows {{from}} to {{to}}",
       "noRows": "No rows match.",
       "noRowsEmptyTable": "This table has no rows.",
-      "sortedBy": "Sorted by {{column}}"
+      "sortedBy": "Sorted by {{column}}",
+      "filterHint": "Type in a column filter row to narrow rows in the database. Prefix with = for an exact match, or use is:null and not:null.",
+      "filterActive_one": "{{count}} column filter active",
+      "filterActive_other": "{{count}} column filters active",
+      "copyAs": "Copy rows",
+      "copySelected_one": "{{count}} selected row",
+      "copySelected_other": "{{count}} selected rows",
+      "copyAll_one": "{{count}} loaded row",
+      "copyAll_other": "{{count}} loaded rows",
+      "format": {
+        "csv": "CSV",
+        "json": "JSON",
+        "insert": "INSERT"
+      },
+      "showing": "Showing rows {{from}} to {{to}} ({{size}} per page)",
+      "loading": "loading",
+      "limitsNote": "Rows load {{page}} at a time. The server returns at most {{rows}} rows per request, cuts any value at {{cell}}, and stops a query after {{seconds}} seconds."
     },
     "grid": {
       "null": "NULL",
@@ -228,7 +247,23 @@
       "resultCapped": "Result capped by the server row or size limit.",
       "cellCapped": "This value was cut at the server cell size limit.",
       "sortAscending": "Sort ascending",
-      "sortDescending": "Sort descending"
+      "sortDescending": "Sort descending",
+      "label": "Table rows",
+      "emptyString": "empty string",
+      "copyFailed": "Could not copy to the clipboard.",
+      "copied_csv": "Copied rows as CSV.",
+      "copied_json": "Copied rows as JSON.",
+      "copied_insert": "Copied rows as INSERT statements.",
+      "selectAll": "Select all loaded rows",
+      "selectRow": "Select row {{row}}",
+      "headerHint": "Click to sort. Drag to reorder, or press Alt with the arrow keys.",
+      "resize": "Resize column {{column}}",
+      "filterPlaceholder": "Filter",
+      "filterColumn": "Filter column {{column}}",
+      "rowOf": "Row {{row}} of {{total}} loaded",
+      "previousRow": "Previous row",
+      "nextRow": "Next row",
+      "copyValue": "Copy value of {{column}}"
     },
     "console": {
       "title": "SQL Console",
@@ -291,6 +326,63 @@
       "ttlSeconds": "{{count}} s",
       "truncated": "Value cut at the server limit.",
       "readOnlyNote": "Read-only. Values are fetched with SCAN, TYPE, TTL, and a type-specific read."
+    },
+    "structure": {
+      "openConsole": "Open in console",
+      "references": "References",
+      "yes": "YES",
+      "no": "NO",
+      "relations": "Relationships",
+      "noRelations": "This table has no foreign keys and nothing references it.",
+      "noIncoming": "Nothing references this table.",
+      "noOutgoing": "No foreign keys.",
+      "ddl": "Definition",
+      "ddlCopied": "Copied the definition."
+    },
+    "states": {
+      "loading": "Reading the schema from the database...",
+      "errorTitle": "Could not read this database",
+      "errorNote": "This does not mean your data is gone. The explorer could not read it right now.",
+      "retry": "Retry",
+      "details": "Show the raw error",
+      "reason": {
+        "permission": "The database refused the read: permission denied for the account the explorer uses.",
+        "connection": "The database is not accepting connections yet, or refused this one.",
+        "timeout": "The database took too long to answer and the read timed out.",
+        "notRunning": "The database is not running. Start it and retry.",
+        "helper": "The helper that runs inside the database container failed before it could return a schema.",
+        "network": "The browser could not reach the control plane.",
+        "unsupported": "This control plane cannot run commands inside database containers."
+      },
+      "emptyTitle": "No tables yet",
+      "emptyVerifyTitle": "No tables found, check this against the evidence below",
+      "emptyBody": "This database was checked and has no user tables. Create tables from the SQL console, or point an app at it.",
+      "openConsole": "Open the SQL console",
+      "migrationTarget": "This database was created as a migration target.",
+      "copyStatus": "Copy status:",
+      "copy": {
+        "pending": "not started",
+        "copying": "copying",
+        "verified": "verified",
+        "failed": "failed",
+        "unsupported": "not supported"
+      },
+      "openMigrationHub": "Open the migration hub",
+      "copyCli": "or run: migrate db-copy <database> with the CLI.",
+      "verifiedEmpty": "The copy is marked verified but the database has no tables. A verified copy should never be empty, so treat this as an error and run the copy again.",
+      "contradiction_one": "The catalog reports {{count}} table but the listing returned none. Retry, and if this persists check the helper logs.",
+      "contradiction_other": "The catalog reports {{count}} tables but the listing returned none. Retry, and if this persists check the helper logs.",
+      "evidence": {
+        "size": "Database size on disk",
+        "schemas": "Schemas scanned",
+        "tables": "Tables and views in those schemas",
+        "excluded": "System schemas excluded",
+        "checked": "Last checked",
+        "unavailable": "The catalog counts could not be read, so this emptiness is not verified."
+      },
+      "noMatches": "No table matches \"{{query}}\".",
+      "noMatchesNote": "The database has tables. Only your search filtered them out.",
+      "clearSearch": "Clear search"
     }
   },
   "createPgvector": {

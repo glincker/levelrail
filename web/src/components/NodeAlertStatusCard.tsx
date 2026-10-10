@@ -17,7 +17,11 @@ type AlertStatusRow = {
 
 const stateConfig: Record<
   NodeAlertState,
-  { icon: Icon; variant: VariantProps<typeof badgeVariants>['variant']; label: string }
+  {
+    icon: Icon
+    variant: VariantProps<typeof badgeVariants>['variant']
+    label: string
+  }
 > = {
   ok: { icon: CheckCircleIcon, variant: 'success', label: 'OK' },
   firing: { icon: WarningCircleIcon, variant: 'destructive', label: 'Firing' },
@@ -51,7 +55,10 @@ export function NodeAlertStatusCard({ nodeId }: Readonly<{ nodeId: string }>) {
           {rows.map((row) => {
             const { icon: StatusIcon, variant, label } = stateConfig[row.state]
             return (
-              <div key={row.label} className="flex items-center justify-between gap-2">
+              <div
+                key={row.label}
+                className="flex items-center justify-between gap-2"
+              >
                 <dt className="text-sm text-muted-foreground">{row.label}</dt>
                 <dd>
                   <Badge variant={variant}>

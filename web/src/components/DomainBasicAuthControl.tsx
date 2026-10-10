@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import { LockIcon, LockKeyIcon, LockOpenIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  LockIcon,
+  LockKeyIcon,
+  LockOpenIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -64,7 +68,9 @@ export function DomainBasicAuthControl({
       return
     }
     if (!auth?.has_password && !password.trim()) {
-      setFormError('A password is required the first time this domain is protected.')
+      setFormError(
+        'A password is required the first time this domain is protected.',
+      )
       return
     }
     setAuth.mutate(
@@ -93,7 +99,12 @@ export function DomainBasicAuthControl({
             </Badge>
           )}
         </button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen((v) => !v)}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen((v) => !v)}
+        >
           <LockIcon className="size-3.5" />
           {open ? 'Hide' : protectedNow ? 'Manage' : 'Protect with basic auth'}
         </Button>
@@ -107,7 +118,9 @@ export function DomainBasicAuthControl({
           className="mt-3 space-y-3"
         >
           <Field>
-            <FieldLabel htmlFor={`basic-auth-username-${domain}`}>Username</FieldLabel>
+            <FieldLabel htmlFor={`basic-auth-username-${domain}`}>
+              Username
+            </FieldLabel>
             <Input
               id={`basic-auth-username-${domain}`}
               autoComplete="off"
@@ -121,7 +134,9 @@ export function DomainBasicAuthControl({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor={`basic-auth-password-${domain}`}>Password</FieldLabel>
+            <FieldLabel htmlFor={`basic-auth-password-${domain}`}>
+              Password
+            </FieldLabel>
             <Input
               id={`basic-auth-password-${domain}`}
               type="password"
@@ -129,7 +144,9 @@ export function DomainBasicAuthControl({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={pending}
-              placeholder={auth?.has_password ? '••••••••••••' : 'Choose a password'}
+              placeholder={
+                auth?.has_password ? '••••••••••••' : 'Choose a password'
+              }
             />
             <FieldDescription>
               {auth?.has_password
@@ -165,7 +182,9 @@ export function DomainBasicAuthControl({
                 variant="outline"
                 disabled={pending}
                 onClick={() => {
-                  clearAuth.mutate(undefined, { onSuccess: () => setPassword('') })
+                  clearAuth.mutate(undefined, {
+                    onSuccess: () => setPassword(''),
+                  })
                 }}
               >
                 {clearAuth.isPending ? 'Removing...' : 'Remove protection'}

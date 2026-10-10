@@ -24,7 +24,13 @@ import type { FeatureFlag } from '../types/featureFlags'
 // PATCH-just-enabled route, matching EnabledToggle's own precedent in
 // ScheduledTasksPanel. Every caller of GET /api/v1/flags/evaluate/{key}
 // sees the new value on its very next call, no redeploy involved.
-function EnabledToggle({ appName, flag }: { appName: string; flag: FeatureFlag }) {
+function EnabledToggle({
+  appName,
+  flag,
+}: {
+  appName: string
+  flag: FeatureFlag
+}) {
   const updateFlag = useUpdateFeatureFlag(appName)
 
   return (
@@ -58,7 +64,13 @@ function EnabledToggle({ appName, flag }: { appName: string; flag: FeatureFlag }
 // on every keystroke) so a caller mid-typing a two-digit number doesn't
 // fire a request per digit. Same live-effect immediately shape as
 // EnabledToggle above.
-function RolloutInput({ appName, flag }: { appName: string; flag: FeatureFlag }) {
+function RolloutInput({
+  appName,
+  flag,
+}: {
+  appName: string
+  flag: FeatureFlag
+}) {
   const updateFlag = useUpdateFeatureFlag(appName)
   const [value, setValue] = useState(String(flag.rollout_percentage))
 
@@ -109,7 +121,9 @@ function RolloutInput({ appName, flag }: { appName: string; flag: FeatureFlag })
 function FlagRow({ appName, flag }: { appName: string; flag: FeatureFlag }) {
   return (
     <TableRow>
-      <TableCell className="font-mono text-xs text-foreground">{flag.key}</TableCell>
+      <TableCell className="font-mono text-xs text-foreground">
+        {flag.key}
+      </TableCell>
       <TableCell className="text-sm text-foreground">{flag.name}</TableCell>
       <TableCell>
         <EnabledToggle appName={appName} flag={flag} />
@@ -136,7 +150,10 @@ export function FeatureFlagsPanel({ appName }: { appName: string }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-            <FlagIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+            <FlagIcon
+              className="size-4 text-muted-foreground"
+              aria-hidden="true"
+            />
             Feature flags
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">

@@ -80,14 +80,32 @@ describe('PreviewEnvironmentsCard', () => {
           return Promise.resolve(fakeJsonResponse({ error: 'not found' }, 404))
         }
         return Promise.resolve(
-          fakeJsonResponse(fakeGitSourceResource({ preview_enabled: previewEnabled, post_pr_comments: postPRComments }), 200),
+          fakeJsonResponse(
+            fakeGitSourceResource({
+              preview_enabled: previewEnabled,
+              post_pr_comments: postPRComments,
+            }),
+            200,
+          ),
         )
       }
-      if (url === '/api/v1/apps/demo-app/preview-settings' && method === 'PUT') {
-        const body = JSON.parse(init?.body as string) as { enabled?: boolean; post_pr_comments?: boolean }
+      if (
+        url === '/api/v1/apps/demo-app/preview-settings' &&
+        method === 'PUT'
+      ) {
+        const body = JSON.parse(init?.body as string) as {
+          enabled?: boolean
+          post_pr_comments?: boolean
+        }
         if (body.enabled !== undefined) previewEnabled = body.enabled
-        if (body.post_pr_comments !== undefined) postPRComments = body.post_pr_comments
-        return Promise.resolve(fakeJsonResponse({ enabled: previewEnabled, post_pr_comments: postPRComments }, 200))
+        if (body.post_pr_comments !== undefined)
+          postPRComments = body.post_pr_comments
+        return Promise.resolve(
+          fakeJsonResponse(
+            { enabled: previewEnabled, post_pr_comments: postPRComments },
+            200,
+          ),
+        )
       }
       if (url === '/api/v1/apps/demo-app/previews' && method === 'GET') {
         return Promise.resolve(
@@ -112,7 +130,10 @@ describe('PreviewEnvironmentsCard', () => {
           ),
         )
       }
-      if (url === '/api/v1/apps/demo-app/previews/42/teardown' && method === 'POST') {
+      if (
+        url === '/api/v1/apps/demo-app/previews/42/teardown' &&
+        method === 'POST'
+      ) {
         return Promise.resolve(fakeJsonResponse(null, 200))
       }
       if (url === '/api/v1/previews/sweep' && method === 'POST') {
@@ -132,7 +153,9 @@ describe('PreviewEnvironmentsCard', () => {
     gitSourceConnected = false
     renderCard()
 
-    const toggle = await screen.findByRole('switch', { name: 'Preview environments enabled' })
+    const toggle = await screen.findByRole('switch', {
+      name: 'Preview environments enabled',
+    })
     expect(toggle).toHaveAttribute('aria-disabled', 'true')
   })
 
@@ -140,7 +163,9 @@ describe('PreviewEnvironmentsCard', () => {
     const user = userEvent.setup()
     renderCard()
 
-    const toggle = await screen.findByRole('switch', { name: 'Preview environments enabled' })
+    const toggle = await screen.findByRole('switch', {
+      name: 'Preview environments enabled',
+    })
     await waitFor(() => {
       expect(toggle).not.toHaveAttribute('aria-disabled', 'true')
     })
@@ -148,17 +173,21 @@ describe('PreviewEnvironmentsCard', () => {
     await user.click(toggle)
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.some(([input, init]) =>
-        requestUrlOf(input as RequestInfo) === '/api/v1/apps/demo-app/preview-settings' && (init as RequestInit)?.method === 'PUT',
-      )).toBe(true)
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, init]) =>
+            requestUrlOf(input as RequestInfo) ===
+              '/api/v1/apps/demo-app/preview-settings' &&
+            (init as RequestInit)?.method === 'PUT',
+        ),
+      ).toBe(true)
     })
 
     await screen.findByText('PR #42')
     expect(screen.getByText('feature-x')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /pr-42\.demo-app\.example\.com/ })).toHaveAttribute(
-      'href',
-      'https://pr-42.demo-app.example.com',
-    )
+    expect(
+      screen.getByRole('link', { name: /pr-42\.demo-app\.example\.com/ }),
+    ).toHaveAttribute('href', 'https://pr-42.demo-app.example.com')
   })
 
   it('tears down a preview on button click', async () => {
@@ -170,9 +199,14 @@ describe('PreviewEnvironmentsCard', () => {
     await user.click(screen.getByRole('button', { name: /tear down/i }))
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.some(([input, init]) =>
-        requestUrlOf(input as RequestInfo) === '/api/v1/apps/demo-app/previews/42/teardown' && (init as RequestInit)?.method === 'POST',
-      )).toBe(true)
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, init]) =>
+            requestUrlOf(input as RequestInfo) ===
+              '/api/v1/apps/demo-app/previews/42/teardown' &&
+            (init as RequestInit)?.method === 'POST',
+        ),
+      ).toBe(true)
     })
   })
 
@@ -227,12 +261,18 @@ describe('PreviewEnvironmentsCard', () => {
     await screen.findByText('PR #42')
     expect(screen.getByText('Stale')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /sweep stale previews/i }))
+    await user.click(
+      screen.getByRole('button', { name: /sweep stale previews/i }),
+    )
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.some(([input, init]) =>
-        requestUrlOf(input as RequestInfo) === '/api/v1/previews/sweep' && (init as RequestInit)?.method === 'POST',
-      )).toBe(true)
+      expect(
+        fetchMock.mock.calls.some(
+          ([input, init]) =>
+            requestUrlOf(input as RequestInfo) === '/api/v1/previews/sweep' &&
+            (init as RequestInit)?.method === 'POST',
+        ),
+      ).toBe(true)
     })
   })
 
@@ -243,7 +283,9 @@ describe('PreviewEnvironmentsCard', () => {
 
     await screen.findByText('PR #42')
     expect(screen.queryByText('Stale')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /sweep stale previews/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /sweep stale previews/i }),
+    ).not.toBeInTheDocument()
   })
 
   it('hides the PR comments toggle until previews are enabled', async () => {
@@ -251,7 +293,9 @@ describe('PreviewEnvironmentsCard', () => {
 
     await screen.findByRole('switch', { name: 'Preview environments enabled' })
     expect(
-      screen.queryByRole('switch', { name: 'Preview environment PR comments and status checks enabled' }),
+      screen.queryByRole('switch', {
+        name: 'Preview environment PR comments and status checks enabled',
+      }),
     ).not.toBeInTheDocument()
   })
 
@@ -266,8 +310,11 @@ describe('PreviewEnvironmentsCard', () => {
     await user.click(toggle)
 
     await waitFor(() => {
-      const call = fetchMock.mock.calls.find(([input, init]) =>
-        requestUrlOf(input as RequestInfo) === '/api/v1/apps/demo-app/preview-settings' && (init as RequestInit)?.method === 'PUT',
+      const call = fetchMock.mock.calls.find(
+        ([input, init]) =>
+          requestUrlOf(input as RequestInfo) ===
+            '/api/v1/apps/demo-app/preview-settings' &&
+          (init as RequestInit)?.method === 'PUT',
       )
       expect(call).toBeDefined()
       const body = JSON.parse((call?.[1] as RequestInit).body as string) as {

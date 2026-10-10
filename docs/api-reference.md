@@ -139,6 +139,7 @@ Endpoints for:
 | PUT | /api/v1/settings/ai-control | AbilityRoot | handleUpdateAIControl |
 | POST | /api/v1/settings/ai-control/revoke-agent-tokens | AbilityRoot | handleRevokeAgentTokens |
 | GET | /api/v1/auth/device/pending-summary | AbilityRead | handleDevicePendingSummary |
+| GET | /api/v1/auth/device/activity | AbilityRead | handleDeviceActivity |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -152,7 +153,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/auth/device/activity | AbilityRead | handleDeviceActivity |
 
 :::
 
@@ -454,6 +454,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleListDatabaseSavedQueries |
 | POST | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleSaveDatabaseQuery |
 | DELETE | /api/v1/databases/{name}/saved-queries/{id} | AbilityReadSensitive | handleDeleteDatabaseSavedQuery |
+| GET | /api/v1/databases/{name}/tables/{schema}/{table}/structure | AbilityReadSensitive | handleGetDatabaseTableStructure |
 
 ## Projects / Organizations / Environments
 
@@ -970,6 +971,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/external-databases/{name}/password | AbilityRoot | handleRevealExternalDatabasePassword |
 | GET | /api/v1/attention/feed | AbilityRead | handleAttentionFeed |
 | POST | /api/v1/attention/dismiss | Session | handleAttentionDismiss |
+| GET | /api/v1/usage/summary | AbilityRead | handleUsageSummary |
 
 ## See also
 

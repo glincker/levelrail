@@ -40,7 +40,10 @@ describe('parseGoDuration / composeGoDuration round-trip', () => {
     // hours, so it resolves to minutes rather than falling all the way
     // back to seconds.
     expect(parseGoDuration('1h30m')).toEqual({ amount: '90', unit: 'minutes' })
-    expect(parseGoDuration('3600s')).toEqual({ amount: '3600', unit: 'seconds' })
+    expect(parseGoDuration('3600s')).toEqual({
+      amount: '3600',
+      unit: 'seconds',
+    })
   })
 
   it('converts a sub-second unit into seconds', () => {

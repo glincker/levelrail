@@ -29,9 +29,50 @@ export interface DbSchemaNode {
   tables: DbTable[]
 }
 
+export interface DbViewerLimits {
+  max_rows: number
+  max_cell_bytes: number
+  timeout_ms: number
+}
+
+export interface DbEvidence {
+  database_size_bytes: number
+  schemas_scanned: number
+  user_tables: number
+  excluded_schemas: string[]
+}
+
 export interface DbSchemaResponse {
   engine: string
+  checked_at: string
+  evidence?: DbEvidence
   schemas: DbSchemaNode[]
+  table_limit: number
+  truncated: boolean
+  limits: DbViewerLimits
+}
+
+export interface DbForeignKey {
+  name: string
+  schema: string
+  table: string
+  columns: string[]
+  ref_schema: string
+  ref_table: string
+  ref_columns: string[]
+}
+
+export interface DbStructure {
+  schema: string
+  name: string
+  kind: string
+  row_estimate: number
+  size_bytes: number
+  columns: DbColumn[]
+  indexes: DbIndex[]
+  foreign_keys: DbForeignKey[]
+  referenced_by: DbForeignKey[]
+  ddl: string
 }
 
 /** A null cell is SQL NULL. */
@@ -57,6 +98,12 @@ export interface DbPage extends DbResult {
 
 export type DbFilterOp = 'contains' | 'equals' | 'is_null' | 'not_null'
 
+export interface DbColumnFilter {
+  column: string
+  op: DbFilterOp
+  value: string
+}
+
 export interface DbPageParams {
   schema: string
   table: string
@@ -64,9 +111,7 @@ export interface DbPageParams {
   offset: number
   sort?: string
   desc?: boolean
-  filterColumn?: string
-  filterOp?: DbFilterOp
-  filterValue?: string
+  filters?: DbColumnFilter[]
 }
 
 export interface DbQueryHistoryEntry {

@@ -1,10 +1,12 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dbviewer"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -88,7 +90,27 @@ func (rt *Router) writeViewerError(w http.ResponseWriter, context, name string, 
 type databaseSchemaResponse struct {
 	Engine  string                `json:"engine"`
 	Schemas []dbviewer.SchemaNode `json:"schemas"`
+	// TableLimit is the most tables one schema call returns; Truncated is
+	// true when the database has at least that many.
+	TableLimit int  `json:"table_limit"`
+	Truncated  bool `json:"truncated"`
+	// Limits tells the UI the server-side bounds it should explain.
+	Limits databaseViewerLimits `json:"limits"`
+	// CheckedAt is when this listing was read; Evidence is only set when
+	// the listing is empty, so an empty result can be verified.
+	CheckedAt string             `json:"checked_at"`
+	Evidence  *dbviewer.Evidence `json:"evidence,omitempty"`
 }
+
+type databaseViewerLimits struct {
+	MaxRows      int `json:"max_rows"`
+	MaxCellBytes int `json:"max_cell_bytes"`
+	TimeoutMs    int `json:"timeout_ms"`
+}
+
+// schemaDetailOutline asks GET .../schema for tables without columns or
+// indexes; each table's detail then comes from its structure route.
+const schemaDetailOutline = "outline"
 
 // handleGetDatabaseSchema handles GET /api/v1/databases/{name}/schema.
 func (rt *Router) handleGetDatabaseSchema(w http.ResponseWriter, r *http.Request) {
@@ -96,12 +118,52 @@ func (rt *Router) handleGetDatabaseSchema(w http.ResponseWriter, r *http.Request
 	if !ok {
 		return
 	}
-	nodes, err := target.Schema(r.Context())
+	load := target.Schema
+	if r.URL.Query().Get("detail") == schemaDetailOutline {
+		load = target.SchemaOutline
+	}
+	nodes, err := load(r.Context())
 	if err != nil {
 		rt.writeViewerError(w, "api: database schema failed", desired.Name, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, databaseSchemaResponse{Engine: desired.Engine, Schemas: nodes})
+	total := 0
+	for _, n := range nodes {
+		total += len(n.Tables)
+	}
+	resp := databaseSchemaResponse{
+		Engine: desired.Engine, Schemas: nodes,
+		CheckedAt:  time.Now().UTC().Format(time.RFC3339),
+		TableLimit: target.Limits.SchemaRows, Truncated: total >= target.Limits.SchemaRows,
+		Limits: databaseViewerLimits{
+			MaxRows:      target.Limits.MaxRows,
+			MaxCellBytes: target.Limits.MaxCellBytes,
+			TimeoutMs:    int(target.Limits.Timeout.Milliseconds()),
+		},
+	}
+	if total == 0 {
+		if ev, err := target.Evidence(r.Context()); err == nil {
+			resp.Evidence = &ev
+		} else {
+			rt.logger.Warn("api: database schema evidence failed", slog.String("name", desired.Name), slog.String("error", err.Error()))
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// handleGetDatabaseTableStructure handles GET
+// /api/v1/databases/{name}/tables/{schema}/{table}/structure.
+func (rt *Router) handleGetDatabaseTableStructure(w http.ResponseWriter, r *http.Request) {
+	target, desired, ok := rt.viewerTarget(w, r, false)
+	if !ok {
+		return
+	}
+	st, err := target.TableStructure(r.Context(), r.PathValue("schema"), r.PathValue("table"))
+	if err != nil {
+		rt.writeViewerError(w, "api: database table structure failed", desired.Name, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, st)
 }
 
 // handleGetDatabaseTableRows handles GET
@@ -122,6 +184,12 @@ func (rt *Router) handleGetDatabaseTableRows(w http.ResponseWriter, r *http.Requ
 		FilterValue:  q.Get("filter_value"),
 	}
 	var err error
+	if raw := q.Get("filters"); raw != "" {
+		if err = json.Unmarshal([]byte(raw), &pq.Filters); err != nil {
+			writeError(w, http.StatusBadRequest, "filters must be a JSON array of {column, op, value}")
+			return
+		}
+	}
 	if raw := q.Get("limit"); raw != "" {
 		if pq.Limit, err = strconv.Atoi(raw); err != nil || pq.Limit < 0 {
 			writeError(w, http.StatusBadRequest, "limit must be a positive integer")

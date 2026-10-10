@@ -1,6 +1,16 @@
-import type { Control, FieldValues, FormState, UseFormRegister } from 'react-hook-form'
+import type {
+  Control,
+  FieldValues,
+  FormState,
+  UseFormRegister,
+} from 'react-hook-form'
 import { Controller } from 'react-hook-form'
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -109,7 +119,9 @@ export function CronScheduleFields<T extends FieldValues & CronFieldsValues>({
             Standard 5-field cron: minute hour day-of-month month day-of-week.
           </FieldDescription>
           <FieldError
-            errors={[formState.errors.customCron as { message?: string } | undefined]}
+            errors={[
+              formState.errors.customCron as { message?: string } | undefined,
+            ]}
           />
         </Field>
       )}

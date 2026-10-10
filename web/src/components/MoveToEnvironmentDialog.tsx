@@ -45,9 +45,8 @@ export function MoveToEnvironmentDialog({
   currentEnvironmentId?: string
 }) {
   const [open, setOpen] = useState(false)
-  const [targetEnvironmentId, setTargetEnvironmentId] = useState(
-    NO_ENVIRONMENT_VALUE,
-  )
+  const [targetEnvironmentId, setTargetEnvironmentId] =
+    useState(NO_ENVIRONMENT_VALUE)
   const setAppEnvironment = useSetAppEnvironment()
   const environmentList = useEnvironmentListOptional(projectId ?? '')
   const environments = environmentList.data ?? []
@@ -90,7 +89,9 @@ export function MoveToEnvironmentDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Tag &ldquo;{appName}&rdquo; with an environment</DialogTitle>
+          <DialogTitle>
+            Tag &ldquo;{appName}&rdquo; with an environment
+          </DialogTitle>
           <DialogDescription>
             Purely organizational: this doesn&apos;t change how {appName} runs.
           </DialogDescription>
@@ -103,8 +104,8 @@ export function MoveToEnvironmentDialog({
           </p>
         ) : environments.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No environments yet for this app&apos;s project. Create one from
-            the project&apos;s own detail page first.
+            No environments yet for this app&apos;s project. Create one from the
+            project&apos;s own detail page first.
           </p>
         ) : (
           <div className="space-y-1.5">

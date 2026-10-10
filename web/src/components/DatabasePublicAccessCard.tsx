@@ -89,7 +89,9 @@ export function DatabasePublicAccessCard({
       }
       const port = portInput.trim() ? Number(portInput) : undefined
       const bindAddress =
-        bindAddressMode === 'custom' ? customBindAddress.trim() : bindAddressMode
+        bindAddressMode === 'custom'
+          ? customBindAddress.trim()
+          : bindAddressMode
       setPublicAccess.mutate(
         { name: database.name, port, bindAddress },
         {
@@ -172,9 +174,9 @@ export function DatabasePublicAccessCard({
             <div className="flex items-start gap-2">
               <WarningIcon className="mt-0.5 size-4 shrink-0" />
               <p className="text-sm">
-                This database has no password configured. Enabling public
-                access lets anyone who can reach this host read and write
-                the entire dataset with no authentication.
+                This database has no password configured. Enabling public access
+                lets anyone who can reach this host read and write the entire
+                dataset with no authentication.
               </p>
             </div>
             <label className="flex items-center gap-2 pl-6 text-sm">
@@ -235,8 +237,8 @@ export function DatabasePublicAccessCard({
               </SelectContent>
             </Select>
             <FieldDescription>
-              Private is reachable only from this host. Public exposes it to
-              any network that can reach this host.
+              Private is reachable only from this host. Public exposes it to any
+              network that can reach this host.
             </FieldDescription>
             {bindAddressMode === 'custom' && (
               <Input
@@ -257,7 +259,10 @@ export function DatabasePublicAccessCard({
           <div className="space-y-2">
             {database.public_bind_address ? (
               <p className="text-sm text-muted-foreground">
-                Bound to {BIND_ADDRESS_LABELS[database.public_bind_address as BindAddressMode] ?? database.public_bind_address}
+                Bound to{' '}
+                {BIND_ADDRESS_LABELS[
+                  database.public_bind_address as BindAddressMode
+                ] ?? database.public_bind_address}
               </p>
             ) : null}
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">

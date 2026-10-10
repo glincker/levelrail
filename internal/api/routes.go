@@ -657,6 +657,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// AbilityReadSensitive; the write console is AbilityRoot (admin only).
 	mux.HandleFunc("GET /api/v1/databases/{name}/schema", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseSchema))
 	mux.HandleFunc("GET /api/v1/databases/{name}/tables/{schema}/{table}/rows", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseTableRows))
+	mux.HandleFunc("GET /api/v1/databases/{name}/tables/{schema}/{table}/structure", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseTableStructure))
 	mux.HandleFunc("POST /api/v1/databases/{name}/query", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDatabaseQuery))
 	mux.HandleFunc("POST /api/v1/databases/{name}/query/write", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleDatabaseQueryWrite))
 	mux.HandleFunc("POST /api/v1/databases/{name}/explain", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDatabaseExplain))

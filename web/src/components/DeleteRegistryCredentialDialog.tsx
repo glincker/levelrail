@@ -47,8 +47,8 @@ export function DeleteRegistryCredentialDialog({
           </DialogTitle>
           <DialogDescription>
             Any service still referencing this credential in its
-            registryCredential field will fail to pull a private image on
-            its next deploy. This cannot be undone.
+            registryCredential field will fail to pull a private image on its
+            next deploy. This cannot be undone.
           </DialogDescription>
         </DialogHeader>
         {deleteCredential.isError ? (

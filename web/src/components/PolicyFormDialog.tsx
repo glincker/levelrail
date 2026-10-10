@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { PencilSimpleIcon, ShieldCheckIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  PencilSimpleIcon,
+  ShieldCheckIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -49,7 +53,9 @@ function defaultValuesFor(policy?: PolicyResource): PolicyFormValues {
   return {
     name: policy?.name ?? '',
     description: policy?.description ?? '',
-    documentText: policy ? JSON.stringify(policy.document, null, 2) : EXAMPLE_DOCUMENT,
+    documentText: policy
+      ? JSON.stringify(policy.document, null, 2)
+      : EXAMPLE_DOCUMENT,
   }
 }
 
@@ -169,8 +175,8 @@ export function PolicyFormDialog({
             {isEdit ? `Edit "${policy?.name}"` : 'Create policy'}
           </DialogTitle>
           <DialogDescription>
-            A JSON document of Allow/Deny statements, attachable to a user or
-            an API token.
+            A JSON document of Allow/Deny statements, attachable to a user or an
+            API token.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -191,7 +197,8 @@ export function PolicyFormDialog({
 
           <Field>
             <FieldLabel htmlFor="policy-description">
-              Description <span className="text-muted-foreground">(optional)</span>
+              Description{' '}
+              <span className="text-muted-foreground">(optional)</span>
             </FieldLabel>
             <Input
               id="policy-description"
@@ -209,11 +216,10 @@ export function PolicyFormDialog({
               {...register('documentText')}
             />
             <FieldHint>
-              A JSON object with a Statement array. Each statement has an
-              Effect ("Allow" or "Deny"), an Action list (read,
-              read:sensitive, write, write:sensitive, deploy, root, or "*"),
-              and a Resource list (e.g. "app:prod-web", "database:main", or
-              "*").
+              A JSON object with a Statement array. Each statement has an Effect
+              ("Allow" or "Deny"), an Action list (read, read:sensitive, write,
+              write:sensitive, deploy, root, or "*"), and a Resource list (e.g.
+              "app:prod-web", "database:main", or "*").
             </FieldHint>
             <FieldError errors={[formState.errors.documentText]} />
             {documentError ? (

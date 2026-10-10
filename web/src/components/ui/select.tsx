@@ -149,7 +149,10 @@ interface SelectItemEntry {
 // write labels as SelectItem children instead, so walk the JSX tree once to
 // build that `items` list automatically rather than requiring every call
 // site to duplicate it.
-function collectSelectItems(node: React.ReactNode, out: SelectItemEntry[]): void {
+function collectSelectItems(
+  node: React.ReactNode,
+  out: SelectItemEntry[],
+): void {
   React.Children.forEach(node, (child) => {
     if (
       !React.isValidElement<{ value?: unknown; children?: React.ReactNode }>(
@@ -159,7 +162,10 @@ function collectSelectItems(node: React.ReactNode, out: SelectItemEntry[]): void
       return
     }
     if (child.type === SelectItem) {
-      out.push({ value: child.props.value, label: child.props.children ?? null })
+      out.push({
+        value: child.props.value,
+        label: child.props.children ?? null,
+      })
       return
     }
     if (child.props.children !== undefined) {
