@@ -139,7 +139,8 @@ Run it on the host as root. The control plane itself never does this.
                              Everything written after the backup is lost.
   --confirm-data-loss NAME   repeat the backup name to confirm that loss
   --accept-unknown-schema    try a release whose schema version is unknown
-  --stop-cmd / --start-cmd   shell commands to stop/start the service
+  --stop-cmd / --start-cmd   commands to stop/start the service, run
+                             directly as argv (no shell, no pipes)
                              (default: systemctl stop/start <binary name>)
   --health-url URL           base URL probed for /healthz and /readyz
   --timeout DURATION         how long the target may take to become healthy
@@ -292,11 +293,25 @@ func printPlan(out io.Writer, p rollback.Plan, asJSON bool) error {
 	return nil
 }
 
+// splitCommand turns an operator's stop or start command into argv. It never
+// goes through a shell, so quoting, pipes and && are not interpreted.
+func splitCommand(s string) ([]string, error) {
+	argv := strings.Fields(s)
+	if len(argv) == 0 {
+		return nil, errors.New("command is empty")
+	}
+	return argv, nil
+}
+
 func hostDeps(f rollbackFlags, exe, name, relDir, dataDir, live, healthBase string, logger *slog.Logger) rollback.Deps {
 	run := func(ctx context.Context, custom, verb string) error {
 		var cmd *exec.Cmd
 		if custom != "" {
-			cmd = exec.CommandContext(ctx, "sh", "-c", custom) //nolint:gosec // operator-supplied flag on a root-run host command
+			argv, err := splitCommand(custom)
+			if err != nil {
+				return fmt.Errorf("%s: %w", verb, err)
+			}
+			cmd = exec.CommandContext(ctx, argv[0], argv[1:]...) //nolint:gosec // operator-supplied flag on a root-run host command, run as argv with no shell
 		} else {
 			cmd = exec.CommandContext(ctx, "systemctl", verb, name) //nolint:gosec // name is this executable's own file name
 		}
