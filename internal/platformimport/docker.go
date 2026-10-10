@@ -18,9 +18,10 @@ type DockerSource struct {
 }
 
 type dockerContainer struct {
-	ID     string `json:"Id"`
-	Name   string `json:"Name"`
-	Config struct {
+	ID      string `json:"Id"`
+	Name    string `json:"Name"`
+	ImageID string `json:"Image"`
+	Config  struct {
 		Image       string              `json:"Image"`
 		Env         []string            `json:"Env"`
 		Labels      map[string]string   `json:"Labels"`
@@ -216,14 +217,15 @@ func dockerRouting(c dockerContainer) (domains []string, port int) {
 func dockerApp(id, name, project string, c dockerContainer, domains []string, port, running int) App {
 	app := App{SourceID: id, Name: name, Project: project, Environment: c.Config.Labels["coolify.environmentName"],
 		Kind: SourceImage, Image: c.Config.Image, Domains: domains, Port: port, Replicas: running,
-		MemoryBytes: c.HostConfig.Memory, NanoCPUs: c.HostConfig.NanoCPUs}
+		MemoryBytes: c.HostConfig.Memory, NanoCPUs: c.HostConfig.NanoCPUs, ImageID: c.ImageID}
 	if app.Replicas == 0 {
 		app.Replicas = 1
 		app.Notes = append(app.Notes, Note{Reason: "no container of this app was running in the snapshot", Manual: "confirm it is meant to run before cutover"})
 	}
 	if dockerBuiltLocally(c.Config.Image) {
+		app.HostBuilt = true
 		app.Notes = append(app.Notes, Note{Reason: "the image was built on the source host and is not in a registry",
-			Manual: "load it on the target before the build step: docker save " + c.Config.Image + " | ssh <target> docker load"})
+			Manual: "move it with the import's Move images step before verify, or by hand: docker save " + c.Config.Image + " | ssh <target> docker load"})
 	}
 	dropped := 0
 	for _, kv := range c.Config.Env {

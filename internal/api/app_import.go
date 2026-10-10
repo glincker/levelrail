@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/appimport"
+	"github.com/GLINCKER/levelrail/internal/imagemove"
 	"github.com/GLINCKER/levelrail/internal/platformimport"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -22,12 +23,13 @@ const (
 	appImportStepInventory = "inventory"
 	appImportStepPreflight = "preflight"
 	appImportStepStage     = "stage"
+	appImportStepImages    = "images"
 	appImportStepVerify    = "verify"
 	appImportStepVolumes   = "volumes"
 	appImportStepCutover   = "cutover"
 )
 
-var appImportSteps = []string{appImportStepInventory, appImportStepPreflight, appImportStepStage, appImportStepVerify, appImportStepVolumes, appImportStepCutover}
+var appImportSteps = []string{appImportStepInventory, appImportStepPreflight, appImportStepStage, appImportStepImages, appImportStepVerify, appImportStepVolumes, appImportStepCutover}
 
 const (
 	envAppImportReadyTimeout = "APP_MIGRATE_APP_READY_TIMEOUT"
@@ -56,9 +58,12 @@ type appImportLive struct {
 }
 
 type appImportState struct {
-	mu      sync.Mutex
-	live    map[string]*appImportLive
-	running map[string]bool
+	mu       sync.Mutex
+	live     map[string]*appImportLive
+	running  map[string]bool
+	moves    map[string]*imageMoveRun
+	hostKeys *imagemove.HostKeys
+	newSaver saverFactory
 }
 
 func newAppImportState() *appImportState {

@@ -18,7 +18,13 @@ export type AppImportState =
   | 'rolled-back'
 
 export type AppImportStep =
-  'inventory' | 'preflight' | 'stage' | 'verify' | 'volumes' | 'cutover'
+  | 'inventory'
+  | 'preflight'
+  | 'stage'
+  | 'images'
+  | 'verify'
+  | 'volumes'
+  | 'cutover'
 
 export interface AppImportFinding {
   reason: string
@@ -52,6 +58,8 @@ export interface AppImportEntry {
   repo?: string
   branch?: string
   image?: string
+  image_id?: string
+  host_built?: boolean
   build_pack?: string
   maps_to?: string
   port?: number
@@ -419,4 +427,85 @@ export function useAppImportCutover() {
 
 export function appImportReceiptUrl(id: string): string {
   return `${base}/${enc(id)}/receipt`
+}
+
+export type AppImportImageState =
+  'pending' | 'running' | 'verified' | 'loaded' | 'failed' | 'cancelled'
+
+export interface AppImportImage {
+  source_id: string
+  app: string
+  target?: string
+  image: string
+  source_image_id?: string
+  loaded_image_id?: string
+  node?: string
+  state: AppImportImageState
+  bytes: number
+  verified: boolean
+  error?: string
+  updated_at?: string
+}
+
+export interface AppImportImages {
+  running: boolean
+  source?: string
+  credentials_held: boolean
+  supported: boolean
+  max_bytes: number
+  images: AppImportImage[]
+}
+
+// The private key travels in this request body only, never the query cache.
+export interface AppImportImagesTransfer {
+  ssh?: string
+  port?: number
+  private_key?: string
+  passphrase?: string
+  use_agent?: boolean
+  items?: string[]
+}
+
+const imageKeys = (id: string) =>
+  ['migration', 'apps', 'session', id, 'images'] as const
+
+export function useAppImportImages(id: string) {
+  return useQuery({
+    queryKey: imageKeys(id),
+    queryFn: () => send<AppImportImages>(`${base}/${enc(id)}/images`),
+    refetchInterval: (q) => (q.state.data?.running ? 1500 : false),
+  })
+}
+
+export function useTransferAppImportImages() {
+  const qc = useQueryClient()
+  return useMutation<
+    AppImportImages,
+    ApiError,
+    { id: string; body: AppImportImagesTransfer }
+  >({
+    mutationFn: ({ id, body }) =>
+      send<AppImportImages>(
+        `${base}/${enc(id)}/images/transfer`,
+        json('POST', body),
+      ),
+    onSuccess: (v, vars) => {
+      qc.setQueryData(imageKeys(vars.id), v)
+      void qc.invalidateQueries({
+        queryKey: appImportKeys.one(vars.id),
+        exact: true,
+      })
+    },
+  })
+}
+
+export function useCancelAppImportImages() {
+  const qc = useQueryClient()
+  return useMutation<AppImportImages, ApiError, string>({
+    mutationFn: (id) =>
+      send<AppImportImages>(`${base}/${enc(id)}/images/cancel`, {
+        method: 'POST',
+      }),
+    onSuccess: (v, id) => qc.setQueryData(imageKeys(id), v),
+  })
 }

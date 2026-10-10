@@ -25,6 +25,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -101,6 +102,18 @@ func (l Local) InspectImageID(ctx context.Context, ref string) (string, error) {
 		return "", fmt.Errorf("agent: local inspect image: %w", err)
 	}
 	return id, nil
+}
+
+// LoadImage implements docker.ImageLoader by forwarding to the wrapped runtime.
+func (l Local) LoadImage(ctx context.Context, r io.Reader) error {
+	loader, ok := l.Runtime.(docker.ImageLoader)
+	if !ok {
+		return ErrImageLoadUnsupported
+	}
+	if err := loader.LoadImage(ctx, r); err != nil {
+		return fmt.Errorf("agent: local load image: %w", err)
+	}
+	return nil
 }
 
 // Stats implements docker.StatsInspector by forwarding to the wrapped

@@ -140,6 +140,17 @@ Endpoints for:
 | POST | /api/v1/settings/ai-control/revoke-agent-tokens | AbilityRoot | handleRevokeAgentTokens |
 | GET | /api/v1/auth/device/pending-summary | AbilityRead | handleDevicePendingSummary |
 | GET | /api/v1/auth/device/activity | AbilityRead | handleDeviceActivity |
+| GET | /api/v1/iam/catalog | AbilityRead | handleIAMCatalog |
+| GET | /api/v1/iam/resources | AbilityRead | handleIAMResources |
+| POST | /api/v1/iam/resources/match | AbilityRead | handleIAMMatch |
+| GET | /api/v1/iam/principals | AbilityRead | handleIAMPrincipals |
+| GET | /api/v1/iam/principals/{principal_type}/{principal_id}/effective | AbilityRead | handleIAMEffective |
+| GET | /api/v1/iam/simulate | AbilityRead | handleIAMSimulate |
+| GET | /api/v1/iam/analyze | AbilityRead | handleIAMAnalyze |
+| POST | /api/v1/iam/policies/validate | AbilityRead | handleValidatePolicy |
+| POST | /api/v1/iam/preview | AbilityRead | handleIAMPreview |
+| GET | /api/v1/iam/policies/{id}/versions | AbilityRead | handleListPolicyVersions |
+| POST | /api/v1/iam/policy-templates/{id}/render | AbilityRead | handleRenderPolicyTemplate |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -153,17 +164,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/iam/catalog | AbilityRead | handleIAMCatalog |
-| GET | /api/v1/iam/resources | AbilityRead | handleIAMResources |
-| POST | /api/v1/iam/resources/match | AbilityRead | handleIAMMatch |
-| GET | /api/v1/iam/principals | AbilityRead | handleIAMPrincipals |
-| GET | /api/v1/iam/principals/{principal_type}/{principal_id}/effective | AbilityRead | handleIAMEffective |
-| GET | /api/v1/iam/simulate | AbilityRead | handleIAMSimulate |
-| GET | /api/v1/iam/analyze | AbilityRead | handleIAMAnalyze |
-| POST | /api/v1/iam/policies/validate | AbilityRead | handleValidatePolicy |
-| POST | /api/v1/iam/preview | AbilityRead | handleIAMPreview |
-| GET | /api/v1/iam/policies/{id}/versions | AbilityRead | handleListPolicyVersions |
-| POST | /api/v1/iam/policy-templates/{id}/render | AbilityRead | handleRenderPolicyTemplate |
 
 :::
 
@@ -1002,6 +1002,26 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/hub/sessions/{id}/receipt | AbilityRead | handleHubReceipt |
 | GET | /api/v1/migration/hub/sessions/{id}/items/{db}/connection | AbilityRead | handleHubConnection |
 | POST | /api/v1/migration/hub/sessions/{id}/items/{db}/reveal | AbilityReadSensitive | handleHubReveal |
+| POST | /api/v1/migration/apps/plan | AbilityWriteSensitive | handleAppImportPlan |
+| POST | /api/v1/migration/apps/sessions | AbilityWriteSensitive | handleCreateAppImportSession |
+| GET | /api/v1/migration/apps/sessions | AbilityRead | handleListAppImportSessions |
+| GET | /api/v1/migration/apps/sessions/{id} | AbilityRead | handleGetAppImportSession |
+| DELETE | /api/v1/migration/apps/sessions/{id} | AbilityWriteSensitive | handleDeleteAppImportSession |
+| POST | /api/v1/migration/apps/sessions/{id}/connect | AbilityWriteSensitive | handleConnectAppImportSession |
+| PUT | /api/v1/migration/apps/sessions/{id}/plan | AbilityWriteSensitive | handlePutAppImportPlan |
+| POST | /api/v1/migration/apps/sessions/{id}/stage | AbilityWriteSensitive | handleStageAppImport |
+| POST | /api/v1/migration/apps/sessions/{id}/verify | AbilityWriteSensitive | handleVerifyAppImport |
+| POST | /api/v1/migration/apps/sessions/{id}/rollback | AbilityWriteSensitive | handleRollbackAppImport |
+| GET | /api/v1/migration/apps/sessions/{id}/images | AbilityRead | handleAppImportImages |
+| GET | /api/v1/migration/apps/sessions/{id}/images/status | AbilityRead | handleAppImportImagesStatus |
+| POST | /api/v1/migration/apps/sessions/{id}/images/transfer | AbilityWriteSensitive | handleTransferAppImportImages |
+| POST | /api/v1/migration/apps/sessions/{id}/images/cancel | AbilityWriteSensitive | handleCancelAppImportImages |
+| GET | /api/v1/migration/apps/sessions/{id}/volumes | AbilityRead | handleAppImportVolumes |
+| PUT | /api/v1/migration/apps/sessions/{id}/items/{item}/volumes/{vol} | AbilityWriteSensitive | handleSetAppImportVolume |
+| GET | /api/v1/migration/apps/sessions/{id}/cutover | AbilityRead | handleAppImportCutover |
+| GET | /api/v1/migration/apps/sessions/{id}/cutover/verify | AbilityWriteSensitive | handleAppImportCutoverVerify |
+| POST | /api/v1/migration/apps/sessions/{id}/items/{item}/route | AbilityWriteSensitive | handleRouteAppImport |
+| GET | /api/v1/migration/apps/sessions/{id}/receipt | AbilityRead | handleAppImportReceipt |
 
 ## See also
 
