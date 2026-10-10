@@ -1,42 +1,46 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
+import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeftIcon,
   ClockIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { RateLimitError, useVerifyTwoFactor } from '../queries/auth'
+import { loginOptionsQueryOptions } from '../queries/signIn'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
+import { Checkbox } from './ui/checkbox'
 import { Field, FieldError, FieldGroup, FieldLabel } from './ui/field'
 import { Alert, AlertDescription } from './ui/alert'
-
-const codeSchema = z.object({
-  code: z.string().trim().min(1, 'Enter a code'),
-})
-
-type CodeFormValues = z.infer<typeof codeSchema>
 
 interface TwoFactorVerifyFormProps {
   mfaToken: string
   onBack: () => void
 }
 
-// Step two of login for an account with TOTP enabled
-// (internal/api/twofactor.go's handleVerifyTwoFactor), shown by
-// LoginForm once handleLogin's own response carries mfa_required. Same
-// RateLimitError countdown shape LoginForm uses for password attempts,
-// this endpoint has its own independent rate limit
-// (Router.mfaVerify) so the same UI treatment applies unchanged.
+// Step two of login for an account with TOTP on. The browser is remembered
+// only when the box is ticked, never by default.
 export function TwoFactorVerifyForm({
   mfaToken,
   onBack,
 }: TwoFactorVerifyFormProps) {
+  const { t } = useTranslation('signIn')
   const verify = useVerifyTwoFactor()
+  const options = useQuery(loginOptionsQueryOptions())
   const [useRecoveryCode, setUseRecoveryCode] = useState(false)
-  const { register, handleSubmit, formState, reset } = useForm<CodeFormValues>({
+  const [remember, setRemember] = useState(false)
+  const codeSchema = useMemo(
+    () =>
+      z.object({ code: z.string().trim().min(1, t('twoFactor.codeRequired')) }),
+    [t],
+  )
+  const { register, handleSubmit, formState, reset } = useForm<{
+    code: string
+  }>({
     resolver: zodResolver(codeSchema),
     defaultValues: { code: '' },
   })
@@ -59,8 +63,8 @@ export function TwoFactorVerifyForm({
   const onSubmit = handleSubmit((values) => {
     verify.mutate(
       useRecoveryCode
-        ? { mfaToken, recoveryCode: values.code }
-        : { mfaToken, code: values.code },
+        ? { mfaToken, recoveryCode: values.code, rememberDevice: remember }
+        : { mfaToken, code: values.code, rememberDevice: remember },
       {
         onError: (error) => {
           if (error instanceof RateLimitError) {
@@ -77,6 +81,8 @@ export function TwoFactorVerifyForm({
     verify.reset()
   }
 
+  const days = options.data?.trusted_device_days ?? 0
+
   return (
     <form
       onSubmit={(e) => {
@@ -87,25 +93,45 @@ export function TwoFactorVerifyForm({
       <FieldGroup>
         <Field data-invalid={formState.errors.code ? true : undefined}>
           <FieldLabel htmlFor="mfa-code">
-            {useRecoveryCode ? 'Recovery code' : 'Authenticator code'}
+            {useRecoveryCode
+              ? t('twoFactor.recoveryLabel')
+              : t('twoFactor.codeLabel')}
           </FieldLabel>
           <Input
             id="mfa-code"
             autoComplete="one-time-code"
             autoFocus
-            placeholder={useRecoveryCode ? 'xxxx-xxxx-xxxx-xxxx' : '123456'}
+            placeholder={
+              useRecoveryCode
+                ? t('twoFactor.recoveryPlaceholder')
+                : t('twoFactor.codePlaceholder')
+            }
             aria-invalid={!!formState.errors.code}
             {...register('code')}
           />
           <FieldError errors={[formState.errors.code]} />
         </Field>
+        {days > 0 ? (
+          <Field orientation="horizontal">
+            <Checkbox
+              id="mfa-remember"
+              checked={remember}
+              onCheckedChange={(checked) => {
+                setRemember(checked === true)
+              }}
+            />
+            <FieldLabel htmlFor="mfa-remember" className="font-normal">
+              {t('twoFactor.remember', { count: days })}
+            </FieldLabel>
+          </Field>
+        ) : null}
       </FieldGroup>
 
       {isRateLimited ? (
         <Alert variant="destructive">
           <ClockIcon />
           <AlertDescription>
-            Too many attempts. Try again in {secondsRemaining}s.
+            {t('twoFactor.rateLimited', { seconds: secondsRemaining })}
           </AlertDescription>
         </Alert>
       ) : verify.isError ? (
@@ -120,7 +146,7 @@ export function TwoFactorVerifyForm({
         className="w-full"
         disabled={verify.isPending || isRateLimited}
       >
-        {verify.isPending ? 'Verifying...' : 'Verify'}
+        {verify.isPending ? t('twoFactor.verifying') : t('twoFactor.verify')}
       </Button>
 
       <div className="flex items-center justify-between text-xs">
@@ -130,14 +156,16 @@ export function TwoFactorVerifyForm({
           className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeftIcon className="size-3" />
-          Back to sign in
+          {t('twoFactor.back')}
         </button>
         <button
           type="button"
           onClick={toggleMode}
           className="text-muted-foreground hover:text-foreground"
         >
-          {useRecoveryCode ? 'Use authenticator code' : 'Use a recovery code'}
+          {useRecoveryCode
+            ? t('twoFactor.useAuthenticator')
+            : t('twoFactor.useRecovery')}
         </button>
       </div>
     </form>

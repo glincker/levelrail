@@ -20,6 +20,12 @@ export const ABILITIES: Ability[] = [
   'root',
 ]
 
+// Token-only: lets a token show the owner's sign-in codes and approve new
+// browsers. Root does not imply it and no user or role ever holds it.
+export const SIGN_IN_APPROVE = 'signin:approve' as const
+
+export type TokenAbility = Ability | typeof SIGN_IN_APPROVE
+
 // Shared badge coloring for an ability chip: TokenTable (a token's own
 // Abilities) and UserTable (a user's own Abilities) both render the same
 // strings, so they share one variant map instead of each picking colors
@@ -35,6 +41,11 @@ export const ABILITY_BADGE_VARIANT: Record<
   deploy: 'default',
   root: 'destructive',
 }
+
+export const TOKEN_ABILITY_BADGE_VARIANT: Record<
+  TokenAbility,
+  'default' | 'outline' | 'destructive' | 'muted'
+> = { ...ABILITY_BADGE_VARIANT, [SIGN_IN_APPROVE]: 'outline' }
 
 // Ability picker copy, one line each: a small, legible permission
 // surface, not a permission matrix. Shared by
@@ -114,7 +125,7 @@ export interface TokenAgent {
 export interface TokenResource {
   id: string
   name: string
-  abilities: Ability[]
+  abilities: TokenAbility[]
   // Set when the token was issued to an AI agent (internal/api/agent_identity.go).
   agent?: TokenAgent
   created_at: string
@@ -125,7 +136,7 @@ export interface TokenResource {
 
 export interface CreateTokenRequest {
   name: string
-  abilities: Ability[]
+  abilities: TokenAbility[]
   // Omitted entirely (not 0, not null) means "never expires", matching
   // createTokenRequest's `omitempty` json tag on the Go side.
   expires_in_days?: number

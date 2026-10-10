@@ -14,6 +14,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -90,6 +91,36 @@ func recoverAdminUser(ctx context.Context, db *store.DB, username, password stri
 	return nil
 }
 
+// retireRecoveredSignIn drops what a recovered account's attacker could still
+// hold: waiting or approved sign-ins, live codes, trusted browsers and
+// signin:approve tokens.
+func retireRecoveredSignIn(ctx context.Context, db *store.DB, username string) error {
+	user, err := db.GetUserByEmail(ctx, username)
+	if err != nil {
+		return fmt.Errorf("load recovered user: %w", err)
+	}
+	now := time.Now()
+	if _, err := db.SupersedeLoginApprovals(ctx, user.ID, now); err != nil {
+		return fmt.Errorf("retire login approvals: %w", err)
+	}
+	if _, err := db.LockLoginCodesForUser(ctx, user.ID, now); err != nil {
+		return fmt.Errorf("lock login codes: %w", err)
+	}
+	if _, err := db.RevokeAllTrustedDevices(ctx, user.ID, now); err != nil {
+		return fmt.Errorf("revoke trusted devices: %w", err)
+	}
+	ids, err := authengine.RevokeOwnerTokensWithAbility(ctx, db.DB, user.ID, api.AbilitySignInApprove)
+	if err != nil {
+		return fmt.Errorf("revoke signin:approve tokens: %w", err)
+	}
+	for _, id := range ids {
+		if err := db.RevokeAPIToken(ctx, id); err != nil && !errors.Is(err, store.ErrAPITokenNotFound) {
+			return fmt.Errorf("revoke signin:approve token mirror: %w", err)
+		}
+	}
+	return nil
+}
+
 // newRecoveredUserID mints an opaque ID matching internal/api's own
 // randomOpaqueID shape, duplicated here since that helper isn't exported.
 func newRecoveredUserID() (string, error) {
@@ -139,6 +170,11 @@ func runRecoverAdmin(ctx context.Context, logger *slog.Logger, args []string, st
 	if err := recoverAdminLibrary(ctx, db, username, password, stdout); err != nil {
 		return err
 	}
+
+	if err := retireRecoveredSignIn(ctx, db, username); err != nil {
+		return err
+	}
+	_, _ = fmt.Fprintln(stdout, "pending sign-in requests, trusted browsers and signin:approve tokens for this account were cleared.")
 
 	logger.Warn("admin account recovered",
 		slog.String("username", username),

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -82,12 +83,16 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "name is required")
 		return
 	}
-	if err := validateAbilities(req.Abilities); err != nil {
+	if err := validateTokenAbilities(req.Abilities); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	if req.ExpiresInDays < 0 {
 		writeError(w, http.StatusBadRequest, "expires_in_days must not be negative")
+		return
+	}
+	if msg := signInApproveTokenProblem(req); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
 
@@ -98,6 +103,13 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, a := range req.Abilities {
+		if a == AbilitySignInApprove {
+			if !rt.signedInUserSession(r) {
+				writeError(w, http.StatusForbidden, AbilitySignInApprove+" can only be granted from a signed-in dashboard or password session")
+				return
+			}
+			continue
+		}
 		if !hasAbility(callerAbilities, a) {
 			writeError(w, http.StatusForbidden, fmt.Sprintf("cannot mint a token with abilities you don't hold yourself: %s", a))
 			return
@@ -180,6 +192,35 @@ func (rt *Router) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.recordAudit(r.Context(), r, AbilityWrite, auditActorSession, callerID, "", http.StatusNoContent)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// signInApproveTokenProblem explains why a signin:approve token request is
+// refused: never for an agent, and always with a bounded expiry.
+func signInApproveTokenProblem(req createTokenRequest) string {
+	if !slices.Contains(req.Abilities, AbilitySignInApprove) {
+		return ""
+	}
+	if req.Agent != nil {
+		return AbilitySignInApprove + " cannot be granted to an agent token"
+	}
+	maxDays := envInt(envSignInApproveTokenMaxDays, defaultSignInApproveTokenMaxDays)
+	if req.ExpiresInDays == 0 || req.ExpiresInDays > maxDays {
+		return fmt.Sprintf("a token with %s must expire within %d days: set expires_in_days from 1 to %d", AbilitySignInApprove, maxDays, maxDays)
+	}
+	return ""
+}
+
+// signedInUserSession reports a real user session: no bearer token and no
+// pinned session link, each of which could otherwise escalate itself.
+func (rt *Router) signedInUserSession(r *http.Request) bool {
+	if _, ok := bearerToken(r); ok {
+		return false
+	}
+	if _, pinned := rt.currentPinnedSession(r); pinned {
+		return false
+	}
+	_, ok := rt.currentSessionUserID(r)
+	return ok
 }
 
 // callerIsAdmin reports whether the session caller holds root.

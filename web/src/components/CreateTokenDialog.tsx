@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { z } from 'zod'
 import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -13,74 +16,115 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+  FieldTitle,
+} from '@/components/ui/field'
 import { AbilitiesField } from './AbilitiesField'
 import { TokenCreatedView } from './TokenCreatedView'
 import { InfoTip } from './kit'
 import { CreateFlowShell } from './CreateFlowKit'
 import { TOKEN_STEPS } from './tokenCreateSteps'
 import { useCreateToken } from '../queries/tokens'
-import type { CreateTokenResponse } from '../types/token'
+import { SIGN_IN_APPROVE } from '../types/token'
+import type { CreateTokenResponse, TokenAbility } from '../types/token'
 
-// Expiration options translate directly to expires_in_days on submit.
-// 'never' sends no expires_in_days field at all (matches Dokploy's real
-// "never" option, finding 10, and createTokenRequest's `omitempty`).
+// 'never' sends no expires_in_days at all, matching the Go side's omitempty.
 const EXPIRATION_OPTIONS = [
-  { value: 'never', label: 'Never', days: undefined },
-  { value: '1', label: '1 day', days: 1 },
-  { value: '7', label: '7 days', days: 7 },
-  { value: '30', label: '30 days', days: 30 },
-  { value: '90', label: '90 days', days: 90 },
-  { value: '365', label: '1 year', days: 365 },
-] as const satisfies {
-  value: string
-  label: string
-  days: number | undefined
-}[]
+  { value: 'never', days: undefined },
+  { value: '1', days: 1 },
+  { value: '7', days: 7 },
+  { value: '30', days: 30 },
+  { value: '90', days: 90 },
+  { value: '365', days: 365 },
+] as const satisfies { value: string; days: number | undefined }[]
 
-const createTokenSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required'),
-  expiration: z.enum(['never', '1', '7', '30', '90', '365']),
-  agentName: z.string().trim().max(64, 'At most 64 characters'),
-  abilities: z
-    .array(
-      z.enum([
-        'read',
-        'read:sensitive',
-        'write',
-        'write:sensitive',
-        'deploy',
-        'root',
-      ]),
+function createTokenSchema(t: TFunction<'settings'>) {
+  return z
+    .object({
+      name: z.string().trim().min(1, t('tokens.create.nameRequired')),
+      expiration: z.enum(['never', '1', '7', '30', '90', '365']),
+      agentName: z.string().trim().max(64, t('tokens.create.agentTooLong')),
+      abilities: z.array(
+        z.enum([
+          'read',
+          'read:sensitive',
+          'write',
+          'write:sensitive',
+          'deploy',
+          'root',
+        ]),
+      ),
+      signInApprove: z.boolean(),
+    })
+    .refine((v) => v.abilities.length > 0 || v.signInApprove, {
+      message: t('tokens.create.abilityRequired'),
+      path: ['abilities'],
+    })
+    .refine((v) => !(v.signInApprove && v.abilities.includes('root')), {
+      message: t('tokens.create.rootExclusive'),
+      path: ['signInApprove'],
+    })
+    .refine(
+      (v) =>
+        !v.signInApprove ||
+        SIGN_IN_APPROVE_EXPIRATIONS.some((e) => e === v.expiration),
+      {
+        message: t('tokens.create.signInApproveExpiry'),
+        path: ['expiration'],
+      },
     )
-    .min(1, 'Select at least one ability'),
-})
+    .refine((v) => !(v.signInApprove && v.agentName.trim() !== ''), {
+      message: t('tokens.create.signInApproveAgent'),
+      path: ['signInApprove'],
+    })
+}
 
-type CreateTokenFormValues = z.infer<typeof createTokenSchema>
+// The server caps signin:approve tokens at 30 days by default.
+const SIGN_IN_APPROVE_EXPIRATIONS = ['1', '7', '30'] as const
+
+type CreateTokenFormValues = z.infer<ReturnType<typeof createTokenSchema>>
 
 export function CreateTokenDialog() {
+  const { t } = useTranslation('settings')
   const [open, setOpen] = useState(false)
   const [created, setCreated] = useState<CreateTokenResponse | null>(null)
   const createToken = useCreateToken()
-  const { control, register, handleSubmit, formState, reset } =
-    useForm<CreateTokenFormValues>({
-      resolver: zodResolver(createTokenSchema),
-      defaultValues: {
-        name: '',
-        expiration: 'never',
-        agentName: '',
-        abilities: [],
-      },
-    })
+  const schema = useMemo(() => createTokenSchema(t), [t])
+  const {
+    control,
+    register,
+    handleSubmit,
+    formState,
+    reset,
+    getValues,
+    setValue,
+  } = useForm<CreateTokenFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: '',
+      expiration: 'never',
+      agentName: '',
+      abilities: [],
+      signInApprove: false,
+    },
+  })
 
   const onSubmit = handleSubmit((values) => {
     const days = EXPIRATION_OPTIONS.find(
       (option) => option.value === values.expiration,
     )?.days
+    const abilities: TokenAbility[] = values.signInApprove
+      ? [...values.abilities, SIGN_IN_APPROVE]
+      : values.abilities
     createToken.mutate(
       {
         name: values.name.trim(),
-        abilities: values.abilities,
+        abilities,
         ...(days ? { expires_in_days: days } : {}),
         ...(values.agentName.trim()
           ? { agent: { name: values.agentName.trim() } }
@@ -90,10 +134,7 @@ export function CreateTokenDialog() {
     )
   })
 
-  // Dismissing the success view is the point of no return: the backend
-  // never returns the plaintext again (tokens.go's handleCreateToken doc
-  // comment), so closing the dialog is what makes it disappear from view
-  // for good, not just a UI reset.
+  // Closing is the point of no return: the plaintext is never returned again.
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
@@ -105,7 +146,9 @@ export function CreateTokenDialog() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button />}>Create token</DialogTrigger>
+      <DialogTrigger render={<Button />}>
+        {t('tokens.create.title')}
+      </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         {created ? (
           <TokenCreatedView
@@ -117,30 +160,34 @@ export function CreateTokenDialog() {
         ) : (
           <CreateFlowShell
             icon={<KeyIcon className="size-4 text-muted-foreground" />}
-            title="Create token"
-            description="A scoped, revocable credential for the CLI, CI, or an MCP integration."
+            title={t('tokens.create.title')}
+            description={t('tokens.create.description')}
             steps={TOKEN_STEPS}
             currentStepIndex={0}
             onSubmit={(e) => {
               void onSubmit(e)
             }}
             error={createToken.isError ? createToken.error.message : null}
-            submitLabel="Create token"
-            submitPendingLabel="Creating..."
+            submitLabel={t('tokens.create.submit')}
+            submitPendingLabel={t('tokens.create.submitting')}
             pending={createToken.isPending}
           >
             <Field>
-              <FieldLabel htmlFor="token-name">Name</FieldLabel>
+              <FieldLabel htmlFor="token-name">
+                {t('tokens.create.name')}
+              </FieldLabel>
               <Input
                 id="token-name"
-                placeholder="e.g. ci-deploy"
+                placeholder={t('tokens.create.namePlaceholder')}
                 {...register('name')}
               />
               <FieldError errors={[formState.errors.name]} />
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="token-expiration">Expiration</FieldLabel>
+              <FieldLabel htmlFor="token-expiration">
+                {t('tokens.create.expiration')}
+              </FieldLabel>
               <Controller
                 control={control}
                 name="expiration"
@@ -152,30 +199,30 @@ export function CreateTokenDialog() {
                     <SelectContent>
                       {EXPIRATION_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {option.days === undefined
+                            ? t('tokens.create.never')
+                            : t('tokens.create.days', { count: option.days })}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 )}
               />
+              <FieldError errors={[formState.errors.expiration]} />
             </Field>
 
             <Field>
               <div className="flex items-center gap-1">
                 <FieldLabel htmlFor="token-agent">
-                  Agent name (optional)
+                  {t('tokens.create.agent')}
                 </FieldLabel>
-                <InfoTip label="About agent names">
-                  Label the token as issued to an AI agent, for example
-                  &ldquo;Claude Code&rdquo;. The name is shown here and on every
-                  audit log entry the token makes, so you can tell agent changes
-                  from human ones.
+                <InfoTip label={t('tokens.create.agentTipLabel')}>
+                  {t('tokens.create.agentTip')}
                 </InfoTip>
               </div>
               <Input
                 id="token-agent"
-                placeholder="e.g. Claude Code"
+                placeholder={t('tokens.create.agentPlaceholder')}
                 {...register('agentName')}
               />
               <FieldError errors={[formState.errors.agentName]} />
@@ -190,6 +237,43 @@ export function CreateTokenDialog() {
                   onChange={field.onChange}
                   error={formState.errors.abilities}
                 />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="signInApprove"
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel>
+                    <Field orientation="horizontal">
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked === true)
+                          const current = getValues('expiration')
+                          if (
+                            checked === true &&
+                            !SIGN_IN_APPROVE_EXPIRATIONS.some(
+                              (e) => e === current,
+                            )
+                          ) {
+                            setValue('expiration', '30')
+                          }
+                        }}
+                      />
+                      <FieldContent>
+                        <FieldTitle>
+                          {t('tokens.create.signInApprove')}
+                        </FieldTitle>
+                        <FieldDescription className="text-xs">
+                          {t('tokens.create.signInApproveHint')}
+                        </FieldDescription>
+                      </FieldContent>
+                    </Field>
+                  </FieldLabel>
+                  <FieldError errors={[formState.errors.signInApprove]} />
+                </Field>
               )}
             />
           </CreateFlowShell>

@@ -33,6 +33,7 @@ Every user and every API token carries abilities. A role is a named set of them.
 | `write:sensitive` | Rotate secrets and update sensitive values |
 | `deploy` | Trigger a deploy |
 | `root` | Everything. Exclusive: it cannot be combined with other abilities |
+| `signin:approve` | Tokens only: show your own sign-in codes and approve new browsers. Root does not include it, and only a signed-in session can mint it |
 
 See [Identity and access](identity-and-access.md) for how abilities, sessions and tokens work.
 

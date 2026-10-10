@@ -20,6 +20,7 @@ const (
 	linkUsers    = "/settings/users"
 	linkUpdates  = "/settings/updates"
 	linkDBs      = "/databases/"
+	linkSecurity = "/settings/security"
 )
 
 type kindInfo struct {
@@ -50,6 +51,8 @@ var kindInfos = map[string]kindInfo{
 	KindDataCopy:            {"Data copy into %s needs attention", "Open the database and retry the copy", linkDBs, true},
 	KindBackupOverdue:       {"Backup of %s is overdue", "Open the database and run a backup", linkDBs, true},
 	KindInvites:             {"Invitations are waiting", "Open Users and resend or revoke them", linkUsers, false},
+	KindLoginCode:           {"Sign-in code requested from %s", "Show the code only if you asked for it", linkSecurity, false},
+	KindLoginApproval:       {"New browser sign-in from %s is waiting", "Approve it only if it is you, otherwise deny it", linkSecurity, false},
 }
 
 // newItem builds an item with its stable id, one-line title, next action and

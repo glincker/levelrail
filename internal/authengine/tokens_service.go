@@ -4,10 +4,12 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -213,6 +215,40 @@ func (e *Engine) ListTokens(ctx context.Context, ownerLegacyID string) ([]TokenR
 		out = append(out, rec)
 	}
 	return out, nil
+}
+
+// RevokeTokensWithAbility revokes every live token of ownerLegacyID that
+// carries ability and returns their ids (legacy where mapped).
+func (e *Engine) RevokeTokensWithAbility(ctx context.Context, ownerLegacyID, ability string) ([]string, error) {
+	if ownerLegacyID == "" {
+		return nil, nil
+	}
+	recs, err := e.ListTokens(ctx, ownerLegacyID)
+	if err != nil {
+		return nil, err
+	}
+	var revoked []string
+	for _, rec := range recs {
+		if rec.RevokedAt != nil || !slices.Contains(rec.Abilities, ability) {
+			continue
+		}
+		if err := e.RevokeToken(ctx, rec.EngineID); err != nil {
+			return revoked, err
+		}
+		revoked = append(revoked, rec.ID)
+	}
+	return revoked, nil
+}
+
+// RevokeOwnerTokensWithAbility is RevokeTokensWithAbility for a caller with
+// only the database, such as the recover-admin command.
+func RevokeOwnerTokensWithAbility(ctx context.Context, db *sql.DB, ownerLegacyID, ability string) ([]string, error) {
+	eng, err := New(db, Config{Directory: NewDirectory(db), BaseURL: "http://localhost"})
+	if err != nil {
+		return nil, fmt.Errorf("authengine: revoke owner tokens: %w", err)
+	}
+	defer eng.Close()
+	return eng.RevokeTokensWithAbility(ctx, ownerLegacyID, ability)
 }
 
 // GetToken loads one token by legacy or library id.

@@ -2293,6 +2293,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
 		api.WithHSTS(hstsEnabled(logger)),
 		api.WithAllowInsecureLogin(allowInsecureLogin(logger)),
+		api.WithNewDeviceApproval(api.NewDeviceApprovalFromEnv()),
 		api.WithAPIRateLimit(apiRateLimitReadRPM(logger), apiRateLimitWriteRPM(logger)),
 		api.WithWebhookRateLimit(webhookRateLimitRPM(logger)),
 		api.WithTokenRedeemRateLimit(apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", defaultTokenRedeemRateLimitRPM)),

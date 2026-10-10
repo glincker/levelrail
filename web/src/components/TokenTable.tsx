@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { RelativeTime } from './kit/RelativeTime'
 import { RevokeTokenDialog } from './RevokeTokenDialog'
-import { ABILITY_BADGE_VARIANT } from '../types/token'
+import { TOKEN_ABILITY_BADGE_VARIANT } from '../types/token'
 import type { TokenResource } from '../types/token'
 
 // Revoked tokens are never hidden from this list (GET /api/v1/auth/tokens
@@ -94,7 +94,7 @@ export function TokenTable({ tokens }: { tokens: TokenResource[] }) {
                     {token.abilities.map((ability) => (
                       <Badge
                         key={ability}
-                        variant={ABILITY_BADGE_VARIANT[ability]}
+                        variant={TOKEN_ABILITY_BADGE_VARIANT[ability]}
                       >
                         {ability}
                       </Badge>

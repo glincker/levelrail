@@ -216,6 +216,7 @@ func (l *authLibMFA) disable(w http.ResponseWriter, r *http.Request) {
 		l.fail(w, "api: 2fa disable: library delete failed", user.ID, err)
 		return
 	}
+	l.rt.retireSignInRequests(r.Context(), r, user.ID, "totp_disabled")
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -306,6 +307,9 @@ func (l *authLibMFA) verify(w http.ResponseWriter, r *http.Request) {
 	if err := l.seam.EstablishSession(w, r, *user); err != nil {
 		rt.internalError(w, "api: 2fa verify: establish session failed", err, slog.String("user_id", userID))
 		return
+	}
+	if req.RememberDevice {
+		rt.trustDevice(w, r, user.ID)
 	}
 	writeJSON(w, http.StatusOK, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
 }

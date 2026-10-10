@@ -156,6 +156,9 @@ func (rt *Router) RunDeviceLoginExpirySweeper(ctx context.Context) error {
 		if _, err := rt.authLib.device.PruneDevices(ctx, cutoff); err != nil && ctx.Err() == nil {
 			rt.logger.Warn("api: prune device requests failed", slog.String("error", err.Error()))
 		}
+		if err := rt.SweepSignInExpiry(ctx, time.Now()); err != nil && ctx.Err() == nil {
+			rt.logger.Warn("api: sign-in expiry sweep failed", slog.String("error", err.Error()))
+		}
 	}
 	tick()
 	ticker := time.NewTicker(envDuration(envDeviceExpirySweep, defaultDeviceExpirySweep))

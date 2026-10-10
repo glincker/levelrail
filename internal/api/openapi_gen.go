@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 802 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 814 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -256,6 +256,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/device/{user_code}/deny", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDenyDeviceAuthRequest", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/forgot-password", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleForgotPassword", Description: "Forgot/reset password: necessarily unauthenticated, gated by possession of the emailed token instead of a session or ability."},
 	{Method: "POST", Path: "/api/v1/auth/login", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLogin", Description: "Auth. Login and first-run registration are necessarily public; everything else requires an existing session."},
+	{Method: "POST", Path: "/api/v1/auth/login-approval/poll", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePollLoginApproval", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/login-approvals/{id}/approve", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleApproveLoginApproval", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/login-approvals/{id}/deny", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDenyLoginApproval", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/login-code/redeem", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRedeemLoginCode", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/login-code/request", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRequestLoginCode", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/login-options", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLoginOptions", Description: "Sign in with a code and new-device approval (login_code.go, login_approval.go). Request, redeem and poll are public and bound to a browser cookie; the rest act only on the caller's own account."},
 	{Method: "POST", Path: "/api/v1/auth/logout", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLogout", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/oauth/providers", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListPublicOAuthProviders", Description: "OAuth sign-in (Google, GitHub). /providers, /start, /callback are all necessarily public; /link/start is requireAuth-gated (see its own doc comment)."},
 	{Method: "GET", Path: "/api/v1/auth/oauth/{provider}/callback", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleOAuthCallback", Description: ""},
@@ -276,9 +282,13 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/auth/session-links/{token}/consume", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleConsumeSessionLink", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/sessions/revoke-others", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeOtherSessions", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/setup-status", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetupStatus", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/sign-in-requests", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListSignInRequests", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/sign-in-requests/codes/{id}/reveal", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevealLoginCode", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/tokens", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListTokens", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/tokens", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateToken", Description: "API tokens: create/revoke are session-only, deliberately never bearer-token authenticated (list also takes a root token). A token cannot mint or revoke another token on its own behalf; only an interactive human session can manage the token set, the same boundary that stops a leaked scoped token from escalating itself by minting a broader one."},
 	{Method: "DELETE", Path: "/api/v1/auth/tokens/{id}", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeToken", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/trusted-devices", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListTrustedDevices", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/auth/trusted-devices/{id}", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeTrustedDevice", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/users", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateUser", Description: "Multi-user: creating another local-password user (see handleRegister's own doc comment) is AbilityRoot, not merely requireAuth: the caller also picks the new user's Abilities, so anyone able to reach this route can mint access at any tier, themselves included, only a root caller may do that. Listing stays AbilityRead, same tier as every other passive view."},
 	{Method: "GET", Path: "/api/v1/auth/whoami", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleWhoami", Description: ""},
 	{Method: "GET", Path: "/api/v1/iam/analyze", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleIAMAnalyze", Description: ""},
@@ -316,6 +326,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/settings/ai-control", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetAIControl", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/ai-control", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateAIControl", Description: ""},
 	{Method: "POST", Path: "/api/v1/settings/ai-control/revoke-agent-tokens", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeAgentTokens", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/auth/code-login", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetCodeLoginSettings", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/auth/code-login", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutCodeLoginSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetGlobalDeployFreeze", Description: "OAuth settings: GET is AbilityRead, PUT is AbilityRoot, matching /api/v1/settings/ingress's own tiers. Global deploy freeze windows apply to every app, so writing them is root-only."},
 	{Method: "PUT", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutGlobalDeployFreeze", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/oauth", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListOAuthSettings", Description: ""},

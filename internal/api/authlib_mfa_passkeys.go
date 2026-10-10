@@ -108,6 +108,7 @@ func (l *authLibMFA) deletePasskey(w http.ResponseWriter, r *http.Request) {
 		l.fail(w, "api: delete passkey failed", userID, err)
 		return
 	}
+	l.rt.retireSignInRequests(r.Context(), r, userID, "passkey_removed")
 	w.WriteHeader(http.StatusNoContent)
 }
 

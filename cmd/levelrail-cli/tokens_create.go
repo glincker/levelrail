@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"slices"
 )
 
 // runTokensCreate implements "tokens create --name NAME --abilities
@@ -32,7 +33,7 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 	var name, abilitiesFlag, agentName, agentDescription, presetFlag string
 	var expiresInDays int
 	fs.StringVar(&name, "name", "", "name for the new token (required)")
-	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list, e.g. \"read,deploy\" (required; valid: read, read:sensitive, write, write:sensitive, deploy, root)")
+	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list, e.g. \"read,deploy\" (required; valid: read, read:sensitive, write, write:sensitive, deploy, root, signin:approve)")
 	fs.StringVar(&presetFlag, "preset", "", "ability preset instead of --abilities: observer (read), deployer (read, deploy) or operator (everything except root)")
 	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 0, never expires)")
 	fs.StringVar(&agentName, "agent", "", "label the token as issued to an AI agent with this name; audit entries made with it record the name")
@@ -72,6 +73,14 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 	if expiresInDays < 0 {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--expires-in-days must not be negative"))
+	}
+	if slices.Contains(abilities, "signin:approve") {
+		if agentName != "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("signin:approve cannot be granted to an agent token"))
+		}
+		if expiresInDays == 0 {
+			return reportError(stdout, stderr, jsonOut, newValidationError("a signin:approve token must expire: set --expires-in-days (30 at most by default)"))
+		}
 	}
 
 	if agentName == "" && agentDescription != "" {
@@ -115,9 +124,16 @@ again after this call). Requires a live session: --username/--password
 (prompted if omitted), not this CLI's own persisted token, see
 "%[1]s tokens -h" for why.
 
+signin:approve is token only: it lets the token show your sign-in codes and
+approve new browsers ("%[1]s auth code", "%[1]s auth approve"). Root does not
+include it and a device login never grants it. A signin:approve token must
+expire (--expires-in-days, 30 at most unless the server sets
+APP_SIGNIN_APPROVE_TOKEN_MAX_DAYS), cannot be an agent token, and is revoked
+when you change or reset your password or sign out your other sessions.
+
 Flags:
   --name string                 name for the new token (required)
-  --abilities string           comma-separated ability list (required; valid: read, read:sensitive, write, write:sensitive, deploy, root)
+  --abilities string           comma-separated ability list (required; valid: read, read:sensitive, write, write:sensitive, deploy, root, signin:approve)
   --preset string              ability preset instead of --abilities: observer (read), deployer (read, deploy) or operator (everything except root)
   --expires-in-days int      token lifetime in days (default: 0, never expires)
   --agent string                label the token as issued to an AI agent; audit entries record the name

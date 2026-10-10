@@ -72,6 +72,11 @@
     "backupOverdueDetail": "No successful backup since {{date}}.",
     "invitesTitle": "Invitations are waiting",
     "invitesDetail": "{{pending}} waiting to be accepted, {{expired}} expired without being accepted.",
+    "loginCodeTitle_one": "Sign-in code requested from {{ip}}",
+    "loginCodeTitle_other": "{{count}} sign-in codes requested, newest from {{ip}}",
+    "loginCodeDetail": "{{agent}}. Only show the code if you asked for it.",
+    "loginApprovalTitle": "New browser sign-in from {{ip}} is waiting",
+    "loginApprovalDetail": "{{agent}}. Approve it only if it is you.",
     "openCliAccess": "Review login",
     "openApprovals": "Review approvals",
     "openItem": "Open"
