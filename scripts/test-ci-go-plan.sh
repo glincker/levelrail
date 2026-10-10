@@ -52,8 +52,8 @@ run() {
 
 run "docs only" - "scope=none" "has_tests=false" "live=smoke" -- docs/ci.md README.md
 run "docs only with label" CI_LIVE_LABEL=true "scope=none" "has_tests=false" -- docs/ci.md
-run "api change skips every e2e lane" - "scope=some" "live=smoke" has:api-1 lacks:e2e lacks:e2e-fleet lacks:e2e-reconcile \
-	nocheck:"Test (e2e)" nocheck:"Test (e2e-fleet)" nocheck:"Test (e2e-reconcile)" -- internal/api/apps.go
+run "api change runs e2e but not the fleet or reconcile lanes" - "scope=some" "live=smoke" has:api-1 has:e2e lacks:e2e-fleet lacks:e2e-reconcile \
+	check:"Test (e2e)" nocheck:"Test (e2e-fleet)" nocheck:"Test (e2e-reconcile)" -- internal/api/apps.go
 run "api change with ci:live label is full" CI_LIVE_LABEL=true "live=full" "live_reason=PR label ci:live" has:e2e-fleet has:e2e \
 	check:"Test (e2e-fleet)" check:"Test (e2e)" -- internal/api/apps.go
 run "ingress change runs e2e only" - "live=full" has:e2e lacks:e2e-fleet lacks:e2e-reconcile \
