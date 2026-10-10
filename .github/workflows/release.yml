@@ -91,11 +91,18 @@ jobs:
           CGO_ENABLED: 0
         run: go build -tags embedweb -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${{ env.RELEASE_TAG }}" -o "levelrail-linux-${{ matrix.goarch }}" ./cmd/levelrail
 
+      - name: Write release manifest
+        if: matrix.goarch == 'amd64'
+        run: ./levelrail-linux-amd64 version --json > release-manifest.json
+
       - name: Upload binary
         uses: actions/upload-artifact@v7
         with:
           name: binary-${{ matrix.goarch }}
-          path: levelrail-linux-${{ matrix.goarch }}
+          path: |
+            levelrail-linux-${{ matrix.goarch }}
+            release-manifest.json
+          if-no-files-found: ignore
           retention-days: 1
 
   build-cli-binaries:

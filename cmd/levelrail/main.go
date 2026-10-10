@@ -326,6 +326,9 @@ const (
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
+	if len(os.Args) > 1 && runReleaseCommand(os.Args[1], os.Args[2:]) {
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "recover-admin" {
 		if err := runRecoverAdmin(context.Background(), logger, os.Args[2:], os.Stdout, openStore); err != nil {
 			logger.Error("recover-admin failed", slog.String("error", err.Error()))

@@ -1,0 +1,138 @@
+{
+  "notes": {
+    "title": "Release notes",
+    "alert": {
+      "note": "Note",
+      "tip": "Tip",
+      "important": "Important",
+      "warning": "Warning",
+      "caution": "Caution"
+    }
+  },
+  "copy": {
+    "copy": "Copy",
+    "copied": "Copied"
+  },
+  "preflight": {
+    "running": "Running preflight checks...",
+    "unavailable": "Preflight checks are unavailable right now.",
+    "checksLabel": "Upgrade preflight checks",
+    "blocked": "Upgrade blocked: fix the failing checks first.",
+    "upgradeCommand": "Run this on the server (never runs automatically)",
+    "rollbackCommand": "To roll back the database after a bad upgrade",
+    "status": {
+      "ok": "Pass",
+      "warn": "Warning",
+      "fail": "Blocked",
+      "unknown": "Unknown"
+    }
+  },
+  "history": {
+    "title": "Release history and rollback",
+    "description": "The last five releases. Pick one to preview exactly what returning to it would do. Nothing is applied from this page: a rollback is run on the server so the control plane never replaces itself.",
+    "viewLabel": "Show",
+    "view": {
+      "stable": "Stable",
+      "beta": "Beta",
+      "all": "Stable and beta"
+    },
+    "loading": "Loading recent releases...",
+    "loadError": "Could not load release history: {{message}}",
+    "retry": "Try again",
+    "empty": "No releases found for this channel.",
+    "emptyHint": "Switch to another channel above, or check that this host can reach github.com.",
+    "githubUnreachable": "GitHub could not be reached. Showing cached releases and the binaries kept on this host.",
+    "currentSchema": "Database schema version {{version}}",
+    "currentSchemaUnknown": "Database schema version could not be read",
+    "running": "Running",
+    "retained": "Kept on this host",
+    "retainedHelp": "Instant and works offline",
+    "notRetained": "Downloaded when you roll back",
+    "noBinary": "No binary for this platform",
+    "binarySize": "{{size}} MB",
+    "unsigned": "Unsigned",
+    "channel": {
+      "stable": "Stable",
+      "beta": "Beta"
+    },
+    "schema": "Schema {{version}}",
+    "schemaUnknown": "Schema unknown",
+    "verdict": {
+      "binary_only": "Safe: binary only",
+      "forward": "Newer schema: migrates forward",
+      "restore_required": "Needs a backup restore",
+      "unknown": "Compatibility unknown"
+    },
+    "preview": "Preview rollback",
+    "previewRunning": "This is the running release",
+    "previewFor": "Preview rollback to {{version}}"
+  },
+  "plan": {
+    "title": "Rollback to {{version}}",
+    "description": "A read-only preview. Nothing has changed.",
+    "loading": "Checking this release against your database...",
+    "loadError": "Could not build the rollback plan: {{message}}",
+    "close": "Close",
+    "summary": "Running {{from}}, database schema {{schema}}.",
+    "target": "{{version}} supports schema {{schema}}.",
+    "targetUnknown": "{{version}} does not publish a schema version.",
+    "downtime": "Estimated downtime: about {{seconds}} seconds while the service restarts.",
+    "blocked": "Blocked: fix the failing checks below before rolling back.",
+    "stepsTitle": "What will happen",
+    "checksTitle": "Preflight checks",
+    "changesTitle": "What you give up between {{target}} and {{current}}",
+    "noChanges": "No release notes are available for the releases in between.",
+    "verdict": {
+      "binary_only": "Safe: the database schema matches, so only the program is replaced. Your data is untouched.",
+      "forward": "This release is newer than your database and will migrate it forward when it starts. That is an upgrade, not a rollback.",
+      "restore_required": "A binary-only rollback is not possible. This release is older than your database schema and would refuse to start. The only way back is to restore a database backup, which permanently loses everything written after it.",
+      "unknown": "This release does not publish its database schema version, so compatibility cannot be confirmed. An older program refuses to start on a newer schema without touching data, and the previous release is restored automatically if that happens."
+    },
+    "step": {
+      "backup": "Take a fresh backup of the control plane database",
+      "fetch": "Download the release and verify its checksum and signature",
+      "verify": "Re-check the retained binary against its recorded checksum",
+      "stop": "Stop the control plane (apps keep running)",
+      "restore_backup": "Replace the database with the backup you choose",
+      "swap_binary": "Replace the program with {{version}}",
+      "start": "Start the control plane",
+      "verify_health": "Wait for health and readiness checks to pass",
+      "auto_recover": "If it does not become healthy, put the previous release back automatically"
+    },
+    "warning": {
+      "data_loss": "Data written after the chosen backup is lost for good.",
+      "unknown_schema": "Schema compatibility is unknown.",
+      "forward_migration": "The database will be migrated forward.",
+      "no_compatible_backup": "No local backup is old enough for this release, so a rollback to it is not possible from here.",
+      "dev_build": "This is a development build, so the running binary cannot be kept for rollback."
+    },
+    "dataLoss": {
+      "title": "This loses data",
+      "body": "Restoring replaces the database with a backup. Anything written after the backup is lost, including deploys, settings changes and audit entries. The database you have now is kept beside it as a copy, and a fresh backup is taken first.",
+      "since": "Everything after {{time}} would be lost.",
+      "backupsTitle": "Backups on this host",
+      "backupRow": "{{name}} taken {{time}}, schema {{schema}}",
+      "compatible": "Compatible",
+      "incompatible": "Too new for this release",
+      "noneCompatible": "No backup on this host is compatible with {{version}}."
+    },
+    "commands": {
+      "fetch": "1. Stage the verified release on the server",
+      "apply": "2. Roll back on the server (you will be asked to type {{version}})",
+      "restore": "Roll back and restore the backup on the server"
+    },
+    "backupHint": "Backups older than a day are flagged above. A fresh backup is also taken automatically before anything changes."
+  },
+  "verify": {
+    "title": "Verify after an upgrade or rollback",
+    "description": "Runs the control plane's own health checks and reports a clear result. Run it once the service is back.",
+    "run": "Run verification",
+    "running": "Verifying...",
+    "pass": "Healthy: every check passed.",
+    "passWarn": "Healthy, with warnings to review.",
+    "fail": "Not healthy: {{count}} check failed.",
+    "failPlural": "Not healthy: {{count}} checks failed.",
+    "error": "Verification could not run: {{message}}",
+    "checkedAt": "Checked {{time}}"
+  }
+}

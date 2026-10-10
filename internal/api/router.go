@@ -298,6 +298,9 @@ type Router struct {
 	// constructed in NewRouter. Separate from updatesCache above so the
 	// stable channel's existing cache/behavior stays untouched.
 	channelUpdatesCache *upgrade.Cache
+	// releaseHist lists recent releases and their schema versions for the
+	// rollback view (updates_releases.go); always non-nil.
+	releaseHist *releaseHistorySource
 	// certExpiryWarningWindow overrides alerting.DefaultCertExpiryWarningWindow
 	// for GET /api/v1/certificates's "expiring_soon" threshold, and for a
 	// kind=cert_expiry alert rule's own evaluation (cmd/levelrail/main.go
@@ -696,6 +699,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		updateSettings:              s,
 		upgradeFetchers:             upgrade.DefaultFetchers(b.RepoSlug()),
 		channelUpdatesCache:         upgrade.NewCache(),
+		releaseHist:                 newReleaseHistorySource(b.RepoSlug()),
 		auditLog:                    s,
 		scheduledTasks:              s,
 		featureFlags:                s,

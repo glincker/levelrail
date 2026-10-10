@@ -194,6 +194,9 @@ type (
 	containerPortResource       = apiclient.ContainerPortResource
 	updatesResource             = apiclient.UpdatesResource
 	updatePreflight             = apiclient.UpdatePreflight
+	releaseHistory              = apiclient.ReleaseHistory
+	releaseHistoryItem          = apiclient.ReleaseHistoryItem
+	rollbackPlan                = apiclient.RollbackPlan
 	changelogResource           = apiclient.ChangelogResource
 	changelogEntryResource      = apiclient.ChangelogEntryResource
 	nodeResource                = apiclient.NodeResource

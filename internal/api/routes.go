@@ -128,6 +128,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// latest published release, AbilityRead like system/status above.
 	mux.HandleFunc("GET /api/v1/updates", rt.requireAbility(AbilityRead, rt.handleGetUpdates))
 	mux.HandleFunc("GET /api/v1/updates/preflight", rt.requireAbility(AbilityRead, rt.handleUpdatePreflight))
+	mux.HandleFunc("GET /api/v1/updates/releases", rt.requireAbility(AbilityRead, rt.handleReleaseHistory))
+	mux.HandleFunc("GET /api/v1/updates/rollback-plan", rt.requireAbility(AbilityRoot, rt.handleRollbackPlan))
 	// Channel/auto-update settings are AbilityRoot on both verbs: see
 	// handleGetUpdateSettings' own doc comment (updates_settings.go).
 	mux.HandleFunc("GET /api/v1/updates/settings", rt.requireAbility(AbilityRoot, rt.handleGetUpdateSettings))
