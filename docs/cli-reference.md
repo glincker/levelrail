@@ -589,7 +589,7 @@ levelrail-cli auth login [--device] [--profile NAME] [flags]
 levelrail-cli auth whoami [flags]
 levelrail-cli auth session-link [flags]
 levelrail-cli auth code [flags]
-levelrail-cli auth approve <id> [flags]
+levelrail-cli auth approve <id> --match N [flags]
 levelrail-cli auth deny <id> [flags]
 levelrail-cli auth devices [revoke <id>] [flags]
 levelrail-cli auth code-login [--admins true|false] [--others true|false] [flags]
@@ -603,7 +603,7 @@ levelrail-cli auth 2fa recovery-codes --code CODE [flags]
 - `login` authenticates and persists a new API token; with `--profile NAME` it saves under a named profile instead of overwriting `default`.
 - `login --device --json` prints one JSON line first (`verification_url`, `user_code`, `expires_in`, `expires_at`) so an agent can relay it, then the token resource once approved. See [Attention center](attention-center.md).
 - `session-link` mints a short lived (about 2 minutes), single use login link that signs in as whoever minted it, meant for browser automation. It needs a token with the root ability.
-- `code` prints the sign-in codes waiting for your account with the requester's IP address, browser and time, plus password sign-ins from new browsers waiting for approval; `approve` and `deny` decide one of those, and `devices` lists or revokes browsers trusted for password sign-in. They need a token that belongs to your user and holds `write:sensitive` (a `login --device` token does). `code-login` shows or changes who may sign in with a code (changing it needs root). See [Identity and access](identity-and-access.md#sign-in-with-a-code).
+- `code` prints the sign-in codes waiting for your account with the requester's IP address, browser and time, plus password sign-ins from new browsers waiting for approval; `approve` and `deny` decide one of those (`approve` needs `--match` with the two digit number the waiting browser shows; a wrong number denies it), and `devices` lists or revokes browsers trusted for password sign-in. They need a token that belongs to your user. Listing and `devices` accept `write:sensitive`; showing a code and `approve` or `deny` need `signin:approve`, which no device login, root or `write:sensitive` token carries. Mint one from a signed-in session with `levelrail-cli tokens create --name approver --abilities signin:approve --expires-in-days 30`, or use the dashboard. `code-login` shows or changes who may sign in with a code (changing it needs root). See [Identity and access](identity-and-access.md#sign-in-with-a-code).
 - Every `2fa` subcommand needs a live session: `--username` and `--password` (prompted if omitted), never the CLI's saved bearer token. `setup` starts enrollment and returns a secret and provisioning URI; `enable` confirms it and returns recovery codes once; `recovery-codes` regenerates them and invalidates the old set.
 
 ## Auth engine

@@ -61,7 +61,7 @@ A background sweeper records expiry whether or not the CLI ever polls again. It 
 
 ## Sign-in codes and new browsers
 
-When someone asks for a sign-in code for your account, or signs in with your password from a browser you have not trusted while you are signed in here, a banner appears on every page and the attention center lists a `login_code` or `login_approval` item with the requester's IP address, browser and time. Items and the banner never carry the code: **Show code** fetches it on demand, and each reveal is audited. Approve or deny a new browser from the banner or from **Settings > Security**. The same requests are available from the terminal with `levelrail-cli auth code`. See [Identity and access](identity-and-access.md#sign-in-with-a-code).
+When someone asks for a sign-in code for your account, or signs in with your password from a browser you have not trusted while you are signed in here, a banner appears on every page and the attention center lists one `login_code` or `login_approval` item for your account, with a count and the newest requester's IP address, browser and time. Items and the banner never carry the code: **Show code** fetches it on demand, and each reveal is audited. Approve or deny a new browser from the banner or from **Settings > Security**; approving asks you to pick the number the waiting browser shows. The same requests are available from the terminal with `levelrail-cli auth code`. See [Identity and access](identity-and-access.md#sign-in-with-a-code).
 
 ## Running the CLI through a tunnel or proxy
 

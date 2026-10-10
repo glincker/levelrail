@@ -141,9 +141,11 @@ function CodeRow({ request }: { request: SignInCodeRequest }) {
 function ApprovalRow({ request }: { request: SignInApprovalRequest }) {
   const { t } = useTranslation('signIn', { useSuspense: false })
   const decide = useDecideApproval()
-  const act = (approve: boolean) => {
+  const [choosing, setChoosing] = useState(false)
+  const act = (approve: boolean, match?: number) => {
+    setChoosing(false)
     decide.mutate(
-      { id: request.id, approve },
+      { id: request.id, approve, match },
       {
         onSuccess: () => {
           toast.add({
@@ -172,25 +174,59 @@ function ApprovalRow({ request }: { request: SignInApprovalRequest }) {
         />
         <p className="font-mono text-xs text-muted-foreground">{request.id}</p>
       </div>
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={decide.isPending}
-          onClick={() => act(false)}
+      {choosing ? (
+        <div
+          className="flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={t('requests.matchPrompt')}
         >
-          {t('requests.deny')}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          disabled={decide.isPending}
-          onClick={() => act(true)}
-        >
-          {t('requests.approve')}
-        </Button>
-      </div>
+          <p className="w-full text-xs text-muted-foreground">
+            {t('requests.matchPrompt')}
+          </p>
+          {request.match_options.map((n) => (
+            <Button
+              key={n}
+              type="button"
+              size="sm"
+              variant="outline"
+              className="font-mono text-base"
+              aria-label={t('requests.matchOption', { number: n })}
+              disabled={decide.isPending}
+              onClick={() => act(true, n)}
+            >
+              {n}
+            </Button>
+          ))}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => setChoosing(false)}
+          >
+            {t('requests.cancel')}
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={decide.isPending}
+            onClick={() => act(false)}
+          >
+            {t('requests.deny')}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={decide.isPending}
+            onClick={() => setChoosing(true)}
+          >
+            {t('requests.approve')}
+          </Button>
+        </div>
+      )}
     </li>
   )
 }

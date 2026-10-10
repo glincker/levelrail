@@ -207,7 +207,10 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
       case 'login_code':
         return {
           ...base,
-          title: t('items.loginCodeTitle', { ip: p.ip ?? f.subject }),
+          title: t('items.loginCodeTitle', {
+            ip: p.ip ?? f.subject,
+            count: Number.parseInt(p.count ?? '1', 10) || 1,
+          }),
           detail: t('items.loginCodeDetail', { agent: p.user_agent ?? '' }),
         }
       case 'login_approval':

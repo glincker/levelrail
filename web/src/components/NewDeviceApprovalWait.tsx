@@ -16,11 +16,13 @@ const POLL_MS = 3000
 export function NewDeviceApprovalWait({
   approvalId,
   expiresAt,
+  matchNumber,
   onBack,
   onUseCode,
 }: {
   approvalId: string
   expiresAt: string
+  matchNumber: number
   onBack: () => void
   onUseCode: () => void
 }) {
@@ -70,6 +72,19 @@ export function NewDeviceApprovalWait({
                 cli: cliCommand(brand.BinaryName, 'auth code'),
               })}
             </p>
+            {matchNumber > 0 ? (
+              <div className="py-2 text-center">
+                <p className="text-xs text-muted-foreground">
+                  {t('approval.matchLabel')}
+                </p>
+                <p
+                  className="font-mono text-4xl font-semibold tracking-widest"
+                  data-testid="approval-match"
+                >
+                  {matchNumber}
+                </p>
+              </div>
+            ) : null}
             <p className="font-mono text-xs">
               {t('approval.reference', { id: approvalId })}
             </p>

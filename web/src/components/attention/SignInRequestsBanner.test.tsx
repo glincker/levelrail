@@ -18,13 +18,16 @@ void testI18n.use(initReactI18next).init({
 
 type Routes = Record<string, unknown>
 
-function stubFetch(routes: Routes) {
+function stubFetch(routes: Routes, bodies: Record<string, string> = {}) {
   const calls: string[] = []
   vi.stubGlobal(
     'fetch',
     vi.fn((input: string, init?: RequestInit) => {
       const key = `${init?.method ?? 'GET'} ${input}`
       calls.push(key)
+      if (typeof init?.body === 'string') {
+        bodies[key] = init.body
+      }
       const body = routes[key]
       if (body === undefined) {
         return Promise.resolve(new Response(null, { status: 204 }))
@@ -72,6 +75,7 @@ const waiting = {
       user_agent: 'Safari',
       created_at: now,
       expires_at: now,
+      match_options: [17, 42, 83],
     },
   ],
 }
@@ -109,12 +113,18 @@ describe('SignInRequestsBanner', () => {
     expect(await screen.findByText('ABCD-EF12')).toBeInTheDocument()
   })
 
-  it('approves a new browser sign-in', async () => {
-    const calls = stubFetch({ 'GET /api/v1/auth/sign-in-requests': waiting })
+  it('approves only after the approver picks the shown number', async () => {
+    const bodies: Record<string, string> = {}
+    const calls = stubFetch(
+      { 'GET /api/v1/auth/sign-in-requests': waiting },
+      bodies,
+    )
     renderBanner()
     fireEvent.click(await screen.findByRole('button', { name: 'Approve' }))
-    await waitFor(() =>
-      expect(calls).toContain('POST /api/v1/auth/login-approvals/la_1/approve'),
-    )
+    expect(calls.some((c) => c.includes('/approve'))).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Number 42' }))
+    const key = 'POST /api/v1/auth/login-approvals/la_1/approve'
+    await waitFor(() => expect(calls).toContain(key))
+    expect(JSON.parse(bodies[key] ?? '{}')).toEqual({ match: 42 })
   })
 })

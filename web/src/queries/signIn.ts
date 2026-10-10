@@ -24,6 +24,8 @@ export interface SignInApprovalRequest {
   user_agent: string
   created_at: string
   expires_at: string
+  // Three numbers; only the one shown in the waiting browser approves it.
+  match_options: number[]
 }
 
 export interface SignInRequests {
@@ -53,6 +55,7 @@ export type ApprovalPollStatus = 'pending' | 'approved' | 'denied' | 'expired'
 export interface ApprovalPoll {
   status: ApprovalPollStatus
   expires_at?: string
+  match_number?: number
   username?: string
   display_name?: string
   mfa_required?: boolean
@@ -71,11 +74,15 @@ async function send<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
+  // The public sign-in POSTs refuse anything but JSON, so a POST always sends it.
+  const payload = body === undefined && method === 'POST' ? {} : body
   const res = await fetch(path, {
     method,
     headers:
-      body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
+      payload === undefined
+        ? undefined
+        : { 'Content-Type': 'application/json' },
+    body: payload === undefined ? undefined : JSON.stringify(payload),
   })
   if (!res.ok) {
     const message = await readErrorMessage(res, `${path} failed: ${res.status}`)
@@ -95,7 +102,10 @@ export function loginOptionsQueryOptions() {
   return queryOptions({
     queryKey: signInKeys.options,
     queryFn: () =>
-      send<{ code_login: boolean }>('GET', '/api/v1/auth/login-options'),
+      send<{ code_login: boolean; trusted_device_days: number }>(
+        'GET',
+        '/api/v1/auth/login-options',
+      ),
     staleTime: 60_000,
   })
 }
@@ -133,11 +143,16 @@ export function revealLoginCode(id: string) {
 
 export function useDecideApproval() {
   const qc = useQueryClient()
-  return useMutation<undefined, ApiError, { id: string; approve: boolean }>({
-    mutationFn: ({ id, approve }) =>
+  return useMutation<
+    undefined,
+    ApiError,
+    { id: string; approve: boolean; match?: number }
+  >({
+    mutationFn: ({ id, approve, match }) =>
       send(
         'POST',
         `/api/v1/auth/login-approvals/${encodeURIComponent(id)}/${approve ? 'approve' : 'deny'}`,
+        approve ? { match } : undefined,
       ),
     onSettled: () => qc.invalidateQueries({ queryKey: signInKeys.requests }),
   })

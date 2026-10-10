@@ -41,6 +41,8 @@ export interface ApprovalRequiredResponse {
   approval_required: true
   approval_id: string
   approval_expires_at: string
+  // The number the approving session must pick out of three.
+  approval_match: number
 }
 
 export type LoginResult =
@@ -109,6 +111,8 @@ export interface VerifyTwoFactorRequest {
   mfaToken: string
   code?: string
   recoveryCode?: string
+  // Opt-in only: an unchecked box never trusts the browser.
+  rememberDevice?: boolean
 }
 
 export async function verifyTwoFactor(
@@ -121,6 +125,7 @@ export async function verifyTwoFactor(
       mfa_token: req.mfaToken,
       code: req.code ?? '',
       recovery_code: req.recoveryCode ?? '',
+      remember_device: req.rememberDevice === true,
     }),
   })
   if (!res.ok) {

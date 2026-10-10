@@ -115,6 +115,7 @@ export function LoginForm({
       <NewDeviceApprovalWait
         approvalId={approval.approval_id}
         expiresAt={approval.approval_expires_at}
+        matchNumber={approval.approval_match}
         onBack={() => {
           setApproval(null)
         }}
