@@ -22,6 +22,7 @@ import { certAttentionRank, sortByCertAttention } from '../../lib/certStatus'
 import { CloudflareDnsCard } from '../../components/CloudflareDnsCard'
 import { Route53DnsCard } from '../../components/Route53DnsCard'
 import { IngressSettingsCard } from '../../components/IngressSettingsCard'
+import { ReverseProxyGuideCard } from '../../components/ReverseProxyGuideCard'
 import { IngressConnectivityCard } from '../../components/IngressConnectivityCard'
 import { Button } from '../../components/ui/button'
 import { DashboardUrlCard } from '../../components/DashboardUrlCard'
@@ -157,6 +158,8 @@ function DomainsPage() {
       <FallbackDomainsCard />
 
       <IngressConnectivityCard />
+
+      <ReverseProxyGuideCard />
 
       <CloudflareDnsCard settings={cloudflareDns} />
 

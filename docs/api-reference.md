@@ -58,6 +58,7 @@ System endpoints for:
 | GET | /api/v1/updates/rollback-plan | AbilityRoot | handleRollbackPlan |
 | GET | /api/v1/updates/history | AbilityRead | handleUpgradeHistory |
 | POST | /api/v1/updates/history/{id}/ack | AbilityWrite | handleAckUpgrade |
+| GET | /api/v1/system/reverse-proxy | AbilityRead | handleReverseProxyGuide |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

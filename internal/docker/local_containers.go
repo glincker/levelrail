@@ -14,6 +14,8 @@ import (
 type LocalNetwork struct {
 	Name string
 	IP   string
+	// Gateway is the host side of the network, reachable from the container.
+	Gateway string
 }
 
 // LocalContainer is a container on this Docker daemon with its networks and
@@ -26,6 +28,8 @@ type LocalContainer struct {
 	Networks []LocalNetwork
 	// Ports are every port the image exposes, published or not.
 	Ports []int
+	// Published are the host ports this container publishes.
+	Published []int
 }
 
 // ListLocalContainers returns every container on the daemon, running or not.
@@ -43,7 +47,7 @@ func (c *Client) ListLocalContainers(ctx context.Context) ([]LocalContainer, err
 		if s.NetworkSettings != nil {
 			for name, ep := range s.NetworkSettings.Networks {
 				if ep != nil && ep.IPAddress != "" {
-					lc.Networks = append(lc.Networks, LocalNetwork{Name: name, IP: ep.IPAddress})
+					lc.Networks = append(lc.Networks, LocalNetwork{Name: name, IP: ep.IPAddress, Gateway: ep.Gateway})
 				}
 			}
 		}
@@ -54,8 +58,12 @@ func (c *Client) ListLocalContainers(ctx context.Context) ([]LocalContainer, err
 				seen[int(p.PrivatePort)] = true
 				lc.Ports = append(lc.Ports, int(p.PrivatePort))
 			}
+			if p.PublicPort != 0 {
+				lc.Published = append(lc.Published, int(p.PublicPort))
+			}
 		}
 		sort.Ints(lc.Ports)
+		sort.Ints(lc.Published)
 		out = append(out, lc)
 	}
 	return out, nil
