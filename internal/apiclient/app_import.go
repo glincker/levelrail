@@ -21,6 +21,7 @@ type AppImportRequest struct {
 	Platform      string             `json:"platform"`
 	URL           string             `json:"url"`
 	Token         string             `json:"token"`
+	Snapshot      string             `json:"snapshot,omitempty"`
 	InsecureTLS   bool               `json:"insecure_tls,omitempty"`
 	AllowPrivate  bool               `json:"allow_private,omitempty"`
 	AllowLoopback bool               `json:"allow_loopback,omitempty"`

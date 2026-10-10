@@ -23,9 +23,9 @@ func NewSource(platform Platform, baseURL, token string, o ClientOptions) (Sourc
 // ParsePlatform validates a live-source platform name.
 func ParsePlatform(s string) (Platform, error) {
 	switch Platform(s) {
-	case Coolify, Dokploy, CapRover:
+	case Coolify, Dokploy, CapRover, Docker:
 		return Platform(s), nil
 	default:
-		return "", fmt.Errorf("platform must be coolify, dokploy or caprover")
+		return "", fmt.Errorf("platform must be coolify, dokploy, caprover or docker")
 	}
 }

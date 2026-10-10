@@ -149,6 +149,8 @@ export interface AppImportSource {
   platform: string
   url: string
   token: string
+  // docker platform: the docker inspect JSON, used instead of url and token.
+  snapshot?: string
   allow_loopback?: boolean
   allow_private?: boolean
   insecure_tls?: boolean
