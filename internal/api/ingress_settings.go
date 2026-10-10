@@ -60,7 +60,18 @@ type ingressSettingsResource struct {
 	TLSTerminatedUpstream bool `json:"tls_terminated_upstream,omitempty"`
 	ACMESkippedUpstream   bool `json:"acme_skipped_upstream,omitempty"`
 	TrustedProxiesMissing bool `json:"trusted_proxies_missing,omitempty"`
+	// ACMEBlocked is set when real certificates are on but cannot succeed
+	// here: certificate authorities validate on ports 80 and 443, and this
+	// ingress listens elsewhere with no DNS-01 provider to fall back on.
+	ACMEBlocked string `json:"acme_blocked,omitempty"`
+	// IngressHTTPPort and IngressHTTPSPort are the ports this ingress listens on.
+	IngressHTTPPort  int `json:"ingress_http_port,omitempty"`
+	IngressHTTPSPort int `json:"ingress_https_port,omitempty"`
 }
+
+// acmeBlockedNonStandardPorts is the ACMEBlocked value for an ingress that
+// does not listen on 80 and 443.
+const acmeBlockedNonStandardPorts = "non_standard_ports"
 
 func (rt *Router) toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource {
 	res := toIngressSettingsResource(s)
@@ -68,6 +79,18 @@ func (rt *Router) toIngressSettingsResource(s store.IngressSettings) ingressSett
 	res.PublicHostSource = rt.publicHostSource
 	res.ACMESkippedUpstream = s.TLSTerminatedUpstream && s.ACMEEnabled
 	res.TrustedProxiesMissing = s.TLSTerminatedUpstream && rt.doctorEdge != nil && rt.doctorEdge.TrustedProxies == 0
+	httpPort, httpsPort := rt.doctorHTTPPort, rt.doctorHTTPSPort
+	if httpPort == 0 {
+		httpPort = defaultDoctorHTTPPort
+	}
+	if httpsPort == 0 {
+		httpsPort = defaultDoctorHTTPSPort
+	}
+	if s.ACMEEnabled && !s.TLSTerminatedUpstream && (httpPort != defaultDoctorHTTPPort || httpsPort != defaultDoctorHTTPSPort) &&
+		rt.activeDNSProvider(context.Background()) == dnsProviderNone {
+		res.ACMEBlocked = acmeBlockedNonStandardPorts
+		res.IngressHTTPPort, res.IngressHTTPSPort = httpPort, httpsPort
+	}
 	return res
 }
 

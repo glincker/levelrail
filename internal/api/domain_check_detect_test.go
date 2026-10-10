@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func TestDomainCheckAcceptsEitherAddressFamily(t *testing.T) {
@@ -27,5 +29,37 @@ func TestClassifyACMEErrorOtherProxy(t *testing.T) {
 	}
 	if got := acmeActionForReason(httpsHintOtherProxy); got != acmeActionOtherProxy {
 		t.Errorf("action = %q", got)
+	}
+}
+
+func TestClassifyACMEErrorTLSALPNOtherProxy(t *testing.T) {
+	msg := "authorization failed: HTTP 400 urn:ietf:params:acme:error:tls - 72.61.8.70: remote error: tls: unrecognized name"
+	if got := classifyACMEError(msg); got != httpsHintOtherProxy {
+		t.Errorf("classifyACMEError() = %q, want %q", got, httpsHintOtherProxy)
+	}
+}
+
+func TestIngressSettingsACMEBlockedOnNonStandardPorts(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	rt.doctorHTTPPort, rt.doctorHTTPSPort = 8088, 8443
+	res := rt.toIngressSettingsResource(store.IngressSettings{ACMEEnabled: true})
+	if res.ACMEBlocked != acmeBlockedNonStandardPorts || res.IngressHTTPSPort != 8443 {
+		t.Errorf("resource = %+v, want blocked on non standard ports", res)
+	}
+	if res := rt.toIngressSettingsResource(store.IngressSettings{ACMEEnabled: false}); res.ACMEBlocked != "" {
+		t.Errorf("acme off must not report a block, got %q", res.ACMEBlocked)
+	}
+	rt.doctorHTTPPort, rt.doctorHTTPSPort = 0, 0
+	if res := rt.toIngressSettingsResource(store.IngressSettings{ACMEEnabled: true}); res.ACMEBlocked != "" {
+		t.Errorf("standard ports must not report a block, got %q", res.ACMEBlocked)
+	}
+}
+
+func TestIngressSettingsNoACMEBlockedBehindTLSUpstream(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	rt.doctorHTTPPort, rt.doctorHTTPSPort = 8088, 8443
+	res := rt.toIngressSettingsResource(store.IngressSettings{ACMEEnabled: true, TLSTerminatedUpstream: true})
+	if res.ACMEBlocked != "" {
+		t.Errorf("a proxy that terminates TLS must not report an ACME block, got %q", res.ACMEBlocked)
 	}
 }

@@ -258,5 +258,11 @@
     "portLabel": "Public HTTPS port",
     "portHelp": "If a proxy such as Traefik or nginx forwards to this ingress, enter the port clients use (usually 443) so links work.",
     "portInvalid": "Enter a port between 0 and 65535, or leave it blank."
+  },
+  "acmeBlocked": {
+    "title": "Real certificates cannot be issued from here",
+    "body": "Certificate authorities check ports 80 and 443, and this ingress listens on {{http}} and {{https}}. If a proxy such as Traefik or nginx owns those ports, let it handle HTTPS for this domain and turn real certificates off here. Otherwise give Levelrail ports 80 and 443, or use a DNS-01 provider.",
+    "turnOff": "Let my proxy handle HTTPS",
+    "turningOff": "Turning off..."
   }
 }

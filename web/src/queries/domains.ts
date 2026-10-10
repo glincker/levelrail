@@ -90,6 +90,11 @@ export interface IngressSettings {
   tls_terminated_upstream?: boolean
   acme_skipped_upstream?: boolean
   trusted_proxies_missing?: boolean
+  // Set when real certificates are on but cannot work: the ingress does not
+  // listen on 80 and 443 and there is no DNS-01 provider.
+  acme_blocked?: 'non_standard_ports'
+  ingress_http_port?: number
+  ingress_https_port?: number
 }
 
 export async function fetchIngressSettings(): Promise<IngressSettings> {
