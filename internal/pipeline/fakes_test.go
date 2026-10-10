@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -323,9 +325,52 @@ func (h *harness) logs(runID string) string {
 	return sb.String()
 }
 
+var (
+	templateOnce sync.Once
+	templateDB   []byte
+	templateErr  error
+)
+
+// migratedTemplate runs the full migration chain once per test binary; each
+// test then starts from a copy instead of re-applying every migration.
+func migratedTemplate() ([]byte, error) {
+	templateOnce.Do(func() {
+		dir, err := os.MkdirTemp("", "pipeline-template-")
+		if err != nil {
+			templateErr = err
+			return
+		}
+		defer func() { _ = os.RemoveAll(dir) }()
+		path := filepath.Join(dir, "t.db")
+		db, err := store.Open(context.Background(), path)
+		if err != nil {
+			templateErr = err
+			return
+		}
+		if _, err := db.ExecContext(context.Background(), `PRAGMA wal_checkpoint(TRUNCATE)`); err != nil {
+			templateErr = err
+		}
+		if err := db.Close(); err != nil && templateErr == nil {
+			templateErr = err
+		}
+		if templateErr == nil {
+			templateDB, templateErr = os.ReadFile(path) //nolint:gosec // test-only path from os.MkdirTemp
+		}
+	})
+	return templateDB, templateErr
+}
+
 func openStore(t *testing.T) *store.DB {
 	t.Helper()
-	db, err := store.Open(context.Background(), t.TempDir()+"/t.db")
+	tmpl, err := migratedTemplate()
+	if err != nil {
+		t.Fatalf("migrated template: %v", err)
+	}
+	path := filepath.Join(t.TempDir(), "t.db")
+	if err := os.WriteFile(path, tmpl, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	db, err := store.Open(context.Background(), path)
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}

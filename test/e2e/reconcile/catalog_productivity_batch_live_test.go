@@ -15,9 +15,11 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/test/e2e/testenv"
 )
 
 func TestCatalogProductivityBatch_Live_Deploys(t *testing.T) {
+	testenv.RequireFullLive(t)
 	env := newLiveBuildEnv(t)
 
 	t.Run("triliumnext", func(t *testing.T) {

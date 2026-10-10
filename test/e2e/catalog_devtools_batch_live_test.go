@@ -21,6 +21,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/GLINCKER/levelrail/test/e2e/testenv"
 )
 
 const (
@@ -35,6 +36,7 @@ const (
 // entries are left to catalog_test.go's static checks; see this PR's
 // description for why (startup time, or, for vault, sealed by design).
 func TestServiceTemplates_Live_DevtoolsBatchBoots(t *testing.T) {
+	testenv.RequireFullLive(t)
 	env := newLiveBuildEnv(t)
 	runtime := env.Runtime
 
