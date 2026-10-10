@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 749 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 760 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -281,16 +281,27 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/auth/tokens/{id}", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeToken", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/users", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateUser", Description: "Multi-user: creating another local-password user (see handleRegister's own doc comment) is AbilityRoot, not merely requireAuth: the caller also picks the new user's Abilities, so anyone able to reach this route can mint access at any tier, themselves included, only a root caller may do that. Listing stays AbilityRead, same tier as every other passive view."},
 	{Method: "GET", Path: "/api/v1/auth/whoami", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleWhoami", Description: ""},
+	{Method: "GET", Path: "/api/v1/iam/analyze", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleIAMAnalyze", Description: ""},
+	{Method: "GET", Path: "/api/v1/iam/catalog", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleIAMCatalog", Description: ""},
 	{Method: "GET", Path: "/api/v1/iam/policies", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListPolicies", Description: ""},
 	{Method: "POST", Path: "/api/v1/iam/policies", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreatePolicy", Description: "IAM policies (iam.go/iam_handlers.go): resource-scoped Allow/Deny documents attached to a user or token, additive on top of the flat Abilities list above. Reading the catalog is AbilityRead like roles above; every mutation (create/update/delete/attach/detach) is AbilityRoot, the same tier as handleUpdateUserAbilities, since a policy can grant or deny access at a resource-scoped level a non-root caller could not otherwise touch."},
+	{Method: "POST", Path: "/api/v1/iam/policies/validate", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleValidatePolicy", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/iam/policies/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeletePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/iam/policies/{id}", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetPolicy", Description: ""},
 	{Method: "PUT", Path: "/api/v1/iam/policies/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdatePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/iam/policies/{id}/attachments", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListPolicyAttachments", Description: ""},
 	{Method: "POST", Path: "/api/v1/iam/policies/{id}/attachments", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleAttachPolicy", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/iam/policies/{id}/attachments/{principal_type}/{principal_id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDetachPolicy", Description: ""},
+	{Method: "GET", Path: "/api/v1/iam/policies/{id}/versions", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListPolicyVersions", Description: ""},
 	{Method: "GET", Path: "/api/v1/iam/policy-templates", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListPolicyTemplates", Description: ""},
 	{Method: "POST", Path: "/api/v1/iam/policy-templates/{id}/apply", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleApplyPolicyTemplate", Description: ""},
+	{Method: "POST", Path: "/api/v1/iam/policy-templates/{id}/render", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRenderPolicyTemplate", Description: ""},
+	{Method: "POST", Path: "/api/v1/iam/preview", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleIAMPreview", Description: ""},
+	{Method: "GET", Path: "/api/v1/iam/principals", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleIAMPrincipals", Description: ""},
+	{Method: "GET", Path: "/api/v1/iam/principals/{principal_type}/{principal_id}/effective", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleIAMEffective", Description: ""},
+	{Method: "GET", Path: "/api/v1/iam/resources", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleIAMResources", Description: ""},
+	{Method: "POST", Path: "/api/v1/iam/resources/match", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleIAMMatch", Description: ""},
+	{Method: "GET", Path: "/api/v1/iam/simulate", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleIAMSimulate", Description: ""},
 	{Method: "GET", Path: "/api/v1/invites", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListInvites", Description: ""},
 	{Method: "POST", Path: "/api/v1/invites", Ability: "AbilityWrite", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateInvite", Description: "Team invites (invites.go): unlike POST /api/v1/auth/users above, create/revoke are AbilityWrite, not AbilityRoot: handleCreateInvite itself caps the abilities an invite can carry at the caller's own resolved abilities, so a write-level caller can never hand out more than they hold, closing off the escalation risk without needing a root gate. Revoke additionally requires the caller be either root or the invite's own creator (handleRevokeInvite). Listing stays AbilityRead, same tier as the user list, but scopes non-root callers to invites they created (handleListInvites). Accept is necessarily public, gated by possession of the emailed token instead of a session or ability, the same shape as reset-password below."},
 	{Method: "POST", Path: "/api/v1/invites/accept", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleAcceptInvite", Description: ""},
@@ -539,7 +550,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/firewall-rules", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateFirewallRule", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/firewall-rules/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteFirewallRule", Description: ""},
 	{Method: "GET", Path: "/api/v1/firewall/exposure", Ability: "AbilityRead", Group: "Other", Handler: "handleExposureReport", Description: "Exposure audit (exposure.go): read-only list of published container ports and how reachable each is; preview is a pure computation. Restricting and unrestricting change the host's DOCKER-USER chain, so they are AbilityRoot like the ufw switch above."},
-	{Method: "POST", Path: "/api/v1/firewall/exposure/preview", Ability: "AbilityRead", Group: "Other", Handler: "handleExposurePreview", Description: ""},
+	{Method: "POST", Path: "/api/v1/firewall/exposure/preview", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposurePreview", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/firewall/exposure/restrictions/{protocol}/{port}", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposureUnrestrict", Description: ""},
 	{Method: "PUT", Path: "/api/v1/firewall/exposure/restrictions/{protocol}/{port}", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposureRestrict", Description: ""},
 	{Method: "GET", Path: "/api/v1/firewall/host", Ability: "AbilityRead", Group: "Other", Handler: "handleHostFirewallStatus", Description: ""},

@@ -73,16 +73,20 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 // public routes (not token-gated at all) and pure computations that
 // change no state.
 var readOnlyMayMutate = map[string]string{
-	"POST /api/v1/pipelines/validate":          "validates YAML, persists nothing",
-	"POST /api/v1/pipelines/filters":           "rewrites submitted YAML with path filters, persists nothing",
-	"POST /api/v1/apps/{name}/preflight":       "read-only probes of the stored app config, persists nothing",
-	"POST /api/v1/models/preflight":            "queries the public Hugging Face Hub with a caller-supplied token, persists nothing",
-	"POST /api/v1/models/fit":                  "estimates VRAM fit from submitted specs and node facts, persists nothing",
-	"POST /api/v1/apply/plan":                  "computes a plan from live reads, persists nothing",
-	"POST /api/v1/prometheus/read":             "Prometheus remote read is a POST but only queries, gated by AbilityRead",
-	"POST /api/v1/apps/{name}/validate-spec":   "validates submitted app.yaml, persists nothing",
-	"POST /api/v1/network-shares/{id}/test":    "reachability dial only, gated by AbilityRead, persists nothing",
-	"POST /api/v1/apps/{name}/health/discover": "active HTTP probes of a running container, gated by AbilityRead, persists nothing",
+	"POST /api/v1/pipelines/validate":               "validates YAML, persists nothing",
+	"POST /api/v1/pipelines/filters":                "rewrites submitted YAML with path filters, persists nothing",
+	"POST /api/v1/apps/{name}/preflight":            "read-only probes of the stored app config, persists nothing",
+	"POST /api/v1/models/preflight":                 "queries the public Hugging Face Hub with a caller-supplied token, persists nothing",
+	"POST /api/v1/models/fit":                       "estimates VRAM fit from submitted specs and node facts, persists nothing",
+	"POST /api/v1/apply/plan":                       "computes a plan from live reads, persists nothing",
+	"POST /api/v1/prometheus/read":                  "Prometheus remote read is a POST but only queries, gated by AbilityRead",
+	"POST /api/v1/iam/resources/match":              "counts what resource patterns select, persists nothing",
+	"POST /api/v1/iam/policies/validate":            "validates a submitted policy document, persists nothing",
+	"POST /api/v1/iam/preview":                      "computes a before and after of a hypothetical policy change, persists nothing",
+	"POST /api/v1/iam/policy-templates/{id}/render": "expands template parameters into a document, persists nothing",
+	"POST /api/v1/apps/{name}/validate-spec":        "validates submitted app.yaml, persists nothing",
+	"POST /api/v1/network-shares/{id}/test":         "reachability dial only, gated by AbilityRead, persists nothing",
+	"POST /api/v1/apps/{name}/health/discover":      "active HTTP probes of a running container, gated by AbilityRead, persists nothing",
 }
 
 // denyExempt lists /apps/{name}/... routes that legitimately do not

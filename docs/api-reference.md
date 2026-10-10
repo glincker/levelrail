@@ -61,7 +61,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 80 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 91 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -140,6 +140,17 @@ Endpoints for:
 | POST | /api/v1/settings/ai-control/revoke-agent-tokens | AbilityRoot | handleRevokeAgentTokens |
 | GET | /api/v1/auth/device/pending-summary | AbilityRead | handleDevicePendingSummary |
 | GET | /api/v1/auth/device/activity | AbilityRead | handleDeviceActivity |
+| GET | /api/v1/iam/catalog | AbilityRead | handleIAMCatalog |
+| GET | /api/v1/iam/resources | AbilityRead | handleIAMResources |
+| POST | /api/v1/iam/resources/match | AbilityRead | handleIAMMatch |
+| GET | /api/v1/iam/principals | AbilityRead | handleIAMPrincipals |
+| GET | /api/v1/iam/principals/{principal_type}/{principal_id}/effective | AbilityRead | handleIAMEffective |
+| GET | /api/v1/iam/simulate | AbilityRead | handleIAMSimulate |
+| GET | /api/v1/iam/analyze | AbilityRead | handleIAMAnalyze |
+| POST | /api/v1/iam/policies/validate | AbilityRead | handleValidatePolicy |
+| POST | /api/v1/iam/preview | AbilityRead | handleIAMPreview |
+| GET | /api/v1/iam/policies/{id}/versions | AbilityRead | handleListPolicyVersions |
+| POST | /api/v1/iam/policy-templates/{id}/render | AbilityRead | handleRenderPolicyTemplate |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -945,7 +956,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/cutover/verify | AbilityWriteSensitive | handleCutoverVerify |
 | GET | /api/v1/ingress/connectivity | AbilityRead | handleIngressConnectivity |
 | GET | /api/v1/firewall/exposure | AbilityRead | handleExposureReport |
-| POST | /api/v1/firewall/exposure/preview | AbilityRead | handleExposurePreview |
+| POST | /api/v1/firewall/exposure/preview | AbilityRoot | handleExposurePreview |
 | PUT | /api/v1/firewall/exposure/restrictions/{protocol}/{port} | AbilityRoot | handleExposureRestrict |
 | DELETE | /api/v1/firewall/exposure/restrictions/{protocol}/{port} | AbilityRoot | handleExposureUnrestrict |
 | GET | /api/v1/migration/hub/local-sources | AbilityRead | handleHubLocalSources |

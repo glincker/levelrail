@@ -33,8 +33,8 @@ func TestPolicyTemplates_AllValidate(t *testing.T) {
 			renderedTemplatePolicy(t, tpl.ID, tpl.placeholderParams())
 		})
 	}
-	if len(policyTemplates) != 5 {
-		t.Fatalf("templates = %d, want 5", len(policyTemplates))
+	if len(policyTemplates) != 8 {
+		t.Fatalf("templates = %d, want 8", len(policyTemplates))
 	}
 }
 
@@ -110,7 +110,7 @@ func TestPolicyTemplates_HTTP(t *testing.T) {
 	for _, tpl := range list.Templates {
 		ids = append(ids, tpl.ID)
 	}
-	if strings.Join(ids, ",") != "read-only,guest-one-environment,deployer-nonprod,ai-operator-nonprod,production-approver" {
+	if strings.Join(ids, ",") != "read-only,guest-one-environment,deployer-nonprod,ai-operator-nonprod,production-approver,app-operator,database-owner,project-deployer" {
 		t.Fatalf("ids = %v", ids)
 	}
 

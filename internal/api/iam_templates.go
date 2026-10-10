@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"regexp"
 	"slices"
@@ -16,7 +17,14 @@ import (
 // policyTemplatesVersion changes whenever a template document changes.
 const policyTemplatesVersion = 1
 
-const templateParamEnvironment = "environment"
+const (
+	templateParamEnvironment = "environment"
+	templateParamApp         = "app"
+	templateParamDatabase    = "database"
+	templateParamProject     = "project"
+	// projectEnvironmentsSuffix is the derived param a project expands into.
+	projectEnvironmentsSuffix = ".environments"
+)
 
 var nonProductionKindResources = []string{
 	resourcePrefixEnvironmentKind + "dev",
@@ -33,6 +41,8 @@ type policyTemplateParam struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Required    bool   `json:"required"`
+	// Kind tells a picker what to offer: environment, app, database or project.
+	Kind string `json:"kind,omitempty"`
 }
 
 // policyTemplate is one ready-made policy; build renders its document.
@@ -66,7 +76,7 @@ var policyTemplates = []policyTemplate{
 		ID:          "guest-one-environment",
 		Name:        "Guest in one environment",
 		Description: "Read access to the apps and databases of one environment. Everything else is denied for changes.",
-		Params:      []policyTemplateParam{{Name: templateParamEnvironment, Description: "Environment ID to grant read access to", Required: true}},
+		Params:      []policyTemplateParam{{Name: templateParamEnvironment, Description: "Environment ID to grant read access to", Required: true, Kind: templateParamEnvironment}},
 		build: func(p map[string]string) Document {
 			return Document{Statement: []Statement{
 				stmt(EffectAllow, []string{AbilityRead}, resourcePrefixEnvironment+p[templateParamEnvironment]),
@@ -104,6 +114,49 @@ var policyTemplates = []policyTemplate{
 		build: func(map[string]string) Document {
 			return Document{Statement: []Statement{
 				stmt(EffectAllow, []string{AbilityRead, AbilityDeploy}, productionKindResource),
+			}}
+		},
+	},
+	{
+		ID:          "app-operator",
+		Name:        "Operator of one app",
+		Description: "Can see, change and deploy one app. Nothing else is granted.",
+		Params:      []policyTemplateParam{{Name: templateParamApp, Description: "App to operate", Required: true, Kind: templateParamApp}},
+		build: func(p map[string]string) Document {
+			return Document{Statement: []Statement{
+				stmt(EffectAllow, []string{AbilityRead, AbilityWrite, AbilityDeploy}, resourcePrefixApp+p[templateParamApp]),
+			}}
+		},
+	},
+	{
+		ID:          "database-owner",
+		Name:        "Owner of one database",
+		Description: "Can see, change and reveal credentials of one database. Nothing else is granted.",
+		Params:      []policyTemplateParam{{Name: templateParamDatabase, Description: "Database to own", Required: true, Kind: templateParamDatabase}},
+		build: func(p map[string]string) Document {
+			return Document{Statement: []Statement{
+				stmt(EffectAllow, []string{AbilityRead, AbilityReadSensitive, AbilityWrite}, resourcePrefixDatabase+p[templateParamDatabase]),
+			}}
+		},
+	},
+	{
+		ID:          "project-deployer",
+		Name:        "Deployer for one project",
+		Description: "Can see, change and deploy everything in the environments of one project. Root is denied.",
+		Params:      []policyTemplateParam{{Name: templateParamProject, Description: "Project whose environments to grant", Required: true, Kind: templateParamProject}},
+		build: func(p map[string]string) Document {
+			envs := []string{}
+			for _, id := range strings.Split(p[templateParamProject+projectEnvironmentsSuffix], ",") {
+				if id != "" {
+					envs = append(envs, resourcePrefixEnvironment+id)
+				}
+			}
+			if len(envs) == 0 {
+				envs = []string{resourcePrefixEnvironment + "{" + templateParamProject + "}"}
+			}
+			return Document{Statement: []Statement{
+				stmt(EffectAllow, []string{AbilityRead, AbilityWrite, AbilityDeploy}, envs...),
+				stmt(EffectDeny, []string{AbilityRoot}, "*"),
 			}}
 		},
 	},
@@ -173,30 +226,112 @@ type applyTemplateResponse struct {
 
 var errTemplateParam = errors.New("invalid template parameter")
 
-func (rt *Router) validateTemplateParams(r *http.Request, t policyTemplate, params map[string]string) error {
+// validateTemplateParams checks every parameter and returns the params with
+// derived values (a project's environment IDs) added for build.
+func (rt *Router) validateTemplateParams(r *http.Request, t policyTemplate, params map[string]string) (map[string]string, error) {
 	for _, p := range t.Params {
 		v := params[p.Name]
 		if v == "" && p.Required {
-			return fmt.Errorf("%w: %s is required", errTemplateParam, p.Name)
+			return nil, fmt.Errorf("%w: %s is required", errTemplateParam, p.Name)
 		}
 		if v != "" && !templateParamPattern.MatchString(v) {
-			return fmt.Errorf("%w: %s must be an identifier", errTemplateParam, p.Name)
+			return nil, fmt.Errorf("%w: %s must be an identifier", errTemplateParam, p.Name)
 		}
 	}
 	for k := range params {
 		if !slices.ContainsFunc(t.Params, func(p policyTemplateParam) bool { return p.Name == k }) {
-			return fmt.Errorf("%w: unknown parameter %q", errTemplateParam, k)
+			return nil, fmt.Errorf("%w: unknown parameter %q", errTemplateParam, k)
 		}
 	}
-	if env, ok := params[templateParamEnvironment]; ok && t.ID == "guest-one-environment" {
-		if _, err := rt.environments.GetEnvironment(r.Context(), env); err != nil {
+	out := maps.Clone(params)
+	if out == nil {
+		out = map[string]string{}
+	}
+	for _, p := range t.Params {
+		if v := params[p.Name]; v != "" {
+			if err := rt.checkTemplateParam(r, p, v, out); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return out, nil
+}
+
+func (rt *Router) checkTemplateParam(r *http.Request, p policyTemplateParam, v string, out map[string]string) error {
+	ctx := r.Context()
+	missing := func(kind string) error { return fmt.Errorf("%w: %s %q does not exist", errTemplateParam, kind, v) }
+	switch p.Kind {
+	case templateParamEnvironment:
+		if _, err := rt.environments.GetEnvironment(ctx, v); err != nil {
 			if errors.Is(err, store.ErrEnvironmentNotFound) {
-				return fmt.Errorf("%w: environment %q does not exist", errTemplateParam, env)
+				return missing("environment")
 			}
 			return fmt.Errorf("look up environment: %w", err)
 		}
+	case templateParamApp:
+		if _, err := rt.apps.GetDesiredService(ctx, v); err != nil {
+			if errors.Is(err, store.ErrServiceNotFound) {
+				return missing("app")
+			}
+			return fmt.Errorf("look up app: %w", err)
+		}
+	case templateParamDatabase:
+		if _, err := rt.databases.GetDesiredDatabase(ctx, v); err != nil {
+			if errors.Is(err, store.ErrDatabaseNotFound) {
+				return missing("database")
+			}
+			return fmt.Errorf("look up database: %w", err)
+		}
+	case templateParamProject:
+		envs, err := rt.environments.ListEnvironmentsByProject(ctx, v)
+		if err != nil {
+			return fmt.Errorf("look up project environments: %w", err)
+		}
+		if len(envs) == 0 {
+			return fmt.Errorf("%w: project %q has no environments yet", errTemplateParam, v)
+		}
+		ids := make([]string, 0, len(envs))
+		for _, e := range envs {
+			ids = append(ids, e.ID)
+		}
+		out[p.Name+projectEnvironmentsSuffix] = strings.Join(ids, ",")
 	}
 	return nil
+}
+
+type renderTemplateRequest struct {
+	Params map[string]string `json:"params"`
+}
+
+type renderTemplateResponse struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Document    Document `json:"document"`
+}
+
+// handleRenderPolicyTemplate handles POST /api/v1/iam/policy-templates/{id}/render:
+// expand a template's parameters into a document without saving anything.
+func (rt *Router) handleRenderPolicyTemplate(w http.ResponseWriter, r *http.Request) {
+	t, ok := findPolicyTemplate(r.PathValue("id"))
+	if !ok {
+		writeError(w, http.StatusNotFound, "policy template not found")
+		return
+	}
+	var req renderTemplateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidPolicyRequestBody)
+		return
+	}
+	params, err := rt.validateTemplateParams(r, t, req.Params)
+	if errors.Is(err, errTemplateParam) {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err != nil {
+		rt.internalError(w, "api: render policy template: validate failed", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, renderTemplateResponse{Name: templatePolicyName(t, req.Params, ""), Description: t.Description, Document: t.build(params)})
 }
 
 func templatePolicyName(t policyTemplate, params map[string]string, override string) string {
@@ -229,7 +364,8 @@ func (rt *Router) handleApplyPolicyTemplate(w http.ResponseWriter, r *http.Reque
 			return
 		}
 	}
-	if err := rt.validateTemplateParams(r, t, req.Params); err != nil {
+	params, err := rt.validateTemplateParams(r, t, req.Params)
+	if err != nil {
 		if errors.Is(err, errTemplateParam) {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
@@ -237,7 +373,7 @@ func (rt *Router) handleApplyPolicyTemplate(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: apply policy template: validate failed", err)
 		return
 	}
-	doc, err := json.Marshal(t.build(req.Params))
+	doc, err := json.Marshal(t.build(params))
 	if err != nil {
 		rt.internalError(w, "api: apply policy template: marshal failed", err)
 		return
@@ -245,6 +381,12 @@ func (rt *Router) handleApplyPolicyTemplate(w http.ResponseWriter, r *http.Reque
 	if _, err := ParseDocument(string(doc)); err != nil {
 		rt.internalError(w, "api: apply policy template: rendered document invalid", err)
 		return
+	}
+	if req.Attach != nil {
+		ref := principalRef{Type: req.Attach.PrincipalType, ID: req.Attach.PrincipalID}
+		if rt.enforceRootGuard(w, r, previewRequest{Document: doc, Attach: []principalRef{ref}}) {
+			return
+		}
 	}
 	id, err := store.NewPolicyID()
 	if err != nil {
@@ -261,6 +403,7 @@ func (rt *Router) handleApplyPolicyTemplate(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: apply policy template: save failed", err)
 		return
 	}
+	rt.recordPolicyVersion(r, rec)
 	resp := applyTemplateResponse{Policy: toPolicyResource(rec)}
 	if req.Attach != nil {
 		attachID, err := store.NewPolicyAttachmentID()
