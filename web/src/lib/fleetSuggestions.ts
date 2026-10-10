@@ -11,6 +11,7 @@ export type ActionSpec =
   | { kind: 'deploys'; app: string }
   | { kind: 'node'; id: string }
   | { kind: 'domains' }
+  | { kind: 'route'; to: '/settings/cli-access' | '/approvals' }
   | { kind: 'system' }
   | { kind: 'cleanup' }
   | { kind: 'ask-ai'; message: string }
@@ -91,6 +92,14 @@ function actionsFor(
         return [act('Open node', { kind: 'node', id: target.id }, true)]
       case 'domain':
         return [act('Review certificate', { kind: 'domains' }, true)]
+      case 'route':
+        return [
+          act(
+            t('needsAttention.review'),
+            { kind: 'route', to: target.to },
+            true,
+          ),
+        ]
       case 'system':
         return item.id === 'disk'
           ? [act('Clean up Docker', { kind: 'cleanup' }, true)]

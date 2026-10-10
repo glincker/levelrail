@@ -14,6 +14,7 @@ import { pollUnlessMissing } from '../../lib/pollUnlessMissing'
 import { useActivityEvents } from '../../queries/activity'
 import { useDeployApprovalsOptional } from '../../queries/deployApprovals'
 import { failedDeploysQueryOptions } from '../../queries/failedDeploys'
+import { useAttentionItems } from '../../queries/attention'
 import {
   buildNotifications,
   groupNotifications,
@@ -37,11 +38,13 @@ export function NotificationCenter() {
     retry: false,
     refetchInterval: pollUnlessMissing(30_000),
   })
+  const attention = useAttentionItems()
   const { ids, set } = useReadIds()
   const list = buildNotifications({
     failedDeploys: failed.data,
     approvals: approvals.data,
     activity: activity.events,
+    attention: attention.items,
   })
   const unread = unreadCount(list, set)
   const groups = groupNotifications(list)

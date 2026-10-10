@@ -1,0 +1,49 @@
+{
+  "deviceLogin": {
+    "bannerTitle": "A CLI login is waiting for your approval",
+    "bannerMore_one": "{{count}} more login is waiting.",
+    "bannerMore_other": "{{count}} more logins are waiting.",
+    "codeLabel": "Code",
+    "from": "From {{ip}}",
+    "device": "Device {{name}}",
+    "unknownDevice": "Unknown device",
+    "requested": "Requested {{age}}",
+    "expiresIn": "Expires in {{time}}",
+    "expired": "This request has expired. Run the login command again.",
+    "review": "Review and approve",
+    "deny": "Deny",
+    "denied": "Denied login for \"{{name}}\".",
+    "approved": "Approved login for \"{{name}}\".",
+    "ipMismatch": "This request came from {{ip}}, which is not the address you are using. Only approve it if you started it.",
+    "confirmTitle": "Confirm this code matches your terminal",
+    "confirmBody": "Look at the terminal that ran the login command. Approve only if it shows exactly this code.",
+    "confirmApprove": "The codes match, approve",
+    "cancel": "Cancel",
+    "agentHint": "Only a person signed in here can approve. An AI agent cannot do it for you."
+  },
+  "panel": {
+    "title": "Needs attention",
+    "empty": "You are all caught up.",
+    "markAllRead": "Mark all read",
+    "unread_one": "{{count}} item needs attention",
+    "unread_other": "{{count}} items need attention",
+    "allRead": "No unread items"
+  },
+  "items": {
+    "deviceLoginTitle": "CLI login from {{name}} is waiting",
+    "deviceLoginDetail": "Expires in {{time}}. Open CLI access to compare the code and approve.",
+    "certRenewalTitle": "Certificate renewal for {{domain}} looks stalled",
+    "certRenewalDetail": "Expires {{date}}.",
+    "certRenewalFailure": "Expires {{date}}. Last CA error: {{reason}}",
+    "nodeEnrollTitle": "Node {{name}} joined but never connected",
+    "nodeEnrollDetail": "Check the agent logs and that it can reach this control plane.",
+    "approvalTitle": "{{service}} awaits deploy approval",
+    "approvalDetail": "Requested by {{who}}.",
+    "openCliAccess": "Review login",
+    "openApprovals": "Review approvals"
+  },
+  "channel": {
+    "notifyDeviceLogin": "Notify when a CLI login is waiting",
+    "notifyDeviceLoginHint": "Sends a link only, never the code. Turn on a dashboard URL so the link can open this page."
+  }
+}

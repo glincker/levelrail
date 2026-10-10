@@ -62,6 +62,7 @@ const sidebarGroups = [
       { text: 'Installing', link: '/installing' },
       { text: 'Troubleshooting', link: '/troubleshooting' },
       { text: 'Email notifications', link: '/email-notifications' },
+      { text: 'Attention center', link: '/attention-center' },
       {
         text: 'Deploying',
         collapsed: true,

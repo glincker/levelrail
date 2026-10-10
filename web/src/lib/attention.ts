@@ -17,6 +17,7 @@ export type AttentionTarget =
   | { kind: 'node'; id: string }
   | { kind: 'domain' }
   | { kind: 'system' }
+  | { kind: 'route'; to: '/settings/cli-access' | '/approvals' }
 
 export interface AttentionItem {
   id: string

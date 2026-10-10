@@ -8,6 +8,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -45,6 +46,61 @@ type Input struct {
 	Failed  []apiclient.FailedDeployResource
 	Status  apiclient.SystemStatusResource
 	Updates apiclient.UpdatesResource
+	// Devices are CLI logins waiting for approval, Approvals are pending
+	// deploy approvals. Now defaults to time.Now when zero.
+	Devices   []apiclient.DevicePendingLogin
+	Approvals []apiclient.DeployApprovalResource
+	Now       time.Time
+}
+
+// Item kinds that block on a person, ranked ahead of other items of the
+// same severity.
+const (
+	KindDeviceLogin = "device_login"
+	KindApproval    = "approval"
+)
+
+func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {
+	items := make([]Item, 0, len(devices))
+	for _, d := range devices {
+		if !d.ExpiresAt.IsZero() && !d.ExpiresAt.After(now) {
+			continue
+		}
+		subject := d.ClientName
+		if subject == "" {
+			subject = "unnamed client"
+		}
+		detail := "a CLI login is waiting for approval"
+		if d.RequesterIP != "" {
+			detail += " from " + d.RequesterIP
+		}
+		if !d.ExpiresAt.IsZero() {
+			detail += fmt.Sprintf(", expires in %d min", int(d.ExpiresAt.Sub(now).Minutes())+1)
+		}
+		detail += ". A signed-in operator must approve it in the dashboard under Settings > CLI access"
+		items = append(items, Item{Warning, KindDeviceLogin, subject, detail, false})
+	}
+	return items
+}
+
+func approvalItems(approvals []apiclient.DeployApprovalResource) []Item {
+	items := make([]Item, 0, len(approvals))
+	for _, a := range approvals {
+		by := a.RequestedByName
+		if by == "" {
+			by = a.RequestedBy
+		}
+		items = append(items, Item{Warning, KindApproval, a.ServiceName, a.Action + " of " + a.Image + " requested by " + by + " awaits approval", false})
+	}
+	return items
+}
+
+// kindRank sorts items that wait on a person ahead of the rest.
+func kindRank(kind string) int {
+	if kind == KindDeviceLogin || kind == KindApproval {
+		return 0
+	}
+	return 1
 }
 
 func diskItem(s apiclient.SystemStatusResource) (Item, bool) {
@@ -112,7 +168,16 @@ func Build(in Input) []Item {
 			items = append(items, Item{Critical, "app", a.Name, a.Status.Label, false})
 		}
 	}
+	now := in.Now
+	if now.IsZero() {
+		now = time.Now()
+	}
+	items = append(items, deviceLoginItems(in.Devices, now)...)
+	items = append(items, approvalItems(in.Approvals)...)
 	for _, n := range in.Nodes {
+		if n.StatusReason == "enrolled_never_connected" {
+			items = append(items, Item{Warning, "node_enroll", n.Name, "joined but never connected: check the agent's logs and that it can reach the control plane", false})
+		}
 		if n.Status == "offline" {
 			detail := "never reported in"
 			if n.LastSeenAt != nil {
@@ -128,6 +193,9 @@ func Build(in Input) []Item {
 			items = append(items, Item{Critical, "certificate", c.Domain, "expired " + c.NotAfter.Format("2006-01-02"), false})
 		case "expiring_soon":
 			items = append(items, Item{Warning, "certificate", c.Domain, "expires " + c.NotAfter.Format("2006-01-02"), false})
+		}
+		if c.Renewal == "stalled" && c.Status != "expired" {
+			items = append(items, Item{Warning, "cert_renewal", c.Domain, "renewal looks stalled, certificate expires " + c.NotAfter.Format("2006-01-02"), false})
 		}
 	}
 	for _, c := range in.Doctor.Checks {
@@ -146,7 +214,11 @@ func Build(in Input) []Item {
 		items = append(items, Item{Warning, "update", "control plane", latest + " is available (running " + in.Updates.CurrentVersion + ")", false})
 	}
 	sort.SliceStable(items, func(i, j int) bool {
-		return items[i].Severity == Critical && items[j].Severity != Critical
+		ci, cj := items[i].Severity == Critical, items[j].Severity == Critical
+		if ci != cj {
+			return ci
+		}
+		return kindRank(items[i].Kind) < kindRank(items[j].Kind)
 	})
 	return items
 }
@@ -174,7 +246,9 @@ func Collect(ctx context.Context, client *apiclient.Client) ([]Item, error) {
 	failed, _ := client.ListFailedDeploys(ctx, "24h")
 	status, _ := client.GetSystemStatus(ctx)
 	updates, _ := client.GetUpdates(ctx)
-	items := Build(Input{Apps: apps, Nodes: nodes, Certs: certs, Doctor: doctor, Failed: failed, Status: status, Updates: updates})
+	devices, _ := client.ListPendingDeviceLogins(ctx)
+	approvals, _ := client.ListDeployApprovals(ctx, "pending", "")
+	items := Build(Input{Apps: apps, Nodes: nodes, Certs: certs, Doctor: doctor, Failed: failed, Status: status, Updates: updates, Devices: devices, Approvals: approvals})
 	markFixable(ctx, client, items)
 	return items, nil
 }

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   CheckCircleIcon,
   WarningCircleIcon,
@@ -73,6 +74,7 @@ function FailedDeployActions({
 
 function ItemActions({ item }: { item: AttentionItem }) {
   const restart = useRestartApp()
+  const { t } = useTranslation('attention')
   const { target } = item
 
   if (target.kind === 'app') {
@@ -138,6 +140,15 @@ function ItemActions({ item }: { item: AttentionItem }) {
         render={<Link to="/nodes/$id" params={{ id: target.id }} />}
       >
         Open node
+      </Button>
+    )
+  }
+  if (target.kind === 'route') {
+    return (
+      <Button size="sm" variant="outline" render={<Link to={target.to} />}>
+        {item.id.startsWith('device:')
+          ? t('items.openCliAccess')
+          : t('items.openApprovals')}
       </Button>
     )
   }

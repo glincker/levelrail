@@ -60,3 +60,24 @@ func (c *Client) PollDeviceAuthToken(ctx context.Context, deviceCode string) (De
 	err := c.do(ctx, http.MethodPost, "/api/v1/auth/device/token", DeviceTokenRequest{DeviceCode: deviceCode}, &out)
 	return out, err
 }
+
+// DevicePendingLogin is one waiting CLI login as the read-only summary
+// shows it. It never carries a user code or device code.
+type DevicePendingLogin struct {
+	ClientName  string    `json:"client_name"`
+	RequesterIP string    `json:"requester_ip"`
+	UserAgent   string    `json:"user_agent"`
+	CreatedAt   time.Time `json:"created_at"`
+	ExpiresAt   time.Time `json:"expires_at"`
+}
+
+// ListPendingDeviceLogins calls GET /api/v1/auth/device/pending-summary.
+func (c *Client) ListPendingDeviceLogins(ctx context.Context) ([]DevicePendingLogin, error) {
+	var out struct {
+		Pending []DevicePendingLogin `json:"pending"`
+	}
+	if err := c.do(ctx, http.MethodGet, "/api/v1/auth/device/pending-summary", nil, &out); err != nil {
+		return nil, err
+	}
+	return out.Pending, nil
+}

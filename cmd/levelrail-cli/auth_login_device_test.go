@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -140,5 +141,26 @@ func TestRun_AuthLoginDevice_FullFlow(t *testing.T) {
 	}
 	if creds.Token != "plaintext-value" {
 		t.Errorf("saved token = %q, want plaintext-value", creds.Token)
+	}
+}
+
+func TestWriteDevicePendingLine_IsOneParsableLine(t *testing.T) {
+	var buf bytes.Buffer
+	started := deviceStartResponse{UserCode: "ABCD-1234", ExpiresIn: 600}
+	expires := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
+	if err := writeDevicePendingLine(&buf, "http://127.0.0.1:28080/settings/cli-access?user_code=ABCD-1234", started, expires); err != nil {
+		t.Fatalf("writeDevicePendingLine() error = %v", err)
+	}
+	out := buf.String()
+	if strings.Count(out, "\n") != 1 || !strings.HasSuffix(out, "\n") {
+		t.Fatalf("output = %q, want exactly one newline-terminated line", out)
+	}
+	var got devicePendingLine
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Event != "device_login_pending" || got.UserCode != "ABCD-1234" || got.ExpiresIn != 600 ||
+		got.VerificationURL != "http://127.0.0.1:28080/settings/cli-access?user_code=ABCD-1234" {
+		t.Errorf("got %+v", got)
 	}
 }

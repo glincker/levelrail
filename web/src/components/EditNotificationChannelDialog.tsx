@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -63,6 +64,7 @@ const editChannelSchema = z
     enabled: z.boolean(),
     interactiveApprovals: z.boolean(),
     interactiveSecret: z.string().trim(),
+    notifyDeviceLogin: z.boolean(),
   })
   .superRefine((data, ctx) => {
     // webpush has no destination to edit: every registered browser
@@ -116,6 +118,7 @@ function defaultsFromChannel(channel: NotificationChannel): EditChannelForm {
     // rather than clearing it (toChannel's own doc comment,
     // internal/api/notification_channels.go).
     interactiveSecret: '',
+    notifyDeviceLogin: channel.notify_device_login,
   }
 }
 
@@ -129,6 +132,7 @@ export function EditNotificationChannelDialog({
 }: {
   channel: NotificationChannel
 }) {
+  const { t } = useTranslation('attention')
   const [open, setOpen] = useState(false)
   const [verified, setVerified] = useState(false)
   const updateChannel = useUpdateNotificationChannel()
@@ -187,6 +191,7 @@ export function EditNotificationChannelDialog({
           enabled: values.enabled,
           interactive_approvals: values.interactiveApprovals,
           interactive_secret: values.interactiveSecret.trim(),
+          notify_device_login: values.notifyDeviceLogin,
         },
       },
       {
@@ -339,6 +344,24 @@ export function EditNotificationChannelDialog({
             />
             <FieldLabel htmlFor="edit-channel-enabled">Enabled</FieldLabel>
           </Field>
+
+          <Field orientation="horizontal">
+            <Controller
+              control={control}
+              name="notifyDeviceLogin"
+              render={({ field }) => (
+                <Switch
+                  id="edit-channel-notify-device-login"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
+            <FieldLabel htmlFor="edit-channel-notify-device-login">
+              {t('channel.notifyDeviceLogin')}
+            </FieldLabel>
+          </Field>
+          <FieldHint>{t('channel.notifyDeviceLoginHint')}</FieldHint>
 
           {isInteractiveKind ? (
             <>

@@ -2,6 +2,7 @@ import type { ActivityEvent } from '../../queries/activity'
 import type { FailedDeploy } from '../../queries/failedDeploys'
 import type { DeployApprovalResource } from '../../types/deployApproval'
 import { formatAge } from '../../lib/format'
+import type { AttentionItem } from '../../lib/attention'
 
 export type NotificationGroup = 'deploys' | 'alerts' | 'approvals' | 'system'
 
@@ -28,12 +29,53 @@ export interface ShellNotification {
   href: string
 }
 
+// Deploy failures and approvals already have their own sources above, so
+// the attention feed only contributes the rest.
+const OWN_SOURCE_PREFIXES = ['deploy:', 'approval:']
+
+function hrefForTarget(target: AttentionItem['target']): string {
+  switch (target.kind) {
+    case 'app':
+      return `/apps/${target.name}`
+    case 'deploy':
+      return `/apps/${target.app}/deploys`
+    case 'node':
+      return `/nodes/${target.id}`
+    case 'domain':
+      return '/domains'
+    case 'route':
+      return target.to
+    case 'system':
+      return '/settings/system-status'
+  }
+}
+
+export function notificationsFromAttention(
+  items: AttentionItem[],
+): ShellNotification[] {
+  return items
+    .filter((i) => !OWN_SOURCE_PREFIXES.some((p) => i.id.startsWith(p)))
+    .map((i) => ({
+      id: `attention:${i.id}`,
+      group: i.id.startsWith('device:') ? 'approvals' : 'system',
+      severity: i.severity,
+      title: i.title,
+      detail: i.detail,
+      href:
+        i.target.kind === 'route' && i.id.startsWith('device:')
+          ? `${i.target.to}?user_code=${encodeURIComponent(i.id.slice('device:'.length))}`
+          : hrefForTarget(i.target),
+    }))
+}
+
 export function buildNotifications(src: {
   failedDeploys?: FailedDeploy[]
   approvals?: DeployApprovalResource[]
   activity?: ActivityEvent[]
+  attention?: AttentionItem[]
 }): ShellNotification[] {
   const out: ShellNotification[] = []
+  out.push(...notificationsFromAttention(src.attention ?? []))
   for (const a of src.approvals ?? []) {
     out.push({
       id: `approval:${a.id}`,

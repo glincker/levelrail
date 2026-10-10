@@ -1124,3 +1124,14 @@ func WithHostFirewallRunner(run func(ctx context.Context, name string, args ...s
 		rt.hostFirewallLookPath = lookPath
 	}
 }
+
+// WithDeviceLoginNotifier enables the opt-in notice sent through channels
+// with NotifyDeviceLogin when a CLI device login is waiting.
+func WithDeviceLoginNotifier(n DeviceLoginNotifier) Option {
+	return func(rt *Router) { rt.deviceNotifier = n }
+}
+
+// WithDashboardURL sets the base URL used for links in outbound notices.
+func WithDashboardURL(u string) Option {
+	return func(rt *Router) { rt.publicDashboardURL = u }
+}

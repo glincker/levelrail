@@ -17,7 +17,7 @@ func runChannelsUpdate(prog string, args []string, stdout, stderr io.Writer, loo
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "channels update", "print the updated channel as JSON to stdout and nothing else", stderr)
 	var name, kind, notifyURL, pushoverUserKey, pushoverAPIToken, pagerDutyRoutingKey string
 	var resendAPIKey, resendTo, resendFrom, opsgenieAPIKey string
-	var disabled bool
+	var disabled, notifyDeviceLogin bool
 	fs.StringVar(&name, "name", "", "display name for the channel (required)")
 	fs.StringVar(&kind, "kind", "", "channel kind: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat (required)")
 	fs.StringVar(&notifyURL, "notify-url", "", "destination (webhook URL, Telegram sendMessage URL, email address, or PagerDuty routing key); required unless a kind-specific alternative below is set")
@@ -28,6 +28,7 @@ func runChannelsUpdate(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&resendTo, "resend-to", "", "Resend destination email address (--kind resend only, required with --resend-api-key)")
 	fs.StringVar(&resendFrom, "resend-from", "", "Resend from address (--kind resend only, optional, defaults to onboarding@resend.dev)")
 	fs.StringVar(&opsgenieAPIKey, "opsgenie-api-key", "", "Opsgenie API Key (--kind opsgenie only, an alternative to --notify-url)")
+	fs.BoolVar(&notifyDeviceLogin, "notify-device-login", false, "send a link-only notice here when a CLI login is waiting for approval (never includes the code)")
 	fs.BoolVar(&disabled, "disabled", false, "leave the channel disabled (default: enabled)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, channelsUpdateUsage(prog)) }
 
@@ -69,7 +70,7 @@ func runChannelsUpdate(prog string, args []string, stdout, stderr io.Writer, loo
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	updated, err := client.UpdateNotificationChannel(context.Background(), id, updateNotificationChannelRequest{
-		Name: name, Kind: kind, NotifyURL: resolvedURL, Enabled: &enabled,
+		Name: name, Kind: kind, NotifyURL: resolvedURL, Enabled: &enabled, NotifyDeviceLogin: notifyDeviceLogin,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update notification channel %q: %w", id, err))
@@ -109,6 +110,7 @@ Flags:
   --resend-to string                   Resend destination email address (--kind resend only, required with --resend-api-key)
   --resend-from string                 Resend from address (--kind resend only, optional, defaults to onboarding@resend.dev)
   --opsgenie-api-key string            Opsgenie API Key (--kind opsgenie only, an alternative to --notify-url)
+  --notify-device-login                send a link-only notice here when a CLI login is waiting for approval (never the code)
   --disabled                           leave the channel disabled (default: enabled)
   --token string                       API token (default: %[2]s env var, then the credentials file)
   --api-url string                    control plane base URL (default: %[3]s env var, then %[4]s)
