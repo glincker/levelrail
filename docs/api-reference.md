@@ -940,6 +940,17 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/cutover | AbilityRead | handleCutoverReport |
 | GET | /api/v1/migration/cutover/verify | AbilityWriteSensitive | handleCutoverVerify |
 | GET | /api/v1/ingress/connectivity | AbilityRead | handleIngressConnectivity |
+| POST | /api/v1/migration/hub/sessions | AbilityWriteSensitive | handleCreateHubSession |
+| GET | /api/v1/migration/hub/sessions | AbilityRead | handleListHubSessions |
+| GET | /api/v1/migration/hub/sessions/{id} | AbilityRead | handleGetHubSession |
+| DELETE | /api/v1/migration/hub/sessions/{id} | AbilityWriteSensitive | handleDeleteHubSession |
+| PUT | /api/v1/migration/hub/sessions/{id}/selection | AbilityWriteSensitive | handlePutHubSelection |
+| PUT | /api/v1/migration/hub/sessions/{id}/step | AbilityWriteSensitive | handlePutHubStep |
+| POST | /api/v1/migration/hub/sessions/{id}/apply | AbilityWriteSensitive | handleApplyHubSession |
+| GET | /api/v1/migration/hub/sessions/{id}/receipt | AbilityRead | handleHubReceipt |
+| GET | /api/v1/migration/hub/sessions/{id}/items/{db}/connection | AbilityRead | handleHubConnection |
+| POST | /api/v1/migration/hub/sessions/{id}/items/{db}/reveal | AbilityReadSensitive | handleHubReveal |
+| GET | /api/v1/migration/hub/local-sources | AbilityRead | handleHubLocalSources |
 
 ## See also
 

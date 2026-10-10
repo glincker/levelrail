@@ -67,6 +67,7 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerGlobalEnvironmentTools(server, client)
 	registerDomainTools(server, client)
 	registerImportTools(server, client)
+	registerMigrationHubTools(server, client)
 	registerCloudflareTools(server, client)
 	registerCertificateTools(server, client)
 	registerLogDrainTools(server, client)

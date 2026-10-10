@@ -2,9 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { useTranslation } from 'react-i18next'
 import { PlatformImportCard } from '../../components/PlatformImportCard'
-import { MigrationCutoverCard } from '../../components/MigrationCutoverCard'
-import { MigrationDataCard } from '../../components/MigrationDataCard'
-import { MigrationVolumesCard } from '../../components/MigrationVolumesCard'
+import { MigrationHub } from '../../components/MigrationHub'
 
 // Needs write:sensitive server-side (the source credential travels in the
 // request body), so a read-only session sees the API's 403 in the form.
@@ -25,9 +23,7 @@ function ImportPlatformPage() {
         <h2 className="text-base font-semibold">{t('title')}</h2>
         <p className="text-sm text-muted-foreground">{t('description')}</p>
       </div>
-      <MigrationDataCard />
-      <MigrationVolumesCard />
-      <MigrationCutoverCard />
+      <MigrationHub />
     </div>
   )
 }

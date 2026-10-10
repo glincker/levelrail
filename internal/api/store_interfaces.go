@@ -563,6 +563,7 @@ type Store interface {
 	ImageAutoUpdateStore
 	AppSleepStore
 	DataImportStore
+	MigrationHubStore
 	CanaryStore
 	DatabaseQueryStore
 	PreviewEnvironmentStore

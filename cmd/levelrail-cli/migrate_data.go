@@ -273,7 +273,8 @@ func printCutover(w io.Writer, rep apiclient.CutoverReport) {
 }
 
 func migrateDataUsage(prog string) string {
-	return fmt.Sprintf(`  %[1]s migrate db-copy NAME --host H --user U --database D   copy live data into an imported database and verify row counts
+	return fmt.Sprintf(`  %[1]s migrate server --engine postgres --host H --user U --list|--plan|--apply   migrate every database of a source server, read-only on the source
+  %[1]s migrate db-copy NAME --host H --user U --database D   copy live data into an imported database and verify row counts
   %[1]s migrate db-status [NAME]                              per-database copy status
   %[1]s migrate volumes --source user@host                    print the commands that copy imported volumes
   %[1]s migrate cutover [--verify]                            go or no-go for the DNS switch, then verify after it

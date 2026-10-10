@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 717 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 728 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -556,6 +556,17 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
 	{Method: "GET", Path: "/api/v1/migration/cutover", Ability: "AbilityRead", Group: "Other", Handler: "handleCutoverReport", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/cutover/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCutoverVerify", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/hub/local-sources", Ability: "AbilityRead", Group: "Other", Handler: "handleHubLocalSources", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/hub/sessions", Ability: "AbilityRead", Group: "Other", Handler: "handleListHubSessions", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/hub/sessions", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateHubSession", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/migration/hub/sessions/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteHubSession", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/hub/sessions/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetHubSession", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/hub/sessions/{id}/apply", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleApplyHubSession", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/hub/sessions/{id}/items/{db}/connection", Ability: "AbilityRead", Group: "Other", Handler: "handleHubConnection", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/hub/sessions/{id}/items/{db}/reveal", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleHubReveal", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/hub/sessions/{id}/receipt", Ability: "AbilityRead", Group: "Other", Handler: "handleHubReceipt", Description: ""},
+	{Method: "PUT", Path: "/api/v1/migration/hub/sessions/{id}/selection", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handlePutHubSelection", Description: ""},
+	{Method: "PUT", Path: "/api/v1/migration/hub/sessions/{id}/step", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handlePutHubStep", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/volumes", Ability: "AbilityRead", Group: "Other", Handler: "handleVolumeGuide", Description: ""},
 	{Method: "GET", Path: "/api/v1/model-cache", Ability: "AbilityRead", Group: "Other", Handler: "handleListModelCache", Description: ""},
 	{Method: "POST", Path: "/api/v1/model-cache/prune", Ability: "AbilityRoot", Group: "Other", Handler: "handlePruneModelCache", Description: ""},
