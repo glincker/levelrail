@@ -62,6 +62,9 @@ export function ChangeDatabaseVersionDialog({
             className="font-mono"
           />
         </label>
+        <p className="text-xs text-muted-foreground">
+          {t('version.pgvectorHint')}
+        </p>
         {setDatabaseVersion.isError ? (
           <p className="text-sm text-destructive" role="alert">
             {setDatabaseVersion.error.message}

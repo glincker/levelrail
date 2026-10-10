@@ -21,7 +21,7 @@ const (
 
 // ImageRef is the image:tag a database of engine and version runs.
 func ImageRef(engine, version string) string {
-	return dockerImageFor(engine) + ":" + versionOrDefault(version)
+	return imageRepo(engine, version) + ":" + ImageTag(engine, version)
 }
 
 // ContainerName exports containerName: the Docker container name dbName's
