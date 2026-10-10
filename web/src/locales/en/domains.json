@@ -140,5 +140,112 @@
     "reachable": "Reachable: this domain serves the dashboard.",
     "notReachable": "Not reachable yet.",
     "error": "Could not build the configuration"
+  },
+  "page": {
+    "title": "Domains",
+    "description": "Every domain routed to your apps.",
+    "add": "Add domain",
+    "count_one": "{{count}} domain",
+    "count_other": "{{count}} domains",
+    "search": "Filter domains",
+    "noMatch": "No domain matches \"{{query}}\"",
+    "noMatchBody": "Check the spelling or clear the filter.",
+    "clearSearch": "Clear filter",
+    "col": {
+      "domain": "Domain",
+      "app": "App",
+      "dns": "DNS",
+      "certificate": "Certificate",
+      "expires": "Expires",
+      "visibility": "Search"
+    },
+    "empty": {
+      "noAppsTitle": "No apps to route yet",
+      "noAppsBody": "A domain routes traffic to an app. Deploy an app first.",
+      "noAppsAction": "Deploy an app",
+      "title": "No domains yet",
+      "body": "Add one or more domains and point them at an app.",
+      "action": "Add domain"
+    },
+    "error": {
+      "title": "Could not load domains",
+      "retry": "Try again"
+    },
+    "dns": {
+      "connected": "Connected",
+      "not_resolving": "Not resolving",
+      "resolves_elsewhere": "Points elsewhere",
+      "unconfigured": "Unknown",
+      "checking": "Checking",
+      "notResolvingHint": "No DNS record found yet.",
+      "elsewhereHint": "Resolves somewhere else: {{hosts}}.",
+      "elsewhereHintNoHosts": "Resolves somewhere else.",
+      "privateHint": "This server is on a private address, so only DNS-01 can issue a certificate."
+    },
+    "cert": {
+      "none": "No certificate yet",
+      "internal": "Internal",
+      "failed": "Request failed"
+    },
+    "visibility": {
+      "toggle": "Allow search engines to index {{domain}}",
+      "visible": "Visible",
+      "hidden": "Hidden",
+      "failed": "Could not change search visibility for {{domain}}."
+    },
+    "row": {
+      "actions": "Actions for {{domain}}",
+      "manage": "Manage on the app",
+      "dnsRecord": "Show DNS record",
+      "copy": "Copy domain",
+      "copied": "Domain copied",
+      "recheck": "Re-check DNS",
+      "automatic": "Automatic"
+    },
+    "flag": {
+      "waf": "WAF enabled",
+      "redirect": "Redirect configured",
+      "maintenance": "Maintenance mode on",
+      "basicAuth": "Basic auth configured"
+    },
+    "dnsDialog": {
+      "title": "DNS record for {{domain}}",
+      "close": "Close"
+    },
+    "platform": {
+      "title": "Platform settings",
+      "summary": "Ingress, HTTPS, dashboard address and DNS providers.",
+      "httpsOff": "HTTPS not enabled",
+      "toggle": "Show platform settings"
+    },
+    "addDialog": {
+      "title": "Add domains",
+      "description": "Pick an app and list the domains that should route to it.",
+      "app": "App",
+      "appPlaceholder": "Choose an app",
+      "domains": "Domains",
+      "domainsPlaceholder": "app.example.com\nwww.example.com",
+      "domainsHint": "One per line, or separated by commas.",
+      "ready_one": "{{count}} domain ready to add",
+      "ready_other": "{{count}} domains ready to add",
+      "invalid": "Not valid: {{list}}",
+      "duplicates": "Repeated, counted once: {{list}}",
+      "claimed": "{{domain}} is already routed to {{app}}.",
+      "submit_one": "Add {{count}} domain",
+      "submit_other": "Add {{count}} domains",
+      "submitting": "Adding...",
+      "noApps": "No apps yet. Deploy an app, then add domains to it.",
+      "resultsTitle": "Point your DNS",
+      "resultsBody": "Create the record shown for each domain at your DNS provider, then verify.",
+      "added": "Added",
+      "failed": "Not added",
+      "verify": "Verify all",
+      "verifying": "Checking...",
+      "retryFailed": "Retry failed",
+      "showRecord": "Show record",
+      "hideRecord": "Hide record",
+      "done": "Done",
+      "summary": "{{ok}} added, {{failed}} not added."
+    }
   }
 }

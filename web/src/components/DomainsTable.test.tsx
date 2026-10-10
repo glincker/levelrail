@@ -1,10 +1,11 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DomainRow } from './DomainRow'
+import { DomainsTable } from './DomainsTable'
 import domainsEn from '../locales/en/domains.json'
 import type { Domain } from '../queries/domains'
 
@@ -49,63 +50,60 @@ function makeDomain(over: Partial<Domain> = {}): Domain {
   }
 }
 
-function renderRow(domain: Domain) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(() => new Promise<Response>(() => undefined)),
-  )
+function renderTable(props: {
+  domains: Domain[]
+  appCount: number
+  onAdd?: () => void
+}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={queryClient}>
-        <DomainRow domain={domain} />
+        <DomainsTable
+          domains={props.domains}
+          certByDomain={new Map()}
+          appCount={props.appCount}
+          onAdd={props.onAdd ?? (() => undefined)}
+        />
       </QueryClientProvider>
     </I18nextProvider>,
   )
 }
 
-describe('DomainRow', () => {
+describe('DomainsTable', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it('shows no status flags when nothing is configured', () => {
-    renderRow(makeDomain())
-    expect(screen.queryByTitle('WAF enabled')).not.toBeInTheDocument()
-    expect(screen.queryByTitle('Redirect configured')).not.toBeInTheDocument()
-    expect(screen.queryByTitle('Maintenance mode on')).not.toBeInTheDocument()
-    expect(screen.queryByTitle('Basic auth configured')).not.toBeInTheDocument()
+  it('points to deploying an app when there are no apps', () => {
+    renderTable({ domains: [], appCount: 0 })
+    expect(screen.getByText('No apps to route yet')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Deploy an app' }),
+    ).toHaveAttribute('href', '/apps')
   })
 
-  it('shows an icon for each active flag', () => {
-    renderRow(
-      makeDomain({
-        waf_enabled: true,
-        has_redirect: true,
-        maintenance_enabled: true,
-        has_basic_auth: true,
-      }),
-    )
-    expect(screen.getByTitle('WAF enabled')).toBeInTheDocument()
-    expect(screen.getByTitle('Redirect configured')).toBeInTheDocument()
-    expect(screen.getByTitle('Maintenance mode on')).toBeInTheDocument()
-    expect(screen.getByTitle('Basic auth configured')).toBeInTheDocument()
+  it('offers Add domain when apps exist but no domains do', async () => {
+    const onAdd = vi.fn()
+    const user = userEvent.setup()
+    renderTable({ domains: [], appCount: 2, onAdd })
+    expect(screen.getByText('No domains yet')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add domain' }))
+    expect(onAdd).toHaveBeenCalledTimes(1)
   })
 
-  it('shows the inline certificate failure next to the domain', () => {
-    renderRow(
-      makeDomain({
-        acme_failure: {
-          error: 'connection refused',
-          renewal: false,
-          at: '2026-10-10T00:00:00Z',
-          reason: 'unreachable',
-          action: 'open_port_80',
-        },
-      }),
+  it('shows a filter empty state with a way back', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
     )
-    expect(screen.getByText(/open ports 80 and 443/i)).toBeInTheDocument()
+    const user = userEvent.setup()
+    renderTable({ domains: [makeDomain()], appCount: 1 })
+    await user.type(screen.getByLabelText('Filter domains'), 'zzz')
+    expect(screen.getByText('No domain matches "zzz"')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Clear filter' }))
+    expect(screen.getByLabelText('Filter domains')).toHaveValue('')
   })
 })
