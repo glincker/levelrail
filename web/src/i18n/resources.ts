@@ -16,6 +16,7 @@ import type domains from '../locales/en/domains.json'
 import type attention from '../locales/en/attention.json'
 import type setup from '../locales/en/setup.json'
 import type updates from '../locales/en/updates.json'
+import type iam from '../locales/en/iam.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -40,6 +41,7 @@ declare module 'i18next' {
       attention: typeof attention
       setup: typeof setup
       updates: typeof updates
+      iam: typeof iam
     }
   }
 }

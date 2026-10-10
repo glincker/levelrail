@@ -15,6 +15,7 @@ export interface PolicyTemplateParam {
   name: string
   description: string
   required: boolean
+  kind?: 'environment' | 'app' | 'database' | 'project'
 }
 
 export interface PolicyTemplate {

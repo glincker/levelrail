@@ -24,6 +24,7 @@ export const NAMESPACES = [
   'setup',
   'updates',
   'exposure',
+  'iam',
 ] as const
 
 void i18n

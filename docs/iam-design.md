@@ -1,3 +1,7 @@
+---
+description: How IAM policies are stored, evaluated and attached, and what the policy builder, simulator and analyzer add without changing any decision.
+---
+
 # IAM: what exists and what the authoring tools add
 
 This page records how IAM policies work today and what the policy builder,
