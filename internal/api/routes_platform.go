@@ -712,7 +712,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// Restricting and unrestricting change the host's DOCKER-USER chain,
 	// so they are AbilityRoot like the ufw switch above.
 	mux.HandleFunc("GET /api/v1/firewall/exposure", rt.requireAbility(AbilityRead, rt.handleExposureReport))
-	mux.HandleFunc("POST /api/v1/firewall/exposure/preview", rt.requireAbility(AbilityRead, rt.handleExposurePreview))
+	mux.HandleFunc("POST /api/v1/firewall/exposure/preview", rt.requireAbility(AbilityRoot, rt.handleExposurePreview))
 	mux.HandleFunc("PUT /api/v1/firewall/exposure/restrictions/{protocol}/{port}", rt.requireAbility(AbilityRoot, rt.handleExposureRestrict))
 	mux.HandleFunc("DELETE /api/v1/firewall/exposure/restrictions/{protocol}/{port}", rt.requireAbility(AbilityRoot, rt.handleExposureUnrestrict))
 
