@@ -86,6 +86,8 @@
     },
     "verdict": {
       "ready": "All clear",
+      "ready_partial_one": "Nothing wrong found, {{count}} check not run",
+      "ready_partial_other": "Nothing wrong found, {{count}} checks not run",
       "attention_one": "{{count}} to review",
       "attention_other": "{{count}} to review",
       "blocked": "Needs a fix now"

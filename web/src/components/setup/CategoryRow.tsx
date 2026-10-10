@@ -88,7 +88,10 @@ export function CategoryRow({
   const tone = VERDICT_TONE[category.verdict]
   const issues = category.warn + category.fail
 
-  let verdict = t('server.verdict.ready')
+  let verdict =
+    category.unknown > 0
+      ? t('server.verdict.ready_partial', { count: category.unknown })
+      : t('server.verdict.ready')
   if (category.verdict === 'blocked') verdict = t('server.verdict.blocked')
   else if (category.verdict === 'attention') {
     verdict = t('server.verdict.attention', { count: issues })
