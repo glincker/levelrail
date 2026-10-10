@@ -27,8 +27,8 @@ func TestDockerSourceDiscover(t *testing.T) {
 	if web.Image != "abcdefghijklmnopqrstuvwx:2222222222222222222222222222222222222222" || web.Replicas != 1 {
 		t.Errorf("web picked the wrong container: %+v", web)
 	}
-	if web.Kind != SourceUnknown {
-		t.Errorf("a host-built image must not claim to be pullable, kind=%s", web.Kind)
+	if web.Kind != SourceImage || len(web.Notes) == 0 || !strings.Contains(web.Notes[0].Manual, "docker save") {
+		t.Errorf("a host-built image stays an image with a load hint, kind=%s notes=%+v", web.Kind, web.Notes)
 	}
 	if web.Port != 3000 || len(web.Domains) != 1 || web.Domains[0] != "app.example.com" {
 		t.Errorf("routing: port=%d domains=%v", web.Port, web.Domains)

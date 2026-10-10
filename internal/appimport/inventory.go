@@ -193,7 +193,7 @@ func judgeApp(a platformimport.App, dbHosts []string, byHost map[string]DBRef) E
 	}
 	if s := e.Env; s.Empty > 0 {
 		attention = append(attention, Finding{Reason: plural(s.Empty, "secret variable") + " came back with no readable value",
-			Next: "use a Coolify token with the read:sensitive ability, or set them here by hand"})
+			Next: "the source did not expose the value: use a token with sensitive read access, or set it here by hand"})
 	}
 	if keys := sharedVarKeys(a.Env); len(keys) > 0 {
 		attention = append(attention, Finding{Reason: "variables reference shared variables that are not resolved here: " + strings.Join(keys, ", "),
