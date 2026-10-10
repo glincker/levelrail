@@ -137,8 +137,19 @@ levelrail import apps --session appimp-123 --cancel-images  # stop a running mov
 
 The control plane opens an SSH connection to the old host, runs
 `docker save <image>` there and loads the stream into the target node through
-the Docker Engine API. Each loaded image ID is compared with the ID in the
-snapshot, so a wrong or partial image is reported as failed, not trusted.
+the Docker Engine API. The check is by content, not by image ID alone: the
+stream is read as it passes, and the loaded image's layers must equal the
+layers listed in the saved image config, in order. The snapshot's image ID
+must then match either the config digest of the stream or the loaded image
+ID. A wrong or partial image is reported as failed, not trusted.
+
+Image IDs are not portable between Docker image stores. The classic overlay2
+store uses the hash of the image config as the ID, while the containerd image
+store uses the manifest digest, so the same image can show two different IDs
+on the old host and the new node. Comparing layers and the config digest
+keeps that case from failing a correct move. A re-run skips an image only
+when the target reports the snapshot's exact ID, so a cross-store image is
+copied again on a re-run.
 
 - Only `docker save` with an image reference from the session's own plan is
   ever run on the old host. References and the SSH login are validated

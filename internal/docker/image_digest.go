@@ -51,6 +51,13 @@ type ImageInspector interface {
 	InspectImageID(ctx context.Context, ref string) (string, error)
 }
 
+// ImageLayerInspector reports the rootfs layer diff IDs of a local image,
+// which are identical across image stores for the same content (unlike the
+// image ID). It returns nil when the image is not present.
+type ImageLayerInspector interface {
+	InspectImageLayers(ctx context.Context, ref string) ([]string, error)
+}
+
 // PinImageRef appends digest to ref unless ref already carries one.
 func PinImageRef(ref, digest string) string {
 	if digest == "" || strings.Contains(ref, "@") {
@@ -143,4 +150,16 @@ func (c *Client) InspectImageID(ctx context.Context, ref string) (string, error)
 		return "", fmt.Errorf("docker: inspect image %q: %w", ref, err)
 	}
 	return resp.ID, nil
+}
+
+// InspectImageLayers implements ImageLayerInspector.
+func (c *Client) InspectImageLayers(ctx context.Context, ref string) ([]string, error) {
+	resp, err := c.cli.ImageInspect(ctx, ref)
+	if err != nil {
+		if cerrdefs.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("docker: inspect image layers %q: %w", ref, err)
+	}
+	return resp.RootFS.Layers, nil
 }

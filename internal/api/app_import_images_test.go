@@ -1,6 +1,7 @@
 package api
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -49,12 +50,52 @@ type fakeImageRuntime struct {
 	got map[string]int
 }
 
+const moveLayer = "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+
+// moveArchive is a minimal docker save tar: a config with one layer, a
+// manifest, and a plain-text marker the fake runtime reads the ref from.
+func moveArchive(ref string) []byte {
+	cfg := []byte(`{"rootfs":{"type":"layers","diff_ids":["` + moveLayer + `"]}}`)
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	for _, e := range []struct{ name, body string }{
+		{"cfg.json", string(cfg)},
+		{"ref.txt", ref},
+		{"manifest.json", `[{"Config":"cfg.json","RepoTags":["` + ref + `"]}]`},
+	} {
+		_ = tw.WriteHeader(&tar.Header{Name: e.name, Mode: 0o600, Size: int64(len(e.body))})
+		_, _ = tw.Write([]byte(e.body))
+	}
+	_ = tw.Close()
+	return buf.Bytes()
+}
+
+func (f *fakeImageRuntime) InspectImageLayers(_ context.Context, ref string) ([]string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.images[ref] == "" {
+		return nil, nil
+	}
+	return []string{moveLayer}, nil
+}
+
 func (f *fakeImageRuntime) LoadImage(_ context.Context, r io.Reader) error {
 	b, err := io.ReadAll(r)
 	if err != nil {
 		return err
 	}
-	ref := string(b)
+	ref := ""
+	tr := tar.NewReader(bytes.NewReader(b))
+	for {
+		h, nerr := tr.Next()
+		if nerr != nil {
+			break
+		}
+		if h.Name == "ref.txt" {
+			rb, _ := io.ReadAll(tr)
+			ref = string(rb)
+		}
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.images[ref] = f.ids[ref]
@@ -85,7 +126,7 @@ func (s *moveSaver) Save(ctx context.Context, ref string) (io.ReadCloser, error)
 		<-ctx.Done()
 		return nil, ctx.Err()
 	}
-	return io.NopCloser(bytes.NewReader([]byte(ref))), nil
+	return io.NopCloser(bytes.NewReader(moveArchive(ref))), nil
 }
 
 func (s *moveSaver) saved() []string {
@@ -171,10 +212,10 @@ func TestAppImportImagesTransfer(t *testing.T) {
 		t.Fatal("response echoes the private key")
 	}
 	v := h.waitImages(id)
-	if web := imageByApp(v, "web"); web.State != imageMoveVerified || !web.Verified || web.Bytes != int64(len(moveRefWeb)) || web.LoadedImageID != moveIDWeb {
+	if web := imageByApp(v, "web"); web.State != imageMoveVerified || !web.Verified || web.Bytes != int64(len(moveArchive(moveRefWeb))) || web.LoadedImageID != moveIDWeb {
 		t.Fatalf("web = %+v", web)
 	}
-	if api := imageByApp(v, "api"); api.State != imageMoveFailed || !strings.Contains(api.Error, "has ID") {
+	if api := imageByApp(v, "api"); api.State != imageMoveFailed || !strings.Contains(api.Error, "neither") {
 		t.Fatalf("api = %+v, want an ID mismatch failure", api)
 	}
 	if bad := imageByApp(v, "bad"); bad.State != imageMoveFailed || !strings.Contains(bad.Error, "not allowed") {
