@@ -30,6 +30,7 @@ const (
 // Next actions for an ACME failure, one per failure reason.
 const (
 	acmeActionOpenPort80 = "open_port_80"
+	acmeActionOtherProxy = "other_proxy"
 	acmeActionFixDNS     = "fix_dns"
 	acmeActionWaitRetry  = "wait_rate_limit"
 	acmeActionFixCAA     = "fix_caa"
@@ -55,6 +56,8 @@ func acmeActionForReason(reason string) string {
 		return acmeActionOpenPort80
 	case httpsHintDNS:
 		return acmeActionFixDNS
+	case httpsHintOtherProxy:
+		return acmeActionOtherProxy
 	case httpsHintRateLimited:
 		return acmeActionWaitRetry
 	case httpsHintCAA:

@@ -72,6 +72,7 @@
 package api
 
 import (
+	"context"
 	"log/slog"
 	"os/exec"
 	"sync"
@@ -213,7 +214,8 @@ type Router struct {
 	// handleCheckDomain (domain_check.go) falls back to the request's own
 	// Host header in that case, see advertisedHost's own doc comment.
 	publicHost              string
-	dashboardListenAddr     string // APP_HTTP_ADDR, so the reverse proxy guide can build an upstream
+	detectPublicIPs         func(context.Context) []string // nil uses ingress.DetectPublicIPs; tests stub it
+	dashboardListenAddr     string                         // APP_HTTP_ADDR, so the reverse proxy guide can build an upstream
 	httpsMu                 sync.Mutex
 	httpsAttempts           []time.Time
 	httpsStartedAt          time.Time

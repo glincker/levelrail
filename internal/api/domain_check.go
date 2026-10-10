@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -189,6 +190,22 @@ func hostsOverlap(a, b []string) bool {
 // ingress_settings.go): same cache, same lookupHost, same status rules,
 // so the two endpoints can never quietly drift apart on what "connected"
 // means.
+// detectedPublicIPs probes this host's own public addresses, cached so a
+// polling dashboard does not hammer the probe services.
+func (rt *Router) detectedPublicIPs(ctx context.Context) []string {
+	const key = "detected-public-ips"
+	if cached, ok := rt.domainChecks.get(key); ok {
+		return cached.resolvedHosts
+	}
+	detect := rt.detectPublicIPs
+	if detect == nil {
+		detect = ingress.DetectPublicIPs
+	}
+	ips := detect(ctx)
+	rt.domainChecks.set(key, domainCheckResult{resolvedHosts: ips, at: time.Now()})
+	return ips
+}
+
 func (rt *Router) runDomainCheck(ctx context.Context, domain, expectedHost string, inferred bool) domainCheckResponse {
 	resp := domainCheckResponse{Domain: domain, ExpectedHost: expectedHost, HostInferred: inferred}
 	if expectedHost == "" {
@@ -230,6 +247,13 @@ func (rt *Router) runDomainCheck(ctx context.Context, domain, expectedHost strin
 		lookupCtx, cancel := context.WithTimeout(ctx, domainCheckLookupTimeout)
 		expected = expectedIPs(lookupCtx, rt.lookupHost, expectedHost)
 		cancel()
+		// A dual-stack host answers on both families, so a domain pointed
+		// at either is pointed at this server, not just at the configured one.
+		for _, ip := range rt.detectedPublicIPs(ctx) {
+			if !containsString(expected, ip) {
+				expected = append(expected, ip)
+			}
+		}
 		rt.domainChecks.set(expectedCacheKey, domainCheckResult{resolvedHosts: expected, at: time.Now()})
 	}
 	resp.ExpectedIPv4, resp.ExpectedIPv6 = splitByFamily(expected)

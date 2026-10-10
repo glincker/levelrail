@@ -64,6 +64,26 @@ func ResolvePublicHost(ctx context.Context) (host, source string) {
 	return "", PublicHostSourceNone
 }
 
+// DetectPublicIPs returns this host's public IPv4 and IPv6 addresses (each
+// when it has one), so a DNS check can accept an A or an AAAA record.
+func DetectPublicIPs(ctx context.Context) []string {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(envPublicIPDetect))) {
+	case "0", "false", "off", "no", "disabled":
+		return nil
+	}
+	urls := defaultPublicIPProbeURLs
+	if raw := strings.TrimSpace(os.Getenv(envPublicIPProbeURLs)); raw != "" {
+		urls = splitNonEmpty(raw)
+	}
+	var out []string
+	for _, network := range []string{"tcp4", "tcp6"} {
+		if ip := probePublicIP(ctx, urls, defaultPublicIPProbeTimeout, network); ip != "" {
+			out = append(out, ip)
+		}
+	}
+	return out
+}
+
 func splitNonEmpty(s string) []string {
 	var out []string
 	for _, p := range strings.Split(s, ",") {
