@@ -4,19 +4,28 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
-	"os/exec"
 	"strings"
+	"time"
 )
 
-const commentMarker = "<!-- glinr-bot -->"
+const (
+	commentMarker = "<!-- glinr-bot -->"
+	perPage       = 100
+	maxPages      = 30
+)
 
 type ghPull struct {
-	Title string `json:"title"`
-	Draft bool   `json:"draft"`
-	User  struct {
+	NodeID string `json:"node_id"`
+	Title  string `json:"title"`
+	Draft  bool   `json:"draft"`
+	User   struct {
 		Login string `json:"login"`
 	} `json:"user"`
 	Labels []struct {
@@ -37,16 +46,79 @@ type ghPull struct {
 	Deletions int `json:"deletions"`
 }
 
-func gh(args ...string) ([]byte, error) {
-	out, err := exec.Command("gh", args...).Output() //nolint:gosec // args are built from the workflow's own env, gh is the only binary run
-	if err != nil {
-		var detail string
-		if ee, ok := err.(*exec.ExitError); ok {
-			detail = strings.TrimSpace(string(ee.Stderr))
-		}
-		return out, fmt.Errorf("gh %s: %w: %s", strings.Join(args[:min(len(args), 3)], " "), err, detail)
+// client is a minimal GitHub REST and GraphQL client over net/http, so this
+// helper starts no host process.
+type client struct {
+	base  string
+	token string
+	http  *http.Client
+}
+
+func newClient() *client {
+	base := strings.TrimRight(os.Getenv("GITHUB_API_URL"), "/")
+	if base == "" {
+		base = "https://api.github.com"
 	}
-	return out, nil
+	return &client{base: base, token: os.Getenv("GH_TOKEN"), http: &http.Client{Timeout: 30 * time.Second}}
+}
+
+func (c *client) do(ctx context.Context, method, path string, in, out any) error {
+	var body io.Reader
+	if in != nil {
+		b, err := json.Marshal(in)
+		if err != nil {
+			return fmt.Errorf("encode request: %w", err)
+		}
+		body = bytes.NewReader(b)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, c.base+path, body) //nolint:gosec // base is the GitHub API, path is built from the workflow's own env
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	if in != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	resp, err := c.http.Do(req) //nolint:gosec // base URL is the GitHub API, path is built from the workflow's own env
+	if err != nil {
+		return fmt.Errorf("%s %s: %w", method, path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
+	if err != nil {
+		return fmt.Errorf("read %s %s: %w", method, path, err)
+	}
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("%s %s: status %d: %s", method, path, resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+	if out != nil && len(raw) > 0 {
+		if err := json.Unmarshal(raw, out); err != nil {
+			return fmt.Errorf("decode %s %s: %w", method, path, err)
+		}
+	}
+	return nil
+}
+
+// pages walks a list endpoint until a short page, collecting every element.
+func pages[T any](ctx context.Context, c *client, path string) ([]T, error) {
+	var all []T
+	sep := "?"
+	if strings.Contains(path, "?") {
+		sep = "&"
+	}
+	for page := 1; page <= maxPages; page++ {
+		var got []T
+		if err := c.do(ctx, http.MethodGet, fmt.Sprintf("%s%sper_page=%d&page=%d", path, sep, perPage, page), nil, &got); err != nil {
+			return nil, err
+		}
+		all = append(all, got...)
+		if len(got) < perPage {
+			break
+		}
+	}
+	return all, nil
 }
 
 func fail(format string, a ...any) {
@@ -75,24 +147,27 @@ func main() {
 		policy.Mode = m
 	}
 
-	body, err := gh("api", "repos/"+repo+"/pulls/"+pr)
-	if err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	c := newClient()
+	var p ghPull
+	if err := c.do(ctx, http.MethodGet, "/repos/"+repo+"/pulls/"+pr, nil, &p); err != nil {
 		fail("%v", err)
 	}
-	var p ghPull
-	if err := json.Unmarshal(body, &p); err != nil {
-		fail("decode pull request: %v", err)
-	}
-	filesOut, err := gh("api", "--paginate", "repos/"+repo+"/pulls/"+pr+"/files", "--jq", ".[].filename")
+	files, err := pages[struct {
+		Filename string `json:"filename"`
+	}](ctx, c, "/repos/"+repo+"/pulls/"+pr+"/files")
 	if err != nil {
 		fail("%v", err)
 	}
 	info := PR{
 		Author: p.User.Login, Title: p.Title, Draft: p.Draft,
 		Fork:         p.Head.Repo.FullName != p.Base.Repo.FullName,
-		Files:        strings.Fields(string(filesOut)),
 		ChangedLines: p.Additions + p.Deletions,
 		SelfAuthored: p.User.Login == os.Getenv("APP_LOGIN") && p.User.Login != "",
+	}
+	for _, f := range files {
+		info.Files = append(info.Files, f.Filename)
 	}
 	for _, l := range p.Labels {
 		info.Labels = append(info.Labels, l.Name)
@@ -101,16 +176,16 @@ func main() {
 	v := Evaluate(policy, info)
 	var done []string
 	if policy.Mode == ModeEnforce {
-		done = act(repo, pr, p.Head.SHA, v, info)
+		done = act(ctx, c, repo, pr, p, v, info)
 	}
-	if err := upsertComment(repo, pr, renderComment(v, policy.Mode, done)); err != nil {
+	if err := upsertComment(ctx, c, repo, pr, renderComment(v, policy.Mode, done)); err != nil {
 		fail("%v", err)
 	}
 	fmt.Printf("glinr-bot: %s#%s mode=%s rule=%q actions=%v done=%v\n", repo, pr, policy.Mode, v.Rule, v.Actions, done)
 }
 
 // act performs the earned actions that change anything besides the comment.
-func act(repo, pr, sha string, v Verdict, info PR) []string {
+func act(ctx context.Context, c *client, repo, pr string, p ghPull, v Verdict, info PR) []string {
 	var done []string
 	for _, a := range v.Actions {
 		switch a {
@@ -119,18 +194,33 @@ func act(repo, pr, sha string, v Verdict, info PR) []string {
 				done = append(done, "approve skipped: the bot authored this PR")
 				continue
 			}
-			if alreadyApproved(repo, pr, sha) {
+			if alreadyApproved(ctx, c, repo, pr, p.Head.SHA) {
 				done = append(done, "approve: already approved this commit")
 				continue
 			}
-			if _, err := gh("pr", "review", pr, "--repo", repo, "--approve", "--body", "Approved by glinr-bot: rule "+v.Rule+" passed."); err != nil {
+			err := c.do(ctx, http.MethodPost, "/repos/"+repo+"/pulls/"+pr+"/reviews",
+				map[string]string{"event": "APPROVE", "body": "Approved by glinr-bot: rule " + v.Rule + " passed."}, nil)
+			if err != nil {
 				done = append(done, "approve failed: "+err.Error())
 				continue
 			}
 			done = append(done, "approved")
 		case ActionAutomerge:
-			if _, err := gh("pr", "merge", pr, "--repo", repo, "--auto", "--squash"); err != nil {
+			q := map[string]any{
+				"query":     "mutation($id: ID!) { enablePullRequestAutoMerge(input: {pullRequestId: $id, mergeMethod: SQUASH}) { clientMutationId } }",
+				"variables": map[string]string{"id": p.NodeID},
+			}
+			var out struct {
+				Errors []struct {
+					Message string `json:"message"`
+				} `json:"errors"`
+			}
+			if err := c.do(ctx, http.MethodPost, "/graphql", q, &out); err != nil {
 				done = append(done, "auto-merge failed: "+err.Error())
+				continue
+			}
+			if len(out.Errors) > 0 {
+				done = append(done, "auto-merge failed: "+out.Errors[0].Message)
 				continue
 			}
 			done = append(done, "auto-merge armed, GitHub merges when required checks pass")
@@ -139,32 +229,40 @@ func act(repo, pr, sha string, v Verdict, info PR) []string {
 	return done
 }
 
-func alreadyApproved(repo, pr, sha string) bool {
-	out, err := gh("api", "repos/"+repo+"/pulls/"+pr+"/reviews", "--paginate",
-		"--jq", `.[] | select(.state=="APPROVED") | select(.user.login | endswith("[bot]")) | .commit_id`)
+func alreadyApproved(ctx context.Context, c *client, repo, pr, sha string) bool {
+	reviews, err := pages[struct {
+		State    string `json:"state"`
+		CommitID string `json:"commit_id"`
+		User     struct {
+			Login string `json:"login"`
+		} `json:"user"`
+	}](ctx, c, "/repos/"+repo+"/pulls/"+pr+"/reviews")
 	if err != nil {
 		return false
 	}
-	for _, c := range strings.Fields(string(out)) {
-		if c == sha {
+	for _, r := range reviews {
+		if r.State == "APPROVED" && r.CommitID == sha && strings.HasSuffix(r.User.Login, "[bot]") {
 			return true
 		}
 	}
 	return false
 }
 
-func upsertComment(repo, pr, body string) error {
-	idOut, err := gh("api", "--paginate", "repos/"+repo+"/issues/"+pr+"/comments",
-		"--jq", fmt.Sprintf(`.[] | select(.body | contains(%q)) | .id`, commentMarker))
+func upsertComment(ctx context.Context, c *client, repo, pr, body string) error {
+	comments, err := pages[struct {
+		ID   int64  `json:"id"`
+		Body string `json:"body"`
+	}](ctx, c, "/repos/"+repo+"/issues/"+pr+"/comments")
 	if err != nil {
 		return err
 	}
-	if id := strings.TrimSpace(strings.SplitN(string(idOut), "\n", 2)[0]); id != "" {
-		_, err = gh("api", "-X", "PATCH", "repos/"+repo+"/issues/comments/"+id, "-f", "body="+body)
-		return err
+	payload := map[string]string{"body": body}
+	for _, cm := range comments {
+		if strings.Contains(cm.Body, commentMarker) {
+			return c.do(ctx, http.MethodPatch, fmt.Sprintf("/repos/%s/issues/comments/%d", repo, cm.ID), payload, nil)
+		}
 	}
-	_, err = gh("api", "-X", "POST", "repos/"+repo+"/issues/"+pr+"/comments", "-f", "body="+body)
-	return err
+	return c.do(ctx, http.MethodPost, "/repos/"+repo+"/issues/"+pr+"/comments", payload, nil)
 }
 
 func renderComment(v Verdict, mode string, done []string) string {
