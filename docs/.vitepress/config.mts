@@ -12,6 +12,20 @@ const description =
   'A self-hosted deployment platform whose agent talks to Docker’s own Engine API directly, ' +
   'no SSH or CLI shelling, with metrics and log storage built into the core.'
 
+// Pages with their own social card, rendered by scripts/og/render.mjs.
+const PAGE_OG: Record<string, string> = {
+  installing: 'og/install.jpg',
+  'getting-started': 'og/install.jpg',
+  'migrating-from-coolify-dokploy-and-caprover': 'og/migrate.jpg',
+  'coolify-alternative': 'og/migrate.jpg',
+  'migrating-from-vercel': 'og/migrate.jpg',
+  'template-catalog': 'og/templates.jpg',
+  templates: 'og/templates.jpg',
+  'canary-deploys': 'og/canary.jpg',
+  'sleep-when-idle': 'og/sleep.jpg',
+  'mcp-tool-surface': 'og/mcp.jpg',
+}
+
 const siteUrl = 'https://levelrail.com'
 
 // public/favicon.svg is served byte-for-byte at a fixed path (no content
@@ -228,6 +242,7 @@ const sidebarGroups = [
       { text: 'Comparison', link: '/comparison' },
       { text: 'Who Levelrail is for', link: '/use-cases' },
       { text: 'White-labeling', link: '/white-labeling' },
+      { text: 'Brand kit', link: '/brand' },
     ],
   },
   {
@@ -502,9 +517,8 @@ export default withMermaid({
     const canonicalUrl = `${siteUrl}/${path}`
     const title = pageData.frontmatter.title || pageData.title || 'Levelrail'
     const pageDescription = pageData.frontmatter.description || pageData.description || description
-    // Homepage gets the branded value-prop card; every other page gets one
-    // shared generic docs card rather than all pages sharing the homepage's.
-    const ogImage = `${siteUrl}/assets/${path === '' ? 'og-home.png' : 'og-docs.png'}`
+    // Homepage gets the value-prop card, key pages their own, the rest the docs card.
+    const ogImage = `${siteUrl}/assets/${path === '' ? 'og-home.png' : (PAGE_OG[path] ?? 'og-docs.png')}`
     const head: [string, Record<string, string>, string?][] = [
       ['link', { rel: 'canonical', href: canonicalUrl }],
       ['meta', { property: 'og:type', content: pageData.params?.tag ? 'article' : 'website' }],
