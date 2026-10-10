@@ -539,7 +539,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/firewall-rules", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateFirewallRule", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/firewall-rules/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteFirewallRule", Description: ""},
 	{Method: "GET", Path: "/api/v1/firewall/exposure", Ability: "AbilityRead", Group: "Other", Handler: "handleExposureReport", Description: "Exposure audit (exposure.go): read-only list of published container ports and how reachable each is; preview is a pure computation. Restricting and unrestricting change the host's DOCKER-USER chain, so they are AbilityRoot like the ufw switch above."},
-	{Method: "POST", Path: "/api/v1/firewall/exposure/preview", Ability: "AbilityRead", Group: "Other", Handler: "handleExposurePreview", Description: ""},
+	{Method: "POST", Path: "/api/v1/firewall/exposure/preview", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposurePreview", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/firewall/exposure/restrictions/{protocol}/{port}", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposureUnrestrict", Description: ""},
 	{Method: "PUT", Path: "/api/v1/firewall/exposure/restrictions/{protocol}/{port}", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposureRestrict", Description: ""},
 	{Method: "GET", Path: "/api/v1/firewall/host", Ability: "AbilityRead", Group: "Other", Handler: "handleHostFirewallStatus", Description: ""},

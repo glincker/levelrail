@@ -46,6 +46,8 @@ type Volume struct {
 	HostPath      string
 	ContainerPath string
 	ReadOnly      bool
+	// SizeBytes is 0 when the source API does not report volume sizes.
+	SizeBytes int64
 }
 
 // HealthCheck is an HTTP probe.
@@ -68,6 +70,13 @@ type App struct {
 	SourceID    string
 	Name        string
 	Project     string
+	Environment string
+	// Server names the source host the app runs on, empty when unreported.
+	Server string
+	// BuildPack is the source's own build method name, unmapped.
+	BuildPack string
+	// PrivateRepo is true when the source needs credentials to clone.
+	PrivateRepo bool
 	Kind        SourceKind
 	Image       string
 	GitURL      string
@@ -93,6 +102,10 @@ type Database struct {
 	Project  string
 	Engine   string
 	Version  string
+	// Environment and InternalHost are set by sources that give each
+	// database an in-network hostname apps connect to.
+	Environment  string
+	InternalHost string
 }
 
 // Note is a per-item caveat found while reading the source.
@@ -108,6 +121,13 @@ type Unsupported struct {
 	Name     string
 	Reason   string
 	Manual   string
+	// Context the source reported about the unsupported item, for display.
+	Project     string
+	Environment string
+	Server      string
+	Source      string
+	Domains     []string
+	Port        int
 }
 
 // Discovery is everything read from a source.

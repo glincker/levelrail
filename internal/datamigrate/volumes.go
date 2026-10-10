@@ -12,6 +12,9 @@ type VolumeRef struct {
 	Name          string
 	ContainerPath string
 	HostPath      string
+	// SourceName is the volume's real name on the source host, when it is
+	// not derivable from Name by trimming the app prefix.
+	SourceName string
 }
 
 // VolumeGuide is a command the operator runs on this node to copy one volume.
@@ -53,6 +56,9 @@ func GuideVolumes(app, appPrefix, sourceSSH string, vols []VolumeRef) []VolumeGu
 			continue
 		}
 		src := strings.TrimPrefix(v.Name, appPrefix)
+		if v.SourceName != "" {
+			src = v.SourceName
+		}
 		g.Kind, g.Source, g.Target = "volume", src, v.Name
 		g.Command = "docker volume create " + shQuote(v.Name) + " >/dev/null && rsync -aHAX --numeric-ids --delete --rsync-path='sudo rsync' -e ssh " +
 			shQuote(sourceSSH+":/var/lib/docker/volumes/"+src+"/_data/") + ` "$(docker volume inspect -f '{{.Mountpoint}}' ` + shQuote(v.Name) + `)/"`

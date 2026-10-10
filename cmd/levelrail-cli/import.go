@@ -57,6 +57,8 @@ func runImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		switch args[0] {
 		case "platform":
 			return runImportPlatform(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
+		case "apps":
+			return runImportApps(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
 		}
 	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "import", "print the plan as JSON to stdout and nothing else", stderr)

@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { useTranslation } from 'react-i18next'
+import { AppImportWizard } from '../../components/AppImportWizard'
 import { PlatformImportCard } from '../../components/PlatformImportCard'
 import { MigrationHub } from '../../components/MigrationHub'
 
@@ -18,6 +19,7 @@ function ImportPlatformPage() {
         title="Import from another platform"
         description="Bring apps and databases over from Coolify, Dokploy or CapRover. Databases and volumes start empty, and re-running skips what was already imported."
       />
+      <AppImportWizard />
       <PlatformImportCard />
       <div className="space-y-1 pt-2">
         <h2 className="text-base font-semibold">{t('title')}</h2>

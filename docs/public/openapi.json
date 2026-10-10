@@ -33777,7 +33777,7 @@
     },
     "/api/v1/firewall/exposure/preview": {
       "post": {
-        "description": "Requires the `read` ability.",
+        "description": "Requires the `root` ability.",
         "operationId": "handleExposurePreview",
         "requestBody": {
           "content": {
@@ -33843,7 +33843,7 @@
         "security": [
           {
             "bearerAuth": [
-              "read"
+              "root"
             ]
           }
         ],
@@ -33851,7 +33851,7 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "read"
+        "x-required-ability": "root"
       }
     },
     "/api/v1/firewall/exposure/restrictions/{protocol}/{port}": {

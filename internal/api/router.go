@@ -436,6 +436,8 @@ type Router struct {
 	appSleep                     AppSleepStore                    // always set, sleep-when-idle settings
 	dataImports                  DataImportStore                  // always set, live data copy status
 	migrationHub                 MigrationHubStore                // always set, server migration hub sessions
+	appImports                   AppImportStore                   // always set, guided app import sessions
+	appImportLive                *appImportState                  // in-memory source tokens and discoveries
 	hubState                     *hubState                        // in-memory source passwords and running sessions
 	externalDatabases            ExternalDatabaseStore            // always set, databases connected but not run
 	dnsResolver                  datamigrate.Resolver             // nil means the real resolver
@@ -663,6 +665,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		appSleep:                    s,
 		dataImports:                 s,
 		migrationHub:                s,
+		appImports:                  s,
+		appImportLive:               newAppImportState(),
 		hubState:                    newHubState(),
 		externalDatabases:           s,
 		canaries:                    s,

@@ -945,7 +945,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/cutover/verify | AbilityWriteSensitive | handleCutoverVerify |
 | GET | /api/v1/ingress/connectivity | AbilityRead | handleIngressConnectivity |
 | GET | /api/v1/firewall/exposure | AbilityRead | handleExposureReport |
-| POST | /api/v1/firewall/exposure/preview | AbilityRead | handleExposurePreview |
+| POST | /api/v1/firewall/exposure/preview | AbilityRoot | handleExposurePreview |
 | PUT | /api/v1/firewall/exposure/restrictions/{protocol}/{port} | AbilityRoot | handleExposureRestrict |
 | DELETE | /api/v1/firewall/exposure/restrictions/{protocol}/{port} | AbilityRoot | handleExposureUnrestrict |
 | GET | /api/v1/migration/hub/local-sources | AbilityRead | handleHubLocalSources |
