@@ -57,13 +57,16 @@ const VARIANTS = {
 };
 // Logos render on transparent backgrounds unless bg is set.
 const FAV = { w: 64, h: 64, kind: "favicon" };
+const PLATE = { w: 64, h: 64, kind: "plate" };
 const LOGOS = {
   "fav-16": { ...FAV, w: 16, h: 16, scale: 1, out: "tmp/fav-16.png" },
   "fav-32": { ...FAV, w: 32, h: 32, scale: 1, out: "docs/public/favicon-32x32.png" },
   "fav-48": { ...FAV, w: 48, h: 48, scale: 1, out: "docs/public/favicon-48x48.png" },
   "fav-64": { ...FAV, w: 64, h: 64, scale: 1, out: "tmp/fav-64.png" },
-  "fav-180": { ...FAV, w: 180, h: 180, scale: 1, out: "docs/public/apple-touch-icon.png" },
-  "fav-512": { ...FAV, w: 512, h: 512, scale: 1, out: "docs/assets/brand/png/app-icon-512.png" },
+  "fav-96": { ...FAV, w: 96, h: 96, scale: 1, out: "docs/public/favicon-96x96.png" },
+  "fav-180": { ...PLATE, w: 180, h: 180, scale: 1, out: "docs/public/apple-touch-icon.png" },
+  "fav-192": { ...PLATE, w: 192, h: 192, scale: 1, out: "docs/public/web-app-manifest-192x192.png" },
+  "fav-512": { ...PLATE, w: 512, h: 512, scale: 1, out: "docs/public/web-app-manifest-512x512.png" },
   "mark-1024": { w: 1024, h: 1024, out: "docs/assets/brand/png/mark-1024.png", kind: "mark" },
   "mark-on-dark-1024": { w: 1024, h: 1024, out: "docs/assets/brand/png/mark-on-dark-1024.png", kind: "mark", bg: C.bg },
   "wordmark-dark": { w: 1200, h: 300, out: "docs/assets/brand/png/wordmark-for-dark.png", kind: "wordmark", ink: "#eaf6fa" },
@@ -163,9 +166,13 @@ ${link}</div></body></html>`;
 }
 
 // Tab icon: a dark plate with a brighter ramp so the three rails read at 16px.
-export const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><title>${name}</title><rect width="256" height="256" rx="56" fill="#0B0E14"/><rect x="24" y="162" width="208" height="52" rx="16" fill="#06232C"/><rect x="24" y="152" width="208" height="52" rx="16" fill="#107292"/><rect x="54" y="110" width="148" height="52" rx="16" fill="#06232C"/><rect x="54" y="100" width="148" height="52" rx="16" fill="#2FB3DC"/><rect x="84" y="58" width="88" height="52" rx="16" fill="#06232C"/><rect x="84" y="48" width="88" height="52" rx="16" fill="#9FDCEF"/></svg>`;
+// The tab icon is the transparent mark, identical to the control plane's favicon.
+export const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><title>${name}</title><rect x="10" y="174" width="236" height="68" rx="22" fill="#06232C"/><rect x="10" y="162" width="236" height="68" rx="22" fill="#084F67"/><rect x="42" y="103" width="172" height="68" rx="22" fill="#06232C"/><rect x="42" y="91" width="172" height="68" rx="22" fill="#107292"/><rect x="75" y="32" width="106" height="68" rx="22" fill="#06232C"/><rect x="75" y="20" width="106" height="68" rx="22" fill="#58B1CE"/></svg>`;
+// iOS and manifest icons need an opaque square, so those use the plate.
+export const PLATE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><title>${name}</title><rect width="256" height="256" rx="56" fill="#0B0E14"/><rect x="24" y="162" width="208" height="52" rx="16" fill="#06232C"/><rect x="24" y="152" width="208" height="52" rx="16" fill="#107292"/><rect x="54" y="110" width="148" height="52" rx="16" fill="#06232C"/><rect x="54" y="100" width="148" height="52" rx="16" fill="#2FB3DC"/><rect x="84" y="58" width="88" height="52" rx="16" fill="#06232C"/><rect x="84" y="48" width="88" height="52" rx="16" fill="#9FDCEF"/></svg>`;
 
 function logoPage(v) {
+  if (v.kind === "plate") return `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;width:${v.w}px;height:${v.h}px;background:transparent}svg{display:block;width:${v.w}px;height:${v.h}px}</style></head><body>${PLATE_SVG}</body></html>`;
   if (v.kind === "favicon") return `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;width:${v.w}px;height:${v.h}px;background:transparent}svg{display:block;width:${v.w}px;height:${v.h}px}</style></head><body>${FAVICON_SVG}</body></html>`;
   const bg = v.bg || "transparent";
   const body = v.kind === "mark"
@@ -197,8 +204,9 @@ for (const n of names) {
   console.log(`${n} -> ${v.out} (${v.w * scaleOf(v)}x${v.h * scaleOf(v)})`);
 }
 if (names.some((n) => n.startsWith("fav-"))) {
-  writeFileSync(join(root, "docs/public/favicon-plate.svg"), FAVICON_SVG + "\n");
-  const parts = ["tmp/fav-16.png", "docs/public/favicon-32x32.png", "docs/public/favicon-48x48.png", "tmp/fav-64.png"].map((f) => join(root, f));
+  writeFileSync(join(root, "docs/public/favicon.svg"), FAVICON_SVG + "\n");
+  writeFileSync(join(root, "docs/public/favicon-plate.svg"), PLATE_SVG + "\n");
+  const parts = ["tmp/fav-16.png", "docs/public/favicon-32x32.png", "docs/public/favicon-48x48.png"].map((f) => join(root, f));
   if (parts.every(existsSync)) execFileSync("magick", [...parts, join(root, "docs/public/favicon.ico")]);
   rmSync(join(root, "tmp"), { recursive: true, force: true });
 }
