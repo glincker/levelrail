@@ -1,9 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { TableIcon } from '@phosphor-icons/react/dist/ssr'
-import { Skeleton } from '@/components/ui/skeleton'
-import { EmptyState } from '@/components/ui/empty-state'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   useDatabaseSchema,
@@ -18,6 +15,13 @@ import {
   writeLastTable,
 } from '../../lib/explorerTree'
 import type { DbSchemaNode, DbTable } from '../../types/databaseViewer'
+import { useDatabaseDataCopy } from '../../queries/databaseDataCopy'
+import { classifyExplorerError } from '../../lib/explorerError'
+import {
+  ExplorerEmpty,
+  ExplorerLoading,
+  ExplorerReadError,
+} from './explorer/ExplorerStates'
 import { StructureView } from './explorer/StructureView'
 import { TableTree } from './explorer/TableTree'
 import { TableDataView } from './TableDataView'
@@ -64,6 +68,7 @@ export function SchemaExplorer({ databaseName }: { databaseName: string }) {
     databaseName,
     true,
   )
+  const copy = useDatabaseDataCopy(databaseName)
   const [picked, setPicked] = useState<Selected | null>(null)
   const [tab, setTab] = useState('data')
 
@@ -111,27 +116,26 @@ export function SchemaExplorer({ databaseName }: { databaseName: string }) {
     })
   }
 
-  if (isLoading) {
+  if (isLoading) return <ExplorerLoading />
+  if (error) {
     return (
-      <Skeleton
-        className="h-64 w-full"
-        aria-label={t('viewer.explorer.loading')}
+      <ExplorerReadError
+        info={classifyExplorerError(error)}
+        retrying={isFetching}
+        onRetry={() => {
+          void refetch()
+        }}
       />
     )
   }
-  if (error) {
+  if (!data) return <ExplorerLoading />
+  if (data.schemas.length === 0) {
     return (
-      <p className="text-sm text-destructive" role="alert">
-        {error.message}
-      </p>
-    )
-  }
-  if (!data || data.schemas.length === 0) {
-    return (
-      <EmptyState
-        icon={<TableIcon className="size-5" />}
-        title={t('viewer.explorer.emptyTitle')}
-        description={t('viewer.explorer.empty')}
+      <ExplorerEmpty
+        databaseName={databaseName}
+        evidence={data.evidence}
+        checkedAt={data.checked_at}
+        copy={copy.data}
       />
     )
   }

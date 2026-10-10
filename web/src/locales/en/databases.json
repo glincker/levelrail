@@ -110,7 +110,6 @@
       "tableCount_one": "{{count}} table",
       "tableCount_other": "{{count}} tables",
       "matches": "{{count}} of {{total}} tables match",
-      "noMatches": "No table matches your search.",
       "view": "view",
       "truncated": "Showing the first {{count}} tables only. Narrow the search or raise the server limit."
     },
@@ -239,6 +238,51 @@
       "noOutgoing": "No foreign keys.",
       "ddl": "Definition",
       "ddlCopied": "Copied the definition."
+    },
+    "states": {
+      "loading": "Reading the schema from the database...",
+      "errorTitle": "Could not read this database",
+      "errorNote": "Nothing here means your data is gone. The explorer simply could not read it right now.",
+      "retry": "Retry",
+      "details": "Show the raw error",
+      "reason": {
+        "permission": "The database refused the read: permission denied for the account the explorer uses.",
+        "connection": "The database is not accepting connections yet, or refused this one.",
+        "timeout": "The database took too long to answer and the read timed out.",
+        "notRunning": "The database is not running. Start it and retry.",
+        "helper": "The helper that runs inside the database container failed before it could return a schema.",
+        "network": "The browser could not reach the control plane.",
+        "unsupported": "This control plane cannot run commands inside database containers."
+      },
+      "emptyTitle": "No tables yet",
+      "emptyVerifyTitle": "No tables found, check this against the evidence below",
+      "emptyBody": "This database was checked and has no user tables. Create tables from the SQL console, or point an app at it.",
+      "openConsole": "Open the SQL console",
+      "migrationTarget": "This database was created as a migration target.",
+      "copyStatus": "Copy status:",
+      "copy": {
+        "pending": "not started",
+        "copying": "copying",
+        "verified": "verified",
+        "failed": "failed",
+        "unsupported": "not supported"
+      },
+      "openMigrationHub": "Open the migration hub",
+      "copyCli": "or run: migrate db-copy <database> with the CLI.",
+      "verifiedEmpty": "The copy is marked verified but the database has no tables. A verified copy should never be empty, so treat this as an error and run the copy again.",
+      "contradiction_one": "The catalog reports {{count}} table but the listing returned none. Retry, and if this persists check the helper logs.",
+      "contradiction_other": "The catalog reports {{count}} tables but the listing returned none. Retry, and if this persists check the helper logs.",
+      "evidence": {
+        "size": "Database size on disk",
+        "schemas": "Schemas scanned",
+        "tables": "Tables and views in those schemas",
+        "excluded": "System schemas excluded",
+        "checked": "Last checked",
+        "unavailable": "The catalog counts could not be read, so this emptiness is not verified."
+      },
+      "noMatches": "No table matches \"{{query}}\".",
+      "noMatchesNote": "The database has tables. Only your search filtered them out.",
+      "clearSearch": "Clear search"
     }
   },
   "createPgvector": {

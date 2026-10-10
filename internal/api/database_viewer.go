@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dbviewer"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -92,6 +93,10 @@ type databaseSchemaResponse struct {
 	Truncated  bool `json:"truncated"`
 	// Limits tells the UI the server-side bounds it should explain.
 	Limits databaseViewerLimits `json:"limits"`
+	// CheckedAt is when this listing was read; Evidence is only set when
+	// the listing is empty, so an empty result can be verified.
+	CheckedAt string             `json:"checked_at"`
+	Evidence  *dbviewer.Evidence `json:"evidence,omitempty"`
 }
 
 type databaseViewerLimits struct {
@@ -123,15 +128,24 @@ func (rt *Router) handleGetDatabaseSchema(w http.ResponseWriter, r *http.Request
 	for _, n := range nodes {
 		total += len(n.Tables)
 	}
-	writeJSON(w, http.StatusOK, databaseSchemaResponse{
+	resp := databaseSchemaResponse{
 		Engine: desired.Engine, Schemas: nodes,
+		CheckedAt:  time.Now().UTC().Format(time.RFC3339),
 		TableLimit: target.Limits.SchemaRows, Truncated: total >= target.Limits.SchemaRows,
 		Limits: databaseViewerLimits{
 			MaxRows:      target.Limits.MaxRows,
 			MaxCellBytes: target.Limits.MaxCellBytes,
 			TimeoutMs:    int(target.Limits.Timeout.Milliseconds()),
 		},
-	})
+	}
+	if total == 0 {
+		if ev, err := target.Evidence(r.Context()); err == nil {
+			resp.Evidence = &ev
+		} else {
+			rt.logger.Warn("api: database schema evidence failed", slog.String("name", desired.Name), slog.String("error", err.Error()))
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // handleGetDatabaseTableStructure handles GET

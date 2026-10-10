@@ -35,8 +35,17 @@ export interface DbViewerLimits {
   timeout_ms: number
 }
 
+export interface DbEvidence {
+  database_size_bytes: number
+  schemas_scanned: number
+  user_tables: number
+  excluded_schemas: string[]
+}
+
 export interface DbSchemaResponse {
   engine: string
+  checked_at: string
+  evidence?: DbEvidence
   schemas: DbSchemaNode[]
   table_limit: number
   truncated: boolean

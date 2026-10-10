@@ -20,6 +20,7 @@ import {
   type TreeItem,
 } from '../../../lib/explorerTree'
 import type { DbSchemaNode } from '../../../types/databaseViewer'
+import { ExplorerNoMatches } from './ExplorerStates'
 
 const ROW_HEIGHT_PX = 32
 const OVERSCAN_ROWS = 10
@@ -180,9 +181,12 @@ export function TableTree({
         className="max-h-[36rem] min-h-40 overflow-auto rounded-lg border border-border outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
       >
         {items.length === 0 ? (
-          <p className="p-4 text-center text-sm text-muted-foreground">
-            {t('viewer.explorer.noMatches')}
-          </p>
+          <ExplorerNoMatches
+            query={query}
+            onClear={() => {
+              setQuery('')
+            }}
+          />
         ) : (
           <div
             className="relative w-full"
