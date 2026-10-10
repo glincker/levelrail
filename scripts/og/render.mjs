@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const CHROME = process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const SCALE = Number(process.env.SCALE || 2);
+const scaleOf = (v) => v.scale ?? SCALE;
 const brand = readFileSync(join(root, "brand.yaml"), "utf8");
 const pick = (re) => re.exec(brand)[1].trim();
 const name = pick(/^name:\s*(.+)$/m);
@@ -23,18 +24,19 @@ const FLOW = ["git push", "app.example.com", "build #42 passed", "TLS ready"];
 
 // h1 line 2 is the accent line. scene: labels for [push, live, build, tls].
 const COPY = {
-  vercel: { h1: "Your own Vercel.<br><em>One binary.</em>", sub: "Self-hosted deploys with HTTPS, live logs, metrics and one-click rollback.", chips: CHIPS, scene: FLOW },
-  push: { h1: "Push to git.<br><em>Get a running app.</em>", sub: "Self-hosted deploys with HTTPS, live logs, metrics and one-click rollback.", chips: CHIPS, scene: FLOW },
-  docs: { h1: "Deploy, observe,<br><em>roll back.</em>", sub: "Documentation for installing and running the platform on your own servers.", chips: ["Guides", "CLI", "API", "Templates"], scene: FLOW },
-  install: { h1: "One command.<br><em>Your own cloud.</em>", sub: "Install on a fresh Linux box and open the dashboard in minutes.", chips: ["curl | sh", "Single binary", "Docker"], scene: ["install.sh", "dashboard :8080", "agent online", "TLS ready"] },
-  migrate: { h1: "Leaving Coolify?<br><em>Bring your apps.</em>", sub: "Read the old server, stage apps and databases, cut over when you are ready.", chips: ["Coolify", "Dokploy", "CapRover"], scene: ["docker inspect", "apps staged", "databases copied", "cutover ready"] },
-  templates: { h1: "311 templates.<br><em>One click each.</em>", sub: "Databases, analytics, automation and more, each a tested compose file.", chips: ["Postgres", "Redis", "n8n"], scene: ["pick", "compose", "deployed", "TLS ready"] },
-  canary: { h1: "Canary deploys,<br><em>no service mesh.</em>", sub: "Send a slice of traffic to the new version and watch before you commit.", chips: ["Weighted traffic", "Instant rollback"], scene: ["deploy v2", "10% traffic", "healthy", "promote"] },
-  sleep: { h1: "Idle apps sleep.<br><em>Requests wake.</em>", sub: "Stop paying in RAM for the side projects nobody visits at 3am.", chips: ["Scale to zero", "Wake on request"], scene: ["no traffic", "sleeping", "request in", "awake"] },
-  mcp: { h1: "Ask your server<br><em>what broke.</em>", sub: "An MCP server over the platform API: logs, metrics, deploys and rollback.", chips: ["MCP", "Read and suggest", "Open API"], scene: ["ask", "logs read", "diagnosis", "rollback ready"] },
+  vercel: { cta: "Get started", h1: "Your own Vercel.<br><em>One binary.</em>", sub: "Self-hosted deploys with HTTPS, live logs, metrics and one-click rollback.", chips: CHIPS, scene: FLOW },
+  push: { cta: "Get started", h1: "Push to git.<br><em>Get a running app.</em>", sub: "Self-hosted deploys with HTTPS, live logs, metrics and one-click rollback.", chips: CHIPS, scene: FLOW },
+  docs: { cta: "Read the docs", h1: "Deploy, observe,<br><em>roll back.</em>", sub: "Install and run the platform on your own servers.", chips: ["Guides", "CLI", "API", "Templates"], scene: FLOW },
+  install: { cta: "Install in minutes", h1: "One command.<br><em>Your own cloud.</em>", sub: "Install on a fresh Linux box and open the dashboard in minutes.", chips: ["curl | sh", "Single binary", "Docker"], scene: ["install.sh", "dashboard :8080", "agent online", "TLS ready"] },
+  migrate: { cta: "Plan your migration", h1: "Leaving Coolify?<br><em>Bring your apps.</em>", sub: "Read the old server, stage apps and databases, then cut over.", chips: ["Coolify", "Dokploy", "CapRover"], scene: ["docker inspect", "apps staged", "databases copied", "cutover ready"] },
+  templates: { cta: "Browse templates", h1: "311 templates.<br><em>One click each.</em>", sub: "Databases, analytics and automation, each a tested compose file.", chips: ["Postgres", "Redis", "n8n"], scene: ["pick", "compose", "deployed", "TLS ready"] },
+  canary: { cta: "Read the guide", h1: "Canary deploys,<br><em>no service mesh.</em>", sub: "Send a slice of traffic to the new version, watch, then commit.", chips: ["Weighted traffic", "Instant rollback"], scene: ["deploy v2", "10% traffic", "healthy", "promote"] },
+  sleep: { cta: "Read the guide", h1: "Idle apps sleep.<br><em>Requests wake.</em>", sub: "Stop paying in RAM for the side projects nobody visits at 3am.", chips: ["Scale to zero", "Wake on request"], scene: ["no traffic", "sleeping", "request in", "awake"] },
+  mcp: { cta: "See the tools", h1: "Ask your server<br><em>what broke.</em>", sub: "An MCP server over the API: logs, metrics, deploys and rollback.", chips: ["MCP", "Read and suggest", "Open API"], scene: ["ask", "logs read", "diagnosis", "rollback ready"] },
 };
 
-const og = (copy, out) => ({ w: 1200, h: 630, out, copy, pad: 64, h1: 68, sub: 23, scene: 640, chips: true });
+// OG cards are exactly 1200x630 (scale 1) and keep the message in the middle so square crops stay readable.
+const og = (copy, out) => ({ w: 1200, h: 630, out, copy, pad: 64, h1: 70, sub: 24, scene: 800, chips: false, center: true, scale: 1 });
 const VARIANTS = {
   "og-home": og("vercel", "docs/assets/og-home.png"),
   "og-docs": og("docs", "docs/assets/og-docs.png"),
@@ -54,7 +56,14 @@ const VARIANTS = {
   linkedin: { w: 1584, h: 396, out: "docs/assets/brand/social/linkedin-banner-1584x396.jpg", copy: "vercel", pad: 72, h1: 42, sub: 0, scene: 440, chips: false, banner: true },
 };
 // Logos render on transparent backgrounds unless bg is set.
+const FAV = { w: 64, h: 64, kind: "favicon" };
 const LOGOS = {
+  "fav-16": { ...FAV, w: 16, h: 16, scale: 1, out: "tmp/fav-16.png" },
+  "fav-32": { ...FAV, w: 32, h: 32, scale: 1, out: "docs/public/favicon-32x32.png" },
+  "fav-48": { ...FAV, w: 48, h: 48, scale: 1, out: "docs/public/favicon-48x48.png" },
+  "fav-64": { ...FAV, w: 64, h: 64, scale: 1, out: "tmp/fav-64.png" },
+  "fav-180": { ...FAV, w: 180, h: 180, scale: 1, out: "docs/public/apple-touch-icon.png" },
+  "fav-512": { ...FAV, w: 512, h: 512, scale: 1, out: "docs/assets/brand/png/app-icon-512.png" },
   "mark-1024": { w: 1024, h: 1024, out: "docs/assets/brand/png/mark-1024.png", kind: "mark" },
   "mark-on-dark-1024": { w: 1024, h: 1024, out: "docs/assets/brand/png/mark-on-dark-1024.png", kind: "mark", bg: C.bg },
   "wordmark-dark": { w: 1200, h: 300, out: "docs/assets/brand/png/wordmark-for-dark.png", kind: "wordmark", ink: "#eaf6fa" },
@@ -107,11 +116,16 @@ function page(v) {
   const scale = v.scene / 800;
   const chips = v.chips ? `<ul class="chips">${c.chips.map((x) => `<li>${x}</li>`).join("")}</ul>` : "";
   const sub = v.sub ? `<p class="sub">${c.sub}</p>` : "";
-  const link = v.banner || v.stack ? `<div class="url">${domain}</div>` : `<div class="url">${domain}</div><div class="tag">${repo}</div>`;
-  const copyBox = v.stack
+  const cta = `<div class="cta">${c.cta || "Get started"}<span>${domain}</span><b>&rarr;</b></div>`;
+  const link = v.center ? "" : v.banner || v.stack ? `<div class="url">${domain}</div>` : `<div class="url">${domain}</div><div class="tag">${repo}</div>`;
+  const copyBox = v.center
+    ? `left:50%;top:150px;width:860px;margin-left:-430px;align-items:center;text-align:center;gap:22px`
+    : v.stack
     ? `left:${v.pad}px;top:${v.pad + 90}px;width:${v.w - v.pad * 2}px;gap:28px`
     : `left:${v.pad}px;top:${Math.round(v.pad * 0.7) + 40}px;bottom:${Math.round(v.pad * 0.5)}px;width:${Math.round(v.w - v.scene * 0.78 - v.pad)}px;justify-content:center;gap:${Math.round(v.h * 0.045)}px`;
-  const sceneBox = v.stack
+  const sceneBox = v.center
+    ? `left:50%;top:50%;margin-left:-400px;margin-top:-40px;transform-origin:center center;opacity:.5;transform:scale(1.1)`
+    : v.stack
     ? `left:50%;bottom:${v.pad}px;margin-left:-400px;transform-origin:center bottom`
     : `right:${v.banner ? 20 : 0}px;top:50%;margin-top:-320px;transform-origin:right center`;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
@@ -126,24 +140,33 @@ html,body{margin:0;width:${v.w}px;height:${v.h}px;overflow:hidden;background:${C
 .copy{position:absolute;${copyBox};display:flex;flex-direction:column}
 h1{margin:0;font-weight:700;font-size:${v.h1}px;line-height:1.04;letter-spacing:-.035em;color:#fff}
 h1 em{font-style:normal;color:${C.rail3}}
-.sub{margin:0;font-size:${v.sub}px;line-height:1.45;color:#b9ccd3;max-width:28em;letter-spacing:-.005em}
+.sub{margin:0;font-size:${v.sub}px;line-height:1.45;color:#c9dae0;max-width:${v.center ? "34em" : "28em"};letter-spacing:-.005em}
 .chips{display:flex;flex-wrap:wrap;gap:10px;margin:0;padding:0;list-style:none}
 .chips li{padding:7px 14px;border-radius:50px;background:rgba(8,79,103,.28);box-shadow:inset 0 0 0 1px rgba(88,177,206,.28);font-family:${MONO};font-size:15px;color:#d5eaf1}
 .url{position:absolute;left:${v.pad}px;bottom:${Math.round(v.pad * 0.55)}px;font-family:${MONO};font-size:22px;color:${C.rail3}}
 .tag{position:absolute;right:${v.pad}px;bottom:${Math.round(v.pad * 0.55)}px;font-family:${MONO};font-size:16px;color:#7f98a1;letter-spacing:.04em}
+.cta{display:flex;align-items:center;gap:14px;margin-top:6px;padding:14px 22px;border-radius:14px;background:#58B1CE;color:#04141a;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.cta span{font-family:${MONO};font-weight:600;font-size:20px;opacity:.78}
+.cta b{font-size:24px}
+.sc-wrap[data-center] .sc{display:none}
+.sc-wrap[data-center]{-webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 38%)}
 .sc-wrap{position:absolute;${sceneBox};width:800px;height:640px;transform:scale(${scale})}
 .scene{position:relative}
 .sc{position:absolute;display:flex;align-items:center;gap:9px;padding:9px 15px;border-radius:12px;background:rgba(4,20,26,.82);box-shadow:inset 0 0 0 1px rgba(88,177,206,.38),0 10px 30px rgba(0,0,0,.45);font-family:${MONO};font-size:18px;color:#eaf6fa;white-space:nowrap}
 .sc i.p{background:#58B1CE;box-shadow:0 0 10px #58B1CE}
 .sc i{width:9px;height:9px;border-radius:50%;background:#3ddc97;box-shadow:0 0 10px #3ddc97}
 </style></head><body><div class="stage"><div class="grid"></div>
-<div class="brand">${logo(Math.round(v.pad * 0.62))}<span>${name}</span></div>
-<div class="copy"><h1>${c.h1}</h1>${sub}${chips}</div>
-<div class="sc-wrap">${scene(c.scene)}</div>
+<div class="brand" style="${v.center ? "left:50%;margin-left:-110px;top:44px;" : ""}">${logo(Math.round(v.pad * 0.62))}<span>${name}</span></div>
+<div class="copy"><h1>${c.h1}</h1>${sub}${v.center ? cta : chips}</div>
+<div class="sc-wrap"${v.center ? ' data-center' : ""}>${scene(c.scene)}</div>
 ${link}</div></body></html>`;
 }
 
+// Tab icon: a dark plate with a brighter ramp so the three rails read at 16px.
+export const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><title>${name}</title><rect width="256" height="256" rx="56" fill="#0B0E14"/><rect x="24" y="162" width="208" height="52" rx="16" fill="#06232C"/><rect x="24" y="152" width="208" height="52" rx="16" fill="#107292"/><rect x="54" y="110" width="148" height="52" rx="16" fill="#06232C"/><rect x="54" y="100" width="148" height="52" rx="16" fill="#2FB3DC"/><rect x="84" y="58" width="88" height="52" rx="16" fill="#06232C"/><rect x="84" y="48" width="88" height="52" rx="16" fill="#9FDCEF"/></svg>`;
+
 function logoPage(v) {
+  if (v.kind === "favicon") return `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;width:${v.w}px;height:${v.h}px;background:transparent}svg{display:block;width:${v.w}px;height:${v.h}px}</style></head><body>${FAVICON_SVG}</body></html>`;
   const bg = v.bg || "transparent";
   const body = v.kind === "mark"
     ? `<div style="display:flex;width:100%;height:100%;align-items:center;justify-content:center">${logo(Math.round(v.w * (v.bg ? 0.62 : 0.9)))}</div>`
@@ -166,11 +189,17 @@ for (const n of names) {
   writeFileSync(html, v.kind ? logoPage(v) : page(v));
   const jpg = out.endsWith(".jpg");
   const shot = jpg ? join(tmp, `${n}.png`) : out;
-  const args = ["--headless=new", "--disable-gpu", "--hide-scrollbars", `--force-device-scale-factor=${SCALE}`,
+  const args = ["--headless=new", "--disable-gpu", "--hide-scrollbars", `--force-device-scale-factor=${scaleOf(v)}`,
     `--window-size=${v.w},${v.h}`, `--screenshot=${shot}`];
   if (v.kind && !v.bg) args.push("--default-background-color=00000000");
   execFileSync(CHROME, [...args, `file://${html}`], { stdio: "pipe" });
   if (jpg) execFileSync("magick", [shot, "-strip", "-sampling-factor", "4:4:4", "-quality", "92", out]);
-  console.log(`${n} -> ${v.out} (${v.w * SCALE}x${v.h * SCALE})`);
+  console.log(`${n} -> ${v.out} (${v.w * scaleOf(v)}x${v.h * scaleOf(v)})`);
+}
+if (names.some((n) => n.startsWith("fav-"))) {
+  writeFileSync(join(root, "docs/public/favicon-plate.svg"), FAVICON_SVG + "\n");
+  const parts = ["tmp/fav-16.png", "docs/public/favicon-32x32.png", "docs/public/favicon-48x48.png", "tmp/fav-64.png"].map((f) => join(root, f));
+  if (parts.every(existsSync)) execFileSync("magick", [...parts, join(root, "docs/public/favicon.ico")]);
+  rmSync(join(root, "tmp"), { recursive: true, force: true });
 }
 rmSync(tmp, { recursive: true, force: true });

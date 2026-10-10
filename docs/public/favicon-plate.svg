@@ -1,10 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <title>Levelrail</title>
-  <path fill="#0B0E14" d="M56,0 H200 A56,56 0 0 1 256,56 V200 A56,56 0 0 1 200,256 H56 A56,56 0 0 1 0,200 V56 A56,56 0 0 1 56,0 Z"/>
-  <rect x="18" y="176" width="220" height="46" rx="15" fill="#06232C"/>
-  <rect x="18" y="168" width="220" height="46" rx="15" fill="#084F67"/>
-  <rect x="48" y="128" width="160" height="46" rx="15" fill="#06232C"/>
-  <rect x="48" y="120" width="160" height="46" rx="15" fill="#107292"/>
-  <rect x="78" y="80" width="100" height="46" rx="15" fill="#06232C"/>
-  <rect x="78" y="72" width="100" height="46" rx="15" fill="#58B1CE"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><title>Levelrail</title><rect width="256" height="256" rx="56" fill="#0B0E14"/><rect x="24" y="162" width="208" height="52" rx="16" fill="#06232C"/><rect x="24" y="152" width="208" height="52" rx="16" fill="#107292"/><rect x="54" y="110" width="148" height="52" rx="16" fill="#06232C"/><rect x="54" y="100" width="148" height="52" rx="16" fill="#2FB3DC"/><rect x="84" y="58" width="88" height="52" rx="16" fill="#06232C"/><rect x="84" y="48" width="88" height="52" rx="16" fill="#9FDCEF"/></svg>

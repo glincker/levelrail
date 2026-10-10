@@ -1,7 +1,7 @@
 ---
 layout: home
 title: Self-hosted deployment platform
-description: Push to a git repo, get a running app with TLS, logs, metrics, and rollback. The agent talks to Docker's own Engine API directly, no SSH, no CLI shelling.
+description: Push to git, get a running app with TLS, logs, metrics and rollback. Self-hosted, one Go binary, no Kubernetes.
 
 hero:
   name: Levelrail

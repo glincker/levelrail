@@ -31,7 +31,7 @@ Keep clear space around the mark of at least a quarter of its width. Do not reco
 
 ## Social images
 
-All images are rendered at 2x, so they stay sharp on high density screens. Sizes below are the logical size.
+Link preview cards are exactly 1200x630, the size every platform expects. The platform banners below are rendered at 2x so they stay sharp on high density screens, and the sizes listed are the logical size.
 
 ### Headlines
 
