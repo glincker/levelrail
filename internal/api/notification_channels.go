@@ -60,18 +60,22 @@ type notificationChannelResource struct {
 	HasInteractiveSecret bool `json:"has_interactive_secret"`
 	// NotifyDeviceLogin opts the channel into a link-only notice when a
 	// CLI device login is waiting for approval.
-	NotifyDeviceLogin bool   `json:"notify_device_login"`
-	CreatedAt         string `json:"created_at"`
-	UpdatedAt         string `json:"updated_at"`
+	NotifyDeviceLogin bool `json:"notify_device_login"`
+	// NotifyDeviceLoginExpired opts the channel into a link-only notice when
+	// a pending CLI login expires unapproved.
+	NotifyDeviceLoginExpired bool   `json:"notify_device_login_expired"`
+	CreatedAt                string `json:"created_at"`
+	UpdatedAt                string `json:"updated_at"`
 }
 
 func toNotificationChannelResource(c alerting.NotificationChannel) notificationChannelResource {
 	return notificationChannelResource{
 		ID: c.ID, Name: c.Name, Kind: string(c.Kind), NotifyURL: c.NotifyURL,
 		Enabled: c.Enabled, InteractiveApprovals: c.InteractiveApprovals,
-		HasInteractiveSecret: c.InteractiveSecret != "",
-		NotifyDeviceLogin:    c.NotifyDeviceLogin,
-		CreatedAt:            c.CreatedAt, UpdatedAt: c.UpdatedAt,
+		HasInteractiveSecret:     c.InteractiveSecret != "",
+		NotifyDeviceLogin:        c.NotifyDeviceLogin,
+		NotifyDeviceLoginExpired: c.NotifyDeviceLoginExpired,
+		CreatedAt:                c.CreatedAt, UpdatedAt: c.UpdatedAt,
 	}
 }
 
@@ -90,6 +94,8 @@ type createNotificationChannelRequest struct {
 	InteractiveApprovals bool   `json:"interactive_approvals,omitempty"`
 	InteractiveSecret    string `json:"interactive_secret,omitempty"`
 	NotifyDeviceLogin    bool   `json:"notify_device_login,omitempty"`
+	// NotifyDeviceLoginExpired opts into a notice when a pending login lapses.
+	NotifyDeviceLoginExpired bool `json:"notify_device_login_expired,omitempty"`
 }
 
 // notificationChannelsSupportingInteractiveApprovals is InteractiveApprovals'
@@ -188,7 +194,7 @@ func (req createNotificationChannelRequest) toChannel(id, existingSecret string)
 	return alerting.NotificationChannel{
 		ID: id, Name: req.Name, Kind: kind, NotifyURL: req.NotifyURL, Enabled: enabled,
 		InteractiveApprovals: req.InteractiveApprovals, InteractiveSecret: secret,
-		NotifyDeviceLogin: req.NotifyDeviceLogin,
+		NotifyDeviceLogin: req.NotifyDeviceLogin, NotifyDeviceLoginExpired: req.NotifyDeviceLoginExpired,
 	}, nil
 }
 

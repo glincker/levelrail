@@ -75,16 +75,18 @@ export function EditUserAbilitiesDialog({ user }: { user: UserResource }) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <RoleSelect roles={roles} abilities={abilities} onChange={setAbilities} />
+          <RoleSelect
+            roles={roles}
+            abilities={abilities}
+            onChange={setAbilities}
+          />
           <AbilitiesField value={abilities} onChange={setAbilities} />
         </div>
 
         {updateAbilities.isError ? (
           <Alert variant="destructive">
             <WarningIcon />
-            <AlertDescription>
-              {updateAbilities.error.message}
-            </AlertDescription>
+            <AlertDescription>{updateAbilities.error.message}</AlertDescription>
           </Alert>
         ) : null}
 

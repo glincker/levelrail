@@ -109,6 +109,7 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Managing databases', link: '/managing-databases' },
+          { text: 'External databases', link: '/external-databases' },
           {
             text: 'Connecting apps to databases',
             link: '/connecting-apps-to-databases',
@@ -139,6 +140,7 @@ const sidebarGroups = [
           { text: 'Feature flags', link: '/feature-flags' },
           { text: 'Library auth engine', link: '/auth-engine' },
           { text: 'Host firewall', link: '/host-firewall' },
+          { text: 'Exposure audit', link: '/exposure-audit' },
           { text: 'Emergency access', link: '/emergency-access' },
           { text: 'Master key rotation', link: '/master-key-rotation' },
           { text: 'Access control', link: '/access-control' },

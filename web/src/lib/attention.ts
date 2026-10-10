@@ -9,7 +9,7 @@ import { certExpiryLabel } from './certStatus'
 import { formatAge, formatBytes } from './format'
 import { nodeAgentAttentionItems } from './nodeAgentAttention'
 
-export type AttentionSeverity = 'critical' | 'warning'
+export type AttentionSeverity = 'critical' | 'warning' | 'info'
 
 export type AttentionTarget =
   | { kind: 'app'; name: string }
@@ -18,6 +18,18 @@ export type AttentionTarget =
   | { kind: 'domain' }
   | { kind: 'system' }
   | { kind: 'route'; to: '/settings/cli-access' | '/approvals' }
+  | { kind: 'path'; to: string }
+
+// What the Status page and the top banner need to label a CLI login and to
+// let the operator dismiss it once it is no longer waiting.
+export interface AttentionDeviceMeta {
+  state: 'waiting' | 'expired' | 'denied' | 'approved'
+  deviceName: string
+  requesterIp: string
+  at: string
+  dismissKey?: string
+  auditPath?: string
+}
 
 export interface AttentionItem {
   id: string
@@ -25,6 +37,9 @@ export interface AttentionItem {
   title: string
   detail: string
   target: AttentionTarget
+  device?: AttentionDeviceMeta
+  // Plain next step from the server feed, shown beside the link.
+  action?: string
 }
 
 export function buildAttentionItems({
@@ -108,7 +123,9 @@ export function buildAttentionItems({
       id: `cert:${cert.domain}`,
       severity: expired ? 'critical' : 'warning',
       title: `Certificate for ${cert.domain} ${expired ? 'has expired' : 'expires soon'}`,
-      detail: certExpiryLabel(cert.not_after),
+      detail: cert.acme_failure?.reason
+        ? `${certExpiryLabel(cert.not_after)}. Last CA error: ${cert.acme_failure.reason}`
+        : certExpiryLabel(cert.not_after),
       target: { kind: 'domain' },
     })
   }

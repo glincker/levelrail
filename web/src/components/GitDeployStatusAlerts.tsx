@@ -58,8 +58,8 @@ export function GitDeployStatusAlerts({
         <Alert variant="destructive">
           <WarningIcon />
           <AlertDescription>
-            App created, but triggering the build failed: {buildError}. Fix
-            the fields above and submit again to retry.
+            App created, but triggering the build failed: {buildError}. Fix the
+            fields above and submit again to retry.
           </AlertDescription>
         </Alert>
       ) : null}

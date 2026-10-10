@@ -63,8 +63,8 @@ export function NodeSelectField({
         </SelectContent>
       </Select>
       <FieldHint>
-        Which server this runs on. Leave it on local unless
-        you&rsquo;ve added another server to manage.
+        Which server this runs on. Leave it on local unless you&rsquo;ve added
+        another server to manage.
       </FieldHint>
       <FieldError errors={error} />
     </Field>

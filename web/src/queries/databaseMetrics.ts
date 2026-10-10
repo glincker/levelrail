@@ -51,7 +51,10 @@ export async function fetchDatabaseMetricSeries(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch database metrics failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch database metrics failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as MetricSeries

@@ -81,7 +81,11 @@ export function RestoreHistoryTableView({
   )
 }
 
-export function RestoreHistoryTable({ databaseName }: { databaseName: string }) {
+export function RestoreHistoryTable({
+  databaseName,
+}: {
+  databaseName: string
+}) {
   const { data, isLoading, error } = useRestoreHistory(databaseName)
   return (
     <RestoreHistoryTableView

@@ -22,7 +22,10 @@ export async function fetchAppResourceUsage(): Promise<AppResourceUsage[]> {
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch app resource usage failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch app resource usage failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as AppResourceUsage[]

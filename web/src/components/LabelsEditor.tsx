@@ -110,10 +110,10 @@ export function LabelsEditor({ app }: { app: AppDetail }) {
         </CardTitle>
         <CardDescription>
           Arbitrary Docker labels applied to the container at create time, for
-          external tooling that keys off container labels (monitoring agents, log
-          shippers, homegrown scripts). Keys starting with{' '}
-          <code className="font-mono">{RESERVED_LABEL_PREFIX}</code> are reserved
-          for the platform.
+          external tooling that keys off container labels (monitoring agents,
+          log shippers, homegrown scripts). Keys starting with{' '}
+          <code className="font-mono">{RESERVED_LABEL_PREFIX}</code> are
+          reserved for the platform.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -124,7 +124,9 @@ export function LabelsEditor({ app }: { app: AppDetail }) {
           className="space-y-3"
         >
           {fields.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No custom labels set.</p>
+            <p className="text-sm text-muted-foreground">
+              No custom labels set.
+            </p>
           ) : (
             <FieldGroup className="gap-2">
               {fields.map((field, index) => (

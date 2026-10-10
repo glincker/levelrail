@@ -29,9 +29,50 @@ export interface DeviceAuthRequest {
   ip_mismatch: boolean
 }
 
+export type DeviceLoginState = 'waiting' | 'expired' | 'denied' | 'approved'
+
+// Mirrors device_activity.go's deviceActivityItem. Never carries a code.
+export interface DeviceActivityItem {
+  id: string
+  state: DeviceLoginState
+  client_name: string
+  requester_ip: string
+  user_agent: string
+  created_at: string
+  expires_at: string
+  ip_mismatch: boolean
+  dismissible: boolean
+  dismissed: boolean
+  item_key: string
+  audit_path: string
+}
+
 export const deviceAuthKeys = {
   all: ['device-auth-requests'] as const,
   list: () => [...deviceAuthKeys.all, 'list'] as const,
+  activity: () => [...deviceAuthKeys.all, 'activity'] as const,
+}
+
+export async function fetchDeviceActivity(): Promise<DeviceActivityItem[]> {
+  const res = await fetch('/api/v1/auth/device/activity')
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `fetch device login activity failed: ${res.status}`,
+      ),
+    )
+  }
+  const body = (await res.json()) as { items?: DeviceActivityItem[] }
+  return Array.isArray(body.items) ? body.items : []
+}
+
+export function deviceActivityQueryOptions() {
+  return queryOptions({
+    queryKey: deviceAuthKeys.activity(),
+    queryFn: fetchDeviceActivity,
+  })
 }
 
 export async function fetchDeviceAuthRequests(): Promise<DeviceAuthRequest[]> {
@@ -73,11 +114,51 @@ export function useDeviceAuthRequests() {
 // endpoint (signed out, token-only session) just yields no requests, and
 // TanStack Query pauses interval refetching while the tab is hidden.
 export function useLiveDeviceAuthRequests() {
-  return useQuery({
+  const activity = useDeviceActivity()
+  const waiting = activity.data?.filter((i) => i.state === 'waiting').length
+  const query = useQuery({
     ...deviceAuthRequestsQueryOptions(),
+    retry: false,
+    enabled: waiting !== 0,
+    refetchInterval: DEVICE_AUTH_POLL_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+  })
+  return waiting === 0 ? { ...query, data: [] } : query
+}
+
+// The one device-login poll in steady state: every state of a recent
+// login, so expired and denied items show without another source. The
+// code-bearing list above is fetched only while something is waiting.
+export function useDeviceActivity() {
+  return useQuery({
+    ...deviceActivityQueryOptions(),
     retry: false,
     refetchInterval: DEVICE_AUTH_POLL_INTERVAL_MS,
     refetchIntervalInBackground: false,
+  })
+}
+
+export function useDismissAttentionItem() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (itemKey: string): Promise<void> => {
+      const res = await fetch('/api/v1/attention/dismiss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_key: itemKey }),
+      })
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `dismiss failed: ${res.status}`),
+        )
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: deviceAuthKeys.activity(),
+      })
+    },
   })
 }
 

@@ -38,9 +38,9 @@ export function GitSourceWebhookBanner({
             size="sm"
             variant="outline"
             onClick={() => {
-              void navigator.clipboard
-                .writeText(webhookUrl)
-                .then(() => { setUrlCopied(true) })
+              void navigator.clipboard.writeText(webhookUrl).then(() => {
+                setUrlCopied(true)
+              })
             }}
           >
             {urlCopied ? <CheckIcon /> : <CopyIcon />}

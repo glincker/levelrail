@@ -18,7 +18,8 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const registryCatalogKeys = {
   repositories: ['registry-catalog', 'repositories'] as const,
-  tags: (repository: string) => ['registry-catalog', 'tags', repository] as const,
+  tags: (repository: string) =>
+    ['registry-catalog', 'tags', repository] as const,
 }
 
 export async function fetchRegistryRepositories(): Promise<string[]> {
@@ -26,7 +27,10 @@ export async function fetchRegistryRepositories(): Promise<string[]> {
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `list registry repositories failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `list registry repositories failed: ${res.status}`,
+      ),
     )
   }
   const body = (await res.json()) as { repositories: string[] | null } | null
@@ -46,11 +50,17 @@ export function registryRepositoriesQueryOptions() {
 // "don't make a network call against a resource that isn't there yet"
 // reasoning useGitBranches' own doc comment gives for its enabled gate.
 export function useRegistryRepositoriesOptional(enabled: boolean) {
-  return useQuery({ ...registryRepositoriesQueryOptions(), enabled, retry: false })
+  return useQuery({
+    ...registryRepositoriesQueryOptions(),
+    enabled,
+    retry: false,
+  })
 }
 
 export async function fetchRegistryTags(repository: string): Promise<string[]> {
-  const res = await fetch(`/api/v1/registry/tags?repository=${encodeURIComponent(repository)}`)
+  const res = await fetch(
+    `/api/v1/registry/tags?repository=${encodeURIComponent(repository)}`,
+  )
   if (!res.ok) {
     throw new ApiError(
       res.status,

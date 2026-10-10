@@ -46,13 +46,15 @@ export function PurgeAuditLogDialog() {
           </DialogTitle>
           <DialogDescription>
             Deletes every audit log entry older than the configured retention
-            window (APP_AUDIT_LOG_RETENTION_DAYS, 90 days by default) right
-            now, instead of waiting for the next automatic sweep. This cannot
-            be undone.
+            window (APP_AUDIT_LOG_RETENTION_DAYS, 90 days by default) right now,
+            instead of waiting for the next automatic sweep. This cannot be
+            undone.
           </DialogDescription>
         </DialogHeader>
         {purgeAuditLog.isError ? (
-          <p className="text-sm text-destructive">{purgeAuditLog.error.message}</p>
+          <p className="text-sm text-destructive">
+            {purgeAuditLog.error.message}
+          </p>
         ) : null}
         <DialogFooter>
           <Button

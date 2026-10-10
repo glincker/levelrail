@@ -65,5 +65,122 @@
       "pre-switch": "Before the switch",
       "post-switch": "After the switch"
     }
+  },
+  "hub": {
+    "title": "Migrate a database server",
+    "description": "Move every database of a source server in one guided run. The source is only ever read: nothing is written to it or removed from it, and you verify every database before you switch anything.",
+    "newMigration": "Start a new migration",
+    "forget": "Forget this plan",
+    "forgetHelp": "Removes the plan and the password held in memory. Databases already created here are kept.",
+    "resume": "Session for {{host}}",
+    "steps": {
+      "connect": "Connect",
+      "inventory": "Inventory",
+      "preflight": "Preflight",
+      "copy": "Copy",
+      "verify": "Verify",
+      "cutover": "Cutover"
+    },
+    "safeToSkip": {
+      "title": "What is safe to skip",
+      "never": "Never skip: the per-table count check after each copy. It is what proves the data arrived.",
+      "volumes": "Volumes: safe to skip if none of your apps keep files on a volume.",
+      "cutover": "Cutover check: safe to skip if you switch apps by hand and check them yourself.",
+      "warnings": "Warnings can be continued past once you have read them. Blocks cannot."
+    },
+    "connect": {
+      "title": "Connect to the source server",
+      "description": "Enter the server's address and a user that can read every database you want to move. The password is held in memory for this session only. It is never stored or logged.",
+      "engine": "Engine",
+      "host": "Host",
+      "port": "Port",
+      "portHelp": "Default for the engine when empty.",
+      "user": "User",
+      "password": "Password",
+      "tls": "Require TLS to the source",
+      "submit": "Read the server",
+      "submitting": "Reading the server",
+      "error": "Could not read the source server",
+      "readOnly": "Only read-only statements and dump tools run against the source.",
+      "advanced": "Copy a single imported database instead",
+      "local": "Database container on this node",
+      "localNone": "Another server (enter host and port)",
+      "localHelp": "Reads the container over its own Docker network. A host address on the same machine is not reachable from the helper because Docker isolates networks.",
+      "localProblem": "{{name}} ({{problem}})"
+    },
+    "inventory": {
+      "title": "Databases on the server",
+      "summary": "{{count}} databases, {{size}} in total. Server version {{version}}, {{free}} free on the target node.",
+      "empty": "The server has no databases this user can read. Check the user's permissions and try again.",
+      "columns": {
+        "select": "Copy",
+        "source": "Source database",
+        "size": "Size",
+        "tables": "Tables",
+        "extensions": "Extensions",
+        "target": "New database name"
+      },
+      "selectAll": "Select all databases",
+      "selectOne": "Copy {{name}}",
+      "targetLabel": "Name of the new database for {{name}}",
+      "next": "Continue to preflight",
+      "noneSelected": "Select at least one database to continue."
+    },
+    "preflight": {
+      "title": "Preflight",
+      "description": "Nothing has been written yet. These checks run before any database is created.",
+      "blocked": "Blocked",
+      "warning": "Warning",
+      "ok": "Ready",
+      "required": "About {{required}} needed with a safety margin, {{free}} free. Estimated time {{time}}.",
+      "passwordTitle": "Source password needed",
+      "passwordHelp": "The password is no longer held in memory. Enter it again, it is used for this run only.",
+      "start": "Copy {{count}} databases",
+      "starting": "Starting",
+      "fixBlocked": "Fix or deselect the blocked databases to continue.",
+      "back": "Back to inventory",
+      "startError": "Could not start the copy",
+      "reachTitle": "Reachability",
+      "reach": "The helper reaches the source over the {{network}} network."
+    },
+    "copy": {
+      "title": "Copy",
+      "description": "Databases copy side by side. One failing never stops the others, and repeating a copy is safe.",
+      "running": "Copying, {{done}} of {{total}} finished",
+      "idle": "Nothing is running.",
+      "retry": "Retry failed",
+      "continue": "Continue to verify",
+      "empty": "No copy has been started yet. Start it from the preflight step.",
+      "status": {
+        "pending": "Waiting",
+        "copying": "Copying",
+        "verified": "Verified",
+        "failed": "Failed"
+      }
+    },
+    "verify": {
+      "title": "Verify",
+      "description": "Every table's row count on the source was compared with the copy. Only exact matches are marked verified.",
+      "tables": "{{count}} tables match",
+      "differs": "{{name}}: source {{source}}, copy {{target}}",
+      "receipt": "Download receipt (JSON)",
+      "receiptHelp": "A record that each database is verified and the source was untouched. It contains no secrets.",
+      "source": "Source untouched",
+      "next": "Continue to cutover",
+      "noneVerified": "No database is verified yet. Fix the failures above and retry."
+    },
+    "cutover": {
+      "title": "Switch your apps",
+      "description": "Point each app at its new database, then run the cutover check. Nothing is switched for you.",
+      "connection": "Connection for {{name}}",
+      "reference": "In an app's connections, reference it as {{ref}} and the platform fills in the values.",
+      "reveal": "Reveal secret",
+      "revealing": "Revealing",
+      "hide": "Hide secret",
+      "revealNote": "Revealing is recorded in the audit log.",
+      "loadError": "Could not load the connection details",
+      "revealError": "Could not reveal the secret"
+    },
+    "loadError": "Could not load the migration plan."
   }
 }

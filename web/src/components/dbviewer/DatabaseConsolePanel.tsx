@@ -7,8 +7,10 @@ import { UnsupportedEngine } from './UnsupportedEngine'
 
 export function DatabaseConsolePanel({
   databaseName,
+  initialSql,
 }: {
   databaseName: string
+  initialSql?: string
 }) {
   const { t } = useTranslation('databases')
   const { data: database } = useDatabase(databaseName)
@@ -20,7 +22,7 @@ export function DatabaseConsolePanel({
         <BetaBadge />
       </h1>
       {SQL_ENGINES.has(database.engine) ? (
-        <SqlConsole databaseName={databaseName} />
+        <SqlConsole databaseName={databaseName} initialSql={initialSql} />
       ) : (
         <UnsupportedEngine engine={database.engine} />
       )}

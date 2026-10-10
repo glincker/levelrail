@@ -112,7 +112,9 @@ export function SettingsEnabledRow({
 export function SettingsFormAlerts({
   alerts,
 }: Readonly<{
-  alerts: ReadonlyArray<{ key: string; message: string } | null | undefined | false>
+  alerts: ReadonlyArray<
+    { key: string; message: string } | null | undefined | false
+  >
 }>) {
   return (
     <>

@@ -26,7 +26,9 @@ function valueOf(usage: AppResourceUsage, metric: RankMetric): number {
 function formatValue(usage: AppResourceUsage, metric: RankMetric): string {
   switch (metric) {
     case 'cpu_percent':
-      return usage.cpu_percent === undefined ? '-' : `${usage.cpu_percent.toFixed(1)}%`
+      return usage.cpu_percent === undefined
+        ? '-'
+        : `${usage.cpu_percent.toFixed(1)}%`
     case 'memory_usage_bytes':
       if (usage.memory_usage_bytes === undefined) return '-'
       if (usage.memory_limit_bytes) {
@@ -69,7 +71,10 @@ export function TopResourceConsumers({ apps }: { apps: AppListEntry[] }) {
     <Card size="sm">
       <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
         <CardTitle className="flex items-center gap-1.5 text-sm font-medium">
-          <ChartBarIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+          <ChartBarIcon
+            className="size-4 text-muted-foreground"
+            aria-hidden="true"
+          />
           Top resource consumers
         </CardTitle>
         <div className="flex gap-1">

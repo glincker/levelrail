@@ -94,7 +94,10 @@ export async function updateVaultSettings(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `update vault settings failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `update vault settings failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as VaultSettings

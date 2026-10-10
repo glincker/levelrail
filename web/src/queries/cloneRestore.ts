@@ -102,7 +102,10 @@ export async function triggerCloneRestore(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `restore as new database failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `restore as new database failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as CloneRestoreRecord

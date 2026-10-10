@@ -91,6 +91,10 @@ The reconciler reports one of these outcomes as the firewall controller's status
 | `UFWInactive` | `ufw` is installed but not enabled. Nothing is managed until you enable it yourself. |
 | `RuleSyncFailed` | One or more `ufw` commands failed. The other rules are still processed, and the message lists the errors. |
 
+## Published container ports
+
+`ufw` does not cover ports Docker publishes: they skip the INPUT chain. The [Exposure audit](exposure-audit.md) lists which of your containers are reachable from outside and can restrict them with DOCKER-USER rules.
+
 ## Related
 
 <CardGroup :cols="2">

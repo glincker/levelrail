@@ -90,10 +90,7 @@ function nodeAwareFetchMock(putResult: DatabaseResource) {
         }),
       )
     }
-    if (
-      url === '/api/v1/databases/demo-db/resources' &&
-      method === 'PUT'
-    ) {
+    if (url === '/api/v1/databases/demo-db/resources' && method === 'PUT') {
       return Promise.resolve(fakeJsonResponse(putResult, 200))
     }
     return Promise.reject(new Error(`unexpected fetch: ${url} ${method}`))
@@ -128,7 +125,9 @@ describe('DatabaseResourceLimitsEditor', () => {
     expect(screen.queryByText(/currently has/)).not.toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Limit (MiB)'), '512')
-    await user.click(screen.getByRole('button', { name: /save resource limits/i }))
+    await user.click(
+      screen.getByRole('button', { name: /save resource limits/i }),
+    )
 
     await waitFor(() => {
       expect(
@@ -148,10 +147,7 @@ describe('DatabaseResourceLimitsEditor', () => {
       if (url.startsWith('/api/v1/nodes/node-1/metrics')) {
         return Promise.resolve(fakeJsonResponse({ error: 'not found' }, 404))
       }
-      if (
-        url === '/api/v1/databases/demo-db/resources' &&
-        method === 'PUT'
-      ) {
+      if (url === '/api/v1/databases/demo-db/resources' && method === 'PUT') {
         return Promise.resolve(fakeJsonResponse(database, 200))
       }
       return Promise.reject(new Error(`unexpected fetch: ${url} ${method}`))
@@ -161,7 +157,9 @@ describe('DatabaseResourceLimitsEditor', () => {
 
     await user.click(screen.getByRole('switch', { name: 'CPU limit' }))
     await user.type(screen.getByLabelText('Limit (cores)'), '0.5')
-    await user.click(screen.getByRole('button', { name: /save resource limits/i }))
+    await user.click(
+      screen.getByRole('button', { name: /save resource limits/i }),
+    )
 
     await waitFor(() => {
       expect(

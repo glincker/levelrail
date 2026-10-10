@@ -22,6 +22,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/rollback"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/upgradehistory"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
 
@@ -138,7 +139,8 @@ Run it on the host as root. The control plane itself never does this.
                              Everything written after the backup is lost.
   --confirm-data-loss NAME   repeat the backup name to confirm that loss
   --accept-unknown-schema    try a release whose schema version is unknown
-  --stop-cmd / --start-cmd   shell commands to stop/start the service
+  --stop-cmd / --start-cmd   commands to stop/start the service, run
+                             directly as argv (no shell, no pipes)
                              (default: systemctl stop/start <binary name>)
   --health-url URL           base URL probed for /healthz and /readyz
   --timeout DURATION         how long the target may take to become healthy
@@ -291,11 +293,25 @@ func printPlan(out io.Writer, p rollback.Plan, asJSON bool) error {
 	return nil
 }
 
+// splitCommand turns an operator's stop or start command into argv. It never
+// goes through a shell, so quoting, pipes and && are not interpreted.
+func splitCommand(s string) ([]string, error) {
+	argv := strings.Fields(s)
+	if len(argv) == 0 {
+		return nil, errors.New("command is empty")
+	}
+	return argv, nil
+}
+
 func hostDeps(f rollbackFlags, exe, name, relDir, dataDir, live, healthBase string, logger *slog.Logger) rollback.Deps {
 	run := func(ctx context.Context, custom, verb string) error {
 		var cmd *exec.Cmd
 		if custom != "" {
-			cmd = exec.CommandContext(ctx, "sh", "-c", custom) //nolint:gosec // operator-supplied flag on a root-run host command
+			argv, err := splitCommand(custom)
+			if err != nil {
+				return fmt.Errorf("%s: %w", verb, err)
+			}
+			cmd = exec.CommandContext(ctx, argv[0], argv[1:]...) //nolint:gosec // operator-supplied flag on a root-run host command, run as argv with no shell
 		} else {
 			cmd = exec.CommandContext(ctx, "systemctl", verb, name) //nolint:gosec // name is this executable's own file name
 		}
@@ -331,14 +347,24 @@ func hostDeps(f rollbackFlags, exe, name, relDir, dataDir, live, healthBase stri
 		},
 		UndoRestoreDB: func(_ context.Context, kept string) error { return rollback.UndoSwap(live, kept) },
 		Audit: func(ctx context.Context, detail string) error {
-			actor := "root"
-			if u, err := user.Current(); err == nil {
-				actor = u.Username
-			}
-			return rollback.WriteAudit(ctx, live, actor, "host rollback: "+detail, time.Now())
+			return rollback.WriteAudit(ctx, live, hostActor(), "host rollback: "+detail, time.Now())
 		},
-		Now: time.Now,
+		WriteMarker: func(_ context.Context, backup string) error {
+			return upgradehistory.WriteMarker(dataDir, upgradehistory.Marker{
+				ToVersion: f.to, Initiator: hostActor(), Method: upgradehistory.MethodRollback,
+				BackupName: backup, WrittenAt: time.Now().UTC(),
+			})
+		},
+		ClearMarker: func() { upgradehistory.ClearMarker(dataDir) },
+		Now:         time.Now,
 	}
+}
+
+func hostActor() string {
+	if u, err := user.Current(); err == nil {
+		return u.Username
+	}
+	return "root"
 }
 
 // runReleaseCommand handles the host-side release subcommands and reports

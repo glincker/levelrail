@@ -1,7 +1,12 @@
 import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import { WarningCircleIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
-import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useDockerHealthPoll } from '../queries/systemStatus'
 
@@ -46,8 +51,8 @@ export function DockerHealthBanner() {
       <WarningCircleIcon />
       <AlertTitle>Docker Engine is unreachable</AlertTitle>
       <AlertDescription>
-        This node cannot reach its Docker daemon. Deploys, restarts,
-        rollbacks, exec, and log streaming will fail until it is back.
+        This node cannot reach its Docker daemon. Deploys, restarts, rollbacks,
+        exec, and log streaming will fail until it is back.
         {data.docker_error ? ` (${data.docker_error})` : null}{' '}
         <Link to="/nodes">Check node status</Link>.
       </AlertDescription>

@@ -13,7 +13,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -62,7 +67,8 @@ const portSchema = z
     customBindAddress: z.string().trim(),
   })
   .refine(
-    (data) => data.bindAddressMode !== 'custom' || data.customBindAddress !== '',
+    (data) =>
+      data.bindAddressMode !== 'custom' || data.customBindAddress !== '',
     { message: 'Enter an IP address', path: ['customBindAddress'] },
   )
 
@@ -141,10 +147,10 @@ export function PortEditor({ app }: { app: AppDetail }) {
           Port
         </CardTitle>
         <CardDescription>
-          The port the container listens on, which host port Docker binds it
-          to, and which network interface that host port is reachable from.
-          Changing any of these redeploys the app so the reconciler can
-          reconcile the running container to the new value.
+          The port the container listens on, which host port Docker binds it to,
+          and which network interface that host port is reachable from. Changing
+          any of these redeploys the app so the reconciler can reconcile the
+          running container to the new value.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -195,8 +201,8 @@ export function PortEditor({ app }: { app: AppDetail }) {
                 )}
               />
               <FieldDescription>
-                Private is reachable only from this host. Public exposes it
-                to any network that can reach this host.
+                Private is reachable only from this host. Public exposes it to
+                any network that can reach this host.
               </FieldDescription>
             </Field>
 

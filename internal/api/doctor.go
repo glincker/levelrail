@@ -121,6 +121,7 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 	checks = append(checks, rt.doctorCheckNASClientTools(ctx)...)
 	checks = append(checks, rt.doctorCheckCrossNodeIngress(ctx)...)
 	checks = append(checks, rt.doctorCheckIngressEdge()...)
+	checks = append(checks, rt.doctorCheckExposure(ctx)...)
 
 	ok := true
 	for _, c := range checks {

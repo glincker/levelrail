@@ -42,10 +42,9 @@ export function AppBindMountsSection({
           <AlertDescription>
             Each row below gives this app&rsquo;s container direct read
             {bindMounts.some((m) => !m.read_only) ? '/write ' : ' '}
-            access to a real directory on the host machine it runs on,
-            outside Docker&rsquo;s own volume management. Change which
-            directories are mounted by redeploying this app&rsquo;s
-            compose file.
+            access to a real directory on the host machine it runs on, outside
+            Docker&rsquo;s own volume management. Change which directories are
+            mounted by redeploying this app&rsquo;s compose file.
           </AlertDescription>
         </Alert>
         <div className="rounded-lg border border-border">

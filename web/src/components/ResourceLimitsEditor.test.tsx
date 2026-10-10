@@ -125,10 +125,14 @@ describe('ResourceLimitsEditor', () => {
     expect(screen.queryByText(/currently has/)).not.toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Limit (MiB)'), '512')
-    await user.click(screen.getByRole('button', { name: /save resource limits/i }))
+    await user.click(
+      screen.getByRole('button', { name: /save resource limits/i }),
+    )
 
     await waitFor(() => {
-      expect(wasCalledWith(fetchMock, '/api/v1/apps/demo-app', 'PUT')).toBe(true)
+      expect(wasCalledWith(fetchMock, '/api/v1/apps/demo-app', 'PUT')).toBe(
+        true,
+      )
     })
   })
 
@@ -153,10 +157,14 @@ describe('ResourceLimitsEditor', () => {
 
     await user.click(screen.getByRole('switch', { name: 'CPU limit' }))
     await user.type(screen.getByLabelText('Limit (cores)'), '0.5')
-    await user.click(screen.getByRole('button', { name: /save resource limits/i }))
+    await user.click(
+      screen.getByRole('button', { name: /save resource limits/i }),
+    )
 
     await waitFor(() => {
-      expect(wasCalledWith(fetchMock, '/api/v1/apps/demo-app', 'PUT')).toBe(true)
+      expect(wasCalledWith(fetchMock, '/api/v1/apps/demo-app', 'PUT')).toBe(
+        true,
+      )
     })
     expect(screen.queryByText(/currently has/)).not.toBeInTheDocument()
   })

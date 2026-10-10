@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { PencilSimpleIcon, PlusCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  PencilSimpleIcon,
+  PlusCircleIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -16,9 +19,17 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
-import { useCreateFeatureFlag, useUpdateFeatureFlag } from '../queries/featureFlags'
+import {
+  useCreateFeatureFlag,
+  useUpdateFeatureFlag,
+} from '../queries/featureFlags'
 import type { FeatureFlag, FeatureFlagRequest } from '../types/featureFlags'
 
 const KEY_REGEX = /^[a-z0-9_-]+$/
@@ -28,7 +39,10 @@ const featureFlagSchema = z.object({
     .string()
     .trim()
     .min(1, 'Key is required')
-    .regex(KEY_REGEX, 'Lowercase letters, digits, hyphens, and underscores only'),
+    .regex(
+      KEY_REGEX,
+      'Lowercase letters, digits, hyphens, and underscores only',
+    ),
   name: z.string().trim().min(1, 'Name is required'),
   description: z.string().trim(),
   enabled: z.boolean(),
@@ -68,10 +82,11 @@ export function FeatureFlagDialog({
       }
     : DEFAULT_VALUES
 
-  const { control, register, handleSubmit, formState, reset } = useForm<FeatureFlagFormValues>({
-    resolver: zodResolver(featureFlagSchema),
-    defaultValues,
-  })
+  const { control, register, handleSubmit, formState, reset } =
+    useForm<FeatureFlagFormValues>({
+      resolver: zodResolver(featureFlagSchema),
+      defaultValues,
+    })
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -124,9 +139,15 @@ export function FeatureFlagDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
             {isEdit ? (
-              <PencilSimpleIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+              <PencilSimpleIcon
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
             ) : (
-              <PlusCircleIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+              <PlusCircleIcon
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
             )}
             {isEdit ? 'Edit feature flag' : 'Create feature flag'}
           </DialogTitle>
@@ -160,7 +181,11 @@ export function FeatureFlagDialog({
 
           <Field>
             <FieldLabel htmlFor="flag-name">Name</FieldLabel>
-            <Input id="flag-name" placeholder="e.g. New checkout" {...register('name')} />
+            <Input
+              id="flag-name"
+              placeholder="e.g. New checkout"
+              {...register('name')}
+            />
             <FieldError errors={[formState.errors.name]} />
           </Field>
 

@@ -56,7 +56,12 @@ export function CreateUserDialog() {
   const { control, register, handleSubmit, formState, reset } =
     useForm<CreateUserFormValues>({
       resolver: zodResolver(createUserSchema),
-      defaultValues: { email: '', displayName: '', password: '', abilities: [] },
+      defaultValues: {
+        email: '',
+        displayName: '',
+        password: '',
+        abilities: [],
+      },
     })
 
   function handleOpenChange(next: boolean) {

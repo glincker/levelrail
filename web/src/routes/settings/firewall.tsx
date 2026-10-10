@@ -24,6 +24,7 @@ import type {
 } from '../../types/firewallRule'
 import { DoctorCheckRow } from '@/components/DoctorCheckRow'
 import { HostFirewallCard } from '@/components/HostFirewallCard'
+import { ExposureCard } from '@/components/exposure/ExposureCard'
 import {
   Table,
   TableBody,
@@ -90,6 +91,7 @@ function FirewallPage() {
       />
 
       <HostFirewallCard />
+      <ExposureCard />
 
       {firewallCheck ? (
         <Card>

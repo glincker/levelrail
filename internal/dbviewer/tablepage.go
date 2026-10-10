@@ -14,7 +14,18 @@ const (
 	OpNotNull  = "not_null"
 )
 
-// PageQuery asks for one page of a table.
+// MaxFilters bounds how many column filters one page request may combine.
+const MaxFilters = 8
+
+// Filter restricts one column of a table page.
+type Filter struct {
+	Column string `json:"column"`
+	Op     string `json:"op"`
+	Value  string `json:"value"`
+}
+
+// PageQuery asks for one page of a table. FilterColumn/FilterOp/FilterValue
+// are the first filter; Filters adds more, all combined with AND.
 type PageQuery struct {
 	Schema, Table string
 	Limit, Offset int
@@ -23,6 +34,15 @@ type PageQuery struct {
 	FilterColumn  string
 	FilterOp      string
 	FilterValue   string
+	Filters       []Filter
+}
+
+func (q PageQuery) allFilters() []Filter {
+	var out []Filter
+	if q.FilterColumn != "" {
+		out = append(out, Filter{Column: q.FilterColumn, Op: q.FilterOp, Value: q.FilterValue})
+	}
+	return append(out, q.Filters...)
 }
 
 // Page is one page of rows. HasMore is true when rows exist past this page.
@@ -106,15 +126,23 @@ func (t Target) TablePage(ctx context.Context, q PageQuery) (Page, error) {
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "SELECT * FROM %s.%s", t.quoteIdent(q.Schema), t.quoteIdent(q.Table))
-	if q.FilterColumn != "" {
-		if !contains(cols, q.FilterColumn) {
-			return Page{}, fmt.Errorf("%w: column %q", ErrNotFound, q.FilterColumn)
+	filters := q.allFilters()
+	if len(filters) > MaxFilters {
+		return Page{}, fmt.Errorf("%w: at most %d filters", ErrNotAllowed, MaxFilters)
+	}
+	for i, f := range filters {
+		if !contains(cols, f.Column) {
+			return Page{}, fmt.Errorf("%w: column %q", ErrNotFound, f.Column)
 		}
-		clause, err := t.filterClause(q)
+		clause, err := t.filterClause(f)
 		if err != nil {
 			return Page{}, err
 		}
-		b.WriteString(" WHERE " + clause)
+		if i == 0 {
+			b.WriteString(" WHERE " + clause)
+		} else {
+			b.WriteString(" AND " + clause)
+		}
 	}
 	if q.SortColumn != "" {
 		if !contains(cols, q.SortColumn) {
@@ -141,28 +169,28 @@ func (t Target) TablePage(ctx context.Context, q PageQuery) (Page, error) {
 	return p, nil
 }
 
-func (t Target) filterClause(q PageQuery) (string, error) {
-	col := t.quoteIdent(q.FilterColumn)
-	switch q.FilterOp {
+func (t Target) filterClause(f Filter) (string, error) {
+	col := t.quoteIdent(f.Column)
+	switch f.Op {
 	case OpIsNull:
 		return col + " IS NULL", nil
 	case OpNotNull:
 		return col + " IS NOT NULL", nil
 	case OpContains, OpEquals, "":
 	default:
-		return "", fmt.Errorf("%w: unknown filter operator %q", ErrNotAllowed, q.FilterOp)
+		return "", fmt.Errorf("%w: unknown filter operator %q", ErrNotAllowed, f.Op)
 	}
-	if strings.ContainsAny(q.FilterValue, "\\\x00") {
+	if strings.ContainsAny(f.Value, "\\\x00") {
 		return "", ErrBackslash
 	}
 	text := "CAST(" + col + " AS TEXT)"
 	if t.Dialect != DialectPostgres {
 		text = "CAST(" + col + " AS CHAR)"
 	}
-	if q.FilterOp == OpEquals {
-		return text + " = " + quoteLiteral(q.FilterValue), nil
+	if f.Op == OpEquals {
+		return text + " = " + quoteLiteral(f.Value), nil
 	}
-	esc := strings.NewReplacer("!", "!!", "%", "!%", "_", "!_").Replace(q.FilterValue)
+	esc := strings.NewReplacer("!", "!!", "%", "!%", "_", "!_").Replace(f.Value)
 	like := "LIKE"
 	if t.Dialect == DialectPostgres {
 		like = "ILIKE"

@@ -10,6 +10,7 @@ import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { DeleteDatabaseDialog } from '../../components/DeleteDatabaseDialog'
 import { StopStartDatabaseButton } from '../../components/StopStartDatabaseButton'
+import { DeleteExternalDatabaseDialog } from '../../components/ExternalDatabaseOverview'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -59,13 +60,17 @@ function DatabaseDetailLayout() {
         title={database.name}
         status={<Badge variant={status.variant}>{status.label}</Badge>}
         actions={
-          <>
-            <StopStartDatabaseButton
-              name={database.name}
-              suspended={Boolean(database.suspended)}
-            />
-            <DeleteDatabaseDialog name={database.name} />
-          </>
+          database.external ? (
+            <DeleteExternalDatabaseDialog name={database.name} />
+          ) : (
+            <>
+              <StopStartDatabaseButton
+                name={database.name}
+                suspended={Boolean(database.suspended)}
+              />
+              <DeleteDatabaseDialog name={database.name} />
+            </>
+          )
         }
       />
 

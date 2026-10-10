@@ -31,8 +31,10 @@ func TestGetAttention(t *testing.T) {
 			_, _ = w.Write([]byte(`{"confidence":"none","fixable":false}`))
 		case "/api/v1/updates":
 			_, _ = w.Write([]byte(`{"current_version":"v1.0.0"}`))
-		case "/api/v1/auth/device/pending-summary":
-			_, _ = w.Write([]byte(`{"pending":[{"client_name":"laptop","requester_ip":"10.0.0.9","created_at":"2026-10-09T10:00:00Z","expires_at":"2999-01-01T00:00:00Z"}]}`))
+		case "/api/v1/auth/device/activity":
+			_, _ = w.Write([]byte(`{"items":[{"id":"r1","state":"waiting","client_name":"laptop","requester_ip":"10.0.0.9","created_at":"2026-10-09T10:00:00Z","expires_at":"2999-01-01T00:00:00Z"},{"id":"r2","state":"expired","client_name":"ci","created_at":"2026-10-09T09:00:00Z","expires_at":"2026-10-09T09:10:00Z"},{"id":"r3","state":"expired","client_name":"gone","dismissed":true,"created_at":"2026-10-09T09:00:00Z","expires_at":"2026-10-09T09:10:00Z"}]}`))
+		case "/api/v1/attention/feed":
+			_, _ = w.Write([]byte(`{"items":[{"id":"token_expiring:ci","severity":"warning","kind":"token_expiring","subject":"ci","detail":"expires in 2 days"}]}`))
 		case "/api/v1/deploy-approvals":
 			_, _ = w.Write([]byte(`{"approvals":[{"id":"a1","service_name":"web","action":"deploy","image":"web:2","requested_by":"u1"}]}`))
 		default:
@@ -50,7 +52,7 @@ func TestGetAttention(t *testing.T) {
 	for _, it := range out.Items {
 		kinds = append(kinds, it.Severity+":"+it.Kind)
 	}
-	want := []string{"critical:disk", "critical:deploy", "critical:app", "warning:device_login", "warning:approval", "warning:doctor"}
+	want := []string{"critical:disk", "critical:deploy", "critical:app", "warning:device_login", "warning:approval", "warning:token_expiring", "warning:doctor", "info:device_login_resolved"}
 	if strings.Join(kinds, ",") != strings.Join(want, ",") {
 		t.Errorf("items = %v, want %v", kinds, want)
 	}

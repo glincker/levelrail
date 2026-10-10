@@ -11,13 +11,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
-import {
-  useClearAppVaultEnv,
-  useSetAppVaultEnv,
-} from '../queries/appVaultEnv'
+import { useClearAppVaultEnv, useSetAppVaultEnv } from '../queries/appVaultEnv'
 
 const vaultEnvSchema = z.object({
   key: z.string().trim().min(1, 'Key is required'),
@@ -51,7 +53,11 @@ export function VaultEnvEditor({
 
   const onSubmit = handleSubmit((values) => {
     setVaultEnv.mutate(
-      { key: values.key.trim(), path: values.path.trim(), vaultKey: values.vaultKey.trim() },
+      {
+        key: values.key.trim(),
+        path: values.path.trim(),
+        vaultKey: values.vaultKey.trim(),
+      },
       {
         onSuccess: () => {
           reset({ key: '', path: '', vaultKey: '' })
@@ -71,9 +77,9 @@ export function VaultEnvEditor({
           Vault-sourced env vars
         </CardTitle>
         <CardDescription>
-          Resolves an env var&apos;s value live from an external HashiCorp
-          Vault instance at deploy time instead of a value this platform
-          stores. Requires Vault to be configured under Settings first.
+          Resolves an env var&apos;s value live from an external HashiCorp Vault
+          instance at deploy time instead of a value this platform stores.
+          Requires Vault to be configured under Settings first.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -124,7 +130,9 @@ export function VaultEnvEditor({
                 {...register('key')}
               />
               <FieldError
-                errors={formState.errors.key ? [formState.errors.key] : undefined}
+                errors={
+                  formState.errors.key ? [formState.errors.key] : undefined
+                }
               />
             </Field>
             <Field>
@@ -137,7 +145,9 @@ export function VaultEnvEditor({
                 {...register('path')}
               />
               <FieldError
-                errors={formState.errors.path ? [formState.errors.path] : undefined}
+                errors={
+                  formState.errors.path ? [formState.errors.path] : undefined
+                }
               />
             </Field>
             <Field>
@@ -151,7 +161,9 @@ export function VaultEnvEditor({
               />
               <FieldError
                 errors={
-                  formState.errors.vaultKey ? [formState.errors.vaultKey] : undefined
+                  formState.errors.vaultKey
+                    ? [formState.errors.vaultKey]
+                    : undefined
                 }
               />
             </Field>

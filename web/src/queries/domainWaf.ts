@@ -42,7 +42,10 @@ function wafPath(appName: string, domain: string): string {
   return `/api/v1/apps/${encodeURIComponent(appName)}/domains/${encodeURIComponent(domain)}/waf`
 }
 
-export async function fetchDomainWaf(appName: string, domain: string): Promise<DomainWaf> {
+export async function fetchDomainWaf(
+  appName: string,
+  domain: string,
+): Promise<DomainWaf> {
   const res = await fetch(wafPath(appName, domain))
   if (!res.ok) {
     throw new ApiError(
@@ -95,7 +98,10 @@ export function useSetDomainWaf(appName: string, domain: string) {
   })
 }
 
-async function clearDomainWaf(appName: string, domain: string): Promise<DomainWaf> {
+async function clearDomainWaf(
+  appName: string,
+  domain: string,
+): Promise<DomainWaf> {
   const res = await fetch(wafPath(appName, domain), { method: 'DELETE' })
   if (!res.ok) {
     throw new ApiError(

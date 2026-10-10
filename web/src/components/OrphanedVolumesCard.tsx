@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import { HardDrivesIcon, TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  HardDrivesIcon,
+  TrashIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
   CardContent,
@@ -83,9 +87,9 @@ export function OrphanedVolumesCard() {
             <div>
               <CardTitle>Orphaned volumes</CardTitle>
               <CardDescription>
-                Named volumes whose app or database was deleted. Never
-                touched by &ldquo;Clean up now&rdquo; above; review and
-                remove them here.
+                Named volumes whose app or database was deleted. Never touched
+                by &ldquo;Clean up now&rdquo; above; review and remove them
+                here.
               </CardDescription>
             </div>
           </div>
@@ -141,7 +145,9 @@ export function OrphanedVolumesCard() {
                 Delete {selectedNames.length} volume
                 {selectedNames.length === 1 ? '' : 's'}?
               </DialogTitle>
-              <DialogDescription render={<div className="space-y-2 text-left" />}>
+              <DialogDescription
+                render={<div className="space-y-2 text-left" />}
+              >
                 <p>This permanently deletes:</p>
                 <ul className="max-h-40 list-disc space-y-1 overflow-y-auto pl-5 font-mono text-xs">
                   {selectedNames.map((name) => (
@@ -150,8 +156,8 @@ export function OrphanedVolumesCard() {
                 </ul>
                 <p>
                   Each one is re-checked right before deletion; if an app or
-                  database started referencing it again in the meantime, it
-                  is skipped instead. This cannot be undone.
+                  database started referencing it again in the meantime, it is
+                  skipped instead. This cannot be undone.
                 </p>
               </DialogDescription>
             </DialogHeader>

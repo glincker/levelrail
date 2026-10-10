@@ -47,14 +47,15 @@ describe('PauseResumeProjectButton', () => {
 
   it('posts to the stop endpoint when "Stop project" is clicked', async () => {
     const user = userEvent.setup()
-    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
-      () =>
-        Promise.resolve(
-          fakeJsonResponse({
-            succeeded_apps: ['web'],
-            succeeded_databases: ['main'],
-          }),
-        ),
+    const fetchMock = vi.fn<
+      (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+    >(() =>
+      Promise.resolve(
+        fakeJsonResponse({
+          succeeded_apps: ['web'],
+          succeeded_databases: ['main'],
+        }),
+      ),
     )
     vi.stubGlobal('fetch', fetchMock)
     renderButton()
@@ -69,11 +70,12 @@ describe('PauseResumeProjectButton', () => {
 
   it('posts to the start endpoint when "Start project" is clicked', async () => {
     const user = userEvent.setup()
-    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
-      () =>
-        Promise.resolve(
-          fakeJsonResponse({ succeeded_apps: [], succeeded_databases: [] }),
-        ),
+    const fetchMock = vi.fn<
+      (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+    >(() =>
+      Promise.resolve(
+        fakeJsonResponse({ succeeded_apps: [], succeeded_databases: [] }),
+      ),
     )
     vi.stubGlobal('fetch', fetchMock)
     renderButton()

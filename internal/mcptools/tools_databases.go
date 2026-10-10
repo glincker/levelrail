@@ -41,6 +41,17 @@ func registerDatabaseTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, engines, nil
 	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "list_external_databases",
+		Description: "List databases this control plane connects to but does not run (connected in place or adopted from an existing container): name, engine, host, port, and the last health probe (reachable, slow, auth_failed, tls_error, unreachable). Never returns a password. Read-only: this server cannot create or change one.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.ExternalDatabase, error) {
+		databases, err := client.ListExternalDatabases(ctx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("list external databases: %w", err)
+		}
+		return nil, databases, nil
+	})
 }
 
 type databaseNameInput struct {
