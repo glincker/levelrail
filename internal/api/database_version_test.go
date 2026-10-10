@@ -27,6 +27,12 @@ func TestCheckVersionChange(t *testing.T) {
 		{"latest cannot be compared", store.EnginePostgres, "latest", "16", "cannot compare"},
 		{"bad tag", store.EnginePostgres, "16", "16 4;rm", "image tag"},
 		{"empty", store.EnginePostgres, "16", "", "image tag"},
+		{"pgvector same", store.EnginePostgres, "17-pgvector", "17-pgvector", ""},
+		{"plain to pgvector refused", store.EnginePostgres, "17", "17-pgvector", "plain and pgvector"},
+		{"pgvector to plain refused", store.EnginePostgres, "17-pgvector", "17", "plain and pgvector"},
+		{"pgvector major refused", store.EnginePostgres, "16-pgvector", "17-pgvector", "major version"},
+		{"malformed variant", store.EnginePostgres, "16", "16.4-pgvector", "not a valid pgvector"},
+		{"variant on mysql", store.EngineMySQL, "8", "16-pgvector", "only available for the postgres"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -119,6 +119,9 @@ export function MajorUpgradeCard({ database }: { database: DatabaseResource }) {
         <p className="text-sm text-muted-foreground">
           {t('majorUpgrade.description')}
         </p>
+        <p className="text-xs text-muted-foreground">
+          {t('majorUpgrade.pgvectorHint')}
+        </p>
         {pitrOn ? (
           <p className="text-sm text-destructive">
             {t('majorUpgrade.pitrBlocked')}
