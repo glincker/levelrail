@@ -795,6 +795,24 @@ expected, not an attack: keep using the http link above until it is enabled.
 EOF
 }
 
+# write_upgrade_marker leaves who ran this and how for the control plane's
+# next boot, which records it in upgrade history and deletes the file. Never
+# fatal: history is a convenience, not a precondition.
+write_upgrade_marker() {
+	method="$1"
+	who="${SUDO_USER:-$(id -un 2>/dev/null || echo unknown)}"
+	who="$(printf '%s' "$who" | tr -cd 'A-Za-z0-9._@-')"
+	chan="$(printf '%s' "${LEVELRAIL_CHANNEL:-}" | tr -cd 'a-z')"
+	when="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+	mkdir -p "$DATA_DIR" 2>/dev/null || return 0
+	(
+		umask 077
+		printf '{"to_version":"%s","initiator":"%s","method":"%s","channel":"%s","written_at":"%s"}\n' \
+			"$VERSION" "${who:-unknown}" "$method" "$chan" "$when" >"$DATA_DIR/upgrade-context.json.tmp" &&
+			mv "$DATA_DIR/upgrade-context.json.tmp" "$DATA_DIR/upgrade-context.json"
+	) 2>/dev/null || warn "could not record who ran this upgrade for the upgrade history"
+}
+
 do_install() {
 	[ -n "$SOCKET_ACTIVATION" ] || SOCKET_ACTIVATION=1
 	preflight
@@ -809,6 +827,7 @@ do_install() {
 	if [ "$SOCKET_ACTIVATION" = "1" ]; then
 		systemctl enable --now "$HTTP_SOCKET_UNIT" "$HTTPS_SOCKET_UNIT" >/dev/null 2>&1
 	fi
+	write_upgrade_marker "install.sh install"
 	systemctl restart "$SERVICE_NAME"
 	wait_healthy
 	discover_public_ip
@@ -836,6 +855,7 @@ do_upgrade() {
 	*) [ -f "$UNIT_PATH" ] || write_unit ;;
 	esac
 	systemctl daemon-reload
+	write_upgrade_marker "install.sh upgrade"
 	systemctl restart "$SERVICE_NAME"
 	wait_healthy
 	log "Upgraded to ${VERSION}."

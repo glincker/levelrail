@@ -56,6 +56,8 @@ System endpoints for:
 | POST | /api/v1/system/orphans/reap | AbilityRoot | handleReapOrphans |
 | GET | /api/v1/updates/releases | AbilityRead | handleReleaseHistory |
 | GET | /api/v1/updates/rollback-plan | AbilityRoot | handleRollbackPlan |
+| GET | /api/v1/updates/history | AbilityRead | handleUpgradeHistory |
+| POST | /api/v1/updates/history/{id}/ack | AbilityWrite | handleAckUpgrade |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

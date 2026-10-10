@@ -140,6 +140,8 @@ func (db *DB) SyncNodeCertDetails(ctx context.Context, id, fingerprint, serial s
 
 // UpdateNodeAgentInfo stores what the node's agent reported about itself.
 func (db *DB) UpdateNodeAgentInfo(ctx context.Context, id string, info NodeAgentInfo, now time.Time) error {
+	// History is best effort: a failure here must not drop the heartbeat.
+	_ = db.recordNodeAgentVersionChange(ctx, id, info.Version, now)
 	res, err := db.ExecContext(ctx, `
 		UPDATE nodes SET agent_version = ?, agent_commit = ?, agent_os = ?, agent_arch = ?, agent_reported_at = ?
 		WHERE id = ?

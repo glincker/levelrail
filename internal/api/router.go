@@ -302,6 +302,8 @@ type Router struct {
 	// releaseHist lists recent releases and their schema versions for the
 	// rollback view (updates_releases.go); always non-nil.
 	releaseHist *releaseHistorySource
+	// upgradeHistory is nil unless WithUpgradeHistory was applied.
+	upgradeHistory UpgradeHistoryStore
 	// certExpiryWarningWindow overrides alerting.DefaultCertExpiryWarningWindow
 	// for GET /api/v1/certificates's "expiring_soon" threshold, and for a
 	// kind=cert_expiry alert rule's own evaluation (cmd/levelrail/main.go

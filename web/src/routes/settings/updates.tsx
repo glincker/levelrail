@@ -34,6 +34,7 @@ import {
 import type { UpdateChannel, UpdateStatus } from '../../queries/updates'
 import { UpgradePreflight } from '../../components/settings/UpgradePreflight'
 import { ReleaseHistory } from '../../components/settings/ReleaseHistory'
+import { UpgradeHistory } from '../../components/settings/UpgradeHistory'
 import { PostUpgradeVerify } from '../../components/settings/PostUpgradeVerify'
 import { PageHeader } from '../../components/shell/PageHeader'
 import {
@@ -227,6 +228,16 @@ function UpdatesSettingsPage() {
         </CardHeader>
         <CardContent>
           <ReleaseHistory />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('upgradeHistory.title')}</CardTitle>
+          <CardDescription>{t('upgradeHistory.description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <UpgradeHistory />
         </CardContent>
       </Card>
 

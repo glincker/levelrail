@@ -164,6 +164,7 @@ var toolTable = map[string]Meta{
 	"get_firewall_exposure":                 {clsR, "system", 0},
 	"list_releases":                         {clsR, "system", unt | outb},
 	"get_rollback_plan":                     {clsR, "system", unt},
+	"list_upgrade_history":                  {clsR, "system", unt},
 	"get_onboarding_status":                 {clsR, "system", 0},
 	"prune_system":                          {clsD, "system", 0},
 	"list_webhook_deliveries":               {clsR, "webhooks", unt},
