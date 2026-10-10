@@ -12,7 +12,10 @@ import { RelativeTime } from '../kit'
 import { EmptyState } from '../ui/empty-state'
 import { RevokeTokenDialog } from '../RevokeTokenDialog'
 import { CreateAgentTokenDialog } from './CreateAgentTokenDialog'
-import { ABILITY_BADGE_VARIANT, type TokenResource } from '../../types/token'
+import {
+  TOKEN_ABILITY_BADGE_VARIANT,
+  type TokenResource,
+} from '../../types/token'
 
 export function AgentTokensCard({ tokens }: { tokens: TokenResource[] }) {
   const agentTokens = tokens.filter((t) => t.agent)
@@ -67,7 +70,10 @@ export function AgentTokensCard({ tokens }: { tokens: TokenResource[] }) {
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {token.abilities.map((a) => (
-                          <Badge key={a} variant={ABILITY_BADGE_VARIANT[a]}>
+                          <Badge
+                            key={a}
+                            variant={TOKEN_ABILITY_BADGE_VARIANT[a]}
+                          >
                             {a}
                           </Badge>
                         ))}

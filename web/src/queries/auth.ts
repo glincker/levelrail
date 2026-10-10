@@ -16,6 +16,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query'
+import { useCallback } from 'react'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { safeReturnPath } from '../lib/connectionState'
@@ -34,10 +35,29 @@ export interface MFARequiredResponse {
   mfa_token: string
 }
 
-export type LoginResult = AuthUser | MFARequiredResponse
+// A correct password from a browser this account has not trusted while
+// another session is live: that session must approve it first.
+export interface ApprovalRequiredResponse {
+  approval_required: true
+  approval_id: string
+  approval_expires_at: string
+  // The number the approving session must pick out of three.
+  approval_match: number
+}
 
-function isMFARequired(result: LoginResult): result is MFARequiredResponse {
+export type LoginResult =
+  AuthUser | MFARequiredResponse | ApprovalRequiredResponse
+
+export function isMFARequired(
+  result: LoginResult,
+): result is MFARequiredResponse {
   return 'mfa_required' in result && result.mfa_required
+}
+
+export function isApprovalRequired(
+  result: LoginResult,
+): result is ApprovalRequiredResponse {
+  return 'approval_required' in result && result.approval_required
 }
 
 // Thrown for a 429 specifically, carrying the seconds-to-wait the
@@ -91,6 +111,8 @@ export interface VerifyTwoFactorRequest {
   mfaToken: string
   code?: string
   recoveryCode?: string
+  // Opt-in only: an unchecked box never trusts the browser.
+  rememberDevice?: boolean
 }
 
 export async function verifyTwoFactor(
@@ -103,6 +125,7 @@ export async function verifyTwoFactor(
       mfa_token: req.mfaToken,
       code: req.code ?? '',
       recovery_code: req.recoveryCode ?? '',
+      remember_device: req.rememberDevice === true,
     }),
   })
   if (!res.ok) {
@@ -225,13 +248,26 @@ export function useLogin() {
   return useMutation<LoginResult, ApiError, Credentials>({
     mutationFn: ({ username, password }) => login(username, password),
     onSuccess: (result) => {
-      if (isMFARequired(result)) {
+      if (isMFARequired(result) || isApprovalRequired(result)) {
         return
       }
       setStoredUsername(result.username)
       goAfterLogin(navigate, router)
     },
   })
+}
+
+// Records a completed sign-in from any flow (code, approval) and navigates.
+export function useFinishSignIn() {
+  const navigate = useNavigate()
+  const router = useRouter()
+  return useCallback(
+    (username: string) => {
+      setStoredUsername(username)
+      goAfterLogin(navigate, router)
+    },
+    [navigate, router],
+  )
 }
 
 // useConsumeSessionLink mirrors useLogin's own onSuccess shape exactly

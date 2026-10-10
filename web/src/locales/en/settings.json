@@ -198,7 +198,29 @@
     "never": "Never",
     "active": "Active",
     "activeNow": "Active now",
-    "revoked": "Revoked"
+    "revoked": "Revoked",
+    "create": {
+      "title": "Create token",
+      "description": "A scoped, revocable credential for the CLI, CI, or an MCP integration.",
+      "submit": "Create token",
+      "submitting": "Creating...",
+      "name": "Name",
+      "namePlaceholder": "e.g. ci-deploy",
+      "nameRequired": "Name is required",
+      "expiration": "Expiration",
+      "never": "Never",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "agent": "Agent name (optional)",
+      "agentPlaceholder": "e.g. Claude Code",
+      "agentTooLong": "At most 64 characters",
+      "agentTipLabel": "About agent names",
+      "agentTip": "Label the token as issued to an AI agent, for example \"Claude Code\". The name is shown here and on every audit log entry the token makes, so you can tell agent changes from human ones.",
+      "abilityRequired": "Select at least one ability",
+      "rootExclusive": "Root cannot be combined with other abilities",
+      "signInApprove": "Approve my sign-ins",
+      "signInApproveHint": "Lets this token show your sign-in codes and approve new browsers from the CLI. Root does not include it and a device login never grants it, so keep this token short-lived."
+    }
   },
   "hostFirewall": {
     "title": "Host firewall",

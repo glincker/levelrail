@@ -156,6 +156,22 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/auth/whoami", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleWhoami))
 	mux.HandleFunc("POST /api/v1/auth/sessions/revoke-others", rt.requireAuth(rt.handleRevokeOtherSessions))
 
+	// Sign in with a code and new-device approval (login_code.go,
+	// login_approval.go). Request, redeem and poll are public and bound to a
+	// browser cookie; the rest act only on the caller's own account.
+	mux.HandleFunc("GET /api/v1/auth/login-options", rt.handleLoginOptions)
+	mux.HandleFunc("POST /api/v1/auth/login-code/request", rt.handleRequestLoginCode)
+	mux.HandleFunc("POST /api/v1/auth/login-code/redeem", rt.handleRedeemLoginCode)
+	mux.HandleFunc("POST /api/v1/auth/login-approval/poll", rt.handlePollLoginApproval)
+	mux.HandleFunc("GET /api/v1/auth/sign-in-requests", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleListSignInRequests))
+	mux.HandleFunc("POST /api/v1/auth/sign-in-requests/codes/{id}/reveal", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleRevealLoginCode))
+	mux.HandleFunc("POST /api/v1/auth/login-approvals/{id}/approve", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleApproveLoginApproval))
+	mux.HandleFunc("POST /api/v1/auth/login-approvals/{id}/deny", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleDenyLoginApproval))
+	mux.HandleFunc("GET /api/v1/auth/trusted-devices", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleListTrustedDevices))
+	mux.HandleFunc("DELETE /api/v1/auth/trusted-devices/{id}", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleRevokeTrustedDevice))
+	mux.HandleFunc("GET /api/v1/settings/auth/code-login", rt.requireAbility(AbilityRead, rt.handleGetCodeLoginSettings))
+	mux.HandleFunc("PUT /api/v1/settings/auth/code-login", rt.requireAbility(AbilityRoot, rt.handlePutCodeLoginSettings))
+
 	// Session links (session_links.go): a short-lived, single-use,
 	// URL-embeddable token for browser automation to skip manual login.
 	// Minting is root-equivalent since the resulting session inherits

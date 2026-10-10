@@ -18,6 +18,7 @@ import type setup from '../locales/en/setup.json'
 import type updates from '../locales/en/updates.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
 import type iam from '../locales/en/iam.json'
+import type signIn from '../locales/en/signIn.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -44,6 +45,7 @@ declare module 'i18next' {
       updates: typeof updates
       databaseAccess: typeof databaseAccess
       iam: typeof iam
+      signIn: typeof signIn
     }
   }
 }

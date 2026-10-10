@@ -1087,6 +1087,12 @@ func WithWebhookRateLimit(perMinute int) Option {
 	return func(rt *Router) { rt.webhookRateLimit = newAPIRateLimiter(perMinute) }
 }
 
+// WithNewDeviceApproval pauses a password login from an untrusted browser
+// until another live session of the account approves it.
+func WithNewDeviceApproval(on bool) Option {
+	return func(rt *Router) { rt.newDeviceApproval = on }
+}
+
 // WithTokenRedeemRateLimit enables a per-client-IP budget on the
 // unauthenticated POST /api/v1/auth/reset-password and
 // POST /api/v1/invites/accept routes. perMinute <= 0 disables it.

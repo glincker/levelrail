@@ -317,5 +317,6 @@ func (rt *Router) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rt.sessions.revokeAll(id)
+	rt.revokeTrustedDevices(r.Context(), r, anonymousSignIn(id), id, "user_deleted")
 	w.WriteHeader(http.StatusNoContent)
 }

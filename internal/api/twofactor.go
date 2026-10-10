@@ -91,4 +91,7 @@ type twoFactorVerifyRequest struct {
 	MFAToken     string `json:"mfa_token"`
 	Code         string `json:"code"`
 	RecoveryCode string `json:"recovery_code"`
+	// RememberDevice is the opt-in "remember this browser" box; unchecked,
+	// a two-factor sign-in never marks the browser as trusted.
+	RememberDevice bool `json:"remember_device,omitempty"`
 }

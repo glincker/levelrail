@@ -30,6 +30,16 @@ func runAuth(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAuthTwoFactor(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "session-link":
 		return runAuthSessionLink(prog, args[1:], stdout, stderr, lookupEnv)
+	case "code":
+		return runAuthCode(prog, args[1:], stdout, stderr, lookupEnv)
+	case "approve":
+		return runAuthDecide(prog, args[1:], true, stdout, stderr, lookupEnv)
+	case "deny":
+		return runAuthDecide(prog, args[1:], false, stdout, stderr, lookupEnv)
+	case "devices":
+		return runAuthDevices(prog, args[1:], stdout, stderr, lookupEnv)
+	case "code-login":
+		return runAuthCodeLogin(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown auth subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, authUsage(prog))
@@ -43,6 +53,11 @@ func authUsage(prog string) string {
   %[1]s auth whoami [flags]          show who the current token authenticates as
   %[1]s auth 2fa <verb>              manage this account's own two-factor authentication
   %[1]s auth session-link [flags]    mint a short-lived, single-use login link
+  %[1]s auth code [flags]            show sign-in codes and new-browser sign-ins waiting for you
+  %[1]s auth approve <id>            approve a new-browser sign-in
+  %[1]s auth deny <id>               deny a new-browser sign-in
+  %[1]s auth devices [revoke <id>]   list or revoke browsers trusted for password sign-in
+  %[1]s auth code-login [flags]      show or change the auth.code_login setting
 
 Run "%[1]s auth <subcommand> -h" for a subcommand's own flags.
 `, prog)

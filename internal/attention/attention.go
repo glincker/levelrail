@@ -78,6 +78,8 @@ const (
 	KindDataCopy            = "data_copy"
 	KindBackupOverdue       = "backup_overdue"
 	KindInvites             = "invites"
+	KindLoginCode           = "login_code"
+	KindLoginApproval       = "login_approval"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

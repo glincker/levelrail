@@ -33,12 +33,24 @@ const (
 	AbilityWriteSensitive = "write:sensitive"
 	AbilityDeploy         = "deploy"
 	AbilityRoot           = "root"
+	// AbilitySignInApprove lets a token reveal its owner's sign-in codes and
+	// decide new-browser approvals. Root never implies it.
+	AbilitySignInApprove = "signin:approve"
 )
 
 // validAbilities is every ability a token may be minted with, used to
 // reject an unrecognized string at creation time rather than silently
 // storing (and never matching) a typo.
 var validAbilities = []string{AbilityRead, AbilityReadSensitive, AbilityWrite, AbilityWriteSensitive, AbilityDeploy, AbilityRoot}
+
+// validTokenAbilities adds the token-only abilities a user or role never holds.
+var validTokenAbilities = append(slices.Clone(validAbilities), AbilitySignInApprove)
+
+// hasSignInApprove reports whether abilities literally carry
+// AbilitySignInApprove, never by way of root or write:sensitive.
+func hasSignInApprove(abilities []string) bool {
+	return slices.Contains(abilities, AbilitySignInApprove)
+}
 
 // hasAbility reports whether abilities grants required: either directly,
 // or via AbilityRoot, which implies everything. requireAbility (auth.go)
@@ -54,6 +66,15 @@ func hasAbility(abilities []string, required string) bool {
 // rule: selecting root clears every other ability, root is exclusive,
 // not additive).
 func validateAbilities(abilities []string) error {
+	return validateAbilitiesIn(abilities, validAbilities)
+}
+
+// validateTokenAbilities is validateAbilities for an API token mint.
+func validateTokenAbilities(abilities []string) error {
+	return validateAbilitiesIn(abilities, validTokenAbilities)
+}
+
+func validateAbilitiesIn(abilities, valid []string) error {
 	if len(abilities) == 0 {
 		return errAbilityRequired
 	}
@@ -61,7 +82,7 @@ func validateAbilities(abilities []string) error {
 		return errRootExclusive
 	}
 	for _, a := range abilities {
-		if !slices.Contains(validAbilities, a) {
+		if !slices.Contains(valid, a) {
 			return &unknownAbilityError{ability: a}
 		}
 	}

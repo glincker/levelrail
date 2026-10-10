@@ -118,7 +118,52 @@ type loginRequest struct {
 
 // loginResponse mirrors internal/api's loginResponse.
 type loginResponse struct {
-	Username string `json:"username"`
+	Username         string `json:"username"`
+	ApprovalRequired bool   `json:"approval_required,omitempty"`
+	ApprovalID       string `json:"approval_id,omitempty"`
+	ApprovalMatch    int    `json:"approval_match,omitempty"`
+}
+
+// approvalPollInterval is how often a paused login checks for a decision.
+var approvalPollInterval = 3 * time.Second
+
+type approvalPollResponse struct {
+	Status      string `json:"status"`
+	Username    string `json:"username"`
+	MFARequired bool   `json:"mfa_required"`
+}
+
+// awaitApproval waits for another session of the account to approve this
+// new sign-in; the poll carries the approval cookie the login response set.
+func (c *authSessionClient) awaitApproval(ctx context.Context, prog, id string, match int, stderr io.Writer) (loginResponse, error) {
+	_, _ = fmt.Fprintf(stderr, "This sign-in comes from a new device. Approve request %s in a dashboard where you are signed in and pick the number %d, or run \"%s auth approve %s --match %d\" with a token that holds signin:approve. Waiting...\n",
+		id, match, prog, id, match)
+	t := time.NewTicker(approvalPollInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return loginResponse{}, ctx.Err()
+		case <-t.C:
+		}
+		var poll approvalPollResponse
+		if err := c.do(ctx, http.MethodPost, "/api/v1/auth/login-approval/poll", struct{}{}, &poll); err != nil {
+			return loginResponse{}, err
+		}
+		switch poll.Status {
+		case "pending":
+			continue
+		case "approved":
+			if poll.MFARequired {
+				return loginResponse{}, &apiError{StatusCode: http.StatusUnauthorized, Message: "approved, but two-factor authentication is on: use " + prog + " auth login --device"}
+			}
+			return loginResponse{Username: poll.Username}, nil
+		case "denied":
+			return loginResponse{}, &apiError{StatusCode: http.StatusUnauthorized, Message: "the sign-in was denied from another session"}
+		default:
+			return loginResponse{}, &apiError{StatusCode: http.StatusUnauthorized, Message: "nobody approved the sign-in in time"}
+		}
+	}
 }
 
 // Login calls POST /api/v1/auth/login. On success, this client's cookie

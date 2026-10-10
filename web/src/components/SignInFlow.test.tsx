@@ -124,14 +124,20 @@ describe('SignInFlow', () => {
   it('does not call the passkey endpoint when the browser has no WebAuthn support', async () => {
     // jsdom has no WebAuthn implementation by default, this is the real baseline.
     delete (window as { PublicKeyCredential?: unknown }).PublicKeyCredential
-    const fetchSpy = vi.fn(() => Promise.resolve(json({}, 404)))
-    vi.stubGlobal('fetch', fetchSpy)
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        urls.push(url)
+        return Promise.resolve(json({}, 404))
+      }),
+    )
     const user = userEvent.setup()
     renderFlow('carol')
     await user.click(screen.getByRole('button', { name: 'Continue' }))
     await waitFor(() => {
       expect(screen.getByLabelText('Password')).toBeInTheDocument()
     })
-    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(urls.filter((u) => u.includes('passkey'))).toHaveLength(0)
   })
 })

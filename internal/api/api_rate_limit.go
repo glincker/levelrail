@@ -26,43 +26,130 @@ type apiRateLimitBucket struct {
 type apiRateLimiter struct {
 	mu            sync.Mutex
 	buckets       map[string]*apiRateLimitBucket
-	ratePerMinute float64
+	ratePerMinute float64 // capacity per window; the name predates window
+	window        time.Duration
+	maxKeys       int
+	now           func() time.Time
+	lastSweep     time.Time
 }
+
+// defaultLimiterMaxKeys caps one limiter's memory when a flood of distinct
+// keys arrives faster than idle buckets age out.
+const defaultLimiterMaxKeys = 50_000
 
 // newAPIRateLimiter builds an apiRateLimiter. ratePerMinute <= 0 means
 // "no limit", so callers can construct one unconditionally and let allow
 // always report true rather than branching on it being absent.
 func newAPIRateLimiter(ratePerMinute int) *apiRateLimiter {
-	return &apiRateLimiter{buckets: make(map[string]*apiRateLimitBucket), ratePerMinute: float64(ratePerMinute)}
+	return newWindowRateLimiter(ratePerMinute, time.Minute)
+}
+
+// newWindowRateLimiter allows capacity requests per window per key.
+func newWindowRateLimiter(capacity int, window time.Duration) *apiRateLimiter {
+	return &apiRateLimiter{buckets: make(map[string]*apiRateLimitBucket), ratePerMinute: float64(capacity),
+		window: window, maxKeys: defaultLimiterMaxKeys, now: time.Now}
 }
 
 // allow reports whether key may proceed right now, and if not, how long
 // until its next token is available.
 func (l *apiRateLimiter) allow(key string) (ok bool, retryAfter time.Duration) {
+	if ok, retry := l.peek(key); !ok {
+		return false, retry
+	}
+	l.spend(key)
+	return true, 0
+}
+
+// peek reports what allow would answer without spending a token.
+func (l *apiRateLimiter) peek(key string) (ok bool, retryAfter time.Duration) {
 	if l.ratePerMinute <= 0 {
 		return true, 0
 	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
-
-	now := time.Now()
-	b, exists := l.buckets[key]
-	if !exists {
-		l.buckets[key] = &apiRateLimitBucket{tokens: l.ratePerMinute - 1, lastRefill: now}
+	b := l.refilled(key, l.now())
+	if b == nil || b.tokens >= 1 {
 		return true, 0
 	}
+	return false, time.Duration((1 - b.tokens) / l.ratePerMinute * float64(l.window))
+}
 
-	b.tokens += now.Sub(b.lastRefill).Minutes() * l.ratePerMinute
+// spend takes one token from key. A race between peek and spend can push
+// a bucket below zero, which only lengthens its own wait.
+func (l *apiRateLimiter) spend(key string) {
+	if l.ratePerMinute <= 0 {
+		return
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	now := l.now()
+	b := l.refilled(key, now)
+	if b == nil {
+		l.sweep(now)
+		b = &apiRateLimitBucket{tokens: l.ratePerMinute, lastRefill: now}
+		l.buckets[key] = b
+	}
+	b.tokens--
+}
+
+// refilled returns key's bucket topped up to now, or nil for a key with
+// no bucket (which reads as full). Callers hold l.mu.
+func (l *apiRateLimiter) refilled(key string, now time.Time) *apiRateLimitBucket {
+	b, ok := l.buckets[key]
+	if !ok {
+		return nil
+	}
+	b.tokens += float64(now.Sub(b.lastRefill)) / float64(l.window) * l.ratePerMinute
 	if b.tokens > l.ratePerMinute {
 		b.tokens = l.ratePerMinute
 	}
 	b.lastRefill = now
+	return b
+}
 
-	if b.tokens < 1 {
-		wait := time.Duration((1 - b.tokens) / l.ratePerMinute * float64(time.Minute))
-		return false, wait
+// sweep drops buckets idle for a full window (they are full again, the same
+// as absent) and, past maxKeys, arbitrary ones. Callers hold l.mu.
+func (l *apiRateLimiter) sweep(now time.Time) {
+	if now.Sub(l.lastSweep) >= l.window || len(l.buckets) >= l.maxKeys {
+		for k, b := range l.buckets {
+			if now.Sub(b.lastRefill) >= l.window {
+				delete(l.buckets, k)
+			}
+		}
+		l.lastSweep = now
 	}
-	b.tokens--
+	for k := range l.buckets {
+		if len(l.buckets) < l.maxKeys {
+			break
+		}
+		delete(l.buckets, k)
+	}
+}
+
+// keyCount reports how many buckets the limiter holds.
+func (l *apiRateLimiter) keyCount() int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return len(l.buckets)
+}
+
+// limiterCheck is one budget a request must fit.
+type limiterCheck struct {
+	l   *apiRateLimiter
+	key string
+}
+
+// allowAll admits a request only when every budget has room, and spends
+// from all of them only then, so a rejection by one never drains another.
+func allowAll(checks ...limiterCheck) (ok bool, retryAfter time.Duration) {
+	for _, c := range checks {
+		if ok, retry := c.l.peek(c.key); !ok {
+			return false, retry
+		}
+	}
+	for _, c := range checks {
+		c.l.spend(c.key)
+	}
 	return true, 0
 }
 
