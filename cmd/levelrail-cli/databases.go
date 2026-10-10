@@ -65,6 +65,12 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesClearNode(prog, rest, stdout, stderr, lookupEnv)
 	case "public-access":
 		return runDatabasesPublicAccess(prog, rest, stdout, stderr, lookupEnv)
+	case "users":
+		return runDatabasesUsers(prog, rest, stdout, stderr, lookupEnv)
+	case "access":
+		return runDatabasesAccess(prog, rest, stdout, stderr, lookupEnv)
+	case "network":
+		return runDatabasesNetwork(prog, rest, stdout, stderr, lookupEnv)
 	case "set-resources":
 		return runDatabasesSetResources(prog, rest, stdout, stderr, lookupEnv)
 	case "set-version":
@@ -110,6 +116,9 @@ func databasesUsage(prog string) string {
   %[1]s databases clear-node <name> [flags]  move a database back to the local node
   %[1]s databases public-access set <name> [flags]    expose a database on a host port
   %[1]s databases public-access clear <name> [flags]  return a database to internal-network-only
+  %[1]s databases users list|create|rotate|disable|enable|delete <name> ...  manage database logins
+  %[1]s databases access temp|list|revoke|who|grant <name> ...  temporary credentials and who can access
+  %[1]s databases network show|allow|deny|make-private|scope|tls <name> ...  reachability, allowed sources, scope, TLS
   %[1]s databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]  apply memory/CPU limits
   %[1]s databases set-version <name> <version> [flags]  minor or patch image change, same data
   %[1]s databases major-upgrade <name> --version V [flags]  guarded Postgres major upgrade with rollback snapshot

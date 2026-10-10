@@ -13,6 +13,8 @@ const (
 	LabelSourceID       = "import/source-id"
 	LabelSourcePlatform = "import/source-platform"
 	LabelSourceName     = "import/source-name"
+	// LabelSession ties a staged app to the guided import session that created it.
+	LabelSession = "import/session"
 )
 
 // Item statuses in a Report.

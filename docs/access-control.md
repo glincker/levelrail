@@ -148,6 +148,25 @@ levelrail-cli audit-log --client-kind cli --method POST
 levelrail-cli audit-log --format csv --output-file audit-export.csv
 ```
 
+## Build, test and review policies
+
+Open **Settings, IAM policies** for the policy workspace. How the evaluator works is written down in [IAM design notes](iam-design.md).
+
+- **Guided builder.** Pick Allow or Deny, choose abilities from a grouped list with a plain description and a risk hint, then choose resources by picker: everything, a project (expanded to its environments), an environment, an environment kind, one app, one database or a name pattern. Each choice shows how many apps and databases it matches today. The stored JSON is shown beside the rules and is only editable behind the **Edit JSON** switch. Errors point at the field path.
+- **Templates with parameters.** Read only, guest in one environment, deployer for non-production, operator of one app, owner of one database and deployer for one project. You pick the app, database, environment or project instead of typing an ID.
+- **Simulator.** Ask whether a user or token can do an ability on a resource. The answer comes from the same evaluator that guards requests and lists the deciding statement and every statement that matched. The same check runs from the CLI and the read-only MCP tools.
+- **Who has access.** Start from a user or token: its abilities, attached policies and what it can do on every app and database. Attach or detach with a preview of the access that changes, in bulk for tokens.
+- **Analyzer.** Static checks with a severity and a one line fix: allow everything, wildcard or root abilities, sensitive abilities on every resource, a Deny that can never match, unattached policies, tokens holding root, attachments to a missing user or token, shadowed or overlapping statements and keys the evaluator ignores.
+- **Safe changes.** Every saved document is kept as a version with a rule diff. A change that would leave no operational root principal is refused.
+
+Conditions such as source IP, time window and MFA are not part of the evaluator yet, so the builder does not offer them. Scope by environment with resources instead.
+
+```bash
+levelrail-cli iam simulate --principal token:TOKEN_ID --action deploy --resource app:web
+levelrail-cli iam effective --principal user:USER_ID
+levelrail-cli iam analyze --json
+```
+
 ## API
 
 | Method | Path | Ability |
@@ -161,6 +180,17 @@ levelrail-cli audit-log --format csv --output-file audit-export.csv
 | `PUT` | `/api/v1/users/{id}/environment-grants` | `root` |
 | `GET` | `/api/v1/iam/policy-templates` | `read` |
 | `POST` | `/api/v1/iam/policy-templates/{id}/apply` | `root` |
+| `POST` | `/api/v1/iam/policy-templates/{id}/render` | `read` |
+| `GET` | `/api/v1/iam/catalog` | `read` |
+| `GET` | `/api/v1/iam/resources` | `read` |
+| `POST` | `/api/v1/iam/resources/match` | `read` |
+| `GET` | `/api/v1/iam/principals` | `read` |
+| `GET` | `/api/v1/iam/principals/{type}/{id}/effective` | `read` |
+| `GET` | `/api/v1/iam/simulate` | `read` |
+| `GET` | `/api/v1/iam/analyze` | `read` |
+| `POST` | `/api/v1/iam/policies/validate` | `read` |
+| `POST` | `/api/v1/iam/preview` | `read` |
+| `GET` | `/api/v1/iam/policies/{id}/versions` | `read` |
 
 Role bodies are `{"name", "description", "abilities", "visibility"}`. Grants are `{"environment_ids": []}`.
 

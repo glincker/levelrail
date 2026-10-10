@@ -123,6 +123,7 @@ func (rt *Router) handleCreatePolicy(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: create policy: save failed", err)
 		return
 	}
+	rt.recordPolicyVersion(r, rec)
 	writeJSON(w, http.StatusCreated, toPolicyResource(rec))
 }
 
@@ -172,6 +173,9 @@ func (rt *Router) handleUpdatePolicy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if rt.enforceRootGuard(w, r, previewRequest{PolicyID: id, Document: req.Document}) {
+		return
+	}
 	err := rt.policies.UpdatePolicy(r.Context(), id, req.Name, req.Description, string(req.Document))
 	if errors.Is(err, store.ErrPolicyNotFound) {
 		writeError(w, http.StatusNotFound, errPolicyNotFound)
@@ -191,6 +195,7 @@ func (rt *Router) handleUpdatePolicy(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: reload policy after update failed", err, slog.String("policy_id", id))
 		return
 	}
+	rt.recordPolicyVersion(r, *rec)
 	writeJSON(w, http.StatusOK, toPolicyResource(*rec))
 }
 
@@ -235,6 +240,10 @@ func (rt *Router) handleAttachPolicy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ref := principalRef{Type: req.PrincipalType, ID: req.PrincipalID}
+	if rt.enforceRootGuard(w, r, previewRequest{PolicyID: policyID, Attach: []principalRef{ref}}) {
+		return
+	}
 	id, err := store.NewPolicyAttachmentID()
 	if err != nil {
 		rt.internalError(w, "api: attach policy: generate id failed", err)

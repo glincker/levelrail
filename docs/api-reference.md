@@ -61,7 +61,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 80 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 91 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -153,6 +153,17 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
+| GET | /api/v1/iam/catalog | AbilityRead | handleIAMCatalog |
+| GET | /api/v1/iam/resources | AbilityRead | handleIAMResources |
+| POST | /api/v1/iam/resources/match | AbilityRead | handleIAMMatch |
+| GET | /api/v1/iam/principals | AbilityRead | handleIAMPrincipals |
+| GET | /api/v1/iam/principals/{principal_type}/{principal_id}/effective | AbilityRead | handleIAMEffective |
+| GET | /api/v1/iam/simulate | AbilityRead | handleIAMSimulate |
+| GET | /api/v1/iam/analyze | AbilityRead | handleIAMAnalyze |
+| POST | /api/v1/iam/policies/validate | AbilityRead | handleValidatePolicy |
+| POST | /api/v1/iam/preview | AbilityRead | handleIAMPreview |
+| GET | /api/v1/iam/policies/{id}/versions | AbilityRead | handleListPolicyVersions |
+| POST | /api/v1/iam/policy-templates/{id}/render | AbilityRead | handleRenderPolicyTemplate |
 
 :::
 
@@ -454,6 +465,25 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleListDatabaseSavedQueries |
 | POST | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleSaveDatabaseQuery |
 | DELETE | /api/v1/databases/{name}/saved-queries/{id} | AbilityReadSensitive | handleDeleteDatabaseSavedQuery |
+| GET | /api/v1/databases/{name}/users | AbilityReadSensitive | handleListDatabaseUsers |
+| POST | /api/v1/databases/{name}/users | AbilityRoot | handleCreateDatabaseUser |
+| POST | /api/v1/databases/{name}/users/{role}/rotate | AbilityRoot | handleRotateDatabaseUser |
+| POST | /api/v1/databases/{name}/users/{role}/disable | AbilityRoot | handleDisableDatabaseUser |
+| POST | /api/v1/databases/{name}/users/{role}/enable | AbilityRoot | handleEnableDatabaseUser |
+| DELETE | /api/v1/databases/{name}/users/{role} | AbilityRoot | handleDeleteDatabaseUser |
+| GET | /api/v1/databases/{name}/access/temp | AbilityReadSensitive | handleListDatabaseTempCredentials |
+| POST | /api/v1/databases/{name}/access/temp | AbilityRoot | handleIssueDatabaseTempCredential |
+| DELETE | /api/v1/databases/{name}/access/temp/{id} | AbilityRoot | handleRevokeDatabaseTempCredential |
+| GET | /api/v1/databases/{name}/access/principals | AbilityReadSensitive | handleDatabaseWhoCanAccess |
+| POST | /api/v1/databases/{name}/access/grants | AbilityRoot | handleGrantDatabaseAccess |
+| DELETE | /api/v1/databases/{name}/access/grants/{policy_id}/{principal_type}/{principal_id} | AbilityRoot | handleRevokeDatabaseGrant |
+| GET | /api/v1/databases/{name}/network | AbilityRead | handleGetDatabaseNetwork |
+| POST | /api/v1/databases/{name}/network/rules/preview | AbilityRoot | handlePreviewDatabaseRules |
+| PUT | /api/v1/databases/{name}/network/rules | AbilityRoot | handleApplyDatabaseRules |
+| DELETE | /api/v1/databases/{name}/network/rules | AbilityRoot | handleRemoveDatabaseRules |
+| POST | /api/v1/databases/{name}/network/make-private | AbilityRoot | handleMakeDatabasePrivate |
+| PUT | /api/v1/databases/{name}/network/scope | AbilityRoot | handleSetDatabaseScope |
+| PUT | /api/v1/databases/{name}/network/tls | AbilityRoot | handleSetDatabaseTLS |
 | GET | /api/v1/databases/{name}/tables/{schema}/{table}/structure | AbilityReadSensitive | handleGetDatabaseTableStructure |
 
 ## Projects / Organizations / Environments
@@ -945,9 +975,22 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/cutover/verify | AbilityWriteSensitive | handleCutoverVerify |
 | GET | /api/v1/ingress/connectivity | AbilityRead | handleIngressConnectivity |
 | GET | /api/v1/firewall/exposure | AbilityRead | handleExposureReport |
-| POST | /api/v1/firewall/exposure/preview | AbilityRead | handleExposurePreview |
+| POST | /api/v1/firewall/exposure/preview | AbilityRoot | handleExposurePreview |
 | PUT | /api/v1/firewall/exposure/restrictions/{protocol}/{port} | AbilityRoot | handleExposureRestrict |
 | DELETE | /api/v1/firewall/exposure/restrictions/{protocol}/{port} | AbilityRoot | handleExposureUnrestrict |
+| GET | /api/v1/attention/feed | AbilityRead | handleAttentionFeed |
+| POST | /api/v1/attention/dismiss | Session | handleAttentionDismiss |
+| GET | /api/v1/external-databases | AbilityRead | handleListExternalDatabases |
+| POST | /api/v1/external-databases | AbilityRoot | handleCreateExternalDatabase |
+| POST | /api/v1/external-databases/test | AbilityRoot | handleTestExternalDatabase |
+| GET | /api/v1/external-databases/candidates | AbilityRoot | handleListExternalDatabaseCandidates |
+| POST | /api/v1/external-databases/adopt | AbilityRoot | handleAdoptExternalDatabase |
+| GET | /api/v1/external-databases/{name} | AbilityRead | handleGetExternalDatabase |
+| PUT | /api/v1/external-databases/{name} | AbilityRoot | handleUpdateExternalDatabase |
+| DELETE | /api/v1/external-databases/{name} | AbilityWrite | handleDeleteExternalDatabase |
+| POST | /api/v1/external-databases/{name}/probe | AbilityWrite | handleProbeExternalDatabase |
+| GET | /api/v1/external-databases/{name}/password | AbilityRoot | handleRevealExternalDatabasePassword |
+| GET | /api/v1/usage/summary | AbilityRead | handleUsageSummary |
 | GET | /api/v1/migration/hub/local-sources | AbilityRead | handleHubLocalSources |
 | POST | /api/v1/migration/hub/sessions | AbilityWriteSensitive | handleCreateHubSession |
 | GET | /api/v1/migration/hub/sessions | AbilityRead | handleListHubSessions |
@@ -959,19 +1002,6 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/hub/sessions/{id}/receipt | AbilityRead | handleHubReceipt |
 | GET | /api/v1/migration/hub/sessions/{id}/items/{db}/connection | AbilityRead | handleHubConnection |
 | POST | /api/v1/migration/hub/sessions/{id}/items/{db}/reveal | AbilityReadSensitive | handleHubReveal |
-| GET | /api/v1/external-databases | AbilityRead | handleListExternalDatabases |
-| POST | /api/v1/external-databases | AbilityRoot | handleCreateExternalDatabase |
-| POST | /api/v1/external-databases/test | AbilityRoot | handleTestExternalDatabase |
-| GET | /api/v1/external-databases/candidates | AbilityRoot | handleListExternalDatabaseCandidates |
-| POST | /api/v1/external-databases/adopt | AbilityRoot | handleAdoptExternalDatabase |
-| GET | /api/v1/external-databases/{name} | AbilityRead | handleGetExternalDatabase |
-| PUT | /api/v1/external-databases/{name} | AbilityRoot | handleUpdateExternalDatabase |
-| DELETE | /api/v1/external-databases/{name} | AbilityWrite | handleDeleteExternalDatabase |
-| POST | /api/v1/external-databases/{name}/probe | AbilityWrite | handleProbeExternalDatabase |
-| GET | /api/v1/external-databases/{name}/password | AbilityRoot | handleRevealExternalDatabasePassword |
-| GET | /api/v1/attention/feed | AbilityRead | handleAttentionFeed |
-| POST | /api/v1/attention/dismiss | Session | handleAttentionDismiss |
-| GET | /api/v1/usage/summary | AbilityRead | handleUsageSummary |
 
 ## See also
 
