@@ -15,6 +15,7 @@
 // CreateDatabaseRequest's own doc comment (queries/databases.ts).
 
 import type { AppStatusSummary, ServiceResources } from './appDetail'
+import type { ExternalDatabase } from './externalDatabase'
 export type { ServiceResources } from './appDetail'
 
 export type DatabaseEngine = 'postgres' | 'redis' | 'mysql'
@@ -81,6 +82,9 @@ export interface DatabaseResource {
   // activates automatically at database-creation time, not through an
   // operator toggle.
   tls_enabled?: boolean
+  // external: present only for a database Levelrail connects to but does
+  // not run (internal/api/external_databases.go).
+  external?: ExternalDatabase
 }
 
 // GET /api/v1/databases' own wire shape (internal/api/databases.go's

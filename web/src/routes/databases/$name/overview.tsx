@@ -9,6 +9,7 @@ import { PointInTimeRestoreSection } from '../../../components/PointInTimeRestor
 import { MajorUpgradeCard } from '../../../components/MajorUpgradeCard'
 import { DatabasePublicAccessCard } from '../../../components/DatabasePublicAccessCard'
 import { useProjectListOptional } from '../../../queries/projects'
+import { ExternalDatabaseOverview } from '../../../components/ExternalDatabaseOverview'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
@@ -40,6 +41,10 @@ function OverviewSection() {
   const projectName = projectList.data?.find(
     (p) => p.id === database.project_id,
   )?.name
+
+  if (database.external) {
+    return <ExternalDatabaseOverview db={database.external} />
+  }
 
   return (
     <div className="space-y-6">

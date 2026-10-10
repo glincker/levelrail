@@ -131,6 +131,7 @@ var toolTable = map[string]Meta{
 	"unset_app_env":                         {clsM, "apps", sens},
 	"list_databases":                        {clsR, "databases", 0},
 	"get_database":                          {clsR, "databases", 0},
+	"list_external_databases":               {clsR, "databases", 0},
 	"list_database_engines":                 {clsR, "databases", 0},
 	"get_database_resource_recommendation":  {clsR, "metrics", 0},
 	"get_resource_recommendation":           {clsR, "metrics", 0},

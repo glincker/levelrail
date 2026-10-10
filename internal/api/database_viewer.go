@@ -18,6 +18,9 @@ func (rt *Router) viewerTarget(w http.ResponseWriter, r *http.Request, wantKV bo
 	name := r.PathValue("name")
 	desired, err := rt.databases.GetDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
+		if t, d, found, ok := rt.externalViewerTarget(w, r, name, wantKV); found {
+			return t, d, ok
+		}
 		writeError(w, http.StatusNotFound, "database not found")
 		return dbviewer.Target{}, desired, false
 	}

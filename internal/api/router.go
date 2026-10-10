@@ -437,6 +437,7 @@ type Router struct {
 	dataImports                  DataImportStore                  // always set, live data copy status
 	migrationHub                 MigrationHubStore                // always set, server migration hub sessions
 	hubState                     *hubState                        // in-memory source passwords and running sessions
+	externalDatabases            ExternalDatabaseStore            // always set, databases connected but not run
 	dnsResolver                  datamigrate.Resolver             // nil means the real resolver
 	wakeToken                    string                           // empty disables the wake hook
 	canaries                     CanaryStore                      // always set, in-flight canary releases
@@ -662,6 +663,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		dataImports:                 s,
 		migrationHub:                s,
 		hubState:                    newHubState(),
+		externalDatabases:           s,
 		canaries:                    s,
 		dbQueries:                   s,
 		resolveBranchSHA:            resolveRemoteBranchSHA,

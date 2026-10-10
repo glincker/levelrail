@@ -673,4 +673,17 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// Placement, the database counterpart to
 	// PUT /apps/{name}/node above: same AbilityRoot gating.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/node", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleSetDatabaseNode))
+
+	// External databases: connected, never run, by this platform. Anything
+	// that dials out or reveals a credential is admin only.
+	mux.HandleFunc("GET /api/v1/external-databases", rt.requireAbility(AbilityRead, rt.handleListExternalDatabases))
+	mux.HandleFunc("POST /api/v1/external-databases", rt.requireAbility(AbilityRoot, rt.handleCreateExternalDatabase))
+	mux.HandleFunc("POST /api/v1/external-databases/test", rt.requireAbility(AbilityRoot, rt.handleTestExternalDatabase))
+	mux.HandleFunc("GET /api/v1/external-databases/candidates", rt.requireAbility(AbilityRoot, rt.handleListExternalDatabaseCandidates))
+	mux.HandleFunc("POST /api/v1/external-databases/adopt", rt.requireAbility(AbilityRoot, rt.handleAdoptExternalDatabase))
+	mux.HandleFunc("GET /api/v1/external-databases/{name}", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetExternalDatabase))
+	mux.HandleFunc("PUT /api/v1/external-databases/{name}", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleUpdateExternalDatabase))
+	mux.HandleFunc("DELETE /api/v1/external-databases/{name}", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleDeleteExternalDatabase))
+	mux.HandleFunc("POST /api/v1/external-databases/{name}/probe", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleProbeExternalDatabase))
+	mux.HandleFunc("GET /api/v1/external-databases/{name}/password", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleRevealExternalDatabasePassword))
 }

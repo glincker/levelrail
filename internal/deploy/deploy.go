@@ -15,6 +15,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/extdb"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -443,6 +444,18 @@ func (p *Pipeline) validateEnv(ctx context.Context, serviceName string, env map[
 			dbName, field, err := parseFromRef(v.From)
 			if err != nil {
 				return fmt.Errorf("env var %q: %w", name, err)
+			}
+			if ext, ok := p.store.(externalDatabaseGetter); ok {
+				rec, eerr := ext.GetExternalDatabase(ctx, dbName)
+				if eerr == nil {
+					if !extdb.SupportsField(rec.Engine, field) {
+						return fmt.Errorf("env var %q: field %q is not supported for %s databases", name, field, rec.Engine)
+					}
+					continue
+				}
+				if !errors.Is(eerr, store.ErrExternalDatabaseNotFound) {
+					return fmt.Errorf("env var %q: check external database %q exists: %w", name, dbName, eerr)
+				}
 			}
 			desiredDB, err := p.store.GetDesiredDatabase(ctx, dbName)
 			if errors.Is(err, store.ErrDatabaseNotFound) {

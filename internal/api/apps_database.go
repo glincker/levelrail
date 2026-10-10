@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -86,7 +85,7 @@ func (rt *Router) handleSetAppDatabase(w http.ResponseWriter, r *http.Request) {
 		field = defaultDatabaseAttachmentField
 	}
 
-	desiredDB, err := rt.databases.GetDesiredDatabase(r.Context(), req.DatabaseName)
+	desiredDB, external, err := rt.lookupAppDatabase(r.Context(), req.DatabaseName)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusBadRequest, "unknown database_name")
 		return
@@ -95,7 +94,7 @@ func (rt *Router) handleSetAppDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	if !database.SupportsField(desiredDB.Engine, field) {
+	if !databaseFieldSupported(external, desiredDB.Engine, field) {
 		writeError(w, http.StatusBadRequest, "field \""+field+"\" is not supported for "+desiredDB.Engine+" databases")
 		return
 	}

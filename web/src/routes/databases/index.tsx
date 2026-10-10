@@ -11,6 +11,7 @@ import {
   RowSkeleton,
 } from '../../components/DatabaseRow'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
+import { ConnectDatabaseDialog } from '../../components/ConnectDatabaseDialog'
 import { Button } from '../../components/ui/button'
 import { EmptyState } from '../../components/ui/empty-state'
 import { PageHeader } from '../../components/shell/PageHeader'
@@ -72,6 +73,7 @@ function DatabaseListPage() {
                   {databases.length === 1 ? 'database' : 'databases'}
                 </span>
               ) : null}
+              <ConnectDatabaseDialog />
               <CreateResourceWizard
                 scope="databases"
                 trigger={

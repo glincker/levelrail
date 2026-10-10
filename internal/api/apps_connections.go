@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -95,7 +94,7 @@ func (rt *Router) handleCreateAppConnection(w http.ResponseWriter, r *http.Reque
 		field = defaultConnectionFieldRequest
 	}
 
-	desiredDB, err := rt.databases.GetDesiredDatabase(r.Context(), req.Database)
+	desiredDB, external, err := rt.lookupAppDatabase(r.Context(), req.Database)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusBadRequest, "unknown database")
 		return
@@ -104,7 +103,7 @@ func (rt *Router) handleCreateAppConnection(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	if !database.SupportsField(desiredDB.Engine, field) {
+	if !databaseFieldSupported(external, desiredDB.Engine, field) {
 		writeError(w, http.StatusBadRequest, "field \""+field+"\" is not supported for "+desiredDB.Engine+" databases")
 		return
 	}
@@ -134,7 +133,7 @@ func (rt *Router) handleCreateAppConnection(w http.ResponseWriter, r *http.Reque
 	}
 
 	rt.nudgeReconciler()
-	writeJSON(w, http.StatusOK, rt.toAppConnectionResource(envVar, store.DatabaseEnvRef{Database: req.Database, Field: field}, desiredDB, svc.NodeID))
+	writeJSON(w, http.StatusOK, rt.externalizeConnection(r.Context(), rt.toAppConnectionResource(envVar, store.DatabaseEnvRef{Database: req.Database, Field: field}, desiredDB, svc.NodeID), external))
 }
 
 // handleDeleteAppConnection handles DELETE /api/v1/apps/{name}/connections/{env_var}:
@@ -182,7 +181,7 @@ func (rt *Router) handleListAppConnections(w http.ResponseWriter, r *http.Reques
 
 	out := make([]appConnectionResource, 0, len(svc.DatabaseEnv))
 	for envVar, ref := range svc.DatabaseEnv {
-		desiredDB, err := rt.databases.GetDesiredDatabase(r.Context(), ref.Database)
+		desiredDB, external, err := rt.lookupAppDatabase(r.Context(), ref.Database)
 		if errors.Is(err, store.ErrDatabaseNotFound) {
 			continue
 		} else if err != nil {
@@ -190,7 +189,7 @@ func (rt *Router) handleListAppConnections(w http.ResponseWriter, r *http.Reques
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
-		out = append(out, rt.toAppConnectionResource(envVar, ref, desiredDB, svc.NodeID))
+		out = append(out, rt.externalizeConnection(r.Context(), rt.toAppConnectionResource(envVar, ref, desiredDB, svc.NodeID), external))
 	}
 
 	writeJSON(w, http.StatusOK, out)

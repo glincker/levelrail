@@ -23,6 +23,12 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitOK
 	case "create":
 		return runDatabasesCreate(prog, rest, stdout, stderr, lookupEnv, os.Stdin)
+	case "connect":
+		return runDatabasesConnect(prog, rest, os.Stdin, stdout, stderr, lookupEnv)
+	case "adopt":
+		return runDatabasesAdopt(prog, rest, os.Stdin, stdout, stderr, lookupEnv)
+	case "probe":
+		return runDatabasesProbe(prog, rest, stdout, stderr, lookupEnv)
 	case "list":
 		return runDatabasesList(prog, rest, stdout, stderr, lookupEnv)
 	case "get":
@@ -82,6 +88,9 @@ func databasesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s databases create [flags]     create a managed database
   %[1]s databases create --interactive  guided, step-by-step creation
+  %[1]s databases connect --name N --engine E --host H [flags]  connect an existing database where it is, no data moved (--password-stdin, --test)
+  %[1]s databases adopt --container C [--node N] [flags]  adopt a running database container without touching it (--list to browse)
+  %[1]s databases probe <name> [flags]  re-check an external database's connectivity
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
   %[1]s databases status <name> [flags]   show a database's current reconcile conditions

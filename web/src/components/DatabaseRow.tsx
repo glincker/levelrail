@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { CaretRightIcon, DatabaseIcon } from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import type { DatabaseListEntry } from '../types/databaseDetail'
 import { StatusDot } from './AppRow'
@@ -20,6 +21,7 @@ export const DATABASE_LIST_GRID =
 // GET /api/v1/apps status field, computed server-side from one query
 // across every listed database's conditions, no per-row fetch.
 export function DatabaseRow({ database }: { database: DatabaseListEntry }) {
+  const { t } = useTranslation('databases')
   return (
     <Link
       to="/databases/$name"
@@ -33,6 +35,11 @@ export function DatabaseRow({ database }: { database: DatabaseListEntry }) {
       <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
         <StatusDot status={database.status} />
         <span className="truncate">{database.name}</span>
+        {database.external ? (
+          <Badge variant="outline" title={t('external.badgeHint')}>
+            {t('external.badge')}
+          </Badge>
+        ) : null}
       </span>
 
       <span className="min-w-0">
@@ -42,7 +49,9 @@ export function DatabaseRow({ database }: { database: DatabaseListEntry }) {
       </span>
 
       <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
-        {database.version}
+        {database.external
+          ? `${database.external.host}:${database.external.port}`
+          : database.version}
       </span>
 
       <CaretRightIcon
