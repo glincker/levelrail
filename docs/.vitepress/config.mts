@@ -251,6 +251,7 @@ const sidebarGroups = [
       { text: 'Who Levelrail is for', link: '/use-cases' },
       { text: 'White-labeling', link: '/white-labeling' },
       { text: 'Brand kit', link: '/brand' },
+      { text: 'glinr-bot', link: '/glinr-bot' },
     ],
   },
   {
