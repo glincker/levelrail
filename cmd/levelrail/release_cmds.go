@@ -11,10 +11,12 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"os/signal"
 	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
@@ -193,7 +195,12 @@ func runRollback(ctx context.Context, args []string, dataDir string, stdin io.Re
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	healthBase := f.healthURL
 	if healthBase == "" {
-		healthBase = "http://" + dashboardDialAddr(httpAddr())
+		healthBase = "http://" + dashboardDialAddr(serviceHTTPAddr(ctx, name))
+	}
+	// A dropped SSH session must not kill the command between stop and start.
+	signal.Ignore(syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
+	if !f.asJSON {
+		_, _ = fmt.Fprintln(stdout, "Applying. Do not close this session: interrupts are ignored until it finishes.")
 	}
 	own, err := currentVersionInfo()
 	if err != nil {
@@ -215,6 +222,30 @@ func runRollback(ctx context.Context, args []string, dataDir string, stdin io.Re
 		_, _ = fmt.Fprintf(stdout, "%s: %s -> %s (pre-rollback backup %s)\n", res.Outcome, res.From, res.To, res.BackupName)
 	}
 	return err
+}
+
+// serviceHTTPAddr reads APP_HTTP_ADDR from the service's own unit: a sudo shell
+// does not carry it, so the process env alone would probe the default port.
+func serviceHTTPAddr(ctx context.Context, name string) string {
+	if v := os.Getenv("APP_HTTP_ADDR"); v != "" {
+		return v
+	}
+	out, err := exec.CommandContext(ctx, "systemctl", "show", name, "--property=Environment", "--value").Output() //nolint:gosec // name is this executable's own file name
+	if err == nil {
+		if v := envFromSystemctl(string(out), "APP_HTTP_ADDR"); v != "" {
+			return v
+		}
+	}
+	return httpAddr()
+}
+
+func envFromSystemctl(out, key string) string {
+	for _, field := range strings.Fields(out) {
+		if v, ok := strings.CutPrefix(strings.Trim(field, `"`), key+"="); ok {
+			return strings.Trim(v, `"`)
+		}
+	}
+	return ""
 }
 
 func parseRollbackFlags(args []string, stdout io.Writer) (rollbackFlags, error) {

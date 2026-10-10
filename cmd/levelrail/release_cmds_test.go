@@ -49,3 +49,22 @@ func TestParseRollbackFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestEnvFromSystemctl(t *testing.T) {
+	cases := []struct {
+		name, out, key, want string
+	}{
+		{"present", "APP_DATA_DIR=/var/lib/x APP_HTTP_ADDR=127.0.0.1:18080 APP_INGRESS_HTTP_ADDR=:8088\n", "APP_HTTP_ADDR", "127.0.0.1:18080"},
+		{"quoted field", `"APP_HTTP_ADDR=:9090" FOO=bar`, "APP_HTTP_ADDR", ":9090"},
+		{"absent", "FOO=bar BAZ=1", "APP_HTTP_ADDR", ""},
+		{"empty output", "", "APP_HTTP_ADDR", ""},
+		{"prefix is not a match", "XAPP_HTTP_ADDR=:1", "APP_HTTP_ADDR", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := envFromSystemctl(tc.out, tc.key); got != tc.want {
+				t.Fatalf("envFromSystemctl(%q, %q) = %q, want %q", tc.out, tc.key, got, tc.want)
+			}
+		})
+	}
+}
