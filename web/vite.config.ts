@@ -6,6 +6,7 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { docsManifestPlugin } from './vite-plugins/docsManifest.js'
 import { docsAssetsPlugin } from './vite-plugins/docsAssets.js'
+import { precompressPlugin } from './vite-plugins/precompress.js'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -17,6 +18,66 @@ export default defineConfig({
     // CI's web-check job sets BUNDLE_MANIFEST=true right before running
     // that check.
     manifest: process.env.BUNDLE_MANIFEST === 'true',
+    rolldownOptions: {
+      output: {
+        // $initial-tagged groups merge only the first-paint graph; lazy-only
+        // modules keep splitting per route. Per-module chunks cost one round trip each.
+        codeSplitting: {
+          groups: [
+            {
+              name: 'react',
+              test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+              priority: 40,
+            },
+            {
+              name: 'tanstack',
+              test: /node_modules[\\/]@tanstack[\\/]/,
+              tags: ['$initial'],
+              priority: 30,
+            },
+            {
+              name: 'icons',
+              test: /node_modules[\\/]@phosphor-icons[\\/]/,
+              tags: ['$initial'],
+              priority: 30,
+            },
+            {
+              name: 'brand-logos',
+              test: /node_modules[\\/]@thesvg[\\/]/,
+              maxSize: 300_000,
+              priority: 25,
+            },
+            {
+              name: 'icons-lazy',
+              test: /node_modules[\\/]@phosphor-icons[\\/]/,
+              priority: 25,
+            },
+            {
+              name: 'vendor',
+              test: /node_modules[\\/]/,
+              tags: ['$initial'],
+              priority: 20,
+            },
+            {
+              name: 'ui-kit',
+              test: /src[\\/]components[\\/]ui[\\/]/,
+              priority: 12,
+            },
+            {
+              name: 'data',
+              test: /src[\\/](queries|hooks)[\\/]/,
+              priority: 11,
+            },
+            {
+              name: 'shell',
+              test: /src[\\/]/,
+              tags: ['$initial'],
+              priority: 10,
+            },
+          ],
+        },
+      },
+    },
   },
   server: {
     // src/lib/docsContent.ts imports ../../../docs/**/*.md; Vite 8 refuses
@@ -54,6 +115,16 @@ export default defineConfig({
     tanstackRouter({
       target: 'react',
       autoCodeSplitting: true,
+      codeSplittingOptions: {
+        defaultBehavior: [
+          [
+            'component',
+            'pendingComponent',
+            'errorComponent',
+            'notFoundComponent',
+          ],
+        ],
+      },
       routesDirectory: './src/routes',
       generatedRouteTree: './src/routeTree.gen.ts',
     }),
@@ -61,6 +132,7 @@ export default defineConfig({
     tailwindcss(),
     docsManifestPlugin(),
     docsAssetsPlugin(),
+    precompressPlugin(),
     // Emits web/dist/stats.html, a treemap of final chunk sizes. Gated
     // behind ANALYZE so it doesn't run on every plain `npm run build`, only
     // an explicit `ANALYZE=true npm run build`. The actual budget

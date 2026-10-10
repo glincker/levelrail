@@ -7,9 +7,11 @@
 package web
 
 import (
+	"bytes"
 	"io/fs"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/brand"
 )
@@ -32,7 +34,7 @@ func handlerFromFS(embedded fs.FS, b *brand.Brand) http.Handler {
 	// at handler construction time, tells the two cases apart up front.
 	if dist, err := fs.Sub(embedded, "dist"); err == nil {
 		if _, err := fs.Stat(dist, "index.html"); err == nil {
-			return spaHandler{dist: dist, fileServer: http.FileServer(http.FS(dist)), brand: b}
+			return spaHandler{dist: dist, static: &staticFiles{dist: dist}, brand: b}
 		}
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -43,9 +45,9 @@ func handlerFromFS(embedded fs.FS, b *brand.Brand) http.Handler {
 }
 
 type spaHandler struct {
-	dist       fs.FS
-	fileServer http.Handler
-	brand      *brand.Brand
+	dist   fs.FS
+	static *staticFiles
+	brand  *brand.Brand
 }
 
 // ServeHTTP serves a real static asset when the request path matches
@@ -60,11 +62,18 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := strings.TrimPrefix(r.URL.Path, "/")
-	if _, err := fs.Stat(h.dist, name); err != nil || name == "" || name == "index.html" {
+	if name == "" || name == "index.html" || !h.static.exists(name) {
+		// A missing hashed asset must 404, not fall back to HTML: a stale
+		// index.html would otherwise cache a text/html body as a script.
+		if strings.HasPrefix(name, assetsPrefix) {
+			w.Header().Set("Cache-Control", "no-store")
+			http.NotFound(w, r)
+			return
+		}
 		h.serveIndex(w, r)
 		return
 	}
-	h.fileServer.ServeHTTP(w, r)
+	h.static.serve(w, r, name)
 }
 
 func (h spaHandler) serveIndex(w http.ResponseWriter, r *http.Request) {
@@ -73,9 +82,11 @@ func (h spaHandler) serveIndex(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "index.html unavailable", http.StatusInternalServerError)
 		return
 	}
+	body := injectBrandHead(page, h.brand, r)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-cache")
-	_, _ = w.Write(injectBrandHead(page, h.brand, r))
+	w.Header().Set("Cache-Control", cacheRevalidate)
+	w.Header().Set("ETag", bodyETag(body))
+	http.ServeContent(w, r, "index.html", time.Time{}, bytes.NewReader(body))
 }
 
 // dashboardCSP mirrors internal/api's contentSecurityPolicy; img-src also
