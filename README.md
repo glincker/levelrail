@@ -8,6 +8,8 @@
 
 <img src="docs/assets/brand/typing.svg" alt="Push to git. Get a running app. TLS, logs, metrics, and rollback built in. No SSH, no Grafana, no Kubernetes. Self-hosted on your own Linux boxes." width="560" height="40">
 
+<img src="docs/assets/brand/social/github-social-1280x640.jpg" alt="Levelrail: your own Vercel, one binary. Deploys with HTTPS, live logs and rollback." width="720">
+
 <p>
   <a href="https://levelrail.com">Docs</a> ·
   <a href="#install">Install</a> ·
