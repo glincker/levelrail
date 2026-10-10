@@ -35,6 +35,7 @@ const (
 	AuditActionNewDeviceExpire   = AuditActionFamilyNewDevice + ".expired"
 	AuditActionNewDeviceReplace  = AuditActionFamilyNewDevice + ".superseded"
 	AuditActionTrustedDeviceDrop = AuditActionFamilyNewDevice + ".trust_revoked"
+	AuditActionApproverRevoke    = AuditActionFamilyNewDevice + ".approver_tokens_revoked"
 )
 
 // LoginCodeChallenge is one "sign in with a code" request. CodeHash and Salt
@@ -127,6 +128,35 @@ func (db *DB) LockLoginCode(ctx context.Context, id string, now time.Time) (bool
 // usable exactly once.
 func (db *DB) RedeemLoginCode(ctx context.Context, id string, now time.Time) (bool, error) {
 	return db.moveLoginCode(ctx, id, LoginCodeRedeemed, now, true)
+}
+
+// ExpireLoginCode retires a pending challenge early, and reports whether this
+// call did it.
+func (db *DB) ExpireLoginCode(ctx context.Context, id string, now time.Time) (bool, error) {
+	return db.moveLoginCode(ctx, id, LoginCodeExpired, now, false)
+}
+
+// LockLoginCodesForUser locks every pending challenge of userID and returns
+// the ids it moved, so a credential reset leaves no code redeemable.
+func (db *DB) LockLoginCodesForUser(ctx context.Context, userID string, now time.Time) ([]string, error) {
+	if userID == "" {
+		return nil, nil
+	}
+	rows, err := db.QueryContext(ctx, `UPDATE login_code_challenges SET status = ?, resolved_at = ?
+		WHERE user_id = ? AND status = ? RETURNING id`, LoginCodeLocked, FormatAuditTime(now), userID, LoginCodePending)
+	if err != nil {
+		return nil, fmt.Errorf("store: lock login codes: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("store: lock login codes: scan: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
 }
 
 func (db *DB) moveLoginCode(ctx context.Context, id, to string, now time.Time, requireLive bool) (bool, error) {

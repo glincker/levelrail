@@ -216,6 +216,7 @@ func (l *authLibMFA) disable(w http.ResponseWriter, r *http.Request) {
 		l.fail(w, "api: 2fa disable: library delete failed", user.ID, err)
 		return
 	}
+	l.rt.retireSignInRequests(r.Context(), r, user.ID, "totp_disabled")
 	w.WriteHeader(http.StatusNoContent)
 }
 

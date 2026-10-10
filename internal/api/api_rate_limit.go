@@ -1,10 +1,13 @@
 package api
 
 import (
+	"cmp"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -31,7 +34,10 @@ type apiRateLimiter struct {
 	maxKeys       int
 	now           func() time.Time
 	lastSweep     time.Time
+	order         uint64 // fixed lock order for allowAll
 }
+
+var limiterOrder atomic.Uint64
 
 // defaultLimiterMaxKeys caps one limiter's memory when a flood of distinct
 // keys arrives faster than idle buckets age out.
@@ -47,41 +53,39 @@ func newAPIRateLimiter(ratePerMinute int) *apiRateLimiter {
 // newWindowRateLimiter allows capacity requests per window per key.
 func newWindowRateLimiter(capacity int, window time.Duration) *apiRateLimiter {
 	return &apiRateLimiter{buckets: make(map[string]*apiRateLimitBucket), ratePerMinute: float64(capacity),
-		window: window, maxKeys: defaultLimiterMaxKeys, now: time.Now}
+		window: window, maxKeys: defaultLimiterMaxKeys, now: time.Now, order: limiterOrder.Add(1)}
 }
 
 // allow reports whether key may proceed right now, and if not, how long
 // until its next token is available.
 func (l *apiRateLimiter) allow(key string) (ok bool, retryAfter time.Duration) {
-	if ok, retry := l.peek(key); !ok {
+	if l.ratePerMinute <= 0 {
+		return true, 0
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if ok, retry := l.hasLocked(key, 1); !ok {
 		return false, retry
 	}
-	l.spend(key)
+	l.spendLocked(key)
 	return true, 0
 }
 
-// peek reports what allow would answer without spending a token.
-func (l *apiRateLimiter) peek(key string) (ok bool, retryAfter time.Duration) {
-	if l.ratePerMinute <= 0 {
+// hasLocked reports whether key holds n tokens, and if not how long until it
+// will. Callers hold l.mu.
+func (l *apiRateLimiter) hasLocked(key string, n float64) (ok bool, retryAfter time.Duration) {
+	tokens := l.ratePerMinute
+	if b := l.refilled(key, l.now()); b != nil {
+		tokens = b.tokens
+	}
+	if tokens >= n {
 		return true, 0
 	}
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	b := l.refilled(key, l.now())
-	if b == nil || b.tokens >= 1 {
-		return true, 0
-	}
-	return false, time.Duration((1 - b.tokens) / l.ratePerMinute * float64(l.window))
+	return false, time.Duration((n - tokens) / l.ratePerMinute * float64(l.window))
 }
 
-// spend takes one token from key. A race between peek and spend can push
-// a bucket below zero, which only lengthens its own wait.
-func (l *apiRateLimiter) spend(key string) {
-	if l.ratePerMinute <= 0 {
-		return
-	}
-	l.mu.Lock()
-	defer l.mu.Unlock()
+// spendLocked takes one token from key. Callers hold l.mu.
+func (l *apiRateLimiter) spendLocked(key string) {
 	now := l.now()
 	b := l.refilled(key, now)
 	if b == nil {
@@ -141,14 +145,36 @@ type limiterCheck struct {
 
 // allowAll admits a request only when every budget has room, and spends
 // from all of them only then, so a rejection by one never drains another.
+// It holds every limiter's lock throughout, taken in creation order so two
+// calls can never deadlock.
 func allowAll(checks ...limiterCheck) (ok bool, retryAfter time.Duration) {
+	need := make(map[limiterCheck]float64, len(checks))
+	var limiters []*apiRateLimiter
 	for _, c := range checks {
-		if ok, retry := c.l.peek(c.key); !ok {
-			return false, retry
+		if c.l.ratePerMinute <= 0 {
+			continue
+		}
+		if !slices.Contains(limiters, c.l) {
+			limiters = append(limiters, c.l)
+		}
+		need[c]++
+	}
+	slices.SortFunc(limiters, func(a, b *apiRateLimiter) int { return cmp.Compare(a.order, b.order) })
+	for _, l := range limiters {
+		l.mu.Lock()
+		defer l.mu.Unlock()
+	}
+	for _, c := range checks {
+		if n, ok := need[c]; ok {
+			if ok, retry := c.l.hasLocked(c.key, n); !ok {
+				return false, retry
+			}
 		}
 	}
 	for _, c := range checks {
-		c.l.spend(c.key)
+		if c.l.ratePerMinute > 0 {
+			c.l.spendLocked(c.key)
+		}
 	}
 	return true, 0
 }

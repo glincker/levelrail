@@ -22,26 +22,59 @@ const (
 	LoginApprovalSuperseded = "superseded"
 )
 
-// SupersedeLoginApprovals retires every pending approval of userID, so at
-// most one waits per account, and returns the ones this call moved.
+// SupersedeLoginApprovals retires every pending or approved-but-unused
+// approval of userID, so none can still collect a session, and returns the
+// ones this call moved.
 func (db *DB) SupersedeLoginApprovals(ctx context.Context, userID string, now time.Time) ([]LoginApproval, error) {
-	pending, err := db.queryLoginApprovals(ctx, `SELECT `+loginApprovalColumns+` FROM login_approvals
-		WHERE user_id = ? AND status = ?`, userID, LoginApprovalPending)
+	var moved []LoginApproval
+	err := db.inSignInTx(ctx, func(tx *sql.Tx) error {
+		var err error
+		moved, err = supersedeLoginApprovals(ctx, tx, userID, now)
+		return err
+	})
+	return moved, err
+}
+
+// ReplaceLoginApproval supersedes a.UserID's open approvals and inserts a as
+// the new pending one in one transaction, so at most one ever waits.
+func (db *DB) ReplaceLoginApproval(ctx context.Context, a LoginApproval) ([]LoginApproval, error) {
+	var moved []LoginApproval
+	err := db.inSignInTx(ctx, func(tx *sql.Tx) error {
+		var err error
+		if moved, err = supersedeLoginApprovals(ctx, tx, a.UserID, a.CreatedAt); err != nil {
+			return err
+		}
+		return insertLoginApproval(ctx, tx, a)
+	})
+	return moved, err
+}
+
+func (db *DB) inSignInTx(ctx context.Context, fn func(tx *sql.Tx) error) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: begin tx: %w", err)
+	}
+	if err := fn(tx); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: commit tx: %w", err)
+	}
+	return nil
+}
+
+func supersedeLoginApprovals(ctx context.Context, tx *sql.Tx, userID string, now time.Time) ([]LoginApproval, error) {
+	open, err := queryLoginApprovals(ctx, tx, `SELECT `+loginApprovalColumns+` FROM login_approvals
+		WHERE user_id = ? AND status IN (?, ?)`, userID, LoginApprovalPending, LoginApprovalApproved)
 	if err != nil {
 		return nil, err
 	}
-	var moved []LoginApproval
-	for _, a := range pending {
-		res, err := db.ExecContext(ctx, `UPDATE login_approvals SET status = ?, resolved_at = ? WHERE id = ? AND status = ?`,
-			LoginApprovalSuperseded, FormatAuditTime(now), a.ID, LoginApprovalPending)
-		if err != nil {
-			return moved, fmt.Errorf("store: supersede login approval %q: %w", a.ID, err)
-		}
-		if n, _ := res.RowsAffected(); n == 1 {
-			moved = append(moved, a)
-		}
+	if _, err := tx.ExecContext(ctx, `UPDATE login_approvals SET status = ?, resolved_at = ? WHERE user_id = ? AND status IN (?, ?)`,
+		LoginApprovalSuperseded, FormatAuditTime(now), userID, LoginApprovalPending, LoginApprovalApproved); err != nil {
+		return nil, fmt.Errorf("store: supersede login approvals: %w", err)
 	}
-	return moved, nil
+	return open, nil
 }
 
 // LoginApproval is a password sign-in from an unrecognized browser, paused
@@ -73,7 +106,11 @@ func scanLoginApproval(row interface{ Scan(dest ...any) error }) (LoginApproval,
 
 // CreateLoginApproval inserts a pending approval.
 func (db *DB) CreateLoginApproval(ctx context.Context, a LoginApproval) error {
-	_, err := db.ExecContext(ctx, `INSERT INTO login_approvals (`+loginApprovalColumns+`) VALUES (?, ?, ?, ?, ?, ?, '', ?, ?)`,
+	return insertLoginApproval(ctx, db, a)
+}
+
+func insertLoginApproval(ctx context.Context, ex execer, a LoginApproval) error {
+	_, err := ex.ExecContext(ctx, `INSERT INTO login_approvals (`+loginApprovalColumns+`) VALUES (?, ?, ?, ?, ?, ?, '', ?, ?)`,
 		a.ID, a.UserID, a.BrowserHash, a.RequesterIP, a.UserAgent, LoginApprovalPending,
 		FormatAuditTime(a.CreatedAt), FormatAuditTime(a.ExpiresAt))
 	if err != nil {
@@ -152,7 +189,15 @@ func (db *DB) ListPendingLoginApprovalsForUser(ctx context.Context, userID strin
 }
 
 func (db *DB) queryLoginApprovals(ctx context.Context, q string, args ...any) ([]LoginApproval, error) {
-	rows, err := db.QueryContext(ctx, q, args...)
+	return queryLoginApprovals(ctx, db, q, args...)
+}
+
+type rowsQuerier interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
+func queryLoginApprovals(ctx context.Context, q rowsQuerier, query string, args ...any) ([]LoginApproval, error) {
+	rows, err := q.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("store: list login approvals: %w", err)
 	}

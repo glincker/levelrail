@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/mail"
+	"slices"
 	"strings"
 	"time"
 
@@ -46,7 +47,8 @@ func (rt *Router) handleRequestLoginCode(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "username is required")
 		return
 	}
-	if !rt.allowLoginCodeRequest(w, r, username) {
+	owns, allowed := rt.allowLoginCodeRequest(w, r, username)
+	if !allowed {
 		return
 	}
 	ctx := r.Context()
@@ -73,7 +75,7 @@ func (rt *Router) handleRequestLoginCode(w http.ResponseWriter, r *http.Request)
 	}
 	st := rt.codeLogin
 	now := time.Now()
-	eligible, sendEmail := rt.loginCodeCapacity(ctx, user, eligible, now)
+	eligible, sendEmail := rt.loginCodeCapacity(ctx, r, user, eligible, owns, now)
 	c := store.LoginCodeChallenge{
 		ID: id, BrowserHash: hashToken(binding), CodeHash: hashLoginCode(st.pepper, salt, code), Salt: salt,
 		RequesterIP: clientIP(r), UserAgent: browserLabel(r.UserAgent()), CreatedAt: now, ExpiresAt: now.Add(st.ttl),
@@ -87,7 +89,7 @@ func (rt *Router) handleRequestLoginCode(w http.ResponseWriter, r *http.Request)
 	}
 	rt.auditSignIn(ctx, r, anonymousSignIn(c.UserID), store.AuditActionLoginCodeRequest, loginCodeAuditPrefix+c.ID, http.StatusAccepted)
 	if eligible {
-		st.remember(c.ID, pendingPlainCode{userID: user.ID, code: code, expires: c.ExpiresAt})
+		st.remember(c.ID, pendingPlainCode{userID: user.ID, code: code, expires: c.ExpiresAt, owned: owns})
 		if sendEmail {
 			go rt.emailLoginCode(context.WithoutCancel(ctx), *user, c, code)
 		}
@@ -110,22 +112,30 @@ func waitUntil(ctx context.Context, deadline time.Time) {
 	}
 }
 
-// loginCodeCapacity caps live codes per account: past the cap the request
-// stores a decoy, and an email goes out only when no other code is live and
-// the account's hourly email budget allows. Failures read as ineligible.
-func (rt *Router) loginCodeCapacity(ctx context.Context, user *store.User, eligible bool, now time.Time) (ok, sendEmail bool) {
+// loginCodeCapacity caps the live codes strangers can hold per account: at
+// the cap the oldest stranger code expires, so nobody can squat the slots.
+// An email goes out only when no other code is live, within the hourly
+// budget; the proven owner skips the cap and that suppression. Failures read
+// as ineligible.
+func (rt *Router) loginCodeCapacity(ctx context.Context, r *http.Request, user *store.User, eligible, owns bool, now time.Time) (ok, sendEmail bool) {
 	if !eligible {
 		return false, false
 	}
 	st := rt.codeLogin
+	if owns {
+		allowed, _ := st.emailByUser.allow(user.ID)
+		return true, allowed
+	}
 	live, err := rt.loginCodes.ListLiveLoginCodesForUser(ctx, user.ID, now)
 	if err != nil {
 		rt.logger.Warn("api: login code request: count live codes failed", slog.String("user_id", user.ID), slog.String("error", err.Error()))
 		return false, false
 	}
-	if len(live) >= st.maxLive {
-		rt.logger.Info("api: login code request: live code cap reached", slog.String("user_id", user.ID))
-		return false, false
+	strangers := slices.DeleteFunc(slices.Clone(live), func(c store.LoginCodeChallenge) bool { return st.owned(c.ID) })
+	if len(strangers) >= st.maxLive {
+		for _, old := range strangers[st.maxLive-1:] {
+			rt.expireLoginCode(ctx, r, old, now)
+		}
 	}
 	if len(live) > 0 {
 		return true, false
@@ -134,21 +144,35 @@ func (rt *Router) loginCodeCapacity(ctx context.Context, user *store.User, eligi
 	return true, allowed
 }
 
+func (rt *Router) expireLoginCode(ctx context.Context, r *http.Request, c store.LoginCodeChallenge, now time.Time) {
+	rt.codeLogin.forget(c.ID)
+	expired, err := rt.loginCodes.ExpireLoginCode(ctx, c.ID, now)
+	if err != nil {
+		rt.logger.Warn("api: expire oldest login code failed", slog.String("challenge_id", c.ID), slog.String("error", err.Error()))
+		return
+	}
+	if expired {
+		rt.auditSignIn(ctx, r, anonymousSignIn(c.UserID), store.AuditActionLoginCodeExpire, loginCodeAuditPrefix+c.ID+"#replaced", http.StatusOK)
+	}
+}
+
 // allowLoginCodeRequest applies the per-IP, per-account and global budgets,
-// spending from none unless all have room. The account key is the typed
-// name, so it reveals nothing about existence; a requester proven to be the
-// owner draws from a bucket strangers cannot drain.
-func (rt *Router) allowLoginCodeRequest(w http.ResponseWriter, r *http.Request, username string) bool {
+// spending from none unless all have room, and reports whether the requester
+// proved it owns the account. The account key is the typed name, so it
+// reveals nothing about existence; a proven owner draws from a bucket
+// strangers cannot drain.
+func (rt *Router) allowLoginCodeRequest(w http.ResponseWriter, r *http.Request, username string) (owns, ok bool) {
 	st := rt.codeLogin
 	account := limiterCheck{st.byAccount, strings.ToLower(username)}
-	if owner, ok := rt.requesterOwns(r, username); ok {
+	owner, owns := rt.requesterOwns(r, username)
+	if owns {
 		account = limiterCheck{st.byOwner, owner}
 	}
-	if ok, retry := allowAll(limiterCheck{st.byIP, clientIP(r)}, account, limiterCheck{st.global, "global"}); !ok {
+	if allowed, retry := allowAll(limiterCheck{st.byIP, clientIP(r)}, account, limiterCheck{st.global, "global"}); !allowed {
 		writeRateLimited(w, retry)
-		return false
+		return owns, false
 	}
-	return true
+	return owns, true
 }
 
 // requesterOwns reports the account username names when the request already

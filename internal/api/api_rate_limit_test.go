@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -27,6 +29,66 @@ func TestAPIRateLimiter_AllowsBurstThenBlocks(t *testing.T) {
 	}
 	if retryAfter <= 0 {
 		t.Errorf("retryAfter = %v, want a positive duration", retryAfter)
+	}
+}
+
+func TestAPIRateLimiter_ParallelBurstNeverOverspends(t *testing.T) {
+	frozen := time.Now()
+	limiter := func(capacity int) *apiRateLimiter {
+		l := newAPIRateLimiter(capacity)
+		l.now = func() time.Time { return frozen }
+		return l
+	}
+	tests := []struct {
+		name   string
+		budget int
+		admit  func() bool
+	}{
+		{"allow on one limiter", 50, func() func() bool {
+			l := limiter(50)
+			return func() bool { ok, _ := l.allow("k"); return ok }
+		}()},
+		{"allowAll across limiters", 30, func() func() bool {
+			ip, account, global := limiter(80), limiter(30), limiter(120)
+			return func() bool {
+				ok, _ := allowAll(limiterCheck{ip, "ip"}, limiterCheck{account, "acct"}, limiterCheck{global, "global"})
+				return ok
+			}
+		}()},
+		{"allowAll racing allow on a shared limiter", 40, func() func() bool {
+			shared, other := limiter(40), limiter(500)
+			var n atomic.Int64
+			return func() bool {
+				if n.Add(1)%2 == 0 {
+					ok, _ := shared.allow("k")
+					return ok
+				}
+				ok, _ := allowAll(limiterCheck{other, "o"}, limiterCheck{shared, "k"})
+				return ok
+			}
+		}()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var admitted atomic.Int64
+			var wg sync.WaitGroup
+			start := make(chan struct{})
+			for range 200 {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					<-start
+					if tt.admit() {
+						admitted.Add(1)
+					}
+				}()
+			}
+			close(start)
+			wg.Wait()
+			if got := admitted.Load(); got != int64(tt.budget) {
+				t.Fatalf("admitted = %d, want exactly the budget %d", got, tt.budget)
+			}
+		})
 	}
 }
 

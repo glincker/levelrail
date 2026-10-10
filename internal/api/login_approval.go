@@ -7,7 +7,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"slices"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -54,26 +53,11 @@ func (rt *Router) approvalSessionEngine() approvalSessions {
 	return rt.libSessions
 }
 
-// approvalMatch derives the two digit number the waiting browser shows and
-// the three choices the approver sees, from the browser binding nobody else
-// holds, so no extra state is stored.
-func approvalMatch(browserHash string) (number int, options []int) {
+// approvalMatch derives the two digit number the waiting browser shows, and
+// the approver must type, from the browser binding nobody else holds.
+func approvalMatch(browserHash string) int {
 	sum := sha256.Sum256([]byte("approval-match\x00" + browserHash))
-	pick := func(i int) int { return 10 + int(binary.BigEndian.Uint16(sum[i:i+2]))%90 }
-	number = pick(0)
-	options = []int{number}
-	for i := 2; i+2 <= len(sum) && len(options) < 3; i += 2 {
-		if n := pick(i); !slices.Contains(options, n) {
-			options = append(options, n)
-		}
-	}
-	for n := 10; len(options) < 3; n++ {
-		if !slices.Contains(options, n) {
-			options = append(options, n)
-		}
-	}
-	slices.Sort(options)
-	return number, options
+	return 10 + int(binary.BigEndian.Uint16(sum[0:2]))%90
 }
 
 // pauseForDeviceApproval holds a correct password login from an untrusted
@@ -121,27 +105,22 @@ func (rt *Router) createLoginApproval(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 	now := time.Now()
-	replaced, err := rt.loginCodes.SupersedeLoginApprovals(ctx, user.ID, now)
-	for _, old := range replaced {
-		rt.auditSignIn(ctx, r, anonymousSignIn(user.ID), store.AuditActionNewDeviceReplace, approvalAuditPrefix+old.ID, http.StatusOK)
-	}
-	if err != nil {
-		rt.internalError(w, "api: login: supersede approvals failed", err, slog.String("user_id", user.ID))
-		return
-	}
 	ttl := rt.codeLogin.approvalTTL
 	a := store.LoginApproval{
 		ID: id, UserID: user.ID, BrowserHash: hashToken(binding), RequesterIP: clientIP(r),
 		UserAgent: browserLabel(r.UserAgent()), CreatedAt: now, ExpiresAt: now.Add(ttl),
 	}
-	if err := rt.loginCodes.CreateLoginApproval(ctx, a); err != nil {
+	replaced, err := rt.loginCodes.ReplaceLoginApproval(ctx, a)
+	if err != nil {
 		rt.internalError(w, "api: login: save approval failed", err, slog.String("user_id", user.ID))
 		return
 	}
+	for _, old := range replaced {
+		rt.auditSignIn(ctx, r, anonymousSignIn(user.ID), store.AuditActionNewDeviceReplace, approvalAuditPrefix+old.ID, http.StatusOK)
+	}
 	rt.auditSignIn(ctx, r, anonymousSignIn(user.ID), store.AuditActionNewDeviceRequest, approvalAuditPrefix+a.ID, http.StatusAccepted)
 	setBindingCookie(w, r, approvalCookie, approvalCookiePath, binding, ttl)
-	match, _ := approvalMatch(a.BrowserHash)
-	writeJSON(w, http.StatusOK, loginResponse{ApprovalRequired: true, ApprovalID: a.ID, ApprovalExpiresAt: &a.ExpiresAt, ApprovalMatch: match})
+	writeJSON(w, http.StatusOK, loginResponse{ApprovalRequired: true, ApprovalID: a.ID, ApprovalExpiresAt: &a.ExpiresAt, ApprovalMatch: approvalMatch(a.BrowserHash)})
 }
 
 // handlePollLoginApproval handles POST /api/v1/auth/login-approval/poll: the
@@ -169,7 +148,7 @@ func (rt *Router) handlePollLoginApproval(w http.ResponseWriter, r *http.Request
 	now := time.Now()
 	switch {
 	case a.Status == store.LoginApprovalPending && now.Before(a.ExpiresAt):
-		match, _ := approvalMatch(a.BrowserHash)
+		match := approvalMatch(a.BrowserHash)
 		writeJSON(w, http.StatusOK, loginApprovalPollResponse{Status: approvalPollPending, ExpiresAt: a.ExpiresAt, MatchNumber: match})
 		return
 	case a.Status == store.LoginApprovalDenied:
@@ -240,8 +219,8 @@ func (rt *Router) decideLoginApproval(w http.ResponseWriter, r *http.Request, ap
 	mismatch := false
 	if approve {
 		var body loginApprovalDecision
-		if err := decodeJSONBody(r, &body); err != nil || body.Match == 0 {
-			writeError(w, http.StatusBadRequest, "match is required: choose the number shown in the waiting browser")
+		if err := decodeJSONBody(r, &body); err != nil || body.Match < 10 || body.Match > 99 {
+			writeError(w, http.StatusBadRequest, "match is required: type the two digit number shown in the waiting browser")
 			return
 		}
 		a, err := rt.loginCodes.GetLoginApproval(ctx, id)
@@ -253,7 +232,7 @@ func (rt *Router) decideLoginApproval(w http.ResponseWriter, r *http.Request, ap
 			rt.internalError(w, "api: decide login approval: load failed", err)
 			return
 		}
-		if want, _ := approvalMatch(a.BrowserHash); body.Match != want {
+		if body.Match != approvalMatch(a.BrowserHash) {
 			approve, mismatch = false, true
 			auditPath += "#mismatch"
 		}

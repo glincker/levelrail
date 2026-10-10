@@ -124,7 +124,35 @@ describe('CreateTokenDialog', () => {
     await waitFor(() => {
       expect(bodies.length).toBe(1)
     })
-    const body = JSON.parse(bodies[0] ?? '{}') as { abilities: string[] }
+    const body = JSON.parse(bodies[0] ?? '{}') as {
+      abilities: string[]
+      expires_in_days?: number
+    }
     expect(body.abilities).toEqual(['signin:approve'])
+    expect(body.expires_in_days).toBe(30)
+  })
+
+  it('refuses a sign-in approver token for an agent', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+    renderDialog()
+    await user.click(screen.getByRole('button', { name: 'Create token' }))
+    await user.type(screen.getByLabelText('Name'), 'approver')
+    await user.type(screen.getByLabelText('Agent name (optional)'), 'bot')
+    await user.click(
+      screen.getByRole('checkbox', { name: /Approve my sign-ins/ }),
+    )
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Create token',
+      }),
+    )
+    expect(
+      await screen.findByText(
+        'A token that approves sign-ins cannot be issued to an agent',
+      ),
+    ).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

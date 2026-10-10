@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -22,12 +23,11 @@ type signInCodeItem struct {
 }
 
 type signInApprovalItem struct {
-	ID           string    `json:"id"`
-	RequesterIP  string    `json:"requester_ip"`
-	UserAgent    string    `json:"user_agent"`
-	CreatedAt    time.Time `json:"created_at"`
-	ExpiresAt    time.Time `json:"expires_at"`
-	MatchOptions []int     `json:"match_options"`
+	ID          string    `json:"id"`
+	RequesterIP string    `json:"requester_ip"`
+	UserAgent   string    `json:"user_agent"`
+	CreatedAt   time.Time `json:"created_at"`
+	ExpiresAt   time.Time `json:"expires_at"`
 }
 
 type signInRequestsResponse struct {
@@ -103,9 +103,8 @@ func (rt *Router) handleListSignInRequests(w http.ResponseWriter, r *http.Reques
 			CreatedAt: c.CreatedAt, ExpiresAt: c.ExpiresAt, Revealable: revealable})
 	}
 	for _, a := range approvals {
-		_, options := approvalMatch(a.BrowserHash)
 		out.Approvals = append(out.Approvals, signInApprovalItem{ID: a.ID, RequesterIP: safeSignInIP(a.RequesterIP), UserAgent: safeSignInText(a.UserAgent),
-			CreatedAt: a.CreatedAt, ExpiresAt: a.ExpiresAt, MatchOptions: options})
+			CreatedAt: a.CreatedAt, ExpiresAt: a.ExpiresAt})
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -214,6 +213,61 @@ func (rt *Router) revokeTrustedDevices(ctx context.Context, r *http.Request, act
 	if n > 0 {
 		rt.auditSignIn(ctx, r, actor, store.AuditActionTrustedDeviceDrop, trustedAuditPrefix+"all#"+reason+"#"+strconv.Itoa(n), http.StatusOK)
 	}
+}
+
+// retireSignInRequests ends userID's waiting approvals, approved ones not yet
+// collected included, and locks its live codes, so nothing requested before a
+// credential or session reset can still turn into a session.
+func (rt *Router) retireSignInRequests(ctx context.Context, r *http.Request, userID, reason string) {
+	if rt.loginCodes == nil || userID == "" {
+		return
+	}
+	now := time.Now()
+	actor := anonymousSignIn(userID)
+	rt.codeLogin.forgetUser(userID)
+	retired, err := rt.loginCodes.SupersedeLoginApprovals(ctx, userID, now)
+	if err != nil {
+		rt.logger.Warn("api: retire login approvals failed", slog.String("user_id", userID), slog.String("reason", reason), slog.String("error", err.Error()))
+	}
+	for _, a := range retired {
+		rt.auditSignIn(ctx, r, actor, store.AuditActionNewDeviceReplace, approvalAuditPrefix+a.ID+"#"+reason, http.StatusOK)
+	}
+	locked, err := rt.loginCodes.LockLoginCodesForUser(ctx, userID, now)
+	if err != nil {
+		rt.logger.Warn("api: lock login codes failed", slog.String("user_id", userID), slog.String("reason", reason), slog.String("error", err.Error()))
+	}
+	for _, id := range locked {
+		rt.codeLogin.forget(id)
+		rt.auditSignIn(ctx, r, actor, store.AuditActionLoginCodeLockout, loginCodeAuditPrefix+id+"#"+reason, http.StatusOK)
+	}
+}
+
+// revokeSignInApproveTokens revokes userID's signin:approve tokens after a
+// credential or session reset, so a leaked approver cannot outlive it.
+func (rt *Router) revokeSignInApproveTokens(ctx context.Context, r *http.Request, userID, reason string) {
+	if rt.authLib.tokens == nil || userID == "" {
+		return
+	}
+	ids, err := rt.authLib.tokens.RevokeTokensWithAbility(ctx, userID, AbilitySignInApprove)
+	if err != nil {
+		rt.logger.Warn("api: revoke signin:approve tokens failed", slog.String("user_id", userID), slog.String("reason", reason), slog.String("error", err.Error()))
+	}
+	for _, id := range ids {
+		if lerr := rt.tokens.RevokeAPIToken(ctx, id); lerr != nil && !errors.Is(lerr, store.ErrAPITokenNotFound) {
+			rt.logger.Warn("api: revoke signin:approve token mirror failed", slog.String("token_id", id), slog.String("error", lerr.Error()))
+		}
+	}
+	if len(ids) > 0 {
+		rt.auditSignIn(ctx, r, anonymousSignIn(userID), store.AuditActionApproverRevoke, approverAuditPrefix+reason+"#"+strconv.Itoa(len(ids)), http.StatusOK)
+	}
+}
+
+// resetSignInTrust is everything a password change, reset or "sign out other
+// sessions" retires besides the sessions themselves.
+func (rt *Router) resetSignInTrust(ctx context.Context, r *http.Request, userID, reason string) {
+	rt.revokeTrustedDevices(ctx, r, anonymousSignIn(userID), userID, reason)
+	rt.retireSignInRequests(ctx, r, userID, reason)
+	rt.revokeSignInApproveTokens(ctx, r, userID, reason)
 }
 
 // trustedDeviceFor reports whether the request carries a live trusted-device

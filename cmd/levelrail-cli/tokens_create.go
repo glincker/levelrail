@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"slices"
 )
 
 // runTokensCreate implements "tokens create --name NAME --abilities
@@ -73,6 +74,14 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 	if expiresInDays < 0 {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--expires-in-days must not be negative"))
 	}
+	if slices.Contains(abilities, "signin:approve") {
+		if agentName != "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("signin:approve cannot be granted to an agent token"))
+		}
+		if expiresInDays == 0 {
+			return reportError(stdout, stderr, jsonOut, newValidationError("a signin:approve token must expire: set --expires-in-days (30 at most by default)"))
+		}
+	}
 
 	if agentName == "" && agentDescription != "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--agent-description requires --agent"))
@@ -117,7 +126,10 @@ again after this call). Requires a live session: --username/--password
 
 signin:approve is token only: it lets the token show your sign-in codes and
 approve new browsers ("%[1]s auth code", "%[1]s auth approve"). Root does not
-include it and a device login never grants it.
+include it and a device login never grants it. A signin:approve token must
+expire (--expires-in-days, 30 at most unless the server sets
+APP_SIGNIN_APPROVE_TOKEN_MAX_DAYS), cannot be an agent token, and is revoked
+when you change or reset your password or sign out your other sessions.
 
 Flags:
   --name string                 name for the new token (required)

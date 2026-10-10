@@ -24,8 +24,6 @@ export interface SignInApprovalRequest {
   user_agent: string
   created_at: string
   expires_at: string
-  // Three numbers; only the one shown in the waiting browser approves it.
-  match_options: number[]
 }
 
 export interface SignInRequests {

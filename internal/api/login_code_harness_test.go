@@ -181,7 +181,7 @@ func (h *codeHarness) approve(id string, session *http.Cookie) *httptest.Respons
 	if err != nil {
 		h.t.Fatal(err)
 	}
-	match, _ := approvalMatch(a.BrowserHash)
+	match := approvalMatch(a.BrowserHash)
 	return h.send(http.MethodPost, "/api/v1/auth/login-approvals/"+id+"/approve", `{"match":`+strconv.Itoa(match)+`}`, "", session)
 }
 

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -195,6 +196,77 @@ func TestSupersedeLoginApprovals_OnlyOwnPending(t *testing.T) {
 		if got != tc.want {
 			t.Fatalf("pending for %s = %q, want %q", tc.user, got, tc.want)
 		}
+	}
+}
+
+func TestSupersedeLoginApprovals_RetiresApprovedButUnconsumed(t *testing.T) {
+	ctx := context.Background()
+	db := openTestDB(t)
+	now := time.Now()
+	if err := db.CreateLoginApproval(ctx, LoginApproval{ID: "a1", UserID: "u1", BrowserHash: "b1", CreatedAt: now, ExpiresAt: now.Add(time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := db.DecideLoginApproval(ctx, "a1", "u1", true, "session:u1", now); err != nil || !ok {
+		t.Fatalf("approve = %v, %v", ok, err)
+	}
+	if moved, err := db.SupersedeLoginApprovals(ctx, "u1", now); err != nil || len(moved) != 1 {
+		t.Fatalf("superseded = %d, %v, want 1", len(moved), err)
+	}
+	if ok, err := db.ConsumeLoginApproval(ctx, "a1", now); err != nil || ok {
+		t.Fatalf("consume after supersede = %v, %v, want false", ok, err)
+	}
+}
+
+func TestReplaceLoginApproval_ConcurrentLeavesOnePending(t *testing.T) {
+	ctx := context.Background()
+	db := openTestDB(t)
+	now := time.Now()
+	var wg sync.WaitGroup
+	for i := range 30 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			a := LoginApproval{ID: "a" + strconv.Itoa(i), UserID: "u1", BrowserHash: "b", CreatedAt: now, ExpiresAt: now.Add(time.Hour)}
+			if _, err := db.ReplaceLoginApproval(ctx, a); err != nil {
+				t.Error(err)
+			}
+		}()
+	}
+	wg.Wait()
+	list, err := db.ListPendingLoginApprovalsForUser(ctx, "u1", now)
+	if err != nil || len(list) != 1 {
+		t.Fatalf("pending = %d, %v, want exactly 1", len(list), err)
+	}
+}
+
+func TestLockLoginCodesForUser(t *testing.T) {
+	ctx := context.Background()
+	db := openTestDB(t)
+	now := time.Now()
+	for _, c := range []LoginCodeChallenge{
+		newChallenge("c1", "u1", "b1", now, time.Hour),
+		newChallenge("c2", "u1", "b2", now, time.Hour),
+		newChallenge("c3", "u2", "b3", now, time.Hour),
+	} {
+		if err := db.CreateLoginCodeChallenge(ctx, c); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ids, err := db.LockLoginCodesForUser(ctx, "u1", now)
+	if err != nil || len(ids) != 2 {
+		t.Fatalf("locked = %v, %v, want 2", ids, err)
+	}
+	for _, tc := range []struct {
+		user string
+		want int
+	}{{"u1", 0}, {"u2", 1}} {
+		live, err := db.ListLiveLoginCodesForUser(ctx, tc.user, now)
+		if err != nil || len(live) != tc.want {
+			t.Fatalf("live for %s = %d, %v, want %d", tc.user, len(live), err, tc.want)
+		}
+	}
+	if ok, err := db.RedeemLoginCode(ctx, "c1", now); err != nil || ok {
+		t.Fatalf("redeem locked = %v, %v, want false", ok, err)
 	}
 }
 

@@ -19,33 +19,35 @@ import (
 )
 
 const (
-	envLoginCodeTTL          = "APP_LOGIN_CODE_TTL"
-	envLoginCodeMaxAttempts  = "APP_LOGIN_CODE_MAX_ATTEMPTS"
-	envLoginCodeIPRate       = "APP_LOGIN_CODE_RATE_PER_IP_PER_MINUTE"
-	envLoginCodeAccountRate  = "APP_LOGIN_CODE_RATE_PER_ACCOUNT_PER_MINUTE"
-	envLoginCodeGlobalRate   = "APP_LOGIN_CODE_RATE_GLOBAL_PER_MINUTE"
-	envLoginCodeRedeemRate   = "APP_LOGIN_CODE_REDEEM_RATE_PER_IP_PER_MINUTE"
-	envLoginCodeMinResponse  = "APP_LOGIN_CODE_MIN_RESPONSE"
-	envCodeLoginAdmins       = "APP_AUTH_CODE_LOGIN_ADMINS"
-	envCodeLoginOthers       = "APP_AUTH_CODE_LOGIN_OTHERS"
-	envDeviceApprovalTTL     = "APP_AUTH_DEVICE_APPROVAL_TTL"
-	envTrustedDeviceTTL      = "APP_AUTH_TRUSTED_DEVICE_TTL"
-	envNewDeviceApproval     = "APP_AUTH_NEW_DEVICE_APPROVAL"
-	envLoginCodeMaxLive      = "APP_LOGIN_CODE_MAX_LIVE"
-	envLoginCodeEmailRate    = "APP_LOGIN_CODE_EMAILS_PER_ACCOUNT_PER_HOUR"
-	envDeviceApprovalRate    = "APP_AUTH_DEVICE_APPROVAL_RATE_PER_ACCOUNT_PER_HOUR"
-	defaultLoginCodeMaxLive  = 3
-	defaultLoginCodeEmails   = 4
-	defaultApprovalRate      = 6
-	defaultLoginCodeTTL      = 10 * time.Minute
-	defaultLoginCodeAttempts = 5
-	defaultLoginCodeIPRate   = 5
-	defaultLoginCodeAcctRate = 3
-	defaultLoginCodeGlobal   = 60
-	defaultLoginCodeRedeem   = 10
-	defaultLoginCodeMinResp  = 300 * time.Millisecond
-	defaultDeviceApprovalTTL = 10 * time.Minute
-	defaultTrustedDeviceTTL  = 90 * 24 * time.Hour
+	envLoginCodeTTL                  = "APP_LOGIN_CODE_TTL"
+	envLoginCodeMaxAttempts          = "APP_LOGIN_CODE_MAX_ATTEMPTS"
+	envLoginCodeIPRate               = "APP_LOGIN_CODE_RATE_PER_IP_PER_MINUTE"
+	envLoginCodeAccountRate          = "APP_LOGIN_CODE_RATE_PER_ACCOUNT_PER_MINUTE"
+	envLoginCodeGlobalRate           = "APP_LOGIN_CODE_RATE_GLOBAL_PER_MINUTE"
+	envLoginCodeRedeemRate           = "APP_LOGIN_CODE_REDEEM_RATE_PER_IP_PER_MINUTE"
+	envLoginCodeMinResponse          = "APP_LOGIN_CODE_MIN_RESPONSE"
+	envCodeLoginAdmins               = "APP_AUTH_CODE_LOGIN_ADMINS"
+	envCodeLoginOthers               = "APP_AUTH_CODE_LOGIN_OTHERS"
+	envDeviceApprovalTTL             = "APP_AUTH_DEVICE_APPROVAL_TTL"
+	envTrustedDeviceTTL              = "APP_AUTH_TRUSTED_DEVICE_TTL"
+	envNewDeviceApproval             = "APP_AUTH_NEW_DEVICE_APPROVAL"
+	envLoginCodeMaxLive              = "APP_LOGIN_CODE_MAX_LIVE"
+	envLoginCodeEmailRate            = "APP_LOGIN_CODE_EMAILS_PER_ACCOUNT_PER_HOUR"
+	envDeviceApprovalRate            = "APP_AUTH_DEVICE_APPROVAL_RATE_PER_ACCOUNT_PER_HOUR"
+	envSignInApproveTokenMaxDays     = "APP_SIGNIN_APPROVE_TOKEN_MAX_DAYS" //nolint:gosec // env var name, not a credential
+	defaultSignInApproveTokenMaxDays = 30
+	defaultLoginCodeMaxLive          = 3
+	defaultLoginCodeEmails           = 4
+	defaultApprovalRate              = 6
+	defaultLoginCodeTTL              = 10 * time.Minute
+	defaultLoginCodeAttempts         = 5
+	defaultLoginCodeIPRate           = 5
+	defaultLoginCodeAcctRate         = 3
+	defaultLoginCodeGlobal           = 60
+	defaultLoginCodeRedeem           = 10
+	defaultLoginCodeMinResp          = 300 * time.Millisecond
+	defaultDeviceApprovalTTL         = 10 * time.Minute
+	defaultTrustedDeviceTTL          = 90 * 24 * time.Hour
 
 	loginCodeLength    = 8
 	loginCodeAlphabet  = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
@@ -88,6 +90,9 @@ type LoginCodeStore interface {
 	ExtendTrustedDevice(ctx context.Context, id string, expiresAt, now time.Time) error
 	PruneTrustedDevices(ctx context.Context, cutoff time.Time) error
 	SupersedeLoginApprovals(ctx context.Context, userID string, now time.Time) ([]store.LoginApproval, error)
+	ReplaceLoginApproval(ctx context.Context, a store.LoginApproval) ([]store.LoginApproval, error)
+	ExpireLoginCode(ctx context.Context, id string, now time.Time) (bool, error)
+	LockLoginCodesForUser(ctx context.Context, userID string, now time.Time) ([]string, error)
 	GetCodeLoginSettings(ctx context.Context) (store.CodeLoginSettings, bool, error)
 	SaveCodeLoginSettings(ctx context.Context, s store.CodeLoginSettings) error
 }
@@ -96,6 +101,9 @@ type pendingPlainCode struct {
 	userID  string
 	code    string
 	expires time.Time
+	// owned marks a code the account's own session or trusted browser asked
+	// for, which strangers hitting the live cap may never expire.
+	owned bool
 }
 
 // codeLoginState holds the limiters and the only plaintext copy of each live
@@ -164,6 +172,22 @@ func (s *codeLoginState) forget(challengeID string) {
 	s.mu.Lock()
 	delete(s.plain, challengeID)
 	s.mu.Unlock()
+}
+
+func (s *codeLoginState) owned(challengeID string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.plain[challengeID].owned
+}
+
+func (s *codeLoginState) forgetUser(userID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for id, p := range s.plain {
+		if p.userID == userID {
+			delete(s.plain, id)
+		}
+	}
 }
 
 // lookup returns the plaintext only to the challenge's own user.

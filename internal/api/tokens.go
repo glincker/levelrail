@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -88,6 +89,10 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.ExpiresInDays < 0 {
 		writeError(w, http.StatusBadRequest, "expires_in_days must not be negative")
+		return
+	}
+	if msg := signInApproveTokenProblem(req); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
 
@@ -187,6 +192,22 @@ func (rt *Router) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.recordAudit(r.Context(), r, AbilityWrite, auditActorSession, callerID, "", http.StatusNoContent)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// signInApproveTokenProblem explains why a signin:approve token request is
+// refused: never for an agent, and always with a bounded expiry.
+func signInApproveTokenProblem(req createTokenRequest) string {
+	if !slices.Contains(req.Abilities, AbilitySignInApprove) {
+		return ""
+	}
+	if req.Agent != nil {
+		return AbilitySignInApprove + " cannot be granted to an agent token"
+	}
+	maxDays := envInt(envSignInApproveTokenMaxDays, defaultSignInApproveTokenMaxDays)
+	if req.ExpiresInDays == 0 || req.ExpiresInDays > maxDays {
+		return fmt.Sprintf("a token with %s must expire within %d days: set expires_in_days from 1 to %d", AbilitySignInApprove, maxDays, maxDays)
+	}
+	return ""
 }
 
 // signedInUserSession reports a real user session: no bearer token and no

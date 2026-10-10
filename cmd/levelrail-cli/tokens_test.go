@@ -81,6 +81,29 @@ func TestRun_TokensCreate_MissingAbilities(t *testing.T) {
 	}
 }
 
+func TestRun_TokensCreate_SignInApproveRules(t *testing.T) {
+	tests := []struct {
+		name    string
+		extra   []string
+		wantErr string
+	}{
+		{"needs an expiry", nil, "must expire"},
+		{"never for an agent", []string{"--expires-in-days", "7", "--agent", "bot"}, "cannot be granted to an agent"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			args := append([]string{"tokens", "create", "--name", "approver", "--abilities", "signin:approve", "--username", "admin", "--password", "x"}, tt.extra...)
+			if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitValidation {
+				t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitValidation, stderr.String())
+			}
+			if !strings.Contains(stderr.String(), tt.wantErr) {
+				t.Errorf("stderr = %q, want %q", stderr.String(), tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestRun_TokensList(t *testing.T) {
 	srv := fakeSessionAuthServer(t, "GET", "/api/v1/auth/tokens", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

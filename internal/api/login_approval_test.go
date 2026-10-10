@@ -52,15 +52,17 @@ func TestNewDeviceApproval(t *testing.T) {
 		{"approve without a number is refused and leaves it pending", func(h *codeHarness, id string, s *http.Cookie) int {
 			return h.send(http.MethodPost, "/api/v1/auth/login-approvals/"+id+"/approve", "{}", "", s).Code
 		}, http.StatusBadRequest, approvalPollPending, ""},
+		{"a number that is not two digits is refused and leaves it pending", func(h *codeHarness, id string, s *http.Cookie) int {
+			return h.send(http.MethodPost, "/api/v1/auth/login-approvals/"+id+"/approve", `{"match":7}`, "", s).Code
+		}, http.StatusBadRequest, approvalPollPending, ""},
 		{"a wrong number denies the sign-in", func(h *codeHarness, id string, s *http.Cookie) int {
 			a, err := h.db.GetLoginApproval(context.Background(), id)
 			if err != nil {
 				h.t.Fatal(err)
 			}
-			want, options := approvalMatch(a.BrowserHash)
-			wrong := options[0]
-			if wrong == want {
-				wrong = options[1]
+			wrong := approvalMatch(a.BrowserHash) + 1
+			if wrong > 99 {
+				wrong = 10
 			}
 			return h.send(http.MethodPost, "/api/v1/auth/login-approvals/"+id+"/approve", `{"match":`+strconv.Itoa(wrong)+`}`, "", s).Code
 		}, http.StatusConflict, approvalPollDenied, store.AuditActionNewDeviceDeny},

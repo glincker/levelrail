@@ -62,7 +62,7 @@ func TestSignInApprove_TokenCannotEscalateToSession(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			match, _ := approvalMatch(a.BrowserHash)
+			match := approvalMatch(a.BrowserHash)
 			req = httptest.NewRequest(http.MethodPost, "/api/v1/auth/login-approvals/x/approve", strings.NewReader(`{"match":`+strconv.Itoa(match)+`}`))
 			req = req.WithContext(withTokenIdentity(req.Context(), tok))
 			req.SetPathValue("id", id)
@@ -78,7 +78,7 @@ func TestSignInApprove_TokenCannotEscalateToSession(t *testing.T) {
 func TestSignInApprove_MintedOnlyFromASession(t *testing.T) {
 	h := newCodeHarness(t, false)
 	session := h.userSession()
-	rec := h.send(http.MethodPost, "/api/v1/auth/tokens", `{"name":"approver","abilities":["`+AbilitySignInApprove+`"]}`, "", session)
+	rec := h.send(http.MethodPost, "/api/v1/auth/tokens", `{"name":"approver","abilities":["`+AbilitySignInApprove+`"],"expires_in_days":30}`, "", session)
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("mint from session = %d %s", rec.Code, rec.Body.String())
 	}
@@ -98,7 +98,7 @@ func TestSignInApprove_MintedOnlyFromASession(t *testing.T) {
 	if got := bearer(http.MethodPost, "/api/v1/auth/sign-in-requests/codes/"+id+"/reveal", ""); got.Code != http.StatusOK {
 		t.Fatalf("reveal with a signin:approve token = %d %s", got.Code, got.Body.String())
 	}
-	if got := bearer(http.MethodPost, "/api/v1/auth/tokens", `{"name":"again","abilities":["`+AbilitySignInApprove+`"]}`); got.Code == http.StatusCreated {
+	if got := bearer(http.MethodPost, "/api/v1/auth/tokens", `{"name":"again","abilities":["`+AbilitySignInApprove+`"],"expires_in_days":30}`); got.Code == http.StatusCreated {
 		t.Fatal("a token must not mint another signin:approve token")
 	}
 	userRec := h.send(http.MethodPut, "/api/v1/users/"+h.user.ID+"/abilities", `{"abilities":["`+AbilitySignInApprove+`"]}`, "",
@@ -243,7 +243,7 @@ func TestNewDeviceApproval_PromptFatigue(t *testing.T) {
 			t.Fatalf("third approval = %d %s, want 429", rec.Code, rec.Body.String())
 		}
 	})
-	t.Run("the waiting browser shows one of the approver's three numbers", func(t *testing.T) {
+	t.Run("only the waiting browser sees the number the approver must type", func(t *testing.T) {
 		h := newCodeHarness(t, true)
 		existing := responseCookie(h.passwordLogin(), sessionCookieName)
 		rec := h.passwordLogin()
@@ -251,20 +251,12 @@ func TestNewDeviceApproval_PromptFatigue(t *testing.T) {
 		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil || resp.ApprovalMatch < 10 || resp.ApprovalMatch > 99 {
 			t.Fatalf("approval_match = %d (%s)", resp.ApprovalMatch, rec.Body.String())
 		}
-		var list signInRequestsResponse
-		if err := json.Unmarshal(h.send(http.MethodGet, "/api/v1/auth/sign-in-requests", "", "", existing).Body.Bytes(), &list); err != nil || len(list.Approvals) != 1 {
-			t.Fatalf("list: %v %+v", err, list)
-		}
-		opts := list.Approvals[0].MatchOptions
-		if len(opts) != 3 || opts[0] == opts[1] || opts[1] == opts[2] || opts[0] == opts[2] {
-			t.Fatalf("options = %v, want 3 distinct", opts)
-		}
-		found := false
-		for _, o := range opts {
-			found = found || o == resp.ApprovalMatch
-		}
-		if !found {
-			t.Fatalf("options %v lack the shown number %d", opts, resp.ApprovalMatch)
+		listed := h.send(http.MethodGet, "/api/v1/auth/sign-in-requests", "", "", existing).Body.String()
+		feed := h.send(http.MethodGet, "/api/v1/attention/feed", "", "", existing).Body.String()
+		for name, body := range map[string]string{"list": listed, "feed": feed} {
+			if !strings.Contains(body, "192.0.2.10") || strings.Contains(body, "match") {
+				t.Fatalf("%s exposes the match number or options: %s", name, body)
+			}
 		}
 	})
 }

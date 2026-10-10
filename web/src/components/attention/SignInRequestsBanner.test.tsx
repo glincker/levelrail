@@ -75,7 +75,6 @@ const waiting = {
       user_agent: 'Safari',
       created_at: now,
       expires_at: now,
-      match_options: [17, 42, 83],
     },
   ],
 }
@@ -113,7 +112,7 @@ describe('SignInRequestsBanner', () => {
     expect(await screen.findByText('ABCD-EF12')).toBeInTheDocument()
   })
 
-  it('approves only after the approver picks the shown number', async () => {
+  it('approves only after the approver types the shown number', async () => {
     const bodies: Record<string, string> = {}
     const calls = stubFetch(
       { 'GET /api/v1/auth/sign-in-requests': waiting },
@@ -122,7 +121,15 @@ describe('SignInRequestsBanner', () => {
     renderBanner()
     fireEvent.click(await screen.findByRole('button', { name: 'Approve' }))
     expect(calls.some((c) => c.includes('/approve'))).toBe(false)
-    fireEvent.click(screen.getByRole('button', { name: 'Number 42' }))
+    expect(screen.queryByRole('button', { name: /^\d+$/ })).toBeNull()
+    const confirm = screen.getByRole('button', { name: 'Confirm approval' })
+    const input = screen.getByRole('textbox', {
+      name: 'Number shown in the waiting browser',
+    })
+    fireEvent.change(input, { target: { value: '4' } })
+    expect(confirm).toBeDisabled()
+    fireEvent.change(input, { target: { value: '42' } })
+    fireEvent.click(confirm)
     const key = 'POST /api/v1/auth/login-approvals/la_1/approve'
     await waitFor(() => expect(calls).toContain(key))
     expect(JSON.parse(bodies[key] ?? '{}')).toEqual({ match: 42 })

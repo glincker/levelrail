@@ -13,6 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -233,5 +234,88 @@ func TestRunRecoverAdmin_OpenStoreFailurePropagates(t *testing.T) {
 	})
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("runRecoverAdmin() error = %v, want it to wrap %v", err, wantErr)
+	}
+}
+
+func TestRunRecoverAdmin_RetiresSignInGrants(t *testing.T) {
+	ctx := context.Background()
+	dbPath := filepath.Join(t.TempDir(), "levelrail.db")
+	logger := slog.New(slog.NewTextHandler(bytes.NewBuffer(nil), nil))
+	open := func(ctx context.Context) (*store.DB, error) { return store.Open(ctx, dbPath) }
+	args := []string{"--username", "admin", "--password", "explicit-pass-1"}
+	if err := runRecoverAdmin(ctx, logger, args, &bytes.Buffer{}, open); err != nil {
+		t.Fatal(err)
+	}
+	db, err := store.Open(ctx, dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	user, err := db.GetUserByEmail(ctx, "admin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	eng, err := authengine.New(db.DB, authengine.Config{BaseURL: "http://localhost", Directory: authengine.NewDirectory(db.DB)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer eng.Close()
+	expires := time.Now().Add(time.Hour)
+	_, approver, err := eng.MintToken(ctx, authengine.MintInput{OwnerLegacyID: user.ID, Name: "approver", Abilities: []string{api.AbilitySignInApprove}, ExpiresAt: &expires})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, reader, err := eng.MintToken(ctx, authengine.MintInput{OwnerLegacyID: user.ID, Name: "reader", Abilities: []string{api.AbilityRead}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	for _, a := range []store.LoginApproval{
+		{ID: "la_pending", UserID: user.ID, BrowserHash: "b1", CreatedAt: now, ExpiresAt: now.Add(time.Hour)},
+		{ID: "la_approved", UserID: user.ID, BrowserHash: "b2", CreatedAt: now, ExpiresAt: now.Add(time.Hour)},
+	} {
+		if err := db.CreateLoginApproval(ctx, a); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := db.DecideLoginApproval(ctx, "la_approved", user.ID, true, "session:x", now); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.CreateLoginCodeChallenge(ctx, store.LoginCodeChallenge{ID: "lc_1", UserID: user.ID, BrowserHash: "b3", CodeHash: "h", Salt: "s",
+		CreatedAt: now, ExpiresAt: now.Add(time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := runRecoverAdmin(ctx, logger, args, &bytes.Buffer{}, open); err != nil {
+		t.Fatal(err)
+	}
+
+	if ok, err := db.ConsumeLoginApproval(ctx, "la_approved", time.Now()); err != nil || ok {
+		t.Fatalf("approved approval still consumable after recovery: %v %v", ok, err)
+	}
+	if pending, _ := db.ListPendingLoginApprovalsForUser(ctx, user.ID, time.Now()); len(pending) != 0 {
+		t.Fatalf("pending approvals = %d after recovery", len(pending))
+	}
+	if live, _ := db.ListLiveLoginCodesForUser(ctx, user.ID, time.Now()); len(live) != 0 {
+		t.Fatalf("live codes = %d after recovery", len(live))
+	}
+	tests := []struct {
+		name    string
+		id      string
+		revoked bool
+	}{
+		{"signin:approve token is revoked", approver.EngineID, true},
+		{"other tokens are kept", reader.EngineID, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec, err := eng.GetToken(ctx, tt.id)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := rec.RevokedAt != nil; got != tt.revoked {
+				t.Fatalf("revoked = %v, want %v", got, tt.revoked)
+			}
+		})
 	}
 }

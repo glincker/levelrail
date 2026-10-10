@@ -17,15 +17,14 @@ type SignInCode struct {
 	Revealable  bool      `json:"revealable"`
 }
 
-// SignInApproval mirrors internal/api's signInApprovalItem. MatchOptions
-// holds the three numbers to choose from; only one is on the waiting browser.
+// SignInApproval mirrors internal/api's signInApprovalItem. It never carries
+// the number the waiting browser shows: the approver has to type it.
 type SignInApproval struct {
-	ID           string    `json:"id"`
-	RequesterIP  string    `json:"requester_ip"`
-	UserAgent    string    `json:"user_agent"`
-	CreatedAt    time.Time `json:"created_at"`
-	ExpiresAt    time.Time `json:"expires_at"`
-	MatchOptions []int     `json:"match_options"`
+	ID          string    `json:"id"`
+	RequesterIP string    `json:"requester_ip"`
+	UserAgent   string    `json:"user_agent"`
+	CreatedAt   time.Time `json:"created_at"`
+	ExpiresAt   time.Time `json:"expires_at"`
 }
 
 // SignInRequests mirrors internal/api's signInRequestsResponse.

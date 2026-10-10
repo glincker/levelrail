@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -72,18 +71,10 @@ func printAuthCode(w io.Writer, prog string, out authCodeOutput) {
 			c.CreatedAt.Local().Format(time.Kitchen), c.ExpiresAt.Local().Format(time.Kitchen))
 	}
 	for _, a := range out.Approvals {
-		_, _ = fmt.Fprintf(w, "new browser %s  from %s  %s  requested %s  number shown there is one of %s  (approve: %s auth approve %s --match N, deny: %s auth deny %s)\n",
-			a.ID, a.RequesterIP, a.UserAgent, a.CreatedAt.Local().Format(time.Kitchen), joinInts(a.MatchOptions), prog, a.ID, prog, a.ID)
+		_, _ = fmt.Fprintf(w, "new browser %s  from %s  %s  requested %s  (approve: %s auth approve %s --match NN with the number that browser shows, deny: %s auth deny %s)\n",
+			a.ID, a.RequesterIP, a.UserAgent, a.CreatedAt.Local().Format(time.Kitchen), prog, a.ID, prog, a.ID)
 	}
 	_, _ = fmt.Fprintln(w, "Only use a code or approve a browser if you started that sign-in yourself.")
-}
-
-func joinInts(ns []int) string {
-	parts := make([]string, 0, len(ns))
-	for _, n := range ns {
-		parts = append(parts, strconv.Itoa(n))
-	}
-	return strings.Join(parts, ", ")
 }
 
 // signInApproveHelp says how to get a token that may reveal codes and
@@ -128,7 +119,7 @@ func runAuthDecide(prog string, args []string, approve bool, stdout, stderr io.W
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "auth "+verb, "print the result as JSON", stderr)
 	match := 0
 	if approve {
-		fs.IntVar(&match, "match", 0, "the two digit number the waiting browser shows (required); a wrong number denies the sign-in")
+		fs.IntVar(&match, "match", 0, "type the two digit number the waiting browser shows (required); a wrong number denies the sign-in")
 	}
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s auth %s <approval-id> [flags]\n\n%s a password sign-in from a new browser. Find the id with \"%s auth code\".\n\n%s\nFlags:\n",

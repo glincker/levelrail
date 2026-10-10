@@ -14,6 +14,7 @@ const (
 	loginCodeAuditPrefix = "/api/v1/auth/login-code/"
 	approvalAuditPrefix  = "/api/v1/auth/login-approvals/"
 	trustedAuditPrefix   = "/api/v1/auth/trusted-devices/"
+	approverAuditPrefix  = "/api/v1/auth/tokens/signin-approve#"
 )
 
 // signInActor is who an audit row about a sign-in names: the deciding

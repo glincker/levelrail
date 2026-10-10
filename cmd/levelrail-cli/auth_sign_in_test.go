@@ -89,6 +89,7 @@ func TestRun_AuthSignIn(t *testing.T) {
 			"POST /api/v1/auth/login-approvals/la_1/approve": "",
 		}, exitOK, []string{"approved sign-in la_1"}},
 		{"approve without a number is refused", []string{"auth", "approve", "la_1"}, nil, exitValidation, nil},
+		{"approve with a number that is not two digits is refused", []string{"auth", "approve", "la_1", "--match", "7"}, nil, exitValidation, nil},
 		{"deny", []string{"auth", "deny", "la_1"}, map[string]string{
 			"POST /api/v1/auth/login-approvals/la_1/deny": "",
 		}, exitOK, []string{"denied sign-in la_1"}},

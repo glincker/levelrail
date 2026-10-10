@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { KeyIcon, ShieldWarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 import {
   revealLoginCode,
@@ -138,6 +139,53 @@ function CodeRow({ request }: { request: SignInCodeRequest }) {
   )
 }
 
+// The approver types the number rather than picking from choices, so a
+// prompt-fatigued click can never land on the right one by chance.
+function MatchForm({
+  pending,
+  onSubmit,
+  onCancel,
+}: {
+  pending: boolean
+  onSubmit: (match: number) => void
+  onCancel: () => void
+}) {
+  const { t } = useTranslation('signIn', { useSuspense: false })
+  const [value, setValue] = useState('')
+  const valid = /^[1-9]\d$/.test(value)
+  return (
+    <form
+      className="flex flex-wrap items-center gap-2"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (valid) {
+          onSubmit(Number(value))
+        }
+      }}
+    >
+      <p className="w-full text-xs text-muted-foreground">
+        {t('requests.matchPrompt')}
+      </p>
+      <Input
+        autoFocus
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={2}
+        aria-label={t('requests.matchInput')}
+        className="w-16 font-mono text-base"
+        value={value}
+        onChange={(e) => setValue(e.target.value.replace(/\D/g, ''))}
+      />
+      <Button type="submit" size="sm" disabled={!valid || pending}>
+        {t('requests.confirmApprove')}
+      </Button>
+      <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
+        {t('requests.cancel')}
+      </Button>
+    </form>
+  )
+}
+
 function ApprovalRow({ request }: { request: SignInApprovalRequest }) {
   const { t } = useTranslation('signIn', { useSuspense: false })
   const decide = useDecideApproval()
@@ -175,37 +223,11 @@ function ApprovalRow({ request }: { request: SignInApprovalRequest }) {
         <p className="font-mono text-xs text-muted-foreground">{request.id}</p>
       </div>
       {choosing ? (
-        <div
-          className="flex flex-wrap items-center gap-2"
-          role="group"
-          aria-label={t('requests.matchPrompt')}
-        >
-          <p className="w-full text-xs text-muted-foreground">
-            {t('requests.matchPrompt')}
-          </p>
-          {request.match_options.map((n) => (
-            <Button
-              key={n}
-              type="button"
-              size="sm"
-              variant="outline"
-              className="font-mono text-base"
-              aria-label={t('requests.matchOption', { number: n })}
-              disabled={decide.isPending}
-              onClick={() => act(true, n)}
-            >
-              {n}
-            </Button>
-          ))}
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => setChoosing(false)}
-          >
-            {t('requests.cancel')}
-          </Button>
-        </div>
+        <MatchForm
+          pending={decide.isPending}
+          onSubmit={(n) => act(true, n)}
+          onCancel={() => setChoosing(false)}
+        />
       ) : (
         <div className="flex items-center gap-2">
           <Button

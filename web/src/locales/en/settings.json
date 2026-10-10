@@ -219,7 +219,9 @@
       "abilityRequired": "Select at least one ability",
       "rootExclusive": "Root cannot be combined with other abilities",
       "signInApprove": "Approve my sign-ins",
-      "signInApproveHint": "Lets this token show your sign-in codes and approve new browsers from the CLI. Root does not include it and a device login never grants it, so keep this token short-lived."
+      "signInApproveHint": "Lets this token show your sign-in codes and approve new browsers from the CLI. Root does not include it and a device login never grants it. It must expire within 30 days and is revoked when you change or reset your password or sign out your other sessions.",
+      "signInApproveExpiry": "A token that approves sign-ins must expire within 30 days",
+      "signInApproveAgent": "A token that approves sign-ins cannot be issued to an agent"
     }
   },
   "hostFirewall": {

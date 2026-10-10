@@ -69,7 +69,23 @@ function createTokenSchema(t: TFunction<'settings'>) {
       message: t('tokens.create.rootExclusive'),
       path: ['signInApprove'],
     })
+    .refine(
+      (v) =>
+        !v.signInApprove ||
+        SIGN_IN_APPROVE_EXPIRATIONS.some((e) => e === v.expiration),
+      {
+        message: t('tokens.create.signInApproveExpiry'),
+        path: ['expiration'],
+      },
+    )
+    .refine((v) => !(v.signInApprove && v.agentName.trim() !== ''), {
+      message: t('tokens.create.signInApproveAgent'),
+      path: ['signInApprove'],
+    })
 }
+
+// The server caps signin:approve tokens at 30 days by default.
+const SIGN_IN_APPROVE_EXPIRATIONS = ['1', '7', '30'] as const
 
 type CreateTokenFormValues = z.infer<ReturnType<typeof createTokenSchema>>
 
@@ -79,17 +95,24 @@ export function CreateTokenDialog() {
   const [created, setCreated] = useState<CreateTokenResponse | null>(null)
   const createToken = useCreateToken()
   const schema = useMemo(() => createTokenSchema(t), [t])
-  const { control, register, handleSubmit, formState, reset } =
-    useForm<CreateTokenFormValues>({
-      resolver: zodResolver(schema),
-      defaultValues: {
-        name: '',
-        expiration: 'never',
-        agentName: '',
-        abilities: [],
-        signInApprove: false,
-      },
-    })
+  const {
+    control,
+    register,
+    handleSubmit,
+    formState,
+    reset,
+    getValues,
+    setValue,
+  } = useForm<CreateTokenFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: '',
+      expiration: 'never',
+      agentName: '',
+      abilities: [],
+      signInApprove: false,
+    },
+  })
 
   const onSubmit = handleSubmit((values) => {
     const days = EXPIRATION_OPTIONS.find(
@@ -185,6 +208,7 @@ export function CreateTokenDialog() {
                   </Select>
                 )}
               />
+              <FieldError errors={[formState.errors.expiration]} />
             </Field>
 
             <Field>
@@ -227,6 +251,15 @@ export function CreateTokenDialog() {
                         checked={field.value}
                         onCheckedChange={(checked) => {
                           field.onChange(checked === true)
+                          const current = getValues('expiration')
+                          if (
+                            checked === true &&
+                            !SIGN_IN_APPROVE_EXPIRATIONS.some(
+                              (e) => e === current,
+                            )
+                          ) {
+                            setValue('expiration', '30')
+                          }
                         }}
                       />
                       <FieldContent>
