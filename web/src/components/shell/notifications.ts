@@ -27,6 +27,8 @@ export interface ShellNotification {
   title: string
   detail: string
   href: string
+  // Set on informational items the operator can clear for themselves.
+  dismissKey?: string
 }
 
 // Deploy failures and approvals already have their own sources above, so
@@ -44,6 +46,7 @@ function hrefForTarget(target: AttentionItem['target']): string {
     case 'domain':
       return '/domains'
     case 'route':
+    case 'path':
       return target.to
     case 'system':
       return '/settings/system-status'
@@ -57,7 +60,8 @@ export function notificationsFromAttention(
     .filter((i) => !OWN_SOURCE_PREFIXES.some((p) => i.id.startsWith(p)))
     .map((i) => ({
       id: `attention:${i.id}`,
-      group: i.id.startsWith('device:') ? 'approvals' : 'system',
+      group: i.id.startsWith('device') ? 'approvals' : 'system',
+      dismissKey: i.device?.dismissKey,
       severity: i.severity,
       title: i.title,
       detail: i.detail,

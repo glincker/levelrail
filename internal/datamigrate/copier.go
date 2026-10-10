@@ -30,6 +30,9 @@ type Copier struct {
 	Logger   *slog.Logger
 	// VerifyAttempts and VerifyInterval retry the target count while the
 	// engine is still loading the restored data. Zero values use defaults.
+	// HelperNetwork is a Docker network the helper joins instead of the
+	// default bridge, so a source container on it is reachable.
+	HelperNetwork  string
 	VerifyAttempts int
 	VerifyInterval time.Duration
 }
@@ -96,23 +99,38 @@ func (c *Copier) copy(ctx context.Context, t Target, src Source) (Verification, 
 }
 
 func (c *Copier) startHelper(ctx context.Context, t Target, src Source) (string, error) {
+	return startHelperContainer(ctx, c.Runtime, database.ImageRef(t.Engine, t.Version), src, t.Name, c.HelperNetwork)
+}
+
+// startHelperContainer starts a sleeping container from image whose only
+// inputs are the SRC_* variables, and returns its id.
+func startHelperContainer(ctx context.Context, rt docker.Runtime, image string, src Source, label, network string) (string, error) {
+	var attach *docker.NetworkAttachment
+	if network != "" && network != defaultBridgeNetwork {
+		attach = &docker.NetworkAttachment{Name: network}
+	}
+	return startHelperOn(ctx, rt, image, src, label, attach)
+}
+
+func startHelperOn(ctx context.Context, rt docker.Runtime, image string, src Source, label string, attach *docker.NetworkAttachment) (string, error) {
 	buf := make([]byte, 6)
 	if _, err := rand.Read(buf); err != nil {
 		return "", fmt.Errorf("generate helper name: %w", err)
 	}
-	id, err := c.Runtime.Create(ctx, docker.ContainerSpec{
+	id, err := rt.Create(ctx, docker.ContainerSpec{
 		Name:       "dbmigrate-" + hex.EncodeToString(buf),
-		Image:      database.ImageRef(t.Engine, t.Version),
+		Image:      image,
 		Entrypoint: []string{"sleep"},
 		Command:    []string{"86400"},
 		Env:        helperEnv(src),
-		Labels:     map[string]string{"data-copy": t.Name},
+		Labels:     map[string]string{"data-copy": label},
+		Network:    attach,
 	})
 	if err != nil {
 		return "", fmt.Errorf("create helper container: %w", err)
 	}
-	if err := c.Runtime.Start(ctx, id); err != nil {
-		_ = c.Runtime.Remove(context.Background(), id, true)
+	if err := rt.Start(ctx, id); err != nil {
+		_ = rt.Remove(context.Background(), id, true)
 		return "", fmt.Errorf("start helper container: %w", err)
 	}
 	return id, nil

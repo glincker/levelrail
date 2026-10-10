@@ -968,6 +968,9 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 				return replicaOutcome{reason: "DatabaseNetworkConnectFailed"}, err
 			}
 		}
+		if err := c.connectExternalNetworks(ctx, desired, target); err != nil {
+			return replicaOutcome{reason: "DatabaseNetworkConnectFailed"}, err
+		}
 		return c.confirmedOutcome(ctx, target, state, desired, false)
 	}
 
@@ -1164,6 +1167,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		// without its port bindings, so it is never left behind to retry.
 		_ = c.runtime.Remove(ctx, id, true)
 		return fmt.Errorf("start %q after create: %w", name, err)
+	}
+	if err := c.connectExternalNetworks(ctx, desired, name); err != nil {
+		return err
 	}
 	return nil
 }
@@ -1533,6 +1539,13 @@ func DatabaseHost(dbName, zone string) string {
 // internal/secrets storage those generators already write to
 // (database.PasswordSecretKey).
 func (c *Controller) resolveDatabaseField(ctx context.Context, dbName, field string) (string, error) {
+	ext, err := c.lookupExternal(ctx, dbName)
+	if err != nil {
+		return "", err
+	}
+	if ext != nil {
+		return c.resolveExternalField(ctx, ext, field)
+	}
 	desiredDB, err := c.databases.GetDesiredDatabase(ctx, dbName)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		return "", fmt.Errorf("references database %q, which does not exist", dbName)

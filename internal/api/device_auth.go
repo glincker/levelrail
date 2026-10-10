@@ -21,6 +21,7 @@ const deviceAuthTTL = 10 * time.Minute
 // "slow_down"-response escalation real OAuth device grants define.
 
 const (
+	envDeviceCodeTTL        = "APP_DEVICE_CODE_TTL"              //nolint:gosec // env var name
 	envDeviceStartRate      = "APP_DEVICE_START_RATE_PER_MINUTE" //nolint:gosec // env var name
 	defaultDeviceStartRate  = 6
 	envDeviceTokenTTLDays   = "APP_DEVICE_TOKEN_TTL_DAYS"   //nolint:gosec // env var name

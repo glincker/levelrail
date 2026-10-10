@@ -1,10 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { VaultIcon } from '@phosphor-icons/react/dist/ssr'
 import type { VaultSettings } from '../queries/vault'
-import {
-  useDisconnectVault,
-  useUpdateVaultSettings,
-} from '../queries/vault'
+import { useDisconnectVault, useUpdateVaultSettings } from '../queries/vault'
 import {
   Card,
   CardContent,
@@ -213,9 +210,7 @@ export function VaultSettingsCard({ settings }: { settings: VaultSettings }) {
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="vault-mount-path">
-              KV v2 mount path
-            </FieldLabel>
+            <FieldLabel htmlFor="vault-mount-path">KV v2 mount path</FieldLabel>
             <Input
               id="vault-mount-path"
               autoComplete="off"

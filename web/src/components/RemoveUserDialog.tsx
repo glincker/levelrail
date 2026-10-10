@@ -41,8 +41,8 @@ export function RemoveUserDialog({ user }: { user: UserResource }) {
             Remove {user.email}?
           </DialogTitle>
           <DialogDescription>
-            This ends every active session for this account immediately.
-            This cannot be undone.
+            This ends every active session for this account immediately. This
+            cannot be undone.
           </DialogDescription>
         </DialogHeader>
         {deleteUser.isError ? (
@@ -69,7 +69,10 @@ export function RemoveUserDialog({ user }: { user: UserResource }) {
               deleteUser.mutate(user.id, {
                 onSuccess: () => {
                   setOpen(false)
-                  toast.add({ title: `${user.email} removed.`, type: 'success' })
+                  toast.add({
+                    title: `${user.email} removed.`,
+                    type: 'success',
+                  })
                 },
               })
             }}

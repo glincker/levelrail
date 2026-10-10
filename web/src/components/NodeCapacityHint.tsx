@@ -16,8 +16,7 @@ export function NodeCapacityHint({
   const hint = useNodeCapacityHint(nodeId)
   if (!hint) return null
 
-  const value =
-    dimension === 'memory' ? hint.memoryUsedBytes : hint.cpuPercent
+  const value = dimension === 'memory' ? hint.memoryUsedBytes : hint.cpuPercent
   if (value === null) return null
 
   const formatted =
@@ -30,8 +29,8 @@ export function NodeCapacityHint({
 
   return (
     <p className="mt-1 text-xs text-muted-foreground">
-      Node &quot;{hint.nodeName}&quot; currently has {formatted} {label} in
-      use{services}.
+      Node &quot;{hint.nodeName}&quot; currently has {formatted} {label} in use
+      {services}.
     </p>
   )
 }

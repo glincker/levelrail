@@ -28,7 +28,10 @@ export async function fetchResourceRecommendation(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch resource recommendation failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch resource recommendation failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as ResourceRecommendation
@@ -65,20 +68,28 @@ export async function fetchDatabaseResourceRecommendation(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch resource recommendation failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch resource recommendation failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as ResourceRecommendation
 }
 
-export function databaseResourceRecommendationQueryOptions(databaseName: string) {
+export function databaseResourceRecommendationQueryOptions(
+  databaseName: string,
+) {
   return queryOptions({
     queryKey: databaseResourceRecommendationKeys.detail(databaseName),
     queryFn: () => fetchDatabaseResourceRecommendation(databaseName),
   })
 }
 
-export function useDatabaseResourceRecommendation(databaseName: string, enabled = true) {
+export function useDatabaseResourceRecommendation(
+  databaseName: string,
+  enabled = true,
+) {
   return useQuery({
     ...databaseResourceRecommendationQueryOptions(databaseName),
     enabled,

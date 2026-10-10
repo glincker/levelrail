@@ -49,7 +49,10 @@ export async function fetchPublicOAuthProviders(): Promise<
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch oauth providers failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch oauth providers failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as PublicOAuthProvider[]
@@ -101,7 +104,10 @@ export async function updateOAuthProviderSettings(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `update oauth settings failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `update oauth settings failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as OAuthProviderSettings

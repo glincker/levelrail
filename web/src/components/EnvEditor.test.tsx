@@ -6,15 +6,17 @@ import { EnvEditor } from './EnvEditor'
 import type { AppDetail } from '../types/appDetail'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('@tanstack/react-router')>()
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
   return {
     ...actual,
     Link: ({
       children,
       to,
       ...rest
-    }: { children?: ReactNode; to?: string } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    }: {
+      children?: ReactNode
+      to?: string
+    } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
       <a href={to} {...rest}>
         {children}
       </a>
@@ -74,14 +76,21 @@ describe('EnvEditor tier provenance', () => {
         const url = requestUrlOf(input)
         if (url === '/api/v1/projects/proj_1') {
           return Promise.resolve(
-            fakeJsonResponse({ id: 'proj_1', name: 'demo', created_at: '2026-01-01T00:00:00Z', org_id: 'org_1' }),
+            fakeJsonResponse({
+              id: 'proj_1',
+              name: 'demo',
+              created_at: '2026-01-01T00:00:00Z',
+              org_id: 'org_1',
+            }),
           )
         }
         if (url === '/api/v1/organizations/org_1/env') {
           return Promise.resolve(fakeJsonResponse({ SHADOWED: 'org-value' }))
         }
         if (url === '/api/v1/projects/proj_1/env') {
-          return Promise.resolve(fakeJsonResponse({ FROM_PROJECT: 'project-value' }))
+          return Promise.resolve(
+            fakeJsonResponse({ FROM_PROJECT: 'project-value' }),
+          )
         }
         if (url === '/api/v1/environments/env_1/env') {
           return Promise.resolve(fakeJsonResponse({}))

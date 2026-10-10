@@ -43,6 +43,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/GLINCKER/levelrail/internal/exposure"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	"github.com/GLINCKER/levelrail/internal/imageupdate"
@@ -55,6 +56,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	exposurereconcile "github.com/GLINCKER/levelrail/internal/reconcile/exposure"
 	firewallreconcile "github.com/GLINCKER/levelrail/internal/reconcile/firewall"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
@@ -69,6 +71,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/updatecheck"
+	"github.com/GLINCKER/levelrail/internal/upgradehistory"
 	"github.com/GLINCKER/levelrail/internal/vault"
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/internal/webhook"
@@ -396,7 +399,8 @@ func run(logger *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	db, err := openStore(ctx)
+	obs := upgradehistory.Observed{SchemaBefore: -1}
+	db, err := openStoreObserved(ctx, &obs)
 	if err != nil {
 		return err
 	}
@@ -405,6 +409,7 @@ func run(logger *slog.Logger) error {
 			logger.Error("closing store", slog.String("error", cerr.Error()))
 		}
 	}()
+	recordUpgradeHistory(ctx, db, obs, logger)
 
 	// instanceID must be resolved before the Docker client is
 	// constructed below, so every container/network/volume this process
@@ -750,6 +755,7 @@ func run(logger *slog.Logger) error {
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
 	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
+	startExternalDatabaseMonitor(ctx, logger, db, secretsManager, client, agentRegistry)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
 		Handler:           apiHandler,
@@ -1109,6 +1115,14 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	// Device login expiry sweep (api.Router.RunDeviceLoginExpirySweeper):
+	// audits each lapsed CLI login exactly once, even when no CLI polls.
+	go func() {
+		if err := apiRouter.RunDeviceLoginExpirySweeper(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("device login expiry sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	// Webhook delivery retention sweep (api.Router.RunWebhookDeliverySweeper,
 	// internal/api/webhook_delivery_retention.go): deletes
 	// webhook_deliveries rows past the retention window on its own tick,
@@ -1197,6 +1211,11 @@ func stopAgentGRPCServer(server gracefulStopper, logger *slog.Logger, timeout ti
 }
 
 func openStore(ctx context.Context) (*store.DB, error) {
+	return openStoreObserved(ctx, nil)
+}
+
+// openStoreObserved is openStore that reports pre-migration facts into obs.
+func openStoreObserved(ctx context.Context, obs *upgradehistory.Observed) (*store.DB, error) {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1207,7 +1226,7 @@ func openStore(ctx context.Context) (*store.DB, error) {
 	if err := os.MkdirAll(dataDir, 0o750); err != nil { //nolint:gosec // operator-controlled startup config, not user input
 		return nil, err
 	}
-	return store.Open(ctx, filepath.Join(dataDir, storeFilename), store.WithPreMigrateHook(preMigrateSnapshotHook(dataDir)))
+	return store.Open(ctx, filepath.Join(dataDir, storeFilename), store.WithPreMigrateHook(observedPreMigrateSnapshotHook(dataDir, obs)))
 }
 
 // openTelemetryStore opens the metrics store on its own
@@ -2259,6 +2278,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDeviceLoginNotifier(deployDispatcher),
 		api.WithDashboardURL(dashboardBaseURL()),
 		api.WithFirewallRequiredPorts(platformRequiredPorts()),
+		api.WithExposure(newExposureManager(b.RuleCommentPrefix()), db),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithRequestLogThresholds(slowRequestThreshold(logger), criticalRequestThreshold(logger)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
@@ -2584,7 +2604,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	} else {
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
-	opts = append(opts, api.WithChangelog(loadChangelog(logger)))
+	opts = append(opts, api.WithChangelog(loadChangelog(logger)), api.WithUpgradeHistory(db))
 
 	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
 	wireModelPreflight(modelSvc, client, b.ShortName, logger)
@@ -2737,6 +2757,12 @@ func ingressPortFromAddr(addr string) int {
 // APP_INGRESS_HTTPS_ADDR. ingressPortFromAddr's own "0 on unparseable"
 // degrade is harmless here: Validate's port-match loop simply never
 // matches 0.
+// newExposureManager guards the platform ports and SSH from any restriction.
+func newExposureManager(prefix string) *exposure.Manager {
+	protected := append(platformRequiredPorts(), api.HostFirewallSSHPorts()...)
+	return exposure.NewManager(prefix, protected)
+}
+
 func platformRequiredPorts() []int {
 	return []int{
 		ingressPortFromAddr(httpAddr()),
@@ -3685,6 +3711,9 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// the write-time refusal and this reconcile-time, defense-in-depth
 		// skip never disagree about what counts as "required."
 		controllers = append(controllers, firewallreconcile.New(deps.db, firewall.New(deps.firewallRulePrefix), firewallreconcile.WithRequiredPorts(platformRequiredPorts()), firewallreconcile.WithLogger(deps.logger)))
+
+		// Exposure restrictions re-assert DOCKER-USER rules after a reboot or Docker restart.
+		controllers = append(controllers, exposurereconcile.New(deps.db, newExposureManager(deps.firewallRulePrefix), deps.logger))
 
 		if deps.meshCfg != nil {
 			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger)))

@@ -135,10 +135,10 @@ func (rt *Router) handleSaveDatabaseQuery(w http.ResponseWriter, r *http.Request
 		return
 	}
 	name := r.PathValue("name")
-	if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
+	if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) && !rt.isExternalDatabase(r, name) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
-	} else if err != nil {
+	} else if err != nil && !errors.Is(err, store.ErrDatabaseNotFound) {
 		rt.internalError(w, "api: save database query: load database failed", err, slog.String("name", name))
 		return
 	}

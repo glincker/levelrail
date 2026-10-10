@@ -18,15 +18,23 @@ import type { GitSourceResource } from '../types/gitSource'
 
 export const previewEnvironmentKeys = {
   all: ['preview-environments'] as const,
-  list: (appName: string) => [...previewEnvironmentKeys.all, 'list', appName] as const,
+  list: (appName: string) =>
+    [...previewEnvironmentKeys.all, 'list', appName] as const,
 }
 
-export async function fetchPreviewEnvironments(appName: string): Promise<PreviewEnvironment[]> {
-  const res = await fetch(`/api/v1/apps/${encodeURIComponent(appName)}/previews`)
+export async function fetchPreviewEnvironments(
+  appName: string,
+): Promise<PreviewEnvironment[]> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(appName)}/previews`,
+  )
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch preview environments failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch preview environments failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as PreviewEnvironment[]
@@ -53,7 +61,10 @@ export function usePreviewEnvironments(appName: string) {
   return useQuery(previewEnvironmentsQueryOptions(appName))
 }
 
-export async function teardownPreviewEnvironment(appName: string, prNumber: number): Promise<void> {
+export async function teardownPreviewEnvironment(
+  appName: string,
+  prNumber: number,
+): Promise<void> {
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/previews/${prNumber}/teardown`,
     { method: 'POST' },
@@ -71,7 +82,9 @@ export function useTeardownPreviewEnvironment(appName: string) {
   return useMutation<void, ApiError, number>({
     mutationFn: (prNumber) => teardownPreviewEnvironment(appName, prNumber),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: previewEnvironmentKeys.list(appName) })
+      void queryClient.invalidateQueries({
+        queryKey: previewEnvironmentKeys.list(appName),
+      })
     },
   })
 }
@@ -90,13 +103,19 @@ async function putPreviewSettings(
   appName: string,
   body: { enabled?: boolean; post_pr_comments?: boolean },
 ): Promise<PreviewSettings> {
-  const res = await fetch(`/api/v1/apps/${encodeURIComponent(appName)}/preview-settings`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(appName)}/preview-settings`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  )
   if (res.status === 404) {
-    throw new ApiError(404, 'Connect a git source before enabling preview environments.')
+    throw new ApiError(
+      404,
+      'Connect a git source before enabling preview environments.',
+    )
   }
   if (!res.ok) {
     throw new ApiError(
@@ -110,7 +129,10 @@ async function putPreviewSettings(
 // setPreviewEnabled touches only the enabled toggle: post_pr_comments,
 // if previously set, is left unchanged (internal/api's
 // setPreviewSettingsRequest's own doc comment).
-export async function setPreviewEnabled(appName: string, enabled: boolean): Promise<PreviewSettings> {
+export async function setPreviewEnabled(
+  appName: string,
+  enabled: boolean,
+): Promise<PreviewSettings> {
   return putPreviewSettings(appName, { enabled })
 }
 
@@ -121,10 +143,13 @@ export function useSetPreviewEnabled(appName: string) {
     onSuccess: (result) => {
       queryClient.setQueryData<GitSourceResource | undefined>(
         gitSourceKeys.detail(appName),
-        (current) => (current ? { ...current, preview_enabled: result.enabled } : current),
+        (current) =>
+          current ? { ...current, preview_enabled: result.enabled } : current,
       )
       if (result.enabled) {
-        void queryClient.invalidateQueries({ queryKey: previewEnvironmentKeys.list(appName) })
+        void queryClient.invalidateQueries({
+          queryKey: previewEnvironmentKeys.list(appName),
+        })
       }
     },
   })
@@ -132,7 +157,10 @@ export function useSetPreviewEnabled(appName: string) {
 
 // setPreviewPostPRComments touches only the post_pr_comments toggle:
 // enabled, if previously set, is left unchanged.
-export async function setPreviewPostPRComments(appName: string, enabled: boolean): Promise<PreviewSettings> {
+export async function setPreviewPostPRComments(
+  appName: string,
+  enabled: boolean,
+): Promise<PreviewSettings> {
   return putPreviewSettings(appName, { post_pr_comments: enabled })
 }
 
@@ -143,7 +171,10 @@ export function useSetPreviewPostPRComments(appName: string) {
     onSuccess: (result) => {
       queryClient.setQueryData<GitSourceResource | undefined>(
         gitSourceKeys.detail(appName),
-        (current) => (current ? { ...current, post_pr_comments: result.post_pr_comments } : current),
+        (current) =>
+          current
+            ? { ...current, post_pr_comments: result.post_pr_comments }
+            : current,
       )
     },
   })
@@ -155,12 +186,17 @@ export function useSetPreviewPostPRComments(appName: string) {
 // (internal/api/preview_environments_sweep.go), tearing down any preview
 // whose pull-request-closed webhook never arrived. Cross-app, so success
 // invalidates every app's own preview list, not just one.
-export async function sweepStalePreviewEnvironments(): Promise<{ swept: number }> {
+export async function sweepStalePreviewEnvironments(): Promise<{
+  swept: number
+}> {
   const res = await fetch('/api/v1/previews/sweep', { method: 'POST' })
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `sweep preview environments failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `sweep preview environments failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as { swept: number }
@@ -171,7 +207,9 @@ export function useSweepStalePreviewEnvironments() {
   return useMutation<{ swept: number }, ApiError, void>({
     mutationFn: () => sweepStalePreviewEnvironments(),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: previewEnvironmentKeys.all })
+      void queryClient.invalidateQueries({
+        queryKey: previewEnvironmentKeys.all,
+      })
     },
   })
 }

@@ -83,7 +83,11 @@ export function VerificationBadgeAction({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <VerificationStatusBadge status={status} error={error} checkedBy={checkedBy} />
+      <VerificationStatusBadge
+        status={status}
+        error={error}
+        checkedBy={checkedBy}
+      />
       <Button
         type="button"
         variant="outline"
@@ -129,11 +133,7 @@ function VerificationStatusBadge({
   }
   if (status === 'failed') {
     return (
-      <Badge
-        variant="destructive"
-        className="rounded-full"
-        title={error}
-      >
+      <Badge variant="destructive" className="rounded-full" title={error}>
         <ShieldWarningIcon className="size-3" aria-hidden="true" />
         {auto ? 'Failed auto-verification' : 'Failed verification'}
       </Badge>
@@ -143,7 +143,9 @@ function VerificationStatusBadge({
     <Badge
       variant="success"
       className="rounded-full"
-      title={auto ? 'Verified automatically after the scheduled backup' : undefined}
+      title={
+        auto ? 'Verified automatically after the scheduled backup' : undefined
+      }
     >
       <ShieldCheckIcon className="size-3" aria-hidden="true" />
       {auto ? 'Auto-verified' : 'Verified'}

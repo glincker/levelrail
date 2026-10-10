@@ -2,8 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runDatabasesDelete implements "databases delete <name>": DELETE
@@ -25,7 +29,12 @@ func runDatabasesDelete(prog string, args []string, stdout, stderr io.Writer, lo
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
-	if err := client.DeleteDatabase(context.Background(), name, *force); err != nil {
+	err := client.DeleteDatabase(context.Background(), name, *force)
+	var apiErr *apiclient.APIError
+	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound {
+		err = client.DeleteExternalDatabase(context.Background(), name, *force)
+	}
+	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete database %q: %w", name, err))
 	}
 
@@ -43,7 +52,8 @@ func databasesDeleteUsage(prog string) string {
   %[1]s databases delete <name> [flags]
 
 Stops a managed database and removes it from the control plane. Its data
-volume and any backups in storage are kept. Refuses while apps still connect
+volume and any backups in storage are kept. For an external database only
+the local record is removed; the remote database is never contacted. Refuses while apps still connect
 to it unless --force is given.
 
 Flags:

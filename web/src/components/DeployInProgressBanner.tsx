@@ -28,7 +28,10 @@ export function DeployInProgressBanner({
     <Card className="ring-primary/20">
       <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
         <div className="flex min-w-0 items-center gap-3">
-          <RocketIcon className="size-5 shrink-0 animate-pulse text-primary" aria-hidden="true" />
+          <RocketIcon
+            className="size-5 shrink-0 animate-pulse text-primary"
+            aria-hidden="true"
+          />
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-sm font-medium text-foreground">
               Deploy in progress

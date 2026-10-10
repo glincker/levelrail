@@ -130,6 +130,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/updates/preflight", rt.requireAbility(AbilityRead, rt.handleUpdatePreflight))
 	mux.HandleFunc("GET /api/v1/updates/releases", rt.requireAbility(AbilityRead, rt.handleReleaseHistory))
 	mux.HandleFunc("GET /api/v1/updates/rollback-plan", rt.requireAbility(AbilityRoot, rt.handleRollbackPlan))
+	mux.HandleFunc("GET /api/v1/updates/history", rt.requireAbility(AbilityRead, rt.handleUpgradeHistory))
+	mux.HandleFunc("POST /api/v1/updates/history/{id}/ack", rt.requireAbility(AbilityWrite, rt.handleAckUpgrade))
 	// Channel/auto-update settings are AbilityRoot on both verbs: see
 	// handleGetUpdateSettings' own doc comment (updates_settings.go).
 	mux.HandleFunc("GET /api/v1/updates/settings", rt.requireAbility(AbilityRoot, rt.handleGetUpdateSettings))
@@ -261,6 +263,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/device/token", rt.handleDeviceAuthToken)
 	mux.HandleFunc("GET /api/v1/auth/device/requests", rt.requireAuth(rt.handleListDeviceAuthRequests))
 	mux.HandleFunc("GET /api/v1/auth/device/pending-summary", rt.requireAbility(AbilityRead, rt.handleDevicePendingSummary))
+	mux.HandleFunc("GET /api/v1/auth/device/activity", rt.requireAbility(AbilityRead, rt.handleDeviceActivity))
+	mux.HandleFunc("GET /api/v1/attention/feed", rt.requireAbility(AbilityRead, rt.handleAttentionFeed))
+	mux.HandleFunc("POST /api/v1/attention/dismiss", rt.requireAuth(rt.handleAttentionDismiss))
 	mux.HandleFunc("POST /api/v1/auth/device/{user_code}/approve", rt.requireAuth(rt.handleApproveDeviceAuthRequest))
 	mux.HandleFunc("POST /api/v1/auth/device/{user_code}/deny", rt.requireAuth(rt.handleDenyDeviceAuthRequest))
 
@@ -652,6 +657,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// AbilityReadSensitive; the write console is AbilityRoot (admin only).
 	mux.HandleFunc("GET /api/v1/databases/{name}/schema", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseSchema))
 	mux.HandleFunc("GET /api/v1/databases/{name}/tables/{schema}/{table}/rows", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseTableRows))
+	mux.HandleFunc("GET /api/v1/databases/{name}/tables/{schema}/{table}/structure", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseTableStructure))
 	mux.HandleFunc("POST /api/v1/databases/{name}/query", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDatabaseQuery))
 	mux.HandleFunc("POST /api/v1/databases/{name}/query/write", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleDatabaseQueryWrite))
 	mux.HandleFunc("POST /api/v1/databases/{name}/explain", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDatabaseExplain))
@@ -671,4 +677,17 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// Placement, the database counterpart to
 	// PUT /apps/{name}/node above: same AbilityRoot gating.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/node", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleSetDatabaseNode))
+
+	// External databases: connected, never run, by this platform. Anything
+	// that dials out or reveals a credential is admin only.
+	mux.HandleFunc("GET /api/v1/external-databases", rt.requireAbility(AbilityRead, rt.handleListExternalDatabases))
+	mux.HandleFunc("POST /api/v1/external-databases", rt.requireAbility(AbilityRoot, rt.handleCreateExternalDatabase))
+	mux.HandleFunc("POST /api/v1/external-databases/test", rt.requireAbility(AbilityRoot, rt.handleTestExternalDatabase))
+	mux.HandleFunc("GET /api/v1/external-databases/candidates", rt.requireAbility(AbilityRoot, rt.handleListExternalDatabaseCandidates))
+	mux.HandleFunc("POST /api/v1/external-databases/adopt", rt.requireAbility(AbilityRoot, rt.handleAdoptExternalDatabase))
+	mux.HandleFunc("GET /api/v1/external-databases/{name}", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetExternalDatabase))
+	mux.HandleFunc("PUT /api/v1/external-databases/{name}", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleUpdateExternalDatabase))
+	mux.HandleFunc("DELETE /api/v1/external-databases/{name}", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleDeleteExternalDatabase))
+	mux.HandleFunc("POST /api/v1/external-databases/{name}/probe", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleProbeExternalDatabase))
+	mux.HandleFunc("GET /api/v1/external-databases/{name}/password", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleRevealExternalDatabasePassword))
 }

@@ -26,6 +26,12 @@ func runFirewall(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runFirewallHost(prog, "enable", args[1:], stdout, stderr, lookupEnv)
 	case "disable":
 		return runFirewallHost(prog, "disable", args[1:], stdout, stderr, lookupEnv)
+	case "exposure":
+		return runFirewallExposure(prog, args[1:], stdout, stderr, lookupEnv)
+	case "restrict":
+		return runFirewallRestrict(prog, args[1:], stdout, stderr, lookupEnv)
+	case "unrestrict":
+		return runFirewallUnrestrict(prog, args[1:], stdout, stderr, lookupEnv)
 	case "list":
 		return runFirewallList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "allow":
@@ -46,6 +52,9 @@ func firewallUsage(prog string) string {
   %[1]s firewall status [flags]                                          show whether the host firewall (ufw) is on and which ports it needs
   %[1]s firewall enable [--dry-run] [flags]                              allow SSH, 80, 443 and the control plane ports, then turn ufw on
   %[1]s firewall disable [--dry-run] [flags]                             turn ufw off
+  %[1]s firewall exposure [--node N] [--probe] [flags]                   audit which published container ports are reachable from outside
+  %[1]s firewall restrict --port N --allow CIDR[,CIDR] --dry-run|--apply   limit a published port to an allow-list (DOCKER-USER)
+  %[1]s firewall unrestrict --port N [flags]                              remove a restriction Levelrail added
   %[1]s firewall list [flags]                                            list configured firewall rules
   %[1]s firewall allow --port N [--protocol tcp|udp] [--source-cidr CIDR] [--label TEXT] [flags]   add an allow rule
   %[1]s firewall deny --port N [--protocol tcp|udp] [--source-cidr CIDR] [--label TEXT] [flags]    add a deny rule

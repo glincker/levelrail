@@ -18,6 +18,7 @@ const CODE_PREFIXES: ReadonlyArray<[string, ReadinessCategoryId]> = [
   ['external_reachability_', 'network'],
   ['registry_reachability_', 'network'],
   ['cross_node_ingress', 'network'],
+  ['exposure', 'network'],
   ['nas_', 'storage'],
 ]
 

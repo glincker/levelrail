@@ -115,7 +115,11 @@ export function DeployNotifyTargetsPanel({ appName }: { appName: string }) {
               </TableHeader>
               <TableBody>
                 {targets.map((target) => (
-                  <TargetRow key={target.id} appName={appName} target={target} />
+                  <TargetRow
+                    key={target.id}
+                    appName={appName}
+                    target={target}
+                  />
                 ))}
               </TableBody>
             </Table>

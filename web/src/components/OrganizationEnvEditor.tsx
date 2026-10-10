@@ -1,4 +1,7 @@
-import { useOrganizationEnv, useSetOrganizationEnv } from '../queries/organizationEnv'
+import {
+  useOrganizationEnv,
+  useSetOrganizationEnv,
+} from '../queries/organizationEnv'
 import { EnvVarsForm } from './EnvVarsForm'
 import { toast } from '@/components/ui/toast'
 

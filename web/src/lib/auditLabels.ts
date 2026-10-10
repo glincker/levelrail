@@ -3,6 +3,7 @@ import {
   ShieldCheckIcon,
   ShieldIcon,
   ShieldWarningIcon,
+  TerminalWindowIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { AuditLogEntry } from '../queries/auditLog'
 import type auditLogEn from '../locales/en/auditLog.json'
@@ -55,11 +56,31 @@ interface AuditLabelRule {
   icon: Icon
   labelKey: AuditLabelKey
   matches: (
-    entry: Pick<AuditLogEntry, 'ability' | 'method' | 'path'>,
+    entry: Pick<AuditLogEntry, 'ability' | 'method' | 'path' | 'action'>,
   ) => boolean
 }
 
 const AUDIT_LABEL_RULES: AuditLabelRule[] = [
+  {
+    icon: TerminalWindowIcon,
+    labelKey: 'labels.deviceLoginApproved',
+    matches: (e) => e.action === 'device_login.approved',
+  },
+  {
+    icon: TerminalWindowIcon,
+    labelKey: 'labels.deviceLoginDenied',
+    matches: (e) => e.action === 'device_login.denied',
+  },
+  {
+    icon: TerminalWindowIcon,
+    labelKey: 'labels.deviceLoginExpired',
+    matches: (e) => e.action === 'device_login.expired',
+  },
+  {
+    icon: TerminalWindowIcon,
+    labelKey: 'labels.deviceLoginDismissed',
+    matches: (e) => e.action === 'device_login.dismissed',
+  },
   {
     icon: ShieldCheckIcon,
     labelKey: 'labels.certIssued',
@@ -94,7 +115,7 @@ const AUDIT_LABEL_RULES: AuditLabelRule[] = [
 // columns for every row. Returns null when no rule matches, so callers
 // fall back to the existing raw columns unchanged.
 export function auditFriendlyLabel(
-  entry: Pick<AuditLogEntry, 'ability' | 'method' | 'path'>,
+  entry: Pick<AuditLogEntry, 'ability' | 'method' | 'path' | 'action'>,
 ): AuditFriendlyLabel | null {
   const rule = AUDIT_LABEL_RULES.find((r) => r.matches(entry))
   if (!rule) {

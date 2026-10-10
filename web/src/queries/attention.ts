@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useNow } from '../hooks/useNow'
 import { buildAttentionItems } from '../lib/attention'
 import { buildWaitingItems, rankAttentionItems } from '../lib/attentionWaiting'
-import { deviceAuthRequestsQueryOptions } from './deviceAuth'
+import { useDeviceActivity, useLiveDeviceAuthRequests } from './deviceAuth'
+import { attentionFeedQueryOptions } from './attentionFeed'
 import { deployApprovalListQueryOptions } from './deployApprovals'
 import { appListQueryOptions } from './apps'
 import { certificatesQueryOptions } from './certificates'
@@ -15,7 +16,6 @@ import { systemStatusQueryOptions } from './systemStatus'
 import { updatesQueryOptions } from './updates'
 
 const REFRESH_MS = 30_000
-const DEVICE_REFRESH_MS = 5_000
 const NOW_TICK_MS = 15_000
 
 // Each source is optional: a failing or forbidden endpoint drops its own
@@ -29,11 +29,9 @@ export function useAttentionItems() {
   const failed = useQuery({ ...failedDeploysQueryOptions(), ...opts })
   const status = useQuery({ ...systemStatusQueryOptions(), ...opts })
   const updates = useQuery({ ...updatesQueryOptions(), ...opts })
-  const devices = useQuery({
-    ...deviceAuthRequestsQueryOptions(),
-    retry: false,
-    refetchInterval: DEVICE_REFRESH_MS,
-  })
+  const feed = useQuery({ ...attentionFeedQueryOptions(), ...opts })
+  const devices = useLiveDeviceAuthRequests()
+  const activity = useDeviceActivity()
   const approvals = useQuery({
     ...deployApprovalListQueryOptions('pending'),
     ...opts,
@@ -52,6 +50,8 @@ export function useAttentionItems() {
   })
   const waiting = buildWaitingItems({
     deviceLogins: devices.data,
+    resolvedLogins: activity.data,
+    feed: feed.data,
     approvals: approvals.data,
     certs: certs.data,
     nodes: nodes.data,

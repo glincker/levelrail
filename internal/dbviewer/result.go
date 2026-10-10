@@ -33,6 +33,9 @@ type Target struct {
 	ContainerID string
 	Dialect     Dialect
 	Limits      Limits
+	// External marks a database this platform does not run: Exec starts a
+	// helper that carries the connection, and ContainerID is unused.
+	External bool
 }
 
 // ErrTimeout reports that the statement ran past the configured timeout.

@@ -89,6 +89,15 @@ type ContainerState struct {
 	// alone isn't enough on a Docker daemon shared by more than one
 	// control-plane instance.
 	Labels map[string]string
+	// Networks lists the Docker networks the container is attached to with
+	// its address on each. Only the local Docker client reports it.
+	Networks []ContainerNetwork
+}
+
+// ContainerNetwork is one network attachment of a container.
+type ContainerNetwork struct {
+	Name      string
+	IPAddress string
 }
 
 // VolumeMount attaches one named Docker volume to a path inside a

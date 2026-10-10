@@ -84,7 +84,9 @@ export function DomainMaintenanceControl({
               setMaintenance.mutate()
             }}
           >
-            {setMaintenance.isPending ? 'Enabling...' : 'Enable maintenance mode'}
+            {setMaintenance.isPending
+              ? 'Enabling...'
+              : 'Enable maintenance mode'}
           </Button>
         )}
       </div>

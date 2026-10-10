@@ -25,9 +25,7 @@ export const appHookRunsKeys = {
     [...appKeys.detail(appName), 'hook-runs'] as const,
 }
 
-export async function fetchAppHookRuns(
-  appName: string,
-): Promise<AppHookRuns> {
+export async function fetchAppHookRuns(appName: string): Promise<AppHookRuns> {
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/hook-runs`,
   )

@@ -24,7 +24,10 @@ export async function fetchOrganizationEnv(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch organization env failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch organization env failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as Record<string, string>
@@ -45,11 +48,14 @@ export async function setOrganizationEnv(
   id: string,
   vars: Record<string, string>,
 ): Promise<Record<string, string>> {
-  const res = await fetch(`/api/v1/organizations/${encodeURIComponent(id)}/env`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(vars),
-  })
+  const res = await fetch(
+    `/api/v1/organizations/${encodeURIComponent(id)}/env`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(vars),
+    },
+  )
   if (!res.ok) {
     throw new ApiError(
       res.status,

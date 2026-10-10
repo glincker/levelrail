@@ -23,6 +23,7 @@ export const NAMESPACES = [
   'attention',
   'setup',
   'updates',
+  'exposure',
 ] as const
 
 void i18n

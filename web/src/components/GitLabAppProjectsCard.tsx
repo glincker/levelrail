@@ -67,8 +67,8 @@ export function GitLabAppProjectsCard() {
           <div>
             <CardTitle>Projects</CardTitle>
             <CardDescription>
-              Connect a GitLab project as an app&apos;s git source, with a
-              push webhook registered automatically.
+              Connect a GitLab project as an app&apos;s git source, with a push
+              webhook registered automatically.
             </CardDescription>
           </div>
         </div>
@@ -113,7 +113,9 @@ export function GitLabAppProjectsCard() {
             </Button>
           </div>
         ))}
-        {!projects.isLoading && !projects.isError && (projects.data ?? []).length === 0 ? (
+        {!projects.isLoading &&
+        !projects.isError &&
+        (projects.data ?? []).length === 0 ? (
           <EmptyState
             className="py-12"
             icon={<GitlabLogoIcon className="size-5" />}
@@ -122,7 +124,10 @@ export function GitLabAppProjectsCard() {
           />
         ) : null}
       </CardContent>
-      <UseAsSourceDialog project={target} onOpenChange={(open) => !open && setTarget(null)} />
+      <UseAsSourceDialog
+        project={target}
+        onOpenChange={(open) => !open && setTarget(null)}
+      />
     </Card>
   )
 }
@@ -149,7 +154,10 @@ function UseAsSourceDialog({
       return
     }
     useAsSource.mutate(
-      { projectID: project.id, req: { app_name: appName, branch: branch.trim() || undefined } },
+      {
+        projectID: project.id,
+        req: { app_name: appName, branch: branch.trim() || undefined },
+      },
       {
         onSuccess: () => {
           toast.add({
@@ -185,9 +193,10 @@ function UseAsSourceDialog({
         <DialogHeader>
           <DialogTitle>Use as source</DialogTitle>
           <DialogDescription>
-            Connect <span className="font-mono">{project?.path_with_namespace}</span> as
-            an app&apos;s git source. A push webhook is registered on the project
-            automatically.
+            Connect{' '}
+            <span className="font-mono">{project?.path_with_namespace}</span> as
+            an app&apos;s git source. A push webhook is registered on the
+            project automatically.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -203,7 +212,9 @@ function UseAsSourceDialog({
             >
               <SelectTrigger id="gl-use-app" className="w-full">
                 <SelectValue
-                  placeholder={apps.isLoading ? 'Loading apps...' : 'Select an app'}
+                  placeholder={
+                    apps.isLoading ? 'Loading apps...' : 'Select an app'
+                  }
                 />
               </SelectTrigger>
               <SelectContent>

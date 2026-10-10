@@ -55,13 +55,17 @@ export function NotificationDeliveryHistoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button type="button" variant="outline" size="sm" />}>
+      <DialogTrigger
+        render={<Button type="button" variant="outline" size="sm" />}
+      >
         <ClockCounterClockwiseIcon className="size-3.5" aria-hidden="true" />
         History
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>&ldquo;{channel.name}&rdquo; delivery history</DialogTitle>
+          <DialogTitle>
+            &ldquo;{channel.name}&rdquo; delivery history
+          </DialogTitle>
           <DialogDescription>
             Recent send attempts through this channel, newest first.
           </DialogDescription>

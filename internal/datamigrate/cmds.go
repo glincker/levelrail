@@ -19,6 +19,9 @@ const (
 
 const sqlBacktick = "\\`"
 
+// pgReadOnly makes every Postgres session the helper opens refuse writes.
+const pgReadOnly = `export PGOPTIONS="-c default_transaction_read_only=on"`
+
 // helperEnv is the environment of the helper container that reads the source.
 func helperEnv(s Source) map[string]string {
 	env := map[string]string{
@@ -47,6 +50,7 @@ func DumpCommand(engine string) ([]string, error) {
 	switch engine {
 	case EnginePostgres:
 		script = `export PGHOST="$SRC_HOST" PGPORT="$SRC_PORT" PGUSER="$SRC_USER" PGPASSWORD="$SRC_PASSWORD" PGDATABASE="$SRC_DB" PGCONNECT_TIMEOUT=20
+` + pgReadOnly + `
 if [ -n "$SRC_TLS" ]; then export PGSSLMODE=require; fi
 exec pg_dump --no-password --no-owner --no-privileges`
 	case EngineMySQL:
@@ -81,6 +85,7 @@ func SourceCountCommand(engine string) ([]string, error) {
 	switch engine {
 	case EnginePostgres:
 		script = `export PGHOST="$SRC_HOST" PGPORT="$SRC_PORT" PGUSER="$SRC_USER" PGPASSWORD="$SRC_PASSWORD" PGDATABASE="$SRC_DB" PGCONNECT_TIMEOUT=20
+` + pgReadOnly + `
 if [ -n "$SRC_TLS" ]; then export PGSSLMODE=require; fi
 psql --no-password -At -F '|' -v ON_ERROR_STOP=1 <<'SQL'
 ` + pgCountQuery + `

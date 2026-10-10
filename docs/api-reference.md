@@ -56,10 +56,12 @@ System endpoints for:
 | POST | /api/v1/system/orphans/reap | AbilityRoot | handleReapOrphans |
 | GET | /api/v1/updates/releases | AbilityRead | handleReleaseHistory |
 | GET | /api/v1/updates/rollback-plan | AbilityRoot | handleRollbackPlan |
+| GET | /api/v1/updates/history | AbilityRead | handleUpgradeHistory |
+| POST | /api/v1/updates/history/{id}/ack | AbilityWrite | handleAckUpgrade |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 79 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 80 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -137,6 +139,7 @@ Endpoints for:
 | PUT | /api/v1/settings/ai-control | AbilityRoot | handleUpdateAIControl |
 | POST | /api/v1/settings/ai-control/revoke-agent-tokens | AbilityRoot | handleRevokeAgentTokens |
 | GET | /api/v1/auth/device/pending-summary | AbilityRead | handleDevicePendingSummary |
+| GET | /api/v1/auth/device/activity | AbilityRead | handleDeviceActivity |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -451,6 +454,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleListDatabaseSavedQueries |
 | POST | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleSaveDatabaseQuery |
 | DELETE | /api/v1/databases/{name}/saved-queries/{id} | AbilityReadSensitive | handleDeleteDatabaseSavedQuery |
+| GET | /api/v1/databases/{name}/tables/{schema}/{table}/structure | AbilityReadSensitive | handleGetDatabaseTableStructure |
 
 ## Projects / Organizations / Environments
 
@@ -940,6 +944,34 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/cutover | AbilityRead | handleCutoverReport |
 | GET | /api/v1/migration/cutover/verify | AbilityWriteSensitive | handleCutoverVerify |
 | GET | /api/v1/ingress/connectivity | AbilityRead | handleIngressConnectivity |
+| GET | /api/v1/firewall/exposure | AbilityRead | handleExposureReport |
+| POST | /api/v1/firewall/exposure/preview | AbilityRead | handleExposurePreview |
+| PUT | /api/v1/firewall/exposure/restrictions/{protocol}/{port} | AbilityRoot | handleExposureRestrict |
+| DELETE | /api/v1/firewall/exposure/restrictions/{protocol}/{port} | AbilityRoot | handleExposureUnrestrict |
+| GET | /api/v1/migration/hub/local-sources | AbilityRead | handleHubLocalSources |
+| POST | /api/v1/migration/hub/sessions | AbilityWriteSensitive | handleCreateHubSession |
+| GET | /api/v1/migration/hub/sessions | AbilityRead | handleListHubSessions |
+| GET | /api/v1/migration/hub/sessions/{id} | AbilityRead | handleGetHubSession |
+| DELETE | /api/v1/migration/hub/sessions/{id} | AbilityWriteSensitive | handleDeleteHubSession |
+| PUT | /api/v1/migration/hub/sessions/{id}/selection | AbilityWriteSensitive | handlePutHubSelection |
+| PUT | /api/v1/migration/hub/sessions/{id}/step | AbilityWriteSensitive | handlePutHubStep |
+| POST | /api/v1/migration/hub/sessions/{id}/apply | AbilityWriteSensitive | handleApplyHubSession |
+| GET | /api/v1/migration/hub/sessions/{id}/receipt | AbilityRead | handleHubReceipt |
+| GET | /api/v1/migration/hub/sessions/{id}/items/{db}/connection | AbilityRead | handleHubConnection |
+| POST | /api/v1/migration/hub/sessions/{id}/items/{db}/reveal | AbilityReadSensitive | handleHubReveal |
+| GET | /api/v1/external-databases | AbilityRead | handleListExternalDatabases |
+| POST | /api/v1/external-databases | AbilityRoot | handleCreateExternalDatabase |
+| POST | /api/v1/external-databases/test | AbilityRoot | handleTestExternalDatabase |
+| GET | /api/v1/external-databases/candidates | AbilityRoot | handleListExternalDatabaseCandidates |
+| POST | /api/v1/external-databases/adopt | AbilityRoot | handleAdoptExternalDatabase |
+| GET | /api/v1/external-databases/{name} | AbilityRead | handleGetExternalDatabase |
+| PUT | /api/v1/external-databases/{name} | AbilityRoot | handleUpdateExternalDatabase |
+| DELETE | /api/v1/external-databases/{name} | AbilityWrite | handleDeleteExternalDatabase |
+| POST | /api/v1/external-databases/{name}/probe | AbilityWrite | handleProbeExternalDatabase |
+| GET | /api/v1/external-databases/{name}/password | AbilityRoot | handleRevealExternalDatabasePassword |
+| GET | /api/v1/attention/feed | AbilityRead | handleAttentionFeed |
+| POST | /api/v1/attention/dismiss | Session | handleAttentionDismiss |
+| GET | /api/v1/usage/summary | AbilityRead | handleUsageSummary |
 
 ## See also
 

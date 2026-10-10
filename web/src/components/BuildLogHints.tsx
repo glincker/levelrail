@@ -24,7 +24,10 @@ export function BuildLogHints({ lines }: { lines: LogLine[] }) {
   const [scan, setScan] = useState<{
     lines: LogLine[]
     state: BuildLogHintScanState
-  }>(() => ({ lines, state: scanBuildLogHints(lines, initialBuildLogHintScanState) }))
+  }>(() => ({
+    lines,
+    state: scanBuildLogHints(lines, initialBuildLogHintScanState),
+  }))
 
   const state =
     scan.lines === lines ? scan.state : scanBuildLogHints(lines, scan.state)

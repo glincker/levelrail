@@ -26,10 +26,7 @@ export function VolumeCloneRestoreHistoryTable({
   appName: string
   volumeName: string
 }) {
-  const { data, isLoading, error } = useVolumeCloneRestores(
-    appName,
-    volumeName,
-  )
+  const { data, isLoading, error } = useVolumeCloneRestores(appName, volumeName)
   const history = data ?? []
 
   if (isLoading || history.length === 0) {

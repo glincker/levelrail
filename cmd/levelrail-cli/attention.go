@@ -55,13 +55,13 @@ func printAttentionHuman(out io.Writer, items []attentionItem) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "SEVERITY\tKIND\tSUBJECT\tDETAIL")
+	_, _ = fmt.Fprintln(tw, "SEVERITY\tKIND\tSUBJECT\tDETAIL\tNEXT")
 	for _, it := range items {
 		detail := it.Detail
 		if it.Fixable {
 			detail += " [fixable: apps diagnose " + it.Subject + "]"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", it.Severity, it.Kind, it.Subject, detail)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", it.Severity, it.Kind, it.Subject, detail, it.Action)
 	}
 	_ = tw.Flush()
 }
@@ -72,8 +72,10 @@ func attentionUsage(prog string) string {
 
 Lists everything that needs attention right now: failing apps, failed
 deploys from the last 24 hours, low disk space (warn under 10 percent free,
-critical under 5), offline nodes, expired or expiring certificates, and
-doctor warnings or failures.
+critical under 5), offline nodes, expired or expiring certificates,
+doctor warnings or failures, CLI logins waiting, expired or denied, API
+tokens about to expire, failed data copies, overdue backups and pending
+invitations. A token only sees what its abilities allow.
 Exit code is 1 if any item is critical, 0 otherwise.
 
 Flags:

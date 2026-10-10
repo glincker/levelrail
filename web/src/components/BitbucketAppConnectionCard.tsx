@@ -4,7 +4,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
-import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   useConnectBitbucketApp,
   useDisconnectBitbucketApp,
@@ -53,8 +58,8 @@ export function BitbucketAppConnectionCard() {
             />
             {status.connected && !status.authorized && status.base_url ? (
               <p className="text-sm text-muted-foreground">
-                The OAuth consumer is configured but hasn&apos;t been
-                authorized yet. Click Connect to finish.
+                The OAuth consumer is configured but hasn&apos;t been authorized
+                yet. Click Connect to finish.
               </p>
             ) : null}
             {status.connected && !status.authorized && !status.base_url ? (
@@ -102,7 +107,11 @@ export function BitbucketAppConnectionCard() {
               />
             </div>
           ) : (
-            <Button type="button" size="sm" onClick={() => setConfigureOpen(true)}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setConfigureOpen(true)}
+            >
               <GitBranchIcon className="size-4" />
               Configure
             </Button>
@@ -166,7 +175,11 @@ function ConfigureDialog({
   }
 
   return (
-    <ResettableDialog open={open} onOpenChange={onOpenChange} onReset={resetForm}>
+    <ResettableDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      onReset={resetForm}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Configure a Bitbucket OAuth consumer</DialogTitle>
@@ -174,7 +187,9 @@ function ConfigureDialog({
             Create one at bitbucket.org under workspace settings &gt; OAuth
             consumers, with callback URL{' '}
             {baseURL ? (
-              <code className="text-xs">{baseURL}/api/v1/bitbucket-app/callback</code>
+              <code className="text-xs">
+                {baseURL}/api/v1/bitbucket-app/callback
+              </code>
             ) : (
               <span className="text-amber-700 dark:text-amber-400">
                 set a primary domain in domain settings first

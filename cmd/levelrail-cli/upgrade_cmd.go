@@ -15,8 +15,10 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	list := fs.Bool("list", false, "list the last 5 releases with a schema compatibility verdict")
 	channel := fs.String("channel", "", "with --list: stable, beta or all (default: the configured channel)")
 	planVersion := fs.String("rollback-plan", "", "preview a rollback to `version` (read-only; applying happens on the host)")
+	history := fs.Bool("history", false, "list recorded control plane upgrades, rollbacks and installs (add --json for JSON)")
+	ack := fs.String("ack", "", "acknowledge the recorded upgrade `id`")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade [flags]\n\nChecks the running version against the latest release, runs the preflight\n(release signature, Docker Engine, free disk, backup), takes a control plane\nbackup, and prints the command that upgrades. It never upgrades by itself.\n\n--list shows recent releases; --rollback-plan <version> previews returning to\none. Rolling back is applied on the host with `sudo <control plane binary> rollback`.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade [flags]\n\nChecks the running version against the latest release, runs the preflight\n(release signature, Docker Engine, free disk, backup), takes a control plane\nbackup, and prints the command that upgrades. It never upgrades by itself.\n\n--history shows every recorded upgrade and --ack <id> acknowledges one;\n--list shows recent releases; --rollback-plan <version> previews returning to\none. Rolling back is applied on the host with `sudo <control plane binary> rollback`.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -26,6 +28,12 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
+	if *history {
+		return runUpgradeHistory(ctx, client, jsonOut, of, stdout, stderr)
+	}
+	if *ack != "" {
+		return runUpgradeAck(ctx, client, *ack, jsonOut, of, stdout, stderr)
+	}
 	if *list {
 		return runUpgradeList(ctx, client, *channel, jsonOut, of, stdout, stderr)
 	}

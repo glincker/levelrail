@@ -19,7 +19,9 @@ export const featureFlagKeys = {
   list: (appName: string) => [...featureFlagKeys.all(appName), 'list'] as const,
 }
 
-export async function fetchFeatureFlags(appName: string): Promise<FeatureFlag[]> {
+export async function fetchFeatureFlags(
+  appName: string,
+): Promise<FeatureFlag[]> {
   const res = await fetch(`/api/v1/apps/${encodeURIComponent(appName)}/flags`)
   if (!res.ok) {
     throw new ApiError(
@@ -64,7 +66,9 @@ export function useCreateFeatureFlag(appName: string) {
   return useMutation({
     mutationFn: (req: FeatureFlagRequest) => createFeatureFlag(appName, req),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: featureFlagKeys.list(appName) })
+      void queryClient.invalidateQueries({
+        queryKey: featureFlagKeys.list(appName),
+      })
     },
   })
 }
@@ -97,12 +101,17 @@ export function useUpdateFeatureFlag(appName: string) {
     mutationFn: ({ id, req }: { id: string; req: FeatureFlagRequest }) =>
       updateFeatureFlag(appName, id, req),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: featureFlagKeys.list(appName) })
+      void queryClient.invalidateQueries({
+        queryKey: featureFlagKeys.list(appName),
+      })
     },
   })
 }
 
-export async function deleteFeatureFlag(appName: string, id: string): Promise<void> {
+export async function deleteFeatureFlag(
+  appName: string,
+  id: string,
+): Promise<void> {
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/flags/${encodeURIComponent(id)}`,
     { method: 'DELETE' },
@@ -120,7 +129,9 @@ export function useDeleteFeatureFlag(appName: string) {
   return useMutation({
     mutationFn: (id: string) => deleteFeatureFlag(appName, id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: featureFlagKeys.list(appName) })
+      void queryClient.invalidateQueries({
+        queryKey: featureFlagKeys.list(appName),
+      })
     },
   })
 }

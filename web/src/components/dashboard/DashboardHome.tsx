@@ -17,6 +17,9 @@ import { FleetTiles } from './FleetTiles'
 import { NeedsAttention } from './NeedsAttention'
 import { RecentActivity } from './RecentActivity'
 import { QuickStart } from './QuickStart'
+import { FleetDatabases } from './FleetDatabases'
+import { ReservedUsageCard } from './ReservedUsageCard'
+import { StorageUsageCard } from './StorageUsageCard'
 import { PlatformCapabilities } from './PlatformCapabilities'
 
 const RecentAlertsCard = lazy(() =>
@@ -104,6 +107,9 @@ export function DashboardHome({
       <StatusHeader firstAppName={apps[0]?.name} showSetup={isRoot} />
       <FleetTiles apps={apps} />
       <NeedsAttention />
+      <FleetDatabases />
+      <ReservedUsageCard apps={apps} />
+      <StorageUsageCard />
       <Suspense fallback={null}>
         <RecentAlertsCard />
       </Suspense>

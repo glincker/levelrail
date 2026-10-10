@@ -68,3 +68,28 @@ func TestEnvFromSystemctl(t *testing.T) {
 		})
 	}
 }
+
+func TestSplitCommand(t *testing.T) {
+	cases := []struct {
+		name    string
+		in      string
+		want    []string
+		wantErr bool
+	}{
+		{"plain", "systemctl stop levelrail", []string{"systemctl", "stop", "levelrail"}, false},
+		{"extra spaces", "  docker   stop  app ", []string{"docker", "stop", "app"}, false},
+		{"shell operators stay literal args", "echo a && rm -rf /", []string{"echo", "a", "&&", "rm", "-rf", "/"}, false},
+		{"empty", "   ", nil, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := splitCommand(tc.in)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("err = %v, wantErr %v", err, tc.wantErr)
+			}
+			if strings.Join(got, "\x00") != strings.Join(tc.want, "\x00") {
+				t.Fatalf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

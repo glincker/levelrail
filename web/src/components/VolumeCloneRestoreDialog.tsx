@@ -42,10 +42,7 @@ export function VolumeCloneRestoreDialog({
 }) {
   const [open, setOpen] = useState(false)
   const [newVolumeName, setNewVolumeName] = useState('')
-  const triggerCloneRestore = useTriggerVolumeCloneRestore(
-    appName,
-    volumeName,
-  )
+  const triggerCloneRestore = useTriggerVolumeCloneRestore(appName, volumeName)
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -66,9 +63,9 @@ export function VolumeCloneRestoreDialog({
           <DialogTitle>Restore as a new volume</DialogTitle>
           <DialogDescription>
             Creates a brand-new, standalone Docker volume and restores this
-            backup into it. &ldquo;{appName}/{volumeName}&rdquo;&apos;s own
-            live contents are never touched. The new volume is not attached
-            to any app: reference it by name to use it elsewhere.
+            backup into it. &ldquo;{appName}/{volumeName}&rdquo;&apos;s own live
+            contents are never touched. The new volume is not attached to any
+            app: reference it by name to use it elsewhere.
           </DialogDescription>
         </DialogHeader>
         <Field>

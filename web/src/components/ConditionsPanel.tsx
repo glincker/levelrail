@@ -29,8 +29,8 @@ function reasonTranslation(reason: string): React.ReactNode {
   if (reason !== 'CredentialsNotConfigured') return null
   return (
     <>
-      No secrets master key configured, or this database&rsquo;s own
-      credentials failed to generate.{' '}
+      No secrets master key configured, or this database&rsquo;s own credentials
+      failed to generate.{' '}
       <Link to="/settings/general" className="underline underline-offset-2">
         Configure it in Settings &gt; General
       </Link>

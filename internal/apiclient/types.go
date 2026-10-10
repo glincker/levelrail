@@ -1607,9 +1607,12 @@ type NotificationChannelResource struct {
 	Enabled   bool   `json:"enabled"`
 	// NotifyDeviceLogin is true when the channel gets a link-only notice
 	// while a CLI login awaits approval.
-	NotifyDeviceLogin bool   `json:"notify_device_login"`
-	CreatedAt         string `json:"created_at"`
-	UpdatedAt         string `json:"updated_at"`
+	NotifyDeviceLogin bool `json:"notify_device_login"`
+	// NotifyDeviceLoginExpired is true when the channel is told a pending
+	// CLI login expired unapproved.
+	NotifyDeviceLoginExpired bool   `json:"notify_device_login_expired"`
+	CreatedAt                string `json:"created_at"`
+	UpdatedAt                string `json:"updated_at"`
 }
 
 // CreateNotificationChannelRequest mirrors internal/api's
@@ -1621,6 +1624,8 @@ type CreateNotificationChannelRequest struct {
 	Enabled   *bool  `json:"enabled,omitempty"`
 	// NotifyDeviceLogin opts the channel into the CLI-login-waiting notice.
 	NotifyDeviceLogin bool `json:"notify_device_login,omitempty"`
+	// NotifyDeviceLoginExpired opts the channel into the login-expired notice.
+	NotifyDeviceLoginExpired bool `json:"notify_device_login_expired,omitempty"`
 }
 
 // TestNotificationChannelRequest mirrors internal/api's
@@ -3329,6 +3334,8 @@ type CertificateResource struct {
 	Apps []string `json:"apps,omitempty"`
 	// Source is "acme" or "custom"; see certificateStatus.Source.
 	Source string `json:"source"`
+	// ACMEFailure is the CA's last error for this domain, when it has one.
+	ACMEFailure *ACMEFailure `json:"acme_failure,omitempty"`
 }
 
 // RenewCertificateResource mirrors internal/api's

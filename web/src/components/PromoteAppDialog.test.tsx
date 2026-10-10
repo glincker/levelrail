@@ -133,10 +133,22 @@ function fakeApp(overrides: Partial<AppListEntry>): AppListEntry {
 
 const apps: AppListEntry[] = [
   fakeApp({ name: 'web', project_id: 'proj1', environment_id: 'env-dev' }),
-  fakeApp({ name: 'web-staging', project_id: 'proj1', environment_id: 'env-staging' }),
-  fakeApp({ name: 'web-prod', project_id: 'proj1', environment_id: 'env-prod' }),
+  fakeApp({
+    name: 'web-staging',
+    project_id: 'proj1',
+    environment_id: 'env-staging',
+  }),
+  fakeApp({
+    name: 'web-prod',
+    project_id: 'proj1',
+    environment_id: 'env-prod',
+  }),
   // Different project: never a candidate, even if tagged staging.
-  fakeApp({ name: 'other-staging', project_id: 'proj2', environment_id: 'env-staging' }),
+  fakeApp({
+    name: 'other-staging',
+    project_id: 'proj2',
+    environment_id: 'env-staging',
+  }),
 ]
 
 function fakePreview(targetApp: string): PromotePreviewResource {
@@ -146,7 +158,13 @@ function fakePreview(targetApp: string): PromotePreviewResource {
     environment: stagingEnv,
     from: { app_name: 'web', image: 'ghcr.io/acme/app:v2' },
     to: { app_name: targetApp, image: 'ghcr.io/acme/app:v1' },
-    changes: [{ field: 'image', from: 'ghcr.io/acme/app:v1', to: 'ghcr.io/acme/app:v2' }],
+    changes: [
+      {
+        field: 'image',
+        from: 'ghcr.io/acme/app:v1',
+        to: 'ghcr.io/acme/app:v2',
+      },
+    ],
     unsnapshotted_fields: [],
     note: '',
   }
@@ -167,7 +185,9 @@ function renderDialog() {
 // on every environmentId/target change, so an early "to=..." call with no
 // target yet is still sitting in fetchMock.mock.calls once a target is
 // picked afterward.
-function findPreviewCallUrl(fetchMock: ReturnType<typeof vi.fn>): string | undefined {
+function findPreviewCallUrl(
+  fetchMock: ReturnType<typeof vi.fn>,
+): string | undefined {
   const calls = fetchMock.mock.calls.filter(([input]) =>
     requestUrlOf(input as RequestInfo | URL).includes('/promote/preview'),
   )
@@ -185,7 +205,9 @@ describe('PromoteAppDialog', () => {
     mockFetchRoutes({
       'GET /api/v1/projects/proj1/environments': jsonRoute(environments),
       'GET /api/v1/apps': jsonRoute(apps),
-      'GET /api/v1/apps/web/promote/preview': jsonRoute(fakePreview('web-staging')),
+      'GET /api/v1/apps/web/promote/preview': jsonRoute(
+        fakePreview('web-staging'),
+      ),
     })
     const user = userEvent.setup()
     renderDialog()
@@ -207,7 +229,9 @@ describe('PromoteAppDialog', () => {
     const fetchMock = mockFetchRoutes({
       'GET /api/v1/projects/proj1/environments': jsonRoute(environments),
       'GET /api/v1/apps': jsonRoute(apps),
-      'GET /api/v1/apps/web/promote/preview': jsonRoute(fakePreview('web-staging')),
+      'GET /api/v1/apps/web/promote/preview': jsonRoute(
+        fakePreview('web-staging'),
+      ),
     })
     const user = userEvent.setup()
     renderDialog()
@@ -227,7 +251,9 @@ describe('PromoteAppDialog', () => {
     const fetchMock = mockFetchRoutes({
       'GET /api/v1/projects/proj1/environments': jsonRoute(environments),
       'GET /api/v1/apps': jsonRoute(apps),
-      'GET /api/v1/apps/web/promote/preview': jsonRoute(fakePreview('web-staging')),
+      'GET /api/v1/apps/web/promote/preview': jsonRoute(
+        fakePreview('web-staging'),
+      ),
     })
     const user = userEvent.setup()
     renderDialog()
@@ -251,7 +277,11 @@ describe('PromoteAppDialog', () => {
     mockFetchRoutes({
       'GET /api/v1/projects/proj1/environments': jsonRoute(environments),
       'GET /api/v1/apps': jsonRoute([
-        fakeApp({ name: 'web', project_id: 'proj1', environment_id: 'env-dev' }),
+        fakeApp({
+          name: 'web',
+          project_id: 'proj1',
+          environment_id: 'env-dev',
+        }),
       ]),
       'GET /api/v1/apps/web/promote/preview': jsonRoute(fakePreview('web')),
     })

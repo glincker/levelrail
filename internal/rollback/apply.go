@@ -50,6 +50,10 @@ type Deps struct {
 	// database was kept at. UndoRestoreDB puts that path back.
 	RestoreDB     func(ctx context.Context, backupName string) (string, error)
 	UndoRestoreDB func(ctx context.Context, keptPath string) error
+	// WriteMarker leaves the context the next boot records in upgrade history,
+	// and ClearMarker withdraws it when the target did not stay. Both optional.
+	WriteMarker func(ctx context.Context, backupName string) error
+	ClearMarker func()
 	// Audit records the outcome in the audit log. Best effort.
 	Audit func(ctx context.Context, detail string) error
 	Log   *slog.Logger
@@ -171,12 +175,20 @@ func Apply(ctx context.Context, d Deps, plan Plan, opts Options) (Result, error)
 		d.recover(ctx, prev, keptDB)
 		return res, fmt.Errorf("install target binary, previous release restored: %w", err)
 	}
+	if d.WriteMarker != nil {
+		if err := d.WriteMarker(ctx, backup); err != nil {
+			d.Log.Warn("rollback context marker not written", slog.String("error", err.Error()))
+		}
+	}
 	startErr := d.Start(ctx)
 	if startErr == nil {
 		startErr = d.WaitHealthy(ctx, opts.HealthTimeout)
 	}
 	if startErr != nil {
 		res.HealthError = startErr.Error()
+		if d.ClearMarker != nil {
+			d.ClearMarker()
+		}
 		d.Log.Error("rolled-back release failed to start, restoring previous", slog.String("to", res.To), slog.String("error", startErr.Error()))
 		if err := d.recoverAndVerify(ctx, prev, keptDB, opts.HealthTimeout); err != nil {
 			keepPrev = true

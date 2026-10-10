@@ -522,6 +522,9 @@ levelrail-cli databases logs <name> [flags]
 levelrail-cli databases slow-queries <name> [flags]
 levelrail-cli databases schema <name> [--columns] [flags]
 levelrail-cli databases query <name> --sql "select ..." [--explain] [--write --confirm <name>] [flags]
+levelrail-cli databases connect --name <n> --engine <e> --host <h> [--password-stdin] [--test] [flags]
+levelrail-cli databases adopt --container <c> [--node <id>] [--list] [--password-stdin] [flags]
+levelrail-cli databases probe <name> [flags]
 levelrail-cli databases resource-recommendation <name> [flags]
 levelrail-cli databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]
 levelrail-cli databases set-project <name> <project-id> [flags]
@@ -923,12 +926,15 @@ levelrail-cli network-shares test <id>
 
 ## Firewall
 
-Declarative host firewall rules, reconciled onto the control plane's local `ufw`. See [Host firewall](host-firewall.md).
+Declarative host firewall rules, reconciled onto the control plane's local `ufw`. See [Host firewall](host-firewall.md). `exposure`, `restrict` and `unrestrict` are covered in [Exposure audit](exposure-audit.md).
 
 ```
 levelrail-cli firewall status [flags]
 levelrail-cli firewall enable [--dry-run] [flags]
 levelrail-cli firewall disable [--dry-run] [flags]
+levelrail-cli firewall exposure [--node N] [--probe] [flags]
+levelrail-cli firewall restrict --port N --allow CIDR[,CIDR] [--local-containers] --dry-run|--apply [flags]
+levelrail-cli firewall unrestrict --port N [--protocol tcp|udp] [flags]
 levelrail-cli firewall list [flags]
 levelrail-cli firewall allow --port N [--protocol tcp|udp] [--source-cidr CIDR] [--label TEXT] [flags]
 levelrail-cli firewall deny --port N [--protocol tcp|udp] [--source-cidr CIDR] [--label TEXT] [flags]
