@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 782 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 802 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -604,6 +604,26 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/log-archive/policy", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetLogArchivePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/log-archive/runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListLogArchiveRuns", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
+	{Method: "POST", Path: "/api/v1/migration/apps/plan", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAppImportPlan", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppImportSessions", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateAppImportSession", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/migration/apps/sessions/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteAppImportSession", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetAppImportSession", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/connect", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleConnectAppImportSession", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/cutover", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportCutover", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/cutover/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAppImportCutoverVerify", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/images", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportImages", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/images/cancel", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCancelAppImportImages", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/images/status", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportImagesStatus", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/images/transfer", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTransferAppImportImages", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/items/{item}/route", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRouteAppImport", Description: ""},
+	{Method: "PUT", Path: "/api/v1/migration/apps/sessions/{id}/items/{item}/volumes/{vol}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleSetAppImportVolume", Description: ""},
+	{Method: "PUT", Path: "/api/v1/migration/apps/sessions/{id}/plan", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handlePutAppImportPlan", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/receipt", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportReceipt", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/rollback", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRollbackAppImport", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/stage", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleStageAppImport", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleVerifyAppImport", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/volumes", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportVolumes", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/cutover", Ability: "AbilityRead", Group: "Other", Handler: "handleCutoverReport", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/cutover/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCutoverVerify", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/hub/local-sources", Ability: "AbilityRead", Group: "Other", Handler: "handleHubLocalSources", Description: ""},

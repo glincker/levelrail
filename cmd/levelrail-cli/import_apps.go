@@ -25,6 +25,7 @@ type importAppsFlags struct {
 	tokenStdin, plan, apply, verify, receipt, rollback                    bool
 	acceptSuggested, insecure, allowPrivate, allowLoopback                bool
 	jsonOut                                                               bool
+	images                                                                imageMoveFlags
 	maps                                                                  mapPairs
 	wait                                                                  time.Duration
 }
@@ -77,7 +78,8 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 	fs.BoolVar(&f.insecure, "insecure-tls", false, "skip TLS verification of the source")
 	fs.BoolVar(&f.allowPrivate, "allow-private", false, "allow a private-network source (control plane also needs "+"APP_IMPORT_ALLOW_PRIVATE_NETWORKS=true)")
 	fs.BoolVar(&f.allowLoopback, "allow-loopback", false, "allow a loopback source (control plane also needs "+"APP_IMPORT_ALLOW_LOOPBACK=true)")
-	fs.DurationVar(&f.wait, "wait", 15*time.Minute, "how long --verify waits for builds")
+	fs.DurationVar(&f.wait, "wait", 15*time.Minute, "how long --verify and --transfer-images wait")
+	f.images.register(fs)
 	fs.StringVar(&f.apiURL, "api-url", "", "control plane API base URL")
 	fs.StringVar(&f.profile, "profile", "", "named credentials profile for the control plane")
 	fs.BoolVar(&f.jsonOut, "json", false, "print JSON")
@@ -91,6 +93,11 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 	client := apiClientFromFlags(prog, f.apiURL, "", f.profile, lookupEnv)
 	ctx := context.Background()
 	switch {
+	case f.images.any() && f.session == "":
+		_, _ = fmt.Fprintf(stderr, "%s: --transfer-images, --images and --cancel-images need --session\n", prog)
+		return exitUsage
+	case f.images.any():
+		return runImportAppsImages(ctx, prog, client, f, stdin, stdout, stderr, lookupEnv)
 	case f.session != "" && (f.verify || f.rollback || f.receipt):
 		return runImportAppsSession(ctx, client, f, stdout, stderr)
 	case f.plan == f.apply:
@@ -293,6 +300,8 @@ func importAppsUsage(prog string) string {
   %[1]s import apps --from coolify --url URL --token-stdin --plan [--only NAME] [--map OLD=NEW] [--json]
   %[1]s import apps --from docker --snapshot inspect.json --plan
   %[1]s import apps --from coolify --url URL --token-stdin --apply [--only NAME] [--map OLD=NEW] [--accept-suggested-maps]
+  %[1]s import apps --session ID --transfer-images --ssh user@host[:port] --ssh-key FILE|--ssh-agent [--only NAME]
+  %[1]s import apps --session ID --images|--cancel-images
   %[1]s import apps --session ID --verify|--rollback|--receipt [--only NAME]
 
 Plans and stages the applications of another platform. The source is only
@@ -301,9 +310,15 @@ with env and secrets imported encrypted and domains held back. --verify
 builds or pulls them, waits for readiness and stops them again. DNS, volume
 copies and routing stay with you: see the dashboard's Import apps flow.
 
+--transfer-images moves images built on the source host into this node with
+"docker save" over SSH (the only command run there) and checks each loaded
+image ID against the snapshot. The key is read from --ssh-key (a file, or -
+for stdin) and its passphrase from %[3]s; neither is stored. Run it after
+--apply and before --verify. A re-run skips images already verified.
+
 The source token is read from %[2]s, or --token-stdin, or --token (warns).
 It is sent to this control plane in the request body only and never stored.
-`, prog, envImportSourceToken)
+`, prog, envImportSourceToken, envImportSSHPassphrase)
 }
 
 // readSnapshot reads a docker inspect JSON file, or stdin when path is "-".

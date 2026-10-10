@@ -10,6 +10,7 @@ export const APP_IMPORT_STEPS = [
   'inventory',
   'preflight',
   'stage',
+  'images',
   'verify',
   'volumes',
   'cutover',

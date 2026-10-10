@@ -53,6 +53,8 @@ echo
 status="$(in_ct 'curl -fsS --max-time 5 http://127.0.0.1:8080/api/v1/auth/setup-status')"
 echo "setup-status: $status"
 echo "$status" | grep -q '"needs_setup":true' || { echo "expected needs_setup=true"; exit 1; }
+in_ct 'grep -qx "Environment=APP_HTTP_ADDR=:8080" /etc/systemd/system/levelrail.service.d/10-install.conf && grep -qx "Environment=APP_INGRESS_HTTP_ADDR=:80" /etc/systemd/system/levelrail.service.d/10-install.conf' ||
+	{ echo "free ports: drop-in should hold the default :8080/:80 addresses"; exit 1; }
 perms="$(in_ct 'stat -c %a /var/lib/levelrail-data/setup-token')"
 [ "$perms" = "600" ] || { echo "setup-token perms $perms, want 600"; exit 1; }
 in_ct 'APP_DATA_DIR=/var/lib/levelrail-data /usr/local/bin/levelrail setup-token' | grep -qF -- "$(in_ct 'cat /var/lib/levelrail-data/setup-token')" ||
@@ -81,6 +83,67 @@ out="$(docker exec "$name" env \
 	sh /root/install.sh 2>&1)" || rc=$?
 [ "$rc" -ne 0 ] || { echo "install should have failed with port 80 taken"; exit 1; }
 echo "$out" | grep -q "LEVELRAIL_HTTP_PORT/LEVELRAIL_HTTPS_PORT" || { echo "fail message did not mention the override vars: $out"; exit 1; }
+echo "$out" | grep -q "python3" || { echo "preflight did not name the process holding port 80: $out"; exit 1; }
+echo "$out" | grep -q -- "--coexist" || { echo "preflight did not offer --coexist: $out"; exit 1; }
+in_ct 'test ! -e /etc/systemd/system/levelrail.service.d/10-install.conf' || { echo "failed preflight must not write the drop-in"; exit 1; }
+
+echo "== a Docker container publishing the port is named (fake docker on PATH)"
+# shellcheck disable=SC2016 # runs inside the container, expands there
+in_ct 'mkdir -p /fake && cat > /fake/docker <<"SH"
+#!/bin/sh
+case "$1" in
+version) echo 27.0.1 ;;
+ps) echo "container coolify-proxy (image traefik:v3.1)" ;;
+esac
+SH
+chmod 755 /fake/docker'
+rc=0
+out="$(docker exec "$name" env PATH="/fake:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+	LEVELRAIL_BINARY_FILE=/root/levelrail LEVELRAIL_PUBLIC_IP=127.0.0.1 LEVELRAIL_MIN_DISK_GB=1 \
+	sh /root/install.sh 2>&1)" || rc=$?
+[ "$rc" -ne 0 ] || { echo "install should have failed with port 80 taken"; exit 1; }
+echo "$out" | grep -q "container coolify-proxy (image traefik:v3.1)" || { echo "docker holder not reported: $out"; exit 1; }
+
+echo "== --yes switches to coexist mode, settings land in the drop-in"
+out="$(docker exec "$name" timeout "$wait_secs" env \
+	LEVELRAIL_BINARY_FILE=/root/levelrail LEVELRAIL_PUBLIC_IP=127.0.0.1 LEVELRAIL_MIN_DISK_GB=1 \
+	sh /root/install.sh --yes --domain apps.example.test 2>&1)"
+echo "$out" | grep -q "levelrail-cli proxy --domain apps.example.test --verify" || { echo "coexist summary missing the proxy command: $out"; exit 1; }
+dropin=/etc/systemd/system/levelrail.service.d/10-install.conf
+in_ct "grep -qx 'Environment=APP_HTTP_ADDR=127.0.0.1:8080' $dropin" || { echo "dashboard not on loopback in the drop-in"; exit 1; }
+in_ct "grep -qx 'Environment=APP_INGRESS_HTTP_ADDR=:8088' $dropin" || { echo "ingress http not 8088 in the drop-in"; exit 1; }
+in_ct "grep -qx 'Environment=APP_INGRESS_HTTPS_ADDR=:8443' $dropin" || { echo "ingress https not 8443 in the drop-in"; exit 1; }
+in_ct '! grep -q "_ADDR=" /etc/systemd/system/levelrail.service' || { echo "main unit must not carry address settings"; exit 1; }
+in_ct 'curl -fsS --max-time 5 http://127.0.0.1:8080/healthz' >/dev/null || { echo "control plane unhealthy in coexist mode"; exit 1; }
+in_ct 'ss -ltn "sport = :8080"' | grep -q '127.0.0.1:8080' || { echo "dashboard is not bound to loopback only"; exit 1; }
+in_ct 'ss -ltn "sport = :8088"' | grep -q ':8088' || { echo "nothing listens on ingress port 8088"; exit 1; }
+
+echo "== upgrade keeps the drop-in and warns on a drifted main unit"
+before="$(in_ct "md5sum $dropin")"
+in_ct 'echo "# local edit" >> /etc/systemd/system/levelrail.service'
+out="$(docker exec "$name" timeout 300 env LEVELRAIL_BINARY_FILE=/root/levelrail sh /root/install.sh upgrade 2>&1)"
+[ "$before" = "$(in_ct "md5sum $dropin")" ] || { echo "upgrade rewrote the drop-in"; exit 1; }
+echo "$out" | grep -q "differs from what this installer writes" || { echo "no drift warning: $out"; exit 1; }
+in_ct 'curl -fsS --max-time 5 http://127.0.0.1:8080/healthz' >/dev/null || { echo "unhealthy after upgrade"; exit 1; }
+in_ct 'ss -ltn "sport = :8088"' | grep -q ':8088' || { echo "upgrade reset the ingress port"; exit 1; }
+# socket activation switch rewrites the main unit: ports must still survive
+docker exec "$name" timeout 300 env LEVELRAIL_BINARY_FILE=/root/levelrail LEVELRAIL_SOCKET_ACTIVATION=0 sh /root/install.sh upgrade >/dev/null 2>&1
+in_ct "grep -qx 'Environment=APP_INGRESS_HTTP_ADDR=:8088' $dropin" || { echo "unit rewrite lost the ingress port"; exit 1; }
+# Self-bound ingress only opens the HTTPS port until an HTTP route exists.
+in_ct 'ss -ltn "sport = :8443"' | grep -q ':8443' || {
+	echo "ingress not on 8443 after the unit rewrite"
+	in_ct 'ss -ltnp; systemctl cat levelrail; journalctl -u levelrail -n 30 --no-pager' || true
+	exit 1
+}
+
+echo "== upgrade migrates a legacy unit's ports into the drop-in"
+in_ct 'systemctl stop levelrail levelrail-http.socket levelrail-https.socket 2>/dev/null; rm -rf /etc/systemd/system/levelrail.service.d'
+in_ct 'sed -i -e "/^Environment=APP_DATA_DIR/a Environment=APP_HTTP_ADDR=:8090" -e "/^Environment=APP_DATA_DIR/a Environment=APP_INGRESS_HTTP_ADDR=:8088" -e "/^Environment=APP_DATA_DIR/a Environment=APP_INGRESS_HTTPS_ADDR=:8443" /etc/systemd/system/levelrail.service && systemctl daemon-reload'
+docker exec "$name" timeout 300 env LEVELRAIL_BINARY_FILE=/root/levelrail sh /root/install.sh upgrade >/dev/null 2>&1
+in_ct "grep -qx 'Environment=APP_HTTP_ADDR=:8090' $dropin" || { echo "legacy dashboard port not migrated"; exit 1; }
+in_ct 'curl -fsS --max-time 5 http://127.0.0.1:8090/healthz' >/dev/null || { echo "control plane not on the legacy dashboard port 8090"; exit 1; }
+in_ct 'sh /root/install.sh uninstall --purge' >/dev/null
+in_ct 'test ! -e /etc/systemd/system/levelrail.service.d/10-install.conf' || { echo "uninstall left the drop-in"; exit 1; }
 
 echo "== explicit alternate ingress ports work around the same conflict"
 docker exec "$name" timeout "$wait_secs" env \

@@ -5,6 +5,7 @@
 # (if missing) on a single Linux host.
 #
 # Usage: install.sh [install|upgrade|retain|uninstall] [--force] [--purge]
+#                   [--coexist] [--yes] [--http-port N] [--https-port N] [--domain HOST]
 #   install    (default) preflight checks, then install or repair. Safe to re-run.
 #   upgrade    replace the binary with a newer release and restart, keeping
 #              the unit file and data. The previous binaries (last 3) are
@@ -15,6 +16,16 @@
 #   uninstall  remove the service, unit, and binary. Data is kept unless
 #              --purge is given.
 #   --force    continue even if a preflight check fails.
+#   --coexist  run behind a proxy that already holds ports 80/443: ingress on
+#              8088/8443, dashboard on loopback only. Offered automatically
+#              when 80/443 are taken; --yes accepts that offer unattended.
+#   --yes, -y  answer yes to prompts (also accepts the coexist offer).
+#   --http-port / --https-port  ingress ports (override the LEVELRAIL_* env).
+#   --domain   your domain, only used to print the exact proxy command.
+#
+# Chosen ports and addresses are written to a systemd drop-in,
+# /etc/systemd/system/levelrail.service.d/10-install.conf, which `upgrade`
+# reads back and never resets.
 #
 # Env overrides:
 #   LEVELRAIL_VERSION        release tag to install, e.g. v0.3.0
@@ -54,6 +65,10 @@
 #                            the installer never does this on its own; it
 #                            fails preflight instead and tells you to set
 #                            these explicitly once you've accepted that trade.
+#   LEVELRAIL_COEXIST        1 is the same as --coexist
+#   LEVELRAIL_COEXIST_HTTP_PORT / LEVELRAIL_COEXIST_HTTPS_PORT  ingress ports
+#                            coexist mode uses (default: 8088 / 8443)
+#   APP_PUBLIC_HOST          written to the drop-in when set
 #   LEVELRAIL_SOCKET_ACTIVATION  systemd owns the ingress sockets, so a
 #                            restart or upgrade of the control plane queues
 #                            connections instead of refusing them (see
@@ -80,8 +95,27 @@ RELEASES_DIR="${LEVELRAIL_RELEASES_DIR:-${INSTALL_DIR}/${BINARY_NAME}.releases}"
 DASHBOARD_PORT="${LEVELRAIL_DASHBOARD_PORT:-8080}"
 DASHBOARD_PORT_PINNED=0
 [ -z "${LEVELRAIL_DASHBOARD_PORT:-}" ] || DASHBOARD_PORT_PINNED=1
+DASHBOARD_BIND=""
 HTTP_PORT="${LEVELRAIL_HTTP_PORT:-80}"
 HTTPS_PORT="${LEVELRAIL_HTTPS_PORT:-443}"
+HTTP_PORT_PINNED=0
+HTTPS_PORT_PINNED=0
+[ -z "${LEVELRAIL_HTTP_PORT:-}" ] || HTTP_PORT_PINNED=1
+[ -z "${LEVELRAIL_HTTPS_PORT:-}" ] || HTTPS_PORT_PINNED=1
+COEXIST=0
+[ "${LEVELRAIL_COEXIST:-0}" != "1" ] || COEXIST=1
+COEXIST_ACTIVE=0
+SETTINGS_CHANGED=0
+COEXIST_HTTP_PORT="${LEVELRAIL_COEXIST_HTTP_PORT:-8088}"
+COEXIST_HTTPS_PORT="${LEVELRAIL_COEXIST_HTTPS_PORT:-8443}"
+ASSUME_YES=0
+DOMAIN_HINT="${LEVELRAIL_DOMAIN:-}"
+PUBLIC_HOST="${APP_PUBLIC_HOST:-}"
+PUBLIC_HOST_PINNED=0
+[ -z "$PUBLIC_HOST" ] || PUBLIC_HOST_PINNED=1
+DROPIN_DIR="/etc/systemd/system/${SERVICE_NAME}.service.d"
+DROPIN_PATH="${DROPIN_DIR}/10-install.conf"
+PROXY_DOCS_URL="https://levelrail.com/behind-an-existing-proxy"
 # The dashboard is plain HTTP until the operator configures a domain with TLS.
 DASHBOARD_SCHEME="http"
 HTTPS_ONLY="=https"
@@ -103,22 +137,46 @@ fatal() {
 usage() {
 	cat <<'EOF'
 Usage: install.sh [install|upgrade|retain|uninstall] [--force] [--purge]
+                  [--coexist] [--yes] [--http-port N] [--https-port N] [--domain HOST]
   install    (default) preflight checks, then install or repair
   upgrade    replace the binary with a newer release and restart
   retain     download and verify LEVELRAIL_VERSION and keep it for rollback
   uninstall  remove the service, unit, and binary (data kept unless --purge)
   --force    continue even if a preflight check fails
+  --coexist  ingress on 8088/8443 and dashboard on loopback, for a server
+             whose ports 80/443 an existing proxy already holds
+  --yes      answer yes to prompts, including the coexist offer
 EOF
 }
 
 MODE="install"
 FORCE=0
 PURGE=0
-for arg in "$@"; do
+while [ "$#" -gt 0 ]; do
+	arg="$1"
+	shift
+	case "$arg" in
+	--http-port | --https-port | --domain)
+		[ "$#" -gt 0 ] || fatal "$arg needs a value"
+		arg="$arg=$1"
+		shift
+		;;
+	esac
 	case "$arg" in
 	install | upgrade | retain | uninstall) MODE="$arg" ;;
 	--force) FORCE=1 ;;
 	--purge) PURGE=1 ;;
+	--coexist) COEXIST=1 ;;
+	--yes | -y) ASSUME_YES=1 ;;
+	--http-port=*)
+		HTTP_PORT="${arg#*=}"
+		HTTP_PORT_PINNED=1
+		;;
+	--https-port=*)
+		HTTPS_PORT="${arg#*=}"
+		HTTPS_PORT_PINNED=1
+		;;
+	--domain=*) DOMAIN_HINT="${arg#*=}" ;;
 	-h | --help)
 		usage
 		exit 0
@@ -153,11 +211,21 @@ safe_port() {
 	esac
 	{ [ "$2" -ge 1 ] && [ "$2" -le 65535 ]; } || fatal "$1 must be between 1 and 65535: $2"
 }
+safe_host() {
+	case "$2" in
+	'') return 0 ;;
+	*[!A-Za-z0-9.:-]*) fatal "$1 may only contain letters, digits, dot, colon and dash: $2" ;;
+	esac
+}
 safe_dir LEVELRAIL_DATA_DIR "$DATA_DIR"
 safe_dir LEVELRAIL_INSTALL_DIR "$INSTALL_DIR"
 safe_port LEVELRAIL_DASHBOARD_PORT "$DASHBOARD_PORT"
 safe_port LEVELRAIL_HTTP_PORT "$HTTP_PORT"
 safe_port LEVELRAIL_HTTPS_PORT "$HTTPS_PORT"
+safe_port LEVELRAIL_COEXIST_HTTP_PORT "$COEXIST_HTTP_PORT"
+safe_port LEVELRAIL_COEXIST_HTTPS_PORT "$COEXIST_HTTPS_PORT"
+safe_host APP_PUBLIC_HOST "$PUBLIC_HOST"
+safe_host --domain "$DOMAIN_HINT"
 case "${LEVELRAIL_VERSION:-}" in
 *[!A-Za-z0-9._+-]*) fatal "LEVELRAIL_VERSION may only contain letters, digits, dot, dash, plus and underscore" ;;
 esac
@@ -277,6 +345,129 @@ find_free_port() {
 	return 1
 }
 
+# port_holders describes who listens on TCP port $1: a Docker container
+# (name and image) when one publishes it, else the process names ss reports.
+# ss shows process names only to root, so this stays best effort.
+port_holders() {
+	found=""
+	if command -v docker >/dev/null 2>&1; then
+		found="$(docker ps --filter "publish=$1" --format 'container {{.Names}} (image {{.Image}})' 2>/dev/null | tr '\n' ',' | sed 's/,$//; s/,/, /g' || true)"
+	fi
+	if [ -z "$found" ] && command -v ss >/dev/null 2>&1; then
+		found="$(ss -ltnp "sport = :$1" 2>/dev/null |
+			sed -n 's/.*users:(("\([^"]*\)",pid=\([0-9]*\).*/\1 (pid \2)/p' | sort -u | tr '\n' ',' | sed 's/,$//; s/,/, /g' || true)"
+	fi
+	[ -n "$found" ] || found="an unidentified process (run as root with ss installed to see which)"
+	printf '%s' "$found"
+}
+
+valid_port() {
+	case "$1" in
+	'' | *[!0-9]*) return 1 ;;
+	esac
+	[ "$1" -ge 1 ] && [ "$1" -le 65535 ]
+}
+
+# unit_env prints the last Environment=KEY=value from unit file $1.
+unit_env() {
+	[ -r "$1" ] || return 0
+	sed -n 's/^Environment="\{0,1\}'"$2"'=\([^"]*\)"\{0,1\}$/\1/p' "$1" | tail -n 1
+}
+
+# setting reads KEY from the drop-in first, then from the main unit, where
+# installs made before the drop-in existed keep their values.
+setting() {
+	v="$(unit_env "$DROPIN_PATH" "$1")"
+	[ -n "$v" ] || v="$(unit_env "$UNIT_PATH" "$1")"
+	printf '%s' "$v"
+}
+
+# load_settings reads back what an earlier install chose. Flags and env win.
+load_settings() {
+	v="$(setting APP_INGRESS_HTTP_ADDR)"
+	if [ "$HTTP_PORT_PINNED" -eq 0 ] && valid_port "${v##*:}"; then HTTP_PORT="${v##*:}"; fi
+	v="$(setting APP_INGRESS_HTTPS_ADDR)"
+	if [ "$HTTPS_PORT_PINNED" -eq 0 ] && valid_port "${v##*:}"; then HTTPS_PORT="${v##*:}"; fi
+	v="$(setting APP_HTTP_ADDR)"
+	if [ "$DASHBOARD_PORT_PINNED" -eq 0 ] && valid_port "${v##*:}"; then DASHBOARD_PORT="${v##*:}"; fi
+	case "${v%:*}" in
+	127.0.0.1 | localhost) DASHBOARD_BIND="127.0.0.1" ;;
+	esac
+	if [ "$PUBLIC_HOST_PINNED" -eq 0 ]; then
+		v="$(setting APP_PUBLIC_HOST)"
+		case "$v" in
+		*[!A-Za-z0-9.:-]*) ;;
+		*) PUBLIC_HOST="$v" ;;
+		esac
+	fi
+	if [ "$DASHBOARD_BIND" = "127.0.0.1" ] && [ "$HTTP_PORT" != "80" ] && [ "$HTTPS_PORT" != "443" ]; then
+		COEXIST_ACTIVE=1
+	fi
+}
+
+# apply_coexist moves ingress off 80/443 (unless a port was set explicitly)
+# and binds the dashboard to loopback, the safe default behind another proxy.
+apply_coexist() {
+	if [ "$HTTP_PORT_PINNED" -eq 0 ] && [ "$HTTP_PORT" = "80" ]; then HTTP_PORT="$COEXIST_HTTP_PORT"; fi
+	if [ "$HTTPS_PORT_PINNED" -eq 0 ] && [ "$HTTPS_PORT" = "443" ]; then HTTPS_PORT="$COEXIST_HTTPS_PORT"; fi
+	DASHBOARD_BIND="127.0.0.1"
+	COEXIST_ACTIVE=1
+	SETTINGS_CHANGED=1
+}
+
+# can_prompt is true only with a real terminal, outside CI and without --yes.
+can_prompt() {
+	[ "$ASSUME_YES" -eq 0 ] && [ -z "${CI:-}" ] && (: </dev/tty) 2>/dev/null
+}
+
+# confirm asks $1 on the terminal, default yes.
+confirm() {
+	printf '%s [Y/n] ' "$1" >&2
+	ans="$( (read -r a </dev/tty && printf '%s' "$a") 2>/dev/null || true)"
+	case "$ans" in
+	n | N | no | NO | No) return 1 ;;
+	esac
+	return 0
+}
+
+# offer_coexist handles ports 80/443 held by something else: it names the
+# holder, then switches to coexist mode on --coexist/--yes or a confirmed
+# prompt. Otherwise the port rows below fail with the same information.
+offer_coexist() {
+	if [ "$COEXIST" -eq 1 ]; then
+		apply_coexist
+	else
+		[ "$HTTP_PORT_PINNED" -eq 0 ] && [ "$HTTPS_PORT_PINNED" -eq 0 ] || return 0
+		[ "$COEXIST_ACTIVE" -eq 0 ] || return 0
+		taken=""
+		for port in "$HTTP_PORT" "$HTTPS_PORT"; do
+			if port_listening "$port" && ! service_active; then taken="$taken $port"; fi
+		done
+		[ -n "$taken" ] || return 0
+		log "Ports${taken} are already in use on this server:"
+		for port in $taken; do log "  ${port}: $(port_holders "$port")"; done
+		log "Levelrail can run alongside it: ingress on ${COEXIST_HTTP_PORT}/${COEXIST_HTTPS_PORT}, dashboard on loopback only,"
+		log "and your existing proxy forwards your domains to it (no automatic TLS from Levelrail then)."
+		if [ "$ASSUME_YES" -eq 1 ] || { can_prompt && confirm "Install in coexist mode?"; }; then
+			apply_coexist
+		else
+			log "Not switching to coexist mode. Re-run with --coexist (or --yes) to accept it."
+			return 0
+		fi
+	fi
+	service_active && return 0
+	if port_listening "$HTTP_PORT" && free="$(find_free_port "$HTTP_PORT")"; then
+		warn "port ${HTTP_PORT} is also taken, using ${free} for ingress HTTP instead"
+		HTTP_PORT="$free"
+		SETTINGS_CHANGED=1
+	fi
+	if port_listening "$HTTPS_PORT" && free="$(find_free_port "$HTTPS_PORT")"; then
+		warn "port ${HTTPS_PORT} is also taken, using ${free} for ingress HTTPS instead"
+		HTTPS_PORT="$free"
+		SETTINGS_CHANGED=1
+	fi
+}
+
 PREFLIGHT_FAILS=0
 row() {
 	printf '  %-10s %-5s %s\n' "$1" "$2" "$3"
@@ -335,13 +526,14 @@ preflight() {
 	free_gb=$((${free_kb:-0} / 1024 / 1024))
 	if [ "$free_gb" -ge "$MIN_DISK_GB" ]; then row disk ok "${free_gb} GB free on ${disk_dir}"; else row disk FAIL "${free_gb} GB free on ${disk_dir}, need ${MIN_DISK_GB} GB"; fi
 
+	offer_coexist
 	for port in "$HTTP_PORT" "$HTTPS_PORT"; do
 		if ! port_listening "$port"; then
 			row "port $port" ok "free"
 		elif service_active; then
 			row "port $port" ok "in use, presumably by ${SERVICE_NAME} (reinstall)"
 		else
-			row "port $port" FAIL "already in use by another process (automatic TLS needs 80/443; set LEVELRAIL_HTTP_PORT/LEVELRAIL_HTTPS_PORT to run on alternate ports instead, accepting that automatic ACME certs won't work)"
+			row "port $port" FAIL "already in use by $(port_holders "$port"). Automatic TLS needs 80/443. Re-run with --coexist to run behind it, or set LEVELRAIL_HTTP_PORT/LEVELRAIL_HTTPS_PORT to pick other ports (accepting that automatic ACME certs won't work)"
 		fi
 	done
 
@@ -352,6 +544,7 @@ preflight() {
 	elif [ "$DASHBOARD_PORT_PINNED" -eq 0 ] && free_port="$(find_free_port "$DASHBOARD_PORT")"; then
 		row "port $DASHBOARD_PORT" ok "taken, using $free_port instead"
 		DASHBOARD_PORT="$free_port"
+		SETTINGS_CHANGED=1
 	else
 		row "port $DASHBOARD_PORT" FAIL "already in use by another process"
 	fi
@@ -549,13 +742,15 @@ remove_socket_units() {
 	rm -f "/etc/systemd/system/${HTTP_SOCKET_UNIT}" "/etc/systemd/system/${HTTPS_SOCKET_UNIT}"
 }
 
-write_unit() {
+# render_unit prints the main unit. Addresses live in the drop-in, so an
+# upgrade that rewrites this file can never reset them.
+render_unit() {
 	socket_deps=""
 	if [ "$SOCKET_ACTIVATION" = "1" ] || [ -f "/etc/systemd/system/${HTTP_SOCKET_UNIT}" ]; then
 		socket_deps="Requires=${HTTP_SOCKET_UNIT} ${HTTPS_SOCKET_UNIT}
 After=${HTTP_SOCKET_UNIT} ${HTTPS_SOCKET_UNIT}"
 	fi
-	cat >"$UNIT_PATH" <<EOF
+	cat <<EOF
 [Unit]
 Description=Levelrail control plane
 After=network-online.target docker.service
@@ -567,9 +762,6 @@ ${socket_deps}
 ExecStart=${BIN_PATH}
 WorkingDirectory=${DATA_DIR}
 Environment=APP_DATA_DIR=${DATA_DIR}
-Environment=APP_HTTP_ADDR=:${DASHBOARD_PORT}
-Environment=APP_INGRESS_HTTP_ADDR=:${HTTP_PORT}
-Environment=APP_INGRESS_HTTPS_ADDR=:${HTTPS_PORT}
 Restart=on-failure
 RestartSec=5
 
@@ -578,10 +770,72 @@ WantedBy=multi-user.target
 EOF
 }
 
+write_unit() {
+	render_unit >"$UNIT_PATH"
+}
+
+# write_dropin stores every installer-chosen address, so upgrades keep them.
+write_dropin() {
+	mkdir -p "$DROPIN_DIR"
+	{
+		printf '%s\n' "# Written by install.sh. Upgrades read this back and never reset it." \
+			"# After editing: systemctl daemon-reload && systemctl restart ${SERVICE_NAME}" \
+			"[Service]" \
+			"Environment=APP_HTTP_ADDR=${DASHBOARD_BIND}:${DASHBOARD_PORT}" \
+			"Environment=APP_INGRESS_HTTP_ADDR=:${HTTP_PORT}" \
+			"Environment=APP_INGRESS_HTTPS_ADDR=:${HTTPS_PORT}"
+		[ -z "$PUBLIC_HOST" ] || printf 'Environment=APP_PUBLIC_HOST=%s\n' "$PUBLIC_HOST"
+	} >"$DROPIN_PATH"
+}
+
+# ensure_dropin keeps an existing drop-in untouched unless settings were
+# passed this run, and builds it from the legacy main unit's values otherwise.
+ensure_dropin() {
+	if [ -f "$DROPIN_PATH" ] && [ "$HTTP_PORT_PINNED" -eq 0 ] && [ "$HTTPS_PORT_PINNED" -eq 0 ] &&
+		[ "$DASHBOARD_PORT_PINNED" -eq 0 ] && [ "$PUBLIC_HOST_PINNED" -eq 0 ] && [ "$COEXIST" -eq 0 ] &&
+		[ "$SETTINGS_CHANGED" -eq 0 ]; then
+		return 0
+	fi
+	write_dropin
+}
+
+# warn_unit_drift flags a main unit that differs from what this installer
+# would write, ignoring the address lines that moved to the drop-in.
+UNIT_DRIFTED=0
+strip_addr_lines() {
+	grep -v -e '^Environment=APP_HTTP_ADDR=' -e '^Environment=APP_INGRESS_HTTP_ADDR=' -e '^Environment=APP_INGRESS_HTTPS_ADDR=' || true
+}
+warn_unit_drift() {
+	[ -f "$UNIT_PATH" ] || return 0
+	drift_dir="$(mktemp -d)"
+	render_unit | strip_addr_lines >"$drift_dir/want"
+	strip_addr_lines <"$UNIT_PATH" >"$drift_dir/have"
+	if ! cmp -s "$drift_dir/want" "$drift_dir/have"; then
+		UNIT_DRIFTED=1
+		warn "${UNIT_PATH} differs from what this installer writes (hand edits or an older installer). Keep overrides in ${DROPIN_DIR}/."
+	fi
+	rm -rf "$drift_dir"
+}
+
+# warn_taken_ports tells an upgrading operator when the configured ingress
+# ports are held by something else while the service is down.
+warn_taken_ports() {
+	service_active && return 0
+	for port in "$HTTP_PORT" "$HTTPS_PORT"; do
+		if port_listening "$port"; then
+			warn "port ${port} is held by $(port_holders "$port"); the control plane cannot bind it. Run: install.sh upgrade --coexist (see ${PROXY_DOCS_URL})"
+		fi
+	done
+}
+
 # configure_ufw allows SSH before anything else and only enables ufw if it
 # was not already active, so it can never lock the operator out.
 configure_ufw() {
 	[ "${LEVELRAIL_CONFIGURE_UFW:-0}" = "1" ] || return 0
+	if [ "$COEXIST_ACTIVE" -eq 1 ]; then
+		log "Coexist mode: leaving ufw alone, your existing proxy owns the public ports."
+		return 0
+	fi
 	if ! command -v ufw >/dev/null 2>&1; then
 		log "LEVELRAIL_CONFIGURE_UFW=1 set, but ufw is not installed, skipping."
 		return 0
@@ -618,6 +872,13 @@ wait_healthy() {
 discover_public_ip() {
 	PUBLIC_IP="${LEVELRAIL_PUBLIC_IP:-}"
 	[ -z "$PUBLIC_IP" ] || return 0
+	case "$PUBLIC_HOST" in
+	*[!0-9.]* | "") ;;
+	*)
+		PUBLIC_IP="$PUBLIC_HOST"
+		return 0
+		;;
+	esac
 	for svc in https://api.ipify.org https://ifconfig.me/ip; do
 		PUBLIC_IP="$(curl -4 -fsS --proto "$HTTPS_ONLY" --connect-timeout 3 --max-time 5 "$svc" 2>/dev/null | tr -d '[:space:]' || true)"
 		case "$PUBLIC_IP" in
@@ -722,9 +983,45 @@ dashboard_link() {
 	fi
 }
 
+# print_coexist_summary replaces the public-IP links: the dashboard is bound
+# to loopback, so the way in is an SSH tunnel until the proxy fronts it.
+print_coexist_summary() {
+	domain="${DOMAIN_HINT:-<your-domain>}"
+	login="http://127.0.0.1:${DASHBOARD_PORT}"
+	[ -z "$token" ] || login="${login}/login?setup=${token}"
+	host="${PUBLIC_IP:-<server-ip>}"
+	cat <<EOF
+
+Levelrail ${VERSION} installed and running next to your existing proxy.
+
+  Ingress:    http :${HTTP_PORT}, https :${HTTPS_PORT} (point your proxy at these)
+  Dashboard:  127.0.0.1:${DASHBOARD_PORT} only, not exposed on the network
+
+Open the dashboard through an SSH tunnel from your own machine:
+  ssh -L ${DASHBOARD_PORT}:127.0.0.1:${DASHBOARD_PORT} root@${host}
+  then browse to ${login}
+
+Next, wire your domain through the existing proxy and check it end to end:
+  levelrail-cli proxy --domain ${domain} --verify
+(CLI install: curl -fsSL https://levelrail.com/install-cli.sh | sh. Guide: ${PROXY_DOCS_URL})
+
+IMPORTANT: back up ${DATA_DIR}/master.key somewhere safe. Every stored
+secret is encrypted with it, and it cannot be recovered if lost.
+
+  Service status: systemctl status ${SERVICE_NAME}
+  Logs:           journalctl -u ${SERVICE_NAME} -f
+  Settings:       ${DROPIN_PATH} (kept across upgrades)
+  Locked out:     sudo APP_DATA_DIR=${DATA_DIR} ${BIN_PATH} recover-admin --username admin
+EOF
+}
+
 print_summary() {
 	token=""
 	[ ! -r "$DATA_DIR/setup-token" ] || token="$(tr -d '[:space:]' <"$DATA_DIR/setup-token")"
+	if [ "$COEXIST_ACTIVE" -eq 1 ]; then
+		print_coexist_summary
+		return 0
+	fi
 
 	log ""
 	log "Levelrail ${VERSION} installed and running."
@@ -815,10 +1112,12 @@ write_upgrade_marker() {
 
 do_install() {
 	[ -n "$SOCKET_ACTIVATION" ] || SOCKET_ACTIVATION=1
+	load_settings
 	preflight
 	ensure_docker
 	install_binary
 	write_brand
+	ensure_dropin
 	write_unit
 	[ "$SOCKET_ACTIVATION" != "1" ] || write_socket_units
 	configure_ufw
@@ -839,9 +1138,15 @@ do_upgrade() {
 	[ -x "$BIN_PATH" ] || fatal "${BIN_PATH} not found, nothing to upgrade. Run the installer without arguments first."
 	detect_arch
 	[ -n "$GOARCH" ] || fatal "unsupported architecture: $(uname -m)"
+	load_settings
+	[ "$COEXIST" -eq 0 ] || apply_coexist
+	warn_taken_ports
+	warn_unit_drift
 	install_binary
+	ensure_dropin
 	case "$SOCKET_ACTIVATION" in
 	1)
+		[ "$UNIT_DRIFTED" -eq 0 ] || cp -p "$UNIT_PATH" "${UNIT_PATH}.pre-upgrade"
 		write_unit
 		write_socket_units
 		systemctl daemon-reload
@@ -849,6 +1154,7 @@ do_upgrade() {
 		systemctl enable --now "$HTTP_SOCKET_UNIT" "$HTTPS_SOCKET_UNIT" >/dev/null 2>&1
 		;;
 	0)
+		[ "$UNIT_DRIFTED" -eq 0 ] || cp -p "$UNIT_PATH" "${UNIT_PATH}.pre-upgrade"
 		remove_socket_units
 		write_unit
 		;;
@@ -885,7 +1191,8 @@ do_uninstall() {
 	if [ -f "$UNIT_PATH" ]; then
 		systemctl disable --now "$SERVICE_NAME" >/dev/null 2>&1 || true
 		remove_socket_units
-		rm -f "$UNIT_PATH"
+		rm -f "$UNIT_PATH" "$DROPIN_PATH"
+		rmdir "$DROPIN_DIR" 2>/dev/null || true
 		systemctl daemon-reload
 	fi
 	rm -f "$BIN_PATH"

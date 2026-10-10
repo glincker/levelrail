@@ -1005,6 +1005,26 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/hub/sessions/{id}/receipt | AbilityRead | handleHubReceipt |
 | GET | /api/v1/migration/hub/sessions/{id}/items/{db}/connection | AbilityRead | handleHubConnection |
 | POST | /api/v1/migration/hub/sessions/{id}/items/{db}/reveal | AbilityReadSensitive | handleHubReveal |
+| POST | /api/v1/migration/apps/plan | AbilityWriteSensitive | handleAppImportPlan |
+| POST | /api/v1/migration/apps/sessions | AbilityWriteSensitive | handleCreateAppImportSession |
+| GET | /api/v1/migration/apps/sessions | AbilityRead | handleListAppImportSessions |
+| GET | /api/v1/migration/apps/sessions/{id} | AbilityRead | handleGetAppImportSession |
+| DELETE | /api/v1/migration/apps/sessions/{id} | AbilityWriteSensitive | handleDeleteAppImportSession |
+| POST | /api/v1/migration/apps/sessions/{id}/connect | AbilityWriteSensitive | handleConnectAppImportSession |
+| PUT | /api/v1/migration/apps/sessions/{id}/plan | AbilityWriteSensitive | handlePutAppImportPlan |
+| POST | /api/v1/migration/apps/sessions/{id}/stage | AbilityWriteSensitive | handleStageAppImport |
+| POST | /api/v1/migration/apps/sessions/{id}/verify | AbilityWriteSensitive | handleVerifyAppImport |
+| POST | /api/v1/migration/apps/sessions/{id}/rollback | AbilityWriteSensitive | handleRollbackAppImport |
+| GET | /api/v1/migration/apps/sessions/{id}/images | AbilityRead | handleAppImportImages |
+| GET | /api/v1/migration/apps/sessions/{id}/images/status | AbilityRead | handleAppImportImagesStatus |
+| POST | /api/v1/migration/apps/sessions/{id}/images/transfer | AbilityWriteSensitive | handleTransferAppImportImages |
+| POST | /api/v1/migration/apps/sessions/{id}/images/cancel | AbilityWriteSensitive | handleCancelAppImportImages |
+| GET | /api/v1/migration/apps/sessions/{id}/volumes | AbilityRead | handleAppImportVolumes |
+| PUT | /api/v1/migration/apps/sessions/{id}/items/{item}/volumes/{vol} | AbilityWriteSensitive | handleSetAppImportVolume |
+| GET | /api/v1/migration/apps/sessions/{id}/cutover | AbilityRead | handleAppImportCutover |
+| GET | /api/v1/migration/apps/sessions/{id}/cutover/verify | AbilityWriteSensitive | handleAppImportCutoverVerify |
+| POST | /api/v1/migration/apps/sessions/{id}/items/{item}/route | AbilityWriteSensitive | handleRouteAppImport |
+| GET | /api/v1/migration/apps/sessions/{id}/receipt | AbilityRead | handleAppImportReceipt |
 
 ## See also
 

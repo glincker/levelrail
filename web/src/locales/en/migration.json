@@ -197,6 +197,7 @@
       "inventory": "Inventory",
       "preflight": "Preflight",
       "stage": "Stage",
+      "images": "Move images",
       "verify": "Build and verify",
       "volumes": "Volumes",
       "cutover": "Cutover"
@@ -371,6 +372,39 @@
       "none": "No verified app with a domain yet.",
       "receipt": "Download receipt",
       "receiptNote": "A JSON record of what was imported and what remains manual. It holds no secrets."
+    },
+    "images": {
+      "title": "Move images built on the source host",
+      "description": "These apps run an image that was built on the old server and exists in no registry. The control plane runs docker save on the source over SSH, loads the stream into this node and checks each image ID against the snapshot. Nothing else runs on the source.",
+      "none": "No selected app uses an image built on the source host. Continue to verify.",
+      "unsupported": "This control plane has no node runtime to load images into.",
+      "loadError": "Could not load the image list.",
+      "ssh": "Source SSH login",
+      "sshPlaceholder": "root@old-server.example.com",
+      "sshHelp": "user@host or user@host:port. The login must be able to run docker. The host key is trusted on first use and pinned.",
+      "key": "Private key",
+      "keyPlaceholder": "-----BEGIN OPENSSH PRIVATE KEY-----",
+      "keyHeld": "A key is held for this session, leave empty to reuse it",
+      "keyHelp": "Held in memory for this session only, never stored or logged.",
+      "passphrase": "Key passphrase (optional)",
+      "agent": "Use the control plane's own SSH agent instead of a key",
+      "move": "Move images",
+      "retry": "Move remaining images",
+      "cancel": "Cancel",
+      "running": "Moving images from {{source}}",
+      "continue": "Continue to verify",
+      "pending": "{{count}} image(s) not on this node yet",
+      "ids": "Source {{source}}, loaded {{loaded}}",
+      "sourceId": "Source image {{source}}",
+      "noSourceId": "The snapshot has no image ID, so the load cannot be verified.",
+      "state": {
+        "pending": "Not moved",
+        "running": "Moving",
+        "verified": "Verified",
+        "loaded": "Loaded, unverified",
+        "failed": "Failed",
+        "cancelled": "Cancelled"
+      }
     }
   }
 }

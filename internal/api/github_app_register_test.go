@@ -340,6 +340,9 @@ func TestHandleGitHubAppCallback_Success(t *testing.T) {
 	if !strings.Contains(loc, "github.com/apps/my-app/installations/new") {
 		t.Errorf("Location = %q, want a redirect into GitHub's install-new page for the app's slug", loc)
 	}
+	if strings.Contains(loc, "target_id") || strings.Contains(loc, "?") {
+		t.Errorf("Location = %q, must be the bare account chooser with no target_id", loc)
+	}
 	if fakeClient.gotCode != "the-code" {
 		t.Errorf("ExchangeManifestCode was called with code = %q, want %q", fakeClient.gotCode, "the-code")
 	}

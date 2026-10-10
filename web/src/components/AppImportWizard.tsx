@@ -13,6 +13,7 @@ import {
 } from '../queries/appImport'
 import { AppImportConnect } from './AppImportConnect'
 import { AppImportCutover } from './AppImportCutover'
+import { AppImportImages } from './AppImportImages'
 import { AppImportInventory } from './AppImportInventory'
 import { AppImportPreflight } from './AppImportPreflight'
 import { AppImportRun } from './AppImportRun'
@@ -132,6 +133,13 @@ function Session({
           session={session}
           verifyView={false}
           onBack={() => go('preflight')}
+          onNext={() => go('images')}
+        />
+      ) : null}
+      {current === 'images' ? (
+        <AppImportImages
+          session={session}
+          onBack={() => go('stage')}
           onNext={() => go('verify')}
         />
       ) : null}
@@ -139,7 +147,7 @@ function Session({
         <AppImportRun
           session={session}
           verifyView
-          onBack={() => go('stage')}
+          onBack={() => go('images')}
           onNext={() => go('volumes')}
         />
       ) : null}

@@ -36,6 +36,8 @@ func runGitHubApp(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runGitHubAppBranches(prog, args[1:], stdout, stderr, lookupEnv)
 	case "use-as-source":
 		return runGitHubAppUseAsSource(prog, args[1:], stdout, stderr, lookupEnv)
+	case "register-url":
+		return runGitHubAppRegisterURL(prog, args[1:], stdout, stderr, lookupEnv)
 	case "installations":
 		return runGitHubAppInstallations(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -52,12 +54,14 @@ func githubAppUsage(prog string) string {
   %[1]s github-app repos [flags]                                          list repos every connected installation can access
   %[1]s github-app branches <owner> <repo> [flags]                        list a repo's branches
   %[1]s github-app use-as-source <owner> <repo> --app-name NAME [flags]   connect a repo as an app's git source
+  %[1]s github-app register-url [--owner ORG] [--public] [flags]          print the URL that starts App registration in a browser
   %[1]s github-app installations list [flags]                             list every connected account/org
   %[1]s github-app installations add [flags]                              print the URL to install the App on another account/org
   %[1]s github-app installations remove <id> [flags]                      disconnect one account/org
 
-Connecting the GitHub App itself is dashboard-only (it's a real browser
-redirect through GitHub's manifest flow); once connected, these
+Connecting the GitHub App itself happens in a browser (it's a real redirect
+through GitHub's manifest flow): register-url prints the link for a personal
+account or an organization. Once connected, these
 subcommands browse and use its repos from the CLI, or check/forget the
 connection.
 

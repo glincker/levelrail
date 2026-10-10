@@ -68,7 +68,7 @@ else
 fi
 
 # Paths whose change can break a heavy live suite (docs/ci.md#live-suites).
-live_paths_re='^(internal/(catalog|compose|registrycatalog|reconcile|docker|dockertest|agent|build|pipeline|ingress)/|test/e2e/|\.github/workflows/(ci|nightly)\.yml$|\.github/actions/|scripts/(ci-go-plan|ci-go-test|go-test-groups)\.sh$)'
+live_paths_re='^(internal/(catalog|compose|registrycatalog|reconcile|docker|dockertest|agent|network|build|pipeline|ingress)/|test/e2e/|\.github/workflows/(ci|nightly)\.yml$|\.github/actions/|scripts/(ci-go-plan|ci-go-test|go-test-groups)\.sh$)'
 live=smoke
 live_reason="no live-suite path changed"
 if [ "$scope" = all ]; then
@@ -82,6 +82,26 @@ else
 	if [ -n "$hit" ]; then
 		live=full
 		live_reason="diff touches $hit"
+	fi
+fi
+
+# Which live-Docker lanes a diff can break (docs/ci.md#which-e2e-lanes-run).
+# A change confined to internal/reconcile/ingress does not need the fleet.
+pipeline_re='^(\.github/workflows/(ci|nightly)\.yml$|\.github/actions/|scripts/(ci-go-plan|ci-go-test|go-test-groups)\.sh$)'
+fleet_re='^(internal/reconcile/|internal/agent/|internal/network/|test/e2e/)'
+e2e_re='^(internal/api/|internal/ingress/|internal/reconcile/|internal/docker/|internal/deploy/|test/e2e/)'
+fleet_run=false
+e2e_run=false
+if [ "$scope" = all ] || [ "${CI_LIVE_LABEL:-}" = true ] ||
+	printf '%s\n' "${files[@]}" | grep -qE "$pipeline_re"; then
+	fleet_run=true
+	e2e_run=true
+else
+	if printf '%s\n' "${files[@]}" | grep -vE '^internal/reconcile/ingress/' | grep -qE "$fleet_re"; then
+		fleet_run=true
+	fi
+	if printf '%s\n' "${files[@]}" | grep -qE "$e2e_re"; then
+		e2e_run=true
 	fi
 fi
 
@@ -143,8 +163,8 @@ if [ "${#api[@]}" -gt 0 ]; then
 	done
 fi
 
-# test/e2e gets its own lane (and test/e2e/reconcile too on full live runs)
-# so the heaviest one sets the floor alone. Full live runs also isolate the template fleet test (about 1,000 s
+# test/e2e gets its own lane (and test/e2e/reconcile too when fleet_run)
+# so the heaviest one sets the floor alone. Fleet runs also isolate the template fleet test (about 1,000 s
 # sequentially, bounded-parallel inside the test) from the rest of test/e2e.
 e2e_pkg="github.com/GLINCKER/levelrail/test/e2e"
 reconcile_pkg="github.com/GLINCKER/levelrail/test/e2e/reconcile"
@@ -153,22 +173,23 @@ docker_rest=()
 for pkg in "${docker[@]}"; do
 	case "$pkg" in
 	"$e2e_pkg")
-		if [ "$live" = full ]; then
+		if [ "$fleet_run" = true ] && [ "$live" = full ]; then
 			lane e2e-fleet "$pkg" "1/1" "-short -timeout=27m" docker false "$fleet_test"
 			rest_checks+=("Test (e2e-fleet)")
-			lane e2e "$pkg" "" "-short -timeout=27m" docker false "" "$fleet_test"
-		else
-			lane e2e "$pkg" "" "-short -timeout=20m" docker false
 		fi
-		rest_checks+=("Test (e2e)")
+		if [ "$e2e_run" = true ]; then
+			if [ "$live" = full ]; then
+				lane e2e "$pkg" "" "-short -timeout=27m" docker false "" "$fleet_test"
+			else
+				lane e2e "$pkg" "" "-short -timeout=20m" docker false
+			fi
+			rest_checks+=("Test (e2e)")
+		fi
 		;;
 	"$reconcile_pkg")
-		if [ "$live" = full ]; then
-			lane e2e-reconcile "$pkg" "" "-short -timeout=27m" docker false
-			rest_checks+=("Test (e2e-reconcile)")
-		else
-			docker_rest+=("$pkg")
-		fi
+		[ "$fleet_run" = true ] || continue
+		lane e2e-reconcile "$pkg" "" "-short -timeout=27m" docker false
+		rest_checks+=("Test (e2e-reconcile)")
 		;;
 	*) docker_rest+=("$pkg") ;;
 	esac

@@ -117,10 +117,46 @@ Read-only, nothing runs on or changes the old server. Platform containers
 are recognized by image, domains are read from Traefik Host rules, and
 containers of the same app are grouped so an old exited copy never wins.
 Things a snapshot cannot carry are flagged per app: an image built on the old
-host (not in a registry) is marked with a `docker save | ssh | docker load`
-hint, the Docker socket mount is dropped, and `COOLIFY_*` variables are left
-out. The snapshot holds environment variables including secrets, so delete
-the file once the session is staged.
+host (not in a registry) is marked for the Move images step below, the
+Docker socket mount is dropped, and `COOLIFY_*` variables are left out. The
+snapshot holds environment variables including secrets, so delete the file
+once the session is staged.
+
+### Move images built on the old host
+
+Coolify builds most apps on the server itself, so their images exist nowhere
+else. After staging and before verify, the wizard's **Move images** step (or
+the CLI) copies them for you:
+
+```bash
+levelrail import apps --session appimp-123 --transfer-images \
+  --ssh root@old-server.example.com --ssh-key ~/.ssh/id_ed25519
+levelrail import apps --session appimp-123 --images         # state per image
+levelrail import apps --session appimp-123 --cancel-images  # stop a running move
+```
+
+The control plane opens an SSH connection to the old host, runs
+`docker save <image>` there and loads the stream into the target node through
+the Docker Engine API. Each loaded image ID is compared with the ID in the
+snapshot, so a wrong or partial image is reported as failed, not trusted.
+
+- Only `docker save` with an image reference from the session's own plan is
+  ever run on the old host. References and the SSH login are validated
+  strictly, no shell or `ssh` binary runs on the control plane, and the login
+  must be able to run `docker` (root or the `docker` group).
+- The private key (or `--ssh-agent`, the control plane's own agent) is held
+  in memory for the session and never stored or logged. Its passphrase comes
+  from `APP_IMPORT_SSH_PASSPHRASE`.
+- The old host's key is trusted on first use and pinned in
+  `import-known-hosts` in the data directory. A changed key is refused.
+- One failing image does not stop the others. A re-run skips images that are
+  already verified on the target, and the list shows them as verified after
+  a control plane restart.
+- Limits: `APP_MIGRATE_IMAGE_MAX_BYTES` (default 20 GiB per image) and
+  `APP_MIGRATE_IMAGE_TIMEOUT` (default `1h` per image).
+- The target must be the control plane node for now. Apps placed on a remote
+  agent node report that its agent cannot load images yet; move those by hand
+  with `docker save IMAGE | ssh TARGET docker load`.
 
 ## What the report tells you
 

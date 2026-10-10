@@ -90,6 +90,8 @@ type Entry struct {
 	Repo        string        `json:"repo,omitempty"`
 	Branch      string        `json:"branch,omitempty"`
 	Image       string        `json:"image,omitempty"`
+	ImageID     string        `json:"image_id,omitempty"`
+	HostBuilt   bool          `json:"host_built,omitempty"`
 	BuildPack   string        `json:"build_pack,omitempty"`
 	MapsTo      string        `json:"maps_to,omitempty"`
 	Port        int           `json:"port,omitempty"`

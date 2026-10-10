@@ -52,14 +52,24 @@ run() {
 
 run "docs only" - "scope=none" "has_tests=false" "live=smoke" -- docs/ci.md README.md
 run "docs only with label" CI_LIVE_LABEL=true "scope=none" "has_tests=false" -- docs/ci.md
-run "api change is smoke" - "scope=some" "live=smoke" has:api-1 has:e2e lacks:e2e-fleet lacks:e2e-reconcile \
-	check:"Test (e2e)" nocheck:"Test (e2e-fleet)" -- internal/api/apps.go
+run "api change runs e2e but not the fleet or reconcile lanes" - "scope=some" "live=smoke" has:api-1 has:e2e lacks:e2e-fleet lacks:e2e-reconcile \
+	check:"Test (e2e)" nocheck:"Test (e2e-fleet)" nocheck:"Test (e2e-reconcile)" -- internal/api/apps.go
 run "api change with ci:live label is full" CI_LIVE_LABEL=true "live=full" "live_reason=PR label ci:live" has:e2e-fleet has:e2e \
-	check:"Test (e2e-fleet)" -- internal/api/apps.go
+	check:"Test (e2e-fleet)" check:"Test (e2e)" -- internal/api/apps.go
+run "ingress change runs e2e only" - "live=full" has:e2e lacks:e2e-fleet lacks:e2e-reconcile \
+	check:"Test (e2e)" nocheck:"Test (e2e-fleet)" nocheck:"Test (e2e-reconcile)" -- internal/ingress/caddy.go
+run "reconcile/ingress change runs e2e only" - "live=full" has:e2e lacks:e2e-fleet lacks:e2e-reconcile \
+	-- internal/reconcile/ingress/controller.go
+run "reconcile/ingress plus reconcile runs fleet" - "live=full" has:e2e-fleet has:e2e-reconcile \
+	-- internal/reconcile/ingress/controller.go internal/reconcile/application/controller.go
+run "agent change runs reconcile e2e, not single-node e2e" - "live=full" has:e2e-reconcile lacks:e2e -- internal/agent/agent.go
+run "network change runs reconcile e2e, not single-node e2e" - "live=full" has:e2e-reconcile lacks:e2e -- internal/network/mesh.go
+run "docker change runs e2e only" - "live=full" has:e2e lacks:e2e-fleet lacks:e2e-reconcile -- internal/docker/client.go
+run "deploy change runs e2e, not full live" - "live=smoke" has:e2e lacks:e2e-fleet lacks:e2e-reconcile -- internal/deploy/deploy.go
+run "pipeline script change plus api runs fleet and e2e" - "live=full" has:e2e-fleet has:e2e -- scripts/ci-go-plan.sh internal/api/apps.go
 run "reconcile change is full" - "live=full" has:e2e-fleet has:e2e has:e2e-reconcile \
 	check:"Test (e2e-fleet)" check:"Test (e2e-reconcile)" -- internal/reconcile/application/controller.go
-run "docker runtime change is full" - "live=full" has:e2e-fleet -- internal/docker/client.go
-run "catalog data change is full" - "live=full" has:e2e-fleet -- internal/catalog/templates_ai.go
+run "catalog data change is live=full but runs no e2e lane" - "live=full" lacks:e2e-fleet lacks:e2e -- internal/catalog/templates_ai.go
 run "e2e test change is full" - "live=full" has:e2e-fleet has:e2e -- test/e2e/template_fleet_test.go
 run "e2e testenv change is full" - "live=full" has:e2e-reconcile -- test/e2e/testenv/testenv.go
 run "go.mod is a full run" - "scope=all" "live=full" "live_reason=full run" has:docker has:e2e-fleet -- go.mod
