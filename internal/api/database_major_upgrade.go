@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -77,7 +78,16 @@ func checkMajorUpgrade(d *store.DesiredDatabase, toVersion string) string {
 	if !fromOK || !toOK {
 		return fmt.Sprintf("cannot compare %q with %q: use numeric versions", d.Version, toVersion)
 	}
+	if err := database.ValidateEngineVersion(d.Engine, toVersion); err != nil {
+		return err.Error()
+	}
+	_, fromVariant, _ := database.ParsePgvectorVersion(d.Version)
+	_, toVariant, _ := database.ParsePgvectorVersion(toVersion)
+	if fromVariant && !toVariant {
+		return "moving from the pgvector image back to plain Postgres is not supported: the dump references the vector extension"
+	}
 	switch {
+	case to == from && !fromVariant && toVariant:
 	case to == from:
 		return "the major version is unchanged: use PUT /version for a minor or patch change"
 	case to < from:

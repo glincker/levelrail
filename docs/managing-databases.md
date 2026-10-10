@@ -23,6 +23,16 @@ Create a Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, or ClickHou
 | Dragonfly | `dragonfly` | `v1.27.1` | no |
 | ClickHouse | `clickhouse` | `24.8` | no |
 
+### Postgres with pgvector
+
+A Postgres version written `<major>-pgvector` (for example `17-pgvector`) runs the `pgvector/pgvector:pg17` image, so `CREATE EXTENSION vector` works. The engine stays `postgres`: backups, point-in-time restore, TLS, the database viewer, data copy, and the guarded major upgrade all behave the same. Only `<major>-pgvector` with Postgres 13 or newer is accepted; anything else mentioning pgvector is rejected with a `400`.
+
+```bash
+levelrail-cli databases create --name vec --engine postgres --version 17-pgvector
+```
+
+The dashboard create form has an **Include pgvector** checkbox for Postgres. The plain and pgvector images are built on different Debian releases, so a database cannot be switched between them with `set-version`: a glibc collation change can silently corrupt indexes. Move a plain database to pgvector with `databases major-upgrade <name> --version 17-pgvector` (dump and restore, works for the same major too), or restore a backup into a new database with `--version 17-pgvector`. Going from pgvector back to plain is refused.
+
 ## Create a database
 
 <Tabs :items="['CLI', 'API', 'Dashboard']">

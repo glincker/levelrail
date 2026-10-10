@@ -55,6 +55,11 @@ func TestCheckMajorUpgrade(t *testing.T) {
 		{"pitr enabled", pg("16", true), "17", "point-in-time"},
 		{"non numeric target", pg("16", false), "latest", "cannot compare"},
 		{"bad tag", pg("16", false), "../x", "image tag"},
+		{"plain to pgvector same major", pg("17", false), "17-pgvector", ""},
+		{"plain to pgvector newer major", pg("16", false), "17-pgvector", ""},
+		{"pgvector to newer pgvector", pg("16-pgvector", false), "17-pgvector", ""},
+		{"pgvector back to plain", pg("16-pgvector", false), "17", "pgvector image back"},
+		{"malformed variant", pg("16", false), "17.4-pgvector", "not a valid pgvector"},
 		{"redis refused", &store.DesiredDatabase{Engine: store.EngineRedis, Version: "7"}, "8", "only available for postgres"},
 	}
 	for _, tt := range tests {
