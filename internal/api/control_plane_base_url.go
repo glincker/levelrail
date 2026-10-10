@@ -34,5 +34,5 @@ func (rt *Router) controlPlaneBaseURL(ctx context.Context) (string, error) {
 	if settings.PrimaryDomain == "" {
 		return "", errNoPrimaryDomain
 	}
-	return "https://" + settings.PrimaryDomain, nil
+	return httpsURL(settings.PrimaryDomain, settings.PublicLinkPort()), nil
 }

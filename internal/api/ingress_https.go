@@ -183,7 +183,7 @@ func isInternalIssuer(issuer string) bool {
 // the last ACME failure Caddy reported. Pure so it can be table tested.
 func computeHTTPSStatus(s store.IngressSettings, certs []alerting.CertInfo, failure *ingress.ACMEFailure, startedAt, now time.Time, pendingAfter time.Duration) httpsStatusResource {
 	out := httpsStatusResource{State: httpsStateOff, Domain: s.PrimaryDomain, Staging: isStagingDirectory(s.ACMEDirectoryURL)}
-	if s.PrimaryDomain == "" || !s.ACMEEnabled {
+	if s.PrimaryDomain == "" || !s.EffectiveACMEEnabled() {
 		return out
 	}
 	for _, c := range certs {
@@ -284,6 +284,10 @@ func (rt *Router) handleEnableHTTPS(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: enable https: load settings", err)
 		return
 	}
+	if current.TLSTerminatedUpstream {
+		writeError(w, http.StatusConflict, "HTTPS is handled by your proxy: turn off tls_terminated_upstream before enabling certificates here")
+		return
+	}
 	directory := rt.acmeDefaultDirectory
 	if req.Staging {
 		directory = ACMEStagingDirectoryURL
@@ -320,10 +324,10 @@ func (rt *Router) handleEnableHTTPS(w http.ResponseWriter, r *http.Request) {
 // is newly enabled or its CA changes, so Caddy actually re-issues from the new
 // CA instead of reusing a still-valid staging or internal certificate.
 func (rt *Router) purgeOnIssuerChange(ctx context.Context, prev, next store.IngressSettings) {
-	if rt.certs == nil || !next.ACMEEnabled {
+	if rt.certs == nil || !next.EffectiveACMEEnabled() {
 		return
 	}
-	if prev.ACMEEnabled && prev.ACMEDirectoryURL == next.ACMEDirectoryURL {
+	if prev.EffectiveACMEEnabled() && prev.ACMEDirectoryURL == next.ACMEDirectoryURL {
 		return
 	}
 	n, err := ingress.PurgeCertsFromOtherIssuers(ctx, rt.certs, next.ACMEDirectoryURL)

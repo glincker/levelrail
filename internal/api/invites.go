@@ -213,7 +213,7 @@ func (rt *Router) inviteURL(ctx context.Context, token string) string {
 func (rt *Router) emailLinkBase(ctx context.Context) string {
 	settings, err := rt.ingressSettings.GetIngressSettings(ctx)
 	if err == nil && settings.PrimaryDomain != "" {
-		return "https://" + settings.PrimaryDomain
+		return rt.publicHTTPSURL(ctx, settings.PrimaryDomain)
 	}
 	if u, derr := rt.ingressSettings.GetDashboardURL(ctx); derr == nil {
 		return u

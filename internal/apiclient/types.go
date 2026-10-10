@@ -3407,6 +3407,13 @@ type IngressSettingsResource struct {
 	// PublicHost and PublicHostSource are read-only (env, detected, disabled, none).
 	PublicHost       string `json:"public_host,omitempty"`
 	PublicHostSource string `json:"public_host_source,omitempty"`
+	// PublicHTTPSPort is the port clients use behind a proxy; 0 means the ingress listen port.
+	PublicHTTPSPort int `json:"public_https_port,omitempty"`
+	// TLSTerminatedUpstream: a proxy owns TLS, ACME is never attempted here.
+	TLSTerminatedUpstream bool `json:"tls_terminated_upstream,omitempty"`
+	// ACMESkippedUpstream and TrustedProxiesMissing are read-only.
+	ACMESkippedUpstream   bool `json:"acme_skipped_upstream,omitempty"`
+	TrustedProxiesMissing bool `json:"trusted_proxies_missing,omitempty"`
 }
 
 // HTTPSStatusResource mirrors internal/api's httpsStatusResource (GET/POST

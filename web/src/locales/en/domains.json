@@ -248,6 +248,17 @@
       "summary": "{{ok}} added, {{failed}} not added."
     }
   },
+  "ingressUpstream": {
+    "bannerTitle": "HTTPS is handled by your proxy",
+    "bannerBody": "This instance does not request certificates. Point your domains at the proxy host, and the proxy terminates TLS and forwards to this ingress.",
+    "trustedProxiesMissing": "No trusted proxy ranges are set (APP_INGRESS_TRUSTED_PROXIES), so forwarded protocol and host headers are ignored.",
+    "switchLabel": "TLS is terminated by a proxy in front",
+    "switchHelp": "Turn this on when Traefik, nginx or Caddy owns ports 80 and 443. This instance then never runs ACME and builds links with the public port.",
+    "acmeSkipped": "Certificate issuance is stored but skipped while a proxy handles HTTPS.",
+    "portLabel": "Public HTTPS port",
+    "portHelp": "If a proxy such as Traefik or nginx forwards to this ingress, enter the port clients use (usually 443) so links work.",
+    "portInvalid": "Enter a port between 0 and 65535, or leave it blank."
+  },
   "acmeBlocked": {
     "title": "Real certificates cannot be issued from here",
     "body": "Certificate authorities check ports 80 and 443, and this ingress listens on {{http}} and {{https}}. If a proxy such as Traefik or nginx owns those ports, let it handle HTTPS for this domain and turn real certificates off here. Otherwise give Levelrail ports 80 and 443, or use a DNS-01 provider.",

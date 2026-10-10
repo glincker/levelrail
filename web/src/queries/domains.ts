@@ -84,6 +84,12 @@ export interface IngressSettings {
   // Read-only: the server address apps are reachable at and how it was found.
   public_host?: string
   public_host_source?: 'env' | 'detected' | 'disabled' | 'none'
+  // Port clients use behind a proxy; 0 or omitted means the ingress listen port.
+  public_https_port?: number
+  // A proxy owns TLS: no ACME here. The two flags below are read-only.
+  tls_terminated_upstream?: boolean
+  acme_skipped_upstream?: boolean
+  trusted_proxies_missing?: boolean
   // Set when real certificates are on but cannot work: the ingress does not
   // listen on 80 and 443 and there is no DNS-01 provider.
   acme_blocked?: 'non_standard_ports'

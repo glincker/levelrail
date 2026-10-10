@@ -49,7 +49,7 @@ func (rt *Router) PipelineRunEnv(ctx context.Context, run store.PipelineRun) map
 		"PREVIEW_BRANCH":    match.Branch,
 	}
 	if domain != "" {
-		env["PREVIEW_URL"] = "https://" + domain
+		env["PREVIEW_URL"] = rt.publicHTTPSURL(ctx, domain)
 	}
 	return env
 }

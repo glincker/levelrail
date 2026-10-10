@@ -50,6 +50,16 @@ type ingressSettingsResource struct {
 	// SuggestedACMEEmail is the first admin's address, offered as the form
 	// default only; it is never sent to the CA until the operator saves it.
 	SuggestedACMEEmail string `json:"suggested_acme_email,omitempty"`
+	// PublicHTTPSPort is the port clients use when a proxy fronts this
+	// ingress; 0 (omitted) means the ingress listen port.
+	PublicHTTPSPort int `json:"public_https_port,omitempty"`
+	// TLSTerminatedUpstream says a proxy owns TLS, so this instance never
+	// runs ACME. ACMESkippedUpstream is read-only: acme_enabled is stored
+	// but ignored because of it. TrustedProxiesMissing is read-only: no
+	// APP_INGRESS_TRUSTED_PROXIES, so X-Forwarded-* is not honoured.
+	TLSTerminatedUpstream bool `json:"tls_terminated_upstream,omitempty"`
+	ACMESkippedUpstream   bool `json:"acme_skipped_upstream,omitempty"`
+	TrustedProxiesMissing bool `json:"trusted_proxies_missing,omitempty"`
 	// ACMEBlocked is set when real certificates are on but cannot succeed
 	// here: certificate authorities validate on ports 80 and 443, and this
 	// ingress listens elsewhere with no DNS-01 provider to fall back on.
@@ -67,6 +77,8 @@ func (rt *Router) toIngressSettingsResource(s store.IngressSettings) ingressSett
 	res := toIngressSettingsResource(s)
 	res.PublicHost = rt.publicHost
 	res.PublicHostSource = rt.publicHostSource
+	res.ACMESkippedUpstream = s.TLSTerminatedUpstream && s.ACMEEnabled
+	res.TrustedProxiesMissing = s.TLSTerminatedUpstream && rt.doctorEdge != nil && rt.doctorEdge.TrustedProxies == 0
 	httpPort, httpsPort := rt.doctorHTTPPort, rt.doctorHTTPSPort
 	if httpPort == 0 {
 		httpPort = defaultDoctorHTTPPort
@@ -74,7 +86,7 @@ func (rt *Router) toIngressSettingsResource(s store.IngressSettings) ingressSett
 	if httpsPort == 0 {
 		httpsPort = defaultDoctorHTTPSPort
 	}
-	if s.ACMEEnabled && (httpPort != defaultDoctorHTTPPort || httpsPort != defaultDoctorHTTPSPort) &&
+	if s.ACMEEnabled && !s.TLSTerminatedUpstream && (httpPort != defaultDoctorHTTPPort || httpsPort != defaultDoctorHTTPSPort) &&
 		rt.activeDNSProvider(context.Background()) == dnsProviderNone {
 		res.ACMEBlocked = acmeBlockedNonStandardPorts
 		res.IngressHTTPPort, res.IngressHTTPSPort = httpPort, httpsPort
@@ -91,6 +103,8 @@ func toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource 
 		HSTSEnabled:      s.HSTSEnabled,
 
 		FallbackDomainsEnabled: !s.FallbackDomainsDisabled,
+		PublicHTTPSPort:        s.PublicHTTPSPort,
+		TLSTerminatedUpstream:  s.TLSTerminatedUpstream,
 	}
 }
 
@@ -99,6 +113,9 @@ func toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource 
 type ingressSettingsUpdate struct {
 	ingressSettingsResource
 	FallbackDomainsEnabled *bool `json:"fallback_domains_enabled"`
+	// Pointer shadows: a client that omits them leaves the stored value alone.
+	PublicHTTPSPort       *int  `json:"public_https_port"`
+	TLSTerminatedUpstream *bool `json:"tls_terminated_upstream"`
 }
 
 // handleGetIngressSettings handles GET /api/v1/settings/ingress: the
@@ -213,6 +230,12 @@ func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Req
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if upd.PublicHTTPSPort != nil {
+		if err := store.ValidatePublicHTTPSPort(*upd.PublicHTTPSPort); err != nil {
+			writeError(w, http.StatusBadRequest, "public_https_port must be between 0 and 65535")
+			return
+		}
+	}
 	req := upd.ingressSettingsResource
 	if err := validateIngressSettingsRequest(req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -245,6 +268,14 @@ func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Req
 		settings.FallbackDomainsDisabled = !*upd.FallbackDomainsEnabled
 	} else if prevErr == nil {
 		settings.FallbackDomainsDisabled = prev.FallbackDomainsDisabled
+	}
+	settings.PublicHTTPSPort = prev.PublicHTTPSPort
+	settings.TLSTerminatedUpstream = prev.TLSTerminatedUpstream
+	if upd.PublicHTTPSPort != nil {
+		settings.PublicHTTPSPort = *upd.PublicHTTPSPort
+	}
+	if upd.TLSTerminatedUpstream != nil {
+		settings.TLSTerminatedUpstream = *upd.TLSTerminatedUpstream
 	}
 	if prevErr == nil {
 		rt.purgeOnIssuerChange(r.Context(), prev, settings)

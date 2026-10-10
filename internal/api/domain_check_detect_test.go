@@ -54,3 +54,12 @@ func TestIngressSettingsACMEBlockedOnNonStandardPorts(t *testing.T) {
 		t.Errorf("standard ports must not report a block, got %q", res.ACMEBlocked)
 	}
 }
+
+func TestIngressSettingsNoACMEBlockedBehindTLSUpstream(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	rt.doctorHTTPPort, rt.doctorHTTPSPort = 8088, 8443
+	res := rt.toIngressSettingsResource(store.IngressSettings{ACMEEnabled: true, TLSTerminatedUpstream: true})
+	if res.ACMEBlocked != "" {
+		t.Errorf("a proxy that terminates TLS must not report an ACME block, got %q", res.ACMEBlocked)
+	}
+}

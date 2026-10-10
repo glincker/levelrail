@@ -67,12 +67,13 @@ func (rt *Router) handleGetAppNetwork(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := networkResource{ContainerPort: svc.Port, PublicHost: rt.publicHost, FallbackEnabled: true}
-	if ing, ierr := rt.ingressSettings.GetIngressSettings(r.Context()); ierr == nil {
+	ing, ierr := rt.ingressSettings.GetIngressSettings(r.Context())
+	if ierr == nil {
 		resp.FallbackEnabled = !ing.FallbackDomainsDisabled
 	}
 	if len(svc.Domains) == 0 && resp.FallbackEnabled {
 		if fallback, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
-			resp.FallbackURL = rt.ingressHTTPSURL(fallback)
+			resp.FallbackURL = rt.ingressHTTPSURL(ing, fallback)
 		}
 	}
 

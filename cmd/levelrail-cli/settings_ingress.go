@@ -39,7 +39,7 @@ func runSettingsIngress(prog string, args []string, stdout, stderr io.Writer, lo
 func settingsIngressUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s settings ingress get [flags]
-  %[1]s settings ingress set [--primary-domain DOMAIN] [--acme-enabled] [--acme-email EMAIL] [--hsts-enabled] [--fallback-domains=false] [flags]
+  %[1]s settings ingress set [--primary-domain DOMAIN] [--acme-enabled] [--acme-email EMAIL] [--hsts-enabled] [--fallback-domains=false] [--public-https-port N] [--tls-terminated-upstream] [flags]
   %[1]s settings ingress https [status] | enable --email EMAIL [--staging] [--wait] [flags]
 
 Configures the platform-wide primary domain and ACME (Let's Encrypt)
@@ -68,13 +68,16 @@ func runSettingsIngressGet(prog string, args []string, stdout, stderr io.Writer,
 func runSettingsIngressSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "settings ingress set", "print the updated ingress settings as JSON to stdout and nothing else", stderr)
 	var primaryDomain, acmeEmail, acmeDirectoryURL string
-	var acmeEnabled, hstsEnabled, fallbackDomains bool
+	var acmeEnabled, hstsEnabled, fallbackDomains, tlsUpstream bool
+	var publicHTTPSPort int
 	fs.StringVar(&primaryDomain, "primary-domain", "", "hostname the dashboard itself is reachable at")
 	fs.BoolVar(&acmeEnabled, "acme-enabled", false, "enable automatic TLS certificate issuance/renewal")
 	fs.StringVar(&acmeEmail, "acme-email", "", "ACME account contact address (required when --acme-enabled is set)")
 	fs.StringVar(&acmeDirectoryURL, "acme-directory-url", "", "ACME directory URL override (empty uses Caddy's own default, Let's Encrypt production)")
 	fs.BoolVar(&hstsEnabled, "hsts-enabled", false, "send Strict-Transport-Security (only once a real, browser-trusted certificate is issuing)")
 	fs.BoolVar(&fallbackDomains, "fallback-domains", true, "give apps without a domain an automatic <app>.<dashed-ip>.sslip.io hostname")
+	fs.IntVar(&publicHTTPSPort, "public-https-port", 0, "port clients use when a proxy fronts this ingress (usually 443); 0 means the ingress listen port")
+	fs.BoolVar(&tlsUpstream, "tls-terminated-upstream", false, "a proxy in front owns TLS: never run ACME here and build links with the public port")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings ingress set [flags]\n\nConfigures the primary domain and ACME settings.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -85,6 +88,9 @@ func runSettingsIngressSet(prog string, args []string, stdout, stderr io.Writer,
 		return exitCode
 	}
 
+	if publicHTTPSPort < 0 || publicHTTPSPort > 65535 {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("--public-https-port must be between 0 and 65535"))
+	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
@@ -109,6 +115,10 @@ func runSettingsIngressSet(prog string, args []string, stdout, stderr io.Writer,
 			req.HSTSEnabled = hstsEnabled
 		case "fallback-domains":
 			req.FallbackDomainsEnabled = fallbackDomains
+		case "public-https-port":
+			req.PublicHTTPSPort = publicHTTPSPort
+		case "tls-terminated-upstream":
+			req.TLSTerminatedUpstream = tlsUpstream
 		}
 	})
 
@@ -127,6 +137,8 @@ func printIngressSettingsHuman(out io.Writer, s ingressSettingsResource) {
 	_, _ = fmt.Fprintf(out, "acme_directory_url: %s\n", s.ACMEDirectoryURL)
 	_, _ = fmt.Fprintf(out, "hsts_enabled:       %v\n", s.HSTSEnabled)
 	_, _ = fmt.Fprintf(out, "fallback_domains:   %v\n", s.FallbackDomainsEnabled)
+	_, _ = fmt.Fprintf(out, "public_https_port:  %d\n", s.PublicHTTPSPort)
+	_, _ = fmt.Fprintf(out, "tls_terminated_upstream: %v\n", s.TLSTerminatedUpstream)
 	if s.PublicHost != "" {
 		_, _ = fmt.Fprintf(out, "public_host:        %s (%s)\n", s.PublicHost, s.PublicHostSource)
 	} else {
