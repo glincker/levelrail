@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { Badge } from '@/components/ui/badge'
 import { useDatabase } from '../../queries/databases'
 import { RedisKeyBrowser } from './RedisKeyBrowser'
 import { SchemaExplorer } from './SchemaExplorer'
@@ -18,11 +19,14 @@ export function DatabaseExplorerPanel({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-semibold">
-        {KV_ENGINES.has(engine)
-          ? t('viewer.keys.title')
-          : t('viewer.explorer.title')}
-      </h1>
+      <div className="flex items-center gap-2">
+        <h1 className="text-lg font-semibold">
+          {KV_ENGINES.has(engine)
+            ? t('viewer.keys.title')
+            : t('viewer.explorer.title')}
+        </h1>
+        <Badge variant="muted">{t('viewer.explorer.beta')}</Badge>
+      </div>
       {SQL_ENGINES.has(engine) ? (
         <SchemaExplorer databaseName={databaseName} />
       ) : KV_ENGINES.has(engine) ? (

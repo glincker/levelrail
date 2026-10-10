@@ -451,6 +451,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleListDatabaseSavedQueries |
 | POST | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleSaveDatabaseQuery |
 | DELETE | /api/v1/databases/{name}/saved-queries/{id} | AbilityReadSensitive | handleDeleteDatabaseSavedQuery |
+| GET | /api/v1/databases/{name}/tables/{schema}/{table}/structure | AbilityReadSensitive | handleGetDatabaseTableStructure |
 
 ## Projects / Organizations / Environments
 
@@ -940,6 +941,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/cutover | AbilityRead | handleCutoverReport |
 | GET | /api/v1/migration/cutover/verify | AbilityWriteSensitive | handleCutoverVerify |
 | GET | /api/v1/ingress/connectivity | AbilityRead | handleIngressConnectivity |
+| GET | /api/v1/usage/summary | AbilityRead | handleUsageSummary |
 
 ## See also
 

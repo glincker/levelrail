@@ -19,6 +19,7 @@ import type {
   DbQueryResponse,
   DbSavedQuery,
   DbSchemaResponse,
+  DbStructure,
   RedisScan,
   RedisValue,
 } from '../types/databaseViewer'
@@ -29,6 +30,8 @@ export const databaseViewerKeys = {
   all: (name: string) => [...databaseKeys.detail(name), 'viewer'] as const,
   schema: (name: string) =>
     [...databaseViewerKeys.all(name), 'schema'] as const,
+  structure: (name: string, schema: string, table: string) =>
+    [...databaseViewerKeys.all(name), 'structure', schema, table] as const,
   page: (name: string, p: DbPageParams) =>
     [...databaseViewerKeys.all(name), 'page', p] as const,
   keys: (name: string, pattern: string) =>
@@ -68,11 +71,36 @@ export function useDatabaseSchema(name: string, enabled: boolean) {
     queryOptions({
       queryKey: databaseViewerKeys.schema(name),
       queryFn: () =>
-        request<DbSchemaResponse>(`${base(name)}/schema`, undefined, 'schema'),
+        request<DbSchemaResponse>(
+          `${base(name)}/schema?detail=outline`,
+          undefined,
+          'schema',
+        ),
       enabled,
       staleTime: 0,
     }),
   )
+}
+
+// Columns, indexes, keys and DDL of one table, fetched when it is opened
+// so a large schema never travels as one document.
+export function useDatabaseTableStructure(
+  name: string,
+  schema: string,
+  table: string,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: databaseViewerKeys.structure(name, schema, table),
+    queryFn: () =>
+      request<DbStructure>(
+        `${base(name)}/tables/${encodeURIComponent(schema)}/${encodeURIComponent(table)}/structure`,
+        undefined,
+        'table structure',
+      ),
+    enabled,
+    staleTime: 0,
+  })
 }
 
 export function useDatabaseTablePage(name: string, p: DbPageParams) {
@@ -87,12 +115,8 @@ export function useDatabaseTablePage(name: string, p: DbPageParams) {
         q.set('sort', p.sort)
         q.set('dir', p.desc ? 'desc' : 'asc')
       }
-      if (p.filterColumn && p.filterOp) {
-        q.set('filter_column', p.filterColumn)
-        q.set('filter_op', p.filterOp)
-        if (p.filterValue) {
-          q.set('filter_value', p.filterValue)
-        }
+      if (p.filters && p.filters.length > 0) {
+        q.set('filters', JSON.stringify(p.filters))
       }
       const path = `${base(name)}/tables/${encodeURIComponent(p.schema)}/${encodeURIComponent(p.table)}/rows?${q.toString()}`
       return request<DbPage>(path, undefined, 'table rows')

@@ -29,9 +29,15 @@ import { ResultGrid } from './ResultGrid'
 // SQL console. Read-only unless an admin explicitly enables writes for
 // this page session; the server enforces both (read-only transaction,
 // statement guard, admin-only route), this UI only mirrors it.
-export function SqlConsole({ databaseName }: { databaseName: string }) {
+export function SqlConsole({
+  databaseName,
+  initialSql = '',
+}: {
+  databaseName: string
+  initialSql?: string
+}) {
   const { t } = useTranslation('databases')
-  const [sql, setSql] = useState('')
+  const [sql, setSql] = useState(initialSql)
   const [writes, setWrites] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')

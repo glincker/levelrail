@@ -818,6 +818,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// below: ordinary AbilityRead, same tier as those, since this is only
 	// ever a merged read of history metadata already visible per-resource.
 	mux.HandleFunc("GET /api/v1/backups", rt.requireAbility(AbilityRead, rt.handleListAllBackups))
+	mux.HandleFunc("GET /api/v1/usage/summary", rt.requireAbility(AbilityRead, rt.handleUsageSummary))
 
 	// Download one succeeded backup's own object, streamed straight to
 	// the browser. AbilityReadSensitive, not AbilityRead: this returns

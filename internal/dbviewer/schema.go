@@ -48,24 +48,34 @@ var ErrNotFound = errors.New("not found")
 
 const pgSystemFilter = `n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND n.nspname NOT LIKE 'pg_temp%'`
 
-func pgSchemaSQL(limit int) string {
+const pgEmptyJSONArray = `'[]'::json`
+
+func pgSchemaSQL(limit int, outline bool) string {
+	cols, idx := pgSchemaColumnsSQL, pgSchemaIndexesSQL
+	if outline {
+		cols, idx = pgEmptyJSONArray, pgEmptyJSONArray
+	}
 	return `SELECT COALESCE(json_agg(t ORDER BY t.schema, t.name), '[]'::json) FROM (
 SELECT n.nspname AS schema, c.relname AS name,
   CASE c.relkind WHEN 'r' THEN 'table' WHEN 'p' THEN 'table' WHEN 'v' THEN 'view' WHEN 'm' THEN 'materialized_view' ELSE 'foreign_table' END AS kind,
   GREATEST(c.reltuples, 0)::bigint AS row_estimate,
   CASE WHEN c.relkind IN ('r','p','m') THEN pg_total_relation_size(c.oid) ELSE 0 END::bigint AS size_bytes,
-  (SELECT COALESCE(json_agg(json_build_object('name', a.attname, 'type', format_type(a.atttypid, a.atttypmod),
-      'nullable', NOT a.attnotnull, 'default', COALESCE(pg_get_expr(d.adbin, d.adrelid), ''),
-      'primary_key', EXISTS (SELECT 1 FROM pg_index i WHERE i.indrelid = c.oid AND i.indisprimary AND a.attnum = ANY (i.indkey))) ORDER BY a.attnum), '[]'::json)
-   FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
-   WHERE a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped) AS columns,
-  (SELECT COALESCE(json_agg(json_build_object('name', ic.relname, 'definition', pg_get_indexdef(i.indexrelid),
-      'unique', i.indisunique, 'primary', i.indisprimary) ORDER BY ic.relname), '[]'::json)
-   FROM pg_index i JOIN pg_class ic ON ic.oid = i.indexrelid WHERE i.indrelid = c.oid) AS indexes
+  ` + cols + ` AS columns,
+  ` + idx + ` AS indexes
 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE c.relkind IN ('r','p','v','m','f') AND ` + pgSystemFilter + `
 ORDER BY n.nspname, c.relname LIMIT ` + strconv.Itoa(limit) + `) t`
 }
+
+const pgSchemaColumnsSQL = `(SELECT COALESCE(json_agg(json_build_object('name', a.attname, 'type', format_type(a.atttypid, a.atttypmod),
+      'nullable', NOT a.attnotnull, 'default', COALESCE(pg_get_expr(d.adbin, d.adrelid), ''),
+      'primary_key', EXISTS (SELECT 1 FROM pg_index i WHERE i.indrelid = c.oid AND i.indisprimary AND a.attnum = ANY (i.indkey))) ORDER BY a.attnum), '[]'::json)
+   FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
+   WHERE a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped)`
+
+const pgSchemaIndexesSQL = `(SELECT COALESCE(json_agg(json_build_object('name', ic.relname, 'definition', pg_get_indexdef(i.indexrelid),
+      'unique', i.indisunique, 'primary', i.indisprimary) ORDER BY ic.relname), '[]'::json)
+   FROM pg_index i JOIN pg_class ic ON ic.oid = i.indexrelid WHERE i.indrelid = c.oid)`
 
 type pgSchemaRow struct {
 	Schema      string   `json:"schema"`
@@ -80,13 +90,23 @@ type pgSchemaRow struct {
 // Schema lists every user schema with its tables, columns, and indexes.
 func (t Target) Schema(ctx context.Context) ([]SchemaNode, error) {
 	if t.Dialect == DialectPostgres {
-		return t.postgresSchema(ctx)
+		return t.postgresSchema(ctx, false)
 	}
-	return t.mysqlSchema(ctx)
+	return t.mysqlSchema(ctx, false)
 }
 
-func (t Target) postgresSchema(ctx context.Context) ([]SchemaNode, error) {
-	res, err := t.RunTrusted(ctx, pgSchemaSQL(t.Limits.SchemaRows))
+// SchemaOutline lists every user schema with its tables, row estimates and
+// sizes but no columns or indexes, so a database with thousands of tables
+// stays a small document. Per-table detail comes from TableStructure.
+func (t Target) SchemaOutline(ctx context.Context) ([]SchemaNode, error) {
+	if t.Dialect == DialectPostgres {
+		return t.postgresSchema(ctx, true)
+	}
+	return t.mysqlSchema(ctx, true)
+}
+
+func (t Target) postgresSchema(ctx context.Context, outline bool) ([]SchemaNode, error) {
+	res, err := t.RunTrusted(ctx, pgSchemaSQL(t.Limits.SchemaRows, outline))
 	if err != nil {
 		return nil, err
 	}
@@ -117,11 +137,14 @@ func (t Target) postgresSchema(ctx context.Context) ([]SchemaNode, error) {
 
 const mysqlSystemFilter = `table_schema NOT IN ('mysql','information_schema','performance_schema','sys')`
 
-func (t Target) mysqlSchema(ctx context.Context) ([]SchemaNode, error) {
+func (t Target) mysqlSchema(ctx context.Context, outline bool) ([]SchemaNode, error) {
 	lim := strconv.Itoa(t.Limits.SchemaRows)
 	tables, err := t.RunTrusted(ctx, `SELECT table_schema, table_name, table_type, COALESCE(table_rows,0), COALESCE(data_length,0)+COALESCE(index_length,0) FROM information_schema.tables WHERE `+mysqlSystemFilter+` ORDER BY table_schema, table_name LIMIT `+lim)
 	if err != nil {
 		return nil, err
+	}
+	if outline {
+		return assembleMySQL(tables, Result{}, Result{}), nil
 	}
 	cols, err := t.RunTrusted(ctx, `SELECT table_schema, table_name, column_name, column_type, is_nullable, COALESCE(column_default,''), column_key FROM information_schema.columns WHERE `+mysqlSystemFilter+` ORDER BY table_schema, table_name, ordinal_position LIMIT `+strconv.Itoa(t.Limits.SchemaRows*20))
 	if err != nil {

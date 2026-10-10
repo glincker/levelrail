@@ -21,6 +21,17 @@ export function formatBytes(bytes?: number | null): string {
   return `${value.toFixed(decimals)} ${units[unitIndex]}`
 }
 
+// formatSize is formatBytes for measured values, where zero is a real
+// reading ("0 B") rather than "not set".
+export function formatSize(bytes: number): string {
+  return bytes <= 0 ? '0 B' : formatBytes(bytes)
+}
+
+export function formatCores(cores: number): string {
+  if (cores <= 0) return '0'
+  return cores < 10 ? cores.toFixed(2).replace(/\.?0+$/, '') : cores.toFixed(1)
+}
+
 export function formatNanoCpus(nanoCpus?: number | null): string {
   if (!nanoCpus || nanoCpus <= 0) {
     return 'not set'

@@ -4,5 +4,100 @@
     "seeAll": "See all {{count}}",
     "askAi": "Ask AI",
     "review": "Review"
+  },
+  "fleet": {
+    "databases": {
+      "title": "Databases",
+      "viewAll": "View all {{count}}",
+      "emptyTitle": "No databases yet",
+      "emptyBody": "Create a managed database and it shows up here with its health, size and load.",
+      "emptyAction": "Go to databases",
+      "total": "Databases",
+      "healthy": "Healthy",
+      "unhealthy": "Unhealthy",
+      "starting_one": "{{count}} starting",
+      "starting_other": "{{count}} starting",
+      "stoppedCount_one": "{{count}} stopped",
+      "stoppedCount_other": "{{count}} stopped",
+      "totalSize": "Total size",
+      "sizeScope": "Volumes on the control plane node.",
+      "sizedOf": "Measured for {{known}} of {{total}} databases.",
+      "sizeUnknown": "Not reported by this node.",
+      "largest": "Largest",
+      "busiest": "Busiest",
+      "cpuValue": "{{value}}% CPU",
+      "more_one": "{{count}} more database",
+      "more_other": "{{count}} more databases",
+      "health": {
+        "healthy": "Healthy",
+        "unhealthy": "Unhealthy",
+        "starting": "Starting",
+        "stopped": "Stopped"
+      }
+    },
+    "reserved": {
+      "title": "Reserved versus used",
+      "subtitle": "Configured limits of {{active}} running apps and databases, replicas included. {{suspended}} stopped are left out.",
+      "cpu": "CPU",
+      "memory": "Memory",
+      "cores": "cores",
+      "reserved": "Reserved",
+      "used": "Used now",
+      "capacity": "Capacity",
+      "unknown": "Not reported",
+      "cpuCapacityScope": "CPU capacity is the cores of the control plane node.",
+      "capacityPartial": "Capacity reported by {{known}} of {{total}} nodes.",
+      "reservedBar": "{{resource}} reserved",
+      "usedBar": "{{resource}} used",
+      "verdict": {
+        "overCommitted": "Over-committed by {{amount}}",
+        "idle": "Reserved but idle",
+        "headroom": "Healthy headroom",
+        "noLimits": "No limits set",
+        "unknownCapacity": "Capacity not fully reported"
+      },
+      "noLimit": {
+        "cpu_one": "{{count}} container has no CPU limit and is not counted.",
+        "cpu_other": "{{count}} containers have no CPU limit and are not counted.",
+        "memory_one": "{{count}} container has no memory limit and is not counted.",
+        "memory_other": "{{count}} containers have no memory limit and are not counted."
+      },
+      "breakdown": "Reserved by group",
+      "groupBy": "Group by",
+      "by": {
+        "project": "Project",
+        "environment": "Environment"
+      },
+      "colReserved": "Reserved",
+      "colUsed": "Used",
+      "pairHint": "CPU cores / memory.",
+      "unsetInGroup_one": "{{count}} without limit",
+      "unsetInGroup_other": "{{count}} without limits",
+      "noProject": "No project",
+      "noEnvironment": "No environment",
+      "topReservers": "Top reserving resources",
+      "noReservers": "No resource has a limit set yet.",
+      "kind": {
+        "app": "App",
+        "database": "Database"
+      }
+    },
+    "storage": {
+      "title": "Storage",
+      "scope": "Volume sizes cover the control plane node. Backup sizes cover every node.",
+      "databaseVolumes": "Database volumes",
+      "appVolumes": "App volumes",
+      "unknownSizes_one": "{{count}} volume size unknown",
+      "unknownSizes_other": "{{count}} volume sizes unknown",
+      "backups": "Backups stored",
+      "backupCount_one": "{{count}} backup",
+      "backupCount_other": "{{count}} backups",
+      "total": "Total",
+      "totalHint": "Volumes plus backups.",
+      "largestVolumes": "Largest volumes",
+      "largestBackups": "Largest backup sets",
+      "noVolumes": "No volume sizes reported.",
+      "noBackups": "No successful backups yet."
+    }
   }
 }
