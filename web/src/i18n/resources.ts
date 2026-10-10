@@ -12,6 +12,7 @@ import type access from '../locales/en/access.json'
 import type environments from '../locales/en/environments.json'
 import type migration from '../locales/en/migration.json'
 import type domains from '../locales/en/domains.json'
+import type setup from '../locales/en/setup.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -32,6 +33,7 @@ declare module 'i18next' {
       environments: typeof environments
       migration: typeof migration
       domains: typeof domains
+      setup: typeof setup
     }
   }
 }
