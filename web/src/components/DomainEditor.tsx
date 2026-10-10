@@ -1,9 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { GlobeIcon, PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
+import { DOMAIN_PATTERN } from '../lib/domainWizard'
+import { DomainEnvironmentTabs } from './DomainEnvironmentTabs'
+import { DomainWizard } from './DomainWizard'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { useCertificates } from '../queries/certificates'
@@ -17,11 +21,7 @@ import { DomainMaintenanceControl } from './DomainMaintenanceControl'
 import { DomainRedirectControl } from './DomainRedirectControl'
 import { DomainTLSCertControl } from './DomainTLSCertControl'
 import { DomainWafControl } from './DomainWafControl'
-import {
-  CERT_RENEWAL_STALLED_HINT,
-  certRenewalBadge,
-  certStatusMeta,
-} from '../lib/certStatus'
+import { certRenewalBadge, certStatusMeta } from '../lib/certStatus'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -35,9 +35,6 @@ import {
 import { Field, FieldError, FieldGroup, FieldHint } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
-
-const DOMAIN_PATTERN =
-  /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i
 
 const domainSchema = z.object({
   domains: z.array(
@@ -61,6 +58,8 @@ function toFieldValues(domains?: string[]): { value: string }[] {
 // (reused DomainDnsCheck) and TLS status once saved, instead of both
 // being a separate panel shown only after the fact.
 export function DomainEditor({ app }: { app: AppDetail }) {
+  const { t } = useTranslation('domains')
+  const [wizardOpen, setWizardOpen] = useState(false)
   const updateApp = useUpdateApp(app.name)
   const { data: certificates } = useCertificates()
   const { control, register, handleSubmit, formState } =
@@ -116,153 +115,168 @@ export function DomainEditor({ app }: { app: AppDetail }) {
           .
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <form
-          onSubmit={(e) => {
-            void onSubmit(e)
-          }}
-          className="space-y-3"
-        >
-          <FieldHint
-            href="https://developers.cloudflare.com/dns/manage-dns-records/reference/dns-record-types/"
-            linkText="DNS record types explained"
+      <CardContent className="space-y-3">
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setWizardOpen((open) => !open)
+            }}
           >
-            Point an A record at this server&apos;s IP address (or a CNAME at
-            its hostname), then a TLS certificate is issued automatically once
-            it resolves.
-          </FieldHint>
-          <AutomaticDomainRow appName={app.name} />
-          {fields.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No domains configured.
-            </p>
-          ) : (
-            <FieldGroup className="gap-3">
-              {fields.map((field, index) => {
-                const domain = debouncedDomains[index]?.value?.trim() ?? ''
-                const isValidDomain = DOMAIN_PATTERN.test(domain)
-                const isSaved = savedDomains.has(domain)
-                const cert = isSaved ? certByDomain.get(domain) : undefined
-
-                return (
-                  <div key={field.id} className="space-y-2">
-                    <Field orientation="horizontal">
-                      <div className="flex-1">
-                        <Input
-                          {...register(`domains.${index}.value`)}
-                          className="font-mono"
-                          placeholder="app.example.com"
-                          aria-label="Domain"
-                        />
-                        <FieldError
-                          errors={
-                            formState.errors.domains?.[index]?.value
-                              ? [formState.errors.domains[index]?.value]
-                              : undefined
-                          }
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => {
-                          remove(index)
-                        }}
-                      >
-                        <XIcon aria-hidden="true" />
-                        <span className="sr-only">Remove domain</span>
-                      </Button>
-                    </Field>
-
-                    {isValidDomain ? (
-                      <div className="space-y-1.5 pl-1">
-                        <DomainDnsCheck appName={app.name} domain={domain} />
-                        {isSaved ? (
-                          <>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>TLS certificate:</span>
-                              {cert ? (
-                                <>
-                                  <Badge
-                                    variant={
-                                      certStatusMeta[cert.status].variant
-                                    }
-                                  >
-                                    {certStatusMeta[cert.status].label}
-                                  </Badge>
-                                  {certRenewalBadge(cert) ? (
-                                    <Badge
-                                      variant="destructive"
-                                      title={CERT_RENEWAL_STALLED_HINT}
-                                    >
-                                      {certRenewalBadge(cert)?.label}
-                                    </Badge>
-                                  ) : null}
-                                </>
-                              ) : (
-                                <Badge variant="muted">Provisioning</Badge>
-                              )}
-                            </div>
-                            <DomainDnsRecordsControl
-                              appName={app.name}
-                              domain={domain}
-                            />
-                            <DomainBasicAuthControl
-                              appName={app.name}
-                              domain={domain}
-                            />
-                            <DomainMaintenanceControl
-                              appName={app.name}
-                              domain={domain}
-                            />
-                            <DomainRedirectControl
-                              appName={app.name}
-                              domain={domain}
-                            />
-                            <DomainTLSCertControl
-                              appName={app.name}
-                              domain={domain}
-                            />
-                            <DomainWafControl
-                              appName={app.name}
-                              domain={domain}
-                            />
-                            <DomainErrorPagesControl
-                              appName={app.name}
-                              domain={domain}
-                            />
-                          </>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </div>
-                )
-              })}
-            </FieldGroup>
-          )}
-          <div className="flex items-center gap-2 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                append({ value: '' })
-              }}
+            {wizardOpen ? t('wizard.close') : t('wizard.open')}
+          </Button>
+        </div>
+        {wizardOpen ? <DomainWizard app={app} /> : null}
+        <DomainEnvironmentTabs appName={app.name}>
+          <form
+            onSubmit={(e) => {
+              void onSubmit(e)
+            }}
+            className="space-y-3"
+          >
+            <FieldHint
+              href="https://developers.cloudflare.com/dns/manage-dns-records/reference/dns-record-types/"
+              linkText="DNS record types explained"
             >
-              <PlusIcon aria-hidden="true" />
-              Add domain
-            </Button>
-            <Button type="submit" size="sm" disabled={updateApp.isPending}>
-              {updateApp.isPending ? 'Saving...' : 'Save domains'}
-            </Button>
-          </div>
-          {updateApp.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{updateApp.error.message}</AlertDescription>
-            </Alert>
-          ) : null}
-        </form>
+              Point an A record at this server&apos;s IP address (or a CNAME at
+              its hostname), then a TLS certificate is issued automatically once
+              it resolves.
+            </FieldHint>
+            <AutomaticDomainRow appName={app.name} />
+            {fields.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No domains configured.
+              </p>
+            ) : (
+              <FieldGroup className="gap-3">
+                {fields.map((field, index) => {
+                  const domain = debouncedDomains[index]?.value?.trim() ?? ''
+                  const isValidDomain = DOMAIN_PATTERN.test(domain)
+                  const isSaved = savedDomains.has(domain)
+                  const cert = isSaved ? certByDomain.get(domain) : undefined
+
+                  return (
+                    <div key={field.id} className="space-y-2">
+                      <Field orientation="horizontal">
+                        <div className="flex-1">
+                          <Input
+                            {...register(`domains.${index}.value`)}
+                            className="font-mono"
+                            placeholder="app.example.com"
+                            aria-label="Domain"
+                          />
+                          <FieldError
+                            errors={
+                              formState.errors.domains?.[index]?.value
+                                ? [formState.errors.domains[index]?.value]
+                                : undefined
+                            }
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => {
+                            remove(index)
+                          }}
+                        >
+                          <XIcon aria-hidden="true" />
+                          <span className="sr-only">Remove domain</span>
+                        </Button>
+                      </Field>
+
+                      {isValidDomain ? (
+                        <div className="space-y-1.5 pl-1">
+                          <DomainDnsCheck appName={app.name} domain={domain} />
+                          {isSaved ? (
+                            <>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span>TLS certificate:</span>
+                                {cert ? (
+                                  <>
+                                    <Badge
+                                      variant={
+                                        certStatusMeta[cert.status].variant
+                                      }
+                                    >
+                                      {certStatusMeta[cert.status].label}
+                                    </Badge>
+                                    {certRenewalBadge(cert) ? (
+                                      <Badge
+                                        variant="destructive"
+                                        title={certRenewalBadge(cert)?.hint}
+                                      >
+                                        {certRenewalBadge(cert)?.label}
+                                      </Badge>
+                                    ) : null}
+                                  </>
+                                ) : (
+                                  <Badge variant="muted">Provisioning</Badge>
+                                )}
+                              </div>
+                              <DomainDnsRecordsControl
+                                appName={app.name}
+                                domain={domain}
+                              />
+                              <DomainBasicAuthControl
+                                appName={app.name}
+                                domain={domain}
+                              />
+                              <DomainMaintenanceControl
+                                appName={app.name}
+                                domain={domain}
+                              />
+                              <DomainRedirectControl
+                                appName={app.name}
+                                domain={domain}
+                              />
+                              <DomainTLSCertControl
+                                appName={app.name}
+                                domain={domain}
+                              />
+                              <DomainWafControl
+                                appName={app.name}
+                                domain={domain}
+                              />
+                              <DomainErrorPagesControl
+                                appName={app.name}
+                                domain={domain}
+                              />
+                            </>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </FieldGroup>
+            )}
+            <div className="flex items-center gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  append({ value: '' })
+                }}
+              >
+                <PlusIcon aria-hidden="true" />
+                Add domain
+              </Button>
+              <Button type="submit" size="sm" disabled={updateApp.isPending}>
+                {updateApp.isPending ? 'Saving...' : 'Save domains'}
+              </Button>
+            </div>
+            {updateApp.isError ? (
+              <Alert variant="destructive">
+                <AlertDescription>{updateApp.error.message}</AlertDescription>
+              </Alert>
+            ) : null}
+          </form>
+        </DomainEnvironmentTabs>
       </CardContent>
     </Card>
   )

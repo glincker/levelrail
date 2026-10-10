@@ -1,0 +1,118 @@
+{
+  "wizard": {
+    "open": "Guided setup",
+    "close": "Close guide",
+    "title": "Add a domain, step by step",
+    "description": "Point a domain at this app and get a trusted certificate. Each step checks the real state, and nothing is saved until the last one.",
+    "step": {
+      "domain": "Domain",
+      "dns": "DNS record",
+      "port": "Container port",
+      "certificate": "Certificate"
+    },
+    "domain": {
+      "label": "Domain",
+      "placeholder": "app.example.com",
+      "invalid": "Enter a valid domain, for example app.example.com.",
+      "environmentLabel": "Environment",
+      "environmentDefault": "Default (all environments without their own set)",
+      "wwwPreset": "Also route {{www}} and redirect it to {{apex}}",
+      "apexPreset": "Also route {{apex}} and redirect it to {{www}}"
+    },
+    "dns": {
+      "propagation": "DNS changes usually show up within minutes, but can take up to a few hours depending on the record's TTL. This page re-checks on its own, so you can leave it open.",
+      "needDomain": "Enter a domain above to see the exact record to add."
+    }
+  },
+  "port": {
+    "description": "The ingress forwards requests to port {{port}} inside the container.",
+    "listening": "Verified: the container is listening on port {{port}}.",
+    "otherPort": "The container is listening on {{ports}}, not on port {{port}}. Requests would fail until the port matches.",
+    "useListening": "Use port {{port}}",
+    "notListening": "Nothing is listening on port {{port}} inside the running container yet. Check the app starts and binds to 0.0.0.0, not 127.0.0.1.",
+    "unknown": "Not verified: the app is not running yet, or exec access is off for it. The configured port is port {{port}}.",
+    "execDisabled": "Turn on exec access for this app to let the dashboard verify its listening port.",
+    "notRunning": "The app is not running, so its port cannot be verified yet.",
+    "recheck": "Check again",
+    "saved": "Port updated."
+  },
+  "certificate": {
+    "http01": "HTTP-01: the certificate is requested automatically once the domain resolves here. Ports 80 and 443 must reach this server from the internet.",
+    "dns01Private": "HTTP-01 cannot work: this server's address ({{host}}) is private, so no certificate authority can reach port 80. Use DNS-01 with a wildcard domain such as *.example.com.",
+    "dns01Wildcard": "Wildcard domains are validated with DNS-01, which needs a DNS provider connected.",
+    "providerActive": "DNS-01 provider: {{provider}}. Certificates for wildcard domains are issued through it.",
+    "providerNone": "No DNS-01 provider is connected yet.",
+    "setupStep": "Next step: connect Cloudflare or Route53 on the Domains page, then add a wildcard domain for your zone.",
+    "openDomains": "Open Domains settings",
+    "connectivity": "Reachability from this server",
+    "portOpen": "Port {{port}} answers",
+    "portClosed": "Port {{port}} does not answer",
+    "connectivityNote": "This tests the address from the control plane. It cannot prove the port is open to the whole internet, but a closed port here is almost always closed there too.",
+    "stagingNote": "Staging certificates are platform-wide, not per app. To test without rate limits, turn on Let's Encrypt staging in the Domains settings first."
+  },
+  "save": {
+    "submit": "Add domain",
+    "submitting": "Adding...",
+    "done": "{{domain}} added.",
+    "redirectDone": "{{from}} now redirects to {{to}}.",
+    "failed": "Could not add the domain."
+  },
+  "provider": {
+    "label": "DNS-01 provider",
+    "cloudflare": "Cloudflare",
+    "route53": "Route53",
+    "none": "None",
+    "noneHint": "Wildcard domains and private-address servers need one."
+  },
+  "acme": {
+    "title": "Certificate request failed",
+    "renewalTitle": "Certificate renewal failed",
+    "caError": "The certificate authority said",
+    "action": {
+      "open_port_80": "Next step: open ports 80 and 443 to the internet. Check your firewall, your router port forward and your cloud security group, then wait for the next attempt.",
+      "fix_dns": "Next step: point the domain's A or AAAA record at this server, and wait for DNS to propagate.",
+      "wait_rate_limit": "Next step: wait before retrying. The certificate authority is rate limiting this hostname, and every failed attempt counts against the limit.",
+      "fix_caa": "Next step: remove or edit the CAA record so it allows the certificate authority.",
+      "check_logs": "Next step: read the ingress logs for the full certificate authority response."
+    }
+  },
+  "environmentTabs": {
+    "label": "Environment",
+    "default": "Default",
+    "defaultHint": "Used by any environment that has no domain set of its own.",
+    "routingNow": "Routing now",
+    "active": "Active",
+    "activeHint": "This app is tagged with this environment, so this set is what the ingress routes.",
+    "inactiveHint": "Not routed right now. It starts routing when this app is moved into this environment.",
+    "empty": "No domains for this environment. The default set is used there.",
+    "addLabel": "Add a domain to this environment",
+    "add": "Add",
+    "remove": "Remove {{domain}}",
+    "saved": "Environment domains saved.",
+    "failed": "Could not save the environment domains.",
+    "loadFailed": "Could not load the environment domain sets."
+  },
+  "clone": {
+    "copyDomains": "Copy domains under new hostnames",
+    "copyDomainsHint": "A hostname can belong to only one app, so every copied hostname is rewritten.",
+    "mode": {
+      "prefix": "Add a prefix",
+      "replace": "Swap a parent domain"
+    },
+    "prefix": "Prefix",
+    "prefixPlaceholder": "uat.",
+    "find": "Replace this domain",
+    "findPlaceholder": "example.com",
+    "replace": "With",
+    "replacePlaceholder": "uat.example.com"
+  },
+  "connectivityCard": {
+    "title": "Reachability",
+    "description": "Whether ports 80 and 443 answer on this server's address, and which DNS-01 provider is connected.",
+    "check": "Check now",
+    "noHost": "No public address is known. Set APP_PUBLIC_HOST on the control plane.",
+    "private": "This server is on a private address. HTTP-01 cannot work here, use DNS-01 with a wildcard domain.",
+    "closed": "Port 80 or 443 does not answer. Open them in your firewall or forward them from your router.",
+    "ok": "Ports 80 and 443 answer from this server."
+  }
+}

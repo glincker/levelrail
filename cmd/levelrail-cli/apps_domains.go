@@ -21,6 +21,11 @@ func appsDomainsUsage(prog string) string {
 add and remove change only the domain list, never any other setting.
 A domain already used by another app is refused with the conflicting app named.
 
+--env ENV (an environment id, name or kind such as dev, uat, production)
+targets that environment's own domain set instead of the app's default
+set. An app routes the set of the environment it is tagged with, falling
+back to its default set. "list --env all" shows every environment's set.
+
 Run "%[1]s apps domains <subcommand> -h" for a subcommand's own flags.
 `, prog)
 }
@@ -50,6 +55,8 @@ func runAppsDomains(prog string, args []string, stdout, stderr io.Writer, lookup
 
 func runAppsDomainsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps domains list", "print the domains as a JSON array to stdout and nothing else", stderr)
+	var envFlag string
+	fs.StringVar(&envFlag, "env", "", "show one environment's domain set (id, name or kind), or \"all\"")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps domains list <name> [flags]\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -57,6 +64,9 @@ func runAppsDomainsList(prog string, args []string, stdout, stderr io.Writer, lo
 	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps domains list", "app name"}, lookupEnv)
 	if !ok {
 		return exitCode
+	}
+	if envFlag != "" {
+		return runAppsDomainsListEnvironment(client, name, envFlag, jsonOut, of, stdout, stderr)
 	}
 	app, err := client.GetApp(context.Background(), name)
 	if err != nil {
@@ -81,11 +91,15 @@ type appsDomainsResult struct {
 	App     string   `json:"app"`
 	Domains []string `json:"domains"`
 	Changed bool     `json:"changed"`
+	// EnvironmentID is set when --env targeted an environment's own set.
+	EnvironmentID string `json:"environment_id,omitempty"`
 }
 
 func runAppsDomainsChange(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	label := "apps domains " + verb
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, label, "print the result as JSON to stdout and nothing else", stderr)
+	var envFlag string
+	fs.StringVar(&envFlag, "env", "", "change this environment's domain set (id, name or kind) instead of the app's default set")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s %s <name> <domain>... [flags]\n\nFlags:\n", prog, label)
 		fs.PrintDefaults()
@@ -103,9 +117,9 @@ func runAppsDomainsChange(prog, verb string, args []string, stdout, stderr io.Wr
 	name, wanted := rest[0], normalizeDomains(rest[1:])
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	req := apiclient.EditDomainsRequest{Add: wanted}
+	req := apiclient.EditDomainsRequest{Add: wanted, Environment: envFlag}
 	if verb == "remove" {
-		req = apiclient.EditDomainsRequest{Remove: wanted}
+		req = apiclient.EditDomainsRequest{Remove: wanted, Environment: envFlag}
 	}
 	edited, err := client.EditAppDomains(context.Background(), name, req)
 	if err != nil {
@@ -116,7 +130,7 @@ func runAppsDomainsChange(prog, verb string, args []string, stdout, stderr io.Wr
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update domains for app %q: %w", name, err))
 	}
 	next := edited.Domains
-	result := appsDomainsResult{App: name, Domains: next, Changed: edited.Changed}
+	result := appsDomainsResult{App: name, Domains: next, Changed: edited.Changed, EnvironmentID: edited.EnvironmentID}
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
 		if !result.Changed {
 			_, _ = fmt.Fprintf(stdout, "no change: app %q domains are already as requested\n", name)

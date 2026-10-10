@@ -761,6 +761,11 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 // (redirect, basic auth, TLS cert, WAF, maintenance, error pages) cascade
 // from it, so re-inserting would drop them on every save.
 func claimServiceDomains(ctx context.Context, tx *sql.Tx, serviceName string, domains []string) error {
+	envDomains, err := heldEnvDomains(ctx, tx, serviceName)
+	if err != nil {
+		return err
+	}
+	domains = append(append([]string(nil), domains...), envDomains...)
 	held, err := serviceDomainClaims(ctx, tx, serviceName)
 	if err != nil {
 		return err

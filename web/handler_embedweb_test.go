@@ -17,7 +17,7 @@ import (
 // empty embed.
 func TestHandler_UsesPackageDistFS_Embedded(t *testing.T) {
 	rec := httptest.NewRecorder()
-	Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	Handler(nil).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200: this build tag means web/dist must actually be embedded (run `cd web && npm run build` first)", rec.Code)

@@ -10,6 +10,8 @@ import (
 	"io/fs"
 	"net/http"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/brand"
 )
 
 // Handler serves the embedded frontend. If this binary wasn't built
@@ -17,11 +19,11 @@ import (
 // with an actionable message instead of panicking or 404ing silently:
 // a missing frontend is a build configuration fact worth surfacing
 // clearly, not a routing failure to debug.
-func Handler() http.Handler {
-	return handlerFromFS(DistFS)
+func Handler(b *brand.Brand) http.Handler {
+	return handlerFromFS(DistFS, b)
 }
 
-func handlerFromFS(embedded fs.FS) http.Handler {
+func handlerFromFS(embedded fs.FS, b *brand.Brand) http.Handler {
 	// fs.Sub doesn't fail just because "dist" is missing or empty: for
 	// the generic (non-SubFS) case it builds a lazy view and only
 	// errors on the first actual file access, which would otherwise
@@ -30,7 +32,7 @@ func handlerFromFS(embedded fs.FS) http.Handler {
 	// at handler construction time, tells the two cases apart up front.
 	if dist, err := fs.Sub(embedded, "dist"); err == nil {
 		if _, err := fs.Stat(dist, "index.html"); err == nil {
-			return spaHandler{dist: dist, fileServer: http.FileServer(http.FS(dist))}
+			return spaHandler{dist: dist, fileServer: http.FileServer(http.FS(dist)), brand: b}
 		}
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -43,6 +45,7 @@ func handlerFromFS(embedded fs.FS) http.Handler {
 type spaHandler struct {
 	dist       fs.FS
 	fileServer http.Handler
+	brand      *brand.Brand
 }
 
 // ServeHTTP serves a real static asset when the request path matches
@@ -52,12 +55,27 @@ type spaHandler struct {
 // only the app shell that renders them.
 func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	setDashboardSecurityHeaders(w.Header())
+	if r.URL.Path == manifestPath {
+		serveManifest(w, h.brand)
+		return
+	}
 	name := strings.TrimPrefix(r.URL.Path, "/")
-	if _, err := fs.Stat(h.dist, name); err != nil {
-		http.ServeFileFS(w, r, h.dist, "index.html")
+	if _, err := fs.Stat(h.dist, name); err != nil || name == "" || name == "index.html" {
+		h.serveIndex(w, r)
 		return
 	}
 	h.fileServer.ServeHTTP(w, r)
+}
+
+func (h spaHandler) serveIndex(w http.ResponseWriter, r *http.Request) {
+	page, err := fs.ReadFile(h.dist, "index.html")
+	if err != nil {
+		http.Error(w, "index.html unavailable", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
+	_, _ = w.Write(injectBrandHead(page, h.brand, r))
 }
 
 // dashboardCSP mirrors internal/api's contentSecurityPolicy; img-src also

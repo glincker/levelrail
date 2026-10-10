@@ -33,5 +33,27 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     )
   }, [brand.PrimaryColor, brand.PrimaryColorDark])
 
+  // The Go handler already injects these into index.html; this covers the
+  // Vite dev server and any static-fallback shell with no server rewrite.
+  useEffect(() => {
+    if (!brand.Name) return
+    document.title = brand.Name
+    const setMeta = (attr: 'name' | 'property', key: string, value: string) => {
+      let el = document.head.querySelector<HTMLMetaElement>(
+        `meta[${attr}="${key}"]`,
+      )
+      if (!el) {
+        el = document.createElement('meta')
+        el.setAttribute(attr, key)
+        document.head.appendChild(el)
+      }
+      el.setAttribute('content', value)
+    }
+    setMeta('property', 'og:site_name', brand.Name)
+    setMeta('property', 'og:title', brand.Name)
+    setMeta('name', 'twitter:title', brand.Name)
+    setMeta('name', 'theme-color', brand.PrimaryColor)
+  }, [brand.Name, brand.PrimaryColor])
+
   return <BrandContext.Provider value={brand}>{children}</BrandContext.Provider>
 }

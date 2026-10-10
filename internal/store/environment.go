@@ -175,7 +175,17 @@ func (db *DB) SetEnvironmentProtected(ctx context.Context, id string, protected 
 // environment_id is ON DELETE SET NULL (migrations/0054), so every
 // service tagged with this environment is left running, untagged again.
 func (db *DB) DeleteEnvironment(ctx context.Context, id string) error {
-	res, err := db.ExecContext(ctx, `DELETE FROM environments WHERE id = ?`, id)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: delete environment %q: begin transaction: %w", id, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	owners, err := environmentDomainOwners(ctx, tx, id)
+	if err != nil {
+		return fmt.Errorf("store: delete environment %q: %w", id, err)
+	}
+	res, err := tx.ExecContext(ctx, `DELETE FROM environments WHERE id = ?`, id)
 	if err != nil {
 		return fmt.Errorf("store: delete environment %q: %w", id, err)
 	}
@@ -185,6 +195,15 @@ func (db *DB) DeleteEnvironment(ctx context.Context, id string) error {
 	}
 	if n == 0 {
 		return ErrEnvironmentNotFound
+	}
+	// The cascade dropped the environment's domain sets; release their claims.
+	for _, name := range owners {
+		if err := resyncServiceDomainClaims(ctx, tx, name); err != nil {
+			return fmt.Errorf("store: delete environment %q: %w", id, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: delete environment %q: commit: %w", id, err)
 	}
 	return nil
 }

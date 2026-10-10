@@ -2594,7 +2594,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		}))
 	}
 	rt := api.NewRouter(logger, b, db, opts...)
-	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, rt.WithHSTS(web.Handler())))), rt
+	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, rt.WithHSTS(web.Handler(b))))), rt
 }
 
 // composeMux wires the three top-level handlers rootHandler serves

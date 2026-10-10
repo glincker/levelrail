@@ -15,7 +15,6 @@ import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { VariantProps } from 'class-variance-authority'
 import {
-  CERT_RENEWAL_STALLED_HINT,
   certExpiryLabel,
   certRenewalBadge,
   certStatusMeta,
@@ -130,6 +129,7 @@ export function DomainRow({
 }) {
   const { copied, copy } = useCopyToClipboard()
   const { t } = useTranslation('https')
+  const { t: td } = useTranslation('domains')
   return (
     <Link
       to="/apps/$name/domains"
@@ -180,7 +180,7 @@ export function DomainRow({
               {certStatusMeta[cert.status].label}
             </Badge>
             {certRenewalBadge(cert) ? (
-              <Badge variant="destructive" title={CERT_RENEWAL_STALLED_HINT}>
+              <Badge variant="destructive" title={certRenewalBadge(cert)?.hint}>
                 {certRenewalBadge(cert)?.label}
               </Badge>
             ) : (
@@ -192,6 +192,13 @@ export function DomainRow({
               </span>
             )}
           </span>
+        ) : domain.acme_failure ? (
+          <Badge
+            variant="destructive"
+            title={`${domain.acme_failure.error}\n${td(`acme.action.${domain.acme_failure.action}`)}`}
+          >
+            {td('acme.title')}
+          </Badge>
         ) : (
           <span className="text-xs text-muted-foreground/60 italic">
             no cert yet

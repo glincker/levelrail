@@ -50,12 +50,15 @@
 #                            the installer never does this on its own; it
 #                            fails preflight instead and tells you to set
 #                            these explicitly once you've accepted that trade.
-#   LEVELRAIL_SOCKET_ACTIVATION  set to 1 to let systemd own the ingress
-#                            sockets, so a restart or upgrade of the control
-#                            plane queues connections instead of refusing
-#                            them (see docs/resilience.md). Off by default;
-#                            on upgrade, 1 switches an existing install over
-#                            (one brief stop) and 0 switches it back.
+#   LEVELRAIL_SOCKET_ACTIVATION  systemd owns the ingress sockets, so a
+#                            restart or upgrade of the control plane queues
+#                            connections instead of refusing them (see
+#                            docs/resilience.md). On by default for a new
+#                            install; set 0 to opt out (the control plane
+#                            then binds 80/443 itself). On upgrade, unset
+#                            keeps the current mode, 1 switches an existing
+#                            install over (one brief stop) and 0 switches
+#                            it back.
 
 set -eu
 
@@ -248,7 +251,8 @@ port_listening() {
 }
 
 service_active() {
-	systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null
+	systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null ||
+		systemctl is-active --quiet "$HTTP_SOCKET_UNIT" 2>/dev/null
 }
 
 # find_free_port scans start..start+19 and prints the first port
@@ -505,7 +509,7 @@ remove_socket_units() {
 
 write_unit() {
 	socket_deps=""
-	if [ "$SOCKET_ACTIVATION" = "1" ]; then
+	if [ "$SOCKET_ACTIVATION" = "1" ] || [ -f "/etc/systemd/system/${HTTP_SOCKET_UNIT}" ]; then
 		socket_deps="Requires=${HTTP_SOCKET_UNIT} ${HTTPS_SOCKET_UNIT}
 After=${HTTP_SOCKET_UNIT} ${HTTPS_SOCKET_UNIT}"
 	fi
@@ -750,6 +754,7 @@ EOF
 }
 
 do_install() {
+	[ -n "$SOCKET_ACTIVATION" ] || SOCKET_ACTIVATION=1
 	preflight
 	ensure_docker
 	install_binary

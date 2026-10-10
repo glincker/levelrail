@@ -108,6 +108,15 @@ type domainCheckResponse struct {
 	// CNAME when ExpectedHost is a hostname with both.
 	ExpectedIPv4 []string `json:"expected_ipv4,omitempty"`
 	ExpectedIPv6 []string `json:"expected_ipv6,omitempty"`
+	// ExpectedPrivate is true when the address Domain must point at is a
+	// private/LAN one, so no public CA can validate it over HTTP-01.
+	ExpectedPrivate bool `json:"expected_private,omitempty"`
+	// Challenge is "http-01" or "dns-01-required".
+	Challenge string `json:"challenge,omitempty"`
+	// DNSProvider is the active DNS-01 provider: cloudflare, route53, none.
+	DNSProvider string `json:"dns_provider,omitempty"`
+	// ACMEFailure is the CA's last error for Domain, when one is recorded.
+	ACMEFailure *acmeFailureResource `json:"acme_failure,omitempty"`
 }
 
 // advertisedHost picks the host DomainEditor should tell an operator to
@@ -260,6 +269,7 @@ func (rt *Router) handleCheckDomain(w http.ResponseWriter, r *http.Request) {
 
 	expectedHost, inferred := advertisedHost(r, rt.publicHost)
 	resp := rt.runDomainCheck(r.Context(), domain, expectedHost, inferred)
+	rt.enrichDomainCheck(r.Context(), &resp)
 	writeJSON(w, http.StatusOK, resp)
 }
 

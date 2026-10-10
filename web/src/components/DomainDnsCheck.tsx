@@ -11,8 +11,16 @@ import type { VariantProps } from 'class-variance-authority'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useTranslation } from 'react-i18next'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
-import { useDomainCheck, type DomainCheckStatus } from '../queries/domainCheck'
+import {
+  useDomainCheck,
+  type AcmeFailure,
+  type DnsProvider,
+  type DomainCheckStatus,
+} from '../queries/domainCheck'
+import { AcmeFailureHint } from './AcmeFailureHint'
+import { DnsProviderBadge } from './DnsProviderBadge'
 
 // The subset of a domain-check result DomainCheckPanel needs to render:
 // shared by domainCheck.ts's per-app DomainCheckResult and domains.ts's
@@ -24,6 +32,9 @@ export interface DomainCheckPanelData {
   expected_ipv6?: string[]
   host_inferred?: boolean
   status: DomainCheckStatus
+  expected_private?: boolean
+  dns_provider?: DnsProvider
+  acme_failure?: AcmeFailure
 }
 
 type DnsRecordType = 'A' | 'AAAA' | 'CNAME'
@@ -51,8 +62,10 @@ function dnsRecordOptions(data: DomainCheckPanelData): DnsRecordOption[] {
   const type = dnsRecordType(host)
   if (type !== 'CNAME') return [{ type, value: host }]
   const options: DnsRecordOption[] = [{ type: 'CNAME', value: host }]
-  if (data.expected_ipv4?.[0]) options.push({ type: 'A', value: data.expected_ipv4[0] })
-  if (data.expected_ipv6?.[0]) options.push({ type: 'AAAA', value: data.expected_ipv6[0] })
+  if (data.expected_ipv4?.[0])
+    options.push({ type: 'A', value: data.expected_ipv4[0] })
+  if (data.expected_ipv6?.[0])
+    options.push({ type: 'AAAA', value: data.expected_ipv6[0] })
   return options
 }
 
@@ -132,10 +145,13 @@ export function DomainCheckPanel({
   isFetching: boolean
   onRefetch: () => void
 }) {
+  const { t } = useTranslation('domains')
   const meta = data ? STATUS_META[data.status] : undefined
   const StatusIcon = meta?.icon
   const options = data ? dnsRecordOptions(data) : []
-  const [activeType, setActiveType] = useState<DnsRecordType | undefined>(options[0]?.type)
+  const [activeType, setActiveType] = useState<DnsRecordType | undefined>(
+    options[0]?.type,
+  )
   const active = options.find((o) => o.type === activeType) ?? options[0]
 
   return (
@@ -162,7 +178,12 @@ export function DomainCheckPanel({
               : ''}
           </p>
           {options.length > 1 ? (
-            <Tabs value={active.type} onValueChange={(v) => { setActiveType(v as DnsRecordType) }}>
+            <Tabs
+              value={active.type}
+              onValueChange={(v) => {
+                setActiveType(v as DnsRecordType)
+              }}
+            >
               <TabsList>
                 {options.map((o) => (
                   <TabsTrigger key={o.type} value={o.type}>
@@ -171,7 +192,11 @@ export function DomainCheckPanel({
                 ))}
               </TabsList>
               {options.map((o) => (
-                <TabsContent key={o.type} value={o.type} className="space-y-1 pt-2">
+                <TabsContent
+                  key={o.type}
+                  value={o.type}
+                  className="space-y-1 pt-2"
+                >
                   <DnsRecordRow label="Name" value={domain} />
                   <DnsRecordRow label="Value" value={o.value} />
                 </TabsContent>
@@ -194,10 +219,26 @@ export function DomainCheckPanel({
       {data?.host_inferred ? (
         <p className="mt-2 text-xs text-muted-foreground">
           {data.status === 'connected' ? 'This is a ' : 'This is only a '}
-          best guess based on how you reached this dashboard, not a
-          confirmed address. Set <code className="font-mono">APP_PUBLIC_HOST</code>{' '}
-          on the control plane to check against a confirmed one instead.
+          best guess based on how you reached this dashboard, not a confirmed
+          address. Set <code className="font-mono">APP_PUBLIC_HOST</code> on the
+          control plane to check against a confirmed one instead.
         </p>
+      ) : null}
+
+      {data?.expected_private ? (
+        <p className="mt-2 text-xs text-destructive">
+          {t('certificate.dns01Private', { host: data.expected_host ?? '' })}
+        </p>
+      ) : null}
+      {data?.dns_provider ? (
+        <div className="mt-2">
+          <DnsProviderBadge provider={data.dns_provider} />
+        </div>
+      ) : null}
+      {data?.acme_failure ? (
+        <div className="mt-2">
+          <AcmeFailureHint failure={data.acme_failure} />
+        </div>
       ) : null}
 
       <div className="mt-2 flex items-center gap-2">

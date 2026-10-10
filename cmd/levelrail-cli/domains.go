@@ -41,6 +41,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsTLSCert(prog, args[1:], stdout, stderr, lookupEnv)
 	case "check":
 		return runDomainsCheck(prog, args[1:], stdout, stderr, lookupEnv)
+	case "connectivity":
+		return runDomainsConnectivity(prog, args[1:], stdout, stderr, lookupEnv)
 	case "certificates":
 		return runDomainsCertificates(prog, args[1:], stdout, stderr, lookupEnv)
 	case "waf":
@@ -66,6 +68,7 @@ func domainsUsage(prog string) string {
   %[1]s domains redirect <verb> [flags]         point one of an app's domains at a target URL
   %[1]s domains tls-cert <verb> [flags]         upload or clear a domain's own (BYO) TLS certificate
   %[1]s domains check <app> <domain> [flags]    run a real DNS lookup and report whether the domain reaches this control plane
+  %[1]s domains connectivity [flags]            check whether ports 80/443 reach this node and whether HTTP-01 can work
   %[1]s domains certificates [flags]            list every certificate in certmagic storage, healthy or not
   %[1]s domains waf <verb> [flags]              configure a domain's opt-in WAF and rate limiting
   %[1]s domains error-pages <verb> [flags]      configure a domain's custom error pages (404, 500, 502, 503)

@@ -308,6 +308,7 @@ func (rt *Router) handleCheckIngressDomain(w http.ResponseWriter, r *http.Reques
 
 	expectedHost, inferred := advertisedHost(r, rt.publicHost)
 	resp := rt.runDomainCheck(r.Context(), domain, expectedHost, inferred)
+	rt.enrichDomainCheck(r.Context(), &resp)
 	writeJSON(w, http.StatusOK, ingressDomainCheckResponse{Configured: true, domainCheckResponse: resp})
 }
 
@@ -336,6 +337,9 @@ type domainResource struct {
 	// Automatic marks a generated <app>.<dashed-ip>.sslip.io hostname: it
 	// is routed but not stored on the app, so no per-domain feature applies.
 	Automatic bool `json:"automatic,omitempty"`
+	// ACMEFailure is the CA's last error for this hostname, so a domain
+	// stuck without a certificate shows why on the list.
+	ACMEFailure *acmeFailureResource `json:"acme_failure,omitempty"`
 }
 
 // handleListDomains handles GET /api/v1/domains: every service_domains
@@ -401,6 +405,7 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 			HasRedirect:        hasRedirect[d.Domain],
 			MaintenanceEnabled: inMaintenance[d.Domain],
 			HasBasicAuth:       hasBasicAuth[d.Domain],
+			ACMEFailure:        acmeFailureFor(d.Domain),
 		})
 	}
 	out = append(out, rt.automaticDomains(r, canSee)...)

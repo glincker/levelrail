@@ -152,7 +152,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 146 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 148 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -310,6 +310,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/sleep | AbilityRead | handleGetAppSleep |
 | PUT | /api/v1/apps/{name}/sleep | AbilityDeploy | handleSetAppSleep |
 | POST | /api/v1/apps/{name}/sleep/wake | AbilityDeploy | handleWakeApp |
+| GET | /api/v1/apps/{name}/environment-domains | AbilityRead | handleGetAppEnvironmentDomains |
+| GET | /api/v1/apps/{name}/listening-ports | AbilityRead | handleAppListeningPorts |
 
 :::
 
@@ -434,6 +436,18 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/major-upgrades/{id}/rollback | AbilityRoot | handleRollbackMajorUpgrade |
 | DELETE | /api/v1/databases/{name}/major-upgrades/{id}/snapshot | AbilityRoot | handleDiscardMajorUpgradeSnapshot |
 | PUT | /api/v1/databases/{name}/environment | AbilityWrite | handleSetDatabaseEnvironment |
+| GET | /api/v1/databases/{name}/schema | AbilityReadSensitive | handleGetDatabaseSchema |
+| GET | /api/v1/databases/{name}/tables/{schema}/{table}/rows | AbilityReadSensitive | handleGetDatabaseTableRows |
+| POST | /api/v1/databases/{name}/query | AbilityReadSensitive | handleDatabaseQuery |
+| POST | /api/v1/databases/{name}/query/write | AbilityRoot | handleDatabaseQueryWrite |
+| POST | /api/v1/databases/{name}/explain | AbilityReadSensitive | handleDatabaseExplain |
+| GET | /api/v1/databases/{name}/keys | AbilityReadSensitive | handleScanDatabaseKeys |
+| GET | /api/v1/databases/{name}/key | AbilityReadSensitive | handleGetDatabaseKey |
+| GET | /api/v1/databases/{name}/query-history | AbilityReadSensitive | handleListDatabaseQueryHistory |
+| DELETE | /api/v1/databases/{name}/query-history | AbilityReadSensitive | handleClearDatabaseQueryHistory |
+| GET | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleListDatabaseSavedQueries |
+| POST | /api/v1/databases/{name}/saved-queries | AbilityReadSensitive | handleSaveDatabaseQuery |
+| DELETE | /api/v1/databases/{name}/saved-queries/{id} | AbilityReadSensitive | handleDeleteDatabaseSavedQuery |
 
 ## Projects / Organizations / Environments
 
@@ -916,6 +930,13 @@ Routes that do not fit an existing group.
 | POST | /api/v1/firewall/host/disable | AbilityRoot | handleDisableHostFirewall |
 | POST | /api/v1/hooks/image-update/{name}/{token} | Public | handleImageUpdateWebhook |
 | GET | /api/v1/hooks/wake | Public | handleWakeHook |
+| GET | /api/v1/imports/platform/databases | AbilityRead | handleListDatabaseDataCopies |
+| GET | /api/v1/imports/platform/databases/{name} | AbilityRead | handleGetDatabaseDataCopy |
+| POST | /api/v1/imports/platform/databases/{name}/copy | AbilityWriteSensitive | handleCopyDatabaseData |
+| GET | /api/v1/migration/volumes | AbilityRead | handleVolumeGuide |
+| GET | /api/v1/migration/cutover | AbilityRead | handleCutoverReport |
+| GET | /api/v1/migration/cutover/verify | AbilityRead | handleCutoverVerify |
+| GET | /api/v1/ingress/connectivity | AbilityRead | handleIngressConnectivity |
 
 ## See also
 

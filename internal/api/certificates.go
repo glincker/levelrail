@@ -69,6 +69,9 @@ type certificateStatus struct {
 	// computation either way; only the renew action's availability
 	// differs (see handleRenewDomainCertificate).
 	Source string `json:"source"`
+	// ACMEFailure is the CA's last error for Domain when its most recent
+	// issue or renewal attempt failed.
+	ACMEFailure *acmeFailureResource `json:"acme_failure,omitempty"`
 }
 
 // CertObservationSource lists the expiry observations kind=cert_expiry
@@ -143,6 +146,8 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 			Renewal:   renewal[info.Domain],
 			Apps:      owners[strings.ToLower(info.Domain)],
 			Source:    source,
+
+			ACMEFailure: acmeFailureFor(info.Domain),
 		})
 	}
 	writeJSON(w, http.StatusOK, out)

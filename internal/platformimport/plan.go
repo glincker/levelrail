@@ -123,7 +123,7 @@ type Plan struct {
 }
 
 // DataNote is added to every report that contains databases.
-const DataNote = "Databases are created empty. Data is not migrated: dump the source database and restore it into the new one with the backup and restore tools."
+const DataNote = "Databases are created empty. Copy the data in with the data copy step (dashboard: Settings, Import from another platform; CLI: migrate db-copy), which verifies row counts."
 
 var (
 	nonNameRe = regexp.MustCompile(`[^a-z0-9]+`)
@@ -290,7 +290,7 @@ func (p *Plan) planApp(platform Platform, a App, o PlanOptions, taken map[string
 		}
 	}
 	if len(plan.Volumes) > 0 {
-		attention("volumes are created empty, their data is not migrated", "copy the data into the new volumes before starting")
+		attention("volumes are created empty, their data is not migrated", "copy the data into the new volumes before starting (CLI: migrate volumes --source user@host prints the commands)")
 	}
 	if a.Health != nil && a.Health.Path != "" {
 		plan.Health = &HealthPlan{Path: a.Health.Path, IntervalSeconds: a.Health.IntervalSeconds, TimeoutSeconds: a.Health.TimeoutSeconds, Failures: a.Health.Retries}
@@ -369,7 +369,7 @@ func (p *Plan) planDatabase(db Database, o PlanOptions, taken map[string]bool) {
 	item.Target = name
 	item.Status = StatusNeedsAttention
 	item.Reasons = append(item.Reasons, "created empty, data is not migrated")
-	item.Manual = []string{"dump the source database and restore it into " + name + " with the backup and restore tools, then update the app's connection settings"}
+	item.Manual = []string{"copy the data into " + name + " with the data copy step (CLI: migrate db-copy " + name + "), then update the app's connection settings"}
 	p.Databases = append(p.Databases, DatabasePlan{SourceID: db.SourceID, SourceName: db.Name, Name: name, Engine: db.Engine, Version: db.Version, Project: db.Project})
 	p.add(item)
 }

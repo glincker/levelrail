@@ -26,12 +26,16 @@ type editDomainsRequest struct {
 	Set    *[]string `json:"set,omitempty"`
 	Add    []string  `json:"add,omitempty"`
 	Remove []string  `json:"remove,omitempty"`
+	// Environment (ID, name or kind) edits that environment's own domain
+	// set instead of the app's default set.
+	Environment string `json:"environment,omitempty"`
 }
 
 type editDomainsResponse struct {
-	App     string   `json:"app"`
-	Domains []string `json:"domains"`
-	Changed bool     `json:"changed"`
+	App           string   `json:"app"`
+	Domains       []string `json:"domains"`
+	Changed       bool     `json:"changed"`
+	EnvironmentID string   `json:"environment_id,omitempty"`
 }
 
 // errDomainNotSet marks a remove of a domain the app does not have.
@@ -70,6 +74,11 @@ func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
+	}
+
+	if env := strings.TrimSpace(req.Environment); env != "" {
+		rt.editAppEnvironmentDomains(w, r, name, env, req.Set, add, remove)
+		return
 	}
 
 	var before []string

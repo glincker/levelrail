@@ -8,6 +8,7 @@ import (
 	goruntime "runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/diagnose"
@@ -73,9 +74,16 @@ func (rt *Router) diagnoseFacts(ctx context.Context, svc *store.DesiredService, 
 // listeningPorts reads the container's own socket tables, which needs a
 // running container and exec access to be enabled for the app.
 func (rt *Router) listeningPorts(ctx context.Context, runtime docker.Runtime, container string) []int {
+	ports, _ := rt.readListeningPorts(ctx, runtime, container)
+	return ports
+}
+
+// readListeningPorts reports ok=false when no socket table could be read,
+// as in an image with no cat, so callers can tell that from "nothing listens".
+func (rt *Router) readListeningPorts(ctx context.Context, runtime docker.Runtime, container string) ([]int, bool) {
 	state, err := runtime.InspectByName(ctx, container)
 	if err != nil || state == nil || !state.Running {
-		return nil
+		return nil, false
 	}
 	var tables []string
 	for _, path := range []string{"/proc/net/tcp", "/proc/net/tcp6"} {
@@ -85,9 +93,15 @@ func (rt *Router) listeningPorts(ctx context.Context, runtime docker.Runtime, co
 		}
 		b, _ := io.ReadAll(io.LimitReader(out, maxProcNetBytes))
 		_ = out.Close()
+		if !strings.Contains(string(b), "local_address") {
+			continue
+		}
 		tables = append(tables, string(b))
 	}
-	return diagnose.ParseListeningPorts(tables...)
+	if len(tables) == 0 {
+		return nil, false
+	}
+	return diagnose.ParseListeningPorts(tables...), true
 }
 
 func (rt *Router) isLocalNode(nodeID string) bool {

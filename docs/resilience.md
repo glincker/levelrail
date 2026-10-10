@@ -43,7 +43,7 @@ flowchart TD
 
 ## What does not survive
 
-**Caddy's routing dies in the same instant the control plane does, unless systemd holds the sockets.** (With `LEVELRAIL_SOCKET_ACTIVATION=1` the listening sockets outlive the process and connections queue instead of being refused, see [measured windows](#ingress-availability-windows-measured).) This is a direct consequence of an architecture decision, not a bug: Caddy runs embedded inside the control plane process, not as a sibling container with its own lifecycle. There is no separate proxy process to keep serving while the control plane is down.
+**Caddy's routing dies in the same instant the control plane does, unless systemd holds the sockets.** (With socket activation, the default for new installs, the listening sockets outlive the process and connections queue instead of being refused, see [measured windows](#ingress-availability-windows-measured).) This is a direct consequence of an architecture decision, not a bug: Caddy runs embedded inside the control plane process, not as a sibling container with its own lifecycle. There is no separate proxy process to keep serving while the control plane is down.
 
 Concretely: from the moment the control plane process exits to the moment a new one starts and reconciles ingress at least once, **domain-based HTTPS routing is down**. A request to your app's domain fails during that window even though the container behind it never stopped. A request straight to the container's published host port succeeds the whole time; a request through the domain does not.
 
@@ -73,7 +73,7 @@ Measured locally on an Apple silicon laptop (real Docker, a real `traefik/whoami
 
 Where the windows cannot be removed:
 
-- **Without socket activation a restart still refuses connections** for the length of the restart. It is off by default because it changes how the installer owns ports 80 and 443; turn it on with `LEVELRAIL_SOCKET_ACTIVATION=1` ([how](domains-and-ingress.md#surviving-a-control-plane-restart)).
+- **Without socket activation a restart still refuses connections** for the length of the restart. It is on by default for new installs. An install that predates it needs `LEVELRAIL_SOCKET_ACTIVATION=1 ./install.sh upgrade` ([how](domains-and-ingress.md#surviving-a-control-plane-restart)).
 - **Even with it, the instant the old process stops, a handful of TLS handshakes already in progress can fail** (most likely Caddy unloading its certificate cache while the listener is still draining, which we did not confirm). Browsers retry these; a script without retries may see an error.
 - **A killed single-replica container still has a window** of about the reconciler's reaction time (a few hundred milliseconds locally, up to a second on a small server) in which requests get the friendly `503`. Retrying the same address cannot help because the replacement usually gets a new port. Use two replicas for a service that must not drop requests.
 - **`recreate` deploys are down by design** while the old container stops and the new one starts. Visitors get the styled `503` and a page that reloads itself, not a dead connection or a TLS error.
@@ -118,7 +118,7 @@ What to do when the disk or the whole machine is lost.
 </Card>
 <Card title="Domains and ingress" href="/domains-and-ingress">
 
-Turn on socket activation so a restart queues connections.
+Socket activation, on by default, makes a restart queue connections.
 
 </Card>
 </CardGroup>

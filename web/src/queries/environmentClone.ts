@@ -60,6 +60,8 @@ export interface CloneEnvironmentInput {
   newEnvironmentName: string
   copySecretValues: boolean
   apps: EnvironmentCloneAppInput[]
+  // domainRewrite, when set, copies every domain set under rewritten hosts.
+  domainRewrite?: { prefix?: string; find?: string; replace?: string }
 }
 
 export async function cloneEnvironment(
@@ -75,6 +77,8 @@ export async function cloneEnvironment(
         new_environment_name: input.newEnvironmentName,
         copy_secret_values: input.copySecretValues,
         apps: input.apps,
+        copy_domains: input.domainRewrite ? true : undefined,
+        domain_rewrite: input.domainRewrite,
       }),
     },
   )

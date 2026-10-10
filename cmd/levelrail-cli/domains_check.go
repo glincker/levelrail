@@ -56,6 +56,7 @@ func printDomainCheckHuman(out io.Writer, r domainCheckResource) {
 	if len(r.ResolvedHosts) > 0 {
 		_, _ = fmt.Fprintf(out, "resolved: %v\n", r.ResolvedHosts)
 	}
+	printDomainWizardHuman(out, r)
 }
 
 func domainsCheckUsage(prog string) string {
