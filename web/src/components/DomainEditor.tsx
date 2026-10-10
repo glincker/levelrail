@@ -14,6 +14,7 @@ import { useCertificates } from '../queries/certificates'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { AutomaticDomainRow } from './AutomaticDomainRow'
 import { DomainDnsCheck } from './DomainDnsCheck'
+import { ProxyDomainStatus, ProxyHandledTlsBadge } from './ProxyDomainStatus'
 import { DomainDnsRecordsControl } from './DomainDnsRecordsControl'
 import { DomainBasicAuthControl } from './DomainBasicAuthControl'
 import { DomainErrorPagesControl } from './DomainErrorPagesControl'
@@ -215,9 +216,17 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                                     ) : null}
                                   </>
                                 ) : (
-                                  <Badge variant="muted">Provisioning</Badge>
+                                  <ProxyHandledTlsBadge
+                                    domain={domain}
+                                    fallback={
+                                      <Badge variant="muted">
+                                        Provisioning
+                                      </Badge>
+                                    }
+                                  />
                                 )}
                               </div>
+                              <ProxyDomainStatus domain={domain} />
                               <DomainDnsRecordsControl
                                 appName={app.name}
                                 domain={domain}

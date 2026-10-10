@@ -249,6 +249,117 @@
       "summary": "{{ok}} added, {{failed}} not added."
     }
   },
+  "proxySetup": {
+    "title": "Make this domain live",
+    "description": "Your proxy already owns ports 80 and 443. Levelrail writes the routes it needs, then checks that traffic and a certificate arrive.",
+    "unavailable": "Proxy integration is not available on this server version.",
+    "loadFailed": "Could not read the proxy status. It will be retried on the next refresh.",
+    "steps": {
+      "detect": "Find your proxy",
+      "tls_upstream": "Let the proxy handle HTTPS",
+      "routes": "Write the routes",
+      "dns": "Point DNS at this server",
+      "verify": "Check traffic and certificate"
+    },
+    "stepState": {
+      "done": "Done",
+      "todo": "To do",
+      "blocked": "Blocked",
+      "error": "Error"
+    },
+    "setup": "Set up routing",
+    "settingUp": "Setting up...",
+    "setupDone": "Routes written. Waiting for your proxy to pick them up.",
+    "setupFailed": "Could not set up routing.",
+    "confirm": {
+      "title": "Write routes to your proxy?",
+      "directory": "Levelrail will write one route file per domain into {{dir}}. Your proxy reads that directory by itself, nothing else is changed.",
+      "directoryUnknown": "No directory was detected. Fix the missing items first.",
+      "domainsLabel": "Domains that get a route",
+      "noDomains": "No domains yet. Only the dashboard route is written when it has a domain.",
+      "submit": "Write routes",
+      "cancel": "Cancel"
+    },
+    "domains": {
+      "title": "Domains",
+      "target": {
+        "app": "App {{app}}",
+        "dashboard": "Dashboard"
+      },
+      "state": {
+        "todo": "Not set up yet",
+        "handled": "Handled by your proxy",
+        "waiting": "Waiting for certificate",
+        "live": "Live",
+        "error": "Error"
+      },
+      "certificate": {
+        "issued": "{{issuer}}, valid until {{date}}",
+        "expired": "{{issuer}}, expired on {{date}}",
+        "pending": "Proxy default certificate, waiting for issuance"
+      },
+      "checked": "Checked {{time}}",
+      "neverChecked": "Not checked yet",
+      "verify": "Verify",
+      "verifying": "Verifying...",
+      "verifyLive": "{{domain}} is live.",
+      "verifyNotLive": "{{domain}} is not live yet.",
+      "verifyFailed": "Could not verify {{domain}}.",
+      "lastError": "Last problem: {{error}}",
+      "makeLive": "Make this domain live"
+    },
+    "facts": {
+      "title": "What Levelrail detected",
+      "detectedBadge": "detected",
+      "proxy": "Proxy",
+      "container": "Container",
+      "image": "Image",
+      "ports": "Published ports",
+      "directory": "Route directory",
+      "entrypointHttp": "HTTP entrypoint",
+      "entrypointHttps": "HTTPS entrypoint",
+      "resolver": "Certificate resolver",
+      "upstream": "Upstream host",
+      "notFound": "not found",
+      "missingTitle": "Setup cannot continue yet",
+      "missingBody": "Levelrail could not read these from your proxy. Add them to the proxy, or enter them in the proxy settings, then refresh.",
+      "kind": {
+        "traefik": "Traefik",
+        "nginx": "nginx",
+        "caddy": "Caddy",
+        "none": "None"
+      }
+    },
+    "none": {
+      "title": "No existing proxy detected",
+      "body": "If a proxy runs somewhere Levelrail cannot see it, set it up by hand with the manual guide.",
+      "guide": "Open the manual guide"
+    },
+    "handledByProxy": "Handled by your proxy",
+    "byo": {
+      "disclosure": "I have my own certificate",
+      "hint": "Only needed if you bought a certificate. Otherwise certificates are issued automatically.",
+      "uploaded": "BYO certificate",
+      "expires": "expires {{date}}",
+      "certLabel": "Certificate (PEM)",
+      "keyLabel": "Private key (PEM)",
+      "replaceHint": "Replaces the currently uploaded certificate entirely; there is no partial update.",
+      "newHint": "Used instead of automatic issuance for this domain, starting on the next reconcile pass.",
+      "bothRequired": "Both a certificate and a private key are required.",
+      "uploadedToast": "Certificate uploaded for {{domain}}.",
+      "uploadFailed": "Certificate upload failed.",
+      "upload": "Upload",
+      "uploading": "Uploading...",
+      "revert": "Revert to automatic TLS",
+      "revertTitle": "Revert {{domain}} to automatic TLS?",
+      "revertBody": "The uploaded certificate is discarded immediately. If automatic issuance cannot reach this domain, HTTPS will break until a new certificate is uploaded or issued.",
+      "cancel": "Cancel",
+      "revertConfirm": "Revert",
+      "reverting": "Reverting...",
+      "revertedToast": "Reverted {{domain}} to automatic TLS.",
+      "revertFailed": "Could not revert to automatic TLS."
+    }
+  },
   "ingressUpstream": {
     "bannerTitle": "HTTPS is handled by your proxy",
     "bannerBody": "This instance does not request certificates. Point your domains at the proxy host, and the proxy terminates TLS and forwards to this ingress.",
