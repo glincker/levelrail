@@ -1,29 +1,20 @@
-import { useState } from 'react'
+import { useMemo, useReducer, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { CheckIcon, SparkleIcon } from '@phosphor-icons/react/dist/ssr'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { cn } from '@/lib/utils'
-import { useBrand } from '../../hooks/useBrand'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import {
   onboardingQueryOptions,
   useCompleteOnboarding,
   useUpdateOnboardingProgress,
 } from '../../queries/onboarding'
+import { systemDoctorQueryOptions } from '../../queries/systemDoctor'
 import {
   SETUP_STEPS,
-  SETUP_STEP_META,
   nextStep,
   resumeStep,
   withStepStatus,
 } from '../../lib/setupWizard'
+import { railProgress, setupNavReducer } from '../../lib/setupRail'
+import { buildReadiness } from '../../lib/setupReadiness'
 import type {
   SetupStepId,
   SetupStepMap,
@@ -36,21 +27,38 @@ import { EmailStep } from './EmailStep'
 import { GitProviderStep } from './GitProviderStep'
 import { FirstAppStep } from './FirstAppStep'
 import { DoneStep } from './DoneStep'
+import { SetupRail } from './SetupRail'
+import { SetupShell } from './SetupShell'
 
 /** SetupWizard is the first-run setup flow, resumable from its server-side progress. */
 export function SetupWizard() {
-  const brand = useBrand()
   const navigate = useNavigate()
   const { data: state } = useSuspenseQuery(onboardingQueryOptions())
-  const [step, setStep] = useState<SetupStepId>(() =>
-    resumeStep(state.current_step, state.steps),
+  const [nav, dispatch] = useReducer(setupNavReducer, undefined, () => ({
+    current: resumeStep(state.current_step, state.steps),
+  }))
+  const step = nav.current
+  const [seen, setSeen] = useState<ReadonlySet<SetupStepId>>(
+    () => new Set(SETUP_STEPS.slice(0, SETUP_STEPS.indexOf(nav.current) + 1)),
   )
   const saveProgress = useUpdateOnboardingProgress()
   const complete = useCompleteOnboarding()
   const pending = saveProgress.isPending || complete.isPending
 
+  // Read-only view of the doctor cache so the rail can flag a server step that finished with warnings.
+  const { data: doctor } = useQuery({
+    ...systemDoctorQueryOptions(),
+    enabled: false,
+  })
+  const attention = useMemo(() => {
+    const ids = new Set<SetupStepId>()
+    if (doctor && buildReadiness(doctor).warnings.length > 0) ids.add('server')
+    return ids
+  }, [doctor])
+
   function goTo(id: SetupStepId, steps: SetupStepMap = state.steps) {
-    setStep(id)
+    dispatch({ type: 'goto', id })
+    setSeen((prev) => new Set([...prev, id]))
     saveProgress.mutate({ current_step: id, steps })
   }
 
@@ -71,10 +79,6 @@ export function SetupWizard() {
     )
   }
 
-  function dismiss() {
-    complete.mutate()
-  }
-
   const stepProps = {
     onContinue: () => finishStep('completed'),
     onSkip: () => finishStep('skipped'),
@@ -82,97 +86,38 @@ export function SetupWizard() {
   }
 
   return (
-    <Card className="mx-auto max-w-3xl">
-      <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
-        <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <SparkleIcon className="size-5 text-primary" />
-            Set up {brand.Name}
-          </CardTitle>
-          <CardDescription>
-            A few checks and choices to get from a fresh server to a live app.
-            Progress is saved, so you can leave and come back.
-          </CardDescription>
-        </div>
-        {state.completed ? null : (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={dismiss}
-            disabled={pending}
-          >
-            Dismiss setup
-          </Button>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <nav aria-label="Setup steps">
-          <ol className="flex flex-wrap gap-1.5">
-            {SETUP_STEPS.map((id, i) => {
-              const status = state.steps[id]
-              const current = id === step
-              return (
-                <li key={id}>
-                  <button
-                    type="button"
-                    onClick={() => goTo(id)}
-                    aria-current={current ? 'step' : undefined}
-                    className={cn(
-                      'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors',
-                      current
-                        ? 'border-primary bg-primary/10 text-foreground'
-                        : 'border-border text-muted-foreground hover:bg-muted/50',
-                    )}
-                  >
-                    <span className="flex size-4 items-center justify-center rounded-full bg-muted text-[10px]">
-                      {status === 'completed' ? (
-                        <CheckIcon className="size-3" />
-                      ) : (
-                        i + 1
-                      )}
-                    </span>
-                    {SETUP_STEP_META[id].title}
-                    {status === 'skipped' ? (
-                      <span className="sr-only">(skipped)</span>
-                    ) : null}
-                  </button>
-                </li>
-              )
-            })}
-          </ol>
-        </nav>
-
-        <h2 className="text-base font-semibold text-foreground">
-          {SETUP_STEP_META[step].title}
-          {SETUP_STEP_META[step].optional ? (
-            <span className="ml-2 text-xs font-normal text-muted-foreground">
-              Optional
-            </span>
-          ) : null}
-        </h2>
-
-        {step === 'server' ? <ServerCheckStep {...stepProps} /> : null}
-        {step === 'topology' ? <TopologyStep {...stepProps} /> : null}
-        {step === 'domain' ? <DomainStep {...stepProps} /> : null}
-        {step === 'email' ? <EmailStep {...stepProps} /> : null}
-        {step === 'git' ? <GitProviderStep {...stepProps} /> : null}
-        {step === 'app' ? <FirstAppStep {...stepProps} /> : null}
-        {step === 'done' ? (
-          <DoneStep
-            steps={state.steps}
-            onGoToStep={(id) => goTo(id)}
-            onFinish={finishWizard}
-            pending={pending}
-          />
-        ) : null}
-
-        {saveProgress.error ? (
-          <p className="text-xs text-destructive">
-            Could not save progress: {saveProgress.error.message}
-          </p>
-        ) : null}
-      </CardContent>
-    </Card>
+    <SetupShell
+      current={step}
+      settled={railProgress(state.steps).done}
+      rail={
+        <SetupRail
+          current={step}
+          steps={state.steps}
+          attention={attention}
+          onGoTo={(id) => goTo(id)}
+        />
+      }
+      saving={saveProgress.isPending}
+      saveError={saveProgress.error?.message}
+      dismissable={!state.completed}
+      dismissDisabled={pending}
+      onDismiss={() => complete.mutate()}
+    >
+      {step === 'server' ? <ServerCheckStep {...stepProps} /> : null}
+      {step === 'topology' ? <TopologyStep {...stepProps} /> : null}
+      {step === 'domain' ? <DomainStep {...stepProps} /> : null}
+      {step === 'email' ? <EmailStep {...stepProps} /> : null}
+      {step === 'git' ? <GitProviderStep {...stepProps} /> : null}
+      {step === 'app' ? <FirstAppStep {...stepProps} /> : null}
+      {step === 'done' ? (
+        <DoneStep
+          steps={state.steps}
+          visited={seen}
+          onGoToStep={(id) => goTo(id)}
+          onFinish={finishWizard}
+          pending={pending}
+        />
+      ) : null}
+    </SetupShell>
   )
 }

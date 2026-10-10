@@ -1,0 +1,224 @@
+{
+  "shell": {
+    "title": "Set up {{name}}",
+    "subtitle": "From a fresh server to a live app in a few checks and choices.",
+    "railLabel": "Setup steps",
+    "stepOf": "Step {{current}} of {{total}}",
+    "progress": "{{done}} of {{total}} steps settled",
+    "saved": "Progress saved. You can leave and come back.",
+    "saving": "Saving your progress",
+    "saveError": "Could not save progress: {{message}}",
+    "dismiss": "Dismiss setup",
+    "optional": "Optional",
+    "state": {
+      "done": "Done",
+      "current": "Current step",
+      "attention": "Needs attention",
+      "skipped": "Skipped",
+      "upcoming": "Not started"
+    }
+  },
+  "steps": {
+    "server": {
+      "title": "Server check",
+      "hint": "Is this machine ready to run apps"
+    },
+    "topology": {
+      "title": "Single or multi-node",
+      "hint": "One server or several"
+    },
+    "domain": {
+      "title": "Dashboard domain",
+      "hint": "A real address with HTTPS"
+    },
+    "email": { "title": "Email", "hint": "Invites and alerts" },
+    "git": { "title": "Git provider", "hint": "Deploy on push" },
+    "app": { "title": "First app", "hint": "Something live to look at" },
+    "done": { "title": "Done", "hint": "Review and open the dashboard" }
+  },
+  "server": {
+    "eyebrow": "Server check",
+    "intro": "We looked at the runtime, the network path to this server, how secrets are protected, storage and backups, and how much it can hold.",
+    "scoreLabel": "Readiness",
+    "scoreUnavailable": "No score yet",
+    "scoreOf": "{{passed}} of {{total}} checks passed",
+    "rerun": "Re-run checks",
+    "running": "Running checks",
+    "runningNote": "Each check does a real Docker call, disk write or network probe, so this can take a few seconds.",
+    "headline": {
+      "ready": "This server is ready",
+      "attention_one": "Ready to deploy, with {{count}} thing worth fixing",
+      "attention_other": "Ready to deploy, with {{count}} things worth fixing",
+      "blocked_one": "{{count}} thing to fix before you can deploy",
+      "blocked_other": "{{count}} things to fix before you can deploy"
+    },
+    "headlineNote": {
+      "ready": "Everything we could check passed. Nothing to fix before you continue.",
+      "attention": "Nothing here stops you from deploying. Each item below says why it matters and how to fix it.",
+      "blocked": "Nothing can run on this server until these pass. Fix one, then re-run the checks."
+    },
+    "error": {
+      "title": "Could not run the checks",
+      "body": "The control plane did not answer. Check that it is still running, then try again.",
+      "retry": "Try again"
+    },
+    "categories": {
+      "runtime": {
+        "name": "Runtime",
+        "blurb": "Docker, database and the data directory"
+      },
+      "network": {
+        "name": "Network and ingress",
+        "blurb": "Ports, public address and firewall"
+      },
+      "security": {
+        "name": "Security",
+        "blurb": "Keys, secrets and container hardening"
+      },
+      "storage": {
+        "name": "Storage and backup",
+        "blurb": "Disk space, write speed and recovery"
+      },
+      "capacity": {
+        "name": "Capacity",
+        "blurb": "CPU and memory available to apps"
+      }
+    },
+    "verdict": {
+      "ready": "All clear",
+      "attention_one": "{{count}} to review",
+      "attention_other": "{{count}} to review",
+      "blocked": "Needs a fix now"
+    },
+    "chips": {
+      "passed": "{{count}} passed",
+      "warn": "{{count}} warning",
+      "fail": "{{count}} failed",
+      "unknown": "{{count}} not checked"
+    },
+    "expand": "Show checks",
+    "collapse": "Hide checks"
+  },
+  "warnings": {
+    "heading": "Worth fixing",
+    "blockingHeading": "Fix before you can deploy",
+    "why": "Why it matters",
+    "ifIgnored": "If you ignore it",
+    "showDetails": "Show technical details",
+    "hideDetails": "Hide technical details",
+    "groupReachability": "External reachability, ports {{ports}}",
+    "groupPort": "Port conflict, ports {{ports}}",
+    "showMore": "Show {{count}} more",
+    "showFewer": "Show fewer",
+    "openStatus": "Open system status",
+    "explainerClose": "Hide explanation",
+    "guidance": {
+      "firewall": {
+        "why": "A host firewall decides which ports the outside world can reach. Without one, every port a process opens is exposed.",
+        "ifIgnored": "Nothing breaks today, but a mistake in any container could expose a database or admin port to the internet.",
+        "action": "Review firewall rules"
+      },
+      "backup": {
+        "why": "The control plane database holds your apps, secrets and settings. A backup is the only way to rebuild after losing this disk.",
+        "ifIgnored": "If this server's disk fails, every app definition and secret on it is gone and cannot be recovered.",
+        "action": "Add a backup target"
+      },
+      "port": {
+        "why": "The ingress needs port {{ports}} to receive traffic, and something else on this host already holds it.",
+        "ifIgnored": "Apps will deploy but visitors will reach the other process, not your app.",
+        "action": "Diagnose the port conflict"
+      },
+      "reachability": {
+        "why": "We could not confirm from this host that port {{ports}} can be reached from the internet. Visitors and the certificate authority both need it.",
+        "ifIgnored": "If it is blocked, certificates will not issue and public domains will not load. Private use on a local network still works.",
+        "action": "Why might {{ports}} be unreachable?",
+        "explainer": "Check three things in order. First, the cloud firewall or security group for this server must allow inbound TCP {{ports}}. Second, the host firewall must allow it too, for example: ufw allow {{first}}/tcp. Third, behind a home router, forward TCP {{ports}} to this machine's LAN address. A router that blocks hairpin NAT can fail this check from inside your own network even when the port is open, so try from a different network."
+      },
+      "runtime": {
+        "why": "Rootless Docker and Podman work, but support is best-effort. Bind-mount ownership and user ID mapping can behave differently from a standard Docker install.",
+        "ifIgnored": "Apps usually run fine. Volumes may show permission errors that a standard install would not.",
+        "action": "Read the rootless and Podman notes"
+      },
+      "registry": {
+        "why": "Builds and deploys pull images over HTTPS from this registry, and this host could not reach it.",
+        "ifIgnored": "Any deploy that needs an image from this registry will fail until it is reachable.",
+        "action": "Check registry credentials"
+      },
+      "disk": {
+        "why": "Images, build cache and logs all land on this disk. It is running lower than we recommend.",
+        "ifIgnored": "Builds start failing mid-way and Docker can stop starting containers once the disk is full.",
+        "action": "Open storage settings"
+      },
+      "diskLatency": {
+        "why": "Free space does not show how fast the disk writes. Slow writes make deploys and log ingestion feel stuck.",
+        "ifIgnored": "Everything works, but builds and databases on this disk will be slower than the hardware suggests.",
+        "action": "See how to fix slow disks"
+      },
+      "capacityLow": {
+        "why": "This server has less CPU or memory than we recommend for running the control plane and apps together.",
+        "ifIgnored": "Apps may be killed for running out of memory, and builds will compete with running apps.",
+        "action": "See sizing guidance"
+      },
+      "secrets": {
+        "why": "Secret keys that never rotate widen the damage if one ever leaks.",
+        "ifIgnored": "Nothing breaks. A leaked key simply stays valid for longer.",
+        "action": "Open security settings"
+      },
+      "clock": {
+        "why": "Certificates and signed tokens depend on an accurate clock.",
+        "ifIgnored": "Certificate issuance and login sessions can fail in confusing ways.",
+        "action": "Fix the system clock"
+      },
+      "publicIp": {
+        "why": "We could not work out this server's public address, so we cannot tell you which DNS record to create.",
+        "ifIgnored": "You can still continue, but you will need to find the address yourself when you add a domain.",
+        "action": "Set the dashboard domain"
+      },
+      "hardening": {
+        "why": "Containers run with more privileges than they need unless hardening is enforced, so a compromised app has more room to act on this host.",
+        "ifIgnored": "Apps still run. A compromised container can reach more of the host than it should.",
+        "action": "Read the hardening checklist"
+      },
+      "agentAdvertise": {
+        "why": "Remote servers dial this address to join the control plane. It is not set, so there is nothing for them to dial.",
+        "ifIgnored": "Single-server setups are unaffected. Adding a second server later will fail with a confusing connection error.",
+        "action": "Set the agent address"
+      }
+    }
+  },
+  "capacity": {
+    "heading": "Capacity",
+    "intro": "Read straight from this server's checks.",
+    "cpu": "CPU cores",
+    "ram": "Memory",
+    "disk": "Free disk",
+    "latency": "Disk write",
+    "latencyValue": "{{ms}} ms for 1 MiB",
+    "estimate": "This server runs about {{count}} small apps.",
+    "estimateComfortable": "This server comfortably runs about {{count}} small apps.",
+    "estimateLimitedDisk": "About {{count}} small apps, limited by free disk.",
+    "estimateLimitedMemory": "About {{count}} small apps, limited by memory.",
+    "assumptionDisk": "Assumes {{app}} of memory and {{disk}} of disk per app, with {{reserve}} of memory and {{diskReserve}} of disk kept for the control plane and system.",
+    "assumption": "Assumes {{app}} per app and {{reserve}} kept for the control plane and system.",
+    "noEstimate": "We could not read this server's memory, so there is no app estimate yet."
+  },
+  "done": {
+    "eyebrow": "Setup summary",
+    "title": "Setup finished",
+    "titleSkipped_one": "Setup finished, {{count}} optional step skipped",
+    "titleSkipped_other": "Setup finished, {{count}} optional steps skipped",
+    "reviewed": "Reviewed",
+    "subtitle": "Here is what you configured and where to go next.",
+    "summaryHeading": "What you set up",
+    "completed": "Done",
+    "skipped": "Skipped",
+    "notStarted": "Not started",
+    "goBack": "Go back",
+    "dashboardUrl": "Dashboard address",
+    "nextHeading": "Three good next moves",
+    "finish": "Go to dashboard",
+    "importTitle": "Bring your apps from Coolify, Dokploy or CapRover",
+    "importBody": "Point at your existing install and import its apps, databases and domains. The source keeps serving until you switch DNS.",
+    "importAction": "Import from another platform"
+  }
+}

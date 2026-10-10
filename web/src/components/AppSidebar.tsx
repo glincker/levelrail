@@ -80,7 +80,7 @@ export function AppSidebar() {
               render={<Link to="/" />}
               className="gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/40 data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-sidebar-accent"
             >
-              <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#0B0E14] text-sm font-bold text-primary-foreground">
+              <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-950 text-sm font-bold text-primary-foreground">
                 <BrandMarkGlyph svgWrapperClassName="flex size-6 items-center justify-center [&_svg]:size-full" />
               </span>
               <span className="flex min-w-0 flex-col">
