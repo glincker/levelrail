@@ -32,6 +32,7 @@ const (
 const (
 	httpsHintRateLimited = "rate_limited"
 	httpsHintUnreachable = "unreachable"
+	httpsHintOtherProxy  = "other_proxy"
 	httpsHintDNS         = "dns"
 	httpsHintCAA         = "caa"
 	httpsHintUnknown     = "unknown"
@@ -164,6 +165,8 @@ func classifyACMEError(msg string) string {
 		return httpsHintCAA
 	case strings.Contains(l, "nxdomain") || strings.Contains(l, "no valid a records") || strings.Contains(l, "dns problem"):
 		return httpsHintDNS
+	case strings.Contains(l, "invalid response from http://"):
+		return httpsHintOtherProxy
 	case strings.Contains(l, "timeout") || strings.Contains(l, "connection refused") || strings.Contains(l, "no route") || strings.Contains(l, "firewall") || strings.Contains(l, "unreachable"):
 		return httpsHintUnreachable
 	}

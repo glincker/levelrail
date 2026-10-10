@@ -73,6 +73,7 @@
       "fix_dns": "Next step: point the domain's A or AAAA record at this server, and wait for DNS to propagate.",
       "wait_rate_limit": "Next step: wait before retrying. The certificate authority is rate limiting this hostname, and every failed attempt counts against the limit.",
       "fix_caa": "Next step: remove or edit the CAA record so it allows the certificate authority.",
+      "other_proxy": "Another service on this server answers port 80, most likely a reverse proxy such as Traefik or nginx. Either let that proxy issue the certificate and route this domain to Levelrail (see Run behind an existing proxy), or give Levelrail ports 80 and 443.",
       "check_logs": "Next step: read the ingress logs for the full certificate authority response."
     }
   },

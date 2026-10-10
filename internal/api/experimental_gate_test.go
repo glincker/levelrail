@@ -22,6 +22,8 @@ import (
 // calls do; doing one single-threaded open here first avoids it.
 func TestMain(m *testing.M) {
 	experimental.Set(experimental.All()...)
+	// No test may probe the real network for this machine's public address.
+	_ = os.Setenv("APP_PUBLIC_IP_DETECT", "off")
 	warmupDir, err := os.MkdirTemp("", "levelrail-sqlite-warmup")
 	if err != nil {
 		panic("sqlite warmup: " + err.Error())
