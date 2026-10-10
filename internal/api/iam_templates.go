@@ -16,7 +16,10 @@ import (
 // policyTemplatesVersion changes whenever a template document changes.
 const policyTemplatesVersion = 1
 
-const templateParamEnvironment = "environment"
+const (
+	templateParamEnvironment = "environment"
+	templateParamDatabase    = "database"
+)
 
 var nonProductionKindResources = []string{
 	resourcePrefixEnvironmentKind + "dev",
@@ -94,6 +97,44 @@ var policyTemplates = []policyTemplate{
 				stmt(EffectAllow, []string{AbilityRead, AbilityWrite, AbilityDeploy}, nonProductionKindResources...),
 				stmt(EffectDeny, mutatingAbilities, productionKindResource),
 				stmt(EffectDeny, []string{AbilityRoot}, "*"),
+			}}
+		},
+	},
+	{
+		ID:          "database-read-only",
+		Name:        "Database read-only console",
+		Description: "Can see one database and read its data in the console and explorer. Any change is denied.",
+		Params:      []policyTemplateParam{{Name: templateParamDatabase, Description: "Database name", Required: true}},
+		build: func(p map[string]string) Document {
+			res := resourcePrefixDatabase + p[templateParamDatabase]
+			return Document{Statement: []Statement{
+				stmt(EffectAllow, []string{AbilityRead, AbilityReadSensitive}, res),
+				stmt(EffectDeny, mutatingAbilities, res),
+			}}
+		},
+	},
+	{
+		ID:          "database-operator",
+		Name:        "Database operator",
+		Description: "Can read one database and run its day to day operations: backups, stop and start, public access. Users, restore and the write console need the owner.",
+		Params:      []policyTemplateParam{{Name: templateParamDatabase, Description: "Database name", Required: true}},
+		build: func(p map[string]string) Document {
+			res := resourcePrefixDatabase + p[templateParamDatabase]
+			return Document{Statement: []Statement{
+				stmt(EffectAllow, []string{AbilityRead, AbilityReadSensitive, AbilityWrite, AbilityWriteSensitive}, res),
+				stmt(EffectDeny, []string{AbilityRoot}, res),
+			}}
+		},
+	},
+	{
+		ID:          "database-owner",
+		Name:        "Database owner",
+		Description: "Full control of one database, including users, temporary credentials, restore and network rules. Nothing else on the platform.",
+		Params:      []policyTemplateParam{{Name: templateParamDatabase, Description: "Database name", Required: true}},
+		build: func(p map[string]string) Document {
+			res := resourcePrefixDatabase + p[templateParamDatabase]
+			return Document{Statement: []Statement{
+				stmt(EffectAllow, []string{AbilityRead, AbilityReadSensitive, AbilityWrite, AbilityWriteSensitive, AbilityRoot}, res),
 			}}
 		},
 	},
@@ -186,6 +227,14 @@ func (rt *Router) validateTemplateParams(r *http.Request, t policyTemplate, para
 	for k := range params {
 		if !slices.ContainsFunc(t.Params, func(p policyTemplateParam) bool { return p.Name == k }) {
 			return fmt.Errorf("%w: unknown parameter %q", errTemplateParam, k)
+		}
+	}
+	if name, ok := params[templateParamDatabase]; ok && name != "" {
+		if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); err != nil {
+			if errors.Is(err, store.ErrDatabaseNotFound) {
+				return fmt.Errorf("%w: database %q does not exist", errTemplateParam, name)
+			}
+			return fmt.Errorf("look up database: %w", err)
 		}
 	}
 	if env, ok := params[templateParamEnvironment]; ok && t.ID == "guest-one-environment" {

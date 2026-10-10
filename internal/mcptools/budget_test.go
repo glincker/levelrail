@@ -20,13 +20,13 @@ const charsPerToken = 4
 // estimated tokens. Raised once for the access features (roles, global
 // environments, policy templates, AI control add six tools, about 1.9k tokens)
 // and again for the migration, external database, exposure, upgrade history and
-// attention read-only tools (about 1.2k tokens). Override one with
+// attention read-only tools (about 1.2k tokens), and for three database access tools (about 0.9k). Override one with
 // APP_MCP_TOKEN_BUDGET_<MODE>, where MODE is upper case with dashes as
 // underscores (e.g. READ_ONLY).
 var modeTokenBudgets = map[Mode]int{
-	ModeReadOnly: 49500,
-	ModeStandard: 65000,
-	ModeFull:     71000,
+	ModeReadOnly: 50500,
+	ModeStandard: 66000,
+	ModeFull:     72000,
 }
 
 func budgetEnvKey(mode Mode) string {
