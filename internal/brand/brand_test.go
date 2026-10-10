@@ -1,9 +1,12 @@
 package brand
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func writeYAML(t *testing.T, contents string) string {
@@ -176,4 +179,47 @@ func TestRepoSlugMatchesLegacyDefault(t *testing.T) {
 			t.Errorf("RepoSlug(%q) = %q, want empty", url, got)
 		}
 	}
+}
+
+func TestEmbeddedDefaultsMatchRootBrandYAML(t *testing.T) {
+	root, err := os.ReadFile("../../brand.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(root, defaultsYAML) {
+		t.Fatal("internal/brand/defaults.yaml drifted from the root brand.yaml: copy it over")
+	}
+}
+
+func TestLoad_VisualDefaults(t *testing.T) {
+	var def Brand
+	if err := yaml.Unmarshal(defaultsYAML, &def); err != nil {
+		t.Fatal(err)
+	}
+	write := func(name string) string {
+		p := filepath.Join(t.TempDir(), "brand.yaml")
+		body := "name: " + name + "\nbinary_name: x\nlogo_svg: \"\"\nprimary_color: \"\"\n"
+		if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	t.Run("default name inherits the embedded mark", func(t *testing.T) {
+		b, err := Load(write(def.Name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if b.LogoSVG != def.LogoSVG || b.PrimaryColor != def.PrimaryColor || b.PrimaryColorDark != def.PrimaryColorDark {
+			t.Fatalf("visual defaults not applied: %+v", b)
+		}
+	})
+	t.Run("rebranded name never inherits it", func(t *testing.T) {
+		b, err := Load(write("Other"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if b.LogoSVG != "" || b.PrimaryColor != "" {
+			t.Fatalf("a rebranded deployment inherited the default mark: %+v", b)
+		}
+	})
 }

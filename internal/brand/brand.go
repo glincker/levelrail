@@ -3,12 +3,16 @@
 package brand
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+//go:embed defaults.yaml
+var defaultsYAML []byte
 
 // Brand holds every user-visible identity string for the running binary.
 // Nothing outside this package should reference a product name directly.
@@ -61,6 +65,7 @@ func Load(path string) (*Brand, error) {
 		return nil, fmt.Errorf("brand: parse %s: %w", path, err)
 	}
 
+	b.applyVisualDefaults()
 	b.applyEnvOverrides()
 
 	if b.PrimaryColorDark == "" {
@@ -72,6 +77,25 @@ func Load(path string) (*Brand, error) {
 	}
 
 	return &b, nil
+}
+
+// applyVisualDefaults fills an empty logo and colors from the embedded default
+// brand, only while the name is still the default one: a rebranded deployment
+// must never inherit another identity's mark.
+func (b *Brand) applyVisualDefaults() {
+	var def Brand
+	if err := yaml.Unmarshal(defaultsYAML, &def); err != nil || def.Name == "" || b.Name != def.Name {
+		return
+	}
+	if b.LogoSVG == "" {
+		b.LogoSVG = def.LogoSVG
+	}
+	if b.PrimaryColor == "" {
+		b.PrimaryColor = def.PrimaryColor
+		if b.PrimaryColorDark == "" {
+			b.PrimaryColorDark = def.PrimaryColorDark
+		}
+	}
 }
 
 func (b *Brand) applyEnvOverrides() {

@@ -1,0 +1,24 @@
+# Loaded by internal/brand at startup. Every value here is overridable at
+# runtime via APP_BRAND_* env vars (see internal/brand/brand.go). This file
+# is the default, not a hardcoded assumption anywhere else in the codebase.
+name: Levelrail
+short_name: Levelrail
+binary_name: levelrail
+domain: glinr.com/levelrail
+support_url: https://github.com/GLINCKER/levelrail/issues
+support_email: support@levelrail.com
+docs_url: https://levelrail.com
+discussions_url: https://github.com/GLINCKER/levelrail/discussions
+repo_url: https://github.com/GLINCKER/levelrail
+# Visual identity locked 2026-09-30. Petrol-blue, hue 195: checked against
+# every direct self-hosted-PaaS competitor's real brand hex (thesvg's icon
+# catalog), distinct from Railway/Coolify/Fly.io/Zeabur's purple cluster,
+# Supabase/Linode's green, DigitalOcean/Dokku's blue, and specifically
+# Netlify's near-identical teal (#00C7B7, same 175 hue as an earlier draft).
+# Superseded 2026-10-02 (adr/024): now the one brand accent across /web and
+# /docs, replacing the two-color split adr/022 had accepted. primary_color
+# is used live (web/src/components/BrandProvider.tsx sets it as a CSS
+# variable), not just the Go struct field adr/022 found unused.
+primary_color: "#107292"
+primary_color_dark: "#2fb3dc"
+logo_svg: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\"><title>Levelrail</title><rect x=\"10\" y=\"174\" width=\"236\" height=\"68\" rx=\"22\" fill=\"#06232C\"/><rect x=\"10\" y=\"162\" width=\"236\" height=\"68\" rx=\"22\" fill=\"#084F67\"/><rect x=\"42\" y=\"103\" width=\"172\" height=\"68\" rx=\"22\" fill=\"#06232C\"/><rect x=\"42\" y=\"91\" width=\"172\" height=\"68\" rx=\"22\" fill=\"#107292\"/><rect x=\"75\" y=\"32\" width=\"106\" height=\"68\" rx=\"22\" fill=\"#06232C\"/><rect x=\"75\" y=\"20\" width=\"106\" height=\"68\" rx=\"22\" fill=\"#58B1CE\"/></svg>"
