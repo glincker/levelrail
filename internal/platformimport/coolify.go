@@ -64,6 +64,21 @@ type coolifyApp struct {
 	LimitsCPUs          string `json:"limits_cpus"`
 	PreDeployment       string `json:"pre_deployment_command"`
 	PostDeployment      string `json:"post_deployment_command"`
+	PrivateKeyID        int    `json:"private_key_id"`
+	SourceID            int    `json:"source_id"`
+	ServerName          string `json:"server_name"`
+	Destination         struct {
+		Server struct {
+			Name string `json:"name"`
+		} `json:"server"`
+	} `json:"destination"`
+}
+
+func (a coolifyApp) server() string {
+	if a.Destination.Server.Name != "" {
+		return a.Destination.Server.Name
+	}
+	return a.ServerName
 }
 
 type coolifyDatabase struct {
@@ -76,6 +91,12 @@ type coolifyService struct {
 	UUID        string `json:"uuid"`
 	Name        string `json:"name"`
 	ServiceType string `json:"service_type"`
+	ServerName  string `json:"server_name"`
+	Destination struct {
+		Server struct {
+			Name string `json:"name"`
+		} `json:"server"`
+	} `json:"destination"`
 }
 
 type coolifyEnvVar struct {
@@ -91,6 +112,7 @@ type coolifyStorages struct {
 		Name      string `json:"name"`
 		MountPath string `json:"mount_path"`
 		HostPath  string `json:"host_path"`
+		SizeBytes int64  `json:"size_bytes"`
 	} `json:"persistent_storages"`
 	Files []struct {
 		FSPath    string `json:"fs_path"`
@@ -126,16 +148,18 @@ func (c *CoolifySource) Discover(ctx context.Context) (*Discovery, error) {
 			if err := c.r.get(ctx, "/api/v1/projects/"+url.PathEscape(p.UUID)+"/"+url.PathEscape(e.Name), nil, &res); err != nil {
 				return nil, fmt.Errorf("read environment %q of project %q: %w", e.Name, p.Name, err)
 			}
-			c.collect(ctx, d, p.Name, res)
+			c.collect(ctx, d, p.Name, e.Name, res)
 		}
 	}
 	return d, nil
 }
 
-func (c *CoolifySource) collect(ctx context.Context, d *Discovery, project string, res coolifyEnvResources) {
+func (c *CoolifySource) collect(ctx context.Context, d *Discovery, project, environment string, res coolifyEnvResources) {
 	for _, a := range res.Applications {
 		app, unsup := c.mapApp(ctx, project, a)
+		app.Environment = environment
 		if unsup != nil {
+			unsup.Environment = environment
 			d.Unsupported = append(d.Unsupported, *unsup)
 			continue
 		}
@@ -148,12 +172,17 @@ func (c *CoolifySource) collect(ctx context.Context, d *Discovery, project strin
 	for _, g := range dbs {
 		for _, db := range g.list {
 			_, ver := engineFromImage(db.Image)
-			d.Databases = append(d.Databases, Database{SourceID: db.UUID, Name: db.Name, Project: project, Engine: g.engine, Version: ver})
+			d.Databases = append(d.Databases, Database{SourceID: db.UUID, Name: db.Name, Project: project, Engine: g.engine, Version: ver,
+				Environment: environment, InternalHost: db.UUID})
 		}
 	}
 	for _, s := range res.Services {
+		server := s.Destination.Server.Name
+		if server == "" {
+			server = s.ServerName
+		}
 		d.Unsupported = append(d.Unsupported, Unsupported{
-			Kind: "service", SourceID: s.UUID, Name: s.Name,
+			Kind: "service", SourceID: s.UUID, Name: s.Name, Project: project, Environment: environment, Server: server, Source: "service " + s.ServiceType,
 			Reason: "one-click service stacks are Docker Compose projects (" + s.ServiceType + ")",
 			Manual: "export the service's compose file from the source and deploy it with the compose deploy command",
 		})
@@ -163,10 +192,12 @@ func (c *CoolifySource) collect(ctx context.Context, d *Discovery, project strin
 func (c *CoolifySource) mapApp(ctx context.Context, project string, a coolifyApp) (App, *Unsupported) {
 	app := App{SourceID: a.UUID, Name: a.Name, Project: project, Kind: SourceUnknown, Replicas: 1,
 		Domains: splitHosts(a.FQDN), Port: firstPort(a.PortsExposes),
-		MemoryBytes: parseMemory(a.LimitsMemory), NanoCPUs: parseCPUs(a.LimitsCPUs)}
+		MemoryBytes: parseMemory(a.LimitsMemory), NanoCPUs: parseCPUs(a.LimitsCPUs),
+		Server: a.server(), BuildPack: a.BuildPack, PrivateRepo: a.PrivateKeyID != 0 || a.SourceID != 0}
 	switch strings.ToLower(a.BuildPack) {
 	case "dockercompose":
-		return App{}, &Unsupported{Kind: "app", SourceID: a.UUID, Name: a.Name,
+		return App{}, &Unsupported{Kind: "app", SourceID: a.UUID, Name: a.Name, Project: project, Server: a.server(),
+			Source: "docker compose", Domains: app.Domains, Port: app.Port,
 			Reason: "application uses the Docker Compose build pack (multi-service)",
 			Manual: "deploy its compose file with the compose deploy command"}
 	case "dockerimage":
@@ -234,7 +265,7 @@ func (c *CoolifySource) readDetails(ctx context.Context, app *App) {
 	var st coolifyStorages
 	if err := c.r.get(ctx, base+"/storages", nil, &st); err == nil {
 		for _, p := range st.Persistent {
-			app.Volumes = append(app.Volumes, Volume{Name: p.Name, HostPath: p.HostPath, ContainerPath: p.MountPath})
+			app.Volumes = append(app.Volumes, Volume{Name: p.Name, HostPath: p.HostPath, ContainerPath: p.MountPath, SizeBytes: p.SizeBytes})
 		}
 		for _, f := range st.Files {
 			app.Notes = append(app.Notes, Note{Reason: "file mount " + f.MountPath + " is not imported", Manual: "recreate the file content inside the image or as a volume"})

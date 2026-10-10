@@ -56,19 +56,26 @@ func (rt *Router) decodePlatformImport(w http.ResponseWriter, r *http.Request) (
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return req, nil, false
 	}
+	src, ok := rt.openImportSource(w, req)
+	return req, src, ok
+}
+
+// openImportSource validates a decoded request and builds the read-only
+// source client for it. It writes the error response itself.
+func (rt *Router) openImportSource(w http.ResponseWriter, req platformImportRequest) (platformimport.Source, bool) {
 	platform, err := platformimport.ParsePlatform(req.Platform)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
-		return req, nil, false
+		return nil, false
 	}
 	if req.Collision != "" && req.Collision != platformimport.CollisionSuffix && req.Collision != platformimport.CollisionSkip {
 		writeError(w, http.StatusBadRequest, "collision must be suffix or skip")
-		return req, nil, false
+		return nil, false
 	}
 	policy, err := platformImportPolicy(req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
-		return req, nil, false
+		return nil, false
 	}
 	if u, perr := url.Parse(req.URL); perr == nil && (policy.AllowPrivate || policy.AllowLoopback) {
 		rt.logger.Warn("api: platform import: private network opt-in used", slog.String("platform", req.Platform), slog.String("host", u.Hostname()), slog.Bool("allow_private", policy.AllowPrivate), slog.Bool("allow_loopback", policy.AllowLoopback))
@@ -76,9 +83,9 @@ func (rt *Router) decodePlatformImport(w http.ResponseWriter, r *http.Request) (
 	src, err := platformimport.NewSource(platform, req.URL, req.Token, platformimport.ClientOptions{Policy: policy, Insecure: req.InsecureTLS})
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
-		return req, nil, false
+		return nil, false
 	}
-	return req, src, true
+	return src, true
 }
 
 func (rt *Router) buildImportPlan(ctx context.Context, req platformImportRequest, src platformimport.Source) (*platformimport.Plan, error) {
@@ -191,7 +198,16 @@ func stripBindMounts(rt *Router, r *http.Request, plan *platformimport.Plan) {
 	}
 }
 
-type importApplier struct{ rt *Router }
+// importApplier creates imported apps. With a sessionID it stages them:
+// suspended, domains held back and the source repository connected, so
+// nothing runs or routes until the operator verifies and cuts over.
+type importApplier struct {
+	rt        *Router
+	sessionID string
+	// connect lists the managed databases each app (by target name) must join
+	// the network of, because a rewritten hostname only resolves there.
+	connect map[string][]string
+}
 
 func (a *importApplier) projectID(ctx context.Context, name string) (string, error) {
 	if name == "" {
@@ -232,6 +248,14 @@ func planToAppResource(p platformimport.AppPlan) appResource {
 func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan) ([]string, error) {
 	rt := a.rt
 	res := planToAppResource(p)
+	if a.sessionID != "" {
+		res.Domains = nil
+		res.Labels = map[string]string{}
+		for k, v := range p.Labels {
+			res.Labels[k] = v
+		}
+		res.Labels[platformimport.LabelSession] = a.sessionID
+	}
 	if err := validateAppResource(res); err != nil {
 		return nil, fmt.Errorf("invalid app: %w", err)
 	}
@@ -280,6 +304,13 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 	}
 	if _, err := rt.ensureAppLinked(ctx, p.Name, p.Name); err != nil {
 		return warnings, fmt.Errorf("link app: %w", err)
+	}
+	if a.sessionID != "" {
+		staged, err := a.finishStaging(ctx, p)
+		warnings = append(warnings, staged...)
+		if err != nil {
+			return warnings, err
+		}
 	}
 	return warnings, nil
 }

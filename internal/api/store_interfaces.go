@@ -564,6 +564,7 @@ type Store interface {
 	AppSleepStore
 	DataImportStore
 	MigrationHubStore
+	AppImportStore
 	ExternalDatabaseStore
 	CanaryStore
 	DatabaseQueryStore

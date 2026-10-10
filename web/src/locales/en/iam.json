@@ -1,0 +1,314 @@
+{
+  "page": {
+    "title": "Access policies",
+    "description": "Allow and Deny rules scoped to an app, database or environment. A Deny always wins; an Allow can grant narrower access than a token's global abilities.",
+    "createPolicy": "Create policy",
+    "tabs": {
+      "policies": "Policies",
+      "access": "Who has access",
+      "simulator": "Simulator",
+      "analyzer": "Analyzer"
+    },
+    "loadError": "Could not load policies",
+    "retry": "Retry"
+  },
+  "risk": {
+    "read": "Read",
+    "write": "Changes things",
+    "sensitive": "Sensitive",
+    "root": "Root"
+  },
+  "group": {
+    "view": "View",
+    "change": "Change",
+    "deploy": "Deploy",
+    "admin": "Administer"
+  },
+  "list": {
+    "empty": {
+      "title": "No policies yet",
+      "description": "Start from a template or build one rule by rule. Nothing changes for anyone until a policy is attached."
+    },
+    "table": {
+      "name": "Policy",
+      "rules": "Rules",
+      "appliesTo": "Applies to",
+      "updated": "Updated",
+      "actions": "Actions"
+    },
+    "notAttached": "Not attached",
+    "open": "Open",
+    "edit": "Edit",
+    "attach": "Attach",
+    "delete": "Delete",
+    "allow": "{{count}} Allow",
+    "deny": "{{count}} Deny",
+    "rules_one": "{{count}} rule",
+    "rules_other": "{{count}} rules",
+    "appliesToCount_one": "{{count}} principal",
+    "appliesToCount_other": "{{count}} principals"
+  },
+  "builder": {
+    "createTitle": "Create policy",
+    "editTitle": "Edit {{name}}",
+    "description": "Choose what is allowed or denied, on which resources. The JSON on the right is generated and is what gets stored.",
+    "name": "Name",
+    "namePlaceholder": "e.g. deployer-staging",
+    "nameRequired": "Name is required",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "What this policy is for",
+    "statement": "Rule {{n}}",
+    "addStatement": "Add rule",
+    "removeStatement": "Remove rule {{n}}",
+    "effect": {
+      "label": "Effect",
+      "allow": "Allow",
+      "deny": "Deny",
+      "allowHint": "Grants these abilities on the resources below.",
+      "denyHint": "Blocks these abilities on the resources below, even for a token that holds them."
+    },
+    "actions": {
+      "label": "Abilities",
+      "search": "Search abilities",
+      "all": "Every ability",
+      "allHint": "Matches any current or future ability, root included.",
+      "required": "Pick at least one ability",
+      "noMatch": "No ability matches that search.",
+      "selected": "{{count}} selected"
+    },
+    "resources": {
+      "label": "Resources",
+      "required": "Pick at least one resource",
+      "add": "Add resource",
+      "kind": "Kind",
+      "value": "Pick one",
+      "search": "Search",
+      "noOptions": "Nothing of this kind exists yet.",
+      "remove": "Remove {{resource}}",
+      "kinds": {
+        "all": "Everything",
+        "project": "A project",
+        "environment": "An environment",
+        "environment_kind": "An environment kind",
+        "app": "A specific app",
+        "database": "A specific database",
+        "pattern": "A name pattern"
+      },
+      "patternPlaceholder": "app:web-*",
+      "patternHint": "Ends in * to match a prefix, for example app:web-*",
+      "projectNote": "Expands to the project's {{count}} environments when saved.",
+      "matchNone": "matches nothing today",
+      "matchAll": "everything",
+      "matchChecking": "checking",
+      "matchApps_one": "{{count}} app",
+      "matchApps_other": "{{count}} apps",
+      "matchDatabases_one": "{{count}} database",
+      "matchDatabases_other": "{{count}} databases"
+    },
+    "conditions": {
+      "title": "Conditions",
+      "description": "The evaluator has no condition engine yet, so rules apply unconditionally. Scope by environment with the resources above.",
+      "planned": "Not enforced yet",
+      "sourceIp": "Source IP or CIDR",
+      "timeWindow": "Time window and timezone",
+      "mfa": "MFA or session age"
+    },
+    "json": {
+      "title": "Document",
+      "advanced": "Edit JSON",
+      "advancedHint": "Editing here replaces the guided rules. Field errors point at the path.",
+      "invalid": "This is not a valid policy document: {{reason}}",
+      "apply": "Use this JSON",
+      "reset": "Back to guided"
+    },
+    "issues": {
+      "title": "Problems",
+      "ok": "Document is valid",
+      "checking": "Checking"
+    },
+    "template": {
+      "title": "Start from a template",
+      "pick": "Template",
+      "none": "Blank policy",
+      "use": "Fill the rules",
+      "param": {
+        "environment": "Environment",
+        "app": "App",
+        "database": "Database",
+        "project": "Project"
+      },
+      "failed": "Could not expand the template"
+    },
+    "attach": {
+      "title": "Attach on save",
+      "description": "Optional. Pick who gets this policy right away.",
+      "none": "Nobody yet"
+    },
+    "save": "Save policy",
+    "saving": "Saving",
+    "saved": "Policy {{name}} saved",
+    "cancel": "Cancel"
+  },
+  "impact": {
+    "title": "What this changes",
+    "checking": "Working out the effect",
+    "none": "No one is affected yet.",
+    "noChange": "{{name}}: no change in effective access.",
+    "recentlyUsed": "Used in the last 7 days",
+    "guardBlocked": "Blocked: this would leave no root principal able to manage the platform.",
+    "showResources": "Show resources",
+    "tooManyHidden": "and more",
+    "gains_one": "{{name}} gains {{ability}} on {{count}} resource",
+    "gains_other": "{{name}} gains {{ability}} on {{count}} resources",
+    "loses_one": "{{name}} loses {{ability}} on {{count}} resource",
+    "loses_other": "{{name}} loses {{ability}} on {{count}} resources"
+  },
+  "versions": {
+    "title": "History",
+    "empty": "No saved versions yet.",
+    "version": "Version {{n}}",
+    "by": "by {{actor}}",
+    "unknownActor": "unknown",
+    "added": "Added",
+    "removed": "Removed",
+    "noChange": "No rule changes",
+    "initial": "First saved version"
+  },
+  "detail": {
+    "title": "Policy details",
+    "rules": "Rules",
+    "appliesTo": "Applies to",
+    "nobody": "Not attached to anyone. It has no effect until attached.",
+    "findings": "Findings for this policy",
+    "noFindings": "No findings for this policy.",
+    "detach": "Detach",
+    "close": "Close"
+  },
+  "access": {
+    "search": "Search users and tokens",
+    "filter": {
+      "all": "Everyone",
+      "user": "Users",
+      "token": "Tokens"
+    },
+    "empty": {
+      "title": "No users or tokens match",
+      "description": "Clear the search or switch the filter."
+    },
+    "user": "User",
+    "token": "Token",
+    "inactive": "Revoked or expired",
+    "pickOne": {
+      "title": "Pick a user or token",
+      "description": "See what it can do and which policies shape that."
+    },
+    "attachedPolicies": "Attached policies",
+    "noPolicies": "No policies attached. Only its own abilities apply.",
+    "attach": "Attach policy",
+    "bulkAttach": "Attach to selected tokens",
+    "selectedCount": "{{count}} selected",
+    "selectAllTokens": "Select all shown tokens",
+    "clearSelection": "Clear",
+    "flatAbilities": "Abilities",
+    "lastUsed": "Last used {{when}}",
+    "neverUsed": "Never used",
+    "policiesCount_one": "{{count}} policy",
+    "policiesCount_other": "{{count}} policies"
+  },
+  "attachDialog": {
+    "attachTitle": "Attach policy",
+    "detachTitle": "Detach policy",
+    "description": "Review what changes, then confirm. The change is written to the audit log.",
+    "policy": "Policy",
+    "policyPick": "Choose a policy",
+    "principals": "Who",
+    "noPrincipals": "Choose at least one user or token",
+    "confirmAttach": "Attach",
+    "confirmDetach": "Detach",
+    "working": "Working",
+    "failed": "Some changes failed: {{message}}",
+    "attached_one": "Attached {{name}} to {{count}} principal",
+    "attached_other": "Attached {{name}} to {{count}} principals",
+    "detached_one": "Detached {{name}} from {{count}} principal",
+    "detached_other": "Detached {{name}} from {{count}} principals"
+  },
+  "effective": {
+    "title": "What can {{name}} do?",
+    "ability": "Ability",
+    "scope": "Allowed on",
+    "viaPolicy": "Granted by a policy",
+    "deniedByPolicy": "Blocked by a policy",
+    "all": "All {{total}} resources",
+    "some": "{{allowed}} of {{total}}",
+    "none": "None",
+    "noResources": "No apps or databases yet",
+    "restricted": "This principal only sees environments it was granted.",
+    "apps": "Apps",
+    "databases": "Databases"
+  },
+  "simulator": {
+    "title": "Can this principal do this?",
+    "description": "Runs the same evaluator that guards every request. Nothing is changed.",
+    "principal": "Principal",
+    "principalPick": "Choose a user or token",
+    "action": "Ability",
+    "resource": "Resource",
+    "resourcePick": "Choose an app or database",
+    "resourceCustom": "Or type a resource",
+    "run": "Check",
+    "running": "Checking",
+    "allowed": "Allowed",
+    "denied": "Denied",
+    "summary": "{{name}} {{verdict}} {{action}} on {{resource}}",
+    "verdictAllow": "can",
+    "verdictDeny": "cannot",
+    "decidedBy": {
+      "explicit_deny": "An explicit Deny in an attached policy decided this.",
+      "base_ability": "The principal's own abilities grant it, and no Deny matched.",
+      "explicit_allow": "An Allow in an attached policy grants it.",
+      "no_grant": "Nothing grants it: no ability and no Allow statement matches.",
+      "hidden": "The resource is outside the environments this principal can see, so it answers not found.",
+      "inactive_principal": "This token is revoked or expired, so every request is refused."
+    },
+    "decidingStatement": "Deciding statement",
+    "matched": "Every statement that matched",
+    "noneMatched": "No statement in any attached policy matched.",
+    "policy": "Policy {{name}}, rule {{n}}",
+    "environments": "Environment scope seen: {{list}}",
+    "failed": "Could not run the check",
+    "needsInput": "Choose a principal and a resource first.",
+    "showEffective": "What can this principal do?"
+  },
+  "analyzer": {
+    "title": "Policy analyzer",
+    "description": "Static checks over every policy, attachment and token. Each finding says what to change.",
+    "score": "Score {{score}} out of 100",
+    "scoreLabel": "Access hygiene score",
+    "clean": {
+      "title": "No findings",
+      "description": "Nothing in your policies needs attention."
+    },
+    "severity": {
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "info": "Note"
+    },
+    "all": "All",
+    "fix": "Fix",
+    "openPolicy": "Open policy",
+    "openPrincipal": "See access",
+    "rerun": "Run again",
+    "count": "{{count}} findings"
+  },
+  "delete": {
+    "title": "Delete {{name}}?",
+    "description": "Everyone it is attached to loses its rules. This cannot be undone.",
+    "confirm": "Delete policy",
+    "deleted": "Policy {{name}} deleted"
+  },
+  "errors": {
+    "generic": "Something went wrong. Try again."
+  }
+}

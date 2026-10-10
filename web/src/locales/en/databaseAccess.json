@@ -1,0 +1,281 @@
+{
+  "nav": {
+    "access": "Access",
+    "network": "Network"
+  },
+  "access": {
+    "title": "Access",
+    "description": "Who can log in to this database, and who on this platform can manage it.",
+    "unsupportedTitle": "User management is for PostgreSQL",
+    "unsupportedBody": "This engine does not have managed database users yet. Platform access below still applies.",
+    "notRunningTitle": "The database is not running",
+    "notRunningBody": "Users are read from the live database. Start it to list, create or change logins.",
+    "loadFailed": "Could not read this database's users: {{error}}"
+  },
+  "users": {
+    "title": "Database users",
+    "description": "Logins on the database itself. Your apps keep using the platform's own credentials, so a user here never breaks them.",
+    "create": "Create user",
+    "emptyTitle": "No extra users yet",
+    "emptyBody": "Create a read-only login for a teammate or a reporting tool instead of sharing the main password.",
+    "columns": {
+      "name": "User",
+      "access": "Access",
+      "status": "Status",
+      "connections": "Connections",
+      "expires": "Expires",
+      "actions": "Actions"
+    },
+    "kind": {
+      "platform": "Platform admin",
+      "temp": "Temporary",
+      "user": "Managed",
+      "system": "Other"
+    },
+    "preset": {
+      "read_only": "Read only",
+      "read_write": "Read and write",
+      "owner": "Owner of this database"
+    },
+    "presetHint": {
+      "read_only": "Can read every table. Writes are refused even if a tool tries.",
+      "read_write": "Can read and change rows. Cannot change the schema.",
+      "owner": "Full control of this one database, including schema. No server level rights."
+    },
+    "status": {
+      "active": "Can log in",
+      "disabled": "Disabled",
+      "expired": "Expired"
+    },
+    "connectionLimit": "limit {{count}}",
+    "unlimited": "no limit",
+    "never": "Never",
+    "protectedNote": "Platform role, cannot be changed here",
+    "rotate": "Rotate password",
+    "disable": "Disable",
+    "enable": "Enable",
+    "delete": "Delete",
+    "rotateToast": "Password rotated. Open sessions were ended.",
+    "disableToast": "{{name}} can no longer log in.",
+    "enableToast": "{{name}} can log in again.",
+    "deleteToast": "{{name}} was deleted.",
+    "failedToast": "Could not change the user",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteBody": "The login is removed and its sessions end. Anything it created is kept and handed to the admin role.",
+    "deleteConfirm": "Delete user",
+    "cancel": "Cancel"
+  },
+  "create": {
+    "title": "Create a database user",
+    "description": "The password is generated and shown once. It is never stored, so copy it before closing.",
+    "name": "User name",
+    "nameHint": "Lowercase letters, digits and underscores, starting with a letter.",
+    "preset": "Access",
+    "limit": "Connection limit",
+    "limitHint": "Stops one tool from using every connection.",
+    "expiry": "Login expires",
+    "expiryNever": "Never",
+    "expiry7": "In 7 days",
+    "expiry30": "In 30 days",
+    "expiry90": "In 90 days",
+    "submit": "Create user",
+    "submitting": "Creating",
+    "failedToast": "Could not create the user"
+  },
+  "credential": {
+    "title": "Copy this now",
+    "description": "This password is shown once and is not stored anywhere. If you lose it, rotate the password.",
+    "username": "User",
+    "password": "Password",
+    "fromApps": "From apps on this platform",
+    "fromOutside": "From your machine",
+    "expires": "Expires {{when}}",
+    "copy": "Copy",
+    "copied": "Copied",
+    "done": "I have copied it",
+    "tlsNote": "TLS is required by this connection string."
+  },
+  "temp": {
+    "title": "Temporary credentials",
+    "description": "A short-lived login for a developer or a one-off job. It expires and is removed on its own, even if this control plane restarts.",
+    "preset": "Access",
+    "lifetime": "Lifetime",
+    "minutes_one": "{{count}} minute",
+    "minutes_other": "{{count}} minutes",
+    "hours_one": "{{count}} hour",
+    "hours_other": "{{count}} hours",
+    "issue": "Get temporary credentials",
+    "issuing": "Issuing",
+    "issuedToast": "Temporary login issued",
+    "clampedNote": "The lifetime was moved into the allowed range of {{min}} to {{max}} minutes.",
+    "failedToast": "Could not issue a temporary login",
+    "activeTitle": "Active temporary logins",
+    "emptyActive": "None right now.",
+    "columns": {
+      "role": "Login",
+      "access": "Access",
+      "by": "Issued by",
+      "expires": "Expires",
+      "actions": ""
+    },
+    "revoke": "Revoke now",
+    "revokedToast": "Temporary login revoked",
+    "expiresIn": "in {{when}}",
+    "expiredWaiting": "expired, being removed"
+  },
+  "who": {
+    "title": "Who can manage this database",
+    "description": "People and tokens on this platform with abilities on this database, from their own abilities and from IAM policies.",
+    "grant": "Grant access",
+    "policies": "Open IAM policies",
+    "emptyTitle": "Nobody has access through policies",
+    "emptyBody": "Only users and tokens with platform wide abilities can manage this database.",
+    "columns": {
+      "who": "Who",
+      "abilities": "Abilities",
+      "via": "Through",
+      "actions": ""
+    },
+    "type": {
+      "user": "User",
+      "token": "Token"
+    },
+    "policiesTitle": "Policies that mention this database",
+    "scopedOne": "this database only",
+    "scopedWide": "wider than this database",
+    "attached": "{{count}} attached"
+  },
+  "grant": {
+    "title": "Grant access to this database",
+    "description": "Applies a policy scoped to this one database. Nothing else on the platform is affected.",
+    "principalType": "Who",
+    "user": "A user",
+    "token": "An API token",
+    "principal": "Pick one",
+    "template": "Access level",
+    "templates": {
+      "database-read-only": "Read-only console",
+      "database-operator": "Operator",
+      "database-owner": "Owner"
+    },
+    "templateHint": {
+      "database-read-only": "Can see the database and read its data. Any change is denied.",
+      "database-operator": "Read data and run operations: backups, stop and start. Not users, restore or the write console.",
+      "database-owner": "Everything on this database including users, credentials and network rules."
+    },
+    "previewTitle": "This policy will be applied",
+    "preview": "Preview",
+    "apply": "Apply policy",
+    "appliedToast": "Access granted",
+    "failedToast": "Could not grant access"
+  },
+  "network": {
+    "title": "Network",
+    "description": "How this database can be reached, who is allowed in, and how far its reach extends.",
+    "loadFailed": "Could not read this database's network: {{error}}"
+  },
+  "reach": {
+    "title": "Reachability",
+    "verdict": {
+      "stopped": "The database is not running, so nothing can reach it.",
+      "privateNone": "Private: no app references it and no port is published.",
+      "privateOne": "Private: only 1 app can reach it.",
+      "privateMany": "Private: only these {{count}} apps can reach it.",
+      "restricted": "Published on port {{port}}, restricted to the allowed sources.",
+      "exposed": "Exposed to the internet on port {{port}}.",
+      "hostOnly": "Published on port {{port}}, but only the host itself can reach it.",
+      "unknown": "Published on port {{port}}. The firewall could not be read, so exposure is unknown."
+    },
+    "internal": "Internal address",
+    "networks": "Docker networks",
+    "networkKind": {
+      "default-bridge": "default bridge",
+      "app": "app network",
+      "other": "network"
+    },
+    "published": "Published port",
+    "notPublished": "Not published. Only containers on a shared Docker network can connect.",
+    "bind": "Bound to {{bind}}",
+    "clients": "Apps that connect",
+    "noClients": "No app references this database.",
+    "columns": {
+      "app": "App",
+      "via": "Through",
+      "project": "Project",
+      "environment": "Environment",
+      "scope": "In scope"
+    },
+    "inScope": "Yes",
+    "outOfScope": "No, detached",
+    "makePrivate": "Make private",
+    "makePrivateTitle": "Stop publishing this port?",
+    "makePrivateBody": "The database container is replaced without the published port and any rule for it is removed. Apps on the platform keep working. Tools on your machine lose direct access.",
+    "makePrivateConfirm": "Make private",
+    "madePrivateToast": "The port is no longer published",
+    "failedToast": "Could not change exposure",
+    "bridgeCaveat": "Containers on Docker's default bridge on this host can still reach this database by its address. Scope limits which apps the platform attaches, not what shares the default bridge."
+  },
+  "rules": {
+    "title": "Allowed sources",
+    "description": "Only these addresses can connect to the published port. Rules live in the host firewall and are tagged so they can be removed cleanly.",
+    "noPort": "Nothing is published, so there is nothing to restrict. Publish a port from Overview to connect from your machine, then lock it down here.",
+    "empty": "No restriction. Anyone who can route to the published port can connect.",
+    "source": "Source IP or CIDR",
+    "description_": "Description",
+    "descriptionPlaceholder": "Office, laptop, CI runner",
+    "add": "Add source",
+    "remove": "Remove",
+    "localContainers": "Also allow containers on this host",
+    "preview": "Preview rules",
+    "apply": "Apply rules",
+    "clear": "Remove restriction",
+    "clearedToast": "Restriction removed",
+    "appliedToast": "Rules applied",
+    "failedToast": "Could not apply the rules",
+    "previewTitle": "Exact rules",
+    "effect": "What changes",
+    "confirm": "I understand what is dropped",
+    "driftMissing": "Missing from the firewall: {{sources}}. Apply the rules again to restore them.",
+    "driftExtra": "The firewall also allows: {{sources}}. These were not set here.",
+    "cannot": "Rules cannot be applied: {{reason}}"
+  },
+  "scope": {
+    "title": "Network scope",
+    "description": "Limits which apps the platform attaches to this database. The default keeps today's behaviour.",
+    "options": {
+      "platform": "Whole platform",
+      "project": "Same project only",
+      "environment": "Same environment only"
+    },
+    "hint": {
+      "platform": "Any app that references this database can reach it.",
+      "project": "Only apps in the database's project. Others are detached.",
+      "environment": "Only apps in the database's environment. Others are detached."
+    },
+    "placement": "This database is in project {{project}} and environment {{environment}}.",
+    "unplaced": "not set",
+    "check": "Check impact",
+    "apply": "Apply scope",
+    "applyAnyway_one": "Apply and detach {{count}} app",
+    "applyAnyway_other": "Apply and detach {{count}} apps",
+    "dryRunTitle": "Impact of this scope",
+    "noneLost": "Every app that references this database keeps access.",
+    "lost_one": "{{count}} app would lose access. It is detached on the next reconcile and shows why on its status.",
+    "lost_other": "{{count}} apps would lose access. They are detached on the next reconcile and show why on their status.",
+    "appliedToast": "Scope updated",
+    "failedToast": "Could not change the scope"
+  },
+  "tls": {
+    "title": "Require TLS",
+    "description": "Refuse connections that are not encrypted. Connection strings from this platform already ask for TLS.",
+    "unsupported": "This engine has no TLS requirement setting.",
+    "notEnabled": "TLS is not enabled for this database yet.",
+    "redis": "This engine only accepts TLS connections once TLS is on.",
+    "required": "Required",
+    "optional": "Optional",
+    "drift": "The server does not match the saved setting. Toggle it again to realign.",
+    "warning": "Clients configured with sslmode=disable will be refused.",
+    "updatedToast": "TLS requirement updated",
+    "failedToast": "Could not change the TLS requirement"
+  }
+}

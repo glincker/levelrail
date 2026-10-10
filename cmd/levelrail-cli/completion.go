@@ -123,7 +123,7 @@ var cliCommandTree = map[string]*cmdNode{
 	}},
 	"functions": {subs: map[string]*cmdNode{"deploy": nil, "list": nil, "invoke": nil, "delete": nil}},
 	"models":    {subs: map[string]*cmdNode{"list": nil, "get": nil, "deploy": nil, "logs": nil, "delete": nil, "restart": nil, "rotate-key": nil, "metrics": nil, "fit": nil, "residency": nil, "swap-group": nil, "wake": nil, "sleep": nil, "gpus": nil, "preflight": nil, "cache": {subs: map[string]*cmdNode{"list": nil, "prune": nil}}, "keys": {subs: map[string]*cmdNode{"list": nil, "create": nil, "revoke": nil, "rotate": nil}}, "usage": nil}},
-	"databases": {subs: map[string]*cmdNode{"move-env": nil, "connect": nil, "adopt": nil, "probe": nil, "create": nil, "list": nil, "get": nil, "status": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "logs": nil, "slow-queries": nil, "query": nil, "schema": nil, "set-project": nil, "clear-project": nil, "set-node": nil, "clear-node": nil, "set-resources": nil, "set-version": nil, "major-upgrade": nil, "major-upgrades": nil, "major-upgrade-rollback": nil, "major-upgrade-discard": nil, "public-access": {subs: map[string]*cmdNode{"set": nil, "clear": nil}}}},
+	"databases": {subs: map[string]*cmdNode{"move-env": nil, "connect": nil, "adopt": nil, "probe": nil, "create": nil, "list": nil, "get": nil, "status": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "logs": nil, "slow-queries": nil, "query": nil, "schema": nil, "set-project": nil, "clear-project": nil, "set-node": nil, "clear-node": nil, "set-resources": nil, "set-version": nil, "major-upgrade": nil, "major-upgrades": nil, "major-upgrade-rollback": nil, "major-upgrade-discard": nil, "public-access": {subs: map[string]*cmdNode{"set": nil, "clear": nil}}, "users": {subs: map[string]*cmdNode{"list": nil, "create": nil, "rotate": nil, "disable": nil, "enable": nil, "delete": nil}}, "access": {subs: map[string]*cmdNode{"temp": nil, "list": nil, "revoke": nil, "who": nil, "grant": nil}}, "network": {subs: map[string]*cmdNode{"show": nil, "allow": nil, "deny": nil, "make-private": nil, "scope": nil, "tls": nil}}}},
 	"auth": {subs: map[string]*cmdNode{"login": nil, "whoami": nil, "session-link": nil, "2fa": {subs: map[string]*cmdNode{
 		"status": nil, "setup": nil, "enable": nil, "disable": nil, "recovery-codes": nil,
 	}}}},
@@ -236,6 +236,9 @@ var cliCommandTree = map[string]*cmdNode{
 			"attachments": nil,
 		}},
 		"templates": {subs: map[string]*cmdNode{"list": nil, "apply": nil}},
+		"simulate":  nil,
+		"effective": nil,
+		"analyze":   nil,
 	}},
 	"secrets":    {subs: map[string]*cmdNode{"generate-master-key": nil, "rotate-master-key": nil, "binding-status": nil, "rebind": nil}},
 	"migrate":    {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil, "server": nil, "db-copy": nil, "db-status": nil, "volumes": nil, "cutover": nil}},

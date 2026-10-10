@@ -88,6 +88,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/changelog"
 	"github.com/GLINCKER/levelrail/internal/datamigrate"
+	"github.com/GLINCKER/levelrail/internal/dbaccess"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -388,6 +389,8 @@ type Router struct {
 	hostFirewallSSHPorts         []int
 	exposure                     *exposure.Manager // nil is valid: /api/v1/firewall/exposure returns 501, see WithExposure
 	exposureStore                ExposureStore
+	dbAccess                     DatabaseAccessStore // nil is valid: database users, temporary credentials and network controls return 501, see WithDatabaseAccess
+	dbAccessTTL                  dbaccess.TTLLimits
 	backupHistory                BackupHistoryStore               // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
 	backupRunner                 BackupRunner                     // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
 	backupDownloader             BackupDownloader                 // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
@@ -436,6 +439,8 @@ type Router struct {
 	appSleep                     AppSleepStore                    // always set, sleep-when-idle settings
 	dataImports                  DataImportStore                  // always set, live data copy status
 	migrationHub                 MigrationHubStore                // always set, server migration hub sessions
+	appImports                   AppImportStore                   // always set, guided app import sessions
+	appImportLive                *appImportState                  // in-memory source tokens and discoveries
 	hubState                     *hubState                        // in-memory source passwords and running sessions
 	externalDatabases            ExternalDatabaseStore            // always set, databases connected but not run
 	dnsResolver                  datamigrate.Resolver             // nil means the real resolver
@@ -663,6 +668,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		appSleep:                    s,
 		dataImports:                 s,
 		migrationHub:                s,
+		appImports:                  s,
+		appImportLive:               newAppImportState(),
 		hubState:                    newHubState(),
 		externalDatabases:           s,
 		canaries:                    s,

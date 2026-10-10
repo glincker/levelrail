@@ -317,3 +317,27 @@ Because nothing on the source changed, no source-side rollback is needed. Keep D
 - [Backups and storage](backups-and-storage.md): dump and restore tools for engines the copy step does not cover
 - [Comparison](comparison.md): architectural differences between platforms
 - [Coolify alternative](coolify-alternative.md) and [Dokploy alternative](dokploy-alternative.md): why people switch
+
+## Guided app import from Coolify
+
+Settings, Import from another platform, "Move apps from Coolify" walks every application through plan, stage, verify, volumes and cutover. The CLI mirrors it:
+
+```
+levelrail-cli import apps --from coolify --url https://coolify.example.com --token-stdin --plan
+levelrail-cli import apps --from coolify --url https://coolify.example.com --token-stdin --apply --only web --map OLD_DB_HOST=NEW_DB_HOST
+levelrail-cli import apps --session ID --verify
+levelrail-cli import apps --session ID --receipt
+```
+
+What it guarantees:
+
+- Coolify is only read. Every request to it is a GET, and the token lives in memory for the session and in the request body only.
+- Staged apps are created stopped and not routed. Variables and secrets are imported encrypted, domains are held back until you enable routing.
+- Each app gets a verdict (ready, ready with notes, needs attention, unsupported) with the reason and next action. Docker Compose apps and one-click services are listed as unsupported with the manual path.
+- Old database hostnames are only rewritten through a mapping table you confirm, with a masked before and after diff. Suggestions come from databases you already moved. When the target is a managed database, the staged app also gets a connection variable so it joins that database's network.
+- Verify builds or pulls the app, waits for its own health check and stops it again until cutover.
+- Volume data is copied by you with a generated rsync command per volume, and you confirm it. Volume sizes are shown only when Coolify reports them.
+- Rollback removes only apps carrying this session's label. Volumes are kept on disk.
+- The receipt is a JSON download with no secret values. The MCP tool `get_app_import_plan` is read-only.
+
+If the token lacks the `read:sensitive` ability, secret values come back empty and the app is flagged so you can set them by hand.
