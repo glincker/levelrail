@@ -30,7 +30,8 @@ func TestPreflightRules(t *testing.T) {
 	}{
 		{"plain ok", func(*PreflightInput) {}, "extensions", SeverityOK, false},
 		{"stock extension", func(i *PreflightInput) { i.DB.Extensions = []string{"pg_trgm", "citext"} }, "extensions", SeverityOK, false},
-		{"vector blocked while variant unavailable", func(i *PreflightInput) { i.DB.Extensions = []string{"vector"} }, "extensions", SeverityBlock, !PgvectorVariantAvailable},
+		{"vector is served by the pgvector variant", func(i *PreflightInput) { i.DB.Extensions = []string{"vector"} }, "extensions", SeverityOK, false},
+		{"vector with an unsupported extension blocks", func(i *PreflightInput) { i.DB.Extensions = []string{"vector", "postgis"} }, "extensions", SeverityBlock, true},
 		{"unknown extension blocks", func(i *PreflightInput) { i.DB.Extensions = []string{"postgis"} }, "extensions", SeverityBlock, true},
 		{"older target blocks", func(i *PreflightInput) { i.TargetVersion = "15" }, "version", SeverityBlock, true},
 		{"newer target warns", func(i *PreflightInput) { i.TargetVersion = "17" }, "version", SeverityWarn, false},

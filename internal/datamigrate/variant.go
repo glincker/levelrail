@@ -7,9 +7,8 @@ import (
 )
 
 // PgvectorVariantAvailable gates the "<major>-pgvector" managed Postgres
-// version. Flip it to true once the pgvector image variant is on main; this
-// file is the only reconcile point.
-const PgvectorVariantAvailable = false
+// version, which the database reconciler maps to the pgvector image.
+const PgvectorVariantAvailable = true
 
 // PgvectorVersionSuffix is appended to a Postgres major to select the variant.
 const PgvectorVersionSuffix = "-pgvector"
