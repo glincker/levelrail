@@ -29,6 +29,7 @@ type updatePreflightResource struct {
 	Blocked         bool            `json:"blocked"`
 	UpgradeCommand  string          `json:"upgrade_command"`
 	RollbackCommand string          `json:"rollback_command"`
+	CosignCommand   string          `json:"cosign_command"`
 }
 
 // handleUpdatePreflight handles GET /api/v1/updates/preflight: read-only
@@ -39,6 +40,7 @@ func (rt *Router) handleUpdatePreflight(w http.ResponseWriter, r *http.Request) 
 		CurrentVersion:  version.Version,
 		UpgradeCommand:  upgradeCommand("", false),
 		RollbackCommand: "levelrail restore-snapshot --list",
+		CosignCommand:   installScriptCommand("install-cosign"),
 	}
 	release, _, known := rt.latestReleaseForCurrentChannel(r.Context())
 	var assets []string
@@ -166,6 +168,11 @@ func upgradeCommand(tag string, verify bool) string {
 		env += " APP_INSTALL_VERIFY=require"
 	}
 	return "curl -fsSL https://raw.githubusercontent.com/" + githubRepo + "/main/install.sh | sudo" + env + " sh -s upgrade"
+}
+
+// installScriptCommand runs a bare install.sh subcommand as root.
+func installScriptCommand(sub string) string {
+	return "curl -fsSL https://raw.githubusercontent.com/" + githubRepo + "/main/install.sh | sudo sh -s -- " + sub
 }
 
 func checkStatus(checks []upgrade.Check, code string) string {

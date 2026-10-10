@@ -194,7 +194,7 @@ mirror_upgrade() {
 	dir="$1"
 	shift
 	docker exec "$name" env LEVELRAIL_VERSION=v9.9.9 LEVELRAIL_RELEASE_BASE_URL="http://127.0.0.1:8099/v9.9.9/$dir" \
-		LEVELRAIL_INSECURE_MIRROR=1 LEVELRAIL_HEALTH_WAIT=1 "$@" sh /root/install.sh upgrade 2>&1 || true
+		LEVELRAIL_INSECURE_MIRROR=1 LEVELRAIL_HEALTH_WAIT=1 LEVELRAIL_NO_COSIGN=1 "$@" sh /root/install.sh upgrade 2>&1 || true
 }
 
 out="$(mirror_upgrade tampered)"
@@ -211,6 +211,60 @@ echo "$out" | grep -q "cosign not found" || { echo "auto mode should say the sig
 
 out="$(mirror_upgrade good APP_INSTALL_VERIFY=bogus)"
 echo "$out" | grep -q "APP_INSTALL_VERIFY must be" || { echo "invalid APP_INSTALL_VERIFY accepted: $out"; exit 1; }
+
+echo "== cosign is installed by default, verified against a pinned checksum"
+# shellcheck disable=SC2016 # runs inside the container, expands there
+in_ct 'goarch=amd64; [ "$(uname -m)" = x86_64 ] || goarch=arm64
+	mkdir -p /srv/rel/cosign
+	printf "#!/bin/sh\nexit 0\n" > /srv/rel/cosign/cosign-linux-$goarch
+	sha256sum /srv/rel/cosign/cosign-linux-$goarch | cut -d" " -f1 > /srv/rel/cosign/sha
+	echo http://127.0.0.1:8099/cosign/cosign-linux-$goarch > /srv/rel/cosign/url'
+cosign_url="$(in_ct 'cat /srv/rel/cosign/url')"
+cosign_sha="$(in_ct 'cat /srv/rel/cosign/sha')"
+cosign_mirror() {
+	dir="$1"
+	shift
+	mirror_upgrade "$dir" LEVELRAIL_NO_COSIGN=0 LEVELRAIL_COSIGN_URL="$cosign_url" LEVELRAIL_COSIGN_SHA256="$cosign_sha" "$@"
+}
+
+out="$(cosign_mirror good)"
+echo "$out" | grep -q "Installed cosign" || { echo "cosign was not installed when absent: $out"; exit 1; }
+echo "$out" | grep -q "Checksum verified" || { echo "install did not continue after cosign: $out"; exit 1; }
+[ "$(in_ct 'stat -c %a /usr/local/bin/cosign')" = "755" ] || { echo "cosign not mode 755"; exit 1; }
+
+out="$(cosign_mirror good)"
+echo "$out" | grep -q "cosign already installed" || { echo "present cosign was not left alone: $out"; exit 1; }
+echo "$out" | grep -q "Installing cosign" && { echo "cosign reinstalled although present"; exit 1; }
+in_ct 'rm -f /usr/local/bin/cosign'
+
+out="$(cosign_mirror good LEVELRAIL_NO_COSIGN=1)"
+echo "$out" | grep -q "Installing cosign" && { echo "LEVELRAIL_NO_COSIGN=1 still installed cosign: $out"; exit 1; }
+in_ct 'test ! -e /usr/local/bin/cosign' || { echo "opt-out left a cosign binary"; exit 1; }
+out="$(docker exec "$name" env LEVELRAIL_VERSION=v9.9.9 LEVELRAIL_RELEASE_BASE_URL="http://127.0.0.1:8099/v9.9.9/good" \
+	LEVELRAIL_INSECURE_MIRROR=1 LEVELRAIL_HEALTH_WAIT=1 LEVELRAIL_COSIGN_URL="$cosign_url" LEVELRAIL_COSIGN_SHA256="$cosign_sha" \
+	sh /root/install.sh upgrade --no-cosign 2>&1 || true)"
+in_ct 'test ! -e /usr/local/bin/cosign' || { echo "--no-cosign installed cosign: $out"; exit 1; }
+echo "$out" | grep -q "Checksum verified" || { echo "--no-cosign broke the install: $out"; exit 1; }
+
+out="$(mirror_upgrade good LEVELRAIL_NO_COSIGN=0 LEVELRAIL_COSIGN_URL=http://127.0.0.1:8099/cosign/missing LEVELRAIL_COSIGN_SHA256="$cosign_sha")"
+echo "$out" | grep -q "could not download cosign" || { echo "failed cosign download not reported: $out"; exit 1; }
+echo "$out" | grep -q "Checksum verified" || { echo "failed cosign download must degrade, not abort: $out"; exit 1; }
+in_ct 'test ! -e /usr/local/bin/cosign' || { echo "failed download left a cosign binary"; exit 1; }
+
+out="$(mirror_upgrade good LEVELRAIL_NO_COSIGN=0 LEVELRAIL_COSIGN_URL="$cosign_url" LEVELRAIL_COSIGN_SHA256=0000000000000000000000000000000000000000000000000000000000000000)"
+echo "$out" | grep -q "cosign checksum mismatch" || { echo "wrong cosign checksum not rejected: $out"; exit 1; }
+echo "$out" | grep -q "Checksum verified" || { echo "cosign mismatch must degrade, not abort: $out"; exit 1; }
+in_ct 'test ! -e /usr/local/bin/cosign' || { echo "mismatched cosign was installed"; exit 1; }
+
+echo "== install-cosign subcommand"
+docker exec "$name" env LEVELRAIL_INSECURE_MIRROR=1 LEVELRAIL_COSIGN_URL="$cosign_url" LEVELRAIL_COSIGN_SHA256="$cosign_sha" \
+	sh /root/install.sh install-cosign >/dev/null
+in_ct 'test -x /usr/local/bin/cosign' || { echo "install-cosign did not install cosign"; exit 1; }
+in_ct 'rm -f /usr/local/bin/cosign'
+rc=0
+docker exec "$name" env LEVELRAIL_INSECURE_MIRROR=1 LEVELRAIL_COSIGN_URL=http://127.0.0.1:8099/cosign/missing LEVELRAIL_COSIGN_SHA256="$cosign_sha" \
+	sh /root/install.sh install-cosign >/dev/null 2>&1 || rc=$?
+[ "$rc" -ne 0 ] || { echo "install-cosign must fail loudly when asked explicitly"; exit 1; }
 in_ct 'sh /root/install.sh uninstall --purge' >/dev/null
 
 echo "install.sh passed on ${base_image}"

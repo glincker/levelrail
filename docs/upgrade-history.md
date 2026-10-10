@@ -22,6 +22,19 @@ The control plane records history itself, at boot. It compares the running versi
 
 The marker holds no secrets and is written with owner-only permissions.
 
+### Swapping the binary by hand
+
+A manual swap (a package manager, your own CI, `scp`) leaves no marker, so the initiator shows as `unknown`. Record one with `upgrade-note` after replacing the binary and before starting the service:
+
+```bash
+sudo systemctl stop levelrail
+sudo install -m 0755 ./levelrail-linux-amd64 /usr/local/bin/levelrail
+sudo levelrail upgrade-note --by "$USER" --method manual --reason "hotfix build"
+sudo systemctl start levelrail
+```
+
+`--by` is required. `--method` is `manual` (default), `package` or `ci`, `--reason` is optional free text (up to 120 characters, kept in the audit entry), and `--data-dir` defaults to `APP_DATA_DIR` or the standard data directory. The note is written for the version of the binary that runs the command, so run it with the new binary. It follows the same rules as the other markers: consumed once on the next boot, ignored by a different version, discarded after 24 hours.
+
 ## Acknowledging
 
 An unacknowledged change shows a ribbon with an Acknowledge button. The first acknowledgement wins and records who and when. Every recorded transition and every acknowledgement is written to the audit log (actions `upgrade_history.recorded` and `upgrade_history.acknowledged`).

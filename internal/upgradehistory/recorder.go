@@ -81,7 +81,7 @@ func (r *Recorder) Record(ctx context.Context, schemaAfter int, obs Observed) (s
 	if err != nil || !inserted {
 		return stored, false, err
 	}
-	r.audit(ctx, stored)
+	r.audit(ctx, stored, marker.Reason)
 	if r.Notes != nil && IsRelease(stored.ToVersion) {
 		go r.fillNotes(context.WithoutCancel(ctx), stored.ID, stored.ToVersion)
 	} else {
@@ -108,15 +108,19 @@ func (r *Recorder) settle(ctx context.Context, id, notes, state string) {
 	}
 }
 
-func (r *Recorder) audit(ctx context.Context, e store.UpgradeHistoryEntry) {
+func (r *Recorder) audit(ctx context.Context, e store.UpgradeHistoryEntry, reason string) {
 	id, err := store.NewAuditEntryID()
 	if err != nil {
 		r.log().Warn("upgrade history: audit id failed", slog.String("error", err.Error()))
 		return
 	}
+	path := fmt.Sprintf("%s: %s %s -> %s (id %s, initiator %s)", AuditActionRecorded, e.Kind, orDefault(e.FromVersion, "none"), e.ToVersion, e.ID, e.Initiator)
+	if reason != "" {
+		path += ", reason: " + reason
+	}
 	err = r.Store.SaveAuditEntry(ctx, store.AuditEntry{
 		ID: id, ActorType: "system", ActorID: "boot", ActorName: "system", Ability: "system",
-		Method: "SYSTEM", Path: fmt.Sprintf("%s: %s %s -> %s (id %s, initiator %s)", AuditActionRecorded, e.Kind, orDefault(e.FromVersion, "none"), e.ToVersion, e.ID, e.Initiator),
+		Method: "SYSTEM", Path: path,
 		StatusCode: 200, RemoteAddr: "local", CreatedAt: store.FormatAuditTime(r.now()), ClientKind: "system",
 	})
 	if err != nil {

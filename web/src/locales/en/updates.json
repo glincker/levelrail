@@ -20,6 +20,7 @@
     "blocked": "Upgrade blocked: fix the failing checks first.",
     "upgradeCommand": "Run this on the server (never runs automatically)",
     "rollbackCommand": "To roll back the database after a bad upgrade",
+    "cosignCommand": "Install cosign on the server so upgrades also verify the release signature",
     "status": {
       "ok": "Pass",
       "warn": "Warning",
