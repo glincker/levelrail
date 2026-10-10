@@ -18,6 +18,7 @@ import {
   type AcmeFailure,
   type DnsProvider,
   type DomainCheckStatus,
+  type DomainResolver,
 } from '../queries/domainCheck'
 import { AcmeFailureHint } from './AcmeFailureHint'
 import { DnsProviderBadge } from './DnsProviderBadge'
@@ -35,6 +36,8 @@ export interface DomainCheckPanelData {
   expected_private?: boolean
   dns_provider?: DnsProvider
   acme_failure?: AcmeFailure
+  checked_at?: string
+  resolvers?: DomainResolver[]
 }
 
 type DnsRecordType = 'A' | 'AAAA' | 'CNAME'
@@ -112,6 +115,11 @@ const STATUS_META: Record<
   }
 > = {
   connected: { label: 'Connected', variant: 'success', icon: CheckCircleIcon },
+  propagating: {
+    label: 'Propagating',
+    variant: 'warning',
+    icon: WarningCircleIcon,
+  },
   not_resolving: {
     label: 'Not resolving yet',
     variant: 'warning',
@@ -127,6 +135,37 @@ const STATUS_META: Record<
     variant: 'muted',
     icon: WarningCircleIcon,
   },
+}
+
+// What each resolver answered and what to do about it, so "Check now" always
+// ends with an explanation instead of an unchanged badge.
+function DnsResolverReport({ data }: { data: DomainCheckPanelData }) {
+  const { t } = useTranslation('domains')
+  const resolvers = data.resolvers ?? []
+  if (resolvers.length === 0) return null
+  return (
+    <div className="mt-2 space-y-1 text-xs">
+      <ul className="space-y-0.5 text-muted-foreground">
+        {resolvers.map((r) => (
+          <li key={r.name} className="flex gap-2">
+            <span className="w-24 shrink-0">{r.name}</span>
+            <span className="font-mono">
+              {r.addresses && r.addresses.length > 0
+                ? r.addresses.join(', ')
+                : (r.error ?? t('dnsCheck.noAnswer'))}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-foreground">
+        {data.status === 'propagating'
+          ? t('dnsCheck.propagatingHelp')
+          : data.status === 'not_resolving'
+            ? t('dnsCheck.notFoundHelp')
+            : null}
+      </p>
+    </div>
+  )
 }
 
 // The rendering half of the DNS-check guidance layer: the exact record
@@ -241,7 +280,11 @@ export function DomainCheckPanel({
         </div>
       ) : null}
 
-      <div className="mt-2 flex items-center gap-2">
+      {data && data.status !== 'connected' ? (
+        <DnsResolverReport data={data} />
+      ) : null}
+
+      <div className="mt-2 flex items-center gap-2" aria-live="polite">
         <Button
           type="button"
           variant="outline"
@@ -252,8 +295,15 @@ export function DomainCheckPanel({
           <ArrowsClockwiseIcon
             className={isFetching ? 'size-3.5 animate-spin' : 'size-3.5'}
           />
-          Check now
+          {isFetching ? t('dnsCheck.checking') : 'Check now'}
         </Button>
+        {data?.checked_at && !isFetching ? (
+          <span className="text-xs text-muted-foreground">
+            {t('dnsCheck.checkedAt', {
+              time: new Date(data.checked_at).toLocaleTimeString(),
+            })}
+          </span>
+        ) : null}
       </div>
     </div>
   )

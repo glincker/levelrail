@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -61,5 +62,46 @@ func TestIngressSettingsNoACMEBlockedBehindTLSUpstream(t *testing.T) {
 	res := rt.toIngressSettingsResource(store.IngressSettings{ACMEEnabled: true, TLSTerminatedUpstream: true})
 	if res.ACMEBlocked != "" {
 		t.Errorf("a proxy that terminates TLS must not report an ACME block, got %q", res.ACMEBlocked)
+	}
+}
+
+func TestDomainCheckPropagatingWhenPublicDNSIsAhead(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	rt.publicHost = "72.61.8.70"
+	rt.detectPublicIPs = func(context.Context) []string { return nil }
+	rt.lookupHost = func(_ context.Context, host string) ([]string, error) {
+		if host == "72.61.8.70" {
+			return []string{"72.61.8.70"}, nil
+		}
+		return nil, errors.New("no such host")
+	}
+	rt.publicLookup = func(context.Context, string) []resolverResult {
+		return []resolverResult{{Name: "1.1.1.1", Addresses: []string{"72.61.8.70"}}, {Name: "8.8.8.8", Error: "not found"}}
+	}
+
+	got := rt.runDomainCheckOpts(context.Background(), "app.example.com", "72.61.8.70", false, true)
+	if got.Status != domainCheckStatusPropagating {
+		t.Fatalf("status = %q, want propagating: public DNS already shows this server", got.Status)
+	}
+	if len(got.Resolvers) != 3 || got.Resolvers[0].Name != "this server" || got.CheckedAt == "" {
+		t.Errorf("resolvers=%+v checked_at=%q, want this server plus both public resolvers and a timestamp", got.Resolvers, got.CheckedAt)
+	}
+}
+
+func TestDomainCheckNotResolvingEverywhere(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	rt.detectPublicIPs = func(context.Context) []string { return nil }
+	rt.lookupHost = func(_ context.Context, host string) ([]string, error) {
+		if host == "72.61.8.70" {
+			return []string{"72.61.8.70"}, nil
+		}
+		return nil, errors.New("no such host")
+	}
+	rt.publicLookup = func(context.Context, string) []resolverResult {
+		return []resolverResult{{Name: "1.1.1.1", Error: "not found"}}
+	}
+	got := rt.runDomainCheckOpts(context.Background(), "app.example.com", "72.61.8.70", false, true)
+	if got.Status != domainCheckStatusNotResolving {
+		t.Errorf("status = %q, want not_resolving when nobody has the record", got.Status)
 	}
 }

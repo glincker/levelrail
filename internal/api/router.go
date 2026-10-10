@@ -261,6 +261,8 @@ type Router struct {
 	// overridable in this package's own tests the same way fetch and
 	// listBranches already are.
 	lookupHost lookupHostFunc
+	// publicLookup asks public resolvers directly; nil uses queryPublicResolvers (tests stub it).
+	publicLookup func(ctx context.Context, host string) []resolverResult
 	// domainChecks rate-limits handleCheckDomain's real DNS lookups per
 	// domain; always non-nil, constructed in NewRouter.
 	domainChecks *domainCheckCache

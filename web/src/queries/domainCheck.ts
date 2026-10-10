@@ -9,7 +9,18 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export type DomainCheckStatus =
-  'connected' | 'not_resolving' | 'resolves_elsewhere' | 'unconfigured'
+  | 'connected'
+  | 'propagating'
+  | 'not_resolving'
+  | 'resolves_elsewhere'
+  | 'unconfigured'
+
+// What one resolver answered, so a check can say why it reads the way it does.
+export interface DomainResolver {
+  name: string
+  addresses?: string[]
+  error?: string
+}
 
 export type AcmeAction =
   'open_port_80' | 'fix_dns' | 'wait_rate_limit' | 'fix_caa' | 'check_logs'
@@ -41,6 +52,8 @@ export interface DomainCheckResult {
   challenge?: 'http-01' | 'dns-01-required'
   dns_provider?: DnsProvider
   acme_failure?: AcmeFailure
+  checked_at?: string
+  resolvers?: DomainResolver[]
 }
 
 export const domainCheckKeys = {
@@ -53,7 +66,7 @@ export async function fetchDomainCheck(
   domain: string,
 ): Promise<DomainCheckResult> {
   const res = await fetch(
-    `/api/v1/apps/${encodeURIComponent(appName)}/domains/${encodeURIComponent(domain)}/check`,
+    `/api/v1/apps/${encodeURIComponent(appName)}/domains/${encodeURIComponent(domain)}/check?refresh=true`,
   )
   if (!res.ok) {
     throw new ApiError(

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -33,8 +34,33 @@ const domainCheckCacheTTL = 5 * time.Second
 // listBranchesFunc already are, so tests never perform a real DNS query.
 type lookupHostFunc func(ctx context.Context, host string) ([]string, error)
 
+// publicResolvers are asked when the system resolver finds nothing, because a
+// recursive resolver caches "does not exist" for the zone's whole negative TTL
+// (often 30 minutes) after a record is added, so the local answer lags the DNS
+// provider the operator just edited.
+var publicResolvers = []string{"1.1.1.1:53", "8.8.8.8:53"}
+
+func lookupVia(ctx context.Context, server, host string) ([]string, error) {
+	r := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
+			return (&net.Dialer{Timeout: 2 * time.Second}).DialContext(ctx, network, server)
+		},
+	}
+	return r.LookupHost(ctx, host)
+}
+
 func defaultLookupHost(ctx context.Context, host string) ([]string, error) {
-	return net.DefaultResolver.LookupHost(ctx, host)
+	hosts, err := net.DefaultResolver.LookupHost(ctx, host)
+	if err == nil && len(hosts) > 0 {
+		return hosts, nil
+	}
+	for _, server := range publicResolvers {
+		if got, perr := lookupVia(ctx, server, host); perr == nil && len(got) > 0 {
+			return got, nil
+		}
+	}
+	return hosts, err
 }
 
 // domainCheckResult is one lookup outcome, cached by domain.
@@ -81,6 +107,9 @@ const (
 	domainCheckStatusNotResolving      = "not_resolving"
 	domainCheckStatusResolvesElsewhere = "resolves_elsewhere"
 	domainCheckStatusUnconfigured      = "unconfigured"
+	// domainCheckStatusPropagating means public DNS already answers with this
+	// server but the server's own resolver has not caught up (negative caching).
+	domainCheckStatusPropagating = "propagating"
 )
 
 // domainCheckResponse is GET
@@ -90,6 +119,12 @@ const (
 // know DNS terminology beyond "A record."
 type domainCheckResponse struct {
 	Domain string `json:"domain"`
+	// CheckedAt is when this answer was produced (RFC 3339), so a click on
+	// "Check now" visibly changes something.
+	CheckedAt string `json:"checked_at,omitempty"`
+	// Resolvers lists what this server and public resolvers answered, set
+	// when the domain is not yet connected.
+	Resolvers []resolverResult `json:"resolvers,omitempty"`
 	// ExpectedHost is the IP or hostname an A/CNAME record for Domain
 	// should point at to reach this control plane's embedded ingress:
 	// rt.publicHost (APP_PUBLIC_HOST) when configured, else a best-effort
@@ -207,41 +242,65 @@ func (rt *Router) detectedPublicIPs(ctx context.Context) []string {
 }
 
 func (rt *Router) runDomainCheck(ctx context.Context, domain, expectedHost string, inferred bool) domainCheckResponse {
-	resp := domainCheckResponse{Domain: domain, ExpectedHost: expectedHost, HostInferred: inferred}
+	return rt.runDomainCheckOpts(ctx, domain, expectedHost, inferred, false)
+}
+
+// resolverResult is what one resolver answered for the domain, so the
+// dashboard can show why a check says what it says.
+type resolverResult struct {
+	Name      string   `json:"name"`
+	Addresses []string `json:"addresses,omitempty"`
+	Error     string   `json:"error,omitempty"`
+}
+
+// queryPublicResolvers asks well-known public resolvers directly, bypassing
+// the local stub and its negative cache.
+func queryPublicResolvers(ctx context.Context, host string) []resolverResult {
+	if v := strings.ToLower(os.Getenv("APP_DNS_PUBLIC_RESOLVERS")); v == "off" || v == "false" || v == "0" {
+		return nil
+	}
+	out := make([]resolverResult, 0, len(publicResolvers))
+	for _, server := range publicResolvers {
+		got, err := lookupVia(ctx, server, host)
+		rr := resolverResult{Name: strings.TrimSuffix(server, ":53"), Addresses: got}
+		if err != nil {
+			rr.Error = "no answer"
+			var dnsErr *net.DNSError
+			if errors.As(err, &dnsErr) && dnsErr.IsNotFound {
+				rr.Error = "not found"
+			}
+		}
+		out = append(out, rr)
+	}
+	return out
+}
+
+// runDomainCheckOpts is runDomainCheck with refresh, which skips the short
+// result cache so a manual "Check now" always asks DNS again.
+func (rt *Router) runDomainCheckOpts(ctx context.Context, domain, expectedHost string, inferred, refresh bool) domainCheckResponse {
+	resp := domainCheckResponse{Domain: domain, ExpectedHost: expectedHost, HostInferred: inferred, CheckedAt: time.Now().UTC().Format(time.RFC3339)}
 	if expectedHost == "" {
 		resp.Status = domainCheckStatusUnconfigured
 		return resp
 	}
 
 	result, cached := rt.domainChecks.get(domain)
-	if !cached {
+	if !cached || refresh {
 		lookupCtx, cancel := context.WithTimeout(ctx, domainCheckLookupTimeout)
 		hosts, err := rt.lookupHost(lookupCtx, domain)
 		cancel()
 		result = domainCheckResult{resolvedHosts: hosts, resolved: err == nil && len(hosts) > 0, at: time.Now()}
 		rt.domainChecks.set(domain, result)
 	}
-
 	resp.ResolvedHosts = result.resolvedHosts
 	resp.Resolved = result.resolved
-	if !result.resolved {
-		resp.Status = domainCheckStatusNotResolving
-		return resp
-	}
 
-	// Cached the same way and under the same TTL as the domain lookup
-	// above, just keyed with a prefix no real domain can collide with
-	// (a bare hostname is never dot-free the way "expected:" itself
-	// is malformed as a domain). Without this, a hostname
-	// APP_PUBLIC_HOST (as opposed to an IP literal, which
-	// expectedIPs never calls lookupHost for at all) got one real,
-	// uncached DNS lookup on every single poll, defeating the whole
-	// point of the cache above for exactly the deployments where it
-	// matters most (a fronted/load-balanced control plane).
+	// Cached under a prefix no real domain can collide with, so a hostname
+	// APP_PUBLIC_HOST is not looked up again on every poll.
 	expectedCacheKey := "expected:" + expectedHost
 	expectedResult, expectedCached := rt.domainChecks.get(expectedCacheKey)
 	var expected []string
-	if expectedCached {
+	if expectedCached && !refresh {
 		expected = expectedResult.resolvedHosts
 	} else {
 		lookupCtx, cancel := context.WithTimeout(ctx, domainCheckLookupTimeout)
@@ -258,10 +317,35 @@ func (rt *Router) runDomainCheck(ctx context.Context, domain, expectedHost strin
 	}
 	resp.ExpectedIPv4, resp.ExpectedIPv6 = splitByFamily(expected)
 
-	if hostsOverlap(result.resolvedHosts, expected) {
+	switch {
+	case result.resolved && hostsOverlap(result.resolvedHosts, expected):
 		resp.Status = domainCheckStatusConnected
-	} else {
+		return resp
+	case result.resolved:
 		resp.Status = domainCheckStatusResolvesElsewhere
+	default:
+		resp.Status = domainCheckStatusNotResolving
+	}
+
+	// Not connected from this server's point of view: say what this server's
+	// resolver and public resolvers each answered, and report "propagating"
+	// when the public answer is already right.
+	local := resolverResult{Name: "this server", Addresses: result.resolvedHosts}
+	if !result.resolved {
+		local.Error = "not found"
+	}
+	resp.Resolvers = append(resp.Resolvers, local)
+	lookup := rt.publicLookup
+	if lookup == nil {
+		lookup = queryPublicResolvers
+	}
+	pubCtx, cancel := context.WithTimeout(ctx, 2*domainCheckLookupTimeout)
+	defer cancel()
+	for _, rr := range lookup(pubCtx, domain) {
+		resp.Resolvers = append(resp.Resolvers, rr)
+		if hostsOverlap(rr.Addresses, expected) {
+			resp.Status = domainCheckStatusPropagating
+		}
 	}
 	return resp
 }
@@ -292,7 +376,7 @@ func (rt *Router) handleCheckDomain(w http.ResponseWriter, r *http.Request) {
 	}
 
 	expectedHost, inferred := advertisedHost(r, rt.publicHost)
-	resp := rt.runDomainCheck(r.Context(), domain, expectedHost, inferred)
+	resp := rt.runDomainCheckOpts(r.Context(), domain, expectedHost, inferred, r.URL.Query().Get("refresh") == "true")
 	rt.enrichDomainCheck(r.Context(), &resp)
 	writeJSON(w, http.StatusOK, resp)
 }

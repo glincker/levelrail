@@ -180,7 +180,8 @@
       "notResolvingHint": "No DNS record found yet.",
       "elsewhereHint": "Resolves somewhere else: {{hosts}}.",
       "elsewhereHintNoHosts": "Resolves somewhere else.",
-      "privateHint": "This server is on a private address, so only DNS-01 can issue a certificate."
+      "privateHint": "This server is on a private address, so only DNS-01 can issue a certificate.",
+      "propagating": "Propagating"
     },
     "cert": {
       "none": "No certificate yet",
@@ -264,5 +265,12 @@
     "body": "Certificate authorities check ports 80 and 443, and this ingress listens on {{http}} and {{https}}. If a proxy such as Traefik or nginx owns those ports, let it handle HTTPS for this domain and turn real certificates off here. Otherwise give Levelrail ports 80 and 443, or use a DNS-01 provider.",
     "turnOff": "Let my proxy handle HTTPS",
     "turningOff": "Turning off..."
+  },
+  "dnsCheck": {
+    "checking": "Checking...",
+    "checkedAt": "Checked at {{time}}",
+    "noAnswer": "no answer",
+    "propagatingHelp": "Public DNS already points this domain at this server. This server's own resolver keeps a \"not found\" answer for a while (often up to 30 minutes), so it will connect on its own. Nothing is wrong.",
+    "notFoundHelp": "No resolver has this record yet. Check the record at your DNS provider (type, name, value) and give it a minute. A new record is usually visible within a few minutes."
   }
 }
