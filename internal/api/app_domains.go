@@ -75,6 +75,9 @@ func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if !rt.requireWildcardDNS01(w, r, append(slices.Clone(set), add...)) {
+		return
+	}
 
 	if env := strings.TrimSpace(req.Environment); env != "" {
 		rt.editAppEnvironmentDomains(w, r, name, env, req.Set, add, remove)
@@ -109,6 +112,8 @@ func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 			rt.recordAppEvent(r, ev)
 		}
 		rt.nudgeReconciler()
+		added, _ := sliceDiff(before, next)
+		rt.ensureWildcardRecords(r, added)
 	}
 	writeJSON(w, http.StatusOK, editDomainsResponse{App: name, Domains: next, Changed: changed})
 }

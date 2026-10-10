@@ -1037,6 +1037,25 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/apps/sessions/{id}/cutover/verify | AbilityWriteSensitive | handleAppImportCutoverVerify |
 | POST | /api/v1/migration/apps/sessions/{id}/items/{item}/route | AbilityWriteSensitive | handleRouteAppImport |
 | GET | /api/v1/migration/apps/sessions/{id}/receipt | AbilityRead | handleAppImportReceipt |
+| GET | /api/v1/dns/zones | AbilityRead | handleListDNSZones |
+| POST | /api/v1/dns/zones | AbilityRoot | handleCreateDNSZone |
+| GET | /api/v1/dns/zones/{zone} | AbilityRead | handleGetDNSZone |
+| DELETE | /api/v1/dns/zones/{zone} | AbilityRoot | handleDeleteDNSZone |
+| GET | /api/v1/dns/zones/{zone}/nameservers | AbilityRead | handleDNSZoneNameServers |
+| GET | /api/v1/dns/zones/{zone}/delegation | AbilityRead | handleDNSZoneDelegation |
+| GET | /api/v1/dns/zones/{zone}/discover | AbilityRead | handleDiscoverDNSZoneRecords |
+| GET | /api/v1/dns/zones/{zone}/records | AbilityRead | handleListDNSZoneRecords |
+| POST | /api/v1/dns/zones/{zone}/records | AbilityRoot | handleCreateDNSZoneRecord |
+| PUT | /api/v1/dns/zones/{zone}/records | AbilityRoot | handleUpdateDNSZoneRecord |
+| DELETE | /api/v1/dns/zones/{zone}/records | AbilityRoot | handleDeleteDNSZoneRecord |
+| POST | /api/v1/dns/zones/{zone}/records/import | AbilityRoot | handleImportDNSZoneRecords |
+| GET | /api/v1/dns/zones/{zone}/records/export | AbilityRead | handleExportDNSZoneRecords |
+| POST | /api/v1/dns/zones/{zone}/templates/{id} | AbilityRoot | handleApplyDNSTemplate |
+| GET | /api/v1/dns/templates | AbilityRead | handleListDNSTemplates |
+| GET | /api/v1/dns/check | AbilityRead | handleDNSCheck |
+| GET | /api/v1/dns/health-checks | AbilityRead | handleListDNSHealthChecks |
+| POST | /api/v1/dns/health-checks | AbilityRoot | handleCreateDNSHealthCheck |
+| DELETE | /api/v1/dns/health-checks/{id} | AbilityRoot | handleDeleteDNSHealthCheck |
 
 ## See also
 
