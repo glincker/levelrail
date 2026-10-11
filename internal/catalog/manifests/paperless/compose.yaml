@@ -1,0 +1,43 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  paperless:
+    image: paperlessngx/paperless-ngx:latest
+    ports:
+      - "8000"
+    environment:
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_PASSWORD}
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_USER}
+      PAPERLESS_REDIS: redis://redis:6379
+      PAPERLESS_SECRET_KEY: ${SERVICE_REALBASE64_64_PAPERLESS}
+      PAPERLESS_URL: ${SERVICE_URL_PAPERLESS}
+    volumes:
+      - paperless-data:/usr/src/paperless/data
+      - paperless-media:/usr/src/paperless/media
+      - paperless-export:/usr/src/paperless/export
+      - paperless-consume:/usr/src/paperless/consume
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      interval: 30s
+      retries: 5
+      test:
+        - CMD
+        - curl
+        - -fs
+        - -S
+        - --max-time
+        - "2"
+        - http://localhost:8000
+      timeout: 10s
+  redis:
+    image: redis:7.4
+    volumes:
+      - paperless-redis:/data
+    healthcheck:
+      retries: 3
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 10s

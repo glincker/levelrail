@@ -1,0 +1,40 @@
+id: vvveb-with-mariadb
+name: Vvveb With Mariadb
+description: Powerful and easy to use cms to build websites, blogs or ecommerce stores.
+icon: app-window
+category: Applications
+documentation_url: https://docs.vvveb.com
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/vvveb-with-mariadb.yaml
+images:
+  - service: mariadb
+    image: mariadb:11
+  - service: vvveb
+    image: vvveb/vvvebcms:latest
+env:
+  - key: ROOT_PASSWORD
+    label: Root Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: VVVEB_USER
+    label: Vvveb User
+    description: Generated when the app is installed.
+    generate: user
+  - key: VVVEB_PASSWORD
+    label: Vvveb Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: vvveb
+    port: 80
+    description: Public address of vvveb.
+healthcheck:
+  service: vvveb
+  port: 80
+  path: /

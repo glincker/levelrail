@@ -1,0 +1,25 @@
+id: newt-pangolin
+name: Newt Pangolin
+description: Pangolin tunnels your services to the internet so you can access anything from anywhere.
+icon: stack
+category: Infrastructure
+documentation_url: https://docs.digpangolin.com/manage/sites/install-site
+recommended_memory_bytes: 268435456
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/newt-pangolin.yaml
+images:
+  - service: newt
+    image: fosrl/newt:latest
+env:
+  - key: NEWT_ID
+    label: Newt Id
+    description: Required.
+    required: true
+  - key: NEWT_SECRET
+    label: Newt Secret
+    description: Required.
+    required: true
+    secret: true

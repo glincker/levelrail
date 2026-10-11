@@ -1,0 +1,21 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  emqx:
+    image: emqx/emqx-enterprise:6.2.0
+    ports:
+      - "18083"
+    environment:
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_PASSWORD}
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+    healthcheck:
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      test:
+        - CMD
+        - /opt/emqx/bin/emqx
+        - ctl
+        - status
+      timeout: 30s

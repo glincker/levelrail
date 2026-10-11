@@ -1,0 +1,40 @@
+id: uptime-kuma-with-mariadb
+name: Uptime Kuma With Mariadb
+description: Uptime Kuma is a monitoring tool for tracking the status and performance of your applications in real-time.
+icon: chart-line
+category: Monitoring
+documentation_url: https://github.com/louislam/uptime-kuma?tab=readme-ov-file
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/uptime-kuma-with-mariadb.yaml
+images:
+  - service: mariadb
+    image: mariadb:11
+  - service: uptime-kuma
+    image: louislam/uptime-kuma:2
+env:
+  - key: MARIADB_USER
+    label: Mariadb User
+    description: Generated when the app is installed.
+    generate: user
+  - key: MARIADB_PASSWORD
+    label: Mariadb Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: ROOT_PASSWORD
+    label: Root Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: uptime-kuma
+    port: 3001
+    description: Public address of uptime-kuma.
+healthcheck:
+  service: uptime-kuma
+  port: 3001
+  path: /

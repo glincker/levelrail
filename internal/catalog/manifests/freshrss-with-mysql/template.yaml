@@ -1,0 +1,40 @@
+id: freshrss-with-mysql
+name: Freshrss With Mysql
+description: A free, self-hostable feed aggregator.
+icon: check-square
+category: Productivity
+documentation_url: https://freshrss.org/index.html
+recommended_memory_bytes: 805306368
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/freshrss-with-mysql.yaml
+images:
+  - service: freshrss
+    image: freshrss/freshrss:latest
+  - service: freshrss-db
+    image: mysql:8
+env:
+  - key: MYSQL_USER
+    label: Mysql User
+    description: Generated when the app is installed.
+    generate: user
+  - key: MYSQL_PASSWORD
+    label: Mysql Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: ROOT_PASSWORD
+    label: Root Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: freshrss
+    port: 80
+    description: Public address of freshrss.
+healthcheck:
+  service: freshrss
+  port: 80
+  path: /

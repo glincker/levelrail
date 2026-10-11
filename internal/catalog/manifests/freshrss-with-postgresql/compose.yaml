@@ -1,0 +1,40 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  freshrss:
+    image: freshrss/freshrss:latest
+    ports:
+      - "80"
+    environment:
+      CRON_MIN: 1,31
+      POSTGRES_DB: freshrss
+      POSTGRES_HOST: freshrss-db
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRES_USER: ${POSTGRESQL_USER}
+    volumes:
+      - freshrss-data:/var/www/FreshRSS/data
+      - freshrss-extensions:/var/www/FreshRSS/extensions
+    depends_on:
+      freshrss-db:
+        condition: service_healthy
+    healthcheck:
+      interval: 5s
+      retries: 3
+      test:
+        - CMD-SHELL
+        - curl -fsS -o /dev/null http://127.0.0.1:80/
+      timeout: 20s
+  freshrss-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: freshrss
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRES_USER: ${POSTGRESQL_USER}
+    volumes:
+      - freshrss-postgresql-data:/var/lib/postgresql/data
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+      timeout: 20s

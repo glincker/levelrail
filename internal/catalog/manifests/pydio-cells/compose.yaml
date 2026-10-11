@@ -1,0 +1,37 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  cells:
+    image: pydio/cells:4.4
+    ports:
+      - "8080"
+    environment:
+      CELLS_SITE_EXTERNAL: ${SERVICE_URL_CELLS}
+      CELLS_SITE_NO_TLS: "1"
+    volumes:
+      - cells_data:/var/cells
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 60s
+      test:
+        - CMD-SHELL
+        - curl -fsS -o /dev/null http://127.0.0.1:8080/
+      timeout: 10s
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: cells
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQLROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      interval: 10s
+      retries: 5
+      test:
+        - CMD
+        - healthcheck.sh
+        - --connect
+        - --innodb_initialized
+      timeout: 20s

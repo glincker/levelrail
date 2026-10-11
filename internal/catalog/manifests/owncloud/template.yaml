@@ -1,0 +1,51 @@
+id: owncloud
+name: Owncloud
+description: OwnCloud with Open Web UI integrates file management with a powerful, user-friendly interface.
+icon: hard-drives
+category: Storage
+documentation_url: https://owncloud.com/docs-guides/
+recommended_memory_bytes: 671088640
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/owncloud.yaml
+images:
+  - service: mariadb
+    image: mariadb:latest
+  - service: owncloud
+    image: owncloud/server:latest
+  - service: redis
+    image: redis:6
+env:
+  - key: MARIADBROOT_PASSWORD
+    label: Mariadbroot Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: MARIADB_USER
+    label: Mariadb User
+    description: Generated when the app is installed.
+    generate: user
+  - key: MARIADB_PASSWORD
+    label: Mariadb Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: OWNCLOUD_USER
+    label: Owncloud User
+    description: Generated when the app is installed.
+    generate: user
+  - key: OWNCLOUD_PASSWORD
+    label: Owncloud Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: owncloud
+    port: 8080
+    description: Public address of owncloud.
+healthcheck:
+  service: owncloud
+  port: 8080
+  path: /

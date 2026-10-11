@@ -1,0 +1,31 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  imgproxy:
+    image: darthsim/imgproxy:latest
+    environment:
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+      IMGPROXY_JPEG_PROGRESSIVE: "true"
+      IMGPROXY_USE_ETAG: "true"
+    healthcheck:
+      interval: 2s
+      retries: 5
+      test:
+        - CMD
+        - imgproxy
+        - health
+      timeout: 10s
+  next-image-transformation:
+    image: ghcr.io/coollabsio/next-image-transformation:latest
+    ports:
+      - "3000"
+    environment:
+      ALLOWED_REMOTE_DOMAINS: '*'
+      IMGPROXY_URL: http://imgproxy:8080
+      NODE_ENV: production
+    healthcheck:
+      interval: 2s
+      retries: 5
+      test:
+        - CMD-SHELL
+        - wget -qO- http://127.0.0.1:3000/health || exit 1
+      timeout: 10s

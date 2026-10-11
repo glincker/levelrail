@@ -1,0 +1,60 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: yamtrack-db
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRES_USER: ${POSTGRESQL_USER}
+    volumes:
+      - yamtrack_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+      timeout: 20s
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - yamtrack_redis_data:/data
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 20s
+  yamtrack:
+    image: ghcr.io/fuzzygrim/yamtrack:latest
+    ports:
+      - "8000"
+    environment:
+      DB_HOST: postgres
+      DB_NAME: yamtrack-db
+      DB_PASSWORD: ${POSTGRESQL_PASSWORD}
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRESQL_USER}
+      REDIS_URL: redis://redis:6379
+      REGISTRATION: "true"
+      SECRET: ${SECRET_PASSWORD}
+      TZ: Europe/Berlin
+      URLS: ${SERVICE_URL_YAMTRACK}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD
+        - wget
+        - --no-verbose
+        - --tries=1
+        - --spider
+        - http://127.0.0.1:8000/health/
+      timeout: 20s

@@ -1,0 +1,30 @@
+id: jean
+name: Jean
+description: Open-source desktop and server client for orchestrating AI coding agents.
+icon: code
+category: Developer Tools
+documentation_url: https://github.com/coollabsio/jean/blob/main/docs/headless-server.md
+recommended_memory_bytes: 268435456
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/jean.yaml
+images:
+  - service: jean
+    image: ghcr.io/coollabsio/jean-server:latest
+env:
+  - key: JEAN_PASSWORD
+    label: Jean Password
+    description: Generated when the app is installed.
+    generate: password
+    length: 64
+    secret: true
+domains:
+  - service: jean
+    port: 3456
+    description: Public address of jean.
+healthcheck:
+  service: jean
+  port: 3456
+  path: /

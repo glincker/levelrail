@@ -1,0 +1,45 @@
+id: inngest
+name: Inngest
+description: Durable workflow engine for background jobs, queues and scheduled tasks.
+icon: lightning
+category: Automation
+documentation_url: https://www.inngest.com/docs/self-hosting
+recommended_memory_bytes: 671088640
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/inngest.yaml
+images:
+  - service: inngest
+    image: inngest/inngest:v1.27.0
+  - service: postgres
+    image: postgres:17
+  - service: redis
+    image: redis:7-alpine
+env:
+  - key: EVENTKEY_HEX
+    label: Eventkey Hex
+    description: Generated when the app is installed.
+    generate: hex
+    length: 32
+    secret: true
+  - key: SIGNINGKEY_HEX
+    label: Signingkey Hex
+    description: Generated when the app is installed.
+    generate: hex
+    length: 32
+    secret: true
+  - key: POSTGRES_PASSWORD
+    label: Postgres Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: inngest
+    port: 8288
+    description: Public address of inngest.
+healthcheck:
+  service: inngest
+  port: 8288
+  path: /

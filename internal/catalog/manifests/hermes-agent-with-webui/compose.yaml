@@ -1,0 +1,49 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  hermes-agent:
+    image: nousresearch/hermes-agent@sha256:2f1f2f1725e5dc9a61cf6a2dea5aca52a776ec4d022cb29679e6aa3ff303e77a
+    command: gateway run
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      HERMES_GID: "1000"
+      HERMES_HOME: /home/hermes/.hermes
+      HERMES_UID: "1000"
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    volumes:
+      - hermes-home:/home/hermes/.hermes
+      - hermes-agent-src:/opt/hermes
+    healthcheck:
+      interval: 10s
+      retries: 5
+      test:
+        - CMD-SHELL
+        - test -d /home/hermes/.hermes || exit 1
+      timeout: 5s
+  hermes-webui:
+    image: ghcr.io/nesquena/hermes-webui:0.51.92
+    ports:
+      - "8787"
+    environment:
+      HERMES_WEBUI_HOST: 0.0.0.0
+      HERMES_WEBUI_PASSWORD: ${HERMESWEBUI_PASSWORD}
+      HERMES_WEBUI_PORT: "8787"
+      HERMES_WEBUI_STATE_DIR: /home/hermeswebui/.hermes/webui
+      WANTED_GID: "1000"
+      WANTED_UID: "1000"
+    volumes:
+      - hermes-home:/home/hermeswebui/.hermes
+      - hermes-agent-src:/home/hermeswebui/.hermes/hermes-agent:ro
+      - hermes-workspace:/workspace
+    depends_on:
+      - hermes-agent
+    healthcheck:
+      interval: 30s
+      retries: 3
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://127.0.0.1:8787/health
+      timeout: 5s

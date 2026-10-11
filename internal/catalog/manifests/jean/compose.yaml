@@ -1,0 +1,26 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  jean:
+    image: ghcr.io/coollabsio/jean-server:latest
+    ports:
+      - "3456"
+    environment:
+      JEAN_ALLOW_NATIVE_OPEN: "0"
+      JEAN_ALLOW_UNSAFE_NO_TOKEN: "0"
+      JEAN_ALLOWED_ORIGINS: ""
+      JEAN_DATA_DIR: /home/jean/.local/share/com.jean.desktop
+      JEAN_HEADLESS: "1"
+      JEAN_HOST: 0.0.0.0
+      JEAN_NO_TOKEN: "0"
+      JEAN_PORT: "3456"
+      JEAN_TOKEN: ${JEAN_PASSWORD}
+    volumes:
+      - jean-data:/home/jean/.local/share/com.jean.desktop
+    healthcheck:
+      interval: 10s
+      retries: 12
+      start_period: 15s
+      test:
+        - CMD-SHELL
+        - curl -fsS http://127.0.0.1:3456/readyz >/dev/null || exit 1
+      timeout: 5s

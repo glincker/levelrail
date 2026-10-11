@@ -1,0 +1,29 @@
+id: emqx-enterprise
+name: Emqx Enterprise
+description: Open-source MQTT broker for IoT, IIoT, and connected vehicles.
+icon: stack
+category: Infrastructure
+documentation_url: https://www.emqx.io/docs/en/latest/deploy/install-docker.html
+recommended_memory_bytes: 268435456
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/emqx-enterprise.yaml
+images:
+  - service: emqx
+    image: emqx/emqx-enterprise:6.2.0
+env:
+  - key: EMQX_PASSWORD
+    label: Emqx Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: emqx
+    port: 18083
+    description: Public address of emqx.
+healthcheck:
+  service: emqx
+  port: 18083
+  path: /

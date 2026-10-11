@@ -1,0 +1,17 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  wordpress:
+    image: wordpress:latest
+    ports:
+      - "80"
+    volumes:
+      - wordpress-files:/var/www/html
+    healthcheck:
+      interval: 2s
+      retries: 10
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://127.0.0.1
+      timeout: 10s

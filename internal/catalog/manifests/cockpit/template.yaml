@@ -1,0 +1,23 @@
+id: cockpit
+name: Cockpit
+description: Cockpit is a headless content platform that is lightweight, fast and ready for takeoff.
+icon: app-window
+category: Applications
+documentation_url: https://getcockpit.com/documentation/
+recommended_memory_bytes: 268435456
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/cockpit.yaml
+images:
+  - service: cockpit
+    image: cockpithq/cockpit:core-latest
+domains:
+  - service: cockpit
+    port: 80
+    description: Public address of cockpit.
+healthcheck:
+  service: cockpit
+  port: 80
+  path: /

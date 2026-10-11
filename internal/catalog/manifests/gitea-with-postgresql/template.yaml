@@ -1,0 +1,39 @@
+id: gitea-with-postgresql
+name: Gitea With Postgresql
+description: Gitea is a self-hosted, lightweight Git service, offering version control, collaboration, and code hosting.
+icon: code
+category: Developer Tools
+documentation_url: https://docs.gitea.com
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/gitea-with-postgresql.yaml
+images:
+  - service: gitea
+    image: gitea/gitea:latest
+  - service: postgresql
+    image: postgres:16-alpine
+env:
+  - key: POSTGRESQL_USER
+    label: Postgresql User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRESQL_PASSWORD
+    label: Postgresql Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: POSTGRESQL_DATABASE
+    label: Postgresql Database
+    description: Defaults to gitea.
+    default: gitea
+domains:
+  - service: gitea
+    port: 3000
+    description: Public address of gitea.
+healthcheck:
+  service: gitea
+  port: 3000
+  path: /

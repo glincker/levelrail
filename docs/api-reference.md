@@ -207,7 +207,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 160 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 161 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -379,6 +379,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/placement | AbilityRoot | handleSetPlacement |
 | GET | /api/v1/apps/{name}/investigate | AbilityRead | handleInvestigate |
 | GET | /api/v1/apps/{name}/failure-context | AbilityRead | handleFailureContext |
+| GET | /api/v1/service-templates/updates | AbilityRead | handleServiceTemplateUpdates |
 
 :::
 

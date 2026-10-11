@@ -1,0 +1,40 @@
+id: wordpress-with-mariadb
+name: Wordpress With Mariadb
+description: WordPress is open source software you can use to create a beautiful website, blog, or app.
+icon: app-window
+category: Applications
+documentation_url: https://wordpress.org
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/wordpress-with-mariadb.yaml
+images:
+  - service: mariadb
+    image: mariadb:11
+  - service: wordpress
+    image: wordpress:latest
+env:
+  - key: ROOT_PASSWORD
+    label: Root Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: WORDPRESS_USER
+    label: Wordpress User
+    description: Generated when the app is installed.
+    generate: user
+  - key: WORDPRESS_PASSWORD
+    label: Wordpress Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: wordpress
+    port: 80
+    description: Public address of wordpress.
+healthcheck:
+  service: wordpress
+  port: 80
+  path: /

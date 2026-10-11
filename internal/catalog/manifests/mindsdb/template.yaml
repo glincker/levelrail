@@ -1,0 +1,52 @@
+id: mindsdb
+name: Mindsdb
+description: MindsDB is the platform for building AI from enterprise data, enabling smarter organizations.
+icon: sparkle
+category: AI
+documentation_url: https://docs.mindsdb.com/what-is-mindsdb
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/mindsdb.yaml
+images:
+  - service: mindsdb
+    image: mindsdb/mindsdb:latest
+  - service: postgresql
+    image: postgres:16-alpine
+env:
+  - key: POSTGRES_USER
+    label: Postgres User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRES_PASSWORD
+    label: Postgres Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: OPENAI_API_KEY
+    label: Openai Api Key
+    description: Optional. Leave empty to use the application default.
+    secret: true
+  - key: LANGFUSE_HOST
+    label: Langfuse Host
+    description: Optional. Leave empty to use the application default.
+  - key: LANGFUSE_PUBLIC_KEY
+    label: Langfuse Public Key
+    description: Optional. Leave empty to use the application default.
+    secret: true
+  - key: LANGFUSE_SECRET_KEY
+    label: Langfuse Secret Key
+    description: Generated when the app is installed.
+    generate: password
+    length: 32
+    secret: true
+domains:
+  - service: mindsdb
+    port: 47334
+    description: Public address of mindsdb.
+healthcheck:
+  service: mindsdb
+  port: 47334
+  path: /

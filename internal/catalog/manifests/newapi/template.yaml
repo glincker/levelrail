@@ -1,0 +1,43 @@
+id: newapi
+name: Newapi
+description: The next-generation LLM gateway and AI asset management system supports multiple languages.
+icon: code
+category: Developer Tools
+documentation_url: https://docs.newapi.pro/en/getting-started/
+recommended_memory_bytes: 671088640
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/newapi.yaml
+images:
+  - service: new-api
+    image: calciumion/new-api:v0.9.2.0
+  - service: postgresql
+    image: postgres:16-alpine
+  - service: redis
+    image: redis:7-alpine
+env:
+  - key: POSTGRES_USER
+    label: Postgres User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRES_PASSWORD
+    label: Postgres Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: SESSION_SECRET_BASE64
+    label: Session Secret Base64
+    description: Generated when the app is installed.
+    generate: base64
+    length: 64
+    secret: true
+domains:
+  - service: new-api
+    port: 3000
+    description: Public address of new-api.
+healthcheck:
+  service: new-api
+  port: 3000
+  path: /

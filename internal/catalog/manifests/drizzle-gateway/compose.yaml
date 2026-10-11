@@ -1,0 +1,19 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  drizzle-gateway:
+    image: ghcr.io/drizzle-team/gateway:latest
+    ports:
+      - "4983"
+    environment:
+      MASTERPASS: ${DRIZZLE_PASSWORD}
+      STORE_PATH: /app
+    volumes:
+      - drizzle-gateway-data:/app
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 60s
+      test:
+        - CMD-SHELL
+        - curl -fsS -o /dev/null http://127.0.0.1:4983/
+      timeout: 10s

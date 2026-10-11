@@ -1,0 +1,25 @@
+id: next-image-transformation
+name: Next Image Transformation
+description: Drop-in replacement for Vercel's Nextjs image optimization service.
+icon: play-circle
+category: Media
+documentation_url: https://github.com/coollabsio/next-image-transformation
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/next-image-transformation.yaml
+images:
+  - service: imgproxy
+    image: darthsim/imgproxy:latest
+  - service: next-image-transformation
+    image: ghcr.io/coollabsio/next-image-transformation:latest
+domains:
+  - service: next-image-transformation
+    port: 3000
+    description: Public address of next-image-transformation.
+healthcheck:
+  service: next-image-transformation
+  port: 3000
+  path: /

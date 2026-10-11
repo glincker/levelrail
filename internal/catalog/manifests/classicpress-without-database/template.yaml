@@ -1,0 +1,23 @@
+id: classicpress-without-database
+name: Classicpress Without Database
+description: A lightweight, stable, instantly familiar free open-source content management system, based on WordPress without the block editor (Gutenberg).
+icon: app-window
+category: Applications
+documentation_url: https://www.classicpress.net/
+recommended_memory_bytes: 268435456
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/classicpress-without-database.yaml
+images:
+  - service: classicpress
+    image: classicpress/classicpress:latest
+domains:
+  - service: classicpress
+    port: 80
+    description: Public address of classicpress.
+healthcheck:
+  service: classicpress
+  port: 80
+  path: /

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"text/tabwriter"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runTemplates dispatches "templates <verb> [flags]" to one of
@@ -41,6 +43,8 @@ func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runTemplatesInstall(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runTemplatesDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "updates":
+		return runTemplatesUpdates(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown templates subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, templatesUsage(prog))
@@ -50,11 +54,12 @@ func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEn
 
 func templatesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s templates list [--custom] [flags]               browse the curated service catalog, or --custom for your own saved templates
+  %[1]s templates list [--search TEXT] [--category NAME] [--installable] [--custom] [flags]   browse the curated service catalog, or --custom for your own saved templates
   %[1]s templates get <id> [flags]                       show one entry (built-in or custom), including its full compose.yaml
   %[1]s templates deploy <id> [--name NAME] [flags]     deploy a template's compose.yaml as an app, built-in or custom
   %[1]s templates install <id> [--name NAME] [--env K=V] [--domain SVC=HOST]   install a manifest template with its settings
   %[1]s templates delete <id> [flags]                    delete a custom template (see "apps save-as-template")
+  %[1]s templates updates [flags]                        report newer upstream image tags for apps installed from templates (read-only)
 
 "deploy" defaults the app name to <id>; pass --name to deploy under a
 different name (e.g. deploying the same template twice). A custom
@@ -68,8 +73,12 @@ Run "%[1]s templates <subcommand> -h" for a subcommand's own flags.
 
 func runTemplatesList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "templates list", "print the result as a JSON array to stdout and nothing else", stderr)
-	var custom bool
+	var custom, installable bool
+	var search, category string
 	fs.BoolVar(&custom, "custom", false, "list your own saved templates (apps save-as-template) instead of the built-in catalog")
+	fs.StringVar(&search, "search", "", "only templates whose id, name, slogan or category contains this text")
+	fs.StringVar(&category, "category", "", "only templates in this category (e.g. Monitoring)")
+	fs.BoolVar(&installable, "installable", false, "only templates with an install form (settings and domains)")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s templates list [--custom] [flags]\n\nLists every entry in the curated service catalog, without each entry's\ncompose body (see \"templates get\"). --custom lists your own saved\ntemplates instead.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -90,7 +99,7 @@ func runTemplatesList(prog string, args []string, stdout, stderr io.Writer, look
 		return writeScheduledTaskResult(stdout, stderr, of, result, func() { printCustomTemplatesTable(stdout, result) })
 	}
 
-	result, err := client.ListServiceTemplates(context.Background())
+	result, err := client.SearchServiceTemplates(context.Background(), apiclient.ServiceTemplateFilter{Search: search, Category: category, Installable: installable})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list service templates: %w", err))
 	}
@@ -103,9 +112,13 @@ func printTemplatesTable(out io.Writer, templates []serviceTemplateListItem) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tRAM\tGPU\tSLOGAN")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tINSTALL\tRAM\tGPU\tSLOGAN")
 	for _, t := range templates {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name, t.Category, formatRecommendedMemory(t.RecommendedMemoryBytes), gpuColumn(t.RequiresGPU), t.Slogan)
+		install := "-"
+		if t.Installable {
+			install = "form"
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name, t.Category, install, formatRecommendedMemory(t.RecommendedMemoryBytes), gpuColumn(t.RequiresGPU), t.Slogan)
 	}
 	_ = tw.Flush()
 }
@@ -158,6 +171,7 @@ func printTemplateDetailHuman(out io.Writer, t serviceTemplateDetail) {
 	if t.RecommendedMemoryBytes > 0 {
 		_, _ = fmt.Fprintf(out, "recommended_ram:   %s\n", formatRecommendedMemory(t.RecommendedMemoryBytes))
 	}
+	printTemplateInstallInfo(out, t)
 	_, _ = fmt.Fprintln(out, "compose:")
 	_, _ = fmt.Fprintln(out, t.Compose)
 }

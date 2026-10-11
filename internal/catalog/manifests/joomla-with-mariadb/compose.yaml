@@ -1,0 +1,43 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  joomla:
+    image: joomla:latest
+    ports:
+      - "80"
+    environment:
+      JOOMLA_DB_HOST: mariadb
+      JOOMLA_DB_NAME: joomla-db
+      JOOMLA_DB_PASSWORD: ${JOOMLA_PASSWORD}
+      JOOMLA_DB_USER: ${JOOMLA_USER}
+    volumes:
+      - joomla_data:/var/www/html
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      interval: 2s
+      retries: 10
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://127.0.0.1
+      timeout: 10s
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: joomla-db
+      MYSQL_PASSWORD: ${JOOMLA_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${ROOT_PASSWORD}
+      MYSQL_USER: ${JOOMLA_USER}
+    volumes:
+      - joomla_mariadb_data:/var/lib/mysql
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD
+        - healthcheck.sh
+        - --connect
+        - --innodb_initialized
+      timeout: 20s

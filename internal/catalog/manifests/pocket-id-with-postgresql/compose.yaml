@@ -1,0 +1,55 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  pocket-id:
+    image: ghcr.io/pocket-id/pocket-id:v1.13
+    ports:
+      - "1411"
+    environment:
+      APP_URL: ${SERVICE_URL_POCKET_ID}
+      DB_CONNECTION_STRING: postgresql://${POSTGRESQL_USER}:${POSTGRESQL_PASSWORD}@postgresql:5432/pocketid
+      DB_PROVIDER: postgres
+      EMAIL_API_KEY_EXPIRATION_ENABLED: "false"
+      EMAIL_LOGIN_NOTIFICATION_ENABLED: "false"
+      EMAIL_ONE_TIME_ACCESS_AS_ADMIN_ENABLED: "false"
+      ENCRYPTION_KEY: ${POCKETID_PASSWORD}
+      KEYS_STORAGE: database
+      MAXMIND_LICENSE_KEY: ${MAXMIND_LICENSE_KEY}
+      PGID: "1000"
+      PUID: "1000"
+      SMTP_FROM: ${SMTP_FROM}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_PORT: "587"
+      SMTP_SKIP_CERT_VERIFY: "false"
+      SMTP_TLS: starttls
+      SMTP_USER: ${SMTP_USER}
+      TRUST_PROXY: "true"
+    volumes:
+      - pocket-id-data:/app/data
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      test:
+        - CMD
+        - /app/pocket-id
+        - healthcheck
+      timeout: 5s
+  postgresql:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: pocketid
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRES_USER: ${POSTGRESQL_USER}
+    volumes:
+      - pocket-id-postgresql-data:/var/lib/postgresql/data
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+      timeout: 20s

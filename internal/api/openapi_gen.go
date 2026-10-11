@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 954 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 955 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -248,6 +248,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/deploys/failed", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListFailedDeploys", Description: ""},
 	{Method: "POST", Path: "/api/v1/git/branches", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListGitBranches", Description: "Branch listing for an arbitrary public git remote (handleListGitBranches's own doc comment): not scoped to an existing app, since the create-app- from-git wizard needs this before an app exists to attach a build to. AbilityDeploy, the same tier the build trigger above requires: listing what a repo could be built from is a strict subset of actually triggering that build."},
 	{Method: "GET", Path: "/api/v1/service-templates", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListServiceTemplates", Description: "Service template catalog (service_templates.go, ADR 015): read-only, static, served straight from internal/catalog.Templates, no store involved. AbilityRead like every other passive view."},
+	{Method: "GET", Path: "/api/v1/service-templates/updates", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleServiceTemplateUpdates", Description: ""},
 	{Method: "GET", Path: "/api/v1/service-templates/{id}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetServiceTemplate", Description: ""},
 	{Method: "POST", Path: "/api/v1/service-templates/{id}/deploy", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeployServiceTemplateNow", Description: "One-click template deploy (handleDeployServiceTemplateNow): not scoped to an existing app (the app doesn't exist until this request creates it), same \"no resource to scope to yet\" shape as POST /api/v1/git/branches and POST /api/v1/build/detect below. AbilityDeploy, matching POST /api/v1/apps/{name}/compose above, since deployComposeBody is the same create-and-deploy core."},
 	{Method: "POST", Path: "/api/v1/service-templates/{id}/install", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleInstallServiceTemplate", Description: ""},

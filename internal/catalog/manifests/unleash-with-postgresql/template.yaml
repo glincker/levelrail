@@ -1,0 +1,40 @@
+id: unleash-with-postgresql
+name: Unleash With Postgresql
+description: Open source feature flag management for enterprises.
+icon: code
+category: Developer Tools
+documentation_url: https://docs.getunleash.io
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/unleash-with-postgresql.yaml
+images:
+  - service: postgres
+    image: postgres:15
+  - service: unleash
+    image: unleashorg/unleash-server:latest
+env:
+  - key: POSTGRES_USER
+    label: Postgres User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRES_PASSWORD
+    label: Postgres Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: UNLEASH_PASSWORD
+    label: Unleash Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: unleash
+    port: 4242
+    description: Public address of unleash.
+healthcheck:
+  service: unleash
+  port: 4242
+  path: /

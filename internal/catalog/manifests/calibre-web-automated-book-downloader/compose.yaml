@@ -1,0 +1,49 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  calibre-web-automated:
+    image: crocodilestick/calibre-web-automated:latest
+    ports:
+      - "8083"
+    environment:
+      NETWORK_SHARE_MODE: "false"
+      PGID: "1000"
+      PUID: "1000"
+      TZ: UTC
+    volumes:
+      - cwa-config:/config
+      - cwa-book-ingest:/cwa-book-ingest
+      - calibre-library:/calibre-library
+      - calibre-plugins:/config/.config/calibre/plugins
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      test:
+        - CMD-SHELL
+        - curl -fs http://localhost:8083 || exit 1
+      timeout: 10s
+  calibre-web-downloader:
+    image: ghcr.io/calibrain/calibre-web-automated-book-downloader:latest
+    ports:
+      - "8084"
+    environment:
+      APP_ENV: prod
+      BOOK_LANGUAGE: en
+      CWA_DB_PATH: /cwa-config/app.db
+      FLASK_PORT: "8084"
+      GID: "100"
+      LOG_LEVEL: info
+      TZ: America/New_York
+      UID: "1000"
+      USE_BOOK_TITLE: "true"
+    volumes:
+      - cwa-book-ingest:/cwa-book-ingest
+      - cwa-config:/cwa-config
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 60s
+      test:
+        - CMD-SHELL
+        - curl -fsS -o /dev/null http://127.0.0.1:8084/
+      timeout: 10s

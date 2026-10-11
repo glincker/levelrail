@@ -1,0 +1,60 @@
+id: plunk
+name: Plunk
+description: Plunk, The Open-Source Email Platform for AWS
+icon: chat-circle
+category: Communication
+documentation_url: https://docs.useplunk.com/getting-started/introduction
+recommended_memory_bytes: 671088640
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/plunk.yaml
+images:
+  - service: plunk
+    image: driaug/plunk:latest
+  - service: postgresql
+    image: postgres:16-alpine
+  - service: redis
+    image: redis:7.4-alpine
+env:
+  - key: POSTGRES_USER
+    label: Postgres User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRES_PASSWORD
+    label: Postgres Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: JWTSECRET_PASSWORD
+    label: Jwtsecret Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: AWS_REGION
+    label: Aws Region
+    description: Required.
+    required: true
+  - key: AWS_ACCESS_KEY_ID
+    label: Aws Access Key Id
+    description: Required.
+    required: true
+    secret: true
+  - key: AWS_SECRET_ACCESS_KEY
+    label: Aws Secret Access Key
+    description: Required.
+    required: true
+    secret: true
+  - key: AWS_SES_CONFIGURATION_SET
+    label: Aws Ses Configuration Set
+    description: Required.
+    required: true
+domains:
+  - service: plunk
+    port: 3000
+    description: Public address of plunk.
+healthcheck:
+  service: plunk
+  port: 3000
+  path: /

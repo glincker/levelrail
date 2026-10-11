@@ -1,0 +1,26 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  mage-ai:
+    image: mageai/mageai:0.9.78
+    restart: unless-stopped
+    command: mage start default_project
+    ports:
+      - "6789"
+    environment:
+      ENV: production
+      PROJECT_NAME: default_project
+      USER_CODE_PATH: /home/src/default_project
+    volumes:
+      - mageai_data:/home/src/
+    healthcheck:
+      interval: 30s
+      retries: 5
+      test:
+        - CMD
+        - curl
+        - -s
+        - -f
+        - -o
+        - /dev/null
+        - http://127.0.0.1:6789
+      timeout: 10s

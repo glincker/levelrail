@@ -160,6 +160,27 @@ func (m Manifest) validateRender() []error {
 	if m.Healthcheck != nil && !services[m.Healthcheck.Service] {
 		errs = append(errs, fmt.Errorf("healthcheck names service %q, which the compose file does not declare", m.Healthcheck.Service))
 	}
+	return append(errs, m.validateImages()...)
+}
+
+func (m Manifest) validateImages() []error {
+	if len(m.Images) == 0 {
+		return nil
+	}
+	f, err := compose.Parse([]byte(m.Compose))
+	if err != nil {
+		return []error{err}
+	}
+	var errs []error
+	for _, im := range m.Images {
+		svc, ok := f.Services[im.Service]
+		switch {
+		case !ok:
+			errs = append(errs, fmt.Errorf("images names service %q, which the compose file does not declare", im.Service))
+		case svc.Image != im.Image:
+			errs = append(errs, fmt.Errorf("images records %q for service %q but the compose file uses %q", im.Image, im.Service, svc.Image))
+		}
+	}
 	return errs
 }
 

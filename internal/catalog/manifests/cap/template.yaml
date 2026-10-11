@@ -1,0 +1,82 @@
+id: cap
+name: Cap
+description: Cap is the open source alternative to Loom. Lightweight, powerful, and cross-platform. Record and share in seconds.
+icon: play-circle
+category: Media
+documentation_url: https://cap.so
+recommended_memory_bytes: 805306368
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/cap.yaml
+images:
+  - service: cap-db
+    image: mysql:8.0
+  - service: cap-web
+    image: ghcr.io/capsoftware/cap-web:latest
+env:
+  - key: MYSQL_USER
+    label: Mysql User
+    description: Generated when the app is installed.
+    generate: user
+  - key: MYSQL_PASSWORD
+    label: Mysql Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: MYSQLROOT_PASSWORD
+    label: Mysqlroot Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: DATABASEENCRYPTIONKEY_PASSWORD
+    label: Databaseencryptionkey Password
+    description: Generated when the app is installed.
+    generate: password
+    length: 64
+    secret: true
+  - key: NEXTAUTHSECRET_PASSWORD
+    label: Nextauthsecret Password
+    description: Generated when the app is installed.
+    generate: password
+    length: 64
+    secret: true
+  - key: CAP_AWS_ACCESS_KEY
+    label: Cap Aws Access Key
+    description: Required.
+    required: true
+    secret: true
+  - key: CAP_AWS_SECRET_KEY
+    label: Cap Aws Secret Key
+    description: Required.
+    required: true
+    secret: true
+  - key: CAP_AWS_BUCKET
+    label: Cap Aws Bucket
+    description: Required.
+    required: true
+  - key: CAP_AWS_REGION
+    label: Cap Aws Region
+    description: Required.
+    required: true
+  - key: S3_PUBLIC_ENDPOINT
+    label: S3 Public Endpoint
+    description: Required.
+    required: true
+  - key: S3_INTERNAL_ENDPOINT
+    label: S3 Internal Endpoint
+    description: Required.
+    required: true
+  - key: CAP_AWS_ENDPOINT
+    label: Cap Aws Endpoint
+    description: Required.
+    required: true
+domains:
+  - service: cap-web
+    port: 3000
+    description: Public address of cap-web.
+healthcheck:
+  service: cap-web
+  port: 3000
+  path: /

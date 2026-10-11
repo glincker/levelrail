@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   MagnifyingGlassIcon,
   PackageIcon,
   RocketLaunchIcon,
-  SquaresFourIcon,
   UserIcon,
   WarningIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
 import { CATEGORY_ICONS } from './ServiceTemplateGrid'
+import {
+  ALL_CATEGORIES,
+  CategoryChips,
+  CategorySidebar,
+} from './TemplateCategoryRail'
 import { TemplateLogo } from './TemplateLogo'
 import { DeleteCustomTemplateDialog } from './DeleteCustomTemplateDialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -20,17 +24,12 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
 import { formatBytes } from '../lib/format'
 import {
   useServiceTemplates,
   type ServiceTemplateListItem,
 } from '../queries/serviceTemplates'
 import { useCustomTemplates } from '../queries/customTemplates'
-
-// Sentinel for "no category filter applied", distinct from any real
-// catalog.go Category value so it can never collide with one.
-const ALL_CATEGORIES = 'All'
 
 // Synthetic category for operator-defined templates; never a real
 // catalog.Template.Category string, so the two can't collide.
@@ -42,6 +41,7 @@ function matchesSearch(
 ): boolean {
   if (!query) return true
   return (
+    template.id.toLowerCase().includes(query) ||
     template.name.toLowerCase().includes(query) ||
     template.slogan.toLowerCase().includes(query) ||
     template.category.toLowerCase().includes(query)
@@ -73,157 +73,6 @@ function useGridColumns(ref: React.RefObject<HTMLDivElement | null>): number {
   return cols
 }
 
-function CategoryItem({
-  icon: ItemIcon,
-  label,
-  count,
-  active,
-  onClick,
-}: {
-  icon: Icon
-  label: string
-  count: number
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={onClick}
-        aria-pressed={active}
-        className={cn(
-          'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-          active
-            ? 'bg-primary/10 font-medium text-primary'
-            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-        )}
-      >
-        <ItemIcon className="size-4 shrink-0" aria-hidden="true" />
-        <span className="min-w-0 flex-1 truncate">{label}</span>
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {count}
-        </span>
-      </button>
-    </li>
-  )
-}
-
-// Desktop-only vertical filter rail. Hidden below md, where CategoryChips
-// below takes over, so the same active/onChange state drives whichever
-// one the viewport shows.
-function CategorySidebar({
-  categoryCounts,
-  total,
-  active,
-  onChange,
-}: {
-  categoryCounts: [string, number][]
-  total: number
-  active: string
-  onChange: (category: string) => void
-}) {
-  return (
-    <nav
-      aria-label="Template categories"
-      className="hidden md:sticky md:top-4 md:block md:self-start"
-    >
-      <p className="px-2 pb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        Categories
-      </p>
-      <ul className="space-y-0.5">
-        <CategoryItem
-          icon={SquaresFourIcon}
-          label="All templates"
-          count={total}
-          active={active === ALL_CATEGORIES}
-          onClick={() => {
-            onChange(ALL_CATEGORIES)
-          }}
-        />
-        {categoryCounts.map(([category, count]) => (
-          <CategoryItem
-            key={category}
-            icon={CATEGORY_ICONS[category] ?? PackageIcon}
-            label={category}
-            count={count}
-            active={active === category}
-            onClick={() => {
-              onChange(category)
-            }}
-          />
-        ))}
-      </ul>
-    </nav>
-  )
-}
-
-function CategoryChip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'shrink-0 rounded-full border px-3 py-1 text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-        active
-          ? 'border-primary bg-primary/10 text-primary'
-          : 'border-border bg-card text-muted-foreground hover:text-foreground',
-      )}
-    >
-      {label}
-    </button>
-  )
-}
-
-// Mobile/narrow equivalent of CategorySidebar: a horizontally scrollable
-// chip row instead of a column that would otherwise eat half the width.
-function CategoryChips({
-  categoryCounts,
-  total,
-  active,
-  onChange,
-}: {
-  categoryCounts: [string, number][]
-  total: number
-  active: string
-  onChange: (category: string) => void
-}) {
-  return (
-    <div
-      role="group"
-      aria-label="Filter templates by category"
-      className="flex gap-2 overflow-x-auto pb-1 md:hidden"
-    >
-      <CategoryChip
-        label={`All (${total})`}
-        active={active === ALL_CATEGORIES}
-        onClick={() => {
-          onChange(ALL_CATEGORIES)
-        }}
-      />
-      {categoryCounts.map(([category, count]) => (
-        <CategoryChip
-          key={category}
-          label={`${category} (${count})`}
-          active={active === category}
-          onClick={() => {
-            onChange(category)
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
 // Richer sibling of ServiceTemplateGrid's TemplateCard: same three
 // sibling controls (name/logo link, select button, deploy button) so
 // click semantics stay identical, bigger logo and wrapping RAM/GPU
@@ -241,6 +90,7 @@ function MarketplaceCard({
   deploying: boolean
   isCustom: boolean
 }) {
+  const { t } = useTranslation('compose')
   const CategoryIcon = isCustom
     ? UserIcon
     : (CATEGORY_ICONS[template.category] ?? PackageIcon)
@@ -287,8 +137,15 @@ function MarketplaceCard({
         <p className="line-clamp-2 text-xs text-muted-foreground">
           {template.slogan}
         </p>
-        {template.recommended_memory_bytes || template.requires_gpu ? (
+        {template.recommended_memory_bytes ||
+        template.requires_gpu ||
+        template.installable ? (
           <div className="flex flex-wrap items-center gap-1.5">
+            {template.installable && (
+              <Badge variant="muted" className="text-[11px]">
+                {t('catalog.installForm')}
+              </Badge>
+            )}
             {!!template.recommended_memory_bytes && (
               <Badge variant="muted" className="text-[11px]">
                 ~{formatBytes(template.recommended_memory_bytes)} RAM
@@ -296,29 +153,44 @@ function MarketplaceCard({
             )}
             {template.requires_gpu && (
               <Badge variant="muted" className="text-[11px]">
-                GPU required
+                {t('catalog.gpuRequired')}
               </Badge>
             )}
           </div>
         ) : null}
       </button>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        className="w-full"
-        disabled={deploying}
-        onClick={() => {
-          onDeployNow(template)
-        }}
-      >
-        <RocketLaunchIcon aria-hidden="true" />
-        {deploying
-          ? 'Deploying...'
-          : template.requires_configuration
-            ? 'Deploy now (needs setup)'
-            : 'Deploy now'}
-      </Button>
+      {template.installable ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            onSelect(template.id)
+          }}
+        >
+          <RocketLaunchIcon aria-hidden="true" />
+          {t('catalog.install')}
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="w-full"
+          disabled={deploying}
+          onClick={() => {
+            onDeployNow(template)
+          }}
+        >
+          <RocketLaunchIcon aria-hidden="true" />
+          {deploying
+            ? t('catalog.deploying')
+            : template.requires_configuration
+              ? t('catalog.deployNeedsSetup')
+              : t('catalog.deployNow')}
+        </Button>
+      )}
     </div>
   )
 }
@@ -432,8 +304,10 @@ export function TemplateMarketplace({
   onDeployNow: (template: ServiceTemplateListItem) => void
   deployingId?: string
 }) {
+  const { t } = useTranslation('compose')
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<string>(ALL_CATEGORIES)
+  const [installableOnly, setInstallableOnly] = useState(false)
   const templatesQuery = useServiceTemplates()
   const customTemplatesQuery = useCustomTemplates()
 
@@ -478,12 +352,15 @@ export function TemplateMarketplace({
         if (category !== ALL_CATEGORIES && template.category !== category) {
           return false
         }
+        if (installableOnly && !template.installable) {
+          return false
+        }
         return matchesSearch(template, normalizedSearch)
       }),
-    [templates, category, normalizedSearch],
+    [templates, category, normalizedSearch, installableOnly],
   )
 
-  const hasFilters = !!search || category !== ALL_CATEGORIES
+  const hasFilters = !!search || category !== ALL_CATEGORIES || installableOnly
 
   return (
     <div className="space-y-4">
@@ -497,8 +374,10 @@ export function TemplateMarketplace({
           onChange={(e) => {
             setSearch(e.target.value)
           }}
-          placeholder={`Search ${templates.length || ''} templates...`}
-          aria-label="Search templates"
+          placeholder={t('catalog.searchPlaceholder', {
+            count: templates.length,
+          })}
+          aria-label={t('catalog.searchLabel')}
           className="pl-8"
         />
       </div>
@@ -525,17 +404,33 @@ export function TemplateMarketplace({
               active={category}
               onChange={setCategory}
             />
-            <p className="text-xs text-muted-foreground">
-              {filtered.length} of {templates.length} templates
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">
+                {t('catalog.count', {
+                  shown: filtered.length,
+                  total: templates.length,
+                })}
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant={installableOnly ? 'default' : 'outline'}
+                aria-pressed={installableOnly}
+                onClick={() => {
+                  setInstallableOnly((v) => !v)
+                }}
+              >
+                {t('catalog.installableOnly')}
+              </Button>
+            </div>
             {filtered.length === 0 ? (
               <EmptyState
                 icon={<PackageIcon className="size-5" />}
-                title="No templates match"
+                title={t('catalog.emptyTitle')}
                 description={
                   hasFilters
-                    ? `Nothing in ${category === ALL_CATEGORIES ? 'the catalog' : category} matches "${search}".`
-                    : 'This category has no templates yet.'
+                    ? t('catalog.emptyFiltered')
+                    : t('catalog.emptyCategory')
                 }
                 action={
                   hasFilters ? (
@@ -546,10 +441,11 @@ export function TemplateMarketplace({
                       onClick={() => {
                         setSearch('')
                         setCategory(ALL_CATEGORIES)
+                        setInstallableOnly(false)
                       }}
                     >
                       <XIcon aria-hidden="true" />
-                      Clear filters
+                      {t('catalog.clearFilters')}
                     </Button>
                   ) : undefined
                 }

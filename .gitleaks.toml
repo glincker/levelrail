@@ -11,3 +11,9 @@ paths = [
   '''_test\.go$''',
   '''^test/fixtures/''',
 ]
+
+[[allowlists]]
+description = "Docs gallery data lists environment variable names only, never values"
+paths = [
+  '''^docs/\.vitepress/data/templates\.json$''',
+]

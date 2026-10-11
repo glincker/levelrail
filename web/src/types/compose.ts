@@ -103,6 +103,22 @@ export interface TemplateDomainPrompt {
   description?: string
 }
 
+export interface TemplateSource {
+  name: string
+  url: string
+  license: string
+  path: string
+}
+
+// One service of an installable template as the catalog describes it.
+export interface TemplateStackService {
+  name: string
+  image: string
+  ports?: number[]
+  volumes?: string[]
+  depends_on?: string[]
+}
+
 export interface TemplateManifest {
   id: string
   name: string
@@ -113,6 +129,8 @@ export interface TemplateManifest {
   env?: TemplateEnvPrompt[]
   domains?: TemplateDomainPrompt[]
   healthcheck?: { service: string; port: number; path: string }
+  source?: TemplateSource
+  images?: { service: string; image: string }[]
 }
 
 export interface TemplateInstallInput {

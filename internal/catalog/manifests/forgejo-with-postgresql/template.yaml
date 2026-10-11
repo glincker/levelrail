@@ -1,0 +1,42 @@
+id: forgejo-with-postgresql
+name: Forgejo With Postgresql
+description: Forgejo is a self-hosted lightweight software forge. Easy to install and low maintenance, it just does the job.
+icon: code
+category: Developer Tools
+documentation_url: https://forgejo.org/docs
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/forgejo-with-postgresql.yaml
+images:
+  - service: forgejo
+    image: codeberg.org/forgejo/forgejo:15
+  - service: postgresql
+    image: postgres:16-alpine
+env:
+  - key: POSTGRESQL_USER
+    label: Postgresql User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRESQL_PASSWORD
+    label: Postgresql Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: FORGEJO__MIGRATIONS__ALLOWED_DOMAINS
+    label: Forgejo Migrations Allowed Domains
+    description: Optional. Leave empty to use the application default.
+  - key: POSTGRESQL_DATABASE
+    label: Postgresql Database
+    description: Defaults to forgejo.
+    default: forgejo
+domains:
+  - service: forgejo
+    port: 3000
+    description: Public address of forgejo.
+healthcheck:
+  service: forgejo
+  port: 3000
+  path: /

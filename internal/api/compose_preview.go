@@ -132,7 +132,7 @@ func previewEnv(key, value string, hasDomain bool) composePreviewEnv {
 		switch {
 		case mv.Generatable:
 			e.Generated = true
-		case mv.Kind == "FQDN" && hasDomain:
+		case (mv.Kind == "FQDN" || mv.Kind == "URL" || mv.Kind == "HOST") && hasDomain:
 		case !mv.HasDefault:
 			e.Required = true
 		}

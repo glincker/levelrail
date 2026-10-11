@@ -1,0 +1,58 @@
+id: pocket-id-with-postgresql
+name: Pocket Id With Postgresql
+description: A simple and secure OIDC provider with passkey authentication
+icon: shield-check
+category: Security
+documentation_url: https://pocket-id.org/docs/setup/installation
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/pocket-id-with-postgresql.yaml
+images:
+  - service: pocket-id
+    image: ghcr.io/pocket-id/pocket-id:v1.13
+  - service: postgresql
+    image: postgres:16-alpine
+env:
+  - key: POSTGRESQL_USER
+    label: Postgresql User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRESQL_PASSWORD
+    label: Postgresql Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: POCKETID_PASSWORD
+    label: Pocketid Password
+    description: Generated when the app is installed.
+    generate: password
+    length: 64
+    secret: true
+  - key: MAXMIND_LICENSE_KEY
+    label: Maxmind License Key
+    description: Optional. Leave empty to use the application default.
+    secret: true
+  - key: SMTP_HOST
+    label: Smtp Host
+    description: Optional. Leave empty to use the application default.
+  - key: SMTP_FROM
+    label: Smtp From
+    description: Optional. Leave empty to use the application default.
+  - key: SMTP_USER
+    label: Smtp User
+    description: Optional. Leave empty to use the application default.
+  - key: SMTP_PASSWORD
+    label: Smtp Password
+    description: Optional. Leave empty to use the application default.
+    secret: true
+domains:
+  - service: pocket-id
+    port: 1411
+    description: Public address of pocket-id.
+healthcheck:
+  service: pocket-id
+  port: 1411
+  path: /

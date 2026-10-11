@@ -14,7 +14,7 @@ import {
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { appKeys } from './apps'
 import type { ComposeDeployResponse } from './compose'
-import type { TemplateManifest } from '../types/compose'
+import type { TemplateManifest, TemplateStackService } from '../types/compose'
 
 export const serviceTemplateKeys = {
   all: ['service-templates'] as const,
@@ -50,6 +50,8 @@ export interface ServiceTemplateListItem {
 export interface ServiceTemplateDetail extends ServiceTemplateListItem {
   compose: string
   manifest?: TemplateManifest
+  // Set for installable templates: services with images, ports, volumes.
+  stack?: TemplateStackService[]
 }
 
 export async function fetchServiceTemplates(): Promise<

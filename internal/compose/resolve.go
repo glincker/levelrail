@@ -84,11 +84,9 @@ func ResolveMagicVars(
 
 			if len(vars) == 1 && vars[0].Token == value {
 				v := vars[0]
-				if v.Kind == "FQDN" {
-					if url, ok := resolveFQDN(f, svcKey); ok {
-						newEnv[envKey] = url
-						continue
-					}
+				if val, ok := resolveDomainVar(f, svcKey, v); ok {
+					newEnv[envKey] = val
+					continue
 				}
 				if v.Generatable {
 					val, genErr := resolveGenerated(generated, v, generate)
@@ -112,11 +110,9 @@ func ResolveMagicVars(
 			resolved := value
 			hasSecret := false
 			for _, v := range vars {
-				if v.Kind == "FQDN" {
-					if url, ok := resolveFQDN(f, svcKey); ok {
-						resolved = strings.Replace(resolved, v.Token, url, 1)
-						continue
-					}
+				if val, ok := resolveDomainVar(f, svcKey, v); ok {
+					resolved = strings.Replace(resolved, v.Token, val, 1)
+					continue
 				}
 				if v.Generatable {
 					val, genErr := resolveGenerated(generated, v, generate)
@@ -177,11 +173,9 @@ func resolveCommandEntry(f *File, svcKey string, index int, entry string) (strin
 	resolved := entry
 	var unresolved []UnresolvedVar
 	for _, v := range vars {
-		if v.Kind == "FQDN" {
-			if url, ok := resolveFQDN(f, svcKey); ok {
-				resolved = strings.Replace(resolved, v.Token, url, 1)
-				continue
-			}
+		if val, ok := resolveDomainVar(f, svcKey, v); ok {
+			resolved = strings.Replace(resolved, v.Token, val, 1)
+			continue
 		}
 		if v.Generatable {
 			unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: location, Token: v.Token})
@@ -194,6 +188,43 @@ func resolveCommandEntry(f *File, svcKey string, index int, entry string) (strin
 		unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: location, Token: v.Token})
 	}
 	return resolved, unresolved
+}
+
+// resolveDomainVar resolves the three domain token kinds. FQDN keeps its
+// own-domain meaning. URL (https://host) and HOST (bare host) name a
+// service by key, so one service can read another's address. A key that
+// names no service falls back to the referencing service's own domain.
+func resolveDomainVar(f *File, svcKey string, v MagicVar) (string, bool) {
+	switch v.Kind {
+	case "FQDN":
+		return resolveFQDN(f, svcKey)
+	case "URL", "HOST":
+		target := serviceForKey(f, v.Key)
+		if target == "" {
+			target = svcKey
+		}
+		domain := f.Domains[target]
+		if domain == "" {
+			return "", false
+		}
+		if v.Kind == "HOST" {
+			return domain, true
+		}
+		return "https://" + domain, true
+	}
+	return "", false
+}
+
+// serviceForKey names the service a URL or HOST token's key refers to,
+// matching case-insensitively with underscores read as dashes.
+func serviceForKey(f *File, key string) string {
+	want := strings.ToLower(strings.ReplaceAll(key, "_", "-"))
+	for name := range f.Services {
+		if strings.ToLower(strings.ReplaceAll(name, "_", "-")) == want {
+			return name
+		}
+	}
+	return ""
 }
 
 func resolveGenerated(cache map[string]string, v MagicVar, generate func(kind, key string, length int) (string, error)) (string, error) {

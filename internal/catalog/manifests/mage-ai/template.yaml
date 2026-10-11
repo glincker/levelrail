@@ -1,0 +1,23 @@
+id: mage-ai
+name: Mage Ai
+description: Build, run, and manage data pipelines for integrating and transforming data.
+icon: lightning
+category: Automation
+documentation_url: https://docs.mage.ai
+recommended_memory_bytes: 268435456
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/mage-ai.yaml
+images:
+  - service: mage-ai
+    image: mageai/mageai:0.9.78
+domains:
+  - service: mage-ai
+    port: 6789
+    description: Public address of mage-ai.
+healthcheck:
+  service: mage-ai
+  port: 6789
+  path: /

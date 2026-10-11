@@ -1,0 +1,59 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  heyform:
+    image: heyform/community-edition:latest
+    ports:
+      - "9157"
+    environment:
+      APP_HOMEPAGE_URL: ${SERVICE_URL_HEYFORM}
+      FORM_ENCRYPTION_KEY: ${FORM_BASE64}
+      MONGO_URI: mongodb://mongo:27017/heyform
+      REDIS_HOST: keydb
+      REDIS_PASSWORD: ${KEYDB_PASSWORD}
+      REDIS_PORT: "6379"
+      SESSION_KEY: ${SESSION_BASE64}
+    volumes:
+      - heyform-assets:/app/static/upload
+    depends_on:
+      keydb:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      interval: 5s
+      retries: 3
+      test:
+        - CMD-SHELL
+        - wget -qO- http://127.0.0.1:9157 || exit 1
+      timeout: 5s
+  keydb:
+    image: eqalpha/keydb:latest
+    command: keydb-server --appendonly yes
+    environment:
+      GENERATED_KEYDB_PASSWORD: ${KEYDB_PASSWORD}
+      KEYDB_PASSWORD: ${KEYDB_PASSWORD}
+    volumes:
+      - heyform-keydb-data:/data
+    healthcheck:
+      interval: 5s
+      retries: 10
+      start_period: 5s
+      test:
+        - CMD-SHELL
+        - keydb-cli
+        - --pass
+        - $GENERATED_KEYDB_PASSWORD
+        - ping
+      timeout: 5s
+  mongo:
+    image: percona/percona-server-mongodb:latest
+    volumes:
+      - heyform-mongo-data:/data/db
+    healthcheck:
+      interval: 5s
+      retries: 10
+      start_period: 5s
+      test:
+        - CMD-SHELL
+        - echo 'ok' > /dev/null 2>&1
+      timeout: 5s

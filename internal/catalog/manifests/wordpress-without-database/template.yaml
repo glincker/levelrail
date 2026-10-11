@@ -1,0 +1,23 @@
+id: wordpress-without-database
+name: Wordpress Without Database
+description: WordPress is open source software you can use to create a beautiful website, blog, or app.
+icon: app-window
+category: Applications
+documentation_url: https://wordpress.org
+recommended_memory_bytes: 268435456
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/wordpress-without-database.yaml
+images:
+  - service: wordpress
+    image: wordpress:latest
+domains:
+  - service: wordpress
+    port: 80
+    description: Public address of wordpress.
+healthcheck:
+  service: wordpress
+  port: 80
+  path: /

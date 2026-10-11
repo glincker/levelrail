@@ -1,0 +1,40 @@
+id: joomla-with-mariadb
+name: Joomla With Mariadb
+description: Joomla! is the mobile-ready and user-friendly way to build your website. Choose from thousands of features and designs. Joomla! is free and open source.
+icon: app-window
+category: Applications
+documentation_url: https://joomla.org
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/joomla-with-mariadb.yaml
+images:
+  - service: joomla
+    image: joomla:latest
+  - service: mariadb
+    image: mariadb:11
+env:
+  - key: JOOMLA_USER
+    label: Joomla User
+    description: Generated when the app is installed.
+    generate: user
+  - key: JOOMLA_PASSWORD
+    label: Joomla Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: ROOT_PASSWORD
+    label: Root Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: joomla
+    port: 80
+    description: Public address of joomla.
+healthcheck:
+  service: joomla
+  port: 80
+  path: /

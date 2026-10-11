@@ -1,0 +1,29 @@
+id: rivet-engine
+name: Rivet Engine
+description: Build and scale stateful workloads with long-lived processes
+icon: code
+category: Developer Tools
+documentation_url: https://www.rivet.dev/docs
+recommended_memory_bytes: 268435456
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/rivet-engine.yaml
+images:
+  - service: rivet-engine
+    image: rivetdev/engine:2.2.0
+env:
+  - key: TOKEN_BASE64
+    label: Token Base64
+    description: Generated when the app is installed.
+    generate: base64
+    secret: true
+domains:
+  - service: rivet-engine
+    port: 6420
+    description: Public address of rivet-engine.
+healthcheck:
+  service: rivet-engine
+  port: 6420
+  path: /

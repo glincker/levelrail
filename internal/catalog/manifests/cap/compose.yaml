@@ -1,0 +1,55 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  cap-db:
+    image: mysql:8.0
+    command:
+      - --max_connections=1000
+      - --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: planetscale
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQLROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+    volumes:
+      - cap_db:/var/lib/mysql
+    healthcheck:
+      interval: 10s
+      retries: 5
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - -h
+        - 127.0.0.1
+      timeout: 10s
+  cap-web:
+    image: ghcr.io/capsoftware/cap-web:latest
+    ports:
+      - "3000"
+    environment:
+      CAP_AWS_ACCESS_KEY: ${CAP_AWS_ACCESS_KEY}
+      CAP_AWS_BUCKET: ${CAP_AWS_BUCKET}
+      CAP_AWS_ENDPOINT: ${CAP_AWS_ENDPOINT}
+      CAP_AWS_REGION: ${CAP_AWS_REGION}
+      CAP_AWS_SECRET_KEY: ${CAP_AWS_SECRET_KEY}
+      DATABASE_ENCRYPTION_KEY: ${DATABASEENCRYPTIONKEY_PASSWORD}
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@cap-db:3306/planetscale
+      NEXT_RUNTIME: nodejs
+      NEXTAUTH_SECRET: ${NEXTAUTHSECRET_PASSWORD}
+      NEXTAUTH_URL: ${SERVICE_URL_CAP_WEB}
+      S3_INTERNAL_ENDPOINT: ${S3_INTERNAL_ENDPOINT}
+      S3_PATH_STYLE: "true"
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT}
+      WEB_URL: ${SERVICE_URL_CAP_WEB}
+    depends_on:
+      cap-db:
+        condition: service_healthy
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 60s
+      test:
+        - CMD-SHELL
+        - curl -fsS -o /dev/null http://127.0.0.1:3000/
+      timeout: 10s

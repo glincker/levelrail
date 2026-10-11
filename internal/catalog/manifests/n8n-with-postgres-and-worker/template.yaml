@@ -1,0 +1,51 @@
+id: n8n-with-postgres-and-worker
+name: N8n With Postgres And Worker
+description: n8n is an extendable workflow automation tool with queue mode and workers.
+icon: lightning
+category: Automation
+documentation_url: https://n8n.io
+recommended_memory_bytes: 1207959552
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/n8n-with-postgres-and-worker.yaml
+images:
+  - service: n8n
+    image: n8nio/n8n:2.10.4
+  - service: n8n-worker
+    image: n8nio/n8n:2.10.4
+  - service: postgresql
+    image: postgres:16-alpine
+  - service: redis
+    image: redis:6-alpine
+  - service: task-runners
+    image: n8nio/runners:2.10.4
+env:
+  - key: POSTGRES_USER
+    label: Postgres User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRES_PASSWORD
+    label: Postgres Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: ENCRYPTION_PASSWORD
+    label: Encryption Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: N8N_PASSWORD
+    label: N8n Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: n8n
+    port: 5678
+    description: Public address of n8n.
+healthcheck:
+  service: n8n
+  port: 5678
+  path: /

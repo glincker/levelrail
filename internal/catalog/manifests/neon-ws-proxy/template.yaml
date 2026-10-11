@@ -1,0 +1,35 @@
+id: neon-ws-proxy
+name: Neon Ws Proxy
+description: The database you love, on a serverless platform designed to help you build reliable and scalable applications faster.
+icon: stack
+category: Infrastructure
+documentation_url: https://neon.tech
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/neon-ws-proxy.yaml
+images:
+  - service: neon-proxy
+    image: ghcr.io/neondatabase/wsproxy:latest
+  - service: postgres
+    image: postgres:17-alpine
+env:
+  - key: POSTGRESQL_USER
+    label: Postgresql User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRESQL_PASSWORD
+    label: Postgresql Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: neon-proxy
+    port: 2112
+    description: Public address of neon-proxy.
+healthcheck:
+  service: neon-proxy
+  port: 2112
+  path: /

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/catalog"
 	"github.com/GLINCKER/levelrail/internal/compose"
@@ -50,14 +51,57 @@ type serviceTemplateDetail struct {
 	RequiresGPU            bool              `json:"requires_gpu,omitempty"`
 	RequiresConfiguration  bool              `json:"requires_configuration"`
 	Manifest               *catalog.Manifest `json:"manifest,omitempty"`
+	// Stack lists a manifest template's services with images, ports and volumes.
+	Stack []catalog.StackService `json:"stack,omitempty"`
+}
+
+// templateFilter narrows the catalog list: q matches id, name, slogan and
+// category as a case-insensitive substring, category is an exact
+// case-insensitive match, installable keeps manifest templates only.
+type templateFilter struct {
+	q           string
+	category    string
+	installable bool
+}
+
+func templateFilterFromQuery(r *http.Request) templateFilter {
+	q := r.URL.Query()
+	return templateFilter{
+		q:           strings.ToLower(strings.TrimSpace(q.Get("q"))),
+		category:    strings.ToLower(strings.TrimSpace(q.Get("category"))),
+		installable: q.Get("installable") == "true" || q.Get("installable") == "1",
+	}
+}
+
+func (f templateFilter) match(tpl catalog.Template) bool {
+	if f.installable && tpl.Manifest == nil {
+		return false
+	}
+	if f.category != "" && strings.ToLower(tpl.Category) != f.category {
+		return false
+	}
+	if f.q == "" {
+		return true
+	}
+	for _, field := range []string{tpl.ID, tpl.Name, tpl.Slogan, tpl.Category} {
+		if strings.Contains(strings.ToLower(field), f.q) {
+			return true
+		}
+	}
+	return false
 }
 
 // handleListServiceTemplates handles GET /api/v1/service-templates: the
 // full catalog.Templates catalog, static and in-memory, no store
-// involved.
-func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Request) {
+// involved. Optional q, category and installable query parameters
+// narrow it.
+func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, r *http.Request) {
+	filter := templateFilterFromQuery(r)
 	out := make([]serviceTemplateListItem, 0, len(catalog.Templates))
 	for _, tpl := range catalog.Templates {
+		if !filter.match(tpl) {
+			continue
+		}
 		out = append(out, serviceTemplateListItem{
 			ID:                     tpl.ID,
 			Name:                   tpl.Name,
@@ -88,10 +132,20 @@ func (rt *Router) handleGetServiceTemplate(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "service template not found")
 		return
 	}
-	// templateView's fields mirror serviceTemplateDetail's exactly (see
-	// that type's own doc comment), so this is a plain reshape, not a
-	// semantic conversion.
-	writeJSON(w, http.StatusOK, serviceTemplateDetail(tpl))
+	detail := serviceTemplateDetail{
+		ID: tpl.ID, Name: tpl.Name, Slogan: tpl.Slogan, Category: tpl.Category, DocumentationURL: tpl.DocumentationURL,
+		Compose: tpl.Compose, RecommendedMemoryBytes: tpl.RecommendedMemoryBytes, RequiresGPU: tpl.RequiresGPU,
+		RequiresConfiguration: tpl.RequiresConfiguration, Manifest: tpl.Manifest,
+	}
+	if tpl.Manifest != nil {
+		stack, err := tpl.Manifest.Stack()
+		if err != nil {
+			rt.internalError(w, "api: get service template: describe stack failed", err, slog.String("id", id))
+			return
+		}
+		detail.Stack = stack
+	}
+	writeJSON(w, http.StatusOK, detail)
 }
 
 // templateView is the common shape handleGetServiceTemplate and

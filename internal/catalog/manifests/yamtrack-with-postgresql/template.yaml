@@ -1,0 +1,42 @@
+id: yamtrack-with-postgresql
+name: Yamtrack With Postgresql
+description: Yamtrack is a self hosted media tracker for movies, tv shows, anime, manga, video games and books.
+icon: check-square
+category: Productivity
+documentation_url: https://github.com/FuzzyGrim/Yamtrack/wiki
+recommended_memory_bytes: 671088640
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/yamtrack-with-postgresql.yaml
+images:
+  - service: postgres
+    image: postgres:16-alpine
+  - service: redis
+    image: redis:7-alpine
+  - service: yamtrack
+    image: ghcr.io/fuzzygrim/yamtrack:latest
+env:
+  - key: POSTGRESQL_USER
+    label: Postgresql User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRESQL_PASSWORD
+    label: Postgresql Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: SECRET_PASSWORD
+    label: Secret Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: yamtrack
+    port: 8000
+    description: Public address of yamtrack.
+healthcheck:
+  service: yamtrack
+  port: 8000
+  path: /

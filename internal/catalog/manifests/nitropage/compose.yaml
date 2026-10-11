@@ -1,0 +1,21 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  nitropage:
+    image: nitropage/nitropage:sqlite
+    ports:
+      - "3000"
+    environment:
+      DATABASE_URL: file:../.data/dev.db
+      NP_AUTH_PASSWORD: ${SESSION_PASSWORD}
+      NP_AUTH_SALT: ${SALT_BASE64}
+    volumes:
+      - nitropage-data:/app/.data
+    healthcheck:
+      interval: 2s
+      retries: 15
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://127.0.0.1:3000/admin
+      timeout: 10s

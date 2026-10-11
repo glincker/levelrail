@@ -1,0 +1,37 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  neon-proxy:
+    image: ghcr.io/neondatabase/wsproxy:latest
+    restart: unless-stopped
+    ports:
+      - "2112"
+    environment:
+      ALLOW_ADDR_REGEX: .*
+      APPEND_PORT: postgres:5432
+      LOG_CONN_INFO: "true"
+      LOG_TRAFFIC: "false"
+    depends_on:
+      - postgres
+    healthcheck:
+      interval: 5s
+      retries: 20
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 80
+      timeout: 2s
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_HOST_AUTH_METHOD: password
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRES_USER: ${POSTGRESQL_USER}
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+      timeout: 20s

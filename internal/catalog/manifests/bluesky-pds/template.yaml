@@ -1,0 +1,50 @@
+id: bluesky-pds
+name: Bluesky Pds
+description: Bluesky PDS (Personal Data Server)
+icon: code
+category: Developer Tools
+documentation_url: https://github.com/bluesky-social/pds
+recommended_memory_bytes: 268435456
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/bluesky-pds.yaml
+images:
+  - service: pds
+    image: ghcr.io/bluesky-social/pds:0.4.182
+env:
+  - key: JWTSECRET_HEX
+    label: Jwtsecret Hex
+    description: Generated when the app is installed.
+    generate: hex
+    length: 64
+    secret: true
+  - key: ADMIN_PASSWORD
+    label: Admin Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: ROTATIONKEY_HEX
+    label: Rotationkey Hex
+    description: Generated when the app is installed.
+    generate: hex
+    length: 64
+    secret: true
+  - key: PDS_ADMIN_EMAIL
+    label: Pds Admin Email
+    description: Optional. Leave empty to use the application default.
+  - key: PDS_EMAIL_FROM_ADDRESS
+    label: Pds Email From Address
+    description: Optional. Leave empty to use the application default.
+  - key: PDS_EMAIL_SMTP_URL
+    label: Pds Email Smtp Url
+    description: Optional. Leave empty to use the application default.
+domains:
+  - service: pds
+    port: 3000
+    description: Public address of pds.
+healthcheck:
+  service: pds
+  port: 3000
+  path: /

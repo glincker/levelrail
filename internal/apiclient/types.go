@@ -1370,6 +1370,8 @@ type ServiceTemplateListItem struct {
 	DocumentationURL       string `json:"documentation_url"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
 	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
+	// Installable marks a template with an install form (settings and domains).
+	Installable bool `json:"installable,omitempty"`
 }
 
 // ServiceTemplateDetail mirrors internal/api's serviceTemplateDetail:
@@ -1389,6 +1391,9 @@ type ServiceTemplateDetail struct {
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
 	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
 	RequiresConfiguration  bool   `json:"requires_configuration,omitempty"`
+	// Manifest and Stack are set for installable templates.
+	Manifest *TemplateManifestInfo  `json:"manifest,omitempty"`
+	Stack    []TemplateStackService `json:"stack,omitempty"`
 }
 
 // SaveAppAsTemplateRequest mirrors internal/api's

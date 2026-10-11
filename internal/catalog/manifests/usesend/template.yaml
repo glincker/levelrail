@@ -1,0 +1,66 @@
+id: usesend
+name: Usesend
+description: Usesend is an open-source alternative to Resend, Sendgrid, Mailgun and Postmark etc.
+icon: chat-circle
+category: Communication
+documentation_url: https://docs.usesend.com/self-hosting/overview
+recommended_memory_bytes: 671088640
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/usesend.yaml
+images:
+  - service: postgres
+    image: postgres:16
+  - service: redis
+    image: redis:7
+  - service: usesend
+    image: usesend/usesend:latest
+env:
+  - key: POSTGRES_USER
+    label: Postgres User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRES_PASSWORD
+    label: Postgres Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: NEXTAUTHSECRET_BASE64
+    label: Nextauthsecret Base64
+    description: Generated when the app is installed.
+    generate: base64
+    length: 64
+    secret: true
+  - key: AWS_ACCESS_KEY
+    label: Aws Access Key
+    description: Required.
+    required: true
+    secret: true
+  - key: AWS_SECRET_KEY
+    label: Aws Secret Key
+    description: Required.
+    required: true
+    secret: true
+  - key: AWS_DEFAULT_REGION
+    label: Aws Default Region
+    description: Required.
+    required: true
+  - key: GITHUB_ID
+    label: Github Id
+    description: Required.
+    required: true
+  - key: GITHUB_SECRET
+    label: Github Secret
+    description: Required.
+    required: true
+    secret: true
+domains:
+  - service: usesend
+    port: 3000
+    description: Public address of usesend.
+healthcheck:
+  service: usesend
+  port: 3000
+  path: /

@@ -1474,13 +1474,14 @@ levelrail-cli gitea-app use-as-source <owner> <repo> --app-name NAME [flags]
 ## Templates
 
 ```
-levelrail-cli templates list [--custom] [flags]
+levelrail-cli templates list [--search TEXT] [--category NAME] [--installable] [--custom] [flags]
 levelrail-cli templates get <id> [flags]
 levelrail-cli templates deploy <id> [--name NAME] [flags]
 levelrail-cli templates install <id> [--name NAME] [--env KEY=VALUE]... [--domain SERVICE=HOST]... [flags]
 levelrail-cli templates delete <id> [flags]
+levelrail-cli templates updates [flags]
 ```
-`list` browses the curated service catalog, or `--custom` for your own saved templates. `get` shows one entry including its full compose.yaml. `deploy` deploys a template's compose.yaml as an app, and the app name defaults to the template id; pass `--name` to use another. A custom template works with every verb the same as a built-in one, except `delete`: only a custom template can be deleted (see `apps save-as-template`). See [Templates](templates.md).
+`list` browses the curated service catalog, or `--custom` for your own saved templates. `--search`, `--category` and `--installable` narrow the catalog list. `updates` is read-only: it reports newer upstream image tags for every app installed from a template. `get` shows one entry including its full compose.yaml. `deploy` deploys a template's compose.yaml as an app, and the app name defaults to the template id; pass `--name` to use another. A custom template works with every verb the same as a built-in one, except `delete`: only a custom template can be deleted (see `apps save-as-template`). See [Templates](templates.md).
 
 `install` is for manifest templates (the ones `get` shows with settings): it fills each `${KEY}` setting from `--env`, a generated secret or its default, puts the listed services behind `--domain` hosts, and deploys the result as a compose app that is not a trial. See [Compose apps](/compose-apps#templates).
 

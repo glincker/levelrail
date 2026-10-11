@@ -1,0 +1,18 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  firefox:
+    image: jlesage/firefox:latest
+    ports:
+      - "5800"
+    volumes:
+      - firefox_config:/config
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD
+        - wget
+        - -q
+        - --spider
+        - http://127.0.0.1:5800/
+      timeout: 20s

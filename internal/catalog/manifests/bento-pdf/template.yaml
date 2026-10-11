@@ -1,0 +1,23 @@
+id: bento-pdf
+name: Bento Pdf
+description: Process PDFs entirely in your browser. No uploads. No servers. Complete privacy.
+icon: check-square
+category: Productivity
+documentation_url: https://bentopdf.com/docs
+recommended_memory_bytes: 268435456
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/bento-pdf.yaml
+images:
+  - service: bento-pdf
+    image: ghcr.io/alam00000/bentopdf:v1.16.1
+domains:
+  - service: bento-pdf
+    port: 8080
+    description: Public address of bento-pdf.
+healthcheck:
+  service: bento-pdf
+  port: 8080
+  path: /

@@ -1,0 +1,35 @@
+id: paperless
+name: Paperless
+description: Paperless-ngx is a community-supported open-source document management system that transforms your physical documents into a searchable online archive so you can keep, well, less paper.
+icon: check-square
+category: Productivity
+documentation_url: https://docs.paperless-ngx.com/configuration/
+recommended_memory_bytes: 402653184
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/paperless.yaml
+images:
+  - service: paperless
+    image: paperlessngx/paperless-ngx:latest
+  - service: redis
+    image: redis:7.4
+env:
+  - key: PAPERLESS_PASSWORD
+    label: Paperless Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: PAPERLESS_USER
+    label: Paperless User
+    description: Generated when the app is installed.
+    generate: user
+domains:
+  - service: paperless
+    port: 8000
+    description: Public address of paperless.
+healthcheck:
+  service: paperless
+  port: 8000
+  path: /

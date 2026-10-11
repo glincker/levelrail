@@ -1,0 +1,83 @@
+# Templates committed to internal/catalog/manifests by scripts/import-templates.
+# Chosen from the converter's convertible set: stacks of a handful of
+# services, no host access, no file content to ship, and an ID the older
+# single-body catalog does not already serve.
+# Every entry installed green on local Docker (all services Ready,
+# healthcheck answered) except the "not live-tested" group at the end,
+# whose images are over the live-test size cap. Converted templates that
+# failed a live install were removed from this list.
+# The hand-written manifests (onetimesecret, pairdrop, redmine, uptime-kuma,
+# wikijs) are never overwritten.
+
+# single service
+bento-pdf
+bluesky-pds
+classicpress-without-database
+cockpit
+drizzle-gateway
+emqx-enterprise
+executor
+firefox
+jean
+newt-pangolin
+nitropage
+rivet-engine
+wordpress-without-database
+
+# two services
+calibre-web-automated-book-downloader
+cap
+classicpress-with-mariadb
+classicpress-with-mysql
+codimd
+convex
+docuseal-with-postgres
+drupal-with-postgresql
+forgejo-with-mariadb
+forgejo-with-mysql
+forgejo-with-postgresql
+freshrss-with-mariadb
+freshrss-with-mysql
+freshrss-with-postgresql
+gitea-with-mariadb
+gitea-with-mysql
+gitea-with-postgresql
+grafana-with-postgresql
+joomla-with-mariadb
+labelstudio
+neon-ws-proxy
+next-image-transformation
+nitropage-with-postgresql
+pocket-id-with-postgresql
+pydio-cells
+supertokens-with-mysql
+supertokens-with-postgresql
+unleash-with-postgresql
+uptime-kuma-with-mariadb
+uptime-kuma-with-mysql
+vvveb-with-mariadb
+vvveb-with-mysql
+wordpress-with-mariadb
+wordpress-with-mysql
+
+# three or more services
+evolution-api
+heyform
+inngest
+n8n-with-postgres-and-worker
+n8n-with-postgresql
+newapi
+open-archiver
+owncloud
+paymenter
+plunk
+usesend
+yamtrack-with-postgresql
+
+# not live-tested: an image is over the live-test size cap
+flowise-with-databases
+hermes-agent-with-webui
+mage-ai
+metamcp
+mindsdb
+paperless

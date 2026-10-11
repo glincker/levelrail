@@ -1,0 +1,56 @@
+id: flowise-with-databases
+name: Flowise With Databases
+description: Flowise is an open source low-code tool for developers to build customized LLM orchestration flows & AI agents. Also deploys Redis, Postgres and other services.
+icon: sparkle
+category: AI
+documentation_url: https://docs.flowiseai.com/
+recommended_memory_bytes: 939524096
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/flowise-with-databases.yaml
+images:
+  - service: flowise
+    image: flowiseai/flowise:latest
+  - service: pg-record-manager
+    image: postgres:16
+  - service: qdrant
+    image: qdrant/qdrant:latest
+  - service: redis-cache
+    image: redis:7
+env:
+  - key: FLOWISE_USER
+    label: Flowise User
+    description: Generated when the app is installed.
+    generate: user
+  - key: FLOWISE_PASSWORD
+    label: Flowise Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: POSTGRES_USER
+    label: Postgres User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRES_PASSWORD
+    label: Postgres Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: QDRANTAPIKEY_PASSWORD
+    label: Qdrantapikey Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: flowise
+    port: 3001
+    description: Public address of flowise.
+  - service: qdrant
+    port: 6333
+    description: Public address of qdrant.
+healthcheck:
+  service: flowise
+  port: 3001
+  path: /

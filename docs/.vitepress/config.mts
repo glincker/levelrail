@@ -217,6 +217,7 @@ const sidebarGroups = [
         items: [
           { text: 'Templates and registry', link: '/templates-and-registry' },
           { text: 'Template catalog', link: '/template-catalog' },
+          { text: 'Imported templates', link: '/template-import' },
           { text: 'Starter kit templates', link: '/templates' },
         ],
       },

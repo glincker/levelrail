@@ -1,0 +1,48 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  mindsdb:
+    image: mindsdb/mindsdb:latest
+    ports:
+      - "47334"
+    environment:
+      FLASK_DEBUG: "1"
+      LANGFUSE_DEBUG: "False"
+      LANGFUSE_HOST: ${LANGFUSE_HOST}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_RELEASE: local
+      LANGFUSE_SAMPLE_RATE: "1.0"
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_TIMEOUT: "10"
+      MINDSDB_DB_CON: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgresql/mindsdb-db
+      MINDSDB_DOCKER_ENV: "true"
+      MINDSDB_STORAGE_DIR: /mindsdb/var
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    volumes:
+      - mindsdb-data:/mindsdb/var
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    healthcheck:
+      interval: 30s
+      retries: 15
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:47334/api/util/ping
+      timeout: 5s
+  postgresql:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: mindsdb-db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+    volumes:
+      - mindsdb-postgresql-data:/var/lib/postgresql/data
+    healthcheck:
+      interval: 10s
+      retries: 15
+      test:
+        - CMD-SHELL
+        - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+      timeout: 5s

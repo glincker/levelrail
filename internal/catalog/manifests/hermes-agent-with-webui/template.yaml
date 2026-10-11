@@ -1,0 +1,47 @@
+id: hermes-agent-with-webui
+name: Hermes Agent With Webui
+description: Hermes Agent, autonomous AI agent with persistent memory, scheduling, and a self-hosted web chat UI.
+icon: sparkle
+category: AI
+documentation_url: https://github.com/nesquena/hermes-webui
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/hermes-agent-with-webui.yaml
+images:
+  - service: hermes-agent
+    image: nousresearch/hermes-agent@sha256:2f1f2f1725e5dc9a61cf6a2dea5aca52a776ec4d022cb29679e6aa3ff303e77a
+  - service: hermes-webui
+    image: ghcr.io/nesquena/hermes-webui:0.51.92
+env:
+  - key: HERMESWEBUI_PASSWORD
+    label: Hermeswebui Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: OPENROUTER_API_KEY
+    label: Openrouter Api Key
+    description: Optional. Leave empty to use the application default.
+    secret: true
+  - key: ANTHROPIC_API_KEY
+    label: Anthropic Api Key
+    description: Optional. Leave empty to use the application default.
+    secret: true
+  - key: OPENAI_API_KEY
+    label: Openai Api Key
+    description: Optional. Leave empty to use the application default.
+    secret: true
+  - key: GOOGLE_API_KEY
+    label: Google Api Key
+    description: Optional. Leave empty to use the application default.
+    secret: true
+domains:
+  - service: hermes-webui
+    port: 8787
+    description: Public address of hermes-webui.
+healthcheck:
+  service: hermes-webui
+  port: 8787
+  path: /

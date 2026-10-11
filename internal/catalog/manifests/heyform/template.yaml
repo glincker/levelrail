@@ -1,0 +1,45 @@
+id: heyform
+name: Heyform
+description: Allows anyone to create engaging conversational forms for surveys, questionnaires, quizzes, and polls. No coding skills required.
+icon: check-square
+category: Productivity
+documentation_url: https://docs.heyform.net/open-source/self-hosting
+recommended_memory_bytes: 939524096
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/heyform.yaml
+images:
+  - service: heyform
+    image: heyform/community-edition:latest
+  - service: keydb
+    image: eqalpha/keydb:latest
+  - service: mongo
+    image: percona/percona-server-mongodb:latest
+env:
+  - key: SESSION_BASE64
+    label: Session Base64
+    description: Generated when the app is installed.
+    generate: base64
+    length: 64
+    secret: true
+  - key: FORM_BASE64
+    label: Form Base64
+    description: Generated when the app is installed.
+    generate: base64
+    length: 64
+    secret: true
+  - key: KEYDB_PASSWORD
+    label: Keydb Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: heyform
+    port: 9157
+    description: Public address of heyform.
+healthcheck:
+  service: heyform
+  port: 9157
+  path: /

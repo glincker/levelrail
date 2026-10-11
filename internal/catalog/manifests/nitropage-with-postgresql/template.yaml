@@ -1,0 +1,46 @@
+id: nitropage-with-postgresql
+name: Nitropage With Postgresql
+description: Nitropage is an extensible, visual website builder, offering a growing library of versatile building blocks, focal-point image cropping and sovereign font management.
+icon: app-window
+category: Applications
+documentation_url: https://nitropage.org
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/nitropage-with-postgresql.yaml
+images:
+  - service: nitropage
+    image: nitropage/nitropage:latest
+  - service: postgresql
+    image: postgres:16-alpine
+env:
+  - key: SALT_BASE64
+    label: Salt Base64
+    description: Generated when the app is installed.
+    generate: base64
+    secret: true
+  - key: SESSION_PASSWORD
+    label: Session Password
+    description: Generated when the app is installed.
+    generate: password
+    length: 64
+    secret: true
+  - key: POSTGRESQL_USER
+    label: Postgresql User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRESQL_PASSWORD
+    label: Postgresql Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: nitropage
+    port: 3000
+    description: Public address of nitropage.
+healthcheck:
+  service: nitropage
+  port: 3000
+  path: /

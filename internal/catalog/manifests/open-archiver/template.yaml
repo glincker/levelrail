@@ -1,0 +1,84 @@
+id: open-archiver
+name: Open Archiver
+description: A self-hosted, open-source email archiving solution with full-text search capability.
+icon: chat-circle
+category: Communication
+documentation_url: https://docs.openarchiver.com/
+recommended_memory_bytes: 939524096
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/open-archiver.yaml
+images:
+  - service: meilisearch
+    image: getmeili/meilisearch:v1.15
+  - service: open-archiver
+    image: logiclabshq/open-archiver:latest
+  - service: postgres
+    image: postgres:17-alpine
+  - service: valkey
+    image: valkey/valkey:8-alpine
+env:
+  - key: MEILISEARCH_PASSWORD
+    label: Meilisearch Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: ENCRYPTIONKEY_HEX
+    label: Encryptionkey Hex
+    description: Generated when the app is installed.
+    generate: hex
+    length: 64
+    secret: true
+  - key: STORAGEENCRYPTIONKEY_HEX
+    label: Storageencryptionkey Hex
+    description: Generated when the app is installed.
+    generate: hex
+    length: 64
+    secret: true
+  - key: POSTGRES_USER
+    label: Postgres User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRES_PASSWORD
+    label: Postgres Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: VALKEY_PASSWORD
+    label: Valkey Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: JWT_BASE64
+    label: Jwt Base64
+    description: Generated when the app is installed.
+    generate: base64
+    length: 128
+    secret: true
+  - key: STORAGE_S3_ENDPOINT
+    label: Storage S3 Endpoint
+    description: Optional. Leave empty to use the application default.
+  - key: STORAGE_S3_BUCKET
+    label: Storage S3 Bucket
+    description: Optional. Leave empty to use the application default.
+  - key: STORAGE_S3_ACCESS_KEY_ID
+    label: Storage S3 Access Key Id
+    description: Optional. Leave empty to use the application default.
+    secret: true
+  - key: STORAGE_S3_SECRET_ACCESS_KEY
+    label: Storage S3 Secret Access Key
+    description: Optional. Leave empty to use the application default.
+    secret: true
+  - key: STORAGE_S3_REGION
+    label: Storage S3 Region
+    description: Optional. Leave empty to use the application default.
+domains:
+  - service: open-archiver
+    port: 3000
+    description: Public address of open-archiver.
+healthcheck:
+  service: open-archiver
+  port: 3000
+  path: /

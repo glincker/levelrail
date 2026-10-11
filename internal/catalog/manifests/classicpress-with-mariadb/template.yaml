@@ -1,0 +1,40 @@
+id: classicpress-with-mariadb
+name: Classicpress With Mariadb
+description: A lightweight, stable, instantly familiar free open-source content management system, based on WordPress without the block editor (Gutenberg).
+icon: app-window
+category: Applications
+documentation_url: https://www.classicpress.net/
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/classicpress-with-mariadb.yaml
+images:
+  - service: classicpress
+    image: classicpress/classicpress:latest
+  - service: mariadb
+    image: mariadb:11
+env:
+  - key: CLASSICPRESS_USER
+    label: Classicpress User
+    description: Generated when the app is installed.
+    generate: user
+  - key: CLASSICPRESS_PASSWORD
+    label: Classicpress Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: ROOT_PASSWORD
+    label: Root Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: classicpress
+    port: 80
+    description: Public address of classicpress.
+healthcheck:
+  service: classicpress
+  port: 80
+  path: /

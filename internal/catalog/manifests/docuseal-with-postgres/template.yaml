@@ -1,0 +1,39 @@
+id: docuseal-with-postgres
+name: Docuseal With Postgres
+description: Document Signing for Everyone free forever for individuals, extensible for businesses and developers. Open Source Alternative to DocuSign, PandaDoc and more.
+icon: check-square
+category: Productivity
+documentation_url: https://www.docuseal.co/
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/docuseal-with-postgres.yaml
+images:
+  - service: docuseal
+    image: docuseal/docuseal:latest
+  - service: postgresql
+    image: postgres:16-alpine
+env:
+  - key: POSTGRES_USER
+    label: Postgres User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRES_PASSWORD
+    label: Postgres Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: POSTGRES_DB
+    label: Postgres Db
+    description: Defaults to docuseal.
+    default: docuseal
+domains:
+  - service: docuseal
+    port: 3000
+    description: Public address of docuseal.
+healthcheck:
+  service: docuseal
+  port: 3000
+  path: /

@@ -15,6 +15,7 @@ import { TemplateLogo } from '../../components/TemplateLogo'
 import { RamFitBadge } from '../../components/RamFitBadge'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { TemplateInstallForm } from '../../components/TemplateInstallForm'
+import { TemplateStackPanel } from '../../components/TemplateStackPanel'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { formatBytes } from '../../lib/format'
 import { routeErrorMessage } from '../../lib/apiError'
@@ -115,6 +116,13 @@ function TemplateDetailRoute() {
 
       {template.manifest ? (
         <TemplateInstallForm manifest={template.manifest} />
+      ) : null}
+
+      {template.stack?.length ? (
+        <TemplateStackPanel
+          stack={template.stack}
+          source={template.manifest?.source}
+        />
       ) : null}
 
       <div className="flex flex-col items-end gap-1.5">

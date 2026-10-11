@@ -1,0 +1,53 @@
+id: paymenter
+name: Paymenter
+description: Open-Source Billing, Built for Hosting
+icon: coins
+category: Finance
+documentation_url: https://paymenter.org/docs/guides/docker
+recommended_memory_bytes: 671088640
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/paymenter.yaml
+images:
+  - service: mariadb
+    image: mariadb:11.8
+  - service: paymenter
+    image: ghcr.io/paymenter/paymenter:v1.4.5
+  - service: redis
+    image: redis:alpine
+env:
+  - key: MYSQLROOT_PASSWORD
+    label: Mysqlroot Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: MYSQL_USER
+    label: Mysql User
+    description: Generated when the app is installed.
+    generate: user
+  - key: MYSQL_PASSWORD
+    label: Mysql Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: KEY_BASE64
+    label: Key Base64
+    description: Generated when the app is installed.
+    generate: base64
+    secret: true
+  - key: REDIS_PASSWORD
+    label: Redis Password
+    description: Generated when the app is installed.
+    generate: password
+    length: 64
+    secret: true
+domains:
+  - service: paymenter
+    port: 80
+    description: Public address of paymenter.
+healthcheck:
+  service: paymenter
+  port: 80
+  path: /

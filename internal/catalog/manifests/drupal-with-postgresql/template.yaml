@@ -1,0 +1,31 @@
+id: drupal-with-postgresql
+name: Drupal With Postgresql
+description: Drupal is a free and open-source web content management system written in PHP and distributed under the GNU General Public License.
+icon: app-window
+category: Applications
+documentation_url: https://www.drupal.org/about
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/drupal-with-postgresql.yaml
+images:
+  - service: drupal
+    image: drupal:10-apache
+  - service: postgres
+    image: postgres:16
+env:
+  - key: POSTGRES_PASSWORD
+    label: Postgres Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: drupal
+    port: 80
+    description: Public address of drupal.
+healthcheck:
+  service: drupal
+  port: 80
+  path: /

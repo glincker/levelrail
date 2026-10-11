@@ -1,0 +1,99 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.15
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_PASSWORD}
+    volumes:
+      - meilisearch-data:/meili_data
+    healthcheck:
+      interval: 2s
+      retries: 15
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://127.0.0.1:7700/health
+      timeout: 10s
+  open-archiver:
+    image: logiclabshq/open-archiver:latest
+    ports:
+      - "3000"
+    environment:
+      BODY_SIZE_LIMIT: 100M
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/open-archiver-db
+      ENCRYPTION_KEY: ${ENCRYPTIONKEY_HEX}
+      JWT_EXPIRES_IN: 7d
+      JWT_SECRET: ${JWT_BASE64}
+      MEILI_HOST: http://meilisearch:7700
+      MEILI_MASTER_KEY: ${MEILISEARCH_PASSWORD}
+      NODE_ENV: production
+      PORT_BACKEND: "4000"
+      PORT_FRONTEND: "3000"
+      POSTGRES_DB: open_archive
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      RATE_LIMIT_MAX_REQUESTS: "100"
+      RATE_LIMIT_WINDOW_MS: "60000"
+      REDIS_HOST: valkey
+      REDIS_PASSWORD: ${VALKEY_PASSWORD}
+      REDIS_PORT: "6379"
+      REDIS_TLS_ENABLED: "false"
+      STORAGE_ENCRYPTION_KEY: ${STORAGEENCRYPTIONKEY_HEX}
+      STORAGE_LOCAL_ROOT_PATH: /var/data/open-archiver
+      STORAGE_S3_ACCESS_KEY_ID: ${STORAGE_S3_ACCESS_KEY_ID}
+      STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET}
+      STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT}
+      STORAGE_S3_FORCE_PATH_STYLE: "false"
+      STORAGE_S3_REGION: ${STORAGE_S3_REGION}
+      STORAGE_S3_SECRET_ACCESS_KEY: ${STORAGE_S3_SECRET_ACCESS_KEY}
+      STORAGE_TYPE: local
+      SYNC_FREQUENCY: '* * * * *'
+    volumes:
+      - archiver-data:/var/data/open-archiver
+    depends_on:
+      meilisearch:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 60s
+      test:
+        - CMD-SHELL
+        - curl -fsS -o /dev/null http://127.0.0.1:3000/
+      timeout: 10s
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      LC_ALL: C
+      POSTGRES_DB: open-archiver-db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      interval: 10s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+      timeout: 20s
+  valkey:
+    image: valkey/valkey:8-alpine
+    command: valkey-server --requirepass $GENERATED_VALKEY_PASSWORD
+    environment:
+      GENERATED_VALKEY_PASSWORD: ${VALKEY_PASSWORD}
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      interval: 10s
+      retries: 3
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 5s

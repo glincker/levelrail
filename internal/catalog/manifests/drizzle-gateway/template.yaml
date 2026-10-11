@@ -1,0 +1,29 @@
+id: drizzle-gateway
+name: Drizzle Gateway
+description: Free self-hosted Drizzle Studio on steroids
+icon: code
+category: Developer Tools
+documentation_url: https://gateway.drizzle.team/
+recommended_memory_bytes: 268435456
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/drizzle-gateway.yaml
+images:
+  - service: drizzle-gateway
+    image: ghcr.io/drizzle-team/gateway:latest
+env:
+  - key: DRIZZLE_PASSWORD
+    label: Drizzle Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: drizzle-gateway
+    port: 4983
+    description: Public address of drizzle-gateway.
+healthcheck:
+  service: drizzle-gateway
+  port: 4983
+  path: /

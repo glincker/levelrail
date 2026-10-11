@@ -1,0 +1,16 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  newt:
+    image: fosrl/newt:latest
+    environment:
+      NEWT_ID: ${NEWT_ID}
+      NEWT_SECRET: ${NEWT_SECRET}
+      PANGOLIN_ENDPOINT: https://pangolin.domain.tld
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD
+        - newt
+        - --version
+      timeout: 20s

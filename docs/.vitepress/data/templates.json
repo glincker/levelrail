@@ -1052,6 +1052,26 @@
   ]
  },
  {
+  "id": "bento-pdf",
+  "name": "Bento Pdf",
+  "slogan": "Process PDFs entirely in your browser. No uploads. No servers. Complete privacy.",
+  "category": "Productivity",
+  "docUrl": "https://bentopdf.com/docs",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "bento-pdf",
+    "image": "ghcr.io/alam00000/bentopdf:v1.16.1",
+    "ports": [
+     8080
+    ],
+    "volumes": []
+   }
+  ],
+  "env": []
+ },
+ {
   "id": "beszel",
   "name": "Beszel",
   "slogan": "A lightweight server monitoring hub with historical stats for CPU, memory, disk, and network.",
@@ -1075,6 +1095,114 @@
    {
     "service": "beszel",
     "key": "APP_URL",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "bluesky-pds",
+  "name": "Bluesky Pds",
+  "slogan": "Bluesky PDS (Personal Data Server)",
+  "category": "Developer Tools",
+  "docUrl": "https://github.com/bluesky-social/pds",
+  "memoryMiB": 256,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "pds",
+    "image": "ghcr.io/bluesky-social/pds:0.4.182",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "pds-data -> /pds"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "pds",
+    "key": "LOG_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_ADMIN_EMAIL",
+    "kind": "preset"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_ADMIN_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_BLOBSTORE_DISK_LOCATION",
+    "kind": "preset"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_BLOB_UPLOAD_LIMIT",
+    "kind": "preset"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_BSKY_APP_VIEW_DID",
+    "kind": "preset"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_BSKY_APP_VIEW_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_CRAWLERS",
+    "kind": "preset"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_DATA_DIRECTORY",
+    "kind": "preset"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_DID_PLC_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_EMAIL_FROM_ADDRESS",
+    "kind": "preset"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_EMAIL_SMTP_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_HOSTNAME",
+    "kind": "required"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_JWT_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX",
+    "kind": "generated"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_REPORT_SERVICE_DID",
+    "kind": "preset"
+   },
+   {
+    "service": "pds",
+    "key": "PDS_REPORT_SERVICE_URL",
     "kind": "preset"
    }
   ]
@@ -1734,6 +1862,108 @@
   ]
  },
  {
+  "id": "calibre-web-automated-book-downloader",
+  "name": "Calibre Web Automated Book Downloader",
+  "slogan": "An intuitive web interface for searching and requesting book downloads, designed to work seamlessly with Calibre-Web-Automated.",
+  "category": "Media",
+  "docUrl": "https://github.com/calibrain/calibre-web-automated-book-downloader",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "calibre-web-automated",
+    "image": "crocodilestick/calibre-web-automated:latest",
+    "ports": [
+     8083
+    ],
+    "volumes": [
+     "cwa-config -> /config",
+     "cwa-book-ingest -> /cwa-book-ingest",
+     "calibre-library -> /calibre-library",
+     "calibre-plugins -> /config/.config/calibre/plugins"
+    ]
+   },
+   {
+    "name": "calibre-web-downloader",
+    "image": "ghcr.io/calibrain/calibre-web-automated-book-downloader:latest",
+    "ports": [
+     8084
+    ],
+    "volumes": [
+     "cwa-book-ingest -> /cwa-book-ingest",
+     "cwa-config -> /cwa-config"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "calibre-web-automated",
+    "key": "NETWORK_SHARE_MODE",
+    "kind": "preset"
+   },
+   {
+    "service": "calibre-web-automated",
+    "key": "PGID",
+    "kind": "preset"
+   },
+   {
+    "service": "calibre-web-automated",
+    "key": "PUID",
+    "kind": "preset"
+   },
+   {
+    "service": "calibre-web-automated",
+    "key": "TZ",
+    "kind": "preset"
+   },
+   {
+    "service": "calibre-web-downloader",
+    "key": "APP_ENV",
+    "kind": "preset"
+   },
+   {
+    "service": "calibre-web-downloader",
+    "key": "BOOK_LANGUAGE",
+    "kind": "preset"
+   },
+   {
+    "service": "calibre-web-downloader",
+    "key": "CWA_DB_PATH",
+    "kind": "preset"
+   },
+   {
+    "service": "calibre-web-downloader",
+    "key": "FLASK_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "calibre-web-downloader",
+    "key": "GID",
+    "kind": "preset"
+   },
+   {
+    "service": "calibre-web-downloader",
+    "key": "LOG_LEVEL",
+    "kind": "preset"
+   },
+   {
+    "service": "calibre-web-downloader",
+    "key": "TZ",
+    "kind": "preset"
+   },
+   {
+    "service": "calibre-web-downloader",
+    "key": "UID",
+    "kind": "preset"
+   },
+   {
+    "service": "calibre-web-downloader",
+    "key": "USE_BOOK_TITLE",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
   "id": "campfire",
   "name": "Campfire",
   "slogan": "Basecamp's open-source group chat app: rooms, direct messages, and file sharing, self-hosted as one container.",
@@ -1773,6 +2003,130 @@
     "service": "campfire",
     "key": "SSL_DOMAIN",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "cap",
+  "name": "Cap",
+  "slogan": "Cap is the open source alternative to Loom. Lightweight, powerful, and cross-platform. Record and share in seconds.",
+  "category": "Media",
+  "docUrl": "https://cap.so",
+  "memoryMiB": 768,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "cap-db",
+    "image": "mysql:8.0",
+    "ports": [],
+    "volumes": [
+     "cap_db -> /var/lib/mysql"
+    ]
+   },
+   {
+    "name": "cap-web",
+    "image": "ghcr.io/capsoftware/cap-web:latest",
+    "ports": [
+     3000
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "cap-db",
+    "key": "MYSQL_ALLOW_EMPTY_PASSWORD",
+    "kind": "preset"
+   },
+   {
+    "service": "cap-db",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "cap-db",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "cap-db",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "cap-db",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "cap-web",
+    "key": "CAP_AWS_ACCESS_KEY",
+    "kind": "required"
+   },
+   {
+    "service": "cap-web",
+    "key": "CAP_AWS_BUCKET",
+    "kind": "required"
+   },
+   {
+    "service": "cap-web",
+    "key": "CAP_AWS_ENDPOINT",
+    "kind": "required"
+   },
+   {
+    "service": "cap-web",
+    "key": "CAP_AWS_REGION",
+    "kind": "required"
+   },
+   {
+    "service": "cap-web",
+    "key": "CAP_AWS_SECRET_KEY",
+    "kind": "required"
+   },
+   {
+    "service": "cap-web",
+    "key": "DATABASE_ENCRYPTION_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "cap-web",
+    "key": "DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "cap-web",
+    "key": "NEXTAUTH_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "cap-web",
+    "key": "NEXTAUTH_URL",
+    "kind": "required"
+   },
+   {
+    "service": "cap-web",
+    "key": "NEXT_RUNTIME",
+    "kind": "preset"
+   },
+   {
+    "service": "cap-web",
+    "key": "S3_INTERNAL_ENDPOINT",
+    "kind": "required"
+   },
+   {
+    "service": "cap-web",
+    "key": "S3_PATH_STYLE",
+    "kind": "preset"
+   },
+   {
+    "service": "cap-web",
+    "key": "S3_PUBLIC_ENDPOINT",
+    "kind": "required"
+   },
+   {
+    "service": "cap-web",
+    "key": "WEB_URL",
+    "kind": "required"
    }
   ]
  },
@@ -2164,6 +2518,170 @@
   ]
  },
  {
+  "id": "classicpress-with-mariadb",
+  "name": "Classicpress With Mariadb",
+  "slogan": "A lightweight, stable, instantly familiar free open-source content management system, based on WordPress without the block editor (Gutenberg).",
+  "category": "Applications",
+  "docUrl": "https://www.classicpress.net/",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "classicpress",
+    "image": "classicpress/classicpress:latest",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "classicpress-files -> /var/www/html"
+    ]
+   },
+   {
+    "name": "mariadb",
+    "image": "mariadb:11",
+    "ports": [],
+    "volumes": [
+     "mariadb-data -> /var/lib/mysql"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "classicpress",
+    "key": "CLASSICPRESS_DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "classicpress",
+    "key": "CLASSICPRESS_DB_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "classicpress",
+    "key": "CLASSICPRESS_DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "classicpress",
+    "key": "CLASSICPRESS_DB_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "classicpress-with-mysql",
+  "name": "Classicpress With Mysql",
+  "slogan": "A lightweight, stable, instantly familiar free open-source content management system, based on WordPress without the block editor (Gutenberg).",
+  "category": "Applications",
+  "docUrl": "https://www.classicpress.net/",
+  "memoryMiB": 768,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "classicpress",
+    "image": "classicpress/classicpress:latest",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "classicpress-files -> /var/www/html"
+    ]
+   },
+   {
+    "name": "mysql",
+    "image": "mysql:8",
+    "ports": [],
+    "volumes": [
+     "mysql-data -> /var/lib/mysql"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "classicpress",
+    "key": "CLASSICPRESS_DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "classicpress",
+    "key": "CLASSICPRESS_DB_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "classicpress",
+    "key": "CLASSICPRESS_DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "classicpress",
+    "key": "CLASSICPRESS_DB_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "classicpress-without-database",
+  "name": "Classicpress Without Database",
+  "slogan": "A lightweight, stable, instantly familiar free open-source content management system, based on WordPress without the block editor (Gutenberg).",
+  "category": "Applications",
+  "docUrl": "https://www.classicpress.net/",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "classicpress",
+    "image": "classicpress/classicpress:latest",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "classicpress-files -> /var/www/html"
+    ]
+   }
+  ],
+  "env": []
+ },
+ {
   "id": "clickhouse",
   "name": "ClickHouse",
   "slogan": "A columnar database built for fast analytical queries over large datasets.",
@@ -2342,6 +2860,30 @@
   ]
  },
  {
+  "id": "cockpit",
+  "name": "Cockpit",
+  "slogan": "Cockpit is a headless content platform that is lightweight, fast and ready for takeoff.",
+  "category": "Applications",
+  "docUrl": "https://getcockpit.com/documentation/",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "cockpit",
+    "image": "cockpithq/cockpit:core-latest",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "cockpit-config -> /var/www/html/config",
+     "cockpit-spaces -> /var/www/html/.spaces",
+     "cockpit-storage -> /var/www/html/storage"
+    ]
+   }
+  ],
+  "env": []
+ },
+ {
   "id": "cockpit-cms",
   "name": "Cockpit CMS",
   "slogan": "A headless content platform for managing structured content behind a clean API, without a big CMS footprint.",
@@ -2389,6 +2931,87 @@
    {
     "service": "code-server",
     "key": "PASSWORD",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "codimd",
+  "name": "Codimd",
+  "slogan": "Realtime collaborative markdown notes on all platforms",
+  "category": "Productivity",
+  "docUrl": "https://hackmd.io/c/codimd-documentation",
+  "memoryMiB": 512,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "codimd",
+    "image": "nabo.codimd.dev/hackmdio/hackmd:latest",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "uploads_data -> /home/hackmd/app/public/uploads"
+    ]
+   },
+   {
+    "name": "postgres",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "codimd_postgres_data -> /var/lib/postgresql/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "codimd",
+    "key": "CMD_ALLOW_EMAIL_REGISTER",
+    "kind": "preset"
+   },
+   {
+    "service": "codimd",
+    "key": "CMD_DB_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "codimd",
+    "key": "CMD_DOMAIN",
+    "kind": "required"
+   },
+   {
+    "service": "codimd",
+    "key": "CMD_EMAIL",
+    "kind": "preset"
+   },
+   {
+    "service": "codimd",
+    "key": "CMD_PROTOCOL_USESSL",
+    "kind": "preset"
+   },
+   {
+    "service": "codimd",
+    "key": "CMD_SESSION_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "codimd",
+    "key": "CMD_USECDN",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_USER",
     "kind": "generated"
    }
   ]
@@ -2510,6 +3133,177 @@
     "service": "convertx",
     "key": "JWT_SECRET",
     "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "convex",
+  "name": "Convex",
+  "slogan": "Convex is the open-source reactive database for app developers.",
+  "category": "Developer Tools",
+  "docUrl": "https://github.com/get-convex/convex-backend/blob/main/self-hosted/README.md",
+  "memoryMiB": 512,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "backend",
+    "image": "ghcr.io/get-convex/convex-backend:a9a760ca10399ed42e1b4bb87c78539a235488c7",
+    "ports": [
+     3210
+    ],
+    "volumes": [
+     "data -> /convex/data"
+    ]
+   },
+   {
+    "name": "dashboard",
+    "image": "ghcr.io/get-convex/convex-dashboard:a9a760ca10399ed42e1b4bb87c78539a235488c7",
+    "ports": [
+     6791
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "backend",
+    "key": "ACTIONS_USER_TIMEOUT_SECS",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "AWS_ACCESS_KEY_ID",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "AWS_REGION",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "AWS_S3_DISABLE_CHECKSUMS",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "AWS_S3_DISABLE_SSE",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "AWS_S3_FORCE_PATH_STYLE",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "AWS_SECRET_ACCESS_KEY",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "AWS_SESSION_TOKEN",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "CONVEX_CLOUD_ORIGIN",
+    "kind": "required"
+   },
+   {
+    "service": "backend",
+    "key": "CONVEX_RELEASE_VERSION_DEV",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "CONVEX_SITE_ORIGIN",
+    "kind": "required"
+   },
+   {
+    "service": "backend",
+    "key": "DATABASE_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "DISABLE_BEACON",
+    "kind": "required"
+   },
+   {
+    "service": "backend",
+    "key": "DO_NOT_REQUIRE_SSL",
+    "kind": "required"
+   },
+   {
+    "service": "backend",
+    "key": "INSTANCE_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "INSTANCE_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "backend",
+    "key": "MYSQL_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "POSTGRES_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "REDACT_LOGS_TO_CLIENT",
+    "kind": "required"
+   },
+   {
+    "service": "backend",
+    "key": "RUST_BACKTRACE",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "RUST_LOG",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "S3_ENDPOINT_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "S3_STORAGE_EXPORTS_BUCKET",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "S3_STORAGE_FILES_BUCKET",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "S3_STORAGE_MODULES_BUCKET",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "S3_STORAGE_SEARCH_BUCKET",
+    "kind": "preset"
+   },
+   {
+    "service": "backend",
+    "key": "S3_STORAGE_SNAPSHOT_IMPORTS_BUCKET",
+    "kind": "preset"
+   },
+   {
+    "service": "dashboard",
+    "key": "NEXT_PUBLIC_DEPLOYMENT_URL",
+    "kind": "required"
    }
   ]
  },
@@ -3115,6 +3909,62 @@
   ]
  },
  {
+  "id": "docuseal-with-postgres",
+  "name": "Docuseal With Postgres",
+  "slogan": "Document Signing for Everyone free forever for individuals, extensible for businesses and developers. Open Source Alternative to DocuSign, PandaDoc and more.",
+  "category": "Productivity",
+  "docUrl": "https://www.docuseal.co/",
+  "memoryMiB": 512,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "docuseal",
+    "image": "docuseal/docuseal:latest",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "docuseal-data -> /data"
+    ]
+   },
+   {
+    "name": "postgresql",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "postgresql-data -> /var/lib/postgresql/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "docuseal",
+    "key": "DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "docuseal",
+    "key": "HOST",
+    "kind": "required"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "dokuwiki",
   "name": "DokuWiki",
   "slogan": "A simple, database-free wiki that stores pages as plain text files, easy to back up.",
@@ -3260,6 +4110,39 @@
   "env": []
  },
  {
+  "id": "drizzle-gateway",
+  "name": "Drizzle Gateway",
+  "slogan": "Free self-hosted Drizzle Studio on steroids",
+  "category": "Developer Tools",
+  "docUrl": "https://gateway.drizzle.team/",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "drizzle-gateway",
+    "image": "ghcr.io/drizzle-team/gateway:latest",
+    "ports": [
+     4983
+    ],
+    "volumes": [
+     "drizzle-gateway-data -> /app"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "drizzle-gateway",
+    "key": "MASTERPASS",
+    "kind": "generated"
+   },
+   {
+    "service": "drizzle-gateway",
+    "key": "STORE_PATH",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
   "id": "drupal",
   "name": "Drupal",
   "slogan": "A mature, flexible CMS for structured content, multilingual sites, and large editorial teams.",
@@ -3303,6 +4186,73 @@
    },
    {
     "service": "db",
+    "key": "POSTGRES_USER",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "drupal-with-postgresql",
+  "name": "Drupal With Postgresql",
+  "slogan": "Drupal is a free and open-source web content management system written in PHP and distributed under the GNU General Public License.",
+  "category": "Applications",
+  "docUrl": "https://www.drupal.org/about",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "drupal",
+    "image": "drupal:10-apache",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "drupal_modules -> /var/www/html/modules",
+     "drupal_profiles -> /var/www/html/profiles",
+     "drupal_themes -> /var/www/html/themes",
+     "drupal_sites -> /var/www/html/sites"
+    ]
+   },
+   {
+    "name": "postgres",
+    "image": "postgres:16",
+    "ports": [],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "drupal",
+    "key": "DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "drupal",
+    "key": "DB_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "drupal",
+    "key": "DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "drupal",
+    "key": "DB_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
     "key": "POSTGRES_USER",
     "kind": "preset"
    }
@@ -3599,6 +4549,35 @@
   ]
  },
  {
+  "id": "emqx-enterprise",
+  "name": "Emqx Enterprise",
+  "slogan": "Open-source MQTT broker for IoT, IIoT, and connected vehicles.",
+  "category": "Infrastructure",
+  "docUrl": "https://www.emqx.io/docs/en/latest/deploy/install-docker.html",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "emqx",
+    "image": "emqx/emqx-enterprise:6.2.0",
+    "ports": [
+     18083
+    ],
+    "volumes": [
+     "emqx_data -> /opt/emqx/data",
+     "emqx_log -> /opt/emqx/log"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "emqx",
+    "key": "EMQX_DASHBOARD__DEFAULT_PASSWORD",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "espocrm",
   "name": "EspoCRM",
   "slogan": "An open-source CRM for managing sales, support, and customer relationships end to end.",
@@ -3724,6 +4703,660 @@
   ]
  },
  {
+  "id": "evolution-api",
+  "name": "Evolution Api",
+  "slogan": "Multi-platform messaging (whatsapp and more) integration API",
+  "category": "Developer Tools",
+  "docUrl": "https://doc.evolution-api.com/v2/en/get-started/introduction",
+  "memoryMiB": 640,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "api",
+    "image": "evoapicloud/evolution-api:v2.3.7",
+    "ports": [
+     8080
+    ],
+    "volumes": [
+     "evolution_instances -> /evolution/instances"
+    ]
+   },
+   {
+    "name": "postgres",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "postgres_data -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:7-alpine",
+    "ports": [],
+    "volumes": [
+     "evolution_redis -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "api",
+    "key": "AUTHENTICATION_API_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "api",
+    "key": "AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "CACHE_LOCAL_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "CACHE_REDIS_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "CACHE_REDIS_PREFIX_KEY",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "CACHE_REDIS_SAVE_INSTANCES",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "CACHE_REDIS_URI",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "CHATWOOT_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "CHATWOOT_IMPORT_DATABASE_CONNECTION_URI",
+    "kind": "generated"
+   },
+   {
+    "service": "api",
+    "key": "CHATWOOT_IMPORT_PLACEHOLDER_MEDIA_MESSAGE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "CHATWOOT_MESSAGE_DELETE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "CHATWOOT_MESSAGE_READ",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "CONFIG_SESSION_PHONE_CLIENT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "CONFIG_SESSION_PHONE_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DATABASE_CONNECTION_CLIENT_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DATABASE_CONNECTION_URI",
+    "kind": "generated"
+   },
+   {
+    "service": "api",
+    "key": "DATABASE_PROVIDER",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DATABASE_SAVE_DATA_CHATS",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DATABASE_SAVE_DATA_CONTACTS",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DATABASE_SAVE_DATA_HISTORIC",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DATABASE_SAVE_DATA_INSTANCE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DATABASE_SAVE_DATA_LABELS",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DATABASE_SAVE_DATA_NEW_MESSAGE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DATABASE_SAVE_MESSAGE_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "api",
+    "key": "DB_POSTGRESDB_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DB_POSTGRESDB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DB_POSTGRESDB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "api",
+    "key": "DB_POSTGRESDB_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DB_POSTGRESDB_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "api",
+    "key": "DB_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DEL_INSTANCE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "DIFY_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "FLOWISE_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "LANGUAGE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "N8N_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "OPENAI_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "QRCODE_LIMIT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_APPLICATION_STARTUP",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_CALL",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_CHATS_DELETE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_CHATS_SET",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_CHATS_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_CHATS_UPSERT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_CONNECTION_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_CONTACTS_SET",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_CONTACTS_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_CONTACTS_UPSERT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_GROUPS_UPSERT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_GROUP_PARTICIPANTS_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_GROUP_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_INSTANCE_CREATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_INSTANCE_DELETE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_MESSAGES_DELETE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_MESSAGES_EDITED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_MESSAGES_SET",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_MESSAGES_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_MESSAGES_UPSERT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_PRESENCE_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_QRCODE_UPDATED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_SEND_MESSAGE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_TYPEBOT_CHANGE_STATUS",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EVENTS_TYPEBOT_START",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_EXCHANGE_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_GLOBAL_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "RABBITMQ_URI",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "S3_ACCESS_KEY",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "S3_BUCKET",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "S3_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "S3_ENDPOINT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "S3_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "S3_REGION",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "S3_SECRET_KEY",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "S3_USE_SSL",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "SERVER_URL",
+    "kind": "required"
+   },
+   {
+    "service": "api",
+    "key": "SQS_ACCESS_KEY_ID",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "SQS_ACCOUNT_ID",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "SQS_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "SQS_REGION",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "SQS_SECRET_ACCESS_KEY",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "TYPEBOT_API_VERSION",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "TYPEBOT_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WA_BUSINESS_LANGUAGE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WA_BUSINESS_TOKEN_WEBHOOK",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WA_BUSINESS_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WA_BUSINESS_VERSION",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_APPLICATION_STARTUP",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_CALL",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_CHATS_DELETE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_CHATS_SET",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_CHATS_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_CHATS_UPSERT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_CONNECTION_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_CONTACTS_SET",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_CONTACTS_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_CONTACTS_UPSERT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_ERRORS",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_ERRORS_WEBHOOK",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_GROUPS_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_GROUPS_UPSERT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_GROUP_PARTICIPANTS_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_LABELS_ASSOCIATION",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_LABELS_EDIT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_MESSAGES_DELETE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_MESSAGES_EDITED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_MESSAGES_SET",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_MESSAGES_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_MESSAGES_UPSERT",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_PRESENCE_UPDATE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_QRCODE_UPDATED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_SEND_MESSAGE",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_TYPEBOT_CHANGE_STATUS",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_EVENTS_TYPEBOT_START",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_GLOBAL_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_GLOBAL_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBSOCKET_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "api",
+    "key": "WEBSOCKET_GLOBAL_EVENTS",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "AUTHENTICATION_API_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "excalidraw",
   "name": "Excalidraw",
   "slogan": "A self-hosted virtual whiteboard for sketching diagrams that feel hand-drawn.",
@@ -3742,6 +5375,69 @@
    }
   ],
   "env": []
+ },
+ {
+  "id": "executor",
+  "name": "Executor",
+  "slogan": "Self-hosted AI agent integrations and code execution server.",
+  "category": "Developer Tools",
+  "docUrl": "https://executor.sh/docs/hosted/docker",
+  "memoryMiB": 256,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "executor",
+    "image": "ghcr.io/rhyssullivan/executor-selfhost:latest",
+    "ports": [
+     4788
+    ],
+    "volumes": [
+     "executor-data -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "executor",
+    "key": "EXECUTOR_ALLOW_LOCAL_NETWORK",
+    "kind": "preset"
+   },
+   {
+    "service": "executor",
+    "key": "EXECUTOR_DATA_DIR",
+    "kind": "preset"
+   },
+   {
+    "service": "executor",
+    "key": "EXECUTOR_DB_PATH",
+    "kind": "preset"
+   },
+   {
+    "service": "executor",
+    "key": "EXECUTOR_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "executor",
+    "key": "EXECUTOR_ORG_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "executor",
+    "key": "EXECUTOR_ORG_SLUG",
+    "kind": "preset"
+   },
+   {
+    "service": "executor",
+    "key": "EXECUTOR_WEB_BASE_URL",
+    "kind": "required"
+   },
+   {
+    "service": "executor",
+    "key": "PORT",
+    "kind": "preset"
+   }
+  ]
  },
  {
   "id": "fastapi-postgres-starter",
@@ -3964,6 +5660,28 @@
     "kind": "preset"
    }
   ]
+ },
+ {
+  "id": "firefox",
+  "name": "Firefox",
+  "slogan": "Fast, private, and self-hosted secure browser for browsing without limits.",
+  "category": "Productivity",
+  "docUrl": "https://github.com/jlesage/docker-firefox",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "firefox",
+    "image": "jlesage/firefox:latest",
+    "ports": [
+     5800
+    ],
+    "volumes": [
+     "firefox_config -> /config"
+    ]
+   }
+  ],
+  "env": []
  },
  {
   "id": "firefox-browser",
@@ -4282,6 +6000,125 @@
   ]
  },
  {
+  "id": "flowise-with-databases",
+  "name": "Flowise With Databases",
+  "slogan": "Flowise is an open source low-code tool for developers to build customized LLM orchestration flows & AI agents. Also deploys Redis, Postgres and other services.",
+  "category": "AI",
+  "docUrl": "https://docs.flowiseai.com/",
+  "memoryMiB": 896,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "flowise",
+    "image": "flowiseai/flowise:latest",
+    "ports": [
+     3001
+    ],
+    "volumes": [
+     "flowise-data -> /root/.flowise"
+    ]
+   },
+   {
+    "name": "pg-record-manager",
+    "image": "postgres:16",
+    "ports": [],
+    "volumes": [
+     "pg-record-manager-data -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "qdrant",
+    "image": "qdrant/qdrant:latest",
+    "ports": [
+     6333
+    ],
+    "volumes": [
+     "flowise-qdrant-data -> /qdrant/storage"
+    ]
+   },
+   {
+    "name": "redis-cache",
+    "image": "redis:7",
+    "ports": [],
+    "volumes": [
+     "flowise-redis-cache-data -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "flowise",
+    "key": "APIKEY_PATH",
+    "kind": "preset"
+   },
+   {
+    "service": "flowise",
+    "key": "BLOB_STORAGE_PATH",
+    "kind": "preset"
+   },
+   {
+    "service": "flowise",
+    "key": "DATABASE_PATH",
+    "kind": "preset"
+   },
+   {
+    "service": "flowise",
+    "key": "DEBUG",
+    "kind": "preset"
+   },
+   {
+    "service": "flowise",
+    "key": "DISABLE_FLOWISE_TELEMETRY",
+    "kind": "preset"
+   },
+   {
+    "service": "flowise",
+    "key": "FLOWISE_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "flowise",
+    "key": "FLOWISE_USERNAME",
+    "kind": "generated"
+   },
+   {
+    "service": "flowise",
+    "key": "LOG_PATH",
+    "kind": "preset"
+   },
+   {
+    "service": "flowise",
+    "key": "PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "flowise",
+    "key": "SECRETKEY_PATH",
+    "kind": "preset"
+   },
+   {
+    "service": "pg-record-manager",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "pg-record-manager",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "pg-record-manager",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "qdrant",
+    "key": "QDRANT__SERVICE__API_KEY",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "forgejo",
   "name": "Forgejo",
   "slogan": "A lightweight, community-governed Git forge with issues, pull requests, and CI runners.",
@@ -4392,6 +6229,304 @@
     "service": "forgejo",
     "key": "FORGEJO__server__ROOT_URL",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "forgejo-with-mariadb",
+  "name": "Forgejo With Mariadb",
+  "slogan": "Forgejo is a self-hosted lightweight software forge. Easy to install and low maintenance, it just does the job.",
+  "category": "Developer Tools",
+  "docUrl": "https://forgejo.org/docs",
+  "memoryMiB": 512,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "forgejo",
+    "image": "codeberg.org/forgejo/forgejo:15",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "forgejo-data -> /data"
+    ]
+   },
+   {
+    "name": "mariadb",
+    "image": "mariadb:11",
+    "ports": [],
+    "volumes": [
+     "forgejo-mariadb-data -> /var/lib/mysql"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__DB_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__PASSWD",
+    "kind": "generated"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__USER",
+    "kind": "generated"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__migrations__ALLOWED_DOMAINS",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__migrations__ALLOW_LOCALNETWORKS",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__server__ROOT_URL",
+    "kind": "required"
+   },
+   {
+    "service": "forgejo",
+    "key": "USER_GID",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "USER_UID",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "forgejo-with-mysql",
+  "name": "Forgejo With Mysql",
+  "slogan": "Forgejo is a self-hosted lightweight software forge. Easy to install and low maintenance, it just does the job.",
+  "category": "Developer Tools",
+  "docUrl": "https://forgejo.org/docs",
+  "memoryMiB": 768,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "forgejo",
+    "image": "codeberg.org/forgejo/forgejo:15",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "forgejo-data -> /data"
+    ]
+   },
+   {
+    "name": "mysql",
+    "image": "mysql:8",
+    "ports": [],
+    "volumes": [
+     "forgejo-mysql-data -> /var/lib/mysql"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__DB_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__PASSWD",
+    "kind": "generated"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__USER",
+    "kind": "generated"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__migrations__ALLOWED_DOMAINS",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__migrations__ALLOW_LOCALNETWORKS",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__server__ROOT_URL",
+    "kind": "required"
+   },
+   {
+    "service": "forgejo",
+    "key": "USER_GID",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "USER_UID",
+    "kind": "preset"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "forgejo-with-postgresql",
+  "name": "Forgejo With Postgresql",
+  "slogan": "Forgejo is a self-hosted lightweight software forge. Easy to install and low maintenance, it just does the job.",
+  "category": "Developer Tools",
+  "docUrl": "https://forgejo.org/docs",
+  "memoryMiB": 512,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "forgejo",
+    "image": "codeberg.org/forgejo/forgejo:15",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "forgejo-data -> /data"
+    ]
+   },
+   {
+    "name": "postgresql",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "forgejo-postgresql-data -> /var/lib/postgresql/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__DB_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__PASSWD",
+    "kind": "generated"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__database__USER",
+    "kind": "generated"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__migrations__ALLOWED_DOMAINS",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__migrations__ALLOW_LOCALNETWORKS",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "FORGEJO__server__ROOT_URL",
+    "kind": "required"
+   },
+   {
+    "service": "forgejo",
+    "key": "USER_GID",
+    "kind": "preset"
+   },
+   {
+    "service": "forgejo",
+    "key": "USER_UID",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
    }
   ]
  },
@@ -4654,6 +6789,222 @@
     "service": "freshrss",
     "key": "DB_USER",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "freshrss-with-mariadb",
+  "name": "Freshrss With Mariadb",
+  "slogan": "A free, self-hostable feed aggregator.",
+  "category": "Productivity",
+  "docUrl": "https://freshrss.org/index.html",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "freshrss",
+    "image": "freshrss/freshrss:latest",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "freshrss-data -> /var/www/FreshRSS/data",
+     "freshrss-extensions -> /var/www/FreshRSS/extensions"
+    ]
+   },
+   {
+    "name": "freshrss-db",
+    "image": "mariadb:11",
+    "ports": [],
+    "volumes": [
+     "mariadb-data -> /var/lib/mysql"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "freshrss",
+    "key": "CRON_MIN",
+    "kind": "preset"
+   },
+   {
+    "service": "freshrss",
+    "key": "MARIADB_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "freshrss",
+    "key": "MARIADB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "freshrss",
+    "key": "MARIADB_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "freshrss-db",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "freshrss-db",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "freshrss-db",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "freshrss-db",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "freshrss-with-mysql",
+  "name": "Freshrss With Mysql",
+  "slogan": "A free, self-hostable feed aggregator.",
+  "category": "Productivity",
+  "docUrl": "https://freshrss.org/index.html",
+  "memoryMiB": 768,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "freshrss",
+    "image": "freshrss/freshrss:latest",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "freshrss-data -> /var/www/FreshRSS/data",
+     "freshrss-extensions -> /var/www/FreshRSS/extensions"
+    ]
+   },
+   {
+    "name": "freshrss-db",
+    "image": "mysql:8",
+    "ports": [],
+    "volumes": [
+     "mysql-data -> /var/lib/mysql"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "freshrss",
+    "key": "CRON_MIN",
+    "kind": "preset"
+   },
+   {
+    "service": "freshrss",
+    "key": "MYSQL_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "freshrss",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "freshrss",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "freshrss-db",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "freshrss-db",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "freshrss-db",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "freshrss-db",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "freshrss-with-postgresql",
+  "name": "Freshrss With Postgresql",
+  "slogan": "A free, self-hostable feed aggregator.",
+  "category": "Productivity",
+  "docUrl": "https://freshrss.org/index.html",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "freshrss",
+    "image": "freshrss/freshrss:latest",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "freshrss-data -> /var/www/FreshRSS/data",
+     "freshrss-extensions -> /var/www/FreshRSS/extensions"
+    ]
+   },
+   {
+    "name": "freshrss-db",
+    "image": "postgres:16",
+    "ports": [],
+    "volumes": [
+     "freshrss-postgresql-data -> /var/lib/postgresql/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "freshrss",
+    "key": "CRON_MIN",
+    "kind": "preset"
+   },
+   {
+    "service": "freshrss",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "freshrss",
+    "key": "POSTGRES_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "freshrss",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "freshrss",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "freshrss-db",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "freshrss-db",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "freshrss-db",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
    }
   ]
  },
@@ -4961,6 +7312,259 @@
     "service": "gitea",
     "key": "GITEA__database__USER",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "gitea-with-mariadb",
+  "name": "Gitea With Mariadb",
+  "slogan": "Gitea is a self-hosted, lightweight Git service, offering version control, collaboration, and code hosting.",
+  "category": "Developer Tools",
+  "docUrl": "https://docs.gitea.com",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "gitea",
+    "image": "gitea/gitea:latest",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "gitea-data -> /data"
+    ]
+   },
+   {
+    "name": "mariadb",
+    "image": "mariadb:11",
+    "ports": [],
+    "volumes": [
+     "gitea-mariadb-data -> /var/lib/mysql"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "gitea",
+    "key": "GITEA__database__DB_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "gitea",
+    "key": "GITEA__database__HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "gitea",
+    "key": "GITEA__database__NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "gitea",
+    "key": "GITEA__database__PASSWD",
+    "kind": "generated"
+   },
+   {
+    "service": "gitea",
+    "key": "GITEA__database__USER",
+    "kind": "generated"
+   },
+   {
+    "service": "gitea",
+    "key": "USER_GID",
+    "kind": "preset"
+   },
+   {
+    "service": "gitea",
+    "key": "USER_UID",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "gitea-with-mysql",
+  "name": "Gitea With Mysql",
+  "slogan": "Gitea is a self-hosted, lightweight Git service, offering version control, collaboration, and code hosting.",
+  "category": "Developer Tools",
+  "docUrl": "https://docs.gitea.com",
+  "memoryMiB": 768,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "gitea",
+    "image": "gitea/gitea:latest",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "gitea-data -> /data"
+    ]
+   },
+   {
+    "name": "mysql",
+    "image": "mysql:8.0",
+    "ports": [],
+    "volumes": [
+     "gitea-mysql-data -> /var/lib/mysql"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "gitea",
+    "key": "GITEA__database__DB_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "gitea",
+    "key": "GITEA__database__HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "gitea",
+    "key": "GITEA__database__NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "gitea",
+    "key": "GITEA__database__PASSWD",
+    "kind": "generated"
+   },
+   {
+    "service": "gitea",
+    "key": "GITEA__database__USER",
+    "kind": "generated"
+   },
+   {
+    "service": "gitea",
+    "key": "USER_GID",
+    "kind": "preset"
+   },
+   {
+    "service": "gitea",
+    "key": "USER_UID",
+    "kind": "preset"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "gitea-with-postgresql",
+  "name": "Gitea With Postgresql",
+  "slogan": "Gitea is a self-hosted, lightweight Git service, offering version control, collaboration, and code hosting.",
+  "category": "Developer Tools",
+  "docUrl": "https://docs.gitea.com",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "gitea",
+    "image": "gitea/gitea:latest",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "gitea-data -> /data"
+    ]
+   },
+   {
+    "name": "postgresql",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "gitea-postgresql-data -> /var/lib/postgresql/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "gitea",
+    "key": "GITEA__database__DB_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "gitea",
+    "key": "GITEA__database__HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "gitea",
+    "key": "GITEA__database__NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "gitea",
+    "key": "GITEA__database__PASSWD",
+    "kind": "generated"
+   },
+   {
+    "service": "gitea",
+    "key": "GITEA__database__USER",
+    "kind": "generated"
+   },
+   {
+    "service": "gitea",
+    "key": "USER_GID",
+    "kind": "preset"
+   },
+   {
+    "service": "gitea",
+    "key": "USER_UID",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
    }
   ]
  },
@@ -5411,6 +8015,92 @@
   ]
  },
  {
+  "id": "grafana-with-postgresql",
+  "name": "Grafana With Postgresql",
+  "slogan": "Grafana is the open source analytics & monitoring solution for every database.",
+  "category": "Monitoring",
+  "docUrl": "https://grafana.com",
+  "memoryMiB": 512,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "grafana",
+    "image": "grafana/grafana-oss:latest",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "grafana-data -> /var/lib/grafana"
+    ]
+   },
+   {
+    "name": "postgresql",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "postgresql-data -> /var/lib/postgresql/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "grafana",
+    "key": "GF_DATABASE_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "grafana",
+    "key": "GF_DATABASE_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "grafana",
+    "key": "GF_DATABASE_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "grafana",
+    "key": "GF_DATABASE_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "grafana",
+    "key": "GF_DATABASE_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "grafana",
+    "key": "GF_SECURITY_ADMIN_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "grafana",
+    "key": "GF_SERVER_DOMAIN",
+    "kind": "required"
+   },
+   {
+    "service": "grafana",
+    "key": "GF_SERVER_ROOT_URL",
+    "kind": "required"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "gramps-web",
   "name": "Gramps Web",
   "slogan": "An online genealogy system for researching and sharing family trees.",
@@ -5834,6 +8524,189 @@
     "service": "heimdall",
     "key": "TZ",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "hermes-agent-with-webui",
+  "name": "Hermes Agent With Webui",
+  "slogan": "Hermes Agent, autonomous AI agent with persistent memory, scheduling, and a self-hosted web chat UI.",
+  "category": "AI",
+  "docUrl": "https://github.com/nesquena/hermes-webui",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "hermes-agent",
+    "image": "nousresearch/hermes-agent@sha256:2f1f2f1725e5dc9a61cf6a2dea5aca52a776ec4d022cb29679e6aa3ff303e77a",
+    "ports": [],
+    "volumes": [
+     "hermes-home -> /home/hermes/.hermes",
+     "hermes-agent-src -> /opt/hermes"
+    ]
+   },
+   {
+    "name": "hermes-webui",
+    "image": "ghcr.io/nesquena/hermes-webui:0.51.92",
+    "ports": [
+     8787
+    ],
+    "volumes": [
+     "hermes-home -> /home/hermeswebui/.hermes",
+     "hermes-agent-src -> /home/hermeswebui/.hermes/hermes-agent",
+     "hermes-workspace -> /workspace"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "hermes-agent",
+    "key": "ANTHROPIC_API_KEY",
+    "kind": "preset"
+   },
+   {
+    "service": "hermes-agent",
+    "key": "GOOGLE_API_KEY",
+    "kind": "preset"
+   },
+   {
+    "service": "hermes-agent",
+    "key": "HERMES_GID",
+    "kind": "preset"
+   },
+   {
+    "service": "hermes-agent",
+    "key": "HERMES_HOME",
+    "kind": "preset"
+   },
+   {
+    "service": "hermes-agent",
+    "key": "HERMES_UID",
+    "kind": "preset"
+   },
+   {
+    "service": "hermes-agent",
+    "key": "OPENAI_API_KEY",
+    "kind": "preset"
+   },
+   {
+    "service": "hermes-agent",
+    "key": "OPENROUTER_API_KEY",
+    "kind": "preset"
+   },
+   {
+    "service": "hermes-webui",
+    "key": "HERMES_WEBUI_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "hermes-webui",
+    "key": "HERMES_WEBUI_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "hermes-webui",
+    "key": "HERMES_WEBUI_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "hermes-webui",
+    "key": "HERMES_WEBUI_STATE_DIR",
+    "kind": "preset"
+   },
+   {
+    "service": "hermes-webui",
+    "key": "WANTED_GID",
+    "kind": "preset"
+   },
+   {
+    "service": "hermes-webui",
+    "key": "WANTED_UID",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "heyform",
+  "name": "Heyform",
+  "slogan": "Allows anyone to create engaging conversational forms for surveys, questionnaires, quizzes, and polls. No coding skills required.",
+  "category": "Productivity",
+  "docUrl": "https://docs.heyform.net/open-source/self-hosting",
+  "memoryMiB": 896,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "heyform",
+    "image": "heyform/community-edition:latest",
+    "ports": [
+     9157
+    ],
+    "volumes": [
+     "heyform-assets -> /app/static/upload"
+    ]
+   },
+   {
+    "name": "keydb",
+    "image": "eqalpha/keydb:latest",
+    "ports": [],
+    "volumes": [
+     "heyform-keydb-data -> /data"
+    ]
+   },
+   {
+    "name": "mongo",
+    "image": "percona/percona-server-mongodb:latest",
+    "ports": [],
+    "volumes": [
+     "heyform-mongo-data -> /data/db"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "heyform",
+    "key": "APP_HOMEPAGE_URL",
+    "kind": "required"
+   },
+   {
+    "service": "heyform",
+    "key": "FORM_ENCRYPTION_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "heyform",
+    "key": "MONGO_URI",
+    "kind": "preset"
+   },
+   {
+    "service": "heyform",
+    "key": "REDIS_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "heyform",
+    "key": "REDIS_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "heyform",
+    "key": "REDIS_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "heyform",
+    "key": "SESSION_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "keydb",
+    "key": "GENERATED_KEYDB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "keydb",
+    "key": "KEYDB_PASSWORD",
+    "kind": "generated"
    }
   ]
  },
@@ -6278,6 +9151,78 @@
   ]
  },
  {
+  "id": "inngest",
+  "name": "Inngest",
+  "slogan": "Durable workflow engine for background jobs, queues and scheduled tasks.",
+  "category": "Automation",
+  "docUrl": "https://www.inngest.com/docs/self-hosting",
+  "memoryMiB": 640,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "inngest",
+    "image": "inngest/inngest:v1.27.0",
+    "ports": [
+     8288
+    ],
+    "volumes": []
+   },
+   {
+    "name": "postgres",
+    "image": "postgres:17",
+    "ports": [],
+    "volumes": [
+     "postgres-data -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:7-alpine",
+    "ports": [],
+    "volumes": [
+     "redis-data -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "inngest",
+    "key": "INNGEST_EVENT_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "inngest",
+    "key": "INNGEST_POSTGRES_URI",
+    "kind": "generated"
+   },
+   {
+    "service": "inngest",
+    "key": "INNGEST_REDIS_URI",
+    "kind": "preset"
+   },
+   {
+    "service": "inngest",
+    "key": "INNGEST_SIGNING_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_USER",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
   "id": "invoice-ninja",
   "name": "Invoice Ninja",
   "slogan": "Self-hosted invoicing, quotes, and payments for freelancers and small businesses.",
@@ -6431,6 +9376,74 @@
   ]
  },
  {
+  "id": "jean",
+  "name": "Jean",
+  "slogan": "Open-source desktop and server client for orchestrating AI coding agents.",
+  "category": "Developer Tools",
+  "docUrl": "https://github.com/coollabsio/jean/blob/main/docs/headless-server.md",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "jean",
+    "image": "ghcr.io/coollabsio/jean-server:latest",
+    "ports": [
+     3456
+    ],
+    "volumes": [
+     "jean-data -> /home/jean/.local/share/com.jean.desktop"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "jean",
+    "key": "JEAN_ALLOWED_ORIGINS",
+    "kind": "preset"
+   },
+   {
+    "service": "jean",
+    "key": "JEAN_ALLOW_NATIVE_OPEN",
+    "kind": "preset"
+   },
+   {
+    "service": "jean",
+    "key": "JEAN_ALLOW_UNSAFE_NO_TOKEN",
+    "kind": "preset"
+   },
+   {
+    "service": "jean",
+    "key": "JEAN_DATA_DIR",
+    "kind": "preset"
+   },
+   {
+    "service": "jean",
+    "key": "JEAN_HEADLESS",
+    "kind": "preset"
+   },
+   {
+    "service": "jean",
+    "key": "JEAN_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "jean",
+    "key": "JEAN_NO_TOKEN",
+    "kind": "preset"
+   },
+   {
+    "service": "jean",
+    "key": "JEAN_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "jean",
+    "key": "JEAN_TOKEN",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "jellyfin",
   "name": "Jellyfin",
   "slogan": "A free media server for streaming your own movies, shows, and music to any device.",
@@ -6566,6 +9579,77 @@
     "service": "joomla",
     "key": "JOOMLA_DB_USER",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "joomla-with-mariadb",
+  "name": "Joomla With Mariadb",
+  "slogan": "Joomla! is the mobile-ready and user-friendly way to build your website. Choose from thousands of features and designs. Joomla! is free and open source.",
+  "category": "Applications",
+  "docUrl": "https://joomla.org",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "joomla",
+    "image": "joomla:latest",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "joomla_data -> /var/www/html"
+    ]
+   },
+   {
+    "name": "mariadb",
+    "image": "mariadb:11",
+    "ports": [],
+    "volumes": [
+     "joomla_mariadb_data -> /var/lib/mysql"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "joomla",
+    "key": "JOOMLA_DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "joomla",
+    "key": "JOOMLA_DB_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "joomla",
+    "key": "JOOMLA_DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "joomla",
+    "key": "JOOMLA_DB_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_USER",
+    "kind": "generated"
    }
   ]
  },
@@ -7243,6 +10327,122 @@
     "service": "label-studio",
     "key": "LABEL_STUDIO_USERNAME",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "labelstudio",
+  "name": "Labelstudio",
+  "slogan": "Label Studio is a multi-type data labeling and annotation tool with standardized output format",
+  "category": "AI",
+  "docUrl": "https://labelstud.io/guide/",
+  "memoryMiB": 512,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "labelstudio",
+    "image": "heartexlabs/label-studio:latest",
+    "ports": [
+     8080
+    ],
+    "volumes": [
+     "labelstudio-data -> /label-studio/data"
+    ]
+   },
+   {
+    "name": "postgres",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "pg-data -> /var/lib/postgresql/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "labelstudio",
+    "key": "CSRF_TRUSTED_ORIGINS",
+    "kind": "required"
+   },
+   {
+    "service": "labelstudio",
+    "key": "DATA_UPLOAD_MAX_NUMBER_FILES",
+    "kind": "preset"
+   },
+   {
+    "service": "labelstudio",
+    "key": "DJANGO_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "labelstudio",
+    "key": "EXPERIMENTAL_FEATURES",
+    "kind": "preset"
+   },
+   {
+    "service": "labelstudio",
+    "key": "LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK",
+    "kind": "preset"
+   },
+   {
+    "service": "labelstudio",
+    "key": "LABEL_STUDIO_HOST",
+    "kind": "required"
+   },
+   {
+    "service": "labelstudio",
+    "key": "LABEL_STUDIO_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "labelstudio",
+    "key": "LABEL_STUDIO_USERNAME",
+    "kind": "preset"
+   },
+   {
+    "service": "labelstudio",
+    "key": "POSTGRE_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "labelstudio",
+    "key": "POSTGRE_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "labelstudio",
+    "key": "POSTGRE_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "labelstudio",
+    "key": "POSTGRE_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "labelstudio",
+    "key": "POSTGRE_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "labelstudio",
+    "key": "SSRF_PROTECTION_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
    }
   ]
  },
@@ -8582,6 +11782,44 @@
   ]
  },
  {
+  "id": "mage-ai",
+  "name": "Mage Ai",
+  "slogan": "Build, run, and manage data pipelines for integrating and transforming data.",
+  "category": "Automation",
+  "docUrl": "https://docs.mage.ai",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mage-ai",
+    "image": "mageai/mageai:0.9.78",
+    "ports": [
+     6789
+    ],
+    "volumes": [
+     "mageai_data -> /home/src/"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mage-ai",
+    "key": "ENV",
+    "kind": "preset"
+   },
+   {
+    "service": "mage-ai",
+    "key": "PROJECT_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "mage-ai",
+    "key": "USER_CODE_PATH",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
   "id": "mailpit",
   "name": "Mailpit",
   "slogan": "A local SMTP server and web inbox for catching and inspecting outgoing email during development.",
@@ -9040,6 +12278,105 @@
   ]
  },
  {
+  "id": "metamcp",
+  "name": "Metamcp",
+  "slogan": "MCP Aggregator, Orchestrator, Middleware, Gateway in one app",
+  "category": "Developer Tools",
+  "docUrl": "https://github.com/metatool-ai/metamcp",
+  "memoryMiB": 512,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "app",
+    "image": "ghcr.io/metatool-ai/metamcp:2.4",
+    "ports": [
+     12008
+    ],
+    "volumes": []
+   },
+   {
+    "name": "postgres",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "postgres_data -> /var/lib/postgresql/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "app",
+    "key": "APP_URL",
+    "kind": "required"
+   },
+   {
+    "service": "app",
+    "key": "BETTER_AUTH_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "app",
+    "key": "DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "app",
+    "key": "NEXT_PUBLIC_APP_URL",
+    "kind": "required"
+   },
+   {
+    "service": "app",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "app",
+    "key": "POSTGRES_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "app",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "app",
+    "key": "POSTGRES_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "app",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "app",
+    "key": "TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "GENERATED_POSTGRES_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "metube",
   "name": "MeTube",
   "slogan": "A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio.",
@@ -9097,6 +12434,112 @@
     "service": "milvus",
     "key": "ETCD_USE_EMBED",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "mindsdb",
+  "name": "Mindsdb",
+  "slogan": "MindsDB is the platform for building AI from enterprise data, enabling smarter organizations.",
+  "category": "AI",
+  "docUrl": "https://docs.mindsdb.com/what-is-mindsdb",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mindsdb",
+    "image": "mindsdb/mindsdb:latest",
+    "ports": [
+     47334
+    ],
+    "volumes": [
+     "mindsdb-data -> /mindsdb/var"
+    ]
+   },
+   {
+    "name": "postgresql",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "mindsdb-postgresql-data -> /var/lib/postgresql/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mindsdb",
+    "key": "FLASK_DEBUG",
+    "kind": "preset"
+   },
+   {
+    "service": "mindsdb",
+    "key": "LANGFUSE_DEBUG",
+    "kind": "preset"
+   },
+   {
+    "service": "mindsdb",
+    "key": "LANGFUSE_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "mindsdb",
+    "key": "LANGFUSE_PUBLIC_KEY",
+    "kind": "preset"
+   },
+   {
+    "service": "mindsdb",
+    "key": "LANGFUSE_RELEASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mindsdb",
+    "key": "LANGFUSE_SAMPLE_RATE",
+    "kind": "preset"
+   },
+   {
+    "service": "mindsdb",
+    "key": "LANGFUSE_SECRET_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "mindsdb",
+    "key": "LANGFUSE_TIMEOUT",
+    "kind": "preset"
+   },
+   {
+    "service": "mindsdb",
+    "key": "MINDSDB_DB_CON",
+    "kind": "generated"
+   },
+   {
+    "service": "mindsdb",
+    "key": "MINDSDB_DOCKER_ENV",
+    "kind": "preset"
+   },
+   {
+    "service": "mindsdb",
+    "key": "MINDSDB_STORAGE_DIR",
+    "kind": "preset"
+   },
+   {
+    "service": "mindsdb",
+    "key": "OPENAI_API_KEY",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
    }
   ]
  },
@@ -9624,6 +13067,566 @@
   ]
  },
  {
+  "id": "n8n-with-postgres-and-worker",
+  "name": "N8n With Postgres And Worker",
+  "slogan": "n8n is an extendable workflow automation tool with queue mode and workers.",
+  "category": "Automation",
+  "docUrl": "https://n8n.io",
+  "memoryMiB": 1152,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "n8n",
+    "image": "n8nio/n8n:2.10.4",
+    "ports": [
+     5678
+    ],
+    "volumes": [
+     "n8n-data -> /home/node/.n8n"
+    ]
+   },
+   {
+    "name": "n8n-worker",
+    "image": "n8nio/n8n:2.10.4",
+    "ports": [],
+    "volumes": [
+     "n8n-data -> /home/node/.n8n"
+    ]
+   },
+   {
+    "name": "postgresql",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "postgresql-data -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:6-alpine",
+    "ports": [],
+    "volumes": [
+     "redis-data -> /data"
+    ]
+   },
+   {
+    "name": "task-runners",
+    "image": "n8nio/runners:2.10.4",
+    "ports": [],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "n8n",
+    "key": "DB_POSTGRESDB_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "DB_POSTGRESDB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "DB_POSTGRESDB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "n8n",
+    "key": "DB_POSTGRESDB_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "DB_POSTGRESDB_SCHEMA",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "DB_POSTGRESDB_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "n8n",
+    "key": "DB_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "EXECUTIONS_MODE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "GENERIC_TIMEZONE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_BLOCK_ENV_ACCESS_IN_NODE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_EDITOR_BASE_URL",
+    "kind": "required"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_ENCRYPTION_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_GIT_NODE_DISABLE_BARE_REPOS",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_HOST",
+    "kind": "required"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_NATIVE_PYTHON_RUNNER",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_PROTOCOL",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_PROXY_HOPS",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_RUNNERS_AUTH_TOKEN",
+    "kind": "generated"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_RUNNERS_BROKER_LISTEN_ADDRESS",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_RUNNERS_BROKER_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_RUNNERS_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_RUNNERS_MAX_CONCURRENCY",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_RUNNERS_MODE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_SKIP_AUTH_ON_OAUTH_CALLBACK",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "QUEUE_BULL_REDIS_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "QUEUE_HEALTH_CHECK_ACTIVE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "TZ",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "WEBHOOK_URL",
+    "kind": "required"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "DB_POSTGRESDB_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "DB_POSTGRESDB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "DB_POSTGRESDB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "DB_POSTGRESDB_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "DB_POSTGRESDB_SCHEMA",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "DB_POSTGRESDB_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "DB_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "EXECUTIONS_MODE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "GENERIC_TIMEZONE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "N8N_BLOCK_ENV_ACCESS_IN_NODE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "N8N_ENCRYPTION_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "N8N_GIT_NODE_DISABLE_BARE_REPOS",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "N8N_NATIVE_PYTHON_RUNNER",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "N8N_PROXY_HOPS",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "N8N_RUNNERS_AUTH_TOKEN",
+    "kind": "generated"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "N8N_RUNNERS_BROKER_LISTEN_ADDRESS",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "N8N_RUNNERS_BROKER_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "N8N_RUNNERS_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "N8N_RUNNERS_MAX_CONCURRENCY",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "N8N_RUNNERS_MODE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "N8N_SKIP_AUTH_ON_OAUTH_CALLBACK",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "QUEUE_BULL_REDIS_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "QUEUE_HEALTH_CHECK_ACTIVE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n-worker",
+    "key": "TZ",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "task-runners",
+    "key": "N8N_RUNNERS_AUTH_TOKEN",
+    "kind": "generated"
+   },
+   {
+    "service": "task-runners",
+    "key": "N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT",
+    "kind": "preset"
+   },
+   {
+    "service": "task-runners",
+    "key": "N8N_RUNNERS_MAX_CONCURRENCY",
+    "kind": "preset"
+   },
+   {
+    "service": "task-runners",
+    "key": "N8N_RUNNERS_TASK_BROKER_URI",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "n8n-with-postgresql",
+  "name": "N8n With Postgresql",
+  "slogan": "n8n is an extendable workflow automation tool.",
+  "category": "Automation",
+  "docUrl": "https://n8n.io",
+  "memoryMiB": 768,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "n8n",
+    "image": "n8nio/n8n:2.10.2",
+    "ports": [
+     5678
+    ],
+    "volumes": [
+     "n8n-data -> /home/node/.n8n"
+    ]
+   },
+   {
+    "name": "postgresql",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "postgresql-data -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "task-runners",
+    "image": "n8nio/runners:2.10.2",
+    "ports": [],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "n8n",
+    "key": "DB_POSTGRESDB_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "DB_POSTGRESDB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "DB_POSTGRESDB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "n8n",
+    "key": "DB_POSTGRESDB_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "DB_POSTGRESDB_SCHEMA",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "DB_POSTGRESDB_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "n8n",
+    "key": "DB_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "GENERIC_TIMEZONE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_BLOCK_ENV_ACCESS_IN_NODE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_EDITOR_BASE_URL",
+    "kind": "required"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_GIT_NODE_DISABLE_BARE_REPOS",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_HOST",
+    "kind": "required"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_NATIVE_PYTHON_RUNNER",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_PROTOCOL",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_PROXY_HOPS",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_RUNNERS_AUTH_TOKEN",
+    "kind": "generated"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_RUNNERS_BROKER_LISTEN_ADDRESS",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_RUNNERS_BROKER_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_RUNNERS_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_RUNNERS_MAX_CONCURRENCY",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_RUNNERS_MODE",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "N8N_SKIP_AUTH_ON_OAUTH_CALLBACK",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "TZ",
+    "kind": "preset"
+   },
+   {
+    "service": "n8n",
+    "key": "WEBHOOK_URL",
+    "kind": "required"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "task-runners",
+    "key": "N8N_RUNNERS_AUTH_TOKEN",
+    "kind": "generated"
+   },
+   {
+    "service": "task-runners",
+    "key": "N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT",
+    "kind": "preset"
+   },
+   {
+    "service": "task-runners",
+    "key": "N8N_RUNNERS_MAX_CONCURRENCY",
+    "kind": "preset"
+   },
+   {
+    "service": "task-runners",
+    "key": "N8N_RUNNERS_TASK_BROKER_URI",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
   "id": "navidrome",
   "name": "Navidrome",
   "slogan": "Stream your own music collection from a Subsonic-compatible server to any device, anywhere.",
@@ -9654,6 +13657,75 @@
     "service": "navidrome",
     "key": "ND_SCANSCHEDULE",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "neon-ws-proxy",
+  "name": "Neon Ws Proxy",
+  "slogan": "The database you love, on a serverless platform designed to help you build reliable and scalable applications faster.",
+  "category": "Infrastructure",
+  "docUrl": "https://neon.tech",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "neon-proxy",
+    "image": "ghcr.io/neondatabase/wsproxy:latest",
+    "ports": [
+     2112
+    ],
+    "volumes": []
+   },
+   {
+    "name": "postgres",
+    "image": "postgres:17-alpine",
+    "ports": [],
+    "volumes": [
+     "postgresql-data -> /var/lib/postgresql/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "neon-proxy",
+    "key": "ALLOW_ADDR_REGEX",
+    "kind": "preset"
+   },
+   {
+    "service": "neon-proxy",
+    "key": "APPEND_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "neon-proxy",
+    "key": "LOG_CONN_INFO",
+    "kind": "preset"
+   },
+   {
+    "service": "neon-proxy",
+    "key": "LOG_TRAFFIC",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_HOST_AUTH_METHOD",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
    }
   ]
  },
@@ -9890,6 +13962,174 @@
   ]
  },
  {
+  "id": "newapi",
+  "name": "Newapi",
+  "slogan": "The next-generation LLM gateway and AI asset management system supports multiple languages.",
+  "category": "Developer Tools",
+  "docUrl": "https://docs.newapi.pro/en/getting-started/",
+  "memoryMiB": 640,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "new-api",
+    "image": "calciumion/new-api:v0.9.2.0",
+    "ports": [
+     3000
+    ],
+    "volumes": []
+   },
+   {
+    "name": "postgresql",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "postgresql-data -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:7-alpine",
+    "ports": [],
+    "volumes": [
+     "redis-data -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "new-api",
+    "key": "ERROR_LOG_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "new-api",
+    "key": "REDIS_CONN_STRING",
+    "kind": "preset"
+   },
+   {
+    "service": "new-api",
+    "key": "SESSION_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "new-api",
+    "key": "SQL_DSN",
+    "kind": "generated"
+   },
+   {
+    "service": "new-api",
+    "key": "TZ",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "newt-pangolin",
+  "name": "Newt Pangolin",
+  "slogan": "Pangolin tunnels your services to the internet so you can access anything from anywhere.",
+  "category": "Infrastructure",
+  "docUrl": "https://docs.digpangolin.com/manage/sites/install-site",
+  "memoryMiB": 256,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "newt",
+    "image": "fosrl/newt:latest",
+    "ports": [],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "newt",
+    "key": "NEWT_ID",
+    "kind": "required"
+   },
+   {
+    "service": "newt",
+    "key": "NEWT_SECRET",
+    "kind": "required"
+   },
+   {
+    "service": "newt",
+    "key": "PANGOLIN_ENDPOINT",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "next-image-transformation",
+  "name": "Next Image Transformation",
+  "slogan": "Drop-in replacement for Vercel's Nextjs image optimization service.",
+  "category": "Media",
+  "docUrl": "https://github.com/coollabsio/next-image-transformation",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "imgproxy",
+    "image": "darthsim/imgproxy:latest",
+    "ports": [],
+    "volumes": []
+   },
+   {
+    "name": "next-image-transformation",
+    "image": "ghcr.io/coollabsio/next-image-transformation:latest",
+    "ports": [
+     3000
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "imgproxy",
+    "key": "IMGPROXY_ENABLE_WEBP_DETECTION",
+    "kind": "preset"
+   },
+   {
+    "service": "imgproxy",
+    "key": "IMGPROXY_JPEG_PROGRESSIVE",
+    "kind": "preset"
+   },
+   {
+    "service": "imgproxy",
+    "key": "IMGPROXY_USE_ETAG",
+    "kind": "preset"
+   },
+   {
+    "service": "next-image-transformation",
+    "key": "ALLOWED_REMOTE_DOMAINS",
+    "kind": "preset"
+   },
+   {
+    "service": "next-image-transformation",
+    "key": "IMGPROXY_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "next-image-transformation",
+    "key": "NODE_ENV",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
   "id": "nextcloud",
   "name": "Nextcloud",
   "slogan": "Self-hosted file sync, sharing, and collaboration, a full private alternative to consumer cloud drives.",
@@ -10067,6 +14307,105 @@
     "service": "npm",
     "key": "DB_SQLITE_FILE",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "nitropage",
+  "name": "Nitropage",
+  "slogan": "Nitropage is an extensible, visual website builder, offering a growing library of versatile building blocks, focal-point image cropping and sovereign font management.",
+  "category": "Applications",
+  "docUrl": "https://nitropage.org",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "nitropage",
+    "image": "nitropage/nitropage:sqlite",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "nitropage-data -> /app/.data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "nitropage",
+    "key": "DATABASE_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "nitropage",
+    "key": "NP_AUTH_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "nitropage",
+    "key": "NP_AUTH_SALT",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "nitropage-with-postgresql",
+  "name": "Nitropage With Postgresql",
+  "slogan": "Nitropage is an extensible, visual website builder, offering a growing library of versatile building blocks, focal-point image cropping and sovereign font management.",
+  "category": "Applications",
+  "docUrl": "https://nitropage.org",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "nitropage",
+    "image": "nitropage/nitropage:latest",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "nitropage-data -> /app/.data"
+    ]
+   },
+   {
+    "name": "postgresql",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "nitropage-postgresql-data -> /var/lib/postgresql/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "nitropage",
+    "key": "DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "nitropage",
+    "key": "NP_AUTH_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "nitropage",
+    "key": "NP_AUTH_SALT",
+    "kind": "generated"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
    }
   ]
  },
@@ -10696,6 +15035,228 @@
   ]
  },
  {
+  "id": "open-archiver",
+  "name": "Open Archiver",
+  "slogan": "A self-hosted, open-source email archiving solution with full-text search capability.",
+  "category": "Communication",
+  "docUrl": "https://docs.openarchiver.com/",
+  "memoryMiB": 896,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "meilisearch",
+    "image": "getmeili/meilisearch:v1.15",
+    "ports": [],
+    "volumes": [
+     "meilisearch-data -> /meili_data"
+    ]
+   },
+   {
+    "name": "open-archiver",
+    "image": "logiclabshq/open-archiver:latest",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "archiver-data -> /var/data/open-archiver"
+    ]
+   },
+   {
+    "name": "postgres",
+    "image": "postgres:17-alpine",
+    "ports": [],
+    "volumes": [
+     "postgres-data -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "valkey",
+    "image": "valkey/valkey:8-alpine",
+    "ports": [],
+    "volumes": [
+     "valkey-data -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "meilisearch",
+    "key": "MEILI_MASTER_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "open-archiver",
+    "key": "BODY_SIZE_LIMIT",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "open-archiver",
+    "key": "ENCRYPTION_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "open-archiver",
+    "key": "JWT_EXPIRES_IN",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "JWT_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "open-archiver",
+    "key": "MEILI_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "MEILI_MASTER_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "open-archiver",
+    "key": "NODE_ENV",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "PORT_BACKEND",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "PORT_FRONTEND",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "open-archiver",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "open-archiver",
+    "key": "RATE_LIMIT_MAX_REQUESTS",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "RATE_LIMIT_WINDOW_MS",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "REDIS_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "REDIS_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "open-archiver",
+    "key": "REDIS_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "REDIS_TLS_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "STORAGE_ENCRYPTION_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "open-archiver",
+    "key": "STORAGE_LOCAL_ROOT_PATH",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "STORAGE_S3_ACCESS_KEY_ID",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "STORAGE_S3_BUCKET",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "STORAGE_S3_ENDPOINT",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "STORAGE_S3_FORCE_PATH_STYLE",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "STORAGE_S3_REGION",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "STORAGE_S3_SECRET_ACCESS_KEY",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "STORAGE_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "open-archiver",
+    "key": "SYNC_FREQUENCY",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "LC_ALL",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "valkey",
+    "key": "GENERATED_VALKEY_PASSWORD",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "open-webui",
   "name": "Open WebUI",
   "slogan": "A self-hosted chat interface for running local large language models through Ollama.",
@@ -11105,6 +15666,128 @@
   "env": []
  },
  {
+  "id": "owncloud",
+  "name": "Owncloud",
+  "slogan": "OwnCloud with Open Web UI integrates file management with a powerful, user-friendly interface.",
+  "category": "Storage",
+  "docUrl": "https://owncloud.com/docs-guides/",
+  "memoryMiB": 640,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "mariadb",
+    "image": "mariadb:latest",
+    "ports": [],
+    "volumes": [
+     "owncloud-mysql-data -> /var/lib/mysql"
+    ]
+   },
+   {
+    "name": "owncloud",
+    "image": "owncloud/server:latest",
+    "ports": [
+     8080
+    ],
+    "volumes": [
+     "owncloud-data -> /mnt/data"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:6",
+    "ports": [],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "mariadb",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "TZ",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_ADMIN_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_ADMIN_USERNAME",
+    "kind": "generated"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_DB_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_DB_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_DB_USERNAME",
+    "kind": "generated"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_DOMAIN",
+    "kind": "required"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_MYSQL_UTF8MB4",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_REDIS_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_REDIS_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_TRUSTED_DOMAINS",
+    "kind": "required"
+   }
+  ]
+ },
+ {
   "id": "pairdrop",
   "name": "PairDrop",
   "slogan": "An AirDrop-style app for sending files and messages between devices on the same network, from any browser.",
@@ -11142,6 +15825,65 @@
     "service": "pairdrop",
     "key": "TZ",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "paperless",
+  "name": "Paperless",
+  "slogan": "Paperless-ngx is a community-supported open-source document management system that transforms your physical documents into a searchable online archive so you can keep, well, less paper.",
+  "category": "Productivity",
+  "docUrl": "https://docs.paperless-ngx.com/configuration/",
+  "memoryMiB": 384,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "paperless",
+    "image": "paperlessngx/paperless-ngx:latest",
+    "ports": [
+     8000
+    ],
+    "volumes": [
+     "paperless-data -> /usr/src/paperless/data",
+     "paperless-media -> /usr/src/paperless/media",
+     "paperless-export -> /usr/src/paperless/export",
+     "paperless-consume -> /usr/src/paperless/consume"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:7.4",
+    "ports": [],
+    "volumes": [
+     "paperless-redis -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "paperless",
+    "key": "PAPERLESS_ADMIN_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "paperless",
+    "key": "PAPERLESS_ADMIN_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "paperless",
+    "key": "PAPERLESS_REDIS",
+    "kind": "preset"
+   },
+   {
+    "service": "paperless",
+    "key": "PAPERLESS_SECRET_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "paperless",
+    "key": "PAPERLESS_URL",
+    "kind": "required"
    }
   ]
  },
@@ -11270,6 +16012,137 @@
    {
     "service": "passbolt",
     "key": "PASSBOLT_SSL_FORCE",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "paymenter",
+  "name": "Paymenter",
+  "slogan": "Open-Source Billing, Built for Hosting",
+  "category": "Finance",
+  "docUrl": "https://paymenter.org/docs/guides/docker",
+  "memoryMiB": 640,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mariadb",
+    "image": "mariadb:11.8",
+    "ports": [],
+    "volumes": [
+     "paymenter_mariadb_data -> /var/lib/mysql"
+    ]
+   },
+   {
+    "name": "paymenter",
+    "image": "ghcr.io/paymenter/paymenter:v1.4.5",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "app_logs -> /app/storage/logs",
+     "extenstions -> /app/extensions",
+     "themes -> /app/themes",
+     "app_storage -> /app/storage/app",
+     "app_public_storage -> /app/storage/app/public"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:alpine",
+    "ports": [],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "mariadb",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "paymenter",
+    "key": "APP_ENV",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "APP_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "paymenter",
+    "key": "CACHE_STORE",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "DB_CONNECTION",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "DB_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "paymenter",
+    "key": "DB_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "DB_USERNAME",
+    "kind": "generated"
+   },
+   {
+    "service": "paymenter",
+    "key": "QUEUE_CONNECTION",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "REDIS_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "REDIS_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "paymenter",
+    "key": "REDIS_USERNAME",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "SESSION_DRIVER",
     "kind": "preset"
    }
   ]
@@ -12088,6 +16961,118 @@
   ]
  },
  {
+  "id": "plunk",
+  "name": "Plunk",
+  "slogan": "Plunk, The Open-Source Email Platform for AWS",
+  "category": "Communication",
+  "docUrl": "https://docs.useplunk.com/getting-started/introduction",
+  "memoryMiB": 640,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "plunk",
+    "image": "driaug/plunk:latest",
+    "ports": [
+     3000
+    ],
+    "volumes": []
+   },
+   {
+    "name": "postgresql",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "plunk-postgresql-data -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:7.4-alpine",
+    "ports": [],
+    "volumes": [
+     "plunk-redis-data -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "plunk",
+    "key": "API_URI",
+    "kind": "required"
+   },
+   {
+    "service": "plunk",
+    "key": "APP_URI",
+    "kind": "required"
+   },
+   {
+    "service": "plunk",
+    "key": "AWS_ACCESS_KEY_ID",
+    "kind": "required"
+   },
+   {
+    "service": "plunk",
+    "key": "AWS_REGION",
+    "kind": "required"
+   },
+   {
+    "service": "plunk",
+    "key": "AWS_SECRET_ACCESS_KEY",
+    "kind": "required"
+   },
+   {
+    "service": "plunk",
+    "key": "AWS_SES_CONFIGURATION_SET",
+    "kind": "required"
+   },
+   {
+    "service": "plunk",
+    "key": "DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "plunk",
+    "key": "DISABLE_SIGNUPS",
+    "kind": "preset"
+   },
+   {
+    "service": "plunk",
+    "key": "JWT_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "plunk",
+    "key": "NEXT_PUBLIC_API_URI",
+    "kind": "required"
+   },
+   {
+    "service": "plunk",
+    "key": "NODE_OPTIONS",
+    "kind": "preset"
+   },
+   {
+    "service": "plunk",
+    "key": "REDIS_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "pocket-id",
   "name": "Pocket ID",
   "slogan": "A simple, secure OIDC provider that authenticates with passkeys instead of passwords.",
@@ -12117,6 +17102,147 @@
     "service": "pocket-id",
     "key": "TRUST_PROXY",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "pocket-id-with-postgresql",
+  "name": "Pocket Id With Postgresql",
+  "slogan": "A simple and secure OIDC provider with passkey authentication",
+  "category": "Security",
+  "docUrl": "https://pocket-id.org/docs/setup/installation",
+  "memoryMiB": 512,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "pocket-id",
+    "image": "ghcr.io/pocket-id/pocket-id:v1.13",
+    "ports": [
+     1411
+    ],
+    "volumes": [
+     "pocket-id-data -> /app/data"
+    ]
+   },
+   {
+    "name": "postgresql",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "pocket-id-postgresql-data -> /var/lib/postgresql/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "pocket-id",
+    "key": "APP_URL",
+    "kind": "required"
+   },
+   {
+    "service": "pocket-id",
+    "key": "DB_CONNECTION_STRING",
+    "kind": "generated"
+   },
+   {
+    "service": "pocket-id",
+    "key": "DB_PROVIDER",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "EMAIL_API_KEY_EXPIRATION_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "EMAIL_LOGIN_NOTIFICATION_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "EMAIL_ONE_TIME_ACCESS_AS_ADMIN_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "ENCRYPTION_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "pocket-id",
+    "key": "KEYS_STORAGE",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "MAXMIND_LICENSE_KEY",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "PGID",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "PUID",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "SMTP_FROM",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "SMTP_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "SMTP_PASSWORD",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "SMTP_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "SMTP_SKIP_CERT_VERIFY",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "SMTP_TLS",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "SMTP_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "pocket-id",
+    "key": "TRUST_PROXY",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgresql",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
    }
   ]
  },
@@ -12418,6 +17544,67 @@
    {
     "service": "proxyscotch",
     "key": "PROXYSCOTCH_TOKEN",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "pydio-cells",
+  "name": "Pydio Cells",
+  "slogan": "High-performance large file sharing, native no-code automation, and a collaboration-centric architecture that simplifies access control without compromising security or compliance.",
+  "category": "Storage",
+  "docUrl": "https://docs.pydio.com/",
+  "memoryMiB": 512,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "cells",
+    "image": "pydio/cells:4.4",
+    "ports": [
+     8080
+    ],
+    "volumes": [
+     "cells_data -> /var/cells"
+    ]
+   },
+   {
+    "name": "mariadb",
+    "image": "mariadb:11",
+    "ports": [],
+    "volumes": [
+     "mysql_data -> /var/lib/mysql"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "cells",
+    "key": "CELLS_SITE_EXTERNAL",
+    "kind": "required"
+   },
+   {
+    "service": "cells",
+    "key": "CELLS_SITE_NO_TLS",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_USER",
     "kind": "generated"
    }
   ]
@@ -12853,6 +18040,39 @@
    }
   ],
   "env": []
+ },
+ {
+  "id": "rivet-engine",
+  "name": "Rivet Engine",
+  "slogan": "Build and scale stateful workloads with long-lived processes",
+  "category": "Developer Tools",
+  "docUrl": "https://www.rivet.dev/docs",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "rivet-engine",
+    "image": "rivetdev/engine:2.2.0",
+    "ports": [
+     6420
+    ],
+    "volumes": [
+     "rivet-data -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "rivet-engine",
+    "key": "RIVET__AUTH__ADMIN_TOKEN",
+    "kind": "generated"
+   },
+   {
+    "service": "rivet-engine",
+    "key": "RIVET__FILE_SYSTEM__PATH",
+    "kind": "preset"
+   }
+  ]
  },
  {
   "id": "rocketchat",
@@ -14153,6 +19373,124 @@
   ]
  },
  {
+  "id": "supertokens-with-mysql",
+  "name": "Supertokens With Mysql",
+  "slogan": "An open-source authentication solution that simplifies the implementation of secure user authentication and session management for web and mobile applications.",
+  "category": "Security",
+  "docUrl": "https://supertokens.com/docs/guides",
+  "memoryMiB": 1024,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mysql",
+    "image": "mysql:latest",
+    "ports": [],
+    "volumes": [
+     "supertokens-mysql-data -> /var/lib/mysql"
+    ]
+   },
+   {
+    "name": "supertokens",
+    "image": "registry.supertokens.io/supertokens/supertokens-mysql:latest",
+    "ports": [
+     3567
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "mysql",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "supertokens",
+    "key": "API_KEYS",
+    "kind": "preset"
+   },
+   {
+    "service": "supertokens",
+    "key": "MYSQL_CONNECTION_URI",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "supertokens-with-postgresql",
+  "name": "Supertokens With Postgresql",
+  "slogan": "An open-source authentication solution that simplifies the implementation of secure user authentication and session management for web and mobile applications.",
+  "category": "Security",
+  "docUrl": "https://supertokens.com/docs/guides",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "postgres",
+    "image": "postgres:16",
+    "ports": [],
+    "volumes": [
+     "supertokens-postgres-data -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "supertokens",
+    "image": "registry.supertokens.io/supertokens/supertokens-postgresql:latest",
+    "ports": [
+     3567
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "postgres",
+    "key": "GENERATED_POSTGRESQL_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "supertokens",
+    "key": "API_KEYS",
+    "kind": "preset"
+   },
+   {
+    "service": "supertokens",
+    "key": "POSTGRESQL_CONNECTION_URI",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "sure",
   "name": "Sure",
   "slogan": "A privacy-first personal finance app for tracking net worth, budgets, and investments across every account.",
@@ -15367,6 +20705,90 @@
   ]
  },
  {
+  "id": "unleash-with-postgresql",
+  "name": "Unleash With Postgresql",
+  "slogan": "Open source feature flag management for enterprises.",
+  "category": "Developer Tools",
+  "docUrl": "https://docs.getunleash.io",
+  "memoryMiB": 512,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "postgres",
+    "image": "postgres:15",
+    "ports": [],
+    "volumes": [
+     "postgresql-data -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "unleash",
+    "image": "unleashorg/unleash-server:latest",
+    "ports": [
+     4242
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "postgres",
+    "key": "GENERATED_POSTGRES_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "unleash",
+    "key": "DATABASE_SSL",
+    "kind": "preset"
+   },
+   {
+    "service": "unleash",
+    "key": "DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "unleash",
+    "key": "INIT_CLIENT_API_TOKENS",
+    "kind": "preset"
+   },
+   {
+    "service": "unleash",
+    "key": "INIT_FRONTEND_API_TOKENS",
+    "kind": "preset"
+   },
+   {
+    "service": "unleash",
+    "key": "LOG_LEVEL",
+    "kind": "preset"
+   },
+   {
+    "service": "unleash",
+    "key": "UNLEASH_DEFAULT_ADMIN_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "unleash",
+    "key": "UNLEASH_URL",
+    "kind": "required"
+   }
+  ]
+ },
+ {
   "id": "unstructured",
   "name": "Unstructured",
   "slogan": "An API that turns PDFs, Word files, and other documents into clean data for RAG pipelines.",
@@ -15466,6 +20888,230 @@
    {
     "service": "uptime-kuma",
     "key": "TZ",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "uptime-kuma-with-mariadb",
+  "name": "Uptime Kuma With Mariadb",
+  "slogan": "Uptime Kuma is a monitoring tool for tracking the status and performance of your applications in real-time.",
+  "category": "Monitoring",
+  "docUrl": "https://github.com/louislam/uptime-kuma?tab=readme-ov-file",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mariadb",
+    "image": "mariadb:11",
+    "ports": [],
+    "volumes": [
+     "mariadb-data -> /var/lib/mysql"
+    ]
+   },
+   {
+    "name": "uptime-kuma",
+    "image": "louislam/uptime-kuma:2",
+    "ports": [
+     3001
+    ],
+    "volumes": [
+     "uptime-kuma-data -> /app/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mariadb",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "uptime-kuma",
+    "key": "TZ",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "uptime-kuma-with-mysql",
+  "name": "Uptime Kuma With Mysql",
+  "slogan": "Uptime Kuma is a monitoring tool for tracking the status and performance of your applications in real-time.",
+  "category": "Monitoring",
+  "docUrl": "https://github.com/louislam/uptime-kuma?tab=readme-ov-file",
+  "memoryMiB": 768,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mysql",
+    "image": "mysql:8",
+    "ports": [],
+    "volumes": [
+     "mysql-data -> /var/lib/mysql"
+    ]
+   },
+   {
+    "name": "uptime-kuma",
+    "image": "louislam/uptime-kuma:2",
+    "ports": [
+     3001
+    ],
+    "volumes": [
+     "uptime-kuma-data -> /app/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mysql",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "uptime-kuma",
+    "key": "TZ",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "usesend",
+  "name": "Usesend",
+  "slogan": "Usesend is an open-source alternative to Resend, Sendgrid, Mailgun and Postmark etc.",
+  "category": "Communication",
+  "docUrl": "https://docs.usesend.com/self-hosting/overview",
+  "memoryMiB": 640,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "postgres",
+    "image": "postgres:16",
+    "ports": [],
+    "volumes": [
+     "usesend-postgres-data -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:7",
+    "ports": [],
+    "volumes": [
+     "usesend-redis-data -> /data"
+    ]
+   },
+   {
+    "name": "usesend",
+    "image": "usesend/usesend:latest",
+    "ports": [
+     3000
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "postgres",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "usesend",
+    "key": "API_RATE_LIMIT",
+    "kind": "preset"
+   },
+   {
+    "service": "usesend",
+    "key": "AWS_ACCESS_KEY",
+    "kind": "required"
+   },
+   {
+    "service": "usesend",
+    "key": "AWS_DEFAULT_REGION",
+    "kind": "required"
+   },
+   {
+    "service": "usesend",
+    "key": "AWS_SECRET_KEY",
+    "kind": "required"
+   },
+   {
+    "service": "usesend",
+    "key": "DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "usesend",
+    "key": "GITHUB_ID",
+    "kind": "required"
+   },
+   {
+    "service": "usesend",
+    "key": "GITHUB_SECRET",
+    "kind": "required"
+   },
+   {
+    "service": "usesend",
+    "key": "HOSTNAME",
+    "kind": "preset"
+   },
+   {
+    "service": "usesend",
+    "key": "NEXTAUTH_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "usesend",
+    "key": "NEXTAUTH_URL",
+    "kind": "required"
+   },
+   {
+    "service": "usesend",
+    "key": "NEXT_PUBLIC_IS_CLOUD",
+    "kind": "preset"
+   },
+   {
+    "service": "usesend",
+    "key": "REDIS_URL",
     "kind": "preset"
    }
   ]
@@ -15754,6 +21400,158 @@
    }
   ],
   "env": []
+ },
+ {
+  "id": "vvveb-with-mariadb",
+  "name": "Vvveb With Mariadb",
+  "slogan": "Powerful and easy to use cms to build websites, blogs or ecommerce stores.",
+  "category": "Applications",
+  "docUrl": "https://docs.vvveb.com",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mariadb",
+    "image": "mariadb:11",
+    "ports": [],
+    "volumes": [
+     "vvveb-mariadb-data -> /var/lib/mysql"
+    ]
+   },
+   {
+    "name": "vvveb",
+    "image": "vvveb/vvvebcms:latest",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "vvveb-data -> /var/www/html"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mariadb",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "vvveb",
+    "key": "DB_ENGINE",
+    "kind": "preset"
+   },
+   {
+    "service": "vvveb",
+    "key": "DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "vvveb",
+    "key": "DB_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "vvveb",
+    "key": "DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "vvveb",
+    "key": "DB_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "vvveb-with-mysql",
+  "name": "Vvveb With Mysql",
+  "slogan": "Powerful and easy to use cms to build websites, blogs or ecommerce stores.",
+  "category": "Applications",
+  "docUrl": "https://docs.vvveb.com",
+  "memoryMiB": 768,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mysql",
+    "image": "mysql:8.4.2",
+    "ports": [],
+    "volumes": [
+     "vvveb-mysql-data -> /var/lib/mysql"
+    ]
+   },
+   {
+    "name": "vvveb",
+    "image": "vvveb/vvvebcms:latest",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "vvveb-data -> /var/www/html"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mysql",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "vvveb",
+    "key": "DB_ENGINE",
+    "kind": "preset"
+   },
+   {
+    "service": "vvveb",
+    "key": "DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "vvveb",
+    "key": "DB_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "vvveb",
+    "key": "DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "vvveb",
+    "key": "DB_USER",
+    "kind": "generated"
+   }
+  ]
  },
  {
   "id": "wakapi",
@@ -16396,6 +22194,170 @@
   ]
  },
  {
+  "id": "wordpress-with-mariadb",
+  "name": "Wordpress With Mariadb",
+  "slogan": "WordPress is open source software you can use to create a beautiful website, blog, or app.",
+  "category": "Applications",
+  "docUrl": "https://wordpress.org",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mariadb",
+    "image": "mariadb:11",
+    "ports": [],
+    "volumes": [
+     "mariadb-data -> /var/lib/mysql"
+    ]
+   },
+   {
+    "name": "wordpress",
+    "image": "wordpress:latest",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "wordpress-files -> /var/www/html"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mariadb",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "wordpress",
+    "key": "WORDPRESS_DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "wordpress",
+    "key": "WORDPRESS_DB_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "wordpress",
+    "key": "WORDPRESS_DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "wordpress",
+    "key": "WORDPRESS_DB_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "wordpress-with-mysql",
+  "name": "Wordpress With Mysql",
+  "slogan": "WordPress is open source software you can use to create a beautiful website, blog, or app.",
+  "category": "Applications",
+  "docUrl": "https://wordpress.org",
+  "memoryMiB": 768,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mysql",
+    "image": "mysql:8",
+    "ports": [],
+    "volumes": [
+     "mysql-data -> /var/lib/mysql"
+    ]
+   },
+   {
+    "name": "wordpress",
+    "image": "wordpress:latest",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "wordpress-files -> /var/www/html"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mysql",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mysql",
+    "key": "MYSQL_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "wordpress",
+    "key": "WORDPRESS_DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "wordpress",
+    "key": "WORDPRESS_DB_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "wordpress",
+    "key": "WORDPRESS_DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "wordpress",
+    "key": "WORDPRESS_DB_USER",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "wordpress-without-database",
+  "name": "Wordpress Without Database",
+  "slogan": "WordPress is open source software you can use to create a beautiful website, blog, or app.",
+  "category": "Applications",
+  "docUrl": "https://wordpress.org",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "wordpress",
+    "image": "wordpress:latest",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "wordpress-files -> /var/www/html"
+    ]
+   }
+  ],
+  "env": []
+ },
+ {
   "id": "worker-redis-queue-starter",
   "name": "Background Worker + Redis Queue",
   "slogan": "A worker process pulling jobs off a Redis-backed queue, the base shape for async job processing.",
@@ -16473,6 +22435,108 @@
     "service": "yamtrack",
     "key": "URLS",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "yamtrack-with-postgresql",
+  "name": "Yamtrack With Postgresql",
+  "slogan": "Yamtrack is a self hosted media tracker for movies, tv shows, anime, manga, video games and books.",
+  "category": "Productivity",
+  "docUrl": "https://github.com/FuzzyGrim/Yamtrack/wiki",
+  "memoryMiB": 640,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "postgres",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "yamtrack_postgres_data -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:7-alpine",
+    "ports": [],
+    "volumes": [
+     "yamtrack_redis_data -> /data"
+    ]
+   },
+   {
+    "name": "yamtrack",
+    "image": "ghcr.io/fuzzygrim/yamtrack:latest",
+    "ports": [
+     8000
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "postgres",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "postgres",
+    "key": "POSTGRES_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "yamtrack",
+    "key": "DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "yamtrack",
+    "key": "DB_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "yamtrack",
+    "key": "DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "yamtrack",
+    "key": "DB_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "yamtrack",
+    "key": "DB_USER",
+    "kind": "generated"
+   },
+   {
+    "service": "yamtrack",
+    "key": "REDIS_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "yamtrack",
+    "key": "REGISTRATION",
+    "kind": "preset"
+   },
+   {
+    "service": "yamtrack",
+    "key": "SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "yamtrack",
+    "key": "TZ",
+    "kind": "preset"
+   },
+   {
+    "service": "yamtrack",
+    "key": "URLS",
+    "kind": "required"
    }
   ]
  },

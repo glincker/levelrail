@@ -1,0 +1,45 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  mysql:
+    image: mysql:8.4.2
+    environment:
+      MYSQL_DATABASE: vvveb
+      MYSQL_PASSWORD: ${VVVEB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${ROOT_PASSWORD}
+      MYSQL_USER: ${VVVEB_USER}
+    volumes:
+      - vvveb-mysql-data:/var/lib/mysql
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - -h
+        - 127.0.0.1
+      timeout: 20s
+  vvveb:
+    image: vvveb/vvvebcms:latest
+    ports:
+      - "80"
+    environment:
+      DB_ENGINE: mysqli
+      DB_HOST: mysql
+      DB_NAME: vvveb
+      DB_PASSWORD: ${VVVEB_PASSWORD}
+      DB_USER: ${VVVEB_USER}
+    volumes:
+      - vvveb-data:/var/www/html
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      interval: 2s
+      retries: 10
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://127.0.0.1
+      timeout: 10s

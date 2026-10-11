@@ -1,0 +1,38 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  drupal:
+    image: drupal:10-apache
+    ports:
+      - "80"
+    environment:
+      DB_HOST: postgres
+      DB_NAME: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_USER: postgres
+    volumes:
+      - drupal_modules:/var/www/html/modules
+      - drupal_profiles:/var/www/html/profiles
+      - drupal_themes:/var/www/html/themes
+      - drupal_sites:/var/www/html/sites
+    depends_on:
+      - postgres
+    healthcheck:
+      interval: 30s
+      retries: 5
+      test:
+        - CMD-SHELL
+        - curl -f http://localhost:80 || exit 1
+      timeout: 10s
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: postgres
+    healthcheck:
+      interval: 5s
+      retries: 20
+      test:
+        - CMD-SHELL
+        - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+      timeout: 10s

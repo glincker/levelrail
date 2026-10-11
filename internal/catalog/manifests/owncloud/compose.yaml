@@ -1,0 +1,70 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  mariadb:
+    image: mariadb:latest
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_bin
+      - --max-allowed-packet=128M
+      - --innodb-log-file-size=64M
+    environment:
+      MYSQL_DATABASE: owncloud
+      MYSQL_PASSWORD: ${MARIADB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MARIADBROOT_PASSWORD}
+      MYSQL_USER: ${MARIADB_USER}
+      TZ: auto
+    volumes:
+      - owncloud-mysql-data:/var/lib/mysql
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD
+        - healthcheck.sh
+        - --connect
+        - --innodb_initialized
+      timeout: 20s
+  owncloud:
+    image: owncloud/server:latest
+    ports:
+      - "8080"
+    environment:
+      OWNCLOUD_ADMIN_PASSWORD: ${OWNCLOUD_PASSWORD}
+      OWNCLOUD_ADMIN_USERNAME: ${OWNCLOUD_USER}
+      OWNCLOUD_DB_HOST: mariadb
+      OWNCLOUD_DB_NAME: owncloud
+      OWNCLOUD_DB_PASSWORD: ${MARIADB_PASSWORD}
+      OWNCLOUD_DB_TYPE: mysql
+      OWNCLOUD_DB_USERNAME: ${MARIADB_USER}
+      OWNCLOUD_DOMAIN: ${SERVICE_HOST_OWNCLOUD}
+      OWNCLOUD_MYSQL_UTF8MB4: "true"
+      OWNCLOUD_REDIS_ENABLED: "true"
+      OWNCLOUD_REDIS_HOST: redis
+      OWNCLOUD_TRUSTED_DOMAINS: ${SERVICE_HOST_OWNCLOUD}
+    volumes:
+      - owncloud-data:/mnt/data
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      interval: 30s
+      retries: 5
+      test:
+        - CMD
+        - /usr/bin/healthcheck
+      timeout: 10s
+  redis:
+    image: redis:6
+    command:
+      - --databases
+      - "1"
+    healthcheck:
+      interval: 10s
+      retries: 5
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 5s

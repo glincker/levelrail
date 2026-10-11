@@ -32,7 +32,25 @@ type Manifest struct {
 	Env                    []EnvPrompt          `yaml:"env" json:"env,omitempty"`
 	Domains                []DomainPrompt       `yaml:"domains" json:"domains,omitempty"`
 	Healthcheck            *ManifestHealthcheck `yaml:"healthcheck" json:"healthcheck,omitempty"`
+	Source                 *ManifestSource      `yaml:"source" json:"source,omitempty"`
+	Images                 []ManifestImage      `yaml:"images" json:"images,omitempty"`
 	Compose                string               `yaml:"-" json:"-"`
+}
+
+// ManifestSource records where an imported template came from, so
+// attribution and re-imports stay traceable.
+type ManifestSource struct {
+	Name    string `yaml:"name" json:"name"`
+	URL     string `yaml:"url" json:"url"`
+	License string `yaml:"license" json:"license"`
+	Path    string `yaml:"path" json:"path"`
+}
+
+// ManifestImage is one service's pinned image reference, checked against
+// the compose file so the recorded tag cannot drift from what deploys.
+type ManifestImage struct {
+	Service string `yaml:"service" json:"service"`
+	Image   string `yaml:"image" json:"image"`
 }
 
 // EnvPrompt is one ${KEY} placeholder the installer asks for.

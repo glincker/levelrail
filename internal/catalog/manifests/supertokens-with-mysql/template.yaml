@@ -1,0 +1,35 @@
+id: supertokens-with-mysql
+name: Supertokens With Mysql
+description: An open-source authentication solution that simplifies the implementation of secure user authentication and session management for web and mobile applications.
+icon: shield-check
+category: Security
+documentation_url: https://supertokens.com/docs/guides
+recommended_memory_bytes: 1073741824
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/supertokens-with-mysql.yaml
+images:
+  - service: mysql
+    image: mysql:latest
+  - service: supertokens
+    image: registry.supertokens.io/supertokens/supertokens-mysql:latest
+env:
+  - key: MYSQL_PASSWORD
+    label: Mysql Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: MYSQL_USER
+    label: Mysql User
+    description: Generated when the app is installed.
+    generate: user
+domains:
+  - service: supertokens
+    port: 3567
+    description: Public address of supertokens.
+healthcheck:
+  service: supertokens
+  port: 3567
+  path: /

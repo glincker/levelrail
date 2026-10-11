@@ -159,7 +159,53 @@ levelrail-cli templates install redmine --env SECRET_KEY_BASE=... --name tracker
 
 The dashboard's template page shows the same form: one field per setting, generated values listed but not asked for, and one optional domain per service.
 
-Five templates ship in this format today: Uptime Kuma, Wiki.js, Redmine, One-Time Secret and PairDrop. Each one is installed on real Docker by the live test suite (`TestComposeTemplates_Live`). The rest of the catalog uses the older single compose body format and still deploys the same way.
+Five templates are hand-written in this format (Uptime Kuma, Wiki.js, Redmine, One-Time Secret and PairDrop) and each is installed on real Docker by the live test suite (`TestComposeTemplates_Live`). Another 65 are converted from an upstream template catalog by the import pipeline below. Each one except six with images over the size cap installed green on local Docker, and a fixed sample of 30 is installed by `TestComposeCatalogSample_Live` (skipped under `-short`; `LEVELRAIL_LIVE_IMAGE_CAP_MB` bounds the layers one image may pull, default 900, and the test removes the images it pulled). The rest of the catalog uses the older single compose body format and still deploys the same way.
+
+The converted templates record where they came from in a `source:` block and pin their images in an `images:` list that must match the compose file:
+
+```yaml
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/gitea-with-postgresql.yaml
+images:
+  - service: gitea
+    image: gitea/gitea:latest
+  - service: postgresql
+    image: postgres:16-alpine
+```
+
+Attribution and the licence text are in `internal/catalog/manifests/NOTICE` and `LICENSE-APACHE-2.0`.
+
+### Finding a template
+
+```bash
+levelrail-cli templates list --search wiki --installable
+levelrail-cli templates list --category Monitoring
+levelrail-cli templates get gitea-with-postgresql   # services, ports, volumes, settings, domains, source
+```
+
+`GET /api/v1/service-templates` takes the same filters as `q`, `category` and `installable=true`. The dashboard's template page has the search box and category list, and an installable template opens its install form.
+
+### Importing from an upstream catalog
+
+```bash
+go run ./scripts/import-templates -src <clone>/templates/compose -select scripts/import-templates/selected.txt -write \
+  -report docs/template-import-report.json -docs docs/template-import.md
+```
+
+The converter reads each upstream compose file as data and writes a `template.yaml` and `compose.yaml` per template. It rewrites the upstream magic variables (address variables become domain prompts, password, user and base64 variables become generated settings), turns relative bind mounts of directories into named volumes, inlines defaults, turns TCP-only healthchecks on web services into HTTP probes, and drops keys with no equivalent. A template that needs host access, a repository file, a UDP port or a runtime key with no equivalent is skipped with a reason code, and every converted manifest then goes through the same loader and Docker guard rules an install uses. Without `-write` nothing on disk changes. Hand-written manifests are never overwritten, and manifests it wrote earlier that are no longer selected are removed.
+
+`scripts/import-templates/selected.txt` lists which convertible templates are committed. The report and the generated [Imported templates](/template-import) page list what was converted and why the rest was skipped.
+
+### Template updates
+
+```bash
+levelrail-cli templates updates
+```
+
+Read-only: for each app installed from a template, lists the newer upstream tags for each service image (Docker Hub images only, newest first), whether the catalog now pins a different image, and which services use a floating tag such as `latest`, where only the image auto-update check can tell whether the build moved. Nothing is redeployed.
 
 ### Checking a batch of compose files
 
@@ -178,3 +224,5 @@ Five templates ship in this format today: Uptime Kuma, Wiki.js, Redmine, One-Tim
 | `POST` | `/api/v1/apps/{name}/compose/redeploy` | `deploy` |
 | `DELETE` | `/api/v1/apps/{name}/compose[?volumes=true]` | `write` (plus `write-sensitive` with volumes) |
 | `POST` | `/api/v1/service-templates/{id}/install` | `deploy` |
+| `GET` | `/api/v1/service-templates[?q=&category=&installable=true]` | `read` |
+| `GET` | `/api/v1/service-templates/updates` | `read` |

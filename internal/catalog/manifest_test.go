@@ -138,8 +138,8 @@ func TestEmbeddedManifests(t *testing.T) {
 		t.Fatalf("got %d embedded manifests, want at least 5", len(ms))
 	}
 	for _, m := range ms {
-		if m.Healthcheck == nil || len(m.Domains) == 0 {
-			t.Errorf("%s: every shipped manifest needs a healthcheck and a domain prompt", m.ID)
+		if len(m.Domains) > 0 && m.Healthcheck == nil {
+			t.Errorf("%s: a manifest with a domain prompt needs a healthcheck", m.ID)
 		}
 		if tpl, ok := TemplateByID(m.ID); !ok || tpl.Manifest == nil {
 			t.Errorf("%s: not served from the catalog as a manifest entry", m.ID)

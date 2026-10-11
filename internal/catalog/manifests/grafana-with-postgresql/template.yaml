@@ -1,0 +1,40 @@
+id: grafana-with-postgresql
+name: Grafana With Postgresql
+description: Grafana is the open source analytics & monitoring solution for every database.
+icon: chart-line
+category: Monitoring
+documentation_url: https://grafana.com
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/grafana-with-postgresql.yaml
+images:
+  - service: grafana
+    image: grafana/grafana-oss:latest
+  - service: postgresql
+    image: postgres:16-alpine
+env:
+  - key: GRAFANA_PASSWORD
+    label: Grafana Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: POSTGRES_USER
+    label: Postgres User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRES_PASSWORD
+    label: Postgres Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: grafana
+    port: 3000
+    description: Public address of grafana.
+healthcheck:
+  service: grafana
+  port: 3000
+  path: /

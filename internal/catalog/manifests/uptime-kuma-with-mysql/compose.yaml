@@ -1,0 +1,39 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: uptime-kuma-db
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - -h
+        - 127.0.0.1
+      timeout: 20s
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    ports:
+      - "3001"
+    environment:
+      TZ: Etc/UTC
+    volumes:
+      - uptime-kuma-data:/app/data
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - extra/healthcheck
+      timeout: 5s

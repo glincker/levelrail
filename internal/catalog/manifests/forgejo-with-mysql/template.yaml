@@ -1,0 +1,47 @@
+id: forgejo-with-mysql
+name: Forgejo With Mysql
+description: Forgejo is a self-hosted lightweight software forge. Easy to install and low maintenance, it just does the job.
+icon: code
+category: Developer Tools
+documentation_url: https://forgejo.org/docs
+recommended_memory_bytes: 805306368
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/forgejo-with-mysql.yaml
+images:
+  - service: forgejo
+    image: codeberg.org/forgejo/forgejo:15
+  - service: mysql
+    image: mysql:8
+env:
+  - key: MYSQL_USER
+    label: Mysql User
+    description: Generated when the app is installed.
+    generate: user
+  - key: MYSQL_PASSWORD
+    label: Mysql Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: MYSQLROOT_PASSWORD
+    label: Mysqlroot Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: FORGEJO__MIGRATIONS__ALLOWED_DOMAINS
+    label: Forgejo Migrations Allowed Domains
+    description: Optional. Leave empty to use the application default.
+  - key: MYSQL_DATABASE
+    label: Mysql Database
+    description: Defaults to forgejo.
+    default: forgejo
+domains:
+  - service: forgejo
+    port: 3000
+    description: Public address of forgejo.
+healthcheck:
+  service: forgejo
+  port: 3000
+  path: /

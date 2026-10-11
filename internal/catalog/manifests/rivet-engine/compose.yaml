@@ -1,0 +1,21 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  rivet-engine:
+    image: rivetdev/engine:2.2.0
+    ports:
+      - "6420"
+    environment:
+      RIVET__AUTH__ADMIN_TOKEN: ${TOKEN_BASE64}
+      RIVET__FILE_SYSTEM__PATH: /data
+    volumes:
+      - rivet-data:/data
+    healthcheck:
+      interval: 2s
+      retries: 10
+      start_period: 30s
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://127.0.0.1:6420/health
+      timeout: 10s

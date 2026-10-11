@@ -1,0 +1,20 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  cockpit:
+    image: cockpithq/cockpit:core-latest
+    ports:
+      - "80"
+    volumes:
+      - cockpit-config:/var/www/html/config
+      - cockpit-spaces:/var/www/html/.spaces
+      - cockpit-storage:/var/www/html/storage
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD
+        - wget
+        - -q
+        - --spider
+        - http://127.0.0.1/api/system/healthcheck
+      timeout: 20s

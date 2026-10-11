@@ -1,0 +1,47 @@
+id: convex
+name: Convex
+description: Convex is the open-source reactive database for app developers.
+icon: code
+category: Developer Tools
+documentation_url: https://github.com/get-convex/convex-backend/blob/main/self-hosted/README.md
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/convex.yaml
+images:
+  - service: backend
+    image: ghcr.io/get-convex/convex-backend:a9a760ca10399ed42e1b4bb87c78539a235488c7
+  - service: dashboard
+    image: ghcr.io/get-convex/convex-dashboard:a9a760ca10399ed42e1b4bb87c78539a235488c7
+env:
+  - key: SECRET_HEX
+    label: Secret Hex
+    description: Generated when the app is installed.
+    generate: hex
+    length: 64
+    secret: true
+  - key: DISABLE_BEACON
+    label: Disable Beacon
+    description: "false"
+    required: true
+  - key: REDACT_LOGS_TO_CLIENT
+    label: Redact Logs To Client
+    description: "false"
+    required: true
+  - key: DO_NOT_REQUIRE_SSL
+    label: Do Not Require Ssl
+    description: "true"
+    required: true
+domains:
+  - service: backend
+    port: 3210
+    description: Public address of backend.
+  - service: dashboard
+    port: 6791
+    description: Public address of dashboard.
+healthcheck:
+  service: backend
+  port: 3210
+  path: /

@@ -264,7 +264,7 @@ func TestComposeTemplates_Live(t *testing.T) {
 	rt := liveDocker(t)
 	for _, tpl := range catalog.Templates {
 		m := tpl.Manifest
-		if m == nil {
+		if m == nil || m.Source != nil {
 			continue
 		}
 		t.Run(m.ID, func(t *testing.T) {

@@ -1,0 +1,43 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  classicpress:
+    image: classicpress/classicpress:latest
+    ports:
+      - "80"
+    environment:
+      CLASSICPRESS_DB_HOST: mysql
+      CLASSICPRESS_DB_NAME: classicpress
+      CLASSICPRESS_DB_PASSWORD: ${CLASSICPRESS_PASSWORD}
+      CLASSICPRESS_DB_USER: ${CLASSICPRESS_USER}
+    volumes:
+      - classicpress-files:/var/www/html
+    depends_on:
+      - mysql
+    healthcheck:
+      interval: 2s
+      retries: 10
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://127.0.0.1
+      timeout: 10s
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: classicpress
+      MYSQL_PASSWORD: ${CLASSICPRESS_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${ROOT_PASSWORD}
+      MYSQL_USER: ${CLASSICPRESS_USER}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - -h
+        - 127.0.0.1
+      timeout: 20s

@@ -1,0 +1,40 @@
+id: codimd
+name: Codimd
+description: Realtime collaborative markdown notes on all platforms
+icon: check-square
+category: Productivity
+documentation_url: https://hackmd.io/c/codimd-documentation
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/codimd.yaml
+images:
+  - service: codimd
+    image: nabo.codimd.dev/hackmdio/hackmd:latest
+  - service: postgres
+    image: postgres:16-alpine
+env:
+  - key: SESSIONSECRET_PASSWORD
+    label: Sessionsecret Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+  - key: POSTGRES_USER
+    label: Postgres User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRES_PASSWORD
+    label: Postgres Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: codimd
+    port: 3000
+    description: Public address of codimd.
+healthcheck:
+  service: codimd
+  port: 3000
+  path: /

@@ -1,0 +1,37 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_DATABASE: supertokens
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+    volumes:
+      - supertokens-mysql-data:/var/lib/mysql
+    healthcheck:
+      retries: 10
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - -h
+        - localhost
+      timeout: 20s
+  supertokens:
+    image: registry.supertokens.io/supertokens/supertokens-mysql:latest
+    ports:
+      - "3567"
+    environment:
+      API_KEYS: ""
+      MYSQL_CONNECTION_URI: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/supertokens
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      interval: 10s
+      retries: 5
+      test:
+        - CMD-SHELL
+        - curl -fsS -o /dev/null http://127.0.0.1:3567/
+      timeout: 5s

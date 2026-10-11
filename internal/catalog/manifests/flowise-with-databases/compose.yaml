@@ -1,0 +1,75 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  flowise:
+    image: flowiseai/flowise:latest
+    ports:
+      - "3001"
+    environment:
+      APIKEY_PATH: /root/.flowise
+      BLOB_STORAGE_PATH: /root/.flowise/storage
+      DATABASE_PATH: /root/.flowise
+      DEBUG: "false"
+      DISABLE_FLOWISE_TELEMETRY: "true"
+      FLOWISE_PASSWORD: ${FLOWISE_PASSWORD}
+      FLOWISE_USERNAME: ${FLOWISE_USER}
+      LOG_PATH: /root/.flowise/logs
+      PORT: "3001"
+      SECRETKEY_PATH: /root/.flowise
+    volumes:
+      - flowise-data:/root/.flowise
+    depends_on:
+      pg-record-manager:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+    healthcheck:
+      interval: 5s
+      retries: 3
+      test:
+        - CMD-SHELL
+        - wget -qO- http://127.0.0.1:3001 || exit 1
+      timeout: 5s
+  pg-record-manager:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: pg-record-manager
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+    volumes:
+      - pg-record-manager-data:/var/lib/postgresql/data
+    healthcheck:
+      interval: 5s
+      retries: 10
+      start_period: 20s
+      test:
+        - CMD-SHELL
+        - pg_isready -h localhost -U $POSTGRES_USER -d $POSTGRES_DB
+      timeout: 5s
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333"
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANTAPIKEY_PASSWORD}
+    volumes:
+      - flowise-qdrant-data:/qdrant/storage
+    healthcheck:
+      interval: 5s
+      retries: 3
+      test:
+        - CMD-SHELL
+        - curl -fsS -o /dev/null http://127.0.0.1:6333/
+      timeout: 5s
+  redis-cache:
+    image: redis:7
+    volumes:
+      - flowise-redis-cache-data:/data
+    healthcheck:
+      interval: 5s
+      retries: 3
+      test:
+        - CMD-SHELL
+        - redis-cli -h localhost -p 6379 ping
+      timeout: 5s

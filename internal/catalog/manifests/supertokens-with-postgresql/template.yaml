@@ -1,0 +1,35 @@
+id: supertokens-with-postgresql
+name: Supertokens With Postgresql
+description: An open-source authentication solution that simplifies the implementation of secure user authentication and session management for web and mobile applications.
+icon: shield-check
+category: Security
+documentation_url: https://supertokens.com/docs/guides
+recommended_memory_bytes: 536870912
+source:
+  name: coolify
+  url: https://github.com/coollabsio/coolify
+  license: Apache-2.0
+  path: templates/compose/supertokens-with-postgresql.yaml
+images:
+  - service: postgres
+    image: postgres:16
+  - service: supertokens
+    image: registry.supertokens.io/supertokens/supertokens-postgresql:latest
+env:
+  - key: POSTGRESQL_USER
+    label: Postgresql User
+    description: Generated when the app is installed.
+    generate: user
+  - key: POSTGRESQL_PASSWORD
+    label: Postgresql Password
+    description: Generated when the app is installed.
+    generate: password
+    secret: true
+domains:
+  - service: supertokens
+    port: 3567
+    description: Public address of supertokens.
+healthcheck:
+  service: supertokens
+  port: 3567
+  path: /

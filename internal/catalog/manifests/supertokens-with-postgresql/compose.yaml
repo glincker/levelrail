@@ -1,0 +1,35 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      GENERATED_POSTGRESQL_USER: ${POSTGRESQL_USER}
+      POSTGRES_DB: supertokens
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRES_USER: ${POSTGRESQL_USER}
+    volumes:
+      - supertokens-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      interval: 5s
+      retries: 5
+      test:
+        - CMD-SHELL
+        - '''pg_isready'' ''-U'' "$GENERATED_POSTGRESQL_USER" ''-d'' ''supertokens'''
+      timeout: 5s
+  supertokens:
+    image: registry.supertokens.io/supertokens/supertokens-postgresql:latest
+    ports:
+      - "3567"
+    environment:
+      API_KEYS: ""
+      POSTGRESQL_CONNECTION_URI: '"postgresql://${POSTGRESQL_USER}:${POSTGRESQL_PASSWORD}@postgres:5432/supertokens"'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      interval: 10s
+      retries: 5
+      test:
+        - CMD-SHELL
+        - curl -fsS -o /dev/null http://127.0.0.1:3567/
+      timeout: 5s

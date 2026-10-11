@@ -1,0 +1,27 @@
+# Converted from an upstream template catalog (see source in template.yaml).
+services:
+  executor:
+    image: ghcr.io/rhyssullivan/executor-selfhost:latest
+    ports:
+      - "4788"
+    environment:
+      EXECUTOR_ALLOW_LOCAL_NETWORK: "false"
+      EXECUTOR_DATA_DIR: /data
+      EXECUTOR_DB_PATH: /data/data.db
+      EXECUTOR_HOST: 0.0.0.0
+      EXECUTOR_ORG_NAME: Default
+      EXECUTOR_ORG_SLUG: default
+      EXECUTOR_WEB_BASE_URL: ${SERVICE_URL_EXECUTOR}
+      PORT: "4788"
+    volumes:
+      - executor-data:/data
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 20s
+      test:
+        - CMD
+        - bun
+        - -e
+        - fetch(`http://127.0.0.1:${process.env.PORT||4788}/api/health`).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))
+      timeout: 5s
