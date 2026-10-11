@@ -211,10 +211,30 @@
   },
   "dock": {
     "region": "Assistant dock",
+    "regionSide": "Assistant dock side panel",
+    "header": "Dock header",
+    "moveHint": "Arrow keys move the dock, Shift for larger steps, Home resets its position.",
     "toggle": "Toggle assistant dock",
-    "toggleHint": "Assistant dock (Ctrl+J)",
+    "toggleHint": "Assistant dock (Ctrl+J, Ctrl+Shift+M changes layout)",
+    "launcher": "Open assistant dock",
+    "launcherUnread": "Open assistant dock, new reply",
+    "unread": "New reply",
     "close": "Close dock",
-    "resize": "Resize dock",
+    "minimize": "Minimize to launcher",
+    "maximize": "Maximize dock",
+    "restore": "Restore dock size",
+    "menu": "Dock layout and options",
+    "tabsLabel": "Dock tabs",
+    "resizeWidth": "Resize dock width",
+    "resizeHeight": "Resize dock height",
+    "sheetHandle": "Drag down to minimize",
+    "mode": {
+      "float": "Floating window",
+      "bottom": "Bottom panel",
+      "side": "Right side panel"
+    },
+    "push": "Push page content",
+    "reset": "Reset position and size",
     "tabs": {
       "aiChat": "AI chat",
       "console": "Console"

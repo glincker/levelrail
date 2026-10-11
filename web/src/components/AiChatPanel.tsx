@@ -16,7 +16,11 @@ import { EmptyState } from '@/components/ui/empty-state'
 // transcript, and the composer, wired to useAiChatSession which does
 // the actual SSE plumbing. Rendered once the caller has already
 // confirmed a BYOK key is configured (routes/ai-assistant.tsx).
-export function AiChatPanel() {
+export function AiChatPanel({
+  onAssistantReply,
+}: {
+  onAssistantReply?: () => void
+}) {
   const {
     sessionId,
     messages,
@@ -40,6 +44,12 @@ export function AiChatPanel() {
     const seed = takeAiChatSeed()
     if (seed) void sendMessage(seed)
   }, [connectionState, sessionId, sendMessage])
+
+  const wasStreaming = useRef(false)
+  useEffect(() => {
+    if (wasStreaming.current && !streaming) onAssistantReply?.()
+    wasStreaming.current = streaming
+  }, [streaming, onAssistantReply])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">

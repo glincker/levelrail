@@ -69,6 +69,7 @@ export function CliConsole({ className }: { className?: string }) {
   const draftRef = useRef('')
   const runningRef = useRef(false)
   const atLineStartRef = useRef(true)
+  const cursorRowRef = useRef(0)
   const [state, setStateValue] = useState<ConsoleState>('idle')
 
   const setState = useCallback((next: ConsoleState) => {
@@ -81,7 +82,10 @@ export function CliConsole({ className }: { className?: string }) {
   }, [])
 
   const newline = useCallback(() => {
-    if (!atLineStartRef.current) write('\r\n')
+    if (!atLineStartRef.current) {
+      write('\r\n')
+      cursorRowRef.current = 0
+    }
     atLineStartRef.current = true
   }, [write])
 
@@ -93,12 +97,23 @@ export function CliConsole({ className }: { className?: string }) {
     [newline, write],
   )
 
+  // Wrapped input spans several rows: climb to the first row, clear down,
+  // repaint, then park the cursor by row and column (CUB never wraps).
   const redraw = useCallback(() => {
     const { buffer, cursor } = lineRef.current
-    const back = buffer.length - cursor
+    const cols = Math.max(1, termRef.current?.cols ?? 80)
+    const endPos = prompt.length + buffer.length
+    const cursorPos = prompt.length + cursor
+    const up = cursorRowRef.current
+    const endRow = Math.floor(endPos / cols)
+    const wrapFix = endPos > 0 && endPos % cols === 0 ? ' \r' : ''
+    const rowsBack = Math.max(0, endRow - Math.floor(cursorPos / cols))
+    const col = cursorPos % cols
     write(
-      `\r\x1b[2K${GREEN}${prompt}${RESET}${buffer}${back > 0 ? `\x1b[${String(back)}D` : ''}`,
+      `${up > 0 ? `\x1b[${String(up)}A` : ''}\r\x1b[J${GREEN}${prompt}${RESET}${buffer}${wrapFix}` +
+        `${rowsBack > 0 ? `\x1b[${String(rowsBack)}A` : ''}\r${col > 0 ? `\x1b[${String(col)}C` : ''}`,
     )
+    cursorRowRef.current = Math.floor(cursorPos / cols)
     atLineStartRef.current = false
   }, [prompt, write])
 
@@ -106,6 +121,7 @@ export function CliConsole({ className }: { className?: string }) {
     lineRef.current = EMPTY_LINE
     historyIndexRef.current = -1
     newline()
+    cursorRowRef.current = 0
     redraw()
   }, [newline, redraw])
 
@@ -239,6 +255,7 @@ export function CliConsole({ className }: { className?: string }) {
     const line = lineRef.current.buffer.trim()
     write('\r\n')
     atLineStartRef.current = true
+    cursorRowRef.current = 0
     historyRef.current = pushHistory(historyRef.current, line)
     lineRef.current = EMPTY_LINE
     historyIndexRef.current = -1
@@ -395,14 +412,23 @@ export function CliConsole({ className }: { className?: string }) {
     const dataSub = term.onData((d) => {
       onDataRef.current(d)
     })
-    const observer = new ResizeObserver(() => {
-      try {
-        fit.fit()
-      } catch {
-        // zero-sized while detached or mid-transition; re-fits on next observe
-      }
-    })
+    let frame = 0
+    const refit = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        if (container.clientWidth === 0 || container.clientHeight === 0) return
+        try {
+          fit.fit()
+        } catch {
+          // mid-transition; the next observed size change re-fits
+        }
+      })
+    }
+    const observer = new ResizeObserver(refit)
     observer.observe(container)
+    if (container.parentElement) observer.observe(container.parentElement)
+    window.addEventListener('resize', refit)
+    refit()
     const theme = new MutationObserver(() => {
       term.options.theme = isDark() ? DARK_THEME : LIGHT_THEME
     })
@@ -415,6 +441,8 @@ export function CliConsole({ className }: { className?: string }) {
       atLineStartRef.current = true
     }
     return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('resize', refit)
       observer.disconnect()
       theme.disconnect()
       dataSub.dispose()
