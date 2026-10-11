@@ -485,6 +485,7 @@ type Router struct {
 	route53DNSCredentialResolver Route53DNSCredentialResolver     // nil is valid: dns-records routes return 501, same shape as cloudflareDNSTokenResolver above
 	dnsRecordManager             dnsRecordManagerFunc             // always set, defaulted to rt.resolveDNSRecordManager below, overridable in this package's own tests, the same "seam, not an interface" shape lookupHost already uses
 	dnsRecordStatus              dnsRecordStatusFunc              // always set, defaulted to defaultDNSRecordStatus below, overridable in this package's own tests so none of them perform a real DNS query
+	domainAuto                   domainAutoSeams                  // zero value uses the real DNS provider, TLS and HTTP probes; tests replace single funcs
 	registry                     RegistryStore                    // always set, same shape as cloudflareTunnel above
 	registrySecrets              RegistrySecrets                  // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
 	vault                        VaultSettingsStore               // always set, same shape as cloudflareTunnel above

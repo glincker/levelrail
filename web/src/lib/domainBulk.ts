@@ -57,19 +57,20 @@ export function parseDomainInput(
   return out
 }
 
-export type BulkAddOutcome =
-  { domain: string; ok: true } | { domain: string; ok: false; error: string }
+export type BulkAddOutcome<T = unknown> =
+  | { domain: string; ok: true; result: T }
+  | { domain: string; ok: false; error: string }
 
 // One call per domain so a rejected hostname never blocks the others.
-export async function addDomainsIndependently(
+export async function addDomainsIndependently<T = unknown>(
   domains: readonly string[],
-  addOne: (domain: string) => Promise<unknown>,
-): Promise<BulkAddOutcome[]> {
-  const outcomes: BulkAddOutcome[] = []
+  addOne: (domain: string) => Promise<T>,
+): Promise<BulkAddOutcome<T>[]> {
+  const outcomes: BulkAddOutcome<T>[] = []
   for (const domain of domains) {
     try {
-      await addOne(domain)
-      outcomes.push({ domain, ok: true })
+      const result = await addOne(domain)
+      outcomes.push({ domain, ok: true, result })
     } catch (error) {
       outcomes.push({
         domain,

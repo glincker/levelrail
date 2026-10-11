@@ -283,6 +283,67 @@ levelrail-cli domains tls-cert get <app> <domain>
 
 The API is `PUT /api/v1/apps/{name}/domains/{domain}/tls-cert`, and the dashboard has a per-domain TLS control.
 
+## Add a domain and go live
+
+With a DNS provider connected, adding a domain does the rest: Levelrail creates the DNS record, waits for it to propagate, checks the certificate and confirms the site answers, then gives you one link.
+
+1. Connect Cloudflare or Route53 once (see [Wildcard domains: DNS-01 providers](#wildcard-domains-dns-01-providers)). The same credential is used for records.
+2. Add the domain from the dashboard (**Domains**, **Add domains**), with `levelrail-cli apps domains add <app> <domain> --wait`, or with `PATCH /api/v1/apps/{name}/domains`.
+
+```bash
+levelrail-cli apps domains add my-app app.example.com --wait
+levelrail-cli apps domains add my-app app.example.com --dns preview   # show the record, change nothing
+levelrail-cli domains go-live my-app app.example.com --wait --timeout 5m
+```
+
+`--wait` prints each step as it happens and exits non-zero when the domain is not live within `--timeout`.
+
+### What gets created
+
+- An `A` record to this server's public IPv4 address (an `AAAA` record on an IPv6-only host), or a `CNAME` to the target set with `settings ingress set --dns-cname-target`. A CNAME at a zone apex is only created at Cloudflare, which flattens it.
+- An identical record already in place is left as it is. A **different** `A`, `AAAA` or `CNAME` at the same name is reported as a conflict and not overwritten, unless you pass `--replace` (`replace: true`). Other record types such as `TXT` and `MX` are never touched.
+- The TTL is the provider's automatic one unless you set `--dns-ttl`. Cloudflare's proxy is off unless you set `--dns-proxied`; when on, set the zone's SSL/TLS mode to Full (strict).
+- Removing a domain keeps its record unless you pass `--remove-dns`. Only records Levelrail created are ever removed, and only when their value still matches.
+
+### Token scopes
+
+| Provider | Needed |
+| --- | --- |
+| Cloudflare | An API token with `Zone:DNS:Edit` and `Zone:Zone:Read` on the zones you use. Read is how the zone for a domain is found. |
+| Route53 | `route53:ListHostedZonesByName`, `route53:ListResourceRecordSets` and `route53:ChangeResourceRecordSets`. |
+
+Creating or changing a record needs the root ability. Every record write is recorded in the audit log as `dns_record.created`, `dns_record.updated` or `dns_record.deleted`.
+
+### Apps base domain
+
+Set a base domain such as `apps.example.com` and every new app created without a domain gets `<app>.apps.example.com`, with its record created, instead of the sslip.io address.
+
+```bash
+levelrail-cli settings ingress set --apps-base-domain apps.example.com
+levelrail-cli domains backfill-base-domain            # dry run for existing apps
+levelrail-cli domains backfill-base-domain --confirm
+```
+
+The base domain must sit inside a zone your provider manages; the dashboard shows whether the zone was found as you type. Existing apps keep their address until you run the backfill.
+
+### The automation policy
+
+`GET/PUT /api/v1/settings/domain-automation` (or **Domains**, **Platform settings**, **Domain automation**, or `levelrail-cli settings domain-automation get|set`) controls what runs on a new domain:
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `auto_dns` | on when a provider is connected | Create the DNS record. |
+| `auto_proxy_route` | on when the proxy integration is enabled | Wait for the managed proxy route. |
+| `force_https` | on | Force HTTPS once a certificate is ready, where this server supports it. |
+| `www_policy` | `off` | `redirect_to_apex` or `redirect_to_www` also attaches the partner host, its record and a 301 redirect. |
+| `attach_www_counterpart` | off | Attach `www.example.com` with `example.com` and the reverse, without a redirect. |
+| `wildcard_for_base_domain` | off | One `*.<base>` record covers every app under the base domain. |
+| `verify_after` | on | Probe propagation, certificate and HTTP and report each step. |
+
+A request can override any key with an `automation` object. `POST /api/v1/apps/{name}/domains/go-live/plan` is the dry run: it returns the planned steps and changes nothing. Each run is kept in the automation history with a one-step **Undo** that removes only what that run created (`levelrail-cli domains go-live runs`, `domains go-live undo <id>`).
+
+Steps that the server cannot do are reported as `skipped` and the rest still completes.
+
 ## Wildcard domains: DNS-01 providers
 
 Wildcard domains like `*.example.com` need ACME's DNS-01 challenge (HTTP-01 cannot validate wildcards). DNS-01 works by creating a short-lived TXT record at your DNS provider, so you must grant API access.
@@ -292,7 +353,7 @@ Two providers are supported. Configure them platform-wide on the **Domains** pag
 <Tabs :items="['Cloudflare', 'Route53']">
 <Tab value="Cloudflare">
 
-Use an API token scoped to `Zone:DNS:Edit` for your zone, never the global API key.
+Use an API token scoped to `Zone:DNS:Edit` and `Zone:Zone:Read` for your zone, never the global API key.
 
 ```bash
 levelrail-cli domains cloudflare-dns set --cf-api-token <token>

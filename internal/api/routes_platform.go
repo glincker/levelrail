@@ -560,6 +560,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleCreateDNSRecord))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleUpdateDNSRecord))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/dns-records", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleDeleteDNSRecord))
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/go-live", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGoLiveStatus))
+	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/go-live", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleGoLiveRun))
+	mux.HandleFunc("POST /api/v1/apps/{name}/domains/go-live/plan", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleGoLivePlan))
+	mux.HandleFunc("GET /api/v1/settings/domain-automation", rt.requireAbility(AbilityRead, rt.handleGetDomainAutomation))
+	mux.HandleFunc("PUT /api/v1/settings/domain-automation", rt.requireAbility(AbilityRoot, rt.handleUpdateDomainAutomation))
+	mux.HandleFunc("GET /api/v1/domains/automation/runs", rt.requireAbility(AbilityRead, rt.handleListAutomationRuns))
+	mux.HandleFunc("POST /api/v1/domains/automation/runs/{id}/undo", rt.requireAbility(AbilityRoot, rt.handleUndoAutomationRun))
+	mux.HandleFunc("GET /api/v1/dns/zone", rt.requireAbility(AbilityRead, rt.handleDNSZone))
+	mux.HandleFunc("POST /api/v1/settings/ingress/apps-base-domain/backfill", rt.requireAbility(AbilityRoot, rt.handleBackfillBaseDomain))
 
 	// Domain redirect (domain_redirect.go): points one app-owned domain
 	// at an arbitrary target URL, enforced by Caddy's static_response

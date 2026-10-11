@@ -12,6 +12,7 @@ import {
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { appKeys } from './apps'
 import { domainKeys } from './domains'
+import type { DomainDnsResult, GoLiveResult } from './goLive'
 
 export interface EnvironmentDomainSet {
   environment_id: string
@@ -65,6 +66,10 @@ export interface EditDomainsInput {
   environment?: string
   add?: string[]
   remove?: string[]
+  // Automatic DNS: auto (server default), off, or preview.
+  dns?: 'auto' | 'off' | 'preview'
+  replace?: boolean
+  remove_dns?: boolean
 }
 
 export interface EditDomainsResult {
@@ -72,6 +77,8 @@ export interface EditDomainsResult {
   domains: string[]
   changed: boolean
   environment_id?: string
+  dns_results?: DomainDnsResult[]
+  go_live?: GoLiveResult[]
 }
 
 async function editAppDomains(

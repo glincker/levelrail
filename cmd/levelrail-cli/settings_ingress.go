@@ -39,7 +39,7 @@ func runSettingsIngress(prog string, args []string, stdout, stderr io.Writer, lo
 func settingsIngressUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s settings ingress get [flags]
-  %[1]s settings ingress set [--primary-domain DOMAIN] [--acme-enabled] [--acme-email EMAIL] [--hsts-enabled] [--fallback-domains=false] [--public-https-port N] [--tls-terminated-upstream] [flags]
+  %[1]s settings ingress set [--primary-domain DOMAIN] [--acme-enabled] [--acme-email EMAIL] [--hsts-enabled] [--fallback-domains=false] [--public-https-port N] [--tls-terminated-upstream] [--apps-base-domain HOST] [--dns-cname-target HOST] [--dns-ttl SECONDS] [--dns-proxied] [flags]
   %[1]s settings ingress https [status] | enable --email EMAIL [--staging] [--wait] [flags]
 
 Configures the platform-wide primary domain and ACME (Let's Encrypt)
@@ -69,7 +69,9 @@ func runSettingsIngressSet(prog string, args []string, stdout, stderr io.Writer,
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "settings ingress set", "print the updated ingress settings as JSON to stdout and nothing else", stderr)
 	var primaryDomain, acmeEmail, acmeDirectoryURL string
 	var acmeEnabled, hstsEnabled, fallbackDomains, tlsUpstream bool
-	var publicHTTPSPort int
+	var publicHTTPSPort, dnsTTL int
+	var appsBaseDomain, dnsCNAMETarget string
+	var dnsProxied bool
 	fs.StringVar(&primaryDomain, "primary-domain", "", "hostname the dashboard itself is reachable at")
 	fs.BoolVar(&acmeEnabled, "acme-enabled", false, "enable automatic TLS certificate issuance/renewal")
 	fs.StringVar(&acmeEmail, "acme-email", "", "ACME account contact address (required when --acme-enabled is set)")
@@ -78,6 +80,10 @@ func runSettingsIngressSet(prog string, args []string, stdout, stderr io.Writer,
 	fs.BoolVar(&fallbackDomains, "fallback-domains", true, "give apps without a domain an automatic <app>.<dashed-ip>.sslip.io hostname")
 	fs.IntVar(&publicHTTPSPort, "public-https-port", 0, "port clients use when a proxy fronts this ingress (usually 443); 0 means the ingress listen port")
 	fs.BoolVar(&tlsUpstream, "tls-terminated-upstream", false, "a proxy in front owns TLS: never run ACME here and build links with the public port")
+	fs.StringVar(&appsBaseDomain, "apps-base-domain", "", "give new apps without a domain <app>.<base> and create its DNS record (empty clears)")
+	fs.StringVar(&dnsCNAMETarget, "dns-cname-target", "", "create CNAME records to this host instead of A/AAAA to this server's address (empty clears)")
+	fs.IntVar(&dnsTTL, "dns-ttl", 0, "TTL in seconds for records Levelrail creates; 0 is the provider's automatic TTL")
+	fs.BoolVar(&dnsProxied, "dns-proxied", false, "turn Cloudflare's proxy on for created records (needs SSL mode Full strict)")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings ingress set [flags]\n\nConfigures the primary domain and ACME settings.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -119,6 +125,14 @@ func runSettingsIngressSet(prog string, args []string, stdout, stderr io.Writer,
 			req.PublicHTTPSPort = publicHTTPSPort
 		case "tls-terminated-upstream":
 			req.TLSTerminatedUpstream = tlsUpstream
+		case "apps-base-domain":
+			req.AppsBaseDomain = appsBaseDomain
+		case "dns-cname-target":
+			req.DNSCNAMETarget = dnsCNAMETarget
+		case "dns-ttl":
+			req.DNSTTLSeconds = dnsTTL
+		case "dns-proxied":
+			req.DNSProxied = dnsProxied
 		}
 	})
 
@@ -139,6 +153,15 @@ func printIngressSettingsHuman(out io.Writer, s ingressSettingsResource) {
 	_, _ = fmt.Fprintf(out, "fallback_domains:   %v\n", s.FallbackDomainsEnabled)
 	_, _ = fmt.Fprintf(out, "public_https_port:  %d\n", s.PublicHTTPSPort)
 	_, _ = fmt.Fprintf(out, "tls_terminated_upstream: %v\n", s.TLSTerminatedUpstream)
+	if s.AppsBaseDomain != "" {
+		_, _ = fmt.Fprintf(out, "apps_base_domain:   %s\n", s.AppsBaseDomain)
+	}
+	if s.DNSCNAMETarget != "" {
+		_, _ = fmt.Fprintf(out, "dns_cname_target:   %s\n", s.DNSCNAMETarget)
+	}
+	if s.DNSTTLSeconds != 0 || s.DNSProxied {
+		_, _ = fmt.Fprintf(out, "dns_ttl_seconds:    %d (proxied: %v)\n", s.DNSTTLSeconds, s.DNSProxied)
+	}
 	if s.PublicHost != "" {
 		_, _ = fmt.Fprintf(out, "public_host:        %s (%s)\n", s.PublicHost, s.PublicHostSource)
 	} else {

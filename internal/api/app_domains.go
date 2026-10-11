@@ -29,6 +29,14 @@ type editDomainsRequest struct {
 	// Environment (ID, name or kind) edits that environment's own domain
 	// set instead of the app's default set.
 	Environment string `json:"environment,omitempty"`
+	// DNS is auto (default), off or preview: whether added domains get their
+	// DNS record created. Replace lets a conflicting A/AAAA/CNAME be
+	// overwritten. RemoveDNS deletes the records Levelrail created for
+	// removed domains. Automation overrides the go-live policy per request.
+	DNS        string                    `json:"dns,omitempty"`
+	Replace    bool                      `json:"replace,omitempty"`
+	RemoveDNS  bool                      `json:"remove_dns,omitempty"`
+	Automation *domainAutomationOverride `json:"automation,omitempty"`
 }
 
 type editDomainsResponse struct {
@@ -36,6 +44,10 @@ type editDomainsResponse struct {
 	Domains       []string `json:"domains"`
 	Changed       bool     `json:"changed"`
 	EnvironmentID string   `json:"environment_id,omitempty"`
+	// DNSResults is one automatic DNS outcome per added domain (and per
+	// removed domain with remove_dns). GoLive carries the full step list.
+	DNSResults []domainDNSResult `json:"dns_results,omitempty"`
+	GoLive     []goLiveResult    `json:"go_live,omitempty"`
 }
 
 // errDomainNotSet marks a remove of a domain the app does not have.
@@ -76,6 +88,19 @@ func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	switch req.DNS {
+	case "", dnsModeAuto, dnsModeOff, dnsModePreview:
+	default:
+		writeError(w, http.StatusBadRequest, "dns must be auto, off or preview")
+		return
+	}
+	if req.Automation != nil {
+		if msg := req.Automation.validate(); msg != "" {
+			writeError(w, http.StatusBadRequest, msg)
+			return
+		}
+	}
+
 	if env := strings.TrimSpace(req.Environment); env != "" {
 		rt.editAppEnvironmentDomains(w, r, name, env, req.Set, add, remove)
 		return
@@ -110,7 +135,38 @@ func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 		}
 		rt.nudgeReconciler()
 	}
-	writeJSON(w, http.StatusOK, editDomainsResponse{App: name, Domains: next, Changed: changed})
+	resp := editDomainsResponse{App: name, Domains: next, Changed: changed}
+	if changed {
+		rt.automateDomainChanges(r, name, req, before, next, &resp)
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// automateDomainChanges runs the go-live automation for every domain the
+// edit added, and removes tracked DNS records for removed ones on request.
+// A failure here never fails the already-applied domain edit.
+func (rt *Router) automateDomainChanges(r *http.Request, name string, req editDomainsRequest, before, next []string, resp *editDomainsResponse) {
+	ctx := r.Context()
+	added, removed := sliceDiff(before, next)
+	policy := rt.effectiveAutomation(ctx, r, req.Automation)
+	for _, d := range added {
+		if ingress.IsWildcardDomain(d) {
+			continue
+		}
+		res := rt.goLive(ctx, r, name, d, policy, goLiveRequest{DNS: req.DNS, Replace: req.Replace, skipVerify: true}, goLiveModeApply)
+		res.undo = append([]undoAction{{Kind: undoKindAppDomain, App: name, Domain: d}}, res.undo...)
+		res.Undoable = true
+		if req.DNS != dnsModePreview {
+			rt.recordGoLiveRun(ctx, &res)
+		}
+		resp.DNSResults = append(resp.DNSResults, res.DNS...)
+		resp.GoLive = append(resp.GoLive, res)
+	}
+	if req.RemoveDNS {
+		for _, d := range removed {
+			resp.DNSResults = append(resp.DNSResults, rt.removeManagedDNS(ctx, r, name, d)...)
+		}
+	}
 }
 
 func domainChangeEvent(name string, before, next []string) (store.AppEvent, bool) {

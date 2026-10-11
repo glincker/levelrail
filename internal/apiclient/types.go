@@ -3414,6 +3414,12 @@ type IngressSettingsResource struct {
 	// ACMESkippedUpstream and TrustedProxiesMissing are read-only.
 	ACMESkippedUpstream   bool `json:"acme_skipped_upstream,omitempty"`
 	TrustedProxiesMissing bool `json:"trusted_proxies_missing,omitempty"`
+	// AppsBaseDomain gives new apps without a domain <app>.<base> and creates
+	// the DNS record; the DNS fields tune the records Levelrail creates.
+	AppsBaseDomain string `json:"apps_base_domain,omitempty"`
+	DNSCNAMETarget string `json:"dns_cname_target,omitempty"`
+	DNSTTLSeconds  int    `json:"dns_ttl_seconds,omitempty"`
+	DNSProxied     bool   `json:"dns_proxied,omitempty"`
 }
 
 // HTTPSStatusResource mirrors internal/api's httpsStatusResource (GET/POST
