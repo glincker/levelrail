@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 906 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 919 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -177,6 +177,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/loadbalancer/import", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleImportLoadBalancer", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/loadbalancer/status", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleLoadBalancerStatus", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/loadbalancer/upstreams/{id}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetLoadBalancerUpstream", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/move", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartMove", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/move-with-volumes", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleMoveAppWithVolumes", Description: "move-with-volumes: the same AbilityRoot tier as the plain node move above, since this both changes placement and does an in-place, full-overwrite restore of every named volume onto the destination node (the same risk class POST .../volumes/{volume}/restore already sits behind). The two GETs are AbilityRead, matching every other history listing in this file."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/moves", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppVolumeMoves", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/moves/{id}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppVolumeMove", Description: ""},
@@ -201,6 +202,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/pipelines/{pname}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPipeline", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/pipelines/{pname}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUpdatePipeline", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/pipelines/{pname}/runs", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartPipelineRun", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/placement", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPlacement", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/placement", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetPlacement", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/preflight", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePreflightApp", Description: "Preflight checks (preflight.go): read-only probes of an existing app's stored config (AbilityRead, resource-scoped), or of a not yet created app described in the body (AbilityWrite, since the body names hosts the server will contact)."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPreview", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/preview", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutPreview", Description: ""},
@@ -408,6 +411,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/databases/{name}/major-upgrades/{id}/rollback", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleRollbackMajorUpgrade", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/major-upgrades/{id}/snapshot", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDiscardMajorUpgradeSnapshot", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/metrics", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleQueryDatabaseMetrics", Description: "Telemetry query, the database counterpart to GET /apps/{name}/metrics, /logs, /logs/stream above: same TelemetryQuerier/logBroadcaster gating (501 when unconfigured). database_metrics.go/database_logs.go share the actual query/stream logic with their app equivalents via queryResourceMetrics/ queryResourceLogs/streamResourceLogs (metrics.go/logs.go/ live_logs.go), parameterized on a resourceLookup, not a hand-copied duplicate."},
+	{Method: "POST", Path: "/api/v1/databases/{name}/move", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleStartMove", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/network", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseNetwork", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/network/make-private", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleMakeDatabasePrivate", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/network/rules", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleRemoveDatabaseRules", Description: ""},
@@ -421,6 +425,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/databases/{name}/pitr", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleEnablePITR", Description: "Point-in-time restore (pitr.go): enabling/disabling PITR is AbilityWriteSensitive, the same tier creating a backup target or triggering an ordinary backup already uses; base backups are the physical counterpart of an ordinary backup, same tier again. Triggering an actual PITR restore is AbilityRoot, matching the ordinary restore route above for the identical reason: it overwrites a live database's actual data with no way back."},
 	{Method: "POST", Path: "/api/v1/databases/{name}/pitr-restore", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleTriggerPITRRestore", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/pitr-restores", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListPITRRestoreHistory", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/placement", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetPlacement", Description: ""},
+	{Method: "PUT", Path: "/api/v1/databases/{name}/placement", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetPlacement", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/query", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseQuery", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/query-history", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleClearDatabaseQueryHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/query-history", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseQueryHistory", Description: ""},
@@ -569,8 +575,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity-forecast", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCapacityForecast", Description: "Rough disk/memory exhaustion projection (node_capacity_forecast.go), a read-and-suggest layer over the same host samples patch-status/metrics above read, same AbilityRoot boundary and nil-telemetry 501 shape as every other node route."},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/cordon", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCordonNode", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/drain", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDrainNode", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/drains", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeDrains", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/events", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeEvents", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/health", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeHealth", Description: "Health, cordon, drain, same AbilityRoot boundary as every other node route above."},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/labels", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeLabels", Description: ""},
+	{Method: "PUT", Path: "/api/v1/nodes/{id}/labels", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeLabels", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/mesh/rejoin", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRejoinNodeMesh", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/mesh/rotate-key", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRotateNodeMeshKey", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/metrics", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleQueryNodeMetrics", Description: "Node-level metrics (sum of per-container samples for everything placed on this node, see handleQueryNodeMetrics's own doc comment for exactly what that does and doesn't mean): same AbilityRoot boundary and nil-telemetry 501 shape as every route above, and the same query-param contract as GET /apps/{name}/metrics above it."},
@@ -684,6 +693,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/log-archive/policy", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetLogArchivePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/log-archive/runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListLogArchiveRuns", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
+	{Method: "GET", Path: "/api/v1/mesh/connectivity", Ability: "AbilityRoot", Group: "Other", Handler: "handleMeshConnectivity", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/plan", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAppImportPlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppImportSessions", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateAppImportSession", Description: ""},
@@ -734,6 +744,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/network-shares/{id}/test", Ability: "AbilityRead", Group: "Other", Handler: "handleTestNetworkShare", Description: ""},
 	{Method: "GET", Path: "/api/v1/network/proxy", Ability: "AbilityRead", Group: "Other", Handler: "handleGetNetworkProxy", Description: "Proxy/traffic: per-domain reachability (CrossNodeIngress, see doctor_cross_node_ingress.go) plus TLS status, joined for the Traffic/Proxy dashboard page. Same AbilityRead boundary as topology above, same reasoning: read-only, no key material."},
 	{Method: "GET", Path: "/api/v1/network/topology", Ability: "AbilityRead", Group: "Other", Handler: "handleGetNetworkTopology", Description: "Network topology: a read-only, whole-mesh summary (nodes, apps, databases, load balancers, app-to-database connections). Unlike every other node/mesh route above, AbilityRead rather than AbilityRoot: it exposes no key material, no join tokens, and no mutation, just the same placement/DNS-name facts already visible piecemeal across GET /apps, /databases and /nodes."},
+	{Method: "GET", Path: "/api/v1/node-drains/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetNodeDrain", Description: ""},
+	{Method: "GET", Path: "/api/v1/node-moves", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeMoves", Description: ""},
+	{Method: "GET", Path: "/api/v1/node-moves/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetNodeMove", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-providers", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeProviders", Description: "Cloud node provisioning: same AbilityRoot boundary as every other node route above, a provider credential and the ability to spin up a VM are at least as sensitive as a join token."},
 	{Method: "POST", Path: "/api/v1/node-providers", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetNodeProviderCredential", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-providers/{provider}/regions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeProviderRegions", Description: ""},

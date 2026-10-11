@@ -198,7 +198,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 150 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 153 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -360,6 +360,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/listening-ports | AbilityRead | handleAppListeningPorts |
 | GET | /api/v1/apps/{name}/investigate | AbilityRead | handleInvestigate |
 | GET | /api/v1/apps/{name}/failure-context | AbilityRead | handleFailureContext |
+| POST | /api/v1/apps/{name}/move | AbilityRoot | handleStartMove |
+| GET | /api/v1/apps/{name}/placement | AbilityRead | handleGetPlacement |
+| PUT | /api/v1/apps/{name}/placement | AbilityRoot | handleSetPlacement |
 
 :::
 
@@ -523,6 +526,9 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/upgrades | AbilityRead | handleGetDatabaseUpgrades |
 | PUT | /api/v1/databases/{name}/upgrade-policy | AbilityWriteSensitive | handlePutDatabaseUpgradePolicy |
 | POST | /api/v1/databases/{name}/upgrade-now | AbilityWriteSensitive | handleDatabaseUpgradeNow |
+| POST | /api/v1/databases/{name}/move | AbilityRoot | handleStartMove |
+| GET | /api/v1/databases/{name}/placement | AbilityRead | handleGetPlacement |
+| PUT | /api/v1/databases/{name}/placement | AbilityRoot | handleSetPlacement |
 
 ## Projects / Organizations / Environments
 
@@ -612,6 +618,9 @@ Endpoints for:
 | PUT | /api/v1/nodes/{id}/region | AbilityRoot | handleSetNodeRegion |
 | POST | /api/v1/nodes/ssh-provision | AbilityRoot | handleCreateSSHNodeProvision |
 | POST | /api/v1/nodes/{id}/mesh/rejoin | AbilityRoot | handleRejoinNodeMesh |
+| GET | /api/v1/nodes/{id}/drains | AbilityRoot | handleListNodeDrains |
+| GET | /api/v1/nodes/{id}/labels | AbilityRoot | handleGetNodeLabels |
+| PUT | /api/v1/nodes/{id}/labels | AbilityRoot | handleSetNodeLabels |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -1129,6 +1138,10 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run} | AbilityRead | handleGetAppImportCutoverRun |
 | POST | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}/rollback | AbilityWriteSensitive | handleRollbackAppImportCutover |
 | POST | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}/confirm-dns | AbilityWriteSensitive | handleConfirmAppImportCutoverDNS |
+| GET | /api/v1/node-moves | AbilityRoot | handleListNodeMoves |
+| GET | /api/v1/node-moves/{id} | AbilityRoot | handleGetNodeMove |
+| GET | /api/v1/node-drains/{id} | AbilityRoot | handleGetNodeDrain |
+| GET | /api/v1/mesh/connectivity | AbilityRoot | handleMeshConnectivity |
 
 ## See also
 

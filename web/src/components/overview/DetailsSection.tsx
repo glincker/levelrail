@@ -8,6 +8,7 @@ import type { AppDetail } from '../../types/appDetail'
 import type { ReconcileCondition } from '../../types/deploy'
 import { AppHealthTimeline } from '../AppHealthTimeline'
 import { AppOverview } from '../AppOverview'
+import { PlacementCard } from '../PlacementCard'
 import { AppPreflightCard } from '../PreflightPanel'
 import { ConditionsPanel } from '../ConditionsPanel'
 
@@ -32,6 +33,12 @@ export function DetailsSection({
         <div className="space-y-6 p-4 pt-0">
           <AppHealthTimeline appName={app.name} />
           <AppOverview app={app} />
+          <PlacementCard
+            kind="app"
+            name={app.name}
+            currentNodeId={app.node_id}
+            volumeNames={app.volumes?.map((v) => v.name) ?? []}
+          />
           <AppPreflightCard appName={app.name} />
           <ConditionsPanel conditions={conditions} />
         </div>

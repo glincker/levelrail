@@ -4,6 +4,7 @@ import {
   networkTopologyQueryOptions,
   useNetworkTopology,
 } from '../../queries/networkTopology'
+import { MeshConnectivityPanel } from '../../components/network/MeshConnectivityPanel'
 import { MeshPeersPanel } from '../../components/network/MeshPeersPanel'
 import { NetworkTopologyView } from '../../components/network/NetworkTopologyView'
 import { routeErrorMessage } from '../../lib/apiError'
@@ -62,6 +63,8 @@ function NetworkPage() {
       )}
 
       <MeshPeersPanel localNodeId={localNodeId} />
+
+      <MeshConnectivityPanel />
     </div>
   )
 }
