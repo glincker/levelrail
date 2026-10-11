@@ -215,7 +215,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"audit-purge":              nil,
 	"attention":                nil,
 	"doctor":                   nil,
-	"proxy":                    nil,
+	"proxy":                    {subs: map[string]*cmdNode{"setup": nil, "status": nil, "apply": nil, "verify": nil, "disable": nil}},
 	"auth-engine":              {subs: map[string]*cmdNode{"status": nil}},
 	"api-docs":                 nil,
 	"init":                     nil,

@@ -143,6 +143,7 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_DOCTOR_DISK_WARNING_BYTES` | `1073741824` (1 GiB) | Free disk space below which the `disk_space` check warns. Integer bytes. Control plane. |
 | `APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS` | `365` | Age of the master key, in whole days, after which doctor suggests rotating it. See [Master key rotation](master-key-rotation.md). Control plane. |
 | `APP_DOCTOR_NETWORK_TIMEOUT` | `5s` | Shared time limit for the network checks in the doctor endpoint. Control plane. |
+| `APP_PROXY_VERIFY_TIMEOUT` | `8s` | Time limit for each managed proxy route check (TLS handshake and request through the proxy) and for the DNS checks of the proxy setup checklist. Control plane. |
 | `APP_DOCTOR_PUBLIC_IP_ENDPOINT` | `https://api.ipify.org` | URL that returns the caller's public IP as plain text, used by the `public_ip` doctor check and by deploy preflight. Control plane. |
 | `APP_DIAGNOSE_PROBE_TIMEOUT` | `4s` | Time limit for each live probe (container state and container logs) when diagnosing an app. Zero or invalid values use the default. Control plane. |
 | `APP_ATTENTION_DIAGNOSE_LIMIT` | `10` | Maximum number of distinct apps `levelrail-cli attention` asks the control plane to diagnose when it marks items as fixable. Integer, `0` skips diagnosis. CLI. |

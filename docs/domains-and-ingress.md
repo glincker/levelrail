@@ -502,6 +502,13 @@ APP_INGRESS_CLIENT_IP_HEADERS=CF-Connecting-IP   # optional, defaults to X-Forwa
 
 ### Running behind a TLS proxy
 
+If the proxy is Traefik (Coolify's included), `levelrail-cli proxy setup` turns
+this mode on and writes one route per domain into Traefik's watched directory,
+kept in step with every domain you add or remove. See
+[Run behind an existing proxy](behind-an-existing-proxy.md#one-step-setup-traefik-including-coolify).
+The domain check then says the proxy handles certificates instead of asking
+for ports 80 and 443 on this server.
+
 If Traefik, nginx or Caddy owns 80 and 443 and forwards to this ingress, set the **Public HTTPS port** (`public_https_port`, usually `443`) so generated links omit the ingress listen port, and turn on `tls_terminated_upstream` when the proxy also holds the certificates so this instance never runs ACME. Details and a Traefik example: [Run behind an existing proxy](behind-an-existing-proxy.md#several-instances-behind-one-proxy). An ACME failure notice for non-standard ingress ports does not apply in this mode, because the proxy handles HTTPS.
 
 ### When a backend is down

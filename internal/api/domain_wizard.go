@@ -25,6 +25,8 @@ const (
 const (
 	challengeHTTP01        = "http-01"
 	challengeDNS01Required = "dns-01-required"
+	// challengeUpstreamProxy: TLS is terminated by a proxy in front, which owns certificates.
+	challengeUpstreamProxy = "upstream-proxy"
 )
 
 // Next actions for an ACME failure, one per failure reason.
@@ -138,6 +140,9 @@ func (rt *Router) enrichDomainCheck(ctx context.Context, resp *domainCheckRespon
 	}
 	resp.ExpectedPrivate = allPrivate(expected)
 	resp.Challenge = challengeFor(resp.Domain, resp.ExpectedPrivate)
+	if s, err := rt.ingressSettings.GetIngressSettings(ctx); err == nil && s.TLSTerminatedUpstream {
+		resp.Challenge = challengeUpstreamProxy
+	}
 	resp.DNSProvider = rt.activeDNSProvider(ctx)
 	resp.ACMEFailure = acmeFailureFor(resp.Domain)
 }

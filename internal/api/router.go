@@ -216,6 +216,7 @@ type Router struct {
 	publicHost              string
 	detectPublicIPs         func(context.Context) []string // nil uses ingress.DetectPublicIPs; tests stub it
 	dashboardListenAddr     string                         // APP_HTTP_ADDR, so the reverse proxy guide can build an upstream
+	proxyIntegration        *proxyIntegrationDeps          // nil: managed proxy routes answer 501, see SetProxyIntegration
 	httpsMu                 sync.Mutex
 	httpsAttempts           []time.Time
 	httpsStartedAt          time.Time

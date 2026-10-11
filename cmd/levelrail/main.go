@@ -53,6 +53,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/objectstore"
 	"github.com/GLINCKER/levelrail/internal/orphans"
+	"github.com/GLINCKER/levelrail/internal/proxyroutes"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
@@ -62,6 +63,7 @@ import (
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
+	proxyroutesreconcile "github.com/GLINCKER/levelrail/internal/reconcile/proxyroutes"
 	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
 	"github.com/GLINCKER/levelrail/internal/scheduledeploy"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
@@ -825,6 +827,8 @@ func run(logger *slog.Logger) error {
 		return fmt.Errorf("ingress edge settings: %w", err)
 	}
 	apiRouter.SetDoctorIngressEdge(edge.doctorInfo())
+	proxySyncer := newProxySyncer(b, db, logger)
+	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
 
 	engine.SetStore(db)
 	engine.SetSource(dynamicSource(dynamicSourceDeps{
@@ -853,6 +857,7 @@ func run(logger *slog.Logger) error {
 		httpRedirect:                 httpRedirectEnabled(ingressHTTPAddr(), edge.inherited, logger),
 		models:                       newModelDeps(),
 		lbRegistry:                   lbRegistry,
+		proxySyncer:                  proxySyncer,
 		previewNotifier:              previewManager,
 	}))
 	if experimental.Enabled(experimental.AIModels) {
@@ -3582,6 +3587,8 @@ type dynamicSourceDeps struct {
 	ingressEdge  ingressEdge
 	// lbRegistry is shared with the API so it can report live upstream status.
 	lbRegistry *loadbalancer.Registry
+	// proxySyncer is shared with the API so passes on one directory serialise.
+	proxySyncer *proxyroutes.Syncer
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -3669,6 +3676,9 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		ingressOpts = append(ingressOpts, ingressreconcile.WithAppWake(deps.db, dashboardDialAddr(httpAddr()), appWakeToken()))
 		ingressOpts = append(ingressOpts, ingressreconcile.WithCanaries(deps.db))
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
+		if deps.proxySyncer != nil {
+			controllers = append(controllers, proxyroutesreconcile.New(deps.proxySyncer))
+		}
 
 		// Local runtime unconditionally, same reasoning as the ingress
 		// controller above: per-app networks are single-node scope until

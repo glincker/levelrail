@@ -73,6 +73,30 @@ type Plan struct {
 // address (APP_HTTP_ADDR). gateway is the proxy container's host-side address,
 // empty when the proxy runs on the host itself.
 func Build(domain string, kind Kind, listenAddr, gateway string) (Plan, error) {
+	return BuildTarget(Target{Domain: domain, Kind: kind, ListenAddr: listenAddr, Gateway: gateway, Name: defaultName, EnvVar: dashboardEnvVar})
+}
+
+// defaultName and dashboardEnvVar keep the dashboard guide's existing output.
+const (
+	defaultName     = "levelrail-dashboard"
+	dashboardEnvVar = "APP_HTTP_ADDR"
+)
+
+// Target is what a plan routes: a domain to a listener, with the Traefik
+// object name and the variable that moves the listener.
+type Target struct {
+	Domain     string
+	Kind       Kind
+	ListenAddr string
+	Gateway    string
+	Name       string
+	EnvVar     string
+}
+
+// BuildTarget is Build for any listener, for example an app's domain to the
+// ingress HTTP port.
+func BuildTarget(t Target) (Plan, error) {
+	domain, kind, listenAddr, gateway := t.Domain, t.Kind, t.ListenAddr, t.Gateway
 	domain = strings.ToLower(strings.TrimSpace(domain))
 	if domain == "" || strings.ContainsAny(domain, " /:") || !strings.Contains(domain, ".") {
 		return Plan{}, fmt.Errorf("domain must be a hostname such as console.example.com")
@@ -93,10 +117,10 @@ func Build(domain string, kind Kind, listenAddr, gateway string) (Plan, error) {
 		p.UpstreamURL = "http://" + net.JoinHostPort(gateway, port)
 		if loopback {
 			p.NeedsRebind = true
-			p.Rebind = "APP_HTTP_ADDR=" + net.JoinHostPort(gateway, port)
+			p.Rebind = t.EnvVar + "=" + net.JoinHostPort(gateway, port)
 		}
 	}
-	p.Snippet, p.SnippetPath = snippet(kind, domain, p.UpstreamURL)
+	p.Snippet, p.SnippetPath = snippet(kind, domain, p.UpstreamURL, t.Name)
 	p.Steps = steps(p)
 	return p, nil
 }
@@ -118,33 +142,33 @@ func steps(p Plan) []string {
 	return s
 }
 
-func snippet(kind Kind, domain, upstream string) (text, path string) {
+func snippet(kind Kind, domain, upstream, name string) (text, path string) {
 	switch kind {
 	case Traefik:
 		return fmt.Sprintf(`http:
   routers:
-    levelrail-dashboard:
+    %[3]s:
       rule: Host(`+"`%[1]s`"+`)
       entryPoints: [https]
-      service: levelrail-dashboard
+      service: %[3]s
       tls:
         certResolver: letsencrypt
-    levelrail-dashboard-http:
+    %[3]s-http:
       rule: Host(`+"`%[1]s`"+`)
       entryPoints: [http]
-      middlewares: [levelrail-https]
-      service: levelrail-dashboard
+      middlewares: [%[3]s-https]
+      service: %[3]s
   middlewares:
-    levelrail-https:
+    %[3]s-https:
       redirectScheme:
         scheme: https
         permanent: true
   services:
-    levelrail-dashboard:
+    %[3]s:
       loadBalancer:
         servers:
           - url: %[2]s
-`, domain, upstream), "/data/coolify/proxy/dynamic/levelrail.yaml (Coolify) or your Traefik dynamic configuration directory"
+`, domain, upstream, name), "/data/coolify/proxy/dynamic/" + name + ".yaml (Coolify) or your Traefik dynamic configuration directory"
 	case Nginx:
 		return fmt.Sprintf(`server {
     listen 80;

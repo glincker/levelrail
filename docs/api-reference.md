@@ -59,10 +59,14 @@ System endpoints for:
 | GET | /api/v1/updates/history | AbilityRead | handleUpgradeHistory |
 | POST | /api/v1/updates/history/{id}/ack | AbilityWrite | handleAckUpgrade |
 | GET | /api/v1/system/reverse-proxy | AbilityRead | handleReverseProxyGuide |
+| GET | /api/v1/system/proxy-integration | AbilityRead | handleGetProxyIntegration |
+| POST | /api/v1/system/proxy-integration/setup | AbilityRoot | handleSetupProxyIntegration |
+| POST | /api/v1/system/proxy-integration/apply | AbilityRoot | handleApplyProxyIntegration |
+| POST | /api/v1/system/proxy-integration/verify | AbilityRoot | handleVerifyProxyIntegration |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 103 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 104 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -164,6 +168,7 @@ Endpoints for:
 | DELETE | /api/v1/auth/trusted-devices/{id} | Public | handleRevokeTrustedDevice |
 | GET | /api/v1/settings/auth/code-login | AbilityRead | handleGetCodeLoginSettings |
 | PUT | /api/v1/settings/auth/code-login | AbilityRoot | handlePutCodeLoginSettings |
+| PUT | /api/v1/settings/proxy-integration | AbilityRoot | handleUpdateProxyIntegrationSettings |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
