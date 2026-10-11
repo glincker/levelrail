@@ -35,10 +35,10 @@ func TestRuntimeToggle(t *testing.T) {
 }
 
 func TestToggleableListAndMessage(t *testing.T) {
-	if got := ToggleableList(); len(got) != 2 || got[0] != AIChat || got[1] != ResourceAdvisor {
+	if got := ToggleableList(); len(got) != 3 || got[0] != AIChat || got[1] != CLIConsole || got[2] != ResourceAdvisor {
 		t.Fatalf("ToggleableList = %v", got)
 	}
-	for _, f := range []Feature{AIChat, ResourceAdvisor} {
+	for _, f := range []Feature{AIChat, CLIConsole, ResourceAdvisor} {
 		if !strings.Contains(DisabledMessage(f), "Settings") {
 			t.Fatalf("%s beta message should point at Settings", f)
 		}

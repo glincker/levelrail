@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1020 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1022 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -979,6 +979,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/system/backups/{name}", Ability: "AbilityRoot", Group: "System", Handler: "handleDeleteControlPlaneBackup", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/backups/{name}/download", Ability: "AbilityRoot", Group: "System", Handler: "handleDownloadControlPlaneBackup", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/backups/{name}/verify", Ability: "AbilityRoot", Group: "System", Handler: "handleVerifyControlPlaneBackup", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/cli-console/commands", Ability: "AbilityRoot", Group: "System", Handler: "handleCLIConsoleCommands", Description: "The CLI console acts with the caller's full token, so root like the app terminal; step-up is checked inside."},
+	{Method: "GET", Path: "/api/v1/system/cli-console/session", Ability: "AbilityRoot", Group: "System", Handler: "handleCLIConsoleSession", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/containers", Ability: "AbilityRead", Group: "System", Handler: "handleListContainers", Description: "Every container on this node, Levelrail-managed or not (containers.go's own doc comment on why a Managed one stays read-only here), AbilityRead like system/status above."},
 	{Method: "POST", Path: "/api/v1/system/containers/{name}/claim", Ability: "AbilityWrite", Group: "System", Handler: "handleClaimOrphanedContainer", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/containers/{name}/remove", Ability: "AbilityRoot", Group: "System", Handler: "handleRemoveOrphanedContainer", Description: ""},

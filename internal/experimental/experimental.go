@@ -31,6 +31,8 @@ const (
 	AIControl Feature = "ai-control"
 	// ResourceAdvisor is the beta resource advisor: limit, tuning and idle suggestions.
 	ResourceAdvisor Feature = "resource-advisor"
+	// CLIConsole is the dashboard's web console for the platform CLI (never a host shell).
+	CLIConsole Feature = "cli-console"
 )
 
 // EnvVar names the env var holding the comma separated enabled features.
@@ -38,7 +40,7 @@ const EnvVar = "APP_EXPERIMENTAL"
 
 // All returns every gated feature, sorted.
 func All() []Feature {
-	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor}
+	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor, CLIConsole}
 	sort.Slice(fs, func(i, j int) bool { return fs[i] < fs[j] })
 	return fs
 }
