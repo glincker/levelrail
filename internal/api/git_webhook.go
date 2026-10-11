@@ -448,6 +448,14 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		rt.logger.Error("api: git push webhook: resolve deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
 		return http.StatusInternalServerError, "internal error"
 	}
+	if token == "" {
+		// No per-app deploy token: fall back to the connected GitHub App's
+		// installation token (same resolution a one-off build uses), so a
+		// private repo connected through the app deploys on push without a
+		// separately stored PAT. Empty when no app is connected or the
+		// repo is not on the app's instance, which is the old anonymous clone.
+		token = rt.tokenForRepo(ctx, name, gs.RepoURL, true)
+	}
 
 	sourceDir, cleanup, err := rt.gitSourceFetch(ctx, gs.RepoURL, checkoutRef, token)
 	if err != nil {

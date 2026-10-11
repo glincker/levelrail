@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -1150,5 +1151,37 @@ func TestHandleGitPushWebhook_ServicesSpec_TakesPriorityOverAdditionalServices(t
 	}
 	if fb.multiCalls != 1 || fb.calls != 0 {
 		t.Errorf("multiCalls = %d, calls = %d, want DeploySpec called once and single Deploy never called", fb.multiCalls, fb.calls)
+	}
+}
+
+// TestHandleGitPushWebhook_PrivateRepo_FallsBackToGitHubAppToken proves a
+// push to a git source with no stored deploy token still clones with the
+// connected GitHub App's installation token, instead of an anonymous
+// clone that 401s for a private repo.
+func TestHandleGitPushWebhook_PrivateRepo_FallsBackToGitHubAppToken(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	appSecrets := newFakeGitHubAppSecrets()
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithGitSourceSecrets(secrets), WithGitHubAppSecrets(appSecrets))
+	rt.githubAppClient = &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
+	seedInstalledGitHubApp(t, db, appSecrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/octocat/web.git","branch":"main","build_type":"dockerfile"}`)
+
+	var fetchCalls []fakeGitSourceFetchCall
+	rt.gitSourceFetch = newFakeGitSourceFetch(&fetchCalls, t.TempDir(), new(bool), nil)
+	rt.builder = &fakeBuilder{tag: "web:sha1"}
+
+	body := pushBody("refs/heads/main")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if len(fetchCalls) != 1 || fetchCalls[0].token != "ghs_installtoken" {
+		t.Fatalf("fetch calls = %+v, want one call with the minted installation token", fetchCalls)
 	}
 }
