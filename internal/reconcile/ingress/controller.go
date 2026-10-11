@@ -973,6 +973,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		ListenAddr:        c.listenAddr,
 		HTTPPort:          httpPortFromAddr(c.httpListenAddr),
 		HTTPRedirect:      c.httpRedirect && !settings.TLSTerminatedUpstream,
+		PlainHTTP:         settings.TLSTerminatedUpstream,
 		Routes:            routes,
 		StaticRoutes:      staticRoutes,
 		MaintenanceRoutes: maintenanceRoutes,
