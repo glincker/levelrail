@@ -189,6 +189,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runInit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "setup":
+		return runSetup(prog, args[1:], stdout, stderr, lookupEnv)
 	case "proxy":
 		return runProxy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth-engine":
@@ -346,6 +348,7 @@ Usage:
   %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
   %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
+  %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
   %[1]s proxy setup|status|apply|verify|disable [flags]       let this server manage its routes in that proxy (Traefik)
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer

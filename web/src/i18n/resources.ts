@@ -38,6 +38,7 @@ import type jobs from '../locales/en/jobs.json'
 import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
 import type newApp from '../locales/en/newApp.json'
+import type getStarted from '../locales/en/getStarted.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -84,6 +85,7 @@ declare module 'i18next' {
       envEditor: typeof envEditor
       resourceAdvisor: typeof resourceAdvisor
       newApp: typeof newApp
+      getStarted: typeof getStarted
     }
   }
 }

@@ -6,6 +6,7 @@ import { notificationChannelListQueryOptions } from '../../queries/notificationC
 import { NotificationChannelTable } from '../../components/NotificationChannelTable'
 import { CreateNotificationChannelDialog } from '../../components/CreateNotificationChannelDialog'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { SetupStepHint } from '@/components/getStarted/SetupStepHint'
 
 // Account-level, mirroring routes/settings/backup-targets.tsx: connect
 // once here, apps attach a channel by ID instead of retyping a URL.
@@ -23,6 +24,7 @@ function NotificationChannelsPage() {
 
   return (
     <div className="space-y-6">
+      <SetupStepHint step="notifications" />
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <WebhooksLogoIcon className="size-4" />

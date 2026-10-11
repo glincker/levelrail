@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1003 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1007 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -810,6 +810,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/restore", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/snooze", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
 	{Method: "GET", Path: "/api/v1/resource-advisor/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleResourceAdvisorSummary", Description: ""},
+	{Method: "GET", Path: "/api/v1/setup/guide", Ability: "AbilityRead", Group: "Other", Handler: "handleGetSetupGuide", Description: ""},
+	{Method: "POST", Path: "/api/v1/setup/guide/reset", Ability: "AbilityRoot", Group: "Other", Handler: "handleResetSetupGuide", Description: ""},
+	{Method: "PUT", Path: "/api/v1/setup/guide/steps/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetSetupGuideStep", Description: ""},
+	{Method: "PUT", Path: "/api/v1/setup/guide/visibility", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetSetupGuideVisibility", Description: ""},
 	{Method: "GET", Path: "/api/v1/ssh-node-provisions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListSSHNodeProvisions", Description: ""},
 	{Method: "GET", Path: "/api/v1/ssh-node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSSHNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page", Ability: "AbilityRead", Group: "Other", Handler: "handleGetStatusPage", Description: ""},

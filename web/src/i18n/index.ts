@@ -46,6 +46,7 @@ export const NAMESPACES = [
   'envEditor',
   'resourceAdvisor',
   'newApp',
+  'getStarted',
 ] as const
 
 void i18n

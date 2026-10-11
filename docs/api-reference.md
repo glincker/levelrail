@@ -1226,6 +1226,10 @@ Routes that do not fit an existing group.
 | POST | /api/v1/imports/analyze | AbilityWrite | handleAnalyzeImport |
 | GET | /api/v1/storage/orphans | AbilityRead | handleListStorageOrphans |
 | DELETE | /api/v1/storage/orphans/{id} | AbilityWriteSensitive | handleReclaimStorageOrphan |
+| GET | /api/v1/setup/guide | AbilityRead | handleGetSetupGuide |
+| PUT | /api/v1/setup/guide/steps/{id} | AbilityRoot | handleSetSetupGuideStep |
+| PUT | /api/v1/setup/guide/visibility | AbilityRoot | handleSetSetupGuideVisibility |
+| POST | /api/v1/setup/guide/reset | AbilityRoot | handleResetSetupGuide |
 
 ## See also
 

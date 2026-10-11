@@ -1274,6 +1274,18 @@ levelrail-cli doctor [flags]
 
 Runs a local preflight health check: Docker daemon reachability, disk space and write latency, write access on the data directory, port 80 and 443 availability for the embedded ingress, control plane database reachability, RAM and CPU against the recommended minimums, firewall status, outbound network reachability (public IP, external port reachability, ACME, clock skew, the agent advertise host, image registries), and GPU attach checks. Exit code is 0 if every check is ok or warn, 1 if any check fails.
 
+## Setup
+
+```
+levelrail-cli setup status [flags]
+levelrail-cli setup next [flags]
+levelrail-cli setup skip <step> [flags]
+levelrail-cli setup undo <step> [flags]
+levelrail-cli setup reset [flags]
+```
+
+The dashboard's Get started checklist from a terminal. `status` prints every step with its state, time estimate and note, plus the "ready for production" percentage. `next` prints the one step to do next and where to do it. `skip` and `undo` record or clear an operator override for a step id such as `teammate`; `reset` clears every override and shows the guide again. The three writes need a root scoped token. Steps and their rules: [Getting started](getting-started.md#the-get-started-guide). Supports `--json`, `--output json|table|text`, and `--query`.
+
 ## Proxy
 
 ```
