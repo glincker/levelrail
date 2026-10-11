@@ -85,6 +85,8 @@ func TestValidateCreateBackupTargetRequest(t *testing.T) {
 		{name: "valid r2", req: valid, wantErr: false},
 		{name: "valid aws no endpoint", req: createBackupTargetRequest{Name: "p", Provider: store.BackupProviderAWS, Bucket: "b", AccessKeyID: "a", SecretAccessKey: "s"}, wantErr: false},
 		{name: "missing name", req: withField(valid, func(r *createBackupTargetRequest) { r.Name = "" }), wantErr: true},
+		{name: "custom without region", req: withField(valid, func(r *createBackupTargetRequest) { r.Provider = store.BackupProviderCustom }), wantErr: true},
+		{name: "custom with region", req: withField(valid, func(r *createBackupTargetRequest) { r.Provider = store.BackupProviderCustom; r.Region = "us-east-1" }), wantErr: false},
 		{name: "unknown provider", req: withField(valid, func(r *createBackupTargetRequest) { r.Provider = "backblaze" }), wantErr: true},
 		{name: "missing bucket", req: withField(valid, func(r *createBackupTargetRequest) { r.Bucket = "" }), wantErr: true},
 		{name: "r2 missing endpoint", req: withField(valid, func(r *createBackupTargetRequest) { r.Endpoint = "" }), wantErr: true},

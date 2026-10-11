@@ -11,7 +11,7 @@ arch="${1:-amd64}"
 out="${2:-dist/levelrail}"
 case "$arch" in amd64 | arm64) ;; *) echo "arch must be amd64 or arm64" >&2; exit 2 ;; esac
 
-version="$(git describe --tags --always --dirty 2>/dev/null || echo dev)"
+version="$(bash scripts/git-version.sh)"
 commit="$(git rev-parse --short HEAD)"
 
 echo "==> web ($commit)"
