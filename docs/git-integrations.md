@@ -58,7 +58,7 @@ After GitHub creates the App, Levelrail sends you to `/apps/<slug>/installations
 
 `levelrail-cli github-app register-url --owner <org> [--public]` prints the registration link for the same choice. Open it in a browser signed in to the dashboard.
 
-**Installing on an organization.** Create the App with the organization as owner (or make it public), then on GitHub's account chooser pick the organization and the repositories to grant. Use "Add organization" in the connected accounts list to install the same App on another account later.
+**Installing on an organization.** Create the App with the organization as owner (or make it public), then on GitHub's account chooser pick the organization and the repositories to grant. Use "Add organization" in the connected accounts list to install the same App on another account later. Levelrail asks GitHub whether the App is public; when it is private, the dashboard and `github-app installations add` say so and link to the App's Advanced settings, where "Make public" allows installs on any account.
 
 **Manual.** If the control plane has no publicly reachable primary domain yet, create the App at `github.com/settings/apps` yourself and connect it with `PUT /api/v1/github-app/manual`, giving the app ID, client ID, client secret, webhook secret, and the private key PEM.
 

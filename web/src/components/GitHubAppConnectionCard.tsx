@@ -180,6 +180,7 @@ export function GitHubAppConnectionCard() {
 // columns (kept for anything still reading them), this reads the real
 // one-to-many table.
 function GitHubAppInstallationsSection() {
+  const { t } = useTranslation('settings')
   const { data, isLoading, isError, error } = useGitHubAppInstallations(true)
 
   return (
@@ -198,15 +199,43 @@ function GitHubAppInstallationsSection() {
             }
           >
             <PlusIcon className="size-4" />
-            Add organization
+            {t('githubAppOrg.addOrg')}
           </Button>
         ) : null}
       </div>
+      {data?.app_public === false ? (
+        <div className="space-y-2 rounded-md border border-border bg-muted/40 p-3">
+          <p className="text-sm text-foreground">
+            {t('githubAppOrg.privateTitle')}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {t('githubAppOrg.privateBody')}
+          </p>
+          {data.make_public_url ? (
+            <Button
+              type="button"
+              size="sm"
+              render={
+                <a
+                  href={data.make_public_url}
+                  target="_blank"
+                  rel="noreferrer"
+                />
+              }
+            >
+              {t('githubAppOrg.makePublic')}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+      {data?.add_org_url && data.app_public !== false ? (
+        <p className="text-xs text-muted-foreground">
+          {t('githubAppOrg.addOrgHelp')}
+        </p>
+      ) : null}
       {!isLoading && !isError && !data?.add_org_url ? (
         <p className="text-xs text-muted-foreground">
-          This connection was registered before Levelrail could remember the
-          App&apos;s install-on-another-org link. Reconnect the App above (or
-          use manual setup) to enable &quot;Add organization&quot; here.
+          {t('githubAppOrg.noSlug')}
         </p>
       ) : null}
       {isLoading ? (

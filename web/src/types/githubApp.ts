@@ -102,6 +102,10 @@ export interface GitHubAppInstallation {
 export interface GitHubAppInstallationListResponse {
   installations: GitHubAppInstallation[]
   add_org_url?: string
+  // app_public is false when GitHub reports the App private (installable
+  // only on its owner's account); absent when GitHub could not be asked.
+  app_public?: boolean
+  make_public_url?: string
 }
 
 // GitHubAppBranch mirrors gitHubAppBranchResource
