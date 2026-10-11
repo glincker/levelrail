@@ -583,6 +583,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/error-pages", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearDomainErrorPages))
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/search-visibility", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainSearchVisibility))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/search-visibility", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainSearchVisibility))
+	rt.registerDomainPolicyRoutes(mux)
 
 	// Email settings: same precedent as ingress settings just above.
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.

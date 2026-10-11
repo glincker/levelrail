@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
 )
 
 // DomainRedirectStore is the store surface GET/PUT/DELETE
@@ -119,9 +120,15 @@ func (rt *Router) handleSetDomainRedirect(w http.ResponseWriter, r *http.Request
 	if statusCode == 0 {
 		statusCode = store.DomainRedirectPermanent
 	}
-	if statusCode != store.DomainRedirectPermanent && statusCode != store.DomainRedirectTemporary {
-		writeError(w, http.StatusBadRequest, "status_code must be 301 or 302")
+	if !trafficpolicy.AliasStatuses[statusCode] {
+		writeError(w, http.StatusBadRequest, "status_code must be 301, 302, 307 or 308")
 		return
+	}
+	if rows, err := rt.hostRedirects(r.Context()); err == nil {
+		if err := trafficpolicy.CheckRedirectLoop(rows, domain, trafficpolicy.TargetHost(req.TargetURL)); err != nil {
+			writeError(w, http.StatusConflict, err.Error())
+			return
+		}
 	}
 
 	if err := rt.domainRedirect.SetDomainRedirect(r.Context(), domain, req.TargetURL, statusCode); err != nil {
