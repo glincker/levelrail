@@ -249,7 +249,7 @@ func TestNewDeviceApproval_ConcurrentLoginsLeaveOnePending(t *testing.T) {
 			defer wg.Done()
 			<-start
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", nil)
-			h.rt.createLoginApproval(httptest.NewRecorder(), req, h.user)
+			_, _ = h.rt.createLoginApproval(httptest.NewRecorder(), req, h.user)
 		}()
 	}
 	close(start)

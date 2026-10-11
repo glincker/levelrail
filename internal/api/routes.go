@@ -34,6 +34,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerIAMTemplateRoutes(mux)
 	rt.registerDatabaseAccessRoutes(mux)
 	rt.registerIAMBuilderRoutes(mux)
+	rt.registerSecurityRoutes(mux)
 	rt.registerProxyIntegrationRoutes(mux)
 	rt.registerDNSZoneRoutes(mux)
 	rt.registerTrafficRoutes(mux)

@@ -59,17 +59,17 @@ System endpoints for:
 | GET | /api/v1/updates/history | AbilityRead | handleUpgradeHistory |
 | POST | /api/v1/updates/history/{id}/ack | AbilityWrite | handleAckUpgrade |
 | GET | /api/v1/system/reverse-proxy | AbilityRead | handleReverseProxyGuide |
+| GET | /api/v1/system/docker-guard | AbilityRead | handleGetDockerGuard |
+| PUT | /api/v1/system/docker-guard | AbilityRoot | handleUpdateDockerGuard |
+| GET | /api/v1/system/geoip | AbilityRead | handleGeoIPLookup |
 | GET | /api/v1/system/proxy-integration | AbilityRead | handleGetProxyIntegration |
 | POST | /api/v1/system/proxy-integration/setup | AbilityRoot | handleSetupProxyIntegration |
 | POST | /api/v1/system/proxy-integration/apply | AbilityRoot | handleApplyProxyIntegration |
 | POST | /api/v1/system/proxy-integration/verify | AbilityRoot | handleVerifyProxyIntegration |
-| GET | /api/v1/system/geoip | AbilityRead | handleGeoIPLookup |
-| GET | /api/v1/system/docker-guard | AbilityRead | handleGetDockerGuard |
-| PUT | /api/v1/system/docker-guard | AbilityRoot | handleUpdateDockerGuard |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 108 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 117 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -171,11 +171,20 @@ Endpoints for:
 | DELETE | /api/v1/auth/trusted-devices/{id} | Public | handleRevokeTrustedDevice |
 | GET | /api/v1/settings/auth/code-login | AbilityRead | handleGetCodeLoginSettings |
 | PUT | /api/v1/settings/auth/code-login | AbilityRoot | handlePutCodeLoginSettings |
-| PUT | /api/v1/settings/proxy-integration | AbilityRoot | handleUpdateProxyIntegrationSettings |
-| GET | /api/v1/settings/domain-automation | AbilityRead | handleGetDomainAutomation |
-| PUT | /api/v1/settings/domain-automation | AbilityRoot | handleUpdateDomainAutomation |
+| POST | /api/v1/auth/sign-in-alert/disown | Public | handleDisownSignIn |
+| GET | /api/v1/security/posture | AbilityRead | handleSecurityPosture |
+| GET | /api/v1/security/policy | AbilityRead | handleGetSecurityPolicy |
+| PUT | /api/v1/security/policy | AbilityRoot | handlePutSecurityPolicy |
+| GET | /api/v1/security/sessions | Public | handleListSecuritySessions |
+| DELETE | /api/v1/security/sessions/{id} | Public | handleRevokeSecuritySession |
+| POST | /api/v1/security/sessions/revoke-others | Public | handleRevokeOtherSecuritySessions |
+| GET | /api/v1/security/account | Public | handleGetAccountSecurity |
+| PUT | /api/v1/security/account | Public | handlePutAccountSecurity |
 | GET | /api/v1/settings/database-upgrades | AbilityRead | handleGetPlatformUpgradePolicy |
 | PUT | /api/v1/settings/database-upgrades | AbilityRoot | handlePutPlatformUpgradePolicy |
+| GET | /api/v1/settings/domain-automation | AbilityRead | handleGetDomainAutomation |
+| PUT | /api/v1/settings/domain-automation | AbilityRoot | handleUpdateDomainAutomation |
+| PUT | /api/v1/settings/proxy-integration | AbilityRoot | handleUpdateProxyIntegrationSettings |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -676,11 +685,6 @@ Endpoints for:
 | POST | /api/v1/settings/ingress/https | AbilityRoot | handleEnableHTTPS |
 | GET | /api/v1/apps/{name}/domains/{domain}/search-visibility | AbilityRead | handleGetDomainSearchVisibility |
 | PUT | /api/v1/apps/{name}/domains/{domain}/search-visibility | AbilityDeploy | handleSetDomainSearchVisibility |
-| GET | /api/v1/apps/{name}/domains/{domain}/go-live | AbilityRead | handleGoLiveStatus |
-| POST | /api/v1/apps/{name}/domains/{domain}/go-live | AbilityRoot | handleGoLiveRun |
-| POST | /api/v1/apps/{name}/domains/go-live/plan | AbilityWrite | handleGoLivePlan |
-| POST | /api/v1/settings/ingress/apps-base-domain/backfill | AbilityRoot | handleBackfillBaseDomain |
-| POST | /api/v1/apps/{name}/domains/{domain}/doctor | AbilityRead | handleDomainDoctor |
 | GET | /api/v1/apps/{name}/domains/{domain}/headers | AbilityRead | handleGetDomainPolicy |
 | PUT | /api/v1/apps/{name}/domains/{domain}/headers | AbilityDeploy | handleSetDomainPolicy |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/headers | AbilityDeploy | handleDeleteDomainPolicy |
@@ -705,6 +709,11 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/domains/{domain}/ports | AbilityRead | handleGetDomainPorts |
 | PUT | /api/v1/apps/{name}/domains/{domain}/ports/{port}/restrict | AbilityWriteSensitive | handleRestrictDomainPort |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/ports/{port}/restrict | AbilityWriteSensitive | handleUnrestrictDomainPort |
+| GET | /api/v1/apps/{name}/domains/{domain}/go-live | AbilityRead | handleGoLiveStatus |
+| POST | /api/v1/apps/{name}/domains/{domain}/go-live | AbilityRoot | handleGoLiveRun |
+| POST | /api/v1/apps/{name}/domains/go-live/plan | AbilityWrite | handleGoLivePlan |
+| POST | /api/v1/settings/ingress/apps-base-domain/backfill | AbilityRoot | handleBackfillBaseDomain |
+| POST | /api/v1/apps/{name}/domains/{domain}/doctor | AbilityRead | handleDomainDoctor |
 
 :::
 
@@ -1085,7 +1094,6 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/apps/sessions/{id}/cutover/verify | AbilityWriteSensitive | handleAppImportCutoverVerify |
 | POST | /api/v1/migration/apps/sessions/{id}/items/{item}/route | AbilityWriteSensitive | handleRouteAppImport |
 | GET | /api/v1/migration/apps/sessions/{id}/receipt | AbilityRead | handleAppImportReceipt |
-| GET | /api/v1/dns/zone | AbilityRead | handleDNSZone |
 | GET | /api/v1/dns/zones | AbilityRead | handleListDNSZones |
 | POST | /api/v1/dns/zones | AbilityRoot | handleCreateDNSZone |
 | GET | /api/v1/dns/zones/{zone} | AbilityRead | handleGetDNSZone |
@@ -1105,6 +1113,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/dns/health-checks | AbilityRead | handleListDNSHealthChecks |
 | POST | /api/v1/dns/health-checks | AbilityRoot | handleCreateDNSHealthCheck |
 | DELETE | /api/v1/dns/health-checks/{id} | AbilityRoot | handleDeleteDNSHealthCheck |
+| GET | /api/v1/dns/zone | AbilityRead | handleDNSZone |
 | GET | /api/v1/traffic/summary | AbilityRead | handleTrafficSummary |
 
 ## See also

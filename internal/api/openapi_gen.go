@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 883 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 892 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -282,6 +282,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/auth/session-links/{token}/consume", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleConsumeSessionLink", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/sessions/revoke-others", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeOtherSessions", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/setup-status", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetupStatus", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/sign-in-alert/disown", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDisownSignIn", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/sign-in-requests", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListSignInRequests", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/sign-in-requests/codes/{id}/reveal", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevealLoginCode", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/tokens", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListTokens", Description: ""},
@@ -320,6 +321,14 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/roles", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateRole", Description: "Stored roles, role assignment and environment grants: root, and the handlers answer the experimental-disabled error while access-roles is off."},
 	{Method: "DELETE", Path: "/api/v1/roles/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteRole", Description: ""},
 	{Method: "PUT", Path: "/api/v1/roles/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateRole", Description: ""},
+	{Method: "GET", Path: "/api/v1/security/account", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetAccountSecurity", Description: ""},
+	{Method: "PUT", Path: "/api/v1/security/account", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutAccountSecurity", Description: ""},
+	{Method: "GET", Path: "/api/v1/security/policy", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetSecurityPolicy", Description: ""},
+	{Method: "PUT", Path: "/api/v1/security/policy", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutSecurityPolicy", Description: ""},
+	{Method: "GET", Path: "/api/v1/security/posture", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSecurityPosture", Description: ""},
+	{Method: "GET", Path: "/api/v1/security/sessions", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListSecuritySessions", Description: ""},
+	{Method: "POST", Path: "/api/v1/security/sessions/revoke-others", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeOtherSecuritySessions", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/security/sessions/{id}", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeSecuritySession", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteAIAssistantSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetAIAssistantSettings", Description: "BYOK AI assistant settings (ai_settings.go): GET is AbilityRead; PUT/DELETE are AbilityRoot, the same tier PUT /api/v1/settings/ email uses for any other platform-wide credential-bearing config."},
 	{Method: "PUT", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateAIAssistantSettings", Description: ""},

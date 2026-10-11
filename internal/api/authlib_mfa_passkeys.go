@@ -247,6 +247,9 @@ func (l *authLibMFA) finishLogin(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: passkey login finish: load user failed", err)
 		return
 	}
+	if rt.pauseForDeviceApproval(w, r, *user, "", signInMethodPasskey) {
+		return
+	}
 	if err := l.seam.EstablishSession(w, r, *user); err != nil {
 		rt.internalError(w, "api: passkey login finish: establish session failed", err, slog.String("user_id", user.ID))
 		return

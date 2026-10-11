@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -60,12 +61,21 @@ func approvalMatch(browserHash string) int {
 	return 10 + int(binary.BigEndian.Uint16(sum[0:2]))%90
 }
 
-// pauseForDeviceApproval holds a correct password login from an untrusted
-// browser while another session of the account is live; with none it lets the
-// login through so nobody is locked out. Reports whether it wrote a response.
-func (rt *Router) pauseForDeviceApproval(w http.ResponseWriter, r *http.Request, user store.User, token string) bool {
-	if !rt.newDeviceApproval || rt.trustedDeviceFor(r, user.ID) {
-		return false
+// approvalHold is what holdForApproval decided for a sign-in it stopped.
+type approvalHold struct {
+	approval store.LoginApproval
+	limited  bool
+	retry    time.Duration
+}
+
+// holdForApproval stops a correct sign-in from an untrusted browser while
+// another session of the account is live; with none it lets the sign-in
+// through so nobody is locked out. A nil hold and nil error mean "let it
+// through". token, when set, is the already issued session; it is revoked
+// whenever the sign-in is held or the check fails.
+func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user store.User, token, method string) (*approvalHold, error) {
+	if !rt.newDeviceApproval || rt.trustedDeviceFor(r, user.ID) || !rt.approvalRequiredFor(r.Context(), user.ID, method) {
+		return nil, nil
 	}
 	ctx := r.Context()
 	sessions := rt.approvalSessionEngine()
@@ -74,35 +84,52 @@ func (rt *Router) pauseForDeviceApproval(w http.ResponseWriter, r *http.Request,
 		if rerr := sessions.RevokeChecked(ctx, token); rerr != nil {
 			rt.logger.Error("api: login: revoke unapproved session failed", slog.String("user_id", user.ID), slog.String("error", rerr.Error()))
 		}
-		rt.internalError(w, "api: login: count other sessions failed", err, slog.String("user_id", user.ID))
-		return true
+		return nil, fmt.Errorf("count other sessions: %w", err)
 	}
 	if others == 0 {
-		return false
+		return nil, nil
 	}
 	if err := sessions.RevokeChecked(ctx, token); err != nil {
-		rt.internalError(w, "api: login: revoke unapproved session failed", err, slog.String("user_id", user.ID))
-		return true
+		return nil, fmt.Errorf("revoke unapproved session: %w", err)
 	}
 	if ok, retry := rt.codeLogin.approvals.allow(user.ID); !ok {
-		writeRateLimited(w, retry)
+		return &approvalHold{limited: true, retry: retry}, nil
+	}
+	a, err := rt.createLoginApproval(w, r, user)
+	if err != nil {
+		return nil, err
+	}
+	return &approvalHold{approval: a}, nil
+}
+
+// pauseForDeviceApproval is holdForApproval for the JSON sign-in routes.
+// Reports whether it wrote a response.
+func (rt *Router) pauseForDeviceApproval(w http.ResponseWriter, r *http.Request, user store.User, token, method string) bool {
+	hold, err := rt.holdForApproval(w, r, user, token, method)
+	switch {
+	case err != nil:
+		rt.internalError(w, "api: login: new browser approval failed", err, slog.String("user_id", user.ID))
+		return true
+	case hold == nil:
+		return false
+	case hold.limited:
+		writeRateLimited(w, hold.retry)
 		return true
 	}
-	rt.createLoginApproval(w, r, user)
+	a := hold.approval
+	writeJSON(w, http.StatusOK, loginResponse{ApprovalRequired: true, ApprovalID: a.ID, ApprovalExpiresAt: &a.ExpiresAt, ApprovalMatch: approvalMatch(a.BrowserHash)})
 	return true
 }
 
-func (rt *Router) createLoginApproval(w http.ResponseWriter, r *http.Request, user store.User) {
+func (rt *Router) createLoginApproval(w http.ResponseWriter, r *http.Request, user store.User) (store.LoginApproval, error) {
 	ctx := r.Context()
 	binding, err := randomToken()
 	if err != nil {
-		rt.internalError(w, "api: login: generate approval binding failed", err)
-		return
+		return store.LoginApproval{}, fmt.Errorf("generate approval binding: %w", err)
 	}
 	id, err := randomOpaqueID("la_")
 	if err != nil {
-		rt.internalError(w, "api: login: generate approval id failed", err)
-		return
+		return store.LoginApproval{}, fmt.Errorf("generate approval id: %w", err)
 	}
 	now := time.Now()
 	ttl := rt.codeLogin.approvalTTL
@@ -112,15 +139,14 @@ func (rt *Router) createLoginApproval(w http.ResponseWriter, r *http.Request, us
 	}
 	replaced, err := rt.loginCodes.ReplaceLoginApproval(ctx, a)
 	if err != nil {
-		rt.internalError(w, "api: login: save approval failed", err, slog.String("user_id", user.ID))
-		return
+		return a, fmt.Errorf("save approval: %w", err)
 	}
 	for _, old := range replaced {
 		rt.auditSignIn(ctx, r, anonymousSignIn(user.ID), store.AuditActionNewDeviceReplace, approvalAuditPrefix+old.ID, http.StatusOK)
 	}
 	rt.auditSignIn(ctx, r, anonymousSignIn(user.ID), store.AuditActionNewDeviceRequest, approvalAuditPrefix+a.ID, http.StatusAccepted)
 	setBindingCookie(w, r, approvalCookie, approvalCookiePath, binding, ttl)
-	writeJSON(w, http.StatusOK, loginResponse{ApprovalRequired: true, ApprovalID: a.ID, ApprovalExpiresAt: &a.ExpiresAt, ApprovalMatch: approvalMatch(a.BrowserHash)})
+	return a, nil
 }
 
 // handlePollLoginApproval handles POST /api/v1/auth/login-approval/poll: the
@@ -189,7 +215,7 @@ func (rt *Router) handlePollLoginApproval(w http.ResponseWriter, r *http.Request
 		writeJSON(w, http.StatusOK, loginApprovalPollResponse{Status: approvalPollApproved, MFARequired: true, MFAToken: pending})
 		return
 	}
-	if err := rt.establishSession(w, r, *user); err != nil {
+	if err := rt.establishSession(w, withSignInNoticeSuppressed(r), *user); err != nil {
 		rt.internalError(w, "api: login approval: establish session failed", err, slog.String("user_id", a.UserID))
 		return
 	}

@@ -15,12 +15,22 @@ import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Field, FieldLabel } from './ui/field'
 import { Alert, AlertDescription } from './ui/alert'
+import { isApprovalRequired } from '../queries/auth'
+import { NewDeviceApprovalWait } from './NewDeviceApprovalWait'
+import { ResumedApprovalWait } from './ResumedApprovalWait'
 
 type Step =
   | { kind: 'username' }
   | { kind: 'passkey'; challenge: PasskeyLoginChallenge }
   | { kind: 'password' }
   | { kind: 'code' }
+  | {
+      kind: 'approval'
+      id: string
+      expiresAt: string
+      match: number
+    }
+  | { kind: 'resume'; id: string }
 
 // Progressive sign-in: a username first, then whichever method that
 // account actually has, instead of a password field and a passkey
@@ -29,11 +39,18 @@ type Step =
 export function SignInFlow({
   username,
   onUsernameChange,
+  resumeApprovalId,
 }: {
   username: string
   onUsernameChange: (value: string) => void
+  // Set when an OAuth sign-in came back held for new browser approval.
+  resumeApprovalId?: string
 }) {
-  const [step, setStep] = useState<Step>({ kind: 'username' })
+  const [step, setStep] = useState<Step>(
+    resumeApprovalId
+      ? { kind: 'resume', id: resumeApprovalId }
+      : { kind: 'username' },
+  )
   const begin = useBeginPasskeyLogin()
   const finish = useFinishPasskeyLogin()
   const { t } = useTranslation('signIn')
@@ -50,6 +67,30 @@ export function SignInFlow({
       {t('code.useCode')}
     </Button>
   ) : null
+
+  if (step.kind === 'approval' || step.kind === 'resume') {
+    const back = () => {
+      setStep({ kind: 'username' })
+    }
+    const useCode = () => {
+      setStep({ kind: 'code' })
+    }
+    return step.kind === 'approval' ? (
+      <NewDeviceApprovalWait
+        approvalId={step.id}
+        expiresAt={step.expiresAt}
+        matchNumber={step.match}
+        onBack={back}
+        onUseCode={useCode}
+      />
+    ) : (
+      <ResumedApprovalWait
+        approvalId={step.id}
+        onBack={back}
+        onUseCode={useCode}
+      />
+    )
+  }
 
   if (step.kind === 'code') {
     return (
@@ -137,7 +178,18 @@ export function SignInFlow({
           className="w-full"
           disabled={finish.isPending}
           onClick={() => {
-            finish.mutate(challenge)
+            finish.mutate(challenge, {
+              onSuccess: (result) => {
+                if (isApprovalRequired(result)) {
+                  setStep({
+                    kind: 'approval',
+                    id: result.approval_id,
+                    expiresAt: result.approval_expires_at,
+                    match: result.approval_match,
+                  })
+                }
+              },
+            })
           }}
         >
           <FingerprintIcon />

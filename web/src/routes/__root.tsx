@@ -34,7 +34,12 @@ export interface RouterContext {
 // see the page the link pointed at. /reset-password predates this array
 // (it was previously compared to on its own); /accept-invite
 // (routes/accept-invite.tsx) joins it for the same reason.
-const PUBLIC_ROUTE_PATHS = ['/login', '/reset-password', '/accept-invite']
+const PUBLIC_ROUTE_PATHS = [
+  '/login',
+  '/reset-password',
+  '/accept-invite',
+  '/sign-in-alert',
+]
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   // Auth guard for the whole route tree: anything other than

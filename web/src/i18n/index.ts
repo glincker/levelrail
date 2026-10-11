@@ -28,6 +28,7 @@ export const NAMESPACES = [
   'databaseUpgrades',
   'iam',
   'signIn',
+  'security',
   'traffic',
   'dns',
   'domainPolicies',

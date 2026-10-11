@@ -20,6 +20,7 @@ import type databaseAccess from '../locales/en/databaseAccess.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
 import type iam from '../locales/en/iam.json'
 import type signIn from '../locales/en/signIn.json'
+import type security from '../locales/en/security.json'
 import type traffic from '../locales/en/traffic.json'
 import type dns from '../locales/en/dns.json'
 import type domainPolicies from '../locales/en/domainPolicies.json'
@@ -51,6 +52,7 @@ declare module 'i18next' {
       databaseUpgrades: typeof databaseUpgrades
       iam: typeof iam
       signIn: typeof signIn
+      security: typeof security
       traffic: typeof traffic
       dns: typeof dns
       domainPolicies: typeof domainPolicies

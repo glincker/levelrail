@@ -84,6 +84,12 @@
     "loginCodeDetail": "{{agent}}. Only show the code if you asked for it.",
     "loginApprovalTitle": "New browser sign-in from {{ip}} is waiting",
     "loginApprovalDetail": "{{agent}}. Approve it only if it is you.",
+    "loginAnomalyTitle": "{{count}} failed sign-ins for {{subject}}",
+    "loginAnomalyDetail": "Someone may be guessing passwords. Open the security center.",
+    "accountFlaggedTitle": "{{name}} needs a new password",
+    "accountFlaggedDetail": "A sign-in was reported as not the owner's. Change the password, then review sessions.",
+    "tokenUnusedTitle": "API token {{name}} is unused",
+    "tokenUnusedDetail": "It is disabled on {{date}} unless it is used or revoked first.",
     "openCliAccess": "Review login",
     "openApprovals": "Review approvals",
     "openItem": "Open"

@@ -468,6 +468,8 @@ type Router struct {
 	githubAppPublicProbe         func(ctx context.Context, apiBase, slug string) *bool // nil: real GitHub probe; tests inject
 	appVisibility                appVisibilityCache
 	githubApp                    GitHubAppStore               // always set, same "core Store interface" shape as backupTargets/certs above: the connection row/its absence is always queryable, no secrets configuration needed just to read status
+	security                     SecurityStore                // always set, security center policy, alerts and token hygiene
+	sec                          *securityState               // always set
 	githubAppSecrets             GitHubAppSecrets             // nil is valid: every github-app route that needs it (register/start, callback, installed, repos, branches) returns 501, same shape as backupSecrets above
 	githubAppClient              GitHubAppClient              // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
 	githubAppState               *pendingState                // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see pendingState's own doc comment
@@ -702,6 +704,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		resolveBranchSHA:            resolveRemoteBranchSHA,
 		previewEnvironments:         s,
 		githubApp:                   s,
+		security:                    s,
+		sec:                         newSecurityState(),
 		githubAppClient:             githubapp.NewClient(),
 		githubAppState:              newPendingState(),
 		githubAppManifestConfig:     githubapp.DefaultManifestConfig(),
