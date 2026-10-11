@@ -254,6 +254,7 @@ const sidebarGroups = [
       { text: 'Environment variables and secrets', link: '/environment-and-secrets' },
       { text: 'API reference', link: '/api-reference' },
       { text: 'API explorer', link: '/api-explorer' },
+      { text: 'Mobile API', link: '/mobile-api' },
       { text: 'MCP tool surface', link: '/mcp-tool-surface' },
       { text: 'Agent tooling audit', link: '/agent-tooling-audit' },
       { text: 'Shared Go kit', link: '/kit' },

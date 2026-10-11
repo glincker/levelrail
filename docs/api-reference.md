@@ -1248,6 +1248,11 @@ Routes that do not fit an existing group.
 | GET | /api/v1/usage/budgets | AbilityRead | handleListUsageBudgets |
 | PUT | /api/v1/usage/budgets | AbilityWrite | handlePutUsageBudget |
 | DELETE | /api/v1/usage/budgets/{id} | AbilityWrite | handleDeleteUsageBudget |
+| POST | /api/v1/mobile/pairing-codes | AbilityRoot | handleCreateMobilePairing |
+| POST | /api/v1/mobile/pair | Public | handleMobilePair |
+| GET | /api/v1/mobile/devices | AbilityRead | handleListMobileDevices |
+| DELETE | /api/v1/mobile/devices/{id} | AbilityRead | handleRevokeMobileDevice |
+| GET | /api/v1/mobile/overview | AbilityRead | handleMobileOverview |
 
 ## See also
 

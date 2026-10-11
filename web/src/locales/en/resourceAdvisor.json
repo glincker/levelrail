@@ -179,6 +179,11 @@
     "cliConsoleDescription": "A terminal in the dashboard that runs the command line tool as you, with Tab completion and history. It cannot reach the host shell, and every command is audited. Opening it needs a fresh password or passkey confirmation. Set APP_CLI_CONSOLE=off on the server to disable it entirely.",
     "cliConsoleToggleLabel": "Turn on the CLI console",
     "cliConsoleTurnedOn": "CLI console turned on",
-    "cliConsoleTurnedOff": "CLI console turned off"
+    "cliConsoleTurnedOff": "CLI console turned off",
+    "mobileApiTitle": "Mobile app access",
+    "mobileApiDescription": "Lets you pair a phone from Settings, Mobile devices. A paired phone gets its own expiring token that can read status and restart, deploy or roll back apps, never root or secret values. Set APP_MOBILE_API=off on the server to disable it entirely.",
+    "mobileApiToggleLabel": "Turn on mobile app access",
+    "mobileApiTurnedOn": "Mobile app access turned on",
+    "mobileApiTurnedOff": "Mobile app access turned off"
   }
 }
