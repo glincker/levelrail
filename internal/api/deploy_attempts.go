@@ -188,6 +188,11 @@ type deployAttemptResource struct {
 	FinishedAt        *time.Time `json:"finished_at,omitempty"`
 	Error             string     `json:"error,omitempty"`
 	DetectedFramework string     `json:"detected_framework,omitempty"`
+	// Branch, CommitMessage and Author come from the push payload that
+	// triggered a git build; empty for image and dashboard deploys.
+	Branch        string `json:"branch,omitempty"`
+	CommitMessage string `json:"commit_message,omitempty"`
+	Author        string `json:"author,omitempty"`
 	// CacheWarning is set when the build carried on without its remote cache.
 	CacheWarning string `json:"cache_warning,omitempty"`
 
@@ -241,6 +246,9 @@ func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
 		FinishedAt:        a.FinishedAt,
 		Error:             a.Error,
 		DetectedFramework: a.DetectedFramework,
+		Branch:            a.Branch,
+		CommitMessage:     a.CommitMessage,
+		Author:            a.Author,
 		ImageDigest:       a.ImageDigest,
 		DigestReason:      a.DigestReason,
 		RolloutState:      a.RolloutState,

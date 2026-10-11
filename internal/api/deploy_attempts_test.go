@@ -505,3 +505,15 @@ func TestBeginBuildDeployAttempt_SaveFails_RecorderDoesNotLeak(t *testing.T) {
 		t.Error("recorder still has an active entry for id after SaveDeployAttempt failed: Start's registration leaked instead of being cleaned up by Finish")
 	}
 }
+
+func TestToDeployAttemptResource_CarriesCommitMetadata(t *testing.T) {
+	res := toDeployAttemptResource(store.DeployAttempt{
+		ID:            "dep_1",
+		Branch:        "main",
+		CommitMessage: "fix: subject\n\nbody",
+		Author:        "dev",
+	})
+	if res.Branch != "main" || res.CommitMessage != "fix: subject\n\nbody" || res.Author != "dev" {
+		t.Fatalf("commit metadata not carried: %+v", res)
+	}
+}
