@@ -17,6 +17,7 @@ import {
   GearIcon,
   GitBranchIcon,
   GlobeIcon,
+  ListBulletsIcon,
   HardDrivesIcon,
   HeartbeatIcon,
   KeyIcon,
@@ -68,16 +69,27 @@ export type GlobalTo =
   | '/settings/node-providers'
   | '/help'
 
-export type GlobalBadge = 'failing-apps' | 'approvals'
+// Routes whose pages land in a later change: not in the generated route tree
+// yet, so they are gated by requiresRoute and linked through linkTarget().
+export type PendingTo = '/dns'
+
+export type GlobalBadge =
+  | 'failing-apps'
+  | 'approvals'
+  | 'domains-attention'
+  | 'dns-attention'
+  | 'proxy-attention'
 
 export interface GlobalNavItem {
   id: string
   label: string
-  to: GlobalTo
+  to: GlobalTo | PendingTo
   icon: React.ReactNode
   exact?: boolean
   badge?: GlobalBadge
   feature?: ExperimentalFeature
+  // Hidden until the router actually has this route (it lands in another PR).
+  requiresRoute?: boolean
 }
 
 export interface GlobalNavGroup {
@@ -145,6 +157,41 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
     ],
   },
   {
+    id: 'traffic',
+    label: 'Traffic',
+    items: [
+      {
+        id: 'domains',
+        label: 'Domains',
+        to: '/domains',
+        icon: <GlobeIcon />,
+        badge: 'domains-attention',
+      },
+      {
+        id: 'dns',
+        label: 'DNS',
+        to: '/dns',
+        icon: <ListBulletsIcon />,
+        badge: 'dns-attention',
+        requiresRoute: true,
+      },
+      {
+        id: 'proxy',
+        label: 'Proxy',
+        to: '/network/proxy',
+        icon: <TrafficSignalIcon />,
+        badge: 'proxy-attention',
+      },
+      {
+        id: 'loadbalancers',
+        label: 'Load balancers',
+        to: '/loadbalancers',
+        icon: <ArrowsSplitIcon />,
+        feature: 'load-balancer',
+      },
+    ],
+  },
+  {
     id: 'infrastructure',
     label: 'Infrastructure',
     items: [
@@ -154,20 +201,6 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Network',
         to: '/network',
         icon: <ShareNetworkIcon />,
-      },
-      {
-        id: 'traffic',
-        label: 'Traffic',
-        to: '/network/proxy',
-        icon: <TrafficSignalIcon />,
-      },
-      { id: 'domains', label: 'Domains', to: '/domains', icon: <GlobeIcon /> },
-      {
-        id: 'loadbalancers',
-        label: 'Load balancers',
-        to: '/loadbalancers',
-        icon: <ArrowsSplitIcon />,
-        feature: 'load-balancer',
       },
       {
         id: 'registry',
@@ -256,10 +289,13 @@ export const GLOBAL_NAV_FOOTER: GlobalNavItem[] = [
 
 export function visibleGlobalGroups(
   enabled: readonly string[],
+  routeAvailable: (to: string) => boolean = () => true,
 ): GlobalNavGroup[] {
   return GLOBAL_NAV_GROUPS.map((g) => ({
     ...g,
-    items: filterByFeature(g.items, enabled),
+    items: filterByFeature(g.items, enabled).filter(
+      (i) => !i.requiresRoute || routeAvailable(i.to),
+    ),
   })).filter((g) => g.items.length > 0)
 }
 
@@ -288,6 +324,12 @@ export function isGlobalItemActive(
 ): boolean {
   if (item.exact) return pathname === item.to
   return pathname === item.to || pathname.startsWith(`${item.to}/`)
+}
+
+// Typed Link needs a route-tree path; pending routes are only rendered once
+// the router has them, so the narrowing is safe at runtime.
+export function linkTarget(item: GlobalNavItem): GlobalTo {
+  return item.to as GlobalTo
 }
 
 export function chordFor(to: string): string[] | undefined {

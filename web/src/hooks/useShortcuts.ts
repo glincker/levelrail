@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useExperimentalFeatures } from './useExperimental'
+import { useRouteAvailable } from '@/lib/routeAvailability'
 import {
   INITIAL_CHORD,
   LONG_PRESS_MS,
@@ -32,6 +33,7 @@ export function useShortcuts({
 }) {
   const navigate = useNavigate()
   const experimental = useExperimentalFeatures()
+  const routeAvailable = useRouteAvailable()
   const stateRef = React.useRef<ChordState>(INITIAL_CHORD)
   const longPressTimerRef = React.useRef<number | null>(null)
 
@@ -58,6 +60,7 @@ export function useShortcuts({
         input,
         e.timeStamp,
         experimental,
+        routeAvailable,
       )
       stateRef.current = result.state
       const action = result.action
@@ -102,5 +105,5 @@ export function useShortcuts({
       window.removeEventListener('blur', clearLongPress)
       clearLongPress()
     }
-  }, [navigate, onOpenStageOverlay, experimental])
+  }, [navigate, onOpenStageOverlay, experimental, routeAvailable])
 }

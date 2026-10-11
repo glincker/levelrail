@@ -77,8 +77,11 @@ export function ResultRow({
       <span className="truncate">
         <Highlighted text={item.label} query={query} />
       </span>
+      {item.badge ? (
+        <span className="ml-auto shrink-0">{item.badge}</span>
+      ) : null}
       {active ? (
-        <span className="ml-auto" aria-hidden="true">
+        <span className={item.badge ? 'ml-2' : 'ml-auto'} aria-hidden="true">
           <Kbd>Enter</Kbd>
         </span>
       ) : item.hint ? (
