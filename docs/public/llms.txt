@@ -79,6 +79,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Network topology](https://levelrail.com/network-topology): the whole-mesh view of nodes, apps, databases, and how they connect.
 - [Build node routing](https://levelrail.com/build-node-routing): which node a deploy's build runs on, and how to dedicate build-only nodes.
 - [Managing databases](https://levelrail.com/managing-databases): managed Postgres, Redis, MySQL, MongoDB, and other engines.
+- [Database upgrades](https://levelrail.com/database-upgrades): available versions with security and end-of-life status, automatic patch upgrades in a maintenance window, automatic revert.
 - [Connecting apps to databases](https://levelrail.com/connecting-apps-to-databases): connect an app to one or more managed databases and read its reachability badges.
 - [Backups and storage](https://levelrail.com/backups-and-storage): backup targets, registry credentials, and app volume and database backups.
 - [Network shares](https://levelrail.com/network-shares): register NFS and CIFS shares and test that the host is reachable.

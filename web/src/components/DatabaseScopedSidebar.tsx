@@ -1,6 +1,7 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
+  ArrowCircleUpIcon,
   ArrowLeftIcon,
   SquaresFourIcon,
   CpuIcon,
@@ -176,6 +177,20 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
                 <BetaBadge className="ml-auto" />
               </SidebarMenuButton>
             </SidebarMenuItem>
+            {!database.external ? (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={
+                    <Link to="/databases/$name/upgrades" params={{ name }} />
+                  }
+                  isActive={pathname.endsWith('/upgrades')}
+                  tooltip={t('upgrades.nav')}
+                >
+                  <ArrowCircleUpIcon />
+                  <span>{t('upgrades.nav')}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ) : null}
             <SidebarMenuItem>
               <SidebarMenuButton
                 render={<Link to="/databases/$name/access" params={{ name }} />}

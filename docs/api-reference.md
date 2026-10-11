@@ -67,7 +67,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 106 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 108 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -185,6 +185,8 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
+| GET | /api/v1/settings/database-upgrades | AbilityRead | handleGetPlatformUpgradePolicy |
+| PUT | /api/v1/settings/database-upgrades | AbilityRoot | handlePutPlatformUpgradePolicy |
 
 :::
 
@@ -506,6 +508,10 @@ Endpoints for:
 | PUT | /api/v1/databases/{name}/network/scope | AbilityRoot | handleSetDatabaseScope |
 | PUT | /api/v1/databases/{name}/network/tls | AbilityRoot | handleSetDatabaseTLS |
 | GET | /api/v1/databases/{name}/tables/{schema}/{table}/structure | AbilityReadSensitive | handleGetDatabaseTableStructure |
+| GET | /api/v1/databases/upgrade-summary | AbilityRead | handleDatabaseUpgradeSummary |
+| GET | /api/v1/databases/{name}/upgrades | AbilityRead | handleGetDatabaseUpgrades |
+| PUT | /api/v1/databases/{name}/upgrade-policy | AbilityWriteSensitive | handlePutDatabaseUpgradePolicy |
+| POST | /api/v1/databases/{name}/upgrade-now | AbilityWriteSensitive | handleDatabaseUpgradeNow |
 
 ## Projects / Organizations / Environments
 

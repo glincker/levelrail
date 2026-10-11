@@ -219,6 +219,30 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
           title: t('items.loginApprovalTitle', { ip: p.ip ?? f.subject }),
           detail: t('items.loginApprovalDetail', { agent: p.user_agent ?? '' }),
         }
+      case 'db_security_updates':
+        return {
+          ...base,
+          title: t('items.dbSecurityTitle', {
+            count: Number.parseInt(p.count ?? '1', 10) || 1,
+          }),
+          detail: t('items.dbSecurityDetail', { names: p.names ?? '' }),
+        }
+      case 'db_eol':
+        return {
+          ...base,
+          title: t('items.dbEolTitle', { name }),
+          detail: t('items.dbEolDetail', {
+            engine: p.engine ?? '',
+            version: p.version ?? '',
+            eol: shortDate(p.eol),
+          }),
+        }
+      case 'db_upgrade_failed':
+        return {
+          ...base,
+          title: t('items.dbUpgradeFailedTitle', { name }),
+          detail: t('items.dbUpgradeFailedDetail', { reason: p.reason ?? '' }),
+        }
       default:
         return { ...base, title: f.title || f.subject, detail: f.detail }
     }

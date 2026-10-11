@@ -265,6 +265,13 @@
       "description": "Give teammates their own accounts instead of sharing yours."
     }
   },
+  "databaseUpgrades": {
+    "title": "Database upgrades",
+    "description": "The default upgrade policy for every database that does not set its own.",
+    "loadFailed": "Could not load the platform upgrade policy: {{error}}",
+    "formTitle": "Platform default policy",
+    "formDescription": "Databases inherit this until you override them on their Upgrades tab. Only the platform owner can change it."
+  },
   "githubApp": {
     "manageAccess": "Manage repository access",
     "manageAccessHint": "Missing a repository? Choose which repositories this app can see on GitHub, then come back.",
