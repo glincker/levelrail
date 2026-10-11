@@ -69,7 +69,7 @@ func (rt *Router) handleAppResourceUsage(w http.ResponseWriter, r *http.Request)
 	}
 
 	for _, metric := range resourceUsageMetrics {
-		samples, err := rt.telemetry.LatestByMetric(r.Context(), metric)
+		samples, err := rt.latestByMetric(r.Context(), metric)
 		if err != nil {
 			// Partial telemetry (one metric's query failing) must not
 			// blank out every other metric that did succeed: the same

@@ -95,7 +95,7 @@ func (rt *Router) handleSystemStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if rt.dockerPinger != nil {
-		if err := rt.dockerPinger.Ping(r.Context()); err != nil {
+		if err := rt.pingDocker(r.Context()); err != nil {
 			resp.DockerError = err.Error()
 		} else {
 			resp.DockerConnected = true
@@ -103,7 +103,10 @@ func (rt *Router) handleSystemStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if rt.dockerDiskUsage != nil {
-		if usage, err := rt.dockerDiskUsage.DiskUsage(r.Context()); err == nil {
+		done := timePhase(r.Context(), "docker_disk_usage")
+		usage, err := rt.dockerDiskUsage.DiskUsage(r.Context())
+		done()
+		if err == nil {
 			resp.DockerDiskUsage = toDockerDiskUsageResource(usage)
 		}
 		// An error here degrades to "omitted," the same as DockerConnected

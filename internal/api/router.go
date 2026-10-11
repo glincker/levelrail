@@ -112,6 +112,9 @@ import (
 type Router struct {
 	doctorEdge *DoctorIngressEdge // set via SetDoctorIngressEdge
 
+	dash        *dashboardCache // never nil after NewRouter; WithDashboardCache sets the ttl
+	dashPrewarm bool
+
 	logger                 *slog.Logger
 	brand                  *brand.Brand
 	changelogEntries       []changelog.Entry // nil is valid: GET /api/v1/changelog answers an empty list, see WithChangelog
@@ -791,9 +794,11 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.dnsRecordManager = rt.resolveDNSRecordManager
 	rt.dnsRecordStatus = defaultDNSRecordStatus
 
+	rt.dash = newDashboardCache(0, 0)
 	for _, opt := range opts {
 		opt(rt)
 	}
+	rt.warmDashboardCaches()
 	// sessions is built after options are applied, not in the struct
 	// literal above, specifically so WithSessionTTL can influence it:
 	// sessionStore reads its TTL once at construction, it isn't a field

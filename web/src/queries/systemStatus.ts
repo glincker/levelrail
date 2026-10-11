@@ -101,5 +101,6 @@ export function useDockerHealthPoll() {
     ...systemStatusQueryOptions(),
     retry: false,
     refetchInterval: DOCKER_HEALTH_POLL_INTERVAL_MS,
+    refetchIntervalInBackground: false,
   })
 }
