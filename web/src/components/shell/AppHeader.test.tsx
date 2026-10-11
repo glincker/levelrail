@@ -27,6 +27,7 @@ vi.mock('../ui/sidebar', () => ({
     <button type="button" aria-label={props['aria-label']} />
   ),
 }))
+vi.mock('../teams/TeamSwitcher', () => ({ TeamSwitcher: () => null }))
 vi.mock('../environments/EnvironmentSwitcher', () => ({
   EnvironmentSwitcher: () => null,
 }))
