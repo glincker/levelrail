@@ -50,7 +50,7 @@ func envDuration(name string, def time.Duration) time.Duration {
 // the API router and git webhook path, and runs both until ctx is done.
 func startPipelines(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *store.DB, secretsManager *secrets.Manager, client *docker.Client,
 	registry *agent.Registry, builder *deploy.Pipeline, nudger *reconcile.Engine, dispatcher *alerting.DeployDispatcher, apiRouter *api.Router) {
-	acts := &pipelineActions{db: db, builder: builder, nudger: nudger, notifier: dispatcher, secrets: secretsManager, logger: logger, resolver: client}
+	acts := &pipelineActions{db: db, builder: builder, nudger: nudger, notifier: dispatcher, secrets: secretsManager, logger: logger, resolver: client, appToken: apiRouter.GitSourceCloneToken}
 	cfg := pipeline.Config{
 		Store:      db,
 		Actions:    acts,
@@ -114,6 +114,10 @@ type pipelineActions struct {
 	secrets  *secrets.Manager
 	logger   *slog.Logger
 	resolver docker.ImageResolver
+	// appToken resolves a clone credential from the connected GitHub App
+	// when the app has no stored deploy token, so a private repo connected
+	// through the app syncs and builds without a separate PAT.
+	appToken func(ctx context.Context, app, repoURL string) string
 }
 
 func (a *pipelineActions) RepoInfo(ctx context.Context, app string) (string, string, error) {
@@ -132,6 +136,9 @@ func (a *pipelineActions) RepoInfo(ctx context.Context, app string) (string, str
 				return "", "", fmt.Errorf("resolve deploy token: %w", err)
 			}
 		}
+	}
+	if token == "" && a.appToken != nil {
+		token = a.appToken(ctx, app, gs.RepoURL)
 	}
 	return gs.RepoURL, token, nil
 }
