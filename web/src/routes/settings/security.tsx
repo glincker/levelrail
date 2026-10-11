@@ -26,6 +26,7 @@ import {
 import { passkeysQueryOptions } from '../../queries/passkeys'
 import { PasskeysCard } from '../../components/PasskeysCard'
 import { AuthEngineCard } from '../../components/AuthEngineCard'
+import { DockerGuardCard } from '../../components/DockerGuardCard'
 import { SignInSecurityCards } from '../../components/SignInSecurityCards'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import {
@@ -135,6 +136,8 @@ function SecuritySettingsPage() {
       <PasskeysCard />
 
       <AuthEngineCard />
+
+      <DockerGuardCard />
 
       <Card>
         <CardHeader>

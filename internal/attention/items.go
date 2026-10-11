@@ -53,6 +53,7 @@ var kindInfos = map[string]kindInfo{
 	KindInvites:             {"Invitations are waiting", "Open Users and resend or revoke them", linkUsers, false},
 	KindLoginCode:           {"Sign-in code requested from %s", "Show the code only if you asked for it", linkSecurity, false},
 	KindLoginApproval:       {"New browser sign-in from %s is waiting", "Approve it only if it is you, otherwise deny it", linkSecurity, false},
+	KindDockerGuard:         {"Docker API guard needs a decision", "Review the would-be denials and switch the guard to enforce", linkSecurity, false},
 }
 
 // newItem builds an item with its stable id, one-line title, next action and

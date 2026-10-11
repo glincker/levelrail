@@ -80,6 +80,7 @@ const (
 	KindInvites             = "invites"
 	KindLoginCode           = "login_code"
 	KindLoginApproval       = "login_approval"
+	KindDockerGuard         = "docker_guard"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

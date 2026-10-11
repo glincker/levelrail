@@ -33,6 +33,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
@@ -84,7 +85,15 @@ func run(logger *slog.Logger) error {
 		return err
 	}
 
-	client, err := docker.NewClient()
+	guard, err := bootAgentDockerGuard(ctx, logger)
+	if err != nil {
+		return err
+	}
+	clientOpts := []docker.ClientOption{docker.WithCreateDeclarer(guard.Grants)}
+	if guard.Host != "" {
+		clientOpts = append(clientOpts, docker.WithHost(guard.Host))
+	}
+	client, err := docker.NewClient(clientOpts...)
 	if err != nil {
 		return fmt.Errorf("connect to local docker: %w", err)
 	}
@@ -93,8 +102,9 @@ func run(logger *slog.Logger) error {
 			logger.Error("closing docker client", slog.String("error", cerr.Error()))
 		}
 	}()
+	dockerguard.LogPrivilege(ctx, logger, client)
 
-	builder, closeBuilder := loadBuildRunner(ctx, logger)
+	builder, closeBuilder := loadBuildRunner(ctx, logger, guard.Host)
 	if closeBuilder != nil {
 		defer func() {
 			if cerr := closeBuilder(); cerr != nil {
@@ -127,8 +137,12 @@ func run(logger *slog.Logger) error {
 // build-capable. Non-fatal: a node whose BuildKit is unreachable still
 // serves every container operation, and a dispatched build fails with a
 // clear reason rather than the agent refusing to start.
-func loadBuildRunner(ctx context.Context, logger *slog.Logger) (agent.BuildRunner, func() error) {
-	rawDockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+func loadBuildRunner(ctx context.Context, logger *slog.Logger, guardHost string) (agent.BuildRunner, func() error) {
+	rawOpts := []dockerclient.Opt{dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation()}
+	if guardHost != "" {
+		rawOpts = append(rawOpts, dockerclient.WithHost(guardHost))
+	}
+	rawDockerCli, err := dockerclient.NewClientWithOpts(rawOpts...)
 	if err != nil {
 		logger.Warn("no docker client for buildkit: this node cannot run dispatched builds", slog.String("error", err.Error()))
 		return nil, nil
@@ -321,6 +335,25 @@ func loadOrEnroll(ctx context.Context, addr, path string, logger *slog.Logger) (
 	}
 	logger.Info("enrolled", slog.String("node_id", id.NodeID))
 	return id, nil
+}
+
+// bootAgentDockerGuard puts the same Docker API guard the control plane runs
+// in front of this node's daemon. Denials go to a node-local audit file.
+func bootAgentDockerGuard(ctx context.Context, logger *slog.Logger) (dockerguard.Booted, error) {
+	dataDir := os.Getenv("APP_DATA_DIR")
+	if dataDir == "" {
+		dataDir = filepath.Dir(identityFilePath())
+	}
+	b, err := dockerguard.Boot(ctx, dockerguard.BootConfig{
+		DataDir:         dataDir,
+		ResolveSymlinks: !dockerguard.RunningInContainer(),
+		Sink:            dockerguard.NewFileSink(filepath.Join(dataDir, dockerguard.FileSinkName)),
+		Logger:          logger,
+	})
+	if err != nil {
+		return dockerguard.Booted{}, fmt.Errorf("docker guard: %w", err)
+	}
+	return b, nil
 }
 
 func identityFilePath() string {
