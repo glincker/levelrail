@@ -220,6 +220,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runBitbucketApp(prog, args[1:], stdout, stderr, lookupEnv)
 	case "gitea-app":
 		return runGiteaApp(prog, args[1:], stdout, stderr, lookupEnv)
+	case "compose":
+		return runCompose(prog, args[1:], stdout, stderr, lookupEnv)
 	case "templates":
 		return runTemplates(prog, args[1:], stdout, stderr, lookupEnv)
 	case "static-sites":
@@ -345,7 +347,8 @@ Usage:
   %[1]s gitlab-app status|disconnect|projects|branches|use-as-source [flags]   check/forget a GitLab App connection, browse and use its projects
   %[1]s bitbucket-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a Bitbucket App connection, browse and use its repos
   %[1]s gitea-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a Gitea App connection, browse and use its repos
-  %[1]s templates list|get|deploy [flags]                 browse and deploy from the curated service catalog
+  %[1]s templates list|get|deploy|install [flags]         browse, deploy and install from the curated service catalog
+  %[1]s compose deploy|status|logs|redeploy|rollback|down  run a Docker Compose file as one stack
   %[1]s static-sites list [flags]                          list build.type: static apps
   %[1]s deploy-approvals list|get|approve|reject [flags]   two-person approval gate on a deploy/promote into a protected environment
   %[1]s build detect|branches --repo-url URL [flags]       check what framework a public repo would build as, or list its branches

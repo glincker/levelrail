@@ -1,40 +1,6 @@
 package catalog
 
 var productivity2Templates = []Template{
-	{
-		ID:                     "wikijs",
-		Name:                   "Wiki.js",
-		Slogan:                 "A modern, extensible wiki engine with Markdown, visual editing, and fine-grained page permissions.",
-		Category:               "Productivity",
-		DocumentationURL:       "https://docs.requarks.io",
-		RecommendedMemoryBytes: 536870912, // 512Mi
-		Compose: `services:
-  wiki:
-    image: ghcr.io/requarks/wiki:2
-    ports: ["3000:3000"]
-    environment:
-      DB_TYPE: postgres
-      DB_HOST: db
-      DB_PORT: "5432"
-      DB_USER: wikijs
-      DB_PASS: $SERVICE_PASSWORD_DB
-      DB_NAME: wikijs
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: wikijs
-      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
-      POSTGRES_DB: wikijs
-    volumes:
-      - wikijs_db_data:/var/lib/postgresql/data
-`,
-	},
 	{ //nolint:gosec // CORE_DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
 		ID:                     "zipline",
 		Name:                   "Zipline",

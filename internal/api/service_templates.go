@@ -29,7 +29,10 @@ type serviceTemplateListItem struct {
 	// real secret the operator has to supply. The one-click deploy path
 	// (POST .../deploy below) is only safe when this is false; the UI
 	// falls back to the full pre-filled wizard step otherwise.
-	RequiresConfiguration bool `json:"requires_configuration"`
+	RequiresConfiguration bool   `json:"requires_configuration"`
+	Icon                  string `json:"icon,omitempty"`
+	// Installable marks a manifest template: POST .../install takes its env prompts and domains.
+	Installable bool `json:"installable,omitempty"`
 }
 
 // serviceTemplateDetail is GET /api/v1/service-templates/{id}'s response
@@ -37,15 +40,16 @@ type serviceTemplateListItem struct {
 // to pre-fill a deploy form or send straight to
 // POST /api/v1/apps/{name}/compose.
 type serviceTemplateDetail struct {
-	ID                     string `json:"id"`
-	Name                   string `json:"name"`
-	Slogan                 string `json:"slogan"`
-	Category               string `json:"category"`
-	DocumentationURL       string `json:"documentation_url"`
-	Compose                string `json:"compose"`
-	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
-	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
-	RequiresConfiguration  bool   `json:"requires_configuration"`
+	ID                     string            `json:"id"`
+	Name                   string            `json:"name"`
+	Slogan                 string            `json:"slogan"`
+	Category               string            `json:"category"`
+	DocumentationURL       string            `json:"documentation_url"`
+	Compose                string            `json:"compose"`
+	RecommendedMemoryBytes int64             `json:"recommended_memory_bytes,omitempty"`
+	RequiresGPU            bool              `json:"requires_gpu,omitempty"`
+	RequiresConfiguration  bool              `json:"requires_configuration"`
+	Manifest               *catalog.Manifest `json:"manifest,omitempty"`
 }
 
 // handleListServiceTemplates handles GET /api/v1/service-templates: the
@@ -63,6 +67,8 @@ func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Requ
 			RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
 			RequiresGPU:            tpl.RequiresGPU,
 			RequiresConfiguration:  rt.templateRequiresConfig[tpl.ID],
+			Icon:                   manifestIcon(tpl.Manifest),
+			Installable:            tpl.Manifest != nil,
 		})
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -104,6 +110,7 @@ type templateView struct {
 	RecommendedMemoryBytes int64
 	RequiresGPU            bool
 	RequiresConfiguration  bool
+	Manifest               *catalog.Manifest
 }
 
 // resolveTemplate looks id up in catalog.Templates first (static, so
@@ -126,6 +133,7 @@ func (rt *Router) resolveTemplate(ctx context.Context, id string) (templateView,
 			RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
 			RequiresGPU:            tpl.RequiresGPU,
 			RequiresConfiguration:  rt.templateRequiresConfig[tpl.ID],
+			Manifest:               tpl.Manifest,
 		}, true, nil
 	}
 
