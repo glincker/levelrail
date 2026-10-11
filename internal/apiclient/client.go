@@ -1243,6 +1243,31 @@ func (c *Client) ClearDomainWAF(ctx context.Context, name, domain string) (Domai
 	return out, err
 }
 
+func domainAuthGatePath(name, domain string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/domains/" + PathEscape(domain) + "/auth-gate"
+}
+
+// GetDomainAuthGate calls GET /api/v1/apps/{name}/domains/{domain}/auth-gate.
+func (c *Client) GetDomainAuthGate(ctx context.Context, name, domain string) (DomainAuthGateResource, error) {
+	var out DomainAuthGateResource
+	err := c.do(ctx, http.MethodGet, domainAuthGatePath(name, domain), nil, &out)
+	return out, err
+}
+
+// SetDomainAuthGate calls PUT /api/v1/apps/{name}/domains/{domain}/auth-gate.
+func (c *Client) SetDomainAuthGate(ctx context.Context, name, domain string, req SetDomainAuthGateRequest) (DomainAuthGateResource, error) {
+	var out DomainAuthGateResource
+	err := c.do(ctx, http.MethodPut, domainAuthGatePath(name, domain), req, &out)
+	return out, err
+}
+
+// ClearDomainAuthGate calls DELETE /api/v1/apps/{name}/domains/{domain}/auth-gate.
+func (c *Client) ClearDomainAuthGate(ctx context.Context, name, domain string) (DomainAuthGateResource, error) {
+	var out DomainAuthGateResource
+	err := c.do(ctx, http.MethodDelete, domainAuthGatePath(name, domain), nil, &out)
+	return out, err
+}
+
 // dnsRecordsPath builds /api/v1/apps/{name}/domains/{domain}/dns-records,
 // shared by all four DNS record methods below, mirroring domainWAFPath's
 // identical shape for a different per-domain resource.

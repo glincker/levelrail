@@ -712,6 +712,29 @@ type SetDomainWAFRequest struct {
 	RateLimitBurst int    `json:"rate_limit_burst"`
 }
 
+// DomainAuthGateResource mirrors internal/api's domainAuthGateResource.
+type DomainAuthGateResource struct {
+	Domain                string   `json:"domain"`
+	Configured            bool     `json:"configured"`
+	Enabled               bool     `json:"enabled"`
+	AuthURL               string   `json:"auth_url"`
+	CheckPath             string   `json:"check_path"`
+	CopyHeaders           []string `json:"copy_headers"`
+	TimeoutSeconds        int      `json:"timeout_seconds"`
+	DefaultTimeoutSeconds int      `json:"default_timeout_seconds"`
+	UpdatedAt             string   `json:"updated_at,omitempty"`
+}
+
+// SetDomainAuthGateRequest mirrors internal/api's setDomainAuthGateRequest.
+// TimeoutSeconds 0 uses the server's APP_AUTH_GATE_TIMEOUT default.
+type SetDomainAuthGateRequest struct {
+	Enabled        bool     `json:"enabled"`
+	AuthURL        string   `json:"auth_url"`
+	CheckPath      string   `json:"check_path"`
+	CopyHeaders    []string `json:"copy_headers"`
+	TimeoutSeconds int      `json:"timeout_seconds"`
+}
+
 // DNSRecordResource mirrors internal/api's dnsRecordResource
 // (internal/api/dns_records.go): one A/AAAA/CNAME/TXT/MX/SRV/CAA record,
 // used both in GET .../dns-records's own Records list and as the
