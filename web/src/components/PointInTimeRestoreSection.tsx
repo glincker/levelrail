@@ -76,7 +76,7 @@ function PointInTimeRestoreCard({ databaseName }: { databaseName: string }) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between">
         <CardTitle>Point-in-time restore</CardTitle>
         {status.data?.enabled ? (
           <Button

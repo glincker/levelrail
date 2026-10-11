@@ -54,7 +54,7 @@ export function ModelUsageCard({ modelName }: { modelName: string }) {
 
   return (
     <section aria-label="Usage" className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between">
         <h3 className="text-sm font-semibold">Usage</h3>
         <div className="flex gap-1">
           {WINDOWS.map((w) => (
@@ -131,30 +131,32 @@ export function ModelUsageCard({ modelName }: { modelName: string }) {
             range={range}
             isLoading={false}
           />
-          <table className="w-full text-left text-xs">
-            <thead className="text-muted-foreground">
-              <tr>
-                <th className="py-1 font-medium">Key</th>
-                <th className="py-1 font-medium">Requests</th>
-                <th className="py-1 font-medium">Errors</th>
-                <th className="py-1 font-medium">Tokens in / out</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.keys.map((k) => (
-                <tr key={k.key_id} className="border-t border-border">
-                  <td className="py-1">{k.name}</td>
-                  <td className="py-1 font-mono">{k.requests}</td>
-                  <td className="py-1 font-mono">
-                    {k.status_4xx + k.status_5xx}
-                  </td>
-                  <td className="py-1 font-mono">
-                    {k.input_tokens} / {k.output_tokens}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="text-muted-foreground">
+                <tr>
+                  <th className="py-1 font-medium">Key</th>
+                  <th className="py-1 font-medium">Requests</th>
+                  <th className="py-1 font-medium">Errors</th>
+                  <th className="py-1 font-medium">Tokens in / out</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {report.keys.map((k) => (
+                  <tr key={k.key_id} className="border-t border-border">
+                    <td className="py-1">{k.name}</td>
+                    <td className="py-1 font-mono">{k.requests}</td>
+                    <td className="py-1 font-mono">
+                      {k.status_4xx + k.status_5xx}
+                    </td>
+                    <td className="py-1 font-mono">
+                      {k.input_tokens} / {k.output_tokens}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <p className="text-xs text-muted-foreground">{report.note}</p>
         </>
       ) : null}

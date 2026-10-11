@@ -33,7 +33,7 @@ function LoadBalancerSection() {
 function LoadBalancerSectionSkeleton() {
   return (
     <div className="space-y-5" aria-hidden="true">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Skeleton className="h-6 w-40" />
         <div className="flex items-center gap-2">
           <Skeleton className="h-8 w-24 rounded-md" />

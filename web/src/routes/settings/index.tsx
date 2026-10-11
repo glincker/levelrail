@@ -56,7 +56,7 @@ function SettingsHubPage() {
             <a
               key={section.id}
               href={`#settings-${section.id}`}
-              className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="rounded-full border border-border px-3 py-1 text-xs pointer-coarse:py-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               {section.title}
             </a>

@@ -40,7 +40,7 @@ export function SetupShell({
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <header className="flex items-start justify-between gap-4">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-card p-2 text-base font-bold text-foreground">
             <BrandMarkGlyph svgWrapperClassName="flex size-full items-center justify-center [&_svg]:size-full" />

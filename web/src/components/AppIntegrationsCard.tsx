@@ -48,7 +48,7 @@ export function AppIntegrationsCard({ appName }: { appName: string }) {
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
+      <CardHeader className="flex-row flex-wrap items-center justify-between space-y-0">
         <CardTitle>Third-party tools</CardTitle>
         <AttachIntegrationDialog
           appName={appName}

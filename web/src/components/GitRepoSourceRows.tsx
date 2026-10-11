@@ -30,7 +30,7 @@ export function NotConnectedPrompt({
   settingsPath: string
 }>) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-border px-3 py-2.5 text-sm">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border px-3 py-2.5 text-sm">
       <span className="text-muted-foreground">
         Connect {name} to pick a repository.
       </span>

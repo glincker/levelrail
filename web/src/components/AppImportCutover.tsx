@@ -57,7 +57,7 @@ function DomainRow({ d }: { d: AppImportCutoverDomain }) {
         ))}
       </ul>
       {showChange && d.change ? (
-        <div className="mt-2 rounded-md bg-muted p-2 font-mono text-xs">
+        <div className="mt-2 rounded-md bg-muted p-2 break-all font-mono text-xs">
           <p>
             {t('cutover.change', {
               type: d.change.type,

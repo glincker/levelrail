@@ -72,7 +72,7 @@ export function TeamMembersCard({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between">
         <CardTitle>{t('members.title')}</CardTitle>
         <Button
           type="button"

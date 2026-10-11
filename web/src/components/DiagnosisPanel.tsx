@@ -77,7 +77,7 @@ export function DiagnosisPanel({
     <Card>
       <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleTrigger>
-          <CardHeader className="flex-row items-center justify-between gap-3">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-3">
             <CardTitle className="flex items-center gap-2">
               <WarningCircleIcon className="size-4 text-destructive" />
               What happened?

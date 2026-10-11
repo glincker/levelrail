@@ -127,7 +127,7 @@ export function ControlPlaneDrSettings({ status }: { status: ControlPlaneDr }) {
         )
       }}
     >
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-foreground">
             Encrypted off-box backups

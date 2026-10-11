@@ -100,7 +100,7 @@ export function FleetResourceChart() {
 
   return (
     <Card size="sm">
-      <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
+      <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
         <CardTitle className="flex items-center gap-1.5 text-sm font-medium">
           <GaugeIcon
             className="size-4 text-muted-foreground"
@@ -149,10 +149,10 @@ function FleetSparkline({
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">{label}</p>
         {current !== null ? (
-          <p className="font-mono text-sm font-medium text-foreground">
+          <p className="break-all font-mono text-sm font-medium text-foreground">
             {current}
           </p>
         ) : null}

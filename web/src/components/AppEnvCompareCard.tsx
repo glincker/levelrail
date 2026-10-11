@@ -71,7 +71,7 @@ export function AppEnvCompareCard({ app }: { app: AppDetail }) {
           </select>
         </label>
         {diff ? (
-          <div className="space-y-2 font-mono text-xs" role="status">
+          <div className="space-y-2 break-all font-mono text-xs" role="status">
             {diff.onlyA.map((e) => (
               <p key={`a-${e.key}`}>
                 {t('envCompare.onlyIn', { app: app.name })} {e.key}

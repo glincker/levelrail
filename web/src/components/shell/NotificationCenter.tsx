@@ -94,7 +94,11 @@ export function NotificationCenter() {
           </span>
         ) : null}
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-96" glass>
+      <PopoverContent
+        align="end"
+        className="w-96 max-w-[calc(100vw-1rem)]"
+        glass
+      >
         <PopoverHeader className="flex-row items-center justify-between">
           <PopoverTitle>Notifications</PopoverTitle>
           <Button

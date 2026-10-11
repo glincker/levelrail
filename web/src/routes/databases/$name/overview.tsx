@@ -61,7 +61,7 @@ function OverviewSection() {
               <dt className="text-xs text-muted-foreground uppercase">
                 {t('overview.version')}
               </dt>
-              <dd className="mt-1 flex items-center gap-2 font-mono text-sm text-foreground">
+              <dd className="mt-1 flex items-center gap-2 break-all font-mono text-sm text-foreground">
                 {database.version}
                 <ChangeDatabaseVersionDialog
                   name={database.name}
@@ -73,7 +73,7 @@ function OverviewSection() {
               <dt className="text-xs text-muted-foreground uppercase">
                 {t('overview.node')}
               </dt>
-              <dd className="mt-1 flex items-center gap-2 font-mono text-sm text-foreground">
+              <dd className="mt-1 flex items-center gap-2 break-all font-mono text-sm text-foreground">
                 <PlacementLabel
                   nodeId={database.node_id}
                   nodeName={database.node_name}

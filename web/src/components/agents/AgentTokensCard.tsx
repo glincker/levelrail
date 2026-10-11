@@ -21,7 +21,7 @@ export function AgentTokensCard({ tokens }: { tokens: TokenResource[] }) {
   const agentTokens = tokens.filter((t) => t.agent)
   return (
     <section className="space-y-3 rounded-lg border border-border p-4">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-foreground">
             Agent tokens

@@ -27,7 +27,7 @@ export function LbConfigure({
   const [tab, setTab] = useState('traffic')
   return (
     <section aria-label="Configure" className="rounded-2xl border">
-      <div className="flex items-center justify-between gap-2 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3">
         <button
           type="button"
           aria-expanded={open}

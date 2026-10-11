@@ -85,8 +85,8 @@ export function PendingDeployApprovalBanner({ appName }: { appName: string }) {
         <div className="text-sm">
           <p className="font-medium">
             {approval.action === 'promote' ? 'Promotion' : 'Deploy'} to{' '}
-            <span className="font-mono">{approval.image}</span> is awaiting
-            approval.
+            <span className="break-all font-mono">{approval.image}</span> is
+            awaiting approval.
           </p>
           <p className="text-amber-800/90 dark:text-amber-200/80">
             Requested by {approval.requested_by_name}. This environment is

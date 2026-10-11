@@ -139,8 +139,8 @@ export function SSHEnrollFields({
         </DialogDescription>
       </DialogHeader>
       <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
-        <div className="grid grid-cols-3 gap-3">
-          <Field className="col-span-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Field className="sm:col-span-2">
             <FieldLabel htmlFor="ssh-host">Host</FieldLabel>
             <Input
               id="ssh-host"

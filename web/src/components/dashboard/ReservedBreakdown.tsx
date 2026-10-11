@@ -29,14 +29,14 @@ export function ReservedBreakdown({
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-medium">
             {t('fleet.reserved.breakdown')}
           </h3>
           <div
             role="group"
             aria-label={t('fleet.reserved.groupBy')}
-            className="flex gap-1"
+            className="flex flex-wrap gap-1"
           >
             {GROUP_OPTIONS.map((opt) => (
               <Button

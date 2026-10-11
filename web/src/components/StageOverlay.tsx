@@ -125,7 +125,7 @@ export function StageOverlay({
           data-slot="stage-overlay-popup"
           aria-label="Quick navigation"
           className={cn(
-            'glinui-glass-surface fixed bottom-6 left-1/2 z-50 flex w-[calc(100vw-2rem)] max-w-3xl -translate-x-1/2 flex-col gap-2 p-3 outline-none',
+            'glinui-glass-surface fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-50 flex w-[calc(100vw-2rem)] max-w-3xl -translate-x-1/2 flex-col gap-2 p-3 outline-none',
             animate &&
               'duration-200 data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom-4 data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom-4',
           )}

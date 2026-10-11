@@ -172,7 +172,7 @@ export function StorageAttachmentCard({ app }: { app: AppDetail }) {
                         ? 'an env var'
                         : 'env vars'}{' '}
                       named{' '}
-                      <code className="font-mono">
+                      <code className="break-all font-mono">
                         {collidingEnvKeys.join(', ')}
                       </code>
                       . Attaching storage will silently override{' '}

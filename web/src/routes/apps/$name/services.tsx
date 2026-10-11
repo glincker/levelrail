@@ -63,7 +63,7 @@ function ServicesSectionSkeleton() {
             <Skeleton className="h-9 flex-1" />
           </div>
           <Skeleton className="h-16 w-full rounded-md" />
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between">
             <Skeleton className="h-8 w-28 rounded-md" />
             <Skeleton className="h-8 w-32 rounded-md" />
           </div>

@@ -58,7 +58,7 @@ export function GitHubAppConnectionCard() {
         description="Connect a GitHub App for private-repository access and installation-based repo browsing."
       />
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between rounded-lg border border-border px-4 py-3">
           <div className="space-y-1">
             {status.connected ? (
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -185,7 +185,7 @@ function GitHubAppInstallationsSection() {
 
   return (
     <div className="space-y-2 border-t border-border pt-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm font-medium text-foreground">
           Connected accounts
         </p>

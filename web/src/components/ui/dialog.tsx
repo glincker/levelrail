@@ -77,7 +77,7 @@ const dialogContentVariants = cva(
         // and scrolling internally is the same "the whole popup scrolls
         // together" contract `fullscreen` already documents below.
         default:
-          'top-1/2 left-1/2 max-h-[85vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto sm:max-w-sm',
+          'inset-x-0 bottom-0 max-h-[90dvh] w-full overflow-y-auto rounded-b-none pb-[max(1rem,env(safe-area-inset-bottom))] sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:max-h-[85vh] sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-b-xl sm:pb-4',
         // No centering transform: `inset-*` positions and sizes the
         // popup directly against the viewport instead of a centered
         // fixed-width box, which is also what makes this fill available
@@ -89,7 +89,8 @@ const dialogContentVariants = cva(
         // know about), so the whole popup scrolls together while the
         // close button stays pinned to the popup's frame because it's
         // positioned absolute against that same fixed-position ancestor.
-        fullscreen: 'inset-4 w-auto max-w-none overflow-y-auto sm:inset-6',
+        fullscreen:
+          'inset-0 w-auto max-w-none overflow-y-auto rounded-none pb-[max(1rem,env(safe-area-inset-bottom))] sm:inset-6 sm:rounded-xl sm:pb-4',
       },
     },
     defaultVariants: {

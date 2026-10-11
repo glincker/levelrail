@@ -214,7 +214,7 @@ export function ConnectDatabaseDialog({
                     </span>
                   ) : null}
                 </span>
-                <span className="font-mono text-xs text-muted-foreground">
+                <span className="break-all font-mono text-xs text-muted-foreground">
                   {c.network ?? ''}
                 </span>
               </button>

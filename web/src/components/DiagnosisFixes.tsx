@@ -128,7 +128,9 @@ function FixRow({ appName, fix }: { appName: string; fix: DiagnosisFix }) {
         <div className="mt-2 space-y-2">
           {fix.changes.map((c) => (
             <div key={c.field} className="space-y-1">
-              <p className="font-mono text-xs text-foreground">{c.field}</p>
+              <p className="break-all font-mono text-xs text-foreground">
+                {c.field}
+              </p>
               {c.needs_input ? (
                 <Input
                   aria-label={`Value for ${c.field}`}
@@ -142,7 +144,7 @@ function FixRow({ appName, fix }: { appName: string; fix: DiagnosisFix }) {
                   }
                 />
               ) : (
-                <p className="font-mono text-xs text-muted-foreground">
+                <p className="break-all font-mono text-xs text-muted-foreground">
                   {formatChangeValue(c.field, c.from)} {'->'}{' '}
                   {formatChangeValue(c.field, c.to)}
                 </p>
