@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -660,6 +660,7 @@ export function CreateAppFromGitFields({
   // no effect. Domain already tells the user it can be changed later
   // from the app's Domains tab.
   const locked = createdName !== null
+  const autoNameRef = useRef('')
   // The git/build fields ARE resent on every retry, so a failed build
   // trigger must not leave them stuck disabled: that's the only way a
   // user can act on the "fix the fields above and submit again" error
@@ -689,11 +690,11 @@ export function CreateAppFromGitFields({
               setSource(value)
               setValue('repoUrl', value.repoUrl, { shouldValidate: true })
               setValue('ref', value.branch, { shouldValidate: true })
-              if (!getValues('name').trim()) {
-                const slug = repoSlugFrom(value.repoUrl)
-                if (slug) {
-                  setValue('name', slug, { shouldValidate: true })
-                }
+              const current = getValues('name').trim()
+              const slug = repoSlugFrom(value.repoUrl)
+              if (slug && (!current || current === autoNameRef.current)) {
+                setValue('name', slug, { shouldValidate: true })
+                autoNameRef.current = slug
               }
             }}
           />
