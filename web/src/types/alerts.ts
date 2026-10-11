@@ -44,6 +44,20 @@ export type AlertRuleKind =
   | 'log_archive_stale'
   | 'slo_burn'
   | 'version_skew'
+  | 'log_pattern'
+  | 'log_level_rate'
+
+// log_pattern and log_level_rate only (internal/alerting.LogRuleConfig).
+export interface LogRuleConfig {
+  query?: string
+  regex?: string
+  fields?: string[]
+  level?: string
+  count?: number
+  per_minute?: number
+  window_seconds?: number
+  cooldown_seconds?: number
+}
 
 export type SloObjective = 'availability' | 'latency'
 
@@ -110,6 +124,7 @@ export interface AlertRule {
   backup_volume_name?: string
 
   slo?: SloConfig
+  log_rule?: LogRuleConfig
 
   // notify_url/notify_kind are the *resolved* values: the attached
   // channel's own when channel_id is set, this rule's legacy columns
@@ -161,6 +176,7 @@ export interface CreateAlertRuleRequest {
   backup_service_name?: string
   backup_volume_name?: string
   slo?: SloConfig
+  log_rule?: LogRuleConfig
   channel_id?: string
   notify_url?: string
   notify_kind?: NotifyKind

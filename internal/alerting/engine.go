@@ -124,6 +124,8 @@ type Engine struct {
 
 	sloMu       sync.Mutex
 	sloSeverity map[string]string
+
+	logRule logRuleRuntime
 }
 
 // NewEngine builds an Engine. newNotifier defaults to a Notifier with no
@@ -191,6 +193,7 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 		domainHealthCheckInterval: domainHealthCheckInterval, domainHealthThrottle: newDomainHealthThrottle(),
 		backupMissingGracePeriod: backupMissingGracePeriod,
 		slo:                      SLOPolicyFromEnv(), sloThrottle: newDomainHealthThrottle(), sloSeverity: make(map[string]string),
+		logRule: newLogRuleRuntime(),
 	}
 }
 
@@ -418,6 +421,19 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindLogPattern, KindLogLevelRate:
+			if e.logs == nil {
+				continue
+			}
+			var skip bool
+			next, skip, err = e.evaluateLogRule(ctx, r, now)
+			if skip {
+				continue
+			}
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindControlPlaneBackupStale:
 			if e.cpBackups == nil {
 				// Scheduled backups are disabled: nothing to be stale.
@@ -609,6 +625,9 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 
 	if r.Kind == KindSLOBurn && !resolved {
 		ev.SLONotice = sloNotice
+	}
+	if (r.Kind == KindLogPattern || r.Kind == KindLogLevelRate) && !resolved {
+		ev.LogNotice, ev.LogLines = e.logRule.take(r.ID)
 	}
 
 	if !resolved {

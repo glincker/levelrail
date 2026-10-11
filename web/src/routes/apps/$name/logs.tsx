@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   ArchiveIcon,
+  BugIcon,
   TerminalIcon,
   MagnifyingGlassIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -8,13 +11,20 @@ import { useDeployStatus } from '../../../queries/deploys'
 import { LogSearchPanel } from '../../../components/LogSearchPanel'
 import { LiveLogViewer } from '../../../components/LiveLogViewer'
 import { LogArchivePanel } from '../../../components/LogArchivePanel'
+import { LogSignaturesPanel } from '../../../components/LogSignaturesPanel'
+import {
+  CreateLogAlertDialog,
+  type LogAlertDefaults,
+} from '../../../components/CreateLogAlertDialog'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { parseLogsSearch, type LogsTab } from '../../../lib/observabilitySearch'
+import { signatureToRegex } from '../../../lib/logExplorer'
 
-// App-scoped logs section: a live-tailing terminal plus stored search and
-// the archive. Search filters and the time window live in the URL (`tab`,
-// `q`, `level`, `container`, `stream`, `field`, `from`, `to`) so a link from
-// a metrics spike or a copied permalink reproduces the exact view.
+// App-scoped logs section: a live-tailing terminal plus stored search, error
+// signatures and the archive. Search filters and the time window live in the
+// URL (`tab`, `q`, `level`, `container`, `stream`, `field`, `signature`,
+// `from`, `to`) so a link from a metrics spike or a copied permalink
+// reproduces the exact view.
 export const Route = createFileRoute('/apps/$name/logs')({
   validateSearch: parseLogsSearch,
   component: LogsSection,
@@ -24,10 +34,14 @@ function LogsSection() {
   const { name } = Route.useParams()
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
+  const { t } = useTranslation('observability')
   // Same cache key the Overview route primes: lets an empty live tail say
   // why (the app's current reconcile condition).
   const { data: conditions } = useDeployStatus(name)
   const tab: LogsTab = search.tab ?? (search.from ? 'search' : 'live')
+  const [alertDefaults, setAlertDefaults] = useState<LogAlertDefaults | null>(
+    null,
+  )
 
   return (
     <Tabs
@@ -48,6 +62,10 @@ function LogsSection() {
         <TabsTrigger value="search" className="gap-1.5">
           <MagnifyingGlassIcon className="size-4" aria-hidden="true" />
           Search
+        </TabsTrigger>
+        <TabsTrigger value="errors" className="gap-1.5">
+          <BugIcon className="size-4" aria-hidden="true" />
+          {t('explorer.tabErrors')}
         </TabsTrigger>
         <TabsTrigger value="archive" className="gap-1.5">
           <ArchiveIcon className="size-4" aria-hidden="true" />
@@ -70,9 +88,45 @@ function LogsSection() {
           }}
         />
       </TabsContent>
+      <TabsContent value="errors" className="flex-1">
+        <LogSignaturesPanel
+          appName={name}
+          onViewLines={(sig, range) => {
+            void navigate({
+              search: {
+                tab: 'search',
+                signature: sig.id,
+                level: sig.level || undefined,
+                from: range.from.toISOString(),
+                to: range.to.toISOString(),
+              },
+              replace: true,
+            })
+          }}
+          onAlert={(sig) => {
+            setAlertDefaults({
+              name: t('explorer.alertDefaultName', { app: name }),
+              regex: signatureToRegex(sig.template),
+              level: sig.level || 'error',
+            })
+          }}
+        />
+      </TabsContent>
       <TabsContent value="archive" className="flex-1 overflow-y-auto">
         <LogArchivePanel appName={name} />
       </TabsContent>
+      {alertDefaults ? (
+        <CreateLogAlertDialog
+          appName={name}
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setAlertDefaults(null)
+            }
+          }}
+          defaults={alertDefaults}
+        />
+      ) : null}
     </Tabs>
   )
 }

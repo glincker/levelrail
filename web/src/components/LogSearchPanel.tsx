@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  BellRingingIcon,
   CheckIcon,
   DownloadSimpleIcon,
   LinkIcon,
   MagnifyingGlassIcon,
+  TextAlignLeftIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { LogFilterBar } from './LogFilterBar'
@@ -21,9 +22,19 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { buttonVariants } from './ui/button'
 import { Input } from './ui/input'
 import { LogSearchEmptyState } from './LogSearchEmptyState'
-import { LogLevelChips, LogLevelGutter } from './LogLevelChips'
+import { LogSearchRows } from './LogSearchRows'
+import { SavedLogQueriesMenu } from './SavedLogQueriesMenu'
+import { CreateLogAlertDialog } from './CreateLogAlertDialog'
+import { LogEntryDetail } from './LogEntryDetail'
+import { useLogShortcuts } from '../hooks/useLogShortcuts'
 import {
-  bucketOf,
+  rangeSeconds,
+  rememberQuery,
+  type RecentQuery,
+} from '../lib/logExplorer'
+import type { LogQuerySpec } from '../types/logExplorer'
+import { LogLevelChips } from './LogLevelChips'
+import {
   countLevels,
   filterByLevels,
   summarizeShown,
@@ -52,7 +63,8 @@ import { TimeRangeControls } from './TimeRangeControls'
 // TanStack Virtual) because that's still the right look for a log line,
 // not because it shares any code path with it.
 
-const ROW_HEIGHT_PX = 22
+// Relative range keys a saved query can reproduce.
+const TIME_RANGE_KEYS: TimeRangeKey[] = ['15m', '1h', '6h', '24h', '7d', '30d']
 const SEARCH_DEBOUNCE_MS = 300
 // Newest entries fetched per search; the response total says how many matched.
 const LOG_SEARCH_LIMIT = 1000
@@ -106,10 +118,15 @@ export function LogSearchPanel({
   const [refreshNonce, setRefreshNonce] = useState(0)
   const [levels, setLevels] = useState<ReadonlySet<LevelBucket>>(new Set())
   const [copied, setCopied] = useState(false)
+  const [wrap, setWrap] = useState(false)
+  const [selected, setSelected] = useState<number | null>(null)
+  const [alertOpen, setAlertOpen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const trimmedQuery = debouncedQuery.trim()
   useEffect(() => {
     if (trimmedQuery !== (filters.q ?? '')) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       update({ q: trimmedQuery || undefined })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,6 +161,7 @@ export function LogSearchPanel({
     container: filters.container,
     stream: filters.stream,
     fields: fieldFilters,
+    signature: filters.signature,
   }
 
   const { data, isLoading, error } = useLogSearch(appName, {
@@ -173,19 +191,66 @@ export function LogSearchPanel({
     [loaded, levels],
   )
   const search = { query: debouncedQuery, rangeKey, setQuery, setRangeKey }
-
-  // A state-backed callback ref (not useRef): useVirtualizer needs a
-  // re-render once the scroll container actually mounts so
-  // getScrollElement has something to measure, which a plain ref alone
-  // does not trigger.
-  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null)
-
-  const virtualizer = useVirtualizer({
-    count: entries.length,
-    getScrollElement: () => scrollEl,
-    estimateSize: () => ROW_HEIGHT_PX,
-    overscan: 20,
+  const current: RecentQuery = {
+    q: trimmedQuery || undefined,
+    level: filters.level,
+    field: filters.field,
+  }
+  const currentSpec: LogQuerySpec = {
+    q: current.q,
+    level: filters.level,
+    stream: filters.stream,
+    fields: filters.field,
+    container: filters.container,
+    range: rangeKey,
+  }
+  useEffect(() => {
+    if (data) {
+      rememberQuery(appName, current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
+  const applySpec = (spec: LogQuerySpec) => {
+    const secs = rangeSeconds(spec.range)
+    const key = TIME_RANGE_KEYS.find((k) => rangeSeconds(k) === secs)
+    if (key) {
+      setRangeKeyState(key)
+    }
+    setQuery(spec.q ?? '')
+    update({
+      q: spec.q,
+      level: spec.level,
+      stream: spec.stream,
+      container: spec.container,
+      field: spec.fields?.length ? spec.fields : undefined,
+      signature: undefined,
+      from: spec.from,
+      to: spec.to,
+    })
+  }
+  const addFieldFilter = (path: string, value: string) => {
+    const next = `${path}=${value}`
+    if (!(filters.field ?? []).includes(next)) {
+      update({ field: [...(filters.field ?? []), next] })
+    }
+  }
+  useLogShortcuts({
+    focusSearch: () => searchInputRef.current?.focus(),
+    toggleWrap: () => {
+      setWrap((w) => !w)
+    },
+    next: () => {
+      setSelected((i) => Math.min(entries.length - 1, (i ?? -1) + 1))
+    },
+    previous: () => {
+      setSelected((i) => Math.max(0, (i ?? 1) - 1))
+    },
+    close: () => {
+      setSelected(null)
+    },
   })
+
+  const selectedEntry = selected === null ? undefined : entries[selected]
 
   return (
     // id is a scroll-to-anchor target for AlertRulesPanel's "View logs"
@@ -216,6 +281,35 @@ export function LogSearchPanel({
             setRefreshNonce((n) => n + 1)
           }}
         >
+          <SavedLogQueriesMenu
+            appName={appName}
+            current={current}
+            currentSpec={currentSpec}
+            onApply={applySpec}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setAlertOpen(true)
+            }}
+          >
+            <BellRingingIcon className="size-3.5" aria-hidden="true" />
+            {t('explorer.alertFromSearch')}
+          </Button>
+          <Button
+            type="button"
+            variant={wrap ? 'secondary' : 'outline'}
+            size="sm"
+            aria-pressed={wrap}
+            onClick={() => {
+              setWrap((w) => !w)
+            }}
+          >
+            <TextAlignLeftIcon className="size-3.5" aria-hidden="true" />
+            {t('explorer.wrap')}
+          </Button>
           <a
             href={logDownloadURL(appName, queryState)}
             download
@@ -246,6 +340,7 @@ export function LogSearchPanel({
           aria-hidden="true"
         />
         <Input
+          ref={searchInputRef}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
@@ -267,6 +362,21 @@ export function LogSearchPanel({
           </button>
         ) : null}
       </div>
+
+      {filters.signature ? (
+        <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+          {t('explorer.signatureFilter', { id: filters.signature })}
+          <button
+            type="button"
+            className="underline"
+            onClick={() => {
+              update({ signature: undefined })
+            }}
+          >
+            {t('explorer.clearSignature')}
+          </button>
+        </p>
+      ) : null}
 
       <LogFilterBar
         containers={data?.containers ?? []}
@@ -317,107 +427,39 @@ export function LogSearchPanel({
                 {debouncedQuery ? ` matching "${debouncedQuery}"` : ''}
               </p>
             </div>
-            <div
-              ref={setScrollEl}
-              className="h-[50vh] overflow-auto rounded-lg border border-neutral-800 bg-neutral-950 font-mono text-xs leading-5 text-neutral-200"
-            >
-              <div
-                style={{
-                  height: virtualizer.getTotalSize(),
-                  position: 'relative',
+            <LogSearchRows
+              entries={entries}
+              showContainer={(data?.containers.length ?? 0) > 1}
+              wrap={wrap}
+              selected={selected}
+              onSelect={setSelected}
+            />
+            {selectedEntry ? (
+              <LogEntryDetail
+                appName={appName}
+                entry={selectedEntry}
+                onAddFilter={addFieldFilter}
+                onClose={() => {
+                  setSelected(null)
                 }}
-              >
-                {virtualizer.getVirtualItems().map((virtualRow) => {
-                  const entry = entries[virtualRow.index]
-                  if (!entry) {
-                    return null
-                  }
-                  return (
-                    <div
-                      key={virtualRow.key}
-                      data-index={virtualRow.index}
-                      ref={virtualizer.measureElement}
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: ROW_HEIGHT_PX,
-                        transform: `translateY(${virtualRow.start}px)`,
-                      }}
-                      className="flex items-baseline gap-2 truncate pr-3"
-                    >
-                      <LogLevelGutter
-                        level={entry.level}
-                        bucket={bucketOf(entry.level)}
-                      />
-                      <span className="shrink-0 text-neutral-500">
-                        {new Date(entry.timestamp).toLocaleTimeString()}
-                      </span>
-                      <span
-                        className={`shrink-0 rounded px-1 text-[0.65rem] uppercase ${
-                          entry.stream === 'stderr'
-                            ? 'bg-red-900/40 text-red-300'
-                            : 'bg-neutral-800 text-neutral-400'
-                        }`}
-                      >
-                        {entry.stream}
-                      </span>
-                      {entry.container && (data?.containers.length ?? 0) > 1 ? (
-                        <span className="shrink-0 font-mono text-[0.65rem] text-neutral-500">
-                          {entry.container.slice(0, 8)}
-                        </span>
-                      ) : null}
-                      {entry.structured ? (
-                        <span className="shrink-0 rounded bg-sky-900/40 px-1 text-[0.65rem] uppercase text-sky-300">
-                          json
-                        </span>
-                      ) : null}
-                      <span
-                        className={`truncate whitespace-pre ${
-                          entry.stream === 'stderr'
-                            ? 'text-red-400'
-                            : 'text-neutral-200'
-                        }`}
-                      >
-                        {entry.structured
-                          ? formatStructuredFields(entry.fields, entry.message)
-                          : entry.message}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+              />
+            ) : null}
           </>
         )}
       </div>
+      {alertOpen ? (
+        <CreateLogAlertDialog
+          appName={appName}
+          open={alertOpen}
+          onOpenChange={setAlertOpen}
+          defaults={{
+            name: t('explorer.alertDefaultName', { app: appName }),
+            query: current.q,
+            level: filters.level,
+            fields: filters.field,
+          }}
+        />
+      ) : null}
     </section>
   )
-}
-
-// Structured entries render as compact `key=value` pairs instead of the
-// raw JSON message, keeping the monospace row style's fixed line height
-// (a pretty-printed multi-line JSON block would break the virtualizer's
-// fixed-size row assumption, same estimateSize/ROW_HEIGHT_PX approach
-// the live build-log viewer uses). Falls back to the raw message if
-// `fields` came back empty for some reason (logs.go's own contract
-// allows Structured=true with FieldsJSON omitted, see toLogEntryResource).
-function formatStructuredFields(
-  fields: Record<string, unknown> | undefined,
-  fallbackMessage: string,
-): string {
-  if (!fields || Object.keys(fields).length === 0) {
-    return fallbackMessage
-  }
-  return Object.entries(fields)
-    .map(([key, value]) => `${key}=${stringifyFieldValue(value)}`)
-    .join(' ')
-}
-
-function stringifyFieldValue(value: unknown): string {
-  if (typeof value === 'string') {
-    return value
-  }
-  return JSON.stringify(value)
 }

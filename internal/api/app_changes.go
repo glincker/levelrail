@@ -8,6 +8,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 // changeAggregator builds the change aggregator over whichever sources this
@@ -27,7 +28,11 @@ func (rt *Router) changeAggregator() *changes.Aggregator {
 	if rt.auditLog != nil {
 		au = rt.auditLog
 	}
-	return changes.New(ev, dp, au, rt.logger)
+	agg := changes.New(ev, dp, au, rt.logger)
+	if rt.telemetry != nil {
+		agg.Logs = telemetry.NewSignatureDetector{Src: rt.telemetry, MaxRows: logSignatureMaxRows()}
+	}
+	return agg
 }
 
 // handleAppChanges handles GET /api/v1/apps/{name}/changes: what changed on

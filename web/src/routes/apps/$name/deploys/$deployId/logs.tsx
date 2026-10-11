@@ -31,6 +31,7 @@ import { DeploySection } from '../../../../../components/DeploySection'
 import { DeployFailureSummaryCard } from '../../../../../components/DeployFailureSummaryCard'
 import { deployStageAnchorId } from '../../../../../lib/deployFailureSummary'
 import { DeployMetaCard } from '../../../../../components/DeployMetaCard'
+import { DeployNewErrorTypes } from '../../../../../components/DeployNewErrorTypes'
 import { DeployQuickLinks } from '../../../../../components/DeployQuickLinks'
 import { DeployStageTimeline } from '../../../../../components/DeployStageTimeline'
 import { ConditionsPanel } from '../../../../../components/ConditionsPanel'
@@ -127,6 +128,7 @@ function DeployLogsPage() {
               attempt.source === 'webhook' ? gitSource?.branch : undefined
             }
           />
+          <DeployNewErrorTypes appName={name} startedAt={attempt.started_at} />
 
           <DeployFailureSummaryCard
             appName={name}

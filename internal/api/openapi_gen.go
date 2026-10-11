@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 997 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1002 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -728,6 +728,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/log-archive/policy", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteLogArchivePolicy", Description: ""},
 	{Method: "PUT", Path: "/api/v1/log-archive/policy", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetLogArchivePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/log-archive/runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListLogArchiveRuns", Description: ""},
+	{Method: "GET", Path: "/api/v1/logs/queries", Ability: "AbilityRead", Group: "Other", Handler: "handleListSavedLogQueries", Description: ""},
+	{Method: "POST", Path: "/api/v1/logs/queries", Ability: "AbilityRead", Group: "Other", Handler: "handleCreateSavedLogQuery", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleDeleteSavedLogQuery", Description: ""},
+	{Method: "PUT", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleUpdateSavedLogQuery", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
 	{Method: "GET", Path: "/api/v1/mesh/connectivity", Ability: "AbilityRoot", Group: "Other", Handler: "handleMeshConnectivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMeshSettings", Description: ""},
@@ -1013,6 +1017,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/resource-usage", Ability: "AbilityRead", Group: "Telemetry", Handler: "handleAppResourceUsage", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/logs", Ability: "AbilityRead", Group: "Telemetry", Handler: "handleQueryLogs", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/logs/download", Ability: "AbilityRead", Group: "Telemetry", Handler: "handleDownloadLogs", Description: "Log export (a plain-text attachment of a bounded window, see logs_download.go): same AbilityRead boundary as the query/stream routes above, since it reads the same store through the same telemetry.QueryLogs call, nothing more sensitive than either."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/logs/signatures", Ability: "AbilityRead", Group: "Telemetry", Handler: "handleLogSignatures", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/logs/stream", Ability: "AbilityRead", Group: "Telemetry", Handler: "handleLiveLogStream", Description: "Live log tail (additive to the historical search route just above, see handleLiveLogStream's own doc comment): AbilityRead, the same passive-visibility boundary as every other view of telemetry data in this router, including the deploy-log stream at GET .../deploys/{deployId}/logs above."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/metrics", Ability: "AbilityRead", Group: "Telemetry", Handler: "handleQueryMetrics", Description: "Telemetry query: metrics and logs for one app, fanned out through a Federator (today, exactly one local source)."},
 }

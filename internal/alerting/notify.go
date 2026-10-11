@@ -85,6 +85,10 @@ type Event struct {
 	// tripped and how much error budget is left.
 	SLONotice string
 
+	// LogNotice is set for a firing log_pattern or log_level_rate event: the
+	// count or rate that tripped. LogLines then holds the matching samples.
+	LogNotice string
+
 	// Changes is what changed on the app shortly before it fired; set for
 	// firing app-scoped events only. ChangesLink points at its dashboard page.
 	Changes     *changes.Result
@@ -212,6 +216,7 @@ type genericPayload struct {
 	Severity             string     `json:"severity,omitempty"`
 
 	SLONotice     string           `json:"slo_notice,omitempty"`
+	LogNotice     string           `json:"log_notice,omitempty"`
 	RecentChanges []changes.Change `json:"recent_changes,omitempty"`
 	ChangesLink   string           `json:"changes_link,omitempty"`
 }
@@ -235,6 +240,7 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		Severity:             ev.Rule.Severity,
 		ChangesLink:          ev.ChangesLink,
 		SLONotice:            ev.SLONotice,
+		LogNotice:            ev.LogNotice,
 	}
 	if ev.Changes != nil {
 		payload.RecentChanges = ev.Changes.Changes[:min(len(ev.Changes.Changes), changes.NotifyMaxLines)]
@@ -723,8 +729,15 @@ func summaryBody(ev Event) string {
 	if len(ev.GroupNotices) > 0 {
 		fmt.Fprintf(&b, "\nAlerts:\n- %s", strings.Join(ev.GroupNotices, "\n- "))
 	}
+	if ev.LogNotice != "" {
+		fmt.Fprintf(&b, "\n%s", ev.LogNotice)
+	}
 	if len(ev.LogLines) > 0 {
-		fmt.Fprintf(&b, "\nLast %d log lines:\n```\n%s\n```", len(ev.LogLines), strings.Join(ev.LogLines, "\n"))
+		label := "Last"
+		if ev.LogNotice != "" {
+			label = "Matching sample"
+		}
+		fmt.Fprintf(&b, "\n%s %d log lines:\n```\n%s\n```", label, len(ev.LogLines), strings.Join(ev.LogLines, "\n"))
 	}
 	if len(ev.CertNotices) > 0 {
 		fmt.Fprintf(&b, "\nCertificates:\n- %s", strings.Join(ev.CertNotices, "\n- "))

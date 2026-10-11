@@ -1023,7 +1023,7 @@ func run(logger *slog.Logger) error {
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
 	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
-	alertingEngine.SetChanges(changes.New(db, db, db, logger), alertDashboardLink())
+	alertingEngine.SetChanges(withLogSignatures(changes.New(db, db, db, logger), alertingFederator), alertDashboardLink())
 	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))
 	go func() {
 		if err := apiRouter.RunStatusPageSampler(ctx); err != nil && !errors.Is(err, context.Canceled) {

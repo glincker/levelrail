@@ -332,7 +332,7 @@ type EditAlertRuleFormOutput = z.output<typeof editAlertRuleSchema>
 function defaultsFromRule(rule: AlertRule): EditAlertRuleFormInput {
   return {
     name: rule.name,
-    kind: rule.kind,
+    kind: rule.kind as EditAlertRuleFormInput['kind'],
     metric: rule.metric ?? '',
     comparator: rule.comparator ?? '>',
     threshold: rule.threshold,
