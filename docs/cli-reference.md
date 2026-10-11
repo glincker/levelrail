@@ -1151,6 +1151,19 @@ levelrail-cli doctor [flags]
 
 Runs a local preflight health check: Docker daemon reachability, disk space and write latency, write access on the data directory, port 80 and 443 availability for the embedded ingress, control plane database reachability, RAM and CPU against the recommended minimums, firewall status, outbound network reachability (public IP, external port reachability, ACME, clock skew, the agent advertise host, image registries), and GPU attach checks. Exit code is 0 if every check is ok or warn, 1 if any check fails.
 
+## Proxy
+
+```
+levelrail-cli proxy [--domain D | --app NAME] [--proxy traefik|nginx|caddy] [--verify] [flags]
+levelrail-cli proxy setup [--confirm] [--dynamic-dir DIR] [flags]
+levelrail-cli proxy status [flags]
+levelrail-cli proxy apply [flags]
+levelrail-cli proxy verify [--domain D] [flags]
+levelrail-cli proxy disable [flags]
+```
+
+Without a subcommand: shows which container publishes ports 80 and 443 and the configuration to paste into that proxy, for the dashboard (`--domain`) or an app's domain (`--app`, upstream is the ingress HTTP port). `setup` detects a Traefik (Coolify's included) and, with `--confirm`, turns on `tls_terminated_upstream`, saves the detected entrypoints, certificate resolver, directory and upstream host, writes one route file per domain and verifies each over HTTPS; without `--confirm` it is a dry run. It exits with an API error and the precise gap (`detection_incomplete`, `upstream_unreachable` with the drop-in fix, `not_writable`) when it cannot proceed. `status` prints detection, per-domain state (`missing`, `written`, `stale`, `error`), certificate issuer and expiry, and the checklist. `apply` rewrites the files now, `verify` probes again, `disable` removes the files it wrote. Writes need a root scoped token. Details: [Run behind an existing proxy](behind-an-existing-proxy.md#one-step-setup-traefik-including-coolify).
+
 ## Containers
 
 ```

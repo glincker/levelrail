@@ -36,10 +36,10 @@ type ApplyResult struct {
 }
 
 // Apply converges the directory on want: writes missing or different files,
-// leaves identical ones alone, and removes managed files no longer wanted.
-// Safe to repeat after an interruption; files it did not write are never
-// touched.
-func Apply(d *Dir, want []File) (ApplyResult, error) {
+// leaves identical ones alone, and removes managed files neither wanted nor
+// in keep. Safe to repeat after an interruption; files it did not write are
+// never touched.
+func Apply(d *Dir, want []File, keep map[string]bool) (ApplyResult, error) {
 	have, foreign, err := d.Managed()
 	if err != nil {
 		return ApplyResult{}, err
@@ -57,7 +57,7 @@ func Apply(d *Dir, want []File) (ApplyResult, error) {
 	}
 	names := make([]string, 0, len(have))
 	for name := range have {
-		if !wanted[name] {
+		if !wanted[name] && !keep[name] {
 			names = append(names, name)
 		}
 	}

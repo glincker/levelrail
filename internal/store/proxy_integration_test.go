@@ -41,7 +41,7 @@ func TestProxyRouteStatus_Lifecycle(t *testing.T) {
 	if err := db.MarkProxyRouteWritten(ctx, "a.example.com", "app:web", "x-managed-a.example.com.yaml", at, true); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.SaveProxyRouteVerification(ctx, ProxyRouteStatus{Domain: "a.example.com", ProxyLoaded: ProxyLoadedYes, Reachable: true, StatusCode: 200, CertIssuer: "R11", CertTrusted: true, CertLetsEncrypt: true, VerifiedAt: at}); err != nil {
+	if err := db.SaveProxyRouteVerification(ctx, ProxyRouteStatus{Domain: "a.example.com", ProxyLoaded: ProxyLoadedYes, Reachable: true, StatusCode: 200, CertIssuer: "R11", CertTrusted: true, CertNotAfter: at.Add(90 * 24 * time.Hour), VerifiedAt: at}); err != nil {
 		t.Fatal(err)
 	}
 	// An unchanged rewrite keeps the verification and the first write time.
@@ -53,7 +53,7 @@ func TestProxyRouteStatus_Lifecycle(t *testing.T) {
 		t.Fatalf("ListProxyRouteStatus() = %v, %v", rows, err)
 	}
 	r := rows[0]
-	if !r.Written || r.LastError != "" || !r.Reachable || !r.CertLetsEncrypt || !r.VerifiedAt.Equal(at) || !r.WrittenAt.Equal(at) {
+	if !r.Written || r.LastError != "" || !r.Reachable || !r.CertNotAfter.Equal(at.Add(90*24*time.Hour)) || !r.VerifiedAt.Equal(at) || !r.WrittenAt.Equal(at) {
 		t.Errorf("unexpected row %+v", r)
 	}
 	// A changed file clears the verification so it is probed again.
@@ -61,7 +61,7 @@ func TestProxyRouteStatus_Lifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	rows, _ = db.ListProxyRouteStatus(ctx)
-	if !rows[0].VerifiedAt.IsZero() || !rows[0].WrittenAt.Equal(at.Add(2*time.Hour)) {
+	if !rows[0].VerifiedAt.IsZero() || rows[0].Reachable || rows[0].ProxyLoaded != ProxyLoadedUnknown || !rows[0].WrittenAt.Equal(at.Add(2*time.Hour)) {
 		t.Errorf("changed write did not reset verification: %+v", rows[0])
 	}
 	if err := db.DeleteProxyRouteStatus(ctx, "a.example.com"); err != nil {

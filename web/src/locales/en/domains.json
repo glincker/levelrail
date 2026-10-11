@@ -40,6 +40,7 @@
     "http01": "HTTP-01: the certificate is requested automatically once the domain resolves here. Ports 80 and 443 must reach this server from the internet.",
     "dns01Private": "HTTP-01 cannot work: this server's address ({{host}}) is private, so no certificate authority can reach port 80. Use DNS-01 with a wildcard domain such as *.example.com.",
     "dns01Wildcard": "Wildcard domains are validated with DNS-01, which needs a DNS provider connected.",
+    "upstreamProxy": "The reverse proxy in front of this server obtains and renews the certificate. Point the domain at this server; the proxy must route it here.",
     "providerActive": "DNS-01 provider: {{provider}}. Certificates for wildcard domains are issued through it.",
     "providerNone": "No DNS-01 provider is connected yet.",
     "setupStep": "Next step: connect Cloudflare or Route53 on the Domains page, then add a wildcard domain for your zone.",

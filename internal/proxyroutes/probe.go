@@ -28,12 +28,12 @@ type ProbeTarget struct {
 
 // ProbeResult is the outcome of Probe.
 type ProbeResult struct {
-	Reachable       bool
-	StatusCode      int
-	CertIssuer      string
-	CertTrusted     bool
-	CertLetsEncrypt bool
-	Err             string
+	Reachable    bool
+	StatusCode   int
+	CertIssuer   string
+	CertNotAfter time.Time
+	CertTrusted  bool
+	Err          string
 }
 
 // traefikNotFound is the body Traefik answers with when no router matched.
@@ -57,7 +57,7 @@ func Probe(ctx context.Context, t ProbeTarget) ProbeResult {
 			}
 			leaf := cs.PeerCertificates[0]
 			res.CertIssuer = issuerName(leaf)
-			res.CertLetsEncrypt = isLetsEncrypt(leaf)
+			res.CertNotAfter = leaf.NotAfter
 			inter := x509.NewCertPool()
 			for _, c := range cs.PeerCertificates[1:] {
 				inter.AddCert(c)
@@ -115,15 +115,6 @@ func issuerName(c *x509.Certificate) string {
 		return c.Issuer.Organization[0]
 	}
 	return "unknown"
-}
-
-func isLetsEncrypt(c *x509.Certificate) bool {
-	for _, o := range c.Issuer.Organization {
-		if strings.EqualFold(o, "Let's Encrypt") {
-			return true
-		}
-	}
-	return false
 }
 
 // RouterLoaded asks Traefik's API at base (http://127.0.0.1:8080) whether

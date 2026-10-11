@@ -192,7 +192,7 @@ func (d *Dir) Write(name string, content []byte) error {
 	}
 	tmp, err := os.CreateTemp(d.real, "."+d.ns.FilePrefix()+"*.tmp")
 	if err != nil {
-		return fmt.Errorf("create temp file in %s: %w", d.path, err)
+		return &NotWritableError{Dir: d.path, Reason: notWritableReason(d.path, err)}
 	}
 	done := false
 	defer func() {

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 814 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 819 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -334,6 +334,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/oauth/{provider}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateOAuthProviderSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/observability", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetObservabilitySettings", Description: "Observability settings: the external Grafana/dashboard link, same precedent as email settings just above. GET is AbilityRead; PUT is AbilityRoot, matching every other instance-level config row."},
 	{Method: "PUT", Path: "/api/v1/settings/observability", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateObservabilitySettings", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/proxy-integration", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateProxyIntegrationSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/push-subscriptions", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListPushSubscriptions", Description: ""},
 	{Method: "POST", Path: "/api/v1/settings/push-subscriptions", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreatePushSubscription", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/push-subscriptions/vapid-public-key", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetPushVAPIDPublicKey", Description: "Browser push notification subscriptions (push_subscriptions.go): one admin account's registered browsers, the delivery target for the \"webpush\" notification-channel kind. Self-service like passkeys above, so requireAuth not requireAbility."},
@@ -810,6 +811,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/system/master-key/rotate", Ability: "AbilityRoot", Group: "System", Handler: "handleRotateMasterKey", Description: "Master key rotation re-wraps every stored DEK live: AbilityRoot, the same fleet-wide-blast-radius tier as prune above, not AbilityWrite (SecretSetter's own gate for a single app's values)."},
 	{Method: "GET", Path: "/api/v1/system/orphans", Ability: "AbilityRead", Group: "System", Handler: "handleListOrphans", Description: "Orphaned named volumes: detection is a read (AbilityRead), the cleanup that actually deletes one is the same AbilityRoot, fleet-wide, no-undo tier system/prune sits behind, not AbilityWrite."},
 	{Method: "POST", Path: "/api/v1/system/orphans/reap", Ability: "AbilityRoot", Group: "System", Handler: "handleReapOrphans", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/proxy-integration", Ability: "AbilityRead", Group: "System", Handler: "handleGetProxyIntegration", Description: ""},
+	{Method: "POST", Path: "/api/v1/system/proxy-integration/apply", Ability: "AbilityRoot", Group: "System", Handler: "handleApplyProxyIntegration", Description: ""},
+	{Method: "POST", Path: "/api/v1/system/proxy-integration/setup", Ability: "AbilityRoot", Group: "System", Handler: "handleSetupProxyIntegration", Description: ""},
+	{Method: "POST", Path: "/api/v1/system/proxy-integration/verify", Ability: "AbilityRoot", Group: "System", Handler: "handleVerifyProxyIntegration", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/prune", Ability: "AbilityRoot", Group: "System", Handler: "handleSystemPrune", Description: "POST /system/prune deletes real Docker resources (stopped containers, dangling images, anonymous volumes, unused build cache) fleet-wide, not scoped to one app: AbilityRoot, the same gate handleDrainNode uses for its own fleet-wide, no-undo action, not AbilityWrite (which a narrower, single-app token could hold)."},
 	{Method: "GET", Path: "/api/v1/system/reverse-proxy", Ability: "AbilityRead", Group: "System", Handler: "handleReverseProxyGuide", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/secrets/binding", Ability: "AbilityRead", Group: "System", Handler: "handleGetSecretBinding", Description: ""},

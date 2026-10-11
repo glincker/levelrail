@@ -132,11 +132,17 @@ export function CertificateStepBody({
   const path = certificatePath(domain, check?.challenge, privateHost)
   const provider = check?.dns_provider ?? connectivity?.dns_provider ?? 'none'
   const host = check?.expected_host ?? connectivity?.host ?? ''
-  const needsDns01 = path !== 'http-01'
+  const needsDns01 = path === 'dns-01-private' || path === 'dns-01-wildcard'
   return (
     <div className="space-y-2 text-xs">
-      {path === 'http-01' ? (
-        <p className="text-foreground">{t('certificate.http01')}</p>
+      {path === 'http-01' || path === 'upstream-proxy' ? (
+        <p className="text-foreground">
+          {t(
+            path === 'http-01'
+              ? 'certificate.http01'
+              : 'certificate.upstreamProxy',
+          )}
+        </p>
       ) : (
         <Alert variant="destructive">
           <WarningCircleIcon aria-hidden="true" />

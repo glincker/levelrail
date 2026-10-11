@@ -33,7 +33,7 @@ func TestApply_AddUpdateRemoveIdempotent(t *testing.T) {
 		{"remove all", nil, map[string]bool{}, []string{"a.example.com"}},
 	}
 	for _, s := range steps {
-		res, err := Apply(d, s.want)
+		res, err := Apply(d, s.want, nil)
 		if err != nil {
 			t.Fatalf("%s: %v", s.name, err)
 		}
@@ -72,7 +72,7 @@ func TestApply_HalfSucceededPassConverges(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, foreignName), []byte("hand written\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	res, err := Apply(d, []File{a})
+	res, err := Apply(d, []File{a}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

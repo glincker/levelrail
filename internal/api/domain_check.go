@@ -147,7 +147,7 @@ type domainCheckResponse struct {
 	// ExpectedPrivate is true when the address Domain must point at is a
 	// private/LAN one, so no public CA can validate it over HTTP-01.
 	ExpectedPrivate bool `json:"expected_private,omitempty"`
-	// Challenge is "http-01" or "dns-01-required".
+	// Challenge is "http-01", "dns-01-required" or "upstream-proxy" (a proxy in front owns certificates).
 	Challenge string `json:"challenge,omitempty"`
 	// DNSProvider is the active DNS-01 provider: cloudflare, route53, none.
 	DNSProvider string `json:"dns_provider,omitempty"`

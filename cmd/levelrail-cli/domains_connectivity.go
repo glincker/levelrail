@@ -31,6 +31,8 @@ func challengeText(challenge string, private bool) string {
 		return "dns-01 required"
 	case challenge == "http-01":
 		return "http-01 (ports 80 and 443 must reach this server)"
+	case challenge == "upstream-proxy":
+		return "handled by the reverse proxy in front of this server: it obtains and renews the certificate, so ports 80 and 443 only need to reach the proxy"
 	}
 	return challenge
 }

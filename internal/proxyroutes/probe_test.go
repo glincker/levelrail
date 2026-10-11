@@ -46,8 +46,8 @@ func TestProbe(t *testing.T) {
 			if got.Reachable != tc.wantReachable || (tc.wantErr == "") != (got.Err == "") || !strings.Contains(got.Err, tc.wantErr) {
 				t.Errorf("Probe() = %+v", got)
 			}
-			if got.CertIssuer == "" || got.CertLetsEncrypt {
-				t.Errorf("issuer = %q le = %v", got.CertIssuer, got.CertLetsEncrypt)
+			if got.CertIssuer == "" || got.CertNotAfter.IsZero() {
+				t.Errorf("issuer = %q not_after = %v", got.CertIssuer, got.CertNotAfter)
 			}
 		})
 	}

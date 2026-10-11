@@ -27,7 +27,6 @@ const (
 )
 
 // ProxyIntegrationSettings is the single proxy_integration_settings row.
-// Empty override fields mean the detected value applies.
 type ProxyIntegrationSettings struct {
 	Mode            string
 	DynamicDir      string
@@ -50,19 +49,19 @@ func ValidProxyIntegrationMode(mode string) bool {
 // ProxyRouteStatus is one domain's managed route: what was written and the
 // outcome of the last end to end probe.
 type ProxyRouteStatus struct {
-	Domain          string
-	Target          string
-	FileName        string
-	Written         bool
-	WrittenAt       time.Time
-	ProxyLoaded     string
-	Reachable       bool
-	StatusCode      int
-	CertIssuer      string
-	CertTrusted     bool
-	CertLetsEncrypt bool
-	LastError       string
-	VerifiedAt      time.Time
+	Domain       string
+	Target       string
+	FileName     string
+	Written      bool
+	WrittenAt    time.Time
+	ProxyLoaded  string
+	Reachable    bool
+	StatusCode   int
+	CertIssuer   string
+	CertNotAfter time.Time
+	CertTrusted  bool
+	LastError    string
+	VerifiedAt   time.Time
 }
 
 // GetProxyIntegrationSettings returns the seeded singleton row.
@@ -113,7 +112,7 @@ func parseProxyTime(s string) time.Time {
 func (db *DB) ListProxyRouteStatus(ctx context.Context) ([]ProxyRouteStatus, error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT domain, target, file_name, written, written_at, proxy_loaded, reachable, status_code,
-		       cert_issuer, cert_trusted, cert_lets_encrypt, last_error, verified_at
+		       cert_issuer, cert_not_after, cert_trusted, last_error, verified_at
 		FROM proxy_route_status ORDER BY domain
 	`)
 	if err != nil {
@@ -123,15 +122,16 @@ func (db *DB) ListProxyRouteStatus(ctx context.Context) ([]ProxyRouteStatus, err
 	var out []ProxyRouteStatus
 	for rows.Next() {
 		var (
-			s                                 ProxyRouteStatus
-			written, reachable, trusted, isLE int
-			writtenAt, verifiedAt             string
+			s                               ProxyRouteStatus
+			written, reachable, trusted     int
+			writtenAt, verifiedAt, notAfter string
 		)
 		if err := rows.Scan(&s.Domain, &s.Target, &s.FileName, &written, &writtenAt, &s.ProxyLoaded, &reachable, &s.StatusCode,
-			&s.CertIssuer, &trusted, &isLE, &s.LastError, &verifiedAt); err != nil {
+			&s.CertIssuer, &notAfter, &trusted, &s.LastError, &verifiedAt); err != nil {
 			return nil, fmt.Errorf("store: scan proxy route status: %w", err)
 		}
-		s.Written, s.Reachable, s.CertTrusted, s.CertLetsEncrypt = written != 0, reachable != 0, trusted != 0, isLE != 0
+		s.Written, s.Reachable, s.CertTrusted = written != 0, reachable != 0, trusted != 0
+		s.CertNotAfter = parseProxyTime(notAfter)
 		s.WrittenAt, s.VerifiedAt = parseProxyTime(writtenAt), parseProxyTime(verifiedAt)
 		out = append(out, s)
 	}
@@ -153,8 +153,10 @@ func (db *DB) MarkProxyRouteWritten(ctx context.Context, domain, target, fileNam
 			written = 1,
 			written_at = CASE WHEN ? THEN excluded.written_at WHEN proxy_route_status.written_at = '' THEN excluded.written_at ELSE proxy_route_status.written_at END,
 			verified_at = CASE WHEN ? THEN '' ELSE proxy_route_status.verified_at END,
+			reachable = CASE WHEN ? THEN 0 ELSE proxy_route_status.reachable END,
+			proxy_loaded = CASE WHEN ? THEN 'unknown' ELSE proxy_route_status.proxy_loaded END,
 			last_error = CASE WHEN ? OR proxy_route_status.written = 0 THEN '' ELSE proxy_route_status.last_error END
-	`, domain, target, fileName, formatProxyTime(at), changed, changed, changed)
+	`, domain, target, fileName, formatProxyTime(at), changed, changed, changed, changed, changed)
 	if err != nil {
 		return fmt.Errorf("store: mark proxy route %s written: %w", domain, err)
 	}
@@ -179,9 +181,9 @@ func (db *DB) MarkProxyRouteFailed(ctx context.Context, domain, target, lastErro
 func (db *DB) SaveProxyRouteVerification(ctx context.Context, s ProxyRouteStatus) error {
 	_, err := db.ExecContext(ctx, `
 		UPDATE proxy_route_status SET proxy_loaded = ?, reachable = ?, status_code = ?, cert_issuer = ?,
-			cert_trusted = ?, cert_lets_encrypt = ?, last_error = ?, verified_at = ?
+			cert_not_after = ?, cert_trusted = ?, last_error = ?, verified_at = ?
 		WHERE domain = ?
-	`, s.ProxyLoaded, boolInt(s.Reachable), s.StatusCode, s.CertIssuer, boolInt(s.CertTrusted), boolInt(s.CertLetsEncrypt),
+	`, s.ProxyLoaded, boolInt(s.Reachable), s.StatusCode, s.CertIssuer, formatProxyTime(s.CertNotAfter), boolInt(s.CertTrusted),
 		s.LastError, formatProxyTime(s.VerifiedAt), s.Domain)
 	if err != nil {
 		return fmt.Errorf("store: save proxy route %s verification: %w", s.Domain, err)
