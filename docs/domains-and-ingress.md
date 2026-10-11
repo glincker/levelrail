@@ -384,6 +384,8 @@ GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/waf
 
 ## Domain redirects
 
+For force HTTPS, www and apex presets, aliases and other per-domain controls (headers, path forwarders, country rules, caching), see [Domain traffic controls](domain-traffic-controls.md).
+
 Route a domain to a different URL instead of proxying to a container. Use cases:
 
 - `www.example.com` to `example.com`
@@ -397,6 +399,8 @@ This uses Caddy's `static_response` handler with a `Location` header and redirec
 | --- | --- | --- |
 | `301` | Permanent (default) | Renames, www-to-apex normalization, or expected permanent moves |
 | `302` | Temporary | Redirects you plan to undo (browsers and search engines don't cache these) |
+| `307` | Temporary, keeps the method | Like 302, but a POST stays a POST |
+| `308` | Permanent, keeps the method | Like 301, but a POST stays a POST |
 
 ### Requirements
 
@@ -425,7 +429,7 @@ levelrail-cli domains redirect get|set|clear <app> <domain>
 levelrail-cli domains redirect set my-app www.example.com --target https://example.com
 ```
 
-Add `--temporary` for a `302`. The default is a permanent `301`.
+Add `--temporary` for a `302`, or `--status 307`/`--status 308`. The default is a permanent `301`. `--preset www-to-apex` or `--preset apex-to-www` sets up the www and apex pair instead of a fixed target. A redirect that would loop back to its own domain is refused.
 
 </Tab>
 <Tab value="API">
@@ -641,6 +645,11 @@ curl -v https://my-app.example.com
 ## Next steps
 
 <CardGroup :cols="2">
+<Card title="Domain traffic controls" href="/domain-traffic-controls">
+
+Headers, path forwarders, country rules, caching and redirects per domain.
+
+</Card>
 <Card title="ACME verification runbook" href="/acme-verification-runbook">
 
 Issue and verify a real Let's Encrypt certificate.

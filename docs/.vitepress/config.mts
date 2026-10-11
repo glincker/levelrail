@@ -112,6 +112,7 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Domains and ingress', link: '/domains-and-ingress' },
+          { text: 'Domain traffic controls', link: '/domain-traffic-controls' },
           { text: 'Load balancing', link: '/load-balancing' },
           { text: 'ACME verification runbook', link: '/acme-verification-runbook' },
           { text: 'Multi-node', link: '/multi-node' },
