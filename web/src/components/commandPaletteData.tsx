@@ -32,6 +32,7 @@ import {
   GavelIcon,
   RocketLaunchIcon,
   RobotIcon,
+  TerminalWindowIcon,
   BellIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { ExperimentalFeature } from '../lib/experimental'
@@ -149,6 +150,14 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     '/ai-assistant',
     'Navigate',
     'ai-chat',
+  ),
+  nav(
+    'nav-console',
+    'Console',
+    <TerminalWindowIcon />,
+    '/terminal',
+    'Navigate',
+    'cli-console',
   ),
   nav('nav-help', 'Help', <QuestionIcon />, '/help'),
   nav('settings-hub', 'Settings', <GearIcon />, '/settings', 'Settings'),

@@ -2,6 +2,8 @@ import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { XIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { filterByFeature } from '../../lib/experimental'
+import { useExperimentalFeatures } from '../../hooks/useExperimental'
 import { DOCK_TABS } from './dockTabs'
 import {
   DOCK_MIN_HEIGHT,
@@ -18,12 +20,14 @@ export default function DockPanel() {
   const { t } = useTranslation()
   const open = useDockOpen()
   const height = useDockHeight()
+  const experimental = useExperimentalFeatures()
+  const tabs = filterByFeature(DOCK_TABS, experimental)
   const [activeId, setActiveId] = React.useState(DOCK_TABS[0]?.id ?? '')
   const regionRef = React.useRef<HTMLElement>(null)
   const dragRef = React.useRef<{ startY: number; startHeight: number } | null>(
     null,
   )
-  const tab = DOCK_TABS.find((x) => x.id === activeId) ?? DOCK_TABS[0]
+  const tab = tabs.find((x) => x.id === activeId) ?? tabs[0]
 
   React.useEffect(() => {
     if (open) regionRef.current?.focus()
@@ -91,7 +95,7 @@ export default function DockPanel() {
       />
       <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1">
         <div role="tablist" className="flex items-center gap-1">
-          {DOCK_TABS.map((x) => {
+          {tabs.map((x) => {
             const Icon = x.icon
             const selected = x.id === tab.id
             return (

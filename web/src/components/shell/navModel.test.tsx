@@ -37,6 +37,7 @@ const EXPECTED_GLOBAL = [
   '/approvals',
   '/alerts',
   '/ai-assistant',
+  '/terminal',
   '/settings',
   '/help',
 ]

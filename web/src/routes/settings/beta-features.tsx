@@ -31,7 +31,7 @@ export const Route = createFileRoute('/settings/beta-features')({
 })
 
 interface BetaCard {
-  feature: 'resource-advisor' | 'ai-chat'
+  feature: 'resource-advisor' | 'ai-chat' | 'cli-console'
   title: string
   description: string
   toggleLabel: string
@@ -52,6 +52,14 @@ function BetaFeaturesPage() {
       toggleLabel: t('settings.aiChatToggleLabel'),
       turnedOn: t('settings.aiChatTurnedOn'),
       turnedOff: t('settings.aiChatTurnedOff'),
+    },
+    {
+      feature: 'cli-console',
+      title: t('settings.cliConsoleTitle'),
+      description: t('settings.cliConsoleDescription'),
+      toggleLabel: t('settings.cliConsoleToggleLabel'),
+      turnedOn: t('settings.cliConsoleTurnedOn'),
+      turnedOff: t('settings.cliConsoleTurnedOff'),
     },
     {
       feature: 'resource-advisor',

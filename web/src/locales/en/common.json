@@ -180,6 +180,35 @@
     },
     "newApp": "New app"
   },
+  "cliConsole": {
+    "title": "Console",
+    "description": "Runs the CLI as you. Every command is audited.",
+    "navLabel": "Console",
+    "terminalLabel": "CLI console terminal",
+    "pressEnter": "Press Enter to connect. A fresh confirmation is required.",
+    "connecting": "Connecting...",
+    "connected": "Connected to {{server}}. Type help to list commands.",
+    "disconnected": "Disconnected, press Enter to reconnect",
+    "connectFailed": "Could not connect, press Enter to try again",
+    "connectFailedWith": "Could not connect: {{message}}",
+    "reconnectHint": "Press Enter to try again",
+    "stepUpCancelled": "Confirmation cancelled.",
+    "exitCode": "exit code {{code}}",
+    "genericError": "Something went wrong.",
+    "unknownCommand": "Unknown command: {{name}}",
+    "helpIntro": "Available commands (Tab completes, help <command> lists subcommands):",
+    "helpLocal": "Also: help, clear. Ctrl+C cancels a running command, Ctrl+L clears the screen.",
+    "state": {
+      "idle": "Not connected",
+      "connecting": "Connecting",
+      "open": "Connected",
+      "closed": "Disconnected"
+    },
+    "dock": {
+      "offTitle": "Console is turned off",
+      "offDescription": "The CLI console is a beta feature and is off by default. An administrator can turn it on in Settings, Beta features."
+    }
+  },
   "dock": {
     "region": "Assistant dock",
     "toggle": "Toggle assistant dock",
@@ -187,7 +216,8 @@
     "close": "Close dock",
     "resize": "Resize dock",
     "tabs": {
-      "aiChat": "AI chat"
+      "aiChat": "AI chat",
+      "console": "Console"
     },
     "ai": {
       "notConfiguredTitle": "No AI provider configured",
