@@ -26,6 +26,8 @@ func runAppsGitSource(prog string, args []string, stdout, stderr io.Writer, look
 		return exitOK
 	case "detect":
 		return runAppsGitSourceDetect(prog, args[1:], stdout, stderr, lookupEnv)
+	case "commits":
+		return runAppsGitSourceCommits(prog, args[1:], stdout, stderr, lookupEnv)
 	case "get", "show":
 		return runAppsGitSourceGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "set":
@@ -47,6 +49,7 @@ func appsGitSourceUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps git-source get <name> [flags]                              show an app's connected repo
   %[1]s apps git-source show <name> [flags]                             same as get
+  %[1]s apps git-source commits <name> [--branch B] [flags]             newest commits with deploy status and suggestions
   %[1]s apps git-source set <name> --repo-url URL [flags]              connect (or edit) a repo for auto-deploy-on-push
   %[1]s apps git-source set <name> --build-type T --dockerfile P --base-directory D   change only the build settings
   %[1]s apps git-source detect <name> [--apply] [flags]                 list Dockerfiles and build roots found in the repo
