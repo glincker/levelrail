@@ -47,7 +47,7 @@ for f in "${files[@]}"; do
 		scripts/merge-coverprofiles.sh | scripts/check-brand-strings.sh | scripts/check-migration-versions.sh | scripts/check-flaky-tests.sh)
 		set_full "CI pipeline changed: $f"
 		;;
-	go.mod | go.sum | internal/store/migrations/*.sql)
+	go.mod | go.sum)
 		go=true go_full=true lint=all
 		reasons+=("import graph can't scope: $f")
 		;;

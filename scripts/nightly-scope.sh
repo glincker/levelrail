@@ -32,12 +32,20 @@ group_has() {
 }
 
 lanes=()
-flags='-race -shuffle=on -timeout=40m'
-if has ALL || [ "$pkgs" = "ALL" ] || has github.com/GLINCKER/levelrail/internal/api; then
-	for i in 1 2 3 4; do lanes+=("{\"lane\":\"api-$i\",\"group\":\"api\",\"shard\":\"$i/4\",\"flags\":\"$flags\"}"); done
+# -race is 3x or more on every lane, so the nightly applies it only where
+# goroutines live (the race lane) and, weekly, on the big api and docker lanes.
+flags='-shuffle=on -timeout=40m'
+heavy_race=''
+if [ "${NIGHTLY_RACE_ALL:-}" = true ] || [ "$(date -u +%u)" = 7 ]; then
+	heavy_race='-race '
 fi
-{ [ "${NIGHTLY_LIVE_ALWAYS:-}" = true ] || group_has docker; } && lanes+=('{"lane":"docker","group":"docker","shard":"","flags":"-race -shuffle=on -p 2 -timeout=45m"}')
-group_has rest && lanes+=('{"lane":"rest","group":"rest","shard":"","flags":"-race -shuffle=on -timeout=50m"}')
+if has ALL || [ "$pkgs" = "ALL" ] || has github.com/GLINCKER/levelrail/internal/api; then
+	for i in 1 2 3 4; do lanes+=("{\"lane\":\"api-$i\",\"group\":\"api\",\"shard\":\"$i/4\",\"flags\":\"${heavy_race}$flags\"}"); done
+fi
+{ [ "${NIGHTLY_LIVE_ALWAYS:-}" = true ] || group_has docker; } && lanes+=("{\"lane\":\"docker\",\"group\":\"docker\",\"shard\":\"\",\"flags\":\"${heavy_race}-shuffle=on -p 2 -timeout=45m\"}")
+group_has rest-heavy && lanes+=('{"lane":"rest-heavy","group":"rest-heavy","shard":"","flags":"-shuffle=on -timeout=40m"}')
+group_has rest-light && lanes+=('{"lane":"rest-light","group":"rest-light","shard":"","flags":"-shuffle=on -timeout=40m"}')
+group_has race && lanes+=('{"lane":"race","group":"race","shard":"","flags":"-race -shuffle=on -timeout=40m"}')
 
 matrix="[$(IFS=,; echo "${lanes[*]:-}")]"
 kit=false; install=false; sweep=false

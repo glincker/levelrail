@@ -180,6 +180,11 @@ Endpoints for:
 | POST | /api/v1/security/sessions/revoke-others | Public | handleRevokeOtherSecuritySessions |
 | GET | /api/v1/security/account | Public | handleGetAccountSecurity |
 | PUT | /api/v1/security/account | Public | handlePutAccountSecurity |
+| GET | /api/v1/settings/database-upgrades | AbilityRead | handleGetPlatformUpgradePolicy |
+| PUT | /api/v1/settings/database-upgrades | AbilityRoot | handlePutPlatformUpgradePolicy |
+| GET | /api/v1/settings/domain-automation | AbilityRead | handleGetDomainAutomation |
+| PUT | /api/v1/settings/domain-automation | AbilityRoot | handleUpdateDomainAutomation |
+| PUT | /api/v1/settings/proxy-integration | AbilityRoot | handleUpdateProxyIntegrationSettings |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -193,11 +198,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/settings/database-upgrades | AbilityRead | handleGetPlatformUpgradePolicy |
-| PUT | /api/v1/settings/database-upgrades | AbilityRoot | handlePutPlatformUpgradePolicy |
-| GET | /api/v1/settings/domain-automation | AbilityRead | handleGetDomainAutomation |
-| PUT | /api/v1/settings/domain-automation | AbilityRoot | handleUpdateDomainAutomation |
-| PUT | /api/v1/settings/proxy-integration | AbilityRoot | handleUpdateProxyIntegrationSettings |
 
 :::
 
