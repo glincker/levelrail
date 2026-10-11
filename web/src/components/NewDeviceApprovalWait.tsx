@@ -5,7 +5,7 @@ import { useFinishSignIn } from '../queries/auth'
 import { pollLoginApproval, type ApprovalPollStatus } from '../queries/signIn'
 import { useBrand } from '../hooks/useBrand'
 import { cliCommand } from '../lib/cliCommand'
-import { Alert, AlertDescription, AlertTitle } from './ui/alert'
+import { Alert, AlertDescription } from './ui/alert'
 import { Button } from './ui/button'
 import { TwoFactorVerifyForm } from './TwoFactorVerifyForm'
 
@@ -31,6 +31,16 @@ export function NewDeviceApprovalWait({
   const finish = useFinishSignIn()
   const [status, setStatus] = useState<ApprovalPollStatus>('pending')
   const [mfaToken, setMfaToken] = useState<string | null>(null)
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setNow(Date.now())
+    }, 1000)
+    return () => {
+      window.clearInterval(id)
+    }
+  }, [])
 
   useEffect(() => {
     if (status !== 'pending') {
@@ -59,43 +69,62 @@ export function NewDeviceApprovalWait({
     return <TwoFactorVerifyForm mfaToken={mfaToken} onBack={onBack} />
   }
 
-  const until = new Date(expiresAt).toLocaleTimeString()
+  const remaining = Math.max(
+    0,
+    Math.floor((new Date(expiresAt).getTime() - now) / 1000),
+  )
+  const effective: ApprovalPollStatus =
+    status === 'pending' && remaining === 0 ? 'expired' : status
+  const announced = Math.ceil(remaining / 30) * 30
   return (
     <div className="space-y-4">
-      {status === 'pending' || status === 'approved' ? (
-        <Alert>
-          <HourglassIcon />
-          <AlertTitle>{t('approval.waitingTitle')}</AlertTitle>
-          <AlertDescription>
-            <p>
-              {t('approval.waitingHint', {
-                cli: cliCommand(brand.BinaryName, 'auth code'),
-              })}
-            </p>
-            {matchNumber > 0 ? (
-              <div className="py-2 text-center">
-                <p className="text-xs text-muted-foreground">
-                  {t('approval.matchLabel')}
-                </p>
-                <p
-                  className="font-mono text-4xl font-semibold tracking-widest"
-                  data-testid="approval-match"
-                >
-                  {matchNumber}
-                </p>
-              </div>
-            ) : null}
-            <p className="font-mono text-xs">
-              {t('approval.reference', { id: approvalId })}
-            </p>
-            <p>{t('approval.expires', { time: until })}</p>
-          </AlertDescription>
-        </Alert>
+      {effective === 'pending' || effective === 'approved' ? (
+        <section
+          aria-labelledby="approval-title"
+          className="space-y-4 rounded-lg border border-border bg-card p-4 text-center"
+        >
+          <h2 id="approval-title" className="text-sm font-medium">
+            {t('approval.waitingTitle')}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t('approval.waitingHint', {
+              cli: cliCommand(brand.BinaryName, 'auth code'),
+            })}
+          </p>
+          {matchNumber > 0 ? (
+            <div>
+              <p className="text-xs text-muted-foreground">
+                {t('approval.matchLabel')}
+              </p>
+              <p
+                className="font-mono text-5xl font-semibold tracking-widest text-foreground tabular-nums"
+                data-testid="approval-match"
+                aria-label={t('approval.matchAria', { number: matchNumber })}
+              >
+                {matchNumber}
+              </p>
+            </div>
+          ) : null}
+          <p className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+            <HourglassIcon className="size-4" aria-hidden="true" />
+            <span aria-hidden="true" data-testid="approval-countdown">
+              {t('approval.countdown', { time: formatRemaining(remaining) })}
+            </span>
+          </p>
+          <p className="sr-only" role="status" aria-live="polite">
+            {t('approval.countdown', { time: formatRemaining(announced) })}
+          </p>
+          <p className="font-mono text-xs text-muted-foreground">
+            {t('approval.reference', { id: approvalId })}
+          </p>
+        </section>
       ) : (
         <Alert variant="destructive">
           <WarningIcon />
           <AlertDescription>
-            {status === 'denied' ? t('approval.denied') : t('approval.expired')}
+            {effective === 'denied'
+              ? t('approval.denied')
+              : t('approval.expired')}
           </AlertDescription>
         </Alert>
       )}
@@ -120,4 +149,10 @@ export function NewDeviceApprovalWait({
       </Button>
     </div>
   )
+}
+
+function formatRemaining(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60)
+  const sec = totalSeconds % 60
+  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
 }

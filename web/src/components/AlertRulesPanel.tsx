@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
 import { EditAlertRuleDialog } from './EditAlertRuleDialog'
+import { LogRuleCondition } from './LogRuleCondition'
 import { DeleteAlertRuleDialog } from './DeleteAlertRuleDialog'
 import { RuleNoiseDialog } from './RuleNoiseDialog'
 import { RecentChanges } from './RecentChanges'
@@ -128,6 +129,9 @@ function formatCondition(rule: AlertRule): string {
   if (rule.kind === 'node_cert_expiring') {
     return "any node's agent certificate close to expiry or expired (platform-wide)"
   }
+  if (rule.kind === 'budget_threshold') {
+    return 'any project or team budget at its warning level, over its limit or forecast to overrun'
+  }
   if (rule.kind === 'version_skew') {
     return "running build behind the configured update channel's latest release"
   }
@@ -201,6 +205,9 @@ function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'version_skew') {
     return rule.last_value ? 'update available' : 'up to date'
+  }
+  if (rule.kind === 'budget_threshold') {
+    return `${rule.last_value.toFixed(0)}% of the most used budget`
   }
   if (rule.kind === 'node_resource_usage') {
     // Only the CPU signal is tracked here; memory has no comparable unit
@@ -296,7 +303,11 @@ function RuleRow({
           </Badge>
         </TableCell>
         <TableCell className="max-w-[20rem] truncate font-mono text-xs text-muted-foreground">
-          {formatCondition(rule)}
+          {rule.log_rule ? (
+            <LogRuleCondition rule={rule} />
+          ) : (
+            formatCondition(rule)
+          )}
         </TableCell>
         <TableCell>
           <div className="flex flex-col gap-1">
@@ -337,11 +348,13 @@ function RuleRow({
               ruleName={rule.name}
             />
             <RuleNoiseDialog appName={appName} rule={rule} />
-            <EditAlertRuleDialog
-              appName={appName}
-              rule={rule}
-              volumes={volumes}
-            />
+            {rule.log_rule ? null : (
+              <EditAlertRuleDialog
+                appName={appName}
+                rule={rule}
+                volumes={volumes}
+              />
+            )}
             <DeleteAlertRuleDialog appName={appName} rule={rule} />
           </div>
         </TableCell>

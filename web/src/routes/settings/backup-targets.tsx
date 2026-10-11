@@ -6,6 +6,7 @@ import { BackupTargetTable } from '../../components/BackupTargetTable'
 import { CreateBackupTargetDialog } from '../../components/CreateBackupTargetDialog'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageHeader } from '@/components/shell/PageHeader'
+import { SetupStepHint } from '@/components/getStarted/SetupStepHint'
 
 // Account-level, not scoped to one app or database, so it lives under
 // routes/settings/ next to tokens.tsx rather than under routes/apps/ or
@@ -33,6 +34,7 @@ function BackupTargetsPage() {
 
   return (
     <div className="space-y-6">
+      <SetupStepHint step="backup_target" />
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">

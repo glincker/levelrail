@@ -57,6 +57,7 @@ export function DoneStep({
 }) {
   const { t } = useTranslation('setup')
   const { t: ts } = useTranslation('settings')
+  const { t: tg } = useTranslation('getStarted')
   const { data: dashboard } = useQuery(dashboardUrlQueryOptions())
   const reviewable = SETUP_STEPS.filter((id) => id !== 'done')
   const skipped = reviewable.filter(
@@ -165,6 +166,12 @@ export function DoneStep({
             )
           })}
         </div>
+        <Link
+          to="/get-started"
+          className="inline-block text-sm font-medium text-foreground hover:underline"
+        >
+          {tg('wizard.continue')}
+        </Link>
       </section>
 
       <section className="flex flex-col gap-3 rounded-xl border border-tone-accent-border bg-tone-accent-soft/40 p-4 sm:flex-row sm:items-center">

@@ -7,6 +7,7 @@ import { CreateTokenDialog } from '../../components/CreateTokenDialog'
 import { useBrand } from '../../hooks/useBrand'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageHeader } from '@/components/shell/PageHeader'
+import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Account-level, not scoped to one app, so it lives under
 // routes/settings/ rather than routes/apps/, for API token management.
@@ -74,7 +75,7 @@ function TokensPage() {
 function TokensPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">API tokens</h1>
+      <SettingsPageTitle id="tokens" />
       <TableSkeleton columnCount={8} />
     </div>
   )

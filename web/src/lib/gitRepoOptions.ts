@@ -17,6 +17,9 @@ export interface NormalizedRepoOption {
   /** GitHub only: which connected account this repo came from, for the picker's grouping. */
   ownerLogin?: string
   accountType?: 'user' | 'organization'
+  /** GitHub only: primary language and last push time, for the new-app list. */
+  language?: string
+  pushedAt?: string
 }
 
 export function fromGitHubRepo(repo: GitHubAppRepo): NormalizedRepoOption {
@@ -29,6 +32,8 @@ export function fromGitHubRepo(repo: GitHubAppRepo): NormalizedRepoOption {
     providerRef: { kind: 'github', owner: repo.owner_login, repo: repo.name },
     ownerLogin: repo.owner_login,
     accountType: repo.account_type,
+    language: repo.language,
+    pushedAt: repo.pushed_at,
   }
 }
 

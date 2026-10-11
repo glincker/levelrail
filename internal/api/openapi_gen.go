@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 997 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1018 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -393,10 +393,13 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/settings/registry", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleGetRegistrySettings", Description: "Built-in container registry (instance-level, one registry per control plane): GET is AbilityRead; PUT/DELETE are AbilityRoot, matching PUT /api/v1/settings/cloudflare-tunnel's own tier for infrastructure config that runs a system container and generates credentials."},
 	{Method: "PUT", Path: "/api/v1/settings/registry", Ability: "AbilityRoot", Group: "Built-in Container Registry", Handler: "handleUpdateRegistrySettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleListAllBackups", Description: "Instance-wide backup history across every database and app volume, the aggregated counterpart of the per-resource routes above and below: ordinary AbilityRead, same tier as those, since this is only ever a merged read of history metadata already visible per-resource."},
+	{Method: "GET", Path: "/api/v1/backups/coverage", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleBackupCoverage", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups/drills", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleListBackupDrills", Description: ""},
 	{Method: "POST", Path: "/api/v1/backups/drills", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleStartBackupDrill", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups/drills/{id}", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleGetBackupDrill", Description: ""},
+	{Method: "POST", Path: "/api/v1/backups/encryption-key/ack", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleAckBackupEncryptionKey", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups/health", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleBackupHealth", Description: "App service volume backups (app_volume_backups.go/ app_volume_backup_download.go/app_volume_backup_verify.go): the exact same ability tiers as the database routes just above, applied to a service's named volume instead of a managed database. See those handlers' own doc comments for the per-route reasoning this mirrors."},
+	{Method: "POST", Path: "/api/v1/backups/protect-all", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleProtectAll", Description: ""},
 	{Method: "POST", Path: "/api/v1/backups/protection/refresh", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleRefreshBackupProtection", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/backup-schedule", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleClearBackupSchedule", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/backup-schedule", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleSetBackupSchedule", Description: "Scheduled backup config, per database (wave-2 roadmap item 6): which backup target, cron schedule, and retention count internal/backup.Scheduler uses for this database, if any. AbilityWriteSensitive for both PUT and DELETE, the same tier the manual trigger route above already uses: this is the config that decides where an unattended, recurring backup ends up, a live bucket with previously-stored credentials, the identical sensitivity class. GET reuses handleGetDatabase's own existing AbilityRead response (databaseResource already carries these three fields, see that handler's own file), so there is no separate GET route here."},
@@ -712,6 +715,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/gitea-app/repos/{owner}/{repo}/use-as-source", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleUseGiteaRepoAsSource", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/image-update/{name}/{token}", Ability: "Public", Group: "Other", Handler: "handleImageUpdateWebhook", Description: ""},
 	{Method: "GET", Path: "/api/v1/hooks/wake", Ability: "Public", Group: "Other", Handler: "handleWakeHook", Description: ""},
+	{Method: "POST", Path: "/api/v1/imports/analyze", Ability: "AbilityWrite", Group: "Other", Handler: "handleAnalyzeImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/plan", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportPlan", Description: "Import front door: classifies pasted input and returns a plan preview, creating nothing. AbilityWrite because it makes outbound fetches."},
 	{Method: "POST", Path: "/api/v1/imports/platform/apply", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleApplyPlatformImport", Description: ""},
 	{Method: "GET", Path: "/api/v1/imports/platform/databases", Ability: "AbilityRead", Group: "Other", Handler: "handleListDatabaseDataCopies", Description: ""},
@@ -728,6 +732,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/log-archive/policy", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteLogArchivePolicy", Description: ""},
 	{Method: "PUT", Path: "/api/v1/log-archive/policy", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetLogArchivePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/log-archive/runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListLogArchiveRuns", Description: ""},
+	{Method: "GET", Path: "/api/v1/logs/queries", Ability: "AbilityRead", Group: "Other", Handler: "handleListSavedLogQueries", Description: ""},
+	{Method: "POST", Path: "/api/v1/logs/queries", Ability: "AbilityRead", Group: "Other", Handler: "handleCreateSavedLogQuery", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleDeleteSavedLogQuery", Description: ""},
+	{Method: "PUT", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleUpdateSavedLogQuery", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
 	{Method: "GET", Path: "/api/v1/mesh/connectivity", Ability: "AbilityRoot", Group: "Other", Handler: "handleMeshConnectivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMeshSettings", Description: ""},
@@ -806,6 +814,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/restore", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/snooze", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
 	{Method: "GET", Path: "/api/v1/resource-advisor/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleResourceAdvisorSummary", Description: ""},
+	{Method: "GET", Path: "/api/v1/setup/guide", Ability: "AbilityRead", Group: "Other", Handler: "handleGetSetupGuide", Description: ""},
+	{Method: "POST", Path: "/api/v1/setup/guide/reset", Ability: "AbilityRoot", Group: "Other", Handler: "handleResetSetupGuide", Description: ""},
+	{Method: "PUT", Path: "/api/v1/setup/guide/steps/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetSetupGuideStep", Description: ""},
+	{Method: "PUT", Path: "/api/v1/setup/guide/visibility", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetSetupGuideVisibility", Description: ""},
 	{Method: "GET", Path: "/api/v1/ssh-node-provisions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListSSHNodeProvisions", Description: ""},
 	{Method: "GET", Path: "/api/v1/ssh-node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSSHNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page", Ability: "AbilityRead", Group: "Other", Handler: "handleGetStatusPage", Description: ""},
@@ -825,6 +837,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/storage/destinations/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetStorageDestination", Description: ""},
 	{Method: "PUT", Path: "/api/v1/storage/destinations/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleUpdateStorageDestination", Description: ""},
 	{Method: "POST", Path: "/api/v1/storage/destinations/{id}/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTestStorageDestination", Description: ""},
+	{Method: "GET", Path: "/api/v1/storage/orphans", Ability: "AbilityRead", Group: "Other", Handler: "handleListStorageOrphans", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/storage/orphans/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleReclaimStorageOrphan", Description: ""},
 	{Method: "GET", Path: "/api/v1/storage/providers", Ability: "AbilityRead", Group: "Other", Handler: "handleListStorageProviders", Description: ""},
 	{Method: "GET", Path: "/api/v1/tags", Ability: "AbilityRead", Group: "Other", Handler: "handleListTags", Description: ""},
 	{Method: "POST", Path: "/api/v1/tags", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateTag", Description: "Tags (tags.go): arbitrary operator-defined labels for organizing and filtering apps, independent of the project/environment hierarchy. The global collection lives flat under /api/v1/tags (create/list/delete, plus filter-by-tag); attach/detach is scoped under the app it applies to, the same nesting scheduled-tasks/flags above use for their own per-app child resources."},
@@ -850,6 +864,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/templates/custom", Ability: "AbilityRead", Group: "Other", Handler: "handleListCustomTemplates", Description: "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app. Deploy reuses the service-templates/{id}/deploy route above, no second deploy path."},
 	{Method: "DELETE", Path: "/api/v1/templates/custom/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteCustomTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/traffic/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleTrafficSummary", Description: "Counts for the sidebar attention badge and the domains health strip, from stored state and the last known DNS checks only."},
+	{Method: "GET", Path: "/api/v1/usage/budgets", Ability: "AbilityRead", Group: "Other", Handler: "handleListUsageBudgets", Description: ""},
+	{Method: "PUT", Path: "/api/v1/usage/budgets", Ability: "AbilityWrite", Group: "Other", Handler: "handlePutUsageBudget", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/usage/budgets/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteUsageBudget", Description: ""},
+	{Method: "GET", Path: "/api/v1/usage/report", Ability: "AbilityRead", Group: "Other", Handler: "handleUsageReport", Description: ""},
+	{Method: "GET", Path: "/api/v1/usage/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetUsageSettings", Description: ""},
+	{Method: "PUT", Path: "/api/v1/usage/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutUsageSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/usage/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleUsageSummary", Description: ""},
 	{Method: "GET", Path: "/metrics", Ability: "AbilityRead", Group: "Other", Handler: "handleScrapeMetrics", Description: ""},
 	{Method: "GET", Path: "/public/status", Ability: "Public", Group: "Other", Handler: "handlePublicStatusHTML", Description: ""},
@@ -1013,6 +1033,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/resource-usage", Ability: "AbilityRead", Group: "Telemetry", Handler: "handleAppResourceUsage", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/logs", Ability: "AbilityRead", Group: "Telemetry", Handler: "handleQueryLogs", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/logs/download", Ability: "AbilityRead", Group: "Telemetry", Handler: "handleDownloadLogs", Description: "Log export (a plain-text attachment of a bounded window, see logs_download.go): same AbilityRead boundary as the query/stream routes above, since it reads the same store through the same telemetry.QueryLogs call, nothing more sensitive than either."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/logs/signatures", Ability: "AbilityRead", Group: "Telemetry", Handler: "handleLogSignatures", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/logs/stream", Ability: "AbilityRead", Group: "Telemetry", Handler: "handleLiveLogStream", Description: "Live log tail (additive to the historical search route just above, see handleLiveLogStream's own doc comment): AbilityRead, the same passive-visibility boundary as every other view of telemetry data in this router, including the deploy-log stream at GET .../deploys/{deployId}/logs above."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/metrics", Ability: "AbilityRead", Group: "Telemetry", Handler: "handleQueryMetrics", Description: "Telemetry query: metrics and logs for one app, fanned out through a Federator (today, exactly one local source)."},
 }

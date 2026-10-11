@@ -2,15 +2,18 @@ import type { ReactNode } from 'react'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import databasesEn from '../locales/en/databases.json'
+import nodesEn from '../locales/en/nodes.json'
 import trafficEn from '../locales/en/traffic.json'
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['databases', 'traffic'],
+  ns: ['databases', 'traffic', 'nodes'],
   defaultNS: 'databases',
-  resources: { en: { databases: databasesEn, traffic: trafficEn } },
+  resources: {
+    en: { databases: databasesEn, traffic: trafficEn, nodes: nodesEn },
+  },
   interpolation: { escapeValue: false },
 })
 

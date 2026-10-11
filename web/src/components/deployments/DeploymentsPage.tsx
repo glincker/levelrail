@@ -44,6 +44,7 @@ import { DeploymentList, DeploymentsSkeleton, LoadMore } from './DeploymentList'
 import { DeploymentsFilterBar } from './DeploymentsFilterBar'
 import { DeploymentsSummary } from './DeploymentsSummary'
 import { ShortcutsHelp } from './ShortcutsHelp'
+import type { Deployment } from '../../types/deployment'
 
 const AT_TOP_PX = 32
 const MIN_AUTHOR_ROWS = 20
@@ -52,6 +53,8 @@ export interface DeploymentsPageProps {
   search: DeploymentsSearch
   onSearchChange: (next: UrlSearch) => void
   onViewApproval?: () => void
+  /** Row clicks go to the deployment's own page when set; the drawer stays the fallback. */
+  onOpenDetails?: (d: Deployment) => void
 }
 
 function filtersOf(s: DeploymentsSearch): DeploymentFilters {
@@ -70,6 +73,7 @@ export function DeploymentsPage({
   search,
   onSearchChange,
   onViewApproval,
+  onOpenDetails,
 }: DeploymentsPageProps) {
   const filters = filtersOf(search)
   const openId = search.d
@@ -134,6 +138,12 @@ export function DeploymentsPage({
     ? (all.find((d) => d.id === openId) ??
       laneRows.find((d) => d.id === openId))
     : undefined
+  const openDetails = (id: string) => {
+    const row =
+      all.find((d) => d.id === id) ?? laneRows.find((d) => d.id === id)
+    if (row && onOpenDetails) onOpenDetails(row)
+    else setOpen(id)
+  }
   const searching =
     openId !== '' &&
     !drawerRow &&
@@ -179,7 +189,7 @@ export function DeploymentsPage({
         return
       }
       case 'open':
-        if (focusId) setOpen(focusId)
+        if (focusId) openDetails(focusId)
         return
       case 'close':
         setOpen('')
@@ -240,7 +250,7 @@ export function DeploymentsPage({
       <BuildingNowLane
         rows={laneRows}
         now={now}
-        onOpen={setOpen}
+        onOpen={openDetails}
         onCancel={(d) => {
           actions.request('cancel', d)
         }}
@@ -327,7 +337,7 @@ export function DeploymentsPage({
             focusId={focusId}
             onOpen={(id) => {
               setFocusId(id)
-              setOpen(id)
+              openDetails(id)
             }}
             scrollRef={scrollRef}
           />

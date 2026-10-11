@@ -135,6 +135,11 @@ type appResource struct {
 	// overrides simple spread scheduling, see that handler's own doc
 	// comment.
 	NodeID string `json:"node_id,omitempty"`
+	// NodeName and NodeIsLocal are response-only display fields resolved
+	// from NodeID: an empty NodeID means this server. NodeName is empty
+	// when NodeID points at a node that no longer exists.
+	NodeName    string `json:"node_name,omitempty"`
+	NodeIsLocal bool   `json:"node_is_local,omitempty"`
 	// AutoPlaced is response-only, set only by handleCreateApp: true when
 	// node_id was omitted from the create request and simple spread
 	// scheduling (autoPlaceNode, scheduling.go) picked a non-local node
@@ -1116,6 +1121,10 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 // deleteAppIfOrphaned below, so the per-app network can be cleaned up.
 func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	purge, volumes, ok := rt.appDeleteDataPlan(w, r, name)
+	if !ok {
+		return
+	}
 	teardownErr, err := rt.deleteApp(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -1124,6 +1133,9 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rt.internalError(w, "api: delete app failed", err, slog.String("name", name))
 		return
+	}
+	if purge && teardownErr == nil {
+		rt.purgeVolumes(context.WithoutCancel(r.Context()), "app/"+name, volumes)
 	}
 	rt.nudgeReconciler()
 	if teardownErr != nil {

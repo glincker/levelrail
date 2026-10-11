@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { formatAge } from '../../lib/format'
-import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   nodeDetailQueryOptions,
   nodeHealthQueryOptions,
@@ -11,10 +10,9 @@ import {
   useSetNodeRegion,
   useSetNodeWorkloads,
 } from '../../queries/nodes'
-import type { NodeResource, NodeStatus } from '../../types/nodeDetail'
+import type { NodeResource } from '../../types/nodeDetail'
 import { ConditionsPanel } from '../../components/ConditionsPanel'
-import { CordonNodeDialog } from '../../components/CordonNodeDialog'
-import { DrainNodeDialog } from '../../components/DrainNodeDialog'
+import { NodeDetailHeader } from '../../components/nodes/NodeDetailHeader'
 import { NodeAgentCard } from '../../components/NodeAgentCard'
 import { NodeNeverConnectedAlert } from '../../components/NodeNeverConnected'
 import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
@@ -28,7 +26,6 @@ import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
 import { NodeEventsCard } from '../../components/NodeEventsCard'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
@@ -37,8 +34,6 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { Skeleton } from '@/components/ui/skeleton'
-import { PageHeader } from '@/components/shell/PageHeader'
-import type { VariantProps } from 'class-variance-authority'
 
 // Node detail route, mirroring routes/databases/$name.tsx's shape: three
 // queries primed in the loader in parallel (the node itself, its health
@@ -75,29 +70,6 @@ export const Route = createFileRoute('/nodes/$id')({
   errorComponent: NodeDetailError,
 })
 
-// Same two-axis reasoning NodeRow.tsx documents: connectivity (Status)
-// and cordon (Schedulable) are independent, and nothing in this codebase
-// currently sets status to "cordoned" (internal/store/nodes.go's own
-// doc comment on NodeStatusCordoned), so this page renders both badges
-// separately rather than special-casing a status value that never
-// actually appears on the wire.
-const STATUS_BADGE_VARIANT: Record<
-  NodeStatus,
-  VariantProps<typeof badgeVariants>['variant']
-> = {
-  pending: 'muted',
-  online: 'success',
-  offline: 'destructive',
-  cordoned: 'warning',
-}
-
-const STATUS_LABEL: Record<NodeStatus, string> = {
-  pending: 'Pending',
-  online: 'Online',
-  offline: 'Offline',
-  cordoned: 'Cordoned',
-}
-
 function formatNodeDate(iso?: string): string {
   if (!iso) {
     return 'Never'
@@ -113,34 +85,7 @@ function NodeDetailPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        breadcrumb={
-          <Link
-            to="/nodes"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeftIcon className="size-3" />
-            Nodes
-          </Link>
-        }
-        title={node.name}
-        status={
-          <>
-            <Badge variant={STATUS_BADGE_VARIANT[node.status]}>
-              {STATUS_LABEL[node.status]}
-            </Badge>
-            {node.schedulable ? null : (
-              <Badge variant="warning">Cordoned</Badge>
-            )}
-          </>
-        }
-        actions={
-          <>
-            <CordonNodeDialog node={node} />
-            <DrainNodeDialog node={node} />
-          </>
-        }
-      />
+      <NodeDetailHeader node={node} />
 
       <Card>
         <CardHeader>

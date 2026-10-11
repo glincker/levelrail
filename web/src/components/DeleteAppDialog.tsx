@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
 import { useDeleteApp } from '../queries/apps'
+import { DeleteDataOption } from './backups/DeleteDataOption'
 
 // One app's delete action, split out of the detail route the same way
 // DeleteDatabaseDialog is split out of routes/databases/$name.tsx. DELETE
@@ -30,11 +31,13 @@ export function DeleteAppDialog({
   const navigate = useNavigate()
   const { t } = useTranslation('common')
   const deleteApp = useDeleteApp()
+  const [deleteData, setDeleteData] = useState(false)
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
       deleteApp.reset()
+      setDeleteData(false)
     }
   }
 
@@ -64,28 +67,37 @@ export function DeleteAppDialog({
         pending={deleteApp.isPending}
         error={deleteApp.isError ? deleteApp.error.message : null}
         onConfirm={() => {
-          deleteApp.mutate(name, {
-            onSuccess: (result) => {
-              setOpen(false)
-              toast.add(
-                result.teardownPending
-                  ? {
-                      title: t('deleteApp.pendingTitle', { name }),
-                      description: t('deleteApp.pendingDescription', {
-                        reason: result.error,
-                      }),
-                      type: 'warning',
-                    }
-                  : {
-                      title: t('deleteApp.deleted', { name }),
-                      type: 'success',
-                    },
-              )
-              void navigate({ to: '/apps' })
+          deleteApp.mutate(
+            { name, deleteData },
+            {
+              onSuccess: (result) => {
+                setOpen(false)
+                toast.add(
+                  result.teardownPending
+                    ? {
+                        title: t('deleteApp.pendingTitle', { name }),
+                        description: t('deleteApp.pendingDescription', {
+                          reason: result.error,
+                        }),
+                        type: 'warning',
+                      }
+                    : {
+                        title: t('deleteApp.deleted', { name }),
+                        type: 'success',
+                      },
+                )
+                void navigate({ to: '/apps' })
+              },
             },
-          })
+          )
         }}
-      />
+      >
+        <DeleteDataOption
+          kind="app"
+          checked={deleteData}
+          onCheckedChange={setDeleteData}
+        />
+      </ConfirmDialog>
     </>
   )
 }

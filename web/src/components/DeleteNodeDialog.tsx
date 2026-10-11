@@ -1,97 +1,78 @@
 import { useState } from 'react'
-import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useTranslation } from 'react-i18next'
+import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
 import { useDeleteNode } from '../queries/nodes'
+import type { DialogControl } from './dialogControl'
 
-// One node's delete action, mirroring DeleteDatabaseDialog's shape:
-// destructive, irreversible, so a confirm dialog rather than a bare
-// one-click button. Unlike DeleteDatabaseDialog there is no detail route
-// to navigate away from, this node's row simply disappears from the
-// list on success (useDeleteNode already invalidates nodeKeys.list()).
-//
-// The description below states plainly what deleteNode's own doc
-// comment in queries/nodes.ts says: DELETE /api/v1/nodes/{id}
-// (internal/api/nodes.go's handleDeleteNode) removes the registry row
-// only. It does not drain the node or disconnect a real agent session
-// (not built yet), so an operator must not read "delete" here as
-// "safely decommission this machine."
-export function DeleteNodeDialog({ id, name }: { id: string; name: string }) {
-  const [open, setOpen] = useState(false)
+// DELETE /api/v1/nodes/{id} removes the registry row only: it neither
+// drains the node nor disconnects a running agent, so the copy says so.
+export function DeleteNodeDialog({
+  id,
+  name,
+  control,
+  onDeleted,
+}: {
+  id: string
+  name: string
+  control?: DialogControl
+  onDeleted?: () => void
+}) {
+  const { t } = useTranslation('nodes')
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = control?.open ?? internalOpen
+  const setOpen = (next: boolean) => {
+    setInternalOpen(next)
+    control?.onOpenChange?.(next)
+  }
   const deleteNode = useDeleteNode()
 
-  function handleOpenChange(next: boolean) {
-    setOpen(next)
-    if (!next) {
-      deleteNode.reset()
-    }
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-        <TrashIcon className="size-3.5" aria-hidden="true" />
-        Delete
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
-            Delete &ldquo;{name}&rdquo;?
-          </DialogTitle>
-          <DialogDescription>
-            This removes the node from this control plane&apos;s registry. It
-            does not drain the node or stop its agent connection: if the agent
-            process is still running on that machine, it stays connected and its
-            workloads keep running. This cannot be undone from here.
-          </DialogDescription>
-        </DialogHeader>
-        {deleteNode.isError ? (
-          <Alert variant="destructive">
-            <WarningIcon />
-            <AlertDescription>{deleteNode.error.message}</AlertDescription>
-          </Alert>
-        ) : null}
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              handleOpenChange(false)
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            disabled={deleteNode.isPending}
-            onClick={() => {
-              deleteNode.mutate(id, {
-                onSuccess: () => {
-                  setOpen(false)
-                  toast.add({
-                    title: `Node "${name}" deleted.`,
-                    type: 'success',
-                  })
-                },
+    <>
+      {control?.hideTrigger ? null : (
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          onClick={() => {
+            setOpen(true)
+          }}
+        >
+          <TrashIcon className="size-3.5" aria-hidden="true" />
+          {t('delete.trigger')}
+        </Button>
+      )}
+      <ConfirmDialog
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next)
+          if (!next) {
+            deleteNode.reset()
+          }
+        }}
+        tone="destructive"
+        title={t('delete.title', { name })}
+        description={t('delete.description')}
+        requireTyped={name}
+        confirmLabel={t('delete.confirm')}
+        pendingLabel={t('delete.deleting')}
+        pending={deleteNode.isPending}
+        error={deleteNode.isError ? deleteNode.error.message : null}
+        onConfirm={() => {
+          deleteNode.mutate(id, {
+            onSuccess: () => {
+              setOpen(false)
+              onDeleted?.()
+              toast.add({
+                title: t('delete.deleted', { name }),
+                type: 'success',
               })
-            }}
-          >
-            {deleteNode.isPending ? 'Deleting...' : 'Delete node'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            },
+          })
+        }}
+      />
+    </>
   )
 }

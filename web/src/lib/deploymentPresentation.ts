@@ -122,12 +122,22 @@ function imageTag(image: string): string {
   return image.split('/').pop() ?? image
 }
 
+const SUBJECT_MAX = 120
+
+/** First line of a commit message, capped. Squash merges carry the whole PR body after it. */
+export function commitSubject(message: string): string {
+  const first = message.split('\n', 1)[0]?.trim() ?? ''
+  return first.length > SUBJECT_MAX
+    ? `${first.slice(0, SUBJECT_MAX - 1)}…`
+    : first
+}
+
 /** The left-hand headline: commit message, or what a redeploy or rollback did. */
 export function headline(d: Deployment): string {
   if (isRollback(d)) {
     return d.rollback_of ? `Rollback to ${shortId(d.rollback_of)}` : 'Rollback'
   }
-  if (d.commit_message) return d.commit_message
+  if (d.commit_message) return commitSubject(d.commit_message)
   if (isRedeploy(d)) return `Redeploy of ${imageTag(d.image)}`
   return imageTag(d.image) || d.id
 }

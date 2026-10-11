@@ -1,47 +1,33 @@
-import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { ArrowRightIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
-import { useSetupChecklistInput } from '../../queries/setupChecklist'
-import { computeSetupChecklist } from '../../lib/setupChecklist'
-import type { SetupChecklist } from '../../lib/setupChecklist'
-import { ITEM_COPY } from '../setupItemCopy'
-
-const DISMISSED_KEY = 'dashboard-setup-checklist-dismissed'
-
-function readDismissed(): boolean {
-  try {
-    return window.localStorage.getItem(DISMISSED_KEY) === '1'
-  } catch {
-    return false
-  }
-}
+import { showGuideEntryPoints } from '../../lib/setupGuide'
+import { useSetGuideHidden, useSetupGuide } from '../../queries/setupGuide'
 
 export function SetupChipView({
-  checklist,
-  onDismiss,
+  percent,
+  onHide,
 }: {
-  checklist: SetupChecklist
-  onDismiss: () => void
+  percent: number
+  onHide: () => void
 }) {
-  const next = checklist.items.find((i) => i.state === 'todo')
-  if (!next) return null
-  const copy = ITEM_COPY[next.id]
+  const { t } = useTranslation('getStarted')
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card py-0.5 pr-1 pl-2.5 text-xs">
       <span className="tabular-nums text-muted-foreground">
-        Setup {checklist.done}/{checklist.total}
+        {t('chip.label', { percent })}
       </span>
       <Link
-        to={copy.to}
+        to="/get-started"
         className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium text-foreground hover:bg-muted"
       >
-        {copy.cta}
+        {t('chip.cta')}
         <ArrowRightIcon className="size-3" aria-hidden="true" />
       </Link>
       <button
         type="button"
-        aria-label="Dismiss setup progress"
-        onClick={onDismiss}
+        aria-label={t('actions.hide')}
+        onClick={onHide}
         className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
       >
         <XIcon className="size-3" />
@@ -50,25 +36,15 @@ export function SetupChipView({
   )
 }
 
-export function SetupChip({
-  firstAppName,
-}: {
-  firstAppName: string | undefined
-}) {
-  const [dismissed, setDismissed] = useState(readDismissed)
-  const input = useSetupChecklistInput(!dismissed, firstAppName)
-  const checklist = computeSetupChecklist(input)
-  if (dismissed || checklist.loading || checklist.complete) return null
+export function SetupChip() {
+  const { data: guide } = useSetupGuide()
+  const hide = useSetGuideHidden()
+  if (!guide || !showGuideEntryPoints(guide)) return null
   return (
     <SetupChipView
-      checklist={checklist}
-      onDismiss={() => {
-        try {
-          window.localStorage.setItem(DISMISSED_KEY, '1')
-        } catch {
-          // A blocked store only means the chip reappears next session.
-        }
-        setDismissed(true)
+      percent={guide.ready_percent}
+      onHide={() => {
+        hide.mutate(true)
       }}
     />
   )

@@ -275,6 +275,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 - `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.
 - `apps resource-recommendation` suggests memory and CPU limits from historical usage; `apps cost` estimates what the app's CPU and memory would cost under reference providers (not a real bill).
+- `usage report|settings|budgets` shows cost showback and manages prices and budgets, see [usage and cost](usage-and-cost.md). `usage report --csv` prints the export.
 - `advisor findings|summary|apply|dismiss|snooze|restore|enable|disable` drives the beta [resource advisor](resource-advisor.md). `advisor apply ID` only previews; add `--yes` to apply.
 - `apps health-score` gives a synthesized pass, warn or fail readiness verdict across deploy health, security, resilience and observability.
 - `apps log-drain` forwards container logs to an external HTTP or syslog sink, in addition to the built-in node-local log store.
@@ -1258,6 +1259,14 @@ levelrail-cli attention [flags]
 
 Lists everything that needs attention right now: failing apps, failed deploys from the last 24 hours, low disk space (warn under 10 percent free, critical under 5), offline nodes, expired or expiring certificates, and doctor warnings or failures, critical first. It is the CLI side of the dashboard's Status page (`/status`). Exit code is 1 if any item is critical, 0 otherwise, so it works as a script gate. Supports `--json`, `--output json|table|text`, and `--query`.
 
+## TUI
+
+```
+levelrail-cli tui [--read-only] [--refresh DURATION] [flags]
+```
+
+Opens an interactive terminal UI over the same API: live apps, databases, deploys, nodes, domains, alerts and backups, a log tail, and confirm-gated restart, deploy, rollback, stop and start. Needs a TTY. See [Terminal UI](cli-tui.md) for the key map.
+
 ## Doctor
 
 ```
@@ -1265,6 +1274,18 @@ levelrail-cli doctor [flags]
 ```
 
 Runs a local preflight health check: Docker daemon reachability, disk space and write latency, write access on the data directory, port 80 and 443 availability for the embedded ingress, control plane database reachability, RAM and CPU against the recommended minimums, firewall status, outbound network reachability (public IP, external port reachability, ACME, clock skew, the agent advertise host, image registries), and GPU attach checks. Exit code is 0 if every check is ok or warn, 1 if any check fails.
+
+## Setup
+
+```
+levelrail-cli setup status [flags]
+levelrail-cli setup next [flags]
+levelrail-cli setup skip <step> [flags]
+levelrail-cli setup undo <step> [flags]
+levelrail-cli setup reset [flags]
+```
+
+The dashboard's Get started checklist from a terminal. `status` prints every step with its state, time estimate and note, plus the "ready for production" percentage. `next` prints the one step to do next and where to do it. `skip` and `undo` record or clear an operator override for a step id such as `teammate`; `reset` clears every override and shows the guide again. The three writes need a root scoped token. Steps and their rules: [Getting started](getting-started.md#the-get-started-guide). Supports `--json`, `--output json|table|text`, and `--query`.
 
 ## Proxy
 
@@ -1436,6 +1457,7 @@ One way migration from a live instance. By default it writes `app.yaml` files pl
 
 ```
 levelrail-cli import <repo-url|image> [--deploy] [--name NAME] [--ref REF] [--port N] [--env KEY=VALUE]... [flags]
+levelrail-cli import <repo-url> --analyze|--apply [--base-directory DIR] [--dockerfile PATH] [--build-type TYPE] [--no-database] [flags]
 levelrail-cli import -f compose.yaml|Dockerfile [flags]
 levelrail-cli import --docker-run "docker run -p 80:80 nginx:1" [flags]
 levelrail-cli import platform coolify|dokploy|caprover --url URL [flags]
@@ -1443,6 +1465,8 @@ levelrail-cli import cutover plan|run|status|rollback|confirm-dns --session ID -
 ```
 
 `import` classifies its input (a GitHub, GitLab, Gitea or Bitbucket repo URL, a `docker run` command, an image reference, a docker-compose.yml or a Dockerfile) and prints a deployment plan. Nothing is created unless `--deploy` is given. `--file -` reads from stdin. `--env KEY=VALUE` is repeatable, and a required variable with no value blocks `--deploy`.
+
+`import <repo-url> --analyze` prints what the New app wizard would suggest (stack, build, port, health path, env variable names, databases) with the evidence for each, and creates nothing. `--apply` creates the suggested databases, the app, the connections, the repository link and the first build; `--base-directory`, `--dockerfile`, `--build-type`, `--name`, `--port` and `--env` override suggestions. See [New app wizard](new-app-wizard.md).
 
 `import platform` reads apps, databases and settings from another platform (read only) and creates them here. Use `--dry-run` first. Databases and volumes are created empty; data is not migrated. Re-running skips what was already imported. The source token is read from `APP_IMPORT_SOURCE_TOKEN`, `--token-stdin` or `--token` (which lands in shell history). Other flags: `--only`, `--collision suffix|skip`, `--insecure-tls`, `--allow-private`, `--allow-loopback`. See [migrating from Coolify, Dokploy or CapRover](migrating-from-coolify-dokploy-and-caprover.md).
 

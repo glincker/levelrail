@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Combobox } from '@/components/ui/combobox'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { cn } from '@/lib/utils'
+import { GitSelectedRepoBar } from './GitSelectedRepoBar'
 import { GroupedRepoPickerGrid, RepoPickerGrid } from './GitRepoPickerGrid'
 import {
   fromBitbucketRepo,
@@ -75,6 +75,7 @@ function ConnectedProviderRow<TRepo>({
   )
   const [selectedRepoKey, setSelectedRepoKey] = useState('')
   const [selectedBranch, setSelectedBranch] = useState('')
+  const [changing, setChanging] = useState(false)
   const selected = options.find((option) => option.key === selectedRepoKey)
   const [branchArgA, branchArgB] = selected
     ? branchArgsFrom(selected.providerRef)
@@ -93,52 +94,54 @@ function ConnectedProviderRow<TRepo>({
 
   return (
     <div className="space-y-2">
-      <Field>
-        <FieldLabel htmlFor={`${idPrefix}-repo`}>Repository</FieldLabel>
-        <RepoPickerGrid
-          searchInputId={`${idPrefix}-repo`}
-          options={options}
-          isLoading={repos.isLoading}
-          isError={repos.isError}
-          errorMessage={repos.error?.message}
-          selectedKey={selectedRepoKey}
+      {selected && !changing ? (
+        <GitSelectedRepoBar
+          option={selected}
+          branch={selectedBranch}
+          branchOptions={branchOptions}
+          branchesLoading={branches.isLoading}
+          branchError={branches.isError ? branches.error?.message : undefined}
           disabled={disabled}
-          runningRepoByUrl={runningRepoByUrl}
-          onSelect={(option) => {
-            setSelectedRepoKey(option.key)
-            setSelectedBranch('')
+          idPrefix={idPrefix}
+          onBranchChange={(branch) => {
+            setSelectedBranch(branch)
+            onSelect({
+              provider: providerKey,
+              repoUrl: selected.cloneUrl,
+              branch,
+              providerRef: selected.providerRef,
+            })
+          }}
+          onChange={() => {
+            setChanging(true)
           }}
         />
-      </Field>
-
-      {selected ? (
+      ) : (
         <Field>
-          <FieldLabel htmlFor={`${idPrefix}-branch`}>Branch</FieldLabel>
-          <Combobox
-            id={`${idPrefix}-branch`}
-            options={branchOptions}
-            value={selectedBranch}
-            isLoading={branches.isLoading}
+          <FieldLabel htmlFor={`${idPrefix}-repo`}>Repository</FieldLabel>
+          <RepoPickerGrid
+            searchInputId={`${idPrefix}-repo`}
+            options={options}
+            isLoading={repos.isLoading}
+            isError={repos.isError}
+            errorMessage={repos.error?.message}
+            selectedKey={selectedRepoKey}
             disabled={disabled}
-            placeholder="Select a branch"
-            searchPlaceholder="Search branches..."
-            onValueChange={(branch) => {
-              setSelectedBranch(branch)
+            runningRepoByUrl={runningRepoByUrl}
+            onSelect={(option) => {
+              setSelectedRepoKey(option.key)
+              setSelectedBranch(option.defaultBranch)
+              setChanging(false)
               onSelect({
                 provider: providerKey,
-                repoUrl: selected.cloneUrl,
-                branch,
-                providerRef: selected.providerRef,
+                repoUrl: option.cloneUrl,
+                branch: option.defaultBranch,
+                providerRef: option.providerRef,
               })
             }}
           />
-          {branches.isError ? (
-            <p className="text-sm text-destructive">
-              {branches.error?.message}
-            </p>
-          ) : null}
         </Field>
-      ) : null}
+      )}
     </div>
   )
 }
@@ -193,6 +196,7 @@ export function GitHubProviderRow({
   const repos = useGitHubAppRepos(enabled)
   const [selectedRepoKey, setSelectedRepoKey] = useState('')
   const [selectedBranch, setSelectedBranch] = useState('')
+  const [changing, setChanging] = useState(false)
   const [accountFilter, setAccountFilter] = useState('all')
 
   const allOptions = useMemo(
@@ -235,71 +239,73 @@ export function GitHubProviderRow({
 
   return (
     <div className="space-y-2">
-      <Field>
-        <FieldLabel htmlFor="git-picker-github-repo">Repository</FieldLabel>
-        {groups.length > 1 ? (
-          <div className="flex flex-wrap gap-1.5">
-            <AccountFilterChip
-              label="All"
-              active={accountFilter === 'all'}
-              onClick={() => setAccountFilter('all')}
-            />
-            {groups.map((group) => (
-              <AccountFilterChip
-                key={group.key || 'unknown'}
-                label={group.label}
-                active={accountFilter === group.key}
-                hasError={Boolean(group.error)}
-                onClick={() => setAccountFilter(group.key)}
-              />
-            ))}
-          </div>
-        ) : null}
-        <GroupedRepoPickerGrid
-          searchInputId="git-picker-github-repo"
-          groups={visibleGroups}
-          showHeaders={groups.length > 1}
-          isLoading={repos.isLoading}
-          isError={repos.isError}
-          errorMessage={repos.error?.message}
-          selectedKey={selectedRepoKey}
+      {selected && !changing ? (
+        <GitSelectedRepoBar
+          option={selected}
+          branch={selectedBranch}
+          branchOptions={branchOptions}
+          branchesLoading={branches.isLoading}
+          branchError={branches.isError ? branches.error?.message : undefined}
           disabled={disabled}
-          runningRepoByUrl={runningRepoByUrl}
-          onSelect={(option) => {
-            setSelectedRepoKey(option.key)
-            setSelectedBranch('')
+          idPrefix="git-picker-github"
+          onBranchChange={(branch) => {
+            setSelectedBranch(branch)
+            onSelect({
+              provider: 'github',
+              repoUrl: selected.cloneUrl,
+              branch,
+              providerRef: selected.providerRef,
+            })
+          }}
+          onChange={() => {
+            setChanging(true)
           }}
         />
-      </Field>
-
-      {selected ? (
+      ) : (
         <Field>
-          <FieldLabel htmlFor="git-picker-github-branch">Branch</FieldLabel>
-          <Combobox
-            id="git-picker-github-branch"
-            options={branchOptions}
-            value={selectedBranch}
-            isLoading={branches.isLoading}
+          <FieldLabel htmlFor="git-picker-github-repo">Repository</FieldLabel>
+          {groups.length > 1 ? (
+            <div className="flex flex-wrap gap-1.5">
+              <AccountFilterChip
+                label="All"
+                active={accountFilter === 'all'}
+                onClick={() => setAccountFilter('all')}
+              />
+              {groups.map((group) => (
+                <AccountFilterChip
+                  key={group.key || 'unknown'}
+                  label={group.label}
+                  active={accountFilter === group.key}
+                  hasError={Boolean(group.error)}
+                  onClick={() => setAccountFilter(group.key)}
+                />
+              ))}
+            </div>
+          ) : null}
+          <GroupedRepoPickerGrid
+            searchInputId="git-picker-github-repo"
+            groups={visibleGroups}
+            showHeaders={groups.length > 1}
+            isLoading={repos.isLoading}
+            isError={repos.isError}
+            errorMessage={repos.error?.message}
+            selectedKey={selectedRepoKey}
             disabled={disabled}
-            placeholder="Select a branch"
-            searchPlaceholder="Search branches..."
-            onValueChange={(branch) => {
-              setSelectedBranch(branch)
+            runningRepoByUrl={runningRepoByUrl}
+            onSelect={(option) => {
+              setSelectedRepoKey(option.key)
+              setSelectedBranch(option.defaultBranch)
+              setChanging(false)
               onSelect({
                 provider: 'github',
-                repoUrl: selected.cloneUrl,
-                branch,
-                providerRef: selected.providerRef,
+                repoUrl: option.cloneUrl,
+                branch: option.defaultBranch,
+                providerRef: option.providerRef,
               })
             }}
           />
-          {branches.isError ? (
-            <p className="text-sm text-destructive">
-              {branches.error?.message}
-            </p>
-          ) : null}
         </Field>
-      ) : null}
+      )}
     </div>
   )
 }

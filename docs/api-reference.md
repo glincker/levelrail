@@ -459,6 +459,7 @@ Endpoints for:
 | GET | /api/v1/apps/resource-usage | AbilityRead | handleAppResourceUsage |
 | GET | /api/v1/apps/{name}/logs/stream | AbilityRead | handleLiveLogStream |
 | GET | /api/v1/apps/{name}/logs/download | AbilityRead | handleDownloadLogs |
+| GET | /api/v1/apps/{name}/logs/signatures | AbilityRead | handleLogSignatures |
 
 ## Alerts / Scheduled Tasks / Feature Flags / Notification Channels
 
@@ -887,6 +888,9 @@ Endpoints for:
 | GET | /api/v1/backups/drills/{id} | AbilityRead | handleGetBackupDrill |
 | POST | /api/v1/backups/drills | AbilityWriteSensitive | handleStartBackupDrill |
 | POST | /api/v1/backups/protection/refresh | AbilityWriteSensitive | handleRefreshBackupProtection |
+| GET | /api/v1/backups/coverage | AbilityRead | handleBackupCoverage |
+| POST | /api/v1/backups/protect-all | AbilityWriteSensitive | handleProtectAll |
+| POST | /api/v1/backups/encryption-key/ack | AbilityWriteSensitive | handleAckBackupEncryptionKey |
 
 ## App Volume Backups / Restore
 
@@ -1220,6 +1224,23 @@ Routes that do not fit an existing group.
 | POST | /api/v1/resource-advisor/findings/{id}/dismiss | AbilityWrite | handleResourceAdvisorState |
 | POST | /api/v1/resource-advisor/findings/{id}/snooze | AbilityWrite | handleResourceAdvisorState |
 | POST | /api/v1/resource-advisor/findings/{id}/restore | AbilityWrite | handleResourceAdvisorState |
+| POST | /api/v1/imports/analyze | AbilityWrite | handleAnalyzeImport |
+| GET | /api/v1/storage/orphans | AbilityRead | handleListStorageOrphans |
+| DELETE | /api/v1/storage/orphans/{id} | AbilityWriteSensitive | handleReclaimStorageOrphan |
+| GET | /api/v1/setup/guide | AbilityRead | handleGetSetupGuide |
+| PUT | /api/v1/setup/guide/steps/{id} | AbilityRoot | handleSetSetupGuideStep |
+| PUT | /api/v1/setup/guide/visibility | AbilityRoot | handleSetSetupGuideVisibility |
+| POST | /api/v1/setup/guide/reset | AbilityRoot | handleResetSetupGuide |
+| GET | /api/v1/logs/queries | AbilityRead | handleListSavedLogQueries |
+| POST | /api/v1/logs/queries | AbilityRead | handleCreateSavedLogQuery |
+| PUT | /api/v1/logs/queries/{id} | AbilityRead | handleUpdateSavedLogQuery |
+| DELETE | /api/v1/logs/queries/{id} | AbilityRead | handleDeleteSavedLogQuery |
+| GET | /api/v1/usage/report | AbilityRead | handleUsageReport |
+| GET | /api/v1/usage/settings | AbilityRoot | handleGetUsageSettings |
+| PUT | /api/v1/usage/settings | AbilityRoot | handlePutUsageSettings |
+| GET | /api/v1/usage/budgets | AbilityRead | handleListUsageBudgets |
+| PUT | /api/v1/usage/budgets | AbilityWrite | handlePutUsageBudget |
+| DELETE | /api/v1/usage/budgets/{id} | AbilityWrite | handleDeleteUsageBudget |
 
 ## See also
 

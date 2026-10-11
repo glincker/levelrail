@@ -3,9 +3,8 @@
   "release-type": "simple",
   "bump-minor-pre-major": true,
   "include-component-in-tag": false,
-  "versioning": "prerelease",
-  "prerelease-type": "beta",
-  "prerelease": true,
+  "versioning": "default",
+  "prerelease": false,
   "changelog-sections": [
     {
       "type": "feat",
@@ -50,7 +49,8 @@
   ],
   "packages": {
     ".": {
-      "exclude-paths": ["kit"]
+      "exclude-paths": ["kit"],
+      "release-as": "0.2.0"
     },
     "kit": {
       "release-type": "go",
@@ -58,8 +58,7 @@
       "component": "kit",
       "include-component-in-tag": true,
       "tag-separator": "/",
-      "versioning": "default",
-      "release-as": "0.1.0"
+      "versioning": "default"
     }
   }
 }

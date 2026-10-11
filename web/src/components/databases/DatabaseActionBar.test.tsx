@@ -91,7 +91,7 @@ describe('DatabaseActionBar', () => {
     expect(confirm).toBeEnabled()
     await userEvent.click(confirm)
     expect(deleteMutate).toHaveBeenCalledWith(
-      { name: 'orders-db', force: false },
+      { name: 'orders-db', force: false, deleteData: false },
       expect.anything(),
     )
     expect(confirmSpy).not.toHaveBeenCalled()

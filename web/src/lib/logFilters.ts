@@ -56,6 +56,8 @@ export interface LogQueryState {
   container?: string
   stream?: string
   fields?: readonly FieldFilter[]
+  /** Keep only lines of one error signature (see the Errors tab). */
+  signature?: string
   from?: Date
   to?: Date
   limit?: number
@@ -85,6 +87,9 @@ export function buildLogQuery(state: LogQueryState): URLSearchParams {
   }
   if (state.fields) {
     appendFieldParams(params, state.fields)
+  }
+  if (state.signature) {
+    params.set('signature', state.signature)
   }
   if (state.limit) {
     params.set('limit', String(state.limit))

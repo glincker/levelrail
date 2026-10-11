@@ -7,6 +7,7 @@ import { mergeCertificateCenterRows } from '../../lib/certificateCenter'
 import { CertificateCenterTable } from '../../components/CertificateCenterTable'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageHeader } from '@/components/shell/PageHeader'
+import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // The certificate center: every domain's TLS certificate in one place,
 // across every app, with expiry, issuer (ACME/internal vs an
@@ -50,9 +51,7 @@ function CertificatesPage() {
 function CertificatesPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">
-        TLS certificates
-      </h1>
+      <SettingsPageTitle id="certificates" />
       <TableSkeleton columnCount={4} />
     </div>
   )

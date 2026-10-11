@@ -6,11 +6,9 @@ import { SetupChip } from './SetupChip'
 
 export function RecommendationsLineView({
   count,
-  firstAppName,
   showSetup,
 }: {
   count: number
-  firstAppName: string | undefined
   showSetup: boolean
 }) {
   const { t } = useTranslation('dashboard')
@@ -26,24 +24,17 @@ export function RecommendationsLineView({
           {t('recommendations.line', { count })}
         </Link>
       ) : null}
-      {showSetup ? <SetupChip firstAppName={firstAppName} /> : null}
+      {showSetup ? <SetupChip /> : null}
     </div>
   )
 }
 
 // One quiet line: the advice itself lives in the notification centre.
-export function RecommendationsLine({
-  firstAppName,
-  showSetup,
-}: {
-  firstAppName: string | undefined
-  showSetup: boolean
-}) {
+export function RecommendationsLine({ showSetup }: { showSetup: boolean }) {
   const { recommendations } = useAttentionSummary()
   return (
     <RecommendationsLineView
       count={recommendations.length}
-      firstAppName={firstAppName}
       showSetup={showSetup}
     />
   )

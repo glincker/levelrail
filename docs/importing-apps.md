@@ -4,6 +4,8 @@ description: Import an app from a repo URL, a docker run command, an image, a co
 
 # Importing apps
 
+For a repository, the [New app wizard](new-app-wizard.md) reads the files and pre-fills the build, port, health path, variables and databases for you.
+
 The "New app" dialog opens with one input, "Import anything". Paste or upload what you already have and Levelrail classifies it and shows a deployment plan preview before anything is created. The same flow is available from the CLI (`levelrail-cli import`), the HTTP API (`POST /api/v1/imports/plan`) and the MCP server (`plan_import`).
 
 A plan is a preview only. Deploying it uses the existing create, build and compose endpoints; there is no separate deploy path.

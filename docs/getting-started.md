@@ -144,16 +144,37 @@ Once you are signed in, the dashboard home shows live stats, recent activity, an
 
 ![Levelrail dashboard home with app, request, and deploy stats and a Needs attention list](assets/screenshots/dashboard-home.png)
 
-A **Get set up** card also walks you through a safe production setup, driven by live state:
+The sidebar also has a **Get started** item, and the home page a "Setup N% ready" chip, until you hide the guide or every step is settled. It is a checklist driven by live state: each step flips to done on its own the moment the real thing exists, with no reload.
 
-- connect a git provider
-- add a custom domain with a valid certificate
-- add a backup target and take a control plane backup
-- create a notification channel and an alert rule
-- turn on two-factor authentication
-- set the dashboard URL
+| Step | Done when | Optional |
+| --- | --- | --- |
+| Secure the admin account | The account has two-factor authentication or a passkey | no |
+| Set the public dashboard address | The dashboard URL is an `https://` address | no |
+| Connect a Git provider | GitHub, GitLab, Bitbucket, or Gitea is connected | yes |
+| Deploy your first app | At least one app exists | no |
+| Put the app on your domain | A domain is attached to an app | no |
+| Connect a DNS provider or proxy | Cloudflare or Route 53 is connected, or you run behind a proxy | yes |
+| Get a valid TLS certificate | Every domain has a healthy certificate (not needed behind a proxy that terminates TLS) | no |
+| Add a backup target | A backup target exists | no |
+| Take the first backup | A control plane backup exists | no |
+| Verify a restore | A backup has passed verification | no |
+| Add a notification channel and alert rule | A channel exists and an alert rule is set | no |
+| Invite a teammate | A second user or a pending invite exists | yes |
+| Choose an upgrade policy | Automatic upgrades are enabled | yes |
 
-Do the backup step before anything else. Your control plane database and `master.key` are the two things you cannot recreate.
+Each step has a one-line explanation, a time estimate, and a button that opens the exact page or dialog for it. A step that depends on another (a domain needs an app, a first backup needs a target) says what to do first. "Ready for production" is the share of required steps that are done. Steps that do not apply to you, such as TLS behind your own proxy, show as "Not needed" and stay out of that number.
+
+You can **Skip** a step, **Mark done** for something the guide cannot see, and **Undo** either. **Hide for now** removes the sidebar item and chip, and **Reset** clears every skip and manual mark. Both are stored on the server, so they follow you across browsers. Pages that belong to an unfinished step, such as backup targets, show a one-line reminder that links back to the guide.
+
+The same checklist is available from a terminal:
+
+```
+levelrail-cli setup status
+levelrail-cli setup next
+levelrail-cli setup skip teammate
+```
+
+Do the backup steps before anything else. Your control plane database and `master.key` are the two things you cannot recreate.
 
 ## Where to go next
 

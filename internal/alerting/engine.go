@@ -114,6 +114,9 @@ type Engine struct {
 	versionSkewFetchers upgrade.Fetchers
 	versionSkewCache    *upgrade.Cache
 
+	budgets       BudgetSource
+	budgetTracker *budgetTracker
+
 	noise *NoiseControl
 
 	changes     ChangeSource
@@ -124,6 +127,8 @@ type Engine struct {
 
 	sloMu       sync.Mutex
 	sloSeverity map[string]string
+
+	logRule logRuleRuntime
 }
 
 // NewEngine builds an Engine. newNotifier defaults to a Notifier with no
@@ -191,6 +196,7 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 		domainHealthCheckInterval: domainHealthCheckInterval, domainHealthThrottle: newDomainHealthThrottle(),
 		backupMissingGracePeriod: backupMissingGracePeriod,
 		slo:                      SLOPolicyFromEnv(), sloThrottle: newDomainHealthThrottle(), sloSeverity: make(map[string]string),
+		logRule: newLogRuleRuntime(),
 	}
 }
 
@@ -246,6 +252,12 @@ func (e *Engine) SetVersionSkew(settings VersionSkewSettingsSource, fetchers upg
 	e.versionSkewCache = upgrade.NewCache()
 }
 
+// SetBudgets enables kind=budget_threshold rules.
+func (e *Engine) SetBudgets(src BudgetSource) {
+	e.budgets = src
+	e.budgetTracker = newBudgetTracker()
+}
+
 // SetNodeCertThresholds sets the default warning window and critical
 // threshold for kind=node_cert_expiring rules. Zero keeps the defaults.
 func (e *Engine) SetNodeCertThresholds(warning, critical time.Duration) {
@@ -290,6 +302,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 		var next Rule
 		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string
 		var taskFailureNotice, backupMissingNoticeText, sloNotice, versionSkewNotice string
+		var budgetKeys []string
 		switch r.Kind {
 		case KindThreshold:
 			next, err = EvaluateThreshold(ctx, e.metrics, r, now)
@@ -418,6 +431,19 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindLogPattern, KindLogLevelRate:
+			if e.logs == nil {
+				continue
+			}
+			var skip bool
+			next, skip, err = e.evaluateLogRule(ctx, r, now)
+			if skip {
+				continue
+			}
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindControlPlaneBackupStale:
 			if e.cpBackups == nil {
 				// Scheduled backups are disabled: nothing to be stale.
@@ -451,6 +477,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				continue
 			}
 			next, versionSkewNotice, err = EvaluateVersionSkew(ctx, e.versionSkewSettings, e.versionSkewFetchers, e.versionSkewCache, r, version.Version, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindBudgetThreshold:
+			if e.budgets == nil {
+				continue
+			}
+			next, nodeNotices, budgetKeys, err = EvaluateBudgetThreshold(ctx, e.budgets, r, now)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -493,6 +528,10 @@ func (e *Engine) Tick(ctx context.Context) error {
 			if r.Kind == KindSLOBurn {
 				e.sloEscalated(r.ID, next.Severity)
 			}
+			if r.Kind == KindBudgetThreshold {
+				e.budgetTracker.forget(r.ID)
+				e.budgetTracker.record(r.ID, budgetKeys)
+			}
 			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices, taskFailureNotice, backupMissingNoticeText, sloNotice, versionSkewNotice)
 			if r.Kind == KindCrashloop && e.autoRollback != nil {
 				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
@@ -504,8 +543,14 @@ func (e *Engine) Tick(ctx context.Context) error {
 			if r.Kind == KindSLOBurn {
 				e.sloForget(r.ID)
 			}
+			if r.Kind == KindBudgetThreshold {
+				e.budgetTracker.forget(r.ID)
+			}
 			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, nil, "", "", "", "")
 		case stillFiring:
+			if r.Kind == KindBudgetThreshold && e.budgetTracker.record(r.ID, budgetKeys) {
+				e.dispatch(ctx, next, false, nil, nil, nil, nil, nil, nodeNotices, "", "", "", "")
+			}
 			// A ticket-level SLO burn that worsens into a page-level one must
 			// notify again: the operator only heard a warning so far.
 			if r.Kind == KindSLOBurn && e.sloEscalated(r.ID, next.Severity) {
@@ -606,9 +651,15 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if r.Kind == KindVersionSkew && !resolved {
 		ev.VersionSkewNotice = versionSkewNotice
 	}
+	if r.Kind == KindBudgetThreshold && !resolved {
+		ev.BudgetNotices = nodeNotices
+	}
 
 	if r.Kind == KindSLOBurn && !resolved {
 		ev.SLONotice = sloNotice
+	}
+	if (r.Kind == KindLogPattern || r.Kind == KindLogLevelRate) && !resolved {
+		ev.LogNotice, ev.LogLines = e.logRule.take(r.ID)
 	}
 
 	if !resolved {

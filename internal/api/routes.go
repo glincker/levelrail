@@ -19,6 +19,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerAuthEngineStatusRoute(mux)
 	rt.registerPlatformRoutes(mux)
 	rt.registerStorageRoutes(mux)
+	rt.registerBackupCoverageRoutes(mux)
 	rt.registerPipelineRoutes(mux)
 	rt.registerPipelineOverviewRoutes(mux)
 	rt.registerModelRoutes(mux)
@@ -32,6 +33,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerAlertNoiseRoutes(mux)
 	rt.registerStatusPageRoutes(mux)
 	rt.registerResourceAdvisorRoutes(mux)
+	rt.registerUsageCostRoutes(mux)
 	rt.registerPreviewRoutes(mux)
 	rt.registerSupplyChainRoutes(mux)
 	rt.registerIAMTemplateRoutes(mux)
@@ -39,6 +41,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerIAMBuilderRoutes(mux)
 	rt.registerSecurityRoutes(mux)
 	rt.registerProxyIntegrationRoutes(mux)
+	rt.registerSetupGuideRoutes(mux)
 	rt.registerDNSZoneRoutes(mux)
 	rt.registerTrafficRoutes(mux)
 	rt.registerDatabaseUpgradeRoutes(mux)
@@ -46,6 +49,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerComposeRoutes(mux)
 	rt.registerEnvProtectionRoutes(mux)
 	rt.registerStandaloneDomainRoutes(mux)
+	rt.registerLogExplorerRoutes(mux)
 
 	var h http.Handler = mux
 	h = experimentalGateMiddleware(h)
@@ -647,6 +651,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// Import front door: classifies pasted input and returns a plan preview,
 	// creating nothing. AbilityWrite because it makes outbound fetches.
 	mux.HandleFunc("POST /api/v1/imports/plan", rt.requireAbility(AbilityWrite, rt.handleImportPlan))
+	mux.HandleFunc("POST /api/v1/imports/analyze", rt.requireAbility(AbilityWrite, rt.handleAnalyzeImport))
 
 	// Previously-built image tags for this app's repo, so the deploy
 	// trigger form can offer a dropdown instead of a hand-typed tag

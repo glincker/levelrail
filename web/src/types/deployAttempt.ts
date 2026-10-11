@@ -52,6 +52,10 @@ export interface DeployAttempt {
    *  this build, e.g. "Node.js". Absent when detection was skipped or
    *  found nothing buildable. */
   detected_framework?: string
+  /** Push-payload metadata of a git build; absent for image deploys. */
+  branch?: string
+  commit_message?: string
+  author?: string
   /** Content identity: registry digest, or a build's local image ID. */
   image_digest?: string
   /** How image_digest was obtained, e.g. Resolved or PullFailedUsingCached. */

@@ -98,6 +98,7 @@ export function DashboardHome({
             />
           }
         />
+        <RecommendationsLine showSetup={isRoot} />
         <QuickStart hasApps={false} />
         <PlatformCapabilities />
       </div>
@@ -115,7 +116,7 @@ export function DashboardHome({
       <Suspense fallback={null}>
         <RecentAlertsCard />
       </Suspense>
-      <RecommendationsLine firstAppName={apps[0]?.name} showSetup={isRoot} />
+      <RecommendationsLine showSetup={isRoot} />
       <UsageDetails apps={apps} />
       <QuickStart hasApps />
     </div>

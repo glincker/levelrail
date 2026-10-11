@@ -1,406 +1,238 @@
 import type { ComponentType } from 'react'
 import {
-  FlaskIcon,
-  UserIcon,
-  ShieldIcon,
-  ShieldCheckIcon,
-  KeyIcon,
-  LockKeyIcon,
-  UsersIcon,
-  UsersThreeIcon,
+  ArrowCircleUpIcon,
   BuildingsIcon,
-  GithubLogoIcon,
-  GitlabLogoIcon,
-  GitBranchIcon,
-  TeaBagIcon,
-  WebhooksLogoIcon,
+  ChartLineIcon,
+  ClockCounterClockwiseIcon,
   CloudArrowUpIcon,
   CloudCheckIcon,
-  DatabaseIcon,
-  EnvelopeIcon,
-  GearIcon,
-  GlobeIcon,
-  ArrowCircleUpIcon,
-  ClockCounterClockwiseIcon,
-  PackageIcon,
-  DownloadSimpleIcon,
-  TerminalWindowIcon,
   CodeIcon,
-  HeartbeatIcon,
-  StackIcon,
-  HardDrivesIcon,
-  RobotIcon,
-  PlugsConnectedIcon,
-  SparkleIcon,
-  FileCodeIcon,
-  ChartLineIcon,
-  IdentificationBadgeIcon,
+  DatabaseIcon,
+  DownloadSimpleIcon,
+  EnvelopeIcon,
   ExportIcon,
+  FileCodeIcon,
+  FlaskIcon,
+  GearIcon,
+  GitBranchIcon,
+  GithubLogoIcon,
+  GitlabLogoIcon,
+  GlobeIcon,
+  HardDrivesIcon,
+  HeartbeatIcon,
+  IdentificationBadgeIcon,
+  KeyIcon,
+  LockKeyIcon,
+  PackageIcon,
+  PlugsConnectedIcon,
+  RobotIcon,
+  ShieldCheckIcon,
+  ShieldIcon,
+  SparkleIcon,
+  StackIcon,
+  TeaBagIcon,
+  TerminalWindowIcon,
+  UserIcon,
+  UsersIcon,
+  UsersThreeIcon,
+  WebhooksLogoIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { filterByFeature, type ExperimentalFeature } from './experimental'
 
+import type settingsEn from '../locales/en/settings.json'
+
+export type SettingsItemId = keyof (typeof settingsEn)['nav']['items']
+export type SettingsAreaId = keyof (typeof settingsEn)['nav']['areas']
+
 export interface SettingsNavItem {
+  id: SettingsItemId
   to: string
   icon: ComponentType<{ className?: string }>
-  title: string
-  description: string
   feature?: ExperimentalFeature
 }
 
 export interface SettingsNavSection {
-  heading: string
+  id: SettingsAreaId
   items: SettingsNavItem[]
 }
 
-// Single source of truth for every settings page: the hub's card grid
-// (routes/settings/index.tsx) and the sidebar's sub-nav
-// (SettingsScopedSidebar.tsx) both render from this list, so a new
-// settings page only needs adding here once.
+// Single source of truth for every settings page. Labels live in
+// locales/en/settings.json under nav.areas.<id> and nav.items.<id>, read
+// through useSettingsNav, so the hub and the sidebar never drift apart.
 export const settingsNavSections: SettingsNavSection[] = [
   {
-    heading: 'Account',
+    id: 'general',
     items: [
+      { id: 'account', to: '/settings/account', icon: UserIcon },
       {
-        to: '/settings/account',
-        icon: UserIcon,
-        title: 'Account',
-        description: 'Profile and password.',
-      },
-      // Access-control surface bigger than its old spot implied: kept near
-      // the top of Account rather than buried after CLI access.
-      {
-        to: '/settings/iam-policies',
-        icon: ShieldCheckIcon,
-        title: 'IAM policies',
-        description:
-          'Resource-scoped Allow/Deny access, layered on top of a token’s own abilities.',
-      },
-      {
-        to: '/settings/security',
-        icon: ShieldIcon,
-        title: 'Security',
-        description: 'Sessions and login protection.',
-      },
-      {
-        to: '/security',
-        icon: ShieldCheckIcon,
-        title: 'Security center',
-        description:
-          'Security score, every session and device, and token policy.',
-      },
-      {
-        to: '/settings/tokens',
-        icon: KeyIcon,
-        title: 'API tokens',
-        description: 'Scoped, revocable credentials for the CLI, CI, and MCP.',
-      },
-      {
-        to: '/settings/agents',
-        icon: PlugsConnectedIcon,
-        title: 'Agents',
-        description: 'Connect an AI agent over MCP and manage its tokens.',
-      },
-      {
-        to: '/settings/ai-control',
-        icon: ShieldCheckIcon,
-        title: 'AI control',
-        description:
-          'Turn agent access off, read-only or on, and limit it to chosen environments.',
-      },
-      {
+        id: 'cli-access',
         to: '/settings/cli-access',
         icon: TerminalWindowIcon,
-        title: 'CLI access',
-        description:
-          'Approve or deny logins started with levelrail-cli auth login.',
       },
+      { id: 'api-explorer', to: '/settings/api-explorer', icon: CodeIcon },
+      { id: 'data-export', to: '/settings/data-export', icon: ExportIcon },
       {
-        to: '/settings/api-explorer',
-        icon: CodeIcon,
-        title: 'API explorer',
-        description:
-          'Browse and try real endpoints without leaving the dashboard.',
-      },
-    ],
-  },
-  {
-    heading: 'Team',
-    items: [
-      {
-        to: '/settings/users',
-        icon: UsersIcon,
-        title: 'Users',
-        description: 'Everyone with access to this platform.',
-      },
-      {
-        to: '/settings/teams',
-        icon: UsersThreeIcon,
-        title: 'Teams',
-        description: 'Members, roles and invitations for each team.',
-      },
-      {
-        to: '/settings/roles',
-        icon: IdentificationBadgeIcon,
-        title: 'Roles',
-        description: 'Named ability sets, including the guest role.',
-        feature: 'access-roles',
-      },
-      {
-        to: '/settings/oauth',
-        icon: LockKeyIcon,
-        title: 'OAuth sign-in',
-        description: 'Let people sign in with Google or GitHub.',
-      },
-      {
-        to: '/settings/organizations',
-        icon: BuildingsIcon,
-        title: 'Organizations',
-        description: 'Group related projects under an organization.',
-      },
-      {
-        to: '/settings/environments',
-        icon: StackIcon,
-        title: 'Environments',
-        description:
-          'Dev, test, UAT and production environments, and which are protected.',
-        feature: 'global-environments',
-      },
-    ],
-  },
-  {
-    heading: 'Git providers',
-    items: [
-      {
-        to: '/settings/github-app',
-        icon: GithubLogoIcon,
-        title: 'GitHub App',
-        description: 'Private-repository access for git-based deploys.',
-      },
-      {
-        to: '/settings/gitlab-app',
-        icon: GitlabLogoIcon,
-        title: 'GitLab App',
-        description:
-          'gitlab.com or self-hosted project access for git-based deploys.',
-      },
-      {
-        to: '/settings/bitbucket-app',
-        icon: GitBranchIcon,
-        title: 'Bitbucket App',
-        description: 'Bitbucket Cloud repository access for git-based deploys.',
-      },
-      {
-        to: '/settings/gitea-app',
-        icon: TeaBagIcon,
-        title: 'Gitea App',
-        description:
-          'Self-hosted Gitea repository access for git-based deploys.',
-      },
-    ],
-  },
-  {
-    heading: 'Notifications & status',
-    items: [
-      {
-        to: '/settings/notification-channels',
-        icon: WebhooksLogoIcon,
-        title: 'Notification channels',
-        description: 'Slack, Discord, Telegram, webhook, and email alerts.',
-      },
-      {
-        to: '/settings/status-page',
-        icon: HeartbeatIcon,
-        title: 'Status page',
-        description:
-          'Optional public page with component status, uptime and incidents.',
-      },
-    ],
-  },
-  {
-    heading: 'Storage & backups',
-    items: [
-      {
-        to: '/settings/backup-targets',
-        icon: CloudArrowUpIcon,
-        title: 'Backup targets',
-        description: 'S3-compatible buckets for managed database backups.',
-      },
-      {
-        to: '/settings/storage',
-        icon: CloudArrowUpIcon,
-        title: 'Storage destinations',
-        description:
-          'AWS S3, R2, B2, MinIO, Wasabi buckets for log archives and backups.',
-      },
-    ],
-  },
-  {
-    // Named to avoid colliding with "Infrastructure as code" under Platform.
-    heading: 'Registries & nodes',
-    items: [
-      {
-        to: '/settings/registry-credentials',
-        icon: PackageIcon,
-        title: 'Registry credentials',
-        description: 'Pull private images with build.type: image.',
-      },
-      {
-        to: '/settings/node-providers',
-        icon: HardDrivesIcon,
-        title: 'Cloud node providers',
-        description:
-          'Hetzner and DigitalOcean tokens for automatic node provisioning.',
-      },
-      {
-        to: '/settings/registry',
-        icon: HardDrivesIcon,
-        title: 'Container registry',
-        description: 'Built-in image registry for multi-node build caching.',
-      },
-    ],
-  },
-  {
-    heading: 'Platform extras',
-    items: [
-      {
-        to: '/settings/email',
-        icon: EnvelopeIcon,
-        title: 'Email',
-        description: 'Outbound SMTP for alerts and password resets.',
-      },
-      {
-        to: '/settings/cloudflare-tunnel',
-        icon: CloudCheckIcon,
-        title: 'Cloudflare Tunnel',
-        description:
-          'Expose this control plane without opening an inbound port.',
-        feature: 'cloudflare-tunnel',
-      },
-      {
-        to: '/settings/vault',
-        icon: LockKeyIcon,
-        title: 'Vault',
-        description:
-          'Resolve app secrets live from an external HashiCorp Vault instance.',
-      },
-      {
-        to: '/settings/data-export',
-        icon: ExportIcon,
-        title: 'Data export',
-        description:
-          'Send logs, audit events and metrics to Loki, syslog, a webhook, a bucket or an OTLP collector.',
-      },
-      {
-        to: '/settings/observability',
-        icon: ChartLineIcon,
-        title: 'Observability',
-        description:
-          'Remote-read connection info and a link out to your own Grafana.',
-      },
-      {
-        to: '/settings/ai-assistant',
-        icon: RobotIcon,
-        title: 'AI Assistant',
-        description:
-          'Bring your own LLM API key for the platform chat assistant.',
-        feature: 'ai-chat',
-      },
-      {
+        id: 'import-platform',
         to: '/settings/import-platform',
         icon: DownloadSimpleIcon,
-        title: 'Import from another platform',
-        description: 'Bring apps over from Coolify, Dokploy or CapRover.',
+      },
+      { id: 'setup-wizard', to: '/settings/setup-wizard', icon: SparkleIcon },
+      { id: 'general', to: '/settings/general', icon: GearIcon },
+    ],
+  },
+  {
+    id: 'security',
+    items: [
+      {
+        id: 'iam-policies',
+        to: '/settings/iam-policies',
+        icon: ShieldCheckIcon,
+      },
+      { id: 'security', to: '/settings/security', icon: ShieldIcon },
+      { id: 'security-center', to: '/security', icon: ShieldCheckIcon },
+      { id: 'tokens', to: '/settings/tokens', icon: KeyIcon },
+      { id: 'agents', to: '/settings/agents', icon: PlugsConnectedIcon },
+      { id: 'ai-control', to: '/settings/ai-control', icon: ShieldCheckIcon },
+      { id: 'users', to: '/settings/users', icon: UsersIcon },
+      { id: 'teams', to: '/settings/teams', icon: UsersThreeIcon },
+      {
+        id: 'roles',
+        to: '/settings/roles',
+        icon: IdentificationBadgeIcon,
+        feature: 'access-roles',
+      },
+      { id: 'oauth', to: '/settings/oauth', icon: LockKeyIcon },
+      {
+        id: 'organizations',
+        to: '/settings/organizations',
+        icon: BuildingsIcon,
+      },
+      {
+        id: 'environments',
+        to: '/settings/environments',
+        icon: StackIcon,
+        feature: 'global-environments',
+      },
+      { id: 'vault', to: '/settings/vault', icon: LockKeyIcon },
+      {
+        id: 'audit-log',
+        to: '/settings/audit-log',
+        icon: ClockCounterClockwiseIcon,
       },
     ],
   },
   {
-    heading: 'Platform',
+    id: 'domains',
     items: [
       {
-        to: '/settings/setup-wizard',
-        icon: SparkleIcon,
-        title: 'Setup wizard',
-        description: 'Server checks, dashboard domain, git, and a first app.',
+        id: 'cloudflare-tunnel',
+        to: '/settings/cloudflare-tunnel',
+        icon: CloudCheckIcon,
+        feature: 'cloudflare-tunnel',
       },
+      { id: 'domains', to: '/domains', icon: GlobeIcon },
       {
-        to: '/settings/general',
-        icon: GearIcon,
-        title: 'General',
-        description: 'System status and configuration.',
-      },
-      {
-        to: '/settings/control-plane-backup',
-        icon: DatabaseIcon,
-        title: 'Control plane backup',
-        description:
-          'Snapshots, off-box backups, key escrow and restore drills for this instance.',
-      },
-      {
-        to: '/settings/system-status',
-        icon: HeartbeatIcon,
-        title: 'System status',
-        description:
-          'Preflight checks: Docker, disk, ports, database, and firewall.',
-      },
-      {
-        to: '/settings/firewall',
-        icon: ShieldIcon,
-        title: 'Firewall',
-        description:
-          'Allow or deny rules by port, protocol, and source, reconciled onto this node.',
-      },
-      {
-        to: '/settings/containers',
-        icon: StackIcon,
-        title: 'Containers',
-        description:
-          'Every container on this node, managed by this platform or not.',
-      },
-      {
-        to: '/domains',
-        icon: GlobeIcon,
-        title: 'Domains',
-        description:
-          'Platform ingress: dashboard domain and ACME certificates.',
-      },
-      {
+        id: 'certificates',
         to: '/settings/certificates',
         icon: ShieldCheckIcon,
-        title: 'TLS certificates',
-        description:
-          'Every domain’s certificate in one place: expiry, issuer, renew now, and custom certificate upload.',
+      },
+    ],
+  },
+  {
+    id: 'backups',
+    items: [
+      {
+        id: 'backup-targets',
+        to: '/settings/backup-targets',
+        icon: CloudArrowUpIcon,
+      },
+      { id: 'storage', to: '/settings/storage', icon: CloudArrowUpIcon },
+      {
+        id: 'control-plane-backup',
+        to: '/settings/control-plane-backup',
+        icon: DatabaseIcon,
+      },
+    ],
+  },
+  {
+    id: 'notifications',
+    items: [
+      {
+        id: 'notification-channels',
+        to: '/settings/notification-channels',
+        icon: WebhooksLogoIcon,
+      },
+      { id: 'status-page', to: '/settings/status-page', icon: HeartbeatIcon },
+      { id: 'email', to: '/settings/email', icon: EnvelopeIcon },
+    ],
+  },
+  {
+    id: 'integrations',
+    items: [
+      { id: 'github-app', to: '/settings/github-app', icon: GithubLogoIcon },
+      { id: 'gitlab-app', to: '/settings/gitlab-app', icon: GitlabLogoIcon },
+      {
+        id: 'bitbucket-app',
+        to: '/settings/bitbucket-app',
+        icon: GitBranchIcon,
+      },
+      { id: 'gitea-app', to: '/settings/gitea-app', icon: TeaBagIcon },
+      {
+        id: 'registry-credentials',
+        to: '/settings/registry-credentials',
+        icon: PackageIcon,
       },
       {
+        id: 'node-providers',
+        to: '/settings/node-providers',
+        icon: HardDrivesIcon,
+      },
+      { id: 'registry', to: '/settings/registry', icon: HardDrivesIcon },
+      {
+        id: 'ai-assistant',
+        to: '/settings/ai-assistant',
+        icon: RobotIcon,
+        feature: 'ai-chat',
+      },
+    ],
+  },
+  {
+    id: 'beta',
+    items: [
+      { id: 'beta-features', to: '/settings/beta-features', icon: FlaskIcon },
+    ],
+  },
+  {
+    id: 'updates',
+    items: [
+      { id: 'updates', to: '/settings/updates', icon: ArrowCircleUpIcon },
+    ],
+  },
+  {
+    id: 'advanced',
+    items: [
+      {
+        id: 'observability',
+        to: '/settings/observability',
+        icon: ChartLineIcon,
+      },
+      {
+        id: 'system-status',
+        to: '/settings/system-status',
+        icon: HeartbeatIcon,
+      },
+      { id: 'firewall', to: '/settings/firewall', icon: ShieldIcon },
+      { id: 'containers', to: '/settings/containers', icon: StackIcon },
+      {
+        id: 'infrastructure',
         to: '/settings/infrastructure',
         icon: FileCodeIcon,
-        title: 'Infrastructure as code',
-        description:
-          'Plan and apply YAML resource files, and export live state.',
         feature: 'iac',
       },
       {
+        id: 'database-upgrades',
         to: '/settings/database-upgrades',
         icon: DatabaseIcon,
-        title: 'Database upgrades',
-        description: 'Default upgrade policy and maintenance window.',
-      },
-      {
-        to: '/settings/updates',
-        icon: ArrowCircleUpIcon,
-        title: 'Updates',
-        description: 'Current version and available releases.',
-      },
-      {
-        to: '/settings/beta-features',
-        icon: FlaskIcon,
-        title: 'Beta features',
-        description: 'Switch on features that work but are still being tuned.',
-      },
-      {
-        to: '/settings/audit-log',
-        icon: ClockCounterClockwiseIcon,
-        title: 'Audit log',
-        description: 'Who changed what, across every session and API token.',
       },
     ],
   },

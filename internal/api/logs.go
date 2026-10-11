@@ -121,6 +121,9 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 		rt.logger.Warn("api: "+opName+": partial result", slog.String("error", err.Error()), slog.String("name", name))
 	}
 
+	if sig := r.URL.Query().Get("signature"); sig != "" {
+		entries = logsHaveSignature(entries, sig)
+	}
 	entries = filterLogsByLevel(entries, minLevel)
 	entries = filterLogs(entries, stream, fieldFilters)
 	containers := countLogContainers(entries)

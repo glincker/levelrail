@@ -42,6 +42,7 @@ import { RestoreHistoryTable } from './RestoreHistoryTable'
 import { CloneRestoreDialog } from './CloneRestoreDialog'
 import { CloneRestoreHistoryTable } from './CloneRestoreHistoryTable'
 import { BackupScheduleForm } from './BackupScheduleForm'
+import { BackupScheduleSuggestion } from './backups/BackupScheduleSuggestion'
 import { BackupVerificationBadge } from './BackupVerificationBadge'
 import { StatusBadge } from './backupAttemptStatus'
 import type { BackupHistoryRecord } from '../types/backupHistory'
@@ -474,6 +475,7 @@ export function BackupsSection({ database }: { database: DatabaseResource }) {
         <CardTitle>Backups</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <BackupScheduleSuggestion database={database} />
         <BackupScheduleForm database={database} />
         <TriggerBackupRow databaseName={databaseName} />
         <BackupHistoryTable databaseName={databaseName} />

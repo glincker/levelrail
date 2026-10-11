@@ -627,4 +627,24 @@ describe('CreateAppFromGitFields', () => {
     expect(screen.queryByText(/^Detected:/)).not.toBeInTheDocument()
     expect(screen.getByLabelText('Repository URL')).not.toBeDisabled()
   })
+  it('keeps the raw repo fields while typing, and folds them into a summary once the picker supplies the repo', async () => {
+    detectResponse = { detected: false }
+    const user = userEvent.setup()
+    renderForm()
+
+    await screen.findByLabelText('Name')
+    await user.type(
+      screen.getByLabelText('Repository URL'),
+      'https://github.com/example/app.git',
+    )
+    expect(screen.getByLabelText('Repository URL')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()
+
+    await user.click(screen.getByText('Pick GitHub repo (test)'))
+
+    const edit = await screen.findByRole('button', { name: 'Edit' })
+    expect(screen.queryByLabelText('Repository URL')).toBeNull()
+    await user.click(edit)
+    expect(screen.getByLabelText('Repository URL')).toBeInTheDocument()
+  })
 })

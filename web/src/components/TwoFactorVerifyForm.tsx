@@ -153,7 +153,7 @@ export function TwoFactorVerifyForm({
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+          className="flex items-center gap-1 rounded py-2 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           <ArrowLeftIcon className="size-3" />
           {t('twoFactor.back')}
@@ -161,7 +161,7 @@ export function TwoFactorVerifyForm({
         <button
           type="button"
           onClick={toggleMode}
-          className="text-muted-foreground hover:text-foreground"
+          className="rounded py-2 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           {useRecoveryCode
             ? t('twoFactor.useAuthenticator')

@@ -117,8 +117,8 @@ func TestHandleDownloadLogs_TrimsToMaxLines(t *testing.T) {
 	}
 
 	now := time.Now().UTC().Truncate(time.Second)
-	entries := make([]telemetry.LogEntry, 0, logDownloadMaxLines+5)
-	for i := 0; i < logDownloadMaxLines+5; i++ {
+	entries := make([]telemetry.LogEntry, 0, defaultLogDownloadMaxLines+5)
+	for i := 0; i < defaultLogDownloadMaxLines+5; i++ {
 		entries = append(entries, telemetry.LogEntry{
 			ResourceID: "service:web",
 			Stream:     "stdout",
@@ -138,7 +138,7 @@ func TestHandleDownloadLogs_TrimsToMaxLines(t *testing.T) {
 	}
 
 	lines := strings.Count(rec.Body.String(), "\n")
-	if lines != logDownloadMaxLines {
-		t.Errorf("lines = %d, want %d (capped)", lines, logDownloadMaxLines)
+	if lines != defaultLogDownloadMaxLines {
+		t.Errorf("lines = %d, want %d (capped)", lines, defaultLogDownloadMaxLines)
 	}
 }

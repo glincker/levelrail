@@ -25,6 +25,7 @@ import { useRouteAvailable } from '@/lib/routeAvailability'
 import { ProjectsNavItem } from './ProjectsNavTree'
 import { useNavCounts } from './useNavCounts'
 import { usePersistedToggles } from './usePersistedToggles'
+import { GetStartedNavItem } from './GetStartedNavItem'
 
 const GLOBAL_NAV_STORAGE_KEY = 'shell.nav.global.open'
 
@@ -97,6 +98,7 @@ export function GlobalNav() {
   return (
     <>
       <div className="flex flex-col gap-1 p-2">
+        <GetStartedNavItem />
         {visibleGlobalGroups(experimental, routeAvailable).map((group) => {
           const menu = (
             <SidebarMenu>

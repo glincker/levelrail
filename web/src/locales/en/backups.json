@@ -128,10 +128,242 @@
     },
     "stage": "Failed at {{stage}}",
     "files": "{{count}} files",
-    "tables": "{{count}} tables"
+    "tables": "{{count}} tables",
+    "shortDescription": "Restores into scratch resources prove a backup works.",
+    "showAll": "Show all {{count}}",
+    "showLess": "Show fewer"
   },
   "history": {
     "title": "All backup attempts",
     "description": "Every attempt across every database and app volume, newest first."
+  },
+  "page": {
+    "title": "Backups",
+    "helpLabel": "Backups and storage guide",
+    "description": "What is protected, what is not, and one place to fix it.",
+    "loadFailed": "Could not load backup coverage: {{error}}",
+    "noResourcesTitle": "Nothing to back up yet",
+    "noResourcesDescription": "Databases and app volumes show up here as soon as you create them."
+  },
+  "summary": {
+    "protected": "{{protected}} of {{total}} resources protected",
+    "headline": {
+      "empty": "No databases or app volumes yet.",
+      "allVerified": "Every resource is backed up and a restore has been proven.",
+      "someUnprotected_one": "{{count}} resource has no backup schedule.",
+      "someUnprotected_other": "{{count}} resources have no backup schedule.",
+      "failing": "Backups are failing for {{failing}} of them. Fix those first.",
+      "unverified": "Backed up, but a restore has not been proven for every resource yet."
+    },
+    "protectEverything": "Protect everything",
+    "lastVerified": "Last verified restore",
+    "nextRun": "Next run",
+    "storage": "Storage used"
+  },
+  "coverage": {
+    "state": {
+      "verified": "Protected and verified",
+      "unverified": "Protected, not verified",
+      "never_ran": "Scheduled, never ran",
+      "failing": "Backups failing",
+      "unprotected": "Not protected"
+    },
+    "lastBackup": "Last backup",
+    "lastRestore": "Verified restore",
+    "nextRun": "Next run",
+    "size": "Size"
+  },
+  "row": {
+    "kind": {
+      "database": "Database",
+      "volume": "Volume"
+    },
+    "scratch": "Scratch",
+    "protect": "Protect",
+    "protected": "{{name}} is now scheduled",
+    "protectFailed": "Could not protect {{name}}",
+    "backupNow": "Back up now",
+    "backupStarted": "Backup of {{name}} started",
+    "backupFailed": "Could not start a backup of {{name}}"
+  },
+  "target": {
+    "formLabel": "Connect a backup destination",
+    "providerLabel": "Provider",
+    "connected": "Destination \"{{name}}\" connected",
+    "connect": "Connect destination",
+    "connecting": "Connecting...",
+    "preset": {
+      "r2": {
+        "name": "Cloudflare R2",
+        "hint": "No egress fees"
+      },
+      "b2": {
+        "name": "Backblaze B2",
+        "hint": "Cheap cold storage"
+      },
+      "wasabi": {
+        "name": "Wasabi",
+        "hint": "Flat per-TB pricing"
+      },
+      "aws": {
+        "name": "AWS S3",
+        "hint": "Region and keys"
+      },
+      "minio": {
+        "name": "MinIO",
+        "hint": "Your own S3 server"
+      },
+      "local": {
+        "name": "Local disk",
+        "hint": "Same machine, not safe"
+      }
+    },
+    "localWarning": "Backups stored on this machine's own disk are lost with the machine. They protect against a bad deploy or a deleted table, not against a dead disk, a ransomware hit or a deleted server. Use this to try things out, then add an off-site destination.",
+    "field": {
+      "name": "Name",
+      "bucket": "Bucket",
+      "region": "Region",
+      "endpoint": "Endpoint",
+      "accessKeyId": "Access key ID",
+      "secretAccessKey": "Secret access key"
+    },
+    "placeholder": {
+      "name": "e.g. offsite-backups"
+    },
+    "missing": "{{field}} is required."
+  },
+  "protectAll": {
+    "title": "Protect everything",
+    "description": "Schedule a backup for every resource that has none. Nothing changes until you apply.",
+    "destination": "Destination",
+    "addDestination": "Add another destination",
+    "schedule": "Schedule and retention",
+    "choice": {
+      "daily": "Daily at 03:00",
+      "sixHours": "Every 6 hours",
+      "weekly": "Weekly, Sunday 03:00"
+    },
+    "cron": "Cron schedule",
+    "retain": "Backups to keep",
+    "includeScratch_one": "Also protect {{count}} scratch resource (previews and canaries)",
+    "includeScratch_other": "Also protect {{count}} scratch resources (previews and canaries)",
+    "plan": "What will change",
+    "planning": "Working out the plan...",
+    "nothingToDo": "Every resource already has a schedule.",
+    "kind": {
+      "database": "Database",
+      "volume": "Volume"
+    },
+    "cancel": "Cancel",
+    "applying": "Applying...",
+    "apply_one": "Protect {{count}} resource",
+    "apply_other": "Protect {{count}} resources",
+    "done_one": "{{count}} resource scheduled",
+    "done_other": "{{count}} resources scheduled",
+    "someFailed_one": "{{count}} could not be scheduled.",
+    "someFailed_other": "{{count}} could not be scheduled."
+  },
+  "safety": {
+    "title": "Encryption and bucket safety",
+    "encrypted": "Encrypted",
+    "notEncrypted": "Not encrypted",
+    "copied": "Public key copied",
+    "copyFailed": "Could not copy the public key",
+    "keyDetails": "Key details and off-box storage",
+    "keyHint": "Keep the private key (APP_BACKUP_ENCRYPTION_KEY_FILE, default backup-encryption.key in the data directory) in a password manager or another machine. Without it, encrypted backups cannot be restored after a disaster.",
+    "copyKey": "Copy public key",
+    "keyNotStored": "You have not confirmed that the private key is stored off this server. If this server is lost, so are these backups.",
+    "ack": "I stored it off this server",
+    "ackFailed": "Could not save the confirmation",
+    "later": "Remind me later"
+  },
+  "orphans": {
+    "title": "Orphaned data",
+    "description": "Data kept after its database or app was deleted. Deleting a database never removes its data by itself, so nothing here is removed until you reclaim it.",
+    "empty": "No orphaned data. Every volume belongs to a database or app that still exists.",
+    "loadFailed": "Could not list orphaned data: {{error}}",
+    "large": "Orphaned data uses {{size}}. Review it and reclaim what you no longer need.",
+    "role": {
+      "data": "Data volume",
+      "certificates": "Certificates",
+      "wal archive": "WAL archive",
+      "volume": "Volume"
+    },
+    "kind": {
+      "database": "Database",
+      "volume": "App volume",
+      "app": "App"
+    },
+    "sizeUnknown": "size unknown",
+    "age_one": "{{count}} day old",
+    "age_other": "{{count}} days old",
+    "noBackup": "No backup",
+    "hasBackup_one": "{{count}} backup",
+    "hasBackup_other": "{{count}} backups",
+    "inspect": "Inspect",
+    "reclaim": "Reclaim",
+    "volume": "Volume",
+    "belongedTo": "Belonged to",
+    "created": "Created",
+    "lastBackup": "Last backup",
+    "noBackupDetail": "No backup of this data exists",
+    "confirmTitle": "Reclaim the data of \"{{name}}\"?",
+    "confirmDescription": "The volume is deleted from this server. This cannot be undone.",
+    "confirmNoBackup": "No backup of this data exists. It will be gone for good.",
+    "confirmHasBackup_one": "{{count}} backup of it stays in your destination.",
+    "confirmHasBackup_other": "{{count}} backups of it stay in your destination.",
+    "confirmAction": "Delete this data",
+    "reclaiming": "Deleting...",
+    "reclaimed": "Reclaimed {{size}}"
+  },
+  "deleteData": {
+    "label": "Also delete the data",
+    "databaseHint": "Removes the data volume with the database. Without this, the volume is kept and listed under Orphaned data on the Backups page.",
+    "appHint": "Removes the app's volumes with the app. Without this, they are kept and listed under Orphaned data on the Backups page.",
+    "warning": "The data is destroyed and cannot be recovered unless a backup exists."
+  },
+  "firstRun": {
+    "title": "Set up backups",
+    "description": "Connect somewhere safe to keep backups, and every database and app volume can be protected from there.",
+    "descriptionWithResources_one": "{{count}} resource has no backup. Connect somewhere safe to keep them, then protect it in one step.",
+    "descriptionWithResources_other": "{{count}} resources have no backups. Connect somewhere safe to keep them, then protect them all in one step.",
+    "step": {
+      "destination": {
+        "title": "Add a destination",
+        "hint": "An S3-compatible bucket"
+      },
+      "schedule": {
+        "title": "Pick a schedule",
+        "hint": "Daily is a sound default"
+      },
+      "verify": {
+        "title": "Prove a restore",
+        "hint": "A backup counts once it restores"
+      }
+    }
+  },
+  "activity": {
+    "title": "Recent activity",
+    "subtitle": "Every attempt, newest first",
+    "empty": "No backup has run yet.",
+    "loadFailed": "Could not load older backups",
+    "deletedTarget": "Deleted target",
+    "kind": "Kind",
+    "resource": "Resource",
+    "status": "Status",
+    "target": "Target",
+    "size": "Size",
+    "started": "Started",
+    "verification": "Verification",
+    "actions": "Actions",
+    "loading": "Loading...",
+    "loadOlder": "Load older entries"
+  },
+  "suggestion": {
+    "title": "Back this database up",
+    "description": "A destination is connected, but this database has no schedule. Suggested: {{schedule}}, keeping the last {{retain}}.",
+    "apply": "Use the suggestion",
+    "applied": "Backups scheduled",
+    "failed": "Could not schedule backups"
   }
 }

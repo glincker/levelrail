@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import { DeleteDataOption } from './backups/DeleteDataOption'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
 import { ApiError } from '@/lib/apiError'
@@ -21,6 +23,7 @@ export function DeleteDatabaseDialog({
   const { t } = useTranslation('databases')
   const navigate = useNavigate()
   const deleteDatabase = useDeleteDatabase()
+  const [deleteData, setDeleteData] = useState(false)
   const inUse =
     deleteDatabase.error instanceof ApiError &&
     deleteDatabase.error.status === CONFLICT_STATUS
@@ -29,6 +32,7 @@ export function DeleteDatabaseDialog({
     onOpenChange(next)
     if (!next) {
       deleteDatabase.reset()
+      setDeleteData(false)
     }
   }
 
@@ -54,7 +58,7 @@ export function DeleteDatabaseDialog({
       error={error}
       onConfirm={() => {
         deleteDatabase.mutate(
-          { name, force: inUse },
+          { name, force: inUse, deleteData },
           {
             onSuccess: () => {
               onOpenChange(false)
@@ -64,6 +68,12 @@ export function DeleteDatabaseDialog({
           },
         )
       }}
-    />
+    >
+      <DeleteDataOption
+        kind="database"
+        checked={deleteData}
+        onCheckedChange={setDeleteData}
+      />
+    </ConfirmDialog>
   )
 }

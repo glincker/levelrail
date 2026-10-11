@@ -80,10 +80,17 @@ type Event struct {
 	// channel's latest, from EvaluateVersionSkew. Empty for every other
 	// rule kind and for resolved events.
 	VersionSkewNotice string
+	// BudgetNotices is populated only for a firing budget_threshold event:
+	// one line per budget that crossed a threshold.
+	BudgetNotices []string
 
 	// SLONotice is set only for a firing slo_burn event: which burn-rate tier
 	// tripped and how much error budget is left.
 	SLONotice string
+
+	// LogNotice is set for a firing log_pattern or log_level_rate event: the
+	// count or rate that tripped. LogLines then holds the matching samples.
+	LogNotice string
 
 	// Changes is what changed on the app shortly before it fired; set for
 	// firing app-scoped events only. ChangesLink points at its dashboard page.
@@ -206,12 +213,14 @@ type genericPayload struct {
 	DomainHealthNotices  []string   `json:"domain_health_notices,omitempty"`
 	BackupMissingNotice  string     `json:"backup_missing_notice,omitempty"`
 	VersionSkewNotice    string     `json:"version_skew_notice,omitempty"`
+	BudgetNotices        []string   `json:"budget_notices,omitempty"`
 	Headline             string     `json:"headline,omitempty"`
 	GroupNotices         []string   `json:"group_notices,omitempty"`
 	GroupCount           int        `json:"group_count,omitempty"`
 	Severity             string     `json:"severity,omitempty"`
 
 	SLONotice     string           `json:"slo_notice,omitempty"`
+	LogNotice     string           `json:"log_notice,omitempty"`
 	RecentChanges []changes.Change `json:"recent_changes,omitempty"`
 	ChangesLink   string           `json:"changes_link,omitempty"`
 }
@@ -229,12 +238,14 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		DomainHealthNotices:  ev.DomainHealthNotices,
 		BackupMissingNotice:  ev.BackupMissingNotice,
 		VersionSkewNotice:    ev.VersionSkewNotice,
+		BudgetNotices:        ev.BudgetNotices,
 		Headline:             ev.Headline,
 		GroupNotices:         ev.GroupNotices,
 		GroupCount:           ev.GroupCount,
 		Severity:             ev.Rule.Severity,
 		ChangesLink:          ev.ChangesLink,
 		SLONotice:            ev.SLONotice,
+		LogNotice:            ev.LogNotice,
 	}
 	if ev.Changes != nil {
 		payload.RecentChanges = ev.Changes.Changes[:min(len(ev.Changes.Changes), changes.NotifyMaxLines)]
@@ -723,8 +734,15 @@ func summaryBody(ev Event) string {
 	if len(ev.GroupNotices) > 0 {
 		fmt.Fprintf(&b, "\nAlerts:\n- %s", strings.Join(ev.GroupNotices, "\n- "))
 	}
+	if ev.LogNotice != "" {
+		fmt.Fprintf(&b, "\n%s", ev.LogNotice)
+	}
 	if len(ev.LogLines) > 0 {
-		fmt.Fprintf(&b, "\nLast %d log lines:\n```\n%s\n```", len(ev.LogLines), strings.Join(ev.LogLines, "\n"))
+		label := "Last"
+		if ev.LogNotice != "" {
+			label = "Matching sample"
+		}
+		fmt.Fprintf(&b, "\n%s %d log lines:\n```\n%s\n```", label, len(ev.LogLines), strings.Join(ev.LogLines, "\n"))
 	}
 	if len(ev.CertNotices) > 0 {
 		fmt.Fprintf(&b, "\nCertificates:\n- %s", strings.Join(ev.CertNotices, "\n- "))
@@ -755,6 +773,9 @@ func summaryBody(ev Event) string {
 	}
 	if ev.VersionSkewNotice != "" {
 		fmt.Fprintf(&b, "\nVersion: %s", ev.VersionSkewNotice)
+	}
+	if len(ev.BudgetNotices) > 0 {
+		fmt.Fprintf(&b, "\nBudgets:\n- %s", strings.Join(ev.BudgetNotices, "\n- "))
 	}
 	if ev.SLONotice != "" {
 		fmt.Fprintf(&b, "\n%s", ev.SLONotice)

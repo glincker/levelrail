@@ -1,9 +1,7 @@
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import {
-  DownloadSimpleIcon,
-  TerminalIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import { useLogStream, type LogLine } from '../../../../../hooks/useLogStream'
+import { DownloadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { useLogStream } from '../../../../../hooks/useLogStream'
 import { useDeployStepStream } from '../../../../../hooks/useDeployStepStream'
 import {
   buildDeployLogStreamUrl,
@@ -22,15 +20,18 @@ import {
   type DeployStage,
 } from '../../../../../lib/deployStages'
 import type { ReconcileCondition } from '../../../../../types/deploy'
-import { stripAnsiCodes } from '../../../../../lib/ansi'
 import { Breadcrumbs } from '../../../../../components/Breadcrumbs'
 import { LogConnectionBadge } from '../../../../../components/LogConnectionBadge'
 import { LogTerminal } from '../../../../../components/LogTerminal'
 import { BuildLogHints } from '../../../../../components/BuildLogHints'
-import { DeploySection } from '../../../../../components/DeploySection'
+import { DeployHeader } from '../../../../../components/DeployHeader'
+import {
+  DeployStageTabs,
+  type StageTab,
+} from '../../../../../components/DeployStageTabs'
 import { DeployFailureSummaryCard } from '../../../../../components/DeployFailureSummaryCard'
 import { deployStageAnchorId } from '../../../../../lib/deployFailureSummary'
-import { DeployMetaCard } from '../../../../../components/DeployMetaCard'
+import { DeployNewErrorTypes } from '../../../../../components/DeployNewErrorTypes'
 import { DeployQuickLinks } from '../../../../../components/DeployQuickLinks'
 import { DeployStageTimeline } from '../../../../../components/DeployStageTimeline'
 import { ConditionsPanel } from '../../../../../components/ConditionsPanel'
@@ -39,7 +40,6 @@ import { ProbeAttemptsPanel } from '../../../../../components/ProbeAttemptsPanel
 import { useProbeAttempts } from '../../../../../queries/probeAttempts'
 import { SupplyChainSection } from '../../../../../components/SupplyChainSection'
 import { Skeleton } from '@/components/ui/skeleton'
-import { PageHeader } from '@/components/shell/PageHeader'
 
 // 'image' attempts (a bare image-tag redeploy/rollback) have no build
 // step, so they never produce log lines: see types/deployAttempt.ts's
@@ -95,38 +95,43 @@ function DeployLogsPage() {
     ? computeRolloutSubStages(attempt, conditions, isLatestAttempt)
     : null
 
+  const failedStage = stages?.find((s) => s.status === 'failed')
+  const [picked, setPicked] = useState<string | null>(null)
+  const tab = picked ?? (failedStage?.key === 'rollout' ? 'rollout' : 'build')
+  const tabs: StageTab[] = stages
+    ? [
+        {
+          id: 'build',
+          label: noBuildStep ? 'Image' : 'Build',
+          stage: stages[0],
+          hint: lines.length > 0 ? lines.length.toLocaleString() : undefined,
+        },
+        { id: 'rollout', label: 'Roll out', stage: stages[1] },
+        { id: 'supply', label: 'Supply chain' },
+      ]
+    : []
+
   return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto">
+    <div className="flex h-full flex-col gap-5 overflow-y-auto">
       <Breadcrumbs
         projectId={app.project_id}
         environmentId={app.environment_id}
         appName={name}
-        page="Deploy logs"
-      />
-      <PageHeader
-        title={
-          <span className="flex items-center gap-1.5">
-            <TerminalIcon
-              className="size-4 text-muted-foreground"
-              aria-hidden="true"
-            />
-            Deploy
-          </span>
-        }
-        description={`${name} / deploy ${deployId}`}
-        actions={<LogConnectionBadge state={connectionState} />}
+        page="Deploy"
       />
 
       {attempt && stages ? (
         <>
-          <DeployMetaCard
+          <DeployHeader
+            appName={name}
             attempt={attempt}
-            stages={stages}
-            domains={app.domains}
+            domain={app.domains?.[0]}
             branch={
               attempt.source === 'webhook' ? gitSource?.branch : undefined
             }
+            isLive={attempt.rollout_state === 'serving'}
           />
+          <DeployNewErrorTypes appName={name} startedAt={attempt.started_at} />
 
           <DeployFailureSummaryCard
             appName={name}
@@ -137,110 +142,95 @@ function DeployLogsPage() {
             lines={lines}
           />
 
-          <div className="space-y-3">
-            <div
-              id={deployStageAnchorId('build')}
-              tabIndex={-1}
-              className="outline-none"
-            >
-              <DeploySection
-                stage={stages[0]}
-                summary={buildStageSummary(stages[0], lines)}
-                defaultOpen={
-                  stages[0].status === 'running' ||
-                  stages[0].status === 'failed'
-                }
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <DeployStageTabs tabs={tabs} value={tab} onChange={setPicked} />
+              <div className="flex items-center gap-3 pb-1">
+                <LogConnectionBadge state={connectionState} />
+                {tab === 'build' && !noBuildStep ? (
+                  <a
+                    href={deployLogDownloadURL(name, deployId)}
+                    download
+                    className={buttonVariants({
+                      variant: 'outline',
+                      size: 'sm',
+                    })}
+                  >
+                    <DownloadSimpleIcon
+                      className="size-3.5"
+                      aria-hidden="true"
+                    />
+                    Download
+                  </a>
+                ) : null}
+              </div>
+            </div>
+
+            {tab === 'build' ? (
+              <div
+                id={deployStageAnchorId('build')}
+                tabIndex={-1}
+                className="space-y-3 outline-none"
               >
-                <div className="space-y-2">
-                  {!noBuildStep && steps.length > 0 ? (
-                    <div className="rounded-lg border border-border p-3">
+                {!noBuildStep && steps.length > 0 ? (
+                  <details className="rounded-lg border border-border px-3 py-2">
+                    <summary className="cursor-pointer text-sm font-medium text-foreground">
+                      Build steps ({steps.length})
+                    </summary>
+                    <div className="pt-2">
                       <DeployStepFeed steps={steps} />
                     </div>
-                  ) : null}
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Build output
-                    </h3>
-                    <div className="flex items-center gap-3">
-                      <p className="text-xs text-muted-foreground">
-                        {lines.length > 0
-                          ? `${lines.length.toLocaleString()} lines`
-                          : ''}
-                      </p>
-                      {!noBuildStep && (
-                        <a
-                          href={deployLogDownloadURL(name, deployId)}
-                          download
-                          className={buttonVariants({
-                            variant: 'outline',
-                            size: 'sm',
-                          })}
-                        >
-                          <DownloadSimpleIcon
-                            className="size-3.5"
-                            aria-hidden="true"
-                          />
-                          Download
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                  <BuildLogHints lines={lines} />
-                  <LogTerminal
-                    lines={lines}
-                    isPaused={isPaused}
-                    pause={pause}
-                    resume={resume}
-                    heightClassName="h-[40vh]"
-                    emptyStateMessage={
-                      noBuildStep ? NO_BUILD_STEP_MESSAGE : undefined
-                    }
-                    emptyStatePulse={!noBuildStep}
-                    isFinished={attempt.status !== 'running'}
-                  />
-                </div>
-              </DeploySection>
-            </div>
+                  </details>
+                ) : null}
+                <BuildLogHints lines={lines} />
+                <LogTerminal
+                  lines={lines}
+                  isPaused={isPaused}
+                  pause={pause}
+                  resume={resume}
+                  heightClassName="h-[calc(100dvh-24rem)] min-h-80"
+                  emptyStateMessage={
+                    noBuildStep ? NO_BUILD_STEP_MESSAGE : undefined
+                  }
+                  emptyStatePulse={!noBuildStep}
+                  isFinished={attempt.status !== 'running'}
+                />
+              </div>
+            ) : null}
 
-            <div
-              id={deployStageAnchorId('rollout')}
-              tabIndex={-1}
-              className="outline-none"
-            >
-              <DeploySection
-                stage={stages[1]}
-                summary={rolloutStageSummary(stages[1], conditions)}
-                defaultOpen={stages[1].status === 'failed'}
+            {tab === 'rollout' ? (
+              <div
+                id={deployStageAnchorId('rollout')}
+                tabIndex={-1}
+                className="space-y-4 outline-none"
               >
-                <div className="space-y-3">
-                  {rolloutSubStages ? (
-                    <DeployStageTimeline stages={rolloutSubStages} />
-                  ) : null}
-                  <DeployGatePanel appName={name} deployId={deployId} />
-                  <ConditionsPanel conditions={conditions} />
-                  {probeAttempts && probeAttempts.length > 0 ? (
-                    <ProbeAttemptsPanel attempts={probeAttempts} />
-                  ) : null}
-                </div>
-              </DeploySection>
-            </div>
-          </div>
+                <p className="text-sm text-muted-foreground">
+                  {rolloutStageSummary(stages[1], conditions)}
+                </p>
+                {rolloutSubStages ? (
+                  <DeployStageTimeline stages={rolloutSubStages} />
+                ) : null}
+                <DeployGatePanel appName={name} deployId={deployId} />
+                <ConditionsPanel conditions={conditions} />
+                {probeAttempts && probeAttempts.length > 0 ? (
+                  <ProbeAttemptsPanel attempts={probeAttempts} />
+                ) : null}
+              </div>
+            ) : null}
 
-          <section className="space-y-2 rounded-lg border border-border p-4">
-            <h2 className="text-sm font-medium text-foreground">
-              Supply chain
-            </h2>
-            <SupplyChainSection
-              appName={name}
-              deploymentId={deployId}
-              sbomPackages={attempt.sbom_packages}
-            />
-          </section>
+            {tab === 'supply' ? (
+              <SupplyChainSection
+                appName={name}
+                deploymentId={deployId}
+                sbomPackages={attempt.sbom_packages}
+              />
+            ) : null}
+          </div>
 
           <DeployQuickLinks appName={name} />
         </>
       ) : (
-        <div className="min-h-0 flex-1 flex flex-col gap-2">
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
           <p className="text-sm text-muted-foreground">
             This deploy attempt is not in this app&rsquo;s current history.
           </p>
@@ -286,25 +276,6 @@ function DeployLogsSkeleton() {
       <Skeleton className="h-[40vh] w-full rounded-lg" />
     </div>
   )
-}
-
-function buildStageSummary(stage: DeployStage, lines: LogLine[]): string {
-  if (stage.status === 'skipped') {
-    return stage.detail ?? 'No build step ran.'
-  }
-  if (stage.status === 'failed') {
-    return stage.detail || 'Build failed.'
-  }
-  if (stage.status === 'done') {
-    return 'Build finished.'
-  }
-  if (stage.status === 'running') {
-    const last = lines[lines.length - 1]
-    return last ? stripAnsiCodes(last.line) : 'Waiting for build output...'
-  }
-  // pending/unknown never occur for the build stage in practice (see
-  // computeDeployStages), kept only so this stays exhaustive.
-  return 'Not started yet.'
 }
 
 function rolloutStageSummary(

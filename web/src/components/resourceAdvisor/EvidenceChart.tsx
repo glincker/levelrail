@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { chartPalette } from '../../lib/chartPalette'
+import { chartPalette, chartTooltipStyle } from '../../lib/chartPalette'
 import { formatBytes, formatNanoCpus } from '../../lib/format'
 import type { AdvisorEvidence } from '../../types/resourceAdvisor'
 
@@ -56,12 +56,13 @@ export function EvidenceChart({
           <YAxis
             domain={[0, top * 1.1]}
             tickFormatter={(v: number) => formatValue(unit, v)}
-            tick={{ fontSize: 10 }}
+            tick={{ fontSize: 11 }}
             width={64}
             stroke="currentColor"
             className="text-muted-foreground"
           />
           <Tooltip
+            contentStyle={chartTooltipStyle}
             formatter={(v) => [
               formatValue(unit, Number(v)),
               t('finding.usage'),
@@ -85,7 +86,7 @@ export function EvidenceChart({
               label={{
                 value: t('finding.p95'),
                 position: 'insideTopLeft',
-                fontSize: 10,
+                fontSize: 11,
               }}
             />
           ) : null}
@@ -96,7 +97,7 @@ export function EvidenceChart({
               label={{
                 value: t('finding.limit'),
                 position: 'insideTopRight',
-                fontSize: 10,
+                fontSize: 11,
               }}
             />
           ) : null}
@@ -108,7 +109,7 @@ export function EvidenceChart({
               label={{
                 value: t('finding.suggested'),
                 position: 'insideBottomRight',
-                fontSize: 10,
+                fontSize: 11,
               }}
             />
           ) : null}

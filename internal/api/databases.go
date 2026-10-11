@@ -37,6 +37,10 @@ type databaseResource struct {
 	Engine  string `json:"engine"`
 	Version string `json:"version"`
 	NodeID  string `json:"node_id,omitempty"`
+	// NodeName and NodeIsLocal are response-only display fields, see
+	// appResource.
+	NodeName    string `json:"node_name,omitempty"`
+	NodeIsLocal bool   `json:"node_is_local,omitempty"`
 	// AutoPlaced is response-only, set only by handleCreateDatabase: true
 	// when node_id was omitted from the create request and simple spread
 	// scheduling (autoPlaceNode, scheduling.go) picked a non-local node
@@ -128,6 +132,7 @@ func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 // TLS material is only ever generated once it's actually reconciled.
 func (rt *Router) toDatabaseResourceWithStatus(ctx context.Context, d store.DesiredDatabase) databaseResource {
 	res := toDatabaseResource(d)
+	rt.placementResolver(ctx).stampDatabase(&res)
 	res.TLSEnabled = rt.databaseTLSEnabled(ctx, d)
 	return res
 }
@@ -258,9 +263,11 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 
 	tlsStatuses := rt.databaseTLSStatuses(r.Context(), dbs)
 
+	placement := rt.placementResolver(r.Context())
 	out := make([]databaseListResource, 0, len(dbs))
 	for _, d := range dbs {
 		res := toDatabaseResource(d)
+		placement.stampDatabase(&res)
 		res.TLSEnabled = tlsStatuses[d.Name]
 		out = append(out, databaseListResource{
 			databaseResource: res,
@@ -448,6 +455,11 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	purge, ok := rt.requireDeleteDataConfirm(w, r, name, existing.NodeID)
+	if !ok {
+		return
+	}
+
 	err = rt.databases.DeleteDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
@@ -458,7 +470,11 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	rt.teardownDatabaseContainer(name, existing.NodeID)
+	if purge {
+		rt.teardownDatabaseAndPurge(name, existing.NodeID)
+	} else {
+		rt.teardownDatabaseContainer(name, existing.NodeID)
+	}
 	rt.nudgeReconciler()
 	w.WriteHeader(http.StatusNoContent)
 }

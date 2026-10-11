@@ -92,7 +92,7 @@ export function DomainVerification({
       ) : null}
 
       {finished && httpsUrl ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-green-50 p-2.5 dark:bg-green-950/40">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-tone-success-soft p-2.5">
           <p className="text-xs text-foreground">
             {httpsUrl} is ready. Sign in there and this wizard picks up where
             you left off.
