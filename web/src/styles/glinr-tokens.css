@@ -1,0 +1,50 @@
+/*
+ * GLINR CSS tokens
+ *
+ * Source: the TheAuth visuals the sign-in showcase borrows (theauth.dev
+ * exposes no public stylesheet, so values are taken from LoginBrandPanel).
+ * Everything is namespaced --glinr-*. Only values close to the existing
+ * shadcn tokens are mapped onto them in index.css, so the app is not repainted.
+ */
+
+:root {
+  --glinr-bg: oklch(1 0 0);
+  --glinr-surface: oklch(1 0 0);
+  --glinr-border: oklch(0.922 0 0);
+  --glinr-radius: 0.625rem;
+
+  --glinr-showcase-bg: #000;
+  --glinr-showcase-surface: #0e0f11;
+  --glinr-showcase-text: #cfcfd3;
+  --glinr-glow-violet: rgb(182 171 255);
+  --glinr-glow-teal: rgb(0 203 170);
+  --glinr-glow-lime: rgb(238 243 95);
+
+  --glinr-highlight: oklch(1 0 0 / 0%);
+  --glinr-shadow-color: oklch(0.2 0.01 260);
+  --glinr-elev-header: 0 1px 0 oklch(0.2 0.01 260 / 6%),
+    0 4px 12px -4px oklch(0.2 0.01 260 / 12%);
+  --glinr-elev-card: 0 1px 2px oklch(0.2 0.01 260 / 6%),
+    0 1px 1px oklch(0.2 0.01 260 / 4%);
+  --glinr-elev-popover: 0 8px 24px oklch(0.2 0.01 260 / 12%),
+    0 2px 6px oklch(0.2 0.01 260 / 8%);
+  --glinr-elev-dialog: 0 24px 64px oklch(0.2 0.01 260 / 18%),
+    0 4px 12px oklch(0.2 0.01 260 / 10%);
+}
+
+.dark {
+  --glinr-bg: oklch(0.145 0 0);
+  --glinr-surface: oklch(0.205 0 0);
+  --glinr-border: oklch(1 0 0 / 10%);
+
+  --glinr-highlight: oklch(1 0 0 / 7%);
+  --glinr-shadow-color: oklch(0 0 0);
+  --glinr-elev-header: inset 0 -1px 0 oklch(1 0 0 / 8%),
+    0 8px 16px -8px oklch(0 0 0 / 70%);
+  --glinr-elev-card: inset 0 1px 0 var(--glinr-highlight),
+    0 1px 2px oklch(0 0 0 / 50%), 0 2px 8px oklch(0 0 0 / 30%);
+  --glinr-elev-popover: inset 0 1px 0 var(--glinr-highlight),
+    0 0 0 1px oklch(1 0 0 / 8%), 0 12px 32px oklch(0 0 0 / 65%);
+  --glinr-elev-dialog: inset 0 1px 0 var(--glinr-highlight),
+    0 0 0 1px oklch(1 0 0 / 10%), 0 28px 80px oklch(0 0 0 / 75%);
+}
