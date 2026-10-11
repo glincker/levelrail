@@ -470,7 +470,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
       item('health', 'Health', '/apps/$name/health', <HeartbeatIcon />),
       item(
         'scheduled-tasks',
-        'Scheduled tasks',
+        'Jobs',
         '/apps/$name/scheduled-tasks',
         <ClockCountdownIcon />,
       ),

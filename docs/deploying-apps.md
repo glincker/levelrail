@@ -501,7 +501,7 @@ levelrail-cli apps scheduled-tasks list NAME
 levelrail-cli apps scheduled-tasks run NAME ID
 ```
 
-The dashboard's **Scheduled tasks** tab does the same. `update` is a full replace: resupply `command`, `schedule`, and `concurrency_policy`, not only the field you are changing.
+The dashboard's **Jobs** tab does the same, and adds fresh-container runs, run history, retries and catch-up: see [Scheduled jobs](scheduled-jobs.md). `update` is a full replace: resupply `command`, `schedule`, and `concurrency_policy`, not only the field you are changing.
 
 Each task tracks `last_run_at`, `last_run_status`, `last_run_output`, and a `consecutive_failures` counter (the input for `scheduled_task_failure` alert rules). That is the whole run history: there is no log of every past run.
 

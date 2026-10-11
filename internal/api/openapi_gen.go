@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 954 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 949 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -54,12 +54,6 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/flags/{id}", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleDeleteFeatureFlag", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/flags/{id}", Ability: "AbilityRead", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleGetFeatureFlag", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/flags/{id}", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleUpdateFeatureFlag", Description: ""},
-	{Method: "GET", Path: "/api/v1/apps/{name}/scheduled-tasks", Ability: "AbilityRead", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleListScheduledTasks", Description: ""},
-	{Method: "POST", Path: "/api/v1/apps/{name}/scheduled-tasks", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleCreateScheduledTask", Description: "Scheduled tasks: run an arbitrary command inside this app's container on a cron schedule (internal/scheduledtask). CRUD sits at AbilityWrite, the same config-mutation tier alert rules above and env var updates already use; \"run now\" sits one tier up at AbilityDeploy, matching restart/stop/start above, since it has the identical immediate side effect (a real command actually runs inside a running container right now), not just a config change."},
-	{Method: "DELETE", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleDeleteScheduledTask", Description: ""},
-	{Method: "GET", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}", Ability: "AbilityRead", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleGetScheduledTask", Description: ""},
-	{Method: "PUT", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleUpdateScheduledTask", Description: ""},
-	{Method: "POST", Path: "/api/v1/apps/{name}/scheduled-tasks/{id}/run", Ability: "AbilityDeploy", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleRunScheduledTaskNow", Description: ""},
 	{Method: "GET", Path: "/api/v1/flags/evaluate/{key}", Ability: "AbilityRead", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleEvaluateFeatureFlag", Description: ""},
 	{Method: "GET", Path: "/api/v1/notification-channels", Ability: "AbilityRead", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleListNotificationChannels", Description: "Notification channels: the global, connect-once destination the deploy-notify-target routes above attach to by channel_id. AbilityWrite, same tier as deploy-notify-targets' own POST."},
 	{Method: "POST", Path: "/api/v1/notification-channels", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleCreateNotificationChannel", Description: ""},
@@ -173,6 +167,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/integrations", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAttachAppIntegration", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/integrations/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDetachAppIntegration", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/investigate", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleInvestigate", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/job-runs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListScheduledTaskRuns", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/listening-ports", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppListeningPorts", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/loadbalancer", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteLoadBalancer", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/loadbalancer", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetLoadBalancer", Description: ""},

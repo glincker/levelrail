@@ -114,7 +114,7 @@ describe('EditAlertRuleDialog', () => {
   it('parses an existing for_duration string into the DurationInput amount+unit', async () => {
     mockFetchRoutes({
       'GET /api/v1/notification-channels': jsonRoute([]),
-      'GET /api/v1/apps/demo-app/scheduled-tasks': jsonRoute([]),
+      'GET /api/v1/apps/demo-app/jobs': jsonRoute([]),
     })
     renderDialog()
     const popup = await openDialog()
@@ -129,7 +129,7 @@ describe('EditAlertRuleDialog', () => {
   it('renders the metric field as a closed enum select, not free text', async () => {
     mockFetchRoutes({
       'GET /api/v1/notification-channels': jsonRoute([]),
-      'GET /api/v1/apps/demo-app/scheduled-tasks': jsonRoute([]),
+      'GET /api/v1/apps/demo-app/jobs': jsonRoute([]),
     })
     renderDialog()
     const popup = await openDialog()
@@ -149,7 +149,7 @@ describe('EditAlertRuleDialog', () => {
   it('submits a changed metric and a re-composed for_duration string as a full replace', async () => {
     const fetchMock = mockFetchRoutes({
       'GET /api/v1/notification-channels': jsonRoute([]),
-      'GET /api/v1/apps/demo-app/scheduled-tasks': jsonRoute([]),
+      'GET /api/v1/apps/demo-app/jobs': jsonRoute([]),
       'PUT /api/v1/apps/demo-app/alerts/rule_1': jsonRoute({
         ...thresholdRule,
         metric: 'memory_usage_bytes',

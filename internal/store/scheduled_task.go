@@ -31,6 +31,27 @@ const (
 	// ConcurrencyPolicy "replace" cancelled to make room for a newer
 	// invocation of the same task.
 	ScheduledTaskStatusReplaced = "replaced"
+	// ScheduledTaskStatusRunning is the in-flight state of a history row.
+	ScheduledTaskStatusRunning = "running"
+	// ScheduledTaskStatusMissed marks an occurrence the control plane did
+	// not run (it was down, and catch-up did not cover it).
+	ScheduledTaskStatusMissed = "missed"
+	// ScheduledTaskStatusInterrupted marks a run whose control plane
+	// restarted mid-flight; it is never re-run, to rule out a double run.
+	ScheduledTaskStatusInterrupted = "interrupted"
+)
+
+// Scheduled task execution modes and catch-up policies.
+const (
+	ScheduledTaskModeExec        = "exec"
+	ScheduledTaskModeFresh       = "fresh"
+	ScheduledTaskCatchUpSkip     = "skip"
+	ScheduledTaskCatchUpRunOnce  = "run_once"
+	ScheduledTaskSourceAPI       = "api"
+	ScheduledTaskSourceSpec      = "spec"
+	ScheduledTaskTriggerSchedule = "schedule"
+	ScheduledTaskTriggerManual   = "manual"
+	ScheduledTaskTriggerAPI      = "api"
 )
 
 // Scheduled task concurrency policies (migrations/
@@ -42,6 +63,25 @@ const (
 	ScheduledTaskConcurrencyForbid  = "forbid"
 	ScheduledTaskConcurrencyReplace = "replace"
 )
+
+const scheduledTaskColumns = `id, service_name, command, schedule, enabled, concurrency_policy, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at,
+	name, mode, timezone, timeout_seconds, max_retries, retry_backoff_seconds, catch_up, catch_up_lookback_seconds,
+	cpu_limit_millis, memory_limit_mb, warn_after_seconds, source, armed_at, last_scheduled_for, running_since, consecutive_missed`
+
+func marshalCommand(cmd []string) (string, error) {
+	b, err := json.Marshal(cmd)
+	if err != nil {
+		return "", fmt.Errorf("encode command: %w", err)
+	}
+	return string(b), nil
+}
+
+func orDefault(v, def string) string {
+	if v == "" {
+		return def
+	}
+	return v
+}
 
 // ErrScheduledTaskNotFound is returned by GetScheduledTask,
 // UpdateScheduledTask, RecordScheduledTaskRun, and DeleteScheduledTask
@@ -81,6 +121,45 @@ type ScheduledTask struct {
 	// this table keeping a full run history.
 	ConsecutiveFailures int
 
+	// Name is the job's operator-facing identifier, unique per app when
+	// set (what app.yaml's jobs: entries are keyed by).
+	Name string
+	// Mode is ScheduledTaskModeExec or ScheduledTaskModeFresh.
+	Mode string
+	// Timezone is an IANA zone the cron expression is evaluated in.
+	Timezone string
+	// TimeoutSeconds, MaxRetries and RetryBackoffSeconds use 0 as "the
+	// control plane default" (env-configured), never as a literal zero.
+	TimeoutSeconds      int
+	MaxRetries          int
+	RetryBackoffSeconds int
+	// CatchUp is ScheduledTaskCatchUpSkip or ScheduledTaskCatchUpRunOnce,
+	// what to do when the control plane was down across occurrences.
+	CatchUp                string
+	CatchUpLookbackSeconds int
+	// CPULimitMillis and MemoryLimitMB bound a fresh-mode container, 0
+	// meaning the app's own limits.
+	CPULimitMillis int
+	MemoryLimitMB  int
+	// WarnAfterSeconds raises the running-too-long alert once a run has
+	// been in flight that long, 0 meaning never.
+	WarnAfterSeconds int
+	// Source is ScheduledTaskSourceAPI or ScheduledTaskSourceSpec: a
+	// spec-sourced job is owned by the app.yaml that declared it.
+	Source string
+
+	// LastScheduledFor is the cron occurrence the scheduler last handled
+	// (ran, skipped, or recorded as missed): the level-triggered
+	// high-water mark that makes a restart neither double-run nor
+	// silently skip. ArmedAt is when the schedule last became live.
+	LastScheduledFor *time.Time
+	ArmedAt          *time.Time
+	// RunningSince is non-nil while a run is in flight, what the
+	// running-too-long alert polls. ConsecutiveMissed counts occurrences
+	// the control plane failed to run in a row.
+	RunningSince      *time.Time
+	ConsecutiveMissed int
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -96,9 +175,13 @@ func (db *DB) SaveScheduledTask(ctx context.Context, t ScheduledTask) error {
 	}
 
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO scheduled_tasks (id, service_name, command, schedule, enabled, concurrency_policy, last_run_at, last_run_status, last_run_output, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, NULL, '', '', ?, ?)
-	`, t.ID, t.ServiceName, string(cmdJSON), t.Schedule, t.Enabled, normalizeConcurrencyPolicy(t.ConcurrencyPolicy), formatTime(t.CreatedAt), formatTime(t.UpdatedAt))
+		INSERT INTO scheduled_tasks (id, service_name, command, schedule, enabled, concurrency_policy, last_run_at, last_run_status, last_run_output, created_at, updated_at,
+			name, mode, timezone, timeout_seconds, max_retries, retry_backoff_seconds, catch_up, catch_up_lookback_seconds, cpu_limit_millis, memory_limit_mb, warn_after_seconds, source, armed_at)
+		VALUES (?, ?, ?, ?, ?, ?, NULL, '', '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, t.ID, t.ServiceName, string(cmdJSON), t.Schedule, t.Enabled, normalizeConcurrencyPolicy(t.ConcurrencyPolicy), formatTime(t.CreatedAt), formatTime(t.UpdatedAt),
+		t.Name, orDefault(t.Mode, ScheduledTaskModeExec), orDefault(t.Timezone, "UTC"), t.TimeoutSeconds, t.MaxRetries, t.RetryBackoffSeconds,
+		orDefault(t.CatchUp, ScheduledTaskCatchUpSkip), t.CatchUpLookbackSeconds, t.CPULimitMillis, t.MemoryLimitMB, t.WarnAfterSeconds,
+		orDefault(t.Source, ScheduledTaskSourceAPI), formatTime(t.CreatedAt))
 	if err != nil {
 		return fmt.Errorf("store: save scheduled task %q: %w", t.ID, err)
 	}
@@ -119,7 +202,7 @@ func normalizeConcurrencyPolicy(policy string) string {
 // ErrScheduledTaskNotFound.
 func (db *DB) GetScheduledTask(ctx context.Context, id string) (ScheduledTask, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, service_name, command, schedule, enabled, concurrency_policy, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at
+		SELECT `+scheduledTaskColumns+`
 		FROM scheduled_tasks
 		WHERE id = ?
 	`, id)
@@ -138,7 +221,7 @@ func (db *DB) GetScheduledTask(ctx context.Context, id string) (ScheduledTask, e
 // ListBackupTargets already uses.
 func (db *DB) ListScheduledTasksForService(ctx context.Context, serviceName string) ([]ScheduledTask, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, service_name, command, schedule, enabled, concurrency_policy, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at
+		SELECT `+scheduledTaskColumns+`
 		FROM scheduled_tasks
 		WHERE service_name = ?
 		ORDER BY created_at
@@ -155,7 +238,7 @@ func (db *DB) ListScheduledTasksForService(ctx context.Context, serviceName stri
 // 0048_scheduled_tasks.sql, supports exactly this filter).
 func (db *DB) ListEnabledScheduledTasks(ctx context.Context) ([]ScheduledTask, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, service_name, command, schedule, enabled, concurrency_policy, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at
+		SELECT `+scheduledTaskColumns+`
 		FROM scheduled_tasks
 		WHERE enabled = 1
 		ORDER BY created_at
@@ -257,8 +340,21 @@ func scanScheduledTask(scan func(dest ...any) error) (*ScheduledTask, error) {
 		lastRunAt            sql.NullString
 		createdAt, updatedAt string
 	)
-	if err := scan(&t.ID, &t.ServiceName, &cmdJSON, &t.Schedule, &enabled, &t.ConcurrencyPolicy, &lastRunAt, &t.LastRunStatus, &t.LastRunOutput, &t.ConsecutiveFailures, &createdAt, &updatedAt); err != nil {
+	var armedAt, lastScheduled, runningSince sql.NullString
+	if err := scan(&t.ID, &t.ServiceName, &cmdJSON, &t.Schedule, &enabled, &t.ConcurrencyPolicy, &lastRunAt, &t.LastRunStatus, &t.LastRunOutput, &t.ConsecutiveFailures, &createdAt, &updatedAt,
+		&t.Name, &t.Mode, &t.Timezone, &t.TimeoutSeconds, &t.MaxRetries, &t.RetryBackoffSeconds, &t.CatchUp, &t.CatchUpLookbackSeconds,
+		&t.CPULimitMillis, &t.MemoryLimitMB, &t.WarnAfterSeconds, &t.Source, &armedAt, &lastScheduled, &runningSince, &t.ConsecutiveMissed); err != nil {
 		return nil, err
+	}
+	var perr error
+	if t.ArmedAt, perr = parseTimePtr(armedAt); perr != nil {
+		return nil, fmt.Errorf("parse armed_at: %w", perr)
+	}
+	if t.LastScheduledFor, perr = parseTimePtr(lastScheduled); perr != nil {
+		return nil, fmt.Errorf("parse last_scheduled_for: %w", perr)
+	}
+	if t.RunningSince, perr = parseTimePtr(runningSince); perr != nil {
+		return nil, fmt.Errorf("parse running_since: %w", perr)
 	}
 
 	if err := json.Unmarshal([]byte(cmdJSON), &t.Command); err != nil {

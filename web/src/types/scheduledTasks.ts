@@ -1,53 +1,100 @@
-// Wire types for the scheduled-task resource, matching
-// internal/api/scheduled_tasks.go's scheduledTaskResource exactly: same
-// field names, same snake_case JSON tags.
+// Wire types for scheduled jobs, matching internal/api/scheduled_tasks.go's
+// scheduledTaskResource and scheduledTaskRunResource: same field names,
+// same snake_case JSON tags.
 
 export type ScheduledTaskRunStatus =
+  | 'running'
   | 'success'
   | 'failed'
   | 'timeout'
   | 'container_not_running'
   | 'skipped_concurrency'
   | 'replaced'
+  | 'missed'
+  | 'interrupted'
 
-// What internal/scheduledtask.Runner does when a task's next due run
-// finds a previous invocation of itself still executing: allow (default)
-// proceeds unconditionally, forbid skips the new run, replace cancels
-// the in-flight one first.
+// What happens when a job's next run finds the previous one still going.
 export type ScheduledTaskConcurrencyPolicy = 'allow' | 'forbid' | 'replace'
 
-// GET/POST/PUT /api/v1/apps/{name}/scheduled-tasks response shape.
-// last_run_* fields are absent until the task has run at least once
-// (scheduled or manual "run now"), matching store.ScheduledTask's own
-// LastRunAt nil-until-first-run convention.
+// fresh runs the command in a new container of the app's image with its
+// env, volumes and network; exec runs it inside the running container.
+export type ScheduledTaskMode = 'fresh' | 'exec'
+
+// What to do about occurrences missed while the control plane was down.
+export type ScheduledTaskCatchUp = 'skip' | 'run_once'
+
+export type JobRunTrigger = 'schedule' | 'manual' | 'api'
+
+// GET/POST/PUT /api/v1/apps/{name}/jobs response shape.
 export interface ScheduledTask {
   id: string
   service_name: string
+  name?: string
+  mode?: ScheduledTaskMode
   command: string[]
   schedule: string
+  timezone?: string
   enabled: boolean
   concurrency_policy: ScheduledTaskConcurrencyPolicy
+  timeout_seconds?: number
+  max_retries?: number
+  retry_backoff_seconds?: number
+  catch_up?: ScheduledTaskCatchUp
+  catch_up_lookback_seconds?: number
+  cpu_limit_millis?: number
+  memory_limit_mb?: number
+  warn_after_seconds?: number
+  // 'spec' means declared in app.yaml and owned by it.
+  source?: 'api' | 'spec'
   last_run_at?: string
   last_run_status?: ScheduledTaskRunStatus
   last_run_output?: string
-  // consecutive_failures is what a kind=scheduled_task_failure alert
-  // rule (see types/alerts.ts) watches: runs in a row that were not
-  // "success", reset to 0 on the next success. skipped_concurrency and
-  // replaced outcomes leave it unchanged (neither is a command failure).
   consecutive_failures: number
+  consecutive_missed?: number
+  running_since?: string
+  next_run_at?: string
+  // Set on the response to a run-now call.
+  run_id?: string
   created_at: string
   updated_at: string
 }
 
-// POST/PUT /api/v1/apps/{name}/scheduled-tasks request body. No `id` or
-// `service_name`: the server mints the former and derives the latter
-// from the app name in the URL, discarding anything a caller puts in
-// those fields on the wire type above. A full replace: concurrency_policy
-// must be resupplied on every PUT like every other field, an omitted
-// value resets it to "allow" server-side.
+// POST/PUT /api/v1/apps/{name}/jobs request body. On PUT, a field left out
+// keeps its stored value.
 export interface ScheduledTaskRequest {
+  name?: string
+  mode?: ScheduledTaskMode
   command: string[]
   schedule: string
+  timezone?: string
   enabled: boolean
   concurrency_policy?: ScheduledTaskConcurrencyPolicy
+  timeout_seconds?: number
+  max_retries?: number
+  retry_backoff_seconds?: number
+  catch_up?: ScheduledTaskCatchUp
+  catch_up_lookback_seconds?: number
+  cpu_limit_millis?: number
+  memory_limit_mb?: number
+  warn_after_seconds?: number
+}
+
+// One run of a job. output is only populated by the single-run endpoint.
+export interface JobRun {
+  id: string
+  task_id: string
+  job_name?: string
+  service_name: string
+  trigger: JobRunTrigger
+  status: ScheduledTaskRunStatus
+  scheduled_for?: string
+  started_at: string
+  finished_at?: string
+  exit_code?: number
+  duration_ms: number
+  attempts: number
+  node_id?: string
+  mode?: ScheduledTaskMode
+  message?: string
+  output?: string
 }

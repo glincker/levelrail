@@ -359,6 +359,9 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 	if svc.Egress != nil {
 		s.at(p+"egress", "egress policies are not supported by apply yet")
 	}
+	if len(svc.Jobs) > 0 {
+		s.at(p+"jobs", "scheduled jobs are not supported by apply yet; declare them in app.yaml or the app's Jobs tab")
+	}
 	if svc.LoadBalancer != nil {
 		s.at(p+"loadbalancer", "declare a LoadBalancer document instead")
 	}

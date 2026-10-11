@@ -12,58 +12,71 @@ import (
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
 
-// ScheduleStore is the narrow store surface Scheduler needs: every
-// currently enabled scheduled task, re-derived fresh on every tick, the
-// same shape internal/backup.ScheduleStore's own doc comment establishes
-// for its sibling. *store.DB satisfies this structurally.
+// maxScanOccurrences bounds how many cron occurrences one evaluation walks;
+// past it the scan restarts close to now, since only the latest occurrence
+// and an approximate missed count matter.
+const maxScanOccurrences = 2000
+
+// defaultGrace is how late an occurrence may be when Grace is unset.
+const defaultGrace = 2 * time.Minute
+
+// scanRestartWindow is how far back a truncated scan restarts from now.
+const scanRestartWindow = 2 * time.Hour
+
+// ScheduleStore is the store surface Scheduler needs. *store.DB satisfies
+// it structurally.
 type ScheduleStore interface {
 	ListEnabledScheduledTasks(ctx context.Context) ([]store.ScheduledTask, error)
+	ClaimScheduledTaskRun(ctx context.Context, run store.ScheduledTaskRun) (bool, error)
+	InterruptRunningScheduledTaskRuns(ctx context.Context, now time.Time) ([]store.ScheduledTaskRun, error)
 }
 
-// TaskRunner is the surface Scheduler needs to actually run a task once
-// its schedule comes due. *Runner satisfies this structurally; redeclared
-// here rather than depended on directly so a test can substitute a fake
-// without constructing a real Runner, the same reasoning
-// backup.ScheduledBackupRunner's own doc comment gives.
+// TaskRunner runs one claimed occurrence. *Runner satisfies it; a test
+// substitutes a fake.
 type TaskRunner interface {
-	Run(ctx context.Context, task store.ScheduledTask) error
+	RunTrigger(ctx context.Context, task store.ScheduledTask, trig Trigger) error
 }
 
-// Scheduler periodically checks which scheduled tasks have a due cron
-// schedule and runs them through Runner, mirroring
-// internal/backup.Scheduler's own shape field for field: same armed-
-// before-running nextRun bookkeeping, same missed-schedule gap (a
-// schedule that should have fired while the control plane was down
-// waits for its next natural occurrence rather than catching up), same
-// per-task error collection so one broken task never blocks the rest of
-// a tick. See that type's own doc comment for the full reasoning; it
-// applies here unchanged, just for scheduled tasks instead of scheduled
-// backups.
+// Recoverer cleans up what a previous process left behind. *Runner
+// satisfies it; optional.
+type Recoverer interface {
+	Cleanup(ctx context.Context, runs []store.ScheduledTaskRun)
+}
+
+// Scheduler is level-triggered: every tick it derives, from the persisted
+// high-water mark (store.ScheduledTask.LastScheduledFor) and the current
+// time, which cron occurrence is due, claims it atomically in the database
+// and only then runs it. Because the claim is persisted before execution,
+// a restart can neither run an occurrence twice nor lose track of one: an
+// occurrence found overdue is run once (catch_up run_once, inside the
+// lookback), or recorded as missed (skip), never silently dropped.
 type Scheduler struct {
 	Store  ScheduleStore
 	Runner TaskRunner
 	Logger *slog.Logger
-	// Now returns the current time; nil falls back to time.Now, the same
-	// testable-clock convention backup.Scheduler.Now establishes.
+	// Now returns the current time; nil falls back to time.Now.
 	Now func() time.Time
+	// Grace is how late an occurrence may be and still count as on time;
+	// zero means twice the interval passed to Run.
+	Grace time.Duration
+	// Lookback is the default catch-up window when a job sets none.
+	Lookback time.Duration
+	// NewID mints run IDs; nil uses NewRunID.
+	NewID func() (string, error)
 
-	mu      sync.Mutex
-	nextRun map[string]time.Time
+	wg sync.WaitGroup
+	mu sync.Mutex
+	// locations caches time.LoadLocation results.
+	locations map[string]*time.Location
+	baseCtx   context.Context
 }
 
-// NewScheduler builds a Scheduler ready to Tick or Run. logger defaults
-// to slog.Default() if nil, matching backup.NewScheduler's own
-// convention.
-func NewScheduler(store ScheduleStore, runner TaskRunner, logger *slog.Logger) *Scheduler {
+// NewScheduler builds a Scheduler. logger defaults to slog.Default().
+func NewScheduler(st ScheduleStore, runner TaskRunner, logger *slog.Logger) *Scheduler {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Scheduler{
-		Store:   store,
-		Runner:  runner,
-		Logger:  logger,
-		nextRun: make(map[string]time.Time),
-	}
+	return &Scheduler{Store: st, Runner: runner, Logger: logger, locations: make(map[string]*time.Location)}
 }
 
 func (s *Scheduler) now() time.Time {
@@ -80,79 +93,230 @@ func (s *Scheduler) log() *slog.Logger {
 	return slog.Default()
 }
 
-// Tick evaluates every currently enabled scheduled task once. Errors
-// from an individual task (an invalid cron string, Runner.Run itself
-// failing) are collected and joined, never stopping evaluation of the
-// remaining tasks, the same "one broken resource must not block the
-// rest" principle backup.Scheduler.Tick's own doc comment traces back to
-// alerting.Engine.Tick.
+func (s *Scheduler) newID() (string, error) {
+	if s.NewID != nil {
+		return s.NewID()
+	}
+	return NewRunID()
+}
+
+func (s *Scheduler) location(name string) (*time.Location, error) {
+	if name == "" {
+		name = "UTC"
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if loc, ok := s.locations[name]; ok {
+		return loc, nil
+	}
+	loc, err := time.LoadLocation(name)
+	if err != nil {
+		return nil, fmt.Errorf("timezone %q: %w", name, err)
+	}
+	if s.locations == nil {
+		s.locations = make(map[string]*time.Location)
+	}
+	s.locations[name] = loc
+	return loc, nil
+}
+
+// Wait blocks until every run started by Tick has returned. Tests use it;
+// production never needs to.
+func (s *Scheduler) Wait() { s.wg.Wait() }
+
+// Recover marks runs a previous process left in flight as interrupted and
+// removes their containers. They are never re-run: re-running an occurrence
+// whose first execution may have done real work is how double runs happen.
+func (s *Scheduler) Recover(ctx context.Context, rec Recoverer) error {
+	runs, err := s.Store.InterruptRunningScheduledTaskRuns(ctx, s.now())
+	if err != nil {
+		return fmt.Errorf("scheduledtask: recover interrupted runs: %w", err)
+	}
+	for _, r := range runs {
+		s.log().Warn("scheduledtask: run interrupted by restart",
+			slog.String("run_id", r.ID), slog.String("task_id", r.TaskID), slog.String("service", r.ServiceName))
+	}
+	if rec != nil && len(runs) > 0 {
+		rec.Cleanup(ctx, runs)
+	}
+	return nil
+}
+
+// Occurrences returns the cron occurrences in (after, upTo], evaluated on
+// loc's wall clock, oldest first. A wall time skipped by a DST jump runs
+// once at the shifted time; one repeated by a fall-back runs once.
+func Occurrences(sched *cronexpr.Schedule, loc *time.Location, after, upTo time.Time, limit int) (out []time.Time, truncated bool) {
+	t := after
+	for {
+		next := cronexpr.NextInLocation(sched, t, loc)
+		if next.IsZero() || next.After(upTo) {
+			return out, false
+		}
+		if !next.After(t) {
+			return out, false
+		}
+		out = append(out, next)
+		if len(out) >= limit {
+			return out, true
+		}
+		t = next
+	}
+}
+
+// due is the decision for one task at one instant.
+type due struct {
+	latest  time.Time
+	count   int
+	run     bool
+	catchUp bool
+}
+
+// decide derives what, if anything, is owed for task at now.
+func (s *Scheduler) decide(task store.ScheduledTask, now time.Time) (due, error) {
+	sched, err := cronexpr.Parse(task.Schedule)
+	if err != nil {
+		return due{}, fmt.Errorf("schedule %q: %w", task.Schedule, err)
+	}
+	loc, err := s.location(task.Timezone)
+	if err != nil {
+		return due{}, err
+	}
+	anchor := task.CreatedAt
+	if task.ArmedAt != nil {
+		anchor = *task.ArmedAt
+	}
+	if task.LastScheduledFor != nil && task.LastScheduledFor.After(anchor) {
+		anchor = *task.LastScheduledFor
+	}
+	occ, truncated := Occurrences(sched, loc, anchor, now, maxScanOccurrences)
+	if truncated {
+		occ, _ = Occurrences(sched, loc, now.Add(-scanRestartWindow), now, maxScanOccurrences)
+	}
+	if len(occ) == 0 {
+		return due{}, nil
+	}
+	d := due{latest: occ[len(occ)-1], count: len(occ)}
+	lateness := now.Sub(d.latest)
+	lookback := s.Lookback
+	if lookback <= 0 {
+		lookback = defaultCatchUpLookback
+	}
+	if task.CatchUpLookbackSeconds > 0 {
+		lookback = time.Duration(task.CatchUpLookbackSeconds) * time.Second
+	}
+	grace := s.Grace
+	if grace <= 0 {
+		grace = defaultGrace
+	}
+	switch {
+	case lateness <= grace:
+		d.run = true
+	case task.CatchUp == store.ScheduledTaskCatchUpRunOnce && lateness <= lookback:
+		d.run, d.catchUp = true, true
+	}
+	return d, nil
+}
+
+// Tick evaluates every enabled task once. A broken task never blocks the
+// rest; errors are joined.
 func (s *Scheduler) Tick(ctx context.Context) error {
 	tasks, err := s.Store.ListEnabledScheduledTasks(ctx)
 	if err != nil {
 		return fmt.Errorf("scheduledtask: scheduler: list enabled tasks: %w", err)
 	}
-
 	now := s.now()
-	seen := make(map[string]struct{}, len(tasks))
 	var errs []error
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	for _, task := range tasks {
-		seen[task.ID] = struct{}{}
-
-		sched, perr := cronexpr.Parse(task.Schedule)
-		if perr != nil {
-			s.log().Warn("scheduledtask: scheduler: invalid schedule, skipping",
-				slog.String("task_id", task.ID), slog.String("schedule", task.Schedule), slog.String("error", perr.Error()))
-			continue
-		}
-
-		next, known := s.nextRun[task.ID]
-		if !known {
-			// First tick this task has been observed as enabled: arm its
-			// next fire time without running immediately, matching
-			// backup.Scheduler.Tick's own reasoning for why a freshly
-			// armed schedule never fires on sight.
-			s.nextRun[task.ID] = sched.Next(now)
-			continue
-		}
-		if now.Before(next) {
-			continue
-		}
-
-		// Armed before running, not after: if Runner.Run itself panics or
-		// this process is killed mid-run, the next tick still moves
-		// forward to the schedule's next real occurrence instead of
-		// retrying immediately against, most likely, the same failure.
-		s.nextRun[task.ID] = sched.Next(now)
-
-		if rerr := s.Runner.Run(ctx, task); rerr != nil {
-			errs = append(errs, fmt.Errorf("task %q: %w", task.ID, rerr))
+		if err := s.evaluate(ctx, task, now); err != nil {
+			errs = append(errs, fmt.Errorf("task %q: %w", task.ID, err))
 		}
 	}
-
-	// Forget any task no longer in the enabled set (disabled or deleted):
-	// otherwise nextRun would grow forever and a task re-enabled later
-	// under the same ID would incorrectly inherit a stale armed time from
-	// before it was disabled.
-	for id := range s.nextRun {
-		if _, ok := seen[id]; !ok {
-			delete(s.nextRun, id)
-		}
-	}
-
 	return errors.Join(errs...)
 }
 
-// Run calls Tick on interval until ctx is done, matching the shape of
-// every other periodic loop in this codebase (backup.Scheduler.Run,
-// alerting.Engine.Run, telemetry.Collector.Run).
+func (s *Scheduler) evaluate(ctx context.Context, task store.ScheduledTask, now time.Time) error {
+	d, err := s.decide(task, now)
+	if err != nil {
+		s.log().Warn("scheduledtask: scheduler: skipping task with invalid schedule",
+			slog.String("task_id", task.ID), slog.String("error", err.Error()))
+		return nil
+	}
+	if d.count == 0 {
+		return nil
+	}
+	id, err := s.newID()
+	if err != nil {
+		return err
+	}
+	scheduledFor := d.latest
+	run := store.ScheduledTaskRun{
+		ID: id, TaskID: task.ID, ServiceName: task.ServiceName, Trigger: store.ScheduledTaskTriggerSchedule,
+		ScheduledFor: &scheduledFor, StartedAt: now, Mode: modeOf(task),
+	}
+	if !d.run {
+		fin := now
+		run.Status, run.FinishedAt = store.ScheduledTaskStatusMissed, &fin
+		run.Message = fmt.Sprintf("%d scheduled occurrence(s) were not run; the control plane was not running and catch_up is %q or past its lookback",
+			d.count, orDefaultPolicy(task.CatchUp))
+		if _, err := s.Store.ClaimScheduledTaskRun(ctx, run); err != nil {
+			return err
+		}
+		s.log().Warn("scheduledtask: occurrence missed",
+			slog.String("task_id", task.ID), slog.String("service", task.ServiceName), slog.Time("scheduled_for", scheduledFor))
+		return nil
+	}
+
+	run.Status = store.ScheduledTaskStatusRunning
+	claimed, err := s.Store.ClaimScheduledTaskRun(ctx, run)
+	if err != nil {
+		return err
+	}
+	if !claimed {
+		return nil
+	}
+	trig := Trigger{Kind: store.ScheduledTaskTriggerSchedule, RunID: id, ScheduledFor: &scheduledFor, CatchUp: d.catchUp}
+	runCtx := ctx
+	if s.baseCtx != nil {
+		runCtx = s.baseCtx
+	}
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		if err := s.Runner.RunTrigger(runCtx, task, trig); err != nil {
+			s.log().Warn("scheduledtask: run failed", slog.String("task_id", task.ID),
+				slog.String("run_id", id), slog.String("error", err.Error()))
+		}
+	}()
+	return nil
+}
+
+func orDefaultPolicy(p string) string {
+	if p == "" {
+		return store.ScheduledTaskCatchUpSkip
+	}
+	return p
+}
+
+// Run recovers interrupted runs, ticks once immediately (so a restart
+// catches up without waiting a full interval), then ticks every interval
+// until ctx is done.
 func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
+	if s.Grace <= 0 {
+		s.Grace = 2 * interval
+	}
+	s.baseCtx = ctx
+	var rec Recoverer
+	if r, ok := s.Runner.(Recoverer); ok {
+		rec = r
+	}
+	if err := s.Recover(ctx, rec); err != nil {
+		s.log().Error("scheduledtask: recovery failed", slog.String("error", err.Error()))
+	}
+	if err := s.Tick(ctx); err != nil {
+		s.log().Warn("scheduledtask: scheduler tick had errors", slog.String("error", err.Error()))
+	}
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-
 	for {
 		select {
 		case <-ctx.Done():

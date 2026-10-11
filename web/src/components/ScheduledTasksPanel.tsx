@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ClockCountdownIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Table,
@@ -7,100 +8,56 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge, type badgeVariants } from '@/components/ui/badge'
-import type { VariantProps } from 'class-variance-authority'
+import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
-import { ScheduledTaskDialog } from './ScheduledTaskDialog'
+import { JobDialog } from './JobDialog'
+import { JobRunsPanel } from './JobRunsPanel'
+import { JobStatusBadge } from './JobStatusBadge'
 import { DeleteScheduledTaskDialog } from './DeleteScheduledTaskDialog'
 import { RunScheduledTaskButton } from './RunScheduledTaskButton'
 import {
   useScheduledTasks,
   useUpdateScheduledTask,
 } from '../queries/scheduledTasks'
-import type {
-  ScheduledTask,
-  ScheduledTaskConcurrencyPolicy,
-  ScheduledTaskRunStatus,
-} from '../types/scheduledTasks'
+import type { ScheduledTask } from '../types/scheduledTasks'
 
-const STATUS_LABEL: Record<ScheduledTaskRunStatus, string> = {
-  success: 'Success',
-  failed: 'Failed',
-  timeout: 'Timed out',
-  container_not_running: 'Container not running',
-  skipped_concurrency: 'Skipped (already running)',
-  replaced: 'Replaced by newer run',
+function jobLabel(task: ScheduledTask): string {
+  return task.name || task.command.join(' ')
 }
-
-// success -> the green "everything's fine" badge every other status
-// badge in this dashboard uses for a healthy outcome (ConditionsPanel's
-// own STATUS_BADGE_VARIANT precedent); failed/timeout are both real
-// problems an operator needs to notice, so both get destructive/warning
-// rather than one flat "bad" bucket; container_not_running is neither a
-// command failure nor a platform bug, just "there was nothing to run
-// against", so it gets a neutral muted badge instead of implying
-// something broke. skipped_concurrency and replaced are both expected
-// concurrency-policy side effects, not failures either, so they share
-// that same neutral muted treatment.
-const STATUS_BADGE_VARIANT: Record<
-  ScheduledTaskRunStatus,
-  VariantProps<typeof badgeVariants>['variant']
-> = {
-  success: 'success',
-  failed: 'destructive',
-  timeout: 'warning',
-  container_not_running: 'muted',
-  skipped_concurrency: 'muted',
-  replaced: 'muted',
-}
-
-const CONCURRENCY_POLICY_LABEL: Record<ScheduledTaskConcurrencyPolicy, string> =
-  {
-    allow: 'Allow overlap',
-    forbid: 'Skip if running',
-    replace: 'Cancel and replace',
-  }
 
 function LastRunCell({ task }: { task: ScheduledTask }) {
+  const { t } = useTranslation('jobs')
+  if (task.running_since) {
+    return <JobStatusBadge status="running" />
+  }
   if (!task.last_run_at || !task.last_run_status) {
-    return <span className="text-muted-foreground">Never run</span>
+    return <span className="text-muted-foreground">{t('neverRun')}</span>
   }
   return (
-    <div className="flex max-w-[20rem] flex-col gap-1">
-      <Badge variant={STATUS_BADGE_VARIANT[task.last_run_status]}>
-        {STATUS_LABEL[task.last_run_status]}
-      </Badge>
+    <div className="flex flex-col gap-1">
+      <JobStatusBadge status={task.last_run_status} />
       <span className="text-xs text-muted-foreground">
         {new Date(task.last_run_at).toLocaleString()}
       </span>
       {task.consecutive_failures > 0 ? (
         <span className="text-xs text-destructive">
-          {task.consecutive_failures} in a row
+          {t('failedInARow', { count: task.consecutive_failures })}
         </span>
       ) : null}
-      {task.last_run_output ? (
-        <details className="text-xs">
-          <summary className="cursor-pointer text-muted-foreground underline underline-offset-2">
-            Output
-          </summary>
-          <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-2 font-mono text-[11px] text-foreground">
-            {task.last_run_output}
-          </pre>
-        </details>
+      {(task.consecutive_missed ?? 0) > 0 ? (
+        <span className="text-xs text-warning">
+          {t('missedInARow', { count: task.consecutive_missed })}
+        </span>
       ) : null}
     </div>
   )
 }
 
-// EnabledToggle flips a task's Enabled flag in place through the same
-// PUT .../scheduled-tasks/{id} the edit dialog uses, resubmitting its
-// current Command/Schedule unchanged: there is no separate PATCH-just-
-// enabled route, matching UpdateScheduledTask's own "Command, Schedule,
-// and Enabled are updated together" shape (internal/store/
-// scheduled_task.go).
+// EnabledToggle flips Enabled through the same PUT the edit dialog uses;
+// the server merges the body over the stored job, so only enabled is sent.
 function EnabledToggle({
   appName,
   task,
@@ -108,10 +65,12 @@ function EnabledToggle({
   appName: string
   task: ScheduledTask
 }) {
+  const { t } = useTranslation('jobs')
   const updateTask = useUpdateScheduledTask(appName)
 
   return (
     <Switch
+      aria-label={t('toggle.label', { name: jobLabel(task) })}
       checked={task.enabled}
       disabled={updateTask.isPending}
       onCheckedChange={(checked) => {
@@ -122,7 +81,6 @@ function EnabledToggle({
               command: task.command,
               schedule: task.schedule,
               enabled: checked,
-              concurrency_policy: task.concurrency_policy,
             },
           },
           {
@@ -136,20 +94,41 @@ function EnabledToggle({
   )
 }
 
-function TaskRow({ appName, task }: { appName: string; task: ScheduledTask }) {
+function JobRow({ appName, task }: { appName: string; task: ScheduledTask }) {
+  const { t } = useTranslation('jobs')
   return (
     <TableRow>
-      <TableCell className="max-w-[24rem] truncate font-mono text-xs text-foreground">
-        {task.command.join(' ')}
+      <TableCell className="max-w-[24rem]">
+        <div className="flex flex-col gap-0.5">
+          <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+            {task.name || t('unnamed')}
+            {task.source === 'spec' ? (
+              <Badge variant="muted" title={t('specManagedHint')}>
+                {t('specManaged')}
+              </Badge>
+            ) : null}
+          </span>
+          <span className="truncate font-mono text-xs text-muted-foreground">
+            {task.command.join(' ')}
+          </span>
+        </div>
       </TableCell>
       <TableCell className="font-mono text-xs text-muted-foreground">
         {task.schedule}
+        {task.timezone && task.timezone !== 'UTC' ? (
+          <div className="font-sans">{task.timezone}</div>
+        ) : null}
       </TableCell>
       <TableCell className="text-xs text-muted-foreground">
-        {CONCURRENCY_POLICY_LABEL[task.concurrency_policy]}
+        {t(`mode.${task.mode ?? 'exec'}`)}
       </TableCell>
       <TableCell>
         <LastRunCell task={task} />
+      </TableCell>
+      <TableCell className="text-xs text-muted-foreground">
+        {task.enabled && task.next_run_at
+          ? new Date(task.next_run_at).toLocaleString()
+          : '-'}
       </TableCell>
       <TableCell>
         <EnabledToggle appName={appName} task={task} />
@@ -157,7 +136,7 @@ function TaskRow({ appName, task }: { appName: string; task: ScheduledTask }) {
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
           <RunScheduledTaskButton appName={appName} task={task} />
-          <ScheduledTaskDialog appName={appName} task={task} />
+          <JobDialog appName={appName} task={task} />
           <DeleteScheduledTaskDialog appName={appName} task={task} />
         </div>
       </TableCell>
@@ -165,64 +144,72 @@ function TaskRow({ appName, task }: { appName: string; task: ScheduledTask }) {
   )
 }
 
+// ScheduledTasksPanel is the app's Jobs tab: the job list with its
+// schedule, mode and live state, then the app-wide run history.
 export function ScheduledTasksPanel({ appName }: { appName: string }) {
+  const { t } = useTranslation('jobs')
   const { data, isLoading, error } = useScheduledTasks(appName)
   const tasks = data ?? []
 
   return (
-    <section className="rounded-lg border border-border p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-            <ClockCountdownIcon
-              className="size-4 text-muted-foreground"
-              aria-hidden="true"
-            />
-            Scheduled tasks
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Runs a command inside this app&apos;s currently running container on
-            a cron schedule, e.g. a nightly cleanup script or a periodic
-            cache-warm job.
-          </p>
-        </div>
-        <ScheduledTaskDialog appName={appName} />
-      </div>
-
-      <div className="mt-3">
-        {isLoading ? (
-          <TableSkeleton columnCount={6} rowCount={3} />
-        ) : error ? (
-          <p className="text-sm text-destructive">{error.message}</p>
-        ) : tasks.length === 0 ? (
-          <EmptyState
-            icon={<ClockCountdownIcon className="size-5" />}
-            title="No scheduled tasks yet"
-            description="Run a command inside this app's container on a cron schedule, e.g. a nightly cleanup script or a periodic cache-warm job."
-            action={<ScheduledTaskDialog appName={appName} />}
-          />
-        ) : (
-          <div className="rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Command</TableHead>
-                  <TableHead>Schedule</TableHead>
-                  <TableHead>Concurrency</TableHead>
-                  <TableHead>Last run</TableHead>
-                  <TableHead>Enabled</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tasks.map((task) => (
-                  <TaskRow key={task.id} appName={appName} task={task} />
-                ))}
-              </TableBody>
-            </Table>
+    <div className="space-y-4">
+      <section className="rounded-lg border border-border p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <ClockCountdownIcon
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
+              {t('title')}
+            </h2>
+            <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
+              {t('description')}
+            </p>
           </div>
-        )}
-      </div>
-    </section>
+          <JobDialog appName={appName} />
+        </div>
+
+        <div className="mt-3">
+          {isLoading ? (
+            <TableSkeleton columnCount={7} rowCount={3} />
+          ) : error ? (
+            <p className="text-sm text-destructive">{error.message}</p>
+          ) : tasks.length === 0 ? (
+            <EmptyState
+              icon={<ClockCountdownIcon className="size-5" />}
+              title={t('empty.title')}
+              description={t('empty.description')}
+              action={<JobDialog appName={appName} />}
+            />
+          ) : (
+            <div className="rounded-lg border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('columns.job')}</TableHead>
+                    <TableHead>{t('columns.schedule')}</TableHead>
+                    <TableHead>{t('columns.mode')}</TableHead>
+                    <TableHead>{t('columns.lastRun')}</TableHead>
+                    <TableHead>{t('columns.nextRun')}</TableHead>
+                    <TableHead>{t('columns.enabled')}</TableHead>
+                    <TableHead className="text-right">
+                      {t('columns.actions')}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tasks.map((task) => (
+                    <JobRow key={task.id} appName={appName} task={task} />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {tasks.length > 0 ? <JobRunsPanel appName={appName} /> : null}
+    </div>
   )
 }

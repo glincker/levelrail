@@ -329,6 +329,16 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindScheduledTaskMissed, KindScheduledTaskRunningLong:
+			if e.scheduledTasks == nil {
+				e.logger.Warn("alerting: scheduled task health rule found but no scheduled task source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, taskFailureNotice, err = EvaluateScheduledTaskHealth(ctx, e.scheduledTasks, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindNodeDiskSpace:
 			if e.nodes == nil {
 				e.logger.Warn("alerting: node_disk_space rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
@@ -584,7 +594,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if r.Kind == KindNodeResourceUsage && !resolved {
 		ev.ResourceUsageNotices = resourceUsageNotices
 	}
-	if r.Kind == KindScheduledTaskFailure && !resolved {
+	if (r.Kind == KindScheduledTaskFailure || r.Kind == KindScheduledTaskMissed || r.Kind == KindScheduledTaskRunningLong) && !resolved {
 		ev.TaskFailureNotice = taskFailureNotice
 	}
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving) && !resolved {
