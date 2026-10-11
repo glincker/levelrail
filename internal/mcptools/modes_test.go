@@ -30,7 +30,7 @@ func listAll(t *testing.T, opts Options) []*mcp.Tool {
 }
 
 func TestEveryToolClassified(t *testing.T) {
-	tools := listAll(t, Options{Mode: ModeFull})
+	tools := listAll(t, Options{Mode: ModeFull, AllowWrite: true})
 	seen := map[string]bool{}
 	for _, tool := range tools {
 		seen[tool.Name] = true
@@ -86,9 +86,12 @@ func TestModesFilterRegistration(t *testing.T) {
 		want func(Meta) bool
 	}{
 		{"read-only", Options{Mode: ModeReadOnly}, func(m Meta) bool { return m.Class == ClassRead }},
-		{"standard", Options{Mode: ModeStandard}, func(m Meta) bool { return m.Class != ClassDestructive }},
-		{"default", Options{}, func(m Meta) bool { return m.Class != ClassDestructive }},
-		{"full", Options{Mode: ModeFull}, func(Meta) bool { return true }},
+		{"standard", Options{Mode: ModeStandard}, func(m Meta) bool { return m.Class != ClassDestructive && !m.WriteGated() }},
+		{"default", Options{}, func(m Meta) bool { return m.Class != ClassDestructive && !m.WriteGated() }},
+		{"standard allow-write", Options{Mode: ModeStandard, AllowWrite: true}, func(m Meta) bool { return m.Class != ClassDestructive }},
+		{"read-only allow-write", Options{Mode: ModeReadOnly, AllowWrite: true}, func(m Meta) bool { return m.Class == ClassRead }},
+		{"full", Options{Mode: ModeFull}, func(m Meta) bool { return !m.WriteGated() }},
+		{"full allow-write", Options{Mode: ModeFull, AllowWrite: true}, func(Meta) bool { return true }},
 		{"toolsets", Options{Mode: ModeFull, Toolsets: []string{"nodes", "models"}}, func(m Meta) bool { return m.Group == "nodes" || m.Group == "models" }},
 		{"read-only toolset", Options{Mode: ModeReadOnly, Toolsets: []string{"models"}}, func(m Meta) bool { return m.Group == "models" && m.Class == ClassRead }},
 	}
