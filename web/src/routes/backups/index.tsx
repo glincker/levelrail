@@ -1,121 +1,25 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { TableSkeleton } from '@/components/ui/table-skeleton'
-import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/shell/PageHeader'
-import { formatBytes, formatDate } from '../../lib/format'
-import { useBackupTargetsOptional } from '../../queries/backupTargets'
-import {
-  ALL_BACKUP_HISTORY_PAGE_SIZE,
-  allBackupHistoryQueryOptions,
-  fetchAllBackupHistory,
-} from '../../queries/allBackupHistory'
-import { StatusBadge } from '../../components/backupAttemptStatus'
-import {
-  AnyBackupDeleteDialog,
-  AnyBackupDownloadLink,
-  AnyBackupVerificationBadge,
-} from '../../components/AnyBackupActions'
-import type { BackupHistoryRecord } from '../../types/backupHistory'
-import { BackupHealthPanel } from '../../components/backups/BackupHealthPanel'
-import { BackupDrillHistory } from '../../components/backups/BackupDrillHistory'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useBackupCoverage } from '../../queries/backupCoverage'
+import { CoverageList } from '../../components/backups/CoverageList'
+import { CoverageSummary } from '../../components/backups/CoverageSummary'
+import { DrillTimeline } from '../../components/backups/DrillTimeline'
+import { FirstRunSetup } from '../../components/backups/FirstRunSetup'
+import { OrphanedDataPanel } from '../../components/backups/OrphanedDataPanel'
+import { ProtectAllDialog } from '../../components/backups/ProtectAllDialog'
+import { RecentActivity } from '../../components/backups/RecentActivity'
+import { StorageSafetyCard } from '../../components/backups/StorageSafetyCard'
 
-// Instance-wide backup visibility: GET /api/v1/backups
-// (internal/api/backups.go's own handleListAllBackups), merging every
-// database's and every app volume's backup history into one newest-first
-// list. Closes a real, currently-open gap: today a backup is only ever
-// visible scoped to the one resource it belongs to (a database's own
-// Overview page, an app's own Volumes page), so an operator with more
-// than a couple of databases or apps has no single place to check "did
-// everything back up last night." Directly validated by a competitor's
-// own open feature request for the same thing (Coolify issue #7528,
-// "Backup Manager in the UI", 47 comments).
-//
-// Top-level route, not nested under Settings: this is an operational
-// view (what happened), not configuration. Cursor-paginated with a
-// "Load older entries" button rather than virtualized, mirroring
-// routes/settings/audit-log.tsx's own convention for the same kind of
-// list, an unbounded, time-ordered attempt history, the same category as
-// BackupsSection's own per-resource table (BackupsSection.tsx) and
-// deploy history (routes/apps/$name/deploys/index.tsx): none of those
-// virtualize either. This is a deliberate, judgment call for this list's
-// specific access pattern, not a blanket exemption from the "lists over
-// 50 items are virtualized" rule, which stays the right default for
-// flat resource lists like Apps or Domains.
-//
-// Actions (download, verify, delete) reuse the exact mutations and
-// dialogs already built for the per-resource pages
-// (BackupVerificationBadge/VolumeBackupVerificationBadge,
-// DeleteBackupDialog/DeleteVolumeBackupDialog, backupDownloadURL/
-// volumeBackupDownloadURL) via AnyBackup*'s resource_kind dispatch
-// (components/AnyBackupActions.tsx), not reimplemented here. Triggering a
-// new backup and restoring are deliberately not offered from this page:
-// both already require resource-specific context (which target, which
-// confirmation flow) the per-resource pages own; this is a read-mostly
-// visibility view, not a second place to configure or restore backups.
 export const Route = createFileRoute('/backups/')({
-  loader: ({ context: { queryClient } }) =>
-    queryClient.ensureQueryData(allBackupHistoryQueryOptions()),
-  component: AllBackupsPage,
-  pendingComponent: AllBackupsPending,
+  component: BackupsPage,
 })
 
-function resourceLabel(backup: BackupHistoryRecord): string {
-  if (backup.resource_kind === 'volume') {
-    return `${backup.service_name ?? ''}/${backup.volume_name ?? ''}`
-  }
-  return backup.database_name ?? ''
-}
-
-function ResourceLink({ backup }: { backup: BackupHistoryRecord }) {
-  if (backup.resource_kind === 'volume') {
-    return (
-      <Link
-        to="/apps/$name/volumes"
-        params={{ name: backup.service_name ?? '' }}
-        className="text-foreground underline-offset-2 hover:underline"
-      >
-        {resourceLabel(backup)}
-      </Link>
-    )
-  }
-  return (
-    <Link
-      to="/databases/$name/overview"
-      params={{ name: backup.database_name ?? '' }}
-      className="text-foreground underline-offset-2 hover:underline"
-    >
-      {resourceLabel(backup)}
-    </Link>
-  )
-}
-
-function KindBadge({ backup }: { backup: BackupHistoryRecord }) {
-  return (
-    <Badge variant="outline">
-      {backup.resource_kind === 'volume' ? 'Volume' : 'Database'}
-    </Badge>
-  )
-}
-
-// Whether the empty-state's prerequisite branch ("add a backup target
-// first") should show: only once the optional targets query has
-// actually resolved, since it reports [] while still loading regardless
-// of what's really configured, and that must not flash the prerequisite
-// message ahead of a real answer.
+/** shouldPromptForBackupTarget is true only once targets loaded and none exist. */
 export function shouldPromptForBackupTarget(
   targetsLoading: boolean,
   targetCount: number,
@@ -123,43 +27,11 @@ export function shouldPromptForBackupTarget(
   return !targetsLoading && targetCount === 0
 }
 
-function AllBackupsPage() {
+function BackupsPage() {
   const { t } = useTranslation('backups')
-  const { data: initial } = useSuspenseQuery(allBackupHistoryQueryOptions())
-  const [history, setHistory] = useState<BackupHistoryRecord[]>(initial)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [loadMoreError, setLoadMoreError] = useState<string | null>(null)
-  const [exhausted, setExhausted] = useState(
-    initial.length < ALL_BACKUP_HISTORY_PAGE_SIZE,
-  )
-  const targetsQuery = useBackupTargetsOptional()
-  const targets = targetsQuery.data ?? []
-  const noBackupTarget = shouldPromptForBackupTarget(
-    targetsQuery.isLoading,
-    targets.length,
-  )
-  const targetName = (targetId: string) =>
-    targets.find((t) => t.id === targetId)?.name ?? 'Deleted target'
-
-  async function handleLoadMore() {
-    const oldest = history[history.length - 1]
-    if (!oldest) return
-    setLoadingMore(true)
-    setLoadMoreError(null)
-    try {
-      const next = await fetchAllBackupHistory({ before: oldest.started_at })
-      setHistory((prev) => [...prev, ...next])
-      if (next.length < ALL_BACKUP_HISTORY_PAGE_SIZE) {
-        setExhausted(true)
-      }
-    } catch (err) {
-      setLoadMoreError(
-        err instanceof Error ? err.message : 'failed to load older backups',
-      )
-    } finally {
-      setLoadingMore(false)
-    }
-  }
+  const coverage = useBackupCoverage()
+  const [protectOpen, setProtectOpen] = useState(false)
+  const data = coverage.data
 
   return (
     <div className="space-y-6">
@@ -168,163 +40,66 @@ function AllBackupsPage() {
           <CloudArrowUpIcon className="size-4" aria-hidden="true" />
         </div>
         <PageHeader
-          title="Backups"
+          title={t('page.title')}
           helpPath="/backups-and-storage"
-          helpLabel="Backups and storage guide"
-          description={
-            <>
-              Every backup attempt across every database and app volume, newest
-              first. Manage a database's or app's own schedule and targets from
-              its own page. This instance's own control plane backup and
-              disaster recovery settings live under{' '}
-              <Link
-                to="/settings/control-plane-backup"
-                className="text-foreground underline-offset-2 hover:underline"
-              >
-                Settings
-              </Link>
-              .
-            </>
-          }
+          helpLabel={t('page.helpLabel')}
+          description={t('page.description')}
         />
       </div>
 
-      <BackupHealthPanel />
-      <BackupDrillHistory />
-
-      <div>
-        <h2 className="text-base font-medium">{t('history.title')}</h2>
-        <p className="text-sm text-muted-foreground">
-          {t('history.description')}
+      {coverage.isError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {t('page.loadFailed', { error: coverage.error.message })}
         </p>
-      </div>
-
-      {history.length === 0 ? (
-        noBackupTarget ? (
-          <EmptyState
-            icon={<CloudArrowUpIcon className="size-5" />}
-            title="No backup target connected"
-            description="Backups need somewhere to store to. Connect an S3-compatible bucket, then schedule or trigger a backup from a database's own page."
-            action={
-              <Button
-                size="sm"
-                render={<Link to="/settings/backup-targets" />}
-                nativeButton={false}
-              >
-                Add a backup target
-              </Button>
-            }
-          />
-        ) : (
-          <EmptyState
-            icon={<CloudArrowUpIcon className="size-5" />}
-            title="No backups yet"
-            description="Backups will show up here once a schedule runs or you trigger one manually from a database's or app volume's own page."
-          />
-        )
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Kind</TableHead>
-                <TableHead>Resource</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Target</TableHead>
-                <TableHead>Size</TableHead>
-                <TableHead>Started</TableHead>
-                <TableHead>Finished</TableHead>
-                <TableHead>Verification</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {history.map((backup) => (
-                <TableRow key={backup.id}>
-                  <TableCell>
-                    <KindBadge backup={backup} />
-                  </TableCell>
-                  <TableCell>
-                    <ResourceLink backup={backup} />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <StatusBadge status={backup.status} />
-                      {backup.status === 'failed' && backup.error ? (
-                        <span
-                          className="max-w-[20rem] truncate text-xs text-destructive"
-                          title={backup.error}
-                        >
-                          {backup.error}
-                        </span>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-foreground">
-                    {targetName(backup.target_id)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {backup.status === 'running'
-                      ? '-'
-                      : formatBytes(backup.size_bytes)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(backup.started_at, '-')}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(backup.finished_at, '-')}
-                  </TableCell>
-                  <TableCell>
-                    {backup.status === 'succeeded' ? (
-                      <AnyBackupVerificationBadge backup={backup} />
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {backup.status === 'succeeded' ? (
-                        <AnyBackupDownloadLink backup={backup} />
-                      ) : null}
-                      {backup.status !== 'running' ? (
-                        <AnyBackupDeleteDialog backup={backup} />
-                      ) : null}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      ) : !data ? (
+        <div className="space-y-3" aria-busy="true">
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-40 w-full" />
         </div>
+      ) : data.targets.length === 0 ? (
+        <FirstRunSetup unprotected={data.summary.total} />
+      ) : (
+        <>
+          <CoverageSummary
+            summary={data.summary}
+            onProtect={() => {
+              setProtectOpen(true)
+            }}
+          />
+          {data.resources.length === 0 ? (
+            <EmptyState
+              icon={<CloudArrowUpIcon className="size-5" />}
+              title={t('page.noResourcesTitle')}
+              description={t('page.noResourcesDescription')}
+            />
+          ) : (
+            <CoverageList
+              rows={data.resources}
+              targets={data.targets}
+              onNeedTarget={() => {
+                setProtectOpen(true)
+              }}
+            />
+          )}
+          <div className="grid gap-4 md:grid-cols-2">
+            <StorageSafetyCard encryption={data.encryption} />
+            <DrillTimeline />
+          </div>
+        </>
       )}
 
-      {loadMoreError ? (
-        <p className="text-sm text-destructive">{loadMoreError}</p>
-      ) : null}
+      <OrphanedDataPanel />
+      {data && data.targets.length > 0 ? <RecentActivity /> : null}
 
-      {!exhausted && history.length > 0 ? (
-        <Button
-          type="button"
-          variant="outline"
-          disabled={loadingMore}
-          onClick={() => {
-            void handleLoadMore()
-          }}
-        >
-          {loadingMore ? 'Loading...' : 'Load older entries'}
-        </Button>
+      {data ? (
+        <ProtectAllDialog
+          open={protectOpen}
+          onOpenChange={setProtectOpen}
+          targets={data.targets}
+          defaults={data.defaults}
+          scratchCount={data.summary.scratch}
+        />
       ) : null}
-    </div>
-  )
-}
-
-function AllBackupsPending() {
-  return (
-    <div className="space-y-6">
-      <PageHeader title="Backups" />
-      <TableSkeleton columnCount={9} rowCount={8} />
     </div>
   )
 }

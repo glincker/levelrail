@@ -818,8 +818,21 @@ export interface DeleteAppResult {
   error: string
 }
 
-export async function deleteApp(name: string): Promise<DeleteAppResult> {
-  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}`, {
+export interface DeleteAppInput {
+  name: string
+  /** Also destroy the app's data volumes. The server needs the name echoed back. */
+  deleteData?: boolean
+}
+
+export async function deleteApp(
+  input: string | DeleteAppInput,
+): Promise<DeleteAppResult> {
+  const { name, deleteData } =
+    typeof input === 'string' ? { name: input, deleteData: false } : input
+  const query = deleteData
+    ? `?delete_data=true&confirm=${encodeURIComponent(name)}`
+    : ''
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}${query}`, {
     method: 'DELETE',
   })
   if (!res.ok) {
@@ -843,7 +856,8 @@ export function useDeleteApp() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteApp,
-    onSuccess: (_data, name) => {
+    onSuccess: (_data, input) => {
+      const name = typeof input === 'string' ? input : input.name
       queryClient.removeQueries({ queryKey: appKeys.detail(name) })
       void queryClient.invalidateQueries({ queryKey: appKeys.list() })
     },

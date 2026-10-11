@@ -165,7 +165,8 @@ var cliCommandTree = map[string]*cmdNode{
 	}},
 	"backups": {subs: map[string]*cmdNode{
 		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "clone-restores": nil, "verify": nil, "verifications": nil,
-		"health": nil, "protection": nil,
+		"health": nil, "protection": nil, "coverage": nil, "protect-all": nil,
+		"orphans":  {subs: map[string]*cmdNode{"list": nil, "reclaim": nil}},
 		"drill":    {subs: map[string]*cmdNode{"run": nil, "list": nil, "show": nil}},
 		"volumes":  {subs: map[string]*cmdNode{"list": nil, "policy": {subs: map[string]*cmdNode{"get": nil, "set": nil}}, "restore": nil}},
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runAppsDelete implements "apps delete <name>": DELETE
@@ -12,6 +14,8 @@ import (
 func runAppsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeleteUsage(prog)) }
+	deleteData := fs.Bool("delete-data", false, "also destroy the app's data volumes (needs --confirm NAME)")
+	confirm := fs.String("confirm", "", "the app name again, required with --delete-data")
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -25,7 +29,16 @@ func runAppsDelete(prog string, args []string, stdout, stderr io.Writer, lookupE
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
-	res, err := client.DeleteAppResult(context.Background(), name)
+	var res apiclient.DeleteAppResult
+	var err error
+	if *deleteData {
+		if *confirm != name {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--delete-data needs --confirm %s: the data is destroyed and cannot be recovered", name))
+		}
+		res, err = client.DeleteAppAndData(context.Background(), name)
+	} else {
+		res, err = client.DeleteAppResult(context.Background(), name)
+	}
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete app %q: %w", name, err))
 	}
@@ -57,6 +70,8 @@ unreachable or a stop fails, the app is still deleted and teardown is
 retried until it succeeds (the command then reports it as pending).
 
 Flags:
+  --delete-data             also destroy the app's data volumes (needs --confirm NAME); without it they are kept as orphaned data
+  --confirm string          the app name again, required with --delete-data
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

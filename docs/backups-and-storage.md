@@ -177,7 +177,63 @@ levelrail-cli backups volumes restore <app> <volume> --backup ID [--target-app A
 
 `GET /api/v1/backups` (newest first, cursor-paginated with `?limit=&before=`) lists backups across every database and app volume. Each entry carries `resource_kind` (`database` or `volume`) and identity fields (`database_name`, or `service_name` and `volume_name`).
 
-On the dashboard this is the top-level **Backups** page. It opens with backup health grouped by app (last backup, last verified restore, size, next run, bucket protection), then restore drill history, then every attempt with download, verify, and delete actions per row. On the CLI the attempt history is `levelrail-cli backups list-all [--limit N] [--before RFC3339]` and the health view is `levelrail-cli backups health`. Triggering and restoring stay on the resource's own page, because they need context (which target, which confirmation flow) that the aggregated view does not have.
+On the CLI the attempt history is `levelrail-cli backups list-all [--limit N] [--before RFC3339]` and the health view is `levelrail-cli backups health`.
+
+### Coverage: what is and is not protected
+
+The top-level **Backups** page leads with coverage, not history. It answers "is everything backed up, and has a restore been proven?" at a glance:
+
+- A summary: how many resources are protected, the last verified restore, the next run and the storage used.
+- One row for every database and every app volume, protected or not, each with a state and one primary action.
+- A compact card for encryption and bucket safety, a small timeline of restore drills, an **Orphaned data** panel, and a collapsed **Recent activity** section holding the attempt history.
+
+Each resource is in exactly one state:
+
+| State | Meaning | Primary action |
+| --- | --- | --- |
+| Protected and verified | Scheduled, has a backup, and a restore drill passed | Restore |
+| Protected, not verified | Scheduled and backed up, but no restore has been proven | Restore (and Prove restore) |
+| Scheduled, never ran | A schedule exists but no backup has completed | Back up now |
+| Backups failing | Every attempt failed, or the last drill failed | Back up now |
+| Not protected | No schedule or no target. A backup taken by hand does not count | Protect |
+
+A resource counts as protected only when it is scheduled and has a successful backup. Preview environments and canaries are marked **Scratch** and left out of the totals.
+
+**Protect everything** (`POST /api/v1/backups/protect-all`) schedules every unprotected resource in one step. You pick a destination (or connect one inline from a provider preset: Cloudflare R2, Backblaze B2, Wasabi, AWS S3, MinIO, or local disk), a schedule, and how many backups to keep. The dialog previews the plan first, and nothing changes until you apply. Scratch resources are off unless you opt in. The same flow on the CLI:
+
+```bash
+levelrail-cli backups coverage [--unprotected]
+levelrail-cli backups protect-all --target ID                       # prints the plan, changes nothing
+levelrail-cli backups protect-all --target ID --apply [--schedule "0 3 * * *"] [--retain 7] [--retain-days 30]
+```
+
+The default schedule and retention come from `APP_BACKUP_DEFAULT_SCHEDULE` (default `0 3 * * *`), `APP_BACKUP_DEFAULT_RETAIN` (default 7) and `APP_BACKUP_DEFAULT_RETAIN_DAYS` (default 30). They are suggestions: a database without a schedule shows them on its own Backups card once a destination exists, and applies them only when you click. The dashboard also shows a recommendation when resources are not backed up.
+
+::: warning
+The **Local disk** preset points at an S3 server on this machine. Backups stored on the machine they protect are lost with it. It is fine to try things out and wrong for anything you care about.
+:::
+
+#### The encryption key
+
+The card shows whether new volume backups are encrypted. The public key is never printed on the page: use **Copy public key** in the disclosure. The private key must be stored off this server, or encrypted backups cannot be restored after a disaster. Until you confirm that you did (`POST /api/v1/backups/encryption-key/ack`), the card keeps a warning. The confirmation is a statement from you, not something the control plane can verify, and it is tied to the public key, so rotating the key asks again.
+
+### Orphaned data
+
+Deleting a database or app does not delete its Docker volumes, so a mistaken delete never destroys data. Volumes this control plane created whose database or app no longer exists are listed under **Orphaned data** with size, age, which resource they belonged to, and the last backup of it (a volume with no backup is flagged).
+
+- **Inspect** shows the volume, its role (data, certificates, WAL archive), its creation time and its last backup.
+- **Reclaim** deletes the volume after you type its name. The server re-checks that it is still orphaned and not mounted, so a volume an app started using again is refused.
+- Nothing is ever deleted automatically.
+- When orphaned data exceeds `APP_ATTENTION_ORPHAN_BYTES` (default 1 GiB), a recommendation appears on the dashboard.
+
+To destroy the data together with the resource, tick **Also delete the data** in the database or app delete dialog, or pass `--delete-data --confirm NAME` on `levelrail-cli databases delete` and `levelrail-cli apps delete`. The API takes `?delete_data=true&confirm=NAME` and needs `write:sensitive`. It only works for resources on the control plane's own node, and the volumes are removed after the containers are gone, so a teardown that has not finished leaves them listed as orphaned data instead.
+
+```bash
+levelrail-cli backups orphans list
+levelrail-cli backups orphans reclaim db-orders-data --confirm db-orders-data
+```
+
+Coverage, protect-all and orphaned data are instance wide. Members of non-default teams cannot reach them.
 
 ## Retention
 
@@ -343,6 +399,11 @@ Limits to know about:
 | `PUT` | `/api/v1/databases/{name}/backup-schedule` | `write:sensitive` |
 | `DELETE` | `/api/v1/databases/{name}/backup-schedule` | `write:sensitive` |
 | `GET` | `/api/v1/backups/health` | `read` |
+| `GET` | `/api/v1/backups/coverage` | `read` |
+| `POST` | `/api/v1/backups/protect-all` | `write:sensitive` |
+| `POST` | `/api/v1/backups/encryption-key/ack` | `write:sensitive` |
+| `GET` | `/api/v1/storage/orphans` | `read` |
+| `DELETE` | `/api/v1/storage/orphans/{id}` | `write:sensitive` |
 | `GET` | `/api/v1/backups/drills?service=&volume=&database=&limit=` | `read` |
 | `GET` | `/api/v1/backups/drills/{id}` | `read` |
 | `POST` | `/api/v1/backups/drills` | `write:sensitive` |

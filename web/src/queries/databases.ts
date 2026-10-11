@@ -218,13 +218,22 @@ export function useCreateDatabase() {
 export interface DeleteDatabaseInput {
   name: string
   force?: boolean
+  /** Also destroy the data volumes. The server needs the name echoed back. */
+  deleteData?: boolean
 }
 
 export async function deleteDatabase({
   name,
   force,
+  deleteData,
 }: DeleteDatabaseInput): Promise<void> {
-  const query = force ? '?force=true' : ''
+  const params = new URLSearchParams()
+  if (force) params.set('force', 'true')
+  if (deleteData) {
+    params.set('delete_data', 'true')
+    params.set('confirm', name)
+  }
+  const query = params.size > 0 ? `?${params.toString()}` : ''
   const res = await fetch(
     `/api/v1/databases/${encodeURIComponent(name)}${query}`,
     { method: 'DELETE' },

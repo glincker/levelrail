@@ -448,6 +448,11 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	purge, ok := rt.requireDeleteDataConfirm(w, r, name, existing.NodeID)
+	if !ok {
+		return
+	}
+
 	err = rt.databases.DeleteDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
@@ -458,7 +463,11 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	rt.teardownDatabaseContainer(name, existing.NodeID)
+	if purge {
+		rt.teardownDatabaseAndPurge(name, existing.NodeID)
+	} else {
+		rt.teardownDatabaseContainer(name, existing.NodeID)
+	}
 	rt.nudgeReconciler()
 	w.WriteHeader(http.StatusNoContent)
 }

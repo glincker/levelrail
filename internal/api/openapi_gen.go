@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 998 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1003 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -393,10 +393,13 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/settings/registry", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleGetRegistrySettings", Description: "Built-in container registry (instance-level, one registry per control plane): GET is AbilityRead; PUT/DELETE are AbilityRoot, matching PUT /api/v1/settings/cloudflare-tunnel's own tier for infrastructure config that runs a system container and generates credentials."},
 	{Method: "PUT", Path: "/api/v1/settings/registry", Ability: "AbilityRoot", Group: "Built-in Container Registry", Handler: "handleUpdateRegistrySettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleListAllBackups", Description: "Instance-wide backup history across every database and app volume, the aggregated counterpart of the per-resource routes above and below: ordinary AbilityRead, same tier as those, since this is only ever a merged read of history metadata already visible per-resource."},
+	{Method: "GET", Path: "/api/v1/backups/coverage", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleBackupCoverage", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups/drills", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleListBackupDrills", Description: ""},
 	{Method: "POST", Path: "/api/v1/backups/drills", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleStartBackupDrill", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups/drills/{id}", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleGetBackupDrill", Description: ""},
+	{Method: "POST", Path: "/api/v1/backups/encryption-key/ack", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleAckBackupEncryptionKey", Description: ""},
 	{Method: "GET", Path: "/api/v1/backups/health", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleBackupHealth", Description: "App service volume backups (app_volume_backups.go/ app_volume_backup_download.go/app_volume_backup_verify.go): the exact same ability tiers as the database routes just above, applied to a service's named volume instead of a managed database. See those handlers' own doc comments for the per-route reasoning this mirrors."},
+	{Method: "POST", Path: "/api/v1/backups/protect-all", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleProtectAll", Description: ""},
 	{Method: "POST", Path: "/api/v1/backups/protection/refresh", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleRefreshBackupProtection", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/backup-schedule", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleClearBackupSchedule", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/backup-schedule", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleSetBackupSchedule", Description: "Scheduled backup config, per database (wave-2 roadmap item 6): which backup target, cron schedule, and retention count internal/backup.Scheduler uses for this database, if any. AbilityWriteSensitive for both PUT and DELETE, the same tier the manual trigger route above already uses: this is the config that decides where an unattended, recurring backup ends up, a live bucket with previously-stored credentials, the identical sensitivity class. GET reuses handleGetDatabase's own existing AbilityRead response (databaseResource already carries these three fields, see that handler's own file), so there is no separate GET route here."},
@@ -826,6 +829,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/storage/destinations/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetStorageDestination", Description: ""},
 	{Method: "PUT", Path: "/api/v1/storage/destinations/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleUpdateStorageDestination", Description: ""},
 	{Method: "POST", Path: "/api/v1/storage/destinations/{id}/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTestStorageDestination", Description: ""},
+	{Method: "GET", Path: "/api/v1/storage/orphans", Ability: "AbilityRead", Group: "Other", Handler: "handleListStorageOrphans", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/storage/orphans/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleReclaimStorageOrphan", Description: ""},
 	{Method: "GET", Path: "/api/v1/storage/providers", Ability: "AbilityRead", Group: "Other", Handler: "handleListStorageProviders", Description: ""},
 	{Method: "GET", Path: "/api/v1/tags", Ability: "AbilityRead", Group: "Other", Handler: "handleListTags", Description: ""},
 	{Method: "POST", Path: "/api/v1/tags", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateTag", Description: "Tags (tags.go): arbitrary operator-defined labels for organizing and filtering apps, independent of the project/environment hierarchy. The global collection lives flat under /api/v1/tags (create/list/delete, plus filter-by-tag); attach/detach is scoped under the app it applies to, the same nesting scheduled-tasks/flags above use for their own per-app child resources."},
