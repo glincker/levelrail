@@ -72,6 +72,13 @@ func runImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	fs.StringVar(&f.ref, "ref", "", "git branch for a repo import")
 	fs.IntVar(&f.port, "port", 0, "container port override")
 	fs.BoolVar(&f.deploy, "deploy", false, "create the app and deploy it after printing the plan")
+	var af importAnalyzeFlags
+	fs.BoolVar(&af.analyze, "analyze", false, "analyze a repository and print suggestions with evidence, creating nothing")
+	fs.BoolVar(&af.apply, "apply", false, "analyze a repository, then create its databases, app and first build")
+	fs.BoolVar(&af.noDatabase, "no-database", false, "with --apply, do not create or attach the suggested databases")
+	fs.StringVar(&af.baseDir, "base-directory", "", "monorepo app directory (build context) override")
+	fs.StringVar(&af.dockerfile, "dockerfile", "", "Dockerfile path override, relative to the repository root")
+	fs.StringVar(&af.buildType, "build-type", "", "build type override: dockerfile, railpack or static")
 	fs.Var(stringMapFlag(f.env), "env", "env value as KEY=VALUE, repeatable (satisfies required variables)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, importUsage(prog)) }
 
@@ -85,6 +92,9 @@ func runImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	if af.analyze || af.apply {
+		return runImportAnalyze(client, f, af, fs.Args(), stdout, stderr, jsonOut, of)
+	}
 	req := apiclient.ImportPlanRequest{Text: text, Ref: f.ref, Name: f.name, Port: f.port, Env: f.env}
 	plan, err := client.PlanImport(context.Background(), req)
 	if err != nil {
@@ -367,6 +377,12 @@ Flags:
   -f, --file string     read a compose file or Dockerfile (- for stdin)
   --docker-run string   a docker run command to import
   --deploy              create the app and deploy it
+  --analyze             analyze a repository: stack, build, port, health, env keys, databases, with evidence
+  --apply               analyze, then create the databases, app, repository link and first build
+  --base-directory DIR  monorepo app directory override (with --analyze or --apply)
+  --dockerfile PATH     Dockerfile path override (with --analyze or --apply)
+  --build-type TYPE     dockerfile, railpack or static (with --analyze or --apply)
+  --no-database         with --apply, skip the suggested databases
   --name string         app name (default derived from the source)
   --ref string          git branch for a repo import
   --port int            container port override

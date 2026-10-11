@@ -64,6 +64,8 @@ export interface GitHubAppRepo {
   // (migrations/0282): "user" for the admin's own personal account,
   // "organization" otherwise.
   account_type: 'user' | 'organization'
+  language?: string
+  pushed_at?: string
 }
 
 // GitHubAppRepoListError is one entry of GitHubAppRepoListResponse.errors.

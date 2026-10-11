@@ -16,7 +16,6 @@ import { PageHeader } from '@/components/shell/PageHeader'
 import { appListQueryOptions } from '../../queries/apps'
 import { staticSitesQueryOptions } from '../../queries/staticSites'
 import { RowSkeleton } from '../../components/AppRow'
-import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { StaticSitesCard } from '../../components/StaticSitesCard'
 import { AppsBulkBar } from '../../components/AppsBulkBar'
 import { AppsFilterBar } from '../../components/AppsFilterBar'
@@ -161,15 +160,14 @@ function AppListPage() {
                 <DatabaseIcon />
                 {t('appsList.newDatabase', { defaultValue: 'New database' })}
               </Button>
-              <CreateResourceWizard
-                scope="applications"
-                trigger={
-                  <Button size="sm">
-                    <PlusIcon />
-                    {t('appsList.newApp', { defaultValue: 'New app' })}
-                  </Button>
-                }
-              />
+              <Button
+                size="sm"
+                render={<Link to="/apps/new" />}
+                nativeButton={false}
+              >
+                <PlusIcon />
+                {t('appsList.newApp', { defaultValue: 'New app' })}
+              </Button>
             </>
           }
         />
@@ -199,15 +197,10 @@ function AppListPage() {
           })}
           action={
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <CreateResourceWizard
-                scope="applications"
-                trigger={
-                  <Button>
-                    <PlusIcon />
-                    {t('appsList.newApp', { defaultValue: 'New app' })}
-                  </Button>
-                }
-              />
+              <Button render={<Link to="/apps/new" />} nativeButton={false}>
+                <PlusIcon />
+                {t('appsList.newApp', { defaultValue: 'New app' })}
+              </Button>
               <Button
                 variant="outline"
                 render={<Link to="/settings/import-platform" />}

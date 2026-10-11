@@ -1,0 +1,132 @@
+{
+  "title": "New app",
+  "description": "Pick where it comes from. We read the repository, suggest everything, and you confirm.",
+  "steps": {
+    "label": "New app steps",
+    "source": "Where is it from",
+    "findings": "What we found",
+    "review": "Review and deploy"
+  },
+  "nav": {
+    "back": "Back",
+    "review": "Review"
+  },
+  "source": {
+    "analyzing": "Reading the repository...",
+    "analyze": "Analyze repository",
+    "tabs": {
+      "repos": "Your repositories",
+      "url": "Git URL",
+      "other": "Image, compose or docker run",
+      "template": "Template"
+    },
+    "repos": {
+      "search": "Search repositories or languages",
+      "listLabel": "Connected repositories",
+      "noMatch": "No repository matches \"{{query}}\". Try another name or paste its URL.",
+      "private": "Private repository",
+      "pushed": "pushed {{when}}",
+      "partial": "Some connected accounts could not be listed. Paste a URL for anything missing.",
+      "emptyTitle": "No git provider is connected yet",
+      "emptyBody": "Connect GitHub to pick a repository from a list. You can also paste any public git URL.",
+      "connect": "Connect GitHub"
+    },
+    "url": {
+      "label": "Repository URL",
+      "hint": "GitHub, GitLab, Gitea or Bitbucket. Files are read through the provider API, nothing is cloned yet.",
+      "advanced": "Private repository or a specific branch?",
+      "branch": "Branch",
+      "token": "Access token",
+      "tokenHint": "Used once to read files and to build. Leave empty for a public repository."
+    },
+    "template": {
+      "body": "Templates are ready-made services such as databases, CMSs and dashboards with sane defaults.",
+      "browse": "Browse templates"
+    }
+  },
+  "findings": {
+    "warnings": {
+      "nothing_detected": "No Dockerfile, compose file or known framework was found. Pick the build type under Advanced.",
+      "read_budget": "The file read budget was reached, so some findings may be missing.",
+      "tree_truncated": "This repository is large and its file listing was cut short.",
+      "monorepo_choose_app": "This looks like a monorepo with several apps. Check the app directory below.",
+      "port_unknown": "No listening port could be detected. Set the port the app listens on."
+    },
+    "app": {
+      "title": "App",
+      "name": "App name",
+      "domain": "Domain"
+    },
+    "build": {
+      "title": "Build and run",
+      "app": "App in this repository",
+      "appHint": "Several buildable apps were found. Choose the one to deploy."
+    },
+    "port": {
+      "label": "Port the app listens on"
+    },
+    "health": {
+      "label": "Health check path"
+    },
+    "databases": {
+      "title": "Databases it appears to need",
+      "attach": "Create and attach {{engine}} {{version}}",
+      "name": "Database name",
+      "envVar": "Connection variable"
+    },
+    "env": {
+      "title": "Environment variables",
+      "none": "No environment variables were declared in the repository.",
+      "required": "Required",
+      "secret": "Secret",
+      "provided": "Filled in automatically from {{source}}.",
+      "placeholder": "Enter a value",
+      "hasDefault": "Leave empty to use the app's own default",
+      "source": "Found in {{source}}",
+      "optional": "{{count}} optional variables",
+      "noValues": "Only variable names are read from the repository. Values are never imported."
+    },
+    "advanced": {
+      "title": "Advanced options",
+      "buildType": "Build type",
+      "dockerfile": "Dockerfile path",
+      "baseDirectory": "Build context directory",
+      "memory": "Memory limit (MiB)",
+      "types": {
+        "railpack": "Auto-detect (Railpack)",
+        "dockerfile": "Dockerfile",
+        "static": "Static site"
+      }
+    }
+  },
+  "review": {
+    "summary": "This will create {{name}} from a {{framework}} repository with {{databases}} database(s), served at {{domain}}, and start its first build.",
+    "noDomain": "no domain yet",
+    "changesLabel": "What will be created",
+    "willCreate": "Will be created",
+    "kinds": {
+      "app": "App",
+      "source": "Repository",
+      "database": "Database",
+      "domain": "Domain",
+      "env": "Environment variable"
+    },
+    "missingTitle": "Required variables are empty",
+    "missingBody": "Go back and fill in: {{keys}}",
+    "deploy": "Deploy",
+    "deploying": "Creating and deploying...",
+    "failed": {
+      "generic": "Deploy did not finish",
+      "database": "Could not create the database",
+      "app": "Could not create the app",
+      "connection": "Could not attach the database",
+      "source": "Could not connect the repository",
+      "build": "Could not start the build"
+    },
+    "failedResume": "The app record exists, press Deploy to continue from where it stopped."
+  },
+  "toast": {
+    "created": "Creating \"{{name}}\".",
+    "watching": "Watching the first build now."
+  }
+}
