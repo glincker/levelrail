@@ -68,10 +68,12 @@ else
 fi
 
 # Paths whose change can break a heavy live suite (docs/ci.md#live-suites).
-live_paths_re='^(internal/(catalog|compose|registrycatalog|reconcile|docker|dockertest|agent|network|build|pipeline|ingress)/|test/e2e/|\.github/workflows/(ci|nightly)\.yml$|\.github/actions/|scripts/(ci-go-plan|ci-go-test|go-test-groups)\.sh$)'
+live_paths_re='^(internal/(catalog|compose|registrycatalog|reconcile|docker|dockertest|agent|network|build|pipeline|ingress)/|test/e2e/|\.github/actions/|scripts/(ci-go-plan|ci-go-test|go-test-groups)\.sh$)'
 live=smoke
 live_reason="no live-suite path changed"
-if [ "$scope" = all ]; then
+if [ "$scope" = all ] && [ "${CI_LIVE_SMOKE:-}" = true ] && [ "${CI_LIVE_LABEL:-}" != true ]; then
+	live_reason="pipeline-only change, live suites in smoke mode (ci:live label forces full)"
+elif [ "$scope" = all ]; then
 	live=full
 	live_reason="full run"
 elif [ "${CI_LIVE_LABEL:-}" = true ]; then
@@ -87,7 +89,7 @@ fi
 
 # Which live-Docker lanes a diff can break (docs/ci.md#which-e2e-lanes-run).
 # A change confined to internal/reconcile/ingress does not need the fleet.
-pipeline_re='^(\.github/workflows/(ci|nightly)\.yml$|\.github/actions/|scripts/(ci-go-plan|ci-go-test|go-test-groups)\.sh$)'
+pipeline_re='^(\.github/actions/|scripts/(ci-go-plan|ci-go-test|go-test-groups)\.sh$)'
 fleet_re='^(internal/reconcile/|internal/agent/|internal/network/|test/e2e/)'
 e2e_re='^(internal/api/|internal/ingress/|internal/reconcile/|internal/docker/|internal/deploy/|test/e2e/)'
 fleet_run=false

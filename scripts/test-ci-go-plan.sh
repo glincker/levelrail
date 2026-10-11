@@ -26,7 +26,8 @@ run() {
 	if [ "$env_kv" = "-" ]; then
 		out="$(printf '%s\n' "$@" | scripts/ci-go-plan.sh --files 2>/dev/null)"
 	else
-		out="$(printf '%s\n' "$@" | env "$env_kv" scripts/ci-go-plan.sh --files 2>/dev/null)"
+		# shellcheck disable=SC2086 # env_kv is one or more KEY=value words
+		out="$(printf '%s\n' "$@" | env $env_kv scripts/ci-go-plan.sh --files 2>/dev/null)"
 	fi
 	local lanes line_checks e
 	lanes=" $(sed -n 's/^lanes=//p' <<<"$out") "
@@ -75,6 +76,8 @@ run "e2e testenv change is full" - "live=full" has:e2e-reconcile -- test/e2e/tes
 run "go.mod is a full run" - "scope=all" "live=full" "live_reason=full run" has:docker has:e2e-fleet -- go.mod
 run "additive migration scopes to the store and its table users" - "scope=some" lacks:api-1 lacks:e2e -- internal/store/migrations/0404_database_network_rule_notes.sql
 run "data-rewriting migration is a full run" - "scope=all" has:api-1 -- internal/store/migrations/0375_global_environments.sql
+run "pipeline-only full run keeps live suites in smoke mode" CI_LIVE_SMOKE=true "scope=all" "live=smoke" lacks:e2e-fleet -- go.mod
+run "pipeline-only full run with ci:live label is full" "CI_LIVE_SMOKE=true CI_LIVE_LABEL=true" "scope=all" "live=full" has:e2e-fleet -- go.mod
 run "web only has no go lanes" - "scope=none" "has_tests=false" -- web/src/App.tsx
 
 # Whole-tree scanners are selected by any non-test Go change, never by docs.
