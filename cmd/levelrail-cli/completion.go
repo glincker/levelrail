@@ -226,6 +226,12 @@ var cliCommandTree = map[string]*cmdNode{
 	"users":                    {subs: map[string]*cmdNode{"list": nil, "create": nil, "set-abilities": nil, "delete": nil, "roles": nil, "role": {subs: map[string]*cmdNode{"set": nil}}, "grants": {subs: map[string]*cmdNode{"get": nil, "set": nil}}}},
 	"roles":                    {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil}},
 	"invites":                  {subs: map[string]*cmdNode{"create": nil, "list": nil, "revoke": nil}},
+	"dns": {subs: map[string]*cmdNode{
+		"zones":         {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil, "nameservers": nil, "verify": nil}},
+		"records":       {subs: map[string]*cmdNode{"list": nil, "add": nil, "update": nil, "delete": nil, "import": nil, "export": nil, "template": nil}},
+		"check":         nil,
+		"health-checks": {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil}},
+	}},
 	"iam": {subs: map[string]*cmdNode{
 		"policies": {subs: map[string]*cmdNode{
 			"create":      nil,
