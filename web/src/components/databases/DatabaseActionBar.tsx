@@ -1,0 +1,165 @@
+import { useState } from 'react'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
+import {
+  ArrowClockwiseIcon,
+  ClockCounterClockwiseIcon,
+  CloudArrowUpIcon,
+  DotsThreeIcon,
+  PauseIcon,
+  PlayIcon,
+  TrashIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import { ActionMenu } from '@/components/kit'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
+import { useTriggerBackup } from '../../queries/backupHistory'
+import { useStartDatabase, useStopDatabase } from '../../queries/databases'
+import type { DatabaseResource } from '../../types/databaseDetail'
+import { DeleteDatabaseDialog } from '../DeleteDatabaseDialog'
+
+// One primary action (Start when stopped, otherwise Back up now), the rest in
+// the overflow menu so Delete never carries the weight of the primary.
+export function DatabaseActionBar({
+  database,
+}: {
+  database: DatabaseResource
+}) {
+  const { t } = useTranslation('databases')
+  const navigate = useNavigate()
+  const name = database.name
+  const suspended = Boolean(database.suspended)
+  const backup = useTriggerBackup(name)
+  const stop = useStopDatabase()
+  const start = useStartDatabase()
+  const [restarting, setRestarting] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const targetId = database.backup_target_id
+
+  function onError(error: Error) {
+    toast.add({ title: error.message, type: 'error' })
+  }
+
+  function runBackup() {
+    if (!targetId) return
+    backup.mutate(targetId, {
+      onSuccess: () => {
+        toast.add({
+          title: t('detail.backupStarted', { name }),
+          type: 'success',
+        })
+      },
+      onError,
+    })
+  }
+
+  function runStart() {
+    start.mutate(name, {
+      onSuccess: () => {
+        toast.add({ title: t('detail.startToast', { name }), type: 'success' })
+      },
+      onError,
+    })
+  }
+
+  function runStop() {
+    stop.mutate(name, {
+      onSuccess: () => {
+        toast.add({ title: t('detail.stopToast', { name }), type: 'success' })
+      },
+      onError,
+    })
+  }
+
+  async function runRestart() {
+    setRestarting(true)
+    try {
+      await stop.mutateAsync(name)
+      await start.mutateAsync(name)
+      toast.add({ title: t('detail.restarted', { name }), type: 'success' })
+    } catch (error) {
+      onError(error instanceof Error ? error : new Error(String(error)))
+    } finally {
+      setRestarting(false)
+    }
+  }
+
+  return (
+    <>
+      {suspended ? (
+        <Button size="sm" disabled={start.isPending} onClick={runStart}>
+          <PlayIcon aria-hidden="true" />
+          {t('detail.start')}
+        </Button>
+      ) : targetId ? (
+        <Button size="sm" disabled={backup.isPending} onClick={runBackup}>
+          <CloudArrowUpIcon aria-hidden="true" />
+          {backup.isPending
+            ? t('detail.backupStarting')
+            : t('detail.backupNow')}
+        </Button>
+      ) : (
+        <Link
+          to="/databases/$name/overview"
+          params={{ name }}
+          hash="backups"
+          className={buttonVariants({ size: 'sm' })}
+        >
+          <CloudArrowUpIcon aria-hidden="true" />
+          {t('detail.backupSetup')}
+        </Link>
+      )}
+      <ActionMenu
+        trigger={
+          <Button variant="ghost" size="icon-sm" aria-label={t('detail.more')}>
+            <DotsThreeIcon aria-hidden="true" />
+          </Button>
+        }
+        items={[
+          {
+            id: 'restart',
+            label: restarting ? t('detail.restarting') : t('detail.restart'),
+            icon: <ArrowClockwiseIcon />,
+            disabled: restarting || suspended,
+            onSelect: () => {
+              void runRestart()
+            },
+          },
+          {
+            id: 'toggle',
+            label: suspended ? t('detail.start') : t('detail.stop'),
+            icon: suspended ? <PlayIcon /> : <PauseIcon />,
+            disabled: start.isPending || stop.isPending || restarting,
+            onSelect: suspended ? runStart : runStop,
+          },
+          {
+            id: 'restore',
+            label: t('detail.restore'),
+            icon: <ClockCounterClockwiseIcon />,
+            onSelect: () => {
+              void navigate({
+                to: '/databases/$name/overview',
+                params: { name },
+                hash: 'backups',
+              })
+            },
+          },
+          {
+            id: 'delete',
+            label: t('detail.delete'),
+            icon: <TrashIcon />,
+            tone: 'danger',
+            onSelect: () => {
+              setDeleteOpen(true)
+            },
+          },
+        ]}
+      />
+      <DeleteDatabaseDialog
+        name={name}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+      />
+    </>
+  )
+}

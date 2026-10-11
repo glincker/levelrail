@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { PulseIcon } from '@phosphor-icons/react/dist/ssr'
 import { MetricChartCard } from './MetricChartCard'
+import { chartPalette } from '../lib/chartPalette'
 import { TimeRangeControls } from './TimeRangeControls'
 import { useDatabaseMetricSeries } from '../queries/databaseMetrics'
 import type { MetricName } from '../types/metrics'
@@ -42,7 +43,11 @@ const CHART_GROUPS: ChartGroupConfig[] = [
   {
     title: 'CPU',
     unit: 'percent',
-    primary: { metric: 'cpu_percent', label: 'CPU', color: '#0ea5e9' },
+    primary: {
+      metric: 'cpu_percent',
+      label: 'CPU',
+      color: chartPalette.primary,
+    },
   },
   {
     title: 'Memory',
@@ -50,12 +55,12 @@ const CHART_GROUPS: ChartGroupConfig[] = [
     primary: {
       metric: 'memory_usage_bytes',
       label: 'Usage',
-      color: '#0ea5e9',
+      color: chartPalette.primary,
     },
     secondary: {
       metric: 'memory_limit_bytes',
       label: 'Limit',
-      color: '#f59e0b',
+      color: chartPalette.warning,
     },
   },
   {
@@ -64,18 +69,26 @@ const CHART_GROUPS: ChartGroupConfig[] = [
     primary: {
       metric: 'network_rx_bytes',
       label: 'Received',
-      color: '#22c55e',
+      color: chartPalette.success,
     },
-    secondary: { metric: 'network_tx_bytes', label: 'Sent', color: '#a855f7' },
+    secondary: {
+      metric: 'network_tx_bytes',
+      label: 'Sent',
+      color: chartPalette.neutral,
+    },
   },
   {
     title: 'Disk I/O',
     unit: 'bytes',
-    primary: { metric: 'disk_read_bytes', label: 'Read', color: '#22c55e' },
+    primary: {
+      metric: 'disk_read_bytes',
+      label: 'Read',
+      color: chartPalette.success,
+    },
     secondary: {
       metric: 'disk_write_bytes',
       label: 'Write',
-      color: '#a855f7',
+      color: chartPalette.neutral,
     },
   },
 ]

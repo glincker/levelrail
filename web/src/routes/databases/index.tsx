@@ -1,9 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEnvironmentScope } from '../../lib/environmentScope'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DatabaseIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { useEnvironmentScope } from '../../lib/environmentScope'
+import { routeErrorMessage } from '../../lib/apiError'
 import { databaseListQueryOptions } from '../../queries/databases'
 import {
   DATABASE_LIST_GRID,
@@ -12,43 +14,54 @@ import {
 } from '../../components/DatabaseRow'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { ConnectDatabaseDialog } from '../../components/ConnectDatabaseDialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '../../components/ui/button'
 import { EmptyState } from '../../components/ui/empty-state'
 import { PageHeader } from '../../components/shell/PageHeader'
 
-// Typed loader primes the Query cache, the component only reads that
-// cache via useSuspenseQuery against the same key, mirroring
-// routes/apps/index.tsx exactly. The list is virtualized unconditionally
-// (every list that can exceed 50 items must be, a project-wide rule)
-// even though databases will rarely exceed a handful of rows and GET
-// /api/v1/databases returns everything in one response with no
-// server-side pagination.
+// Loader primes the cache; the component reads it via useSuspenseQuery.
+// Virtualized unconditionally: GET /api/v1/databases returns everything.
 export const Route = createFileRoute('/databases/')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(databaseListQueryOptions()),
   component: DatabaseListPage,
   pendingComponent: DatabaseListPending,
+  errorComponent: DatabaseListError,
 })
 
-// Column labels for the sticky header, matching DatabaseRow's
-// DATABASE_LIST_GRID exactly (icon column and trailing chevron column
-// stay blank) so the header never drifts out of alignment with row
-// content.
 function ListHeader() {
+  const { t } = useTranslation('databases')
   return (
     <div
       className={`${DATABASE_LIST_GRID} sticky top-0 z-10 border-b border-border bg-card px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
     >
       <span aria-hidden="true" />
-      <span>Name</span>
-      <span>Engine</span>
-      <span>Version</span>
+      <span>{t('list.colName')}</span>
+      <span className="hidden lg:block">{t('list.colEngine')}</span>
+      <span className="hidden lg:block">{t('list.colBackups')}</span>
+      <span className="hidden lg:block">{t('list.colNode')}</span>
       <span aria-hidden="true" />
     </div>
   )
 }
 
+function NewDatabaseButton() {
+  const { t } = useTranslation('databases')
+  return (
+    <CreateResourceWizard
+      scope="databases"
+      trigger={
+        <Button size="sm">
+          <PlusIcon aria-hidden="true" />
+          {t('list.new')}
+        </Button>
+      }
+    />
+  )
+}
+
 function DatabaseListPage() {
+  const { t } = useTranslation('databases')
   useEnvironmentScope()
   const { data: databases } = useSuspenseQuery(databaseListQueryOptions())
   const parentRef = useRef<HTMLDivElement>(null)
@@ -61,53 +74,32 @@ function DatabaseListPage() {
   })
 
   return (
-    <div>
-      <div className="mb-4">
-        <PageHeader
-          title="Databases"
-          actions={
-            <>
-              {databases.length > 0 ? (
-                <span className="text-sm text-muted-foreground">
-                  {databases.length}{' '}
-                  {databases.length === 1 ? 'database' : 'databases'}
-                </span>
-              ) : null}
-              <ConnectDatabaseDialog />
-              <CreateResourceWizard
-                scope="databases"
-                trigger={
-                  <Button size="sm">
-                    <PlusIcon />
-                    New database
-                  </Button>
-                }
-              />
-            </>
-          }
-        />
-      </div>
+    <div className="space-y-4">
+      <PageHeader
+        title={t('list.title')}
+        description={
+          databases.length > 0
+            ? t('list.count', { count: databases.length })
+            : undefined
+        }
+        actions={
+          <>
+            <ConnectDatabaseDialog />
+            <NewDatabaseButton />
+          </>
+        }
+      />
       {databases.length === 0 ? (
         <EmptyState
           icon={<DatabaseIcon className="size-5" />}
-          title="No databases yet"
-          description="Create a managed Postgres, MySQL, or Redis database and reference it from an app's environment, credentials are injected automatically."
-          action={
-            <CreateResourceWizard
-              scope="databases"
-              trigger={
-                <Button size="sm" variant="glinui">
-                  <PlusIcon />
-                  New database
-                </Button>
-              }
-            />
-          }
+          title={t('list.emptyTitle')}
+          description={t('list.emptyBody')}
+          action={<NewDatabaseButton />}
         />
       ) : (
         <div
           ref={parentRef}
-          className="h-[70vh] overflow-auto rounded-lg border border-border bg-card"
+          className="max-h-[70vh] overflow-auto rounded-lg border border-border bg-card"
         >
           <ListHeader />
           <div
@@ -145,21 +137,43 @@ function DatabaseListPage() {
   )
 }
 
-// Route-level fallback for the loader's pending phase (slow network,
-// cold cache): a static stack of RowSkeleton rows under the same header
-// and container chrome as the real list, mirroring AppListPending.
 function DatabaseListPending() {
+  const { t } = useTranslation('databases')
   return (
-    <div>
-      <div className="mb-4">
-        <PageHeader title="Databases" />
-      </div>
+    <div className="space-y-4">
+      <PageHeader title={t('list.title')} />
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <ListHeader />
         {Array.from({ length: 6 }, (_, i) => (
           <RowSkeleton key={i} />
         ))}
       </div>
+    </div>
+  )
+}
+
+function DatabaseListError({ error }: { error: unknown }) {
+  const { t } = useTranslation('databases')
+  return (
+    <div className="space-y-4">
+      <PageHeader title={t('list.title')} />
+      <Alert variant="destructive">
+        <AlertDescription className="space-y-2">
+          <p className="font-medium">{t('list.errorTitle')}</p>
+          <p>
+            {t('list.errorBody')} {routeErrorMessage(error)}
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              globalThis.location.reload()
+            }}
+          >
+            {t('list.retry')}
+          </Button>
+        </AlertDescription>
+      </Alert>
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CheckIcon,
   CopyIcon,
@@ -18,6 +19,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
+import { TONE } from '@/components/kit/tone'
+import { cn } from '@/lib/utils'
 import {
   useClearDatabasePublicAccess,
   useSetDatabasePublicAccess,
@@ -47,6 +50,12 @@ import type { DatabaseResource } from '../types/databaseDetail'
 // different risk than Postgres/MySQL's generated passwords, so this
 // family gets its own copy plus an explicit confirmation checkbox
 // gating the toggle; the other engines keep the single passive warning.
+const WARNING_TONE = cn(
+  TONE.warning.soft,
+  TONE.warning.border,
+  TONE.warning.text,
+)
+
 const NO_AUTH_ENGINES = new Set(['redis', 'keydb', 'dragonfly'])
 
 // BIND_ADDRESS_MODES mirrors PortEditor's own identically-named
@@ -66,6 +75,7 @@ export function DatabasePublicAccessCard({
 }: {
   database: DatabaseResource
 }) {
+  const { t } = useTranslation('databases')
   const [portInput, setPortInput] = useState('')
   const [bindAddressMode, setBindAddressMode] =
     useState<BindAddressMode>('private')
@@ -170,14 +180,12 @@ export function DatabasePublicAccessCard({
         </div>
 
         {!enabled && requiresNoAuthAck && (
-          <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+          <div
+            className={cn('space-y-2 rounded-lg border p-2.5', WARNING_TONE)}
+          >
             <div className="flex items-start gap-2">
               <WarningIcon className="mt-0.5 size-4 shrink-0" />
-              <p className="text-sm">
-                This database has no password configured. Enabling public access
-                lets anyone who can reach this host read and write the entire
-                dataset with no authentication.
-              </p>
+              <p className="text-sm">{t('publicAccess.noPasswordWarning')}</p>
             </div>
             <label className="flex items-center gap-2 pl-6 text-sm">
               <Checkbox
@@ -265,12 +273,17 @@ export function DatabasePublicAccessCard({
                 ] ?? database.public_bind_address}
               </p>
             ) : null}
-            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+            <div
+              className={cn(
+                'flex items-start gap-2 rounded-lg border p-2.5',
+                WARNING_TONE,
+              )}
+            >
               <WarningIcon className="mt-0.5 size-4 shrink-0" />
               <p className="text-sm">
                 {requiresNoAuthAck
-                  ? 'This database has no password. This port is reachable from any network that can reach this host, granting full unauthenticated access to the dataset.'
-                  : 'This port is reachable from any network that can reach this host, not just your own machine. Make sure your firewall or network trusts that before relying on this in production.'}
+                  ? t('publicAccess.noPasswordOpen')
+                  : t('publicAccess.openPort')}
               </p>
             </div>
             <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">

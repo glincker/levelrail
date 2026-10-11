@@ -1,3 +1,5 @@
+import { cn } from '@/lib/utils'
+import { TONE } from '@/components/kit/tone'
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -184,7 +186,14 @@ export function DatabaseAttachmentCard({ app }: { app: AppDetail }) {
                   Database
                 </FieldLabel>
                 {collidingEnvKey ? (
-                  <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+                  <div
+                    className={cn(
+                      'flex items-start gap-2 rounded-lg border p-2.5',
+                      TONE.warning.soft,
+                      TONE.warning.border,
+                      TONE.warning.text,
+                    )}
+                  >
                     <WarningIcon className="mt-0.5 size-4 shrink-0" />
                     <p className="text-sm">
                       This app already has an env var named{' '}
