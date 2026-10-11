@@ -99,6 +99,11 @@ export interface IngressSettings {
   acme_blocked?: 'non_standard_ports'
   ingress_http_port?: number
   ingress_https_port?: number
+  // New apps without a domain get <app>.<base>, with the DNS record created.
+  apps_base_domain?: string
+  dns_cname_target?: string
+  dns_ttl_seconds?: number
+  dns_proxied?: boolean
 }
 
 export async function fetchIngressSettings(): Promise<IngressSettings> {

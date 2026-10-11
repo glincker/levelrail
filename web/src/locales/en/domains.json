@@ -237,8 +237,8 @@
       "submit_other": "Add {{count}} domains",
       "submitting": "Adding...",
       "noApps": "No apps yet. Deploy an app, then add domains to it.",
-      "resultsTitle": "Point your DNS",
-      "resultsBody": "Create the record shown for each domain at your DNS provider, then verify.",
+      "resultsTitle": "Going live",
+      "resultsBody": "Each domain below shows its progress. Records are created for you when a DNS provider is connected.",
       "added": "Added",
       "failed": "Not added",
       "verify": "Verify all",
@@ -384,5 +384,106 @@
     "noAnswer": "no answer",
     "propagatingHelp": "Public DNS already points this domain at this server. This server's own resolver keeps a \"not found\" answer for a while (often up to 30 minutes), so it will connect on its own. Nothing is wrong.",
     "notFoundHelp": "No resolver has this record yet. Check the record at your DNS provider (type, name, value) and give it a minute. A new record is usually visible within a few minutes."
+  },
+  "goLive": {
+    "loading": "Checking progress...",
+    "steps": {
+      "dns": "DNS record",
+      "counterpart": "www and apex pair",
+      "redirect": "Canonical redirect",
+      "proxy_route": "Proxy route",
+      "force_https": "Force HTTPS",
+      "propagation": "DNS propagation",
+      "certificate": "Certificate",
+      "http": "Site responds"
+    },
+    "state": {
+      "done": "done",
+      "pending": "will happen",
+      "skipped": "skipped",
+      "failed": "failed",
+      "manual": "manual step",
+      "conflict": "conflict"
+    },
+    "text": {
+      "dnsDone": "DNS record created at {{provider}}",
+      "propagatingSeen": "Waiting for DNS to propagate ({{resolver}} sees it)",
+      "propagatingWaiting": "Waiting for the record to show up in DNS",
+      "certDone": "Certificate issued by {{issuer}}, valid until {{date}}",
+      "skipped": "Skipped: {{reason}}"
+    },
+    "cloudflareBadge": "Created at Cloudflare",
+    "proxiedWarning": "The record is proxied by Cloudflare. Set the SSL/TLS mode to Full (strict) or visitors can hit redirect loops.",
+    "conflictHint": "A different record already exists for this name and was left alone. Remove it, or add the domain again with replace turned on.",
+    "connectCloudflare": "No DNS provider is connected, so add the record yourself.",
+    "connectCloudflareAction": "Connect Cloudflare to do this automatically.",
+    "openLive": "Open live site"
+  },
+  "baseDomain": {
+    "title": "Apps base domain",
+    "description": "New apps without a domain get app-name.base-domain, and its DNS record is created for you.",
+    "label": "Base domain",
+    "save": "Save",
+    "saved": "Apps base domain saved",
+    "invalid": "Enter a hostname such as apps.example.com.",
+    "zoneChecking": "Looking for the zone at your DNS provider...",
+    "zoneFound": "Zone {{zone}} found at {{provider}}",
+    "zoneNotFound": "No zone for this name at your DNS provider. Connect a provider that manages it first.",
+    "noProvider": "No DNS provider is connected yet.",
+    "noProviderAction": "Connect Cloudflare or Route53 below.",
+    "backfillHelp": "Apps that already exist keep their address. Give the ones without a domain a {{base}} address:",
+    "backfillPreview": "Preview existing apps",
+    "backfillApply_one": "Apply to {{count}} app",
+    "backfillApply_other": "Apply to {{count}} apps",
+    "backfillNone": "Every app already has a domain."
+  },
+  "automation": {
+    "title": "Domain automation",
+    "description": "What happens on its own when you add a domain to an app.",
+    "saved": "Domain automation saved",
+    "previewList": "Planned steps",
+    "previewLabel": "What will happen when I add",
+    "previewRun": "Show plan",
+    "previewNeedsApp": "Create an app first to preview a plan.",
+    "previewTitle": "Adding {{domain}} will:",
+    "historyTitle": "Automation history",
+    "historyEmpty": "No automated runs yet.",
+    "auditLink": "Open audit log",
+    "undo": "Undo",
+    "undone": "undone",
+    "undoDone": "Undone: only what that run created was removed",
+    "toggles": {
+      "auto_dns": {
+        "label": "Create DNS records",
+        "help": "Needs a connected DNS provider. Existing records are never overwritten."
+      },
+      "auto_proxy_route": {
+        "label": "Create proxy routes",
+        "help": "Waits for the managed proxy to route the domain when that integration is on."
+      },
+      "force_https": {
+        "label": "Force HTTPS",
+        "help": "Send visitors to the secure address once a certificate is ready."
+      },
+      "attach_www_counterpart": {
+        "label": "Add the www or apex partner",
+        "help": "Adding example.com also adds www.example.com, and the other way round."
+      },
+      "wildcard_for_base_domain": {
+        "label": "Wildcard record for the base domain",
+        "help": "One record covers every app under the apps base domain."
+      },
+      "verify_after": {
+        "label": "Verify after adding",
+        "help": "Check DNS, the certificate and the site, and report each step."
+      }
+    },
+    "www": {
+      "label": "www policy",
+      "off": "Leave both addresses as they are",
+      "redirect_to_apex": "Redirect www to the apex",
+      "redirect_to_www": "Redirect the apex to www",
+      "help": "Needs the partner host, which is added for you when a redirect is chosen."
+    }
   }
 }

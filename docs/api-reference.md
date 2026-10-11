@@ -66,7 +66,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 104 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 106 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -169,6 +169,8 @@ Endpoints for:
 | GET | /api/v1/settings/auth/code-login | AbilityRead | handleGetCodeLoginSettings |
 | PUT | /api/v1/settings/auth/code-login | AbilityRoot | handlePutCodeLoginSettings |
 | PUT | /api/v1/settings/proxy-integration | AbilityRoot | handleUpdateProxyIntegrationSettings |
+| GET | /api/v1/settings/domain-automation | AbilityRead | handleGetDomainAutomation |
+| PUT | /api/v1/settings/domain-automation | AbilityRoot | handleUpdateDomainAutomation |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -595,7 +597,7 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 57 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+::: details 61 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -665,6 +667,10 @@ Endpoints for:
 | POST | /api/v1/settings/ingress/https | AbilityRoot | handleEnableHTTPS |
 | GET | /api/v1/apps/{name}/domains/{domain}/search-visibility | AbilityRead | handleGetDomainSearchVisibility |
 | PUT | /api/v1/apps/{name}/domains/{domain}/search-visibility | AbilityDeploy | handleSetDomainSearchVisibility |
+| GET | /api/v1/apps/{name}/domains/{domain}/go-live | AbilityRead | handleGoLiveStatus |
+| POST | /api/v1/apps/{name}/domains/{domain}/go-live | AbilityRoot | handleGoLiveRun |
+| POST | /api/v1/apps/{name}/domains/go-live/plan | AbilityWrite | handleGoLivePlan |
+| POST | /api/v1/settings/ingress/apps-base-domain/backfill | AbilityRoot | handleBackfillBaseDomain |
 
 :::
 
@@ -694,6 +700,8 @@ Endpoints for:
 | GET | /api/v1/registry-credentials/{id}/repositories | AbilityReadSensitive | handleListRegistryCredentialRepositories |
 | GET | /api/v1/registry-credentials/{id}/tags | AbilityReadSensitive | handleListRegistryCredentialTags |
 | GET | /api/v1/domains | AbilityRead | handleListDomains |
+| GET | /api/v1/domains/automation/runs | AbilityRead | handleListAutomationRuns |
+| POST | /api/v1/domains/automation/runs/{id}/undo | AbilityRoot | handleUndoAutomationRun |
 
 ## Built-in Container Registry
 
@@ -1042,6 +1050,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/apps/sessions/{id}/cutover/verify | AbilityWriteSensitive | handleAppImportCutoverVerify |
 | POST | /api/v1/migration/apps/sessions/{id}/items/{item}/route | AbilityWriteSensitive | handleRouteAppImport |
 | GET | /api/v1/migration/apps/sessions/{id}/receipt | AbilityRead | handleAppImportReceipt |
+| GET | /api/v1/dns/zone | AbilityRead | handleDNSZone |
 
 ## See also
 

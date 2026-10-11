@@ -226,8 +226,8 @@ Attach an already connected notification channel (see [Channels](#channels)) so 
 
 ```
 levelrail-cli apps domains list <name> [flags]
-levelrail-cli apps domains add <name> <domain>... [flags]
-levelrail-cli apps domains remove <name> <domain>... [flags]
+levelrail-cli apps domains add <name> <domain>... [--dns auto|off|preview] [--replace] [--wait] [--timeout 2m] [flags]
+levelrail-cli apps domains remove <name> <domain>... [--remove-dns] [flags]
 levelrail-cli apps streams list <name> [flags]
 levelrail-cli apps streams create <name> --container-port N --host-port N [--protocol tcp] [flags]
 levelrail-cli apps streams delete <name> <id> [flags]
@@ -237,6 +237,7 @@ levelrail-cli apps egress clear <name> [flags]
 levelrail-cli apps exec-access enable|disable|status <name> [flags]
 ```
 
+- `apps domains add` creates the DNS record when a provider is connected (`--dns off` skips it, `--dns preview` shows it); `--wait` prints the go-live steps and exits non-zero when the domain is not live within `--timeout`. See [Add a domain and go live](domains-and-ingress.md#add-a-domain-and-go-live).
 - `apps domains` shows or changes an app's domains; a domain already used by another app is refused and nothing is changed. Per-domain TLS, redirects, WAF and the like are under [Domains](#domains).
 - `apps streams` forwards a host port to one container port as raw TCP (only `tcp` is supported). A stream change takes effect on the app's next container recreation, such as an image change or `apps restart`.
 - `apps egress` restricts an app's outbound traffic to the declared `host:port` pairs; with nothing configured, egress is unrestricted. DNS and loopback traffic stay open regardless.
@@ -651,6 +652,11 @@ levelrail-cli domains error-pages clear <app> <domain> [--code N] [flags]
 levelrail-cli domains dns list <app> <domain> [flags]
 levelrail-cli domains dns add <app> <domain> --type T --name N --value V [flags]
 levelrail-cli domains dns remove <app> <domain> --type T --name N --value V [flags]
+levelrail-cli domains go-live <app> <domain> [--dns auto|off|preview] [--replace] [--plan] [--wait] [--timeout 2m] [flags]
+levelrail-cli domains go-live runs [--limit N] [flags]
+levelrail-cli domains go-live undo <run-id> [flags]
+levelrail-cli domains backfill-base-domain [--confirm] [flags]
+levelrail-cli settings domain-automation get|set [flags]
 levelrail-cli domains cloudflare-dns get|set|clear [flags]
 levelrail-cli domains route53-dns get|set|clear [flags]
 ```
@@ -1337,7 +1343,7 @@ levelrail-cli settings oauth set <provider> [flags]
 levelrail-cli settings email get [flags]
 levelrail-cli settings email set [flags]
 levelrail-cli settings ingress get [flags]
-levelrail-cli settings ingress set [--primary-domain D] [--acme-enabled] [--public-https-port N] [--tls-terminated-upstream] [flags]
+levelrail-cli settings ingress set [--primary-domain D] [--acme-enabled] [--public-https-port N] [--tls-terminated-upstream] [--apps-base-domain HOST] [--dns-cname-target HOST] [--dns-ttl SECONDS] [--dns-proxied] [flags]
 levelrail-cli settings ingress https status [flags]
 levelrail-cli settings ingress https enable --email EMAIL [--staging] [--wait 2m] [flags]
 levelrail-cli settings dashboard-url get [flags]
@@ -1351,7 +1357,7 @@ levelrail-cli settings ai-assistant get|set|clear [flags]
 ```
 
 - `oauth set <provider>` enables, configures or disables one sign in provider; `<provider>` is `google`, `github` or `oidc`.
-- `ingress get` shows the primary domain, ACME settings, the automatic hostname toggle and the detected public address. `ingress set` changes them (`--primary-domain`, `--acme-enabled`, `--acme-email`, `--acme-directory-url`, `--fallback-domains=false`, `--hsts-enabled`); flags you leave out keep their current value.
+- `ingress get` shows the primary domain, ACME settings, the automatic hostname toggle and the detected public address. `ingress set` changes them (`--primary-domain`, `--acme-enabled`, `--acme-email`, `--acme-directory-url`, `--fallback-domains=false`, `--hsts-enabled`, `--apps-base-domain`, `--dns-cname-target`, `--dns-ttl`, `--dns-proxied`); flags you leave out keep their current value.
 - `ingress https status` shows whether the dashboard's free sslip.io HTTPS is off, pending, issued or failed. `ingress https enable` points the dashboard at `<dashed-ip>.sslip.io` and issues a real Let's Encrypt certificate for it, with no DNS setup.
 - `dashboard-url set` sets the public dashboard URL; once it is `https://`, sign in over plain HTTP is refused (`--url ""` clears it).
 - `updates` configures the release channel and auto update checking. `deploy-freeze` manages fleet wide freeze windows; per app windows are under `apps freeze`.
