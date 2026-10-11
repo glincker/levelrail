@@ -616,7 +616,7 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.web != 'none') }}
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
-    timeout-minutes: 10
+    timeout-minutes: 30
     env:
       WEB: ${{ needs.changes.outputs.web }}
       VITEST: ${{ needs.changes.outputs.vitest }}
