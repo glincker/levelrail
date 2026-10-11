@@ -945,6 +945,7 @@ type WebhookDeliveryResource struct {
 	Payload          string    `json:"payload"`
 	PayloadTruncated bool      `json:"payload_truncated"`
 	Error            string    `json:"error,omitempty"`
+	Note             string    `json:"note,omitempty"`
 	ReceivedAt       time.Time `json:"received_at"`
 }
 

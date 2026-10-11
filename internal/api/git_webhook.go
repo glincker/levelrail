@@ -183,7 +183,7 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 
 	gs, err := rt.gitSources.GetGitSource(r.Context(), name)
 	if errors.Is(err, store.ErrGitSourceNotFound) {
-		rt.saveWebhookDelivery(r.Context(), name, provider, eventType, headerFields, false, false, http.StatusNotFound, body, "no git source connected for this app")
+		rt.saveWebhookDelivery(r.Context(), name, provider, eventType, headerFields, false, false, http.StatusNotFound, body, "no git source connected for this app", "")
 		writeError(w, http.StatusNotFound, "no git source connected for this app")
 		return
 	}
@@ -203,17 +203,19 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 
 	if !verifyGitPushWebhookAuth(secret, body, r.Header) {
 		rt.logger.Warn("api: git push webhook: signature verification failed", slog.String("name", name), slog.String("remote_addr", r.RemoteAddr))
-		rt.saveWebhookDelivery(r.Context(), name, provider, eventType, headerFields, false, true, http.StatusUnauthorized, body, "invalid signature")
+		rt.saveWebhookDelivery(r.Context(), name, provider, eventType, headerFields, false, true, http.StatusUnauthorized, body, "invalid signature", "")
 		writeError(w, http.StatusUnauthorized, "invalid signature")
 		return
 	}
 
 	status, message := rt.processGitPushWebhookPayload(r.Context(), name, *gs, body, r.Header)
-	deliveryErr := ""
+	deliveryErr, deliveryNote := "", ""
 	if status >= http.StatusBadRequest {
 		deliveryErr = message
+	} else {
+		deliveryNote = webhookDeliveryNote(message)
 	}
-	rt.saveWebhookDelivery(r.Context(), name, provider, eventType, headerFields, true, true, status, body, deliveryErr)
+	rt.saveWebhookDelivery(r.Context(), name, provider, eventType, headerFields, true, true, status, body, deliveryErr, deliveryNote)
 
 	w.WriteHeader(status)
 	if _, err := fmt.Fprint(w, message); err != nil { //nolint:gosec // gosec's taint check can't see the text/plain Content-Type set above this function's entry, which is the actual mitigation for a client ever interpreting message's webhook-payload-derived fields as markup
@@ -460,6 +462,17 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 	sourceDir, cleanup, err := rt.gitSourceFetch(ctx, gs.RepoURL, checkoutRef, token)
 	if err != nil {
 		rt.logger.Error("api: git push webhook: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("checkout_ref", checkoutRef))
+		// A fetch that fails before any build starts still gets a failed
+		// attempt row, so the Deploys page, the CLI and the deploy
+		// notifier show the real cause instead of an empty history. The
+		// response body stays generic: the detail is only on the
+		// authenticated attempt row.
+		_, _, finishFetchAttempt, _ := rt.beginBuildDeployAttempt(ctx, deploy.Request{
+			ServiceName: name,
+			CommitSHA:   commitLabel,
+			ImageRepo:   defaultImageRepo(name, existing.Image),
+		}, *existing, source, "")
+		finishFetchAttempt(fmt.Errorf("fetch source: %w", err))
 		return http.StatusInternalServerError, "deploy failed"
 	}
 	defer cleanup()
@@ -570,7 +583,7 @@ func detectWebhookProviderAndEvent(header http.Header) (provider, eventType stri
 // must never block or fail the webhook response itself, the same
 // "optional signal" reasoning beginBuildDeployAttempt's own doc comment
 // establishes for deploy_attempts.
-func (rt *Router) saveWebhookDelivery(ctx context.Context, name, provider, eventType string, headerFields map[string]string, signatureValid, matched bool, statusCode int, payload []byte, errMsg string) {
+func (rt *Router) saveWebhookDelivery(ctx context.Context, name, provider, eventType string, headerFields map[string]string, signatureValid, matched bool, statusCode int, payload []byte, errMsg, note string) {
 	id, err := store.NewWebhookDeliveryID()
 	if err != nil {
 		rt.logger.Error("api: save webhook delivery: mint id failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -579,10 +592,25 @@ func (rt *Router) saveWebhookDelivery(ctx context.Context, name, provider, event
 	if err := rt.webhookDeliveries.SaveWebhookDelivery(ctx, store.WebhookDelivery{
 		ID: id, ServiceName: name, Provider: provider, EventType: eventType,
 		HeaderFields: headerFields, SignatureValid: signatureValid, Matched: matched,
-		StatusCode: statusCode, Payload: payload, Error: errMsg, ReceivedAt: time.Now(),
+		StatusCode: statusCode, Payload: payload, Error: errMsg, Note: note, ReceivedAt: time.Now(),
 	}); err != nil {
 		rt.logger.Error("api: save webhook delivery failed", slog.String("error", err.Error()), slog.String("name", name))
 	}
+}
+
+// maxWebhookDeliveryNoteBytes caps a stored outcome note: the message can
+// echo a payload-derived ref or branch name, so it is bounded like any
+// other value copied out of an inbound request.
+const maxWebhookDeliveryNoteBytes = 300
+
+// webhookDeliveryNote turns a handler outcome message into the single
+// trimmed line stored on the delivery row.
+func webhookDeliveryNote(message string) string {
+	note := strings.TrimSpace(message)
+	if len(note) > maxWebhookDeliveryNoteBytes {
+		note = note[:maxWebhookDeliveryNoteBytes]
+	}
+	return note
 }
 
 // resolveGitSourceDeployToken returns name's connected git source's

@@ -96,6 +96,8 @@ function DeliveryRow({
       </div>
       {delivery.error ? (
         <p className="mt-1.5 text-xs text-destructive">{delivery.error}</p>
+      ) : delivery.note ? (
+        <p className="mt-1.5 text-xs text-muted-foreground">{delivery.note}</p>
       ) : null}
       <details className="mt-1.5 text-xs">
         <summary className="cursor-pointer text-muted-foreground underline underline-offset-2">

@@ -657,6 +657,16 @@ func TestHandleGitPushWebhook_FetchFailure_ReturnsServerErrorNotLeaky(t *testing
 	if fb.calls != 0 {
 		t.Errorf("builder called %d times, want 0 when fetch fails", fb.calls)
 	}
+	attempts, err := db.ListDeployAttempts(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 1 {
+		t.Fatalf("deploy attempts = %d, want 1 failed attempt recorded for the fetch failure", len(attempts))
+	}
+	if attempts[0].Status != store.DeployAttemptStatusFailed || !strings.Contains(attempts[0].Error, "connection refused") {
+		t.Errorf("attempt = status %q error %q, want failed with the fetch error", attempts[0].Status, attempts[0].Error)
+	}
 }
 
 func TestHandleGitPushWebhook_AppDeleted_ReturnsNotFound(t *testing.T) {
@@ -1183,5 +1193,37 @@ func TestHandleGitPushWebhook_PrivateRepo_FallsBackToGitHubAppToken(t *testing.T
 	}
 	if len(fetchCalls) != 1 || fetchCalls[0].token != "ghs_installtoken" {
 		t.Fatalf("fetch calls = %+v, want one call with the minted installation token", fetchCalls)
+	}
+}
+
+// TestHandleGitPushWebhook_IgnoredBranch_StoresNote proves a push to a
+// branch the app does not watch is a 200 whose reason is persisted on the
+// delivery row, so the Source page and CLI can say why nothing deployed.
+func TestHandleGitPushWebhook_IgnoredBranch_StoresNote(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
+	fb := &fakeBuilder{tag: "web:sha1"}
+	rt.builder = fb
+
+	body := pushBody("refs/heads/develop")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if fb.calls != 0 {
+		t.Fatalf("builder called %d times, want 0 for an ignored branch", fb.calls)
+	}
+	deliveries, err := db.ListWebhookDeliveries(context.Background(), "web", 10, nil)
+	if err != nil || len(deliveries) != 1 {
+		t.Fatalf("ListWebhookDeliveries() = %d rows, err = %v, want 1", len(deliveries), err)
+	}
+	if deliveries[0].Error != "" || !strings.Contains(deliveries[0].Note, "refs/heads/develop") || !strings.Contains(deliveries[0].Note, "refs/heads/main") {
+		t.Errorf("delivery error = %q note = %q, want no error and a note naming both refs", deliveries[0].Error, deliveries[0].Note)
 	}
 }

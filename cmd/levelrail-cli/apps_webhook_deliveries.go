@@ -86,10 +86,14 @@ func printWebhookDeliveriesTable(out io.Writer, deliveries []webhookDeliveryReso
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tPROVIDER\tEVENT\tSIGNATURE\tMATCHED\tSTATUS\tRECEIVED")
+	_, _ = fmt.Fprintln(tw, "ID\tPROVIDER\tEVENT\tSIGNATURE\tMATCHED\tSTATUS\tRECEIVED\tRESULT")
 	for _, d := range deliveries {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%t\t%t\t%d\t%s\n",
-			d.ID, d.Provider, d.EventType, d.SignatureValid, d.Matched, d.StatusCode, d.ReceivedAt.Format("2006-01-02T15:04:05Z07:00"))
+		result := d.Note
+		if d.Error != "" {
+			result = d.Error
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%t\t%t\t%d\t%s\t%s\n",
+			d.ID, d.Provider, d.EventType, d.SignatureValid, d.Matched, d.StatusCode, d.ReceivedAt.Format("2006-01-02T15:04:05Z07:00"), result)
 	}
 	_ = tw.Flush()
 }
