@@ -65,6 +65,7 @@ jobs:
     permissions:
       contents: read
     strategy:
+      fail-fast: false
       matrix:
         goarch: [amd64, arm64]
     steps:
@@ -109,10 +110,11 @@ jobs:
     name: Build CLI (${{ matrix.goos }}/${{ matrix.goarch }})
     if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: read
     strategy:
+      fail-fast: false
       matrix:
         goos: [linux, darwin, windows]
         goarch: [amd64, arm64]
@@ -157,6 +159,7 @@ jobs:
     permissions:
       contents: read
     strategy:
+      fail-fast: false
       matrix:
         goarch: [amd64, arm64]
     steps:
@@ -193,6 +196,7 @@ jobs:
     permissions:
       contents: read
     strategy:
+      fail-fast: false
       matrix:
         goarch: [amd64, arm64]
     steps:
