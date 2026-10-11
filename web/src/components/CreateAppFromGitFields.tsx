@@ -721,6 +721,7 @@ export function CreateAppFromGitFields({
           setValue={setValue}
           watch={watch}
           disabled={buildFieldsLocked}
+          pickedFromPicker={source !== null}
           onDetected={(result) => {
             setDetectedFramework(
               result?.detected ? result.frameworkName : undefined,

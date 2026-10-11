@@ -51,6 +51,7 @@ export function GitBuildSourceFields({
   setValue,
   watch,
   disabled,
+  pickedFromPicker = false,
   onDetected,
 }: {
   control: Control<FormInput, unknown, FormOutput>
@@ -60,6 +61,8 @@ export function GitBuildSourceFields({
   setValue: UseFormSetValue<FormInput>
   watch: UseFormWatch<FormInput>
   disabled: boolean
+  /** True once the source picker supplied the repo, so the raw fields fold into a summary. */
+  pickedFromPicker?: boolean
   /** Called each time framework pre-flight detection settles or resets
    *  to null; CreateAppFromGitFields stores the latest result to send
    *  with the build trigger. */
@@ -80,6 +83,13 @@ export function GitBuildSourceFields({
 
   const repoUrl = watch('repoUrl').trim()
   const ref = watch('ref').trim()
+  const [editSource, setEditSource] = useState(false)
+  const summarized =
+    pickedFromPicker &&
+    repoUrl !== '' &&
+    !editSource &&
+    !formState.errors.repoUrl &&
+    !formState.errors.ref
   const detection = useAutoDetectFramework({
     enabled: buildType !== 'image',
     repoUrl,
@@ -89,7 +99,30 @@ export function GitBuildSourceFields({
 
   return (
     <>
-      {buildType !== 'image' ? (
+      {buildType !== 'image' && summarized ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+          {hostIcon ? (
+            <BrandIcon name={hostIcon} className="size-4 shrink-0" />
+          ) : null}
+          <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
+            {repoUrl.replace(/^https?:\/\//, '').replace(/\.git$/, '')}
+            <span className="text-muted-foreground"> @ {ref || 'default'}</span>
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={() => {
+              setEditSource(true)
+            }}
+          >
+            Edit
+          </Button>
+        </div>
+      ) : null}
+
+      {buildType !== 'image' && !summarized ? (
         <>
           <Field>
             <FieldLabel htmlFor="git-app-repo-url">Repository URL</FieldLabel>
