@@ -112,6 +112,12 @@ func (req standaloneDomainRequest) apply(d *store.StandaloneDomain) {
 	setIf(&d.Description, req.Description)
 }
 
+func sameTarget(a, b string) bool {
+	ta, errA := standalone.ParseTarget(a)
+	tb, errB := standalone.ParseTarget(b)
+	return errA == nil && errB == nil && ta.String() == tb.String()
+}
+
 func setIf[T any](dst *T, src *T) {
 	if src != nil {
 		*dst = *src
@@ -223,8 +229,10 @@ func (rt *Router) handleUpdateStandaloneDomain(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusBadRequest, "a standalone domain cannot be renamed; delete it and add the new name")
 		return
 	}
+	previous := d.Target
 	req.apply(&d)
-	if !rt.prepareStandalone(w, r, &d, req.Confirm) {
+	// The target was confirmed when it was saved; only a new one asks again.
+	if !rt.prepareStandalone(w, r, &d, req.Confirm || sameTarget(previous, d.Target)) {
 		return
 	}
 	if err := st.UpdateStandaloneDomain(r.Context(), d); err != nil {

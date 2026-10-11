@@ -50,6 +50,17 @@ func (rt *Router) serverAddressOverrideIPs(ctx context.Context) []string {
 	return out
 }
 
+// advertisedPublicHost is APP_PUBLIC_HOST, else the override's first address.
+func (rt *Router) advertisedPublicHost(ctx context.Context) string {
+	if rt.publicHost != "" {
+		return rt.publicHost
+	}
+	if ips := rt.serverAddressOverrideIPs(ctx); len(ips) > 0 {
+		return ips[0]
+	}
+	return ""
+}
+
 type serverAddressPair struct {
 	IPv4 string `json:"ipv4,omitempty"`
 	IPv6 string `json:"ipv6,omitempty"`

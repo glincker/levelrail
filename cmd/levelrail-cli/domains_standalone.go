@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -145,7 +146,11 @@ func runDomainsStandaloneWrite(prog, verb string, args []string, stdout, stderr 
 		d, err = client.UpdateStandaloneDomain(ctx, domain, req)
 	}
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s standalone domain %q: %w (pass --confirm after checking the target if asked)", verb, domain, err))
+		hint := ""
+		if strings.Contains(err.Error(), "needs confirmation") {
+			hint = "; check the target, then rerun with --confirm"
+		}
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s standalone domain %q: %w%s", verb, domain, err, hint))
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, d, func() {
 		_, _ = fmt.Fprintf(stdout, "%s -> %s\n", d.Domain, d.TargetURL)

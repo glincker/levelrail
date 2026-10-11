@@ -82,7 +82,13 @@ func TestStandaloneDomainsAPI_Lifecycle(t *testing.T) {
 		t.Fatalf("unknown standalone domain = %d, want 404", rec.Code)
 	}
 
-	rec = sdReq(t, rt, cookie, http.MethodPut, "/api/v1/domains/standalone/test.example.com", `{"target":"https://public.example/base","read_timeout_seconds":60}`)
+	if rec := sdReq(t, rt, cookie, http.MethodPut, "/api/v1/domains/standalone/test.example.com", `{"websocket":false}`); rec.Code != http.StatusOK {
+		t.Fatalf("an unchanged confirmed target must not ask again: %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := sdReq(t, rt, cookie, http.MethodPut, "/api/v1/domains/standalone/test.example.com", `{"target":"10.0.0.9:80"}`); rec.Code != http.StatusConflict {
+		t.Fatalf("a new private target must ask again: %d", rec.Code)
+	}
+	rec = sdReq(t, rt, cookie, http.MethodPut, "/api/v1/domains/standalone/test.example.com", `{"target":"https://public.example/base","read_timeout_seconds":60,"websocket":true}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("update = %d %s", rec.Code, rec.Body.String())
 	}

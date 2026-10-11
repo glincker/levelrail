@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowRightIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -47,6 +47,7 @@ export function StandaloneDomainForm({
     initial ? advancedFrom(initial) : DEFAULT_ADVANCED,
   )
   const [confirmed, setConfirmed] = useState(false)
+  const confirmId = useId()
   const [lateReasons, setLateReasons] = useState<string[]>([])
   const create = useCreateStandaloneDomain()
   const update = useUpdateStandaloneDomain(initial?.domain ?? '')
@@ -159,26 +160,33 @@ export function StandaloneDomainForm({
       />
 
       {reasons.length > 0 ? (
-        <Alert>
-          <WarningIcon className="text-amber-600" aria-hidden="true" />
-          <AlertTitle>{t('standalone.confirmTitle')}</AlertTitle>
-          <AlertDescription>
-            <ul className="list-disc space-y-0.5 pl-4">
-              {reasons.map((r) => (
-                <li key={r}>{r}</li>
-              ))}
-            </ul>
-            <label className="mt-2 flex items-center gap-2 text-foreground">
-              <Checkbox
-                checked={confirmed}
-                onCheckedChange={(c) => {
-                  setConfirmed(c)
-                }}
-              />
-              {t('standalone.confirmCheck')}
-            </label>
-          </AlertDescription>
-        </Alert>
+        <div
+          role="alert"
+          className="space-y-2 rounded-lg border border-tone-warning-border bg-tone-warning-soft p-2.5 text-sm"
+        >
+          <p className="flex items-start gap-2 font-medium">
+            <WarningIcon
+              className="mt-0.5 size-4 shrink-0 text-tone-warning"
+              aria-hidden="true"
+            />
+            {t('standalone.confirmTitle')}
+          </p>
+          <ul className="list-disc space-y-0.5 pl-10 text-muted-foreground">
+            {reasons.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
+          <label htmlFor={confirmId} className="flex items-center gap-2 pl-6">
+            <Checkbox
+              id={confirmId}
+              checked={confirmed}
+              onCheckedChange={(c) => {
+                setConfirmed(c)
+              }}
+            />
+            {t('standalone.confirmCheck')}
+          </label>
+        </div>
       ) : null}
 
       {mutation.isError &&

@@ -360,7 +360,7 @@ func (rt *Router) verifySteps(ctx context.Context, domain string, s store.Ingres
 	ctx, cancel := context.WithTimeout(ctx, goLiveStatusBudget)
 	defer cancel()
 
-	check := rt.runDomainCheckOpts(ctx, domain, rt.publicHost, false, true)
+	check := rt.runDomainCheckOpts(ctx, domain, rt.advertisedPublicHost(ctx), false, true)
 	prop.Resolvers = check.Resolvers
 	proxied := s.DNSProxied && rt.activeDNSProvider(ctx) == dnsProviderCloudflare
 	switch {
