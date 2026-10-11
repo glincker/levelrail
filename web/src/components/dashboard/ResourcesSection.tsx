@@ -1,13 +1,19 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { DatabaseIcon, PackageIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  CubeIcon,
+  DatabaseIcon,
+  PackageIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Progress as ProgressPrimitive } from '@base-ui/react/progress'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { SkeletonTile, Sparkline } from '@/components/kit'
 import { TONE, type Tone } from '../kit/tone'
 import { cn } from '@/lib/utils'
 import { formatSize } from '../../lib/format'
+import { useBrand } from '../../hooks/useBrand'
 import {
   rankConsumers,
   ratio,
@@ -133,20 +139,43 @@ function HostCard({ host }: { host: HostGauge }) {
 }
 
 interface Segment {
-  key: 'apps' | 'databases' | 'system' | 'free'
+  key: 'levelrail' | 'apps' | 'databases' | 'other' | 'system' | 'free'
   bytes: number
   className: string
 }
 
 function MemoryStack({ breakdown }: { breakdown: MemoryBreakdown }) {
   const { t } = useTranslation('dashboard')
+  const brand = useBrand().Name
+  const showAttribution =
+    breakdown.systemKnown ||
+    breakdown.levelrail > 0 ||
+    breakdown.otherContainers > 0
   const segments: Segment[] = [
+    ...(showAttribution
+      ? [
+          {
+            key: 'levelrail' as const,
+            bytes: breakdown.levelrail,
+            className: TONE.success.solid,
+          },
+        ]
+      : []),
     { key: 'apps', bytes: breakdown.apps, className: TONE.accent.solid },
     {
       key: 'databases',
       bytes: breakdown.databases,
       className: TONE.info.solid,
     },
+    ...(showAttribution
+      ? [
+          {
+            key: 'other' as const,
+            bytes: breakdown.otherContainers,
+            className: TONE.warning.solid,
+          },
+        ]
+      : []),
     ...(breakdown.systemKnown
       ? [
           {
@@ -186,12 +215,16 @@ function MemoryStack({ breakdown }: { breakdown: MemoryBreakdown }) {
       </div>
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
         {segments.map((s) => (
-          <li key={s.key} className="flex items-center gap-1.5">
+          <li
+            key={s.key}
+            title={t(`resources.segmentHelp.${s.key}`, { brand })}
+            className="flex items-center gap-1.5"
+          >
             <span
               aria-hidden="true"
               className={cn('size-2 rounded-full', s.className)}
             />
-            {t(`resources.segment.${s.key}`)}
+            {t(`resources.segment.${s.key}`, { brand })}
             <span className="tabular-nums text-foreground">
               {formatSize(s.bytes)}
             </span>
@@ -212,8 +245,14 @@ function ConsumerRow({
   sort: ConsumerSort
 }) {
   const { t } = useTranslation('dashboard')
+  const brand = useBrand().Name
   const value = sort === 'memory' ? c.memoryBytes : c.cpuPercent
-  const Icon = c.kind === 'app' ? PackageIcon : DatabaseIcon
+  const Icon =
+    c.kind === 'app'
+      ? PackageIcon
+      : c.kind === 'database'
+        ? DatabaseIcon
+        : CubeIcon
   const content = (
     <>
       <Icon
@@ -223,6 +262,9 @@ function ConsumerRow({
       <span className="min-w-0 flex-1 truncate text-sm font-medium">
         {c.name}
       </span>
+      {c.kind === 'other' ? (
+        <Badge variant="warning">{t('resources.notManaged', { brand })}</Badge>
+      ) : null}
       <span className="hidden w-16 shrink-0 sm:block">
         {c.spark && c.spark.some((v) => v > 0) ? (
           <Sparkline
@@ -237,7 +279,13 @@ function ConsumerRow({
       <span className="w-20 shrink-0 sm:w-28">
         <Bar
           value={ratio(value, max)}
-          tone={c.kind === 'app' ? 'accent' : 'info'}
+          tone={
+            c.kind === 'app'
+              ? 'accent'
+              : c.kind === 'database'
+                ? 'info'
+                : 'warning'
+          }
           label={c.name}
         />
       </span>
@@ -250,6 +298,13 @@ function ConsumerRow({
   )
   const cls =
     'flex items-center gap-3 px-3 py-2 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none'
+  if (c.kind === 'other') {
+    return (
+      <Link to="/settings/containers" className={cls}>
+        {content}
+      </Link>
+    )
+  }
   return c.kind === 'app' ? (
     <Link to="/apps/$name" params={{ name: c.name }} className={cls}>
       {content}

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"text/tabwriter"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runNodesResourceUsage implements "nodes resource-usage": GET
@@ -61,6 +63,26 @@ func printFleetResourceUsageTable(out io.Writer, usage fleetResourceUsageResourc
 		formatFleetPercent(usage.Fleet.MemoryUsedPercent, usage.Fleet.NodesWithMemoryCapacity, usage.Fleet.NodeCount),
 		formatFleetPercent(usage.Fleet.DiskUsedPercent, usage.Fleet.NodesWithDiskCapacity, usage.Fleet.NodeCount))
 	_ = tw.Flush()
+	printMemoryAttribution(out, usage.Nodes)
+}
+
+func printMemoryAttribution(out io.Writer, nodes []apiclient.NodeResourceUsageResource) {
+	for _, n := range nodes {
+		if n.LevelrailMemoryBytes == nil {
+			continue
+		}
+		_, _ = fmt.Fprintf(out, "\nmemory attribution on %s\n", n.Name)
+		_, _ = fmt.Fprintf(out, "  control plane and node agent:  %s\n", formatRecommendationBytes(int64(*n.LevelrailMemoryBytes)))
+		if n.OtherContainersMemoryBytes != nil {
+			_, _ = fmt.Fprintf(out, "  other containers (not managed): %s\n", formatRecommendationBytes(int64(*n.OtherContainersMemoryBytes)))
+			for _, c := range n.OtherContainers {
+				_, _ = fmt.Fprintf(out, "    %s  %s\n", c.Name, formatRecommendationBytes(int64(c.MemoryBytes)))
+			}
+		}
+		if n.SystemMemoryBytes != nil {
+			_, _ = fmt.Fprintf(out, "  system (kernel, cache, other):  %s\n", formatRecommendationBytes(int64(*n.SystemMemoryBytes)))
+		}
+	}
 }
 
 func formatDiskUsage(used, total *float64) string {

@@ -36,6 +36,7 @@ export function useDashboardResources(): DashboardResources {
       apps.data ?? [],
       usage.data?.databases ?? [],
       metrics.data,
+      fleet.data,
     )
     return {
       isPending: fleet.isPending && apps.isPending && usage.isPending,
