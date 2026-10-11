@@ -126,6 +126,7 @@
       "fix_dns": "Let's Encrypt could not find this domain. Point its DNS at this server.",
       "wait_rate_limit": "Let's Encrypt paused issuing for this domain. We try again later.",
       "fix_caa": "A CAA record blocks Let's Encrypt. Add a CAA record that allows letsencrypt.org.",
+      "other_proxy": "Another proxy on this server answered the certificate check. Let that proxy terminate TLS, or give this server ports 80 and 443.",
       "check_logs": "Let's Encrypt could not issue a certificate. Check the ingress logs."
     }
   },

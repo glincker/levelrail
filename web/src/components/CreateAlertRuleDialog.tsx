@@ -62,6 +62,7 @@ import type {
   Comparator,
   CreateAlertRuleRequest,
 } from '../types/alerts'
+import { isScheduledTaskKind } from '../types/alerts'
 import { SloRuleFields, type SloFormShape } from './SloRuleFields'
 import { sloConfigFromForm } from '../queries/sloPreview'
 import type { AppVolume } from '../types/appDetail'
@@ -114,7 +115,17 @@ const KIND_OPTIONS: {
   { value: 'patch_status', label: 'Node patch status', Icon: WrenchIcon },
   {
     value: 'scheduled_task_failure',
-    label: 'Scheduled task failure',
+    label: 'Job failure',
+    Icon: ClockCountdownIcon,
+  },
+  {
+    value: 'scheduled_task_missed',
+    label: 'Job missed a run',
+    Icon: ClockCountdownIcon,
+  },
+  {
+    value: 'scheduled_task_running_long',
+    label: 'Job running too long',
     Icon: ClockCountdownIcon,
   },
   { value: 'node_disk_space', label: 'Node disk space', Icon: HardDriveIcon },
@@ -167,6 +178,8 @@ const createAlertRuleSchema = z
       'cert_expiry',
       'patch_status',
       'scheduled_task_failure',
+      'scheduled_task_missed',
+      'scheduled_task_running_long',
       'node_disk_space',
       'node_resource_usage',
       'domain_health',
@@ -264,7 +277,7 @@ const createAlertRuleSchema = z
       return
     }
 
-    if (data.kind === 'scheduled_task_failure') {
+    if (isScheduledTaskKind(data.kind)) {
       if (!data.scheduledTaskId) {
         ctx.addIssue({
           code: 'custom',
@@ -433,7 +446,7 @@ export function CreateAlertRuleDialog({
     } else if (values.kind === 'crashloop') {
       req.restart_count_threshold = values.restartCountThreshold
       req.restart_window = values.restartWindow.trim()
-    } else if (values.kind === 'scheduled_task_failure') {
+    } else if (isScheduledTaskKind(values.kind)) {
       req.scheduled_task_id = values.scheduledTaskId
       req.restart_count_threshold = values.restartCountThreshold
     } else if (
@@ -755,7 +768,7 @@ export function CreateAlertRuleDialog({
                 <FieldError errors={[formState.errors.forDuration]} />
               </Field>
             </>
-          ) : kind === 'scheduled_task_failure' ? (
+          ) : isScheduledTaskKind(kind) ? (
             <>
               <Field>
                 <FieldLabel htmlFor="rule-scheduled-task">
@@ -764,7 +777,7 @@ export function CreateAlertRuleDialog({
                 {scheduledTasks.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     This app has no scheduled tasks yet. Create one from the
-                    Scheduled tasks section first.
+                    Jobs section first.
                   </p>
                 ) : (
                   <Controller
@@ -784,7 +797,7 @@ export function CreateAlertRuleDialog({
                         <SelectContent>
                           {scheduledTasks.map((task) => (
                             <SelectItem key={task.id} value={task.id}>
-                              {task.command.join(' ')}
+                              {task.name || task.command.join(' ')}
                             </SelectItem>
                           ))}
                         </SelectContent>

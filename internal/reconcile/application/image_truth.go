@@ -115,24 +115,6 @@ func (c *Controller) recordRolloutFailure(ctx context.Context, desired *store.De
 	_ = c.rollouts.RecordRolloutFailure(ctx, c.serviceName, desired.Image, cause.Error())
 }
 
-// removeStaleAfterHold is removeStale that keeps the most recent previous
-// release's running containers until previousReleaseHold has passed since
-// the current cutover, so a rollback and a roll forward inside the window
-// are both instant. Older releases, stopped containers and excess replicas
-// of the current release are never held.
-func (c *Controller) removeStaleAfterHold(ctx context.Context, targets []string) error {
-	if c.previousReleaseHold <= 0 {
-		return c.removeStale(ctx, targets)
-	}
-	all, err := c.runtime.ListByPrefix(ctx, c.serviceName+"-")
-	if err != nil {
-		return fmt.Errorf("list containers for %s: %w", c.serviceName, err)
-	}
-	due, heldUntil := c.heldFilter(all, targets, time.Now())
-	c.recordHold(ctx, heldUntil)
-	return c.removeContainers(ctx, due)
-}
-
 // releaseOf is a container name without its replica suffix.
 func releaseOf(name string) string {
 	if i := strings.LastIndex(name, "-r"); i > 0 {
@@ -147,6 +129,11 @@ func releaseOf(name string) string {
 // the held previous release (if any) is due. A release's cutover is its
 // replica 0's creation, so scaling up does not extend the window.
 func (c *Controller) heldFilter(all []docker.ContainerState, targets []string, now time.Time) (due []docker.ContainerState, heldUntil time.Time) {
+	return c.heldFilterFor(all, targets, now, c.previousReleaseHold)
+}
+
+// heldFilterFor is heldFilter with an explicit hold duration.
+func (c *Controller) heldFilterFor(all []docker.ContainerState, targets []string, now time.Time, hold time.Duration) (due []docker.ContainerState, heldUntil time.Time) {
 	firstCreated := map[string]time.Time{}
 	lastCreated := map[string]time.Time{}
 	seenBase := map[string]bool{}
@@ -171,7 +158,7 @@ func (c *Controller) heldFilter(all []docker.ContainerState, targets []string, n
 			cutover = t
 		}
 	}
-	holding := !cutover.IsZero() && now.Before(cutover.Add(c.previousReleaseHold))
+	holding := !cutover.IsZero() && now.Before(cutover.Add(hold))
 	currentBase := ""
 	if len(targets) > 0 {
 		currentBase = releaseOf(targets[0])
@@ -197,7 +184,7 @@ func (c *Controller) heldFilter(all []docker.ContainerState, targets []string, n
 		due = append(due, cs)
 	}
 	if newestPrevious != "" {
-		heldUntil = cutover.Add(c.previousReleaseHold)
+		heldUntil = cutover.Add(hold)
 	}
 	return due, heldUntil
 }

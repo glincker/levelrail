@@ -34,6 +34,7 @@ import { DeployMetaCard } from '../../../../../components/DeployMetaCard'
 import { DeployQuickLinks } from '../../../../../components/DeployQuickLinks'
 import { DeployStageTimeline } from '../../../../../components/DeployStageTimeline'
 import { ConditionsPanel } from '../../../../../components/ConditionsPanel'
+import { DeployGatePanel } from '../../../../../components/DeployGatePanel'
 import { ProbeAttemptsPanel } from '../../../../../components/ProbeAttemptsPanel'
 import { useProbeAttempts } from '../../../../../queries/probeAttempts'
 import { SupplyChainSection } from '../../../../../components/SupplyChainSection'
@@ -215,6 +216,7 @@ function DeployLogsPage() {
                   {rolloutSubStages ? (
                     <DeployStageTimeline stages={rolloutSubStages} />
                   ) : null}
+                  <DeployGatePanel appName={name} deployId={deployId} />
                   <ConditionsPanel conditions={conditions} />
                   {probeAttempts && probeAttempts.length > 0 ? (
                     <ProbeAttemptsPanel attempts={probeAttempts} />

@@ -8,32 +8,17 @@ import {
 import { summarizeDatabaseStatus } from '../../lib/databaseStatus'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
-import { DeleteDatabaseDialog } from '../../components/DeleteDatabaseDialog'
-import { StopStartDatabaseButton } from '../../components/StopStartDatabaseButton'
+import { DatabaseActionBar } from '../../components/databases/DatabaseActionBar'
 import { DeleteExternalDatabaseDialog } from '../../components/ExternalDatabaseOverview'
+import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shell/PageHeader'
 
-// Database detail layout route, mirroring routes/apps/$name.tsx's own
-// split (the Databases fast-follow to that same treatment): this file
-// used to render the entire
-// page itself (header, Overview card, ConditionsPanel). It is now the
-// layout: it owns the loader (both queries below) and the shared page
-// header (database name, status, delete action), then renders <Outlet />
-// for whichever section route (overview.tsx, resources.tsx) is active.
-// Unlike apps/$name.tsx there is no pinned deploy-trigger form here:
-// databases have no equivalent per-resource action that applies across
-// every section.
-//
-// Both queries are primed here, matching apps/$name.tsx's own reasoning:
-// the database resource itself (GET /api/v1/databases/{name}) and its
-// current reconcile status (GET /api/v1/databases/{name}/status). The
-// section route and DatabaseScopedSidebar both read the same cache via
-// useDatabase/useDatabaseStatus (queries/databases.ts), so navigating
-// never re-fetches either query.
+// Layout route: primes the database and status queries once so the section
+// routes and sidebar read the same cache.
 export const Route = createFileRoute('/databases/$name')({
   loader: ({ context: { queryClient }, params: { name } }) =>
     Promise.all([
@@ -63,13 +48,7 @@ function DatabaseDetailLayout() {
           database.external ? (
             <DeleteExternalDatabaseDialog name={database.name} />
           ) : (
-            <>
-              <StopStartDatabaseButton
-                name={database.name}
-                suspended={Boolean(database.suspended)}
-              />
-              <DeleteDatabaseDialog name={database.name} />
-            </>
+            <DatabaseActionBar database={database} />
           )
         }
       />
@@ -136,12 +115,13 @@ function DatabaseDetailSkeleton() {
 // 404, which lands here rather than crashing the whole route tree,
 // mirroring AppDetailError.
 function DatabaseDetailError({ error }: { error: unknown }) {
+  const { t } = useTranslation('databases')
   return (
     <Alert variant="destructive">
       <AlertDescription>
         <p>{routeErrorMessage(error)}</p>
         <Link to="/databases" className="mt-2 inline-block underline">
-          Back to databases
+          {t('detail.backToList')}
         </Link>
       </AlertDescription>
     </Alert>

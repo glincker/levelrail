@@ -26,6 +26,7 @@ export function appsMetricsQueryOptions() {
     queryFn: fetchAppsMetrics,
     staleTime: 30_000,
     refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     retry: false,
   })
 }

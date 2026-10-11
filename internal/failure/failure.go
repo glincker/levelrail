@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/diagnose"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/kit/untrusted"
@@ -84,15 +85,19 @@ func envInt(lookup func(string) (string, bool), key string, def int) int {
 // RolloutFailureReasons are the reconcile condition reasons that mean a
 // finished build did not converge into a healthy container.
 var RolloutFailureReasons = map[string]bool{
-	"CreateFailed":             true,
-	"StartFailed":              true,
-	"ReadinessFailed":          true,
-	"InspectFailed":            true,
-	"EnsureNetworkFailed":      true,
-	"VanishedAfterStart":       true,
-	"PreDeployHookFailed":      true,
-	"OOMKilledDuringReadiness": true,
-	"ExitedDuringReadiness":    true,
+	"CreateFailed":                              true,
+	"StartFailed":                               true,
+	deploysafety.ReasonReadinessFailed:          true,
+	"InspectFailed":                             true,
+	"EnsureNetworkFailed":                       true,
+	"VanishedAfterStart":                        true,
+	"PreDeployHookFailed":                       true,
+	deploysafety.ReasonOOMKilledDuringReadiness: true,
+	deploysafety.ReasonExitedDuringReadiness:    true,
+	deploysafety.ReasonOOMKilledDuringWindow:    true,
+	deploysafety.ReasonExitedDuringWindow:       true,
+	deploysafety.ReasonRestartedDuringWindow:    true,
+	deploysafety.ReasonGateTimeout:              true,
 }
 
 const (

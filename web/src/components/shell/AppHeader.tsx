@@ -1,10 +1,11 @@
+import { useTranslation } from 'react-i18next'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Kbd } from '@/components/kit'
-import { EnvironmentSwitcher } from '../environments/EnvironmentSwitcher'
 import { TeamSwitcher } from '../teams/TeamSwitcher'
+import { EnvironmentSwitcher } from '../environments/EnvironmentSwitcher'
 import { HelpMenu } from '../HelpMenu'
 import { ThemeToggle } from '../ThemeToggle'
 import { NotificationCenter } from './NotificationCenter'
@@ -14,31 +15,56 @@ import { WhatsNewPanel } from './WhatsNewPanel'
 const isMac =
   typeof navigator !== 'undefined' && /mac/i.test(navigator.platform)
 
+// Breakpoints are container queries on the header's own width, not the
+// viewport: the open sidebar takes 16rem, so a 768px window leaves ~512px.
+// Search is icon-only under @xl, What's new appears at @md, and the
+// environment switcher sits on its own row until @4xl.
 export function AppHeader({ onSearch }: { onSearch: () => void }) {
+  const { t } = useTranslation()
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
-      <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-2 h-4" />
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="w-64 justify-start rounded-full text-muted-foreground"
-        aria-label="Search or run a command"
-        onClick={onSearch}
-      >
-        <MagnifyingGlassIcon />
-        <span className="flex-1 text-left">Search or jump to...</span>
-        <Kbd keys={[isMac ? '⌘' : 'Ctrl', 'K']} />
-      </Button>
-      <div className="ml-auto flex items-center gap-2">
-        <TeamSwitcher />
-        <EnvironmentSwitcher />
-        <StatusChip />
-        <NotificationCenter />
-        <WhatsNewPanel />
-        <HelpMenu />
-        <ThemeToggle />
+    <header
+      aria-label={t('shell.topBar')}
+      className="@container shrink-0 border-b border-border"
+    >
+      <div className="flex min-h-14 flex-wrap items-center gap-x-1 gap-y-2 px-3 py-2 @xl:gap-x-2 @xl:px-4 @4xl:flex-nowrap @4xl:py-0">
+        <SidebarTrigger
+          className="-ml-1"
+          aria-label={t('shell.toggleSidebar')}
+        />
+        <Separator
+          orientation="vertical"
+          className="mr-1 hidden h-4 data-vertical:self-center @xl:mr-2 @xl:block"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="rounded-full text-muted-foreground max-@xl:w-7 max-@xl:justify-center max-@xl:px-0 @xl:w-44 @xl:justify-start @3xl:w-64"
+          aria-label={t('shell.search.label')}
+          aria-keyshortcuts="Control+K Meta+K"
+          onClick={onSearch}
+        >
+          <MagnifyingGlassIcon />
+          <span className="hidden flex-1 truncate text-left @xl:inline">
+            {t('shell.search.placeholder')}
+          </span>
+          <span className="hidden @3xl:inline-flex">
+            <Kbd keys={[isMac ? '⌘' : 'Ctrl', 'K']} />
+          </span>
+        </Button>
+        <div className="order-last w-full empty:hidden @4xl:order-none @4xl:ml-auto @4xl:w-auto">
+          <EnvironmentSwitcher />
+        </div>
+        <div className="ml-auto flex items-center gap-1 @xl:gap-2 @4xl:ml-2">
+          <TeamSwitcher />
+          <StatusChip />
+          <NotificationCenter />
+          <div className="hidden @md:block">
+            <WhatsNewPanel />
+          </div>
+          <HelpMenu />
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   )

@@ -1,5 +1,9 @@
 import type { CertificateStatus } from '../queries/certificates'
-import type { AcmeFailure, DomainCheckStatus } from '../queries/domainCheck'
+import type {
+  AcmeFailure,
+  DomainCheckStatus,
+  TlsOwner,
+} from '../queries/domainCheck'
 import { isInternalCert } from './certStatus'
 
 export const DOMAIN_STATUSES = [
@@ -64,6 +68,9 @@ export interface DomainStatusInput {
   > | null
   acmeFailure?: Pick<AcmeFailure, 'action'> | null
   firstIssuancePending?: boolean
+  // 'proxy' means a fronting proxy owns TLS: this server's ACME state,
+  // internal certificate and port 80 guidance do not apply.
+  tlsOwner?: TlsOwner
 }
 
 export interface DerivedDomainStatus {
@@ -95,6 +102,7 @@ function result(
 
 // A failed attempt that only needs time (rate limit) is not a failure to fix.
 function blockingFailure(input: DomainStatusInput): boolean {
+  if (input.tlsOwner === 'proxy') return false
   const failure = input.acmeFailure ?? input.cert?.acme_failure
   return Boolean(failure) && failure?.action !== 'wait_rate_limit'
 }
@@ -109,7 +117,12 @@ function attention(input: DomainStatusInput): DerivedDomainStatus | null {
   if (blockingFailure(input)) {
     return result('needs_attention', 'acmeFailure', 'fix')
   }
-  if (input.check === 'resolves_elsewhere' && input.proxyMode !== 'external') {
+  const proxyOwned = input.tlsOwner === 'proxy'
+  if (
+    input.check === 'resolves_elsewhere' &&
+    input.proxyMode !== 'external' &&
+    !proxyOwned
+  ) {
     return result('needs_attention', 'resolvesElsewhere', 'fix')
   }
   if (input.routeState === 'error') {
@@ -148,10 +161,20 @@ export function deriveDomainStatus(
   if (input.check === 'propagating') {
     return result('propagating', 'propagating', 'check_again')
   }
-  if (input.check !== 'connected') {
+  const proxyOwned = input.tlsOwner === 'proxy'
+  const reachable =
+    input.check === 'connected' ||
+    (proxyOwned && input.check === 'resolves_elsewhere')
+  if (!reachable) {
     return result('not_set_up', 'noCheck', 'set_up')
   }
   const cert = input.cert
+  if (proxyOwned) {
+    if (cert?.status === 'expiring_soon') {
+      return result('expiring_soon', 'certExpiring', 'show_proxy_setup')
+    }
+    return result('live', 'live', 'open_site')
+  }
   if (!cert || input.firstIssuancePending) {
     return result('going_live', 'gettingCertificate', 'view_progress')
   }

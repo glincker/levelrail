@@ -8,6 +8,7 @@ import {
   certRenewalBadge,
   certStatusMeta,
   isInternalCert,
+  isProxyManagedCert,
 } from '../lib/certStatus'
 import type { CertificateCenterRow } from '../lib/certificateCenter'
 import { DomainTLSCertControl } from './DomainTLSCertControl'
@@ -17,6 +18,9 @@ function CertificateRow({ row }: { row: CertificateCenterRow }) {
   const { t } = useTranslation('https')
   const { domain, appName, cert } = row
   const internal = cert ? isInternalCert(cert) : false
+  const proxyManaged = cert
+    ? isProxyManagedCert(cert)
+    : row.tlsOwner === 'proxy'
   const renewalBadge = cert ? certRenewalBadge(cert) : null
 
   return (
@@ -35,10 +39,14 @@ function CertificateRow({ row }: { row: CertificateCenterRow }) {
             {cert
               ? internal
                 ? t('certTable.internalRenews')
-                : certExpiryLabel(cert.not_after)
-              : appName
-                ? 'Not yet issued'
-                : 'Certificate remains from a domain no longer configured on any app'}
+                : proxyManaged
+                  ? `${certExpiryLabel(cert.not_after)}. ${t('certTable.proxyRenews')}`
+                  : certExpiryLabel(cert.not_after)
+              : proxyManaged
+                ? t('certTable.proxyUnknown')
+                : appName
+                  ? 'Not yet issued'
+                  : 'Certificate remains from a domain no longer configured on any app'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -49,9 +57,11 @@ function CertificateRow({ row }: { row: CertificateCenterRow }) {
             >
               {cert.source === 'custom'
                 ? t('certTable.custom')
-                : internal
-                  ? t('certTable.internalBadge')
-                  : t('certTable.acmeBadge')}
+                : proxyManaged
+                  ? t('certTable.proxyBadge')
+                  : internal
+                    ? t('certTable.internalBadge')
+                    : t('certTable.acmeBadge')}
             </Badge>
           ) : null}
           {cert && !(internal && cert.status !== 'expired') ? (
@@ -69,12 +79,17 @@ function CertificateRow({ row }: { row: CertificateCenterRow }) {
               {t('certTable.getTrusted')}
             </Link>
           ) : null}
-          {appName && (!cert || cert.source === 'acme') ? (
+          {appName && !proxyManaged && (!cert || cert.source === 'acme') ? (
             <RenewCertificateButton appName={appName} domain={domain} />
+          ) : null}
+          {proxyManaged ? (
+            <Link to="/network/proxy" className="text-xs underline">
+              {t('certTable.proxyLink')}
+            </Link>
           ) : null}
         </div>
       </div>
-      {appName ? (
+      {appName && !proxyManaged ? (
         <DomainTLSCertControl appName={appName} domain={domain} />
       ) : null}
     </div>

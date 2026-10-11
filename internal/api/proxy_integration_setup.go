@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/proxyroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -55,6 +56,7 @@ func (rt *Router) handleSetupProxyIntegration(w http.ResponseWriter, r *http.Req
 			rt.internalError(w, "proxy integration: ingress settings", err)
 			return
 		}
+		ingressdriver.DefaultACMEFailures().ClearAll()
 		if err := deps.store.UpdateProxyIntegrationSettings(ctx, plan.settings); err != nil {
 			rt.internalError(w, "proxy integration: settings", err)
 			return

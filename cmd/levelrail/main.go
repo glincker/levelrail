@@ -74,6 +74,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/tlsowner"
 	"github.com/GLINCKER/levelrail/internal/updatecheck"
 	"github.com/GLINCKER/levelrail/internal/upgradehistory"
 	"github.com/GLINCKER/levelrail/internal/vault"
@@ -716,9 +717,13 @@ func run(logger *slog.Logger) error {
 	// exec'd command carries no credential of its own), so it's always
 	// constructed, the same "always available by the time rootHandler is
 	// called" shape client/agentRegistry already have.
+	jobLimits := scheduledtask.LimitsFromEnv(os.LookupEnv)
 	scheduledTaskRunner := &scheduledtask.Runner{
-		Apps: db,
-		Runs: db,
+		Apps:       db,
+		Runs:       db,
+		History:    db,
+		Limits:     jobLimits,
+		NamePrefix: b.ShortName,
 		Resolver: func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)
 		},
@@ -777,6 +782,7 @@ func run(logger *slog.Logger) error {
 	configureNodeCerts(apiRouter, agentServer)
 	apiRouter.SetDockerGuard(guard.Controller)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
+	setupDataExport(ctx, logger, b, db, telemetryDB, secretsManager, logBroadcaster, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
 	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
@@ -859,7 +865,9 @@ func run(logger *slog.Logger) error {
 	apiRouter.ResumeCutoverRuns(ctx)
 
 	engine.SetStore(db)
-	engine.SetSource(dynamicSource(dynamicSourceDeps{
+	gate := newDeployGate(logger, db, client, b.ShortName, meshLocalNodeID(meshCfg))
+	sourceDeps := dynamicSourceDeps{
+		deployGate:                   gate,
 		orphanReaper:                 orphanReaper,
 		ingressEdge:                  edge,
 		db:                           db,
@@ -887,7 +895,12 @@ func run(logger *slog.Logger) error {
 		lbRegistry:                   lbRegistry,
 		proxySyncer:                  proxySyncer,
 		previewNotifier:              previewManager,
-	}))
+	}
+	engine.SetSource(dynamicSource(sourceDeps))
+	scheduledTaskRunner.Specs = newJobSpecBuilder(sourceDeps)
+	scheduledTaskRunner.Resolver = func(nodeID string) (docker.Runtime, error) {
+		return resolveNodeTransport(client, agentRegistry, runtimeNodeID(sourceDeps, nodeID))
+	}
 	if experimental.Enabled(experimental.AIModels) {
 		startLocalGPUCollector(ctx, db, client, logger)
 		go models.NewEngineMetricsCollector(db, telemetryDB, nil, logger).Run(ctx, models.EngineMetricsInterval())
@@ -992,13 +1005,16 @@ func run(logger *slog.Logger) error {
 	// kind=backup_missing rule reads the same schedule and history
 	// internal/backup.Scheduler and GET /api/v1/databases/{name}/backups
 	// already read.
-	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db, db,
+	tlsSuppress := alerting.CertSuppressor(func(c context.Context) func(string) bool {
+		return tlsowner.Load(c, db, db, nil).Suppressed
+	})
+	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, alerting.NewSuppressedCertSource(db, tlsSuppress), db,
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
 		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
-	alertingEngine.SetTrafficSources(db, ingressdriver.DefaultACMEFailures())
+	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetChanges(changes.New(db, db, db, logger), alertDashboardLink())
 	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))
@@ -1025,6 +1041,8 @@ func run(logger *slog.Logger) error {
 	// per app (store.DesiredService.AutoRollbackOnSLOBurn, off by
 	// default), same reasoning as SetAutoRollback above.
 	alertingEngine.SetSLOBurnAutoRollback(db, engine, alertingDB)
+	startDeployWatch(ctx, gate, deployWatchDeps{db: db, local: client, registry: agentRegistry, localNodeID: meshLocalNodeID(meshCfg),
+		restarts: restartTracker, metrics: alertingFederator, sampleEvery: metricsCollectionInterval, nudger: engine, dispatcher: deployDispatcher, logger: logger})
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
@@ -1075,6 +1093,7 @@ func run(logger *slog.Logger) error {
 	// scheduler just above, this needs no secretsManager gate:
 	// scheduledTaskRunner is always non-nil, so this loop always runs.
 	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
+	scheduledTaskScheduler.Lookback = scheduledTaskRunner.Limits.CatchUpLookback
 	go func() {
 		if err := scheduledTaskScheduler.Run(ctx, scheduledTaskSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("scheduled task scheduler stopped", slog.String("error", err.Error()))
@@ -2013,6 +2032,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithAppStore(db),
 		deploy.WithVaultConfigChecker(db),
 		deploy.WithLoadBalancerStore(db),
+		deploy.WithJobStore(db),
 		deploy.WithOrderedStore(db),
 		deploy.WithAttemptRecorder(db),
 	}
@@ -2310,6 +2330,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 	opts := []api.Option{
 		api.WithReconcileNudger(engine),
+		api.WithDeployGate(db, deployGateDefaults()),
 		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
 		api.WithRequestSummaryWindow(requestSummaryWindow()),
@@ -2329,6 +2350,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDatabaseAccess(db, dbaccess.TTLLimitsFromEnv(os.Getenv)),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithRequestLogThresholds(slowRequestThreshold(logger), criticalRequestThreshold(logger)),
+		api.WithDashboardCache(envDurationOr(logger, "APP_DASHBOARD_CACHE_TTL", 5*time.Second), envDurationOr(logger, "APP_DASHBOARD_CACHE_STALE", time.Minute)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
 		api.WithHSTS(hstsEnabled(logger)),
 		api.WithAllowInsecureLogin(allowInsecureLogin(logger)),
@@ -2372,6 +2394,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// shape api.WithDeployRecorder/api.WithLogBroadcaster already use
 		// for their own always-non-nil dependencies.
 		api.WithScheduledTaskRunner(scheduledTaskRunner),
+		api.WithJobLimits(jobsPerAppCap(scheduledTaskRunner)),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
 		api.WithCertRenewalTracking(alertingDB, certRenewalStalledThreshold(logger)),
 		api.WithNodeAlertThresholds(
@@ -3578,6 +3601,7 @@ func resolvedPublicHost() (host, source string) {
 // field here is fixed for the process lifetime, only the store contents
 // dynamicSource reads change between reconcile passes.
 type dynamicSourceDeps struct {
+	deployGate         deployGate
 	previewNotifier    previewNotifier
 	db                 *store.DB
 	runtime            docker.Runtime
@@ -3782,9 +3806,10 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 	}
 }
 
-// appControllersFor builds one application.Controller per service,
-// skipping (with a warning) any whose node isn't currently reachable.
-func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
+// appOptionsFor builds the options every application.Controller shares:
+// the reconcile path and scheduled job containers both resolve a service's
+// env, volumes and network through them.
+func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	// application.WithStorageTargets/WithDatabaseAttachments are both
 	// unconditional, unlike WithSecretResolver below: resolving a
 	// StorageTarget's endpoint/region/bucket, or a database's host/port,
@@ -3825,6 +3850,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
 		application.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
 	}
+	appOpts = append(appOpts, deps.deployGate.appOptions(deps.db)...)
 	if deps.secretsManager != nil {
 		appOpts = append(appOpts, application.WithSecretResolver(deps.secretsManager))
 	}
@@ -3837,7 +3863,13 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 	if deps.meshCfg != nil && deps.meshCfg.resolver != nil {
 		appOpts = append(appOpts, application.WithMeshDatabases(meshDatabaseConfig(deps)))
 	}
+	return appOpts
+}
 
+// appControllersFor builds one application.Controller per service,
+// skipping (with a warning) any whose node isn't currently reachable.
+func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
+	appOpts := appOptionsFor(deps)
 	controllers := make([]reconcile.Controller, 0, len(services))
 	for _, svc := range services {
 		svcRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, svc.NodeID))

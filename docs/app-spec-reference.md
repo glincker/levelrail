@@ -95,6 +95,7 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | `labels` | map of string to string | no | none | Arbitrary operator-supplied Docker labels applied to the container at create time. See Validation below for the limits enforced on these. |
 | `volumes` | list of `Volume` | no | none | Named Docker volumes and host-directory bind mounts this service's container mounts. |
 | `hooks` | `Hooks` | no | none | Pre/post-deploy commands run inside the container. Not meaningful when `build.type` is `static` or `compose`. |
+| `jobs` | list of `Job` | no | none | Cron-scheduled commands, each run in a fresh container of this service's image or exec'd into it. See [Scheduled jobs](scheduled-jobs.md). Not meaningful when `build.type` is `static` or `compose`. |
 | `command` | list of string | no | none | Overrides the image's own default `CMD`. A plain argv list, never shell-interpreted. |
 | `egress` | `Egress` | no | open egress | Limits outbound traffic to an allowlist of host and port pairs. See [`Egress`](#egress). |
 | `loadbalancer` | `LoadBalancer` | no | none | Balances traffic across the service's replicas. See [Load balancing](load-balancing.md). |
@@ -233,6 +234,28 @@ Shell commands the reconciler runs inside the service's own container via the Do
 - With more than one replica, each hook runs exactly once per deploy (against the first replica), not once per replica. Running a database migration N times per deploy would be wrong even though every replica gets a freshly built container from the same image.
 - The most recent outcome of each hook (exit code, captured output) is queryable via `GET /api/v1/apps/{name}/hook-runs`.
 
+### `Job` (an entry under `jobs`)
+
+| Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `name` | string | yes | none | Unique within the service: lowercase letters, digits, `-` and `_`. |
+| `schedule` | string | yes | none | 5-field cron expression. |
+| `command` | list of string | yes | none | Argv list, never shell-interpreted. |
+| `timezone` | string | no | `UTC` | IANA zone the schedule is read in. |
+| `mode` | string | no | `fresh` | `fresh` (new container from the service's spec) or `exec` (inside the running container). |
+| `concurrency` | string | no | `forbid` | `allow`, `forbid` or `replace`. |
+| `timeout` | duration | no | 10m | Go duration such as `30s`, `10m`. |
+| `retries` | integer | no | `0` | Retries after a failed attempt. |
+| `retryBackoff` | duration | no | 10s | First retry delay, doubled each retry. |
+| `catchUp` | string | no | `skip` | `skip` or `run-once`. |
+| `catchUpLookback` | duration | no | 1h | How far back `run-once` still applies. |
+| `cpu` | number | no | the service's | CPU cores for a fresh container. |
+| `memory` | string | no | the service's | `256Mi` or `1Gi` form, fresh container only. |
+| `warnAfter` | duration | no | none | Raises the running-too-long alert. |
+| `enabled` | boolean | no | `true` | Keep the job but do not run it. |
+
+See [Scheduled jobs](scheduled-jobs.md) for how runs, retries and catch-up behave.
+
 ### `EnvVar` (an entry under `env`)
 
 Each value under `env` is either a plain string scalar (a literal value) or
@@ -367,6 +390,7 @@ Checked by `ValidateLabels` (`internal/spec/labels.go`):
 
 **Hooks**
 
+- `jobs` is rejected when `build.type` is `static` or `compose`, for the same reason as `hooks`. Job names must be unique within the service, the schedule must parse as a cron expression, `timezone` must be a known IANA zone, and durations must be positive.
 - `hooks` is rejected when `build.type` is `static` (no container to run a command in) or `compose` (a wrapper that expands into N real services; one `hooks` block cannot unambiguously target any of them).
 - An empty `hooks: {}` block is rejected at the schema layer (the schema's own `minProperties: 1`).
 

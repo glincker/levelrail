@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { usePITRStatus } from '../queries/pitr'
 import {
   useDiscardMajorUpgradeSnapshot,
@@ -27,6 +28,7 @@ function HistoryRow({
   const settled = upgrade.status !== 'running'
   const hasSnapshot = Boolean(upgrade.snapshot_volume) && settled
   const error = rollback.error ?? discard.error
+  const [asking, setAsking] = useState<'rollback' | 'discard' | null>(null)
   return (
     <li className="flex flex-col gap-1 border-b border-border py-2 last:border-b-0">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -45,21 +47,7 @@ function HistoryRow({
               size="xs"
               disabled={rollback.isPending}
               onClick={() => {
-                if (
-                  window.confirm(
-                    t('majorUpgrade.rollbackConfirm', {
-                      version: upgrade.from_version,
-                    }),
-                  )
-                ) {
-                  rollback.mutate(upgrade.id, {
-                    onSuccess: () =>
-                      toast.add({
-                        title: t('majorUpgrade.rollbackStarted'),
-                        type: 'success',
-                      }),
-                  })
-                }
+                setAsking('rollback')
               }}
             >
               {t('majorUpgrade.rollback')}
@@ -70,15 +58,7 @@ function HistoryRow({
               size="xs"
               disabled={discard.isPending}
               onClick={() => {
-                if (window.confirm(t('majorUpgrade.discardConfirm'))) {
-                  discard.mutate(upgrade.id, {
-                    onSuccess: () =>
-                      toast.add({
-                        title: t('majorUpgrade.discarded'),
-                        type: 'success',
-                      }),
-                  })
-                }
+                setAsking('discard')
               }}
             >
               {t('majorUpgrade.discard')}
@@ -94,6 +74,54 @@ function HistoryRow({
           {error.message}
         </p>
       ) : null}
+      <ConfirmDialog
+        open={asking === 'rollback'}
+        onOpenChange={(open) => {
+          if (!open) setAsking(null)
+        }}
+        tone="destructive"
+        title={t('majorUpgrade.rollbackTitle', {
+          version: upgrade.from_version,
+        })}
+        description={t('majorUpgrade.rollbackConfirm', {
+          version: upgrade.from_version,
+        })}
+        confirmLabel={t('majorUpgrade.rollbackAction')}
+        pending={rollback.isPending}
+        onConfirm={() => {
+          rollback.mutate(upgrade.id, {
+            onSuccess: () => {
+              setAsking(null)
+              toast.add({
+                title: t('majorUpgrade.rollbackStarted'),
+                type: 'success',
+              })
+            },
+          })
+        }}
+      />
+      <ConfirmDialog
+        open={asking === 'discard'}
+        onOpenChange={(open) => {
+          if (!open) setAsking(null)
+        }}
+        tone="destructive"
+        title={t('majorUpgrade.discardTitle')}
+        description={t('majorUpgrade.discardConfirm')}
+        confirmLabel={t('majorUpgrade.discardAction')}
+        pending={discard.isPending}
+        onConfirm={() => {
+          discard.mutate(upgrade.id, {
+            onSuccess: () => {
+              setAsking(null)
+              toast.add({
+                title: t('majorUpgrade.discarded'),
+                type: 'success',
+              })
+            },
+          })
+        }}
+      />
     </li>
   )
 }

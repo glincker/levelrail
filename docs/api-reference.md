@@ -207,7 +207,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 160 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 165 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -379,6 +379,11 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/placement | AbilityRoot | handleSetPlacement |
 | GET | /api/v1/apps/{name}/investigate | AbilityRead | handleInvestigate |
 | GET | /api/v1/apps/{name}/failure-context | AbilityRead | handleFailureContext |
+| GET | /api/v1/apps/{name}/deploys/{deployId}/gate | AbilityRead | handleGetDeployGate |
+| GET | /api/v1/apps/{name}/deploy-safety | AbilityRead | handleGetDeploySafety |
+| PUT | /api/v1/apps/{name}/deploy-safety | AbilityDeploy | handlePutDeploySafety |
+| GET | /api/v1/apps/{name}/rollback-targets | AbilityRead | handleListRollbackTargets |
+| GET | /api/v1/apps/{name}/job-runs | AbilityRead | handleListScheduledTaskRuns |
 
 :::
 
@@ -417,6 +422,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/git-source/build | AbilityWriteSensitive | handleSetGitSourceBuild |
 | POST | /api/v1/apps/{name}/git-source/detect | AbilityDeploy | handleDetectGitSourceBuild |
 | POST | /api/v1/apps/{name}/previews/{number}/extend | AbilityDeploy | handleExtendPreviewEnvironment |
+| GET | /api/v1/apps/{name}/git-source/commits | AbilityDeploy | handleListGitSourceCommits |
 
 ## Telemetry
 
@@ -447,12 +453,6 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/alerts | AbilityRead | handleListAlertRules |
 | PUT | /api/v1/apps/{name}/alerts/{id} | AbilityWrite | handleUpdateAlertRule |
 | DELETE | /api/v1/apps/{name}/alerts/{id} | AbilityWrite | handleDeleteAlertRule |
-| POST | /api/v1/apps/{name}/scheduled-tasks | AbilityWrite | handleCreateScheduledTask |
-| GET | /api/v1/apps/{name}/scheduled-tasks | AbilityRead | handleListScheduledTasks |
-| GET | /api/v1/apps/{name}/scheduled-tasks/{id} | AbilityRead | handleGetScheduledTask |
-| PUT | /api/v1/apps/{name}/scheduled-tasks/{id} | AbilityWrite | handleUpdateScheduledTask |
-| DELETE | /api/v1/apps/{name}/scheduled-tasks/{id} | AbilityWrite | handleDeleteScheduledTask |
-| POST | /api/v1/apps/{name}/scheduled-tasks/{id}/run | AbilityDeploy | handleRunScheduledTaskNow |
 | POST | /api/v1/apps/{name}/flags | AbilityWrite | handleCreateFeatureFlag |
 | GET | /api/v1/apps/{name}/flags | AbilityRead | handleListFeatureFlags |
 | GET | /api/v1/apps/{name}/flags/{id} | AbilityRead | handleGetFeatureFlag |
@@ -915,6 +915,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/log-drain | AbilityRead | handleGetAppLogDrain |
 | PUT | /api/v1/apps/{name}/log-drain | AbilityWriteSensitive | handleSetAppLogDrain |
 | DELETE | /api/v1/apps/{name}/log-drain | AbilityWriteSensitive | handleClearAppLogDrain |
+| GET | /api/v1/audit-log/export | AbilityRoot | handleExportAuditLog |
 
 `GET /api/v1/audit-log` accepts optional query params: `limit`, `before` (RFC3339 cursor), `path`, `method`, `client_kind` (exact match), `q` (case-insensitive substring across actor name, ability, method, path and remote address), `status=failed` (only `status_code >= 400`), and `format=csv`. All filters combine with AND and the CSV export honors them.
 
@@ -1177,6 +1178,13 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/teams/{id}/invites/{invite} | AbilityWrite | handleRevokeTeamInvite |
 | GET | /api/v1/team-invites/{token} | Session | handlePreviewTeamInvite |
 | POST | /api/v1/team-invites/accept | Public | handleAcceptTeamInvite |
+| GET | /metrics | AbilityRead | handleScrapeMetrics |
+| GET | /api/v1/export/destinations | AbilityRoot | handleListExportDestinations |
+| POST | /api/v1/export/destinations | AbilityRoot | handleCreateExportDestination |
+| GET | /api/v1/export/destinations/{id} | AbilityRoot | handleGetExportDestination |
+| PATCH | /api/v1/export/destinations/{id} | AbilityRoot | handleUpdateExportDestination |
+| DELETE | /api/v1/export/destinations/{id} | AbilityRoot | handleDeleteExportDestination |
+| POST | /api/v1/export/destinations/{id}/test | AbilityRoot | handleTestExportDestination |
 
 ## See also
 

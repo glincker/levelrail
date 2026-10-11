@@ -1,6 +1,6 @@
 // Query-key factory and fetchers for
-// GET/POST/PUT/DELETE /api/v1/apps/{name}/scheduled-tasks[/{id}] and
-// POST .../scheduled-tasks/{id}/run (internal/api/scheduled_tasks.go).
+// GET/POST/PUT/DELETE /api/v1/apps/{name}/jobs[/{id}] and
+// POST .../jobs/{id}/run (internal/api/scheduled_tasks.go).
 // Kept in its own module for the same reason queries/alerts.ts is: a
 // genuinely different resource shape than AppDetail, nested under the
 // same app name.
@@ -13,6 +13,7 @@ import {
   type QueryClient,
 } from '@tanstack/react-query'
 import type {
+  JobRun,
   ScheduledTask,
   ScheduledTaskRequest,
 } from '../types/scheduledTasks'
@@ -24,14 +25,77 @@ export const scheduledTaskKeys = {
     [...appKeys.detail(appName), 'scheduled-tasks'] as const,
   list: (appName: string) =>
     [...scheduledTaskKeys.all(appName), 'list'] as const,
+  runs: (appName: string, taskId: string, status: string) =>
+    [...scheduledTaskKeys.all(appName), 'runs', taskId, status] as const,
+  run: (appName: string, taskId: string, runId: string) =>
+    [...scheduledTaskKeys.all(appName), 'run', taskId, runId] as const,
+}
+
+// JOB_RUNS_PAGE is how many runs the history table fetches, the cap that
+// keeps it under the virtualization threshold.
+export const JOB_RUNS_PAGE = 50
+
+export async function fetchJobRuns(
+  appName: string,
+  taskId: string,
+  status: string,
+): Promise<JobRun[]> {
+  const base = `/api/v1/apps/${encodeURIComponent(appName)}`
+  const path = taskId
+    ? `${base}/jobs/${encodeURIComponent(taskId)}/runs`
+    : `${base}/job-runs`
+  const q = new URLSearchParams({ limit: String(JOB_RUNS_PAGE) })
+  if (status) q.set('status', status)
+  const res = await fetch(`${path}?${q.toString()}`)
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `fetch job runs failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as JobRun[]
+}
+
+// useJobRuns polls while the table is open so a running job settles in
+// view; taskId '' lists every job of the app.
+export function useJobRuns(appName: string, taskId: string, status: string) {
+  return useQuery({
+    queryKey: scheduledTaskKeys.runs(appName, taskId, status),
+    queryFn: () => fetchJobRuns(appName, taskId, status),
+    refetchInterval: 5000,
+  })
+}
+
+export async function fetchJobRun(
+  appName: string,
+  taskId: string,
+  runId: string,
+): Promise<JobRun> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(appName)}/jobs/${encodeURIComponent(taskId)}/runs/${encodeURIComponent(runId)}`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `fetch job run failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as JobRun
+}
+
+export function useJobRun(appName: string, taskId: string, runId: string) {
+  return useQuery({
+    queryKey: scheduledTaskKeys.run(appName, taskId, runId),
+    queryFn: () => fetchJobRun(appName, taskId, runId),
+    refetchInterval: (query) =>
+      query.state.data?.status === 'running' ? 2000 : false,
+  })
 }
 
 export async function fetchScheduledTasks(
   appName: string,
 ): Promise<ScheduledTask[]> {
-  const res = await fetch(
-    `/api/v1/apps/${encodeURIComponent(appName)}/scheduled-tasks`,
-  )
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(appName)}/jobs`)
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -59,14 +123,11 @@ export async function createScheduledTask(
   appName: string,
   req: ScheduledTaskRequest,
 ): Promise<ScheduledTask> {
-  const res = await fetch(
-    `/api/v1/apps/${encodeURIComponent(appName)}/scheduled-tasks`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req),
-    },
-  )
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(appName)}/jobs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -98,7 +159,7 @@ export async function updateScheduledTask(
   req: ScheduledTaskRequest,
 ): Promise<ScheduledTask> {
   const res = await fetch(
-    `/api/v1/apps/${encodeURIComponent(appName)}/scheduled-tasks/${encodeURIComponent(id)}`,
+    `/api/v1/apps/${encodeURIComponent(appName)}/jobs/${encodeURIComponent(id)}`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -135,7 +196,7 @@ export async function deleteScheduledTask(
   id: string,
 ): Promise<void> {
   const res = await fetch(
-    `/api/v1/apps/${encodeURIComponent(appName)}/scheduled-tasks/${encodeURIComponent(id)}`,
+    `/api/v1/apps/${encodeURIComponent(appName)}/jobs/${encodeURIComponent(id)}`,
     { method: 'DELETE' },
   )
   if (!res.ok) {
@@ -172,7 +233,7 @@ export function useDeleteScheduledTask(appName: string) {
 // of state to track) at the cost of not catching a genuinely slow run
 // without a manual refresh.
 function pollAfterRun(queryClient: QueryClient, appName: string) {
-  const key = scheduledTaskKeys.list(appName)
+  const key = scheduledTaskKeys.all(appName)
   for (const delayMs of [2000, 5000, 10000, 20000]) {
     setTimeout(() => {
       void queryClient.invalidateQueries({ queryKey: key })
@@ -185,7 +246,7 @@ export async function runScheduledTaskNow(
   id: string,
 ): Promise<ScheduledTask> {
   const res = await fetch(
-    `/api/v1/apps/${encodeURIComponent(appName)}/scheduled-tasks/${encodeURIComponent(id)}/run`,
+    `/api/v1/apps/${encodeURIComponent(appName)}/jobs/${encodeURIComponent(id)}/run`,
     { method: 'POST' },
   )
   if (res.status === 501) {
@@ -209,7 +270,7 @@ export function useRunScheduledTaskNow(appName: string) {
     mutationFn: (id: string) => runScheduledTaskNow(appName, id),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: scheduledTaskKeys.list(appName),
+        queryKey: scheduledTaskKeys.all(appName),
       })
       pollAfterRun(queryClient, appName)
     },

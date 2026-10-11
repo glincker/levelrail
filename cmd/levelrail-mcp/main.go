@@ -36,6 +36,11 @@
 // APP_API_TOKEN/APP_API_URL env vars still take precedence when set,
 // exactly like the CLI's own resolution order.
 //
+// # Write tools
+//
+// Confirm-gated write tools are hidden unless --allow-write (or
+// APP_MCP_ALLOW_WRITE=1) is set; see docs/mcp.md for the threat model.
+//
 // # Running over the network
 //
 // --transport=http runs the MCP Streamable HTTP transport instead of
@@ -77,18 +82,22 @@ func main() {
 }
 
 func run(prog string, args []string, lookupEnv func(string) (string, bool), logger *slog.Logger) error {
-	tokenFlag, apiURLFlag, profileFlag, transportFlag, listenFlag, modeFlag, toolsetsFlag, toolProfileFlag, err := parseFlags(prog, args)
+	f, err := parseAllFlags(prog, args)
 	if err != nil {
 		return err
 	}
-	opts, err := resolveOptions(modeFlag, toolsetsFlag, toolProfileFlag, lookupEnv)
+	tokenFlag, apiURLFlag, profileFlag, transportFlag, listenFlag := f.token, f.apiURL, f.profile, f.transport, f.listen
+	opts, err := resolveOptions(f.mode, f.toolsets, f.toolProfile, lookupEnv)
 	if err != nil {
 		return err
 	}
+	opts.AllowWrite = f.allowWrite || envTrue(lookupEnv, mcptools.EnvAllowWrite)
+	opts.OmitOutputSchemas = !f.outputSchemas && !envTrue(lookupEnv, mcptools.EnvOutputSchemas)
 
 	profile := resolveProfile(profileFlag, lookupEnv)
 	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
 	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
+	apiclient.SetScope(apiclient.ResolveScope(apiclient.Scope{Team: f.team, Project: f.project}, lookupEnv, prog, profile))
 	client := apiclient.NewClient(apiURL, token, apiclient.WithUserAgent("levelrail-mcp/"+version.Version))
 
 	server, summary := mcptools.NewServerWithOptions(client, opts)
@@ -99,6 +108,8 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 		slog.Int("read", summary.Read),
 		slog.Int("mutating", summary.Mutate),
 		slog.Int("destructive", summary.Destruct),
+		slog.Bool("allow_write", opts.AllowWrite),
+		slog.Bool("output_schemas", !opts.OmitOutputSchemas),
 	}
 	if len(summary.Toolsets) > 0 {
 		logAttrs = append(logAttrs, slog.String("toolsets", strings.Join(summary.Toolsets, ",")))
@@ -165,22 +176,42 @@ const (
 // an operator explicitly passes a different --listen address.
 const defaultListenAddr = "127.0.0.1:8090"
 
-func parseFlags(prog string, args []string) (token, apiURL, profile, transport, listen, mode, toolsets, toolProfile string, err error) {
+// cliFlags holds every parsed command line flag.
+type cliFlags struct {
+	token, apiURL, profile, transport, listen, mode, toolsets, toolProfile string
+	team, project                                                          string
+	allowWrite, outputSchemas                                              bool
+}
+
+func parseAllFlags(prog string, args []string) (f cliFlags, err error) {
 	fs := flag.NewFlagSet(prog, flag.ContinueOnError)
-	fs.StringVar(&token, "token", "", "API token (overrides "+apiclient.EnvAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURL, "api-url", "", "control plane API base URL (overrides "+apiclient.EnvAPIURL+" and the credentials file, default "+apiclient.DefaultAPIURL+")")
-	fs.StringVar(&profile, "profile", "", "named credentials profile to read (overrides "+apiclient.EnvProfile+", default \""+apiclient.DefaultProfile+"\")")
-	fs.StringVar(&transport, "transport", "", "MCP transport: \""+transportStdio+"\" (default, spawn as a local subprocess) or \""+transportHTTP+"\" (network-reachable, requires an API token)")
-	fs.StringVar(&listen, "listen", "", "address to bind in --transport=http mode (default "+defaultListenAddr+", loopback only)")
-	fs.StringVar(&mode, "mode", "", "tool exposure: \"read-only\", \"standard\" (default, no destructive tools) or \"full\" (overrides "+mcptools.EnvMode+")")
-	fs.StringVar(&toolsets, "toolsets", "", "comma separated tool groups to expose, default all (overrides "+mcptools.EnvToolsets+")")
-	fs.StringVar(&toolProfile, "tool-profile", "", "tool profile: \""+mcptools.ProfileAgentCore+"\" exposes a small allowlist of core agent tools (overrides "+mcptools.EnvToolProfile+")")
+	fs.StringVar(&f.token, "token", "", "API token (overrides "+apiclient.EnvAPIToken+" and the credentials file)")
+	fs.StringVar(&f.apiURL, "api-url", "", "control plane API base URL (overrides "+apiclient.EnvAPIURL+" and the credentials file, default "+apiclient.DefaultAPIURL+")")
+	fs.StringVar(&f.profile, "profile", "", "named credentials profile to read (overrides "+apiclient.EnvProfile+", default \""+apiclient.DefaultProfile+"\")")
+	fs.StringVar(&f.transport, "transport", "", "MCP transport: \""+transportStdio+"\" (default, spawn as a local subprocess) or \""+transportHTTP+"\" (network-reachable, requires an API token)")
+	fs.StringVar(&f.listen, "listen", "", "address to bind in --transport=http mode (default "+defaultListenAddr+", loopback only)")
+	fs.StringVar(&f.mode, "mode", "", "tool exposure: \"read-only\", \"standard\" (default, no destructive tools) or \"full\" (overrides "+mcptools.EnvMode+")")
+	fs.StringVar(&f.toolsets, "toolsets", "", "comma separated tool groups to expose, default all (overrides "+mcptools.EnvToolsets+")")
+	fs.StringVar(&f.toolProfile, "tool-profile", "", "tool profile: \""+mcptools.ProfileAgentCore+"\" exposes a small allowlist of core agent tools (overrides "+mcptools.EnvToolProfile+")")
+	fs.StringVar(&f.team, "team", "", "narrow every request to one team (overrides "+apiclient.EnvTeam+")")
+	fs.StringVar(&f.project, "project", "", "narrow every request to one project (overrides "+apiclient.EnvProject+")")
+	fs.BoolVar(&f.allowWrite, "allow-write", false, "expose confirm-gated write tools such as extend_preview and run_restore_drill (or set "+mcptools.EnvAllowWrite+"=1); never exposed in read-only mode")
+	fs.BoolVar(&f.outputSchemas, "output-schemas", false, "advertise every tool's outputSchema in tools/list, about 2.4x the listing size (or set "+mcptools.EnvOutputSchemas+"=1)")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(fs.Output(), "%s: an MCP server exposing the control plane's REST API as tools over stdio or streamable HTTP.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	if parseErr := fs.Parse(args); parseErr != nil {
-		return "", "", "", "", "", "", "", "", parseErr
+		return cliFlags{}, parseErr
 	}
-	return token, apiURL, profile, transport, listen, mode, toolsets, toolProfile, nil
+	return f, nil
+}
+
+func envTrue(lookupEnv func(string) (string, bool), key string) bool {
+	v, _ := lookupEnv(key)
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "1", "true", "yes", "on":
+		return true
+	}
+	return false
 }

@@ -8,7 +8,7 @@
 
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
-import type { AcmeFailure } from './domainCheck'
+import type { AcmeFailure, TlsOwner } from './domainCheck'
 
 export const certificatesKeys = {
   all: ['certificates'] as const,
@@ -35,7 +35,10 @@ export interface CertificateStatus {
   // source is "custom" for an operator-uploaded certificate
   // (setDomainTLSCert), "acme" for Caddy's automatic ACME/internal
   // issuance.
-  source: 'acme' | 'custom'
+  // "proxy" is the certificate a fronting proxy serves, not a stored one.
+  source: 'acme' | 'custom' | 'proxy'
+  // tls_owner is who terminates TLS for this hostname.
+  tls_owner?: TlsOwner
   // managed_by is 'proxy' when a fronting proxy issued and renews this
   // certificate; set client-side from the proxy integration probe.
   managed_by?: 'proxy'

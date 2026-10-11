@@ -251,7 +251,7 @@ func (rt *Router) handleDomainActivity(w http.ResponseWriter, r *http.Request) {
 		page.NextCursor = rows[len(rows)-1].CreatedAt
 	}
 	// The synthetic ACME event lands on the page whose time range holds it.
-	if ev, ok := acmeActivity(domain, before); ok && len(filter.ActionPrefixes) == 0 &&
+	if ev, ok := acmeActivity(domain, before); ok && !rt.tlsSnapshot(r.Context()).Suppressed(domain) && len(filter.ActionPrefixes) == 0 &&
 		(!full || !ev.At.Before(page.Events[len(page.Events)-1].At)) {
 		page.Events = append(page.Events, ev)
 	}

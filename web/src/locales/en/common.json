@@ -81,5 +81,100 @@
   "loginHelp": {
     "lockedOut": "Locked out? On the server, run",
     "emergencyDocs": "Emergency access"
+  },
+  "shell": {
+    "skipToContent": "Skip to content",
+    "topBar": "Top bar",
+    "toggleSidebar": "Toggle sidebar",
+    "search": {
+      "label": "Search or run a command",
+      "placeholder": "Search or jump to..."
+    },
+    "dashboardTitle": "Dashboard",
+    "status": {
+      "ok": "All good",
+      "issues_one": "{{count}} issue",
+      "issues_other": "{{count}} issues",
+      "triggerLabel": "Platform status: {{label}}",
+      "title": "Platform status",
+      "healthy": "Docker, disk, nodes and certificates look fine.",
+      "view": "View",
+      "snooze": "Snooze",
+      "snoozeItem": "Snooze {{title}}",
+      "snoozedCount": "{{count}} snoozed",
+      "showAgain": "Show again",
+      "insecureTitle": "Dashboard is not on HTTPS",
+      "insecureDetail": "Sessions travel unencrypted"
+    },
+    "snoozeFor": {
+      "1h": "1 hour",
+      "1d": "1 day",
+      "forever": "Forever"
+    },
+    "theme": {
+      "label": "Theme: {{theme}}",
+      "menu": "Choose theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "help": {
+      "label": "Help",
+      "forPage": "Help for this page",
+      "docs": "Documentation",
+      "troubleshooting": "Troubleshooting",
+      "systemStatus": "System status",
+      "report": "Report an issue",
+      "community": "Ask the community"
+    },
+    "account": {
+      "controlPlane": "Control plane",
+      "signOut": "Sign out"
+    },
+    "breadcrumb": {
+      "label": "Breadcrumb",
+      "home": "Home"
+    },
+    "navGroup": {
+      "home": "Home",
+      "apps": "Apps",
+      "data": "Data",
+      "traffic": "Traffic",
+      "infrastructure": "Infrastructure",
+      "access": "Access control",
+      "ai": "AI",
+      "automation": "Automation"
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "status": "Status",
+      "apps": "Apps",
+      "deployments": "Deployments",
+      "projects": "Projects",
+      "databases": "Databases",
+      "backups": "Backups",
+      "domains": "Domains",
+      "dns": "DNS",
+      "proxy": "Proxy",
+      "loadbalancers": "Load balancers",
+      "nodes": "Nodes",
+      "network": "Network",
+      "registry": "Container registry",
+      "registry-credentials": "Registry credentials",
+      "network-shares": "Network shares",
+      "node-providers": "Cloud node providers",
+      "iam-policies": "IAM policies",
+      "models": "AI models",
+      "pipelines": "Pipelines",
+      "approvals": "Deploy approvals",
+      "alerts": "Alerts",
+      "assistant": "AI assistant",
+      "settings": "Settings",
+      "help": "Help"
+    },
+    "quickNav": {
+      "label": "Quick navigation (hold L)"
+    },
+    "newApp": "New app"
   }
 }

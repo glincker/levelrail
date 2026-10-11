@@ -1,13 +1,15 @@
 ---
-description: Four guarantees between a deploy being triggered and that exact content serving, digest-truthful deploys, a stale-deploy guard, deploy freeze windows, and a short hold of the previous release after cutover.
+description: What stands between a deploy being triggered and that exact content serving, a readiness gate with a stable window, a drain, pinned rollback targets, a post-deploy watch with automatic rollback, digest-truthful deploys, a stale-deploy guard and freeze windows.
 ---
 
 # Deploy safety
 
-Four guarantees sit between "a deploy was triggered" and "that exact
-content is serving": digest-truthful deploys, a stale-deploy guard,
-deploy freeze windows, and a short hold of the previous release after a
-cutover.
+Several guarantees sit between "a deploy was triggered" and "that exact
+content is serving": a readiness gate that a release must hold for a
+stable window, a drain of the previous release, pinned rollback targets,
+a post-deploy watch that rolls a bad release back, digest-truthful
+deploys, a stale-deploy guard, deploy freeze windows, and a short hold of
+the previous release after a cutover.
 
 ```mermaid
 flowchart TD
@@ -18,11 +20,145 @@ flowchart TD
   W -->|no, or override with reason| B["Build, start new container(s)"]
   B --> R{"Readiness probe"}
   R -->|fail| Keep1["Previous release keeps serving"]
-  R -->|pass| D{"Digest-truthful check<br/>(running image ID vs pinned digest)"}
+  R -->|pass| G{"Stable window<br/>(N passes in a row, no restart or OOM kill)"}
+  G -->|exit, OOM or restart| Keep3["Gate failed<br/>previous release keeps serving"]
+  G -->|pass| D{"Digest-truthful check<br/>(running image ID vs pinned digest)"}
   D -->|mismatch| Keep2["Ready: False, ImageDigestMismatch<br/>previous release keeps serving"]
-  D -->|match| Cutover["Cut traffic to the new release<br/>(blue-green / rolling)"]
-  Cutover --> Hold["Previous release held briefly<br/>(instant rollback window)"]
+  D -->|match| Cutover["Cut traffic to the new release<br/>(blue-green / rolling), pin it as a rollback target"]
+  Cutover --> Hold["Previous release drains, then stays held<br/>(instant rollback window)"]
+  Hold --> Watch{"Post-deploy watch<br/>(crashloop, OOM kill, 5xx share)"}
+  Watch -->|trips| RB["Automatic rollback to the last good release<br/>with its config, through the same gate"]
+  Watch -->|quiet for the window| Cleared["Cleared"]
 ```
+
+## Readiness gate
+
+A new container takes traffic only when all of these hold:
+
+- its readiness probe passed `APP_DEPLOY_SUCCESS_THRESHOLD` times in a row
+  (default `2`; a failed probe resets the streak),
+- it has been running for `APP_DEPLOY_STABLE_WINDOW` (default `10s`),
+- it did not exit, restart or get OOM-killed inside that window. The
+  controller compares Docker's `RestartCount`, `StartedAt`, `OOMKilled` and
+  exit code against what it saw when the window began.
+
+An app with no readiness probe still has to survive the stable window. A
+container that fails the gate is stopped and the deploy attempt is marked
+failed with a reason (`OOMKilledDuringStableWindow`,
+`ExitedDuringStableWindow`, `RestartedDuringStableWindow`,
+`StabilityGateTimeout`, or the existing `ReadinessFailed`,
+`OOMKilledDuringReadiness`, `ExitedDuringReadiness`). The previous release
+never stops serving: ingress keeps routing to it because the new release
+never reports ready. The next reconcile retries the new release under the
+crash restart backoff.
+
+Multi-replica releases are gated replica by replica. With blue-green,
+nothing from the old release is retired until every new replica passed its
+own gate, so a release where replica 0 passes and replica 1 is OOM-killed
+leaves the old release fully in place.
+
+## Drain
+
+After cutover the previous release keeps running for at least
+`APP_DEPLOY_DRAIN_TIMEOUT` (default `15s`), measured from the cutover
+itself, so requests already in flight on it finish before it is stopped.
+Ingress moves new requests to the new release in the same reconcile pass.
+With a drain configured, rolling deploys also stop retiring old replicas
+mid-pass: they all drain together after the pass, because ingress keeps
+balancing over them until then. The drain timeout is a floor on the hold
+described in [Holding the previous release](#holding-the-previous-release).
+
+## Rollback pins
+
+Every release that takes traffic is pinned: its image gets an extra local
+tag (`<short-name>-rollback/<app>:<deploy-id>`) and a row in the store. A
+tagged image is never dangling, so image cleanup can never remove a
+rollback target, even after a rebuild moved the original tag to new
+content. The newest `APP_DEPLOY_ROLLBACK_PINS` (default `3`) per app are
+kept; older pins are untagged without force, so Docker still refuses to
+remove an image a container uses.
+
+Rolling back to a deploy (dashboard **Roll back to this**,
+`apps deploys rollback-to`, `POST .../deploys/{id}/rollback`) deploys its
+registry digest when it has one, otherwise its pin. It restores that
+deploy's config too: literal env values, port, health checks, replicas,
+strategy, resources and labels. Secret, database and vault references keep
+their current values, and domains, volumes and host ports stay as they are
+now. `?config=false` keeps the current config. The rollback is an ordinary
+deploy, so it passes the same readiness gate.
+
+## Post-deploy watch
+
+For `APP_DEPLOY_WATCH_WINDOW` (default `5m`) after cutover the release is
+watched every `APP_DEPLOY_WATCH_INTERVAL` (default `10s`). The watch trips
+when:
+
+| Trigger | Default | Reason |
+| --- | --- | --- |
+| A container was OOM-killed | always | `PostDeployOOMKilled` |
+| Restarts (or an exit) reach the limit | `APP_DEPLOY_WATCH_MAX_RESTARTS=2` | `PostDeployCrashloop`, `PostDeployExited` |
+| Share of 5xx answers through the ingress | `APP_DEPLOY_WATCH_ERROR_RATE=0.2` after `APP_DEPLOY_WATCH_MIN_REQUESTS=20` requests | `PostDeployErrorRate` |
+
+The 5xx share comes from the ingress request metrics the app already has.
+The first metrics sample after cutover is left out, since it can still hold
+answers from the previous release.
+
+When the watch trips, the deploy attempt is marked failed with the reason,
+an alert goes out through the app's deploy notification channels, and with
+`APP_DEPLOY_AUTO_ROLLBACK=true` (the default) the app is rolled back to the
+newest pinned release that is still marked succeeded, with that release's
+config. A release the watch already tripped on is failed, so rollbacks never
+ping-pong, and a release that is itself an automatic rollback is never
+rolled back again: that points at something outside the app, so it is left
+for an operator. With auto-rollback on, the previous release is held for the
+whole watch window, so the rollback target is still running if the watch
+trips.
+
+## Gate timeline
+
+Each deploy records its gate as a timeline: readiness, stable window,
+cutover, drain, rollback pin, watch and rollback steps with a status, a
+reason and a message. The deploy detail page shows it under **Roll out**,
+refreshing until the release clears its watch, fails or is replaced.
+
+```bash
+levelrail-cli deploy status web --watch          # newest deploy, follow it
+levelrail-cli apps deploys gate web dep_abc123   # one deploy, once
+levelrail-cli apps deploys rollback-to web dep_abc123 --watch
+```
+
+`deploy status` exits `7` when the release failed its gate, tripped its
+watch or was rolled back. The API is
+`GET /api/v1/apps/{name}/deploys/{deployId}/gate` (`latest` works as the
+id).
+
+## Per-app settings
+
+Every `APP_DEPLOY_*` value above is the platform default. An app can
+override the gate and watch thresholds in **Deploy settings → Deploy
+safety**, with the CLI, or with `PUT /api/v1/apps/{name}/deploy-safety`
+(deploy permission). A `null` field, an empty dashboard field or the CLI
+value `default` inherits the platform default. Windows are capped at 30
+minutes so one app cannot stall the reconcile loop.
+
+```bash
+levelrail-cli apps deploy-safety show web
+levelrail-cli apps deploy-safety set web --stable-window 30s --success-threshold 3
+levelrail-cli apps deploy-safety set web --auto-rollback false --watch-window default
+levelrail-cli apps deploy-safety targets web
+```
+
+## How this is tested
+
+`test/e2e/reconcile/deploy_safety_live_test.go` runs the real application
+and ingress controllers on a real reconcile engine against Docker, with the
+request metrics pipeline and the watch, while four clients hammer the
+ingress. It deploys a good release, a release that exits inside its stable
+window, and a release that answers 5xx until the watch rolls it back. The
+fixture app drops in-flight requests on `SIGTERM`, so only a real drain
+keeps them alive. A run on Docker Desktop: 2617 requests, 0 failed
+(transport errors or proxy 5xx), the bad release's own 500s excluded. With
+the drain turned off the same test loses requests at cutover.
 
 ## Digest-truthful deploys
 
@@ -192,8 +328,9 @@ They become `superseded` with `superseded_by` pointing at the newer one. A
 deploy that already started building is never canceled automatically.
 
 `POST /api/v1/apps/{name}/deploys/{deployId}/rollback` redeploys the exact
-content a past succeeded deploy recorded, pinned by digest, through the same
-freeze and approval gates as a plain deploy. It answers `410` when the local
+content a past succeeded deploy recorded, pinned by digest or by its
+[rollback pin](#rollback-pins), with its config, through the same freeze,
+approval and readiness gates as a plain deploy. It answers `410` when the local
 image was garbage collected, `409` when its tag now points at other content or
 the row recorded no digest.
 
@@ -216,6 +353,13 @@ Pruning removes only dangling (untagged) images, and Docker itself refuses to re
 - On remote nodes reached over the agent transport the running image ID is
   not yet reported, so the controller cannot detect a mismatch there; the
   digest pinning itself still applies.
+- Rollback pins are only made for apps on the control plane's own node;
+  a remote node's images rely on the registry digest. Restart counts and
+  start times are not carried over the agent transport yet, so on a remote
+  node the stable window detects exits and OOM kills but not a restart the
+  container survived.
+- The drain and the cutover time used by the watch live in memory; after a
+  control plane restart the hold falls back to container creation times.
 - Digest resolution runs on the control plane's Docker daemon. A private
   registry needs a registry credential on the app.
 - Apps created or edited through the plain app create/update and compose

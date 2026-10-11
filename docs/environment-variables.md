@@ -115,6 +115,30 @@ The archiver's other settings are on [Log archive](log-archive.md). These two bo
 | `APP_LOG_ARCHIVE_MAX_WINDOWS_PER_RUN` | `24` | Maximum number of one-hour windows archived in a single scheduled run. Integer. |
 | `APP_LOG_ARCHIVE_MAX_BACKFILL` | `24h` | How far back a run may reach when it catches up on missed windows. Duration. |
 
+## Data export
+
+How these are used is on [Data export](data-export.md). Positive values only; anything else uses the default. Control plane.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_EXPORT_ALLOW_PRIVATE_NETWORKS` | `false` | Let export destinations resolve to private, loopback or link-local addresses, for a Loki or collector on the same host or network. Boolean. |
+| `APP_EXPORT_RESYNC` | `15s` | How often running exporters are reconciled with the configured destinations. Duration. |
+| `APP_EXPORT_QUEUE_LINES` | `10000` | In-memory queue length per log destination. The oldest entries are dropped and counted when it is full. Integer. |
+| `APP_EXPORT_BATCH_LINES` | `200` | Maximum entries per delivered batch. Integer. |
+| `APP_EXPORT_BATCH_BYTES` | `1048576` | Approximate maximum batch size in bytes. Integer. |
+| `APP_EXPORT_FLUSH_INTERVAL` | `2s` | How long a partial batch waits for more entries. Duration. |
+| `APP_EXPORT_MAX_ATTEMPTS` | `4` | Delivery attempts per batch before it is dropped (audit batches are held instead). Integer. |
+| `APP_EXPORT_BACKOFF_BASE` | `500ms` | First retry delay, doubled per attempt with jitter. Duration. |
+| `APP_EXPORT_BACKOFF_MAX` | `15s` | Upper bound for the retry delay. Duration. |
+| `APP_EXPORT_BREAKER_FAILURES` | `5` | Consecutive failed batches that open a destination's circuit breaker. Integer. |
+| `APP_EXPORT_BREAKER_COOLDOWN` | `60s` | How long an open breaker waits before one trial batch. Duration. |
+| `APP_EXPORT_SEND_TIMEOUT` | `10s` | Timeout of one delivery request. Duration. |
+| `APP_EXPORT_STATUS_INTERVAL` | `5s` | How often delivery counters are saved. Duration. |
+| `APP_EXPORT_AUDIT_INTERVAL` | `10s` | How often the audit log is polled for new rows. Duration. |
+| `APP_EXPORT_AUDIT_BATCH` | `500` | Audit rows per batch and per page of a download. Integer. |
+| `APP_EXPORT_AUDIT_MAX_ROWS` | `1000000` | Maximum rows in one audit log download. Integer. |
+| `APP_EXPORT_METRICS_INTERVAL` | `60s` | Default OTLP metrics push interval. Duration. |
+
 ## Ingress
 
 The edge hardening limits are in [Domains and ingress](domains-and-ingress.md#edge-limits-client-ips-and-failover). These two are not listed there. Control plane.
@@ -129,10 +153,12 @@ The edge hardening limits are in [Domains and ingress](domains-and-ingress.md#ed
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_CERT_EXPIRY_WARNING_WINDOW` | `336h` (14 days) | How close to expiry a certificate must be before it counts as expiring, for both the certificate expiry alert rules and the API. Control plane. |
-| `APP_SLOW_REQUEST_THRESHOLD` | `500ms` | API requests slower than this are logged at Warn level. Control plane. |
+| `APP_SLOW_REQUEST_THRESHOLD` | `500ms` | API requests slower than this are logged at Warn level, with a `breakdown` field naming the slowest phases (for example `telemetry_latest=1.2s`). Control plane. |
 | `APP_CRITICAL_REQUEST_THRESHOLD` | `2s` | API requests slower than this are logged at Error level. Control plane. |
+| `APP_DASHBOARD_CACHE_TTL` | `5s` | How long the dashboard's aggregate reads (app and node resource usage, apps metrics, system status, doctor) are reused between requests. `0` disables the cache. Control plane. |
+| `APP_DASHBOARD_CACHE_STALE` | `1m` | How long past the TTL a cached aggregate may still be served while one background refresh runs. Control plane. |
 
-For all three, a value that does not parse logs a warning and uses the default. For the two request thresholds, zero or a negative duration also means the default.
+For all of these, a value that does not parse logs a warning and uses the default. For the two request thresholds, zero or a negative duration also means the default.
 
 ## Doctor and diagnosis
 

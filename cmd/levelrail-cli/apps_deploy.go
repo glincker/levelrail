@@ -21,6 +21,8 @@ type deployOrRollbackConfig struct {
 	// knownImagesOnly refuses a tag the app never built locally, since a
 	// typo'd rollback target fails to create and takes the app offline.
 	knownImagesOnly bool
+	// fromSource registers --commit/--latest, deploying the connected git source.
+	fromSource bool
 }
 
 // runAppsDeploy implements "apps deploy <name> --image <ref>": POST
@@ -59,6 +61,7 @@ func runAppsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupE
 		confirmHelp:   "confirm deploying into a protected environment; omit to be prompted interactively if needed",
 		usage:         appsDeployUsage,
 		errContext:    "deploy",
+		fromSource:    true,
 		successFormat: "app %q now targets image %q; reconcile is asynchronous, check \"%s apps status %s\"\n",
 	})
 }
@@ -74,6 +77,12 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	fs.StringVar(&image, "image", "", cfg.imageHelp)
 	fs.BoolVar(&confirm, "confirm", false, cfg.confirmHelp)
 	extra.register(fs)
+	var src sourceDeployFlags
+	if cfg.fromSource {
+		fs.StringVar(&src.commit, "commit", "", "deploy this commit of the connected git source (builds it, no --image needed)")
+		fs.BoolVar(&src.latest, "latest", false, "deploy the newest commit of the connected branch")
+		fs.StringVar(&src.branch, "branch", "", "with --latest: branch to take the newest commit from (default: the connected branch)")
+	}
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, cfg.usage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -92,6 +101,12 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
+	if src.commit != "" || src.latest {
+		if image != "" || (src.commit != "" && src.latest) {
+			return reportError(stdout, stderr, jsonOut, newValidationError("use exactly one of --image, --commit, or --latest"))
+		}
+		return deployFromSource(prog, client, name, src, stdout, stderr, jsonOut, of)
+	}
 	if image == "" && extra.pull {
 		current, err := client.GetApp(ctx, name)
 		if err != nil {
@@ -146,6 +161,8 @@ If the app is tagged with a protected environment, this fails unless
 Flags:
   --image string          image reference to deploy, e.g. registry.example.com/org/app:tag (required)
   --confirm                  confirm deploying into a protected environment, skipping the interactive prompt
+  --commit string            build and deploy this commit of the app's connected git source
+  --latest                   build and deploy the newest commit of the connected branch (with --branch to pick another)
   --pull                     re-resolve the tag against its registry, failing rather than deploying a cached
                              image; without --image, redeploys the app's current tag at its newest digest
   --override-freeze          deploy even though a deploy freeze window is active

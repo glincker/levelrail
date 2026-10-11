@@ -7,23 +7,36 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// rollbackPin returns target's rollback pin, or nil when none is recorded.
+func (rt *Router) rollbackPin(ctx context.Context, target store.DeployAttempt) *store.RollbackPin {
+	if rt.deployGate == nil {
+		return nil
+	}
+	pin, err := rt.deployGate.GetRollbackPin(ctx, target.ServiceName, target.ID)
+	if err != nil {
+		rt.logger.Warn("api: rollback: load pin failed", slog.String("error", err.Error()), slog.String("deploy_id", target.ID))
+		return nil
+	}
+	return pin
+}
+
 // rollbackImageRef returns the image reference that redeploys exactly the
 // content target recorded, or an HTTP status and message when it cannot.
-func (rt *Router) rollbackImageRef(ctx context.Context, target store.DeployAttempt) (ref string, status int, msg string) {
+func (rt *Router) rollbackImageRef(ctx context.Context, target store.DeployAttempt, pin *store.RollbackPin) (ref string, status int, msg string) {
 	if target.Status != store.DeployAttemptStatusSucceeded || target.Image == "" {
 		return "", http.StatusConflict, "only a succeeded deploy can be rolled back to"
+	}
+	if ref, safe := deploy.RollbackRef(target, pin); safe {
+		return ref, 0, ""
 	}
 	digest := target.ImageDigest
 	if digest == "" {
 		return "", http.StatusConflict, "this deploy has no recorded image digest; roll back by image tag with POST /api/v1/apps/{name}/deploys instead"
-	}
-	switch target.DigestReason {
-	case store.DigestReasonResolved, store.DigestReasonPinned:
-		return docker.PinImageRef(docker.UnpinImageRef(target.Image), digest), 0, ""
 	}
 	inspector, ok := rt.imageResolver.(docker.ImageInspector)
 	if !ok {
@@ -44,8 +57,9 @@ func (rt *Router) rollbackImageRef(ctx context.Context, target store.DeployAttem
 }
 
 // handleRollbackToDeploy handles POST /api/v1/apps/{name}/deploys/{deployId}/rollback:
-// redeploys the content a past succeeded deploy recorded, pinned by digest,
-// through the same freeze and approval gates as a plain deploy.
+// redeploys the content a past succeeded deploy recorded, pinned by digest
+// or rollback pin, with its config restored (?config=false keeps the
+// current config), through the same freeze, approval and readiness gates.
 func (rt *Router) handleRollbackToDeploy(w http.ResponseWriter, r *http.Request) {
 	target, ok := rt.lookupAppAttempt(w, r)
 	if !ok {
@@ -64,11 +78,20 @@ func (rt *Router) handleRollbackToDeploy(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	ref, status, msg := rt.rollbackImageRef(r.Context(), *target)
+	pin := rt.rollbackPin(r.Context(), *target)
+	ref, status, msg := rt.rollbackImageRef(r.Context(), *target, pin)
 	if status != 0 {
 		writeError(w, status, msg)
 		return
 	}
 	req.Image = ref
-	rt.applyDeploy(w, r, *existing, req, target.ID)
+	restored := *existing
+	if r.URL.Query().Get("config") != "false" {
+		restored = deploy.RestoreSnapshot(*existing, target.Snapshot)
+	}
+	if deploy.LocalOnlyRef(pin, ref) {
+		restored.PullPolicy = ""
+		req.Pull = false
+	}
+	rt.applyDeploy(w, r, restored, req, target.ID)
 }

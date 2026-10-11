@@ -96,8 +96,7 @@ func (rn *run) checkPortOwners(context.Context) Check {
 func (rn *run) checkStoredCert(context.Context) Check {
 	c := Check{ID: IDStoredCert, Title: "Certificate is issued and renewing", Tier: TierCertificate}
 	if rn.facts.TLSTerminatedUpstream {
-		c.State, c.Detail = StateSkipped, "TLS is terminated by your own proxy"
-		return c
+		return rn.proxyManagedCert(c)
 	}
 	renew := &Action{Kind: ActionRequest, Label: "Renew now", API: "POST " + rn.appDomainAPI("/cert/renew")}
 	if rn.facts.App == "" {
@@ -148,6 +147,30 @@ func (rn *run) checkStoredCert(context.Context) Check {
 	default:
 		c.State = StatePass
 		c.Detail = fmt.Sprintf("issued by %s, expires in %d days", cert.Issuer, days)
+	}
+	return c
+}
+
+// proxyManagedCert reports the certificate a fronting proxy serves; this
+// platform neither issues nor renews it, so there is no renew action.
+func (rn *run) proxyManagedCert(c Check) Check {
+	c.Title = "Certificate is managed by your proxy"
+	cert := rn.facts.Cert
+	if cert == nil {
+		c.State, c.Detail = StateSkipped, "TLS is terminated by your own proxy"
+		return c
+	}
+	days := int(cert.NotAfter.Sub(rn.opts.Now()).Hours() / 24)
+	c.Detail = fmt.Sprintf("issued by %s, expires %s (in %d days), renews automatically", cert.Issuer, cert.NotAfter.UTC().Format(time.DateOnly), days)
+	switch {
+	case days < 0:
+		c.State, c.Title = StateFail, "The certificate your proxy serves has expired"
+		c.Fix = &Fix{Summary: "Check your proxy's certificate resolver and its logs; this platform cannot renew it."}
+	case cert.Status == certStatusExpiringSoon || days < rn.opts.ExpiryWarnDays:
+		c.State, c.Tier, c.Title = StateWarn, TierSoon, fmt.Sprintf("Your proxy's certificate expires in %d days", days)
+		c.Fix = &Fix{Summary: "Your proxy should renew it on its own; check its certificate resolver if it does not."}
+	default:
+		c.State = StatePass
 	}
 	return c
 }

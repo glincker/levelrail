@@ -246,6 +246,13 @@ func (rt *Router) collectPostureTLS(ctx context.Context, in *postureInput, now t
 			public[strings.ToLower(san)] = true
 		}
 	}
+	tls := rt.tlsSnapshot(ctx)
+	for _, host := range tls.ProxyHosts() {
+		if pc, ok := tls.ProxyCert(host); ok && pc.NotAfter.After(now) {
+			in.RealCert = true
+			public[host] = true
+		}
+	}
 	names := []string{}
 	if s.PrimaryDomain != "" {
 		names = append(names, s.PrimaryDomain)

@@ -34,7 +34,9 @@ import {
   certExpiryLabel,
   certRenewalBadge,
   certStatusMeta,
+  effectiveDomainCert,
   isInternalCert,
+  isProxyManagedCert,
 } from '../lib/certStatus'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import type { CertificateStatus } from '../queries/certificates'
@@ -99,7 +101,10 @@ function inlineWarning(
   dns: DomainCheckResult | undefined,
   t: TFunction<'domains'>,
 ): { text: string; title: string } | null {
-  const failure = cert?.acme_failure ?? domain.acme_failure
+  const proxyOwned = domain.tls_owner === 'proxy'
+  const failure = proxyOwned
+    ? undefined
+    : (cert?.acme_failure ?? domain.acme_failure)
   if (failure) {
     const text = t(`acme.action.${failure.action}`)
     return { text, title: `${failure.error}\n${text}` }
@@ -116,7 +121,7 @@ function inlineWarning(
       : t('page.dns.elsewhereHintNoHosts')
     return { text, title: text }
   }
-  if (dns.expected_private) {
+  if (dns.expected_private && !proxyOwned) {
     const text = t('page.dns.privateHint')
     return { text, title: text }
   }
@@ -163,6 +168,9 @@ function CertCell({
   cert?: CertificateStatus
 }) {
   const { t } = useTranslation('domains')
+  if (!cert && domain.tls_owner === 'proxy') {
+    return <Badge variant="info">{t('proxyManaged.badge')}</Badge>
+  }
   if (!cert) {
     return domain.acme_failure ? (
       <Badge variant="destructive">{t('page.cert.failed')}</Badge>
@@ -200,7 +208,7 @@ function ExpiryCell({ cert }: { cert?: CertificateStatus }) {
   const renews =
     cert.source === 'custom'
       ? t('page.cert.renewsManual')
-      : cert.managed_by === 'proxy'
+      : isProxyManagedCert(cert)
         ? t('page.cert.renewsProxy')
         : t('page.cert.renewsAuto')
   return (
@@ -278,11 +286,12 @@ function RowActions({
 
 export function DomainRow({
   domain,
-  cert,
+  cert: storedCert,
 }: {
   domain: Domain
   cert?: CertificateStatus
 }) {
+  const cert = effectiveDomainCert(domain, storedCert)
   const { t } = useTranslation('domains')
   const [recordOpen, setRecordOpen] = useState(false)
   // Plain query, no polling: one row per visible domain must stay cheap.

@@ -36,6 +36,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/integrations"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
@@ -262,6 +263,12 @@ type Controller struct {
 	handoffFailed       map[string]time.Time            // target name to the time its next pinned-port handoff may run
 	restartBackoff      *RestartBackoff                 // nil disables crash restart backoff, see WithRestartBackoff
 	meshPaths           meshpath.Resolver               // nil is valid: remote ports stay on loopback, see WithMeshPaths
+	gateDefaults        *deploysafety.Effective         // nil: one readiness pass is enough, see WithStabilityGate
+	gateSource          DeploySafetySource
+	gateRecorder        GateRecorder
+	gateTick            time.Duration
+	drain               *DrainTracker
+	pinner              RollbackPinner
 }
 
 // Option configures optional Controller behavior.
@@ -663,7 +670,7 @@ func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, d
 
 	// Every target is running and ready: retire the rest, holding the
 	// previous release for WithPreviousReleaseHold if configured.
-	if err := c.removeStaleAfterHold(ctx, targets); err != nil {
+	if err := c.retireStale(ctx, targets, desired, anyDeployed); err != nil {
 		// The important fact, a healthy set is serving, is still true; a
 		// stray old container is a real problem but a lesser one, so
 		// Status stays True with a reason that says exactly what's
@@ -774,8 +781,10 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 				return notReady("InspectFailed", err), fmt.Errorf("application/%s: list stale containers: %w", c.serviceName, err)
 			}
 			// With a hold configured the last old container stays as the
-			// held previous release.
-			if len(stale) > 1 || (len(stale) == 1 && c.previousReleaseHold <= 0) {
+			// held previous release. With a drain window nothing old stops
+			// mid-pass: ingress still balances over it until this pass ends.
+			safety := c.safetyFor(ctx, desired)
+			if safety.DrainTimeout <= 0 && (len(stale) > 1 || (len(stale) == 1 && c.effectiveHold(safety) <= 0)) {
 				// Created is often tied at test/fake-clock resolution, so
 				// break ties on name to keep this deterministic rather
 				// than following ListByPrefix's map-iteration order.
@@ -797,7 +806,7 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 		}
 	}
 
-	if err := c.removeStaleAfterHold(ctx, targets); err != nil {
+	if err := c.retireStale(ctx, targets, desired, anyDeployed); err != nil {
 		return reconcile.Result{Conditions: []reconcile.Condition{{
 			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue,
 			Reason: "RunningStaleCleanupFailed", Message: err.Error(),
@@ -819,6 +828,9 @@ func (c *Controller) finishReconcile(ctx context.Context, targets []string, desi
 	// liveness history belongs to an instance that no longer exists.
 	c.liveness.resetAll(c.serviceName, targets, time.Now())
 	c.restartBackoff.retain(c.serviceName, targets)
+	c.recordGate(ctx, desired, targets[0], deploysafety.PhaseCutover, deploysafety.StatusPassed, "",
+		fmt.Sprintf("traffic moved to %d ready replica(s)", len(targets)))
+	c.pinServing(ctx, desired)
 
 	// Runs once per deploy (this codebase's own DeployRecorder below
 	// already treats "any target freshly (re)created this pass" as one
@@ -1019,8 +1031,18 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	if err := c.waitReady(ctx, state, desired); err != nil {
+		reason := readinessReason(err, deploysafety.ReasonReadinessFailed)
+		c.recordGate(ctx, desired, target, deploysafety.PhaseReadiness, deploysafety.StatusFailed, reason, err.Error())
 		c.recordRolloutFailure(ctx, desired, err)
-		return replicaOutcome{reason: readinessReason(err, "ReadinessFailed")}, c.abortHandoff(ctx, target, released, err)
+		c.markGateFailure(ctx, desired, reason)
+		return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
+	}
+	c.recordGate(ctx, desired, target, deploysafety.PhaseReadiness, deploysafety.StatusPassed, "", "first readiness check passed")
+	if err := c.stabilityGate(ctx, state, desired); err != nil {
+		reason := readinessReason(err, deploysafety.ReasonGateTimeout)
+		c.recordRolloutFailure(ctx, desired, err)
+		c.markGateFailure(ctx, desired, reason)
+		return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
 	}
 	delete(c.handoffFailed, target)
 	return c.confirmedOutcome(ctx, target, state, desired, true)
@@ -1057,9 +1079,13 @@ func readinessReason(err error, fallback string) string {
 	var crash *readinessCrashError
 	if errors.As(err, &crash) {
 		if crash.oomKilled {
-			return "OOMKilledDuringReadiness"
+			return deploysafety.ReasonOOMKilledDuringReadiness
 		}
-		return "ExitedDuringReadiness"
+		return deploysafety.ReasonExitedDuringReadiness
+	}
+	var gate *gateError
+	if errors.As(err, &gate) {
+		return gate.reason
 	}
 	return fallback
 }

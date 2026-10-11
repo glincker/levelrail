@@ -44,6 +44,8 @@ function NavLinkItem({
   counts: Record<string, number>
 }) {
   const { t } = useTranslation('traffic')
+  const { t: tc } = useTranslation()
+  const label = tc(`shell.nav.${item.id}`, { defaultValue: item.label })
   const chord = chordFor(item.to)
   const count = item.badge ? (counts[item.badge] ?? 0) : 0
   const trafficKey =
@@ -64,14 +66,14 @@ function NavLinkItem({
         tooltip={{
           children: (
             <span className="flex items-center gap-2">
-              {item.label}
+              {label}
               {chord ? <Kbd keys={chord} /> : null}
             </span>
           ),
         }}
       >
         {item.icon}
-        <span>{item.label}</span>
+        <span>{label}</span>
         <NavBadge
           count={count}
           tone={item.badge === 'approvals' ? 'warning' : 'danger'}
@@ -83,6 +85,7 @@ function NavLinkItem({
 }
 
 export function GlobalNav() {
+  const { t } = useTranslation()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const { state } = useSidebar()
   const rail = state === 'collapsed'
@@ -128,7 +131,9 @@ export function GlobalNav() {
               id={`global-${group.id}`}
               open={resolveOpen(stored, group.id, true)}
               onOpenChange={(open) => setOpen(group.id, open)}
-              header={group.label}
+              header={t(`shell.navGroup.${group.id}`, {
+                defaultValue: group.label,
+              })}
             >
               {menu}
             </CollapsibleSection>

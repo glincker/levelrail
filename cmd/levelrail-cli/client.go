@@ -173,6 +173,7 @@ type (
 
 	scheduledTaskResource = apiclient.ScheduledTaskResource
 	scheduledTaskRequest  = apiclient.ScheduledTaskRequest
+	jobRunResource        = apiclient.JobRunResource
 
 	alertRuleResource      = apiclient.AlertRuleResource
 	createAlertRuleRequest = apiclient.CreateAlertRuleRequest

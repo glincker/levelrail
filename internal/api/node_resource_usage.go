@@ -139,7 +139,7 @@ func (rt *Router) handleFleetResourceUsage(w http.ResponseWriter, r *http.Reques
 	}
 
 	for _, metric := range nodeResourceUsagePlacedMetrics {
-		samples, err := rt.telemetry.LatestByMetric(r.Context(), metric)
+		samples, err := rt.latestByMetric(r.Context(), metric)
 		if err != nil {
 			rt.logger.Warn("api: fleet resource usage: query placed metric failed", slog.String("metric", metric), slog.String("error", err.Error()))
 			continue
@@ -168,7 +168,7 @@ func (rt *Router) handleFleetResourceUsage(w http.ResponseWriter, r *http.Reques
 	}
 
 	for _, metric := range nodeResourceUsageHostMetrics {
-		samples, err := rt.telemetry.LatestByMetric(r.Context(), metric)
+		samples, err := rt.latestByMetric(r.Context(), metric)
 		if err != nil {
 			rt.logger.Warn("api: fleet resource usage: query host metric failed", slog.String("metric", metric), slog.String("error", err.Error()))
 			continue

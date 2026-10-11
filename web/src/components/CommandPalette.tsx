@@ -187,6 +187,7 @@ export function CommandPalette({
       items.push({
         key: 'action-shortcuts',
         label: 'Keyboard shortcuts',
+        keywords: 'quick navigation hold l go to',
         group: 'Actions',
         icon: <KeyboardIcon />,
         run: onShowShortcuts,

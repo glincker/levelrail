@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"sync"
 )
 
 // defaultDoctorRegistryPort is the TLS port every OCI registry this
@@ -28,10 +29,16 @@ const defaultDoctorRegistryHost = "registry-1.docker.io"
 // needs is actually reachable from this host.
 func (rt *Router) doctorCheckRegistryReachability(ctx context.Context) []doctorCheckResource {
 	hosts := rt.doctorRegistryHosts(ctx)
-	out := make([]doctorCheckResource, 0, len(hosts))
-	for _, host := range hosts {
-		out = append(out, rt.doctorCheckOneRegistry(ctx, host))
+	out := make([]doctorCheckResource, len(hosts))
+	var wg sync.WaitGroup
+	for i, host := range hosts {
+		wg.Add(1)
+		go func(i int, host string) {
+			defer wg.Done()
+			out[i] = rt.doctorCheckOneRegistry(ctx, host)
+		}(i, host)
 	}
+	wg.Wait()
 	return out
 }
 

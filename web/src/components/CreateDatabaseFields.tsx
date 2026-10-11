@@ -1,3 +1,5 @@
+import { cn } from '@/lib/utils'
+import { TONE } from '@/components/kit/tone'
 import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
@@ -317,15 +319,14 @@ export function CreateDatabaseFields({
     >
       {CREDENTIALED_ENGINES.has(watchedEngine) &&
       systemStatus.data?.secrets_configured === false ? (
-        // Warning, not a gate: submission below is never disabled on
-        // this. See the "Honesty note" comment above for why creating
-        // now and converging once the operator fixes the master key is
-        // the intended behavior here, not a bug to work around. No
-        // "warning" tone exists in badgeVariants/alertVariants, so this
-        // reuses the same amber-precedent classes AddNodeDialog.tsx and
-        // CreateTokenDialog.tsx already established for exactly this
-        // gap.
-        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+        <div
+          className={cn(
+            'flex items-start gap-2 rounded-lg border p-2.5',
+            TONE.warning.soft,
+            TONE.warning.border,
+            TONE.warning.text,
+          )}
+        >
           <WarningIcon className="mt-0.5 size-4 shrink-0" />
           <p className="text-sm">
             No secrets master key is configured on this control plane. This

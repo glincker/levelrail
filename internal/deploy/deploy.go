@@ -193,6 +193,7 @@ type Pipeline struct {
 	apps AppStore // nil is valid: every method except DeploySpec ignores it, see WithAppStore
 
 	loadBalancers LoadBalancerStore // nil is valid: the loadbalancer: block is then ignored
+	jobs          JobStore          // nil is valid: the jobs: list is then ignored
 
 	buildCache BuildCacheProvider // nil is valid: builds use only the local and registry caches
 
@@ -364,6 +365,9 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	if err := p.saveLoadBalancer(ctx, req); err != nil {
 		return "", err
 	}
+	if err := p.saveJobs(ctx, req); err != nil {
+		return "", err
+	}
 
 	// A metrics-store hiccup must never fail a deploy that already landed.
 	if p.metrics != nil {
@@ -404,6 +408,9 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 	}
 	p.recordDigest(ctx, req, resolution)
 	if err := p.saveLoadBalancer(ctx, req); err != nil {
+		return "", err
+	}
+	if err := p.saveJobs(ctx, req); err != nil {
 		return "", err
 	}
 	return desired.Image, nil

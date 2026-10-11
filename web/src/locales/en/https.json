@@ -62,6 +62,10 @@
     "internalRenews": "Renews automatically",
     "acmeBadge": "Let's Encrypt",
     "custom": "Custom",
+    "proxyBadge": "Your proxy",
+    "proxyRenews": "Managed by your proxy, renews automatically.",
+    "proxyUnknown": "Managed by your proxy. Not seen yet: verify the route on the proxy page.",
+    "proxyLink": "Open the proxy page",
     "getTrusted": "Get a trusted certificate"
   }
 }

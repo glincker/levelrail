@@ -19,9 +19,12 @@ import {
   type DnsProvider,
   type DomainCheckStatus,
   type DomainResolver,
+  type ProxyCertificate,
+  type TlsOwner,
 } from '../queries/domainCheck'
 import { AcmeFailureHint } from './AcmeFailureHint'
 import { DnsProviderBadge } from './DnsProviderBadge'
+import { ProxyManagedCertNote } from './ProxyManagedCertNote'
 
 // The subset of a domain-check result DomainCheckPanel needs to render:
 // shared by domainCheck.ts's per-app DomainCheckResult and domains.ts's
@@ -36,6 +39,8 @@ export interface DomainCheckPanelData {
   expected_private?: boolean
   dns_provider?: DnsProvider
   acme_failure?: AcmeFailure
+  tls_owner?: TlsOwner
+  proxy_certificate?: ProxyCertificate
   checked_at?: string
   resolvers?: DomainResolver[]
 }
@@ -185,6 +190,7 @@ export function DomainCheckPanel({
   onRefetch: () => void
 }) {
   const { t } = useTranslation('domains')
+  const proxyOwned = data?.tls_owner === 'proxy'
   const meta = data ? STATUS_META[data.status] : undefined
   const StatusIcon = meta?.icon
   const options = data ? dnsRecordOptions(data) : []
@@ -264,17 +270,22 @@ export function DomainCheckPanel({
         </p>
       ) : null}
 
-      {data?.expected_private ? (
+      {proxyOwned ? (
+        <div className="mt-2">
+          <ProxyManagedCertNote certificate={data?.proxy_certificate} />
+        </div>
+      ) : null}
+      {data?.expected_private && !proxyOwned ? (
         <p className="mt-2 text-xs text-destructive">
           {t('certificate.dns01Private', { host: data.expected_host ?? '' })}
         </p>
       ) : null}
-      {data?.dns_provider ? (
+      {data?.dns_provider && !proxyOwned ? (
         <div className="mt-2">
           <DnsProviderBadge provider={data.dns_provider} />
         </div>
       ) : null}
-      {data?.acme_failure ? (
+      {data?.acme_failure && !proxyOwned ? (
         <div className="mt-2">
           <AcmeFailureHint failure={data.acme_failure} />
         </div>

@@ -49,6 +49,9 @@ const (
 	// flagUntrusted marks a tool whose result carries workload or
 	// third-party authored text.
 	flagUntrusted
+	// flagWriteGate marks a write tool that exists only when the server
+	// runs with Options.AllowWrite.
+	flagWriteGate
 )
 
 // Meta is one tool's classification.
@@ -67,6 +70,9 @@ func (m Meta) Outbound() bool { return m.flags&flagOutbound != 0 }
 // Untrusted reports whether the tool's result carries attacker-influenced text.
 func (m Meta) Untrusted() bool { return m.flags&flagUntrusted != 0 }
 
+// WriteGated reports whether the tool is hidden unless the server runs with AllowWrite.
+func (m Meta) WriteGated() bool { return m.flags&flagWriteGate != 0 }
+
 const (
 	clsR = ClassRead
 	clsM = ClassMutate
@@ -75,6 +81,7 @@ const (
 	sens = flagSensitive
 	outb = flagOutbound
 	unt  = flagUntrusted
+	wg   = flagWriteGate
 
 	// MetaSensitiveKey is the tool _meta key set on sensitive tools.
 	MetaSensitiveKey = "levelrail/sensitive"
@@ -85,6 +92,18 @@ const (
 // toolTable classifies every registered tool. TestEveryToolClassified
 // fails when a registered tool is missing here or an entry has no tool.
 var toolTable = map[string]Meta{
+	"investigate_app":                       {clsR, "diagnostics", unt},
+	"failure_context":                       {clsR, "diagnostics", unt},
+	"domain_doctor":                         {clsR, "domains", unt},
+	"traffic_summary":                       {clsR, "domains", 0},
+	"backups_health":                        {clsR, "backups", 0},
+	"list_backup_drills":                    {clsR, "backups", unt},
+	"get_upgrade_readiness":                 {clsR, "system", unt},
+	"list_node_moves":                       {clsR, "nodes", unt},
+	"list_teams":                            {clsR, "teams", 0},
+	"list_team_members":                     {clsR, "teams", 0},
+	"extend_preview":                        {clsM, "previews", unt | wg},
+	"run_restore_drill":                     {clsM, "backups", wg},
 	"list_apps":                             {clsR, "apps", 0},
 	"get_app":                               {clsR, "apps", 0},
 	"get_app_status":                        {clsR, "apps", unt},

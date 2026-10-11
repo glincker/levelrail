@@ -144,7 +144,14 @@ func (rt *Router) enrichDomainCheck(ctx context.Context, resp *domainCheckRespon
 		resp.Challenge = challengeUpstreamProxy
 	}
 	resp.DNSProvider = rt.activeDNSProvider(ctx)
-	resp.ACMEFailure = acmeFailureFor(resp.Domain)
+	snap := rt.tlsSnapshot(ctx)
+	resp.TLSOwner = string(snap.Owner(resp.Domain))
+	resp.ProxyCertificate = rt.proxyCertificateFor(snap, resp.Domain, time.Now())
+	if snap.ProxyManaged(resp.Domain) {
+		resp.Challenge = challengeUpstreamProxy
+		resp.DNSProvider = ""
+	}
+	resp.ACMEFailure = acmeFailureIn(snap, resp.Domain)
 }
 
 // connectivityPort is one TCP probe of this node's ingress ports.
@@ -174,6 +181,8 @@ type ingressConnectivityResource struct {
 	HTTP01Possible bool   `json:"http01_possible"`
 	DNSProvider    string `json:"dns_provider"`
 	Guidance       string `json:"guidance"`
+	// TLSUpstream is true when a proxy in front terminates TLS.
+	TLSUpstream bool `json:"tls_upstream,omitempty"`
 }
 
 // connectivityGuidance is the pure verdict from probe results.
@@ -234,6 +243,7 @@ func (rt *Router) handleIngressConnectivity(w http.ResponseWriter, r *http.Reque
 	}
 	out.HTTP01Possible = host != "" && !out.Private
 	out.DNSProvider = rt.activeDNSProvider(r.Context())
+	out.TLSUpstream = rt.tlsSnapshot(r.Context()).Upstream()
 	out.Guidance = connectivityGuidance(host, out.Private, out.Ports)
 	writeJSON(w, http.StatusOK, out)
 }

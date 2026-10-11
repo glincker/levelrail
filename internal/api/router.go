@@ -93,6 +93,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/exposure"
@@ -111,6 +112,9 @@ import (
 // Router wires every internal/api handler onto one http.Handler.
 type Router struct {
 	doctorEdge *DoctorIngressEdge // set via SetDoctorIngressEdge
+
+	dash        *dashboardCache // never nil after NewRouter; WithDashboardCache sets the ttl
+	dashPrewarm bool
 
 	logger                 *slog.Logger
 	brand                  *brand.Brand
@@ -178,11 +182,13 @@ type Router struct {
 	registryAuthTester     RegistryAuthTester       // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
 	teardownOpts           []application.Option
 	deleteTimeout          time.Duration
-	execRuntime            NodeRuntimeResolver         // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
-	models                 ModelService                // nil is valid: /api/v1/models routes return 501, see WithModels
-	gpuHostDiagnoser       GPUHostDiagnoser            // nil is valid: doctor skips the detailed host GPU checks
-	deploySafety           DeploySafetyStore           // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
-	imageResolver          docker.ImageResolver        // nil deploys image tags unresolved, see WithDeploySafety
+	execRuntime            NodeRuntimeResolver  // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
+	models                 ModelService         // nil is valid: /api/v1/models routes return 501, see WithModels
+	gpuHostDiagnoser       GPUHostDiagnoser     // nil is valid: doctor skips the detailed host GPU checks
+	deploySafety           DeploySafetyStore    // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
+	imageResolver          docker.ImageResolver // nil deploys image tags unresolved, see WithDeploySafety
+	deployGate             DeployGateStore      // nil disables the gate timeline and rollback pins, see WithDeployGate
+	deployGateDefaults     deploysafety.Effective
 	reconcileNudger        ReconcileNudger             // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
 	certs                  CertStore                   // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
 	ingressSettings        IngressSettingsStore        // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
@@ -391,6 +397,7 @@ type Router struct {
 	backupTargets                BackupTargetStore               // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
 	storage                      *StorageDeps                    // nil is valid: /api/v1/storage and /api/v1/log-archive routes return 501
 	backupSecrets                BackupSecretsSetter             // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
+	dataExport                   DataExportService               // nil is valid: export routes and GET /metrics return 501
 	registryCredentials          RegistryCredentialStore         // always set, same "core Store interface" shape as backupTargets above
 	registryCredentialSecrets    RegistryCredentialSecretsSetter // nil is valid: POST /api/v1/registry-credentials returns 501, same shape as backupSecrets above
 	networkShares                NetworkShareStore               // always set, same "core Store interface" shape as registryCredentials above
@@ -473,6 +480,7 @@ type Router struct {
 	security                     SecurityStore                // always set, security center policy, alerts and token hygiene
 	sec                          *securityState               // always set
 	repoLayoutSource             repoLayoutSourceFunc         // nil uses defaultRepoLayoutSource; tests serve a fake tree
+	gitCommits                   *gitCommitsCache             // brief provider-side cache for the deploy sheet's commits list
 	backupProtection             BackupProtection             // nil is valid: backup health, drill, policy and restore-to routes return 501
 	backupProtectionStore        BackupProtectionStore        // nil is valid, same as backupProtection above
 	cutover                      cutoverService               // in-memory cutover workers, zero value is ready
@@ -518,6 +526,7 @@ type Router struct {
 	forgotPasswordByEmail        *loginLimiter                // per-(IP,email) forgot-password budget; both this and forgotPasswordByIP must allow a request
 	auditLog                     AuditStore                   // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
 	scheduledTasks               ScheduledTaskStore           // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task needs no runner configuration, only actually running one does
+	jobsMaxPerApp                int                          // 0 means defaultJobsMaxPerApp
 	scheduledTaskRunner          ScheduledTaskRunner          // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
 	preview                      PreviewService               // nil is valid: preview routes return 501 (SetPreview)
 	supplyChain                  SupplyChainService           // nil is valid: supply chain routes return 501 (SetSupplyChain)
@@ -712,6 +721,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		canaries:                    s,
 		dbQueries:                   s,
 		resolveBranchSHA:            resolveRemoteBranchSHA,
+		gitCommits:                  newGitCommitsCache(),
 		previewEnvironments:         s,
 		githubApp:                   s,
 		security:                    s,
@@ -791,9 +801,11 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.dnsRecordManager = rt.resolveDNSRecordManager
 	rt.dnsRecordStatus = defaultDNSRecordStatus
 
+	rt.dash = newDashboardCache(0, 0)
 	for _, opt := range opts {
 		opt(rt)
 	}
+	rt.warmDashboardCaches()
 	// sessions is built after options are applied, not in the struct
 	// literal above, specifically so WithSessionTTL can influence it:
 	// sessionStore reads its TTL once at construction, it isn't a field

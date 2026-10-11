@@ -6,13 +6,13 @@ import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { DashboardHome } from './DashboardHome'
 import { NeedsAttentionView } from './NeedsAttention'
-import { platformPill } from '../../lib/fleetStatus'
 import type { AppListEntry } from '../../types/appDetail'
 import type { AttentionItem } from '../../lib/attention'
 import {
   attentionToSuggestions,
   type ActionSpec,
 } from '../../lib/fleetSuggestions'
+import commonEn from '../../locales/en/common.json'
 import dashboardEn from '../../locales/en/dashboard.json'
 
 // A dedicated instance with the real dashboard.json resources loaded
@@ -21,9 +21,10 @@ const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['dashboard'],
+  ns: ['dashboard', 'common'],
   defaultNS: 'dashboard',
-  resources: { en: { dashboard: dashboardEn } },
+  fallbackNS: 'common',
+  resources: { en: { dashboard: dashboardEn, common: commonEn } },
   interpolation: { escapeValue: false },
 })
 const dashboardT = testI18n.getFixedT('en', 'dashboard')
@@ -154,7 +155,7 @@ describe('DashboardHome', () => {
       'system/status': { docker_connected: true },
     })
     renderHome(apps)
-    expect(await screen.findByText('All systems healthy')).toBeInTheDocument()
+    expect(await screen.findByText('All good')).toBeInTheDocument()
     expect(screen.getByText('1 / 1')).toBeInTheDocument()
     expect(screen.getByText('Add a node')).toBeInTheDocument()
     expect(
@@ -181,7 +182,7 @@ describe('DashboardHome', () => {
       screen.getByRole('button', { name: 'Open logs' }),
     ).toBeInTheDocument()
     await waitFor(() => {
-      expect(screen.getByText('1 needs attention')).toBeInTheDocument()
+      expect(screen.getByText('1 issue')).toBeInTheDocument()
     })
   })
 })
@@ -245,18 +246,5 @@ describe('NeedsAttentionView', () => {
       onRun: vi.fn(),
     })
     expect(screen.getAllByRole('button', { name: 'Ask AI' })).toHaveLength(4)
-  })
-})
-
-describe('platformPill', () => {
-  it('summarizes severity', () => {
-    expect(platformPill([]).tone).toBe('success')
-    const w = { severity: 'warning' } as AttentionItem
-    const c = { severity: 'critical' } as AttentionItem
-    expect(platformPill([w])).toEqual({ tone: 'warning', label: '1 warning' })
-    expect(platformPill([w, c, c])).toEqual({
-      tone: 'danger',
-      label: '2 need attention',
-    })
   })
 })

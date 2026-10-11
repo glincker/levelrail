@@ -63,6 +63,14 @@ func (a *ACMEFailures) Clear(identifier string) {
 	delete(a.last, identifier)
 }
 
+// ClearAll forgets every recorded failure, for when a proxy takes over TLS
+// and earlier attempts no longer describe what visitors get.
+func (a *ACMEFailures) ClearAll() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	clear(a.last)
+}
+
 // EventsApp is Caddy's "events" app, used only to observe certificate events.
 type EventsApp struct {
 	Subscriptions []EventSubscription `json:"subscriptions"`

@@ -126,13 +126,22 @@ func (db *DB) queryRaw(ctx context.Context, resourceID, metric string, from, to 
 // error mean "no resource has recorded this metric yet," the same
 // convention Query's own doc comment establishes.
 func (db *DB) LatestByMetric(ctx context.Context, metric string) ([]Sample, error) {
+	// Loose index scan: hop distinct resource_ids through the primary key,
+	// then seek each (resource_id, metric) newest row. Scanning every row
+	// of the metric grew with retention times resource count.
 	rows, err := db.QueryContext(ctx, `
-		SELECT resource_id, ts, value FROM metric_samples m
-		WHERE metric = ? AND ts = (
-			SELECT MAX(ts) FROM metric_samples
-			WHERE resource_id = m.resource_id AND metric = ?
+		WITH RECURSIVE r(rid) AS (
+			SELECT MIN(resource_id) FROM metric_samples
+			UNION ALL
+			SELECT (SELECT MIN(resource_id) FROM metric_samples WHERE resource_id > r.rid)
+			FROM r WHERE r.rid IS NOT NULL
 		)
-	`, metric, metric)
+		SELECT m.resource_id, m.ts, m.value
+		FROM r JOIN metric_samples m
+		  ON m.resource_id = r.rid AND m.metric = ?1
+		 AND m.ts = (SELECT MAX(ts) FROM metric_samples WHERE resource_id = r.rid AND metric = ?1)
+		WHERE r.rid IS NOT NULL
+	`, metric)
 	if err != nil {
 		return nil, fmt.Errorf("telemetry: latest by metric %s: %w", metric, err)
 	}

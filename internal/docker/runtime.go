@@ -320,6 +320,10 @@ type ExitState struct {
 	Running   bool
 	OOMKilled bool
 	ExitCode  int
+	// RestartCount and StartedAt are zero when the transport cannot report
+	// them (the remote agent protocol does not carry them yet).
+	RestartCount int
+	StartedAt    time.Time
 }
 
 // ExitStateInspector is an optional Runtime capability, checked via a

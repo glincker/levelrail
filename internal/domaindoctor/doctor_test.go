@@ -213,8 +213,23 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name: "upstream tls skips certificate checks", status: StatusWarnings, dns: fakeDNS{answers: []ResolverAnswer{{Resolver: "1.1.1.1", IPv4: []string{"198.51.100.9"}}}},
-			facts: func(f *Facts) { f.TLSTerminatedUpstream = true }, noProbe: true,
+			facts: func(f *Facts) { f.TLSTerminatedUpstream = true; f.Cert = nil }, noProbe: true,
 			want: map[string]State{IDDNSPointsHere: StateWarn, IDCAA: StateSkipped, IDStoredCert: StateSkipped},
+		},
+		{
+			name: "proxy-managed certificate passes with its expiry", dns: fakeDNS{answers: []ResolverAnswer{{Resolver: "1.1.1.1", IPv4: []string{"198.51.100.9"}}}},
+			facts: func(f *Facts) { f.TLSTerminatedUpstream = true; f.Cert.Source = "proxy" }, noProbe: true,
+			want:     map[string]State{IDStoredCert: StatePass},
+			contains: map[string]string{IDStoredCert: "renews automatically"},
+		},
+		{
+			name: "proxy-managed certificate expiring warns without a renew action", dns: fakeDNS{answers: []ResolverAnswer{{Resolver: "1.1.1.1", IPv4: []string{"198.51.100.9"}}}},
+			facts: func(f *Facts) {
+				f.TLSTerminatedUpstream = true
+				f.Cert.NotAfter = testNow.Add(5 * 24 * time.Hour)
+				f.Cert.Status = "expiring_soon"
+			}, noProbe: true,
+			want: map[string]State{IDStoredCert: StateWarn},
 		},
 	}
 	for _, tc := range cases {
