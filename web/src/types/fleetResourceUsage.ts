@@ -19,6 +19,12 @@ export interface NodeResourceUsage {
   memory_available_bytes?: number
   disk_used_bytes?: number
   disk_total_bytes?: number
+  // Local node only: control plane process memory, running containers
+  // Levelrail does not manage (with the largest few), and the used remainder.
+  levelrail_memory_bytes?: number
+  other_containers_memory_bytes?: number
+  other_containers?: { name: string; memory_bytes: number }[]
+  system_memory_bytes?: number
 }
 
 // FleetResourceUsageRollup's *_percent fields are only computed from

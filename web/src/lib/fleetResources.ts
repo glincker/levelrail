@@ -6,7 +6,7 @@ import type {
 } from '../types/fleetResourceUsage'
 import type { DatabaseUsage } from '../queries/usageSummary'
 
-export type ConsumerKind = 'app' | 'database'
+export type ConsumerKind = 'app' | 'database' | 'other'
 export type ConsumerSort = 'memory' | 'cpu'
 
 export interface Consumer {
@@ -22,6 +22,7 @@ export function buildConsumers(
   apps: AppResourceUsage[],
   databases: DatabaseUsage[],
   metrics: AppMetricsSummary[] = [],
+  fleet?: FleetResourceUsage,
 ): Consumer[] {
   const sparkByApp = new Map(metrics.map((m) => [m.name, m.spark]))
   const out: Consumer[] = []
@@ -42,6 +43,16 @@ export function buildConsumers(
       cpuPercent: d.cpu_percent ?? 0,
     })
   }
+  for (const n of fleet?.nodes ?? []) {
+    for (const o of n.other_containers ?? []) {
+      out.push({
+        kind: 'other',
+        name: o.name,
+        memoryBytes: o.memory_bytes,
+        cpuPercent: 0,
+      })
+    }
+  }
   return out
 }
 
@@ -60,6 +71,8 @@ export interface MemoryBreakdown {
   totalBytes: number
   apps: number
   databases: number
+  levelrail: number
+  otherContainers: number
   system: number
   free: number
   // False when the host did not report available memory: system and free
@@ -90,12 +103,35 @@ export function buildMemoryBreakdown(
     consumers
       .filter((c) => c.kind === kind)
       .reduce((s, c) => s + c.memoryBytes, 0)
-  const apps = Math.min(sum('app'), totalBytes)
-  const databases = Math.min(sum('database'), Math.max(0, totalBytes - apps))
-  const used = known ? totalBytes - availableBytes : apps + databases
-  const system = known ? Math.max(0, used - apps - databases) : 0
-  const free = Math.max(0, totalBytes - apps - databases - system)
-  return { totalBytes, apps, databases, system, free, systemKnown: known }
+  const nodeSum = (pick: (n: NodeResourceUsage) => number | undefined) =>
+    capacity.reduce((s, n) => s + (pick(n) ?? 0), 0)
+  // Each segment is clamped to what is left so the parts never exceed total.
+  let left = totalBytes
+  const take = (v: number) => {
+    const got = Math.min(Math.max(0, v), left)
+    left -= got
+    return got
+  }
+  const apps = take(sum('app'))
+  const databases = take(sum('database'))
+  const levelrail = take(nodeSum((n) => n.levelrail_memory_bytes))
+  const otherContainers = take(nodeSum((n) => n.other_containers_memory_bytes))
+  const used = known
+    ? totalBytes - availableBytes
+    : apps + databases + levelrail + otherContainers
+  const named = apps + databases + levelrail + otherContainers
+  const system = known ? Math.max(0, used - named) : 0
+  const free = Math.max(0, totalBytes - named - system)
+  return {
+    totalBytes,
+    apps,
+    databases,
+    levelrail,
+    otherContainers,
+    system,
+    free,
+    systemKnown: known,
+  }
 }
 
 export interface HostGauge {
