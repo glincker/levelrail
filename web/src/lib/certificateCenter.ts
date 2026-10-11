@@ -1,5 +1,6 @@
 import type { CertificateStatus } from '../queries/certificates'
 import type { Domain } from '../queries/domains'
+import { effectiveDomainCert } from './certStatus'
 
 // One row of the certificate center (routes/settings/certificates.tsx):
 // a domain joined with its stored certificate, if any. appName is
@@ -11,6 +12,7 @@ export interface CertificateCenterRow {
   domain: string
   appName?: string
   cert?: CertificateStatus
+  tlsOwner?: Domain['tls_owner']
 }
 
 // mergeCertificateCenterRows joins every app-owned domain (GET
@@ -32,7 +34,8 @@ export function mergeCertificateCenterRows(
     rows.push({
       domain: d.domain,
       appName: d.service_name,
-      cert: certByDomain.get(d.domain),
+      cert: effectiveDomainCert(d, certByDomain.get(d.domain)),
+      tlsOwner: d.tls_owner,
     })
   }
   for (const c of certificates) {

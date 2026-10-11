@@ -489,6 +489,8 @@ type DomainResource struct {
 	ServiceName string `json:"service_name"`
 	// Automatic marks a generated sslip.io hostname rather than a configured domain.
 	Automatic bool `json:"automatic,omitempty"`
+	// TLSOwner is who terminates TLS: acme, internal, proxy or custom.
+	TLSOwner string `json:"tls_owner,omitempty"`
 	// ReachableURL is the link to open; ReachableReason says why it is empty.
 	ReachableURL    string `json:"reachable_url,omitempty"`
 	ReachableReason string `json:"reachable_reason,omitempty"`
@@ -3384,8 +3386,10 @@ type CertificateResource struct {
 	// Apps is every app or static site owning Domain; see
 	// certificateStatus.Apps's own doc comment.
 	Apps []string `json:"apps,omitempty"`
-	// Source is "acme" or "custom"; see certificateStatus.Source.
+	// Source is "acme", "custom" or "proxy"; see certificateStatus.Source.
 	Source string `json:"source"`
+	// TLSOwner is who terminates TLS: acme, internal, proxy or custom.
+	TLSOwner string `json:"tls_owner,omitempty"`
 	// ACMEFailure is the CA's last error for this domain, when it has one.
 	ACMEFailure *ACMEFailure `json:"acme_failure,omitempty"`
 }

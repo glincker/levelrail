@@ -70,6 +70,7 @@ function statusBadge(domain: Domain): React.ReactNode {
   const derived = deriveDomainStatus({
     maintenanceEnabled: domain.maintenance_enabled,
     acmeFailure: domain.acme_failure,
+    tlsOwner: domain.tls_owner,
   })
   if (derived.reason === 'noCheck') return undefined
   return <DomainStatusBadge status={derived.status} size="sm" />

@@ -21,6 +21,8 @@ import type {
   AcmeFailure,
   DomainCheckStatus,
   DomainResolver,
+  ProxyCertificate,
+  TlsOwner,
 } from './domainCheck'
 
 export const domainKeys = {
@@ -41,6 +43,10 @@ export interface Domain {
   automatic?: boolean
   // acme_failure is the CA's last error for this hostname, if any.
   acme_failure?: AcmeFailure
+  // tls_owner says who terminates TLS; proxy_certificate is what a managing
+  // proxy serves, when known.
+  tls_owner?: TlsOwner
+  proxy_certificate?: ProxyCertificate
 }
 
 export async function fetchDomains(): Promise<Domain[]> {

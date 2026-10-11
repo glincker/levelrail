@@ -6,9 +6,40 @@ import (
 	"strings"
 	"testing"
 
+	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+func TestController_Reconcile_TLSTerminatedUpstreamClearsStaleACMEFailures(t *testing.T) {
+	tests := []struct {
+		name         string
+		upstream     bool
+		wantRecorded bool
+	}{
+		{"levelrail owns TLS keeps the failure", false, true},
+		{"proxy owns TLS clears the stale failure", true, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			failures := ingressdriver.DefaultACMEFailures()
+			failures.Record(ingressdriver.ACMEFailure{Identifier: "web.example.com", Error: "tls: unrecognized name"})
+			t.Cleanup(failures.ClearAll)
+
+			desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"web.example.com"}}
+			rt := newFakeRuntime()
+			rt.seedRunning(application.ContainerName(desired.Name, desired.Image, ""), 34567)
+			st := &fakeStore{services: []store.DesiredService{desired}, settings: store.IngressSettings{ACMEEnabled: true, TLSTerminatedUpstream: tt.upstream}}
+			c := New(st, rt, &fakeApplier{}, WithLogger(discardLogger()))
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatalf("Reconcile() error = %v", err)
+			}
+			if _, got := failures.Get("web.example.com"); got != tt.wantRecorded {
+				t.Errorf("failure recorded = %v, want %v", got, tt.wantRecorded)
+			}
+		})
+	}
+}
 
 func TestController_Reconcile_TLSTerminatedUpstreamSkipsACME(t *testing.T) {
 	tests := []struct {

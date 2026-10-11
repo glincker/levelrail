@@ -23,7 +23,12 @@ export interface DomainResolver {
 }
 
 export type AcmeAction =
-  'open_port_80' | 'fix_dns' | 'wait_rate_limit' | 'fix_caa' | 'check_logs'
+  | 'open_port_80'
+  | 'fix_dns'
+  | 'wait_rate_limit'
+  | 'fix_caa'
+  | 'other_proxy'
+  | 'check_logs'
 
 // Mirrors internal/api's acmeFailureResource: the CA's last error for a
 // hostname, classified into one concrete next step.
@@ -36,6 +41,16 @@ export interface AcmeFailure {
 }
 
 export type DnsProvider = 'cloudflare' | 'route53' | 'none'
+
+// Who terminates TLS for a hostname (internal/tlsowner).
+export type TlsOwner = 'acme' | 'internal' | 'proxy' | 'custom'
+
+// The certificate a managing proxy serves, as last verified.
+export interface ProxyCertificate {
+  issuer?: string
+  not_after: string
+  status: 'healthy' | 'expiring_soon' | 'expired'
+}
 
 // Mirrors internal/api/domain_check.go's domainCheckResponse wire shape
 // exactly.
@@ -52,6 +67,8 @@ export interface DomainCheckResult {
   challenge?: 'http-01' | 'dns-01-required' | 'upstream-proxy'
   dns_provider?: DnsProvider
   acme_failure?: AcmeFailure
+  tls_owner?: TlsOwner
+  proxy_certificate?: ProxyCertificate
   checked_at?: string
   resolvers?: DomainResolver[]
 }

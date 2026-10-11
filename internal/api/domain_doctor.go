@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/domaindoctor"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -101,7 +102,19 @@ func (rt *Router) doctorFacts(ctx context.Context, svc *store.DesiredService, do
 			f.Cert = &domaindoctor.CertFacts{Issuer: c.Issuer, NotAfter: c.NotAfter, Status: c.Status, Renewal: c.Renewal, Source: c.Source}
 		}
 	}
-	if a := acmeFailureFor(domain); a != nil {
+	tls := rt.tlsSnapshot(ctx)
+	if tls.ProxyManaged(domain) {
+		f.TLSTerminatedUpstream = true
+		f.ACMEEnabled = false
+		f.Cert = nil
+		if pc, ok := tls.ProxyCert(domain); ok {
+			f.Cert = &domaindoctor.CertFacts{
+				Issuer: pc.Issuer, NotAfter: pc.NotAfter, Source: certSourceProxy,
+				Status: alerting.CertExpiryStatus(pc.NotAfter, time.Now(), window),
+			}
+		}
+	}
+	if a := acmeFailureIn(tls, domain); a != nil {
 		f.ACMEFailure = &domaindoctor.ACMEFailureFacts{Error: a.Error, Action: a.Action, Renewal: a.Renewal}
 	}
 	return f

@@ -150,6 +150,27 @@ guide also gives a systemd drop-in that moves the dashboard to that network's
 gateway address. That address is internal to the host, not reachable from the
 internet, and a drop-in survives upgrades.
 
+## Certificates once a proxy owns TLS
+
+When TLS is terminated by the proxy, the platform reports one certificate state
+for each domain: the certificate the proxy actually serves (issuer, expiry,
+"renews automatically"), read from the last route verification. Nothing that
+this server stored earlier is shown or alerted on:
+
+- A stale certificate request failure from an earlier attempt, the "another
+  service answers port 80" guidance and the DNS-01 provider prompt are hidden,
+  and the recorded failure is cleared when you enable proxy mode.
+- The internal certificate this server stored before the proxy took over is not
+  listed under **Settings > Certificates**, in the security checks or in the
+  domain doctor, and `cert_expiring`, `cert_expiry` and `cert_renewal_stalled`
+  alert rules ignore it.
+- `GET /api/v1/domains` and `GET /api/v1/certificates` carry a `tls_owner`
+  field (`acme`, `internal`, `proxy`, `custom`); `levelrail-cli domains
+  certificates` prints it as the OWNER column.
+
+If the proxy certificate has not been seen yet, run **Verify** on the proxy
+page (or `levelrail-cli proxy --verify`).
+
 ## Links and the public HTTPS port
 
 When a proxy owns 80 and 443 and forwards to this ingress on its own ports

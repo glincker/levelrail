@@ -65,6 +65,13 @@
     "none": "None",
     "noneHint": "Wildcard domains and private-address servers need one."
   },
+  "proxyManaged": {
+    "badge": "Managed by your proxy",
+    "line": "Certificate managed by your proxy (issued by {{issuer}}, expires {{date}}, renews automatically)",
+    "lineNoIssuer": "Certificate managed by your proxy (expires {{date}}, renews automatically)",
+    "unknown": "Certificate managed by your proxy. This server has not seen it yet: verify the route on the proxy page.",
+    "link": "Open the proxy page"
+  },
   "acme": {
     "title": "Certificate request failed",
     "renewalTitle": "Certificate renewal failed",

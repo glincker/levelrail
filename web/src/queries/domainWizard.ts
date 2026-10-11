@@ -26,6 +26,8 @@ export interface IngressConnectivity {
   http01_possible: boolean
   dns_provider: DnsProvider
   guidance: ConnectivityGuidance
+  // tls_upstream: a proxy in front terminates TLS, so DNS-01 does not apply.
+  tls_upstream?: boolean
 }
 
 export type ListenVerdict =
