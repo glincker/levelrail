@@ -180,6 +180,21 @@
     },
     "newApp": "New app"
   },
+  "dock": {
+    "region": "Assistant dock",
+    "toggle": "Toggle assistant dock",
+    "toggleHint": "Assistant dock (Ctrl+J)",
+    "close": "Close dock",
+    "resize": "Resize dock",
+    "tabs": {
+      "aiChat": "AI chat"
+    },
+    "ai": {
+      "notConfiguredTitle": "No AI provider configured",
+      "notConfiguredDescription": "Add a BYOK API key in Settings to start chatting.",
+      "configure": "Configure AI Assistant"
+    }
+  },
   "login": {
     "signInTitle": "Sign in",
     "signInHint": "Enter your credentials to continue.",

@@ -6,6 +6,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Kbd } from '@/components/kit'
 import { TeamSwitcher } from '../teams/TeamSwitcher'
 import { EnvironmentSwitcher } from '../environments/EnvironmentSwitcher'
+import { DockToggle } from '../dock/DockToggle'
 import { HelpMenu } from '../HelpMenu'
 import { ThemeToggle } from '../ThemeToggle'
 import { NotificationCenter } from './NotificationCenter'
@@ -62,6 +63,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
           <div className="hidden @md:block">
             <WhatsNewPanel />
           </div>
+          <DockToggle />
           <HelpMenu />
           <ThemeToggle />
         </div>
