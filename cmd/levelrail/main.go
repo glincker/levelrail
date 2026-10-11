@@ -2329,6 +2329,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDatabaseAccess(db, dbaccess.TTLLimitsFromEnv(os.Getenv)),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithRequestLogThresholds(slowRequestThreshold(logger), criticalRequestThreshold(logger)),
+		api.WithDashboardCache(envDurationOr(logger, "APP_DASHBOARD_CACHE_TTL", 5*time.Second), envDurationOr(logger, "APP_DASHBOARD_CACHE_STALE", time.Minute)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
 		api.WithHSTS(hstsEnabled(logger)),
 		api.WithAllowInsecureLogin(allowInsecureLogin(logger)),

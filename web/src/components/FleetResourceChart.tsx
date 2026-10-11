@@ -54,6 +54,7 @@ export function FleetResourceChart() {
     ...appResourceUsageQueryOptions(),
     retry: false,
     refetchInterval: POLL_INTERVAL_MS,
+    refetchIntervalInBackground: false,
   })
 
   // "Storing information from previous renders"

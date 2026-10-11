@@ -1,9 +1,13 @@
 package api
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -53,6 +57,8 @@ func requestLoggingMiddleware(logger *slog.Logger, thresholds requestLogThreshol
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+			timings := &requestTimings{}
+			r = r.WithContext(context.WithValue(r.Context(), requestTimingsKey{}, timings))
 			start := time.Now()
 			next.ServeHTTP(rec, r)
 			duration := time.Since(start)
@@ -66,6 +72,11 @@ func requestLoggingMiddleware(logger *slog.Logger, thresholds requestLogThreshol
 			}
 
 			level := requestLogLevel(duration, requestLogThresholds{slow: slow, critical: critical}, isStreamingResponse(rec))
+			if level >= slog.LevelWarn {
+				if b := timings.breakdown(); b != "" {
+					attrs = append(attrs, slog.String("breakdown", b))
+				}
+			}
 			logger.LogAttrs(r.Context(), level, "api: request", attrs...)
 		})
 	}
@@ -111,4 +122,51 @@ func loggablePath(path string) string {
 	}
 	name, _, _ := strings.Cut(rest, "/")
 	return imageUpdateHookPrefix + name + "/redacted"
+}
+
+type requestTimingsKey struct{}
+
+// requestTimings collects named phase durations during one request so a
+// slow request WARN line says where the time went.
+type requestTimings struct {
+	mu    sync.Mutex
+	parts map[string]time.Duration
+}
+
+// timePhase returns a func that, when called, records the elapsed time
+// under label on the request's timings. A no-op outside the middleware.
+func timePhase(ctx context.Context, label string) func() {
+	t, _ := ctx.Value(requestTimingsKey{}).(*requestTimings)
+	if t == nil {
+		return func() {}
+	}
+	start := time.Now()
+	return func() {
+		d := time.Since(start)
+		t.mu.Lock()
+		defer t.mu.Unlock()
+		if t.parts == nil {
+			t.parts = map[string]time.Duration{}
+		}
+		t.parts[label] += d
+	}
+}
+
+// breakdown renders phases slowest first, e.g. "telemetry_latest=1.2s,deploy_activity=40ms".
+func (t *requestTimings) breakdown() string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if len(t.parts) == 0 {
+		return ""
+	}
+	labels := make([]string, 0, len(t.parts))
+	for l := range t.parts {
+		labels = append(labels, l)
+	}
+	sort.Slice(labels, func(i, j int) bool { return t.parts[labels[i]] > t.parts[labels[j]] })
+	out := make([]string, len(labels))
+	for i, l := range labels {
+		out[i] = fmt.Sprintf("%s=%s", l, t.parts[l].Round(time.Millisecond))
+	}
+	return strings.Join(out, ",")
 }

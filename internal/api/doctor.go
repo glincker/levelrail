@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync"
 	"syscall"
 	"time"
 
@@ -81,7 +82,40 @@ type systemDoctorResponse struct {
 // reportable status, never a 5xx" shape handleSystemStatus already
 // follows; OK reflects only whether any individual check is fail.
 func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	resp, err := rt.doctorReport(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: system doctor", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// doctorReport runs the checks once per dashboard cache ttl. The report
+// does not depend on the caller, so one entry serves every viewer.
+func (rt *Router) doctorReport(ctx context.Context) (systemDoctorResponse, error) {
+	defer timePhase(ctx, "doctor_checks")()
+	if rt.dash.ttl <= 0 {
+		return rt.runDoctorChecks(ctx), nil
+	}
+	v, err := rt.dash.get(ctx, "doctor", func(ctx context.Context) (any, error) {
+		runCtx, cancel := context.WithTimeout(ctx, doctorRunTimeout)
+		defer cancel()
+		return rt.runDoctorChecks(runCtx), nil
+	})
+	if err != nil {
+		return systemDoctorResponse{}, err
+	}
+	resp, _ := v.(systemDoctorResponse)
+	return resp, nil
+}
+
+// doctorRunTimeout bounds a cached doctor run, detached from any one request.
+const doctorRunTimeout = 30 * time.Second
+
+// doctorParallelism bounds how many check groups run at once.
+const doctorParallelism = 8
+
+func (rt *Router) runDoctorChecks(ctx context.Context) systemDoctorResponse {
 	httpPort := rt.doctorHTTPPort
 	if httpPort == 0 {
 		httpPort = defaultDoctorHTTPPort
@@ -95,45 +129,63 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		runtimeInfo = reporter.Runtime()
 	}
 	hardeningCfg, hardeningErr := docker.HardeningFromEnv(runtimeInfo)
-	checks := []doctorCheckResource{
-		rt.doctorCheckDocker(ctx),
-		rt.doctorCheckContainerRuntime(ctx),
-		rt.doctorCheckDiskSpace(),
-		rt.doctorCheckDataDirWritable(),
-		rt.doctorCheckPort(httpPort),
-		rt.doctorCheckPort(httpsPort),
-		rt.doctorCheckDatabase(ctx),
-		rt.doctorCheckMasterKeyRotation(ctx),
-		rt.doctorCheckSecretBinding(ctx),
-		rt.doctorCheckStaleSecrets(ctx),
-		rt.doctorCheckControlPlaneBackup(),
-		rt.doctorCheckControlPlaneDR(ctx),
-		doctorCheckFirewallCtx(ctx),
-		rt.doctorCheckRAM(),
-		rt.doctorCheckCPU(),
-		rt.doctorCheckDiskIOLatency(),
-		doctorCheckContainerHardening(hardeningCfg, hardeningErr),
-		rt.doctorCheckDockerGuard(ctx),
-		rt.doctorCheckDockerPrivilege(ctx),
+	one := func(f func() doctorCheckResource) func() []doctorCheckResource {
+		return func() []doctorCheckResource { return []doctorCheckResource{f()} }
 	}
-	checks = append(checks, rt.doctorRunNetworkChecks(ctx, httpPort, httpsPort)...)
-	checks = append(checks, rt.doctorCheckRegistryReachability(ctx)...)
-	checks = append(checks, rt.doctorCheckGPUs(ctx)...)
-	checks = append(checks, rt.doctorCheckGPUPlacement(ctx)...)
-	checks = append(checks, rt.doctorCheckNASClientTools(ctx)...)
-	checks = append(checks, rt.doctorCheckCrossNodeIngress(ctx)...)
-	checks = append(checks, rt.doctorCheckIngressEdge()...)
-	checks = append(checks, rt.doctorCheckExposure(ctx)...)
+	groups := []func() []doctorCheckResource{
+		one(func() doctorCheckResource { return rt.doctorCheckDocker(ctx) }),
+		one(func() doctorCheckResource { return rt.doctorCheckContainerRuntime(ctx) }),
+		one(rt.doctorCheckDiskSpace),
+		one(rt.doctorCheckDataDirWritable),
+		one(func() doctorCheckResource { return rt.doctorCheckPort(httpPort) }),
+		one(func() doctorCheckResource { return rt.doctorCheckPort(httpsPort) }),
+		one(func() doctorCheckResource { return rt.doctorCheckDatabase(ctx) }),
+		one(func() doctorCheckResource { return rt.doctorCheckMasterKeyRotation(ctx) }),
+		one(func() doctorCheckResource { return rt.doctorCheckSecretBinding(ctx) }),
+		one(func() doctorCheckResource { return rt.doctorCheckStaleSecrets(ctx) }),
+		one(rt.doctorCheckControlPlaneBackup),
+		one(func() doctorCheckResource { return rt.doctorCheckControlPlaneDR(ctx) }),
+		one(func() doctorCheckResource { return doctorCheckFirewallCtx(ctx) }),
+		one(rt.doctorCheckRAM),
+		one(rt.doctorCheckCPU),
+		one(rt.doctorCheckDiskIOLatency),
+		one(func() doctorCheckResource { return doctorCheckContainerHardening(hardeningCfg, hardeningErr) }),
+		one(func() doctorCheckResource { return rt.doctorCheckDockerGuard(ctx) }),
+		one(func() doctorCheckResource { return rt.doctorCheckDockerPrivilege(ctx) }),
+		func() []doctorCheckResource { return rt.doctorRunNetworkChecks(ctx, httpPort, httpsPort) },
+		func() []doctorCheckResource { return rt.doctorCheckRegistryReachability(ctx) },
+		func() []doctorCheckResource { return rt.doctorCheckGPUs(ctx) },
+		func() []doctorCheckResource { return rt.doctorCheckGPUPlacement(ctx) },
+		func() []doctorCheckResource { return rt.doctorCheckNASClientTools(ctx) },
+		func() []doctorCheckResource { return rt.doctorCheckCrossNodeIngress(ctx) },
+		func() []doctorCheckResource { return rt.doctorCheckIngressEdge() },
+		func() []doctorCheckResource { return rt.doctorCheckExposure(ctx) },
+	}
+	results := make([][]doctorCheckResource, len(groups))
+	sem := make(chan struct{}, doctorParallelism)
+	var wg sync.WaitGroup
+	for i, g := range groups {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(i int, g func() []doctorCheckResource) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			results[i] = g()
+		}(i, g)
+	}
+	wg.Wait()
 
+	checks := []doctorCheckResource{}
 	ok := true
-	for _, c := range checks {
-		if c.Status == doctorStatusFail {
-			ok = false
-			break
+	for _, group := range results {
+		for _, c := range group {
+			if c.Status == doctorStatusFail {
+				ok = false
+			}
+			checks = append(checks, c)
 		}
 	}
-
-	writeJSON(w, http.StatusOK, systemDoctorResponse{OK: ok, Checks: checks})
+	return systemDoctorResponse{OK: ok, Checks: checks}
 }
 
 func (rt *Router) doctorCheckDocker(ctx context.Context) doctorCheckResource {
@@ -141,7 +193,7 @@ func (rt *Router) doctorCheckDocker(ctx context.Context) doctorCheckResource {
 	if rt.dockerPinger == nil {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "no Docker reachability check configured"}
 	}
-	if err := rt.dockerPinger.Ping(ctx); err != nil {
+	if err := rt.pingDocker(ctx); err != nil {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusFail, Message: err.Error()}
 	}
 	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "reachable"}

@@ -129,10 +129,12 @@ The edge hardening limits are in [Domains and ingress](domains-and-ingress.md#ed
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_CERT_EXPIRY_WARNING_WINDOW` | `336h` (14 days) | How close to expiry a certificate must be before it counts as expiring, for both the certificate expiry alert rules and the API. Control plane. |
-| `APP_SLOW_REQUEST_THRESHOLD` | `500ms` | API requests slower than this are logged at Warn level. Control plane. |
+| `APP_SLOW_REQUEST_THRESHOLD` | `500ms` | API requests slower than this are logged at Warn level, with a `breakdown` field naming the slowest phases (for example `telemetry_latest=1.2s`). Control plane. |
 | `APP_CRITICAL_REQUEST_THRESHOLD` | `2s` | API requests slower than this are logged at Error level. Control plane. |
+| `APP_DASHBOARD_CACHE_TTL` | `5s` | How long the dashboard's aggregate reads (app and node resource usage, apps metrics, system status, doctor) are reused between requests. `0` disables the cache. Control plane. |
+| `APP_DASHBOARD_CACHE_STALE` | `1m` | How long past the TTL a cached aggregate may still be served while one background refresh runs. Control plane. |
 
-For all three, a value that does not parse logs a warning and uses the default. For the two request thresholds, zero or a negative duration also means the default.
+For all of these, a value that does not parse logs a warning and uses the default. For the two request thresholds, zero or a negative duration also means the default.
 
 ## Doctor and diagnosis
 

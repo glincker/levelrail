@@ -8,6 +8,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { FleetResourceUsage } from '../types/fleetResourceUsage'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { DEDUPE_STALE_MS } from '../lib/queryStale'
 
 export const fleetResourceUsageKeys = {
   all: ['nodes', 'resource-usage'] as const,
@@ -34,6 +35,7 @@ export function fleetResourceUsageQueryOptions() {
   return queryOptions({
     queryKey: fleetResourceUsageKeys.all,
     queryFn: fetchFleetResourceUsage,
+    staleTime: DEDUPE_STALE_MS,
   })
 }
 
@@ -49,5 +51,6 @@ export function useFleetResourceUsage() {
     ...fleetResourceUsageQueryOptions(),
     retry: false,
     refetchInterval: POLL_INTERVAL_MS,
+    refetchIntervalInBackground: false,
   })
 }

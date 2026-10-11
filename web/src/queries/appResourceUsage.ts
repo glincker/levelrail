@@ -9,6 +9,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { AppResourceUsage } from '../types/appResourceUsage'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { DEDUPE_STALE_MS } from '../lib/queryStale'
 
 export const appResourceUsageKeys = {
   all: ['apps', 'resource-usage'] as const,
@@ -35,6 +36,7 @@ export function appResourceUsageQueryOptions() {
   return queryOptions({
     queryKey: appResourceUsageKeys.all,
     queryFn: fetchAppResourceUsage,
+    staleTime: DEDUPE_STALE_MS,
   })
 }
 
