@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -65,11 +66,18 @@ type metricPoint struct {
 	Timestamp time.Time `json:"timestamp"`
 	Value     float64   `json:"value"`
 	Count     int       `json:"count"`
+	// Max is the bucket's largest raw sample, so spikes survive averaging.
+	Max float64 `json:"max"`
 }
 
 type metricsResponse struct {
-	Metric string        `json:"metric"`
-	Points []metricPoint `json:"points"`
+	Metric string `json:"metric"`
+	// StepSeconds is the bucket width used, 0 for raw samples.
+	StepSeconds float64 `json:"step_seconds"`
+	// Downsampled is true when max_points forced a coarser step than asked.
+	Downsampled    bool          `json:"downsampled"`
+	Points         []metricPoint `json:"points"`
+	PreviousPoints []metricPoint `json:"previous_points,omitempty"`
 }
 
 // handleQueryMetrics handles GET /api/v1/apps/{name}/metrics; see
@@ -139,13 +147,70 @@ func (rt *Router) queryResourceMetrics(w http.ResponseWriter, r *http.Request, l
 		rt.logger.Warn("api: "+opName+": partial result", slog.String("error", err.Error()), slog.String("name", name), slog.String("metric", metric))
 	}
 
-	aggregated := telemetry.Aggregate(samples, from, step)
-	points := make([]metricPoint, len(aggregated))
-	for i, a := range aggregated {
-		points[i] = metricPoint{Timestamp: a.Timestamp, Value: a.Value, Count: a.Count}
+	maxPoints, err := parseMaxPoints(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	step, downsampled := capStep(step, to.Sub(from), maxPoints)
+
+	resp := metricsResponse{
+		Metric:      metric,
+		StepSeconds: step.Seconds(),
+		Downsampled: downsampled,
+		Points:      toMetricPoints(telemetry.Aggregate(samples, from, step)),
 	}
 
-	writeJSON(w, http.StatusOK, metricsResponse{Metric: metric, Points: points})
+	if r.URL.Query().Get("compare") == "previous" {
+		span := to.Sub(from)
+		prevFrom := from.Add(-span)
+		prev, perr := rt.telemetry.QueryMetrics(r.Context(), resourceID, metric, prevFrom, from)
+		if perr != nil && len(prev) == 0 {
+			rt.logger.Warn("api: "+opName+": previous period unavailable", slog.String("error", perr.Error()), slog.String("name", name), slog.String("metric", metric))
+		}
+		shifted := telemetry.ShiftPoints(telemetry.Aggregate(prev, prevFrom, step), span)
+		resp.PreviousPoints = toMetricPoints(shifted)
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func toMetricPoints(agg []telemetry.AggregatedPoint) []metricPoint {
+	points := make([]metricPoint, len(agg))
+	for i, a := range agg {
+		points[i] = metricPoint{Timestamp: a.Timestamp, Value: a.Value, Count: a.Count, Max: a.Max}
+	}
+	return points
+}
+
+// parseMaxPoints reads max_points; 0 means no cap. A request is clamped to
+// APP_METRICS_MAX_POINTS so one call cannot ask for an unbounded series.
+func parseMaxPoints(r *http.Request) (int, error) {
+	raw := r.URL.Query().Get("max_points")
+	if raw == "" {
+		return 0, nil
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 1 {
+		return 0, errors.New("max_points must be a positive integer")
+	}
+	return min(n, telemetry.MaxPointsFromEnv()), nil
+}
+
+// capStep widens step so span holds at most maxPoints buckets. A zero step
+// (raw samples) is only bucketed when raw would exceed maxPoints.
+func capStep(step, span time.Duration, maxPoints int) (time.Duration, bool) {
+	if maxPoints <= 0 || span <= 0 {
+		return step, false
+	}
+	floor := step
+	if floor <= 0 {
+		floor = telemetry.MinRequestStep
+	}
+	if span/floor <= time.Duration(maxPoints) {
+		return step, false
+	}
+	return telemetry.AutoStep(span, maxPoints, floor), true
 }
 
 // parseTimeRange reads from/to query params (RFC3339), defaulting to

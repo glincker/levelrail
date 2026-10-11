@@ -650,7 +650,7 @@ func run(logger *slog.Logger) error {
 		}
 	}
 
-	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, emailSender, pushSender, logger)
+	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, emailSender, pushSender, logger).WithLogSources(telemetryDB, telemetryDB)
 
 	// backupRunner is constructed once, here in run(), not inside
 	// rootHandler where it used to live: wave-2 roadmap item 6

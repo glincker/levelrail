@@ -194,7 +194,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 148 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 150 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -354,6 +354,8 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/sleep/wake | AbilityDeploy | handleWakeApp |
 | GET | /api/v1/apps/{name}/environment-domains | AbilityRead | handleGetAppEnvironmentDomains |
 | GET | /api/v1/apps/{name}/listening-ports | AbilityRead | handleAppListeningPorts |
+| GET | /api/v1/apps/{name}/investigate | AbilityRead | handleInvestigate |
+| GET | /api/v1/apps/{name}/failure-context | AbilityRead | handleFailureContext |
 
 :::
 

@@ -93,6 +93,8 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// fanned out through a Federator (today, exactly one local source).
 	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryMetrics))
 	mux.HandleFunc("GET /api/v1/apps/{name}/requests", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryRequests))
+	mux.HandleFunc("GET /api/v1/apps/{name}/investigate", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleInvestigate))
+	mux.HandleFunc("GET /api/v1/apps/{name}/failure-context", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleFailureContext))
 	mux.HandleFunc("GET /api/v1/apps/{name}/logs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryLogs))
 	// Cross-app resource usage ranking (app_resource_usage.go): a
 	// literal segment, so Go's ServeMux resolves it ahead of the

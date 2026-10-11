@@ -69,7 +69,7 @@ func (m requestStatsModule) ServeHTTP(w http.ResponseWriter, r *http.Request, ne
 	if in < 0 {
 		in = 0
 	}
-	DefaultRequestStats().Observe(m.Key, status, time.Since(start), in, rec.bytes, upstreamErr)
+	DefaultRequestStats().ObservePath(m.Key, r.URL.Path, status, time.Since(start), in, rec.bytes, upstreamErr)
 	return err
 }
 
@@ -138,6 +138,19 @@ func latencyBucket(d time.Duration) int {
 
 // Observe records one finished request.
 func (s *RequestStats) Observe(key string, status int, d time.Duration, bytesIn, bytesOut int64, upstreamErr bool) {
+	s.ObservePath(key, "", status, d, bytesIn, bytesOut, upstreamErr)
+}
+
+var (
+	routesEnabled = telemetry.RoutesEnabled()
+	routeMax      = telemetry.RouteMaxFromEnv()
+	routeDepth    = telemetry.RouteDepthFromEnv()
+)
+
+// ObservePath records one finished request and, when route counting is on and
+// path is non-empty, its normalized route template. Only the path is read,
+// never the query string, and ids are collapsed before anything is stored.
+func (s *RequestStats) ObservePath(key, path string, status int, d time.Duration, bytesIn, bytesOut int64, upstreamErr bool) {
 	s.mu.RLock()
 	h := s.hosts[key]
 	s.mu.RUnlock()
@@ -172,6 +185,11 @@ func (s *RequestStats) Observe(key string, status int, d time.Duration, bytesIn,
 		h.w.BytesOut += uint64(bytesOut)
 	}
 	h.w.Latency[latencyBucket(d)]++
+	route := ""
+	if routesEnabled && path != "" {
+		route = telemetry.NormalizeRoute(path, routeDepth)
+	}
+	h.w.ObserveRoute(route, status, float64(d)/float64(time.Millisecond), routeMax)
 }
 
 // SetHostOwners replaces the host-to-app map used to attribute traffic. Keys
