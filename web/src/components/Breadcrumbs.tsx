@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { CaretRightIcon, HouseIcon } from '@phosphor-icons/react/dist/ssr'
 import { useProjectListOptional } from '../queries/projects'
 import { useOrganizationListOptional } from '../queries/organizations'
@@ -41,6 +42,7 @@ export function Breadcrumbs({
   appName,
   page,
 }: BreadcrumbsProps) {
+  const { t } = useTranslation()
   const projectList = useProjectListOptional()
   const project = projectId
     ? projectList.data?.find((p) => p.id === projectId)
@@ -63,10 +65,14 @@ export function Breadcrumbs({
 
   return (
     <nav
-      aria-label="Breadcrumb"
+      aria-label={t('shell.breadcrumb.label')}
       className="flex flex-wrap items-center gap-1.5 text-xs"
     >
-      <Link to="/" className={CRUMB_LINK_CLASS} aria-label="Home">
+      <Link
+        to="/"
+        className={CRUMB_LINK_CLASS}
+        aria-label={t('shell.breadcrumb.home')}
+      >
         <HouseIcon className="size-3.5" aria-hidden="true" />
       </Link>
 
@@ -82,7 +88,7 @@ export function Breadcrumbs({
               {organization?.name ?? resolvedOrgId}
             </Link>
           ) : (
-            <span className={CRUMB_CURRENT_CLASS}>
+            <span aria-current="page" className={CRUMB_CURRENT_CLASS}>
               {organization?.name ?? resolvedOrgId}
             </span>
           )}
@@ -101,7 +107,7 @@ export function Breadcrumbs({
               {project?.name ?? projectId}
             </Link>
           ) : (
-            <span className={CRUMB_CURRENT_CLASS}>
+            <span aria-current="page" className={CRUMB_CURRENT_CLASS}>
               {project?.name ?? projectId}
             </span>
           )}
@@ -121,7 +127,7 @@ export function Breadcrumbs({
                 {environment?.name ?? environmentId}
               </Link>
             ) : (
-              <span className={CRUMB_CURRENT_CLASS}>
+              <span aria-current="page" className={CRUMB_CURRENT_CLASS}>
                 {environment?.name ?? environmentId}
               </span>
             )
@@ -148,7 +154,9 @@ export function Breadcrumbs({
               {appName}
             </Link>
           ) : (
-            <span className={CRUMB_CURRENT_CLASS}>{appName}</span>
+            <span aria-current="page" className={CRUMB_CURRENT_CLASS}>
+              {appName}
+            </span>
           )}
         </>
       ) : null}
@@ -156,7 +164,9 @@ export function Breadcrumbs({
       {page ? (
         <>
           <Separator />
-          <span className={CRUMB_CURRENT_CLASS}>{page}</span>
+          <span aria-current="page" className={CRUMB_CURRENT_CLASS}>
+            {page}
+          </span>
         </>
       ) : null}
     </nav>

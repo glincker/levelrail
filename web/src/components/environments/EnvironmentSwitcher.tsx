@@ -47,7 +47,7 @@ export function EnvironmentSwitcher() {
     >
       <SelectTrigger
         size="sm"
-        className="w-44"
+        className="w-full @4xl:w-44"
         aria-label={t('switcher.aria')}
         id="environment-switcher"
       >

@@ -16,6 +16,7 @@ import { useShortcuts } from '../hooks/useShortcuts'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { AppHeader } from '../components/shell/AppHeader'
 import { ShellBanner } from '../components/shell/ShellBanner'
+import { MAIN_CONTENT_ID, SkipLink } from '../components/shell/SkipLink'
 import { DeviceLoginBanner } from '../components/attention/DeviceLoginBanner'
 import { SignInRequestsBanner } from '../components/attention/SignInRequestsBanner'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
@@ -101,6 +102,7 @@ function AppShell() {
 
   return (
     <SidebarProvider>
+      <SkipLink />
       <AppSidebar />
       <CommandPalette
         open={commandPaletteOpen}
@@ -116,16 +118,15 @@ function AppShell() {
         <ShellBanner />
         <DeviceLoginBanner />
         <SignInRequestsBanner />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main
+          id={MAIN_CONTENT_ID}
+          tabIndex={-1}
+          className="flex-1 overflow-y-auto p-4 outline-none md:p-6"
+        >
           <div className="mx-auto w-full max-w-6xl">
             <div className="mb-4 empty:hidden"></div>
             <Outlet />
           </div>
-          <p className="mx-auto mt-8 w-full max-w-6xl text-xs text-muted-foreground">
-            Hold{' '}
-            <kbd className="rounded border border-border bg-muted px-1">L</kbd>{' '}
-            for quick navigation
-          </p>
         </main>
       </SidebarInset>
     </SidebarProvider>

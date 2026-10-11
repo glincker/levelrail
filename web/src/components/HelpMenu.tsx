@@ -1,4 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   BookOpenIcon,
   ChatCircleTextIcon,
@@ -26,6 +27,7 @@ import { helpDocForPath } from './shell/contextHelp'
 // same "no invented link" rule HelpLink follows.
 export function HelpMenu() {
   const brand = useBrand()
+  const { t } = useTranslation()
   const contextDoc = useRouterState({
     select: (st) => helpDocForPath(st.location.pathname),
   })
@@ -38,7 +40,7 @@ export function HelpMenu() {
             type="button"
             variant="outline"
             size="icon-sm"
-            aria-label="Help"
+            aria-label={t('shell.help.label')}
           />
         }
       >
@@ -50,22 +52,22 @@ export function HelpMenu() {
             render={<Link to="/help/$" params={{ _splat: contextDoc }} />}
           >
             <BookOpenIcon />
-            Help for this page
+            {t('shell.help.forPage')}
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem render={<Link to="/help" />}>
           <LifebuoyIcon />
-          Documentation
+          {t('shell.help.docs')}
         </DropdownMenuItem>
         <DropdownMenuItem
           render={<Link to="/help/$" params={{ _splat: 'troubleshooting' }} />}
         >
           <QuestionIcon />
-          Troubleshooting
+          {t('shell.help.troubleshooting')}
         </DropdownMenuItem>
         <DropdownMenuItem render={<Link to="/settings/system-status" />}>
           <HeartbeatIcon />
-          System status
+          {t('shell.help.systemStatus')}
         </DropdownMenuItem>
         {brand.SupportURL || brand.DiscussionsURL ? (
           <DropdownMenuSeparator />
@@ -77,7 +79,7 @@ export function HelpMenu() {
             rel="noreferrer"
           >
             <GithubLogoIcon />
-            Report an issue
+            {t('shell.help.report')}
           </DropdownMenuLinkItem>
         ) : null}
         {brand.DiscussionsURL ? (
@@ -87,7 +89,7 @@ export function HelpMenu() {
             rel="noreferrer"
           >
             <ChatCircleTextIcon />
-            Ask the community
+            {t('shell.help.community')}
           </DropdownMenuLinkItem>
         ) : null}
       </DropdownMenuContent>
