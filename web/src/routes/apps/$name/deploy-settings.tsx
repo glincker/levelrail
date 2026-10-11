@@ -3,6 +3,7 @@ import { useApp } from '../../../queries/apps'
 import { PortEditor } from '../../../components/PortEditor'
 import { DeployStrategyEditor } from '../../../components/DeployStrategyEditor'
 import { HooksEditor } from '../../../components/HooksEditor'
+import { DeploySafetyCard } from '../../../components/DeploySafetyCard'
 import { BuildCacheCard } from '../../../components/BuildCacheCard'
 import { DeployFreezeCard } from '../../../components/DeployFreezeCard'
 import { ScheduledDeployCard } from '../../../components/ScheduledDeployCard'
@@ -25,6 +26,7 @@ function DeploySettingsSection() {
     <div className="space-y-6">
       <PortEditor app={app} />
       <DeployStrategyEditor app={app} />
+      <DeploySafetyCard appName={name} />
       <HooksEditor app={app} />
       <DeployFreezeCard appName={name} />
       <ScheduledDeployCard appName={name} />

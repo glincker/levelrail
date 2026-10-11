@@ -38,6 +38,7 @@ export const NAMESPACES = [
   'gitBuild',
   'teams',
   'compose',
+  'deploySafety',
 ] as const
 
 void i18n

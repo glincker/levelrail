@@ -164,7 +164,10 @@ levelrail-cli apps deploys logs <name> <deploy-id> [flags]
 levelrail-cli apps deploys steps <name> <deploy-id> [flags]
 levelrail-cli apps deploys failed [--since 24h] [flags]
 levelrail-cli apps deploys cancel <name> <deploy-id> [flags]
-levelrail-cli apps deploys rollback-to <name> <deploy-id> [flags]
+levelrail-cli apps deploys rollback-to <name> <deploy-id> [--watch] [flags]
+levelrail-cli apps deploys gate <name> [deploy-id] [--watch] [flags]
+levelrail-cli deploy status <name> [deploy-id] [--watch] [flags]
+levelrail-cli apps deploy-safety show|set|targets <name> [flags]
 levelrail-cli apps timeline <name> [--limit N] [flags]
 levelrail-cli apps diagnose <name> [--deploy ID] [--apply-fix N] [flags]
 levelrail-cli apps preflight <name> [--require-env A,B] [flags]
@@ -188,7 +191,8 @@ levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
 - `apps deploys wait` blocks until one deploy is healthy, failed, canceled, superseded or blocked (a freeze window or approval) and prints the result with its failure. Exit 0 healthy, 7 failed, canceled, superseded or blocked, 6 timeout. Without a deploy id it resolves the newest deploy once and follows it by id.
 - `apps deploys compare` diffs two deploy attempts, or one against the current live state. `apps deploys logs` prints one attempt's full build and log output to stdout. `apps deploys steps` streams the pipeline steps (detecting, building, pushing, deploying) until the attempt ends and exits non-zero if a step failed; an already finished attempt replays only a short summary.
 - `apps deploys failed` lists every app's latest failed deploy in the window (default set by the server), with the image of its newest good deploy as a rollback target.
-- `apps deploys cancel` cancels a queued or in-progress deploy before it cuts traffic. `apps deploys rollback-to` redeploys a past succeeded deploy's exact image, pinned by digest.
+- `apps deploys cancel` cancels a queued or in-progress deploy before it cuts traffic. `apps deploys rollback-to` redeploys a past succeeded deploy's exact image, pinned by digest or rollback pin, with that deploy's config; `--watch` follows it through the readiness gate.
+- `apps deploys gate` (alias `deploy status`) prints a release's gate timeline: readiness passes, stable window, cutover, drain, rollback pin and post-deploy watch. `--watch` follows it until the release clears its watch, fails, is rolled back or is replaced. Exit 0 healthy or in progress, 7 failed or rolled back. `apps deploy-safety` shows and overrides the per-app thresholds (`set web --stable-window 20s --auto-rollback false`, `default` clears one) and lists pinned rollback targets. See [Deploy safety](deploy-safety.md#readiness-gate).
 - `apps timeline` shows what happened to an app, newest first: deploys, rollbacks, restarts, env, secret and config changes (key names only, never values), scaling, stop and start.
 - `apps diagnose` explains a failed deploy or crashloop and can apply a suggested fix with `--apply-fix N`. `apps preflight` runs pre-deploy checks (DNS, ports, disk, image, env).
 - `apps freeze` manages deploy freeze windows: a window starts at every match of a 5 field cron expression, evaluated in `--timezone` (default UTC), and lasts `--duration`. While one is active, webhook, pipeline and released deploys are held and run when the window ends; a manual deploy needs `apps deploy --override-freeze --override-reason TEXT`. `set` replaces the app's windows with the one given. Fleet-wide windows are under `settings deploy-freeze`.

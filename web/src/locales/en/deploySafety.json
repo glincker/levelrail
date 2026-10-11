@@ -1,0 +1,84 @@
+{
+  "gate": {
+    "title": "Readiness gate and watch",
+    "rules": "Takes traffic after {{passes}} readiness passes in a row and {{stable}} running without a restart. The previous release drains for {{drain}}, then this one is watched for {{watch}}.",
+    "pinned": "Pinned as rollback target {{ref}}, so image cleanup will never remove it.",
+    "hidden_one": "{{count}} earlier step is not shown.",
+    "hidden_other": "{{count}} earlier steps are not shown.",
+    "empty": "No gate steps recorded yet. They appear once the new container starts.",
+    "unavailable": "The gate timeline is not available for this deploy."
+  },
+  "phase": {
+    "readiness": "Readiness",
+    "stability": "Stable window",
+    "cutover": "Cutover",
+    "drain": "Drain",
+    "watch": "Post-deploy watch",
+    "rollback": "Rollback",
+    "pin": "Rollback pin"
+  },
+  "stage": {
+    "pending": "Pending",
+    "gating": "Passing the gate",
+    "gate_failed": "Failed the gate",
+    "watching": "Watching",
+    "cleared": "Cleared",
+    "watch_failed": "Watch tripped",
+    "rolled_back": "Rolled back"
+  },
+  "settings": {
+    "title": "Deploy safety",
+    "infoTipLabel": "About deploy safety",
+    "description": "A new release takes traffic only after its readiness probe passes several times in a row and it runs for a stable window without restarting or being OOM-killed. The previous release keeps serving in-flight requests while it drains. After cutover the release is watched, and a crashloop, OOM kill or 5xx spike rolls it back.",
+    "inheritHint": "Leave a field empty to use the platform default shown in it.",
+    "unavailable": "Deploy safety settings could not be loaded.",
+    "save": "Save",
+    "reset": "Use platform defaults",
+    "on": "on",
+    "off": "off",
+    "field": {
+      "success_threshold": {
+        "label": "Readiness passes in a row",
+        "hint": "Consecutive readiness probe passes before traffic moves."
+      },
+      "stable_window": {
+        "label": "Stable window",
+        "hint": "How long the new container must run with no restart or OOM kill, e.g. 10s."
+      },
+      "drain_timeout": {
+        "label": "Drain timeout",
+        "hint": "How long the previous release keeps serving after cutover, e.g. 15s."
+      },
+      "watch_window": {
+        "label": "Watch window",
+        "hint": "How long a new release is watched after cutover, e.g. 5m."
+      },
+      "watch_max_restarts": {
+        "label": "Restarts that trip the watch",
+        "hint": "Container restarts inside the watch window that count as a crashloop."
+      },
+      "watch_error_rate": {
+        "label": "5xx share that trips the watch (%)",
+        "hint": "Share of requests answered with 5xx inside the watch window."
+      },
+      "watch_min_requests": {
+        "label": "Requests before the 5xx share counts",
+        "hint": "A handful of requests is not enough to judge a release."
+      }
+    },
+    "autoRollback": {
+      "label": "Roll back automatically when the watch trips",
+      "hint": "Set for this app.",
+      "inherited": "Following the platform default ({{value}})."
+    },
+    "toast": {
+      "saved": "Deploy safety settings saved.",
+      "error": "Could not save deploy safety settings."
+    }
+  },
+  "targets": {
+    "title": "Pinned rollback targets",
+    "empty": "No pinned releases yet. A release is pinned when it takes traffic.",
+    "live": "Live"
+  }
+}
