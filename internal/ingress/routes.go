@@ -331,6 +331,9 @@ type RoutesOptions struct {
 	// redirect every routed host to https. Off keeps the port unbound
 	// outside ACME challenges (non-root dev runs cannot bind port 80).
 	HTTPRedirect bool
+	// PlainHTTP serves the same routes over unencrypted HTTP on HTTPPort,
+	// for a proxy in front that terminates TLS and dials this port.
+	PlainHTTP bool
 	// Routes is every reverse-proxy backend to route on this listener.
 	// Empty is valid: it produces a listener with no routes and no TLS
 	// automation policy, the normal shape for a reconcile pass over zero
@@ -742,6 +745,13 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			}
 			cfg.Apps.TLS.Certificates = CertificatesConfig{"load_pem": pairs}
 		}
+	}
+
+	if opts.PlainHTTP && opts.HTTPPort != 0 && !opts.Inherited.Active() {
+		plain := *server
+		plain.Listen = []string{fmt.Sprintf(":%d", opts.HTTPPort)}
+		plain.AutomaticHTTPS = &AutoHTTPSConfig{Disabled: true}
+		cfg.Apps.HTTP.Servers[opts.ServerName+"-plain"] = &plain
 	}
 
 	return cfg, nil
