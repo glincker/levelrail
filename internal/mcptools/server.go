@@ -26,7 +26,8 @@ func NewServer(client *apiclient.Client) *mcp.Server {
 // tool the mode and toolsets exclude, so a hidden tool costs no model
 // context and cannot be called.
 func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, Summary) {
-	server := mcp.NewServer(&mcp.Implementation{Name: "levelrail-mcp", Version: version.Version}, nil)
+	server := mcp.NewServer(&mcp.Implementation{Name: "levelrail-mcp", Version: version.Version},
+		&mcp.ServerOptions{CompletionHandler: newCompletionHandler(client)})
 
 	registerAppTools(server, client)
 	registerDeployFreezeTools(server, client)
@@ -94,6 +95,9 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerAIControlTools(server, client)
 	registerExpansionReadTools(server, client)
 	registerExpansionWriteTools(server, client)
+
+	registerPrompts(server, opts)
+	registerResources(server, client)
 
 	summary := applyOptions(server, opts)
 	server.AddReceivingMiddleware(aiControlMiddleware(client))
