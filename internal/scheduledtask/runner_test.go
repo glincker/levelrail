@@ -342,8 +342,8 @@ func TestRunner_Run_LoadServiceFailed_ReturnsError(t *testing.T) {
 	if err == nil {
 		t.Fatal("Run() error = nil, want a genuine infrastructure error")
 	}
-	if len(runs.calls) != 0 {
-		t.Errorf("RecordScheduledTaskRun calls = %d, want 0: never got far enough to run anything", len(runs.calls))
+	if len(runs.calls) != 1 || runs.calls[0].status != store.ScheduledTaskStatusFailed {
+		t.Errorf("RecordScheduledTaskRun calls = %+v, want exactly one failed record so the outage stays visible", runs.calls)
 	}
 }
 

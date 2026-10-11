@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -25,6 +26,7 @@ export function DeleteScheduledTaskDialog({
   appName: string
   task: ScheduledTask
 }) {
+  const { t } = useTranslation('jobs')
   const [open, setOpen] = useState(false)
   const deleteTask = useDeleteScheduledTask(appName)
 
@@ -39,18 +41,15 @@ export function DeleteScheduledTaskDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="destructive" size="sm" />}>
         <TrashIcon className="size-3.5" aria-hidden="true" />
-        Delete
+        {t('delete.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <WarningIcon className="size-4" aria-hidden="true" />
-            Delete this scheduled task?
+            {t('delete.title')}
           </DialogTitle>
-          <DialogDescription>
-            &ldquo;{task.schedule}&rdquo; stops running immediately. This cannot
-            be undone.
-          </DialogDescription>
+          <DialogDescription>{t('delete.description')}</DialogDescription>
         </DialogHeader>
         {deleteTask.isError ? (
           <Alert variant="destructive">
@@ -66,7 +65,7 @@ export function DeleteScheduledTaskDialog({
               handleOpenChange(false)
             }}
           >
-            Cancel
+            {t('delete.cancel')}
           </Button>
           <Button
             type="button"
@@ -77,14 +76,14 @@ export function DeleteScheduledTaskDialog({
                 onSuccess: () => {
                   setOpen(false)
                   toast.add({
-                    title: 'Scheduled task deleted.',
+                    title: t('delete.deleted'),
                     type: 'success',
                   })
                 },
               })
             }}
           >
-            {deleteTask.isPending ? 'Deleting...' : 'Delete task'}
+            {deleteTask.isPending ? t('dialog.saving') : t('delete.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

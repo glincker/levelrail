@@ -35,10 +35,15 @@ const (
 	KindCertExpiry           Kind = "cert_expiry"
 	KindPatchStatus          Kind = "patch_status"
 	KindScheduledTaskFailure Kind = "scheduled_task_failure"
-	KindNodeDiskSpace        Kind = "node_disk_space"
-	KindNodeResourceUsage    Kind = "node_resource_usage"
-	KindDomainHealth         Kind = "domain_health"
-	KindBackupMissing        Kind = "backup_missing"
+	// KindScheduledTaskMissed and KindScheduledTaskRunningLong watch one
+	// job's schedule health: skipped occurrences and a run in flight past
+	// its warning threshold (scheduled_task_health.go).
+	KindScheduledTaskMissed      Kind = "scheduled_task_missed"
+	KindScheduledTaskRunningLong Kind = "scheduled_task_running_long"
+	KindNodeDiskSpace            Kind = "node_disk_space"
+	KindNodeResourceUsage        Kind = "node_resource_usage"
+	KindDomainHealth             Kind = "domain_health"
+	KindBackupMissing            Kind = "backup_missing"
 
 	// KindControlPlaneBackupStale is platform-wide: it watches the newest control plane snapshot's age.
 	KindControlPlaneBackupStale Kind = "control_plane_backup_stale"

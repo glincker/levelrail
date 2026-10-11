@@ -44,7 +44,7 @@ const APP_SECTION_LABELS: Record<string, string> = {
   resources: 'Resources',
   volumes: 'Volumes',
   integrations: 'Integrations',
-  'scheduled-tasks': 'Scheduled tasks',
+  'scheduled-tasks': 'Jobs',
   'feature-flags': 'Feature flags',
   metrics: 'Metrics',
   logs: 'Logs',

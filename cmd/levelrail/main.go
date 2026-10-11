@@ -717,9 +717,13 @@ func run(logger *slog.Logger) error {
 	// exec'd command carries no credential of its own), so it's always
 	// constructed, the same "always available by the time rootHandler is
 	// called" shape client/agentRegistry already have.
+	jobLimits := scheduledtask.LimitsFromEnv(os.LookupEnv)
 	scheduledTaskRunner := &scheduledtask.Runner{
-		Apps: db,
-		Runs: db,
+		Apps:       db,
+		Runs:       db,
+		History:    db,
+		Limits:     jobLimits,
+		NamePrefix: b.ShortName,
 		Resolver: func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)
 		},
@@ -862,7 +866,7 @@ func run(logger *slog.Logger) error {
 
 	engine.SetStore(db)
 	gate := newDeployGate(logger, db, client, b.ShortName, meshLocalNodeID(meshCfg))
-	engine.SetSource(dynamicSource(dynamicSourceDeps{
+	sourceDeps := dynamicSourceDeps{
 		deployGate:                   gate,
 		orphanReaper:                 orphanReaper,
 		ingressEdge:                  edge,
@@ -891,7 +895,12 @@ func run(logger *slog.Logger) error {
 		lbRegistry:                   lbRegistry,
 		proxySyncer:                  proxySyncer,
 		previewNotifier:              previewManager,
-	}))
+	}
+	engine.SetSource(dynamicSource(sourceDeps))
+	scheduledTaskRunner.Specs = newJobSpecBuilder(sourceDeps)
+	scheduledTaskRunner.Resolver = func(nodeID string) (docker.Runtime, error) {
+		return resolveNodeTransport(client, agentRegistry, runtimeNodeID(sourceDeps, nodeID))
+	}
 	if experimental.Enabled(experimental.AIModels) {
 		startLocalGPUCollector(ctx, db, client, logger)
 		go models.NewEngineMetricsCollector(db, telemetryDB, nil, logger).Run(ctx, models.EngineMetricsInterval())
@@ -1084,6 +1093,7 @@ func run(logger *slog.Logger) error {
 	// scheduler just above, this needs no secretsManager gate:
 	// scheduledTaskRunner is always non-nil, so this loop always runs.
 	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
+	scheduledTaskScheduler.Lookback = scheduledTaskRunner.Limits.CatchUpLookback
 	go func() {
 		if err := scheduledTaskScheduler.Run(ctx, scheduledTaskSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("scheduled task scheduler stopped", slog.String("error", err.Error()))
@@ -2022,6 +2032,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithAppStore(db),
 		deploy.WithVaultConfigChecker(db),
 		deploy.WithLoadBalancerStore(db),
+		deploy.WithJobStore(db),
 		deploy.WithOrderedStore(db),
 		deploy.WithAttemptRecorder(db),
 	}
@@ -2383,6 +2394,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// shape api.WithDeployRecorder/api.WithLogBroadcaster already use
 		// for their own always-non-nil dependencies.
 		api.WithScheduledTaskRunner(scheduledTaskRunner),
+		api.WithJobLimits(jobsPerAppCap(scheduledTaskRunner)),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
 		api.WithCertRenewalTracking(alertingDB, certRenewalStalledThreshold(logger)),
 		api.WithNodeAlertThresholds(
@@ -3794,9 +3806,10 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 	}
 }
 
-// appControllersFor builds one application.Controller per service,
-// skipping (with a warning) any whose node isn't currently reachable.
-func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
+// appOptionsFor builds the options every application.Controller shares:
+// the reconcile path and scheduled job containers both resolve a service's
+// env, volumes and network through them.
+func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	// application.WithStorageTargets/WithDatabaseAttachments are both
 	// unconditional, unlike WithSecretResolver below: resolving a
 	// StorageTarget's endpoint/region/bucket, or a database's host/port,
@@ -3850,7 +3863,13 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 	if deps.meshCfg != nil && deps.meshCfg.resolver != nil {
 		appOpts = append(appOpts, application.WithMeshDatabases(meshDatabaseConfig(deps)))
 	}
+	return appOpts
+}
 
+// appControllersFor builds one application.Controller per service,
+// skipping (with a warning) any whose node isn't currently reachable.
+func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
+	appOpts := appOptionsFor(deps)
 	controllers := make([]reconcile.Controller, 0, len(services))
 	for _, svc := range services {
 		svcRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, svc.NodeID))

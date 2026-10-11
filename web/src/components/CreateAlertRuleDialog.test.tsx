@@ -102,7 +102,7 @@ describe('CreateAlertRuleDialog', () => {
   it('renders the metric field as a closed enum select, not free text', async () => {
     mockFetchRoutes({
       'GET /api/v1/notification-channels': jsonRoute([]),
-      'GET /api/v1/apps/demo-app/scheduled-tasks': jsonRoute([]),
+      'GET /api/v1/apps/demo-app/jobs': jsonRoute([]),
     })
     renderDialog()
     const popup = await openDialog()
@@ -121,7 +121,7 @@ describe('CreateAlertRuleDialog', () => {
   it('renders the for-duration field as a number+unit DurationInput defaulting to 2 minutes', async () => {
     mockFetchRoutes({
       'GET /api/v1/notification-channels': jsonRoute([]),
-      'GET /api/v1/apps/demo-app/scheduled-tasks': jsonRoute([]),
+      'GET /api/v1/apps/demo-app/jobs': jsonRoute([]),
     })
     renderDialog()
     const popup = await openDialog()
@@ -137,7 +137,7 @@ describe('CreateAlertRuleDialog', () => {
   it('submits the chosen metric and a composed for_duration string', async () => {
     const fetchMock = mockFetchRoutes({
       'GET /api/v1/notification-channels': jsonRoute([]),
-      'GET /api/v1/apps/demo-app/scheduled-tasks': jsonRoute([]),
+      'GET /api/v1/apps/demo-app/jobs': jsonRoute([]),
       'POST /api/v1/apps/demo-app/alerts': jsonRoute(
         {
           id: 'rule_1',
@@ -194,7 +194,7 @@ describe('CreateAlertRuleDialog', () => {
   it('creates a control_plane_backup_stale rule with no kind-specific required fields', async () => {
     const fetchMock = mockFetchRoutes({
       'GET /api/v1/notification-channels': jsonRoute([]),
-      'GET /api/v1/apps/demo-app/scheduled-tasks': jsonRoute([]),
+      'GET /api/v1/apps/demo-app/jobs': jsonRoute([]),
       'POST /api/v1/apps/demo-app/alerts': jsonRoute(
         {
           id: 'rule_2',

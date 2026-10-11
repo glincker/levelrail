@@ -95,6 +95,7 @@ const sidebarGroups = [
           { text: 'Deploy safety', link: '/deploy-safety' },
           { text: 'Deploy failures', link: '/deploy-failures' },
           { text: 'Scheduled deploys', link: '/scheduled-deploys' },
+          { text: 'Scheduled jobs', link: '/scheduled-jobs' },
           { text: 'Image auto-update', link: '/image-auto-update' },
           { text: 'Sleep when idle', link: '/sleep-when-idle' },
           { text: 'Functions', link: '/functions' },

@@ -1,0 +1,145 @@
+{
+  "title": "Jobs",
+  "description": "Run a command on a cron schedule, in a fresh container with this app's env, secrets, volumes and network, or inside its running container.",
+  "unnamed": "Unnamed job",
+  "specManaged": "app.yaml",
+  "specManagedHint": "Declared in app.yaml. Change it there; only the enabled switch can be toggled here.",
+  "empty": {
+    "title": "No jobs yet",
+    "description": "Run a migration, warm a cache or send a report on a schedule. Each run is kept in the history with its output."
+  },
+  "columns": {
+    "job": "Job",
+    "schedule": "Schedule",
+    "mode": "Mode",
+    "lastRun": "Last run",
+    "nextRun": "Next run",
+    "enabled": "Enabled",
+    "actions": "Actions"
+  },
+  "mode": {
+    "fresh": "Fresh container",
+    "exec": "Inside running container"
+  },
+  "concurrency": {
+    "allow": "Allow overlap",
+    "forbid": "Skip if still running",
+    "replace": "Cancel and replace"
+  },
+  "concurrencyHint": {
+    "allow": "Start the new run even if the previous one has not finished.",
+    "forbid": "Skip this run if a previous one is still in flight, recorded as skipped.",
+    "replace": "Cancel the still-running previous run, then start this one."
+  },
+  "status": {
+    "running": "Running",
+    "success": "Succeeded",
+    "failed": "Failed",
+    "timeout": "Timed out",
+    "container_not_running": "Container not running",
+    "skipped_concurrency": "Skipped (limit reached)",
+    "replaced": "Replaced by newer run",
+    "missed": "Missed",
+    "interrupted": "Interrupted by restart"
+  },
+  "trigger": {
+    "schedule": "Schedule",
+    "manual": "Manual",
+    "api": "API"
+  },
+  "neverRun": "Never run",
+  "failedInARow": "{{count}} failed in a row",
+  "missedInARow": "{{count}} missed in a row",
+  "localNode": "local",
+  "run": {
+    "now": "Run now",
+    "starting": "Starting...",
+    "started": "Job started.",
+    "startedWithId": "Job started (run {{id}})."
+  },
+  "toggle": {
+    "label": "Enable {{name}}"
+  },
+  "dialog": {
+    "createTrigger": "Create job",
+    "createTitle": "Create job",
+    "editTitle": "Edit job",
+    "created": "Job created.",
+    "updated": "Job updated.",
+    "saving": "Saving...",
+    "creating": "Creating...",
+    "save": "Save changes",
+    "create": "Create job",
+    "edit": "Edit",
+    "name": "Name",
+    "nameHint": "Optional. Lowercase letters, digits, hyphens and underscores.",
+    "namePlaceholder": "e.g. nightly-migrate",
+    "nameInvalid": "Use lowercase letters, digits, hyphens or underscores.",
+    "wholeNumber": "Must be a whole number.",
+    "command": "Command",
+    "commandPlaceholder": "e.g. rm -rf /tmp/cache/*",
+    "commandHint": "Run through a shell (sh -c), so the image needs a shell. Levelrail never interprets it.",
+    "commandRequired": "Command is required",
+    "modeLabel": "Where it runs",
+    "modeHint": {
+      "fresh": "A new container from the app's current image, with its env, secrets, volumes and network. It is removed when the run ends.",
+      "exec": "Inside the app's running container. Fails if the container is not running."
+    },
+    "timezone": "Time zone",
+    "timezoneHint": "IANA name such as Europe/Berlin. The schedule is read in this zone, including daylight saving changes.",
+    "timezoneRequired": "Time zone is required",
+    "concurrencyLabel": "If a previous run is still going",
+    "enabled": "Enabled",
+    "advanced": "Timeout, retries and limits",
+    "timeout": "Timeout (seconds)",
+    "timeoutHint": "Per attempt. Empty uses the control plane default.",
+    "retries": "Retries",
+    "retriesHint": "Extra attempts after a failure, with doubling backoff.",
+    "backoff": "Retry backoff (seconds)",
+    "catchUpLabel": "After control plane downtime",
+    "catchUp": {
+      "skip": "Skip missed runs, record them as missed",
+      "run_once": "Run once if a run was missed recently"
+    },
+    "lookback": "Catch-up window (seconds)",
+    "memory": "Memory limit (MiB)",
+    "memoryHint": "Fresh container only. Empty uses the app's own limit.",
+    "cpu": "CPU limit (millicores)",
+    "warnAfter": "Warn after (seconds)",
+    "warnAfterHint": "Raises the running-too-long alert once a run exceeds this. 0 disables it."
+  },
+  "delete": {
+    "trigger": "Delete",
+    "title": "Delete this job?",
+    "description": "Its schedule and run history are removed. This cannot be undone.",
+    "cancel": "Cancel",
+    "confirm": "Delete job",
+    "deleted": "Job deleted."
+  },
+  "history": {
+    "title": "Run history",
+    "description": "The most recent runs across this app's jobs, newest first.",
+    "filter": "Status",
+    "filterAll": "All statuses",
+    "empty": "No runs yet. Use Run now to start one.",
+    "emptyFiltered": "No runs with this status.",
+    "columns": {
+      "started": "Started",
+      "job": "Job",
+      "status": "Status",
+      "trigger": "Trigger",
+      "duration": "Duration",
+      "exit": "Exit",
+      "attempts": "Attempts",
+      "node": "Node"
+    },
+    "trendLabel": "Run durations for the last {{count}} finished runs",
+    "trendCaption": "Run duration, oldest to newest, slowest {{max}}",
+    "viewLogs": "Logs",
+    "logsTitle": "Run output",
+    "logsEmpty": "This run produced no output.",
+    "logsLoading": "Loading output...",
+    "logsRedacted": "Secrets are redacted from this output.",
+    "alertsHint": "Get notified when a job fails, misses runs or runs too long with Alerts, using the job failure, missed run or running too long kinds."
+  }
+}

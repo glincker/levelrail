@@ -50,6 +50,10 @@
           "items": { "$ref": "#/$defs/volume" }
         },
         "hooks": { "$ref": "#/$defs/hooks" },
+        "jobs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/job" }
+        },
         "command": {
           "type": "array",
           "items": { "type": "string" },
@@ -145,6 +149,28 @@
       "properties": {
         "host": { "type": "string", "minLength": 1 },
         "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+      }
+    },
+    "job": {
+      "type": "object",
+      "required": ["name", "schedule", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$" },
+        "schedule": { "type": "string", "minLength": 1 },
+        "command": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+        "timezone": { "type": "string", "minLength": 1 },
+        "mode": { "enum": ["fresh", "exec"] },
+        "concurrency": { "enum": ["allow", "forbid", "replace"] },
+        "timeout": { "type": "string", "minLength": 2 },
+        "retries": { "type": "integer", "minimum": 0 },
+        "retryBackoff": { "type": "string", "minLength": 2 },
+        "catchUp": { "enum": ["skip", "run-once"] },
+        "catchUpLookback": { "type": "string", "minLength": 2 },
+        "cpu": { "type": "number", "exclusiveMinimum": 0 },
+        "memory": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
+        "warnAfter": { "type": "string", "minLength": 2 },
+        "enabled": { "type": "boolean" }
       }
     },
     "hooks": {

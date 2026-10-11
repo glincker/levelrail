@@ -207,7 +207,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 164 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 165 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -383,6 +383,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/deploy-safety | AbilityRead | handleGetDeploySafety |
 | PUT | /api/v1/apps/{name}/deploy-safety | AbilityDeploy | handlePutDeploySafety |
 | GET | /api/v1/apps/{name}/rollback-targets | AbilityRead | handleListRollbackTargets |
+| GET | /api/v1/apps/{name}/job-runs | AbilityRead | handleListScheduledTaskRuns |
 
 :::
 
@@ -452,12 +453,6 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/alerts | AbilityRead | handleListAlertRules |
 | PUT | /api/v1/apps/{name}/alerts/{id} | AbilityWrite | handleUpdateAlertRule |
 | DELETE | /api/v1/apps/{name}/alerts/{id} | AbilityWrite | handleDeleteAlertRule |
-| POST | /api/v1/apps/{name}/scheduled-tasks | AbilityWrite | handleCreateScheduledTask |
-| GET | /api/v1/apps/{name}/scheduled-tasks | AbilityRead | handleListScheduledTasks |
-| GET | /api/v1/apps/{name}/scheduled-tasks/{id} | AbilityRead | handleGetScheduledTask |
-| PUT | /api/v1/apps/{name}/scheduled-tasks/{id} | AbilityWrite | handleUpdateScheduledTask |
-| DELETE | /api/v1/apps/{name}/scheduled-tasks/{id} | AbilityWrite | handleDeleteScheduledTask |
-| POST | /api/v1/apps/{name}/scheduled-tasks/{id}/run | AbilityDeploy | handleRunScheduledTaskNow |
 | POST | /api/v1/apps/{name}/flags | AbilityWrite | handleCreateFeatureFlag |
 | GET | /api/v1/apps/{name}/flags | AbilityRead | handleListFeatureFlags |
 | GET | /api/v1/apps/{name}/flags/{id} | AbilityRead | handleGetFeatureFlag |

@@ -91,6 +91,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDatabases(prog, args[1:], stdout, stderr, lookupEnv)
 	case "functions":
 		return runFunctions(prog, args[1:], stdout, stderr, lookupEnv)
+	case "jobs":
+		return runJobs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "models":
 		return runModels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth":

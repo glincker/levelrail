@@ -138,12 +138,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// AbilityDeploy, matching restart/stop/start above, since it has the
 	// identical immediate side effect (a real command actually runs
 	// inside a running container right now), not just a config change.
-	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCreateScheduledTask))
-	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListScheduledTasks))
-	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetScheduledTask))
-	mux.HandleFunc("PUT /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleUpdateScheduledTask))
-	mux.HandleFunc("DELETE /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteScheduledTask))
-	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks/{id}/run", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRunScheduledTaskNow))
+	rt.registerJobRoutes(mux)
 
 	// Feature flags (feature_flags.go): a boolean plus optional gradual
 	// rollout percentage a running app's own code reads live via the

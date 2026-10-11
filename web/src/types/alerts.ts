@@ -32,6 +32,8 @@ export type AlertRuleKind =
   | 'cert_expiry'
   | 'patch_status'
   | 'scheduled_task_failure'
+  | 'scheduled_task_missed'
+  | 'scheduled_task_running_long'
   | 'node_disk_space'
   | 'node_resource_usage'
   | 'domain_health'
@@ -166,4 +168,13 @@ export interface CreateAlertRuleRequest {
   consecutive_failures?: number
   flap_threshold?: number
   flap_window?: string
+}
+
+// Kinds that watch one of the app's scheduled jobs through scheduled_task_id.
+export function isScheduledTaskKind(kind: string): boolean {
+  return (
+    kind === 'scheduled_task_failure' ||
+    kind === 'scheduled_task_missed' ||
+    kind === 'scheduled_task_running_long'
+  )
 }

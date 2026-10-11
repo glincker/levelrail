@@ -341,6 +341,87 @@
       },
       "type": "object"
     },
+    "job": {
+      "additionalProperties": false,
+      "properties": {
+        "catchUp": {
+          "enum": [
+            "skip",
+            "run-once"
+          ]
+        },
+        "catchUpLookback": {
+          "minLength": 2,
+          "type": "string"
+        },
+        "command": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "concurrency": {
+          "enum": [
+            "allow",
+            "forbid",
+            "replace"
+          ]
+        },
+        "cpu": {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "memory": {
+          "pattern": "^[0-9]+(Mi|Gi)$",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "fresh",
+            "exec"
+          ]
+        },
+        "name": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$",
+          "type": "string"
+        },
+        "retries": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "retryBackoff": {
+          "minLength": 2,
+          "type": "string"
+        },
+        "schedule": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "timeout": {
+          "minLength": 2,
+          "type": "string"
+        },
+        "timezone": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "warnAfter": {
+          "minLength": 2,
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "schedule",
+        "command"
+      ],
+      "type": "object"
+    },
     "literalEnv": {
       "additionalProperties": {
         "type": "string"
@@ -738,6 +819,12 @@
         "image": {
           "minLength": 1,
           "type": "string"
+        },
+        "jobs": {
+          "items": {
+            "$ref": "#/$defs/job"
+          },
+          "type": "array"
         },
         "labels": {
           "additionalProperties": {

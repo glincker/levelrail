@@ -1734,8 +1734,50 @@ type ScheduledTaskResource struct {
 	// kind=scheduled_task_failure alert rule watches.
 	ConsecutiveFailures int `json:"consecutive_failures"`
 
+	// Scheduled job fields (internal/api/scheduled_tasks.go): Name, Mode
+	// (fresh or exec), Timezone, retry/timeout/catch-up policy, limits,
+	// and live scheduling state.
+	Name                   string     `json:"name,omitempty"`
+	Mode                   string     `json:"mode,omitempty"`
+	Timezone               string     `json:"timezone,omitempty"`
+	TimeoutSeconds         int        `json:"timeout_seconds,omitempty"`
+	MaxRetries             int        `json:"max_retries,omitempty"`
+	RetryBackoffSeconds    int        `json:"retry_backoff_seconds,omitempty"`
+	CatchUp                string     `json:"catch_up,omitempty"`
+	CatchUpLookbackSeconds int        `json:"catch_up_lookback_seconds,omitempty"`
+	CPULimitMillis         int        `json:"cpu_limit_millis,omitempty"`
+	MemoryLimitMB          int        `json:"memory_limit_mb,omitempty"`
+	WarnAfterSeconds       int        `json:"warn_after_seconds,omitempty"`
+	Source                 string     `json:"source,omitempty"`
+	ConsecutiveMissed      int        `json:"consecutive_missed"`
+	RunningSince           *time.Time `json:"running_since,omitempty"`
+	NextRunAt              *time.Time `json:"next_run_at,omitempty"`
+	// RunID is set on the response to a run-now call.
+	RunID string `json:"run_id,omitempty"`
+
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
+}
+
+// JobRunResource mirrors internal/api's scheduledTaskRunResource: one job
+// run. Output is only populated when a single run is fetched.
+type JobRunResource struct {
+	ID           string     `json:"id"`
+	TaskID       string     `json:"task_id"`
+	JobName      string     `json:"job_name,omitempty"`
+	ServiceName  string     `json:"service_name"`
+	Trigger      string     `json:"trigger"`
+	Status       string     `json:"status"`
+	ScheduledFor *time.Time `json:"scheduled_for,omitempty"`
+	StartedAt    time.Time  `json:"started_at"`
+	FinishedAt   *time.Time `json:"finished_at,omitempty"`
+	ExitCode     *int       `json:"exit_code,omitempty"`
+	DurationMS   int64      `json:"duration_ms"`
+	Attempts     int        `json:"attempts"`
+	NodeID       string     `json:"node_id,omitempty"`
+	Mode         string     `json:"mode,omitempty"`
+	Message      string     `json:"message,omitempty"`
+	Output       string     `json:"output,omitempty"`
 }
 
 // ScheduledTaskRequest mirrors the fields internal/api's
@@ -1749,6 +1791,20 @@ type ScheduledTaskRequest struct {
 	// ConcurrencyPolicy is one of "allow", "forbid", "replace", or empty
 	// (server-side default "allow").
 	ConcurrencyPolicy string `json:"concurrency_policy,omitempty"`
+
+	// Scheduled job fields; zero values are omitted so an update leaves
+	// the stored value alone.
+	Name                   string `json:"name,omitempty"`
+	Mode                   string `json:"mode,omitempty"`
+	Timezone               string `json:"timezone,omitempty"`
+	TimeoutSeconds         int    `json:"timeout_seconds,omitempty"`
+	MaxRetries             int    `json:"max_retries,omitempty"`
+	RetryBackoffSeconds    int    `json:"retry_backoff_seconds,omitempty"`
+	CatchUp                string `json:"catch_up,omitempty"`
+	CatchUpLookbackSeconds int    `json:"catch_up_lookback_seconds,omitempty"`
+	CPULimitMillis         int    `json:"cpu_limit_millis,omitempty"`
+	MemoryLimitMB          int    `json:"memory_limit_mb,omitempty"`
+	WarnAfterSeconds       int    `json:"warn_after_seconds,omitempty"`
 }
 
 // FeatureFlagResource mirrors internal/api's featureFlagResource

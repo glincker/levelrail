@@ -109,6 +109,37 @@ type Service struct {
 	// start-order guarantee, not a health-based wait. See Validate for
 	// the reference and cycle checks.
 	DependsOn []string `yaml:"dependsOn,omitempty"`
+
+	// Jobs are cron-scheduled commands run for this service, each in a
+	// fresh container of its image (or exec'd into the running one), kept
+	// in step with this list on every deploy. Nil leaves jobs created
+	// through the dashboard or CLI alone; an explicit empty list removes
+	// every spec-declared job.
+	Jobs []Job `yaml:"jobs,omitempty"`
+}
+
+// Job is one entry under a service's jobs:. Durations use Go syntax
+// ("30s", "10m", "1h"); Memory the same "512Mi"/"1Gi" shape as resources.
+type Job struct {
+	Name     string   `yaml:"name"`
+	Schedule string   `yaml:"schedule"`
+	Command  []string `yaml:"command"`
+	Timezone string   `yaml:"timezone,omitempty"`
+	// Mode is "fresh" (default, a new container from the service's image
+	// and spec) or "exec" (inside the running container).
+	Mode string `yaml:"mode,omitempty"`
+	// Concurrency is "allow", "forbid" (default) or "replace".
+	Concurrency     string  `yaml:"concurrency,omitempty"`
+	Timeout         string  `yaml:"timeout,omitempty"`
+	Retries         int     `yaml:"retries,omitempty"`
+	RetryBackoff    string  `yaml:"retryBackoff,omitempty"`
+	CatchUp         string  `yaml:"catchUp,omitempty"`
+	CatchUpLookback string  `yaml:"catchUpLookback,omitempty"`
+	CPU             float64 `yaml:"cpu,omitempty"`
+	Memory          string  `yaml:"memory,omitempty"`
+	WarnAfter       string  `yaml:"warnAfter,omitempty"`
+	// Enabled defaults to true when omitted.
+	Enabled *bool `yaml:"enabled,omitempty"`
 }
 
 // EgressModeAllowlist is the only meaningful Egress.Mode value today; see

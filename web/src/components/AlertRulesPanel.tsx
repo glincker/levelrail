@@ -135,7 +135,13 @@ function formatCondition(rule: AlertRule): string {
     return 'any node over its summed CPU or memory threshold (platform-wide)'
   }
   if (rule.kind === 'scheduled_task_failure') {
-    return `task ${rule.scheduled_task_id ?? '?'} fails ${rule.restart_count_threshold} runs in a row`
+    return `job ${rule.scheduled_task_id ?? '?'} fails ${rule.restart_count_threshold} runs in a row`
+  }
+  if (rule.kind === 'scheduled_task_missed') {
+    return `job ${rule.scheduled_task_id ?? '?'} misses scheduled runs`
+  }
+  if (rule.kind === 'scheduled_task_running_long') {
+    return `job ${rule.scheduled_task_id ?? '?'} runs past its warning threshold`
   }
   if (rule.kind === 'domain_health') {
     const forPart = rule.for_duration ? ` for ${rule.for_duration}` : ''
@@ -204,6 +210,12 @@ function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'scheduled_task_failure') {
     return `${rule.last_value} consecutive failures`
+  }
+  if (rule.kind === 'scheduled_task_missed') {
+    return `${rule.last_value} missed runs in a row`
+  }
+  if (rule.kind === 'scheduled_task_running_long') {
+    return `running for ${Math.round(rule.last_value)}s`
   }
   if (rule.kind === 'domain_health') {
     return `${rule.last_value} domain(s) unhealthy`
