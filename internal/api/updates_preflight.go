@@ -30,6 +30,11 @@ type updatePreflightResource struct {
 	UpgradeCommand  string          `json:"upgrade_command"`
 	RollbackCommand string          `json:"rollback_command"`
 	CosignCommand   string          `json:"cosign_command"`
+	// ReleaseKind is "release" or "edge_image". Edge carries guidance for
+	// this install instead of a release upgrade command.
+	ReleaseKind string        `json:"release_kind"`
+	Channel     string        `json:"channel"`
+	Edge        *edgeGuidance `json:"edge,omitempty"`
 }
 
 // handleUpdatePreflight handles GET /api/v1/updates/preflight: read-only
@@ -41,10 +46,12 @@ func (rt *Router) handleUpdatePreflight(w http.ResponseWriter, r *http.Request) 
 		UpgradeCommand:  upgradeCommand("", false),
 		RollbackCommand: "levelrail restore-snapshot --list",
 		CosignCommand:   installScriptCommand("install-cosign"),
+		ReleaseKind:     upgrade.KindRelease,
+		Channel:         rt.currentUpdateChannel(r.Context()),
 	}
 	release, known := rt.latestReleaseForCurrentChannel(r.Context())
 	var assets []string
-	var upgradeTag string
+	var upgradeTag, kind string
 	if known && release != nil {
 		tag, url := release.Tag, release.URL
 		out.LatestVersion, out.ReleaseURL = &tag, &url
@@ -52,6 +59,9 @@ func (rt *Router) handleUpdatePreflight(w http.ResponseWriter, r *http.Request) 
 		out.ReleaseNotes = truncateRunes(cleanReleaseNotes(release.Body), releaseNotesMaxRunes)
 		upgradeTag = tag
 		assets = release.AssetNames
+		kind = releaseKind(release)
+		out.ReleaseKind = kind
+		out.Edge = buildEdgeGuidance(release)
 	}
 	out.Checks = upgrade.Run(r.Context(), upgrade.Inputs{
 		Lookup:        os.LookupEnv,
@@ -61,10 +71,18 @@ func (rt *Router) handleUpdatePreflight(w http.ResponseWriter, r *http.Request) 
 		Now:           time.Now(),
 		AssetNames:    assets,
 		ReleaseKnown:  known && release != nil,
+		ReleaseKind:   kind,
 		LookPath:      exec.LookPath,
 	})
 	verified := checkStatus(out.Checks, "release_verifier") == upgrade.StatusOK
 	out.UpgradeCommand = upgradeCommand(upgradeTag, verified)
+	if out.Edge != nil {
+		out.UpgradeCommand = out.Edge.RecreateCommand
+		if out.Edge.Installable {
+			out.UpgradeCommand = out.Edge.PullCommand + " && " + out.Edge.RecreateCommand
+		}
+		out.RollbackCommand = ""
+	}
 	out.Blocked = upgrade.Blocked(out.Checks)
 	writeJSON(w, http.StatusOK, out)
 }

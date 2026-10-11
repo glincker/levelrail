@@ -18,6 +18,8 @@ const (
 	StatusWarn    = "warn"
 	StatusFail    = "fail"
 	StatusUnknown = "unknown"
+	// StatusSkipped marks a check that does not apply to this target.
+	StatusSkipped = "skipped"
 )
 
 // Check is one preflight result.
@@ -79,6 +81,9 @@ type Inputs struct {
 	Now           time.Time
 	AssetNames    []string
 	ReleaseKnown  bool
+	// ReleaseKind is Release.Kind of the target; an edge image has no
+	// binaries, so the checksum and signature checks do not apply to it.
+	ReleaseKind string
 	// LookPath finds the signature verifier (cosign) on the host; nil reports unknown.
 	LookPath func(string) (string, error)
 }
@@ -106,6 +111,10 @@ func Blocked(checks []Check) bool {
 
 func releaseAssetsCheck(in Inputs) Check {
 	c := Check{Code: "release_signature", Name: "Release checksums and signature"}
+	if in.ReleaseKind == KindEdgeImage {
+		c.Status, c.Message = StatusSkipped, EdgeNoSignatureNote
+		return c
+	}
 	if !in.ReleaseKnown {
 		c.Status, c.Message = StatusUnknown, "latest release could not be fetched"
 		return c
@@ -131,8 +140,15 @@ func releaseAssetsCheck(in Inputs) Check {
 // VerifierTool is the program the installer uses to check the release signature.
 const VerifierTool = "cosign"
 
+// EdgeNoSignatureNote explains why release checks are skipped for edge.
+const EdgeNoSignatureNote = "Edge builds are container images, not signed binaries, so there are no checksums to verify."
+
 func verifierCheck(in Inputs) Check {
 	c := Check{Code: "release_verifier", Name: "Signature verification tool"}
+	if in.ReleaseKind == KindEdgeImage {
+		c.Status, c.Message = StatusSkipped, EdgeNoSignatureNote
+		return c
+	}
 	if in.LookPath == nil {
 		c.Status, c.Message = StatusUnknown, "could not look for "+VerifierTool
 		return c

@@ -99,5 +99,17 @@
     "notifyDeviceLoginHint": "Sends a link only, never the code. Turn on a dashboard URL so the link can open this page.",
     "notifyDeviceLoginExpired": "Notify when a CLI login expires",
     "notifyDeviceLoginExpiredHint": "Sends a link only, never the code, when a login request runs out of time unapproved."
+  },
+  "copyFailure": {
+    "technical": "Technical details",
+    "technicalHelp": "The raw error with passwords removed. Share it when asking for help.",
+    "snooze": "Snooze for a day",
+    "snoozed": "Snoozed for a day.",
+    "dismiss": "Dismiss",
+    "dismissed": "Dismissed. A new failed attempt will show again.",
+    "openDatabase": "Open the database",
+    "snoozedCount_one": "{{count}} snoozed item hidden",
+    "snoozedCount_other": "{{count}} snoozed items hidden",
+    "showSnoozed": "Show"
   }
 }

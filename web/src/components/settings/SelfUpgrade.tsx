@@ -13,6 +13,7 @@ import {
   type SelfUpgradeAttempt,
 } from '../../queries/selfUpgrade'
 import { CopyCommand } from './CopyCommand'
+import { EdgeUpdateGuidance } from './EdgeUpdateGuidance'
 
 const OUTCOME_TONE: Record<AttemptOutcome, Tone> = {
   running: 'info',
@@ -103,6 +104,8 @@ export function SelfUpgrade() {
         <p className="text-sm text-muted-foreground">
           {t('selfUpgrade.noPlan')}
         </p>
+      ) : data.edge ? (
+        <EdgeUpdateGuidance edge={data.edge} updateAvailable />
       ) : (
         <div className="space-y-3">
           <p className="text-sm">

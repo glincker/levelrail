@@ -22,12 +22,14 @@ const copyPollInterval = 3 * time.Second
 type dataFlags struct {
 	apiURL, profile string
 	jsonOut         bool
+	verbose         bool
 }
 
 func (f *dataFlags) register(fs *flag.FlagSet) {
 	fs.StringVar(&f.apiURL, "api-url", "", "control plane API base URL")
 	fs.StringVar(&f.profile, "profile", "", "named credentials profile for the control plane")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the result as JSON")
+	fs.BoolVar(&f.verbose, "verbose", false, "show the raw technical error of a failed copy")
 }
 
 func newDataFlagSet(prog, name string, stderr io.Writer) *flag.FlagSet {
@@ -94,7 +96,7 @@ func runMigrateDbCopy(prog string, args []string, stdin io.Reader, stdout, stder
 			return c
 		}
 	} else {
-		printDataCopy(stdout, []apiclient.DataCopyStatus{st}, true)
+		printDataCopy(stdout, []apiclient.DataCopyStatus{st}, true, f.verbose)
 	}
 	if st.Status == "failed" {
 		return exitCheckFailed
@@ -147,11 +149,11 @@ func runMigrateDbStatus(prog string, args []string, stdout, stderr io.Writer, lo
 	if f.jsonOut {
 		return printJSONOrFail(stdout, stderr, rows)
 	}
-	printDataCopy(stdout, rows, len(positional) == 1)
+	printDataCopy(stdout, rows, len(positional) == 1, f.verbose)
 	return exitOK
 }
 
-func printDataCopy(w io.Writer, rows []apiclient.DataCopyStatus, detail bool) {
+func printDataCopy(w io.Writer, rows []apiclient.DataCopyStatus, detail, verbose bool) {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "DATABASE\tENGINE\tSTATUS\tTABLES\tMISMATCHED")
 	for _, r := range rows {
@@ -162,7 +164,16 @@ func printDataCopy(w io.Writer, rows []apiclient.DataCopyStatus, detail bool) {
 		return
 	}
 	for _, r := range rows {
-		if r.Reason != "" {
+		switch {
+		case r.Failure != nil:
+			_, _ = fmt.Fprintf(w, "\n%s: %s\n  %s\n", r.Database, r.Failure.Summary, r.Failure.Hint)
+			switch {
+			case verbose && r.Failure.Technical != "":
+				_, _ = fmt.Fprintf(w, "  technical details: %s\n", r.Failure.Technical)
+			case r.Failure.Technical != "":
+				_, _ = fmt.Fprintln(w, "  (add --verbose for the technical details)")
+			}
+		case r.Reason != "":
 			_, _ = fmt.Fprintf(w, "\n%s: %s\n", r.Database, r.Reason)
 		}
 		for _, t := range r.Tables {

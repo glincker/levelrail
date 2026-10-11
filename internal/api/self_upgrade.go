@@ -129,7 +129,12 @@ type selfUpgradePlanResource struct {
 	CannotApplyWhy string                `json:"cannot_apply_reason,omitempty"`
 	Command        string                `json:"command"`
 	Steps          []string              `json:"steps"`
+	// Edge is set when the channel's target is the edge container image,
+	// which this self-upgrade does not apply.
+	Edge *edgeGuidance `json:"edge,omitempty"`
 }
+
+const errEdgeNotApplicable = "edge builds are container images, not release binaries: pull the image instead, or switch the channel to beta or stable"
 
 var selfUpgradeSteps = []string{
 	selfupgrade.StepDownload, selfupgrade.StepChecksum, selfupgrade.StepSignature, selfupgrade.StepProbe,
@@ -192,6 +197,10 @@ func (rt *Router) handleSelfUpgradePlan(w http.ResponseWriter, r *http.Request) 
 			writeError(w, http.StatusBadGateway, "the latest release could not be fetched")
 			return
 		}
+		if g := buildEdgeGuidance(release); g != nil {
+			writeJSON(w, http.StatusOK, edgePlan(release.Tag, g))
+			return
+		}
 		target = release.Tag
 	}
 	plan, status, msg := rt.buildSelfUpgradePlan(r.Context(), target)
@@ -222,6 +231,10 @@ func (rt *Router) handleSelfUpgradeStart(w http.ResponseWriter, r *http.Request)
 	}
 	if len(req.Ack) > maxAckIDs {
 		writeError(w, http.StatusBadRequest, "too many acknowledgements")
+		return
+	}
+	if strings.HasPrefix(strings.TrimSpace(req.Target), "main-") {
+		writeError(w, http.StatusBadRequest, errEdgeNotApplicable)
 		return
 	}
 	plan, status, msg := rt.buildSelfUpgradePlan(r.Context(), strings.TrimSpace(req.Target))
@@ -357,4 +370,15 @@ func toSelfUpgradeItem(row store.SelfUpgradeAttempt) selfUpgradeAttemptItem {
 		}
 	}
 	return item
+}
+
+func edgePlan(tag string, g *edgeGuidance) selfUpgradePlanResource {
+	cmd := g.RecreateCommand
+	if g.Installable {
+		cmd = g.PullCommand + " && " + g.RecreateCommand
+	}
+	return selfUpgradePlanResource{
+		CurrentVersion: version.Version, TargetVersion: tag, Breaking: []selfUpgradeBreaking{}, Steps: []string{},
+		CannotApplyWhy: errEdgeNotApplicable, Command: cmd, Edge: g,
+	}
 }

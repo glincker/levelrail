@@ -144,6 +144,11 @@ type updateStatusResource struct {
 	UpdateAvailable bool    `json:"update_available"`
 	ReleaseURL      *string `json:"release_url"`
 	PublishedAt     *string `json:"published_at"`
+	// ReleaseKind is "release" or "edge_image"; Channel is the active one.
+	ReleaseKind string `json:"release_kind"`
+	Channel     string `json:"channel"`
+	// Image is the container image reference an edge build is pulled from.
+	Image *string `json:"image,omitempty"`
 }
 
 // handleGetUpdates handles GET /api/v1/updates: the running version
@@ -154,8 +159,8 @@ type updateStatusResource struct {
 // update_available: there is no meaningful "newer" to compare against an
 // unreleased build.
 func (rt *Router) handleGetUpdates(w http.ResponseWriter, r *http.Request) {
-	resp := updateStatusResource{CurrentVersion: version.Version}
 	channel := rt.currentUpdateChannel(r.Context())
+	resp := updateStatusResource{CurrentVersion: version.Version, ReleaseKind: upgrade.KindRelease, Channel: channel}
 
 	if channel == upgrade.ChannelStable {
 		release, ok := rt.updatesCache.fresh(updatesCacheTTL)
@@ -197,6 +202,11 @@ func (rt *Router) handleGetUpdates(w http.ResponseWriter, r *http.Request) {
 		resp.ReleaseURL = &url
 		resp.PublishedAt = &published
 		resp.UpdateAvailable = upgrade.UpdateAvailable(version.Version, release)
+		resp.ReleaseKind = releaseKind(release)
+		if release.IsEdge() {
+			image := release.Image
+			resp.Image = &image
+		}
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

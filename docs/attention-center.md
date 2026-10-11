@@ -14,7 +14,7 @@ Some states block on a person and used to be visible only if you went looking. T
 | CLI login expired or denied | A login nobody approved in time, or that was denied | Start over from the terminal, or dismiss |
 | Deploy approval pending | A deploy into a protected environment | Open Approvals |
 | API token expiring or expired | A token with an expiry inside the window | Create a replacement and revoke the old one |
-| Data copy failed or stalled | A live data copy into a managed database | Open the database and retry |
+| Data copy failed or stalled | The latest live data copy into a managed database | Read the plain-language cause, fix it and retry |
 | Backup overdue | A scheduled backup later than its schedule allows | Open the database and run a backup |
 | Invitations waiting | Pending or expired, unaccepted invitations | Open Users and resend or revoke |
 | Certificate renewal stalled | A certificate that should have renewed by now, with the CA's last error | Open Domains, read the CA error |
@@ -101,6 +101,15 @@ You can also toggle both when editing a channel in the dashboard. A notice conta
 | `APP_DEVICE_HISTORY_RETENTION` | `720h` | How long resolved requests are kept |
 | `APP_ATTENTION_TOKEN_WINDOW` | `168h` | How far ahead token expiry is flagged, and how long after |
 | `APP_ATTENTION_BACKUP_GRACE` | `6h` | Slack past a backup's expected interval before it is overdue |
+| `APP_ATTENTION_COPY_FAILURE_DAYS` | `14` | Days a failed data copy stays an incident before it moves to history |
+
+## Failed data copies
+
+A failed copy is an incident only while it is the latest attempt for that database. It drops off by itself when a restore into that database succeeded after it, when a newer attempt is running or has been verified, or when it is older than `APP_ATTENTION_COPY_FAILURE_DAYS`.
+
+The item states the cause in one sentence with a fix hint, for example "The source database did not answer on 72.61.8.70:5432 in time. Check that it is reachable from this server (firewall, allowed IPs) and retry." Covered shapes: connection timeout, connection refused, host name not found, authentication failed, database does not exist, SSL required or refused, permission denied, out of disk space, target database not running, and a verification mismatch. The raw error is under **Technical details** in the dashboard and behind `--verbose` in `levelrail-cli migrate db-status`. It is never the default view, and passwords and connection strings are redacted before it leaves the server.
+
+Each failed attempt can be snoozed for a day (remembered in this browser) or dismissed (remembered for your account). Both apply to that attempt only: a new failed attempt shows again.
 
 ## Security notes
 

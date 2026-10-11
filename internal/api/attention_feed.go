@@ -104,6 +104,8 @@ func (rt *Router) databaseAttentionItems(r *http.Request, abilities []string, no
 		return nil
 	}
 	imports := rt.dataImportsByName(ctx)
+	dismissed := rt.attentionDismissals(r)
+	copyWindow := copyFailureWindow()
 	grace := envDuration(envAttentionBackupGrace, alerting.DefaultBackupMissingGracePeriod)
 	var items []attention.Item
 	for _, d := range dbs {
@@ -111,7 +113,11 @@ func (rt *Router) databaseAttentionItems(r *http.Request, abilities []string, no
 			continue
 		}
 		if imp, ok := imports[d.Name]; ok {
-			if it, ok := dataCopyItem(d.Name, imp, now); ok {
+			var lastRestore time.Time
+			if imp.Status == store.DataImportFailed {
+				lastRestore = rt.latestSuccessfulRestore(ctx, d.Name)
+			}
+			if it, ok := dataCopyAttentionItem(d.Name, imp, now, copyWindow, lastRestore); ok && !dismissed[it.ID] {
 				items = append(items, it)
 			}
 		}
@@ -133,21 +139,6 @@ func (rt *Router) dataImportsByName(ctx context.Context) map[string]store.Databa
 		out[row.DatabaseName] = row
 	}
 	return out
-}
-
-func dataCopyItem(name string, imp store.DatabaseDataImport, now time.Time) (attention.Item, bool) {
-	switch {
-	case imp.Status == store.DataImportFailed:
-		detail := "the last copy of live data failed"
-		if imp.Reason != "" {
-			detail += ": " + imp.Reason
-		}
-		return feedItem(attention.Warning, attention.KindDataCopy, name, detail, map[string]string{"state": store.DataImportFailed, "reason": imp.Reason}), true
-	case imp.Status == store.DataImportCopying && !imp.StartedAt.IsZero() && now.Sub(imp.StartedAt) > copyTimeout():
-		detail := "a data copy has been running since " + imp.StartedAt.UTC().Format(time.RFC3339) + " and looks stalled"
-		return feedItem(attention.Warning, attention.KindDataCopy, name, detail, map[string]string{"state": "stalled"}), true
-	}
-	return attention.Item{}, false
 }
 
 func (rt *Router) backupOverdueItem(ctx context.Context, d store.DesiredDatabase, grace time.Duration, now time.Time) (attention.Item, bool) {

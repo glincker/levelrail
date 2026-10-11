@@ -2907,6 +2907,9 @@ type UpdatesResource struct {
 	UpdateAvailable bool    `json:"update_available"`
 	ReleaseURL      *string `json:"release_url"`
 	PublishedAt     *string `json:"published_at"`
+	ReleaseKind     string  `json:"release_kind,omitempty"`
+	Channel         string  `json:"channel,omitempty"`
+	Image           *string `json:"image,omitempty"`
 }
 
 // ChangelogEntryResource mirrors internal/api's changelogEntryResource:

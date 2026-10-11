@@ -51,6 +51,31 @@ type Release struct {
 	PublishedAt string
 	Body        string
 	AssetNames  []string
+	// Kind is KindRelease (or empty) for a GitHub release and KindEdgeImage
+	// for the edge channel's pseudo-release. Commit and Image are set only
+	// for the latter.
+	Kind   string
+	Commit string
+	Image  string
+}
+
+// Release kinds. An edge pseudo-release is a commit on main shipped as the
+// moving container image tag, never a GitHub release with binaries.
+const (
+	KindRelease   = "release"
+	KindEdgeImage = "edge_image"
+)
+
+// EdgeImageTag is the moving image tag release.yml pushes on every main push.
+const EdgeImageTag = "edge"
+
+// IsEdge reports whether r is the edge channel's pseudo-release.
+func (r *Release) IsEdge() bool { return r != nil && r.Kind == KindEdgeImage }
+
+// EdgeImage returns the image reference the edge channel follows for repo
+// ("owner/name").
+func EdgeImage(repo string) string {
+	return "ghcr.io/" + strings.ToLower(repo) + ":" + EdgeImageTag
 }
 
 type rawRelease struct {
@@ -203,7 +228,10 @@ func FetchLatestEdge(ctx context.Context, repo string) (*Release, error) {
 	if len(sha) > mainCommitShortSHALen {
 		sha = sha[:mainCommitShortSHALen]
 	}
-	return &Release{Tag: "main-" + sha, URL: c.HTMLURL, PublishedAt: c.Commit.Committer.Date}, nil
+	return &Release{
+		Tag: "main-" + sha, URL: c.HTMLURL, PublishedAt: c.Commit.Committer.Date,
+		Kind: KindEdgeImage, Commit: c.SHA, Image: EdgeImage(repo),
+	}, nil
 }
 
 // Fetchers groups one fetch function per channel, the same overridable
@@ -237,6 +265,14 @@ func (f Fetchers) LatestForChannel(ctx context.Context, channel string) (*Releas
 	}
 }
 
+// edgeSHA extracts the commit from a "main-<sha>" version. A built image
+// carries the full 40 character sha, the lookup the short one, so they are
+// compared by prefix.
+func edgeSHA(v string) (string, bool) {
+	sha, ok := strings.CutPrefix(v, "main-")
+	return sha, ok && sha != ""
+}
+
 // UpdateAvailable reports whether latest represents a newer build than
 // currentVersion. A "dev" build never reports an update available:
 // there is no meaningful newer build to compare an unreleased build
@@ -245,6 +281,11 @@ func (f Fetchers) LatestForChannel(ctx context.Context, channel string) (*Releas
 func UpdateAvailable(currentVersion string, latest *Release) bool {
 	if latest == nil || currentVersion == "dev" {
 		return false
+	}
+	if cur, ok := edgeSHA(currentVersion); ok {
+		if want, ok := edgeSHA(latest.Tag); ok {
+			return !strings.HasPrefix(cur, want) && !strings.HasPrefix(want, cur)
+		}
 	}
 	cmp, ok := semver.Compare(currentVersion, latest.Tag)
 	if !ok {

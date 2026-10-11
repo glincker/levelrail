@@ -26,6 +26,23 @@ type UpdatePreflight struct {
 	UpgradeCommand  string         `json:"upgrade_command"`
 	RollbackCommand string         `json:"rollback_command"`
 	CosignCommand   string         `json:"cosign_command"`
+	ReleaseKind     string         `json:"release_kind,omitempty"`
+	Channel         string         `json:"channel,omitempty"`
+	Edge            *EdgeGuidance  `json:"edge,omitempty"`
+}
+
+// EdgeGuidance is what the edge channel means for this install: a moving
+// container image tag rather than a release binary.
+type EdgeGuidance struct {
+	Commit          string   `json:"commit,omitempty"`
+	CommitURL       string   `json:"commit_url,omitempty"`
+	Image           string   `json:"image"`
+	RunsInContainer bool     `json:"runs_in_container"`
+	Installable     bool     `json:"installable"`
+	PullCommand     string   `json:"pull_command,omitempty"`
+	RecreateCommand string   `json:"recreate_command,omitempty"`
+	ComposeSnippet  string   `json:"compose_snippet,omitempty"`
+	SwitchTo        []string `json:"switch_to,omitempty"`
 }
 
 // GetUpdatePreflight calls GET /api/v1/updates/preflight.

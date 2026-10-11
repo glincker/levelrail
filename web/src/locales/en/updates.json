@@ -27,7 +27,8 @@
       "ok": "Pass",
       "warn": "Warning",
       "fail": "Blocked",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "skipped": "Not applicable"
     }
   },
   "history": {
@@ -186,7 +187,6 @@
       "first": "first report"
     }
   },
-
   "selfUpgrade": {
     "title": "Upgrade this server",
     "description": "Downloads the release, checks its checksum and signature, backs up the database, tries the migrations on a copy, swaps the program and restarts. If the new release does not become healthy in time, the previous program and data come back automatically.",
@@ -250,5 +250,45 @@
       "own_ports": "Recommended: install with its own ports 80 and 443",
       "behind_proxy": "Recommended: install behind your existing proxy"
     }
+  },
+  "channels": {
+    "label": "Channel",
+    "active": "Release channel",
+    "stable": {
+      "label": "Stable (recommended)",
+      "description": "Signed releases that are ready for everyday use."
+    },
+    "beta": {
+      "label": "Beta (pre-release)",
+      "description": "Signed pre-releases with new features, a little earlier than stable."
+    },
+    "edge": {
+      "label": "Edge (latest main, unstable)",
+      "description": "A container image of the newest commit on main. Not signed, can break, container installs only."
+    }
+  },
+  "version": {
+    "running": "Running version",
+    "latest": "A new version is available: {{version}}",
+    "latestEdge": "A newer edge build is available: {{version}}",
+    "upToDate": "You're on the latest version.",
+    "upToDateEdge": "You're on the latest edge build.",
+    "none": "No releases published yet.",
+    "viewRelease": "View release",
+    "viewCommit": "View commit",
+    "image": "Image: {{image}}",
+    "channelLine": "Channel: {{channel}}"
+  },
+  "edge": {
+    "title": "Edge is a container image",
+    "intro": "Edge builds are container images, not signed binaries, so there is no release or checksum to verify.",
+    "pull": "Pull the image",
+    "recreate": "Recreate the container",
+    "compose": "Or pin it in your compose file",
+    "binaryTitle": "Edge cannot be installed on this host",
+    "binaryBody": "This control plane runs as a host binary, so edge builds are not installable here. Switch to a channel that ships binaries.",
+    "switchTo": "Switch to {{channel}}",
+    "switched": "Channel switched to {{channel}}.",
+    "commit": "Commit {{commit}}"
   }
 }

@@ -7,7 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
-import { updatesKeys } from './updates'
+import { updatesKeys, type EdgeGuidance } from './updates'
 
 export interface SelfUpgradeBreaking {
   id: string
@@ -25,6 +25,7 @@ export interface SelfUpgradePlan {
   cannot_apply_reason?: string
   command: string
   steps: string[]
+  edge?: EdgeGuidance
 }
 
 export type AttemptOutcome =

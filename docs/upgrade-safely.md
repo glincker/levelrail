@@ -91,6 +91,25 @@ Breaking changes are read from each release's notes. A release author can declar
 
 `ack` defaults to true. Without the comment, every bullet under a heading named "Breaking changes" (including release-please's "BREAKING CHANGES" section) counts and requires acknowledgement. When the notes cannot be fetched the dashboard refuses to start the upgrade and the host command asks for `--skip-notes-check`.
 
+## Channels and the edge channel
+
+Settings > Updates shows the active channel on the Version card with a one-line description, and the same descriptions sit under the channel picker.
+
+| Channel | What it follows | How it installs |
+| --- | --- | --- |
+| Stable | The latest non-prerelease GitHub release | Signed binary, checksums and signature verified |
+| Beta | The newest pre-release | Signed binary, checksums and signature verified |
+| Edge | The newest commit on `main`, shipped as the moving `edge` container image tag | Pull the image and recreate the container |
+
+Edge is not a GitHub release. It has no binaries, no `checksums.txt` and no signature, so the "Release checksums and signature" preflight check is shown as not applicable instead of blocking, and the card says so. The version shows as `main-<short sha>` and links to the commit.
+
+What edge means for your install:
+
+- **Control plane runs as a container.** The preflight card shows the exact image (`ghcr.io/<owner>/<name>:edge`) with the `docker pull` command and the compose pull and recreate command. `levelrail-cli upgrade` prints the same.
+- **Control plane runs as a host binary under systemd.** Edge is not installable that way. The card offers one-click buttons to move the channel to Beta or Stable (`levelrail-cli settings updates set --channel beta` does the same).
+
+Self-upgrade (`--apply`, and the dashboard Upgrade button) only ever applies a release tag, so it refuses a `main-<sha>` target.
+
 ## Mirrors and air-gapped hosts
 
 `LEVELRAIL_RELEASE_BASE_URL` points the download at an https mirror laid out like GitHub release downloads (`<base>/<tag>/<asset>`). `LEVELRAIL_INSECURE_MIRROR=1` allows plain http for a local test mirror. Use `--skip-notes-check` when GitHub's API is unreachable.

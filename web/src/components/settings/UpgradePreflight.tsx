@@ -7,12 +7,14 @@ import {
 } from '../../queries/updates'
 import { CopyCommand } from './CopyCommand'
 import { ReleaseNotes } from './ReleaseNotes'
+import { EdgeUpdateGuidance } from './EdgeUpdateGuidance'
 
 const STATUS_TONE: Record<UpgradeCheckStatus, Tone> = {
   ok: 'success',
   warn: 'warning',
   fail: 'danger',
   unknown: 'neutral',
+  skipped: 'neutral',
 }
 
 export function UpgradePreflight() {
@@ -71,6 +73,11 @@ export function UpgradePreflight() {
       </ul>
       {data.blocked ? (
         <p className="text-sm text-destructive">{t('preflight.blocked')}</p>
+      ) : data.edge ? (
+        <EdgeUpdateGuidance
+          edge={data.edge}
+          updateAvailable={data.update_available}
+        />
       ) : data.update_available ? (
         <div className="space-y-3">
           <CopyCommand
