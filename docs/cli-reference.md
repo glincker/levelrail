@@ -713,12 +713,24 @@ levelrail-cli backups schedule set <database> --target ID --cron EXPR [flags]
 levelrail-cli backups schedule clear <database> [flags]
 levelrail-cli backups verify <database> --backup ID [flags]
 levelrail-cli backups verifications <database> --backup ID [flags]
+levelrail-cli backups health [flags]
+levelrail-cli backups protection [--refresh] [flags]
+levelrail-cli backups drill run --backup ID [--wait] [flags]
+levelrail-cli backups drill list [--app A --volume V | --database D] [--limit N]
+levelrail-cli backups drill show <drill-id> [flags]
+levelrail-cli backups volumes list <app> <volume> [flags]
+levelrail-cli backups volumes policy get <app> <volume> [flags]
+levelrail-cli backups volumes policy set <app> <volume> [--retain-daily N --retain-weekly N --retain-monthly N --pre-hook CMD --post-hook CMD --pause]
+levelrail-cli backups volumes restore <app> <volume> --backup ID [--new-volume NAME] [--target-app APP] [--node NODE]
 ```
 
 - `list-all` lists backup history across every database and app volume instance wide.
 - `delete` removes one archived backup (destructive). `download` streams a succeeded backup's object to stdout.
 - `restore` restores in place and is destructive; `--confirm` takes the database name. `restore-as-new` restores into a brand new database and is non destructive. `restores` and `clone-restores` list the attempt history of each.
 - `verify` checks a backup is intact without a live restore; `verifications` lists past attempts.
+- `health` shows every backed up resource with its last backup and last verified restore. `protection` shows bucket object lock and versioning.
+- `drill run` restores a backup into a scratch resource, validates and destroys it, and exits non zero when it fails. See [Prove your backups work](prove-your-backups-work.md).
+- `volumes restore` restores into a new volume only, optionally named for another app or on another node.
 
 ## App volume backups
 

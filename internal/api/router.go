@@ -429,6 +429,8 @@ type Router struct {
 	serviceVolumeRestoreRunner   ServiceVolumeRestoreRunner       // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore returns 501, same shape as restoreRunner above
 	volumeCloneRestoreHistory    VolumeCloneRestoreHistoryStore   // always set, same "core Store interface" shape as cloneRestoreHistory above
 	appVolumeMoves               AppVolumeMoveStore               // always set, same "core Store interface" shape as backupHistory above
+	backupProtection             BackupProtection                 // nil is valid: backup health, drill, policy and restore-to routes return 501
+	backupProtectionStore        BackupProtectionStore            // nil is valid, same as backupProtection above
 	volumeCloneRestoreRunner     VolumeCloneRestoreRunner         // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new returns 501, same shape as cloneRestoreRunner above
 	deployAttempts               DeployAttemptStore               // always set, same "core Store interface" shape as certs/staticSites above
 	probeAttempts                ProbeAttemptStore                // always set, same "core Store interface" shape as deployAttempts above

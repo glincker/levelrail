@@ -821,6 +821,11 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/restore-as-new | AbilityWriteSensitive | handleCloneRestore |
 | GET | /api/v1/databases/{name}/clone-restores | AbilityRead | handleListCloneRestores |
 | DELETE | /api/v1/databases/{name}/backups/{historyId} | AbilityWriteSensitive | handleDeleteBackup |
+| GET | /api/v1/backups/health | AbilityRead | handleBackupHealth |
+| GET | /api/v1/backups/drills | AbilityRead | handleListBackupDrills |
+| GET | /api/v1/backups/drills/{id} | AbilityRead | handleGetBackupDrill |
+| POST | /api/v1/backups/drills | AbilityWriteSensitive | handleStartBackupDrill |
+| POST | /api/v1/backups/protection/refresh | AbilityWriteSensitive | handleRefreshBackupProtection |
 
 ## App Volume Backups / Restore
 
@@ -845,6 +850,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/volumes/{volume}/clone-restores | AbilityRead | handleListVolumeCloneRestores |
 | DELETE | /api/v1/apps/{name}/volumes/{volume}/backups/{historyId} | AbilityWriteSensitive | handleDeleteVolumeBackup |
 | PUT | /api/v1/apps/{name}/volumes | AbilityWrite | handleSetAppVolumes |
+| GET | /api/v1/apps/{name}/volumes/{volume}/backup-policy | AbilityRead | handleGetVolumeBackupPolicy |
+| PUT | /api/v1/apps/{name}/volumes/{volume}/backup-policy | AbilityWriteSensitive | handleSetVolumeBackupPolicy |
+| POST | /api/v1/apps/{name}/volumes/{volume}/restore-to | AbilityWriteSensitive | handleVolumeRestoreTo |
 
 ## App Storage / Database Attach
 

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"filippo.io/age"
+
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -41,6 +43,8 @@ type VolumeCloneRestoreRunner struct {
 	Downloader     Downloader
 	VolumeRestorer VolumeRestorer
 	Volumes        VolumeCreator
+	// Identities decrypt sealed backups; empty is valid for raw ones.
+	Identities []age.Identity
 	// Now returns the current time, the same "field, not time.Now called
 	// directly" reasoning CloneRestoreRunner.Now's own doc comment gives.
 	Now func() time.Time
@@ -97,5 +101,5 @@ func (r *VolumeCloneRestoreRunner) createAndRestore(ctx context.Context, newVolu
 	if err := r.Volumes.EnsureVolume(ctx, newVolumeName); err != nil {
 		return fmt.Errorf("create volume %q: %w", newVolumeName, err)
 	}
-	return downloadAndRestoreVolume(ctx, r.Store, r.Secrets, r.Downloader, r.VolumeRestorer, newVolumeName, backupHistoryID)
+	return downloadAndRestoreVolume(ctx, r.Store, r.Secrets, r.Downloader, r.VolumeRestorer, r.Identities, newVolumeName, backupHistoryID)
 }

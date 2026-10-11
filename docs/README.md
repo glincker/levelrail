@@ -82,6 +82,7 @@ Four main types, plus two Levelrail-specific categories:
 | --- | --- |
 | [managing-databases.md](managing-databases.md) | Create and manage Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse resources |
 | [backups-and-storage.md](backups-and-storage.md) | Backup targets, registry credentials, and app volume backups |
+| [prove-your-backups-work.md](prove-your-backups-work.md) | Restore drills, backup health, restore to a new volume, app or node |
 
 #### Observability and Monitoring
 

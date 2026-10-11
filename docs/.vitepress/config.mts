@@ -140,6 +140,7 @@ const sidebarGroups = [
             link: '/connecting-apps-to-databases',
           },
           { text: 'Backups and storage', link: '/backups-and-storage' },
+          { text: 'Prove your backups work', link: '/prove-your-backups-work' },
           { text: 'Object storage', link: '/object-storage' },
           { text: 'Network shares', link: '/network-shares' },
           { text: 'Log archive', link: '/log-archive' },

@@ -61,6 +61,11 @@ type BackupHistory struct {
 	StartedAt      string
 	FinishedAt     string
 	ChecksumSHA256 string
+	// Codec is "" for a raw legacy object, "zstd" or "zstd+age" for a sealed one.
+	Codec          string
+	ManifestDigest string
+	ManifestFiles  int64
+	ManifestBytes  int64
 }
 
 // StartBackupHistory records a backup attempt beginning, status
@@ -122,10 +127,10 @@ func (db *DB) FinishBackupHistory(ctx context.Context, id, status string, sizeBy
 func (db *DB) GetBackupHistory(ctx context.Context, id string) (BackupHistory, error) {
 	var h BackupHistory
 	err := db.QueryRowContext(ctx, `
-		SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256
+		SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
 		FROM backup_history
 		WHERE id = ?
-	`, id).Scan(&h.ID, &h.DatabaseName, &h.ResourceKind, &h.ServiceName, &h.VolumeName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt, &h.ChecksumSHA256)
+	`, id).Scan(&h.ID, &h.DatabaseName, &h.ResourceKind, &h.ServiceName, &h.VolumeName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt, &h.ChecksumSHA256, &h.Codec, &h.ManifestDigest, &h.ManifestFiles, &h.ManifestBytes)
 	if errors.Is(err, sql.ErrNoRows) {
 		return BackupHistory{}, ErrBackupHistoryNotFound
 	}
@@ -276,7 +281,7 @@ func (db *DB) ListBackupHistory(ctx context.Context, databaseName string, limit 
 	)
 	if before != nil {
 		rows, err = db.QueryContext(ctx, `
-			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
 			FROM backup_history
 			WHERE database_name = ? AND started_at < ?
 			ORDER BY started_at DESC
@@ -284,7 +289,7 @@ func (db *DB) ListBackupHistory(ctx context.Context, databaseName string, limit 
 		`, databaseName, before.UTC().Format(time.RFC3339), limit)
 	} else {
 		rows, err = db.QueryContext(ctx, `
-			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
 			FROM backup_history
 			WHERE database_name = ?
 			ORDER BY started_at DESC
@@ -318,7 +323,7 @@ func (db *DB) ListAllBackupHistory(ctx context.Context, limit int, before *time.
 	)
 	if before != nil {
 		rows, err = db.QueryContext(ctx, `
-			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
 			FROM backup_history
 			WHERE started_at < ?
 			ORDER BY started_at DESC
@@ -326,7 +331,7 @@ func (db *DB) ListAllBackupHistory(ctx context.Context, limit int, before *time.
 		`, before.UTC().Format(time.RFC3339), limit)
 	} else {
 		rows, err = db.QueryContext(ctx, `
-			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
 			FROM backup_history
 			ORDER BY started_at DESC
 			LIMIT ?
@@ -354,7 +359,7 @@ func scanBackupHistoryRows(rows *sql.Rows) ([]BackupHistory, error) {
 	var out []BackupHistory
 	for rows.Next() {
 		var h BackupHistory
-		if err := rows.Scan(&h.ID, &h.DatabaseName, &h.ResourceKind, &h.ServiceName, &h.VolumeName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt, &h.ChecksumSHA256); err != nil {
+		if err := rows.Scan(&h.ID, &h.DatabaseName, &h.ResourceKind, &h.ServiceName, &h.VolumeName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt, &h.ChecksumSHA256, &h.Codec, &h.ManifestDigest, &h.ManifestFiles, &h.ManifestBytes); err != nil {
 			return nil, fmt.Errorf("scan backup history row: %w", err)
 		}
 		out = append(out, h)
@@ -377,7 +382,7 @@ func (db *DB) ListServiceVolumeBackupHistory(ctx context.Context, serviceName, v
 	)
 	if before != nil {
 		rows, err = db.QueryContext(ctx, `
-			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
 			FROM backup_history
 			WHERE resource_kind = ? AND service_name = ? AND volume_name = ? AND started_at < ?
 			ORDER BY started_at DESC
@@ -385,7 +390,7 @@ func (db *DB) ListServiceVolumeBackupHistory(ctx context.Context, serviceName, v
 		`, BackupResourceKindVolume, serviceName, volumeName, before.UTC().Format(time.RFC3339), limit)
 	} else {
 		rows, err = db.QueryContext(ctx, `
-			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
 			FROM backup_history
 			WHERE resource_kind = ? AND service_name = ? AND volume_name = ?
 			ORDER BY started_at DESC

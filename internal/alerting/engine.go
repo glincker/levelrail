@@ -103,6 +103,8 @@ type Engine struct {
 
 	logArchive LogArchiveSource
 
+	restoreDrills RestoreDrillSource
+
 	nodeCertWarning, nodeCertCritical time.Duration
 
 	// versionSkew* back kind=version_skew rules, set via SetVersionSkew.
@@ -230,6 +232,9 @@ func (e *Engine) SetControlPlaneBackups(src ControlPlaneBackupSource, maxAge tim
 
 // SetLogArchive enables kind=log_archive_stale rules.
 func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
+
+// SetRestoreDrills enables kind=restore_drill_failed rules.
+func (e *Engine) SetRestoreDrills(src RestoreDrillSource) { e.restoreDrills = src }
 
 // SetVersionSkew enables kind=version_skew rules: settings supplies the
 // configured update channel, fetchers is the shared GitHub lookup
@@ -422,6 +427,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindRestoreDrillFailed:
+			if e.restoreDrills == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateRestoreDrillFailed(ctx, e.restoreDrills, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindVersionSkew:
 			if e.versionSkewSettings == nil {
 				continue
@@ -576,7 +590,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale) && !resolved {
+	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindRestoreDrillFailed) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 	if r.Kind == KindVersionSkew && !resolved {

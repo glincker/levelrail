@@ -31,6 +31,7 @@ export const NAMESPACES = [
   'traffic',
   'dns',
   'domainPolicies',
+  'backups',
 ] as const
 
 void i18n

@@ -690,6 +690,11 @@ func run(logger *slog.Logger) error {
 			Secrets:    secretsManager,
 			Downloader: backup.S3Downloader{},
 		}
+		volumeBackupOpts, err := newVolumeBackupOptions(db, client, agentRegistry, logger)
+		if err != nil {
+			return err
+		}
+		backupRunner.Volume = volumeBackupOpts
 	}
 
 	// scheduledTaskRunner, like backupRunner just above, is constructed
@@ -1026,6 +1031,8 @@ func run(logger *slog.Logger) error {
 		// completes, no opt-in toggle: same "just works" default the
 		// manual verify button already gives an operator on demand.
 		scheduler.Verifier = backupVerifyRunner
+		scheduler.Policies, scheduler.GFS = db, db
+		startBackupDrills(ctx, logger, db, newBackupProtection(db, secretsManager, client, backupRunner, logger), alertingEngine)
 		scheduler.BaseBackups = newBaseBackupRunner(db, secretsManager, client, backupRunner, logger)
 		go func() {
 			if err := scheduler.Run(ctx, backupSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
@@ -2474,6 +2481,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			Downloader:     backup.S3Downloader{},
 			Restorer:       &backup.ContainerRestorer{Runtime: client},
 			VolumeRestorer: &backup.ContainerVolumeRestorer{Runtime: client},
+			Identities:     backupIdentities(backupRunner),
 		}
 		// baseBackupRunner/pitrRunner back point-in-time restore
 		// (internal/api/pitr.go): the physical-backup and PITR-restore
@@ -2543,7 +2551,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 				Downloader:     backup.S3Downloader{},
 				VolumeRestorer: &backup.ContainerVolumeRestorer{Runtime: client},
 				Volumes:        client,
+				Identities:     backupIdentities(backupRunner),
 			}),
+			api.WithBackupProtection(newBackupProtection(db, secretsManager, client, backupRunner, logger), db),
 			// The plain-download counterpart of the restore runner above:
 			// same secretsManager dependency and same backup.S3Downloader,
 			// but hands the object stream straight back to internal/api

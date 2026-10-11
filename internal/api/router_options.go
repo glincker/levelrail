@@ -1146,3 +1146,12 @@ func WithDeviceLoginNotifier(n DeviceLoginNotifier) Option {
 func WithDashboardURL(u string) Option {
 	return func(rt *Router) { rt.publicDashboardURL = u }
 }
+
+// WithBackupProtection enables the backup health, restore drill, volume
+// backup policy and restore-to routes. Without it they return 501.
+func WithBackupProtection(p BackupProtection, st BackupProtectionStore) Option {
+	return func(rt *Router) {
+		rt.backupProtection = p
+		rt.backupProtectionStore = st
+	}
+}

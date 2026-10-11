@@ -8,6 +8,8 @@ import (
 	"io"
 	"time"
 
+	"filippo.io/age"
+
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -56,6 +58,8 @@ type RestoreRunner struct {
 	// RunRestore. nil is valid, the same "optional capability" shape
 	// Runner.VolumeArchiver's own doc comment establishes.
 	VolumeRestorer VolumeRestorer
+	// Identities decrypt sealed volume backups; empty is valid for raw ones.
+	Identities []age.Identity
 	// WorkDir is RunRestore/RunVolumeRestore's disk-space preflight
 	// target, matching Runner.WorkDir's own fallback-to-APP_DATA_DIR,
 	// skip-if-still-empty behavior.
@@ -249,7 +253,7 @@ func (r *RestoreRunner) RunVolumeRestore(ctx context.Context, historyID, service
 // runDownloadAndRestoreVolume is RunVolumeRestore's actual work, the
 // volume counterpart of runDownloadAndRestore.
 func (r *RestoreRunner) runDownloadAndRestoreVolume(ctx context.Context, dockerVolumeName, backupHistoryID string) error {
-	return downloadAndRestoreVolume(ctx, r.Store, r.Secrets, r.Downloader, r.VolumeRestorer, dockerVolumeName, backupHistoryID)
+	return downloadAndRestoreVolume(ctx, r.Store, r.Secrets, r.Downloader, r.VolumeRestorer, r.Identities, dockerVolumeName, backupHistoryID)
 }
 
 // downloadAndRestoreVolume resolves backupHistoryID down to a live object
@@ -260,7 +264,7 @@ func (r *RestoreRunner) runDownloadAndRestoreVolume(ctx context.Context, dockerV
 // freshly created volume), the same "identical download-and-apply
 // mechanics, only what happens before and after differs" reasoning
 // downloadAndRestore's own doc comment gives.
-func downloadAndRestoreVolume(ctx context.Context, resolver backupResolver, secrets SecretsResolver, downloader Downloader, restorer VolumeRestorer, dockerVolumeName, backupHistoryID string) error {
+func downloadAndRestoreVolume(ctx context.Context, resolver backupResolver, secrets SecretsResolver, downloader Downloader, restorer VolumeRestorer, identities []age.Identity, dockerVolumeName, backupHistoryID string) error {
 	bh, err := resolver.GetBackupHistory(ctx, backupHistoryID)
 	if err != nil {
 		return fmt.Errorf("get backup history %q: %w", backupHistoryID, err)
@@ -293,9 +297,21 @@ func downloadAndRestoreVolume(ctx context.Context, resolver backupResolver, secr
 		SecretAccessKey: secretAccessKey,
 	}
 
-	archive, err := downloader.Download(ctx, dest, bh.ObjectKey)
+	if err := verifyObjectBeforeRestore(ctx, downloader, dest, bh); err != nil {
+		return err
+	}
+
+	raw, err := downloader.Download(ctx, dest, bh.ObjectKey)
 	if err != nil {
 		return fmt.Errorf("download backup %q object %q: %w", backupHistoryID, bh.ObjectKey, err)
+	}
+	defer func() {
+		_ = raw.Close()
+	}()
+
+	archive, err := OpenSealed(raw, bh.Codec, identities)
+	if err != nil {
+		return fmt.Errorf("open backup %q: %w", backupHistoryID, err)
 	}
 	defer func() {
 		_ = archive.Close()

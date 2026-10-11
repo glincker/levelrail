@@ -946,6 +946,14 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// to a service's named volume instead of a managed database. See
 	// those handlers' own doc comments for the per-route reasoning this
 	// mirrors.
+	mux.HandleFunc("GET /api/v1/backups/health", rt.requireAbility(AbilityRead, rt.handleBackupHealth))
+	mux.HandleFunc("GET /api/v1/backups/drills", rt.requireAbility(AbilityRead, rt.handleListBackupDrills))
+	mux.HandleFunc("GET /api/v1/backups/drills/{id}", rt.requireAbility(AbilityRead, rt.handleGetBackupDrill))
+	mux.HandleFunc("POST /api/v1/backups/drills", rt.requireAbility(AbilityWriteSensitive, rt.handleStartBackupDrill))
+	mux.HandleFunc("POST /api/v1/backups/protection/refresh", rt.requireAbility(AbilityWriteSensitive, rt.handleRefreshBackupProtection))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backup-policy", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetVolumeBackupPolicy))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes/{volume}/backup-policy", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetVolumeBackupPolicy))
+	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/restore-to", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleVolumeRestoreTo))
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backups", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleTriggerVolumeBackup))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListVolumeBackupHistory))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/download", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleDownloadVolumeBackup))

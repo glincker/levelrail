@@ -50,6 +50,8 @@ const (
 
 	// KindLogArchiveStale is platform-wide: it fires when a log archive policy fails or stops succeeding.
 	KindLogArchiveStale Kind = "log_archive_stale"
+	// KindRestoreDrillFailed is platform-wide: it fires while a resource's latest restore drill is failed.
+	KindRestoreDrillFailed Kind = "restore_drill_failed"
 
 	// KindVersionSkew is platform-wide: it fires while the running build
 	// is behind the configured update channel's latest release

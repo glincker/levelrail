@@ -1,0 +1,137 @@
+{
+  "health": {
+    "title": "Backup health",
+    "description": "Every backed up database and app volume, grouped by app. A backup only counts once a restore of it has been proven to work.",
+    "loadFailed": "Could not load backup health: {{error}}",
+    "empty": "No backed up resources yet. Schedule or trigger a backup from a database's or app volume's own page.",
+    "databasesGroup": "Databases",
+    "appGroup": "App {{name}}",
+    "columns": {
+      "resource": "Resource",
+      "state": "State",
+      "lastBackup": "Last backup",
+      "lastRestore": "Last verified restore",
+      "size": "Size",
+      "nextRun": "Next run",
+      "actions": "Actions"
+    },
+    "state": {
+      "healthy": "Healthy",
+      "warning": "Needs attention",
+      "failing": "Failing",
+      "unverified": "Not verified",
+      "unprotected": "No backup"
+    },
+    "never": "Never verified",
+    "none": "None yet",
+    "notScheduled": "Not scheduled",
+    "encrypted": "Encrypted",
+    "notEncrypted": "Not encrypted",
+    "backups": "{{count}} backups",
+    "restoreProven": "Restore proven {{when}}",
+    "drillFailed": "Last drill failed",
+    "runDrill": "Prove restore",
+    "drillStarted": "Restore drill started",
+    "drillStartedDescription": "It restores into a scratch resource, validates it and destroys it. Results appear in the drill history.",
+    "drillFailedToast": "Could not start the restore drill",
+    "restore": "Restore",
+    "restoreDatabase": "Restore options",
+    "policy": "Policy"
+  },
+  "encryption": {
+    "on": "New volume backups are compressed and encrypted on this server before upload. Public key: {{key}}",
+    "off": "New volume backups are compressed but not encrypted. Anyone with bucket access can read them.",
+    "keyHint": "Keep a copy of the key file (APP_BACKUP_ENCRYPTION_KEY_FILE, default backup-encryption.key in the data directory) somewhere off this server, or encrypted backups cannot be restored after a disaster."
+  },
+  "protection": {
+    "title": "Bucket protection",
+    "check": "Check buckets",
+    "checking": "Checking...",
+    "checkFailed": "Could not probe the backup buckets",
+    "locked": "Object lock is on",
+    "versioned": "Versioning is on",
+    "open": "Anyone with the key can delete backups",
+    "probeError": "Could not inspect this bucket: {{error}}",
+    "target": "Target {{id}}"
+  },
+  "restoreWizard": {
+    "title": "Restore {{app}}/{{volume}}",
+    "description": "Restores always go into a new volume. The existing volume is never overwritten.",
+    "stepBackup": "Choose a backup",
+    "stepDestination": "Choose where",
+    "stepConfirm": "Confirm",
+    "backup": "Backup",
+    "noBackups": "There is no succeeded backup of this volume to restore.",
+    "destination": "Destination",
+    "sameApp": "A new volume next to the original",
+    "otherApp": "A new volume for another app",
+    "targetApp": "App name",
+    "targetAppHint": "The volume is named so that deploying this app mounts the restored data.",
+    "node": "Node",
+    "sameNode": "Same node as the app",
+    "newName": "Volume name",
+    "newNameHint": "Leave empty to generate one.",
+    "summary": "Restore backup {{backup}} into a new volume {{name}} on {{node}}.",
+    "generatedName": "a generated name",
+    "next": "Next",
+    "back": "Back",
+    "start": "Start restore",
+    "cancel": "Cancel",
+    "started": "Restoring into {{name}}",
+    "startedDescription": "Follow progress in the restore history of this volume.",
+    "failed": "Could not start the restore"
+  },
+  "policy": {
+    "title": "Backup policy for {{app}}/{{volume}}",
+    "description": "Retention counts keep the newest backup of each of the last N days, weeks and months. Hooks run inside the app container.",
+    "daily": "Keep daily",
+    "weekly": "Keep weekly",
+    "monthly": "Keep monthly",
+    "retentionHint": "0 turns a bucket off. Counts combine with the schedule's own keep-last and age limits.",
+    "preHook": "Command before backup",
+    "preHookHint": "A non-zero exit fails the backup, so an inconsistent volume is never archived.",
+    "postHook": "Command after backup",
+    "pause": "Pause the app while the archive streams",
+    "pauseHint": "Freezes every process in the container so files cannot change mid-archive. The app is unavailable until the upload finishes.",
+    "save": "Save policy",
+    "saved": "Backup policy saved",
+    "failed": "Could not save the backup policy",
+    "loadFailed": "Could not load the backup policy: {{error}}"
+  },
+  "drills": {
+    "title": "Restore drills",
+    "description": "Scheduled and manual restores into scratch resources. A failed drill raises the restore_drill_failed alert.",
+    "empty": "No drills have run yet. Drills run automatically once a week by default.",
+    "loadFailed": "Could not load drills: {{error}}",
+    "columns": {
+      "resource": "Resource",
+      "trigger": "Trigger",
+      "result": "Result",
+      "checks": "Checks",
+      "took": "Took",
+      "started": "Started"
+    },
+    "status": {
+      "running": "Running",
+      "passed": "Passed",
+      "failed": "Failed"
+    },
+    "trigger": {
+      "manual": "Manual",
+      "scheduled": "Scheduled"
+    },
+    "check": {
+      "object": "Object present",
+      "checksum": "Checksum",
+      "restore": "Restored",
+      "content": "Content"
+    },
+    "stage": "Failed at {{stage}}",
+    "files": "{{count}} files",
+    "tables": "{{count}} tables"
+  },
+  "history": {
+    "title": "All backup attempts",
+    "description": "Every attempt across every database and app volume, newest first."
+  }
+}
