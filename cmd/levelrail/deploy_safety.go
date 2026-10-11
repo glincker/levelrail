@@ -11,6 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -116,8 +117,8 @@ func runDeployQueueDrain(ctx context.Context, rt *api.Router, interval time.Dura
 // digestResolverOptions gives the build pipeline a docker client to resolve
 // image tags to digests and read built image IDs. A client failure only
 // disables resolution: deploys still work, unpinned.
-func digestResolverOptions(logger *slog.Logger, db *store.DB, secretsManager *secrets.Manager) []deploy.Option {
-	client, err := docker.NewClient()
+func digestResolverOptions(logger *slog.Logger, db *store.DB, secretsManager *secrets.Manager, guard dockerguard.Booted) []deploy.Option {
+	client, err := docker.NewClient(guardClientOptions(guard)...)
 	if err != nil {
 		logger.Warn("digest resolution disabled: docker client unavailable", slog.String("error", err.Error()))
 		return nil

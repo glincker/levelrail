@@ -49,6 +49,9 @@ type Client struct {
 	// runtime is DetectRuntimeSocket's result at construction time,
 	// exposed via Runtime() for the doctor's container_runtime check.
 	runtime RuntimeInfo
+	// host, when set (WithHost), is dialed instead of runtime.Host.
+	host     string
+	declarer CreateDeclarer
 }
 
 // ClientOption configures optional Client behavior at construction time.
@@ -80,20 +83,24 @@ func WithInstanceLabel(key, value string) ClientOption {
 // same precedence when only reporting, not connecting).
 func NewClient(opts ...ClientOption) (*Client, error) {
 	runtime := DetectRuntimeSocket(os.LookupEnv)
+	hardening, herr := HardeningFromEnv(runtime)
+	logHardeningEnv(herr)
+	c := &Client{hardening: hardening, runtime: runtime}
+	for _, opt := range opts {
+		opt(c)
+	}
 	dockerOpts := []dockerclient.Opt{dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation()}
-	if runtime.Source == envRuntimeSocket {
+	switch {
+	case c.host != "":
+		dockerOpts = append(dockerOpts, dockerclient.WithHost(c.host))
+	case runtime.Source == envRuntimeSocket:
 		dockerOpts = append(dockerOpts, dockerclient.WithHost(runtime.Host))
 	}
 	cli, err := dockerclient.NewClientWithOpts(dockerOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("docker: new client: %w", err)
 	}
-	hardening, herr := HardeningFromEnv(runtime)
-	logHardeningEnv(herr)
-	c := &Client{cli: cli, hardening: hardening, runtime: runtime}
-	for _, opt := range opts {
-		opt(c)
-	}
+	c.cli = cli
 	return c, nil
 }
 
@@ -350,6 +357,8 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 	}
 	c.hardening.apply(hostConfig, spec)
 
+	release := c.declare(spec)
+	defer release()
 	resp, err := c.cli.ContainerCreate(ctx,
 		&container.Config{
 			Image:        spec.Image,

@@ -249,6 +249,7 @@ const sidebarGroups = [
       { text: 'Architecture', link: '/architecture' },
       { text: 'Security overview', link: '/security' },
       { text: 'Threat model', link: '/threat-model' },
+      { text: 'Docker access and the API guard', link: '/docker-access' },
       { text: 'Security alert verdicts', link: '/security-alert-verdicts' },
       { text: 'Comparison', link: '/comparison' },
       { text: 'Who Levelrail is for', link: '/use-cases' },

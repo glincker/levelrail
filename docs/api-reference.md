@@ -64,6 +64,8 @@ System endpoints for:
 | POST | /api/v1/system/proxy-integration/apply | AbilityRoot | handleApplyProxyIntegration |
 | POST | /api/v1/system/proxy-integration/verify | AbilityRoot | handleVerifyProxyIntegration |
 | GET | /api/v1/system/geoip | AbilityRead | handleGeoIPLookup |
+| GET | /api/v1/system/docker-guard | AbilityRead | handleGetDockerGuard |
+| PUT | /api/v1/system/docker-guard | AbilityRoot | handleUpdateDockerGuard |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -172,6 +174,8 @@ Endpoints for:
 | PUT | /api/v1/settings/proxy-integration | AbilityRoot | handleUpdateProxyIntegrationSettings |
 | GET | /api/v1/settings/domain-automation | AbilityRead | handleGetDomainAutomation |
 | PUT | /api/v1/settings/domain-automation | AbilityRoot | handleUpdateDomainAutomation |
+| GET | /api/v1/settings/database-upgrades | AbilityRead | handleGetPlatformUpgradePolicy |
+| PUT | /api/v1/settings/database-upgrades | AbilityRoot | handlePutPlatformUpgradePolicy |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -185,8 +189,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/settings/database-upgrades | AbilityRead | handleGetPlatformUpgradePolicy |
-| PUT | /api/v1/settings/database-upgrades | AbilityRoot | handlePutPlatformUpgradePolicy |
 
 :::
 

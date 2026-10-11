@@ -26,6 +26,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerPlatformImportRoutes(mux)
 	rt.registerAppImportRoutes(mux)
 	rt.registerIaCRoutes(mux)
+	rt.registerDockerGuardRoutes(mux)
 	rt.registerAlertNoiseRoutes(mux)
 	rt.registerStatusPageRoutes(mux)
 	rt.registerPreviewRoutes(mux)
