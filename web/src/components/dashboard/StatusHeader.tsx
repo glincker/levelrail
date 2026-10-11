@@ -1,15 +1,22 @@
+import { useTranslation } from 'react-i18next'
 import {
   CheckCircleIcon,
+  PlusIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
-import { SkeletonLine, StatusPill } from '@/components/kit'
+import { SkeletonLine, StatusPill, type Tone } from '@/components/kit'
 import { Button } from '@/components/ui/button'
-import { useAuthUsername } from '../../hooks/useAuthUsername'
-import { useAttentionItems } from '../../queries/attention'
+import type { AttentionLevel } from '../../lib/attentionSummary'
 import { CreateResourceWizard } from '../CreateResourceWizard'
+import { PageHeader } from '../shell/PageHeader'
+import { useAttentionSummary } from '../shell/useAttentionSummary'
 import { SetupChip } from './SetupChip'
-import { greetingFor, platformPill } from '../../lib/fleetStatus'
+
+const LEVEL_TONE: Record<AttentionLevel, Tone> = {
+  ok: 'success',
+  warning: 'warning',
+  critical: 'danger',
+}
 
 export function StatusHeader({
   firstAppName,
@@ -18,50 +25,41 @@ export function StatusHeader({
   firstAppName: string | undefined
   showSetup: boolean
 }) {
-  const username = useAuthUsername()
-  const { items, isLoading } = useAttentionItems()
-  const pill = platformPill(items)
+  const { t } = useTranslation()
+  const { level, count, isLoading } = useAttentionSummary()
+  const label =
+    level === 'ok' ? t('shell.status.ok') : t('shell.status.issues', { count })
+  const Icon = level === 'ok' ? CheckCircleIcon : WarningCircleIcon
   return (
-    <header className="flex flex-wrap items-center justify-between gap-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-lg font-semibold text-foreground">
-          {greetingFor(new Date().getHours())}
-          {username ? `, ${username}` : ''}
-        </h1>
-        {isLoading ? (
-          <SkeletonLine width={120} className="h-6 rounded-full" />
-        ) : (
-          <StatusPill
-            tone={pill.tone}
-            label={pill.label}
-            live
-            icon={
-              pill.tone === 'success' ? (
-                <CheckCircleIcon
-                  weight="fill"
-                  className="size-4"
-                  aria-hidden="true"
-                />
-              ) : (
-                <WarningCircleIcon
-                  weight="fill"
-                  className="size-4"
-                  aria-hidden="true"
-                />
-              )
-            }
-          />
-        )}
-        {showSetup ? <SetupChip firstAppName={firstAppName} /> : null}
-      </div>
-      <CreateResourceWizard
-        trigger={
-          <Button size="sm">
-            <PlusIcon />
-            New app
-          </Button>
-        }
-      />
-    </header>
+    <PageHeader
+      title={t('shell.dashboardTitle')}
+      status={
+        <>
+          {isLoading ? (
+            <SkeletonLine width={120} className="h-6 rounded-full" />
+          ) : (
+            <StatusPill
+              tone={LEVEL_TONE[level]}
+              label={label}
+              live
+              icon={
+                <Icon weight="fill" className="size-4" aria-hidden="true" />
+              }
+            />
+          )}
+          {showSetup ? <SetupChip firstAppName={firstAppName} /> : null}
+        </>
+      }
+      actions={
+        <CreateResourceWizard
+          trigger={
+            <Button size="sm">
+              <PlusIcon />
+              {t('shell.newApp')}
+            </Button>
+          }
+        />
+      }
+    />
   )
 }

@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { SignOutIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -63,6 +64,7 @@ const SETTINGS_SCOPE_PATTERN = /^\/settings(\/|$)/
 // duplicated across a parent chooser and per-mode components.
 export function AppSidebar() {
   const brand = useBrand()
+  const { t } = useTranslation()
   const username = useAuthUsername()
   const logout = useLogout()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
@@ -88,7 +90,7 @@ export function AppSidebar() {
                   {brand.ShortName || brand.Name}
                 </span>
                 <span className="truncate text-[11px] text-sidebar-foreground/60">
-                  Control plane
+                  {t('shell.account.controlPlane')}
                 </span>
               </span>
             </SidebarMenuButton>
@@ -130,8 +132,8 @@ export function AppSidebar() {
               variant="ghost"
               size="icon"
               className="size-6 shrink-0"
-              aria-label="Sign out"
-              title="Sign out"
+              aria-label={t('shell.account.signOut')}
+              title={t('shell.account.signOut')}
               disabled={logout.isPending}
               onClick={() => {
                 logout.mutate()

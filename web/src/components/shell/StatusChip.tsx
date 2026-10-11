@@ -1,4 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   BellSlashIcon,
   CheckCircleIcon,
@@ -21,16 +22,13 @@ import {
 } from '@/components/ui/popover'
 import { StatusPill, type Tone } from '@/components/kit'
 import { CleanUpDockerDialog } from '../CleanUpDockerDialog'
-import {
-  summarizeIssues,
-  type ChipLevel,
-  type PlatformIssue,
-} from './platformIssues'
-import { SNOOZE_LABELS, type SnoozeDuration } from './snooze'
-import { snoozeNow, unsnoozeNow, useSnoozed } from './snoozeStore'
-import { usePlatformIssues } from './usePlatformIssues'
+import type { AttentionItem } from '../../lib/attention'
+import { attentionHref, type AttentionLevel } from '../../lib/attentionSummary'
+import type { SnoozeDuration } from './snooze'
+import { snoozeNow, unsnoozeNow } from './snoozeStore'
+import { useAttentionSummary } from './useAttentionSummary'
 
-const LEVEL_TONE: Record<ChipLevel, Tone> = {
+const LEVEL_TONE: Record<AttentionLevel, Tone> = {
   ok: 'success',
   warning: 'warning',
   critical: 'danger',
@@ -38,37 +36,34 @@ const LEVEL_TONE: Record<ChipLevel, Tone> = {
 
 const DURATIONS: SnoozeDuration[] = ['1h', '1d', 'forever']
 
-function IssueRow({ issue }: { issue: PlatformIssue }) {
+function IssueRow({ issue }: { issue: AttentionItem }) {
   const navigate = useNavigate()
-  const Icon = issue.severity === 'critical' ? WarningCircleIcon : WarningIcon
+  const { t } = useTranslation()
+  const critical = issue.severity === 'critical'
+  const Icon = critical ? WarningCircleIcon : WarningIcon
   return (
     <li className="flex items-start gap-2.5 rounded-lg px-2 py-2">
       <Icon
         aria-hidden="true"
         className={`mt-0.5 size-4 shrink-0 ${
-          issue.severity === 'critical'
-            ? 'text-destructive'
-            : 'text-amber-600 dark:text-amber-400'
+          critical ? 'text-destructive' : 'text-amber-600 dark:text-amber-400'
         }`}
       />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{issue.title}</p>
         <p className="truncate text-xs text-muted-foreground">{issue.detail}</p>
-        <div className="mt-1.5 flex items-center gap-1.5">
-          {issue.actions.map((a) =>
-            a.kind === 'cleanup-docker' ? (
-              <CleanUpDockerDialog key="cleanup" />
-            ) : (
-              <Button
-                key={a.label}
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => void navigate({ to: a.to, hash: a.hash })}
-              >
-                {a.label}
-              </Button>
-            ),
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {issue.id === 'disk' ? (
+            <CleanUpDockerDialog key="cleanup" />
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => void navigate({ to: attentionHref(issue.target) })}
+            >
+              {t('shell.status.view')}
+            </Button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -77,12 +72,14 @@ function IssueRow({ issue }: { issue: PlatformIssue }) {
                   type="button"
                   size="sm"
                   variant="ghost"
-                  aria-label={`Snooze ${issue.title}`}
+                  aria-label={t('shell.status.snoozeItem', {
+                    title: issue.title,
+                  })}
                 />
               }
             >
               <BellSlashIcon />
-              Snooze
+              {t('shell.status.snooze')}
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               {DURATIONS.map((d) => (
@@ -90,7 +87,7 @@ function IssueRow({ issue }: { issue: PlatformIssue }) {
                   key={d}
                   onClick={() => snoozeNow(issue.id, d)}
                 >
-                  {SNOOZE_LABELS[d]}
+                  {t(`shell.snoozeFor.${d}`)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -102,13 +99,10 @@ function IssueRow({ issue }: { issue: PlatformIssue }) {
 }
 
 export function StatusChip() {
-  const issues = usePlatformIssues()
-  const { isSnoozed } = useSnoozed()
-  const { level, visible, snoozed } = summarizeIssues(issues, isSnoozed)
+  const { t } = useTranslation()
+  const { level, count, visible, snoozed } = useAttentionSummary()
   const label =
-    level === 'ok'
-      ? 'All good'
-      : `${String(visible.length)} ${visible.length === 1 ? 'issue' : 'issues'}`
+    level === 'ok' ? t('shell.status.ok') : t('shell.status.issues', { count })
 
   return (
     <Popover>
@@ -116,7 +110,7 @@ export function StatusChip() {
         render={
           <button
             type="button"
-            aria-label={`Platform status: ${label}`}
+            aria-label={t('shell.status.triggerLabel', { label })}
             className="rounded-full outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
           />
         }
@@ -128,9 +122,13 @@ export function StatusChip() {
           size="md"
         />
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-96" glass>
+      <PopoverContent
+        align="end"
+        className="w-96 max-w-[calc(100vw-1rem)]"
+        glass
+      >
         <PopoverHeader>
-          <PopoverTitle>Platform status</PopoverTitle>
+          <PopoverTitle>{t('shell.status.title')}</PopoverTitle>
         </PopoverHeader>
         {visible.length === 0 ? (
           <div className="flex flex-col items-center gap-1.5 px-2 py-6 text-center">
@@ -139,7 +137,7 @@ export function StatusChip() {
               className="size-6 text-emerald-600 dark:text-emerald-400"
             />
             <p className="text-sm text-muted-foreground">
-              Docker, disk, nodes and certificates look fine.
+              {t('shell.status.healthy')}
             </p>
           </div>
         ) : (
@@ -151,14 +149,16 @@ export function StatusChip() {
         )}
         {snoozed.length > 0 ? (
           <div className="mt-1 flex items-center justify-between border-t border-border px-2 pt-2 text-xs text-muted-foreground">
-            <span>{snoozed.length} snoozed</span>
+            <span>
+              {t('shell.status.snoozedCount', { count: snoozed.length })}
+            </span>
             <Button
               type="button"
               size="sm"
               variant="ghost"
               onClick={() => snoozed.forEach((i) => unsnoozeNow(i.id))}
             >
-              Show again
+              {t('shell.status.showAgain')}
             </Button>
           </div>
         ) : null}
