@@ -46,6 +46,7 @@ type networkTopologyAppResource struct {
 	Domains     []string `json:"domains,omitempty"`
 	DNSName     string   `json:"dns_name,omitempty"`
 	MeshAddress string   `json:"mesh_address,omitempty"`
+	Port        int      `json:"port,omitempty"`
 }
 
 // networkTopologyDatabaseResource is one managed database, same shape as
@@ -92,6 +93,9 @@ type networkTopologyResponse struct {
 	Databases     []networkTopologyDatabaseResource     `json:"databases"`
 	LoadBalancers []networkTopologyLoadBalancerResource `json:"load_balancers"`
 	Connections   []networkTopologyConnectionResource   `json:"connections"`
+	// Groups is the node-grouped view the Network page renders: this server
+	// first, then every other node, then unplaced resources if any.
+	Groups []networkTopologyGroup `json:"groups"`
 }
 
 // handleGetNetworkTopology handles GET /api/v1/network/topology. See this
@@ -153,6 +157,7 @@ func (rt *Router) handleGetNetworkTopology(w http.ResponseWriter, r *http.Reques
 			NodeID:  s.NodeID,
 			Domains: s.Domains,
 			DNSName: dnsNameFor(s.Name, zone),
+			Port:    s.Port,
 		}
 		if node != nil {
 			app.MeshAddress = node.MeshAddress
@@ -194,6 +199,10 @@ func (rt *Router) handleGetNetworkTopology(w http.ResponseWriter, r *http.Reques
 			return res.Connections[i].App < res.Connections[j].App
 		}
 		return res.Connections[i].Database < res.Connections[j].Database
+	})
+	res.Groups = groupTopology(topologyGroupInput{
+		nodes: nodes, apps: res.Apps, databases: res.Databases, localNodeID: rt.localNodeID,
+		hostname: localHostname(), address: localAddress(rt.doctorAgentAdvertiseHost),
 	})
 
 	writeJSON(w, http.StatusOK, res)

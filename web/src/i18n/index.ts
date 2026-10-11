@@ -42,6 +42,7 @@ export const NAMESPACES = [
   'dataExport',
   'deploySafety',
   'jobs',
+  'network',
 ] as const
 
 void i18n

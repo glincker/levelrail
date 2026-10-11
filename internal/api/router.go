@@ -171,6 +171,7 @@ type Router struct {
 	localNodeID            string        // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
 	meshZone               string        // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness              ReadinessProbes
+	meshSettings           meshSettingsState        // see mesh_settings.go
 	dockerGuard            DockerGuardController    // nil is valid: the docker guard routes report it as not configured
 	dockerPinger           DockerPinger             // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
 	images                 ImageLister              // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above

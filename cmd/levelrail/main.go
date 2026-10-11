@@ -819,6 +819,7 @@ func run(logger *slog.Logger) error {
 		// (APP_MESH_ENABLED=1) should not take down a control plane
 		// that would otherwise run fine without it.
 		logger.Warn("mesh not configured", slog.String("error", err.Error()))
+		apiRouter.SetMeshStartError(err)
 	}
 	if meshCfg != nil {
 		meshEndpoints.Attach(meshCfg.coordinator, meshCfg.localNodeID)
@@ -2693,6 +2694,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		modelGateway.SetWakeHook(engine.Nudge)
 	}
 	opts = append(opts, api.WithModels(modelSvc))
+	opts = append(opts, api.WithMeshSettings(db))
 	if client != nil {
 		opts = append(opts, api.WithGPUHostDiagnoser(func(ctx context.Context) gpu.HostDiagnosis {
 			return gpu.DiagnoseHost(ctx, gpu.ExecRunner{}, client, nil)

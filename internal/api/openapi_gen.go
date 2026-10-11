@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 968 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 970 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -718,6 +718,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/log-archive/runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListLogArchiveRuns", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
 	{Method: "GET", Path: "/api/v1/mesh/connectivity", Ability: "AbilityRoot", Group: "Other", Handler: "handleMeshConnectivity", Description: ""},
+	{Method: "GET", Path: "/api/v1/mesh/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMeshSettings", Description: ""},
+	{Method: "PUT", Path: "/api/v1/mesh/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateMeshSettings", Description: "Turning the mesh on or off changes how every node talks to this host, so AbilityRoot."},
 	{Method: "POST", Path: "/api/v1/migration/apps/plan", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleAppImportPlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppImportSessions", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateAppImportSession", Description: ""},
