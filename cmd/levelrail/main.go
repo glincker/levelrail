@@ -2723,6 +2723,8 @@ func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler
 	mux := http.NewServeMux()
 	mux.Handle("/healthz", apiHandler)
 	mux.Handle("/readyz", apiHandler)
+	mux.Handle("/metrics", apiHandler)
+	mux.Handle("/.well-known/jwks.json", apiHandler)
 	mux.Handle("/api/", apiHandler)
 	mux.Handle("/public/", apiHandler)
 	if webhookHandler != nil {

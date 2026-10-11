@@ -411,8 +411,10 @@ func selfUpgradeDeps(f selfUpgradeFlags, exe, name, dataDir, live, healthBase st
 		MigrateTest: func(ctx context.Context, binary, snapshot string) (int, error) {
 			return migrateCheckWith(ctx, binary, snapshot, dataDir)
 		},
-		Stop:        func(ctx context.Context) error { return service(ctx, f.stopCmd, "stop") },
-		Start:       func(ctx context.Context) error { return service(ctx, f.startCmd, "start") },
+		Stop: func(ctx context.Context) error { return service(ctx, f.stopCmd, "stop") },
+		// restart, not start: socket activation re-launches the old binary on
+		// traffic between stop and swap, and start would then be a no-op.
+		Start:       func(ctx context.Context) error { return service(ctx, f.startCmd, "restart") },
 		WaitHealthy: func(ctx context.Context, t time.Duration) error { return rollback.WaitHealthy(ctx, healthBase, t) },
 		RestoreDB: func(_ context.Context, snapshot string) (string, error) {
 			return rollback.SwapInBackup(live, snapshot, time.Now())
