@@ -51,6 +51,13 @@ type gitHubAppInstallationListResource struct {
 	// so the only fix is reconnecting the App (manifest flow records it
 	// automatically) or pasting it in through the manual connect form.
 	AddOrgURL string `json:"add_org_url,omitempty"`
+	// AppPublic is false when GitHub reports the App private, in which
+	// case it can only be installed on its owner's account; nil when
+	// GitHub could not be asked.
+	AppPublic *bool `json:"app_public,omitempty"`
+	// MakePublicURL opens the App's Advanced settings, where the owner
+	// can allow installs on any account.
+	MakePublicURL string `json:"make_public_url,omitempty"`
 }
 
 // handleListGitHubAppInstallations handles
@@ -90,6 +97,14 @@ func (rt *Router) handleListGitHubAppInstallations(w http.ResponseWriter, r *htt
 	resp := gitHubAppInstallationListResource{Installations: out}
 	if connErr == nil && conn.Slug != nil && *conn.Slug != "" {
 		resp.AddOrgURL = strings.TrimSuffix(conn.InstanceURL, "/") + "/apps/" + url.PathEscape(*conn.Slug) + "/installations/new"
+		resp.AppPublic = rt.githubAppPublic(ctx, conn.InstanceURL, *conn.Slug)
+		if resp.AppPublic != nil && !*resp.AppPublic {
+			var ownerType, ownerLogin string
+			if len(installations) > 0 {
+				ownerType, ownerLogin = installations[0].AccountType, installations[0].AccountLogin
+			}
+			resp.MakePublicURL = githubAppMakePublicURL(conn.InstanceURL, *conn.Slug, ownerType, ownerLogin)
+		}
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

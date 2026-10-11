@@ -43,22 +43,34 @@ else
 	echo "gitleaks not installed, skipping (install: brew install gitleaks)"
 fi
 
-echo "pre-commit: go vet"
-if ! go vet ./... 2>&1; then
-	fail=1
+# Go checks run only for staged Go files, on their packages only. The full
+# build (every dependent) runs once per push in pre-push, and CI lints the
+# whole tree, so a commit pays for what it touched, not for the repo.
+go_pkg_dirs=$(git diff --cached --name-only --diff-filter=ACMR -- '*.go' ':!tools/*' ':!kit/*' ':!docs-local/*' | xargs -n1 dirname 2>/dev/null | sort -u | while read -r d; do [ -d "$d" ] && echo "./$d"; done)
+go_mod_staged=$(git diff --cached --name-only -- go.mod go.sum)
+
+echo "pre-commit: go vet (changed packages)"
+if [ -n "$go_pkg_dirs" ] || [ -n "$go_mod_staged" ]; then
+	# shellcheck disable=SC2086
+	if ! go vet ${go_pkg_dirs:-./...} 2>&1; then
+		fail=1
+	fi
+else
+	echo "no staged Go files, skipped"
 fi
 
-echo "pre-commit: golangci-lint"
-if command -v golangci-lint >/dev/null; then
-	# Per-worktree cache: avoids phantom issues from other worktrees.
-	if ! GOLANGCI_LINT_CACHE="$(git rev-parse --absolute-git-dir)/golangci-lint-cache" golangci-lint run ./...; then
+echo "pre-commit: golangci-lint (changed packages, new issues only)"
+if [ -z "$go_pkg_dirs" ]; then
+	echo "no staged Go files, skipped"
+elif command -v golangci-lint >/dev/null; then
+	# shellcheck disable=SC2086
+	if ! GOLANGCI_LINT_CACHE="$(git rev-parse --absolute-git-dir)/golangci-lint-cache" golangci-lint run --new-from-rev=HEAD $go_pkg_dirs; then
 		fail=1
 	fi
 else
 	echo "golangci-lint not installed, skipping (CI still enforces this)"
 fi
 
-# kit/ is a nested module, invisible to the ./... commands above.
 echo "pre-commit: kit (vet, lint, build, brand strings)"
 staged_kit_files=$(git diff --cached --name-only --diff-filter=ACM -- 'kit/')
 if [ -n "$staged_kit_files" ]; then
@@ -139,9 +151,12 @@ if [ -n "$bloat_hits" ]; then
 	fail=1
 fi
 
-echo "pre-commit: go build"
-if ! go build ./... 2>&1; then
-	fail=1
+echo "pre-commit: go build (changed packages)"
+if [ -n "$go_pkg_dirs" ]; then
+	# shellcheck disable=SC2086
+	if ! go build $go_pkg_dirs 2>&1; then
+		fail=1
+	fi
 fi
 
 echo "pre-commit: web (tsc, eslint, prettier)"

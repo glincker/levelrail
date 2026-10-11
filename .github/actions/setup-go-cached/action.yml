@@ -10,6 +10,27 @@ inputs:
     required: false
     default: 'false'
 
+  remote-cache-bucket:
+    description: S3-compatible bucket for a shared GOCACHEPROG build and test cache (gobuildcache). Empty keeps the actions/cache path below. Callers pass vars.GOCACHE_BUCKET.
+    required: false
+    default: ''
+  remote-cache-region:
+    description: Region for remote-cache-bucket.
+    required: false
+    default: 'us-east-1'
+  remote-cache-key-id:
+    description: Access key id for the bucket (secrets.GOCACHE_KEY_ID).
+    required: false
+    default: ''
+  remote-cache-secret:
+    description: Secret access key for the bucket (secrets.GOCACHE_SECRET).
+    required: false
+    default: ''
+  remote-cache-endpoint:
+    description: Optional S3 endpoint for R2, Tigris or MinIO.
+    required: false
+    default: ''
+
 outputs:
   go-version:
     description: Resolved Go version, from setup-go.
@@ -28,6 +49,31 @@ runs:
         go-version-file: go.mod
         cache: false
 
+    # Content-addressed and shared by every job, branch, laptop and agent
+    # worktree: a package whose inputs hash the same is a cache hit (build
+    # and test result), which is the Go-native form of "affected only".
+    - name: Remote Go cache (GOCACHEPROG)
+      if: inputs.remote-cache-bucket != '' && inputs.remote-cache-key-id != ''
+      shell: bash
+      env:
+        BUCKET: ${{ inputs.remote-cache-bucket }}
+        REGION: ${{ inputs.remote-cache-region }}
+        KEY_ID: ${{ inputs.remote-cache-key-id }}
+        SECRET: ${{ inputs.remote-cache-secret }}
+        ENDPOINT: ${{ inputs.remote-cache-endpoint }}
+      run: |
+        GOBIN="$RUNNER_TEMP/gocacheprog" go install github.com/richardartoul/gobuildcache@v1.4.0
+        {
+          echo "GOCACHEPROG=$RUNNER_TEMP/gocacheprog/gobuildcache"
+          echo "GOBUILDCACHE_BACKEND_TYPE=s3"
+          echo "GOBUILDCACHE_S3_BUCKET=$BUCKET"
+          echo "GOBUILDCACHE_AWS_REGION=$REGION"
+          echo "GOBUILDCACHE_AWS_ACCESS_KEY_ID=$KEY_ID"
+          echo "GOBUILDCACHE_AWS_SECRET_ACCESS_KEY=$SECRET"
+          echo "GOBUILDCACHE_S3_PREFIX=levelrail-go"
+          [ -z "$ENDPOINT" ] || echo "GOBUILDCACHE_S3_ENDPOINT=$ENDPOINT"
+        } >> "$GITHUB_ENV"
+
     - name: Cache key
       id: day
       shell: bash
@@ -39,7 +85,7 @@ runs:
     # empty cache every day.
     - name: Go cache (restore and save at job end)
       id: cache
-      if: inputs.save == 'true'
+      if: inputs.save == 'true' && (inputs.remote-cache-bucket == '' || inputs.remote-cache-key-id == '')
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
@@ -52,7 +98,7 @@ runs:
 
     - name: Go cache (restore only)
       id: cache-ro
-      if: inputs.save != 'true'
+      if: inputs.save != 'true' && (inputs.remote-cache-bucket == '' || inputs.remote-cache-key-id == '')
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |

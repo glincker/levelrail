@@ -1,0 +1,15 @@
+# Max transitive dependents per package (scripts/check-fanin.sh). Raise a number only
+# with a reason in the PR; lowering it after a split is the point.
+internal/bindaddr 72
+internal/bindmount 74
+internal/docker 79
+internal/gpu 70
+internal/loadbalancer 72
+internal/reconcile 72
+internal/reconcile/database 25
+internal/spec 71
+internal/store 69
+kit/cronexpr 24
+kit/diskspace 25
+kit/netguard 28
+kit/probe 72

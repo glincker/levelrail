@@ -5,6 +5,7 @@ import {
   certExpiryLabel,
   certRenewalBadge,
   isInternalCert,
+  proxyCertStatus,
   sortByCertAttention,
 } from './certStatus'
 import type { CertificateStatus } from '../queries/certificates'
@@ -145,5 +146,43 @@ describe('isInternalCert', () => {
         source: 'acme',
       }),
     ).toBe(2)
+  })
+})
+
+describe('proxyCertStatus', () => {
+  const now = new Date('2026-10-11T00:00:00Z')
+  const cert = (notAfter: string, valid = true) => ({
+    issuer: "Let's Encrypt",
+    not_after: notAfter,
+    valid,
+  })
+
+  it.each([
+    ['ninety days left is healthy', '2027-01-09T00:00:00Z', true, 'healthy'],
+    [
+      'ten days left is expiring soon',
+      '2026-10-21T00:00:00Z',
+      true,
+      'expiring_soon',
+    ],
+    ['past date is expired', '2026-10-01T00:00:00Z', true, 'expired'],
+  ])('%s', (_name, notAfter, valid, want) => {
+    const got = proxyCertStatus('a.example.com', cert(notAfter, valid), now)
+    expect(got?.status).toBe(want)
+    expect(got?.managed_by).toBe('proxy')
+  })
+
+  it('returns undefined for an untrusted certificate', () => {
+    expect(
+      proxyCertStatus(
+        'a.example.com',
+        cert('2027-01-09T00:00:00Z', false),
+        now,
+      ),
+    ).toBeUndefined()
+  })
+
+  it('returns undefined for an unparseable date', () => {
+    expect(proxyCertStatus('a.example.com', cert('nope'), now)).toBeUndefined()
   })
 })

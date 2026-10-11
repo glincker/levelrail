@@ -20,6 +20,9 @@ import (
 // given no timeout (cmd/levelrail reads APP_PROXY_VERIFY_TIMEOUT).
 const defaultProxyVerifyTimeout = 8 * time.Second
 
+// listenerProbeTimeout bounds the local dial that explains a 5xx from the proxy.
+const listenerProbeTimeout = time.Second
+
 // Conflict codes returned by setup.
 const (
 	proxyCodeNotDetected = "proxy_not_detected"
@@ -213,6 +216,15 @@ func (rt *Router) verifyProxyRoute(ctx context.Context, deps *proxyIntegrationDe
 		path = "/healthz"
 	}
 	res := deps.probe(ctx, proxyroutes.ProbeTarget{Domain: it.Domain, Address: addr, Path: path, Timeout: deps.timeout()})
+	if !res.Reachable || res.StatusCode >= http.StatusInternalServerError {
+		l := deps.syncer.Ingress
+		if it.Kind == proxyroutes.TargetDashboard {
+			l = deps.syncer.Dashboard
+		}
+		if msg := listenerDownMessage(l); msg != "" {
+			res.Err = msg
+		}
+	}
 	st := store.ProxyRouteStatus{
 		Domain: it.Domain, ProxyLoaded: store.ProxyLoadedUnknown, Reachable: res.Reachable, StatusCode: res.StatusCode,
 		CertIssuer: res.CertIssuer, CertNotAfter: res.CertNotAfter, CertTrusted: res.CertTrusted, LastError: res.Err, VerifiedAt: time.Now(),
@@ -229,4 +241,22 @@ func (rt *Router) verifyProxyRoute(ctx context.Context, deps *proxyIntegrationDe
 	if err := deps.store.SaveProxyRouteVerification(ctx, st); err != nil {
 		rt.logger.WarnContext(ctx, "proxy integration: save verification", "domain", it.Domain, "error", err.Error())
 	}
+}
+
+// listenerDownMessage names the missing local listener when the proxy got a
+// 5xx, so the operator sees the cause instead of a bare upstream status.
+func listenerDownMessage(l proxyroutes.Listener) string {
+	addr := l.Addr
+	if strings.HasPrefix(addr, ":") {
+		addr = "127.0.0.1" + addr
+	}
+	if addr == "" {
+		return ""
+	}
+	c, err := net.DialTimeout("tcp", addr, listenerProbeTimeout)
+	if err == nil {
+		_ = c.Close()
+		return ""
+	}
+	return fmt.Sprintf("nothing is listening on the %s port %s: wait for the ingress to reconcile, or check %s", l.Label, l.Addr, l.EnvVar)
 }

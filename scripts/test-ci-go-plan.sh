@@ -73,7 +73,26 @@ run "catalog data change is live=full but runs no e2e lane" - "live=full" lacks:
 run "e2e test change is full" - "live=full" has:e2e-fleet has:e2e -- test/e2e/template_fleet_test.go
 run "e2e testenv change is full" - "live=full" has:e2e-reconcile -- test/e2e/testenv/testenv.go
 run "go.mod is a full run" - "scope=all" "live=full" "live_reason=full run" has:docker has:e2e-fleet -- go.mod
+run "additive migration scopes to the store and its table users" - "scope=some" lacks:api-1 lacks:e2e -- internal/store/migrations/0404_database_network_rule_notes.sql
+run "data-rewriting migration is a full run" - "scope=all" has:api-1 -- internal/store/migrations/0375_global_environments.sql
 run "web only has no go lanes" - "scope=none" "has_tests=false" -- web/src/App.tsx
+
+# Whole-tree scanners are selected by any non-test Go change, never by docs.
+expect_pkg() { # label want(yes|no) pkg path...
+	local label="$1" want="$2" pkg="$3" out
+	shift 3
+	checks=$((checks + 1))
+	out="$(printf '%s\n' "$@" | scripts/affected-go-packages.sh --stdin 2>/dev/null)"
+	if grep -qxF "$pkg" <<<"$out"; then
+		[ "$want" = yes ] || { echo "FAIL $label: $pkg selected"; fail=1; }
+	else
+		[ "$want" = no ] || { echo "FAIL $label: $pkg missing"; fail=1; }
+	fi
+}
+guard=github.com/GLINCKER/levelrail/test/execgate
+expect_pkg "go change selects execgate" yes "$guard" internal/spec/discover.go
+expect_pkg "test-only change skips execgate" no "$guard" internal/spec/discover_test.go
+expect_pkg "docs change skips execgate" no "$guard" docs/ci.md
 
 if [ "$fail" -ne 0 ]; then
 	echo "test-ci-go-plan: FAILED"

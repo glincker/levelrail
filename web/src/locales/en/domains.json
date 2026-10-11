@@ -187,7 +187,10 @@
     "cert": {
       "none": "No certificate yet",
       "internal": "Internal",
-      "failed": "Request failed"
+      "failed": "Request failed",
+      "renewsAuto": "Renews automatically",
+      "renewsProxy": "Renews automatically via your proxy",
+      "renewsManual": "Uploaded certificate: renew it before it expires"
     },
     "visibility": {
       "toggle": "Allow search engines to index {{domain}}",

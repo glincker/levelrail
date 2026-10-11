@@ -10,8 +10,9 @@
 #        scripts/affected-go-packages.sh --stdin         changed paths on stdin
 #        scripts/affected-go-packages.sh --stdin --seeds changed package dirs only, no Go toolchain needed
 # Output: one import path per line, or the single line "ALL" when the diff
-# touched something the import graph can't scope (go.mod, go.sum, a store
-# migration, this script). Nothing at all when no Go package is affected.
+# touched something the import graph can't scope (go.mod, go.sum, a
+# destructive store migration, this script). Nothing at all when no Go package
+# is affected.
 
 set -euo pipefail
 
@@ -28,8 +29,10 @@ fi
 
 [ "${#CHANGED_FILES[@]}" -gt 0 ] || exit 0
 
-# Store migrations are read at runtime by nearly every store-backed test.
-UNSCOPABLE_PATTERN='^(go\.mod|go\.sum|kit/go\.mod|kit/go\.sum|internal/store/migrations/.*\.sql|scripts/affected-go-packages\.sh)$'
+UNSCOPABLE_PATTERN='^(go\.mod|go\.sum|kit/go\.mod|kit/go\.sum|scripts/affected-go-packages\.sh)$'
+# Whole-tree scanners have no import edge to what they scan, so a diff that
+# can break one must select it by hand (scripts/ci-guards.txt).
+GUARDS_FILE=scripts/ci-guards.txt
 # Too common to map a change to the Go files that mention them by name.
 GENERIC_NAMES='^(README\.md|index\.md|Dockerfile|package\.json|package-lock\.json|LICENSE|Makefile|\.gitignore|\.dockerignore)$'
 
@@ -62,8 +65,43 @@ add_seed() { # dir [test]
 	fi
 }
 
+# Additive DDL (new tables, indexes, columns) can only change the packages
+# whose Go code names the table, so those and the store's own tests are
+# enough. Anything else (drop, rename, update, delete, trigger, view) can
+# change existing behavior everywhere: ALL.
+migration_seed() {
+	local f="$1" sql tables created t hit
+	[ -f "$f" ] || { echo ALL; exit 0; }
+	sql="$(sed -E 's/--.*$//' "$f" | tr '[:upper:]' '[:lower:]')"
+	if grep -qE '(^|;)[[:space:]]*(drop|update|delete|replace)[[:space:]]|\brename\b|\bdrop (column|constraint)\b|\bcreate (temp |temporary )?view\b' <<<"$sql"; then
+		echo ALL
+		exit 0
+	fi
+	# A trigger is additive only when it guards a table this migration creates.
+	created="$(grep -oE 'create table( if not exists)?[[:space:]]+[a-z0-9_"]+' <<<"$sql" | awk '{print $NF}' | tr -d '"' || true)"
+	while IFS= read -r t; do
+		[ -n "$t" ] || continue
+		grep -qxF "$t" <<<"$created" || { echo ALL; exit 0; }
+	done < <(grep -oE '(before|after|instead of)[[:space:]]+(insert|update|delete)([[:space:]]+of[[:space:]]+[a-z0-9_, ]+)?[[:space:]]+on[[:space:]]+[a-z0-9_"]+' <<<"$sql" | awk '{print $NF}' | tr -d '"' || true)
+	tables="$(grep -oE '(create table( if not exists)?|alter table|create (unique )?index( if not exists)? [a-z0-9_]+ on|insert( or [a-z]+)? into)[[:space:]]+[a-z0-9_"]+' <<<"$sql" | awk '{print $NF}' | tr -d '"' | sort -u || true)"
+	if [ -z "$tables" ]; then
+		echo ALL
+		exit 0
+	fi
+	add_seed internal/store test
+	for t in $tables; do
+		while IFS= read -r hit; do
+			add_seed "$(dirname "$hit")" test
+		done < <(git grep -lw -e "$t" -- '*.go' ':!internal/store/migrations' 2>/dev/null || true)
+	done
+}
+
 for f in "${CHANGED_FILES[@]}"; do
 	case "$f" in
+	internal/store/migrations/*.sql)
+		migration_seed "$f"
+		continue
+		;;
 	*_test.go)
 		add_seed "$(dirname "$f")" test
 		continue
@@ -110,6 +148,21 @@ for f in "${CHANGED_FILES[@]}"; do
 		esac
 	done < <(git grep -l "${grep_args[@]}" -- '*.go' 2>/dev/null || true)
 done
+
+if [ "$SEEDS_ONLY" = false ] && [ -f "$GUARDS_FILE" ]; then
+	for f in "${CHANGED_FILES[@]}"; do
+		case "$f" in
+		*_test.go | tools/* | kit/* | web/*) continue ;;
+		*.go)
+			while read -r guard _; do
+				case "$guard" in '' | '#'*) continue ;; esac
+				add_seed "$guard" test
+			done <"$GUARDS_FILE"
+			break
+			;;
+		esac
+	done
+fi
 
 [ "$((${#SEED_DIRS[@]} + ${#TEST_SEED_DIRS[@]} + ${#KIT_IMPORTS[@]}))" -gt 0 ] || exit 0
 

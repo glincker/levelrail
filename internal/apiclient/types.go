@@ -3636,6 +3636,8 @@ type GitHubAppInstallationResource struct {
 type GitHubAppInstallationListResource struct {
 	Installations []GitHubAppInstallationResource `json:"installations"`
 	AddOrgURL     string                          `json:"add_org_url,omitempty"`
+	AppPublic     *bool                           `json:"app_public,omitempty"`
+	MakePublicURL string                          `json:"make_public_url,omitempty"`
 }
 
 // GitAppBranchResource mirrors the identical branch wire shape every git

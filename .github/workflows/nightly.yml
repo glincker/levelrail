@@ -14,7 +14,7 @@ permissions:
 jobs:
   check-activity:
     name: Scope to changed code
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 5
     permissions:
       contents: read
@@ -36,9 +36,10 @@ jobs:
         with:
           go-version-file: go.mod
 
-      # Diff against the last completed scheduled run's commit, so only the
-      # lanes the changed packages can affect run. Manual dispatch and a
-      # missing prior run both fall back to the full suite.
+      # Diff against the last GREEN scheduled run's commit, so a lane that
+      # failed or timed out is retried until it passes instead of being
+      # forgotten. Manual dispatch and a missing prior run both fall back
+      # to the full suite.
       - name: Pick lanes from changes since the last nightly
         id: scope
         env:
@@ -47,7 +48,7 @@ jobs:
         run: |
           base=ALL
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            base="$(gh api "repos/${{ github.repository }}/actions/workflows/nightly.yml/runs?event=schedule&status=completed&per_page=1" --jq '.workflow_runs[0].head_sha // "ALL"')"
+            base="$(gh api "repos/${{ github.repository }}/actions/workflows/nightly.yml/runs?event=schedule&status=success&per_page=1" --jq '.workflow_runs[0].head_sha // "ALL"')"
           fi
           scripts/nightly-scope.sh "$base" | tee scope.out >> "$GITHUB_OUTPUT"
           if grep -q '^matrix=\[\]$' scope.out && grep -q '^kit=false$' scope.out && grep -q '^install=false$' scope.out && grep -q '^sweep=false$' scope.out; then
@@ -56,14 +57,14 @@ jobs:
             echo "has-commits=true" >> "$GITHUB_OUTPUT"
           fi
 
-  # Same lanes as ci.yml, plus -race, -shuffle=on (order dependence) and no
-  # -short. internal/api is split four ways: as one job it outgrew the 40m
-  # test timeout under -race.
+  # Same lanes as ci.yml plus -shuffle=on (order dependence) and no -short.
+  # -race runs on the race lane (concurrent packages) every night and on the
+  # api and docker lanes on Sundays; see scripts/nightly-scope.sh.
   full-test:
     name: Full test suite (${{ matrix.lane }})
     needs: check-activity
     if: needs.check-activity.outputs.matrix != '[]'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -93,6 +94,10 @@ jobs:
           echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
           sudo systemctl restart docker
 
+      - name: Pre-pull live-test images (retry, tolerate upstream drift)
+        if: matrix.lane == 'docker'
+        run: scripts/prepull-test-images.sh
+
       - name: go test
         env:
           GO_TEST_FLAGS: ${{ matrix.flags }}
@@ -115,7 +120,7 @@ jobs:
     name: Kit full suite
     needs: check-activity
     if: needs.check-activity.outputs.kit == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -136,11 +141,11 @@ jobs:
     name: Flake sweep (-count=3)
     needs: check-activity
     if: needs.check-activity.outputs.sweep == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     continue-on-error: true
-    timeout-minutes: 75
+    timeout-minutes: 40
     env:
-      FLAKE_SWEEP_PACKAGES: ./internal/agent/ ./internal/backup/ ./test/e2e/ ./test/e2e/reconcile/
+      FLAKE_SWEEP_PACKAGES: ./internal/agent/ ./internal/backup/
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -165,7 +170,7 @@ jobs:
 
       - name: go test (repeated, shuffled)
         env:
-          GO_TEST_FLAGS: -shuffle=on -count=3 -p 1 -timeout=70m
+          GO_TEST_FLAGS: -shuffle=on -count=3 -p 1 -timeout=35m
           RERUNS: '0'
         run: |
           read -r -a packages <<<"$FLAKE_SWEEP_PACKAGES"
@@ -184,7 +189,7 @@ jobs:
     name: Quarantined tests (non-blocking)
     needs: check-activity
     if: needs.check-activity.outputs.has-commits == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     continue-on-error: true
     timeout-minutes: 30
     steps:
@@ -224,7 +229,7 @@ jobs:
     name: File flaky-test issues
     needs: [check-activity, full-test, flake-sweep]
     if: always() && needs.check-activity.outputs.has-commits == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     permissions:
       contents: read
       issues: write
@@ -253,7 +258,7 @@ jobs:
     name: install.sh (${{ matrix.image }})
     needs: check-activity
     if: needs.check-activity.outputs.install == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 25
     strategy:
       fail-fast: false

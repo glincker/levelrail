@@ -96,3 +96,48 @@ export function certExpiryLabel(notAfter: string, now = new Date()): string {
   }
   return days === 0 ? 'expires today' : `expires in ${days} ${unit}`
 }
+
+const PROXY_CERT_WARN_DAYS = 30
+
+// proxyCertStatus turns the certificate a fronting proxy was seen serving
+// into the shape the domain list renders. Untrusted ones (a proxy's default
+// certificate) return undefined so they never read as healthy.
+export function proxyCertStatus(
+  domain: string,
+  cert: { issuer: string; not_after: string; valid: boolean },
+  now = new Date(),
+): CertificateStatus | undefined {
+  const end = new Date(cert.not_after).getTime()
+  if (!cert.valid || Number.isNaN(end)) {
+    return undefined
+  }
+  const left = end - now.getTime()
+  let status: CertificateStatus['status'] = 'healthy'
+  if (left < 0) {
+    status = 'expired'
+  } else if (left < PROXY_CERT_WARN_DAYS * DAY_MS) {
+    status = 'expiring_soon'
+  }
+  return {
+    domain,
+    issuer: cert.issuer,
+    not_before: '',
+    not_after: cert.not_after,
+    status,
+    renewal: 'ok',
+    source: 'acme',
+    managed_by: 'proxy',
+  }
+}
+
+export function certExpiryDate(notAfter: string): string {
+  const d = new Date(notAfter)
+  if (Number.isNaN(d.getTime())) {
+    return ''
+  }
+  return d.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
