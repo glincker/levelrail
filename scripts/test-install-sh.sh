@@ -75,13 +75,19 @@ in_ct 'curl -fsS --max-time 5 http://127.0.0.1:8081/healthz' >/dev/null ||
 in_ct 'kill "$(cat /tmp/blocker.pid)"' >/dev/null 2>&1 || true
 in_ct 'sh /root/install.sh uninstall --purge' >/dev/null
 
-echo "== ingress port conflict fails preflight, with a next-action message"
+echo "== --check reports the holder and the coexist command, changes nothing"
 in_ct 'nohup python3 -m http.server 80 --bind 127.0.0.1 >/dev/null 2>&1 & echo $! > /tmp/blocker.pid'
+out="$(docker exec "$name" env LEVELRAIL_MIN_DISK_GB=1 sh /root/install.sh --check 2>&1)" || true
+echo "$out" | grep -q "Recommended mode: behind your existing proxy" || { echo "--check did not recommend coexist: $out"; exit 1; }
+echo "$out" | grep -q "python3" || { echo "--check did not name the holder: $out"; exit 1; }
+in_ct 'test ! -e /etc/systemd/system/levelrail.service.d/10-install.conf' || { echo "--check must not write the drop-in"; exit 1; }
+
+echo "== --no-coexist keeps the failing preflight, with a next-action message"
 rc=0
 out="$(docker exec "$name" env \
 	LEVELRAIL_BINARY_FILE=/root/levelrail LEVELRAIL_PUBLIC_IP=127.0.0.1 LEVELRAIL_MIN_DISK_GB=1 \
-	sh /root/install.sh 2>&1)" || rc=$?
-[ "$rc" -ne 0 ] || { echo "install should have failed with port 80 taken"; exit 1; }
+	sh /root/install.sh --no-coexist 2>&1)" || rc=$?
+[ "$rc" -ne 0 ] || { echo "install --no-coexist should have failed with port 80 taken"; exit 1; }
 echo "$out" | grep -q "LEVELRAIL_HTTP_PORT/LEVELRAIL_HTTPS_PORT" || { echo "fail message did not mention the override vars: $out"; exit 1; }
 echo "$out" | grep -q "python3" || { echo "preflight did not name the process holding port 80: $out"; exit 1; }
 echo "$out" | grep -q -- "--coexist" || { echo "preflight did not offer --coexist: $out"; exit 1; }
@@ -100,14 +106,15 @@ chmod 755 /fake/docker'
 rc=0
 out="$(docker exec "$name" env PATH="/fake:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
 	LEVELRAIL_BINARY_FILE=/root/levelrail LEVELRAIL_PUBLIC_IP=127.0.0.1 LEVELRAIL_MIN_DISK_GB=1 \
-	sh /root/install.sh 2>&1)" || rc=$?
-[ "$rc" -ne 0 ] || { echo "install should have failed with port 80 taken"; exit 1; }
+	sh /root/install.sh --no-coexist 2>&1)" || rc=$?
+[ "$rc" -ne 0 ] || { echo "install --no-coexist should have failed with port 80 taken"; exit 1; }
 echo "$out" | grep -q "container coolify-proxy (image traefik:v3.1)" || { echo "docker holder not reported: $out"; exit 1; }
 
-echo "== --yes switches to coexist mode, settings land in the drop-in"
+echo "== coexist mode is chosen automatically, settings land in the drop-in"
 out="$(docker exec "$name" timeout "$wait_secs" env \
 	LEVELRAIL_BINARY_FILE=/root/levelrail LEVELRAIL_PUBLIC_IP=127.0.0.1 LEVELRAIL_MIN_DISK_GB=1 \
-	sh /root/install.sh --yes --domain apps.example.test 2>&1)"
+	sh /root/install.sh --domain apps.example.test 2>&1)"
+echo "$out" | grep -q "Switching to coexist mode" || { echo "automatic coexist switch was not announced: $out"; exit 1; }
 echo "$out" | grep -q "levelrail-cli proxy --domain apps.example.test --verify" || { echo "coexist summary missing the proxy command: $out"; exit 1; }
 dropin=/etc/systemd/system/levelrail.service.d/10-install.conf
 in_ct "grep -qx 'Environment=APP_HTTP_ADDR=127.0.0.1:8080' $dropin" || { echo "dashboard not on loopback in the drop-in"; exit 1; }

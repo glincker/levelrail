@@ -17,8 +17,14 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	planVersion := fs.String("rollback-plan", "", "preview a rollback to `version` (read-only; applying happens on the host)")
 	history := fs.Bool("history", false, "list recorded control plane upgrades, rollbacks and installs (add --json for JSON)")
 	ack := fs.String("ack", "", "acknowledge the recorded upgrade `id`")
+	apply := fs.Bool("apply", false, "download, verify, back up, swap and health-check the new release, rolling back automatically on failure")
+	applyTo := fs.String("version", "", "with --apply or --plan: release `tag` to install (default: latest on the channel)")
+	applyAck := fs.String("ack-breaking", "", "with --apply: comma-separated breaking-change `ids` you acknowledge")
+	planOnly := fs.Bool("plan", false, "show the breaking changes between the running version and the target, change nothing")
+	attempts := fs.Bool("attempts", false, "list recorded self-upgrade attempts with their step timelines")
+	noWatch := fs.Bool("no-wait", false, "with --apply: return once the upgrade has started instead of following it")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade [flags]\n\nChecks the running version against the latest release, runs the preflight\n(release signature, Docker Engine, free disk, backup), takes a control plane\nbackup, and prints the command that upgrades. It never upgrades by itself.\n\n--history shows every recorded upgrade and --ack <id> acknowledges one;\n--list shows recent releases; --rollback-plan <version> previews returning to\none. Rolling back is applied on the host with `sudo <control plane binary> rollback`.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade [flags]\n\nChecks the running version against the latest release, runs the preflight\n(release signature, Docker Engine, free disk, backup), takes a control plane\nbackup, and prints the command that upgrades. It never upgrades by itself.\n\n--history shows every recorded upgrade and --ack <id> acknowledges one;\n--plan shows breaking changes and --apply upgrades with automatic rollback;\n--attempts lists self-upgrade runs; --list shows recent releases; --rollback-plan <version> previews returning to\none. Rolling back is applied on the host with `sudo <control plane binary> rollback`.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -28,6 +34,12 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
+	if *apply || *planOnly {
+		return runUpgradeApply(ctx, client, upgradeApplyOptions{target: *applyTo, ack: *applyAck, plan: *planOnly && !*apply, watch: !*noWatch}, jsonOut, of, stdout, stderr)
+	}
+	if *attempts {
+		return runUpgradeAttempts(ctx, client, jsonOut, of, stdout, stderr)
+	}
 	if *history {
 		return runUpgradeHistory(ctx, client, jsonOut, of, stdout, stderr)
 	}

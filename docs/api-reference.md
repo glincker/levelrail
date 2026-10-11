@@ -66,6 +66,10 @@ System endpoints for:
 | GET | /api/v1/system/geoip | AbilityRead | handleGeoIPLookup |
 | GET | /api/v1/system/docker-guard | AbilityRead | handleGetDockerGuard |
 | PUT | /api/v1/system/docker-guard | AbilityRoot | handleUpdateDockerGuard |
+| GET | /api/v1/system/readiness | AbilityRead | handleServerReadiness |
+| GET | /api/v1/updates/self-upgrade/plan | AbilityRead | handleSelfUpgradePlan |
+| GET | /api/v1/updates/self-upgrade/attempts | AbilityRead | handleSelfUpgradeAttempts |
+| POST | /api/v1/updates/self-upgrade | AbilityRoot | handleSelfUpgradeStart |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
