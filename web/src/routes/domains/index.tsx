@@ -28,6 +28,7 @@ import { useProxyIntegration } from '../../queries/proxyIntegration'
 import { proxyCertStatus } from '../../lib/certStatus'
 import { PlatformSettingsSection } from '../../components/PlatformSettingsSection'
 import { PageHeader } from '../../components/shell/PageHeader'
+import { SetupStepHint } from '../../components/getStarted/SetupStepHint'
 
 // The loader primes every query the page and its collapsed settings use,
 // so nothing fetches in a component body.
@@ -90,6 +91,7 @@ function DomainsPage() {
 
   return (
     <div className="space-y-6">
+      <SetupStepHint step="app_domain" />
       <PageHeader
         title={t('page.title')}
         description={t('page.description')}
