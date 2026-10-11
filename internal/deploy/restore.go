@@ -11,12 +11,9 @@ func snapshotRecorded(snap store.DeployAttemptSnapshot) bool {
 	return len(snap.Env) > 0 || snap.Port != 0 || snap.Health != nil || snap.Replicas != 0 || snap.Strategy != "" || snap.Resources != nil
 }
 
-// RestoreSnapshot returns current with snap's runtime config restored:
-// literal env values, port, health checks, replicas, strategy, resources
-// and labels. Secret, database and vault references keep their current
-// values (a snapshot records only their names), and domains, volumes and
-// host ports stay as they are now, since rolling those back can take
-// traffic or data away from a running app.
+// RestoreSnapshot restores snap's env literals, port, health, replicas,
+// strategy, resources and labels onto current. Secret references, domains,
+// volumes and host ports stay current: rolling them back can cut traffic or data.
 func RestoreSnapshot(current store.DesiredService, snap store.DeployAttemptSnapshot) store.DesiredService {
 	if !snapshotRecorded(snap) {
 		return current

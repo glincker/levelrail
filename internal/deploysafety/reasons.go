@@ -1,7 +1,5 @@
-// Package deploysafety holds the rules that decide whether a new release
-// may take traffic and whether a live one must be rolled back: the
-// readiness gate, the post-deploy watch, their settings and the reason
-// strings every surface (reconciler, API, CLI, dashboard) shares.
+// Package deploysafety decides whether a new release may take traffic and
+// whether a live one must be rolled back, and holds the shared reason strings.
 package deploysafety
 
 // Phases of a deploy's gate timeline.

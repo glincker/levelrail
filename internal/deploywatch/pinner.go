@@ -1,7 +1,5 @@
-// Package deploywatch keeps live releases safe after cutover: it pins the
-// last N good releases so image cleanup cannot remove a rollback target,
-// and watches each new release for a bounded window, rolling it back when
-// it crashloops, is OOM-killed or starts answering with 5xx.
+// Package deploywatch pins released images as rollback targets and watches
+// each new release after cutover, rolling it back when it misbehaves.
 package deploywatch
 
 import (

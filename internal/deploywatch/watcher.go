@@ -297,10 +297,9 @@ func (w *Watcher) trip(ctx context.Context, svc *store.DesiredService, attempt *
 	w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; rolled back automatically to deploy %s", reason, message, target.ID))
 }
 
-// rollbackTarget is the newest pinned release other than attempt that is
-// still marked succeeded (a release the watch already tripped on is
-// failed, so rollbacks never ping-pong), falling back to the newest
-// earlier succeeded deploy of a different image.
+// rollbackTarget is the newest still-succeeded pinned release other than
+// attempt, else the newest earlier succeeded deploy of a different image.
+// Tripped releases are failed, so rollbacks never ping-pong.
 func (w *Watcher) rollbackTarget(ctx context.Context, svc *store.DesiredService, attempt *store.DeployAttempt) (*store.DeployAttempt, *store.RollbackPin, error) {
 	pins, err := w.Store.ListRollbackPins(ctx, svc.Name)
 	if err != nil {

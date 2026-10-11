@@ -26,7 +26,9 @@ func Stage(events []store.DeployGateEvent) string {
 				stage = StageGating
 			}
 		case PhaseCutover:
-			if e.Status == StatusPassed && stage != StageWatchFailed && stage != StageRolledBack {
+			// A crash restart of a live release records another cutover;
+			// it must not reopen a watch that already ended.
+			if e.Status == StatusPassed && (stage == StagePending || stage == StageGating || stage == StageGateFailed) {
 				stage = StageWatching
 			}
 		case PhaseWatch:

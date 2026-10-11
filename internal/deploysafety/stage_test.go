@@ -23,6 +23,7 @@ func TestStage(t *testing.T) {
 		{"cut over", []store.DeployGateEvent{ev(PhaseStability, StatusPassed), ev(PhaseCutover, StatusPassed)}, StageWatching},
 		{"watch cleared", []store.DeployGateEvent{ev(PhaseCutover, StatusPassed), ev(PhaseWatch, StatusPassed)}, StageCleared},
 		{"watch tripped, no rollback", []store.DeployGateEvent{ev(PhaseCutover, StatusPassed), ev(PhaseWatch, StatusFailed), ev(PhaseRollback, StatusFailed)}, StageWatchFailed},
+		{"cleared, later restart cutover ignored", []store.DeployGateEvent{ev(PhaseCutover, StatusPassed), ev(PhaseWatch, StatusPassed), ev(PhaseCutover, StatusPassed)}, StageCleared},
 		{"rolled back, later restart cutover ignored", []store.DeployGateEvent{ev(PhaseWatch, StatusFailed), ev(PhaseRollback, StatusPassed), ev(PhaseCutover, StatusPassed)}, StageRolledBack},
 	}
 	for _, tt := range tests {
@@ -34,5 +35,8 @@ func TestStage(t *testing.T) {
 	}
 	if StageTerminal(StageWatching) || !StageTerminal(StageRolledBack) {
 		t.Error("StageTerminal() misclassifies watching or rolled_back")
+	}
+	if StageFailed(StageCleared) || !StageFailed(StageWatchFailed) || !StageFailed(StageGateFailed) {
+		t.Error("StageFailed() misclassifies cleared, watch_failed or gate_failed")
 	}
 }

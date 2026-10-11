@@ -23,10 +23,8 @@ type DeploySafetySource interface {
 	GetDeploySafetySettings(ctx context.Context, serviceName string) (store.DeploySafetySettings, error)
 }
 
-// WithStabilityGate makes a new container pass defaults (overridable per
-// app through src) before it may take traffic: N consecutive readiness
-// passes, a minimum running window, and no restart or OOM kill inside it.
-// Without it a single readiness pass is enough.
+// WithStabilityGate holds a new container back from traffic until it passes
+// N readiness checks in a row and a stable window with no restart or OOM kill.
 func WithStabilityGate(defaults deploysafety.Effective, src DeploySafetySource) Option {
 	return func(ctrl *Controller) {
 		d := defaults
@@ -89,10 +87,8 @@ func (c *Controller) markGateFailure(ctx context.Context, desired *store.Desired
 	_ = c.gateRecorder.MarkRolloutFailureReason(ctx, c.serviceName, desired.Image, reason)
 }
 
-// stabilityGate runs after the first readiness pass and holds the
-// container back from traffic until deploysafety.EvaluateGate passes. A
-// failed container is stopped, so the next pass restarts it under the
-// crash backoff instead of promoting it on a single probe.
+// stabilityGate runs after the first readiness pass. A failed container is
+// stopped, so the next pass restarts it under the crash backoff.
 func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService) error {
 	cfg := c.safetyFor(ctx, desired)
 	if cfg.SuccessThreshold <= 1 && cfg.StableWindow <= 0 {

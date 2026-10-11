@@ -11,11 +11,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// DrainTracker remembers when each service last cut over to a new release,
-// so the previous release keeps serving for the drain timeout measured
-// from cutover rather than from container creation. Shared across passes
-// because the controller set is rebuilt every pass; in memory only, and a
-// control-plane restart falls back to the creation-based hold.
+// DrainTracker remembers each service's last cutover across passes, so the
+// drain is measured from cutover. In memory: a restart falls back to the hold.
 type DrainTracker struct {
 	mu      sync.Mutex
 	cutover map[string]time.Time
@@ -49,10 +46,9 @@ func (t *DrainTracker) at(service string) time.Time {
 	return t.cutover[service]
 }
 
-// effectiveHold is how long the previous release outlives a cutover: the
-// configured hold, but never less than the drain timeout or, with
-// auto-rollback on, the post-deploy watch window, so a rollback the watch
-// triggers lands on a release that is still running.
+// effectiveHold is how long the previous release outlives a cutover: at
+// least the drain timeout and, with auto-rollback, the watch window, so a
+// watch-triggered rollback lands on a release that is still running.
 func (c *Controller) effectiveHold(cfg deploysafety.Effective) time.Duration {
 	hold := max(c.previousReleaseHold, cfg.DrainTimeout)
 	if cfg.AutoRollback {
