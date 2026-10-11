@@ -90,6 +90,7 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Deploying apps', link: '/deploying-apps' },
+          { text: 'Compose apps', link: '/compose-apps' },
           { text: 'Importing apps', link: '/importing-apps' },
           { text: 'Deploy safety', link: '/deploy-safety' },
           { text: 'Deploy failures', link: '/deploy-failures' },

@@ -194,7 +194,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 148 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 155 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -354,6 +354,13 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/sleep/wake | AbilityDeploy | handleWakeApp |
 | GET | /api/v1/apps/{name}/environment-domains | AbilityRead | handleGetAppEnvironmentDomains |
 | GET | /api/v1/apps/{name}/listening-ports | AbilityRead | handleAppListeningPorts |
+| GET | /api/v1/apps/{name}/compose | AbilityRead | handleGetComposeStack |
+| GET | /api/v1/apps/{name}/compose/revisions | AbilityRead | handleListComposeRevisions |
+| GET | /api/v1/apps/{name}/compose/revisions/{revision} | AbilityRead | handleGetComposeRevision |
+| POST | /api/v1/apps/{name}/compose/rollback | AbilityDeploy | handleRollbackCompose |
+| POST | /api/v1/apps/{name}/compose/redeploy | AbilityDeploy | handleRedeployCompose |
+| POST | /api/v1/service-templates/{id}/install | AbilityDeploy | handleInstallServiceTemplate |
+| DELETE | /api/v1/apps/{name}/compose | AbilityWrite | handleComposeDown |
 
 :::
 
@@ -1106,6 +1113,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/dns/health-checks | AbilityRoot | handleCreateDNSHealthCheck |
 | DELETE | /api/v1/dns/health-checks/{id} | AbilityRoot | handleDeleteDNSHealthCheck |
 | GET | /api/v1/traffic/summary | AbilityRead | handleTrafficSummary |
+| GET | /api/v1/compose | AbilityRead | handleListComposeStacks |
+| POST | /api/v1/compose/preview | AbilityDeploy | handlePreviewCompose |
 
 ## See also
 
