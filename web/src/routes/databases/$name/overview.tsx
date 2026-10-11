@@ -13,6 +13,7 @@ import { useProjectListOptional } from '../../../queries/projects'
 import { ExternalDatabaseOverview } from '../../../components/ExternalDatabaseOverview'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConnectionDetailsCard } from '../../../components/databases/ConnectionDetailsCard'
+import { OptimiseHint } from '../../../components/resourceAdvisor/ResourceAdvisorTile'
 
 // Reads database and conditions from the cache the layout route primed.
 export const Route = createFileRoute('/databases/$name/overview')({
@@ -37,6 +38,7 @@ function OverviewSection() {
 
   return (
     <div className="space-y-6">
+      <OptimiseHint kind="database" name={name} />
       <Card>
         <CardHeader>
           <CardTitle>{t('overview.title')}</CardTitle>

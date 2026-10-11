@@ -115,9 +115,9 @@ func diskFindings(n Node, th Thresholds, now time.Time) []Finding {
 // hostFindings is rule i: pressure, swap, top consumers and missing capacity.
 func hostFindings(n Node, res []Resource, th Thresholds, now time.Time) []Finding {
 	var out []Finding
-	if n.MemoryTotal <= 0 {
+	if n.MemoryTotal <= 0 || n.NoIdentity {
 		f := newFinding(KindCapacityUnknown, SeverityInfo, nodeRef(n))
-		f.Title = fmt.Sprintf("%s does not report its memory capacity", nodeLabel(n))
+		f.Title = fmt.Sprintf("Memory capacity is not reported for %s", nodeLabel(n))
 		f.Why = "Without host memory the dashboard cannot compare reserved limits with capacity, and the advisor cannot tell how close the server is to running out."
 		f.Action = &Action{Type: ActionManual, Instructions: "Host memory is recorded per node only for the control plane's own node once it has a node identity (APP_MESH_ENABLED=1). Remote nodes do not report it yet."}
 		if n.NoIdentity {
@@ -132,7 +132,7 @@ func hostFindings(n Node, res []Resource, th Thresholds, now time.Time) []Findin
 			used := 1 - avail.mean/n.MemoryTotal
 			if used >= th.HostPressure {
 				f := newFinding(KindHostMemoryPressure, SeverityWarn, nodeRef(n))
-				f.Title = fmt.Sprintf("%s is short of memory", nodeLabel(n))
+				f.Title = fmt.Sprintf("Memory is running short on %s", nodeLabel(n))
 				f.Why = fmt.Sprintf("Over the last hour %.0f%% of %s was in use on average. The kernel will start reclaiming cache and then OOM-killing containers.", used*100, rightsizing.FormatMemory(int64(n.MemoryTotal)))
 				f.Evidence = Evidence{Window: "last 1 hour", WindowSeconds: 3600, Samples: avail.n, Unit: UnitBytes, Limit: n.MemoryTotal, Numbers: map[string]float64{"used_fraction": used}}
 				f.Impact.Risk = "Under pressure any container without a limit can be the one the kernel kills."
@@ -144,7 +144,7 @@ func hostFindings(n Node, res []Resource, th Thresholds, now time.Time) []Findin
 	}
 	if swap := summarize(within(n.SwapUsed, recent)); swap.n > 0 && int64(swap.mean) >= th.SwapWarnBytes {
 		f := newFinding(KindSwapInUse, SeveritySuggest, nodeRef(n))
-		f.Title = fmt.Sprintf("%s is using %s of swap", nodeLabel(n), rightsizing.FormatMemory(int64(swap.mean)))
+		f.Title = fmt.Sprintf("%s of swap in use on %s", rightsizing.FormatMemory(int64(swap.mean)), nodeLabel(n))
 		f.Why = "Swapping means memory demand exceeded RAM at some point; swapped database pages turn into slow disk reads."
 		f.Evidence = Evidence{Window: "last 1 hour", WindowSeconds: 3600, Samples: swap.n, Unit: UnitBytes, Numbers: map[string]float64{"swap_bytes": swap.mean}}
 		f.Action = &Action{Type: ActionManual, Instructions: "Find the largest consumers below and cap or move them."}

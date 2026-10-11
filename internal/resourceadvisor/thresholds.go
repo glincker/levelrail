@@ -35,6 +35,7 @@ type Thresholds struct {
 	TopConsumerShare   float64
 	DiskHorizon        time.Duration
 	ReclaimableMin     int64
+	DatabaseCPUFloor   int64
 	CacheTTL           time.Duration
 }
 
@@ -61,6 +62,7 @@ func DefaultThresholds() Thresholds {
 		TopConsumerShare:   0.6,
 		DiskHorizon:        30 * day,
 		ReclaimableMin:     gib,
+		DatabaseCPUFloor:   500_000_000,
 		CacheTTL:           time.Minute,
 	}
 }
@@ -138,6 +140,9 @@ func ThresholdsFromEnv(lookup func(string) (string, bool)) (Thresholds, []error)
 	dur("DISK_HORIZON", &t.DiskHorizon)
 	size("RECLAIM_MIN", &t.ReclaimableMin)
 	dur("CACHE_TTL", &t.CacheTTL)
+	floor := float64(t.DatabaseCPUFloor) / 1e9
+	ratio("DATABASE_CPU_FLOOR", &floor, 0, 64)
+	t.DatabaseCPUFloor = int64(floor * 1e9)
 	if t.OverProvisionRatio >= t.TightRatio {
 		errs = append(errs, fmt.Errorf("%sOVERPROVISION_RATIO must be below %sTIGHT_RATIO, using defaults", EnvPrefix, EnvPrefix))
 		d := DefaultThresholds()

@@ -1,8 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { ResourceLimitsEditor } from '../../../components/ResourceLimitsEditor'
-import { ResourceRecommendationCard } from '../../../components/ResourceRecommendationCard'
-import { CostEstimateCard } from '../../../components/CostEstimateCard'
+import { OptimisePanel } from '../../../components/resourceAdvisor/OptimisePanel'
 import { LabelsEditor } from '../../../components/LabelsEditor'
 
 // Former "resources" tab, now a real deep-linkable route. Reads app data
@@ -17,8 +16,7 @@ function ResourcesSection() {
 
   return (
     <div className="space-y-6">
-      <ResourceRecommendationCard appName={name} />
-      <CostEstimateCard appName={name} />
+      <OptimisePanel appName={name} />
       <ResourceLimitsEditor app={app} />
       <LabelsEditor app={app} />
     </div>

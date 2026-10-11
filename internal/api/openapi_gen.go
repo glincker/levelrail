@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 962 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 970 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -352,6 +352,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/settings/ai-control/revoke-agent-tokens", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeAgentTokens", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/auth/code-login", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetCodeLoginSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/auth/code-login", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutCodeLoginSettings", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/beta-features", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListBetaFeatures", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/beta-features/{feature}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetBetaFeature", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/database-upgrades", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetPlatformUpgradePolicy", Description: "The platform default reaches every database, so writing it is root-only."},
 	{Method: "PUT", Path: "/api/v1/settings/database-upgrades", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutPlatformUpgradePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetGlobalDeployFreeze", Description: "OAuth settings: GET is AbilityRead, PUT is AbilityRoot, matching /api/v1/settings/ingress's own tiers. Global deploy freeze windows apply to every app, so writing them is root-only."},
@@ -786,6 +788,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/pipelines/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleGetPipelineSummary", Description: ""},
 	{Method: "POST", Path: "/api/v1/pipelines/validate", Ability: "AbilityRead", Group: "Other", Handler: "handleValidatePipeline", Description: ""},
 	{Method: "POST", Path: "/api/v1/preflight", Ability: "AbilityWrite", Group: "Other", Handler: "handlePreflightNew", Description: ""},
+	{Method: "GET", Path: "/api/v1/resource-advisor/findings", Ability: "AbilityRead", Group: "Other", Handler: "handleResourceAdvisorFindings", Description: ""},
+	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/apply", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorApply", Description: ""},
+	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/dismiss", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
+	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/restore", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
+	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/snooze", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
+	{Method: "GET", Path: "/api/v1/resource-advisor/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleResourceAdvisorSummary", Description: ""},
 	{Method: "GET", Path: "/api/v1/ssh-node-provisions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListSSHNodeProvisions", Description: ""},
 	{Method: "GET", Path: "/api/v1/ssh-node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSSHNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page", Ability: "AbilityRead", Group: "Other", Handler: "handleGetStatusPage", Description: ""},

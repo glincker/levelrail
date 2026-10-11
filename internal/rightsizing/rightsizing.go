@@ -409,8 +409,8 @@ func formatMemory(bytes int64) string {
 	if bytes <= 0 {
 		return "0 MiB"
 	}
-	if bytes >= 1024*mib && bytes%(256*mib) == 0 {
-		return strconv.FormatFloat(float64(bytes)/(1024*mib), 'f', -1, 64) + " GiB"
+	if bytes >= 1024*mib {
+		return strconv.FormatFloat(math.Round(float64(bytes)/(1024*mib)*10)/10, 'f', -1, 64) + " GiB"
 	}
 	return fmt.Sprintf("%d MiB", (bytes+mib/2)/mib)
 }

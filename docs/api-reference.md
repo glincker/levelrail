@@ -73,7 +73,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 117 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 119 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -202,6 +202,8 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
+| GET | /api/v1/settings/beta-features | AbilityRead | handleListBetaFeatures |
+| PUT | /api/v1/settings/beta-features/{feature} | AbilityRoot | handleSetBetaFeature |
 
 :::
 
@@ -1185,6 +1187,12 @@ Routes that do not fit an existing group.
 | PATCH | /api/v1/export/destinations/{id} | AbilityRoot | handleUpdateExportDestination |
 | DELETE | /api/v1/export/destinations/{id} | AbilityRoot | handleDeleteExportDestination |
 | POST | /api/v1/export/destinations/{id}/test | AbilityRoot | handleTestExportDestination |
+| GET | /api/v1/resource-advisor/findings | AbilityRead | handleResourceAdvisorFindings |
+| GET | /api/v1/resource-advisor/summary | AbilityRead | handleResourceAdvisorSummary |
+| POST | /api/v1/resource-advisor/findings/{id}/apply | AbilityWrite | handleResourceAdvisorApply |
+| POST | /api/v1/resource-advisor/findings/{id}/dismiss | AbilityWrite | handleResourceAdvisorState |
+| POST | /api/v1/resource-advisor/findings/{id}/snooze | AbilityWrite | handleResourceAdvisorState |
+| POST | /api/v1/resource-advisor/findings/{id}/restore | AbilityWrite | handleResourceAdvisorState |
 
 ## See also
 

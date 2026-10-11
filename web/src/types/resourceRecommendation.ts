@@ -24,6 +24,7 @@ export interface DimensionRecommendation {
 export interface ResourceRecommendation {
   service_name: string
   lookback_window: string
+  lookback_label?: string
   memory: DimensionRecommendation
   cpu: DimensionRecommendation
   oom_detected_at?: string

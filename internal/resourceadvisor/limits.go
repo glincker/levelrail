@@ -18,6 +18,9 @@ func toRightsizing(samples []Sample) []rightsizing.Sample {
 
 func memoryEvidence(samples []Sample, limit int64, window time.Duration) Evidence {
 	s := summarize(samples)
+	if held := coverage(samples, latest(samples)); held > 0 && held < window {
+		window = held.Round(time.Hour)
+	}
 	return Evidence{
 		Window: rightsizing.HumanWindow(window), WindowSeconds: int64(window.Seconds()), Samples: s.n,
 		Unit: UnitBytes, P50: s.p50, P95: s.p95, P99: s.p99, Max: s.max, Limit: float64(limit),
@@ -127,6 +130,11 @@ func cpuLimitFinding(r Resource, rec rightsizing.DimensionRecommendation, cpu []
 	switch {
 	case r.NanoCPUs <= 0:
 		value := rightsizing.RoundCPUUp(math.Max(ev.P99, ev.P95*th.CPUHeadroom))
+		// Databases burst on checkpoints, vacuum and index builds, so a
+		// cap sized from a quiet average would stall them.
+		if r.Ref.Kind == ResourceDatabase {
+			value = max(value, th.DatabaseCPUFloor)
+		}
 		f := newFinding(KindCPULimitMissing, SeverityInfo, r.Ref)
 		f.Title = fmt.Sprintf("Set a CPU limit on %s", r.Ref.Name)
 		f.Why = fmt.Sprintf("%s can use every core, so a busy loop starves its neighbours. Over the %s its p95 was %s and p99 %s; a %s cap covers that with room for bursts.",

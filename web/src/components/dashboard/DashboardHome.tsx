@@ -19,6 +19,7 @@ import { RecentActivity } from './RecentActivity'
 import { QuickStart } from './QuickStart'
 import { FleetDatabases } from './FleetDatabases'
 import { ReservedUsageCard } from './ReservedUsageCard'
+import { ResourceAdvisorTile } from '../resourceAdvisor/ResourceAdvisorTile'
 import { StorageUsageCard } from './StorageUsageCard'
 import { PlatformCapabilities } from './PlatformCapabilities'
 
@@ -105,6 +106,7 @@ export function DashboardHome({
       <NeedsAttention />
       <FleetDatabases />
       <ReservedUsageCard apps={apps} />
+      <ResourceAdvisorTile />
       <StorageUsageCard />
       <Suspense fallback={null}>
         <RecentAlertsCard />
