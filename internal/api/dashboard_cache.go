@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -79,7 +80,13 @@ func (c *dashboardCache) get(ctx context.Context, key string, fn func(ctx contex
 	}
 }
 
-func (c *dashboardCache) loadInner(key string, fn func(ctx context.Context) (any, error)) (any, error) {
+func (c *dashboardCache) loadInner(key string, fn func(ctx context.Context) (any, error)) (v any, err error) {
+	// Loads run on their own goroutine, outside net/http's per request recover.
+	defer func() {
+		if r := recover(); r != nil {
+			v, err = nil, fmt.Errorf("api: dashboard load %s panicked: %v", key, r)
+		}
+	}()
 	val, err := fn(context.Background())
 	if err != nil {
 		return nil, err

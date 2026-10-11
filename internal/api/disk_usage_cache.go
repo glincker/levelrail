@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -82,7 +83,7 @@ func (c *cachedDiskUsager) startRefreshLocked() {
 
 // refresh fetches outside the request path; a failure keeps the old value.
 func (c *cachedDiskUsager) refresh(flight chan struct{}) {
-	u, err := c.inner.DiskUsage(context.Background())
+	u, err := c.fetchGuarded()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if err == nil {
@@ -90,6 +91,17 @@ func (c *cachedDiskUsager) refresh(flight chan struct{}) {
 	}
 	c.flight = nil
 	close(flight)
+}
+
+// fetchGuarded keeps a panicking source from crashing the process off the
+// request path, where net/http's per request recover does not apply.
+func (c *cachedDiskUsager) fetchGuarded() (u docker.DiskUsage, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("api: docker disk usage panicked: %v", r)
+		}
+	}()
+	return c.inner.DiskUsage(context.Background())
 }
 
 // prewarm starts one background fetch so the first dashboard load after a
