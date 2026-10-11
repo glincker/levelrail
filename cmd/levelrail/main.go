@@ -835,6 +835,7 @@ func run(logger *slog.Logger) error {
 	apiRouter.SetDoctorIngressEdge(edge.doctorInfo())
 	proxySyncer := newProxySyncer(b, db, logger)
 	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
+	apiRouter.ResumeCutoverRuns(ctx)
 
 	engine.SetStore(db)
 	engine.SetSource(dynamicSource(dynamicSourceDeps{

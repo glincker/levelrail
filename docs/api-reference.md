@@ -1106,6 +1106,12 @@ Routes that do not fit an existing group.
 | POST | /api/v1/dns/health-checks | AbilityRoot | handleCreateDNSHealthCheck |
 | DELETE | /api/v1/dns/health-checks/{id} | AbilityRoot | handleDeleteDNSHealthCheck |
 | GET | /api/v1/traffic/summary | AbilityRead | handleTrafficSummary |
+| GET | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/plan | AbilityRead | handleAppImportCutoverPlan |
+| GET | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs | AbilityRead | handleListAppImportCutoverRuns |
+| POST | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs | AbilityWriteSensitive | handleStartAppImportCutover |
+| GET | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run} | AbilityRead | handleGetAppImportCutoverRun |
+| POST | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}/rollback | AbilityWriteSensitive | handleRollbackAppImportCutover |
+| POST | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}/confirm-dns | AbilityWriteSensitive | handleConfirmAppImportCutoverDNS |
 
 ## See also
 

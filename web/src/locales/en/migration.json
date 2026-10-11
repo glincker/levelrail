@@ -371,7 +371,67 @@
       "enableAnyway": "Enable routing anyway",
       "none": "No verified app with a domain yet.",
       "receipt": "Download receipt",
-      "receiptNote": "A JSON record of what was imported and what remains manual. It holds no secrets."
+      "receiptNote": "A JSON record of what was imported and what remains manual. It holds no secrets.",
+      "guide": {
+        "open": "Guided cutover",
+        "close": "Close",
+        "title": "Cutover of {{app}}",
+        "recheck": "Check again",
+        "safety": "Nothing on the source platform is touched. A switch can be rolled back, and a failed verification rolls it back by itself.",
+        "status": {
+          "pass": "Pass",
+          "warn": "Warning",
+          "block": "Blocked"
+        },
+        "verdict": {
+          "ready": "Ready",
+          "warnings": "Ready with warnings",
+          "blocked": "Blocked"
+        },
+        "method": {
+          "dns": "DNS provider",
+          "proxy": "Managed proxy route",
+          "manual": "Manual record",
+          "none": "Already points here"
+        },
+        "domainLine": "{{domain}}: switched by {{method}}, now {{current}}",
+        "copyRecord": "Copy the record",
+        "dryRun": "Dry run",
+        "typeToConfirm": "Type {{app}} to switch",
+        "acceptWarnings": "Go ahead despite the warnings",
+        "switch": "Switch traffic",
+        "rollback": "Roll back",
+        "confirmDns": "I changed the record",
+        "manualRecord": "Set {{type}} {{domain}} to {{value}}, then press the button",
+        "liveHint": "Traffic is live here and verified through the public name. Keep the source running for a full traffic cycle.",
+        "noRuns": "No run yet. A dry run starts the app, probes it through this node's ingress and stops it again without changing a record.",
+        "mode": {
+          "dry_run": "Dry run",
+          "switch": "Switch"
+        },
+        "state": {
+          "planning": "Planning",
+          "ready": "Ready",
+          "starting": "Starting",
+          "verifying": "Verifying",
+          "switching": "Switching",
+          "live": "Live",
+          "rolled_back": "Rolled back",
+          "failed": "Failed"
+        },
+        "step": {
+          "readiness": "Readiness",
+          "route": "Start",
+          "healthy": "Healthy",
+          "ingress_probe": "Ingress probe",
+          "dns_preview": "Preview",
+          "switch": "Switch",
+          "post_verify": "Verify",
+          "cleanup": "Stop",
+          "rollback": "Restore",
+          "manual_dns": "Manual DNS"
+        }
+      }
     },
     "images": {
       "title": "Move images built on the source host",

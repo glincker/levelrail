@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/toast'
+import { AppImportCutoverGuide } from './AppImportCutoverGuide'
 import {
   appImportReceiptUrl,
   useAppImportCutover,
@@ -156,6 +157,11 @@ function ItemCard({
           <DomainRow key={d.domain} d={d} />
         ))}
       </ul>
+      <AppImportCutoverGuide
+        sessionId={sessionId}
+        item={item.source_id}
+        app={item.target}
+      />
     </li>
   )
 }
