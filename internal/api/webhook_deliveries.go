@@ -31,6 +31,7 @@ type webhookDeliveryResource struct {
 	Payload          string    `json:"payload"`
 	PayloadTruncated bool      `json:"payload_truncated"`
 	Error            string    `json:"error,omitempty"`
+	Note             string    `json:"note,omitempty"`
 	ReceivedAt       time.Time `json:"received_at"`
 }
 
@@ -46,6 +47,7 @@ func toWebhookDeliveryResource(d store.WebhookDelivery) webhookDeliveryResource 
 		Payload:          string(d.Payload),
 		PayloadTruncated: d.PayloadTruncated,
 		Error:            d.Error,
+		Note:             d.Note,
 		ReceivedAt:       d.ReceivedAt,
 	}
 }

@@ -1630,3 +1630,20 @@ func TestHandleTriggerBuild_RequiredSecretAlreadySet_StillDeploys(t *testing.T) 
 		t.Fatalf("attempt Status = %q, want %q: a required secret that already has a value must not block redeploy; attempt.Error = %q", attempt.Status, store.DeployAttemptStatusSucceeded, attempt.Error)
 	}
 }
+
+// TestGitSourceCloneToken_FallsBackToInstallationToken covers the exported
+// resolver the pipeline engine uses for repo reads and builds.
+func TestGitSourceCloneToken_FallsBackToInstallationToken(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
+	rt, _ := newPrivateRepoAuthRouter(t, fb, fetch, fakeClient)
+
+	got := rt.GitSourceCloneToken(context.Background(), "web", "https://github.com/acme/widgets.git")
+	if got != "ghs_installtoken" {
+		t.Errorf("GitSourceCloneToken() = %q, want the installation token", got)
+	}
+	if rt.GitSourceCloneToken(context.Background(), "web", "https://example.com/other/repo.git") != "" {
+		t.Error("GitSourceCloneToken() minted a token for a repo outside the app's instance, want empty")
+	}
+}

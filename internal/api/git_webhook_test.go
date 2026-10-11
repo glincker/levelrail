@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -656,6 +657,16 @@ func TestHandleGitPushWebhook_FetchFailure_ReturnsServerErrorNotLeaky(t *testing
 	if fb.calls != 0 {
 		t.Errorf("builder called %d times, want 0 when fetch fails", fb.calls)
 	}
+	attempts, err := db.ListDeployAttempts(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 1 {
+		t.Fatalf("deploy attempts = %d, want 1 failed attempt recorded for the fetch failure", len(attempts))
+	}
+	if attempts[0].Status != store.DeployAttemptStatusFailed || !strings.Contains(attempts[0].Error, "connection refused") {
+		t.Errorf("attempt = status %q error %q, want failed with the fetch error", attempts[0].Status, attempts[0].Error)
+	}
 }
 
 func TestHandleGitPushWebhook_AppDeleted_ReturnsNotFound(t *testing.T) {
@@ -1150,5 +1161,77 @@ func TestHandleGitPushWebhook_ServicesSpec_TakesPriorityOverAdditionalServices(t
 	}
 	if fb.multiCalls != 1 || fb.calls != 0 {
 		t.Errorf("multiCalls = %d, calls = %d, want DeploySpec called once and single Deploy never called", fb.multiCalls, fb.calls)
+	}
+}
+
+// newGitHubAppGitSourceRouter is newConnectedGitSourceRouter plus a
+// connected, installed GitHub App whose fake client mints
+// "ghs_installtoken", for the tests proving a source with no stored deploy
+// token authenticates with the installation token instead.
+func newGitHubAppGitSourceRouter(t *testing.T) (*Router, gitSourceResource) {
+	t.Helper()
+	appSecrets := newFakeGitHubAppSecrets()
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithGitSourceSecrets(newFakeGitSourceSecrets()), WithGitHubAppSecrets(appSecrets))
+	rt.githubAppClient = &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
+	seedInstalledGitHubApp(t, db, appSecrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	return rt, connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/octocat/web.git","branch":"main","build_type":"dockerfile"}`)
+}
+
+// postSignedPush sends a push to ref with the connected source's real
+// webhook secret.
+func postSignedPush(t *testing.T, rt *Router, created gitSourceResource, ref string) *httptest.ResponseRecorder {
+	t.Helper()
+	body := pushBody(ref)
+	return postGitWebhook(t, rt, "X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body), body, nil)
+}
+
+// TestHandleGitPushWebhook_PrivateRepo_FallsBackToGitHubAppToken proves a
+// push to a source with no stored deploy token still clones with the
+// connected GitHub App's installation token, not an anonymous clone that
+// 401s for a private repo.
+func TestHandleGitPushWebhook_PrivateRepo_FallsBackToGitHubAppToken(t *testing.T) {
+	rt, created := newGitHubAppGitSourceRouter(t)
+	var fetchCalls []fakeGitSourceFetchCall
+	rt.gitSourceFetch = newFakeGitSourceFetch(&fetchCalls, t.TempDir(), new(bool), nil)
+	rt.builder = &fakeBuilder{tag: "web:sha1"}
+
+	requireStatusOK(t, postSignedPush(t, rt, created, "refs/heads/main"))
+	if len(fetchCalls) != 1 || fetchCalls[0].token != "ghs_installtoken" {
+		t.Fatalf("fetch calls = %+v, want one call with the minted installation token", fetchCalls)
+	}
+}
+
+// TestHandleGitPushWebhook_IgnoredBranch_StoresNote proves a push to a
+// branch the app does not watch is a 200 whose reason is persisted on the
+// delivery row, so the Source page and CLI can say why nothing deployed.
+func TestHandleGitPushWebhook_IgnoredBranch_StoresNote(t *testing.T) {
+	rt, created := newGitHubAppGitSourceRouter(t)
+	fb := &fakeBuilder{tag: "web:sha1"}
+	rt.builder = fb
+
+	requireStatusOK(t, postSignedPush(t, rt, created, "refs/heads/develop"))
+	if fb.calls != 0 {
+		t.Fatalf("builder called %d times, want 0 for an ignored branch", fb.calls)
+	}
+	deliveries, err := rt.webhookDeliveries.(*store.DB).ListWebhookDeliveries(context.Background(), "web", 10, nil)
+	if err != nil || len(deliveries) != 1 {
+		t.Fatalf("ListWebhookDeliveries() = %d rows, err = %v, want 1", len(deliveries), err)
+	}
+	if got := deliveries[0]; got.Error != "" || !strings.Contains(got.Note, "refs/heads/develop") || !strings.Contains(got.Note, "refs/heads/main") {
+		t.Errorf("delivery error = %q note = %q, want no error and a note naming both refs", got.Error, got.Note)
+	}
+}
+
+// TestResolveGitSourceDeployToken_FallsBackToGitHubAppToken covers the
+// shared resolver scheduled deploys and preview environments call, not
+// just the push path.
+func TestResolveGitSourceDeployToken_FallsBackToGitHubAppToken(t *testing.T) {
+	rt, _ := newGitHubAppGitSourceRouter(t)
+	got, err := rt.resolveGitSourceDeployToken(context.Background(), "web")
+	if err != nil || got != "ghs_installtoken" {
+		t.Fatalf("resolveGitSourceDeployToken() = %q, %v, want the installation token", got, err)
 	}
 }

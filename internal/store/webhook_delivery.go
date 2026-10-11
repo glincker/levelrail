@@ -54,7 +54,11 @@ type WebhookDelivery struct {
 	// Error is the same non-leaky status message the webhook response
 	// itself returned (e.g. "invalid signature", "deploy failed"), never
 	// a secret or the payload's own contents.
-	Error      string
+	Error string
+	// Note is the outcome message of a delivery that was accepted but did
+	// not (or not yet) deploy, e.g. an ignored branch or a path filter
+	// skip. Empty when the delivery returned an error.
+	Note       string
 	ReceivedAt time.Time
 }
 
@@ -94,11 +98,11 @@ func (db *DB) SaveWebhookDelivery(ctx context.Context, d WebhookDelivery) error 
 	}
 
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO webhook_deliveries (id, service_name, provider, event_type, header_fields, signature_valid, matched, status_code, payload, payload_truncated, error, received_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO webhook_deliveries (id, service_name, provider, event_type, header_fields, signature_valid, matched, status_code, payload, payload_truncated, error, note, received_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, d.ID, d.ServiceName, d.Provider, d.EventType, string(headerFieldsJSON),
 		boolToInt(d.SignatureValid), boolToInt(d.Matched), d.StatusCode,
-		payload, boolToInt(truncated), d.Error, d.ReceivedAt.UTC().Format(time.RFC3339Nano))
+		payload, boolToInt(truncated), d.Error, d.Note, d.ReceivedAt.UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return fmt.Errorf("store: save webhook delivery %q: %w", d.ID, err)
 	}
@@ -115,7 +119,7 @@ var ErrWebhookDeliveryNotFound = errors.New("store: webhook delivery not found")
 // re-run.
 func (db *DB) GetWebhookDelivery(ctx context.Context, id string) (*WebhookDelivery, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, service_name, provider, event_type, header_fields, signature_valid, matched, status_code, payload, payload_truncated, error, received_at
+		SELECT id, service_name, provider, event_type, header_fields, signature_valid, matched, status_code, payload, payload_truncated, error, note, received_at
 		FROM webhook_deliveries WHERE id = ?
 	`, id)
 	d, err := scanWebhookDelivery(row.Scan)
@@ -138,7 +142,7 @@ func (db *DB) ListWebhookDeliveries(ctx context.Context, serviceName string, lim
 		rows *sql.Rows
 		err  error
 	)
-	const selectCols = `id, service_name, provider, event_type, header_fields, signature_valid, matched, status_code, payload, payload_truncated, error, received_at`
+	const selectCols = `id, service_name, provider, event_type, header_fields, signature_valid, matched, status_code, payload, payload_truncated, error, note, received_at`
 	if before != nil {
 		rows, err = db.QueryContext(ctx, `
 			SELECT `+selectCols+`
@@ -202,7 +206,7 @@ func scanWebhookDelivery(scan func(dest ...any) error) (*WebhookDelivery, error)
 		receivedAt              string
 	)
 	if err := scan(&d.ID, &d.ServiceName, &d.Provider, &d.EventType, &headerFieldsJSON,
-		&signatureValid, &matched, &d.StatusCode, &d.Payload, &payloadTruncated, &d.Error, &receivedAt); err != nil {
+		&signatureValid, &matched, &d.StatusCode, &d.Payload, &payloadTruncated, &d.Error, &d.Note, &receivedAt); err != nil {
 		return nil, err
 	}
 

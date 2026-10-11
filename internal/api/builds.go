@@ -282,6 +282,16 @@ func (rt *Router) tokenForRepo(ctx context.Context, name, repoURL string, allowP
 	return token
 }
 
+// GitSourceCloneToken resolves the clone credential for a git source's own
+// repository for in-process callers outside this package (the pipeline
+// engine's repo reads and builds): name's stored deploy token, else the
+// connected GitHub App's installation token. repoURL must be the stored
+// git source URL, never a request-supplied value, since this mints a live
+// installation token. Empty when neither exists.
+func (rt *Router) GitSourceCloneToken(ctx context.Context, name, repoURL string) string {
+	return rt.tokenForRepo(ctx, name, repoURL, true)
+}
+
 // handleTriggerBuild handles POST /api/v1/apps/{name}/builds: builds an
 // image from a git source and points the app's desired state at the
 // result, through the same internal/deploy.Pipeline

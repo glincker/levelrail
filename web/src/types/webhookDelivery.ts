@@ -13,6 +13,7 @@ export interface WebhookDelivery {
   payload: string
   payload_truncated: boolean
   error?: string
+  note?: string
   received_at: string
 }
 
