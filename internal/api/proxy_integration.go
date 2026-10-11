@@ -31,6 +31,8 @@ type proxyIntegrationDeps struct {
 	// probe and routerLoaded are overridable in tests.
 	probe        func(ctx context.Context, t proxyroutes.ProbeTarget) proxyroutes.ProbeResult
 	routerLoaded func(ctx context.Context, base, router string, timeout time.Duration) (bool, error)
+	// routeRetryInterval spaces re-probes while the proxy has no route yet; tests shrink it.
+	routeRetryInterval time.Duration
 	// setupMu makes setup one at a time so two clicks cannot interleave.
 	setupMu sync.Mutex
 }

@@ -365,6 +365,7 @@ levelrail-cli backup-targets get <id>
 levelrail-cli backup-targets delete <id>
 levelrail-cli backup-targets test <id>
 levelrail-cli backup-targets create --name NAME --provider PROVIDER --bucket BUCKET --access-key-id ID --secret-access-key KEY [--endpoint URL] [--region REGION]
+# --endpoint is required for r2 and custom, --region is also required for custom.
 levelrail-cli backup-targets update <id> --name NAME --provider PROVIDER --bucket BUCKET [--access-key-id ID --secret-access-key KEY] [--endpoint URL] [--region REGION]
 
 levelrail-cli registry-credentials list

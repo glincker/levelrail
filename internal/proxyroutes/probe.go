@@ -33,8 +33,14 @@ type ProbeResult struct {
 	CertIssuer   string
 	CertNotAfter time.Time
 	CertTrusted  bool
-	Err          string
+	// NoRoute is true when the proxy answered with its own "no router matched" 404.
+	NoRoute bool
+	Err     string
 }
+
+// WaitingForRoute is the pending message recorded when the proxy had not
+// loaded a written route file within the verify window.
+const WaitingForRoute = "waiting for the proxy to load the route"
 
 // traefikNotFound is the body Traefik answers with when no router matched.
 const traefikNotFound = "404 page not found"
@@ -93,6 +99,7 @@ func Probe(ctx context.Context, t ProbeTarget) ProbeResult {
 	res.StatusCode = resp.StatusCode
 	switch {
 	case resp.StatusCode == http.StatusNotFound && strings.TrimSpace(string(body)) == traefikNotFound:
+		res.NoRoute = true
 		res.Err = "the proxy has no route for this domain yet (it answered with its own 404)"
 	case resp.StatusCode == http.StatusBadGateway || resp.StatusCode == http.StatusGatewayTimeout:
 		res.Err = fmt.Sprintf("the proxy could not reach this server (status %d): check the upstream host and that the listener accepts connections from the proxy", resp.StatusCode)

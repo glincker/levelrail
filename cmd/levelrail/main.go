@@ -332,6 +332,9 @@ const (
 )
 
 func main() {
+	if code, handled := bootArgsExit(os.Args[1:], os.Args[0], os.Stdout, os.Stderr); handled {
+		os.Exit(code)
+	}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	if len(os.Args) > 1 && runReleaseCommand(os.Args[1], os.Args[2:]) {

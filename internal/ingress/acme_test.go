@@ -248,8 +248,8 @@ func TestBuildRoutesConfig_ACMEEnabled(t *testing.T) {
 		t.Fatalf("BuildRoutesConfig() error = %v", err)
 	}
 
-	if got.Apps.PKI != nil {
-		t.Errorf("Apps.PKI = %+v, want nil: ACME issuance needs no local CA", got.Apps.PKI)
+	if got.Apps.PKI == nil {
+		t.Error("Apps.PKI = nil, want the internal CA config the fallback issuer needs (install_trust off)")
 	}
 	if got.Apps.TLS == nil || got.Apps.TLS.Automation == nil || len(got.Apps.TLS.Automation.Policies) != 1 {
 		t.Fatalf("Apps.TLS = %+v, want exactly one automation policy", got.Apps.TLS)
@@ -258,8 +258,11 @@ func TestBuildRoutesConfig_ACMEEnabled(t *testing.T) {
 	if !reflect.DeepEqual(policy.Subjects, []string{"app.example.com"}) {
 		t.Errorf("policy.Subjects = %v, want [app.example.com]", policy.Subjects)
 	}
-	if len(policy.Issuers) != 1 {
-		t.Fatalf("policy.Issuers = %+v, want exactly one issuer", policy.Issuers)
+	if len(policy.Issuers) != 2 {
+		t.Fatalf("policy.Issuers = %+v, want ACME then the internal fallback", policy.Issuers)
+	}
+	if _, ok := policy.Issuers[1].(InternalIssuer); !ok {
+		t.Fatalf("policy.Issuers[1] = %T, want InternalIssuer fallback", policy.Issuers[1])
 	}
 	issuer, ok := policy.Issuers[0].(ACMEIssuer)
 	if !ok {

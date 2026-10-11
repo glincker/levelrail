@@ -2006,7 +2006,8 @@ func (c *Controller) effectiveReadyBudget(desired *store.DesiredService) time.Du
 // probe. A service with no readiness config, or an HTTP probe but no port
 // (a worker with nothing listening), is ready the moment it's running.
 func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService) error {
-	readiness := readinessProbeFor(desired)
+	readiness := c.deployReadinessProbeFor(desired)
+	c.noteImplicitReadiness(ctx, state.Name, desired, readiness)
 	if readiness == nil {
 		return nil
 	}

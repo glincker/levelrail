@@ -36,6 +36,9 @@ func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer
 	if bucket == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--bucket is required"))
 	}
+	if msg := backupTargetProviderProblem(provider, endpoint, region); msg != "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("%s", msg))
+	}
 	if accessKeyID == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--access-key-id is required"))
 	}
@@ -62,6 +65,25 @@ func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer
 	return exitOK
 }
 
+// backupTargetProviderProblem mirrors the API's per-provider required fields
+// so a bad create fails before a request is sent.
+func backupTargetProviderProblem(provider, endpoint, region string) string {
+	switch provider {
+	case "r2":
+		if endpoint == "" {
+			return "--endpoint is required for the r2 provider"
+		}
+	case "custom":
+		if endpoint == "" {
+			return "--endpoint is required for the custom provider"
+		}
+		if region == "" {
+			return "--region is required for the custom provider"
+		}
+	}
+	return ""
+}
+
 func backupTargetsCreateUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s backup-targets create --name NAME --provider PROVIDER --bucket BUCKET --access-key-id ID --secret-access-key KEY [flags]
@@ -72,7 +94,7 @@ Flags:
   --name string                  display name for the backup target (required)
   --provider string               provider: aws, r2, or custom (required)
   --endpoint string               S3-compatible endpoint URL (required for r2 and custom)
-  --region string                 bucket region
+  --region string                 bucket region (required for custom)
   --bucket string                 bucket name (required)
   --access-key-id string          access key id (required)
   --secret-access-key string      secret access key (required)

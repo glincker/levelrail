@@ -107,6 +107,37 @@ func TestHandleCreateAlertRule_ThresholdSuccess(t *testing.T) {
 	}
 }
 
+func TestHandleCreateAlertRule_WarnsWithoutDestination(t *testing.T) {
+	tests := []struct {
+		name     string
+		extra    string
+		wantWarn bool
+	}{
+		{name: "no channel and no url warns", extra: "", wantWarn: true},
+		{name: "notify url does not warn", extra: `,"notify_url":"https://hooks.glincker.com/x","notify_kind":"slack"`, wantWarn: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db, _ := newTestRouterWithAlerting(t)
+			cookie := loginTestSession(t, rt, db)
+			seedApp(t, db, "web")
+			body := `{"name":"high cpu","kind":"threshold","metric":"cpu_percent","comparator":">","threshold":80,"enabled":true` + tt.extra + `}`
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+			if rec.Code != http.StatusCreated {
+				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+			}
+			var got ruleResource
+			if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if gotWarn := len(got.Warnings) > 0; gotWarn != tt.wantWarn {
+				t.Errorf("Warnings = %v, want warning = %v", got.Warnings, tt.wantWarn)
+			}
+		})
+	}
+}
+
 func TestHandleCreateAlertRule_CrashloopSuccess(t *testing.T) {
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)

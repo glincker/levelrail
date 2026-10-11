@@ -362,6 +362,9 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create alert rule for app %q: %w", appName, err))
 	}
 
+	for _, w := range created.Warnings {
+		_, _ = fmt.Fprintf(stderr, "warning: %s (see %q and --channel-id)\n", w, prog+" channels list")
+	}
 	if err := renderResult(stdout, of.Format, of.Query, created, func() {
 		_, _ = fmt.Fprintf(stdout, "alert rule %q (id %s, kind %s) created for app %q\n", created.Name, created.ID, created.Kind, appName)
 	}); err != nil {

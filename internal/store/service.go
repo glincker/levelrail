@@ -48,6 +48,7 @@ type ServiceProbe struct {
 	FollowRedirects *bool         `json:"follow_redirects,omitempty"`
 	ExpectedStatus  string        `json:"expected_status,omitempty"`
 	Exec            []string      `json:"exec,omitempty"`
+	TCP             bool          `json:"tcp,omitempty"`
 	Interval        time.Duration `json:"interval,omitempty"`
 	Timeout         time.Duration `json:"timeout,omitempty"`
 	Failures        int           `json:"failures,omitempty"`
@@ -63,6 +64,7 @@ func (p ServiceProbe) ProbeConfig() probe.Config {
 		FollowRedirects: p.FollowRedirects,
 		ExpectedStatus:  p.ExpectedStatus,
 		Exec:            p.Exec,
+		TCP:             p.TCP,
 		Interval:        p.Interval,
 		Timeout:         p.Timeout,
 	}

@@ -122,6 +122,40 @@ func TestDeleteBackupTarget(t *testing.T) {
 	}
 }
 
+func TestDeleteBackupTarget_HistoryStatus(t *testing.T) {
+	tests := []struct {
+		name    string
+		status  string
+		wantErr bool
+	}{
+		{name: "failed only history is deletable", status: BackupStatusFailed},
+		{name: "succeeded history blocks", status: BackupStatusSucceeded, wantErr: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db := openTestDB(t)
+			ctx := context.Background()
+			target := newTestBackupTarget()
+			if err := db.SaveBackupTarget(ctx, target); err != nil {
+				t.Fatalf("SaveBackupTarget() error = %v", err)
+			}
+			if err := db.StartBackupHistory(ctx, BackupHistory{
+				ID: "bkh_1", DatabaseName: "mydb", TargetID: target.ID,
+				ObjectKey: "mydb/mydb-1.dump", StartedAt: "2026-08-14T00:00:00Z",
+			}); err != nil {
+				t.Fatalf("StartBackupHistory() error = %v", err)
+			}
+			if err := db.FinishBackupHistory(ctx, "bkh_1", tc.status, 1, "", "boom", "2026-08-14T00:00:01Z"); err != nil {
+				t.Fatalf("FinishBackupHistory() error = %v", err)
+			}
+			err := db.DeleteBackupTarget(ctx, target.ID)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("DeleteBackupTarget() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestDeleteBackupTarget_NotFound(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

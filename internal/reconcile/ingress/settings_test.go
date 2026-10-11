@@ -80,8 +80,8 @@ func TestController_Reconcile_ACMEEnabled_ThreadsSettingsIntoConfig(t *testing.T
 		t.Fatalf("Reconcile() error = %v", err)
 	}
 
-	if applier.lastCfg.Apps.PKI != nil {
-		t.Errorf("Apps.PKI = %+v, want nil: ACME issuance needs no local CA", applier.lastCfg.Apps.PKI)
+	if applier.lastCfg.Apps.PKI == nil {
+		t.Error("Apps.PKI = nil, want the internal CA config the fallback issuer needs")
 	}
 	policies := applier.lastCfg.Apps.TLS.Automation.Policies
 	if len(policies) != 1 {

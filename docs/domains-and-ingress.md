@@ -203,11 +203,15 @@ The Domains page opens with an **Enable HTTPS** card (the setup wizard's domain 
 From the CLI:
 
 ```
-levelrail-cli settings ingress https enable --email you@example.com --wait 2m
+levelrail-cli settings ingress https enable --email you@yourdomain.com --wait 2m
 levelrail-cli settings ingress https status
 ```
 
 The API is `GET` and `POST /api/v1/settings/ingress/https`.
+
+The contact email is checked before anything is saved: it must be a plain address on a real domain, and `example.com`, `.test`, `.invalid`, `.localhost` and similar reserved names are rejected because Let's Encrypt refuses them. The same applies to the primary domain when real ACME is on.
+
+If issuance fails for any reason (a rejected contact, a closed port, a rate limit), the site keeps answering over HTTPS with a certificate signed by the platform's own CA instead of dropping the handshake, and the domain shows the certificate authority's error with a hint. The public CA is retried each time that fallback certificate renews, every `APP_INGRESS_FALLBACK_CERT_LIFETIME` (default `6h`), and immediately when you run the enable command again with a corrected email.
 
 Ports 80 and 443 must be reachable from the internet. If issuance fails, the card shows the certificate authority's own error and a localized hint:
 
@@ -256,7 +260,7 @@ The tradeoff: browsers and HTTP clients show a trust warning until you accept th
 
 ### Real public ACME (Let's Encrypt or RFC 8555 CA)
 
-A Caddy ACME issuer is built and wired end-to-end. Enable it with the **Issue real ACME certificates** toggle on the Domains page, or with `levelrail-cli settings ingress set --acme-enabled --acme-email you@example.com`. The API is `GET/PUT /api/v1/settings/ingress`. An account email is required, and a directory URL is optional.
+A Caddy ACME issuer is built and wired end-to-end. Enable it with the **Issue real ACME certificates** toggle on the Domains page, or with `levelrail-cli settings ingress set --acme-enabled --acme-email you@yourdomain.com`. The API is `GET/PUT /api/v1/settings/ingress`. An account email is required, and a directory URL is optional.
 
 ::: tip Verified against a live domain
 Real Let's Encrypt issuance, HTTP to HTTPS redirect and trusted-chain handshakes were run on a public VPS (`<dashed-ip>.sslip.io`, ports 80 and 443 open). The recorded run, including what failed before it worked, is in [docs/acme-verification-runbook.md](acme-verification-runbook.md#recorded-run-2026-10-05).

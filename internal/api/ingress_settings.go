@@ -177,6 +177,8 @@ func (rt *Router) firstAdminAddress(ctx context.Context) string {
 var (
 	errACMEEmailRequired = errors.New("acme_email is required when acme_enabled is true")
 	errACMEEmailInvalid  = errors.New("acme_email is not a valid email address")
+	// errACMEDomainReserved is returned when the primary domain is one no public CA signs.
+	errACMEDomainReserved = errors.New("primary_domain cannot get a public certificate (IP addresses, single labels, example.com, .test, .invalid, .localhost, .local and .internal are rejected by Let's Encrypt); use a real domain or leave real ACME off")
 )
 
 // validateIngressSettingsRequest enforces the one real business rule
@@ -214,9 +216,14 @@ func validateIngressSettingsRequest(req ingressSettingsResource) error {
 	if email == "" {
 		return errACMEEmailRequired
 	}
-	addr, err := mail.ParseAddress(email)
-	if err != nil || addr.Address != email {
+	if err := ingress.ValidateACMEContact(email); err != nil {
+		if errors.Is(err, ingress.ErrACMEContactReserved) {
+			return err
+		}
 		return errACMEEmailInvalid
+	}
+	if d := strings.TrimSpace(req.PrimaryDomain); d != "" && !ingress.ACMEIssuable(d) {
+		return errACMEDomainReserved
 	}
 	return nil
 }

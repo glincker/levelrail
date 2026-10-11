@@ -110,7 +110,7 @@ type createBackupTargetRequest struct {
 // validateBackupTargetFields checks name/provider/endpoint/bucket, the
 // fields createBackupTargetRequest and updateBackupTargetRequest validate
 // identically; each then layers its own credential-field rules on top.
-func validateBackupTargetFields(name, provider, endpoint, bucket string) error {
+func validateBackupTargetFields(name, provider, endpoint, region, bucket string) error {
 	if name == "" {
 		return errors.New("name is required")
 	}
@@ -125,11 +125,14 @@ func validateBackupTargetFields(name, provider, endpoint, bucket string) error {
 	if endpoint == "" && provider != store.BackupProviderAWS {
 		return errors.New("endpoint is required for r2 and custom providers")
 	}
+	if region == "" && provider == store.BackupProviderCustom {
+		return fmt.Errorf("region is required for the %s provider", provider)
+	}
 	return nil
 }
 
 func validateCreateBackupTargetRequest(req createBackupTargetRequest) error {
-	if err := validateBackupTargetFields(req.Name, req.Provider, req.Endpoint, req.Bucket); err != nil {
+	if err := validateBackupTargetFields(req.Name, req.Provider, req.Endpoint, req.Region, req.Bucket); err != nil {
 		return err
 	}
 	if req.AccessKeyID == "" {
@@ -158,7 +161,7 @@ type updateBackupTargetRequest struct {
 }
 
 func validateUpdateBackupTargetRequest(req updateBackupTargetRequest) error {
-	if err := validateBackupTargetFields(req.Name, req.Provider, req.Endpoint, req.Bucket); err != nil {
+	if err := validateBackupTargetFields(req.Name, req.Provider, req.Endpoint, req.Region, req.Bucket); err != nil {
 		return err
 	}
 	if (req.AccessKeyID == "") != (req.SecretAccessKey == "") {

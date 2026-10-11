@@ -42,6 +42,15 @@ A new container takes traffic only when all of these hold:
   controller compares Docker's `RestartCount`, `StartedAt`, `OOMKilled` and
   exit code against what it saw when the window began.
 
+An app with no readiness probe but a declared port is gated on a TCP
+connect to that port, with the same consecutive passes and stable window as
+any probe. A connection that is accepted and then dropped (what Docker's
+published-port proxy does when nothing listens behind it) counts as a
+failure, so an image that never listens fails the deploy and the previous
+release keeps serving. An app with neither a port nor a probe has nothing to
+check: readiness is only "the container is running". The gate timeline says
+so in a note, and the deploy suggestions recommend adding a health check.
+
 An app with no readiness probe still has to survive the stable window. A
 container that fails the gate is stopped and the deploy attempt is marked
 failed with a reason (`OOMKilledDuringStableWindow`,

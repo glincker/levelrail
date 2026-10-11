@@ -76,6 +76,10 @@ type ruleResource struct {
 	NotifyKind string `json:"notify_kind,omitempty"`
 	Enabled    bool   `json:"enabled"`
 
+	// Response-only on create and update: problems that do not block the
+	// save but mean the rule will not behave as the caller probably expects.
+	Warnings []string `json:"warnings,omitempty"`
+
 	// Noise control. Severity and Labels feed silence matchers;
 	// ConsecutiveFailures, FlapThreshold and FlapWindow override the
 	// control plane defaults (zero keeps the default).
@@ -418,7 +422,21 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, toRuleResource(*saved))
+	res := toRuleResource(*saved)
+	res.Warnings = ruleWarnings(*saved)
+	writeJSON(w, http.StatusCreated, res)
+}
+
+// alertRuleNoDestinationWarning is returned when a rule has nowhere to notify.
+const alertRuleNoDestinationWarning = "no notification channel is set (channel_id or notify_url), so this rule will fire without notifying anyone"
+
+// ruleWarnings lists non-blocking problems with a saved rule. There is no
+// default channel to fall back to, so an unset destination is always silent.
+func ruleWarnings(r alerting.Rule) []string {
+	if r.ChannelID == "" && r.NotifyURL == "" {
+		return []string{alertRuleNoDestinationWarning}
+	}
+	return nil
 }
 
 // handleUpdateAlertRule handles PUT /api/v1/apps/{name}/alerts/{id}: a

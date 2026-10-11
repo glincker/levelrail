@@ -38,7 +38,7 @@
     "test": {
       "title": "Send a test email",
       "description": "Sends one real email through the saved backend above, the same path alert notifications and password resets use.",
-      "placeholder": "you@example.com",
+      "placeholder": "you@yourdomain.com",
       "send": "Send test email",
       "sending": "Sending...",
       "success": "Test email sent to {{to}}."

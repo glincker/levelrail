@@ -3180,6 +3180,9 @@ type AlertRuleResource struct {
 	NotifyKind string `json:"notify_kind,omitempty"`
 	Enabled    bool   `json:"enabled"`
 
+	// Warnings are response-only, non-blocking problems with the saved rule.
+	Warnings []string `json:"warnings,omitempty"`
+
 	Severity            string            `json:"severity,omitempty"`
 	Labels              map[string]string `json:"labels,omitempty"`
 	ConsecutiveFailures int               `json:"consecutive_failures,omitempty"`
