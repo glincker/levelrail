@@ -338,5 +338,13 @@
     "saving": "Saving...",
     "saved": "Docker guard mode saved",
     "viewAudit": "View in audit log"
+  },
+  "githubAppOrg": {
+    "addOrg": "Add organization",
+    "addOrgHelp": "GitHub shows the accounts you can install on. Pick the organization. If you are not an owner, GitHub sends the request to its owners.",
+    "privateTitle": "This GitHub App is private, so GitHub only allows it on the account that owns it.",
+    "privateBody": "To add an organization, open the App's Advanced settings, choose Make public (Any account), then come back and press Add organization. Or register a new App owned by the organization.",
+    "makePublic": "Make the App public on GitHub",
+    "noSlug": "This connection was registered before Levelrail could remember the App's install link. Reconnect the App above (or use manual setup) to enable Add organization here."
   }
 }

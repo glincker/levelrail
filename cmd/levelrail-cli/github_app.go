@@ -272,6 +272,12 @@ func runGitHubAppInstallationsAdd(prog string, args []string, stdout, stderr io.
 				return
 			}
 			_, _ = fmt.Fprintln(out, list.AddOrgURL)
+			if list.AppPublic != nil && !*list.AppPublic {
+				_, _ = fmt.Fprintln(out, "note: this App is private, so GitHub only lets its owner account install it.")
+				if list.MakePublicURL != "" {
+					_, _ = fmt.Fprintln(out, "make it public (Any account) here, then use the URL above: "+list.MakePublicURL)
+				}
+			}
 		},
 	})
 }
