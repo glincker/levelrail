@@ -887,6 +887,9 @@ Endpoints for:
 | GET | /api/v1/backups/drills/{id} | AbilityRead | handleGetBackupDrill |
 | POST | /api/v1/backups/drills | AbilityWriteSensitive | handleStartBackupDrill |
 | POST | /api/v1/backups/protection/refresh | AbilityWriteSensitive | handleRefreshBackupProtection |
+| GET | /api/v1/backups/coverage | AbilityRead | handleBackupCoverage |
+| POST | /api/v1/backups/protect-all | AbilityWriteSensitive | handleProtectAll |
+| POST | /api/v1/backups/encryption-key/ack | AbilityWriteSensitive | handleAckBackupEncryptionKey |
 
 ## App Volume Backups / Restore
 
@@ -1220,6 +1223,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/resource-advisor/findings/{id}/dismiss | AbilityWrite | handleResourceAdvisorState |
 | POST | /api/v1/resource-advisor/findings/{id}/snooze | AbilityWrite | handleResourceAdvisorState |
 | POST | /api/v1/resource-advisor/findings/{id}/restore | AbilityWrite | handleResourceAdvisorState |
+| GET | /api/v1/storage/orphans | AbilityRead | handleListStorageOrphans |
+| DELETE | /api/v1/storage/orphans/{id} | AbilityWriteSensitive | handleReclaimStorageOrphan |
 
 ## See also
 

@@ -29,6 +29,8 @@ export interface ConfirmDialogProps {
   pending?: boolean
   error?: string | null
   onConfirm: () => void
+  /** Extra controls rendered under the consequences, above the typed field. */
+  children?: ReactNode
 }
 
 export function ConfirmDialog({
@@ -45,6 +47,7 @@ export function ConfirmDialog({
   pending = false,
   error,
   onConfirm,
+  children,
 }: ConfirmDialogProps) {
   const { t } = useTranslation('common')
   const [typed, setTyped] = useState('')
@@ -72,6 +75,7 @@ export function ConfirmDialog({
             ))}
           </ul>
         ) : null}
+        {children}
         {requireTyped !== undefined ? (
           <div className="space-y-1.5">
             <Label htmlFor={inputId}>

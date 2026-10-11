@@ -32,6 +32,12 @@ func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runBackupsHealth(prog, args[1:], stdout, stderr, lookupEnv)
 	case "protection":
 		return runBackupsProtection(prog, args[1:], stdout, stderr, lookupEnv)
+	case "coverage":
+		return runBackupsCoverage(prog, args[1:], stdout, stderr, lookupEnv)
+	case "protect-all":
+		return runBackupsProtectAll(prog, args[1:], stdout, stderr, lookupEnv)
+	case "orphans":
+		return runBackupsOrphans(prog, args[1:], stdout, stderr, lookupEnv)
 	case "drill":
 		return runBackupsDrill(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes":
@@ -70,6 +76,9 @@ func backupsUsage(prog string) string {
   %[1]s backups list <database> [flags]                                    list backup history for a database
   %[1]s backups health [flags]                                             every resource with last backup and last verified restore
   %[1]s backups protection [--refresh] [flags]                             bucket object lock and versioning status
+  %[1]s backups coverage [--unprotected] [flags]                           which databases and volumes are protected, verified or not backed up
+  %[1]s backups protect-all --target ID [--apply] [flags]                  schedule a backup for everything that has none (plan unless --apply)
+  %[1]s backups orphans list|reclaim <volume> [flags]                      data kept after its database or app was deleted
   %[1]s backups drill run|list|show [flags]                                prove a restore works (scratch restore, validate, destroy)
   %[1]s backups volumes list|policy|restore <app> <volume> [flags]         app volume backups, retention and hooks, restore to a new volume or node
   %[1]s backups list-all [flags]                                           list backup history across every database and app volume

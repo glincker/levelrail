@@ -1116,6 +1116,10 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 // deleteAppIfOrphaned below, so the per-app network can be cleaned up.
 func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	purge, volumes, ok := rt.appDeleteDataPlan(w, r, name)
+	if !ok {
+		return
+	}
 	teardownErr, err := rt.deleteApp(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -1124,6 +1128,9 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rt.internalError(w, "api: delete app failed", err, slog.String("name", name))
 		return
+	}
+	if purge && teardownErr == nil {
+		rt.purgeVolumes(context.WithoutCancel(r.Context()), "app/"+name, volumes)
 	}
 	rt.nudgeReconciler()
 	if teardownErr != nil {
