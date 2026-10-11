@@ -69,7 +69,7 @@ export function derivePlatformIssues(src: IssueSources): PlatformIssue[] {
   }
 
   for (const cert of src.certs ?? []) {
-    if (cert.status === 'healthy') continue
+    if (cert.status === 'healthy' || cert.expiry_class !== 'incident') continue
     const expired = cert.status === 'expired'
     issues.push({
       id: `cert:${cert.domain}`,
@@ -83,6 +83,7 @@ export function derivePlatformIssues(src: IssueSources): PlatformIssue[] {
 
   for (const check of src.doctor?.checks ?? []) {
     if (check.status !== 'fail' && check.status !== 'warn') continue
+    if (check.class === 'recommendation') continue
     if (
       check.code.toLowerCase().includes('disk') &&
       disk &&

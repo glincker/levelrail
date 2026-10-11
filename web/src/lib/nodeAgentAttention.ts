@@ -48,6 +48,7 @@ export function nodeAgentAttentionItems(node: NodeResource): AttentionItem[] {
       title: `Node ${node.name}: agent is outdated`,
       detail: `Agent ${node.agent.version || 'version unknown'} is older than the minimum ${node.agent.min_version ?? ''}`,
       target,
+      class: 'recommendation',
     })
   }
   return items

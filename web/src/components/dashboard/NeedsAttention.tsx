@@ -7,14 +7,14 @@ import {
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { SkeletonList, SuggestionList } from '@/components/kit'
-import { useAttentionItems } from '../../queries/attention'
+import { useAttentionSummary } from '../shell/useAttentionSummary'
 import { attentionToSuggestions } from '../../lib/fleetSuggestions'
 import type { SuggestionSpec } from '../../lib/fleetSuggestions'
 import { useExperimentalFeatures } from '../../hooks/useExperimental'
 import { isFeatureVisible } from '../../lib/experimental'
 import { useSuggestionRunner } from './useSuggestionRunner'
 
-const MAX_SHOWN = 4
+const MAX_SHOWN = 5
 
 export function NeedsAttentionView({
   specs,
@@ -78,11 +78,11 @@ export function NeedsAttentionView({
 
 export function NeedsAttention() {
   const { t } = useTranslation('dashboard')
-  const { items, isLoading } = useAttentionItems()
+  const { visible, isLoading } = useAttentionSummary()
   const run = useSuggestionRunner()
   const features = useExperimentalFeatures()
   const aiChatEnabled = isFeatureVisible('ai-chat', features)
-  const specs = attentionToSuggestions(items, t).map((spec) =>
+  const specs = attentionToSuggestions(visible, t).map((spec) =>
     aiChatEnabled
       ? spec
       : {

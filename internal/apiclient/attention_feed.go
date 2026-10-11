@@ -52,6 +52,7 @@ type AttentionFeedItem struct {
 	Action   string            `json:"action"`
 	Link     string            `json:"link"`
 	Params   map[string]string `json:"params,omitempty"`
+	Class    string            `json:"class,omitempty"`
 }
 
 // GetAttentionFeed calls GET /api/v1/attention/feed.

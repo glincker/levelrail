@@ -101,6 +101,15 @@ You can also toggle both when editing a channel in the dashboard. A notice conta
 | `APP_DEVICE_HISTORY_RETENTION` | `720h` | How long resolved requests are kept |
 | `APP_ATTENTION_TOKEN_WINDOW` | `168h` | How far ahead token expiry is flagged, and how long after |
 | `APP_ATTENTION_BACKUP_GRACE` | `6h` | Slack past a backup's expected interval before it is overdue |
+| `APP_ATTENTION_SHORT_LIVED_CERT` | `168h` | Certificates valid for no longer than this are auto-renewed internal issuance and never raise an expiry item |
+
+## Incidents and recommendations
+
+Every item has one of two classes, decided on the server. An incident is broken or about to break and needs action: failed deploys, crashloops, a real certificate that expired or whose renewal stalled, disk pressure, overdue backups, offline nodes, active sign-in threats. Only incidents appear in the dashboard's Needs attention list and in the header count.
+
+A recommendation is setup or hardening advice: control plane disaster recovery is off, the Docker API guard could move from audit to enforce, a new release is available, an agent is out of date, a database release is past end of life. These wait in the notification centre under Pending setup and hardening, where each can be snoozed for a day or dismissed. The dashboard shows them as a single line with a count.
+
+Certificate expiry only becomes an incident for a certificate that is routed to an app or site, is not issued by the internal CA, and whose TLS is not terminated by a proxy. An auto-renewing ACME certificate counts only once it expired or its renewal stalled; an uploaded certificate counts from the start of the warning window.
 
 ## Security notes
 

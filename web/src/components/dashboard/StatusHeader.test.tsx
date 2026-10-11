@@ -4,6 +4,7 @@ import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import type { AttentionItem } from '../../lib/attention'
 import commonEn from '../../locales/en/common.json'
+import dashboardEn from '../../locales/en/dashboard.json'
 import { resetSnoozeStoreForTests, snoozeNow } from '../shell/snoozeStore'
 import { StatusHeader } from './StatusHeader'
 
@@ -24,9 +25,9 @@ vi.mock('../HelpLink', () => ({ HelpLink: () => null }))
 const i18n = i18next.createInstance()
 void i18n.use(initReactI18next).init({
   lng: 'en',
-  ns: ['common'],
+  ns: ['common', 'dashboard'],
   defaultNS: 'common',
-  resources: { en: { common: commonEn } },
+  resources: { en: { common: commonEn, dashboard: dashboardEn } },
   interpolation: { escapeValue: false },
 })
 
@@ -54,13 +55,26 @@ describe('StatusHeader', () => {
     ]
     render(
       <I18nextProvider i18n={i18n}>
-        <StatusHeader firstAppName={undefined} showSetup={false} />
+        <StatusHeader />
       </I18nextProvider>,
     )
     expect(
       screen.getByRole('heading', { level: 1, name: 'Dashboard' }),
     ).toBeInTheDocument()
-    expect(screen.getByText('3 issues')).toBeInTheDocument()
+    expect(screen.getByText('3 incidents')).toBeInTheDocument()
+  })
+
+  it('does not count recommendations', () => {
+    attention.items = [
+      { ...item('dr', 'warning'), class: 'recommendation' },
+      { ...item('guard', 'warning'), class: 'recommendation' },
+    ]
+    render(
+      <I18nextProvider i18n={i18n}>
+        <StatusHeader />
+      </I18nextProvider>,
+    )
+    expect(screen.getByText('All systems normal')).toBeInTheDocument()
   })
 
   it('drops snoozed items from the count', () => {
@@ -68,9 +82,9 @@ describe('StatusHeader', () => {
     snoozeNow('a', '1h')
     render(
       <I18nextProvider i18n={i18n}>
-        <StatusHeader firstAppName={undefined} showSetup={false} />
+        <StatusHeader />
       </I18nextProvider>,
     )
-    expect(screen.getByText('1 issue')).toBeInTheDocument()
+    expect(screen.getByText('1 incident')).toBeInTheDocument()
   })
 })

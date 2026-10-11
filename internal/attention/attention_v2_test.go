@@ -78,7 +78,7 @@ func TestBuild_CertificateCarriesCAReason(t *testing.T) {
 	t.Parallel()
 	notAfter := time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)
 	got := Build(Input{Certs: []apiclient.CertificateResource{{
-		Domain: "a.example", Status: "expiring_soon", Renewal: "stalled", NotAfter: notAfter,
+		Domain: "a.example", Status: "expiring_soon", Renewal: "stalled", NotAfter: notAfter, ExpiryClass: ClassIncident,
 		ACMEFailure: &apiclient.ACMEFailure{Reason: "DNS record not found"},
 	}}})
 	if len(got) != 2 {

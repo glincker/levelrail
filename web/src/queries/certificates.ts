@@ -45,6 +45,10 @@ export interface CertificateStatus {
   // acme_failure is the CA's last error for this hostname, when its most
   // recent issue or renewal attempt failed.
   acme_failure?: AcmeFailure
+  // expiry_class is 'incident' only when this certificate's expiry needs
+  // an operator; the server never sets it for internal-CA, proxy-owned or
+  // unrouted certificates.
+  expiry_class?: 'incident'
 }
 
 export async function fetchCertificates(): Promise<CertificateStatus[]> {

@@ -51,6 +51,7 @@ describe('derivePlatformIssues', () => {
           status: 'expired',
           not_after: '',
           renewal: 'stalled',
+          expiry_class: 'incident',
         },
       ] as never,
       doctor: {

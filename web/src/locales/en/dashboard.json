@@ -101,5 +101,59 @@
       "notReported": "Size not reported.",
       "noBackups": "No successful backups yet."
     }
+  },
+  "status": {
+    "ok": "All systems normal",
+    "incidents_one": "{{count}} incident",
+    "incidents_other": "{{count}} incidents"
+  },
+  "tiles": {
+    "appsRunning": "Apps running",
+    "requests": "Requests",
+    "errorRate": "Error rate",
+    "noTraffic": "No traffic",
+    "deploys24h": "Deploys 24h",
+    "nodesOnline": "Nodes online",
+    "lastHour": "Last hour, all apps."
+  },
+  "resources": {
+    "title": "Resources",
+    "controlPlane": "Control plane",
+    "cpu": "CPU",
+    "memory": "Memory",
+    "disk": "Disk",
+    "cpuOfCores": "{{percent}}% of {{cores}} cores",
+    "cpuContainers": "{{percent}}% across containers",
+    "noReadings": "No host readings from this node yet.",
+    "memoryBreakdown": "Memory breakdown",
+    "segment": {
+      "apps": "Apps",
+      "databases": "Databases",
+      "system": "System",
+      "free": "Free"
+    },
+    "topConsumers": "Top consumers",
+    "sortBy": "Sort by",
+    "sort": {
+      "memory": "Memory",
+      "cpu": "CPU"
+    },
+    "kind": {
+      "app": "App",
+      "database": "Database"
+    },
+    "requestTrend": "{{name}} request trend",
+    "viewAll_one": "View all {{count}}",
+    "viewAll_other": "View all {{count}}",
+    "showLess": "Show fewer",
+    "databasesLine_one": "{{count}} database",
+    "databasesLine_other": "{{count}} databases"
+  },
+  "recommendations": {
+    "line_one": "{{count}} recommendation",
+    "line_other": "{{count}} recommendations"
+  },
+  "usageDetails": {
+    "title": "Usage details"
   }
 }

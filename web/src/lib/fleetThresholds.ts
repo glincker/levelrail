@@ -41,3 +41,10 @@ export function errorTone(
   if (pct >= warn) return 'warning'
   return 'neutral'
 }
+
+// Below this many requests in the traffic window an error percentage is
+// noise, so the tile says there is no traffic instead.
+export const ERROR_RATE_MIN_REQUESTS = envNumber(
+  import.meta.env.VITE_ERROR_RATE_MIN_REQUESTS as string | undefined,
+  20,
+)

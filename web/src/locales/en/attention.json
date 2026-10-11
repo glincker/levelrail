@@ -99,5 +99,14 @@
     "notifyDeviceLoginHint": "Sends a link only, never the code. Turn on a dashboard URL so the link can open this page.",
     "notifyDeviceLoginExpired": "Notify when a CLI login expires",
     "notifyDeviceLoginExpiredHint": "Sends a link only, never the code, when a login request runs out of time unapproved."
+  },
+  "setup": {
+    "title_one": "Pending setup and hardening ({{count}})",
+    "title_other": "Pending setup and hardening ({{count}})",
+    "snooze": "Snooze for a day",
+    "dismiss": "Dismiss",
+    "snoozedCount_one": "{{count}} snoozed",
+    "snoozedCount_other": "{{count}} snoozed",
+    "restore": "Restore"
   }
 }

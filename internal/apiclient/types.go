@@ -2758,6 +2758,8 @@ type DoctorCheckResource struct {
 	Message  string `json:"message"`
 	Fix      string `json:"fix,omitempty"`
 	DocsPath string `json:"docs_path,omitempty"`
+	// Class is "incident" or "recommendation" for a check that is not ok.
+	Class string `json:"class,omitempty"`
 }
 
 // SystemDoctorResource mirrors internal/api's systemDoctorResponse
@@ -3449,6 +3451,9 @@ type CertificateResource struct {
 	TLSOwner string `json:"tls_owner,omitempty"`
 	// ACMEFailure is the CA's last error for this domain, when it has one.
 	ACMEFailure *ACMEFailure `json:"acme_failure,omitempty"`
+	// ExpiryClass is "incident" when this certificate's expiry needs an
+	// operator, empty otherwise.
+	ExpiryClass string `json:"expiry_class,omitempty"`
 }
 
 // RenewCertificateResource mirrors internal/api's

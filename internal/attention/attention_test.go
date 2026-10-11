@@ -19,7 +19,7 @@ func TestBuild(t *testing.T) {
 	got := Build(Input{
 		Apps:   []apiclient.AppStatusEntry{bad},
 		Nodes:  []apiclient.NodeResource{{Name: "n1", Status: "offline", LastSeenAt: &seen}, {Name: "n2", Status: "offline"}},
-		Certs:  []apiclient.CertificateResource{{Domain: "a.example", Status: "expiring_soon", NotAfter: notAfter}, {Domain: "b.example", Status: "expired", NotAfter: notAfter}},
+		Certs:  []apiclient.CertificateResource{{Domain: "a.example", Status: "expiring_soon", NotAfter: notAfter, ExpiryClass: ClassIncident}, {Domain: "b.example", Status: "expired", NotAfter: notAfter, ExpiryClass: ClassIncident}},
 		Doctor: apiclient.SystemDoctorResource{Checks: []apiclient.DoctorCheckResource{{Name: "disk", Status: "warn"}, {Name: "docker", Status: "fail"}}},
 	})
 	if len(got) != 7 {
@@ -105,7 +105,7 @@ func TestBuild_RankingAndWaitingItems(t *testing.T) {
 			Now:       now,
 			Devices:   []apiclient.DevicePendingLogin{{ClientName: "laptop", RequesterIP: "10.0.0.9", ExpiresAt: now.Add(5 * time.Minute)}},
 			Approvals: []apiclient.DeployApprovalResource{{ServiceName: "web", Action: "deploy", Image: "web:2", RequestedBy: "u1"}},
-			Certs:     []apiclient.CertificateResource{{Domain: "a.example", Status: "healthy", Renewal: "stalled", NotAfter: notAfter}},
+			Certs:     []apiclient.CertificateResource{{Domain: "a.example", Status: "healthy", Renewal: "stalled", NotAfter: notAfter, ExpiryClass: ClassIncident}},
 			Doctor:    apiclient.SystemDoctorResource{Checks: []apiclient.DoctorCheckResource{{Name: "docker", Status: "fail"}, {Name: "disk", Status: "warn"}}},
 		}, []string{"critical:doctor", "warning:device_login", "warning:approval", "warning:cert_renewal", "warning:doctor"}},
 		{"never connected node", Input{Now: now, Nodes: []apiclient.NodeResource{{Name: "n1", Status: "pending", StatusReason: "enrolled_never_connected"}}},
