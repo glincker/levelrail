@@ -1,12 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Terminal } from '@xterm/xterm'
-import { FitAddon } from '@xterm/addon-fit'
+import type { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import { useBrand } from '../../hooks/useBrand'
 import { useStepUpGate } from '../../hooks/useStepUpGate'
 import { StepUpDialog } from '../env/StepUpDialog'
 import { Badge } from '@/components/ui/badge'
+import { useAppListOptional } from '../../queries/apps'
+import { useNodeListOptional } from '../../queries/nodes'
+import { mountConsoleTerminal } from '../../lib/cliConsoleTerminal'
+import { DIM, GREEN, RED, RESET } from '../../lib/cliConsoleTheme'
+import { QuickActions, SelectedAppRow } from './QuickActions'
 import {
   backspace,
   complete,
@@ -37,29 +41,6 @@ type ConsoleState = 'idle' | 'connecting' | 'open' | 'closed'
 const HIDDEN_DISCONNECT_MS = 60_000
 const PING_INTERVAL_MS = 25_000
 
-const DARK_THEME = {
-  background: '#09090b',
-  foreground: '#e4e4e7',
-  cursor: '#e4e4e7',
-  selectionBackground: '#3f3f46',
-}
-
-const LIGHT_THEME = {
-  background: '#fafafa',
-  foreground: '#18181b',
-  cursor: '#18181b',
-  selectionBackground: '#d4d4d8',
-}
-
-const RED = '\x1b[31m'
-const DIM = '\x1b[2m'
-const GREEN = '\x1b[32m'
-const RESET = '\x1b[0m'
-
-function isDark(): boolean {
-  return document.documentElement.classList.contains('dark')
-}
-
 export function CliConsole({ className }: { className?: string }) {
   const { t } = useTranslation()
   const brand = useBrand()
@@ -81,6 +62,28 @@ export function CliConsole({ className }: { className?: string }) {
     stderr: EMPTY_SANITIZE_STATE,
   })
   const [state, setStateValue] = useState<ConsoleState>('idle')
+  const [running, setRunningValue] = useState(false)
+  const [commands, setCommands] = useState<CliCommand[]>([])
+  const [selectedApp, setSelectedApp] = useState('')
+  const appsQuery = useAppListOptional()
+  const nodesQuery = useNodeListOptional()
+  const appNames = useMemo(
+    () => (appsQuery.data ?? []).map((a) => a.name),
+    [appsQuery.data],
+  )
+  const nodes = useMemo(
+    () => (nodesQuery.data ?? []).map((n) => ({ id: n.id, name: n.name })),
+    [nodesQuery.data],
+  )
+  const appNamesRef = useRef<string[]>([])
+  useEffect(() => {
+    appNamesRef.current = appNames
+  }, [appNames])
+
+  const setRunning = useCallback((next: boolean) => {
+    runningRef.current = next
+    setRunningValue(next)
+  }, [])
 
   const setState = useCallback((next: ConsoleState) => {
     stateRef.current = next
@@ -151,11 +154,11 @@ export function CliConsole({ className }: { className?: string }) {
         socket.onmessage = null
         socket.close(1000, 'console closed')
       }
-      runningRef.current = false
+      setRunning(false)
       setState('closed')
       printLine(message, DIM)
     },
-    [printLine, setState],
+    [printLine, setRunning, setState],
   )
 
   const openSocket = useCallback(() => {
@@ -186,7 +189,7 @@ export function CliConsole({ className }: { className?: string }) {
           break
         }
         case 'exit':
-          runningRef.current = false
+          setRunning(false)
           sanitizeRef.current = {
             stdout: EMPTY_SANITIZE_STATE,
             stderr: EMPTY_SANITIZE_STATE,
@@ -200,7 +203,7 @@ export function CliConsole({ className }: { className?: string }) {
           endSession(t('cliConsole.disconnected'))
           break
         case 'error':
-          runningRef.current = false
+          setRunning(false)
           printLine(msg.message || t('cliConsole.genericError'), RED)
           showPrompt()
           break
@@ -213,7 +216,7 @@ export function CliConsole({ className }: { className?: string }) {
         ready ? t('cliConsole.disconnected') : t('cliConsole.connectFailed'),
       )
     }
-  }, [endSession, printLine, setState, showPrompt, t, write])
+  }, [endSession, printLine, setRunning, setState, showPrompt, t, write])
 
   const fail = useCallback(
     (error: unknown) => {
@@ -246,6 +249,7 @@ export function CliConsole({ className }: { className?: string }) {
       { action: 'manage', app: CLI_CONSOLE_STEP_UP_APP },
       async () => {
         treeRef.current = await fetchCliCommands()
+        setCommands(treeRef.current)
         openSocket()
       },
     )
@@ -288,9 +292,9 @@ export function CliConsole({ className }: { className?: string }) {
       printHelp(line.slice(4).trim())
       return showPrompt()
     }
-    runningRef.current = true
+    setRunning(true)
     send({ type: 'run', line })
-  }, [printHelp, send, showPrompt, write])
+  }, [printHelp, send, setRunning, showPrompt, write])
 
   const browseHistory = useCallback(
     (direction: -1 | 1) => {
@@ -315,6 +319,24 @@ export function CliConsole({ className }: { className?: string }) {
     },
     [redraw],
   )
+
+  const runLine = useCallback(
+    (line: string) => {
+      if (stateRef.current !== 'open' || runningRef.current) return
+      lineRef.current = insertText(EMPTY_LINE, line)
+      historyIndexRef.current = -1
+      redraw()
+      submit()
+    },
+    [redraw, submit],
+  )
+
+  const stopLine = useCallback(() => {
+    if (!runningRef.current) return
+    write('^C\r\n')
+    atLineStartRef.current = true
+    send({ type: 'cancel' })
+  }, [send, write])
 
   const onData = useCallback(
     (data: string) => {
@@ -416,55 +438,20 @@ export function CliConsole({ className }: { className?: string }) {
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-    const term = new Terminal({
-      cursorBlink: true,
-      fontFamily:
-        'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
-      fontSize: 13,
-      theme: isDark() ? DARK_THEME : LIGHT_THEME,
+    const mounted = mountConsoleTerminal(container, {
+      onData: (d) => {
+        onDataRef.current(d)
+      },
+      appNames: () => appNamesRef.current,
+      onSelectApp: setSelectedApp,
     })
-    const fit = new FitAddon()
-    term.loadAddon(fit)
-    term.open(container)
-    fit.fit()
+    const { term } = mounted
     termRef.current = term
-    const dataSub = term.onData((d) => {
-      onDataRef.current(d)
-    })
-    let frame = 0
-    const refit = () => {
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(() => {
-        if (container.clientWidth === 0 || container.clientHeight === 0) return
-        try {
-          fit.fit()
-        } catch {
-          // mid-transition; the next observed size change re-fits
-        }
-      })
-    }
-    const observer = new ResizeObserver(refit)
-    observer.observe(container)
-    if (container.parentElement) observer.observe(container.parentElement)
-    window.addEventListener('resize', refit)
-    refit()
-    const theme = new MutationObserver(() => {
-      term.options.theme = isDark() ? DARK_THEME : LIGHT_THEME
-    })
-    theme.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    })
     if (stateRef.current === 'idle') {
       term.write(`${DIM}${t('cliConsole.pressEnter')}${RESET}\r\n`)
       atLineStartRef.current = true
     }
     return () => {
-      cancelAnimationFrame(frame)
-      window.removeEventListener('resize', refit)
-      observer.disconnect()
-      theme.disconnect()
-      dataSub.dispose()
       const socket = socketRef.current
       socketRef.current = null
       if (socket) {
@@ -472,7 +459,7 @@ export function CliConsole({ className }: { className?: string }) {
         socket.onmessage = null
         socket.close(1000, 'console closed')
       }
-      term.dispose()
+      mounted.dispose()
       termRef.current = null
     }
     // Mount-only: later renders reach the terminal through refs.
@@ -508,15 +495,38 @@ export function CliConsole({ className }: { className?: string }) {
       : { variant: 'muted' as const, label: t(`cliConsole.state.${state}`) }
 
   return (
-    <div className={`flex min-h-0 flex-col gap-2 ${className ?? ''}`}>
+    <div
+      className={`@container flex min-h-0 flex-col gap-2 ${className ?? ''}`}
+    >
       <div className="flex items-center gap-2">
         <Badge variant={badge.variant}>{badge.label}</Badge>
       </div>
-      <div
-        aria-label={t('cliConsole.terminalLabel')}
-        className="min-h-0 flex-1 overflow-hidden rounded-md border bg-zinc-50 p-2 dark:bg-zinc-950"
-      >
-        <div ref={containerRef} className="h-full w-full" />
+      <div className="flex min-h-0 flex-1 flex-col gap-2 @md:flex-row">
+        <QuickActions
+          commands={commands}
+          appNames={appNames}
+          nodes={nodes}
+          selectedApp={selectedApp}
+          disabled={state !== 'open'}
+          running={running}
+          onRun={runLine}
+          onStop={stopLine}
+          className="@md:w-52 @md:shrink-0 @md:overflow-y-auto"
+        />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+          <SelectedAppRow
+            appName={selectedApp}
+            onClear={() => {
+              setSelectedApp('')
+            }}
+          />
+          <div
+            aria-label={t('cliConsole.terminalLabel')}
+            className="min-h-0 flex-1 overflow-hidden rounded-md border bg-zinc-50 p-2 dark:bg-zinc-950"
+          >
+            <div ref={containerRef} className="h-full w-full" />
+          </div>
+        </div>
       </div>
       <StepUpDialog
         scope={gate.pending?.scope ?? null}
