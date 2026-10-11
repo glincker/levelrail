@@ -198,6 +198,7 @@
     "row": {
       "actions": "Actions for {{domain}}",
       "manage": "Manage on the app",
+      "open": "Open {{domain}} in a new tab",
       "dnsRecord": "Show DNS record",
       "copy": "Copy domain",
       "copied": "Domain copied",

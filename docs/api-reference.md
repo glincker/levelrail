@@ -63,6 +63,7 @@ System endpoints for:
 | POST | /api/v1/system/proxy-integration/setup | AbilityRoot | handleSetupProxyIntegration |
 | POST | /api/v1/system/proxy-integration/apply | AbilityRoot | handleApplyProxyIntegration |
 | POST | /api/v1/system/proxy-integration/verify | AbilityRoot | handleVerifyProxyIntegration |
+| GET | /api/v1/system/geoip | AbilityRead | handleGeoIPLookup |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -597,7 +598,7 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 62 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+::: details 86 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -672,6 +673,30 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/domains/go-live/plan | AbilityWrite | handleGoLivePlan |
 | POST | /api/v1/settings/ingress/apps-base-domain/backfill | AbilityRoot | handleBackfillBaseDomain |
 | POST | /api/v1/apps/{name}/domains/{domain}/doctor | AbilityRead | handleDomainDoctor |
+| GET | /api/v1/apps/{name}/domains/{domain}/headers | AbilityRead | handleGetDomainPolicy |
+| PUT | /api/v1/apps/{name}/domains/{domain}/headers | AbilityDeploy | handleSetDomainPolicy |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/headers | AbilityDeploy | handleDeleteDomainPolicy |
+| GET | /api/v1/apps/{name}/domains/{domain}/forwarders | AbilityRead | handleGetDomainPolicy |
+| PUT | /api/v1/apps/{name}/domains/{domain}/forwarders | AbilityDeploy | handleSetDomainPolicy |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/forwarders | AbilityDeploy | handleDeleteDomainPolicy |
+| GET | /api/v1/apps/{name}/domains/{domain}/geo | AbilityRead | handleGetDomainPolicy |
+| PUT | /api/v1/apps/{name}/domains/{domain}/geo | AbilityDeploy | handleSetDomainPolicy |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/geo | AbilityDeploy | handleDeleteDomainPolicy |
+| GET | /api/v1/apps/{name}/domains/{domain}/cache | AbilityRead | handleGetDomainPolicy |
+| PUT | /api/v1/apps/{name}/domains/{domain}/cache | AbilityDeploy | handleSetDomainPolicy |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/cache | AbilityDeploy | handleDeleteDomainPolicy |
+| POST | /api/v1/apps/{name}/domains/{domain}/cache/purge | AbilityDeploy | handlePurgeDomainCache |
+| GET | /api/v1/apps/{name}/domains/{domain}/cache/stats | AbilityRead | handleGetDomainCacheStats |
+| GET | /api/v1/apps/{name}/domains/{domain}/policies | AbilityRead | handleGetDomainPolicies |
+| POST | /api/v1/apps/{name}/domains/{domain}/policies/preview | AbilityRead | handlePreviewDomainPolicies |
+| GET | /api/v1/apps/{name}/domains/{domain}/redirects | AbilityRead | handleGetDomainRedirects |
+| PUT | /api/v1/apps/{name}/domains/{domain}/redirects | AbilityDeploy | handleSetDomainRedirectSettings |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/redirects | AbilityDeploy | handleDeleteDomainRedirectSettings |
+| POST | /api/v1/apps/{name}/domains/{domain}/redirects/canonical | AbilityDeploy | handleSetDomainCanonical |
+| PUT | /api/v1/apps/{name}/domains/{domain}/redirects/aliases | AbilityDeploy | handleSetDomainAliases |
+| GET | /api/v1/apps/{name}/domains/{domain}/ports | AbilityRead | handleGetDomainPorts |
+| PUT | /api/v1/apps/{name}/domains/{domain}/ports/{port}/restrict | AbilityWriteSensitive | handleRestrictDomainPort |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/ports/{port}/restrict | AbilityWriteSensitive | handleUnrestrictDomainPort |
 
 :::
 

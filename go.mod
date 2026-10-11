@@ -48,6 +48,7 @@ require (
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/oklog/ulid/v2 v2.1.2
 	github.com/opencontainers/image-spec v1.1.1
+	github.com/oschwald/maxminddb-golang/v2 v2.7.0
 	github.com/railwayapp/railpack v0.40.1
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/smallstep/certificates v0.30.2

@@ -63,6 +63,18 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsGoLive(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backfill-base-domain":
 		return runDomainsBackfillBaseDomain(prog, args[1:], stdout, stderr, lookupEnv)
+	case "headers":
+		return runDomainsHeaders(prog, args[1:], stdout, stderr, lookupEnv)
+	case "forwarders":
+		return runDomainsForwarders(prog, args[1:], stdout, stderr, lookupEnv)
+	case "geo":
+		return runDomainsGeo(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cache":
+		return runDomainsCache(prog, args[1:], stdout, stderr, lookupEnv)
+	case "redirects":
+		return runDomainsRedirects(prog, args[1:], stdout, stderr, lookupEnv)
+	case "ports":
+		return runDomainsPorts(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown domains subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, domainsUsage(prog))
@@ -92,7 +104,7 @@ func domainsUsage(prog string) string {
   %[1]s domains go-live <app> <domain> [flags]  create the DNS record and watch the domain go live
   %[1]s domains go-live runs|undo [flags]       automation history and one-step undo
   %[1]s domains backfill-base-domain [flags]    give existing apps without a domain <app>.<base domain>
-
+%[2]s
 Run "%[1]s domains <subcommand> -h" for a subcommand's own flags.
-`, prog)
+`, prog, domainsPoliciesUsageLines(prog))
 }
