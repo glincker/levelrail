@@ -81,7 +81,7 @@ func (tc templateFleetCase) serviceTimeoutOrDefault() time.Duration {
 // (the race above), two Starter Kits entries that do declare it, across
 // nine categories and four runtimes.
 var templateFleetSample = []templateFleetCase{
-	{id: "uptime-kuma", serviceOrder: []string{"uptime-kuma"}},
+	{id: "uptime-kuma", serviceOrder: []string{"kuma"}},
 	{id: "homepage", serviceOrder: []string{"homepage"}},
 	{id: "vaultwarden", serviceOrder: []string{"vaultwarden"}},
 	{id: "code-server", serviceOrder: []string{"code-server"}},
