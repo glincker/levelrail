@@ -6,6 +6,7 @@ import {
   KeyIcon,
   LockKeyIcon,
   UsersIcon,
+  UsersThreeIcon,
   BuildingsIcon,
   GithubLogoIcon,
   GitlabLogoIcon,
@@ -121,6 +122,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: UsersIcon,
         title: 'Users',
         description: 'Everyone with access to this platform.',
+      },
+      {
+        to: '/settings/teams',
+        icon: UsersThreeIcon,
+        title: 'Teams',
+        description: 'Members, roles and invitations for each team.',
       },
       {
         to: '/settings/roles',

@@ -56,6 +56,7 @@ func main() {
 // forking a subprocess.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	args, debug := extractDebugFlag(args)
+	args, scopeFlags = extractScopeFlags(args)
 	if debug {
 		apiclient.SetDebugTrace(stderr)
 	} else {
@@ -200,6 +201,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runVolumesOrphanedCleanup(prog, args[1:], stdout, stderr, lookupEnv)
 	case "roles":
 		return runRoles(prog, args[1:], stdout, stderr, lookupEnv)
+	case "teams":
+		return runTeams(prog, args[1:], stdout, stderr, lookupEnv)
+	case "members":
+		return runMembers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "users":
 		return runUsers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "invites":
@@ -335,6 +340,9 @@ Usage:
   %[1]s users role set <user> <role> [flags]                   assign a stored role to a user
   %[1]s users grants get|set <user> [--environment ID ...]     the environments a guest user can see
   %[1]s invites create|list|revoke [flags]                     invite a teammate by email, list or revoke pending invites
+  %[1]s teams list|create|show|rename|delete|use|roles|transfer|events|members|invites   teams, their members, roles and invitations
+  %[1]s members list|set-role|remove|leave <team> ...          shortcut for "teams members"
+  %[1]s --team ID [--project ID] <command> ...                 narrow any command to one team or project (also APP_TEAM, APP_PROJECT, "teams use")
   %[1]s iam policies create|list|get|update|delete|attach|detach|attachments [flags]   resource-scoped Allow/Deny policies, additive on top of --abilities
   %[1]s iam templates list|apply <id> [--param KEY=VALUE] [--attach-user ID|--attach-token ID]   ready-made policies (read-only, guest-one-environment, deployer-nonprod, ...)
   %[1]s secrets generate-master-key --out PATH   write a new master key file (local, no API call)

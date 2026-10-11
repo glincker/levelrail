@@ -38,6 +38,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerDNSZoneRoutes(mux)
 	rt.registerTrafficRoutes(mux)
 	rt.registerDatabaseUpgradeRoutes(mux)
+	rt.registerTeamRoutes(mux)
 
 	var h http.Handler = mux
 	h = experimentalGateMiddleware(h)
@@ -220,7 +221,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// passkeys above, so requireAuth not requireAbility.
 	mux.HandleFunc("GET /api/v1/settings/push-subscriptions/vapid-public-key", rt.requireAuth(rt.handleGetPushVAPIDPublicKey))
 	mux.HandleFunc("GET /api/v1/settings/push-subscriptions", rt.requireAuth(rt.handleListPushSubscriptions))
-	mux.HandleFunc("POST /api/v1/settings/push-subscriptions", rt.requireAuth(rt.handleCreatePushSubscription))
+	mux.HandleFunc("POST /api/v1/settings/push-subscriptions", rt.requireAuth(rt.instanceMembersOnly(rt.handleCreatePushSubscription)))
 	mux.HandleFunc("DELETE /api/v1/settings/push-subscriptions/{id}", rt.requireAuth(rt.handleDeletePushSubscription))
 
 	// Multi-user: creating another local-password user (see

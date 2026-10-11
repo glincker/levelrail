@@ -1142,6 +1142,23 @@ Routes that do not fit an existing group.
 | GET | /api/v1/node-moves/{id} | AbilityRoot | handleGetNodeMove |
 | GET | /api/v1/node-drains/{id} | AbilityRoot | handleGetNodeDrain |
 | GET | /api/v1/mesh/connectivity | AbilityRoot | handleMeshConnectivity |
+| GET | /api/v1/teams | AbilityRead | handleListTeams |
+| POST | /api/v1/teams | AbilityRoot | handleCreateTeam |
+| GET | /api/v1/teams/roles | AbilityRead | handleListTeamRoles |
+| GET | /api/v1/teams/{id} | AbilityRead | handleGetTeam |
+| PATCH | /api/v1/teams/{id} | AbilityWrite | handleRenameTeam |
+| DELETE | /api/v1/teams/{id} | AbilityWrite | handleDeleteTeam |
+| GET | /api/v1/teams/{id}/members | AbilityRead | handleListTeamMembers |
+| PUT | /api/v1/teams/{id}/members/{user} | AbilityWrite | handleSetTeamMemberRole |
+| DELETE | /api/v1/teams/{id}/members/{user} | AbilityWrite | handleRemoveTeamMember |
+| DELETE | /api/v1/teams/{id}/members/me | AbilityRead | handleLeaveTeam |
+| POST | /api/v1/teams/{id}/transfer | AbilityWrite | handleTransferTeam |
+| GET | /api/v1/teams/{id}/events | AbilityRead | handleListTeamEvents |
+| GET | /api/v1/teams/{id}/invites | AbilityRead | handleListTeamInvites |
+| POST | /api/v1/teams/{id}/invites | AbilityWrite | handleCreateTeamInvite |
+| DELETE | /api/v1/teams/{id}/invites/{invite} | AbilityWrite | handleRevokeTeamInvite |
+| GET | /api/v1/team-invites/{token} | Session | handlePreviewTeamInvite |
+| POST | /api/v1/team-invites/accept | Public | handleAcceptTeamInvite |
 
 ## See also
 

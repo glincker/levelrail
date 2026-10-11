@@ -57,11 +57,17 @@ func toProjectResource(p store.Project) projectResource {
 // created_at is server-set).
 type createProjectRequest struct {
 	Name string `json:"name"`
+	// TeamID files the project under a team; empty picks the switcher's team,
+	// then the caller's only team, then the default team.
+	TeamID string `json:"team_id,omitempty"`
 }
 
 // handleListProjects handles GET /api/v1/projects.
 func (rt *Router) handleListProjects(w http.ResponseWriter, r *http.Request) {
 	projects, err := rt.projects.ListProjects(r.Context())
+	if err == nil {
+		projects, err = rt.filterProjects(r, projects)
+	}
 	if err != nil {
 		rt.logger.Error("api: list projects failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -114,6 +120,10 @@ func (rt *Router) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "name is required")
 		return
 	}
+	team, ok := rt.resolveProjectTeam(w, r, req.TeamID)
+	if !ok {
+		return
+	}
 
 	id, err := randomProjectID()
 	if err != nil {
@@ -132,6 +142,11 @@ func (rt *Router) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	if err := rt.organizations.SetProjectOrganization(r.Context(), id, team); err != nil {
+		rt.internalError(w, "api: create project: assign team", err, slog.String("project_id", id))
+		return
+	}
+	p.OrgID = team
 	writeJSON(w, http.StatusCreated, toProjectResource(p))
 }
 
@@ -141,6 +156,9 @@ func (rt *Router) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 // cascade=true tears them all down first, see deleteWithMembers.
 func (rt *Router) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if rt.refuseOrphaningDelete(w, r, "project", id) {
+		return
+	}
 	rt.deleteWithMembers(w, r, "project", func(ctx context.Context) (cascadeScope, error) {
 		return rt.projectScope(ctx, id)
 	}, func(ctx context.Context, _ cascadeScope) error {
@@ -170,9 +188,10 @@ func randomProjectID() (string, error) {
 // project-less via ON DELETE SET NULL, but a *client* handing this
 // endpoint a stale or invented id gets a clear rejection instead).
 func (rt *Router) validateProjectID(ctx context.Context, projectID string) error {
-	if projectID == "" {
-		return nil
+	if projectID != "" {
+		if _, err := rt.projects.GetProject(ctx, projectID); err != nil {
+			return err
+		}
 	}
-	_, err := rt.projects.GetProject(ctx, projectID)
-	return err
+	return rt.authorizeProjectAssignment(ctx, projectID)
 }

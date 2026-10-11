@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 919 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 936 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -786,6 +786,23 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/tags", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateTag", Description: "Tags (tags.go): arbitrary operator-defined labels for organizing and filtering apps, independent of the project/environment hierarchy. The global collection lives flat under /api/v1/tags (create/list/delete, plus filter-by-tag); attach/detach is scoped under the app it applies to, the same nesting scheduled-tasks/flags above use for their own per-app child resources."},
 	{Method: "DELETE", Path: "/api/v1/tags/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteTag", Description: ""},
 	{Method: "GET", Path: "/api/v1/tags/{id}/apps", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppsByTag", Description: ""},
+	{Method: "POST", Path: "/api/v1/team-invites/accept", Ability: "Public", Group: "Other", Handler: "handleAcceptTeamInvite", Description: ""},
+	{Method: "GET", Path: "/api/v1/team-invites/{token}", Ability: "Session", Group: "Other", Handler: "handlePreviewTeamInvite", Description: ""},
+	{Method: "GET", Path: "/api/v1/teams", Ability: "AbilityRead", Group: "Other", Handler: "handleListTeams", Description: ""},
+	{Method: "POST", Path: "/api/v1/teams", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateTeam", Description: ""},
+	{Method: "GET", Path: "/api/v1/teams/roles", Ability: "AbilityRead", Group: "Other", Handler: "handleListTeamRoles", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/teams/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteTeam", Description: ""},
+	{Method: "GET", Path: "/api/v1/teams/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetTeam", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/teams/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleRenameTeam", Description: ""},
+	{Method: "GET", Path: "/api/v1/teams/{id}/events", Ability: "AbilityRead", Group: "Other", Handler: "handleListTeamEvents", Description: ""},
+	{Method: "GET", Path: "/api/v1/teams/{id}/invites", Ability: "AbilityRead", Group: "Other", Handler: "handleListTeamInvites", Description: ""},
+	{Method: "POST", Path: "/api/v1/teams/{id}/invites", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateTeamInvite", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/teams/{id}/invites/{invite}", Ability: "AbilityWrite", Group: "Other", Handler: "handleRevokeTeamInvite", Description: ""},
+	{Method: "GET", Path: "/api/v1/teams/{id}/members", Ability: "AbilityRead", Group: "Other", Handler: "handleListTeamMembers", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/teams/{id}/members/me", Ability: "AbilityRead", Group: "Other", Handler: "handleLeaveTeam", Description: "Read tier: it only ever removes the caller's own membership."},
+	{Method: "DELETE", Path: "/api/v1/teams/{id}/members/{user}", Ability: "AbilityWrite", Group: "Other", Handler: "handleRemoveTeamMember", Description: ""},
+	{Method: "PUT", Path: "/api/v1/teams/{id}/members/{user}", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetTeamMemberRole", Description: ""},
+	{Method: "POST", Path: "/api/v1/teams/{id}/transfer", Ability: "AbilityWrite", Group: "Other", Handler: "handleTransferTeam", Description: ""},
 	{Method: "GET", Path: "/api/v1/templates/custom", Ability: "AbilityRead", Group: "Other", Handler: "handleListCustomTemplates", Description: "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app. Deploy reuses the service-templates/{id}/deploy route above, no second deploy path."},
 	{Method: "DELETE", Path: "/api/v1/templates/custom/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteCustomTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/traffic/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleTrafficSummary", Description: "Counts for the sidebar attention badge and the domains health strip, from stored state and the last known DNS checks only."},

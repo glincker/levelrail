@@ -297,6 +297,7 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		writeError(w, http.StatusBadRequest, err.Error())
 		return false
 	}
+	req.ProjectID = defaultProjectFor(r, req.ProjectID)
 	if err := rt.validateProjectID(r.Context(), req.ProjectID); err != nil {
 		if errors.Is(err, store.ErrProjectNotFound) {
 			writeError(w, http.StatusBadRequest, "unknown project_id")

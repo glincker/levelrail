@@ -39,6 +39,9 @@ func (rt *Router) handleListOrganizations(w http.ResponseWriter, r *http.Request
 	}
 	out := make([]organizationResource, 0, len(orgs))
 	for _, o := range orgs {
+		if !visibleOrganization(r, o.ID) {
+			continue
+		}
 		out = append(out, toOrganizationResource(o))
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -94,6 +97,13 @@ func (rt *Router) handleCreateOrganization(w http.ResponseWriter, r *http.Reques
 // deleteWithMembers.
 func (rt *Router) handleDeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if id == store.DefaultTeamID {
+		writeError(w, http.StatusConflict, "the default team cannot be deleted")
+		return
+	}
+	if rt.refuseOrphaningDelete(w, r, "organization", id) {
+		return
+	}
 	rt.deleteWithMembers(w, r, "organization", func(ctx context.Context) (cascadeScope, error) {
 		return rt.organizationScope(ctx, id)
 	}, func(ctx context.Context, sc cascadeScope) error {
@@ -125,6 +135,9 @@ func (rt *Router) handleSetProjectOrganization(w http.ResponseWriter, r *http.Re
 			writeError(w, http.StatusBadRequest, "unknown org_id")
 			return
 		}
+	}
+	if !rt.mayMoveProjectBetweenTeams(w, r, projectID, req.OrgID) {
+		return
 	}
 
 	err := rt.organizations.SetProjectOrganization(r.Context(), projectID, req.OrgID)

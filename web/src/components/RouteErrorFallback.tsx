@@ -5,7 +5,8 @@ import {
   HouseIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { routeErrorMessage } from '@/lib/apiError'
+import { ApiError, routeErrorMessage } from '@/lib/apiError'
+import { ForbiddenState } from './teams/ForbiddenState'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -13,6 +14,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 // route without its own errorComponent. Routes that need a more specific
 // back-link (apps/$name.tsx and its siblings) keep their own instead.
 export function RouteErrorFallback({ error, reset }: ErrorComponentProps) {
+  if (error instanceof ApiError && error.status === 403) {
+    return <ForbiddenState message={error.message} />
+  }
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-4">
       <Card className="w-full max-w-md">

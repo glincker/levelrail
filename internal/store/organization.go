@@ -97,6 +97,18 @@ func (db *DB) DeleteOrganization(ctx context.Context, id string) error {
 	return nil
 }
 
+// RenameOrganization changes a team's display name.
+func (db *DB) RenameOrganization(ctx context.Context, id, name string) error {
+	res, err := db.ExecContext(ctx, `UPDATE organizations SET name = ? WHERE id = ?`, name, id)
+	if err != nil {
+		return fmt.Errorf("store: rename organization %q: %w", id, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrOrganizationNotFound
+	}
+	return nil
+}
+
 // SetProjectOrganization assigns or clears (orgID == "") a project's
 // organization. Returns ErrProjectNotFound if the project doesn't exist.
 func (db *DB) SetProjectOrganization(ctx context.Context, projectID, orgID string) error {

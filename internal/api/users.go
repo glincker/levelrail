@@ -198,6 +198,12 @@ func (rt *Router) writeResolveError(w http.ResponseWriter, op string, err error)
 // directly. displayName falling back to email is this function's own
 // default, not each caller's.
 func (rt *Router) createLocalUser(ctx context.Context, email, displayName, password string, abilities []string) (store.User, error) {
+	return rt.createLocalUserInTeam(ctx, email, displayName, password, abilities, "", "")
+}
+
+// createLocalUserInTeam is createLocalUser for a user joining teamID as role
+// instead of the default team.
+func (rt *Router) createLocalUserInTeam(ctx context.Context, email, displayName, password string, abilities []string, teamID, role string) (store.User, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return store.User{}, fmt.Errorf("hash password: %w", err)
@@ -217,6 +223,8 @@ func (rt *Router) createLocalUser(ctx context.Context, email, displayName, passw
 		PasswordHash: &hashStr,
 		Abilities:    abilities,
 		CreatedAt:    time.Now(),
+		TeamID:       teamID,
+		TeamRole:     role,
 	}
 	if err := rt.auth.CreateUser(ctx, user); err != nil {
 		return store.User{}, err
