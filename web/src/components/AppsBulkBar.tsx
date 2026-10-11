@@ -38,11 +38,11 @@ const ACTIONS: { value: BulkAction; label: string; needsValue?: string }[] = [
 ]
 
 const STATUS_STYLE: Record<BulkAppResult['status'], string> = {
-  ok: 'text-emerald-600 dark:text-emerald-400',
+  ok: 'text-tone-success',
   would_apply: 'text-foreground',
   denied: 'text-destructive',
   not_found: 'text-destructive',
-  skipped: 'text-amber-600 dark:text-amber-400',
+  skipped: 'text-tone-warning',
   error: 'text-destructive',
 }
 

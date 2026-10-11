@@ -2,6 +2,7 @@ import type { badgeVariants } from '@/components/ui/badge'
 import type { VariantProps } from 'class-variance-authority'
 import type { ReconcileCondition } from '../types/deploy'
 import type { AppStatusSummary } from '../types/appDetail'
+import { TONE } from '@/components/kit/tone'
 
 // Shared between routes/apps/$name.tsx (page header) and
 // AppScopedSidebar.tsx (sidebar app-info block): both render the same
@@ -44,11 +45,15 @@ export function isOptionalFeatureUnconfigured(c: ReconcileCondition): boolean {
   )
 }
 
-// Solid-fill counterpart to badgeVariants' success/destructive/muted
-// backgrounds: a dot has no room for the badge's own light-background/
-// dark-text combo, so this maps the same variants to one solid color.
+// A dot has no room for the badge's soft background, so it takes the tone's solid color.
 export const STATUS_DOT_COLOR: Record<AppStatusSummary['variant'], string> = {
-  success: 'bg-green-500 dark:bg-green-400',
-  destructive: 'bg-destructive',
-  muted: 'bg-muted-foreground/40',
+  success: TONE.success.solid,
+  destructive: TONE.danger.solid,
+  muted: TONE.neutral.solid,
+}
+
+export const STATUS_TEXT_COLOR: Record<AppStatusSummary['variant'], string> = {
+  success: TONE.success.text,
+  destructive: TONE.danger.text,
+  muted: 'text-muted-foreground',
 }

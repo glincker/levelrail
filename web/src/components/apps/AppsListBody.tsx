@@ -71,8 +71,8 @@ export function AppsListBody({
       ref={parentRef}
       className={
         mode === 'grid'
-          ? 'h-[70vh] overflow-auto'
-          : 'h-[70vh] overflow-auto rounded-2xl border border-border bg-card'
+          ? 'max-h-[70vh] overflow-auto'
+          : 'max-h-[70vh] overflow-auto rounded-lg border border-border bg-card'
       }
     >
       {mode === 'table' ? <ListHeader /> : null}

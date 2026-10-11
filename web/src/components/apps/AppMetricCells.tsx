@@ -1,15 +1,16 @@
 import { RelativeTime, Sparkline, type Tone } from '@/components/kit'
+import { TONE } from '@/components/kit/tone'
 import { cn } from '@/lib/utils'
 import { errorTone, latencyTone } from '../../lib/fleetThresholds'
 import type { AppRowMetrics } from './useAppRowMetrics'
 
 const NUM_TONE: Record<Tone, string> = {
   neutral: 'text-muted-foreground',
-  success: 'text-emerald-600 dark:text-emerald-400',
-  warning: 'text-amber-600 dark:text-amber-400',
-  danger: 'text-destructive',
-  info: 'text-sky-600 dark:text-sky-400',
-  accent: 'text-primary',
+  success: TONE.success.text,
+  warning: TONE.warning.text,
+  danger: TONE.danger.text,
+  info: TONE.info.text,
+  accent: TONE.accent.text,
 }
 
 export function TrafficSpark({

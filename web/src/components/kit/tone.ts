@@ -46,3 +46,16 @@ export const TONE: Record<Tone, ToneClasses> = {
     solid: 'bg-tone-accent-solid',
   },
 }
+
+export type BadgeToneVariant =
+  'muted' | 'success' | 'warning' | 'destructive' | 'info' | 'accent'
+
+// One vocabulary: Badge, StatusBadge and StatusPill all resolve a Tone through this table.
+export const TONE_BADGE_VARIANT: Record<Tone, BadgeToneVariant> = {
+  neutral: 'muted',
+  success: 'success',
+  warning: 'warning',
+  danger: 'destructive',
+  info: 'info',
+  accent: 'accent',
+}

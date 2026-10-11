@@ -26,29 +26,32 @@ export function AppMetaChips({ app }: { app: AppListEntry }) {
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-1">
       {app.is_trial ? (
-        <Badge
-          variant="outline"
-          className="gap-1 px-1.5 py-0 text-[10px] text-violet-700 dark:text-violet-300"
-        >
+        <Badge variant="accent" className="gap-1 px-1.5 py-0">
           <FlaskIcon className="size-3 shrink-0" aria-hidden="true" />
           Trial
         </Badge>
       ) : null}
       {app.environment_name ? (
-        <Badge variant="muted" className="px-1.5 py-0 text-[10px]">
+        <Badge variant="muted" className="px-1.5 py-0">
           {app.environment_name}
         </Badge>
       ) : null}
       {domain ? (
         <Badge
           variant="outline"
-          className="max-w-44 gap-1 px-1.5 py-0 text-[10px] text-muted-foreground"
+          className="max-w-44 gap-1 px-1.5 py-0 text-muted-foreground"
         >
           <GlobeIcon className="size-3 shrink-0" aria-hidden="true" />
           <span className="truncate">{domain}</span>
           {extra > 0 ? <span>+{extra}</span> : null}
         </Badge>
       ) : null}
+      <span
+        title={app.image}
+        className="max-w-48 truncate font-mono text-xs text-muted-foreground"
+      >
+        {app.image}
+      </span>
     </span>
   )
 }

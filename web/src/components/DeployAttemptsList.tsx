@@ -37,18 +37,14 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast, toastAction } from '@/components/ui/toast'
 
-// Scrolls to the "Trigger a deploy" card pinned above this list on the
-// same route (see routes/apps/$name.tsx's showDeployTrigger) rather than
-// duplicating that form here, then moves focus into its image-tag field
-// (falling back to the tab buttons above it) so a keyboard user lands
-// somewhere useful instead of just visually nearby.
-function focusDeployTriggerForm() {
-  const form = document.getElementById('deploy-trigger-form')
-  form?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  const target =
-    form?.querySelector<HTMLElement>('input') ??
-    form?.querySelector<HTMLElement>('button')
-  target?.focus()
+function durationSuffix(attempt: DeployAttempt): string {
+  if (attempt.finished_at) {
+    const ms =
+      new Date(attempt.finished_at).getTime() -
+      new Date(attempt.started_at).getTime()
+    if (ms < 1000) return ''
+  }
+  return ` · ${formatDeployDuration(attempt.started_at, attempt.finished_at)}`
 }
 
 // DeployAttemptsList renders GET /api/v1/apps/{name}/deploy-attempts'
@@ -77,10 +73,12 @@ export function DeployAttemptsList({
   appName,
   attempts,
   conditions = [],
+  onDeploy,
 }: {
   appName: string
   attempts: DeployAttempt[]
   conditions?: ReconcileCondition[]
+  onDeploy?: () => void
 }) {
   // Capped at 2: a comparison is always between exactly two points (or
   // one point and "current", the per-row Compare-to-current button
@@ -103,15 +101,17 @@ export function DeployAttemptsList({
           <EmptyState
             icon={<RocketLaunchIcon className="size-5" />}
             title="No deploys yet"
-            description="Trigger your first deploy above, either from an existing image tag or by building from a git source."
+            description="Deploy an existing image tag, or build one from a git source."
             action={
-              <Button size="sm" onClick={focusDeployTriggerForm}>
-                <RocketLaunchIcon
-                  className="size-3.5"
-                  data-icon="inline-start"
-                />
-                Go to deploy form
-              </Button>
+              onDeploy ? (
+                <Button size="sm" onClick={onDeploy}>
+                  <RocketLaunchIcon
+                    className="size-3.5"
+                    data-icon="inline-start"
+                  />
+                  Deploy
+                </Button>
+              ) : undefined
             }
           />
         </CardContent>
@@ -320,7 +320,7 @@ function DeployAttemptRow({
   ]
 
   return (
-    <li className="flex items-start gap-3 px-4 py-3 first:pt-0 last:pb-0">
+    <li className="flex items-start gap-3 px-4 py-3 first:pt-0 last:pb-0 max-sm:flex-wrap">
       <Checkbox
         className="mt-1"
         checked={isSelected}
@@ -360,7 +360,7 @@ function DeployAttemptRow({
           />
           <RolloutChip attempt={attempt} />
           {attempt.commit_sha ? (
-            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-neutral-600 dark:text-muted-foreground">
+            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
               {attempt.commit_sha.slice(0, 7)}
             </span>
           ) : null}
@@ -371,8 +371,8 @@ function DeployAttemptRow({
           ) : null}
         </div>
         <p className="mt-0.5 text-xs text-muted-foreground/70">
-          Started {new Date(attempt.started_at).toLocaleString()} ·{' '}
-          {formatDeployDuration(attempt.started_at, attempt.finished_at)}
+          Started {new Date(attempt.started_at).toLocaleString()}
+          {durationSuffix(attempt)}
         </p>
         {attempt.status === 'queued' ? (
           <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
@@ -405,7 +405,7 @@ function DeployAttemptRow({
         ) : null}
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2 max-sm:w-full max-sm:justify-end">
         <Button
           variant="outline"
           size="sm"

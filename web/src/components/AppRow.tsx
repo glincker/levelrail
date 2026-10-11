@@ -2,7 +2,9 @@ import { Link } from '@tanstack/react-router'
 import { AppRowActions } from './AppRowActions'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { AppListEntry, AppStatusSummary } from '../types/appDetail'
-import { STATUS_DOT_COLOR } from '../lib/appStatus'
+import { STATUS_DOT_COLOR, STATUS_TEXT_COLOR } from '../lib/appStatus'
+import { TONE } from '@/components/kit/tone'
+import { cn } from '@/lib/utils'
 import { statusBucket } from '../lib/appsListView'
 import { AppLogo, AppMetaChips } from './apps/AppMetaChips'
 import {
@@ -48,17 +50,15 @@ export function AppRow({
       <AppLogo image={app.image} />
 
       <span className="flex min-w-0 flex-col justify-center gap-1">
-        <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
-          <StatusDot status={app.status} />
-          <Link
-            to="/apps/$name"
-            params={{ name: app.name }}
-            className="truncate after:absolute after:inset-0"
-          >
-            {app.name}
-          </Link>
-        </span>
-        <span className="pl-4">
+        <Link
+          to="/apps/$name"
+          params={{ name: app.name }}
+          className="truncate text-sm font-medium text-foreground after:absolute after:inset-0"
+        >
+          {app.name}
+        </Link>
+        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <StatusLabel status={app.status} />
           <AppMetaChips app={app} />
         </span>
       </span>
@@ -90,7 +90,10 @@ export function StatusDot({ status }: { status: AppStatusSummary }) {
   const deploying = statusBucket({ status }) === 'deploying'
   return (
     <span
-      className={`relative size-2 shrink-0 rounded-full ${deploying ? 'bg-amber-500' : STATUS_DOT_COLOR[status.variant]}`}
+      className={cn(
+        'relative size-2 shrink-0 rounded-full',
+        deploying ? TONE.warning.solid : STATUS_DOT_COLOR[status.variant],
+      )}
       role="img"
       aria-label={status.label}
       title={status.label}
@@ -98,9 +101,29 @@ export function StatusDot({ status }: { status: AppStatusSummary }) {
       {deploying ? (
         <span
           aria-hidden="true"
-          className="absolute inset-0 animate-ping rounded-full bg-amber-500/70 motion-reduce:animate-none"
+          className={cn(
+            'absolute inset-0 animate-ping rounded-full opacity-70 motion-reduce:animate-none',
+            TONE.warning.solid,
+          )}
         />
       ) : null}
+    </span>
+  )
+}
+
+export function StatusLabel({ status }: { status: AppStatusSummary }) {
+  const deploying = statusBucket({ status }) === 'deploying'
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs">
+      <StatusDot status={status} />
+      <span
+        className={cn(
+          'font-medium',
+          deploying ? TONE.warning.text : STATUS_TEXT_COLOR[status.variant],
+        )}
+      >
+        {status.label}
+      </span>
     </span>
   )
 }

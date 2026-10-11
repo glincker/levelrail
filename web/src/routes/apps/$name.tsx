@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   createFileRoute,
   Link,
@@ -12,15 +13,12 @@ import {
 import { summarizeAppStatus } from '../../lib/appStatus'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
-import { CloneAppDialog } from '../../components/CloneAppDialog'
-import { DeleteAppDialog } from '../../components/DeleteAppDialog'
-import { DeployTriggerForm } from '../../components/DeployTriggerForm'
+import { AppActionBar } from '../../components/apps/AppActionBar'
+import {
+  DeploySheet,
+  type DeployTab,
+} from '../../components/overview/DeploySheet'
 import { PendingDeployApprovalBanner } from '../../components/PendingDeployApprovalBanner'
-import { PromoteAppDialog } from '../../components/PromoteAppDialog'
-import { RedeployAppButton } from '../../components/RedeployAppButton'
-import { RestartAppButton } from '../../components/RestartAppButton'
-import { StopStartAppButton } from '../../components/StopStartAppButton'
-import { ConvergenceIndicator } from '../../components/ConvergenceIndicator'
 import { TrialAppBanner } from '../../components/TrialAppBanner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -53,26 +51,9 @@ const APP_SECTION_LABELS: Record<string, string> = {
   exec: 'Exec',
 }
 
-// App detail layout route, expanded into a per-section nested-route
-// layout: this file used to render all 8 sections itself as client-side
-// Tabs/TabsContent panels. They are now real nested routes under
-// /apps/$name/* (overview.tsx, domains.tsx, environment.tsx, health.tsx,
-// resources.tsx, metrics.tsx, logs.tsx, alerts.tsx), each deep-linkable,
-// matching the precedent /apps/$name/deploys/$deployId/logs already set
-// as a real nested route rather than in-page tab state. This file is now
-// the layout: it owns the loader (both queries below), the shared page
-// header (app name, status, restart/clone/delete actions), and the pinned
-// deploy-trigger form, then renders <Outlet /> for whichever section
-// route is active.
-//
-// Both queries are primed here so the route's data comes from typed
-// loaders, not fetches in the component body: the app resource itself (GET
-// /api/v1/apps/{name}) and its current reconcile status (GET
-// /api/v1/apps/{name}/deploys). Every child section route reads the same
-// cache via useApp/useDeployStatus (keyed identically, see queries/apps.ts
-// and queries/deploys.ts), so navigating between sections never re-fetches
-// either query, the same sharing precedent AppScopedSidebar.tsx relies on
-// to render the app name/status in the sidebar without its own fetch.
+// Layout for /apps/$name/*: owns the loader, the page header with its action
+// bar, and the deploy sheet, then renders the active section via <Outlet />.
+// Section routes share this cache through useApp/useDeployStatus.
 export const Route = createFileRoute('/apps/$name')({
   loader: ({ context: { queryClient }, params: { name } }) =>
     Promise.all([
@@ -102,17 +83,10 @@ function AppDetailLayout() {
   const isViewingDeployLogs = useRouterState({
     select: (s) => s.location.pathname.includes('/deploys/'),
   })
-  // Only /overview and /deploys (the section index, not /deploys/$id/logs
-  // above) are the "Deploy" sidebar group's own sections; every other
-  // section is a Configure/Observe concern, so the card doesn't pin there.
-  const showDeployTrigger = useRouterState({
-    select: (s) =>
-      s.location.pathname.endsWith('/overview') ||
-      s.location.pathname.endsWith('/deploys'),
-  })
   const isOverview = useRouterState({
     select: (s) => s.location.pathname.endsWith('/overview'),
   })
+  const [deployTab, setDeployTab] = useState<DeployTab | null>(null)
   const section = useRouterState({
     select: (s) => s.location.pathname.split('/').filter(Boolean).pop(),
   })
@@ -131,42 +105,24 @@ function AppDetailLayout() {
         />
       </div>
       {isOverview ? null : (
-        <>
-          <PageHeader
-            title={app.name}
-            status={
-              <>
-                <Badge variant={status.variant}>{status.label}</Badge>
-                <ConvergenceIndicator
-                  conditions={conditions}
-                  healthy={status.label === 'Healthy'}
-                />
-              </>
-            }
-            actions={
-              <>
-                <StopStartAppButton name={app.name} suspended={app.suspended} />
-                <RestartAppButton name={app.name} />
-                <RedeployAppButton name={app.name} image={app.image} />
-                <PromoteAppDialog
-                  appName={app.name}
-                  projectId={app.project_id}
-                />
-                <CloneAppDialog name={app.name} />
-                <DeleteAppDialog name={app.name} />
-              </>
-            }
-          />
-        </>
+        <PageHeader
+          title={app.name}
+          status={<Badge variant={status.variant}>{status.label}</Badge>}
+          actions={<AppActionBar app={app} onDeploy={setDeployTab} />}
+        />
       )}
 
       {app.is_trial ? <TrialAppBanner name={app.name} /> : null}
 
       <PendingDeployApprovalBanner appName={app.name} />
 
-      {showDeployTrigger && !isOverview ? (
-        <DeployTriggerForm appName={app.name} />
-      ) : null}
+      <DeploySheet
+        appName={app.name}
+        tab={deployTab}
+        onClose={() => {
+          setDeployTab(null)
+        }}
+      />
 
       <Outlet />
     </div>

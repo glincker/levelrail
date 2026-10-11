@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   DatabaseIcon,
   DownloadSimpleIcon,
@@ -39,6 +40,8 @@ import {
   type ViewMode,
 } from '../../lib/appsListView'
 import { Button } from '../../components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { routeErrorMessage } from '../../lib/apiError'
 
 // The loader primes the Query cache; the component only reads it. The
 // list is virtualized unconditionally (project rule for lists that can
@@ -58,10 +61,12 @@ export const Route = createFileRoute('/apps/')({
     ]),
   component: AppListPage,
   pendingComponent: AppListPending,
+  errorComponent: AppListError,
 })
 
 function AppListPage() {
   useEnvironmentScope()
+  const { t } = useTranslation('common')
   const { data: apps } = useSuspenseQuery({
     ...appListQueryOptions(),
     refetchInterval: 15_000,
@@ -106,21 +111,25 @@ function AppListPage() {
     filteredApps.every((app) => selected.includes(app.name))
   const narrowed = filtersActive(filters) || status !== null
 
+  const countLabel =
+    apps.length === 0
+      ? undefined
+      : t('appsList.count', {
+          defaultValue: '{{count}} apps',
+          count: filteredApps.length,
+          total: apps.length,
+          context: narrowed ? 'filtered' : undefined,
+        })
+
   return (
     <div>
       <div className="mb-4">
         <PageHeader
-          title="Apps"
+          title={t('appsList.title', { defaultValue: 'Apps' })}
+          description={countLabel}
           actions={
             <>
-              {apps.length > 0 ? (
-                <span className="text-sm text-muted-foreground tabular-nums">
-                  {filteredApps.length}
-                  {narrowed ? ` of ${apps.length}` : ''}{' '}
-                  {apps.length === 1 ? 'app' : 'apps'}
-                </span>
-              ) : null}
-              {filteredApps.length > 0 ? (
+              {selected.length > 0 ? (
                 <Button
                   size="sm"
                   variant="outline"
@@ -130,27 +139,34 @@ function AppListPage() {
                     )
                   }}
                 >
-                  {allVisibleSelected ? 'Deselect all' : 'Select all'}
+                  {allVisibleSelected
+                    ? t('appsList.deselectAll', {
+                        defaultValue: 'Deselect all',
+                      })
+                    : t('appsList.selectAll', { defaultValue: 'Select all' })}
                 </Button>
               ) : null}
               {apps.length > 0 ? (
-                <ViewToggle mode={mode} onChange={changeMode} />
+                <span className="hidden sm:block">
+                  <ViewToggle mode={mode} onChange={changeMode} />
+                </span>
               ) : null}
               <Button
                 size="sm"
                 variant="outline"
+                className="max-sm:hidden"
                 render={<Link to="/databases" />}
                 nativeButton={false}
               >
                 <DatabaseIcon />
-                New database
+                {t('appsList.newDatabase', { defaultValue: 'New database' })}
               </Button>
               <CreateResourceWizard
                 scope="applications"
                 trigger={
                   <Button size="sm">
                     <PlusIcon />
-                    New app
+                    {t('appsList.newApp', { defaultValue: 'New app' })}
                   </Button>
                 }
               />
@@ -176,16 +192,19 @@ function AppListPage() {
         <EmptyState
           illustration="rocket"
           icon={<PackageIcon className="size-6" />}
-          title="No apps yet"
-          description="Deploy your first app in under a minute."
+          title={t('appsList.emptyTitle', { defaultValue: 'No apps yet' })}
+          description={t('appsList.emptyBody', {
+            defaultValue:
+              'Deploy from a git repository or a container image, or import apps from another platform.',
+          })}
           action={
             <div className="flex flex-wrap items-center justify-center gap-2">
               <CreateResourceWizard
                 scope="applications"
                 trigger={
-                  <Button variant="glinui">
+                  <Button>
                     <PlusIcon />
-                    New app
+                    {t('appsList.newApp', { defaultValue: 'New app' })}
                   </Button>
                 }
               />
@@ -195,7 +214,7 @@ function AppListPage() {
                 nativeButton={false}
               >
                 <DownloadSimpleIcon />
-                Import
+                {t('appsList.import', { defaultValue: 'Import' })}
               </Button>
               <Button
                 variant="outline"
@@ -203,7 +222,7 @@ function AppListPage() {
                 nativeButton={false}
               >
                 <GitBranchIcon />
-                Connect Git
+                {t('appsList.connectGit', { defaultValue: 'Connect Git' })}
               </Button>
             </div>
           }
@@ -212,8 +231,12 @@ function AppListPage() {
         <EmptyState
           illustration="chart"
           icon={<FunnelIcon className="size-6" />}
-          title="No apps match"
-          description="Try a different status or search."
+          title={t('appsList.noMatchTitle', { defaultValue: 'No apps match' })}
+          description={t('appsList.noMatchBody', {
+            defaultValue:
+              'No app fits the current status and search. Clear the filters to see all {{total}}.',
+            total: apps.length,
+          })}
           action={
             <Button
               size="sm"
@@ -223,7 +246,7 @@ function AppListPage() {
                 setStatus(null)
               }}
             >
-              Clear filters
+              {t('appsList.clearFilters', { defaultValue: 'Clear filters' })}
             </Button>
           }
         />
@@ -252,12 +275,40 @@ function AppListPending() {
       <div className="mb-4">
         <PageHeader title="Apps" />
       </div>
-      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         <ListHeader />
         {Array.from({ length: 6 }, (_, i) => (
           <RowSkeleton key={i} />
         ))}
       </div>
+    </div>
+  )
+}
+
+function AppListError({ error }: { error: unknown }) {
+  const { t } = useTranslation('common')
+  return (
+    <div className="space-y-4">
+      <PageHeader title={t('appsList.title', { defaultValue: 'Apps' })} />
+      <Alert variant="destructive">
+        <AlertDescription className="space-y-2">
+          <p>
+            {t('appsList.errorBody', {
+              defaultValue: 'The app list could not be loaded. {{message}}',
+              message: routeErrorMessage(error),
+            })}
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              globalThis.location.reload()
+            }}
+          >
+            {t('appsList.retry', { defaultValue: 'Retry' })}
+          </Button>
+        </AlertDescription>
+      </Alert>
     </div>
   )
 }
