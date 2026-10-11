@@ -194,7 +194,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 148 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 151 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -354,6 +354,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/sleep/wake | AbilityDeploy | handleWakeApp |
 | GET | /api/v1/apps/{name}/environment-domains | AbilityRead | handleGetAppEnvironmentDomains |
 | GET | /api/v1/apps/{name}/listening-ports | AbilityRead | handleAppListeningPorts |
+| POST | /api/v1/apps/{name}/move | AbilityRoot | handleStartMove |
+| GET | /api/v1/apps/{name}/placement | AbilityRead | handleGetPlacement |
+| PUT | /api/v1/apps/{name}/placement | AbilityRoot | handleSetPlacement |
 
 :::
 
@@ -514,6 +517,9 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/upgrades | AbilityRead | handleGetDatabaseUpgrades |
 | PUT | /api/v1/databases/{name}/upgrade-policy | AbilityWriteSensitive | handlePutDatabaseUpgradePolicy |
 | POST | /api/v1/databases/{name}/upgrade-now | AbilityWriteSensitive | handleDatabaseUpgradeNow |
+| POST | /api/v1/databases/{name}/move | AbilityRoot | handleStartMove |
+| GET | /api/v1/databases/{name}/placement | AbilityRead | handleGetPlacement |
+| PUT | /api/v1/databases/{name}/placement | AbilityRoot | handleSetPlacement |
 
 ## Projects / Organizations / Environments
 
@@ -603,6 +609,9 @@ Endpoints for:
 | PUT | /api/v1/nodes/{id}/region | AbilityRoot | handleSetNodeRegion |
 | POST | /api/v1/nodes/ssh-provision | AbilityRoot | handleCreateSSHNodeProvision |
 | POST | /api/v1/nodes/{id}/mesh/rejoin | AbilityRoot | handleRejoinNodeMesh |
+| GET | /api/v1/nodes/{id}/drains | AbilityRoot | handleListNodeDrains |
+| GET | /api/v1/nodes/{id}/labels | AbilityRoot | handleGetNodeLabels |
+| PUT | /api/v1/nodes/{id}/labels | AbilityRoot | handleSetNodeLabels |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -1106,6 +1115,10 @@ Routes that do not fit an existing group.
 | POST | /api/v1/dns/health-checks | AbilityRoot | handleCreateDNSHealthCheck |
 | DELETE | /api/v1/dns/health-checks/{id} | AbilityRoot | handleDeleteDNSHealthCheck |
 | GET | /api/v1/traffic/summary | AbilityRead | handleTrafficSummary |
+| GET | /api/v1/node-moves | AbilityRoot | handleListNodeMoves |
+| GET | /api/v1/node-moves/{id} | AbilityRoot | handleGetNodeMove |
+| GET | /api/v1/node-drains/{id} | AbilityRoot | handleGetNodeDrain |
+| GET | /api/v1/mesh/connectivity | AbilityRoot | handleMeshConnectivity |
 
 ## See also
 

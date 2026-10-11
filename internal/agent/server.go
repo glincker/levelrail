@@ -48,11 +48,12 @@ const (
 // Server implements agentpb.AgentServiceServer.
 type Server struct {
 	agentpb.UnimplementedAgentServiceServer
-	ca       *CA
-	store    EnrollStore
-	registry *Registry
-	logger   *slog.Logger
-	gpuSink  GPUSink // nil is valid: GPU reports are ignored
+	ca        *CA
+	store     EnrollStore
+	registry  *Registry
+	logger    *slog.Logger
+	gpuSink   GPUSink // nil is valid: GPU reports are ignored
+	onSession func(nodeID, remoteIP string)
 
 	certValidity time.Duration
 	renewGrace   time.Duration
@@ -291,6 +292,7 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 	})
 	s.registry.Register(nodeID, newGRPCTransport(m))
 	live := s.trackSession(nodeID, m)
+	s.observeSession(ctx, nodeID)
 	s.logger.Info("agent: node connected", slog.String("node_id", nodeID))
 
 	heartbeatDone := make(chan struct{})

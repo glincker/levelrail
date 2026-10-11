@@ -37,18 +37,14 @@ func TestPrintNodesTable_GPUColumn(t *testing.T) {
 	}
 }
 
-func TestPrintDrainNodeResultHuman_Blocked(t *testing.T) {
+func TestPrintDrainHuman_Blocked(t *testing.T) {
 	var out bytes.Buffer
-	printDrainNodeResultHuman(&out, "n1", drainNodeResponse{
-		Blocked: []apiclient.DrainBlockedResource{{Kind: "app", Name: "llm", Reason: "no GPU node available (n2: not enough free GPUs)"}},
-		Errors:  []string{"service llm: no GPU node available (n2: not enough free GPUs)"},
-	})
+	printDrainHuman(&out, apiclient.NodeDrainResource{ID: "dr1", NodeID: "n1", Status: "failed",
+		Blocked: []apiclient.DrainBlocked{{Kind: "app", Name: "llm", Reason: "no GPU node available (n2: not enough free GPUs)"}},
+		Error:   "could not move: app llm"}, true)
 	got := out.String()
-	if !strings.Contains(got, "blocked (left on the node)") || !strings.Contains(got, "app llm: no GPU node available") {
+	if !strings.Contains(got, "blocked: app llm: no GPU node available") || !strings.Contains(got, "error: could not move") {
 		t.Errorf("output = %q", got)
-	}
-	if strings.Contains(got, "errors:") {
-		t.Errorf("blocked entries must not be repeated under errors: %q", got)
 	}
 }
 

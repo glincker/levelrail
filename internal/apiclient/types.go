@@ -2878,9 +2878,11 @@ type SetNodeWorkloadsRequest struct {
 // appearance, the same "shown once, never recoverable again" shape a
 // created API token uses.
 type CreateNodeJoinTokenResponse struct {
-	Token         string    `json:"token"`
-	ExpiresAt     time.Time `json:"expires_at"`
-	CAFingerprint string    `json:"ca_fingerprint,omitempty"`
+	Token            string        `json:"token"`
+	ExpiresAt        time.Time     `json:"expires_at"`
+	CAFingerprint    string        `json:"ca_fingerprint,omitempty"`
+	ControlPlaneAddr string        `json:"control_plane_addr,omitempty"`
+	JoinCommands     *JoinCommands `json:"join_commands,omitempty"`
 }
 
 // DrainNodeResponse mirrors internal/api's drainNodeResponse. A partial

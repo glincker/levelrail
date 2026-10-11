@@ -178,6 +178,9 @@ type ContainerSpec struct {
 	// (cmd/levelrail/mesh.go's containerDNSAddr) ever sets this, and
 	// only when the mesh is actually enabled and running.
 	DNS []string
+	// ExtraHosts are "name:ip" entries Docker writes into /etc/hosts, used
+	// to resolve a cross-node database's mesh name without a DNS server.
+	ExtraHosts []string
 	// Labels are applied to the container verbatim via the Engine API's
 	// own label mechanism (container.Config.Labels), operator-supplied
 	// custom Docker labels (internal/spec.Service.Labels, an escape

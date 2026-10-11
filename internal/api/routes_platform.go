@@ -450,6 +450,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// Agent certificate lifecycle (node_cert.go, ADR 021).
 	mux.HandleFunc("POST /api/v1/nodes/{id}/reenroll-token", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleCreateNodeReenrollToken))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/revoke-cert", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleRevokeNodeCert))
+	rt.registerMultiNodeRoutes(mux)
 
 	// Certificates (TLS renewal visibility): this project treats
 	// "a cert renewal fails silently at 3am" as its central

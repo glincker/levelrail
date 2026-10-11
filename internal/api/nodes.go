@@ -19,12 +19,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// nodeJoinTokenTTL is how long a minted join token stays redeemable
-// before an operator has to mint a new one. Not (yet) an env-configurable
-// threshold: this is a one-shot enrollment window, not an ongoing
-// operational setting like APP_SESSION_TTL, so the project's "no
-// hardcoded thresholds" concern doesn't apply the same way here. Revisit
-// if real usage shows this needs to be adjustable.
+// nodeJoinTokenTTL is the default join token lifetime; APP_NODE_JOIN_TOKEN_TTL overrides it.
 const nodeJoinTokenTTL = 15 * time.Minute
 
 // NodeStore is the store surface the node-management handlers need.
@@ -316,6 +311,9 @@ func (rt *Router) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	if rt.nodeCerts.sessions != nil {
+		rt.nodeCerts.sessions.Disconnect(id)
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -489,6 +487,10 @@ type drainNodeResponse struct {
 // same teardownServiceContainers/teardownDatabaseContainer call
 // handleSetAppNode/handleSetDatabaseNode make.
 func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
+	if rt.multiNode != nil {
+		rt.handleStartDrain(w, r)
+		return
+	}
 	id := r.PathValue("id")
 	targetSpecified := r.URL.Query().Has("target_node_id")
 	targetNodeID := r.URL.Query().Get("target_node_id")
@@ -639,22 +641,48 @@ func (rt *Router) handleGetNodeHealth(w http.ResponseWriter, r *http.Request) {
 // in plaintext, the same "shown once, never recoverable again" shape
 // createTokenResponse (tokens.go) already established for API tokens.
 type createNodeJoinTokenResponse struct {
-	Token         string    `json:"token"`
-	ExpiresAt     time.Time `json:"expires_at"`
-	CAFingerprint string    `json:"ca_fingerprint,omitempty"`
+	Token            string        `json:"token"`
+	ExpiresAt        time.Time     `json:"expires_at"`
+	CAFingerprint    string        `json:"ca_fingerprint,omitempty"`
+	ControlPlaneAddr string        `json:"control_plane_addr,omitempty"`
+	JoinCommands     *joinCommands `json:"join_commands,omitempty"`
 }
 
 // handleCreateNodeJoinToken handles POST /api/v1/nodes/join-tokens:
 // mints a one-time token an agent redeems at enrollment, returned with
 // the agent CA fingerprint the agent should pin.
 func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Request) {
-	rec, err := rt.mintNodeJoinToken(r.Context(), nodeJoinTokenTTL)
+	var req createNodeJoinTokenRequest
+	if r.ContentLength != 0 {
+		if err := decodeJSONBody(r, &req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+	}
+	addr := req.ControlPlaneAddr
+	if addr == "" {
+		addr = rt.defaultControlPlaneAddr()
+	}
+	if addr != "" && !controlPlaneAddrRe.MatchString(addr) {
+		writeError(w, http.StatusBadRequest, "control_plane_addr must be host:port")
+		return
+	}
+	if req.NodeName != "" && !nodeProvisionNameRe.MatchString(req.NodeName) {
+		writeError(w, http.StatusBadRequest, "node_name must be lowercase letters, digits and dashes, starting with a letter")
+		return
+	}
+	rec, err := rt.mintNodeJoinToken(r.Context(), rt.effectiveJoinTokenTTL())
 	if err != nil {
 		rt.logger.Error("api: create node join token failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusCreated, createNodeJoinTokenResponse{Token: rec.plaintext, ExpiresAt: rec.expiresAt, CAFingerprint: rt.agentCAFingerprint})
+	resp := createNodeJoinTokenResponse{Token: rec.plaintext, ExpiresAt: rec.expiresAt, CAFingerprint: rt.agentCAFingerprint, ControlPlaneAddr: addr}
+	if addr != "" {
+		cmds := rt.buildJoinCommands(addr, rec.plaintext, rt.agentCAFingerprint, req.NodeName, req.Mesh)
+		resp.JoinCommands = &cmds
+	}
+	writeJSON(w, http.StatusCreated, resp)
 }
 
 // mintedJoinToken is mintNodeJoinToken's result: the plaintext token

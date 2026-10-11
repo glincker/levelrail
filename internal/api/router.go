@@ -572,6 +572,10 @@ type Router struct {
 	// meshPaths reports whether a remote node is reachable over the mesh,
 	// set via SetMeshPaths. nil reads as "mesh networking is off".
 	meshPaths meshpath.Resolver
+	// multiNode holds node moves, drains, labels and selectors; nil means 501.
+	multiNode *multiNodeState
+	// joinTokenTTL overrides nodeJoinTokenTTL, see WithNodeJoinTokenTTL.
+	joinTokenTTL time.Duration
 	// meshRotator is the same node's *network.Coordinator, narrowed to
 	// MeshKeyRotator. nil is valid, same shape as mesh above; set
 	// together with it by SetMesh.

@@ -585,7 +585,8 @@ func run(logger *slog.Logger) error {
 			PermitWithoutStream: true,
 		}),
 	)
-	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(), agent.WithGPUSink(db))...)
+	meshEndpoints := newMeshEndpointBook(logger)
+	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(), agent.WithGPUSink(db), agent.WithSessionObserver(meshEndpoints.Observe))...)
 	agentpb.RegisterAgentServiceServer(agentGRPCServer, agentServer)
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
@@ -798,6 +799,9 @@ func run(logger *slog.Logger) error {
 		// that would otherwise run fine without it.
 		logger.Warn("mesh not configured", slog.String("error", err.Error()))
 	}
+	if meshCfg != nil {
+		meshEndpoints.Attach(meshCfg.coordinator, meshCfg.localNodeID)
+	}
 	apiRouter.SetAppTeardownOptions(application.WithNetworkPrefix(b.ShortName), application.WithInstanceID(instanceID))
 	if meshCfg != nil {
 		defer meshCfg.close()
@@ -806,6 +810,8 @@ func run(logger *slog.Logger) error {
 		apiRouter.SetMesh(meshCfg.device, meshCfg.coordinator)
 	}
 	apiRouter.SetMeshPaths(newMeshPathResolver(meshCfg, db))
+	apiRouter.SetMeshPeerStatus(agent.NewGRPCSink(agentRegistry))
+	go apiRouter.RunNodeMoves(ctx)
 	// Resolved once at startup, not per reconcile pass: the bridge
 	// gateway IP a container-reachable mesh DNS address depends on
 	// (containerDNSAddr's own doc comment) does not change while this
@@ -2314,6 +2320,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithTokenRedeemRateLimit(apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", defaultTokenRedeemRateLimitRPM)),
 		api.WithDataDir(dataDir),
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
+		multiNodeOption(db),
+		api.WithNodeJoinTokenTTL(nodeJoinTokenTTL(logger)),
 		api.WithControlPlaneBackupScheduleDisabled(controlPlaneBackupInterval(logger) == 0),
 		api.WithDockerPinger(client),
 		api.WithImageLister(client),
@@ -3804,6 +3812,9 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 	if deps.meshDNSAddr != "" && deps.meshCfg != nil && deps.meshCfg.resolver != nil {
 		appOpts = append(appOpts, application.WithMeshZone(deps.meshCfg.resolver.Zone()))
 	}
+	if deps.meshCfg != nil && deps.meshCfg.resolver != nil {
+		appOpts = append(appOpts, application.WithMeshDatabases(meshDatabaseConfig(deps)))
+	}
 
 	controllers := make([]reconcile.Controller, 0, len(services))
 	for _, svc := range services {
@@ -3840,6 +3851,9 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 		dbOpts := databaseCredentialOpts(ctx, deps, desired)
 		if deps.meshDNSAddr != "" {
 			dbOpts = append(dbOpts, database.WithMeshDNSAddr(deps.meshDNSAddr))
+		}
+		if deps.meshCfg != nil {
+			dbOpts = append(dbOpts, database.WithMeshEndpoint(newMeshPathResolver(deps.meshCfg, deps.db), deps.db))
 		}
 		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
 	}
