@@ -38,6 +38,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerDNSZoneRoutes(mux)
 	rt.registerTrafficRoutes(mux)
 	rt.registerDatabaseUpgradeRoutes(mux)
+	rt.registerComposeRoutes(mux)
 
 	var h http.Handler = mux
 	h = experimentalGateMiddleware(h)
