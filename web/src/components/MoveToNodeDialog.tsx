@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowsLeftRightIcon,
-  CheckCircleIcon,
-  CircleNotchIcon,
   WarningIcon,
-  XCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -18,7 +15,6 @@ import {
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -27,196 +23,97 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
-import { appKeys, useSetAppNode } from '../queries/apps'
-import { useSetDatabaseNode } from '../queries/databases'
 import { useNodeListOptional } from '../queries/nodes'
-import {
-  useAppVolumeMove,
-  useMoveAppWithVolumes,
-} from '../queries/appVolumeMove'
-import type { AppVolumeMoveStatus } from '../types/appVolumeMove'
-import { MovePlan } from './MovePlan'
+import { useNodeMove, useStartNodeMove } from '../queries/nodeMoves'
+import type { NodeResource } from '../types/nodeDetail'
+import { MoveStatusBadge, NodeMoveSteps } from './nodes/NodeMoveSteps'
 
-// Local-node sentinel, mirrors DrainNodeDialog's own: Base UI's Select
-// can't use an empty string as an item value (reads as "no selection"),
-// but both PUT .../node endpoints treat an empty node_id as "this
-// control plane, local" (setAppNode/setDatabaseNode's own doc comments
-// in queries/apps.ts and queries/databases.ts).
-const LOCAL_NODE_VALUE = '__local__'
+// Empty string is not a valid Select item value in Base UI.
+const AUTOMATIC_VALUE = '__auto__'
 
 type MoveToNodeKind = 'app' | 'database'
 
-// One dialog shared by both the app and database Overview sections
-// rather than two near-identical components. useSetAppNode and
-// useSetDatabaseNode differ only in which PUT .../node endpoint they
-// call: both take the same {name, nodeId} mutate shape, and the
-// meaningful behavioral difference (handleSetAppNode rejects a cordoned
-// target with a 400, handleSetDatabaseNode's own doc comment says it
-// only checks that the node exists, not that it's schedulable) is a
-// backend-side detail this dialog doesn't need to special-case, the
-// error message either endpoint returns is surfaced verbatim either
-// way. Both mutation hooks are called unconditionally so hook order
-// stays stable across renders (kind is fixed per mount, never toggled),
-// then the right one is picked by `kind`. kind="app" gets one more
-// option, "take its volumes with it" (POST .../move-with-volumes instead
-// of PUT .../node), shown only when volumeCount > 0.
-
-// stepStatusIcon renders a small status glyph for one AppVolumeMoveStep,
-// the live-progress list shown while a "move with volumes" is running.
-function stepStatusIcon(status: AppVolumeMoveStatus) {
-  switch (status) {
-    case 'succeeded':
-      return (
-        <CheckCircleIcon
-          className="size-3.5 shrink-0 text-primary"
-          weight="fill"
-          aria-hidden="true"
-        />
-      )
-    case 'failed':
-      return (
-        <XCircleIcon
-          className="size-3.5 shrink-0 text-destructive"
-          weight="fill"
-          aria-hidden="true"
-        />
-      )
-    default:
-      return (
-        <CircleNotchIcon
-          className="size-3.5 shrink-0 animate-spin text-muted-foreground"
-          aria-hidden="true"
-        />
-      )
+function effectiveCurrentNode(
+  nodes: NodeResource[],
+  currentNodeId: string | undefined,
+): string {
+  if (currentNodeId) {
+    return currentNodeId
   }
+  return nodes.find((n) => n.is_local)?.id ?? ''
 }
 
+// One dialog for both app and database overviews: starts a verified move
+// (POST .../move), then polls the move and shows each phase as it runs.
 export function MoveToNodeDialog({
   kind,
   name,
   currentNodeId,
-  volumeCount = 0,
   volumeNames = [],
 }: {
   kind: MoveToNodeKind
   name: string
   currentNodeId?: string
-  // volumeCount is app.volumes?.length: only meaningful for kind="app",
-  // it's what decides whether the "take volumes with it" option even
-  // renders. A database's own volume lives entirely inside its managed
-  // container and has no equivalent move path yet, so this is never
-  // passed for kind="database".
   volumeCount?: number
   volumeNames?: string[]
 }) {
+  const { t } = useTranslation('nodes')
   const [open, setOpen] = useState(false)
-  const [targetNodeId, setTargetNodeId] = useState(LOCAL_NODE_VALUE)
-  const [withVolumes, setWithVolumes] = useState(false)
+  const [targetNodeId, setTargetNodeId] = useState(AUTOMATIC_VALUE)
   const [moveId, setMoveId] = useState<string | null>(null)
-  const setAppNode = useSetAppNode()
-  const setDatabaseNode = useSetDatabaseNode()
-  const mutation = kind === 'app' ? setAppNode : setDatabaseNode
-  // Called unconditionally for the same hook-order-stability reason
-  // setAppNode/setDatabaseNode both are above: harmless for kind=
-  // "database", which never sets withVolumes true (the checkbox that
-  // would only never renders for it).
-  const moveWithVolumes = useMoveAppWithVolumes(name)
-  const appMove = useAppVolumeMove(name, moveId)
-  const queryClient = useQueryClient()
-  const showWithVolumesOption = kind === 'app' && volumeCount > 0
+  const start = useStartNodeMove(kind, name)
+  const move = useNodeMove(moveId)
 
-  // Watches a triggered move-with-volumes attempt to its conclusion:
-  // handleMove's own onSuccess only sees the initial 202/200 response
-  // (Status "running" or already "succeeded"), this is what notices a
-  // background move actually finishing and reacts to it. Deliberately
-  // does not close the dialog itself (react-hooks/set-state-in-effect):
-  // the render below shows a "Done" button once succeededMove is set,
-  // and closing happens from that real click handler instead. A failure
-  // is left visible inline (the steps list below), not swallowed into a
-  // toast, since a partially-applied volume move is exactly the kind of
-  // thing CLAUDE.md's own "the main risk" section says an operator needs
-  // to be able to diagnose.
-  useEffect(() => {
-    if (!moveId || appMove.data?.status !== 'succeeded') {
-      return
-    }
-    toast.add({
-      title: `App "${name}" moved, volumes included.`,
-      type: 'success',
-    })
-    void queryClient.invalidateQueries({ queryKey: appKeys.detail(name) })
-    void queryClient.invalidateQueries({ queryKey: appKeys.list() })
-  }, [appMove.data, moveId, name, queryClient])
-
-  // Optional convenience only, see useNodeListOptional's own doc
-  // comment: this dialog's whole purpose depends on there being other
-  // nodes to move to, but a failure to list them must degrade to "no
-  // other nodes available" rather than crash the Overview page this
-  // trigger lives on.
+  // Optional convenience: a failed node list degrades to "no targets".
   const nodeList = useNodeListOptional()
   const nodes = nodeList.data ?? []
-  const otherNodes = nodes.filter((n) => n.id !== currentNodeId)
+  const currentId = effectiveCurrentNode(nodes, currentNodeId)
+  const targets = nodes.filter((n) => n.id !== currentId)
+
+  const status = move.data?.status
+  const running =
+    start.isPending || (moveId !== null && (!status || status === 'running'))
+  const failed = status === 'failed' || status === 'rolled_back'
+
+  useEffect(() => {
+    if (status === 'succeeded') {
+      toast.add({ title: t('move.toastSucceeded', { name }), type: 'success' })
+    }
+  }, [status, name, t])
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
-    if (next) {
-      // Pre-select the resource's actual current placement so the
-      // dialog reads as "here's where it is, pick somewhere else"
-      // rather than always defaulting back to local.
-      setTargetNodeId(currentNodeId || LOCAL_NODE_VALUE)
-    } else {
-      setAppNode.reset()
-      setDatabaseNode.reset()
-      moveWithVolumes.reset()
-      setWithVolumes(false)
+    if (!next) {
+      start.reset()
       setMoveId(null)
+      setTargetNodeId(AUTOMATIC_VALUE)
     }
   }
-
-  const resolvedTarget = targetNodeId === LOCAL_NODE_VALUE ? '' : targetNodeId
-  const isNoop = (currentNodeId ?? '') === resolvedTarget
-  // "This control plane (local)" is always a real option whenever the
-  // resource isn't already there, even with zero other registered
-  // nodes: nodes list never includes the local node itself, so
-  // otherNodes.length alone undercounts by one in exactly that case.
-  const hasNoOtherNodes = otherNodes.length === 0 && !currentNodeId
-  // A move-with-volumes attempt is "in flight" from the moment the
-  // trigger request is sent until GetAppVolumeMove reports it's no
-  // longer running: the synchronous no-volumes/same-node shortcut on the
-  // server returns an already-"succeeded" record on the very first
-  // response, so this only ever actually holds the dialog open+disabled
-  // for a real volume copy.
-  const movingWithVolumes =
-    moveWithVolumes.isPending ||
-    (moveId !== null && appMove.data?.status === 'running')
-  const failedMove =
-    moveId !== null && appMove.data?.status === 'failed' ? appMove.data : null
-  const succeededMove =
-    moveId !== null && appMove.data?.status === 'succeeded'
-      ? appMove.data
-      : null
 
   function handleMove() {
-    if (kind === 'app' && withVolumes) {
-      moveWithVolumes.mutate(
-        { node_id: resolvedTarget },
-        { onSuccess: (move) => setMoveId(move.id) },
-      )
-      return
-    }
-    mutation.mutate(
-      { name, nodeId: resolvedTarget },
-      {
-        onSuccess: () => {
-          setOpen(false)
-          toast.add({
-            title: `${kind === 'app' ? 'App' : 'Database'} "${name}" moved.`,
-            type: 'success',
-          })
-        },
-      },
-    )
+    const target = targetNodeId === AUTOMATIC_VALUE ? '' : targetNodeId
+    start.mutate(target, { onSuccess: (m) => setMoveId(m.id) })
   }
+
+  function optionLabel(n: NodeResource): string {
+    const notes: string[] = []
+    if (n.is_local) {
+      notes.push(t('move.controlPlane'))
+    }
+    if (!n.schedulable) {
+      notes.push(t('move.cordoned'))
+    } else if (n.status === 'offline') {
+      notes.push(t('move.offline'))
+    }
+    return notes.length === 0 ? n.name : `${n.name} (${notes.join(', ')})`
+  }
+
+  const selectedLabel =
+    targetNodeId === AUTOMATIC_VALUE
+      ? t('move.automatic')
+      : (targets.find((n) => n.id === targetNodeId)?.name ?? targetNodeId)
+
+  const noTargets = nodeList.isSuccess && targets.length === 0
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -224,169 +121,148 @@ export function MoveToNodeDialog({
         render={<Button type="button" variant="outline" size="sm" />}
       >
         <ArrowsLeftRightIcon className="size-3.5" aria-hidden="true" />
-        Move
+        {t('move.trigger')}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Move &ldquo;{name}&rdquo; to another node</DialogTitle>
+          <DialogTitle>{t('move.title', { name })}</DialogTitle>
           <DialogDescription>
-            Desired placement changes immediately, but the container only
-            actually relocates once the reconcile engine&apos;s next pass
-            converges it on the new node.
+            {kind === 'app'
+              ? t('move.descriptionApp')
+              : t('move.descriptionDatabase')}
           </DialogDescription>
         </DialogHeader>
 
-        {hasNoOtherNodes ? (
-          <p className="text-sm text-muted-foreground">
-            No other nodes available to move to.
-          </p>
-        ) : (
-          <div className="space-y-1.5">
-            <label
-              htmlFor="move-target-node"
-              className="text-sm font-medium text-foreground"
-            >
-              Move to
-            </label>
-            <Select
-              value={targetNodeId}
-              onValueChange={(value) => {
-                if (value) {
-                  setTargetNodeId(value)
-                }
-              }}
-            >
-              <SelectTrigger id="move-target-node" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={LOCAL_NODE_VALUE}>
-                  This control plane (local)
-                  {currentNodeId ? '' : ' (current)'}
-                </SelectItem>
-                {otherNodes.map((n) => (
-                  <SelectItem key={n.id} value={n.id} disabled={!n.schedulable}>
-                    {n.name}
-                    {n.schedulable ? '' : ' (cordoned)'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        {moveId === null ? (
+          <>
+            {noTargets ? (
+              <p className="text-sm text-muted-foreground">
+                {t('move.noTargets')}
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="move-target-node"
+                  className="text-sm font-medium text-foreground"
+                >
+                  {t('move.targetLabel')}
+                </label>
+                <Select
+                  value={targetNodeId}
+                  onValueChange={(value) => {
+                    if (value) {
+                      setTargetNodeId(value)
+                    }
+                  }}
+                >
+                  <SelectTrigger id="move-target-node" className="w-full">
+                    <SelectValue>{selectedLabel}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={AUTOMATIC_VALUE}>
+                      {t('move.automatic')}
+                    </SelectItem>
+                    {targets.map((n) => (
+                      <SelectItem
+                        key={n.id}
+                        value={n.id}
+                        disabled={!n.schedulable || n.status === 'offline'}
+                      >
+                        {optionLabel(n)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-        {showWithVolumesOption ? (
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={withVolumes}
-                disabled={movingWithVolumes}
-                onCheckedChange={(checked) => {
-                  setWithVolumes(checked === true)
-                }}
-              />
-              Take {volumeCount === 1 ? 'its volume' : 'its volumes'} with it
-            </label>
-            {withVolumes ? (
+            {volumeNames.length > 0 ? (
               <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
                 <WarningIcon
                   className="mt-0.5 size-4 shrink-0 text-amber-500"
                   aria-hidden="true"
                 />
                 <span>
-                  {name} will be stopped for the duration: each volume is
-                  archived from its current node and restored onto the
-                  destination before the app starts again there.
+                  {t('move.statefulWarning', {
+                    name,
+                    volumes: volumeNames.join(', '),
+                  })}
                 </span>
               </p>
+            ) : kind === 'app' ? (
+              <p className="text-sm text-muted-foreground">
+                {t('move.statelessNote', { name })}
+              </p>
             ) : null}
-            {withVolumes ? (
-              <MovePlan appName={name} volumeNames={volumeNames} />
-            ) : null}
+          </>
+        ) : (
+          <div className="space-y-2 rounded-md border border-border p-2">
+            {move.data ? (
+              <>
+                <MoveStatusBadge status={move.data.status} />
+                <NodeMoveSteps move={move.data} />
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {t('move.moving')}
+              </p>
+            )}
           </div>
-        ) : null}
+        )}
 
-        {moveId && appMove.data ? (
-          <div className="space-y-1 rounded-md border border-border p-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase">
-              {appMove.data.status === 'succeeded'
-                ? 'Move complete'
-                : appMove.data.status === 'failed'
-                  ? 'Move failed'
-                  : 'Moving...'}
-            </p>
-            <ul className="space-y-1">
-              {appMove.data.steps.map((step) => (
-                <li
-                  key={step.name}
-                  className="flex items-center gap-1.5 font-mono text-xs text-foreground"
-                >
-                  {stepStatusIcon(step.status)}
-                  {step.name}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        {mutation.isError ? (
+        {start.isError ? (
           <Alert variant="destructive">
             <WarningIcon />
-            <AlertDescription>{mutation.error.message}</AlertDescription>
+            <AlertDescription>{start.error.message}</AlertDescription>
           </Alert>
         ) : null}
 
-        {moveWithVolumes.isError ? (
+        {move.isError ? (
           <Alert variant="destructive">
             <WarningIcon />
-            <AlertDescription>{moveWithVolumes.error.message}</AlertDescription>
+            <AlertDescription>{move.error.message}</AlertDescription>
           </Alert>
         ) : null}
 
-        {failedMove ? (
+        {failed ? (
           <Alert variant="destructive">
             <WarningIcon />
             <AlertDescription>
-              {failedMove.error || 'The move failed partway through.'}
+              <p>{move.data?.error || t('move.failedFallback')}</p>
+              <p>
+                {status === 'rolled_back'
+                  ? t('move.rolledBackHint', { name })
+                  : t('move.failedHint')}
+              </p>
             </AlertDescription>
           </Alert>
         ) : null}
 
         <DialogFooter>
-          {succeededMove ? (
-            <Button
-              type="button"
-              onClick={() => {
-                handleOpenChange(false)
-              }}
-            >
-              Done
+          {status === 'succeeded' || failed ? (
+            <Button type="button" onClick={() => handleOpenChange(false)}>
+              {status === 'succeeded' ? t('move.done') : t('move.close')}
             </Button>
           ) : (
             <>
               <Button
                 type="button"
                 variant="outline"
-                disabled={movingWithVolumes}
-                onClick={() => {
-                  handleOpenChange(false)
-                }}
+                onClick={() => handleOpenChange(false)}
               >
-                {failedMove ? 'Close' : 'Cancel'}
+                {running && moveId !== null
+                  ? t('move.close')
+                  : t('move.cancel')}
               </Button>
-              <Button
-                type="button"
-                disabled={
-                  mutation.isPending ||
-                  movingWithVolumes ||
-                  hasNoOtherNodes ||
-                  isNoop ||
-                  failedMove !== null
-                }
-                onClick={handleMove}
-              >
-                {mutation.isPending || movingWithVolumes ? 'Moving...' : 'Move'}
-              </Button>
+              {moveId === null ? (
+                <Button
+                  type="button"
+                  disabled={start.isPending || noTargets}
+                  onClick={handleMove}
+                >
+                  {start.isPending ? t('move.starting') : t('move.start')}
+                </Button>
+              ) : null}
             </>
           )}
         </DialogFooter>

@@ -7,7 +7,10 @@ import {
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
+import i18next from 'i18next'
+import { initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import nodesEn from '../locales/en/nodes.json'
 import { AddNodeWizard } from './AddNodeWizard'
 import type { Brand } from '../types/brand'
 import type {
@@ -17,6 +20,15 @@ import type {
   NodeProvisionResource,
 } from '../types/nodeProvision'
 import type { SSHNodeProvisionResource } from '../types/nodeSSHProvision'
+
+void i18next.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  ns: ['nodes'],
+  defaultNS: 'nodes',
+  resources: { en: { nodes: nodesEn } },
+  interpolation: { escapeValue: false },
+})
 
 const navigateMock = vi.fn()
 vi.mock('@tanstack/react-router', async (importOriginal) => {

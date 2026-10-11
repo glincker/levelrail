@@ -74,7 +74,15 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 </Tab>
 </Tabs>
 
-The token is valid for 15 minutes and is returned in plaintext exactly once, because the server stores only its hash. If it expires unused, mint a new one. Tokens cannot be renewed.
+The token is single use and is returned in plaintext exactly once, because the server stores only its hash. It is valid for 15 minutes by default (`APP_NODE_JOIN_TOKEN_TTL`, clamped to 1 minute through 24 hours). If it expires unused, mint a new one. Tokens cannot be renewed.
+
+The request body is optional: `control_plane_addr` (`host:port`), `node_name` (lowercase letters, digits and dashes, starting with a letter) and `mesh` (join the WireGuard mesh). When the server knows or was given the control plane address, the response carries `join_commands` with a ready-made `docker` command and `binary` command, so there is nothing to assemble by hand. The dashboard's **Add node** dialog shows both with copy buttons, plus the expiry time.
+
+The CLI does all of it in one command:
+
+```bash
+levelrail-cli nodes add --name w2 --mesh
+```
 
 </Step>
 <Step title="Run the agent on the new machine">
@@ -266,12 +274,13 @@ Every agent reports its version, commit, OS and architecture when its session op
 
 **Cordon** marks a node unschedulable for new placements without moving anything already running.
 
-**Drain** is the heavier action that actually moves existing placements off.
+**Drain** is the heavier action that moves everything off the node, using the same verified moves described below.
 
 ```bash
 levelrail-cli nodes cordon <id>
 levelrail-cli nodes uncordon <id>
-levelrail-cli nodes drain <id> [--target <node-id>]
+levelrail-cli nodes drain <id> [--target <node-id>] [--wait]
+levelrail-cli nodes drains <id>
 ```
 
 ### Cordon / uncordon
@@ -285,17 +294,20 @@ Effects:
 
 ### Drain
 
-`POST /api/v1/nodes/{id}/drain?target_node_id=` moves every service and database on the node.
+`POST /api/v1/nodes/{id}/drain?target_node_id=` starts a drain job and returns `202` with a `NodeDrain`. The node is cordoned immediately, and a second drain on a node that is already draining returns `409`.
 
-**Placement options:**
-- With `--target`: Move everything to the specified node.
-- Without `--target` (and auto-placement enabled): Each resource picks its own target from least-loaded-node logic, spreading load across other nodes.
+**Order and targets:**
+- Databases move first, then apps. An app follows its database's node when that node is eligible.
+- With `--target`: everything goes to the specified node.
+- Without `--target`: each resource goes to the least loaded eligible node.
 
 **Behavior:**
-- Only changes desired placement immediately. The reconciler actually relocates containers on its next pass.
-- One resource failing to move does not stop the rest.
-- GPU apps (`resources.gpu`) only move to a node with a working nvidia runtime and enough free GPUs. An app no node can host stays where it is and is listed under `blocked` with a per-node reason (`no GPU node available (gpu-2: not enough free GPUs: needs 2, 1 free of 2)`). Models cannot be moved, so any model on the node is always listed as blocked. See [GPU scheduling](ai-models.md#gpu-scheduling).
-- Response: `200` on full success, `207 Multi-Status` when some resources failed (lists exactly what moved and what didn't). Never a bare `500` for a partial result.
+- Each resource is a verified move (see [Verified moves](#verified-moves)), run one after another.
+- The drain stops at the first failed move and leaves the node cordoned. Fix the cause, then drain again or uncordon the node.
+- GPU apps (`resources.gpu`) only move to a node with a working nvidia runtime and enough free GPUs. An app no node can host stays where it is and is listed under `blocked` with a per-node reason. Models cannot be moved, so any model on the node is always listed as blocked. See [GPU scheduling](ai-models.md#gpu-scheduling).
+- Progress is a job, not a single response: poll `GET /api/v1/node-drains/{id}`, or use `nodes drain <id> --wait`. `nodes drains <id>` and `GET /api/v1/nodes/{id}/drains` list the newest 20.
+
+A `NodeDrain` carries `status` (`running`, `succeeded`, `failed`), an `error`, the `blocked` list and the `moves` in the order they ran. The node page's **Drain** dialog polls it every couple of seconds and lists each move with its phase; the **Drains** card keeps the history.
 
 ### Deleting a node
 
@@ -303,13 +315,14 @@ Effects:
 
 - Refused with `409` while the node still has anything placed on it. Drain first.
 - Otherwise idempotent. Deleting an already-deleted node ID succeeds.
+- Also closes the node's live agent session, so a deleted node's agent is disconnected rather than left connected to a registry row that no longer exists.
 
 ## Viewing what's placed on a node
 
 There is no dedicated "workloads on this node" list. These show it indirectly:
 
 - **Network page and `levelrail-cli nodes topology`:** every node with the apps and databases placed on it. See [Network topology](network-topology.md).
-- **App and database detail pages:** show `node_id`, with a move-to-node control next to it.
+- **App and database detail pages:** a Placement card shows the current node, the selector, eligible nodes and the move action.
 - **Node metrics:** `resource_count` is how many placed services contributed a sample in the queried range, a rough occupancy signal.
 - **Drain and delete:** both enumerate everything on the node server-side, which is why deleting a node with placements fails instead of orphaning them.
 
@@ -394,6 +407,83 @@ When you create an app or database without specifying a node, the server decides
 **Explicit placement:** An explicit `node_id` (or explicit empty string meaning "local, on purpose") always overrides auto-placement and is validated against cordoned/unknown-node checks.
 
 **Dashboard visibility:** Create responses carry `auto_placed: true` with the `node_id` picked. A toast shows "Auto-placed on node ... (simple spread scheduling)" so it is never a silent decision.
+
+## Verified moves
+
+A move relocates one app or database to another node, checking each step and rolling back when the target cannot run it.
+
+```bash
+levelrail-cli nodes move app web --to <node-id> --wait
+levelrail-cli nodes move database main --to <node-id> --wait
+```
+
+Omit `--to` to let the scheduler pick the least loaded eligible node. The API is `POST /api/v1/apps/{name}/move` and `POST /api/v1/databases/{name}/move` with `{"node_id": "..."}` (an empty `node_id` means automatic). They return `202` with a `NodeMove`; poll `GET /api/v1/node-moves/{id}`, or list with `GET /api/v1/node-moves?kind=&resource=&drain_id=&status=&limit=`. In the dashboard, the **Move** button on the app or database **Placement** card runs the same move and shows each phase live, with an **Automatic** target option.
+
+Errors: `400` (same node, label mismatch, cordoned or offline target, no eligible node), `404`, `409` (that resource is already moving) and `501` (not configured).
+
+### Phases
+
+A move walks `preflight`, `stop_source`, `copy_volumes`, `place`, `verify`, `stop_old`, `finalize`, then `done`. If something fails after the source was touched it enters `rollback`. The final `status` is `succeeded`, `failed` or `rolled_back`, and every step records its outcome (`ok`, `retry`, `waiting` or `failed`).
+
+Two shapes, depending on whether the resource has state:
+
+- **Stateless** (no volumes): stage, verify, switch, stop. The new copy is started and checked on the target before the old one is stopped, so there should be no downtime.
+- **Stateful** (volumes, and every database): stop, copy, start. The source is stopped, its volumes are copied, and the target starts them. Downtime lasts until the copy finishes.
+
+While the target comes up, ingress holds incoming requests instead of failing them.
+
+### Tuning and guarantees
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_NODE_MOVE_VERIFY_TIMEOUT` | `5m` | How long the target has to become healthy before the move rolls back. |
+| `APP_NODE_MOVE_MAX_ATTEMPTS` | `5` | Attempts for a retryable step. |
+| `APP_NODE_MOVE_INTERVAL` | `3s` | Delay between attempts. |
+
+- Moves resume after a control plane restart.
+- There is one move per resource at a time.
+- Apps with host bind mounts are refused, because only Docker named volumes can be copied.
+- A database moves with its data volume (and its WAL archive when point-in-time recovery is on). Apps that depend on it are restarted afterwards.
+
+## Labels and placement selectors
+
+Label nodes, then restrict where an app or database may run with a selector.
+
+```bash
+levelrail-cli nodes labels <id> disk=ssd
+levelrail-cli nodes placement app web disk=ssd
+levelrail-cli nodes placement database main disk=ssd
+```
+
+- `GET` and `PUT /api/v1/nodes/{id}/labels` read and replace a node's whole label set. Keys are lowercase letters, digits, `.`, `_`, `-` and `/`, 1 to 63 characters. Values are letters, digits, `.`, `_` and `-`, 1 to 63 characters. At most 32 labels. Invalid input returns `400` with the reason.
+- `GET` and `PUT /api/v1/apps/{name}/placement` (and the same for `databases`) read and set a `node_selector`. The response lists `eligible_node_ids` and the `rejected` nodes with a reason each. Setting a selector never moves anything by itself.
+- The dashboard has a **Labels** card on the node page and a **Placement** card on the app and database pages.
+
+### The spread scheduler
+
+When a move or a drain has no explicit target, the scheduler picks the least loaded eligible node, breaking ties by node id. A node is not eligible when it is cordoned, offline, or missing a label the selector requires.
+
+## Cross-node database connections
+
+With the mesh on, an app on one node can use a database on another.
+
+- The app's `DATABASE_URL` uses `<db>.<zone>:<mesh port>`.
+- The name is pinned in the container's `/etc/hosts` to the database node's mesh address, so no DNS server has to be reachable from the container.
+- Mesh ports are allocated from `APP_MESH_DB_PORT_MIN` to `APP_MESH_DB_PORT_MAX` (default `21000` to `21999`).
+- A database is published on its node's mesh address only once an app on another node uses it, and never on a wildcard or public address.
+- Without the mesh, a move that would split an app from its database is refused, except inside a drain.
+
+### Worker to worker links
+
+Worker to worker WireGuard endpoints are recorded from where each agent connects, on UDP `51820`, so workers can reach each other directly without extra configuration.
+
+### Pair diagnostics
+
+```bash
+levelrail-cli nodes connectivity
+```
+
+`GET /api/v1/mesh/connectivity` returns every node's WireGuard view of every other node as pairs, each `ok`, `degraded`, `down` or `unknown`, with a per-direction link state (`healthy`, `stale`, `never`, `no_peer`, `unknown`), last handshake, endpoint and a `hint` for a bad pair. It returns `501` when the mesh is off. The Network page shows the same matrix under **Node connectivity**.
 
 ## Moving an app with its volumes
 
@@ -593,6 +683,19 @@ This does not move databases or app streams onto the mesh, and auto-placement st
 | `POST` | `/api/v1/nodes/{id}/reenroll-token` | `root` (scoped to `node:{id}`) |
 | `POST` | `/api/v1/nodes/{id}/revoke-cert` | `root` (scoped to `node:{id}`) |
 | `GET` | `/api/v1/mesh` | `root` |
+| `GET` | `/api/v1/mesh/connectivity` | `root` |
+| `POST` | `/api/v1/apps/{name}/move` | `root` |
+| `POST` | `/api/v1/databases/{name}/move` | `root` |
+| `GET` | `/api/v1/node-moves?kind=&resource=&drain_id=&status=&limit=` | `root` |
+| `GET` | `/api/v1/node-moves/{id}` | `root` |
+| `GET` | `/api/v1/nodes/{id}/drains` | `root` |
+| `GET` | `/api/v1/node-drains/{id}` | `root` |
+| `GET` | `/api/v1/nodes/{id}/labels` | `root` |
+| `PUT` | `/api/v1/nodes/{id}/labels` | `root` |
+| `GET` | `/api/v1/apps/{name}/placement` | `root` |
+| `PUT` | `/api/v1/apps/{name}/placement` | `root` |
+| `GET` | `/api/v1/databases/{name}/placement` | `root` |
+| `PUT` | `/api/v1/databases/{name}/placement` | `root` |
 | `PUT` | `/api/v1/apps/{name}/node` | `root` |
 | `POST` | `/api/v1/apps/{name}/move-with-volumes` | `root` |
 | `GET` | `/api/v1/apps/{name}/moves` | `read` |
@@ -614,7 +717,13 @@ levelrail-cli nodes provision --provider NAME --region ID --size ID --name NAME 
 levelrail-cli nodes provisions list|show <id> [flags]
 levelrail-cli nodes cordon <id> [flags]
 levelrail-cli nodes uncordon <id> [flags]
-levelrail-cli nodes drain <id> [--target <node-id>] [flags]
+levelrail-cli nodes drain <id> [--target <node-id>] [--wait] [flags]
+levelrail-cli nodes drains <id> [flags]
+levelrail-cli nodes add [--name NAME] [--mesh] [flags]
+levelrail-cli nodes move app|database <name> [--to <node-id>] [--wait] [flags]
+levelrail-cli nodes labels <id> [key=value ...] [flags]
+levelrail-cli nodes placement app|database <name> [key=value ...] [flags]
+levelrail-cli nodes connectivity [flags]
 levelrail-cli nodes workloads <id> --accepts-app=BOOL --accepts-build=BOOL [flags]
 levelrail-cli nodes health <id> [flags]
 levelrail-cli nodes patch-status <id> [flags]
@@ -677,7 +786,12 @@ Per-node metrics, resource usage and patch status.
 <AccordionGroup>
 <Accordion title="Resource-aware scheduling">
 
-Auto-placement and drain's auto-spread count placements only, never CPU, memory or disk. Bin-packing and affinity rules are a deliberate non-goal.
+The spread scheduler counts placements and filters on cordon, status and labels, never CPU, memory or disk headroom. Resource-aware scheduling is not built. Bin-packing and affinity rules are a deliberate non-goal.
+
+</Accordion>
+<Accordion title="Agent self-update">
+
+Upgrading an agent is still manual: stop it, replace the binary or image, start it again. The control plane only flags outdated agents.
 
 </Accordion>
 <Accordion title="Node-specific change history">

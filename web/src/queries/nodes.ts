@@ -20,7 +20,6 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import type {
-  DrainNodeResponse,
   NodeCapacityForecastResource,
   NodeJoinTokenResponse,
   NodePatchStatusResource,
@@ -28,9 +27,8 @@ import type {
   NodeResource,
 } from '../types/nodeDetail'
 import type { ReconcileCondition } from '../types/deploy'
+import type { NodeJoinTokenRequest } from '../types/nodeMoves'
 import { ApiError, readErrorMessage } from '../lib/apiError'
-import { appKeys } from './apps'
-import { databaseKeys } from './databases'
 
 export const nodeKeys = {
   all: ['nodes'] as const,
@@ -239,14 +237,17 @@ export function useNodeEvents(id: string) {
   })
 }
 
-// POST /api/v1/nodes/join-tokens (internal/api/nodes.go's
-// handleCreateNodeJoinToken): mints a one-time enrollment token. Nothing
-// to invalidate on success, minting a token doesn't change the node
-// list, the node only appears once the agent actually enrolls with it
-// (still nothing this dashboard can observe happening in real time as
-// of this pass, no polling added here).
-export async function createNodeJoinToken(): Promise<NodeJoinTokenResponse> {
-  const res = await fetch('/api/v1/nodes/join-tokens', { method: 'POST' })
+// POST /api/v1/nodes/join-tokens: mints a single-use enrollment token.
+// With control_plane_addr the server also returns ready-made join
+// commands. The node only appears in the list once its agent enrolls.
+export async function createNodeJoinToken(
+  req: NodeJoinTokenRequest = {},
+): Promise<NodeJoinTokenResponse> {
+  const res = await fetch('/api/v1/nodes/join-tokens', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -341,57 +342,6 @@ export function useUncordonNode() {
     onSuccess: (updated) => {
       queryClient.setQueryData(nodeKeys.detail(updated.id), updated)
       void queryClient.invalidateQueries({ queryKey: nodeKeys.list() })
-    },
-  })
-}
-
-// POST /api/v1/nodes/{id}/drain?target_node_id=<id-or-empty>
-// (internal/api/nodes.go's handleDrainNode): moves every app and
-// database placed on id to targetNodeId (empty string is the
-// local/control-plane sentinel, the same convention setDatabaseNode's
-// own node_id already uses). Returns the full DrainNodeResponse rather
-// than throwing on a 207: a partial failure is real data the caller
-// must render (which resources moved, which didn't), not an exception,
-// per drainNodeResponse's own doc comment in the backend. Only a
-// genuine transport/5xx failure (res.ok false and status is neither 200
-// nor 207) throws.
-export async function drainNode({
-  id,
-  targetNodeId,
-}: {
-  id: string
-  targetNodeId: string
-}): Promise<DrainNodeResponse> {
-  const params = new URLSearchParams({ target_node_id: targetNodeId })
-  const res = await fetch(
-    `/api/v1/nodes/${encodeURIComponent(id)}/drain?${params.toString()}`,
-    { method: 'POST' },
-  )
-  if (!res.ok && res.status !== 207) {
-    throw new ApiError(
-      res.status,
-      await readErrorMessage(res, `drain node failed: ${res.status}`),
-    )
-  }
-  return (await res.json()) as DrainNodeResponse
-}
-
-// Draining moves apps and databases onto a different node, so their own
-// list/detail queries go stale too, not just this node's: invalidating
-// appKeys.list()/databaseKeys.list() here (rather than leaving that to
-// whichever route the operator happens to visit next) keeps the apps and
-// databases pages honest about node placement immediately after a drain,
-// the same cross-resource invalidation reasoning useSetDatabaseNode
-// already applies to its own single-resource move.
-export function useDrainNode() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: drainNode,
-    onSuccess: (_result, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: nodeKeys.detail(id) })
-      void queryClient.invalidateQueries({ queryKey: nodeKeys.list() })
-      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
-      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
     },
   })
 }

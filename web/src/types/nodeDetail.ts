@@ -103,30 +103,14 @@ export interface NodeJoinTokenResponse {
   expires_at: string
   // SHA-256 of the agent CA, pinned by the agent during enrollment.
   ca_fingerprint?: string
+  control_plane_addr?: string
+  // Present when the server knows or was given the control plane address.
+  join_commands?: NodeJoinCommands
 }
 
-// Response body for POST /api/v1/nodes/{id}/drain
-// (internal/api/nodes.go's drainNodeResponse). A partial failure is not
-// an error response: status is 200 if Errors is empty, 207 Multi-Status
-// if some resources failed to move, but everything not named in Errors
-// still moved successfully, per that handler's own doc comment. UI code
-// must render Errors alongside MovedServices/MovedDatabases rather than
-// treating the whole request as pass/fail.
-export interface DrainNodeResponse {
-  target_node_id: string
-  moved_services: string[]
-  moved_databases: string[]
-  errors?: string[]
-  // Checks that could not run, so the drain may be incomplete.
-  warnings?: string[]
-  // Apps and models left on the node because no GPU node can host them.
-  blocked?: DrainBlocked[]
-}
-
-export interface DrainBlocked {
-  kind: 'app' | 'model'
-  name: string
-  reason: string
+export interface NodeJoinCommands {
+  docker: string
+  binary: string
 }
 
 // Response body for GET /api/v1/nodes/{id}/patch-status
