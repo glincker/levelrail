@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -35,17 +36,50 @@ func (rt *Router) lookupBearerToken(ctx context.Context, raw string) (*store.API
 }
 
 // legacySystemToken serves tokens the library never holds (system-minted, no
-// owner). An owned token missing from the library is refused.
+// owner). An owned token from before the library is imported on first use.
 func (rt *Router) legacySystemToken(ctx context.Context, raw string) (*store.APIToken, error) {
-	rec, err := rt.tokens.GetAPITokenByHash(ctx, hashToken(raw))
+	digest := hashToken(raw)
+	rec, err := rt.tokens.GetAPITokenByHash(ctx, digest)
 	if err != nil {
 		return nil, err
 	}
-	if rec.OwnerUserID != "" {
-		rt.logger.Warn("api: owned token missing from the auth library", slog.String("token_id", rec.ID))
+	if subtle.ConstantTimeCompare([]byte(rec.TokenHash), []byte(digest)) != 1 {
 		return nil, store.ErrAPITokenNotFound
 	}
-	return rec, nil
+	if rec.OwnerUserID == "" {
+		return rec, nil
+	}
+	return rt.importLegacyOwnedToken(ctx, raw, rec)
+}
+
+// importLegacyOwnedToken moves an owned pre-library token into the library,
+// then serves it from there so abilities come from one place. Anything other
+// than a clean import refuses the token.
+func (rt *Router) importLegacyOwnedToken(ctx context.Context, raw string, rec *store.APIToken) (*store.APIToken, error) {
+	res, err := rt.authLib.tokens.ImportLegacyToken(ctx, *rec)
+	switch {
+	case errors.Is(err, authengine.ErrLegacyAlreadyLinked):
+		rt.logger.Warn("api: owned token missing from the auth library", slog.String("token_id", rec.ID))
+		return nil, store.ErrAPITokenNotFound
+	case err != nil:
+		if _, again := rt.authLib.tokens.LookupBearer(ctx, raw); again != nil {
+			rt.logger.Error("api: legacy token import failed", slog.String("token_id", rec.ID), slog.String("error", err.Error()))
+			return nil, store.ErrAPITokenNotFound
+		}
+	case !res.Migrated:
+		rt.logger.Info("api: legacy token not migrated", slog.String("token_id", rec.ID), slog.String("reason", res.SkipReason))
+		return nil, store.ErrAPITokenNotFound
+	default:
+		rt.logger.Info("api: legacy token migrated", slog.String("token_id", rec.ID))
+	}
+	lib, err := rt.authLib.tokens.LookupBearer(ctx, raw)
+	switch {
+	case errors.Is(err, authengine.ErrTokenUnknown), errors.Is(err, authengine.ErrTokenRejected):
+		return nil, store.ErrAPITokenNotFound
+	case err != nil:
+		return nil, fmt.Errorf("api: library token lookup after import: %w", err)
+	}
+	return libraryTokenToStore(lib), nil
 }
 
 func libraryTokenToStore(r authengine.TokenRecord) *store.APIToken {

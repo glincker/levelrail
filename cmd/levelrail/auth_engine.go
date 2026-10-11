@@ -43,9 +43,22 @@ func authEngineOptions(ctx context.Context, logger *slog.Logger, b *brand.Brand,
 		return nil, err
 	}
 	logger.Info("auth engine ready", slog.String("prefix", eng.Prefix()))
+	importLegacyTokens(ctx, logger, eng)
 	opts := []api.Option{api.WithAuthEngine(eng)}
 	if len(cfg.EncryptionKey) > 0 {
 		opts = append(opts, api.WithLoginCodeKey(cfg.EncryptionKey))
 	}
 	return opts, nil
+}
+
+// importLegacyTokens carries owned tokens minted before the auth library into
+// it. A failure is not fatal: those tokens still import on first use.
+func importLegacyTokens(ctx context.Context, logger *slog.Logger, eng *authengine.Engine) {
+	sum, err := eng.ImportLegacyTokens(ctx)
+	if err != nil {
+		logger.Error("legacy token import incomplete", slog.Int("pending", sum.Pending), slog.String("error", err.Error()))
+	}
+	if sum.Migrated > 0 || sum.Skipped > 0 {
+		logger.Info("legacy tokens migrated", slog.Int("migrated", sum.Migrated), slog.Int("skipped", sum.Skipped))
+	}
 }

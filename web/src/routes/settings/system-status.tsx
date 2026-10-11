@@ -61,6 +61,7 @@ const SECURITY_CODES = [
   'master_key_rotation',
   'stale_secrets',
   'secret_reveal_policy',
+  'legacy_tokens',
 ]
 const NETWORK_CODES = [
   'public_ip',

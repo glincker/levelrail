@@ -121,6 +121,22 @@ What is not kept: data the control plane wrote between the swap and the rollback
 
 If the rollback itself fails, the attempt is `failed` and the message names the previous binary (`<binary>.prev`) and the snapshot, so a person can finish the job by hand with `restore-snapshot`.
 
+## What survives an upgrade
+
+| Item | After the upgrade |
+| --- | --- |
+| Apps, databases, domains, secrets, settings | Kept, migrated in place |
+| Passwords, passkeys, second factors | Kept, sign in as before |
+| API tokens (CLI, CI, MCP configs, automations) | Kept: the same token string keeps working with the same abilities, expiry, name and last-used time |
+| Revoked or expired API tokens | Stay unusable, never revived |
+| Browser sessions | Ended: sign in again |
+
+**API tokens from before the built-in auth library** (releases up to 0.2.0-beta.18) are imported on the first start of the new release, keeping their stored hash, so nothing has to be re-issued. Any token the start-up import missed is imported the first time it is used. Abilities are copied one to one and never widened; a token whose owner no longer holds an ability loses it, as for any token. Tokens that are revoked, expired, belong to a deleted user or carry an unknown ability are skipped. Each import writes an audit log entry (`api_token.legacy_migrated`) that names the token id, never the secret.
+
+The journal shows `legacy tokens migrated migrated=N skipped=M` after the first start, and `levelrail-cli doctor` (or Settings > System status) has a **Pre-upgrade API tokens** check with the same counts. It warns if any owned token is still waiting to be imported.
+
+**Browser sessions** before 0.2.0-beta.19 lived only in the control plane's memory, so there is nothing to carry over (a restart of those releases signed everyone out too). After the upgrade, an open dashboard goes to the sign-in page with a note that the session ended. Sign in again; your password, passkeys and second factors still work.
+
 ## The upgrade was interrupted
 
 An SSH drop or a power cut can end the host command mid-way. The journal in `<data dir>/self-upgrade/` records every step. The next upgrade refuses to start while an attempt is unfinished and tells you to run:

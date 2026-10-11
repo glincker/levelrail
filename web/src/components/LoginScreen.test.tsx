@@ -55,14 +55,14 @@ function findTitle(text: string) {
   return screen.findByText(text, { selector: '[data-slot="card-title"]' })
 }
 
-function renderScreen(setup?: string) {
+function renderScreen(setup?: string, sessionEnded = false) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   return render(
     <QueryClientProvider client={client}>
       <ThemeProvider>
-        <LoginScreen setup={setup} />
+        <LoginScreen setup={setup} sessionEnded={sessionEnded} />
       </ThemeProvider>
     </QueryClientProvider>,
   )
@@ -151,6 +151,24 @@ describe('LoginScreen', () => {
     expect(await findTitle('Set up the admin account')).toBeInTheDocument()
     expect(
       screen.queryByText('sudo testbin recover-admin'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('explains a sign-out caused by an ended session', async () => {
+    mockFetch(false)
+    renderScreen(undefined, true)
+    expect(await findTitle('Sign in')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      /signed out|sessionEnded\.notice/,
+    )
+  })
+
+  it('shows no sign-out notice on a normal visit', async () => {
+    mockFetch(false)
+    renderScreen()
+    expect(await findTitle('Sign in')).toBeInTheDocument()
+    expect(
+      screen.queryByText(/signed out|sessionEnded\.notice/),
     ).not.toBeInTheDocument()
   })
 })
