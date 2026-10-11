@@ -30,6 +30,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import {
+  certExpiryDate,
   certExpiryLabel,
   certRenewalBadge,
   certStatusMeta,
@@ -196,12 +197,22 @@ function ExpiryCell({ cert }: { cert?: CertificateStatus }) {
       </span>
     )
   }
+  const renews =
+    cert.source === 'custom'
+      ? t('page.cert.renewsManual')
+      : cert.managed_by === 'proxy'
+        ? t('page.cert.renewsProxy')
+        : t('page.cert.renewsAuto')
   return (
     <span
-      className="truncate text-xs text-muted-foreground"
+      className="flex min-w-0 flex-col text-xs text-muted-foreground"
       title={cert.not_after}
     >
-      {certExpiryLabel(cert.not_after)}
+      <span className="truncate text-foreground">
+        {certExpiryDate(cert.not_after)}
+      </span>
+      <span className="truncate">{certExpiryLabel(cert.not_after)}</span>
+      <span className="truncate text-muted-foreground/70">{renews}</span>
     </span>
   )
 }
