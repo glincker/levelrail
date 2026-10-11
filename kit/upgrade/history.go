@@ -99,6 +99,9 @@ func selectHistory(rrs []rawHistory, channel string, limit int) []HistoryRelease
 				continue
 			}
 		}
+		if !IsProductTag(rr.TagName) {
+			continue
+		}
 		at, err := time.Parse(time.RFC3339, rr.PublishedAt)
 		if err != nil {
 			continue

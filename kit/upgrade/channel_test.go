@@ -176,3 +176,34 @@ func TestCache_FreshStaleSet(t *testing.T) {
 		t.Errorf("Stale(stable) after TTL expiry = %+v, %v, want %+v, true", got, ok, release)
 	}
 }
+
+func TestIsProductTag(t *testing.T) {
+	tests := []struct {
+		tag  string
+		want bool
+	}{
+		{"v0.2.0-beta.19", true},
+		{"v1.0.0", true},
+		{"kit/v0.1.0", false},
+		{"main-abc1234", false},
+		{"", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.tag, func(t *testing.T) {
+			if got := IsProductTag(tc.tag); got != tc.want {
+				t.Errorf("IsProductTag(%q) = %v, want %v", tc.tag, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestPickLatestPrerelease_IgnoresModuleTags(t *testing.T) {
+	rrs := []rawRelease{
+		{TagName: "kit/v0.1.0", Prerelease: true, PublishedAt: "2026-10-11T07:17:44Z"},
+		{TagName: "v0.2.0-beta.19", Prerelease: true, PublishedAt: "2026-10-11T07:17:43Z"},
+	}
+	got := pickLatestPrerelease(rrs)
+	if got == nil || got.Tag != "v0.2.0-beta.19" {
+		t.Fatalf("pickLatestPrerelease() = %+v, want tag v0.2.0-beta.19 (the newer kit/ tag is not a platform release)", got)
+	}
+}

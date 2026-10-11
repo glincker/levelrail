@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -114,10 +115,17 @@ func FetchLatestStable(ctx context.Context, repo string) (*Release, error) {
 	if err != nil {
 		return nil, err
 	}
-	if status == http.StatusNotFound {
+	if status == http.StatusNotFound || !IsProductTag(rr.TagName) {
 		return FetchLatestBeta(ctx, repo)
 	}
 	return rr.toRelease(), nil
+}
+
+// IsProductTag reports whether tag names a platform release (v1.2.3 or
+// v0.2.0-beta.19). Nested Go module releases such as kit/v0.1.0 share the
+// repository's releases list but are not installable versions.
+func IsProductTag(tag string) bool {
+	return strings.HasPrefix(tag, "v") && !strings.Contains(tag, "/")
 }
 
 // FetchLatestBeta fetches the newest prerelease from GitHub's releases
@@ -145,7 +153,7 @@ func pickLatestPrerelease(rrs []rawRelease) *Release {
 	var latestAt time.Time
 	for i := range rrs {
 		rr := rrs[i]
-		if !rr.Prerelease || rr.Draft {
+		if !rr.Prerelease || rr.Draft || !IsProductTag(rr.TagName) {
 			continue
 		}
 		at, err := time.Parse(time.RFC3339, rr.PublishedAt)
