@@ -1,3 +1,4 @@
+import { formatDeltaPercent } from '@/lib/deltaPercent'
 import type { ReactNode } from 'react'
 import { ArrowDownIcon, ArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
 import { cn } from '@/lib/utils'
@@ -36,7 +37,7 @@ function DeltaChip({ delta }: { delta: MetricDelta }) {
       )}
     >
       <Arrow className="size-3" weight="bold" aria-hidden="true" />
-      {Math.abs(delta.value)}%
+      {formatDeltaPercent(delta.value)}
       <span className="sr-only">
         {delta.direction === 'up' ? ' up' : ' down'},{' '}
         {tone === 'success' ? 'good' : tone === 'danger' ? 'bad' : 'no change'}
