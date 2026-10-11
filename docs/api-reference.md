@@ -80,6 +80,8 @@ System endpoints for:
 | PUT | /api/v1/system/server-address | AbilityRoot | handleSetServerAddress |
 | GET | /api/v1/system/restart | AbilityRead | handleGetSystemRestart |
 | POST | /api/v1/system/restart | AbilityRoot | handleSystemRestart |
+| GET | /api/v1/system/cli-console/commands | AbilityRoot | handleCLIConsoleCommands |
+| GET | /api/v1/system/cli-console/session | AbilityRoot | handleCLIConsoleSession |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
