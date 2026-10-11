@@ -1140,6 +1140,7 @@ func run(logger *slog.Logger) error {
 	// tick, the configured release channel (store.UpdateSettings,
 	// migrations/0258_update_settings.sql) for a newer release, only
 	// when an operator has opted into auto_update_enabled.
+	startUpgradeScheduler(ctx, logger, apiRouter)
 	updateCheckScheduler := updatecheck.NewScheduler(db, logger, b.RepoSlug())
 	go func() {
 		if err := updateCheckScheduler.Run(ctx, updateCheckInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
@@ -2340,6 +2341,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDeployNotifyTargets(alertingDB),
 		api.WithDeployNotifier(deployDispatcher),
 		api.WithNotificationChannels(alertingDB),
+		upgradeSchedulingOption(db, deployDispatcher),
 		api.WithNotificationChannelTester(deployDispatcher),
 		api.WithNotificationDeliveries(alertingDB),
 		api.WithApprovalChatNotifier(deployDispatcher),

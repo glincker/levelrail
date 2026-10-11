@@ -8,10 +8,21 @@ import (
 
 // UpgradeCheck is one preflight result from GET /api/v1/updates/preflight.
 type UpgradeCheck struct {
-	Code    string `json:"code"`
-	Name    string `json:"name"`
-	Status  string `json:"status"`
-	Message string `json:"message"`
+	Code      string      `json:"code"`
+	Name      string      `json:"name"`
+	Status    string      `json:"status"`
+	Message   string      `json:"message"`
+	Kind      string      `json:"kind"`
+	Retryable bool        `json:"retryable"`
+	Protects  string      `json:"protects"`
+	Hint      string      `json:"hint"`
+	Fix       *UpgradeFix `json:"fix"`
+}
+
+// UpgradeFix is the action that can clear a preflight check.
+type UpgradeFix struct {
+	Action  string `json:"action"`
+	Command string `json:"command"`
 }
 
 // UpdatePreflight is GET /api/v1/updates/preflight's response.
@@ -23,6 +34,7 @@ type UpdatePreflight struct {
 	ReleaseNotes    string         `json:"release_notes"`
 	Checks          []UpgradeCheck `json:"checks"`
 	Blocked         bool           `json:"blocked"`
+	Waiting         bool           `json:"waiting"`
 	UpgradeCommand  string         `json:"upgrade_command"`
 	RollbackCommand string         `json:"rollback_command"`
 	CosignCommand   string         `json:"cosign_command"`
@@ -32,6 +44,13 @@ type UpdatePreflight struct {
 func (c *Client) GetUpdatePreflight(ctx context.Context) (UpdatePreflight, error) {
 	var out UpdatePreflight
 	err := c.do(ctx, http.MethodGet, "/api/v1/updates/preflight", nil, &out)
+	return out, err
+}
+
+// RecheckUpdatePreflight is GetUpdatePreflight bypassing the release cache.
+func (c *Client) RecheckUpdatePreflight(ctx context.Context) (UpdatePreflight, error) {
+	var out UpdatePreflight
+	err := c.do(ctx, http.MethodGet, "/api/v1/updates/preflight?refresh=1", nil, &out)
 	return out, err
 }
 

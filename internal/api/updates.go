@@ -125,6 +125,14 @@ func (c *updatesCache) stale() (*githubRelease, bool) {
 	return c.release, c.fetched
 }
 
+// expire marks the cached release stale so the next lookup refetches, while
+// stale() still serves it if that fetch fails.
+func (c *updatesCache) expire() {
+	c.mu.Lock()
+	c.fetchedAt = time.Time{}
+	c.mu.Unlock()
+}
+
 func (c *updatesCache) set(release *githubRelease) {
 	c.mu.Lock()
 	c.release = release

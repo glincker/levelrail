@@ -282,6 +282,14 @@ func (c *Cache) Stale(channel string) (*Release, bool) {
 	return c.release, true
 }
 
+// Expire marks the cached result stale so the next lookup refetches, while
+// Stale still serves it if that fetch fails.
+func (c *Cache) Expire() {
+	c.mu.Lock()
+	c.fetchedAt = time.Time{}
+	c.mu.Unlock()
+}
+
 // Set records release as the latest lookup result for channel.
 func (c *Cache) Set(channel string, release *Release) {
 	c.mu.Lock()

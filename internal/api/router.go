@@ -104,6 +104,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/upgradesched"
 	"github.com/GLINCKER/levelrail/kit/dockerhub"
 	"github.com/GLINCKER/levelrail/kit/firewall"
 	"github.com/GLINCKER/levelrail/kit/upgrade"
@@ -325,6 +326,11 @@ type Router struct {
 	upgradeHistory UpgradeHistoryStore
 	// selfUpgrade is nil unless WithSelfUpgrade was applied.
 	selfUpgrade *selfUpgradeConfig
+	// upgradeSchedule is nil unless WithUpgradeScheduling was applied;
+	// upgradeSched is the scheduler UpgradeScheduler builds from it once.
+	upgradeSchedule  *upgradeScheduleConfig
+	upgradeSchedOnce sync.Once
+	upgradeSched     *upgradesched.Scheduler
 	// certExpiryWarningWindow overrides alerting.DefaultCertExpiryWarningWindow
 	// for GET /api/v1/certificates's "expiring_soon" threshold, and for a
 	// kind=cert_expiry alert rule's own evaluation (cmd/levelrail/main.go

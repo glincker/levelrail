@@ -150,6 +150,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/updates/self-upgrade/plan", rt.requireAbility(AbilityRead, rt.handleSelfUpgradePlan))
 	mux.HandleFunc("GET /api/v1/updates/self-upgrade/attempts", rt.requireAbility(AbilityRead, rt.handleSelfUpgradeAttempts))
 	mux.HandleFunc("POST /api/v1/updates/self-upgrade", rt.requireAbility(AbilityRoot, rt.handleSelfUpgradeStart))
+	mux.HandleFunc("GET /api/v1/updates/schedule", rt.requireAbility(AbilityRead, rt.handleGetUpgradeSchedule))
+	mux.HandleFunc("POST /api/v1/updates/schedule", rt.requireAbility(AbilityRoot, rt.handleCreateUpgradeSchedule))
+	mux.HandleFunc("DELETE /api/v1/updates/schedule", rt.requireAbility(AbilityRoot, rt.handleCancelUpgradeSchedule))
+	mux.HandleFunc("GET /api/v1/updates/auto", rt.requireAbility(AbilityRoot, rt.handleGetUpgradePolicy))
+	mux.HandleFunc("PUT /api/v1/updates/auto", rt.requireAbility(AbilityRoot, rt.handleUpdateUpgradePolicy))
+	mux.HandleFunc("POST /api/v1/updates/backup-now", rt.requireAbility(AbilityRoot, rt.handleUpgradeBackupNow))
 	// Channel/auto-update settings are AbilityRoot on both verbs: see
 	// handleGetUpdateSettings' own doc comment (updates_settings.go).
 	mux.HandleFunc("GET /api/v1/updates/settings", rt.requireAbility(AbilityRoot, rt.handleGetUpdateSettings))

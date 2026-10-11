@@ -42,13 +42,20 @@ export function updatesQueryOptions() {
   })
 }
 
-export type UpgradeCheckStatus = 'ok' | 'warn' | 'fail' | 'unknown'
+export type UpgradeCheckStatus = 'ok' | 'warn' | 'fail' | 'unknown' | 'pending'
+
+export type UpgradeFixAction = 'backup_now' | 'recheck' | 'command'
 
 export interface UpgradeCheck {
   code: string
   name: string
   status: UpgradeCheckStatus
   message: string
+  kind?: string
+  retryable?: boolean
+  protects?: string
+  hint?: string
+  fix?: { action: UpgradeFixAction; command?: string }
 }
 
 export interface UpdatePreflight {
@@ -59,6 +66,8 @@ export interface UpdatePreflight {
   release_notes: string
   checks: UpgradeCheck[]
   blocked: boolean
+  waiting?: boolean
+  release_published_at?: string
   upgrade_command: string
   rollback_command: string
   cosign_command: string
