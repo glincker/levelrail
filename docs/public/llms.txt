@@ -68,6 +68,8 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Docker](https://levelrail.com/docker): how Levelrail talks to the Docker Engine API directly.
 - [Command palette](https://levelrail.com/command-palette): keyboard-first navigation and quick app actions in the dashboard.
 - [Domains and ingress](https://levelrail.com/domains-and-ingress): custom domains, TLS, maintenance mode, redirects, WAF, and the embedded Caddy ingress.
+- [DNS zones and records](https://levelrail.com/dns): zones and records at Cloudflare or Route53, name server delegation, propagation checks, and wildcard subdomains.
+- [Domain traffic controls](https://levelrail.com/domain-traffic-controls): per-domain header rules, path forwarders, country rules, response caching, redirects and raw ports.
 - [Load balancing](https://levelrail.com/load-balancing): balance traffic across an app's replicas with health checks, retries, and sticky sessions.
 - [ACME verification runbook](https://levelrail.com/acme-verification-runbook): diagnose and fix failed TLS certificate issuance.
 - [Multi-node](https://levelrail.com/multi-node): add servers, the WireGuard mesh, and node placement.
@@ -77,6 +79,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Network topology](https://levelrail.com/network-topology): the whole-mesh view of nodes, apps, databases, and how they connect.
 - [Build node routing](https://levelrail.com/build-node-routing): which node a deploy's build runs on, and how to dedicate build-only nodes.
 - [Managing databases](https://levelrail.com/managing-databases): managed Postgres, Redis, MySQL, MongoDB, and other engines.
+- [Database upgrades](https://levelrail.com/database-upgrades): available versions with security and end-of-life status, automatic patch upgrades in a maintenance window, automatic revert.
 - [Connecting apps to databases](https://levelrail.com/connecting-apps-to-databases): connect an app to one or more managed databases and read its reachability badges.
 - [Backups and storage](https://levelrail.com/backups-and-storage): backup targets, registry credentials, and app volume and database backups.
 - [Network shares](https://levelrail.com/network-shares): register NFS and CIFS shares and test that the host is reachable.
@@ -125,6 +128,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Architecture](https://levelrail.com/architecture): the reconciler pattern, agent transport, and why each major dependency was chosen.
 - [Security overview](https://levelrail.com/security): secrets, sessions, TLS, and access control, with links to the detailed page for each.
 - [Threat model](https://levelrail.com/threat-model): trust boundaries, assets, attackers, and today's mitigations and known gaps.
+- [Docker access and the API guard](https://levelrail.com/docker-access): every Docker Engine API call Levelrail makes, and the guard that refuses privileged containers and host mounts.
 - [Security alert verdicts](https://levelrail.com/security-alert-verdicts): verdict, evidence, and dismissal command for each open code scanning alert.
 - [White-labeling](https://levelrail.com/white-labeling): how the brand layer names the dashboard, agent, prefixes and update repository, and what a fork must change.
 - [Comparison](https://levelrail.com/comparison): how Levelrail differs from Coolify, Dokploy, CapRover, Dokku, and Kamal.

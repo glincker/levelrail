@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
-  CertificateIcon,
-  LockKeyIcon,
+  CaretRightIcon,
   ShieldCheckIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -27,15 +27,9 @@ import {
   useSetDomainTLSCert,
 } from '../queries/domainTlsCert'
 
-// BYO (bring your own) TLS certificate for one already-saved domain: an
-// operator-supplied certificate/key pair used by the embedded Caddy
-// ingress in place of automatic ACME/internal issuance
-// (internal/reconcile/ingress), for domains ACME cannot reach
-// (internal-only hosts, externally issued wildcards, a cert already
-// provisioned before DNS cuts over). Collapsed by default like
-// DomainBasicAuthControl, and expands into a form for the same reason:
-// pasting PEM text needs a real form, not an instant toggle like
-// DomainMaintenanceControl.
+// BYO certificate for one saved domain, used by the embedded ingress instead
+// of automatic issuance. Collapsed behind a disclosure: most operators never
+// need it, and pasting PEM text needs a real form, not a toggle.
 export function DomainTLSCertControl({
   appName,
   domain,
@@ -43,6 +37,7 @@ export function DomainTLSCertControl({
   appName: string
   domain: string
 }) {
+  const { t } = useTranslation('domains')
   const { data: cert, isLoading } = useDomainTLSCert(appName, domain)
   const [open, setOpen] = useState(false)
   const [certPEM, setCertPEM] = useState('')
@@ -71,7 +66,7 @@ export function DomainTLSCertControl({
     e.preventDefault()
     setFormError(null)
     if (!certPEM.trim() || !keyPEM.trim()) {
-      setFormError('Both a certificate and a private key are required.')
+      setFormError(t('proxySetup.byo.bothRequired'))
       return
     }
     setCert.mutate(
@@ -81,20 +76,14 @@ export function DomainTLSCertControl({
           setCertPEM('')
           setKeyPEM('')
           toast.add({
-            title: `Certificate uploaded for ${domain}.`,
+            title: t('proxySetup.byo.uploadedToast', { domain }),
             type: 'success',
           })
         },
         onError: (error) => {
-          // error.message is the backend's own validation reason
-          // (internal/api/domain_tls_cert.go's writeError body, read via
-          // readErrorMessage): "certificate and key do not form a valid
-          // pair", "certificate is already expired (expired at ...)",
-          // and so on. Surfaced verbatim rather than a generic message,
-          // since that's the actionable part an operator needs to fix a
-          // rejected upload.
+          // The backend's own validation reason is the actionable part.
           toast.add({
-            title: 'Certificate upload failed.',
+            title: t('proxySetup.byo.uploadFailed'),
             description: error.message,
             type: 'error',
           })
@@ -105,41 +94,42 @@ export function DomainTLSCertControl({
 
   return (
     <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
-      <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className="flex items-center gap-1.5 text-left"
-        >
-          {uploaded ? (
-            <Badge variant="success" className="shrink-0">
-              <ShieldCheckIcon className="size-3" aria-hidden="true" />
-              BYO certificate
-            </Badge>
-          ) : (
-            <Badge variant="muted" className="shrink-0">
-              <LockKeyIcon className="size-3" aria-hidden="true" />
-              Automatic TLS
-            </Badge>
-          )}
-          {uploaded && cert?.expires_at ? (
-            <span className="text-xs text-muted-foreground">
-              expires {new Date(cert.expires_at).toLocaleDateString()}
-            </span>
-          ) : null}
-        </button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-        >
-          <CertificateIcon className="size-3.5" aria-hidden="true" />
-          {open ? 'Hide' : uploaded ? 'Manage' : 'Upload certificate'}
-        </Button>
-      </div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-1.5 text-left"
+      >
+        <CaretRightIcon
+          className={
+            open
+              ? 'size-3.5 shrink-0 rotate-90 transition-transform'
+              : 'size-3.5 shrink-0 transition-transform'
+          }
+          aria-hidden="true"
+        />
+        <span className="font-medium text-foreground">
+          {t('proxySetup.byo.disclosure')}
+        </span>
+        {uploaded ? (
+          <Badge variant="success" className="shrink-0">
+            <ShieldCheckIcon className="size-3" aria-hidden="true" />
+            {t('proxySetup.byo.uploaded')}
+          </Badge>
+        ) : null}
+        {uploaded && cert?.expires_at ? (
+          <span className="text-xs text-muted-foreground">
+            {t('proxySetup.byo.expires', {
+              date: new Date(cert.expires_at).toLocaleDateString(),
+            })}
+          </span>
+        ) : null}
+      </button>
+      {open ? null : (
+        <p className="mt-1 pl-5 text-xs text-muted-foreground">
+          {t('proxySetup.byo.hint')}
+        </p>
+      )}
 
       {open ? (
         <form
@@ -148,9 +138,12 @@ export function DomainTLSCertControl({
           }}
           className="mt-3 space-y-3"
         >
+          <p className="text-xs text-muted-foreground">
+            {t('proxySetup.byo.hint')}
+          </p>
           <Field>
             <FieldLabel htmlFor={`tls-cert-pem-${domain}`}>
-              Certificate (PEM)
+              {t('proxySetup.byo.certLabel')}
             </FieldLabel>
             <Textarea
               id={`tls-cert-pem-${domain}`}
@@ -164,7 +157,7 @@ export function DomainTLSCertControl({
           </Field>
           <Field>
             <FieldLabel htmlFor={`tls-key-pem-${domain}`}>
-              Private key (PEM)
+              {t('proxySetup.byo.keyLabel')}
             </FieldLabel>
             <Textarea
               id={`tls-key-pem-${domain}`}
@@ -177,8 +170,8 @@ export function DomainTLSCertControl({
             />
             <FieldDescription>
               {uploaded
-                ? 'Replaces the currently uploaded certificate entirely; there is no partial update.'
-                : 'Used instead of automatic ACME/internal issuance for this domain, starting on the next reconcile pass.'}
+                ? t('proxySetup.byo.replaceHint')
+                : t('proxySetup.byo.newHint')}
             </FieldDescription>
           </Field>
 
@@ -200,7 +193,9 @@ export function DomainTLSCertControl({
 
           <div className="flex items-center gap-2">
             <Button type="submit" size="sm" disabled={pending}>
-              {setCert.isPending ? 'Uploading...' : 'Upload'}
+              {setCert.isPending
+                ? t('proxySetup.byo.uploading')
+                : t('proxySetup.byo.upload')}
             </Button>
             {uploaded ? (
               <Dialog
@@ -217,18 +212,16 @@ export function DomainTLSCertControl({
                     />
                   }
                 >
-                  Revert to automatic TLS
+                  {t('proxySetup.byo.revert')}
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-sm">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-1.5 text-destructive">
                       <WarningIcon className="size-4" aria-hidden="true" />
-                      Revert {domain} to automatic TLS?
+                      {t('proxySetup.byo.revertTitle', { domain })}
                     </DialogTitle>
                     <DialogDescription>
-                      The uploaded certificate is discarded immediately. If ACME
-                      or internal issuance cannot reach this domain, HTTPS will
-                      break until a new certificate is uploaded or issued.
+                      {t('proxySetup.byo.revertBody')}
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
@@ -237,7 +230,7 @@ export function DomainTLSCertControl({
                       variant="outline"
                       onClick={() => setConfirmingRevert(false)}
                     >
-                      Cancel
+                      {t('proxySetup.byo.cancel')}
                     </Button>
                     <Button
                       type="button"
@@ -248,13 +241,15 @@ export function DomainTLSCertControl({
                           onSuccess: () => {
                             setConfirmingRevert(false)
                             toast.add({
-                              title: `Reverted ${domain} to automatic TLS.`,
+                              title: t('proxySetup.byo.revertedToast', {
+                                domain,
+                              }),
                               type: 'success',
                             })
                           },
                           onError: (error) => {
                             toast.add({
-                              title: 'Could not revert to automatic TLS.',
+                              title: t('proxySetup.byo.revertFailed'),
                               description: error.message,
                               type: 'error',
                             })
@@ -262,7 +257,9 @@ export function DomainTLSCertControl({
                         })
                       }}
                     >
-                      {clearCert.isPending ? 'Reverting...' : 'Revert'}
+                      {clearCert.isPending
+                        ? t('proxySetup.byo.reverting')
+                        : t('proxySetup.byo.revertConfirm')}
                     </Button>
                   </DialogFooter>
                 </DialogContent>

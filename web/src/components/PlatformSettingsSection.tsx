@@ -11,7 +11,9 @@ import type { CertificateStatus } from '../queries/certificates'
 import type { CloudflareDnsSettings } from '../queries/cloudflareDns'
 import type { IngressSettings } from '../queries/domains'
 import type { Route53DnsSettings } from '../queries/route53Dns'
+import { AppsBaseDomainCard } from './AppsBaseDomainCard'
 import { CloudflareDnsCard } from './CloudflareDnsCard'
+import { DomainAutomationCard } from './DomainAutomationCard'
 import { DashboardUrlCard } from './DashboardUrlCard'
 import { EnableHttpsCard } from './EnableHttpsCard'
 import { FallbackDomainsCard } from './FallbackDomainsCard'
@@ -74,6 +76,8 @@ export function PlatformSettingsSection({
           {httpsOff ? <EnableHttpsCard /> : null}
           <IngressSettingsCard settings={settings} primaryCert={primaryCert} />
           <DashboardUrlCard />
+          <DomainAutomationCard />
+          <AppsBaseDomainCard />
           <FallbackDomainsCard />
           <IngressConnectivityCard />
           <ReverseProxyGuideCard />

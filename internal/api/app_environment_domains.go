@@ -37,6 +37,8 @@ type appEnvironmentDomainsResource struct {
 	DefaultDomains      []string                       `json:"default_domains"`
 	RoutedDomains       []string                       `json:"routed_domains"`
 	Environments        []environmentDomainSetResource `json:"environments"`
+	// Reachability maps each domain to its reachable_url or reachable_reason.
+	Reachability map[string]domainReachability `json:"reachability,omitempty"`
 }
 
 // resolveDomainEnvironment accepts an environment ID, name, or kind.
@@ -204,5 +206,10 @@ func (rt *Router) handleGetAppEnvironmentDomains(w http.ResponseWriter, r *http.
 			Domains: nonNilStrings(sets[e.ID]),
 		})
 	}
+	all := slices.Clone(out.DefaultDomains)
+	for _, set := range sets {
+		all = append(all, set...)
+	}
+	out.Reachability = rt.appDomainReachability(r.Context(), name, out.RoutedDomains, all)
 	writeJSON(w, http.StatusOK, out)
 }

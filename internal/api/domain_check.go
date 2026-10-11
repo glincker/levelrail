@@ -147,7 +147,7 @@ type domainCheckResponse struct {
 	// ExpectedPrivate is true when the address Domain must point at is a
 	// private/LAN one, so no public CA can validate it over HTTP-01.
 	ExpectedPrivate bool `json:"expected_private,omitempty"`
-	// Challenge is "http-01" or "dns-01-required".
+	// Challenge is "http-01", "dns-01-required" or "upstream-proxy" (a proxy in front owns certificates).
 	Challenge string `json:"challenge,omitempty"`
 	// DNSProvider is the active DNS-01 provider: cloudflare, route53, none.
 	DNSProvider string `json:"dns_provider,omitempty"`
@@ -279,6 +279,7 @@ func queryPublicResolvers(ctx context.Context, host string) []resolverResult {
 // result cache so a manual "Check now" always asks DNS again.
 func (rt *Router) runDomainCheckOpts(ctx context.Context, domain, expectedHost string, inferred, refresh bool) domainCheckResponse {
 	resp := domainCheckResponse{Domain: domain, ExpectedHost: expectedHost, HostInferred: inferred, CheckedAt: time.Now().UTC().Format(time.RFC3339)}
+	defer func() { rt.traffic.recordCheck(domain, resp.Status) }()
 	if expectedHost == "" {
 		resp.Status = domainCheckStatusUnconfigured
 		return resp
@@ -287,7 +288,7 @@ func (rt *Router) runDomainCheckOpts(ctx context.Context, domain, expectedHost s
 	result, cached := rt.domainChecks.get(domain)
 	if !cached || refresh {
 		lookupCtx, cancel := context.WithTimeout(ctx, domainCheckLookupTimeout)
-		hosts, err := rt.lookupHost(lookupCtx, domain)
+		hosts, err := rt.lookupHost(lookupCtx, wildcardProbeHost(domain))
 		cancel()
 		result = domainCheckResult{resolvedHosts: hosts, resolved: err == nil && len(hosts) > 0, at: time.Now()}
 		rt.domainChecks.set(domain, result)
@@ -341,7 +342,7 @@ func (rt *Router) runDomainCheckOpts(ctx context.Context, domain, expectedHost s
 	}
 	pubCtx, cancel := context.WithTimeout(ctx, 2*domainCheckLookupTimeout)
 	defer cancel()
-	for _, rr := range lookup(pubCtx, domain) {
+	for _, rr := range lookup(pubCtx, wildcardProbeHost(domain)) {
 		resp.Resolvers = append(resp.Resolvers, rr)
 		if hostsOverlap(rr.Addresses, expected) {
 			resp.Status = domainCheckStatusPropagating

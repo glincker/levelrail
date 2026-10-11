@@ -53,6 +53,10 @@ var kindInfos = map[string]kindInfo{
 	KindInvites:             {"Invitations are waiting", "Open Users and resend or revoke them", linkUsers, false},
 	KindLoginCode:           {"Sign-in code requested from %s", "Show the code only if you asked for it", linkSecurity, false},
 	KindLoginApproval:       {"New browser sign-in from %s is waiting", "Approve it only if it is you, otherwise deny it", linkSecurity, false},
+	KindDBSecurityUpdates:   {"Databases have security updates available", "Open each database's Upgrades tab and apply the patch", linkDBs, false},
+	KindDBEOL:               {"%s runs a release past its end of life", "Plan a major upgrade or restore into a supported version", linkDBs, true},
+	KindDBUpgradeFailed:     {"Upgrade of %s did not complete", "Open the database's Upgrades tab and read the reason", linkDBs, true},
+	KindDockerGuard:         {"Docker API guard needs a decision", "Review the would-be denials and switch the guard to enforce", linkSecurity, false},
 }
 
 // newItem builds an item with its stable id, one-line title, next action and

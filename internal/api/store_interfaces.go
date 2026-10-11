@@ -559,6 +559,7 @@ type Store interface {
 	DomainRedirectStore
 	DomainErrorPagesStore
 	DomainSearchVisibilityStore
+	DomainTrafficPolicyStore
 	GitSourceStore
 	AppScheduleStore
 	ImageAutoUpdateStore

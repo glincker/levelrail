@@ -600,8 +600,8 @@ func TestHandleListDomains(t *testing.T) {
 		t.Fatalf("decode: %v", err)
 	}
 	want := []domainResource{
-		{Domain: "web.example.com", ServiceName: "web"},
-		{Domain: "www.example.com", ServiceName: "web"},
+		{Domain: "web.example.com", ServiceName: "web", ReachableReason: reachableReasonStopped},
+		{Domain: "www.example.com", ServiceName: "web", ReachableReason: reachableReasonStopped},
 	}
 	if len(got) != len(want) {
 		t.Fatalf("GET /domains = %+v, want %+v", got, want)
@@ -657,9 +657,10 @@ func TestHandleListDomains_StatusFlags(t *testing.T) {
 		"configured.example.com": {
 			Domain: "configured.example.com", ServiceName: "web",
 			WAFEnabled: true, HasRedirect: true, MaintenanceEnabled: true, HasBasicAuth: true,
+			ReachableReason: reachableReasonStopped,
 		},
 		"plain.example.com": {
-			Domain: "plain.example.com", ServiceName: "web",
+			Domain: "plain.example.com", ServiceName: "web", ReachableReason: reachableReasonStopped,
 		},
 	}
 	if len(got) != len(want) {

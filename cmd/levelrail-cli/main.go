@@ -96,6 +96,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runProfile(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tokens":
 		return runTokens(prog, args[1:], stdout, stderr, lookupEnv)
+	case "dns":
+		return runDNS(prog, args[1:], stdout, stderr, lookupEnv)
 	case "domains":
 		return runDomains(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backups":
@@ -184,6 +186,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runContainers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "system-prune":
 		return runSystemPrune(prog, args[1:], stdout, stderr, lookupEnv)
+	case "docker-guard":
+		return runDockerGuard(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned":
 		return runVolumesOrphaned(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned-cleanup":
@@ -259,6 +263,7 @@ Usage:
   %[1]s functions deploy|list|invoke|delete [flags]   image apps that sleep when idle and wake on the first request
   %[1]s models list|get|deploy|logs|delete|restart|rotate-key|gpus [flags]   AI models on GPU nodes
   %[1]s domains list [flags]           list every app's domains in one call
+  %[1]s dns zones|records|check|health-checks ...   DNS zones, records, delegation and propagation at Cloudflare or Route53
   %[1]s preview status|enable|disable|capture|prune <app> [flags]   deploy preview screenshots (opt-in per app)
   %[1]s deployments list|summary|watch [flags]   deploys across all apps, filterable, with live stream
   %[1]s environments list|create|update|delete [flags]   instance-wide dev, test, uat, production and custom environments
@@ -302,12 +307,14 @@ Usage:
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
   %[1]s changelog [--limit N] [flags]                         recent release notes from the control plane's own CHANGELOG.md
   %[1]s ai-control status|set|revoke-agents [flags]           what agents and AI may do: off, observe, operate, admin
+  %[1]s docker-guard status|set [flags]                       the Docker API allowlist proxy: off, audit, enforce
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
   %[1]s audit-purge [flags]                                   delete audit log entries past the retention window now
   %[1]s attention [flags]                                     everything failing right now: apps, nodes, certificates, doctor checks
   %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
+  %[1]s proxy setup|status|apply|verify|disable [flags]       let this server manage its routes in that proxy (Traefik)
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database

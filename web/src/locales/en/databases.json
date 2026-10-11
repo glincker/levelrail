@@ -1,4 +1,7 @@
 {
+  "upgrades": {
+    "nav": "Upgrades"
+  },
   "external": {
     "badge": "External",
     "badgeHint": "Levelrail connects to this database but does not run it.",

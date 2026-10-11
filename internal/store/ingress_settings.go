@@ -55,7 +55,19 @@ type IngressSettings struct {
 	// TLSTerminatedUpstream marks a proxy in front as the TLS owner: no ACME
 	// here and links use the public port (migrations/0416).
 	TLSTerminatedUpstream bool
+	// AppsBaseDomain is the suffix apps created without a domain get as
+	// <app>.<base> (migrations/0418). Empty means not set.
+	AppsBaseDomain string
+	// DNSCNAMETarget makes automatic records CNAMEs to this host instead of
+	// A/AAAA to the detected public IP. DNSTTLSeconds 0 is the provider's auto.
+	DNSCNAMETarget string
+	DNSTTLSeconds  int
+	// DNSProxied turns Cloudflare's proxy on for records Levelrail creates.
+	DNSProxied bool
 }
+
+// MaxDNSTTLSeconds is the highest valid DNSTTLSeconds (one day).
+const MaxDNSTTLSeconds = 86400
 
 // MaxPublicHTTPSPort is the highest valid PublicHTTPSPort.
 const MaxPublicHTTPSPort = 65535
@@ -103,12 +115,18 @@ func (db *DB) GetIngressSettings(ctx context.Context) (IngressSettings, error) {
 		fallbackDisabled int
 		publicHTTPSPort  int
 		tlsUpstream      int
+		appsBaseDomain   sql.NullString
+		cnameTarget      sql.NullString
+		dnsTTL           int
+		dnsProxied       int
 	)
 	err := db.QueryRowContext(ctx, `
-		SELECT primary_domain, acme_enabled, acme_email, acme_directory_url, hsts_enabled, fallback_domains_disabled, public_https_port, tls_terminated_upstream
+		SELECT primary_domain, acme_enabled, acme_email, acme_directory_url, hsts_enabled, fallback_domains_disabled, public_https_port, tls_terminated_upstream,
+			apps_base_domain, dns_cname_target, dns_ttl_seconds, dns_proxied
 		FROM ingress_settings
 		WHERE id = 1
-	`).Scan(&primaryDomain, &acmeEnabled, &acmeEmail, &acmeDirectoryURL, &hstsEnabled, &fallbackDisabled, &publicHTTPSPort, &tlsUpstream)
+	`).Scan(&primaryDomain, &acmeEnabled, &acmeEmail, &acmeDirectoryURL, &hstsEnabled, &fallbackDisabled, &publicHTTPSPort, &tlsUpstream,
+		&appsBaseDomain, &cnameTarget, &dnsTTL, &dnsProxied)
 	if err != nil {
 		return IngressSettings{}, fmt.Errorf("store: get ingress settings: %w", err)
 	}
@@ -121,6 +139,10 @@ func (db *DB) GetIngressSettings(ctx context.Context) (IngressSettings, error) {
 	s.FallbackDomainsDisabled = fallbackDisabled != 0
 	s.PublicHTTPSPort = publicHTTPSPort
 	s.TLSTerminatedUpstream = tlsUpstream != 0
+	s.AppsBaseDomain = appsBaseDomain.String
+	s.DNSCNAMETarget = cnameTarget.String
+	s.DNSTTLSeconds = dnsTTL
+	s.DNSProxied = dnsProxied != 0
 	return s, nil
 }
 
@@ -140,6 +162,13 @@ func (db *DB) GetIngressSettings(ctx context.Context) (IngressSettings, error) {
 func (db *DB) UpdateIngressSettings(ctx context.Context, s IngressSettings) error {
 	if err := ValidatePublicHTTPSPort(s.PublicHTTPSPort); err != nil {
 		return err
+	}
+	if s.DNSTTLSeconds < 0 || s.DNSTTLSeconds > MaxDNSTTLSeconds {
+		return fmt.Errorf("store: dns_ttl_seconds %d is out of range 0-%d", s.DNSTTLSeconds, MaxDNSTTLSeconds)
+	}
+	dnsProxied := 0
+	if s.DNSProxied {
+		dnsProxied = 1
 	}
 	tlsUpstream := 0
 	if s.TLSTerminatedUpstream {
@@ -161,7 +190,8 @@ func (db *DB) UpdateIngressSettings(ctx context.Context, s IngressSettings) erro
 
 	_, err := db.ExecContext(ctx, `
 		UPDATE ingress_settings
-		SET primary_domain = ?, acme_enabled = ?, acme_email = ?, acme_directory_url = ?, hsts_enabled = ?, fallback_domains_disabled = ?, public_https_port = ?, tls_terminated_upstream = ?
+		SET primary_domain = ?, acme_enabled = ?, acme_email = ?, acme_directory_url = ?, hsts_enabled = ?, fallback_domains_disabled = ?, public_https_port = ?, tls_terminated_upstream = ?,
+			apps_base_domain = ?, dns_cname_target = ?, dns_ttl_seconds = ?, dns_proxied = ?
 		WHERE id = 1
 	`,
 		sql.NullString{String: s.PrimaryDomain, Valid: s.PrimaryDomain != ""},
@@ -172,6 +202,10 @@ func (db *DB) UpdateIngressSettings(ctx context.Context, s IngressSettings) erro
 		fallbackDisabled,
 		s.PublicHTTPSPort,
 		tlsUpstream,
+		sql.NullString{String: s.AppsBaseDomain, Valid: s.AppsBaseDomain != ""},
+		sql.NullString{String: s.DNSCNAMETarget, Valid: s.DNSCNAMETarget != ""},
+		s.DNSTTLSeconds,
+		dnsProxied,
 	)
 	if err != nil {
 		return fmt.Errorf("store: update ingress settings: %w", err)

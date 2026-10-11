@@ -34,6 +34,13 @@ var defaultACMEFailures = &ACMEFailures{last: map[string]ACMEFailure{}}
 // DefaultACMEFailures is the process-wide tracker fed by Caddy's cert events.
 func DefaultACMEFailures() *ACMEFailures { return defaultACMEFailures }
 
+// ACMEFailing returns the last error text for identifier; it satisfies
+// alerting.ACMEFailureSource.
+func (a *ACMEFailures) ACMEFailing(identifier string) (string, bool) {
+	f, ok := a.Get(identifier)
+	return f.Error, ok
+}
+
 // Get returns the last failure for identifier.
 func (a *ACMEFailures) Get(identifier string) (ACMEFailure, bool) {
 	a.mu.Lock()

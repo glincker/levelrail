@@ -49,7 +49,7 @@ export interface DomainCheckResult {
   resolved_hosts?: string[]
   status: DomainCheckStatus
   expected_private?: boolean
-  challenge?: 'http-01' | 'dns-01-required'
+  challenge?: 'http-01' | 'dns-01-required' | 'upstream-proxy'
   dns_provider?: DnsProvider
   acme_failure?: AcmeFailure
   checked_at?: string

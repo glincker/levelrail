@@ -38,8 +38,10 @@ import {
   domainCheckKeys,
   domainCheckQueryOptions,
 } from '../queries/domainCheck'
+import type { EditDomainsResult } from '../queries/appEnvironmentDomains'
 import { DomainCheckPanel } from './DomainDnsCheck'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
+import { GoLivePanel } from './GoLivePanel'
 
 export interface AddDomainsApp {
   name: string
@@ -50,7 +52,7 @@ function ResultRow({
   outcome,
 }: {
   appName: string
-  outcome: BulkAddOutcome
+  outcome: BulkAddOutcome<EditDomainsResult>
 }) {
   const { t } = useTranslation('domains')
   const [open, setOpen] = useState(false)
@@ -98,6 +100,14 @@ function ResultRow({
             : t('page.addDialog.showRecord')}
         </Button>
       </div>
+      <div className="mt-2 pl-6">
+        <GoLivePanel
+          app={appName}
+          domain={outcome.domain}
+          initial={outcome.result.go_live?.[0]}
+          dns={outcome.result.dns_results?.[0]}
+        />
+      </div>
       {open ? (
         <div className="mt-2">
           <DomainCheckPanel
@@ -131,7 +141,9 @@ function AddDomainsBody({
     initialApp ?? (apps.length === 1 ? (apps[0]?.name ?? '') : ''),
   )
   const [text, setText] = useState('')
-  const [outcomes, setOutcomes] = useState<BulkAddOutcome[] | null>(null)
+  const [outcomes, setOutcomes] = useState<
+    BulkAddOutcome<EditDomainsResult>[] | null
+  >(null)
   const [busy, setBusy] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const edit = useEditAppDomains(appName)
@@ -142,8 +154,9 @@ function AddDomainsBody({
 
   async function run(domains: string[]) {
     setBusy(true)
-    const results = await addDomainsIndependently(domains, (domain) =>
-      edit.mutateAsync({ add: [domain] }),
+    const results = await addDomainsIndependently<EditDomainsResult>(
+      domains,
+      (domain) => edit.mutateAsync({ add: [domain] }),
     )
     setBusy(false)
     return results
@@ -204,7 +217,7 @@ function AddDomainsBody({
         <p className="text-xs text-muted-foreground">
           {t('page.addDialog.summary', { ok: okCount, failed: failedCount })}
         </p>
-        <ul className="max-h-80 divide-y divide-border overflow-auto">
+        <ul className="max-h-96 divide-y divide-border overflow-auto">
           {outcomes.map((o) => (
             <ResultRow key={o.domain} appName={appName} outcome={o} />
           ))}

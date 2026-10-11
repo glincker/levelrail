@@ -1,0 +1,104 @@
+{
+  "updated": "2025-11-13",
+  "engines": {
+    "postgres": {
+      "levels": ["major", "patch"],
+      "auto_max": "patch",
+      "image_revert": true,
+      "notes": "Postgres minor releases keep the on-disk format, so they run in place and can be reverted by image.",
+      "versions": ["13.23", "14.20", "15.15", "16.11", "17.7", "18.1"],
+      "lines": [
+        {"line": "13", "eol": "2025-11-13"},
+        {"line": "14", "eol": "2026-11-12"},
+        {"line": "15", "eol": "2027-11-11"},
+        {"line": "16", "eol": "2028-11-09"},
+        {"line": "17", "eol": "2029-11-08"},
+        {"line": "18", "eol": "2030-11-14"}
+      ],
+      "advisories": [
+        {"ids": ["CVE-2025-1094"], "fixed": ["13.19", "14.16", "15.11", "16.7", "17.3"]},
+        {"ids": ["CVE-2025-8713", "CVE-2025-8714", "CVE-2025-8715"], "fixed": ["13.22", "14.19", "15.14", "16.10", "17.6"]},
+        {"ids": ["CVE-2025-12817", "CVE-2025-12818"], "fixed": ["13.23", "14.20", "15.15", "16.11", "17.7", "18.1"]}
+      ]
+    },
+    "redis": {
+      "levels": ["major", "minor", "patch"],
+      "auto_max": "minor",
+      "image_revert": true,
+      "notes": "A newer minor can write an RDB version an older server cannot load; a failed revert by image falls back to the data snapshot.",
+      "versions": ["6.2.20", "7.2.11", "7.4.6", "8.0.4", "8.2.2"],
+      "lines": [],
+      "advisories": [
+        {"ids": ["CVE-2025-49844", "CVE-2025-46817", "CVE-2025-46818", "CVE-2025-46819"], "fixed": ["6.2.20", "7.2.11", "7.4.6", "8.0.4", "8.2.2"]}
+      ]
+    },
+    "mysql": {
+      "levels": ["major", "major", "patch"],
+      "auto_max": "none",
+      "image_revert": false,
+      "manual_reason": "MySQL upgrades its data dictionary and system tables on the first start of a newer server, and downgrading is not supported even between patch releases. Upgrade it by hand after a verified backup.",
+      "versions": ["8.0.43", "8.4.6"],
+      "lines": [
+        {"line": "8.0", "eol": "2026-04-30"},
+        {"line": "8.4", "eol": "2032-04-30"}
+      ],
+      "advisories": []
+    },
+    "mariadb": {
+      "levels": ["major", "major", "patch"],
+      "auto_max": "patch",
+      "image_revert": false,
+      "notes": "Each MariaDB release series is its own line; a move between series needs mariadb-upgrade and stays manual. A failed patch upgrade reverts from the data snapshot, never by image alone.",
+      "versions": ["10.6.23", "10.11.14", "11.4.8", "11.8.3"],
+      "lines": [
+        {"line": "10.6", "eol": "2026-07-06"},
+        {"line": "10.11", "eol": "2028-02-16"},
+        {"line": "11.4", "eol": "2029-05-29"},
+        {"line": "11.8", "eol": "2028-06-04"}
+      ],
+      "advisories": []
+    },
+    "mongodb": {
+      "levels": ["major", "major", "patch"],
+      "auto_max": "patch",
+      "image_revert": true,
+      "notes": "MongoDB release series (7.0, 8.0) are majors. Patch releases keep featureCompatibilityVersion, so reverting by image is safe.",
+      "versions": ["6.0.20", "7.0.16", "8.0.4"],
+      "lines": [
+        {"line": "6.0", "eol": "2025-07-31"},
+        {"line": "7.0", "eol": "2027-08-31"},
+        {"line": "8.0", "eol": "2029-10-31"}
+      ],
+      "advisories": []
+    },
+    "clickhouse": {
+      "levels": ["major", "major", "patch", "patch"],
+      "auto_max": "patch",
+      "image_revert": true,
+      "notes": "ClickHouse releases (24.8, 25.3) are majors; stay inside one LTS series for automatic patches.",
+      "versions": ["24.8", "25.3", "25.8"],
+      "lines": [
+        {"line": "25.3", "eol": "2026-03-20"},
+        {"line": "25.8", "eol": "2026-08-29"}
+      ],
+      "advisories": []
+    },
+    "dragonfly": {
+      "levels": ["major", "minor", "patch"],
+      "auto_max": "patch",
+      "image_revert": true,
+      "versions": ["v1.27.1"],
+      "lines": [],
+      "advisories": []
+    },
+    "keydb": {
+      "levels": ["major", "minor", "patch"],
+      "auto_max": "none",
+      "image_revert": false,
+      "manual_reason": "KeyDB images are published as latest and architecture-prefixed tags only, so there is no version line to follow. Pin a tag by hand.",
+      "versions": [],
+      "lines": [],
+      "advisories": []
+    }
+  }
+}

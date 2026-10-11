@@ -6,6 +6,7 @@ import {
   FolderIcon,
   BuildingsIcon,
   HardDrivesIcon,
+  GlobeHemisphereWestIcon,
   GlobeIcon,
   UserIcon,
   ShieldIcon,
@@ -42,6 +43,10 @@ export interface PaletteItem {
   icon: React.ReactNode
   run: () => void
   hint?: string[]
+  /** Extra match text ranked below the label, e.g. a domain's app name. */
+  keywords?: string
+  /** Trailing status chip, e.g. a domain's status. */
+  badge?: React.ReactNode
 }
 
 export interface RouteEntry {
@@ -57,6 +62,7 @@ export interface RouteEntry {
 export const GROUP_ORDER = [
   'Suggested',
   'Recent',
+  'Domain actions',
   'Actions',
   'App actions',
   'Navigate',
@@ -66,6 +72,8 @@ export const GROUP_ORDER = [
   'Nodes',
   'Templates',
   'Domains',
+  'DNS zones',
+  'DNS records',
 ] as const
 
 const nav = (
@@ -114,6 +122,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
   nav('nav-projects', 'Projects', <FolderIcon />, '/projects'),
   nav('nav-pipelines', 'Pipelines', <TreeStructureIcon />, '/pipelines'),
   nav('nav-domains', 'Domains', <GlobeIcon />, '/domains'),
+  nav('nav-dns', 'DNS zones', <GlobeHemisphereWestIcon />, '/dns'),
   nav(
     'nav-loadbalancers',
     'Load balancers',

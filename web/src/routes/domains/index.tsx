@@ -21,6 +21,7 @@ import {
   DomainsTable,
   DomainsTableSkeleton,
 } from '../../components/DomainsTable'
+import { ProxySetupCard } from '../../components/ProxySetupCard'
 import { PlatformSettingsSection } from '../../components/PlatformSettingsSection'
 import { PageHeader } from '../../components/shell/PageHeader'
 
@@ -88,6 +89,8 @@ function DomainsPage() {
           </Button>
         }
       />
+
+      <ProxySetupCard />
 
       <DomainsTable
         domains={domains}

@@ -25,8 +25,12 @@ export const NAMESPACES = [
   'updates',
   'exposure',
   'databaseAccess',
+  'databaseUpgrades',
   'iam',
   'signIn',
+  'traffic',
+  'dns',
+  'domainPolicies',
 ] as const
 
 void i18n

@@ -371,6 +371,9 @@ type Controller struct {
 
 	// localNodeID is this control plane's own node ID (see WithLocalNodeID).
 	localNodeID string
+
+	// policyTargets caches checked forwarder addresses (controller_policies.go).
+	policyTargets targetCache
 }
 
 // isLocalNode mirrors internal/api's Router.isLocalNode: "" is always local.
@@ -858,6 +861,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			svcRoutes[i].LB = lb
 		}
 		routes = append(routes, svcRoutes...)
+	}
+
+	// Per-domain traffic controls (controller_policies.go), after every
+	// app route exists so forwarders can resolve other apps' dials.
+	if routes, err = c.applyTrafficPolicies(ctx, routes, claimedHosts, settings, tlsCertOverrides); err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain traffic policies: %w", err)
 	}
 
 	var staticRoutes []ingress.StaticRoute

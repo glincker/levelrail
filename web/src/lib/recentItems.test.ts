@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { loadRecentKeys, pushRecentKey, withRecent } from './recentItems'
+import {
+  isRecentEligible,
+  loadRecentKeys,
+  pushRecentKey,
+  withRecent,
+} from './recentItems'
 
 afterEach(() => {
   window.localStorage.clear()
@@ -41,5 +46,18 @@ describe('recent persistence', () => {
     })
     expect(loadRecentKeys()).toEqual([])
     expect(pushRecentKey('x')).toEqual(['x'])
+  })
+})
+
+describe('isRecentEligible', () => {
+  it.each([
+    ['app-web', true],
+    ['domain-shop.example.com', true],
+    ['nav-dns', true],
+    ['app-action-restart-web', false],
+    ['suggest-failing-web', false],
+    ['domain-action-verify-shop.example.com', false],
+  ])('%s -> %s', (key, want) => {
+    expect(isRecentEligible(key)).toBe(want)
   })
 })

@@ -40,6 +40,7 @@
     "http01": "HTTP-01: the certificate is requested automatically once the domain resolves here. Ports 80 and 443 must reach this server from the internet.",
     "dns01Private": "HTTP-01 cannot work: this server's address ({{host}}) is private, so no certificate authority can reach port 80. Use DNS-01 with a wildcard domain such as *.example.com.",
     "dns01Wildcard": "Wildcard domains are validated with DNS-01, which needs a DNS provider connected.",
+    "upstreamProxy": "The reverse proxy in front of this server obtains and renews the certificate. Point the domain at this server; the proxy must route it here.",
     "providerActive": "DNS-01 provider: {{provider}}. Certificates for wildcard domains are issued through it.",
     "providerNone": "No DNS-01 provider is connected yet.",
     "setupStep": "Next step: connect Cloudflare or Route53 on the Domains page, then add a wildcard domain for your zone.",
@@ -197,11 +198,14 @@
     "row": {
       "actions": "Actions for {{domain}}",
       "manage": "Manage on the app",
+      "open": "Open {{domain}} in a new tab",
       "dnsRecord": "Show DNS record",
       "copy": "Copy domain",
       "copied": "Domain copied",
       "recheck": "Re-check DNS",
-      "automatic": "Automatic"
+      "automatic": "Automatic",
+      "wildcard": "Wildcard",
+      "wildcardHint": "Matches every single label under this domain. Exact domains on other apps still win."
     },
     "flag": {
       "waf": "WAF enabled",
@@ -236,8 +240,8 @@
       "submit_other": "Add {{count}} domains",
       "submitting": "Adding...",
       "noApps": "No apps yet. Deploy an app, then add domains to it.",
-      "resultsTitle": "Point your DNS",
-      "resultsBody": "Create the record shown for each domain at your DNS provider, then verify.",
+      "resultsTitle": "Going live",
+      "resultsBody": "Each domain below shows its progress. Records are created for you when a DNS provider is connected.",
       "added": "Added",
       "failed": "Not added",
       "verify": "Verify all",
@@ -247,6 +251,117 @@
       "hideRecord": "Hide record",
       "done": "Done",
       "summary": "{{ok}} added, {{failed}} not added."
+    }
+  },
+  "proxySetup": {
+    "title": "Make this domain live",
+    "description": "Your proxy already owns ports 80 and 443. Levelrail writes the routes it needs, then checks that traffic and a certificate arrive.",
+    "unavailable": "Proxy integration is not available on this server version.",
+    "loadFailed": "Could not read the proxy status. It will be retried on the next refresh.",
+    "steps": {
+      "detect": "Find your proxy",
+      "tls_upstream": "Let the proxy handle HTTPS",
+      "routes": "Write the routes",
+      "dns": "Point DNS at this server",
+      "verify": "Check traffic and certificate"
+    },
+    "stepState": {
+      "done": "Done",
+      "todo": "To do",
+      "blocked": "Blocked",
+      "error": "Error"
+    },
+    "setup": "Set up routing",
+    "settingUp": "Setting up...",
+    "setupDone": "Routes written. Waiting for your proxy to pick them up.",
+    "setupFailed": "Could not set up routing.",
+    "confirm": {
+      "title": "Write routes to your proxy?",
+      "directory": "Levelrail will write one route file per domain into {{dir}}. Your proxy reads that directory by itself, nothing else is changed.",
+      "directoryUnknown": "No directory was detected. Fix the missing items first.",
+      "domainsLabel": "Domains that get a route",
+      "noDomains": "No domains yet. Only the dashboard route is written when it has a domain.",
+      "submit": "Write routes",
+      "cancel": "Cancel"
+    },
+    "domains": {
+      "title": "Domains",
+      "target": {
+        "app": "App {{app}}",
+        "dashboard": "Dashboard"
+      },
+      "state": {
+        "todo": "Not set up yet",
+        "handled": "Handled by your proxy",
+        "waiting": "Waiting for certificate",
+        "live": "Live",
+        "error": "Error"
+      },
+      "certificate": {
+        "issued": "{{issuer}}, valid until {{date}}",
+        "expired": "{{issuer}}, expired on {{date}}",
+        "pending": "Proxy default certificate, waiting for issuance"
+      },
+      "checked": "Checked {{time}}",
+      "neverChecked": "Not checked yet",
+      "verify": "Verify",
+      "verifying": "Verifying...",
+      "verifyLive": "{{domain}} is live.",
+      "verifyNotLive": "{{domain}} is not live yet.",
+      "verifyFailed": "Could not verify {{domain}}.",
+      "lastError": "Last problem: {{error}}",
+      "makeLive": "Make this domain live"
+    },
+    "facts": {
+      "title": "What Levelrail detected",
+      "detectedBadge": "detected",
+      "proxy": "Proxy",
+      "container": "Container",
+      "image": "Image",
+      "ports": "Published ports",
+      "directory": "Route directory",
+      "entrypointHttp": "HTTP entrypoint",
+      "entrypointHttps": "HTTPS entrypoint",
+      "resolver": "Certificate resolver",
+      "upstream": "Upstream host",
+      "notFound": "not found",
+      "missingTitle": "Setup cannot continue yet",
+      "missingBody": "Levelrail could not read these from your proxy. Add them to the proxy, or enter them in the proxy settings, then refresh.",
+      "kind": {
+        "traefik": "Traefik",
+        "nginx": "nginx",
+        "caddy": "Caddy",
+        "none": "None"
+      }
+    },
+    "none": {
+      "title": "No existing proxy detected",
+      "body": "If a proxy runs somewhere Levelrail cannot see it, set it up by hand with the manual guide.",
+      "guide": "Open the manual guide"
+    },
+    "handledByProxy": "Handled by your proxy",
+    "byo": {
+      "disclosure": "I have my own certificate",
+      "hint": "Only needed if you bought a certificate. Otherwise certificates are issued automatically.",
+      "uploaded": "BYO certificate",
+      "expires": "expires {{date}}",
+      "certLabel": "Certificate (PEM)",
+      "keyLabel": "Private key (PEM)",
+      "replaceHint": "Replaces the currently uploaded certificate entirely; there is no partial update.",
+      "newHint": "Used instead of automatic issuance for this domain, starting on the next reconcile pass.",
+      "bothRequired": "Both a certificate and a private key are required.",
+      "uploadedToast": "Certificate uploaded for {{domain}}.",
+      "uploadFailed": "Certificate upload failed.",
+      "upload": "Upload",
+      "uploading": "Uploading...",
+      "revert": "Revert to automatic TLS",
+      "revertTitle": "Revert {{domain}} to automatic TLS?",
+      "revertBody": "The uploaded certificate is discarded immediately. If automatic issuance cannot reach this domain, HTTPS will break until a new certificate is uploaded or issued.",
+      "cancel": "Cancel",
+      "revertConfirm": "Revert",
+      "reverting": "Reverting...",
+      "revertedToast": "Reverted {{domain}} to automatic TLS.",
+      "revertFailed": "Could not revert to automatic TLS."
     }
   },
   "ingressUpstream": {
@@ -272,5 +387,106 @@
     "noAnswer": "no answer",
     "propagatingHelp": "Public DNS already points this domain at this server. This server's own resolver keeps a \"not found\" answer for a while (often up to 30 minutes), so it will connect on its own. Nothing is wrong.",
     "notFoundHelp": "No resolver has this record yet. Check the record at your DNS provider (type, name, value) and give it a minute. A new record is usually visible within a few minutes."
+  },
+  "goLive": {
+    "loading": "Checking progress...",
+    "steps": {
+      "dns": "DNS record",
+      "counterpart": "www and apex pair",
+      "redirect": "Canonical redirect",
+      "proxy_route": "Proxy route",
+      "force_https": "Force HTTPS",
+      "propagation": "DNS propagation",
+      "certificate": "Certificate",
+      "http": "Site responds"
+    },
+    "state": {
+      "done": "done",
+      "pending": "will happen",
+      "skipped": "skipped",
+      "failed": "failed",
+      "manual": "manual step",
+      "conflict": "conflict"
+    },
+    "text": {
+      "dnsDone": "DNS record created at {{provider}}",
+      "propagatingSeen": "Waiting for DNS to propagate ({{resolver}} sees it)",
+      "propagatingWaiting": "Waiting for the record to show up in DNS",
+      "certDone": "Certificate issued by {{issuer}}, valid until {{date}}",
+      "skipped": "Skipped: {{reason}}"
+    },
+    "cloudflareBadge": "Created at Cloudflare",
+    "proxiedWarning": "The record is proxied by Cloudflare. Set the SSL/TLS mode to Full (strict) or visitors can hit redirect loops.",
+    "conflictHint": "A different record already exists for this name and was left alone. Remove it, or add the domain again with replace turned on.",
+    "connectCloudflare": "No DNS provider is connected, so add the record yourself.",
+    "connectCloudflareAction": "Connect Cloudflare to do this automatically.",
+    "openLive": "Open live site"
+  },
+  "baseDomain": {
+    "title": "Apps base domain",
+    "description": "New apps without a domain get app-name.base-domain, and its DNS record is created for you.",
+    "label": "Base domain",
+    "save": "Save",
+    "saved": "Apps base domain saved",
+    "invalid": "Enter a hostname such as apps.example.com.",
+    "zoneChecking": "Looking for the zone at your DNS provider...",
+    "zoneFound": "Zone {{zone}} found at {{provider}}",
+    "zoneNotFound": "No zone for this name at your DNS provider. Connect a provider that manages it first.",
+    "noProvider": "No DNS provider is connected yet.",
+    "noProviderAction": "Connect Cloudflare or Route53 below.",
+    "backfillHelp": "Apps that already exist keep their address. Give the ones without a domain a {{base}} address:",
+    "backfillPreview": "Preview existing apps",
+    "backfillApply_one": "Apply to {{count}} app",
+    "backfillApply_other": "Apply to {{count}} apps",
+    "backfillNone": "Every app already has a domain."
+  },
+  "automation": {
+    "title": "Domain automation",
+    "description": "What happens on its own when you add a domain to an app.",
+    "saved": "Domain automation saved",
+    "previewList": "Planned steps",
+    "previewLabel": "What will happen when I add",
+    "previewRun": "Show plan",
+    "previewNeedsApp": "Create an app first to preview a plan.",
+    "previewTitle": "Adding {{domain}} will:",
+    "historyTitle": "Automation history",
+    "historyEmpty": "No automated runs yet.",
+    "auditLink": "Open audit log",
+    "undo": "Undo",
+    "undone": "undone",
+    "undoDone": "Undone: only what that run created was removed",
+    "toggles": {
+      "auto_dns": {
+        "label": "Create DNS records",
+        "help": "Needs a connected DNS provider. Existing records are never overwritten."
+      },
+      "auto_proxy_route": {
+        "label": "Create proxy routes",
+        "help": "Waits for the managed proxy to route the domain when that integration is on."
+      },
+      "force_https": {
+        "label": "Force HTTPS",
+        "help": "Send visitors to the secure address once a certificate is ready."
+      },
+      "attach_www_counterpart": {
+        "label": "Add the www or apex partner",
+        "help": "Adding example.com also adds www.example.com, and the other way round."
+      },
+      "wildcard_for_base_domain": {
+        "label": "Wildcard record for the base domain",
+        "help": "One record covers every app under the apps base domain."
+      },
+      "verify_after": {
+        "label": "Verify after adding",
+        "help": "Check DNS, the certificate and the site, and report each step."
+      }
+    },
+    "www": {
+      "label": "www policy",
+      "off": "Leave both addresses as they are",
+      "redirect_to_apex": "Redirect www to the apex",
+      "redirect_to_www": "Redirect the apex to www",
+      "help": "Needs the partner host, which is added for you when a redirect is chosen."
+    }
   }
 }

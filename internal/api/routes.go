@@ -26,6 +26,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerPlatformImportRoutes(mux)
 	rt.registerAppImportRoutes(mux)
 	rt.registerIaCRoutes(mux)
+	rt.registerDockerGuardRoutes(mux)
 	rt.registerAlertNoiseRoutes(mux)
 	rt.registerStatusPageRoutes(mux)
 	rt.registerPreviewRoutes(mux)
@@ -33,6 +34,10 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerIAMTemplateRoutes(mux)
 	rt.registerDatabaseAccessRoutes(mux)
 	rt.registerIAMBuilderRoutes(mux)
+	rt.registerProxyIntegrationRoutes(mux)
+	rt.registerDNSZoneRoutes(mux)
+	rt.registerTrafficRoutes(mux)
+	rt.registerDatabaseUpgradeRoutes(mux)
 
 	var h http.Handler = mux
 	h = experimentalGateMiddleware(h)

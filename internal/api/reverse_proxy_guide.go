@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -79,7 +80,8 @@ func firstGateway(c docker.LocalContainer) string {
 // handleReverseProxyGuide handles GET /api/v1/system/reverse-proxy: who holds
 // ports 80 and 443, and the configuration that puts the dashboard behind
 // that proxy. With ?domain= it also builds the plan, and with &verify=true it
-// checks the domain reaches this dashboard.
+// checks the domain reaches this dashboard. With ?app= the snippet routes
+// that app's domain to the ingress HTTP listener instead.
 func (rt *Router) handleReverseProxyGuide(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	out := reverseProxyGuideResource{Holders: rt.portHolders(r.Context())}
@@ -95,6 +97,15 @@ func (rt *Router) handleReverseProxyGuide(w http.ResponseWriter, r *http.Request
 		}
 	}
 	domain := strings.TrimSpace(q.Get("domain"))
+	target := proxycoexist.Target{Domain: domain, ListenAddr: rt.dashboardListenAddr, Name: rt.brand.BinaryName + "-dashboard", EnvVar: "APP_HTTP_ADDR"}
+	if app := strings.TrimSpace(q.Get("app")); app != "" {
+		t, status, msg := rt.appGuideTarget(r.Context(), app, domain)
+		if status != 0 {
+			writeError(w, status, msg)
+			return
+		}
+		target, domain = t, t.Domain
+	}
 	if domain == "" {
 		writeJSON(w, http.StatusOK, out)
 		return
@@ -115,7 +126,8 @@ func (rt *Router) handleReverseProxyGuide(w http.ResponseWriter, r *http.Request
 	if holder != nil {
 		gateway = holder.NetworkGateway
 	}
-	plan, err := proxycoexist.Build(domain, kind, rt.dashboardListenAddr, gateway)
+	target.Kind, target.Gateway = kind, gateway
+	plan, err := proxycoexist.BuildTarget(target)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -177,4 +189,34 @@ func (rt *Router) checkDomainReachesDashboard(ctx context.Context, domain string
 		res.Detail = "the proxy answered with status " + http.StatusText(resp.StatusCode) + ", so the route is not pointing at this dashboard"
 	}
 	return res
+}
+
+// appGuideTarget routes app's domain (the first one when domain is empty) to
+// the ingress HTTP listener. A non-zero status is the error to return.
+func (rt *Router) appGuideTarget(ctx context.Context, app, domain string) (proxycoexist.Target, int, string) {
+	svc, err := rt.apps.GetDesiredService(ctx, app)
+	if err != nil || svc == nil {
+		return proxycoexist.Target{}, http.StatusNotFound, "app " + app + " not found"
+	}
+	switch {
+	case domain == "" && len(svc.Domains) == 0:
+		return proxycoexist.Target{}, http.StatusBadRequest, "app " + app + " has no domains yet: add one first"
+	case domain == "":
+		domain = svc.Domains[0]
+	case !containsString(svc.Domains, strings.ToLower(domain)):
+		return proxycoexist.Target{}, http.StatusBadRequest, domain + " is not a domain of app " + app
+	}
+	return proxycoexist.Target{Domain: domain, ListenAddr: rt.ingressHTTPListenAddr(), Name: rt.brand.BinaryName + "-" + app, EnvVar: "APP_INGRESS_HTTP_ADDR"}, 0, ""
+}
+
+// ingressHTTPListenAddr is where the ingress serves plain HTTP.
+func (rt *Router) ingressHTTPListenAddr() string {
+	if rt.proxyIntegration != nil && rt.proxyIntegration.syncer.Ingress.Addr != "" {
+		return rt.proxyIntegration.syncer.Ingress.Addr
+	}
+	port := rt.doctorHTTPPort
+	if port == 0 {
+		port = defaultDoctorHTTPPort
+	}
+	return ":" + strconv.Itoa(port)
 }
