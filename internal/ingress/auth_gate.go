@@ -209,10 +209,7 @@ func (g AuthGate) handlers() ([]any, error) {
 	}
 
 	uri := strings.TrimRight(u.EscapedPath(), "/") + checkPath
-	if !strings.Contains(checkPath, "?") {
-		// A bare "?" clears the query; without it Caddy keeps the client's.
-		uri += "?"
-	}
+	// No query in check_path: Caddy keeps the client's, which SSO token handoffs rely on.
 
 	good := []Route{{Handle: []any{VarsHandler{Handler: "vars"}}}}
 	for _, name := range copyHeaders {

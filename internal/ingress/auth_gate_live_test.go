@@ -91,8 +91,8 @@ func TestAuthGate_Live(t *testing.T) {
 		t.Errorf("allowed request = %d %q", resp.StatusCode, body)
 	}
 	mu.Lock()
-	if authMethod != http.MethodGet || authURI != "/check" {
-		t.Errorf("subrequest = %s %s, want GET /check", authMethod, authURI)
+	if authMethod != http.MethodGet || authURI != "/check?id=7" {
+		t.Errorf("subrequest = %s %s, want GET /check?id=7 (client query kept for SSO token handoff)", authMethod, authURI)
 	}
 	if authSaw.Get("X-Forwarded-Method") != http.MethodPost || authSaw.Get("X-Forwarded-Uri") != "/orders?id=7" || authSaw.Get("X-Forwarded-Host") != "app.test" {
 		t.Errorf("forwarded headers = %v", authSaw)
