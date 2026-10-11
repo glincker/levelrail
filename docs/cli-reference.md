@@ -1258,6 +1258,14 @@ levelrail-cli attention [flags]
 
 Lists everything that needs attention right now: failing apps, failed deploys from the last 24 hours, low disk space (warn under 10 percent free, critical under 5), offline nodes, expired or expiring certificates, and doctor warnings or failures, critical first. It is the CLI side of the dashboard's Status page (`/status`). Exit code is 1 if any item is critical, 0 otherwise, so it works as a script gate. Supports `--json`, `--output json|table|text`, and `--query`.
 
+## TUI
+
+```
+levelrail-cli tui [--read-only] [--refresh DURATION] [flags]
+```
+
+Opens an interactive terminal UI over the same API: live apps, databases, deploys, nodes, domains, alerts and backups, a log tail, and confirm-gated restart, deploy, rollback, stop and start. Needs a TTY. See [Terminal UI](cli-tui.md) for the key map.
+
 ## Doctor
 
 ```

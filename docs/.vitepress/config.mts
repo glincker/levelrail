@@ -246,6 +246,7 @@ const sidebarGroups = [
       { text: 'App spec reference', link: '/app-spec-reference' },
       { text: 'Feature catalog', link: '/feature-catalog' },
       { text: 'CLI reference', link: '/cli-reference' },
+      { text: 'Terminal UI', link: '/cli-tui' },
       { text: 'Environment variables', link: '/environment-variables' },
       { text: 'Environment variables and secrets', link: '/environment-and-secrets' },
       { text: 'API reference', link: '/api-reference' },
