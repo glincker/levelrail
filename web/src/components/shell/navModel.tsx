@@ -55,6 +55,7 @@ export type GlobalTo =
   | '/network'
   | '/network/proxy'
   | '/domains'
+  | '/dns'
   | '/loadbalancers'
   | '/models'
   | '/ai-assistant'
@@ -329,7 +330,7 @@ export function isGlobalItemActive(
 // Typed Link needs a route-tree path; pending routes are only rendered once
 // the router has them, so the narrowing is safe at runtime.
 export function linkTarget(item: GlobalNavItem): GlobalTo {
-  return item.to as GlobalTo
+  return item.to
 }
 
 export function chordFor(to: string): string[] | undefined {

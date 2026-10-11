@@ -96,6 +96,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runProfile(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tokens":
 		return runTokens(prog, args[1:], stdout, stderr, lookupEnv)
+	case "dns":
+		return runDNS(prog, args[1:], stdout, stderr, lookupEnv)
 	case "domains":
 		return runDomains(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backups":
@@ -259,6 +261,7 @@ Usage:
   %[1]s functions deploy|list|invoke|delete [flags]   image apps that sleep when idle and wake on the first request
   %[1]s models list|get|deploy|logs|delete|restart|rotate-key|gpus [flags]   AI models on GPU nodes
   %[1]s domains list [flags]           list every app's domains in one call
+  %[1]s dns zones|records|check|health-checks ...   DNS zones, records, delegation and propagation at Cloudflare or Route53
   %[1]s preview status|enable|disable|capture|prune <app> [flags]   deploy preview screenshots (opt-in per app)
   %[1]s deployments list|summary|watch [flags]   deploys across all apps, filterable, with live stream
   %[1]s environments list|create|update|delete [flags]   instance-wide dev, test, uat, production and custom environments

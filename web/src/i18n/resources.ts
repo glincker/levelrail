@@ -20,6 +20,7 @@ import type databaseAccess from '../locales/en/databaseAccess.json'
 import type iam from '../locales/en/iam.json'
 import type signIn from '../locales/en/signIn.json'
 import type traffic from '../locales/en/traffic.json'
+import type dns from '../locales/en/dns.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -48,6 +49,7 @@ declare module 'i18next' {
       iam: typeof iam
       signIn: typeof signIn
       traffic: typeof traffic
+      dns: typeof dns
     }
   }
 }

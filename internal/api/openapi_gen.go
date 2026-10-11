@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 828 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 847 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -575,7 +575,26 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/deployments", Ability: "AbilityRead", Group: "Other", Handler: "handleListDeployments", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/stream", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsStream", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsSummary", Description: ""},
+	{Method: "GET", Path: "/api/v1/dns/check", Ability: "AbilityRead", Group: "Other", Handler: "handleDNSCheck", Description: ""},
+	{Method: "GET", Path: "/api/v1/dns/health-checks", Ability: "AbilityRead", Group: "Other", Handler: "handleListDNSHealthChecks", Description: ""},
+	{Method: "POST", Path: "/api/v1/dns/health-checks", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateDNSHealthCheck", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/dns/health-checks/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteDNSHealthCheck", Description: ""},
+	{Method: "GET", Path: "/api/v1/dns/templates", Ability: "AbilityRead", Group: "Other", Handler: "handleListDNSTemplates", Description: ""},
 	{Method: "GET", Path: "/api/v1/dns/zone", Ability: "AbilityRead", Group: "Other", Handler: "handleDNSZone", Description: ""},
+	{Method: "GET", Path: "/api/v1/dns/zones", Ability: "AbilityRead", Group: "Other", Handler: "handleListDNSZones", Description: ""},
+	{Method: "POST", Path: "/api/v1/dns/zones", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateDNSZone", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/dns/zones/{zone}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteDNSZone", Description: ""},
+	{Method: "GET", Path: "/api/v1/dns/zones/{zone}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDNSZone", Description: ""},
+	{Method: "GET", Path: "/api/v1/dns/zones/{zone}/delegation", Ability: "AbilityRead", Group: "Other", Handler: "handleDNSZoneDelegation", Description: ""},
+	{Method: "GET", Path: "/api/v1/dns/zones/{zone}/discover", Ability: "AbilityRead", Group: "Other", Handler: "handleDiscoverDNSZoneRecords", Description: ""},
+	{Method: "GET", Path: "/api/v1/dns/zones/{zone}/nameservers", Ability: "AbilityRead", Group: "Other", Handler: "handleDNSZoneNameServers", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/dns/zones/{zone}/records", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteDNSZoneRecord", Description: ""},
+	{Method: "GET", Path: "/api/v1/dns/zones/{zone}/records", Ability: "AbilityRead", Group: "Other", Handler: "handleListDNSZoneRecords", Description: ""},
+	{Method: "POST", Path: "/api/v1/dns/zones/{zone}/records", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateDNSZoneRecord", Description: ""},
+	{Method: "PUT", Path: "/api/v1/dns/zones/{zone}/records", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateDNSZoneRecord", Description: ""},
+	{Method: "GET", Path: "/api/v1/dns/zones/{zone}/records/export", Ability: "AbilityRead", Group: "Other", Handler: "handleExportDNSZoneRecords", Description: ""},
+	{Method: "POST", Path: "/api/v1/dns/zones/{zone}/records/import", Ability: "AbilityRoot", Group: "Other", Handler: "handleImportDNSZoneRecords", Description: ""},
+	{Method: "POST", Path: "/api/v1/dns/zones/{zone}/templates/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleApplyDNSTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/export", Ability: "AbilityRead", Group: "Other", Handler: "handleIaCExport", Description: ""},
 	{Method: "GET", Path: "/api/v1/external-databases", Ability: "AbilityRead", Group: "Other", Handler: "handleListExternalDatabases", Description: "External databases: connected, never run, by this platform. Anything that dials out or reveals a credential is admin only."},
 	{Method: "POST", Path: "/api/v1/external-databases", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateExternalDatabase", Description: ""},

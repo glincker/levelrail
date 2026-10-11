@@ -669,6 +669,29 @@ levelrail-cli domains route53-dns get|set|clear [flags]
 - `dns` reads and writes the real A, AAAA, CNAME, TXT, MX, SRV and CAA records in the domain's zone through whichever DNS-01 provider is configured. `remove` must match an existing record exactly.
 - `cloudflare-dns set --cf-api-token TOKEN` and `route53-dns set --aws-access-key-id ID --aws-secret-access-key KEY` configure the ACME DNS-01 credentials needed for wildcard domains. A domain is wildcard eligible by having a leading `*.` label; if both providers are enabled, Cloudflare takes precedence.
 
+## DNS
+
+See [DNS zones and records](dns.md).
+
+```
+levelrail-cli dns zones list [--provider cloudflare|route53]
+levelrail-cli dns zones create <domain> [--account-id ID]
+levelrail-cli dns zones nameservers <zone>
+levelrail-cli dns zones verify <zone>
+levelrail-cli dns zones delete <zone> --confirm <zone> [--force]
+levelrail-cli dns records list <zone> [--type T] [--search S]
+levelrail-cli dns records add|update <zone> --name N --type T --value V [--value V2] [--ttl S] [--proxied] [--routing weighted|failover|multivalue --set-id ID ...]
+levelrail-cli dns records delete <zone> --name N --type T [--set-id ID]
+levelrail-cli dns records import <zone> --file F [--format bind|json] [--apply] [--replace --confirm <zone>]
+levelrail-cli dns records export <zone> [--format bind|json] [--out F]
+levelrail-cli dns records template <zone> <template> [--param KEY=VALUE]... [--apply]
+levelrail-cli dns check <name> [--type T] [--zone Z]
+levelrail-cli dns health-checks list|create|delete
+```
+
+- `zones verify` compares the NS set the system resolver, 1.1.1.1 and 8.8.8.8 return with the zone's assigned name servers.
+- `records import` and `records template` print a plan and change nothing until `--apply`. `--replace` deletes sets missing from the file and needs `--confirm`.
+
 ## Backups
 
 See [Backups and storage](backups-and-storage.md).

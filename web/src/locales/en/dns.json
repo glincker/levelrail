@@ -1,0 +1,301 @@
+{
+  "common": {
+    "cancel": "Cancel"
+  },
+  "page": {
+    "title": "DNS",
+    "description": "Zones, records, name server delegation and propagation at your DNS provider.",
+    "help": "DNS guide",
+    "addZone": "Add zone",
+    "provider": "Provider: {{provider}}",
+    "loadFailed": "Could not load DNS zones"
+  },
+  "empty": {
+    "title": "Connect a DNS provider",
+    "body": "Connect Cloudflare or Route53 under Domains, DNS provider, then manage zones and records here with the same credentials.",
+    "action": "Open Domains",
+    "noZonesTitle": "No zones yet",
+    "noZonesBody": "Create a zone for a domain you own, then point your registrar at its name servers.",
+    "noZonesAction": "Add zone"
+  },
+  "zones": {
+    "col": {
+      "name": "Zone",
+      "status": "Status",
+      "records": "Records",
+      "nameServers": "Name servers"
+    },
+    "private": "Private",
+    "unknown": "unknown",
+    "notReported": "n/a"
+  },
+  "wizard": {
+    "title": "Bring a domain onto DNS",
+    "titleFor": "Name servers for {{zone}}",
+    "progress": "Onboarding steps",
+    "step": {
+      "domain": "Domain",
+      "nameservers": "Name servers",
+      "import": "Import records",
+      "verify": "Verify"
+    },
+    "lead": {
+      "domain": "Create a zone for a domain you own at any registrar.",
+      "nameservers": "Set exactly these name servers at your registrar, replacing the current ones.",
+      "import": "Copy the records the domain serves today, so nothing breaks when the name servers switch.",
+      "verify": "Public resolvers are asked which name servers the domain uses now."
+    },
+    "domain": "Domain",
+    "domainHint": "The registrable domain, for example example.com, not a subdomain.",
+    "create": "Create zone",
+    "creating": "Creating...",
+    "copyAll": "Copy all",
+    "copied": "Copied",
+    "registrarHint": "At your registrar, open the domain's name server settings, choose custom name servers and paste these. Keep the old ones out: a mix answers inconsistently.",
+    "skipImport": "Skip import",
+    "next": "Next",
+    "propagationHint": "Registries usually publish the change within an hour; resolvers can hold the old answer for up to two days.",
+    "openZone": "Open zone"
+  },
+  "delegation": {
+    "state": {
+      "delegated": "Delegated",
+      "partially_delegated": "Partially delegated",
+      "delegated_elsewhere": "Delegated elsewhere",
+      "not_delegated": "Not delegated"
+    },
+    "hint": {
+      "delegated": "Every resolver asked returns this zone's name servers.",
+      "partially_delegated": "Some resolvers still return other name servers. Wait for caches to expire, or remove stray servers at the registrar.",
+      "delegated_elsewhere": "The domain still points at other name servers. Update them at your registrar.",
+      "not_delegated": "No resolver returned name servers for this domain. Check the domain is registered and the name servers are set."
+    },
+    "verdict": {
+      "match": "Matches",
+      "partial": "Mixed",
+      "elsewhere": "Elsewhere",
+      "none": "No answer"
+    },
+    "col": {
+      "resolver": "Resolver",
+      "verdict": "Verdict",
+      "answer": "Name servers"
+    },
+    "system": "This server",
+    "noAnswer": "no answer",
+    "elsewhere": "Still pointing at: {{servers}}",
+    "recheck": "Check again",
+    "checking": "Checking..."
+  },
+  "import": {
+    "title": "Import and export",
+    "lead": "Bring records into {{zone}} from a zone file or JSON. Nothing changes until you apply the plan.",
+    "tabImport": "Import",
+    "tabExport": "Export",
+    "file": "File",
+    "paste": "Or paste",
+    "formatHint": "BIND zone file or the JSON this page exports. SOA and apex NS are skipped.",
+    "replace": "Replace: delete record sets missing from the import",
+    "confirm": "Type {{zone}} to confirm replacing",
+    "preview": "Preview",
+    "apply": "Apply",
+    "appliedToast_one": "{{count}} change applied",
+    "appliedToast_other": "{{count}} changes applied",
+    "failedToast": "Import failed",
+    "exportLead": "Download every record set except provider managed NS and SOA.",
+    "exportBind": "Zone file",
+    "exportJson": "JSON",
+    "discoverHint": "Common names were looked up at the domain's current name servers. Untick anything you do not want.",
+    "extraNames": "More names to look up",
+    "extraPlaceholder": "vpn, portal, _acme-challenge",
+    "rescan": "Look up",
+    "nothingFound": "No records found at the current name servers.",
+    "foundAt_one": "{{count}} record set found at {{servers}}",
+    "foundAt_other": "{{count}} record sets found at {{servers}}",
+    "keep": "Import {{name}} {{type}}",
+    "skip": "Skip",
+    "importSelected_one": "Import {{count}} set",
+    "importSelected_other": "Import {{count}} sets"
+  },
+  "plan": {
+    "summary": "{{create}} to create, {{update}} to update, {{delete}} to delete, {{unchanged}} unchanged",
+    "action": {
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete",
+      "unchanged": "Same"
+    },
+    "blocked": "Conflicts block this plan. Fix them and preview again."
+  },
+  "records": {
+    "search": "Search name or value",
+    "typeFilter": "Record type",
+    "allTypes": "All types",
+    "count_one": "{{count}} record set",
+    "count_other": "{{count}} record sets",
+    "add": "Add record",
+    "clear": "Clear filters",
+    "emptyTitle": "No records yet",
+    "emptyBody": "Add a record, apply a template, or import a zone file.",
+    "noMatch": "No records match",
+    "noMatchBody": "Try another name, value or type.",
+    "col": {
+      "name": "Name",
+      "type": "Type",
+      "ttl": "TTL",
+      "values": "Values",
+      "flags": "Routing"
+    },
+    "auto": "Auto",
+    "proxied": "Proxied",
+    "routed": "{{routing}} {{id}}",
+    "managed": "Managed",
+    "alias": "Alias to {{target}}",
+    "edit": "Edit {{name}} {{type}}",
+    "delete": "Delete {{name}} {{type}}",
+    "deleteTitle": "Delete {{name}} {{type}}?",
+    "deleteLead_one": "The record is removed at the provider right away.",
+    "deleteLead_other": "All {{count}} values are removed at the provider right away.",
+    "confirmDelete": "Delete"
+  },
+  "record": {
+    "addTitle": "Add record",
+    "editTitle": "Edit record",
+    "lead": "Changes are written to {{zone}} at the provider when you save.",
+    "name": "Name",
+    "type": "Type",
+    "ttl": "TTL",
+    "nameHint": "Relative to {{zone}}: @ for the apex, * for a wildcard.",
+    "ttlAutoHint": "TTL 1 means automatic.",
+    "values": "Values",
+    "addValue": "Add value",
+    "removeValue": "Remove value {{n}}",
+    "partLabel": "{{part}} {{n}}",
+    "part": {
+      "address": "Address",
+      "target": "Target",
+      "text": "Text",
+      "priority": "Priority",
+      "weight": "Weight",
+      "port": "Port",
+      "flags": "Flags",
+      "tag": "Tag",
+      "caaValue": "Value"
+    },
+    "placeholder": {
+      "address": "203.0.113.10",
+      "target": "host.example.com",
+      "text": "",
+      "priority": "10",
+      "weight": "5",
+      "port": "443",
+      "flags": "0",
+      "tag": "",
+      "caaValue": "letsencrypt.org"
+    },
+    "proxied": "Proxy through Cloudflare",
+    "routing": "Routing policy",
+    "routingPolicy": {
+      "simple": "Simple",
+      "weighted": "Weighted",
+      "failover": "Failover",
+      "multivalue": "Multivalue answer"
+    },
+    "setIdentifier": "Set identifier",
+    "weight": "Weight (0 to 255)",
+    "failover": "Failover role",
+    "failoverPick": "Choose a role",
+    "primary": "Primary",
+    "secondary": "Secondary",
+    "healthCheck": "Health check",
+    "noHealthCheck": "None",
+    "save": "Save",
+    "saving": "Saving...",
+    "savedToast": "Saved {{name}}",
+    "failedToast": "Could not save the record",
+    "warning": "Saved with a warning"
+  },
+  "validation": {
+    "name": "The name is not a valid DNS name. A wildcard must be the leftmost label.",
+    "noValues": "Add at least one value.",
+    "ipv4": "An A record needs an IPv4 address.",
+    "ipv6": "An AAAA record needs an IPv6 address.",
+    "host": "The target must be a host name.",
+    "priority": "Priority must be a number from 0 to 65535.",
+    "weight": "Weight must be a number from 0 to 65535.",
+    "port": "Port must be a number from 0 to 65535.",
+    "caaTag": "The CAA tag must be issue, issuewild or iodef.",
+    "caaValue": "The CAA value is required.",
+    "textTooLong": "TXT text is limited to 4000 characters.",
+    "cnameSingle": "A CNAME holds exactly one target.",
+    "apexNs": "Apex NS records are managed by the provider.",
+    "ttl": "TTL must be between 30 and 604800 seconds.",
+    "proxiedType": "Only A, AAAA and CNAME records can be proxied.",
+    "setIdentifier": "Routed records need a set identifier.",
+    "routingWeight": "Weight must be between 0 and 255.",
+    "failoverRole": "Choose primary or secondary."
+  },
+  "templates": {
+    "title": "Apply a template",
+    "lead": "Common setups as record sets. Existing TXT values at the same name are kept, except a second SPF or DMARC record.",
+    "pick": "Choose a template",
+    "failedToast": "Template failed"
+  },
+  "check": {
+    "name": "Record name",
+    "type": "Record type",
+    "run": "Check",
+    "checking": "Checking...",
+    "agree": "Answers agree",
+    "differ": "Answers differ",
+    "zoneSays": "Zone: {{values}}",
+    "authoritative": "authoritative",
+    "ttlLeft": "{{ttl}}s",
+    "noRecords": "no records",
+    "mismatch": "differs from zone",
+    "col": {
+      "server": "Server",
+      "ttl": "TTL left",
+      "answer": "Answer"
+    }
+  },
+  "health": {
+    "lead": "Route53 health checks decide which failover or multivalue record answers.",
+    "type": "Type",
+    "target": "Host or IP",
+    "port": "Port",
+    "path": "Path",
+    "create": "Add health check",
+    "delete": "Delete health check {{id}}",
+    "empty": "No health checks yet.",
+    "failedToast": "Health check failed"
+  },
+  "zone": {
+    "loadFailed": "Could not load this zone",
+    "nameservers": "Name servers",
+    "templates": "Templates",
+    "importExport": "Import and export",
+    "delete": "Delete zone",
+    "deleteTitle": "Delete {{zone}}?",
+    "deleteLead": "The zone and its name servers are removed at the provider. The domain stops resolving if it is still delegated here.",
+    "deleteHasRecords_one": "The zone still has {{count}} record set beyond NS and SOA. Export it first if you may need it.",
+    "deleteHasRecords_other": "The zone still has {{count}} record sets beyond NS and SOA. Export them first if you may need them.",
+    "typeName": "Type {{zone}} to confirm",
+    "force": "Delete the records too",
+    "deletedToast": "Deleted {{zone}}",
+    "deleteFailed": "Could not delete the zone",
+    "recordsByType": "Records by type",
+    "total_one": "{{count}} set in total",
+    "total_other": "{{count}} sets in total",
+    "lastChanged": "Last changed",
+    "by": "by {{who}} ({{action}})",
+    "noChanges": "No change made from here yet.",
+    "provider": "{{provider}}, {{status}}",
+    "tab": {
+      "records": "Records",
+      "delegation": "Delegation",
+      "propagation": "Propagation",
+      "health": "Health checks"
+    }
+  }
+}

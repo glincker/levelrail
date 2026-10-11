@@ -80,6 +80,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/statuspage"
@@ -487,6 +488,8 @@ type Router struct {
 	dnsRecordManager             dnsRecordManagerFunc             // always set, defaulted to rt.resolveDNSRecordManager below, overridable in this package's own tests, the same "seam, not an interface" shape lookupHost already uses
 	dnsRecordStatus              dnsRecordStatusFunc              // always set, defaulted to defaultDNSRecordStatus below, overridable in this package's own tests so none of them perform a real DNS query
 	domainAuto                   domainAutoSeams                  // zero value uses the real DNS provider, TLS and HTTP probes; tests replace single funcs
+	dnsZoneProviders             dnsZoneProvidersFunc             // nil uses rt.resolveDNSZoneProviders (dns_zones.go); tests swap in fakes
+	dnsQuerier                   dnszones.Querier                 // nil uses a real miekg/dns querier; tests swap in a fake
 	registry                     RegistryStore                    // always set, same shape as cloudflareTunnel above
 	registrySecrets              RegistrySecrets                  // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
 	vault                        VaultSettingsStore               // always set, same shape as cloudflareTunnel above

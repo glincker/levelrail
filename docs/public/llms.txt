@@ -68,6 +68,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Docker](https://levelrail.com/docker): how Levelrail talks to the Docker Engine API directly.
 - [Command palette](https://levelrail.com/command-palette): keyboard-first navigation and quick app actions in the dashboard.
 - [Domains and ingress](https://levelrail.com/domains-and-ingress): custom domains, TLS, maintenance mode, redirects, WAF, and the embedded Caddy ingress.
+- [DNS zones and records](https://levelrail.com/dns): zones and records at Cloudflare or Route53, name server delegation, propagation checks, and wildcard subdomains.
 - [Load balancing](https://levelrail.com/load-balancing): balance traffic across an app's replicas with health checks, retries, and sticky sessions.
 - [ACME verification runbook](https://levelrail.com/acme-verification-runbook): diagnose and fix failed TLS certificate issuance.
 - [Multi-node](https://levelrail.com/multi-node): add servers, the WireGuard mesh, and node placement.

@@ -632,7 +632,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 
 	server := &Server{
 		Listen: []string{opts.ListenAddr},
-		Routes: routes,
+		Routes: exactHostsFirst(routes),
 	}
 	if opts.Inherited.Active() {
 		server.Listen = opts.Inherited.listenAddrs()

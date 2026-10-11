@@ -303,6 +303,11 @@ export function DomainRow({
           {domain.automatic ? (
             <Badge variant="outline">{t('page.row.automatic')}</Badge>
           ) : null}
+          {domain.domain.startsWith('*.') ? (
+            <Badge variant="outline" title={t('page.row.wildcardHint')}>
+              {t('page.row.wildcard')}
+            </Badge>
+          ) : null}
           {flags.map((flag) => (
             <span
               key={flag.key}

@@ -87,6 +87,9 @@ func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if !rt.requireWildcardDNS01(w, r, append(slices.Clone(set), add...)) {
+		return
+	}
 
 	switch req.DNS {
 	case "", dnsModeAuto, dnsModeOff, dnsModePreview:
@@ -134,6 +137,8 @@ func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 			rt.recordAppEvent(r, ev)
 		}
 		rt.nudgeReconciler()
+		added, _ := sliceDiff(before, next)
+		rt.ensureWildcardRecords(r, added)
 	}
 	resp := editDomainsResponse{App: name, Domains: next, Changed: changed}
 	if changed {

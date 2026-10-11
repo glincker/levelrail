@@ -34,6 +34,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerDatabaseAccessRoutes(mux)
 	rt.registerIAMBuilderRoutes(mux)
 	rt.registerProxyIntegrationRoutes(mux)
+	rt.registerDNSZoneRoutes(mux)
 
 	var h http.Handler = mux
 	h = experimentalGateMiddleware(h)

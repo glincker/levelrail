@@ -6,6 +6,7 @@ import {
   FolderIcon,
   BuildingsIcon,
   HardDrivesIcon,
+  GlobeHemisphereWestIcon,
   GlobeIcon,
   UserIcon,
   ShieldIcon,
@@ -121,6 +122,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
   nav('nav-projects', 'Projects', <FolderIcon />, '/projects'),
   nav('nav-pipelines', 'Pipelines', <TreeStructureIcon />, '/pipelines'),
   nav('nav-domains', 'Domains', <GlobeIcon />, '/domains'),
+  nav('nav-dns', 'DNS zones', <GlobeHemisphereWestIcon />, '/dns'),
   nav(
     'nav-loadbalancers',
     'Load balancers',
