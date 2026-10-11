@@ -31,6 +31,7 @@ import {
   ScrollIcon,
   ShareNetworkIcon,
   ShieldCheckIcon,
+  ShieldWarningIcon,
   SlidersHorizontalIcon,
   SquaresFourIcon,
   StackIcon,
@@ -65,6 +66,7 @@ export type GlobalTo =
   | '/alerts'
   | '/settings'
   | '/settings/iam-policies'
+  | '/security'
   | '/settings/registry'
   | '/settings/registry-credentials'
   | '/settings/network-shares'
@@ -239,6 +241,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'IAM policies',
         to: '/settings/iam-policies',
         icon: <ShieldCheckIcon />,
+      },
+      {
+        id: 'security',
+        label: 'Security center',
+        to: '/security',
+        icon: <ShieldWarningIcon />,
       },
     ],
   },

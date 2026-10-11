@@ -59,13 +59,13 @@ System endpoints for:
 | GET | /api/v1/updates/history | AbilityRead | handleUpgradeHistory |
 | POST | /api/v1/updates/history/{id}/ack | AbilityWrite | handleAckUpgrade |
 | GET | /api/v1/system/reverse-proxy | AbilityRead | handleReverseProxyGuide |
+| GET | /api/v1/system/docker-guard | AbilityRead | handleGetDockerGuard |
+| PUT | /api/v1/system/docker-guard | AbilityRoot | handleUpdateDockerGuard |
+| GET | /api/v1/system/geoip | AbilityRead | handleGeoIPLookup |
 | GET | /api/v1/system/proxy-integration | AbilityRead | handleGetProxyIntegration |
 | POST | /api/v1/system/proxy-integration/setup | AbilityRoot | handleSetupProxyIntegration |
 | POST | /api/v1/system/proxy-integration/apply | AbilityRoot | handleApplyProxyIntegration |
 | POST | /api/v1/system/proxy-integration/verify | AbilityRoot | handleVerifyProxyIntegration |
-| GET | /api/v1/system/geoip | AbilityRead | handleGeoIPLookup |
-| GET | /api/v1/system/docker-guard | AbilityRead | handleGetDockerGuard |
-| PUT | /api/v1/system/docker-guard | AbilityRoot | handleUpdateDockerGuard |
 | GET | /api/v1/system/readiness | AbilityRead | handleServerReadiness |
 | GET | /api/v1/updates/self-upgrade/plan | AbilityRead | handleSelfUpgradePlan |
 | GET | /api/v1/updates/self-upgrade/attempts | AbilityRead | handleSelfUpgradeAttempts |
@@ -73,7 +73,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 108 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 117 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -175,11 +175,20 @@ Endpoints for:
 | DELETE | /api/v1/auth/trusted-devices/{id} | Public | handleRevokeTrustedDevice |
 | GET | /api/v1/settings/auth/code-login | AbilityRead | handleGetCodeLoginSettings |
 | PUT | /api/v1/settings/auth/code-login | AbilityRoot | handlePutCodeLoginSettings |
-| PUT | /api/v1/settings/proxy-integration | AbilityRoot | handleUpdateProxyIntegrationSettings |
-| GET | /api/v1/settings/domain-automation | AbilityRead | handleGetDomainAutomation |
-| PUT | /api/v1/settings/domain-automation | AbilityRoot | handleUpdateDomainAutomation |
+| POST | /api/v1/auth/sign-in-alert/disown | Public | handleDisownSignIn |
+| GET | /api/v1/security/posture | AbilityRead | handleSecurityPosture |
+| GET | /api/v1/security/policy | AbilityRead | handleGetSecurityPolicy |
+| PUT | /api/v1/security/policy | AbilityRoot | handlePutSecurityPolicy |
+| GET | /api/v1/security/sessions | Public | handleListSecuritySessions |
+| DELETE | /api/v1/security/sessions/{id} | Public | handleRevokeSecuritySession |
+| POST | /api/v1/security/sessions/revoke-others | Public | handleRevokeOtherSecuritySessions |
+| GET | /api/v1/security/account | Public | handleGetAccountSecurity |
+| PUT | /api/v1/security/account | Public | handlePutAccountSecurity |
 | GET | /api/v1/settings/database-upgrades | AbilityRead | handleGetPlatformUpgradePolicy |
 | PUT | /api/v1/settings/database-upgrades | AbilityRoot | handlePutPlatformUpgradePolicy |
+| GET | /api/v1/settings/domain-automation | AbilityRead | handleGetDomainAutomation |
+| PUT | /api/v1/settings/domain-automation | AbilityRoot | handleUpdateDomainAutomation |
+| PUT | /api/v1/settings/proxy-integration | AbilityRoot | handleUpdateProxyIntegrationSettings |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -358,11 +367,6 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/sleep/wake | AbilityDeploy | handleWakeApp |
 | GET | /api/v1/apps/{name}/environment-domains | AbilityRead | handleGetAppEnvironmentDomains |
 | GET | /api/v1/apps/{name}/listening-ports | AbilityRead | handleAppListeningPorts |
-| GET | /api/v1/apps/{name}/investigate | AbilityRead | handleInvestigate |
-| GET | /api/v1/apps/{name}/failure-context | AbilityRead | handleFailureContext |
-| POST | /api/v1/apps/{name}/move | AbilityRoot | handleStartMove |
-| GET | /api/v1/apps/{name}/placement | AbilityRead | handleGetPlacement |
-| PUT | /api/v1/apps/{name}/placement | AbilityRoot | handleSetPlacement |
 | GET | /api/v1/apps/{name}/compose | AbilityRead | handleGetComposeStack |
 | GET | /api/v1/apps/{name}/compose/revisions | AbilityRead | handleListComposeRevisions |
 | GET | /api/v1/apps/{name}/compose/revisions/{revision} | AbilityRead | handleGetComposeRevision |
@@ -370,6 +374,11 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/compose/redeploy | AbilityDeploy | handleRedeployCompose |
 | POST | /api/v1/service-templates/{id}/install | AbilityDeploy | handleInstallServiceTemplate |
 | DELETE | /api/v1/apps/{name}/compose | AbilityWrite | handleComposeDown |
+| POST | /api/v1/apps/{name}/move | AbilityRoot | handleStartMove |
+| GET | /api/v1/apps/{name}/placement | AbilityRead | handleGetPlacement |
+| PUT | /api/v1/apps/{name}/placement | AbilityRoot | handleSetPlacement |
+| GET | /api/v1/apps/{name}/investigate | AbilityRead | handleInvestigate |
+| GET | /api/v1/apps/{name}/failure-context | AbilityRead | handleFailureContext |
 
 :::
 
@@ -405,9 +414,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/git-source/rotate-webhook-secret | AbilityWriteSensitive | handleRotateGitSourceWebhookSecret |
 | POST | /api/v1/webhooks/slack/interactions | Public | handleSlackInteraction |
 | POST | /api/v1/webhooks/discord/interactions | Public | handleDiscordInteraction |
-| POST | /api/v1/apps/{name}/previews/{number}/extend | AbilityDeploy | handleExtendPreviewEnvironment |
 | PUT | /api/v1/apps/{name}/git-source/build | AbilityWriteSensitive | handleSetGitSourceBuild |
 | POST | /api/v1/apps/{name}/git-source/detect | AbilityDeploy | handleDetectGitSourceBuild |
+| POST | /api/v1/apps/{name}/previews/{number}/extend | AbilityDeploy | handleExtendPreviewEnvironment |
 
 ## Telemetry
 
@@ -701,11 +710,6 @@ Endpoints for:
 | POST | /api/v1/settings/ingress/https | AbilityRoot | handleEnableHTTPS |
 | GET | /api/v1/apps/{name}/domains/{domain}/search-visibility | AbilityRead | handleGetDomainSearchVisibility |
 | PUT | /api/v1/apps/{name}/domains/{domain}/search-visibility | AbilityDeploy | handleSetDomainSearchVisibility |
-| GET | /api/v1/apps/{name}/domains/{domain}/go-live | AbilityRead | handleGoLiveStatus |
-| POST | /api/v1/apps/{name}/domains/{domain}/go-live | AbilityRoot | handleGoLiveRun |
-| POST | /api/v1/apps/{name}/domains/go-live/plan | AbilityWrite | handleGoLivePlan |
-| POST | /api/v1/settings/ingress/apps-base-domain/backfill | AbilityRoot | handleBackfillBaseDomain |
-| POST | /api/v1/apps/{name}/domains/{domain}/doctor | AbilityRead | handleDomainDoctor |
 | GET | /api/v1/apps/{name}/domains/{domain}/headers | AbilityRead | handleGetDomainPolicy |
 | PUT | /api/v1/apps/{name}/domains/{domain}/headers | AbilityDeploy | handleSetDomainPolicy |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/headers | AbilityDeploy | handleDeleteDomainPolicy |
@@ -730,6 +734,11 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/domains/{domain}/ports | AbilityRead | handleGetDomainPorts |
 | PUT | /api/v1/apps/{name}/domains/{domain}/ports/{port}/restrict | AbilityWriteSensitive | handleRestrictDomainPort |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/ports/{port}/restrict | AbilityWriteSensitive | handleUnrestrictDomainPort |
+| GET | /api/v1/apps/{name}/domains/{domain}/go-live | AbilityRead | handleGoLiveStatus |
+| POST | /api/v1/apps/{name}/domains/{domain}/go-live | AbilityRoot | handleGoLiveRun |
+| POST | /api/v1/apps/{name}/domains/go-live/plan | AbilityWrite | handleGoLivePlan |
+| POST | /api/v1/settings/ingress/apps-base-domain/backfill | AbilityRoot | handleBackfillBaseDomain |
+| POST | /api/v1/apps/{name}/domains/{domain}/doctor | AbilityRead | handleDomainDoctor |
 
 :::
 
@@ -1118,7 +1127,6 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/apps/sessions/{id}/cutover/verify | AbilityWriteSensitive | handleAppImportCutoverVerify |
 | POST | /api/v1/migration/apps/sessions/{id}/items/{item}/route | AbilityWriteSensitive | handleRouteAppImport |
 | GET | /api/v1/migration/apps/sessions/{id}/receipt | AbilityRead | handleAppImportReceipt |
-| GET | /api/v1/dns/zone | AbilityRead | handleDNSZone |
 | GET | /api/v1/dns/zones | AbilityRead | handleListDNSZones |
 | POST | /api/v1/dns/zones | AbilityRoot | handleCreateDNSZone |
 | GET | /api/v1/dns/zones/{zone} | AbilityRead | handleGetDNSZone |
@@ -1138,6 +1146,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/dns/health-checks | AbilityRead | handleListDNSHealthChecks |
 | POST | /api/v1/dns/health-checks | AbilityRoot | handleCreateDNSHealthCheck |
 | DELETE | /api/v1/dns/health-checks/{id} | AbilityRoot | handleDeleteDNSHealthCheck |
+| GET | /api/v1/dns/zone | AbilityRead | handleDNSZone |
 | GET | /api/v1/traffic/summary | AbilityRead | handleTrafficSummary |
 | GET | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/plan | AbilityRead | handleAppImportCutoverPlan |
 | GET | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs | AbilityRead | handleListAppImportCutoverRuns |
@@ -1145,6 +1154,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run} | AbilityRead | handleGetAppImportCutoverRun |
 | POST | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}/rollback | AbilityWriteSensitive | handleRollbackAppImportCutover |
 | POST | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}/confirm-dns | AbilityWriteSensitive | handleConfirmAppImportCutoverDNS |
+| GET | /api/v1/compose | AbilityRead | handleListComposeStacks |
+| POST | /api/v1/compose/preview | AbilityDeploy | handlePreviewCompose |
 | GET | /api/v1/node-moves | AbilityRoot | handleListNodeMoves |
 | GET | /api/v1/node-moves/{id} | AbilityRoot | handleGetNodeMove |
 | GET | /api/v1/node-drains/{id} | AbilityRoot | handleGetNodeDrain |
@@ -1166,8 +1177,6 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/teams/{id}/invites/{invite} | AbilityWrite | handleRevokeTeamInvite |
 | GET | /api/v1/team-invites/{token} | Session | handlePreviewTeamInvite |
 | POST | /api/v1/team-invites/accept | Public | handleAcceptTeamInvite |
-| GET | /api/v1/compose | AbilityRead | handleListComposeStacks |
-| POST | /api/v1/compose/preview | AbilityDeploy | handlePreviewCompose |
 
 ## See also
 

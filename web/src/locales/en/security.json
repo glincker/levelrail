@@ -1,0 +1,247 @@
+{
+  "page": {
+    "title": "Security center",
+    "description": "Your security score, what to fix first, and every session and device that can reach this control plane.",
+    "tabs": {
+      "checklist": "Checklist",
+      "sessions": "Sessions and devices",
+      "policy": "Policy"
+    },
+    "loadError": "Could not load the security center.",
+    "retry": "Try again"
+  },
+  "score": {
+    "label": "Security score",
+    "grade": "Grade {{grade}}",
+    "generated": "Checked {{time}}",
+    "failing": "{{critical}} critical, {{high}} high, {{medium}} medium, {{low}} low",
+    "passing": "{{count}} checks pass",
+    "unknown": "{{count}} could not be checked",
+    "summaryOnly": "Only admins see the full checklist. Ask an admin to review the items behind this score."
+  },
+  "severity": {
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "status": {
+    "pass": "Pass",
+    "fail": "Needs action",
+    "unknown": "Unknown"
+  },
+  "checklist": {
+    "platform": "Platform",
+    "account": "Your account",
+    "empty": "Nothing to check yet.",
+    "count": "{{count}} affected",
+    "showPassing": "Show passing checks",
+    "hidePassing": "Hide passing checks",
+    "fix": "Fix",
+    "open": "Open",
+    "cli": "From the CLI",
+    "applied": "Change applied.",
+    "applyError": "Could not apply the change."
+  },
+  "items": {
+    "admin_without_mfa": {
+      "title": "Admins without two-factor or a passkey",
+      "pass": "Every admin has two-factor or a passkey",
+      "why": "A leaked admin password alone would give full control of every app and secret."
+    },
+    "account_flagged": {
+      "title": "Accounts flagged for a new password",
+      "pass": "No account is flagged for a password reset",
+      "why": "Someone reported a sign-in to these accounts that was not theirs."
+    },
+    "recovery_codes_missing": {
+      "title": "Accounts with no recovery codes left",
+      "pass": "Every two-factor account has recovery codes",
+      "why": "Losing the authenticator app would lock these accounts out with no way back in."
+    },
+    "no_admin_passkey": {
+      "title": "No admin has a passkey",
+      "pass": "Admins have {{count}} passkey(s)",
+      "why": "Passkeys cannot be phished or reused, unlike passwords and codes."
+    },
+    "token_root": {
+      "title": "API tokens that hold root",
+      "pass": "No API token holds root",
+      "why": "A root token can do anything an admin can, including minting more tokens."
+    },
+    "token_no_expiry": {
+      "title": "API tokens that never expire",
+      "pass": "Every API token has an expiry",
+      "why": "A token without an expiry keeps working long after anyone remembers it exists."
+    },
+    "token_signin_approve": {
+      "title": "API tokens that can approve sign-ins",
+      "pass": "No API token can approve sign-ins",
+      "why": "Such a token can reveal sign-in codes and approve new browsers for its owner."
+    },
+    "token_unused": {
+      "title": "API tokens unused for a long time",
+      "pass": "No long-unused API tokens",
+      "why": "Unused tokens are pure risk: revoke what nothing needs anymore."
+    },
+    "sessions_old": {
+      "title": "Old sessions still signed in",
+      "pass": "No old sessions",
+      "why": "Long-lived sessions on forgotten browsers are an easy way in."
+    },
+    "new_device_approval_off": {
+      "title": "New browser approval is off",
+      "pass": "New browser approval is on",
+      "why": "Without it, a stolen password signs in from anywhere with no second look."
+    },
+    "approval_password_only": {
+      "title": "Only password sign-ins need new browser approval",
+      "pass": "Every sign-in method needs new browser approval",
+      "why": "Passkey and OAuth sign-ins from a new browser skip the approval step today."
+    },
+    "code_login_admins": {
+      "title": "Admins can sign in with a code",
+      "pass": "Admins cannot sign in with a code",
+      "why": "A code sent to an open session or email is a weaker path into an admin account."
+    },
+    "public_exposure": {
+      "title": "Container ports open to the internet",
+      "pass": "No unrestricted public ports",
+      "why": "Docker publishes ports past the host firewall, so these are reachable by anyone."
+    },
+    "docker_api_exposed": {
+      "title": "The Docker API is reachable from the internet",
+      "pass": "The Docker API is not exposed",
+      "why": "Unauthenticated Docker API access is full control of the server."
+    },
+    "offbox_backup_off": {
+      "title": "Off-box control plane backups are off",
+      "pass": "Encrypted off-box backups are on",
+      "why": "Losing this machine would lose every app definition, secret and certificate."
+    },
+    "master_key_rotation": {
+      "title": "The master key is missing or overdue for rotation",
+      "pass": "The master key was rotated recently",
+      "why": "Rotating the master key limits what an old leaked copy can decrypt."
+    },
+    "secrets_old": {
+      "title": "Secrets older than {{detail}}",
+      "pass": "No stale secrets",
+      "why": "Old secrets are more likely to have leaked somewhere along the way."
+    },
+    "tls_not_public": {
+      "title": "Domains without a publicly trusted certificate",
+      "pass": "Every domain has a public certificate",
+      "why": "Browsers warn on these domains, which trains people to click through warnings."
+    },
+    "hsts_off": {
+      "title": "HSTS is off while real certificates are in place",
+      "pass": "HSTS is on or not needed yet",
+      "why": "Without HSTS, a first visit over plain HTTP can be intercepted and downgraded."
+    },
+    "agents_outdated": {
+      "title": "Node agents older than the minimum version",
+      "pass": "Every node agent is current",
+      "why": "Old agents miss security fixes that the control plane already expects."
+    },
+    "login_anomalies": {
+      "title": "Bursts of failed sign-ins",
+      "pass": "No bursts of failed sign-ins",
+      "why": "Many wrong passwords in a short time usually means someone is guessing."
+    },
+    "own_mfa": {
+      "title": "Your account has no two-factor or passkey",
+      "pass": "Your account has two-factor or a passkey",
+      "why": "Your password alone is all it takes to sign in as you."
+    },
+    "own_recovery_codes": {
+      "title": "You have no recovery codes left",
+      "pass": "You have recovery codes",
+      "why": "Without them, losing your authenticator locks you out."
+    },
+    "own_account_flagged": {
+      "title": "Your account needs a new password",
+      "pass": "Your account is not flagged",
+      "why": "A sign-in to your account was reported as not yours."
+    }
+  },
+  "actions": {
+    "set_policy": "Apply the recommended policy",
+    "disable_code_login_admins": "Turn off code sign-in for admins",
+    "review_sessions": "Review sessions"
+  },
+  "sessions": {
+    "title": "Active sessions",
+    "description": "Browsers signed in to this account. The location is the network the address belongs to, not a place.",
+    "viewing": "Viewing account",
+    "self": "Your account",
+    "browser": "Browser",
+    "network": "Network",
+    "created": "Signed in",
+    "lastSeen": "Last active",
+    "current": "This browser",
+    "revoke": "Sign out",
+    "revokeAria": "Sign out session {{id}}",
+    "revoked": "Session signed out.",
+    "revokeError": "Could not sign out that session.",
+    "revokeOthers": "Sign out all other sessions",
+    "revokeOthersAdmin": "Sign out every session of this account",
+    "revokeOthersDone": "Signed out {{count}} session(s). Trusted browsers and waiting sign-ins were reset too.",
+    "empty": "No active sessions.",
+    "devicesTitle": "Trusted browsers",
+    "devicesDescription": "Browsers that skip new browser approval. Remove any you do not recognise.",
+    "devicesEmpty": "No trusted browsers.",
+    "deviceRemove": "Remove",
+    "deviceRemoved": "Browser removed.",
+    "tokensTitle": "API tokens",
+    "tokensDescription": "Tokens owned by this account, with when each was last used.",
+    "tokensEmpty": "No API tokens.",
+    "neverUsed": "Never used",
+    "usedAgo": "Used {{time}}",
+    "manageTokens": "Manage tokens",
+    "confirmTitle": "Sign out other sessions?",
+    "confirmBody": "Every other browser signed in to this account is signed out, and trusted browsers and waiting sign-ins are reset.",
+    "confirm": "Sign them out",
+    "cancel": "Cancel"
+  },
+  "policy": {
+    "title": "Security policy",
+    "description": "Platform rules for sign-in approval and API token hygiene. Changes apply right away.",
+    "adminOnly": "Only admins can change the security policy.",
+    "source": {
+      "saved": "Saved here",
+      "env": "From the environment",
+      "default": "Default"
+    },
+    "approvalScope": "New browser approval applies to",
+    "scopePasswordOnly": "Password sign-ins only",
+    "scopeAllMethods": "Every sign-in method (password, passkey, OAuth)",
+    "approvalOff": "New browser approval is turned off on this server, so this setting has no effect until it is turned back on.",
+    "maxLifetime": "Longest API token lifetime (days, 0 for no limit)",
+    "warnUnused": "Flag tokens unused for (days, 0 to stop)",
+    "disableUnused": "Disable tokens unused for (days, 0 to stop)",
+    "disableHint": "A token gets a notice first and is disabled {{days}} days later unless it is used.",
+    "save": "Save policy",
+    "saved": "Security policy saved.",
+    "saveError": "Could not save the security policy."
+  },
+  "account": {
+    "title": "Require approval for new browsers on my account",
+    "description": "Ask one of your signed-in sessions to approve any new browser, whatever sign-in method it uses.",
+    "on": "Approval required for every sign-in method on your account.",
+    "off": "Your account follows the platform policy.",
+    "saveError": "Could not change this setting.",
+    "flagged": "A sign-in to your account was reported as not yours. Change your password now; that clears this warning."
+  },
+  "alertPage": {
+    "title": "Was this sign-in not you?",
+    "description": "Confirm to sign out that browser, forget your trusted browsers and flag your account for a new password.",
+    "confirm": "It was not me, sign it out",
+    "working": "Signing it out...",
+    "done": "Done. That browser is signed out and your account is flagged. Sign in and change your password now.",
+    "doneNoSession": "Done. That session had already ended. Your account is flagged: sign in and change your password now.",
+    "signIn": "Go to sign in",
+    "missing": "This link is missing its token. Open the link from the email again.",
+    "error": "This link is invalid, already used or expired."
+  }
+}

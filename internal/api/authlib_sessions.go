@@ -110,6 +110,9 @@ func (rt *Router) handleLibLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		if authengine.IsCode(err, authengine.CodeInvalidCredentials) {
+			rt.recordFailedPassword(r, req.Email)
+		}
 		rt.writeLibAuthError(w, "api: login: library sign-in failed", err)
 		return
 	}
@@ -119,7 +122,7 @@ func (rt *Router) handleLibLogin(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: login: load user failed", err, slog.String("user_id", userID))
 		return
 	}
-	if rt.pauseForDeviceApproval(w, r, *user, token) {
+	if rt.pauseForDeviceApproval(w, r, *user, token, signInMethodPassword) {
 		return
 	}
 	rt.finishLibSession(w, r, *user, token)
@@ -131,6 +134,7 @@ func (rt *Router) finishLibSession(w http.ResponseWriter, r *http.Request, user 
 		rt.logger.Warn("api: update last_login_at failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))
 	}
 	setSessionCookie(w, r, token, time.Now().Add(rt.sessions.ttl))
+	rt.noticeSignIn(r, user, token)
 }
 
 // establishLibSession is establishSession's library-backed body.
@@ -318,7 +322,7 @@ func (rt *Router) consumeLibSessionLink(w http.ResponseWriter, r *http.Request, 
 		writeError(w, http.StatusBadRequest, errInvalidOrExpiredSessionLink.Error())
 		return
 	}
-	rt.finishLibSession(w, r, *user, token)
+	rt.finishLibSession(w, withSignInNoticeSuppressed(r), *user, token)
 	writeJSON(w, http.StatusOK, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
 }
 

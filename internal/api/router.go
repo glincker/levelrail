@@ -470,6 +470,8 @@ type Router struct {
 	githubAppPublicProbe         func(ctx context.Context, apiBase, slug string) *bool // nil: real GitHub probe; tests inject
 	appVisibility                appVisibilityCache
 	githubApp                    GitHubAppStore               // always set, same "core Store interface" shape as backupTargets/certs above: the connection row/its absence is always queryable, no secrets configuration needed just to read status
+	security                     SecurityStore                // always set, security center policy, alerts and token hygiene
+	sec                          *securityState               // always set
 	repoLayoutSource             repoLayoutSourceFunc         // nil uses defaultRepoLayoutSource; tests serve a fake tree
 	backupProtection             BackupProtection             // nil is valid: backup health, drill, policy and restore-to routes return 501
 	backupProtectionStore        BackupProtectionStore        // nil is valid, same as backupProtection above
@@ -712,6 +714,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		resolveBranchSHA:            resolveRemoteBranchSHA,
 		previewEnvironments:         s,
 		githubApp:                   s,
+		security:                    s,
+		sec:                         newSecurityState(),
 		githubAppClient:             githubapp.NewClient(),
 		githubAppState:              newPendingState(),
 		githubAppManifestConfig:     githubapp.DefaultManifestConfig(),

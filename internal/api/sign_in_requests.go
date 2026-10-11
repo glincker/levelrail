@@ -268,6 +268,12 @@ func (rt *Router) resetSignInTrust(ctx context.Context, r *http.Request, userID,
 	rt.revokeTrustedDevices(ctx, r, anonymousSignIn(userID), userID, reason)
 	rt.retireSignInRequests(ctx, r, userID, reason)
 	rt.revokeSignInApproveTokens(ctx, r, userID, reason)
+	if rt.security != nil && (reason == "password_changed" || reason == "password_reset") {
+		if err := rt.security.ClearUserResetFlag(ctx, userID, time.Now()); err != nil {
+			rt.logger.Warn("api: clear reset flag failed", slog.String("user_id", userID), slog.String("error", err.Error()))
+		}
+		rt.sec.posture.invalidate()
+	}
 }
 
 // trustedDeviceFor reports whether the request carries a live trusted-device

@@ -80,6 +80,9 @@ const (
 	KindInvites             = "invites"
 	KindLoginCode           = "login_code"
 	KindLoginApproval       = "login_approval"
+	KindLoginAnomaly        = "login_anomaly"
+	KindAccountFlagged      = "account_flagged"
+	KindTokenUnused         = "token_unused" //nolint:gosec // item kind name, not a credential
 	KindDBSecurityUpdates   = "db_security_updates"
 	KindDBEOL               = "db_eol"
 	KindDBUpgradeFailed     = "db_upgrade_failed"

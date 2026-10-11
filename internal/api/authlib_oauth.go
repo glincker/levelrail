@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"net/url"
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 )
@@ -95,6 +96,19 @@ func (rt *Router) authLibOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rt.logger.Error("api: oauth callback: load user failed", slog.String("user_id", userID), slog.String("error", err.Error()))
 		redirectOAuthError(w, r, "internal_error")
+		return
+	}
+	hold, err := rt.holdForApproval(w, r, *user, out.SessionCookie.Value, signInMethodOAuth)
+	switch {
+	case err != nil:
+		rt.logger.Error("api: oauth callback: new browser approval failed", slog.String("user_id", userID), slog.String("error", err.Error()))
+		redirectOAuthError(w, r, "internal_error")
+		return
+	case hold != nil && hold.limited:
+		redirectOAuthError(w, r, "rate_limited")
+		return
+	case hold != nil:
+		http.Redirect(w, r, "/login?approval="+url.QueryEscape(hold.approval.ID), http.StatusFound)
 		return
 	}
 	rt.finishLibSession(w, r, *user, out.SessionCookie.Value)

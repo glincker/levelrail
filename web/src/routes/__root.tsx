@@ -38,6 +38,7 @@ const PUBLIC_ROUTE_PATHS = [
   '/login',
   '/reset-password',
   '/accept-invite',
+  '/sign-in-alert',
   '/accept-team-invite',
 ]
 

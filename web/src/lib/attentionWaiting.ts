@@ -219,6 +219,27 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
           title: t('items.loginApprovalTitle', { ip: p.ip ?? f.subject }),
           detail: t('items.loginApprovalDetail', { agent: p.user_agent ?? '' }),
         }
+      case 'login_anomaly':
+        return {
+          ...base,
+          title: t('items.loginAnomalyTitle', {
+            count: p.count ?? '',
+            subject: p.subject ?? f.subject,
+          }),
+          detail: t('items.loginAnomalyDetail'),
+        }
+      case 'account_flagged':
+        return {
+          ...base,
+          title: t('items.accountFlaggedTitle', { name }),
+          detail: t('items.accountFlaggedDetail'),
+        }
+      case 'token_unused':
+        return {
+          ...base,
+          title: t('items.tokenUnusedTitle', { name }),
+          detail: t('items.tokenUnusedDetail', { date: shortDate(p.at) }),
+        }
       case 'db_security_updates':
         return {
           ...base,

@@ -159,6 +159,7 @@ func WithLoginCodeKey(key []byte) Option {
 		m := hmac.New(sha256.New, key)
 		m.Write([]byte("sign-in-code-pepper-v1"))
 		rt.codeLogin.pepper = m.Sum(nil)
+		rt.sec.deriveAlertKey(key)
 	}
 }
 

@@ -21,6 +21,7 @@ const (
 	linkUpdates  = "/settings/updates"
 	linkDBs      = "/databases/"
 	linkSecurity = "/settings/security"
+	linkCenter   = "/security"
 )
 
 type kindInfo struct {
@@ -53,6 +54,9 @@ var kindInfos = map[string]kindInfo{
 	KindInvites:             {"Invitations are waiting", "Open Users and resend or revoke them", linkUsers, false},
 	KindLoginCode:           {"Sign-in code requested from %s", "Show the code only if you asked for it", linkSecurity, false},
 	KindLoginApproval:       {"New browser sign-in from %s is waiting", "Approve it only if it is you, otherwise deny it", linkSecurity, false},
+	KindLoginAnomaly:        {"Repeated failed sign-ins for %s", "Open the security center and check who is trying", linkCenter, false},
+	KindAccountFlagged:      {"Account %s needs a new password", "Change the password, then review sessions", linkCenter, false},
+	KindTokenUnused:         {"API token %s is unused and will be disabled", "Use it or revoke it before the grace period ends", linkCenter, false},
 	KindDBSecurityUpdates:   {"Databases have security updates available", "Open each database's Upgrades tab and apply the patch", linkDBs, false},
 	KindDBEOL:               {"%s runs a release past its end of life", "Plan a major upgrade or restore into a supported version", linkDBs, true},
 	KindDBUpgradeFailed:     {"Upgrade of %s did not complete", "Open the database's Upgrades tab and read the reason", linkDBs, true},
