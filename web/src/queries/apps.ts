@@ -196,6 +196,7 @@ export interface CreateAppRequest {
   /** Names of env vars backed by encrypted secret storage, values in `secrets`. */
   secret_env?: string[]
   secrets?: Record<string, string>
+  resources?: { memory_bytes?: number }
 }
 
 // POST /api/v1/apps. Rejects a name that already exists with a 409

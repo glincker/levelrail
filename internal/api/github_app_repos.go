@@ -143,6 +143,9 @@ type gitHubAppRepoResource struct {
 	// AccountType groups the picker's card grid by account (migrations/0282):
 	// "user" for the admin's own personal account, "organization" otherwise.
 	AccountType string `json:"account_type"`
+	// Language and PushedAt feed the new-app wizard's repo list.
+	Language string `json:"language,omitempty"`
+	PushedAt string `json:"pushed_at,omitempty"`
 }
 
 func toGitHubAppRepoResource(r githubapp.Repo, instanceURL, accountType string) gitHubAppRepoResource {
@@ -154,6 +157,8 @@ func toGitHubAppRepoResource(r githubapp.Repo, instanceURL, accountType string) 
 		DefaultBranch: r.DefaultBranch,
 		CloneURL:      instanceURL + "/" + r.FullName + ".git",
 		AccountType:   accountType,
+		Language:      r.Language,
+		PushedAt:      r.PushedAt,
 	}
 }
 

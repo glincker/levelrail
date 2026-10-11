@@ -1436,6 +1436,7 @@ One way migration from a live instance. By default it writes `app.yaml` files pl
 
 ```
 levelrail-cli import <repo-url|image> [--deploy] [--name NAME] [--ref REF] [--port N] [--env KEY=VALUE]... [flags]
+levelrail-cli import <repo-url> --analyze|--apply [--base-directory DIR] [--dockerfile PATH] [--build-type TYPE] [--no-database] [flags]
 levelrail-cli import -f compose.yaml|Dockerfile [flags]
 levelrail-cli import --docker-run "docker run -p 80:80 nginx:1" [flags]
 levelrail-cli import platform coolify|dokploy|caprover --url URL [flags]
@@ -1443,6 +1444,8 @@ levelrail-cli import cutover plan|run|status|rollback|confirm-dns --session ID -
 ```
 
 `import` classifies its input (a GitHub, GitLab, Gitea or Bitbucket repo URL, a `docker run` command, an image reference, a docker-compose.yml or a Dockerfile) and prints a deployment plan. Nothing is created unless `--deploy` is given. `--file -` reads from stdin. `--env KEY=VALUE` is repeatable, and a required variable with no value blocks `--deploy`.
+
+`import <repo-url> --analyze` prints what the New app wizard would suggest (stack, build, port, health path, env variable names, databases) with the evidence for each, and creates nothing. `--apply` creates the suggested databases, the app, the connections, the repository link and the first build; `--base-directory`, `--dockerfile`, `--build-type`, `--name`, `--port` and `--env` override suggestions. See [New app wizard](new-app-wizard.md).
 
 `import platform` reads apps, databases and settings from another platform (read only) and creates them here. Use `--dry-run` first. Databases and volumes are created empty; data is not migrated. Re-running skips what was already imported. The source token is read from `APP_IMPORT_SOURCE_TOKEN`, `--token-stdin` or `--token` (which lands in shell history). Other flags: `--only`, `--collision suffix|skip`, `--insecure-tls`, `--allow-private`, `--allow-loopback`. See [migrating from Coolify, Dokploy or CapRover](migrating-from-coolify-dokploy-and-caprover.md).
 

@@ -321,6 +321,8 @@ type Repo struct {
 	Private       bool
 	DefaultBranch string
 	HTMLURL       string
+	Language      string
+	PushedAt      string
 }
 
 type repoResponse struct {
@@ -332,6 +334,8 @@ type repoResponse struct {
 	Private       bool   `json:"private"`
 	DefaultBranch string `json:"default_branch"`
 	HTMLURL       string `json:"html_url"`
+	Language      string `json:"language"`
+	PushedAt      string `json:"pushed_at"`
 }
 
 type listRepositoriesResponse struct {
@@ -371,6 +375,8 @@ func (c *Client) ListInstallationRepos(ctx context.Context, instanceURL, token s
 				Private:       r.Private,
 				DefaultBranch: r.DefaultBranch,
 				HTMLURL:       r.HTMLURL,
+				Language:      r.Language,
+				PushedAt:      r.PushedAt,
 			})
 		}
 		if len(resp.Repositories) < listPerPage {
