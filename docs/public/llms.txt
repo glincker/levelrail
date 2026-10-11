@@ -125,6 +125,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Architecture](https://levelrail.com/architecture): the reconciler pattern, agent transport, and why each major dependency was chosen.
 - [Security overview](https://levelrail.com/security): secrets, sessions, TLS, and access control, with links to the detailed page for each.
 - [Threat model](https://levelrail.com/threat-model): trust boundaries, assets, attackers, and today's mitigations and known gaps.
+- [Docker access and the API guard](https://levelrail.com/docker-access): every Docker Engine API call Levelrail makes, and the guard that refuses privileged containers and host mounts.
 - [Security alert verdicts](https://levelrail.com/security-alert-verdicts): verdict, evidence, and dismissal command for each open code scanning alert.
 - [White-labeling](https://levelrail.com/white-labeling): how the brand layer names the dashboard, agent, prefixes and update repository, and what a fork must change.
 - [Comparison](https://levelrail.com/comparison): how Levelrail differs from Coolify, Dokploy, CapRover, Dokku, and Kamal.

@@ -59,6 +59,8 @@ System endpoints for:
 | GET | /api/v1/updates/history | AbilityRead | handleUpgradeHistory |
 | POST | /api/v1/updates/history/{id}/ack | AbilityWrite | handleAckUpgrade |
 | GET | /api/v1/system/reverse-proxy | AbilityRead | handleReverseProxyGuide |
+| GET | /api/v1/system/docker-guard | AbilityRead | handleGetDockerGuard |
+| PUT | /api/v1/system/docker-guard | AbilityRoot | handleUpdateDockerGuard |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
