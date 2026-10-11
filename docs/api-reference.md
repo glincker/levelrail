@@ -1185,6 +1185,8 @@ Routes that do not fit an existing group.
 | PATCH | /api/v1/export/destinations/{id} | AbilityRoot | handleUpdateExportDestination |
 | DELETE | /api/v1/export/destinations/{id} | AbilityRoot | handleDeleteExportDestination |
 | POST | /api/v1/export/destinations/{id}/test | AbilityRoot | handleTestExportDestination |
+| GET | /api/v1/mesh/settings | AbilityRead | handleGetMeshSettings |
+| PUT | /api/v1/mesh/settings | AbilityRoot | handleUpdateMeshSettings |
 
 ## See also
 

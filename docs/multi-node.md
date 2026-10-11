@@ -214,6 +214,8 @@ This calls `GET /api/v1/nodes/{id}/health`:
 
 ### The control plane's local node
 
+On the Network page the control plane's own server is always the first card, **This server (control plane)**, whether or not the mesh is on. Apps and databases with an empty placement, or placed on the control plane's own node ID, belong to it. The **Unplaced** card only appears for resources placed on a node ID the control plane does not know.
+
 The control plane's own local node uses the same health system: it heartbeats itself rather than through gRPC. It is never permanently `online` by fiat.
 
 **Cordoning and status.** Cordon is tracked as a separate `schedulable` flag, not a status value. A node can be `online` and cordoned, or `offline` and schedulable.
@@ -533,7 +535,15 @@ When mesh is enabled, database env vars (like `DATABASE_URL` or any field from a
 
 ### Enabling the mesh on the control plane
 
-Set `APP_MESH_ENABLED=1` (default: off). A mesh setup failure is logged and the control plane still starts.
+Turn it on from **Network > Mesh networking** in the dashboard, or with the CLI (default: off):
+
+```bash
+levelrail-cli network mesh status     # state plus the readiness checks
+levelrail-cli network mesh enable     # root only; refused while a check fails
+levelrail-cli network mesh disable    # --force when other nodes are enrolled
+```
+
+The readiness list checks WireGuard support (kernel module, or wireguard-go with root and `/dev/net/tun`), that the UDP port is free, whether `ufw` is blocking it, and whether a public address is set for agents to dial. A failing check blocks enabling and shows a fix hint. The choice is saved and applies on the next control plane restart (the card and `status` show the restart command). Setting `APP_MESH_ENABLED` on the server pins the mesh on or off and wins over the saved choice; the card then shows it as read-only. A mesh setup failure is logged and the control plane still starts.
 
 This brings up:
 - The control plane's own WireGuard device, interface, and mesh address.
@@ -645,7 +655,7 @@ Only the app's main port moves. App streams, managed databases and every unpubli
 
 **Reading the status.** While a remote app cannot be routed, the app shows a `CrossNodeIngress` condition with reason `NoMeshIngressPath`, the specific cause and the next action. It clears on the next reconcile pass after the mesh is healthy. Typical causes:
 
-- `mesh networking is off`: set `APP_MESH_ENABLED=1` and restart the control plane.
+- `mesh networking is off`: enable it on the Network page (or `levelrail-cli network mesh enable`) and restart the control plane.
 - `the node has not joined the mesh yet`: check `levelrail-cli nodes mesh`.
 - `no recent WireGuard handshake`: open UDP 51820 between the hosts.
 - `publishes its port on loopback only`: transient, the app controller republishes it on its next pass.
