@@ -49,6 +49,7 @@ const broadcastBufferSize = 256
 type LogBroadcaster struct {
 	mu   sync.Mutex
 	subs map[string][]chan LogEntry // keyed by ResourceID
+	all  []chan LogEntry            // receives every resource's lines
 }
 
 // NewLogBroadcaster builds an empty LogBroadcaster.
@@ -67,6 +68,12 @@ func NewLogBroadcaster() *LogBroadcaster {
 func (b *LogBroadcaster) Publish(entry LogEntry) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	for _, ch := range b.all {
+		select {
+		case ch <- entry:
+		default:
+		}
+	}
 	for _, ch := range b.subs[entry.ResourceID] {
 		select {
 		case ch <- entry:
@@ -121,4 +128,24 @@ func (b *LogBroadcaster) Subscribe(resourceID string) (ch <-chan LogEntry, unsub
 	}
 
 	return c, unsubscribe
+}
+
+// SubscribeAll returns a channel receiving every resource's lines, with
+// the same non-blocking drop-on-slow-subscriber behavior as Subscribe.
+func (b *LogBroadcaster) SubscribeAll() (ch <-chan LogEntry, unsubscribe func()) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	c := make(chan LogEntry, broadcastBufferSize)
+	b.all = append(b.all, c)
+	return c, func() {
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		for i, existing := range b.all {
+			if existing == c {
+				b.all = append(b.all[:i], b.all[i+1:]...)
+				break
+			}
+		}
+	}
 }

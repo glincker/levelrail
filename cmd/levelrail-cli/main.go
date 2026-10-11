@@ -312,6 +312,7 @@ Usage:
   %[1]s apply -f file|dir|- [--dry-run] [--prune --source S] [flags]   converge to YAML resource files: plan, diff, apply
   %[1]s diff -f dir [flags]                                    drift between the files and live state, exit 2 when they differ
   %[1]s export [--project P] [--app A] [-o dir|-] [flags]      write live state as stable resource files
+  %[1]s export destinations list|create|test|status|enable|disable|delete, export audit   send logs, audit events and metrics to your own tools
   %[1]s apps tag <name> <tag> [flags]                          attach a tag (by name) to an app
   %[1]s apps untag <name> <tag> [flags]                        detach a tag (by name) from an app
   %[1]s nodes list|get|delete [flags]                        manage nodes

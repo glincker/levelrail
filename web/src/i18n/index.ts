@@ -39,6 +39,7 @@ export const NAMESPACES = [
   'teams',
   'compose',
   'smartDeploy',
+  'dataExport',
 ] as const
 
 void i18n

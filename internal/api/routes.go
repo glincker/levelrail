@@ -22,6 +22,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerPipelineRoutes(mux)
 	rt.registerPipelineOverviewRoutes(mux)
 	rt.registerModelRoutes(mux)
+	rt.registerDataExportRoutes(mux)
 	rt.registerLoadBalancerRoutes(mux)
 	rt.registerPlatformImportRoutes(mux)
 	rt.registerAppImportRoutes(mux)

@@ -942,6 +942,15 @@ levelrail-cli storage delete <id>
 ```
 S3 compatible storage destinations. `providers` lists the presets (`aws`, `r2`, `b2`, `minio`, `wasabi`, `custom`). `add` also takes `--account-id` (r2), `--region` (aws, b2, wasabi), `--endpoint` (minio, custom), `--virtual-hosted` and `--skip-verify`. `test` writes, reads back and deletes a probe object.
 
+## Data export
+
+See [Data export](data-export.md).
+
+```
+levelrail-cli export destinations list|create|test|status|enable|disable|delete
+levelrail-cli export audit [--from T] [--to T] [--format ndjson|csv]
+```
+
 ## Logs
 
 See [Log archive](log-archive.md).
