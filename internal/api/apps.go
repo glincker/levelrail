@@ -134,6 +134,10 @@ type appResource struct {
 	// for it. Every other handler returning an appResource leaves this
 	// false.
 	AutoPlaced bool `json:"auto_placed,omitempty"`
+	// AutoDomain and DNS are response-only, set by handleCreateApp when the
+	// apps base domain attached <app>.<base> and created its record.
+	AutoDomain string           `json:"auto_domain,omitempty"`
+	DNS        *domainDNSResult `json:"dns,omitempty"`
 	// ProjectID is which project (projects.go) this app is filed under,
 	// empty meaning no project. Response-only on PUT (handleUpdateApp
 	// echoes back the existing, unchanged value the same way it already
@@ -496,6 +500,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	autoDomain := rt.attachAppsBaseDomain(r.Context(), &req)
 	if len(req.Secrets) > 0 && rt.secrets == nil {
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
 		return
@@ -635,6 +640,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// scrub before echoing it.
 	req.VaultEnv = toAppResource(desired).VaultEnv
 
+	if autoDomain != "" {
+		req.AutoDomain = autoDomain
+		req.DNS = rt.dnsForAutoDomain(r.Context(), r, req.Name, autoDomain)
+	}
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)
 }

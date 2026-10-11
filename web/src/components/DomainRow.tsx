@@ -30,6 +30,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import {
+  certExpiryDate,
   certExpiryLabel,
   certRenewalBadge,
   certStatusMeta,
@@ -196,12 +197,22 @@ function ExpiryCell({ cert }: { cert?: CertificateStatus }) {
       </span>
     )
   }
+  const renews =
+    cert.source === 'custom'
+      ? t('page.cert.renewsManual')
+      : cert.managed_by === 'proxy'
+        ? t('page.cert.renewsProxy')
+        : t('page.cert.renewsAuto')
   return (
     <span
-      className="truncate text-xs text-muted-foreground"
+      className="flex min-w-0 flex-col text-xs text-muted-foreground"
       title={cert.not_after}
     >
-      {certExpiryLabel(cert.not_after)}
+      <span className="truncate text-foreground">
+        {certExpiryDate(cert.not_after)}
+      </span>
+      <span className="truncate">{certExpiryLabel(cert.not_after)}</span>
+      <span className="truncate text-muted-foreground/70">{renews}</span>
     </span>
   )
 }
@@ -288,20 +299,30 @@ export function DomainRow({
     >
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-1.5">
+          <Link
+            to="/domains/$domain"
+            params={{ domain: domain.domain }}
+            search={{ app: domain.service_name }}
+            className="min-w-0 truncate font-mono text-sm font-medium text-foreground hover:underline"
+          >
+            {domain.domain}
+          </Link>
           <a
             href={`https://${domain.domain.replace(/^\*\./, '')}`}
             target="_blank"
             rel="noreferrer noopener"
-            className="inline-flex min-w-0 items-center gap-1 font-mono text-sm font-medium text-foreground hover:underline"
+            aria-label={t('page.row.open', { domain: domain.domain })}
+            className="shrink-0 text-muted-foreground hover:text-foreground"
           >
-            <span className="truncate">{domain.domain}</span>
-            <ArrowSquareOutIcon
-              className="size-3 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
+            <ArrowSquareOutIcon className="size-3" aria-hidden="true" />
           </a>
           {domain.automatic ? (
             <Badge variant="outline">{t('page.row.automatic')}</Badge>
+          ) : null}
+          {domain.domain.startsWith('*.') ? (
+            <Badge variant="outline" title={t('page.row.wildcardHint')}>
+              {t('page.row.wildcard')}
+            </Badge>
           ) : null}
           {flags.map((flag) => (
             <span

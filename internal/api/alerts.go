@@ -154,10 +154,12 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 
 	kind := alerting.Kind(a.Kind)
 	switch kind {
-	case alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindSLOBurn, alerting.KindVersionSkew:
+	case alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindSLOBurn, alerting.KindVersionSkew,
+		alerting.KindCertExpiring, alerting.KindCertRenewalStalled, alerting.KindDomainNotResolving:
 	default:
-		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, or %q",
-			alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindSLOBurn, alerting.KindVersionSkew)
+		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, or %q",
+			alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindSLOBurn, alerting.KindVersionSkew,
+			alerting.KindCertExpiring, alerting.KindCertRenewalStalled, alerting.KindDomainNotResolving)
 	}
 
 	forDuration, err := parseOptionalDuration(a.ForDuration)
@@ -232,6 +234,10 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		}
 		if r.RestartCountThreshold <= 0 {
 			return alerting.Rule{}, errors.New("restart_count_threshold must be a positive integer for a scheduled_task_failure rule")
+		}
+	case alerting.KindCertExpiring:
+		if r.Threshold < 0 {
+			return alerting.Rule{}, errors.New("threshold (days) must not be negative for a cert_expiring rule")
 		}
 	case alerting.KindSLOBurn:
 		if r.SLO == nil {

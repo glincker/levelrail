@@ -283,6 +283,67 @@ levelrail-cli domains tls-cert get <app> <domain>
 
 The API is `PUT /api/v1/apps/{name}/domains/{domain}/tls-cert`, and the dashboard has a per-domain TLS control.
 
+## Add a domain and go live
+
+With a DNS provider connected, adding a domain does the rest: Levelrail creates the DNS record, waits for it to propagate, checks the certificate and confirms the site answers, then gives you one link.
+
+1. Connect Cloudflare or Route53 once (see [Wildcard domains: DNS-01 providers](#wildcard-domains-dns-01-providers)). The same credential is used for records.
+2. Add the domain from the dashboard (**Domains**, **Add domains**), with `levelrail-cli apps domains add <app> <domain> --wait`, or with `PATCH /api/v1/apps/{name}/domains`.
+
+```bash
+levelrail-cli apps domains add my-app app.example.com --wait
+levelrail-cli apps domains add my-app app.example.com --dns preview   # show the record, change nothing
+levelrail-cli domains go-live my-app app.example.com --wait --timeout 5m
+```
+
+`--wait` prints each step as it happens and exits non-zero when the domain is not live within `--timeout`.
+
+### What gets created
+
+- An `A` record to this server's public IPv4 address (an `AAAA` record on an IPv6-only host), or a `CNAME` to the target set with `settings ingress set --dns-cname-target`. A CNAME at a zone apex is only created at Cloudflare, which flattens it.
+- An identical record already in place is left as it is. A **different** `A`, `AAAA` or `CNAME` at the same name is reported as a conflict and not overwritten, unless you pass `--replace` (`replace: true`). Other record types such as `TXT` and `MX` are never touched.
+- The TTL is the provider's automatic one unless you set `--dns-ttl`. Cloudflare's proxy is off unless you set `--dns-proxied`; when on, set the zone's SSL/TLS mode to Full (strict).
+- Removing a domain keeps its record unless you pass `--remove-dns`. Only records Levelrail created are ever removed, and only when their value still matches.
+
+### Token scopes
+
+| Provider | Needed |
+| --- | --- |
+| Cloudflare | An API token with `Zone:DNS:Edit` and `Zone:Zone:Read` on the zones you use. Read is how the zone for a domain is found. |
+| Route53 | `route53:ListHostedZonesByName`, `route53:ListResourceRecordSets` and `route53:ChangeResourceRecordSets`. |
+
+Creating or changing a record needs the root ability. Every record write is recorded in the audit log as `dns_record.created`, `dns_record.updated` or `dns_record.deleted`.
+
+### Apps base domain
+
+Set a base domain such as `apps.example.com` and every new app created without a domain gets `<app>.apps.example.com`, with its record created, instead of the sslip.io address.
+
+```bash
+levelrail-cli settings ingress set --apps-base-domain apps.example.com
+levelrail-cli domains backfill-base-domain            # dry run for existing apps
+levelrail-cli domains backfill-base-domain --confirm
+```
+
+The base domain must sit inside a zone your provider manages; the dashboard shows whether the zone was found as you type. Existing apps keep their address until you run the backfill.
+
+### The automation policy
+
+`GET/PUT /api/v1/settings/domain-automation` (or **Domains**, **Platform settings**, **Domain automation**, or `levelrail-cli settings domain-automation get|set`) controls what runs on a new domain:
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `auto_dns` | on when a provider is connected | Create the DNS record. |
+| `auto_proxy_route` | on when the proxy integration is enabled | Wait for the managed proxy route. |
+| `force_https` | on | Force HTTPS once a certificate is ready, where this server supports it. |
+| `www_policy` | `off` | `redirect_to_apex` or `redirect_to_www` also attaches the partner host, its record and a 301 redirect. |
+| `attach_www_counterpart` | off | Attach `www.example.com` with `example.com` and the reverse, without a redirect. |
+| `wildcard_for_base_domain` | off | One `*.<base>` record covers every app under the base domain. |
+| `verify_after` | on | Probe propagation, certificate and HTTP and report each step. |
+
+A request can override any key with an `automation` object. `POST /api/v1/apps/{name}/domains/go-live/plan` is the dry run: it returns the planned steps and changes nothing. Each run is kept in the automation history with a one-step **Undo** that removes only what that run created (`levelrail-cli domains go-live runs`, `domains go-live undo <id>`).
+
+Steps that the server cannot do are reported as `skipped` and the rest still completes.
+
 ## Wildcard domains: DNS-01 providers
 
 Wildcard domains like `*.example.com` need ACME's DNS-01 challenge (HTTP-01 cannot validate wildcards). DNS-01 works by creating a short-lived TXT record at your DNS provider, so you must grant API access.
@@ -292,7 +353,7 @@ Two providers are supported. Configure them platform-wide on the **Domains** pag
 <Tabs :items="['Cloudflare', 'Route53']">
 <Tab value="Cloudflare">
 
-Use an API token scoped to `Zone:DNS:Edit` for your zone, never the global API key.
+Use an API token scoped to `Zone:DNS:Edit` and `Zone:Zone:Read` for your zone, never the global API key.
 
 ```bash
 levelrail-cli domains cloudflare-dns set --cf-api-token <token>
@@ -384,6 +445,8 @@ GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/waf
 
 ## Domain redirects
 
+For force HTTPS, www and apex presets, aliases and other per-domain controls (headers, path forwarders, country rules, caching), see [Domain traffic controls](domain-traffic-controls.md).
+
 Route a domain to a different URL instead of proxying to a container. Use cases:
 
 - `www.example.com` to `example.com`
@@ -397,6 +460,8 @@ This uses Caddy's `static_response` handler with a `Location` header and redirec
 | --- | --- | --- |
 | `301` | Permanent (default) | Renames, www-to-apex normalization, or expected permanent moves |
 | `302` | Temporary | Redirects you plan to undo (browsers and search engines don't cache these) |
+| `307` | Temporary, keeps the method | Like 302, but a POST stays a POST |
+| `308` | Permanent, keeps the method | Like 301, but a POST stays a POST |
 
 ### Requirements
 
@@ -425,7 +490,7 @@ levelrail-cli domains redirect get|set|clear <app> <domain>
 levelrail-cli domains redirect set my-app www.example.com --target https://example.com
 ```
 
-Add `--temporary` for a `302`. The default is a permanent `301`.
+Add `--temporary` for a `302`, or `--status 307`/`--status 308`. The default is a permanent `301`. `--preset www-to-apex` or `--preset apex-to-www` sets up the www and apex pair instead of a fixed target. A redirect that would loop back to its own domain is refused.
 
 </Tab>
 <Tab value="API">
@@ -501,6 +566,13 @@ APP_INGRESS_CLIENT_IP_HEADERS=CF-Connecting-IP   # optional, defaults to X-Forwa
 `private_ranges` expands to the RFC 1918 and loopback ranges. For a trusted peer, the client address is read from the header (right to left for `X-Forwarded-For`, so a forged left-most entry is ignored), appended to `X-Forwarded-For`, and sent to the app as `X-Real-IP`. Every app receives `X-Real-IP`, trusted proxy or not. Keep the list to the proxies you actually run: anything listed can claim any client address.
 
 ### Running behind a TLS proxy
+
+If the proxy is Traefik (Coolify's included), `levelrail-cli proxy setup` turns
+this mode on and writes one route per domain into Traefik's watched directory,
+kept in step with every domain you add or remove. See
+[Run behind an existing proxy](behind-an-existing-proxy.md#one-step-setup-traefik-including-coolify).
+The domain check then says the proxy handles certificates instead of asking
+for ports 80 and 443 on this server.
 
 If Traefik, nginx or Caddy owns 80 and 443 and forwards to this ingress, set the **Public HTTPS port** (`public_https_port`, usually `443`) so generated links omit the ingress listen port, and turn on `tls_terminated_upstream` when the proxy also holds the certificates so this instance never runs ACME. Details and a Traefik example: [Run behind an existing proxy](behind-an-existing-proxy.md#several-instances-behind-one-proxy). An ACME failure notice for non-standard ingress ports does not apply in this mode, because the proxy handles HTTPS.
 
@@ -600,6 +672,88 @@ levelrail-cli apps set-node <app-name> <this control plane's own node id>
 levelrail-cli apps clear-node <app-name>
 ```
 
+## Reachable links, health summary and the domain doctor
+
+### `reachable_url`: the link that actually works
+
+`GET /api/v1/domains` returns `reachable_url` on every row, and `GET /api/v1/apps/{name}/environment-domains` returns a `reachability` map keyed by domain. The URL is `https://<domain>`, with the public HTTPS port only when one is configured (or 443 when TLS is terminated by a proxy in front). It is present only when the app is running and the domain is routable. Otherwise the field is omitted and `reachable_reason` says why:
+
+| Reason | Meaning |
+| --- | --- |
+| `held_back` | an app import staged the domain without routing it yet |
+| `stopped` | the app is stopped or has never run |
+| `not_routed` | no standard public link exists: the ingress listens on a non standard port and no public HTTPS port is set, or the domain is not in the app's active environment |
+| `not_resolving` | the last DNS check found no record, or a record pointing elsewhere (not counted when your own proxy fronts this server) |
+
+The dashboard builds its **Open site** button from this field only, so it never shows a `:8443` or sslip.io link that does not answer. `levelrail-cli domains list` prints it in the `URL` column.
+
+### Health summary
+
+`GET /api/v1/traffic/summary` (`read` ability) feeds the sidebar badge and the health strip. It counts domains as `live`, `propagating`, `waiting`, `needs_attention`, `not_set_up`, `paused` or `unknown`; certificates expiring within `APP_TRAFFIC_CERT_EXPIRY_DAYS` days (default 30), expired, or failing to renew; and the total needing attention. It never does network I/O: it reads stored state and the last DNS check result for each domain (a domain never checked since the control plane started counts as `unknown`), and it is cached for `APP_TRAFFIC_SUMMARY_CACHE_TTL` (default `5s`). Zone delegation and proxy route errors are listed in `unavailable` until those features report them.
+
+```json
+{
+  "generated_at": "2026-10-10T12:00:00Z",
+  "domains": {"total": 6, "live": 3, "waiting": 1, "propagating": 1, "needs_attention": 1, "not_set_up": 0, "paused": 0, "unknown": 0},
+  "certificates": {"window_days": 30, "expiring": 1, "expired": 0, "renewal_failing": 1},
+  "domains_not_resolving": 1,
+  "attention": 1,
+  "unavailable": ["zones_not_delegated", "routes_with_errors"]
+}
+```
+
+`levelrail-cli domains summary` prints the same counts.
+
+### Domain doctor
+
+`POST /api/v1/apps/{name}/domains/{domain}/doctor` (`read` ability) runs ordered checks and returns one fix per problem:
+
+| Check | What it looks at |
+| --- | --- |
+| `dns.resolves` | what this server and public resolvers answer, and whether they disagree (propagating) |
+| `dns.points_here` | whether the answers include this server's public address |
+| `dns.aaaa_mismatch` | AAAA records that send IPv6 visitors somewhere else |
+| `dns.cname_apex` | a CNAME at the zone apex |
+| `caa.blocks_issuer` | CAA records that do not allow `letsencrypt.org` |
+| `app.running` | the app is running and ready |
+| `domain.held_back` | an import staged the domain without routing it |
+| `proxy.ports` | another container (Traefik, nginx, Caddy) publishing port 80 or 443 |
+| `net.port80` | port 80 answers (Let's Encrypt validates over it) |
+| `tls.certificate` | the certificate served on 443 for this name: issuer, expiry, name mismatch, and a proxy's default certificate such as `TRAEFIK DEFAULT CERT` or Caddy's local authority |
+| `http.status` | what `GET /` returns over HTTPS |
+| `redirect.chain` | redirect loops, HTTP not redirecting to HTTPS, www and apex hops |
+| `hsts.risk` | an untrusted certificate behind HSTS (a header from the site, or a preloaded TLD such as `.dev`), which browsers refuse with `net::ERR_CERT_AUTHORITY_INVALID` and no way to click through |
+| `cert.renewal` | the stored certificate, stalled renewal, or the CA's last error with its next action |
+
+Each check has a `state` (`pass`, `warn`, `fail`, `skipped`, `unavailable`), a `tier` (1 blocks traffic, 2 blocks the certificate, 3 breaks soon, 4 hygiene) and, when it is not passing, a `fix` with a summary and at most one action (`request` with the API call, `link`, or `copy` with the exact record).
+
+```json
+{
+  "domain": "shop.example.com",
+  "app": "shop",
+  "checked_at": "2026-10-10T12:00:00Z",
+  "status": "problems",
+  "probed": true,
+  "checks": [
+    {"id": "tls.certificate", "title": "A default certificate from Traefik is served", "state": "fail", "tier": 2,
+     "detail": "subject \"CN=TRAEFIK DEFAULT CERT\" ...",
+     "fix": {"summary": "Give that proxy a route and certificate for this domain ...",
+             "action": {"kind": "request", "label": "Show proxy setup", "api": "GET /api/v1/system/reverse-proxy?domain=shop.example.com"}}}
+  ]
+}
+```
+
+The doctor only connects to the domain when it resolves to this server's own public address (`APP_PUBLIC_HOST` or the detected public IPs, never the request's Host header), and it always dials that address, never an address taken from DNS. When the domain points elsewhere it runs the DNS checks only, sets `probed` to false and explains why in `probe_note`. The whole run is bounded by `APP_DOMAIN_DOCTOR_TIMEOUT` (default `20s`) and each probe by `APP_DOMAIN_DOCTOR_PROBE_TIMEOUT` (default `4s`). Probes run from this server, so a NAT that does not hairpin can make a port check warn even when visitors connect fine.
+
+```bash
+levelrail-cli domains doctor shop shop.example.com          # prioritised fix list
+levelrail-cli domains doctor shop shop.example.com --json
+```
+
+### Activity
+
+`GET /api/v1/domains/{domain}/activity` (`read` ability, limited to domains whose app you can see) returns the domain's recent changes from the audit log plus certificate issuance, renewals and the CA's last failure, newest first, as `{events: [{id, at, kind, title, detail, failed, action, actor: {type, name}, object: {type, id, href}}], next_cursor}`. Pass `next_cursor` back as `?before=` for the next page; `?limit=` and `?actions=` work as on the audit log. `levelrail-cli domains activity <domain>` prints it.
+
 ## Walkthrough: your first domain
 
 This assumes the control plane is running and an app is deployed (see [Getting started](getting-started.md)).
@@ -641,6 +795,11 @@ curl -v https://my-app.example.com
 ## Next steps
 
 <CardGroup :cols="2">
+<Card title="Domain traffic controls" href="/domain-traffic-controls">
+
+Headers, path forwarders, country rules, caching and redirects per domain.
+
+</Card>
 <Card title="ACME verification runbook" href="/acme-verification-runbook">
 
 Issue and verify a real Let's Encrypt certificate.

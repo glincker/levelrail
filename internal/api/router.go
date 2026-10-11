@@ -80,6 +80,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/statuspage"
@@ -165,6 +166,7 @@ type Router struct {
 	localNodeID            string        // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
 	meshZone               string        // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness              ReadinessProbes
+	dockerGuard            DockerGuardController    // nil is valid: the docker guard routes report it as not configured
 	dockerPinger           DockerPinger             // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
 	images                 ImageLister              // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
 	containers             ContainerLister          // nil is valid: GET /api/v1/system/containers returns 501, same shape as execRuntime above
@@ -193,6 +195,7 @@ type Router struct {
 	domainWAF              DomainWAFStore              // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainRedirect         DomainRedirectStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainSearchVisibility DomainSearchVisibilityStore // always set, core Store
+	domainPolicy           domainPolicyDeps            // per-domain traffic controls, domain_policies.go
 	domainErrorPages       DomainErrorPagesStore       // always set, same "core Store interface" shape as domainWAF above; no secrets dependency either
 	masterKeyRotator       MasterKeyRotator            // nil is valid: POST /system/master-key/rotate returns 501, same shape as domainBasicAuthSecrets above
 	secretBinder           SecretBinder                // nil is valid: the secrets binding routes return 501
@@ -216,6 +219,7 @@ type Router struct {
 	publicHost              string
 	detectPublicIPs         func(context.Context) []string // nil uses ingress.DetectPublicIPs; tests stub it
 	dashboardListenAddr     string                         // APP_HTTP_ADDR, so the reverse proxy guide can build an upstream
+	proxyIntegration        *proxyIntegrationDeps          // nil: managed proxy routes answer 501, see SetProxyIntegration
 	httpsMu                 sync.Mutex
 	httpsAttempts           []time.Time
 	httpsStartedAt          time.Time
@@ -266,6 +270,8 @@ type Router struct {
 	// domainChecks rate-limits handleCheckDomain's real DNS lookups per
 	// domain; always non-nil, constructed in NewRouter.
 	domainChecks *domainCheckCache
+	// traffic holds the domain status memo, summary cache and doctor probes.
+	traffic *trafficState
 	// apiRateLimit is the general per-actor request budget requireAbility
 	// enforces (api_rate_limit.go). nil is valid: NewRouter leaves it
 	// unset, so existing tests and any embedder that never opts in see
@@ -411,6 +417,7 @@ type Router struct {
 	baseBackupHistory            BaseBackupHistoryStore           // always set, same "core Store interface" shape as backupHistory above
 	baseBackupRunner             BaseBackupRunner                 // nil is valid: POST /api/v1/databases/{name}/base-backups returns 501, same shape as backupRunner above
 	majorUpgrader                MajorUpgrader                    // nil is valid: the major upgrade routes return 501
+	dbUpgrader                   DatabaseUpgrader                 // nil is valid: the database upgrade routes return 501
 	majorUpgrades                MajorUpgradeStore                // always set, same "core Store interface" shape as pitrRestoreHistory
 	pitrRestoreHistory           PITRRestoreHistoryStore          // always set, same "core Store interface" shape as restoreHistory above
 	walShipStatus                WALShipStatusSource              // nil is valid: "pitr status" omits wal_ship
@@ -485,6 +492,9 @@ type Router struct {
 	route53DNSCredentialResolver Route53DNSCredentialResolver     // nil is valid: dns-records routes return 501, same shape as cloudflareDNSTokenResolver above
 	dnsRecordManager             dnsRecordManagerFunc             // always set, defaulted to rt.resolveDNSRecordManager below, overridable in this package's own tests, the same "seam, not an interface" shape lookupHost already uses
 	dnsRecordStatus              dnsRecordStatusFunc              // always set, defaulted to defaultDNSRecordStatus below, overridable in this package's own tests so none of them perform a real DNS query
+	domainAuto                   domainAutoSeams                  // zero value uses the real DNS provider, TLS and HTTP probes; tests replace single funcs
+	dnsZoneProviders             dnsZoneProvidersFunc             // nil uses rt.resolveDNSZoneProviders (dns_zones.go); tests swap in fakes
+	dnsQuerier                   dnszones.Querier                 // nil uses a real miekg/dns querier; tests swap in a fake
 	registry                     RegistryStore                    // always set, same shape as cloudflareTunnel above
 	registrySecrets              RegistrySecrets                  // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
 	vault                        VaultSettingsStore               // always set, same shape as cloudflareTunnel above
@@ -655,8 +665,10 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainRedirect:              s,
 		domainErrorPages:            s,
 		domainSearchVisibility:      s,
+		domainPolicy:                domainPolicyDeps{store: s},
 		lookupHost:                  defaultLookupHost,
 		domainChecks:                newDomainCheckCache(),
+		traffic:                     newTrafficState(),
 		backupTargets:               s,
 		registryCredentials:         s,
 		networkShares:               s,

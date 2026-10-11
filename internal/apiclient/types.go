@@ -489,6 +489,9 @@ type DomainResource struct {
 	ServiceName string `json:"service_name"`
 	// Automatic marks a generated sslip.io hostname rather than a configured domain.
 	Automatic bool `json:"automatic,omitempty"`
+	// ReachableURL is the link to open; ReachableReason says why it is empty.
+	ReachableURL    string `json:"reachable_url,omitempty"`
+	ReachableReason string `json:"reachable_reason,omitempty"`
 }
 
 // CloudflareDNSResource mirrors internal/api's cloudflareDNSResource
@@ -834,11 +837,12 @@ type EnvironmentDomainSet struct {
 
 // AppEnvironmentDomains mirrors internal/api's appEnvironmentDomainsResource.
 type AppEnvironmentDomains struct {
-	App                 string                 `json:"app"`
-	ActiveEnvironmentID string                 `json:"active_environment_id,omitempty"`
-	DefaultDomains      []string               `json:"default_domains"`
-	RoutedDomains       []string               `json:"routed_domains"`
-	Environments        []EnvironmentDomainSet `json:"environments"`
+	App                 string                        `json:"app"`
+	ActiveEnvironmentID string                        `json:"active_environment_id,omitempty"`
+	DefaultDomains      []string                      `json:"default_domains"`
+	RoutedDomains       []string                      `json:"routed_domains"`
+	Environments        []EnvironmentDomainSet        `json:"environments"`
+	Reachability        map[string]DomainReachability `json:"reachability,omitempty"`
 }
 
 // CloneAppRequest mirrors internal/api's cloneAppRequest
@@ -3215,6 +3219,8 @@ type ListAuditLogOptions struct {
 	Search     string // case-insensitive substring across actor, ability, method, path, remote addr
 	FailedOnly bool   // only entries with status_code >= 400
 	Agent      string // only entries made with a token labeled with this agent name
+	Resource   string // "domain:<name>", "zone:<name>" or "app:<name>"
+	Actions    string // comma separated action prefixes, e.g. "dns_record.,domain."
 }
 
 // PurgeAuditLogResult is POST /api/v1/audit-log/purge's response shape
@@ -3414,6 +3420,12 @@ type IngressSettingsResource struct {
 	// ACMESkippedUpstream and TrustedProxiesMissing are read-only.
 	ACMESkippedUpstream   bool `json:"acme_skipped_upstream,omitempty"`
 	TrustedProxiesMissing bool `json:"trusted_proxies_missing,omitempty"`
+	// AppsBaseDomain gives new apps without a domain <app>.<base> and creates
+	// the DNS record; the DNS fields tune the records Levelrail creates.
+	AppsBaseDomain string `json:"apps_base_domain,omitempty"`
+	DNSCNAMETarget string `json:"dns_cname_target,omitempty"`
+	DNSTTLSeconds  int    `json:"dns_ttl_seconds,omitempty"`
+	DNSProxied     bool   `json:"dns_proxied,omitempty"`
 }
 
 // HTTPSStatusResource mirrors internal/api's httpsStatusResource (GET/POST

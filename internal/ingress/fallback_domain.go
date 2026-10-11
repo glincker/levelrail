@@ -52,6 +52,9 @@ func FallbackDomain(publicHost, serviceName string) (domain string, ok bool) {
 	return label + "." + dashEncodeIP(ip) + "." + fallbackDomainSuffix, true
 }
 
+// SanitizeDNSLabel is sanitizeDNSLabel for callers outside this package.
+func SanitizeDNSLabel(s string) string { return sanitizeDNSLabel(s) }
+
 // IsPubliclyRoutable is isPubliclyRoutable for callers outside this package.
 func IsPubliclyRoutable(ip net.IP) bool { return isPubliclyRoutable(ip) }
 

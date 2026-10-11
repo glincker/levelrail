@@ -113,6 +113,8 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		rt.doctorCheckCPU(),
 		rt.doctorCheckDiskIOLatency(),
 		doctorCheckContainerHardening(hardeningCfg, hardeningErr),
+		rt.doctorCheckDockerGuard(ctx),
+		rt.doctorCheckDockerPrivilege(ctx),
 	}
 	checks = append(checks, rt.doctorRunNetworkChecks(ctx, httpPort, httpsPort)...)
 	checks = append(checks, rt.doctorCheckRegistryReachability(ctx)...)

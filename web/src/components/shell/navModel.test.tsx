@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   APP_NAV_SECTIONS,
+  visibleGlobalGroups,
   GLOBAL_NAV_GROUPS,
   activeAppSection,
   allGlobalItems,
@@ -21,6 +22,7 @@ const EXPECTED_GLOBAL = [
   '/network',
   '/network/proxy',
   '/domains',
+  '/dns',
   '/loadbalancers',
   '/settings/registry',
   '/settings/registry-credentials',
@@ -70,7 +72,28 @@ describe('global nav model', () => {
   })
 
   it('keeps groups short', () => {
-    expect(GLOBAL_NAV_GROUPS.length).toBeLessThanOrEqual(7)
+    expect(GLOBAL_NAV_GROUPS.length).toBeLessThanOrEqual(8)
+  })
+
+  it('groups Domains, DNS, Proxy and Load balancers under Traffic', () => {
+    const traffic = GLOBAL_NAV_GROUPS.find((g) => g.id === 'traffic')
+    expect(traffic?.label).toBe('Traffic')
+    expect(traffic?.items.map((i) => i.label)).toEqual([
+      'Domains',
+      'DNS',
+      'Proxy',
+      'Load balancers',
+    ])
+  })
+
+  it('hides route-gated items until the router has the route', () => {
+    const labels = (has: boolean) =>
+      visibleGlobalGroups(['load-balancer'], () => has)
+        .flatMap((g) => g.items)
+        .map((i) => i.label)
+    expect(labels(false)).not.toContain('DNS')
+    expect(labels(true)).toContain('DNS')
+    expect(labels(false)).toContain('Domains')
   })
 
   it.each([

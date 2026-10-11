@@ -265,6 +265,13 @@
       "description": "Give teammates their own accounts instead of sharing yours."
     }
   },
+  "databaseUpgrades": {
+    "title": "Database upgrades",
+    "description": "The default upgrade policy for every database that does not set its own.",
+    "loadFailed": "Could not load the platform upgrade policy: {{error}}",
+    "formTitle": "Platform default policy",
+    "formDescription": "Databases inherit this until you override them on their Upgrades tab. Only the platform owner can change it."
+  },
   "githubApp": {
     "manageAccess": "Manage repository access",
     "manageAccessHint": "Missing a repository? Choose which repositories this app can see on GitHub, then come back.",
@@ -301,5 +308,35 @@
       "continue": "Continue to GitHub"
     },
     "notInstalled": "The App was created but has not been installed on an account or organization yet. Finish installing it on GitHub to pick repositories. A private App can only be installed on the account or organization that owns it."
+  },
+  "dockerGuard": {
+    "title": "Docker API guard",
+    "description": "Every Docker request this control plane makes passes through an allowlist that blocks privileged containers, host namespaces and protected host mounts.",
+    "modeLabel": "Guard mode",
+    "modes": {
+      "enforce": {
+        "label": "Enforce",
+        "description": "Reject requests a rule denies before they reach Docker."
+      },
+      "audit": {
+        "label": "Audit",
+        "description": "Allow everything and record what enforce would deny."
+      },
+      "off": {
+        "label": "Off",
+        "description": "No guard. Takes effect after a restart."
+      }
+    },
+    "notConfigured": "This control plane was started without the guard.",
+    "restartRequired": "The saved mode differs from the running one. Restart the control plane to apply it.",
+    "readyToEnforce": "Audit mode saw no would-be denials in the last {{days}} days. Enforce is likely safe.",
+    "pinned": "The mode is set by APP_DOCKER_GUARD on the server. Unset it to change the mode here.",
+    "windowTitle": "Flagged requests, last {{days}} days",
+    "windowEmpty": "Nothing flagged.",
+    "ruleCounts": "{{wouldDeny}} would deny, {{denied}} denied",
+    "save": "Save mode",
+    "saving": "Saving...",
+    "saved": "Docker guard mode saved",
+    "viewAudit": "View in audit log"
   }
 }

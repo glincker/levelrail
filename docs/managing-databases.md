@@ -207,6 +207,8 @@ levelrail-cli databases set-version <name> 16.4
 - **Redis, KeyDB, Dragonfly:** a newer major is allowed, but never going back.
 - For a Postgres major upgrade, use the guarded flow below. For the other engines, back up, then restore into a new database on the new version with `backups restore-as-new`.
 
+To see which patch and minor releases are available, which fix CVEs, and to apply them automatically in a maintenance window with a backup first and an automatic revert, see [Database upgrades](/database-upgrades).
+
 Postgres 18 and newer images moved their default data directory outside the path this platform mounts, which would lose data on any container recreate. For version 18 and above the controller pins `PGDATA` back to the mounted path.
 
 ### Postgres major version upgrade
@@ -219,6 +221,9 @@ levelrail-cli databases major-upgrade <name> --version 17 [--confirm NAME]
 levelrail-cli databases major-upgrades <name>
 levelrail-cli databases major-upgrade-rollback <name> <id> [--confirm NAME]
 levelrail-cli databases major-upgrade-discard <name> <id>
+levelrail-cli databases upgrades [<name>]
+levelrail-cli databases upgrade-policy <name>|--platform [--auto off|patch|minor] [--window CRON] [--duration 2h] [--timezone TZ]
+levelrail-cli databases upgrade-now <name> <version> [--confirm NAME]
 ```
 
 </Tab>
@@ -608,6 +613,10 @@ The database Overview page has a **Slow Queries** tab with a time-range picker (
 | `GET` | `/api/v1/databases/{name}/major-upgrades` | `read` |
 | `POST` | `/api/v1/databases/{name}/major-upgrades/{id}/rollback` | `root` |
 | `DELETE` | `/api/v1/databases/{name}/major-upgrades/{id}/snapshot` | `root` |
+| `GET` | `/api/v1/databases/{name}/upgrades` | `read` |
+| `PUT` | `/api/v1/databases/{name}/upgrade-policy` | `write:sensitive` |
+| `POST` | `/api/v1/databases/{name}/upgrade-now` | `write:sensitive` |
+| `GET` | `/api/v1/databases/upgrade-summary` | `read` |
 | `PUT` | `/api/v1/apps/{name}/database` | `write` |
 | `DELETE` | `/api/v1/apps/{name}/database` | `write` |
 | `GET`/`POST`/`PUT`/`DELETE` | `/api/v1/backup-targets` (+ `/{id}`, `/{id}/test`) | `read` (GET), `write:sensitive` (everything else) |

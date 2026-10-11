@@ -219,6 +219,10 @@ func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, befo
 		writeError(w, http.StatusBadRequest, `status must be "failed"`)
 		return 0, nil, store.AuditEntryFilter{}, false
 	}
+	if err := applyAuditResourceFilter(&filter, r.URL.Query()); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return 0, nil, store.AuditEntryFilter{}, false
+	}
 	return limit, before, filter, true
 }
 

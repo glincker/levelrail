@@ -56,15 +56,17 @@ export function suggestPort(
   return { port: configured, switchTo: listening[0] }
 }
 
-export type CertificatePath = 'http-01' | 'dns-01-private' | 'dns-01-wildcard'
+export type CertificatePath =
+  'http-01' | 'dns-01-private' | 'dns-01-wildcard' | 'upstream-proxy'
 
 // certificatePath mirrors the server verdict, adding the wildcard case so
 // the wizard can word it separately from the private-address case.
 export function certificatePath(
   domain: string,
-  challenge: 'http-01' | 'dns-01-required' | undefined,
+  challenge: 'http-01' | 'dns-01-required' | 'upstream-proxy' | undefined,
   privateHost: boolean,
 ): CertificatePath {
+  if (challenge === 'upstream-proxy') return 'upstream-proxy'
   if (domain.trim().startsWith('*.')) return 'dns-01-wildcard'
   if (challenge === 'dns-01-required' || privateHost) return 'dns-01-private'
   return 'http-01'

@@ -112,6 +112,8 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Domains and ingress', link: '/domains-and-ingress' },
+          { text: 'DNS zones and records', link: '/dns' },
+          { text: 'Domain traffic controls', link: '/domain-traffic-controls' },
           { text: 'Load balancing', link: '/load-balancing' },
           { text: 'ACME verification runbook', link: '/acme-verification-runbook' },
           { text: 'Multi-node', link: '/multi-node' },
@@ -131,6 +133,7 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Managing databases', link: '/managing-databases' },
+          { text: 'Database upgrades', link: '/database-upgrades' },
           { text: 'External databases', link: '/external-databases' },
           {
             text: 'Connecting apps to databases',
@@ -247,6 +250,7 @@ const sidebarGroups = [
       { text: 'Architecture', link: '/architecture' },
       { text: 'Security overview', link: '/security' },
       { text: 'Threat model', link: '/threat-model' },
+      { text: 'Docker access and the API guard', link: '/docker-access' },
       { text: 'Security alert verdicts', link: '/security-alert-verdicts' },
       { text: 'Comparison', link: '/comparison' },
       { text: 'Who Levelrail is for', link: '/use-cases' },

@@ -23,7 +23,6 @@ import (
 	"syscall"
 	"time"
 
-	dockerclient "github.com/docker/docker/client"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
@@ -42,6 +41,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/exposure"
@@ -53,6 +53,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/objectstore"
 	"github.com/GLINCKER/levelrail/internal/orphans"
+	"github.com/GLINCKER/levelrail/internal/proxyroutes"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
@@ -62,6 +63,7 @@ import (
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
+	proxyroutesreconcile "github.com/GLINCKER/levelrail/internal/reconcile/proxyroutes"
 	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
 	"github.com/GLINCKER/levelrail/internal/scheduledeploy"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
@@ -426,7 +428,11 @@ func run(logger *slog.Logger) error {
 		logger.Warn("instance id not available: cross-instance Docker cleanup safety is disabled", slog.String("error", err.Error()))
 	}
 
-	clientOpts := []docker.ClientOption{}
+	guard, err := bootDockerGuard(ctx, logger, db)
+	if err != nil {
+		return err
+	}
+	clientOpts := guardClientOptions(guard)
 	if instanceID != "" {
 		clientOpts = append(clientOpts, docker.WithInstanceLabel(spec.InstanceLabelKey, instanceID))
 	}
@@ -439,6 +445,7 @@ func run(logger *slog.Logger) error {
 			logger.Error("closing docker client", slog.String("error", cerr.Error()))
 		}
 	}()
+	dockerguard.LogPrivilege(ctx, logger, client)
 
 	// Must run before anything below can create a new deploy attempt:
 	// see FailOrphanedDeployAttempts' own doc comment.
@@ -704,7 +711,7 @@ func run(logger *slog.Logger) error {
 
 	supplyChainSvc := newSupplyChainService(ctx, logger, db, client, agentDataDir, b.ShortName)
 
-	builder, closeBuilder, err := loadBuilder(ctx, logger, db, telemetryDB, secretsManager, agentRegistry, supplyChainSvc)
+	builder, closeBuilder, err := loadBuilder(ctx, logger, db, telemetryDB, secretsManager, agentRegistry, supplyChainSvc, guard)
 	if err != nil {
 		// Not fatal, the same choice as everything else optional above:
 		// the control plane still starts, serving apps deployed by hand
@@ -752,6 +759,7 @@ func run(logger *slog.Logger) error {
 
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver, pushVAPIDPublicKey)
 	configureNodeCerts(apiRouter, agentServer)
+	apiRouter.SetDockerGuard(guard.Controller)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
 	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
@@ -825,6 +833,8 @@ func run(logger *slog.Logger) error {
 		return fmt.Errorf("ingress edge settings: %w", err)
 	}
 	apiRouter.SetDoctorIngressEdge(edge.doctorInfo())
+	proxySyncer := newProxySyncer(b, db, logger)
+	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
 
 	engine.SetStore(db)
 	engine.SetSource(dynamicSource(dynamicSourceDeps{
@@ -853,6 +863,7 @@ func run(logger *slog.Logger) error {
 		httpRedirect:                 httpRedirectEnabled(ingressHTTPAddr(), edge.inherited, logger),
 		models:                       newModelDeps(),
 		lbRegistry:                   lbRegistry,
+		proxySyncer:                  proxySyncer,
 		previewNotifier:              previewManager,
 	}))
 	if experimental.Enabled(experimental.AIModels) {
@@ -965,6 +976,7 @@ func run(logger *slog.Logger) error {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
+	alertingEngine.SetTrafficSources(db, ingressdriver.DefaultACMEFailures())
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetChanges(changes.New(db, db, db, logger), alertDashboardLink())
 	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))
@@ -1070,6 +1082,9 @@ func run(logger *slog.Logger) error {
 			logger.Error("database temporary credential sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
+
+	startDatabaseUpgrades(ctx, logger, db, secretsManager, client, engine.Nudge, backupRunner, backupVerifyRunner, alertingDB, deployDispatcher,
+		func(nodeID string) bool { return nodeID == "" || (meshCfg != nil && nodeID == meshCfg.localNodeID) }, apiRouter)
 
 	imageUpdateScheduler := &imageupdate.Scheduler{Store: db, Checker: apiRouter, Logger: logger}
 	go func() {
@@ -1927,8 +1942,8 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 // buildNodeSource below, which build.Router consults per build to decide
 // whether to build here or dispatch to a node an operator marked
 // build-capable (migrations/0010_node_workloads.sql).
-func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, supplyChain *supplychain.Service) (*deploy.Pipeline, func() error, error) {
-	rawDockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, supplyChain *supplychain.Service, guard dockerguard.Booted) (*deploy.Pipeline, func() error, error) {
+	rawDockerCli, err := rawDockerClient(guard.Host)
 	if err != nil {
 		return nil, nil, fmt.Errorf("new docker client for buildkit: %w", err)
 	}
@@ -1977,7 +1992,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithOrderedStore(db),
 		deploy.WithAttemptRecorder(db),
 	}
-	deployOpts = append(deployOpts, digestResolverOptions(logger, db, secretsManager)...)
+	deployOpts = append(deployOpts, digestResolverOptions(logger, db, secretsManager, guard)...)
 	deployOpts = append(deployOpts, supplyChainDeployOptions(supplyChain)...)
 	if secretsManager != nil {
 		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager), deploy.WithBuildCache(newBuildCache(logger, db, secretsManager)))
@@ -3582,6 +3597,8 @@ type dynamicSourceDeps struct {
 	ingressEdge  ingressEdge
 	// lbRegistry is shared with the API so it can report live upstream status.
 	lbRegistry *loadbalancer.Registry
+	// proxySyncer is shared with the API so passes on one directory serialise.
+	proxySyncer *proxyroutes.Syncer
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -3669,6 +3686,9 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		ingressOpts = append(ingressOpts, ingressreconcile.WithAppWake(deps.db, dashboardDialAddr(httpAddr()), appWakeToken()))
 		ingressOpts = append(ingressOpts, ingressreconcile.WithCanaries(deps.db))
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
+		if deps.proxySyncer != nil {
+			controllers = append(controllers, proxyroutesreconcile.New(deps.proxySyncer))
+		}
 
 		// Local runtime unconditionally, same reasoning as the ingress
 		// controller above: per-app networks are single-node scope until

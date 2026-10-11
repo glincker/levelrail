@@ -918,3 +918,44 @@ func TestBuildRoutesConfig_HTTPRedirectAndACMEEvents(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildRoutesConfig_PlainHTTP(t *testing.T) {
+	opts := RoutesOptions{
+		ServerName: "ingress", ListenAddr: ":8443", HTTPPort: 8088, TLS: true,
+		Routes: []ProxyRoute{{Hosts: []string{"app.example.com"}, BackendDial: "127.0.0.1:3000"}},
+	}
+	tests := []struct {
+		name      string
+		plainHTTP bool
+		wantPlain bool
+	}{
+		{name: "off: only the TLS server", plainHTTP: false, wantPlain: false},
+		{name: "on: a plain HTTP server on the HTTP port", plainHTTP: true, wantPlain: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			o := opts
+			o.PlainHTTP = tc.plainHTTP
+			cfg, err := BuildRoutesConfig(o)
+			if err != nil {
+				t.Fatalf("BuildRoutesConfig() error: %v", err)
+			}
+			plain, ok := cfg.Apps.HTTP.Servers["ingress-plain"]
+			if ok != tc.wantPlain {
+				t.Fatalf("plain server present = %v, want %v", ok, tc.wantPlain)
+			}
+			if !ok {
+				return
+			}
+			if len(plain.Listen) != 1 || plain.Listen[0] != ":8088" {
+				t.Errorf("listen = %v, want [:8088]", plain.Listen)
+			}
+			if plain.AutomaticHTTPS == nil || !plain.AutomaticHTTPS.Disabled {
+				t.Errorf("automatic_https not disabled on the plain server")
+			}
+			if len(plain.Routes) != len(cfg.Apps.HTTP.Servers["ingress"].Routes) {
+				t.Errorf("plain routes = %d, want the TLS server's %d", len(plain.Routes), len(cfg.Apps.HTTP.Servers["ingress"].Routes))
+			}
+		})
+	}
+}

@@ -21,6 +21,9 @@ import {
   DomainsTable,
   DomainsTableSkeleton,
 } from '../../components/DomainsTable'
+import { ProxySetupCard } from '../../components/ProxySetupCard'
+import { useProxyIntegration } from '../../queries/proxyIntegration'
+import { proxyCertStatus } from '../../lib/certStatus'
 import { PlatformSettingsSection } from '../../components/PlatformSettingsSection'
 import { PageHeader } from '../../components/shell/PageHeader'
 
@@ -56,10 +59,17 @@ function DomainsPage() {
   const { data: apps } = useSuspenseQuery(appListQueryOptions())
   const [addOpen, setAddOpen] = useState(false)
 
-  const certByDomain = useMemo(
-    () => new Map(certificates.map((cert) => [cert.domain, cert])),
-    [certificates],
-  )
+  const { data: proxy } = useProxyIntegration()
+  const certByDomain = useMemo(() => {
+    const byDomain = new Map(certificates.map((cert) => [cert.domain, cert]))
+    for (const d of proxy?.domains ?? []) {
+      const seen = d.certificate
+        ? proxyCertStatus(d.domain, d.certificate)
+        : undefined
+      if (seen) byDomain.set(d.domain, seen)
+    }
+    return byDomain
+  }, [certificates, proxy])
   const claimedBy = useMemo(
     () => new Map(domains.map((d) => [d.domain, d.service_name])),
     [domains],
@@ -88,6 +98,8 @@ function DomainsPage() {
           </Button>
         }
       />
+
+      <ProxySetupCard />
 
       <DomainsTable
         domains={domains}

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -98,8 +99,18 @@ type appsDomainsResult struct {
 func runAppsDomainsChange(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	label := "apps domains " + verb
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, label, "print the result as JSON to stdout and nothing else", stderr)
-	var envFlag string
+	var envFlag, dnsFlag string
+	var replace, removeDNS, wait bool
+	var timeout time.Duration
 	fs.StringVar(&envFlag, "env", "", "change this environment's domain set (id, name or kind) instead of the app's default set")
+	if verb == "add" {
+		fs.StringVar(&dnsFlag, "dns", "", "automatic DNS record: auto (default), off or preview (shows what would be created)")
+		fs.BoolVar(&replace, "replace", false, "overwrite a conflicting A/AAAA/CNAME record instead of reporting it")
+		fs.BoolVar(&wait, "wait", false, "print each go-live step and wait until the domain is live")
+		fs.DurationVar(&timeout, "timeout", defaultGoLiveWait, "how long --wait polls before exiting non-zero")
+	} else {
+		fs.BoolVar(&removeDNS, "remove-dns", false, "also delete the DNS records Levelrail created for these domains")
+	}
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s %s <name> <domain>... [flags]\n\nFlags:\n", prog, label)
 		fs.PrintDefaults()
@@ -117,9 +128,9 @@ func runAppsDomainsChange(prog, verb string, args []string, stdout, stderr io.Wr
 	name, wanted := rest[0], normalizeDomains(rest[1:])
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	req := apiclient.EditDomainsRequest{Add: wanted, Environment: envFlag}
+	req := apiclient.EditDomainsRequest{Add: wanted, Environment: envFlag, DNS: dnsFlag, Replace: replace}
 	if verb == "remove" {
-		req = apiclient.EditDomainsRequest{Remove: wanted, Environment: envFlag}
+		req = apiclient.EditDomainsRequest{Remove: wanted, Environment: envFlag, RemoveDNS: removeDNS}
 	}
 	edited, err := client.EditAppDomains(context.Background(), name, req)
 	if err != nil {
@@ -131,13 +142,34 @@ func runAppsDomainsChange(prog, verb string, args []string, stdout, stderr io.Wr
 	}
 	next := edited.Domains
 	result := appsDomainsResult{App: name, Domains: next, Changed: edited.Changed, EnvironmentID: edited.EnvironmentID}
-	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
+	code := writeScheduledTaskResult(stdout, stderr, of, result, func() {
 		if !result.Changed {
 			_, _ = fmt.Fprintf(stdout, "no change: app %q domains are already as requested\n", name)
 			return
 		}
 		_, _ = fmt.Fprintf(stdout, "app %q domains: %s\n", name, strings.Join(next, ", "))
+		for _, d := range edited.DNSResults {
+			_, _ = fmt.Fprintf(stdout, "  dns %s: %s %s\n", d.Domain, d.DNS, d.Message)
+		}
 	})
+	if code != exitOK || !wait || verb != "add" {
+		return code
+	}
+	return waitAddedDomains(context.Background(), client, edited.GoLive, timeout, stdout, jsonOut)
+}
+
+// waitAddedDomains polls every added domain until live; non-zero when any is
+// not live within timeout.
+func waitAddedDomains(ctx context.Context, client *Client, runs []apiclient.GoLiveResult, timeout time.Duration, stdout io.Writer, quiet bool) int {
+	code := exitOK
+	for _, run := range runs {
+		_, _ = fmt.Fprintf(stdout, "%s\n", run.Domain)
+		final, err := waitGoLive(ctx, client, run, timeout, stdout, quiet)
+		if err != nil || final.State != goLiveStateLive {
+			code = exitAPIError
+		}
+	}
+	return code
 }
 
 func normalizeDomains(in []string) []string {

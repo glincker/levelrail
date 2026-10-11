@@ -115,6 +115,10 @@ What `enforce` sets:
 
 `APP_CONTAINER_HARDENING_CAP_ADD` (comma separated, for example `SYS_CHROOT,NET_RAW`) adds capabilities for every container on that host, for images that need more than the minimal set (SSH or FTP servers, tools using `ping`). It applies host-wide because a per-app override would need a new field carried to remote agents; a per-app `security` block in `app.yaml` is future work. Read-only root filesystems and privileged containers are never set by these defaults. The setting is read by the process that creates the container, so it applies to remote nodes when set on the agent, and the doctor reports the control plane's own value.
 
+## Docker API guard
+
+The control plane and each agent reach Docker through an in-process allowlisting proxy that refuses privileged containers, host namespaces, unsafe capabilities and protected host mounts. It ships in `audit` mode (`APP_DOCKER_GUARD`). See [Docker access and the API guard](/docker-access) for the endpoint list, every rule, and its limits.
+
 ## Rootless and Podman
 
 `GET /api/v1/system/doctor`'s `container_runtime` check (`levelrail-cli doctor`) reports which container engine and privilege mode the control plane is talking to: Docker or Podman, rootful or rootless, and which setting decided the socket (`APP_CONTAINER_RUNTIME_SOCKET`, then the standard `DOCKER_HOST`, then a well-known rootless or Podman socket path, then the rootful default `/var/run/docker.sock`).

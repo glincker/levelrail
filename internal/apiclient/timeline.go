@@ -53,14 +53,23 @@ type EditDomainsRequest struct {
 	Remove []string  `json:"remove,omitempty"`
 	// Environment (ID, name or kind) targets that environment's own set.
 	Environment string `json:"environment,omitempty"`
+	// DNS is auto (default), off or preview. Replace overwrites a
+	// conflicting record, RemoveDNS deletes records Levelrail created for
+	// removed domains, Automation overrides the go-live policy.
+	DNS        string                    `json:"dns,omitempty"`
+	Replace    bool                      `json:"replace,omitempty"`
+	RemoveDNS  bool                      `json:"remove_dns,omitempty"`
+	Automation *DomainAutomationOverride `json:"automation,omitempty"`
 }
 
 // EditDomainsResult mirrors internal/api's editDomainsResponse.
 type EditDomainsResult struct {
-	App           string   `json:"app"`
-	Domains       []string `json:"domains"`
-	Changed       bool     `json:"changed"`
-	EnvironmentID string   `json:"environment_id,omitempty"`
+	App           string            `json:"app"`
+	Domains       []string          `json:"domains"`
+	Changed       bool              `json:"changed"`
+	EnvironmentID string            `json:"environment_id,omitempty"`
+	DNSResults    []DomainDNSResult `json:"dns_results,omitempty"`
+	GoLive        []GoLiveResult    `json:"go_live,omitempty"`
 }
 
 // GetAppEnvironmentDomains calls GET /api/v1/apps/{name}/environment-domains.

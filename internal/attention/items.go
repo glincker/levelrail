@@ -57,6 +57,10 @@ var kindInfos = map[string]kindInfo{
 	KindLoginAnomaly:        {"Repeated failed sign-ins for %s", "Open the security center and check who is trying", linkCenter, false},
 	KindAccountFlagged:      {"Account %s needs a new password", "Change the password, then review sessions", linkCenter, false},
 	KindTokenUnused:         {"API token %s is unused and will be disabled", "Use it or revoke it before the grace period ends", linkCenter, false},
+	KindDBSecurityUpdates:   {"Databases have security updates available", "Open each database's Upgrades tab and apply the patch", linkDBs, false},
+	KindDBEOL:               {"%s runs a release past its end of life", "Plan a major upgrade or restore into a supported version", linkDBs, true},
+	KindDBUpgradeFailed:     {"Upgrade of %s did not complete", "Open the database's Upgrades tab and read the reason", linkDBs, true},
+	KindDockerGuard:         {"Docker API guard needs a decision", "Review the would-be denials and switch the guard to enforce", linkSecurity, false},
 }
 
 // newItem builds an item with its stable id, one-line title, next action and

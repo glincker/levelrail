@@ -31,3 +31,11 @@ export function pushRecentKey(key: string): string[] {
   }
   return next
 }
+
+// Transient actions (run a restart, verify a domain) are not destinations,
+// so they never become a "recent" entry.
+const TRANSIENT_KEY_PREFIXES = ['app-action-', 'suggest-', 'domain-action-']
+
+export function isRecentEligible(key: string): boolean {
+  return !TRANSIENT_KEY_PREFIXES.some((prefix) => key.startsWith(prefix))
+}

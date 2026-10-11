@@ -45,3 +45,30 @@ func splitWildcardHosts(hosts []string) (wildcard, regular []string) {
 	}
 	return wildcard, regular
 }
+
+// exactHostsFirst moves routes matching any wildcard host behind the exact
+// ones, keeping relative order. Caddy runs routes in order, so without this
+// a "*.example.com" route could answer for an app that owns api.example.com.
+func exactHostsFirst(routes []Route) []Route {
+	exact := make([]Route, 0, len(routes))
+	var wild []Route
+	for _, r := range routes {
+		if routeHasWildcard(r) {
+			wild = append(wild, r)
+		} else {
+			exact = append(exact, r)
+		}
+	}
+	return append(exact, wild...)
+}
+
+func routeHasWildcard(r Route) bool {
+	for _, m := range r.Match {
+		for _, h := range m.Host {
+			if IsWildcardDomain(h) {
+				return true
+			}
+		}
+	}
+	return false
+}

@@ -42,9 +42,13 @@ type ReverseProxyGuide struct {
 	Check    *ReverseProxyCheck   `json:"check,omitempty"`
 }
 
-// GetReverseProxyGuide calls GET /api/v1/system/reverse-proxy.
-func (c *Client) GetReverseProxyGuide(ctx context.Context, domain, proxy string, verify bool) (ReverseProxyGuide, error) {
+// GetReverseProxyGuide calls GET /api/v1/system/reverse-proxy. A non-empty
+// app builds the snippet for that app's domain instead of the dashboard.
+func (c *Client) GetReverseProxyGuide(ctx context.Context, domain, proxy, app string, verify bool) (ReverseProxyGuide, error) {
 	q := url.Values{}
+	if app != "" {
+		q.Set("app", app)
+	}
 	if domain != "" {
 		q.Set("domain", domain)
 	}

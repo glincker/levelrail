@@ -36,6 +36,9 @@ export interface CertificateStatus {
   // (setDomainTLSCert), "acme" for Caddy's automatic ACME/internal
   // issuance.
   source: 'acme' | 'custom'
+  // managed_by is 'proxy' when a fronting proxy issued and renews this
+  // certificate; set client-side from the proxy integration probe.
+  managed_by?: 'proxy'
   // acme_failure is the CA's last error for this hostname, when its most
   // recent issue or renewal attempt failed.
   acme_failure?: AcmeFailure

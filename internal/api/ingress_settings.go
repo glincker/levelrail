@@ -67,6 +67,13 @@ type ingressSettingsResource struct {
 	// IngressHTTPPort and IngressHTTPSPort are the ports this ingress listens on.
 	IngressHTTPPort  int `json:"ingress_http_port,omitempty"`
 	IngressHTTPSPort int `json:"ingress_https_port,omitempty"`
+	// AppsBaseDomain gives apps created without a domain <app>.<base>, with
+	// the DNS record created automatically. DNSCNAMETarget, DNSTTLSeconds
+	// (0 is the provider's auto) and DNSProxied tune those records.
+	AppsBaseDomain string `json:"apps_base_domain,omitempty"`
+	DNSCNAMETarget string `json:"dns_cname_target,omitempty"`
+	DNSTTLSeconds  int    `json:"dns_ttl_seconds,omitempty"`
+	DNSProxied     bool   `json:"dns_proxied,omitempty"`
 }
 
 // acmeBlockedNonStandardPorts is the ACMEBlocked value for an ingress that
@@ -105,6 +112,10 @@ func toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource 
 		FallbackDomainsEnabled: !s.FallbackDomainsDisabled,
 		PublicHTTPSPort:        s.PublicHTTPSPort,
 		TLSTerminatedUpstream:  s.TLSTerminatedUpstream,
+		AppsBaseDomain:         s.AppsBaseDomain,
+		DNSCNAMETarget:         s.DNSCNAMETarget,
+		DNSTTLSeconds:          s.DNSTTLSeconds,
+		DNSProxied:             s.DNSProxied,
 	}
 }
 
@@ -114,8 +125,12 @@ type ingressSettingsUpdate struct {
 	ingressSettingsResource
 	FallbackDomainsEnabled *bool `json:"fallback_domains_enabled"`
 	// Pointer shadows: a client that omits them leaves the stored value alone.
-	PublicHTTPSPort       *int  `json:"public_https_port"`
-	TLSTerminatedUpstream *bool `json:"tls_terminated_upstream"`
+	PublicHTTPSPort       *int    `json:"public_https_port"`
+	TLSTerminatedUpstream *bool   `json:"tls_terminated_upstream"`
+	AppsBaseDomain        *string `json:"apps_base_domain"`
+	DNSCNAMETarget        *string `json:"dns_cname_target"`
+	DNSTTLSeconds         *int    `json:"dns_ttl_seconds"`
+	DNSProxied            *bool   `json:"dns_proxied"`
 }
 
 // handleGetIngressSettings handles GET /api/v1/settings/ingress: the
@@ -236,6 +251,10 @@ func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Req
 			return
 		}
 	}
+	if msg := rt.validateDNSAutomationFields(r.Context(), upd); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
 	req := upd.ingressSettingsResource
 	if err := validateIngressSettingsRequest(req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -276,6 +295,20 @@ func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Req
 	}
 	if upd.TLSTerminatedUpstream != nil {
 		settings.TLSTerminatedUpstream = *upd.TLSTerminatedUpstream
+	}
+	settings.AppsBaseDomain, settings.DNSCNAMETarget = prev.AppsBaseDomain, prev.DNSCNAMETarget
+	settings.DNSTTLSeconds, settings.DNSProxied = prev.DNSTTLSeconds, prev.DNSProxied
+	if upd.AppsBaseDomain != nil {
+		settings.AppsBaseDomain = strings.ToLower(strings.TrimSpace(*upd.AppsBaseDomain))
+	}
+	if upd.DNSCNAMETarget != nil {
+		settings.DNSCNAMETarget = strings.ToLower(strings.TrimSpace(*upd.DNSCNAMETarget))
+	}
+	if upd.DNSTTLSeconds != nil {
+		settings.DNSTTLSeconds = *upd.DNSTTLSeconds
+	}
+	if upd.DNSProxied != nil {
+		settings.DNSProxied = *upd.DNSProxied
 	}
 	if prevErr == nil {
 		rt.purgeOnIssuerChange(r.Context(), prev, settings)
@@ -394,6 +427,10 @@ type domainResource struct {
 	// ACMEFailure is the CA's last error for this hostname, so a domain
 	// stuck without a certificate shows why on the list.
 	ACMEFailure *acmeFailureResource `json:"acme_failure,omitempty"`
+	// ReachableURL is the link a visitor can open now; when empty,
+	// ReachableReason says why (stopped, not_resolving, not_routed, held_back).
+	ReachableURL    string `json:"reachable_url,omitempty"`
+	ReachableReason string `json:"reachable_reason,omitempty"`
 }
 
 // handleListDomains handles GET /api/v1/domains: every service_domains
@@ -463,6 +500,7 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	out = append(out, rt.automaticDomains(r, canSee)...)
+	rt.annotateDomainReachability(r.Context(), out)
 	writeJSON(w, http.StatusOK, out)
 }
 

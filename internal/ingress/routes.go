@@ -74,6 +74,8 @@ type ProxyRoute struct {
 	Hidden bool
 	// LB, if non-nil, replaces BackendDial with a multi-upstream pool.
 	LB *LBRoute
+	// Policy, if non-nil, adds the domain's traffic controls (policy_*.go).
+	Policy *RoutePolicy
 }
 
 // ErrorPage is one status-code-to-body mapping for a domain
@@ -329,6 +331,9 @@ type RoutesOptions struct {
 	// redirect every routed host to https. Off keeps the port unbound
 	// outside ACME challenges (non-root dev runs cannot bind port 80).
 	HTTPRedirect bool
+	// PlainHTTP serves the same routes over unencrypted HTTP on HTTPPort,
+	// for a proxy in front that terminates TLS and dials this port.
+	PlainHTTP bool
 	// Routes is every reverse-proxy backend to route on this listener.
 	// Empty is valid: it produces a listener with no routes and no TLS
 	// automation policy, the normal shape for a reconcile pass over zero
@@ -520,6 +525,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 				handle = append([]any{limit}, handle...)
 			}
 		}
+		// Traffic controls, backend side: cache and path forwarders sit
+		// right before the reverse proxy, behind auth and WAF.
+		handle = r.Policy.wrapBackend(r.Hosts[0], handle)
 		if r.BasicAuth != nil {
 			// Prepended, not appended: Caddy runs a route's handlers in
 			// order, so authentication must short-circuit with 401 before
@@ -563,6 +571,8 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 				Errors:  &ErrorsConfig{Routes: errorPageErrorRoutes(r.ErrorPages)},
 			}}
 		}
+		// Traffic controls, front side: redirects, geo and headers run first.
+		handle = r.Policy.wrapFront(handle)
 		if opts.RequestStats {
 			handle = append([]any{NewRequestStatsHandler(r.Hosts[0])}, handle...)
 		}
@@ -632,7 +642,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 
 	server := &Server{
 		Listen: []string{opts.ListenAddr},
-		Routes: routes,
+		Routes: exactHostsFirst(routes),
 	}
 	if opts.Inherited.Active() {
 		server.Listen = opts.Inherited.listenAddrs()
@@ -735,6 +745,13 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			}
 			cfg.Apps.TLS.Certificates = CertificatesConfig{"load_pem": pairs}
 		}
+	}
+
+	if opts.PlainHTTP && opts.HTTPPort != 0 && !opts.Inherited.Active() {
+		plain := *server
+		plain.Listen = []string{fmt.Sprintf(":%d", opts.HTTPPort)}
+		plain.AutomaticHTTPS = &AutoHTTPSConfig{Disabled: true}
+		cfg.Apps.HTTP.Servers[opts.ServerName+"-plain"] = &plain
 	}
 
 	return cfg, nil

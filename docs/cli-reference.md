@@ -226,8 +226,8 @@ Attach an already connected notification channel (see [Channels](#channels)) so 
 
 ```
 levelrail-cli apps domains list <name> [flags]
-levelrail-cli apps domains add <name> <domain>... [flags]
-levelrail-cli apps domains remove <name> <domain>... [flags]
+levelrail-cli apps domains add <name> <domain>... [--dns auto|off|preview] [--replace] [--wait] [--timeout 2m] [flags]
+levelrail-cli apps domains remove <name> <domain>... [--remove-dns] [flags]
 levelrail-cli apps streams list <name> [flags]
 levelrail-cli apps streams create <name> --container-port N --host-port N [--protocol tcp] [flags]
 levelrail-cli apps streams delete <name> <id> [flags]
@@ -237,6 +237,7 @@ levelrail-cli apps egress clear <name> [flags]
 levelrail-cli apps exec-access enable|disable|status <name> [flags]
 ```
 
+- `apps domains add` creates the DNS record when a provider is connected (`--dns off` skips it, `--dns preview` shows it); `--wait` prints the go-live steps and exits non-zero when the domain is not live within `--timeout`. See [Add a domain and go live](domains-and-ingress.md#add-a-domain-and-go-live).
 - `apps domains` shows or changes an app's domains; a domain already used by another app is refused and nothing is changed. Per-domain TLS, redirects, WAF and the like are under [Domains](#domains).
 - `apps streams` forwards a host port to one container port as raw TCP (only `tcp` is supported). A stream change takes effect on the app's next container recreation, such as an image change or `apps restart`.
 - `apps egress` restricts an app's outbound traffic to the declared `host:port` pairs; with nothing configured, egress is unrestricted. DNS and loopback traffic stay open regardless.
@@ -636,6 +637,9 @@ Per domain settings take `<app> <domain>`, and the domain must already be one of
 ```
 levelrail-cli domains list [flags]
 levelrail-cli domains check <app> <domain> [flags]
+levelrail-cli domains doctor <app> <domain> [--json]
+levelrail-cli domains summary [--json]
+levelrail-cli domains activity <domain> [--limit N] [--before CURSOR] [--actions PREFIXES] [--json]
 levelrail-cli domains certificates [flags]
 levelrail-cli domains basic-auth get|set|clear <app> <domain> [flags]
 levelrail-cli domains maintenance get|set|clear <app> <domain> [flags]
@@ -651,6 +655,11 @@ levelrail-cli domains error-pages clear <app> <domain> [--code N] [flags]
 levelrail-cli domains dns list <app> <domain> [flags]
 levelrail-cli domains dns add <app> <domain> --type T --name N --value V [flags]
 levelrail-cli domains dns remove <app> <domain> --type T --name N --value V [flags]
+levelrail-cli domains go-live <app> <domain> [--dns auto|off|preview] [--replace] [--plan] [--wait] [--timeout 2m] [flags]
+levelrail-cli domains go-live runs [--limit N] [flags]
+levelrail-cli domains go-live undo <run-id> [flags]
+levelrail-cli domains backfill-base-domain [--confirm] [flags]
+levelrail-cli settings domain-automation get|set [flags]
 levelrail-cli domains cloudflare-dns get|set|clear [flags]
 levelrail-cli domains route53-dns get|set|clear [flags]
 ```
@@ -662,6 +671,29 @@ levelrail-cli domains route53-dns get|set|clear [flags]
 - `error-pages` sets custom HTML for status code 404, 500, 502 or 503; `clear` removes one mapping, or all if `--code` is omitted.
 - `dns` reads and writes the real A, AAAA, CNAME, TXT, MX, SRV and CAA records in the domain's zone through whichever DNS-01 provider is configured. `remove` must match an existing record exactly.
 - `cloudflare-dns set --cf-api-token TOKEN` and `route53-dns set --aws-access-key-id ID --aws-secret-access-key KEY` configure the ACME DNS-01 credentials needed for wildcard domains. A domain is wildcard eligible by having a leading `*.` label; if both providers are enabled, Cloudflare takes precedence.
+
+## DNS
+
+See [DNS zones and records](dns.md).
+
+```
+levelrail-cli dns zones list [--provider cloudflare|route53]
+levelrail-cli dns zones create <domain> [--account-id ID]
+levelrail-cli dns zones nameservers <zone>
+levelrail-cli dns zones verify <zone>
+levelrail-cli dns zones delete <zone> --confirm <zone> [--force]
+levelrail-cli dns records list <zone> [--type T] [--search S]
+levelrail-cli dns records add|update <zone> --name N --type T --value V [--value V2] [--ttl S] [--proxied] [--routing weighted|failover|multivalue --set-id ID ...]
+levelrail-cli dns records delete <zone> --name N --type T [--set-id ID]
+levelrail-cli dns records import <zone> --file F [--format bind|json] [--apply] [--replace --confirm <zone>]
+levelrail-cli dns records export <zone> [--format bind|json] [--out F]
+levelrail-cli dns records template <zone> <template> [--param KEY=VALUE]... [--apply]
+levelrail-cli dns check <name> [--type T] [--zone Z]
+levelrail-cli dns health-checks list|create|delete
+```
+
+- `zones verify` compares the NS set the system resolver, 1.1.1.1 and 8.8.8.8 return with the zone's assigned name servers.
+- `records import` and `records template` print a plan and change nothing until `--apply`. `--replace` deletes sets missing from the file and needs `--confirm`.
 
 ## Backups
 
@@ -1146,7 +1178,7 @@ levelrail-cli audit-log [flags]
 levelrail-cli audit-purge [flags]
 ```
 
-`audit-log` lists every recorded write, deploy and root tier request plus automatic certificate renewals, newest first. Read only requests are not recorded. It needs an admin or root scoped token. Flags: `--limit N`, `--before RFC3339`, `--path`, `--method`, `--client-kind cli|dashboard|mcp|api`, `--agent <name>` (entries made with a token labeled with that agent name), `--search <text>` (case-insensitive substring across actor, ability, method, path and remote address), `--failed` (status 400 or higher), `--format csv` with `--output-file FILE`. `--agent`, `--search` and `--failed` are applied server side and carry into csv exports.
+`audit-log` lists every recorded write, deploy and root tier request plus automatic certificate renewals, newest first. Read only requests are not recorded. It needs an admin or root scoped token. Flags: `--limit N`, `--before RFC3339`, `--path`, `--method`, `--client-kind cli|dashboard|mcp|api`, `--agent <name>` (entries made with a token labeled with that agent name), `--search <text>` (case-insensitive substring across actor, ability, method, path and remote address), `--resource domain:<name>|zone:<name>|app:<name>` (one resource's own trail), `--actions <prefixes>` (comma separated action prefixes such as `dns_record.,proxy_route.,domain.`), `--failed` (status 400 or higher), `--format csv` with `--output-file FILE`. `--agent`, `--search` and `--failed` are applied server side and carry into csv exports.
 
 `audit-purge` deletes every entry older than the retention window (`APP_AUDIT_LOG_RETENTION_DAYS`, default 90 days) right now instead of waiting for the automatic sweep. It needs an admin or root scoped token.
 
@@ -1165,6 +1197,19 @@ levelrail-cli doctor [flags]
 ```
 
 Runs a local preflight health check: Docker daemon reachability, disk space and write latency, write access on the data directory, port 80 and 443 availability for the embedded ingress, control plane database reachability, RAM and CPU against the recommended minimums, firewall status, outbound network reachability (public IP, external port reachability, ACME, clock skew, the agent advertise host, image registries), and GPU attach checks. Exit code is 0 if every check is ok or warn, 1 if any check fails.
+
+## Proxy
+
+```
+levelrail-cli proxy [--domain D | --app NAME] [--proxy traefik|nginx|caddy] [--verify] [flags]
+levelrail-cli proxy setup [--confirm] [--dynamic-dir DIR] [flags]
+levelrail-cli proxy status [flags]
+levelrail-cli proxy apply [flags]
+levelrail-cli proxy verify [--domain D] [flags]
+levelrail-cli proxy disable [flags]
+```
+
+Without a subcommand: shows which container publishes ports 80 and 443 and the configuration to paste into that proxy, for the dashboard (`--domain`) or an app's domain (`--app`, upstream is the ingress HTTP port). `setup` detects a Traefik (Coolify's included) and, with `--confirm`, turns on `tls_terminated_upstream`, saves the detected entrypoints, certificate resolver, directory and upstream host, writes one route file per domain and verifies each over HTTPS; without `--confirm` it is a dry run. It exits with an API error and the precise gap (`detection_incomplete`, `upstream_unreachable` with the drop-in fix, `not_writable`) when it cannot proceed. `status` prints detection, per-domain state (`missing`, `written`, `stale`, `error`), certificate issuer and expiry, and the checklist. `apply` rewrites the files now, `verify` probes again, `disable` removes the files it wrote. Writes need a root scoped token. Details: [Run behind an existing proxy](behind-an-existing-proxy.md#one-step-setup-traefik-including-coolify).
 
 ## Containers
 
@@ -1339,7 +1384,7 @@ levelrail-cli settings oauth set <provider> [flags]
 levelrail-cli settings email get [flags]
 levelrail-cli settings email set [flags]
 levelrail-cli settings ingress get [flags]
-levelrail-cli settings ingress set [--primary-domain D] [--acme-enabled] [--public-https-port N] [--tls-terminated-upstream] [flags]
+levelrail-cli settings ingress set [--primary-domain D] [--acme-enabled] [--public-https-port N] [--tls-terminated-upstream] [--apps-base-domain HOST] [--dns-cname-target HOST] [--dns-ttl SECONDS] [--dns-proxied] [flags]
 levelrail-cli settings ingress https status [flags]
 levelrail-cli settings ingress https enable --email EMAIL [--staging] [--wait 2m] [flags]
 levelrail-cli settings dashboard-url get [flags]
@@ -1353,7 +1398,7 @@ levelrail-cli settings ai-assistant get|set|clear [flags]
 ```
 
 - `oauth set <provider>` enables, configures or disables one sign in provider; `<provider>` is `google`, `github` or `oidc`.
-- `ingress get` shows the primary domain, ACME settings, the automatic hostname toggle and the detected public address. `ingress set` changes them (`--primary-domain`, `--acme-enabled`, `--acme-email`, `--acme-directory-url`, `--fallback-domains=false`, `--hsts-enabled`); flags you leave out keep their current value.
+- `ingress get` shows the primary domain, ACME settings, the automatic hostname toggle and the detected public address. `ingress set` changes them (`--primary-domain`, `--acme-enabled`, `--acme-email`, `--acme-directory-url`, `--fallback-domains=false`, `--hsts-enabled`, `--apps-base-domain`, `--dns-cname-target`, `--dns-ttl`, `--dns-proxied`); flags you leave out keep their current value.
 - `ingress https status` shows whether the dashboard's free sslip.io HTTPS is off, pending, issued or failed. `ingress https enable` points the dashboard at `<dashed-ip>.sslip.io` and issues a real Let's Encrypt certificate for it, with no DNS setup.
 - `dashboard-url set` sets the public dashboard URL; once it is `https://`, sign in over plain HTTP is refused (`--url ""` clears it).
 - `updates` configures the release channel and auto update checking. `deploy-freeze` manages fleet wide freeze windows; per app windows are under `apps freeze`.

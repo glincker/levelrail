@@ -143,24 +143,31 @@ func (rt *Router) resolveDNSRecordManager(ctx context.Context, domain string) (d
 }
 
 func (rt *Router) resolveCloudflareRecordManager(ctx context.Context) (dnsrecords.Manager, error) {
+	token, err := rt.cloudflareDNSToken(ctx)
+	if err != nil || token == "" {
+		return nil, err
+	}
+	return dnsrecords.NewCloudflareManager(token), nil
+}
+
+// cloudflareDNSToken returns the stored Cloudflare token, or "" when the
+// provider is not configured and enabled.
+func (rt *Router) cloudflareDNSToken(ctx context.Context) (string, error) {
 	if rt.cloudflareDNSTokenResolver == nil {
-		return nil, nil
+		return "", nil
 	}
 	settings, err := rt.cloudflareDNS.GetCloudflareDNSSettings(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("api: get cloudflare dns settings: %w", err)
+		return "", fmt.Errorf("api: get cloudflare dns settings: %w", err)
 	}
 	if !settings.Enabled {
-		return nil, nil
+		return "", nil
 	}
 	token, err := rt.cloudflareDNSTokenResolver.Resolve(ctx, store.CloudflareDNSSecretsKey(), store.CloudflareDNSTokenEnvKey)
 	if err != nil {
-		return nil, fmt.Errorf("api: resolve cloudflare dns token: %w", err)
+		return "", fmt.Errorf("api: resolve cloudflare dns token: %w", err)
 	}
-	if token == "" {
-		return nil, nil
-	}
-	return dnsrecords.NewCloudflareManager(token), nil
+	return token, nil
 }
 
 func (rt *Router) resolveRoute53RecordManager(ctx context.Context) (dnsrecords.Manager, error) {

@@ -36,4 +36,31 @@ describe('fuzzyFilter', () => {
   it('returns empty when nothing matches', () => {
     expect(fuzzyFilter(labels, 'zzz', (s) => s)).toEqual([])
   })
+
+  describe('keywords', () => {
+    const domains = [
+      { domain: 'blog.example.com', app: 'web' },
+      { domain: 'web.example.net', app: 'site' },
+      { domain: 'api.example.com', app: 'api-gateway' },
+    ]
+    const find = (q: string) =>
+      fuzzyFilter(
+        domains,
+        q,
+        (d) => d.domain,
+        (d) => d.app,
+      ).map((d) => d.domain)
+
+    it('matches on keywords when the label does not match', () => {
+      expect(find('gateway')).toEqual(['api.example.com'])
+    })
+
+    it('ranks a label hit above a keyword-only hit', () => {
+      expect(find('web')).toEqual(['web.example.net', 'blog.example.com'])
+    })
+
+    it('does not change results without a keywords getter', () => {
+      expect(fuzzyFilter(domains, 'gateway', (d) => d.domain)).toEqual([])
+    })
+  })
 })

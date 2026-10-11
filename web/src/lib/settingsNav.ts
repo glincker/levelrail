@@ -363,6 +363,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         feature: 'iac',
       },
       {
+        to: '/settings/database-upgrades',
+        icon: DatabaseIcon,
+        title: 'Database upgrades',
+        description: 'Default upgrade policy and maintenance window.',
+      },
+      {
         to: '/settings/updates',
         icon: ArrowCircleUpIcon,
         title: 'Updates',
