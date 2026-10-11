@@ -221,6 +221,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"version":                  nil,
 	"changelog":                nil,
 	"upgrade":                  nil,
+	"readiness":                nil,
 	"ai-control":               {subs: map[string]*cmdNode{"status": nil, "set": nil, "revoke-agents": nil}},
 	"docker-guard":             {subs: map[string]*cmdNode{"status": nil, "set": nil}},
 	"audit-log":                nil,

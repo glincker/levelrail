@@ -317,6 +317,8 @@ type Router struct {
 	releaseHist *releaseHistorySource
 	// upgradeHistory is nil unless WithUpgradeHistory was applied.
 	upgradeHistory UpgradeHistoryStore
+	// selfUpgrade is nil unless WithSelfUpgrade was applied.
+	selfUpgrade *selfUpgradeConfig
 	// certExpiryWarningWindow overrides alerting.DefaultCertExpiryWarningWindow
 	// for GET /api/v1/certificates's "expiring_soon" threshold, and for a
 	// kind=cert_expiry alert rule's own evaluation (cmd/levelrail/main.go

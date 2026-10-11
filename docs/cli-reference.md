@@ -1070,7 +1070,23 @@ Shows the control plane's own configured and not configured signals, including w
 levelrail-cli upgrade [--no-backup] [flags]
 ```
 
-Compares the running version with the latest release, runs the preflight checks (release signature, Docker Engine, free disk, backup), takes a control plane backup and prints the command that upgrades. It never upgrades by itself. See [Installing](installing.md#check-first-then-upgrade).
+Compares the running version with the latest release, runs the preflight checks (release signature, Docker Engine, free disk, backup), takes a control plane backup and prints the command that upgrades. It never upgrades by itself unless you pass `--apply`. See [Installing](installing.md#check-first-then-upgrade).
+
+```
+levelrail-cli upgrade --plan [--version TAG]
+levelrail-cli upgrade --apply [--version TAG] [--ack-breaking ID,...] [--no-wait]
+levelrail-cli upgrade --attempts
+```
+
+`--plan` shows the breaking changes between the running version and the target (default: latest on the channel). `--apply` asks the control plane to run the safe self-update on its host: verified download, snapshot, migration dry run, swap, health check and automatic rollback. Breaking changes flagged as needing acknowledgement are refused until you list their ids with `--ack-breaking`. It follows the attempt to its outcome unless `--no-wait`, and exits non-zero when the upgrade was rolled back or failed. `--attempts` lists every attempt with its step timeline. See [Upgrade safely](upgrade-safely.md).
+
+## Readiness
+
+```
+levelrail-cli readiness [--domain example.com] [flags]
+```
+
+Checks whether the server is ready: who holds ports 80 and 443, Docker version and rootless mode, exposed Docker API, disk, memory, firewall and the DNS of the domain. Prints the recommended install mode (own ports or behind your existing proxy) and the exact next step. Exits 1 when a check fails. Before anything is installed use `install.sh --check` instead, see [Installing](installing.md#check-the-server-first).
 
 ## Version
 

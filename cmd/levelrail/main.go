@@ -68,6 +68,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/scheduledeploy"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 	"github.com/GLINCKER/levelrail/internal/sharedenv"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -387,6 +388,11 @@ func main() {
 	}
 
 	if err := run(logger); err != nil {
+		var refusal *downgradeRefusal
+		if errors.As(err, &refusal) {
+			fmt.Fprint(os.Stderr, refusal.msg)
+			os.Exit(selfupgrade.ExitDowngradeRefused)
+		}
 		logger.Error("exited with error", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
@@ -404,6 +410,9 @@ func run(logger *slog.Logger) error {
 
 	obs := upgradehistory.Observed{SchemaBefore: -1}
 	db, err := openStoreObserved(ctx, &obs)
+	if errors.Is(err, store.ErrSchemaNewer) {
+		return newDowngradeRefusal(ctx, dataDirFromEnv())
+	}
 	if err != nil {
 		return err
 	}
@@ -413,6 +422,7 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 	recordUpgradeHistory(ctx, db, obs, logger)
+	importSelfUpgradeJournal(ctx, db, logger)
 
 	// instanceID must be resolved before the Docker client is
 	// constructed below, so every container/network/volume this process
@@ -2630,7 +2640,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	} else {
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
-	opts = append(opts, api.WithChangelog(loadChangelog(logger)), api.WithUpgradeHistory(db))
+	opts = append(opts, api.WithChangelog(loadChangelog(logger)), api.WithUpgradeHistory(db), api.WithSelfUpgrade(db, nil))
 
 	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
 	wireModelPreflight(modelSvc, client, b.ShortName, logger)

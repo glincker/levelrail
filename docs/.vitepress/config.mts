@@ -145,6 +145,7 @@ const sidebarGroups = [
           { text: 'Log archive', link: '/log-archive' },
           { text: 'Control plane backup', link: '/control-plane-backup' },
           { text: 'Disaster recovery', link: '/disaster-recovery' },
+          { text: 'Upgrade safely', link: '/upgrade-safely' },
         ],
       },
       {

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 883 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 887 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -880,6 +880,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/system/proxy-integration/setup", Ability: "AbilityRoot", Group: "System", Handler: "handleSetupProxyIntegration", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/proxy-integration/verify", Ability: "AbilityRoot", Group: "System", Handler: "handleVerifyProxyIntegration", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/prune", Ability: "AbilityRoot", Group: "System", Handler: "handleSystemPrune", Description: "POST /system/prune deletes real Docker resources (stopped containers, dangling images, anonymous volumes, unused build cache) fleet-wide, not scoped to one app: AbilityRoot, the same gate handleDrainNode uses for its own fleet-wide, no-undo action, not AbilityWrite (which a narrower, single-app token could hold)."},
+	{Method: "GET", Path: "/api/v1/system/readiness", Ability: "AbilityRead", Group: "System", Handler: "handleServerReadiness", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/reverse-proxy", Ability: "AbilityRead", Group: "System", Handler: "handleReverseProxyGuide", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/secrets/binding", Ability: "AbilityRead", Group: "System", Handler: "handleGetSecretBinding", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/secrets/rebind", Ability: "AbilityRoot", Group: "System", Handler: "handleRebindSecrets", Description: ""},
@@ -892,6 +893,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/updates/preflight", Ability: "AbilityRead", Group: "System", Handler: "handleUpdatePreflight", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/releases", Ability: "AbilityRead", Group: "System", Handler: "handleReleaseHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/rollback-plan", Ability: "AbilityRoot", Group: "System", Handler: "handleRollbackPlan", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/self-upgrade", Ability: "AbilityRoot", Group: "System", Handler: "handleSelfUpgradeStart", Description: ""},
+	{Method: "GET", Path: "/api/v1/updates/self-upgrade/attempts", Ability: "AbilityRead", Group: "System", Handler: "handleSelfUpgradeAttempts", Description: ""},
+	{Method: "GET", Path: "/api/v1/updates/self-upgrade/plan", Ability: "AbilityRead", Group: "System", Handler: "handleSelfUpgradePlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/settings", Ability: "AbilityRoot", Group: "System", Handler: "handleGetUpdateSettings", Description: "Channel/auto-update settings are AbilityRoot on both verbs: see handleGetUpdateSettings' own doc comment (updates_settings.go)."},
 	{Method: "PUT", Path: "/api/v1/updates/settings", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateSettings", Description: ""},
 	{Method: "GET", Path: "/healthz", Ability: "Public", Group: "System", Handler: "handleHealthz", Description: ""},

@@ -16,6 +16,10 @@ The control plane records history itself, at boot. It compares the running versi
 - Each row keeps the schema version before and after, the pre-migration backup name, the initiator and method when known, and a snapshot of the release notes fetched best effort at that time (offline is fine; the row says the notes were unavailable).
 - Rows are append-only. The database refuses updates and deletes except the one-time release-notes fill and the acknowledgement.
 
+## Self-upgrade attempts
+
+Upgrades run by the safe self-update (Settings > Updates > Upgrade this server, `levelrail-cli upgrade --apply`, `levelrail self-upgrade`) are also recorded as attempts with a step timeline, including ones that were refused or rolled back, which never reach this history because the old version kept running. `levelrail-cli upgrade --attempts` lists them, API `GET /api/v1/updates/self-upgrade/attempts`. The version transition itself still appears here with method `self-upgrade`. See [Upgrade safely](upgrade-safely.md).
+
 ## Who did it
 
 `install.sh` and `sudo <binary> rollback` leave a small `upgrade-context.json` in the data directory (user, method, channel, backup name, time). The next boot consumes it exactly once and deletes it. A marker for a different version is ignored, and one older than 24 hours is discarded. With no marker the initiator is `unknown`, and the page says so plainly.

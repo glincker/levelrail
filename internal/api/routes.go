@@ -141,6 +141,10 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/updates/rollback-plan", rt.requireAbility(AbilityRoot, rt.handleRollbackPlan))
 	mux.HandleFunc("GET /api/v1/updates/history", rt.requireAbility(AbilityRead, rt.handleUpgradeHistory))
 	mux.HandleFunc("POST /api/v1/updates/history/{id}/ack", rt.requireAbility(AbilityWrite, rt.handleAckUpgrade))
+	mux.HandleFunc("GET /api/v1/system/readiness", rt.requireAbility(AbilityRead, rt.handleServerReadiness))
+	mux.HandleFunc("GET /api/v1/updates/self-upgrade/plan", rt.requireAbility(AbilityRead, rt.handleSelfUpgradePlan))
+	mux.HandleFunc("GET /api/v1/updates/self-upgrade/attempts", rt.requireAbility(AbilityRead, rt.handleSelfUpgradeAttempts))
+	mux.HandleFunc("POST /api/v1/updates/self-upgrade", rt.requireAbility(AbilityRoot, rt.handleSelfUpgradeStart))
 	// Channel/auto-update settings are AbilityRoot on both verbs: see
 	// handleGetUpdateSettings' own doc comment (updates_settings.go).
 	mux.HandleFunc("GET /api/v1/updates/settings", rt.requireAbility(AbilityRoot, rt.handleGetUpdateSettings))

@@ -33,6 +33,8 @@ import {
 } from '../../queries/updates'
 import type { UpdateChannel, UpdateStatus } from '../../queries/updates'
 import { UpgradePreflight } from '../../components/settings/UpgradePreflight'
+import { SelfUpgrade } from '../../components/settings/SelfUpgrade'
+import { ServerReadiness } from '../../components/settings/ServerReadiness'
 import { ReleaseHistory } from '../../components/settings/ReleaseHistory'
 import { UpgradeHistory } from '../../components/settings/UpgradeHistory'
 import { PostUpgradeVerify } from '../../components/settings/PostUpgradeVerify'
@@ -210,14 +212,31 @@ function UpdatesSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Upgrade preflight</CardTitle>
-          <CardDescription>
-            Read-only checks before you upgrade. The control plane never
-            upgrades itself.
-          </CardDescription>
+          <CardTitle>{t('preflight.cardTitle')}</CardTitle>
+          <CardDescription>{t('preflight.cardDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <UpgradePreflight />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('selfUpgrade.title')}</CardTitle>
+          <CardDescription>{t('selfUpgrade.description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SelfUpgrade />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('readiness.title')}</CardTitle>
+          <CardDescription>{t('readiness.description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ServerReadiness />
         </CardContent>
       </Card>
 

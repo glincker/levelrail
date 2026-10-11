@@ -196,6 +196,7 @@ type (
 	updatePreflight             = apiclient.UpdatePreflight
 	releaseHistory              = apiclient.ReleaseHistory
 	upgradeHistory              = apiclient.UpgradeHistory
+	serverReadiness             = apiclient.ServerReadiness
 	upgradeHistoryEntry         = apiclient.UpgradeHistoryItem
 	releaseHistoryItem          = apiclient.ReleaseHistoryItem
 	rollbackPlan                = apiclient.RollbackPlan

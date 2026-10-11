@@ -140,6 +140,18 @@ curl -fsSL https://levelrail.com/install.sh \
 ```
 :::
 
+### Check the server first
+
+`install.sh --check` is a read-only readiness report. It changes nothing and runs without root (port owners are then only partly visible):
+
+```bash
+curl -fsSL https://levelrail.com/install.sh | sh -s -- --check --domain apps.example.com
+```
+
+It reports who holds ports 80 and 443 (Traefik, nginx, Caddy, Apache, HAProxy, a container or a host process), the Docker version and whether the daemon is rootless, whether the Docker API is exposed on the network, free disk, memory, the host firewall, and whether the domain you give resolves to this server. It ends with the recommended mode, own ports or behind your existing proxy, and the exact command to run next. It exits non-zero when a check fails.
+
+Once the control plane runs, the same report is **Settings > Updates > Server readiness**, `levelrail-cli readiness [--domain D]` and `GET /api/v1/system/readiness`.
+
 ### Server already runs a proxy
 
 Coolify, Traefik, nginx or Caddy on the same box already hold ports 80 and 443, so a default install would start but never serve or issue certificates. The installer checks this before it changes anything. It reads who listens on 80 and 443 (`ss`, and `docker ps --filter publish=<port>` to name a container and its image) and says so plainly:
@@ -151,7 +163,7 @@ Ports 80 443 are already in use on this server:
 Levelrail can run alongside it: ingress on 8088/8443, dashboard on loopback only, ...
 ```
 
-If both are free nothing changes. If they are taken, the installer offers **coexist mode**:
+If both are free nothing changes. If they are taken, the installer switches to **coexist mode** by itself and says so, because the other outcomes are a failed install or a Levelrail fighting your proxy for the ports. Pass `--no-coexist` (or `LEVELRAIL_COEXIST=0`) to keep the old behavior of failing preflight instead.
 
 | Setting | Coexist value |
 | --- | --- |
@@ -159,10 +171,10 @@ If both are free nothing changes. If they are taken, the installer offers **coex
 | Dashboard | `127.0.0.1:<port>`, reachable by SSH tunnel until your proxy fronts it |
 | `ufw` | left alone, even with `LEVELRAIL_CONFIGURE_UFW=1` |
 
-In a terminal it asks `[Y/n]`. Unattended (no usable `/dev/tty`, or `CI` set) it never decides for you: preflight fails and names the flags. Pass `--coexist` (or `LEVELRAIL_COEXIST=1`) to choose it up front, or `--yes` to accept the offer without a prompt:
+The installer never prompts. Pass `--coexist` (or `LEVELRAIL_COEXIST=1`) to choose the mode up front, for example to move a server whose ports are currently free:
 
 ```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --yes --domain apps.example.com
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- --coexist --domain apps.example.com
 ```
 
 `--domain` only fills in the next command, which the installer prints at the end:
@@ -382,11 +394,23 @@ Both commands talk to the control plane's API (`GET /api/v1/updates` and `GET /a
 
 The CLI also takes a fresh control plane backup unless you pass `--no-backup`, then prints the exact command to run. The API is `GET /api/v1/updates/preflight`.
 
+### Upgrade with automatic rollback
+
+Settings > Updates > **Upgrade this server** and `levelrail-cli upgrade --apply` run the safe self-update. It downloads the release, checks its checksum and cosign signature, snapshots the database, tries the new release's migrations on a copy of that snapshot, swaps the binary, restarts and waits for health. If the new release is not healthy within the time limit (`--timeout`, 90 seconds by default) the previous binary and, when the schema changed, the pre-upgrade database snapshot come back automatically. Every attempt, with its step timeline, is kept and shown on the Updates page.
+
+```bash
+levelrail-cli upgrade --plan                    # breaking changes between here and the latest release
+levelrail-cli upgrade --apply --ack-breaking ID # acknowledge flagged ones, then upgrade
+levelrail-cli upgrade --attempts                # history with step timelines
+```
+
+The same engine runs on the host as `sudo levelrail self-upgrade --to <version>`. See [Upgrade safely](upgrade-safely.md) for the runbook, what is checked, and what to do when something fails.
+
 ### Run the upgrade
 
 **If you used install.sh:**
 
-Run the `upgrade` subcommand. It replaces the binary with the newest release, keeps your unit file, your chosen ports (stored in the `10-install.conf` drop-in, see [Server already runs a proxy](#server-already-runs-a-proxy)), any `systemctl edit` overrides and data, restarts the service, and waits for it to come back healthy.
+Run the `upgrade` subcommand. It replaces the binary with the newest release, keeps your unit file, your chosen ports (stored in the `10-install.conf` drop-in, see [Server already runs a proxy](#server-already-runs-a-proxy)), any `systemctl edit` overrides and data, restarts the service, and waits for it to come back healthy. If the new binary is not healthy within `LEVELRAIL_HEALTH_WAIT` seconds the previous binary is put back and started again. The installer cannot undo a schema migration: for an upgrade that also restores the data, use the self-update above.
 
 ```bash
 curl -fsSL https://levelrail.com/install.sh | sudo sh -s upgrade
@@ -431,6 +455,10 @@ sudo systemctl start levelrail
 ```
 
 `--method` is `manual` (default), `package` or `ci`; `--data-dir` defaults to `APP_DATA_DIR`. The note names the version of the binary that runs it, so it must be the new binary. See [Upgrade history](upgrade-history.md).
+
+### Older binary refuses to start
+
+A binary older than the database exits with status 78 and prints which release last ran on the data and the exact commands to recover. The installer's unit adds `RestartPreventExitStatus=78`, so systemd does not restart-loop it. Nothing is modified: migrations only go forward. Run the release it names (`LEVELRAIL_VERSION=vX.Y.Z ... install.sh upgrade`) or restore a backup taken by the older release.
 
 ### Rolling back
 

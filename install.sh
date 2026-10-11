@@ -4,10 +4,15 @@
 # Installs the levelrail control plane binary, a systemd unit, and Docker
 # (if missing) on a single Linux host.
 #
-# Usage: install.sh [install|upgrade|retain|install-cosign|uninstall] [--force] [--purge]
-#                   [--coexist] [--yes] [--no-cosign] [--http-port N] [--https-port N]
-#                   [--domain HOST]
+# Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall] [--force] [--purge]
+#                   [--coexist|--no-coexist] [--yes] [--no-cosign] [--http-port N]
+#                   [--https-port N] [--domain HOST]
 #   install    (default) preflight checks, then install or repair. Safe to re-run.
+#   check      (also --check) read-only server readiness report: who holds ports
+#              80/443, Docker version and isolation, exposed Docker API, disk,
+#              memory, firewall, and the DNS of --domain. Prints the recommended
+#              install mode and the exact next command. Changes nothing, runs
+#              without root (port owners are then only partly visible).
 #   upgrade    replace the binary with a newer release and restart, keeping
 #              the unit file and data. The previous binaries (last 3) are
 #              kept in ${LEVELRAIL_INSTALL_DIR}/levelrail.releases for rollback.
@@ -21,9 +26,12 @@
 #              --purge is given.
 #   --force    continue even if a preflight check fails.
 #   --coexist  run behind a proxy that already holds ports 80/443: ingress on
-#              8088/8443, dashboard on loopback only. Offered automatically
-#              when 80/443 are taken; --yes accepts that offer unattended.
-#   --yes, -y  answer yes to prompts (also accepts the coexist offer).
+#              8088/8443, dashboard on loopback only. Chosen automatically
+#              when 80/443 are taken by something else.
+#   --no-coexist  do not switch automatically: a taken 80/443 fails preflight
+#              (same as LEVELRAIL_COEXIST=0).
+#   --yes, -y  accepted for scripts. The installer no longer prompts: it
+#              switches to coexist mode by itself when 80/443 are taken.
 #   --no-cosign  do not install cosign (same as LEVELRAIL_NO_COSIGN=1). Releases
 #              are then verified by SHA-256 checksum only.
 #   --http-port / --https-port  ingress ports (override the LEVELRAIL_* env).
@@ -114,12 +122,13 @@ HTTPS_PORT_PINNED=0
 [ -z "${LEVELRAIL_HTTP_PORT:-}" ] || HTTP_PORT_PINNED=1
 [ -z "${LEVELRAIL_HTTPS_PORT:-}" ] || HTTPS_PORT_PINNED=1
 COEXIST=0
-[ "${LEVELRAIL_COEXIST:-0}" != "1" ] || COEXIST=1
+NO_COEXIST=0
+[ "${LEVELRAIL_COEXIST:-}" != "1" ] || COEXIST=1
+[ "${LEVELRAIL_COEXIST:-}" != "0" ] || NO_COEXIST=1
 COEXIST_ACTIVE=0
 SETTINGS_CHANGED=0
 COEXIST_HTTP_PORT="${LEVELRAIL_COEXIST_HTTP_PORT:-8088}"
 COEXIST_HTTPS_PORT="${LEVELRAIL_COEXIST_HTTPS_PORT:-8443}"
-ASSUME_YES=0
 DOMAIN_HINT="${LEVELRAIL_DOMAIN:-}"
 PUBLIC_HOST="${APP_PUBLIC_HOST:-}"
 PUBLIC_HOST_PINNED=0
@@ -154,18 +163,21 @@ fatal() {
 
 usage() {
 	cat <<'EOF'
-Usage: install.sh [install|upgrade|retain|install-cosign|uninstall] [--force] [--purge]
-                  [--coexist] [--yes] [--no-cosign] [--http-port N] [--https-port N]
-                  [--domain HOST]
+Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall] [--force] [--purge]
+                  [--coexist|--no-coexist] [--yes] [--no-cosign] [--http-port N]
+                  [--https-port N] [--domain HOST]
   install    (default) preflight checks, then install or repair
+  check      (also --check) read-only readiness report and recommended mode
   upgrade    replace the binary with a newer release and restart
   retain     download and verify LEVELRAIL_VERSION and keep it for rollback
   install-cosign  install cosign so release signatures can be verified
   uninstall  remove the service, unit, and binary (data kept unless --purge)
   --force    continue even if a preflight check fails
   --coexist  ingress on 8088/8443 and dashboard on loopback, for a server
-             whose ports 80/443 an existing proxy already holds
-  --yes      answer yes to prompts, including the coexist offer
+             whose ports 80/443 an existing proxy already holds (chosen
+             automatically when they are taken)
+  --no-coexist  fail preflight instead of switching to coexist mode
+  --yes      accepted for scripts, the installer never prompts
   --no-cosign  do not install cosign (checksum-only verification)
 EOF
 }
@@ -184,12 +196,17 @@ while [ "$#" -gt 0 ]; do
 		;;
 	esac
 	case "$arg" in
-	install | upgrade | retain | install-cosign | uninstall) MODE="$arg" ;;
+	install | check | upgrade | retain | install-cosign | uninstall) MODE="$arg" ;;
+	--check) MODE="check" ;;
+	--no-coexist) NO_COEXIST=1 ;;
 	--no-cosign) NO_COSIGN=1 ;;
 	--force) FORCE=1 ;;
 	--purge) PURGE=1 ;;
-	--coexist) COEXIST=1 ;;
-	--yes | -y) ASSUME_YES=1 ;;
+	--coexist)
+		COEXIST=1
+		NO_COEXIST=0
+		;;
+	--yes | -y) ;;
 	--http-port=*)
 		HTTP_PORT="${arg#*=}"
 		HTTP_PORT_PINNED=1
@@ -252,7 +269,7 @@ case "${LEVELRAIL_VERSION:-}" in
 *[!A-Za-z0-9._+-]*) fatal "LEVELRAIL_VERSION may only contain letters, digits, dot, dash, plus and underscore" ;;
 esac
 
-[ "$(id -u)" -eq 0 ] || fatal "must run as root, e.g.: curl -fsSL <url> | sudo sh"
+[ "$MODE" = "check" ] || [ "$(id -u)" -eq 0 ] || fatal "must run as root, e.g.: curl -fsSL <url> | sudo sh"
 
 github_api() {
 	curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 30 \
@@ -437,24 +454,10 @@ apply_coexist() {
 	SETTINGS_CHANGED=1
 }
 
-# can_prompt is true only with a real terminal, outside CI and without --yes.
-can_prompt() {
-	[ "$ASSUME_YES" -eq 0 ] && [ -z "${CI:-}" ] && (: </dev/tty) 2>/dev/null
-}
-
-# confirm asks $1 on the terminal, default yes.
-confirm() {
-	printf '%s [Y/n] ' "$1" >&2
-	ans="$( (read -r a </dev/tty && printf '%s' "$a") 2>/dev/null || true)"
-	case "$ans" in
-	n | N | no | NO | No) return 1 ;;
-	esac
-	return 0
-}
-
 # offer_coexist handles ports 80/443 held by something else: it names the
-# holder, then switches to coexist mode on --coexist/--yes or a confirmed
-# prompt. Otherwise the port rows below fail with the same information.
+# holder and switches to coexist mode by itself, because the only other
+# outcomes are a failed install or a Levelrail that fights your proxy for the
+# ports. --no-coexist (LEVELRAIL_COEXIST=0) keeps the old failing preflight.
 offer_coexist() {
 	if [ "$COEXIST" -eq 1 ]; then
 		apply_coexist
@@ -468,14 +471,13 @@ offer_coexist() {
 		[ -n "$taken" ] || return 0
 		log "Ports${taken} are already in use on this server:"
 		for port in $taken; do log "  ${port}: $(port_holders "$port")"; done
-		log "Levelrail can run alongside it: ingress on ${COEXIST_HTTP_PORT}/${COEXIST_HTTPS_PORT}, dashboard on loopback only,"
-		log "and your existing proxy forwards your domains to it (no automatic TLS from Levelrail then)."
-		if [ "$ASSUME_YES" -eq 1 ] || { can_prompt && confirm "Install in coexist mode?"; }; then
-			apply_coexist
-		else
-			log "Not switching to coexist mode. Re-run with --coexist (or --yes) to accept it."
+		if [ "$NO_COEXIST" -eq 1 ]; then
+			log "Not switching to coexist mode (--no-coexist). Re-run without it to run behind that service."
 			return 0
 		fi
+		log "Switching to coexist mode: ingress on ${COEXIST_HTTP_PORT}/${COEXIST_HTTPS_PORT}, dashboard on loopback only,"
+		log "and your existing proxy forwards your domains to it (no automatic TLS from Levelrail then)."
+		apply_coexist
 	fi
 	service_active && return 0
 	if port_listening "$HTTP_PORT" && free="$(find_free_port "$HTTP_PORT")"; then
@@ -508,9 +510,92 @@ first_existing_dir() {
 	printf '%s' "$d"
 }
 
+# docker_rootless is true when the daemon reports rootless mode.
+docker_rootless() {
+	docker info --format '{{.SecurityOptions}}' 2>/dev/null | grep -q 'name=rootless'
+}
+
+# docker_tcp_exposed is true when something listens on 2375 (the unencrypted
+# Docker API) on an address other than loopback.
+docker_tcp_exposed() {
+	port_listening 2375 || return 1
+	if command -v ss >/dev/null 2>&1; then
+		ss -ltnH "sport = :2375" 2>/dev/null | awk '{ print $4 }' | grep -vqE '^(127\.|\[::1\])'
+	else
+		return 0
+	fi
+}
+
+# firewall_blocks prints a fix when an active ufw or firewalld does not allow
+# ports 80 and 443, and nothing otherwise.
+firewall_blocks() {
+	if command -v ufw >/dev/null 2>&1; then
+		st="$(ufw status 2>/dev/null || true)"
+		case "$st" in
+		*"Status: active"*)
+			missing=""
+			for p in 80 443; do
+				printf '%s\n' "$st" | grep -Eq "^(${p}(/tcp)?|Nginx Full|Apache Full|WWW Full)[[:space:]].*ALLOW" || missing="$missing $p"
+			done
+			[ -z "$missing" ] || printf 'ufw is active and does not allow port(s)%s: sudo ufw allow 80/tcp && sudo ufw allow 443/tcp' "$missing"
+			return 0
+			;;
+		esac
+	elif command -v firewall-cmd >/dev/null 2>&1 && firewall-cmd --state >/dev/null 2>&1; then
+		svc="$(firewall-cmd --list-services 2>/dev/null) $(firewall-cmd --list-ports 2>/dev/null)"
+		case "$svc" in
+		*http*https* | *443/tcp*80/tcp* | *80/tcp*443/tcp*) ;;
+		*) printf 'firewalld is active and does not list http and https: sudo firewall-cmd --permanent --add-service=http --add-service=https && sudo firewall-cmd --reload' ;;
+		esac
+	fi
+	return 0
+}
+
+# preflight_environment adds the checks that are about the surroundings:
+# Docker isolation and exposure, the firewall, and the DNS of --domain.
+preflight_environment() {
+	if command -v docker >/dev/null 2>&1; then
+		if docker_rootless; then
+			row docker-mode warn "rootless Docker cannot publish ports 80/443 until net.ipv4.ip_unprivileged_port_start=80 is set"
+		fi
+		sock=/var/run/docker.sock
+		if [ -S "$sock" ]; then
+			perm="$(stat -c %a "$sock" 2>/dev/null || true)"
+			case "${perm#"${perm%?}"}" in
+			2 | 3 | 6 | 7) row docker-socket warn "${sock} is writable by every local user (mode ${perm}), which is root on this host: chmod 660 ${sock}" ;;
+			esac
+		fi
+	fi
+	if docker_tcp_exposed; then
+		row docker-api FAIL "the Docker API listens on a network address without TLS (port 2375): anyone who reaches it owns this server. Remove the tcp:// host from the daemon settings"
+	fi
+	fw="$(firewall_blocks)"
+	if [ -n "$fw" ]; then row firewall warn "$fw"; fi
+	if [ -n "$DOMAIN_HINT" ]; then
+		resolved="$(getent ahostsv4 "$DOMAIN_HINT" 2>/dev/null | awk '{ print $1 }' | sort -u | tr '\n' ' ' | sed 's/ $//')"
+		if [ -z "$resolved" ]; then
+			row dns warn "${DOMAIN_HINT} does not resolve: create an A record pointing at this server's public IPv4 address"
+		else
+			here=0
+			for ip in $(local_ips); do
+				case " $resolved " in *" $ip "*) here=1 ;; esac
+			done
+			if [ "$here" -eq 1 ]; then
+				row dns ok "${DOMAIN_HINT} points at this server (${resolved})"
+			else
+				row dns warn "${DOMAIN_HINT} resolves to ${resolved}, which is not an address on this server (fine behind NAT or a load balancer)"
+			fi
+		fi
+	fi
+}
+
 preflight() {
 	log "Preflight checks:"
-	row root ok "running as root"
+	if [ "$(id -u)" -eq 0 ]; then
+		row root ok "running as root"
+	else
+		row root warn "not root, so process names of port holders may be hidden (re-run with sudo for full detail)"
+	fi
 
 	detect_arch
 	if [ -n "$GOARCH" ]; then row arch ok "$(uname -m)"; else row arch FAIL "$(uname -m) (supported: x86_64, aarch64)"; fi
@@ -570,6 +655,9 @@ preflight() {
 	else
 		row "port $DASHBOARD_PORT" FAIL "already in use by another process"
 	fi
+
+	preflight_environment
+	[ "$MODE" != "check" ] || return 0
 
 	if [ "$PREFLIGHT_FAILS" -gt 0 ]; then
 		[ "$FORCE" -eq 1 ] || fatal "${PREFLIGHT_FAILS} preflight check(s) failed. Fix them, or re-run with --force to continue anyway."
@@ -868,6 +956,15 @@ write_unit() {
 	render_unit >"$UNIT_PATH"
 }
 
+# write_restart_policy stops systemd from restart-looping a binary that
+# refused to start because the database is newer than it (exit status 78).
+RESTART_POLICY_PATH="${DROPIN_DIR}/20-restart-policy.conf"
+write_restart_policy() {
+	mkdir -p "$DROPIN_DIR"
+	printf '%s\n' "# Written by install.sh. A binary older than the database exits 78 and must not be restarted." \
+		"[Service]" "RestartPreventExitStatus=78" >"$RESTART_POLICY_PATH"
+}
+
 # write_dropin stores every installer-chosen address, so upgrades keep them.
 write_dropin() {
 	mkdir -p "$DROPIN_DIR"
@@ -961,6 +1058,37 @@ wait_healthy() {
 		waited=$((waited + 2))
 	done
 	fatal "control plane did not become healthy within ${HEALTH_WAIT}s. Check: systemctl status ${SERVICE_NAME} && journalctl -u ${SERVICE_NAME} -n 100 --no-pager"
+}
+
+# healthy_within polls /healthz for up to $HEALTH_WAIT seconds and reports the
+# result without exiting, so an upgrade can roll back instead of dying.
+healthy_within() {
+	waited=0
+	while [ "$waited" -lt "$HEALTH_WAIT" ]; do
+		if curl -fsS --max-time 3 -o /dev/null "http://127.0.0.1:${DASHBOARD_PORT}/healthz" 2>/dev/null; then
+			return 0
+		fi
+		sleep 2
+		waited=$((waited + 2))
+	done
+	return 1
+}
+
+# rollback_failed_upgrade puts the binary saved before the upgrade back and
+# restarts. It cannot undo a schema migration: if the previous binary refuses
+# the migrated database, the printed recovery commands do that.
+rollback_failed_upgrade() {
+	previous="$1"
+	warn "${VERSION} did not become healthy within ${HEALTH_WAIT}s, restoring the previous binary"
+	systemctl stop "$SERVICE_NAME" >/dev/null 2>&1 || true
+	rm -f "${DATA_DIR}/upgrade-context.json"
+	install -m 0755 "$previous" "$BIN_PATH"
+	systemctl start "$SERVICE_NAME" >/dev/null 2>&1 || true
+	if healthy_within; then
+		rm -f "$previous"
+		fatal "upgrade to ${VERSION} rolled back: the previous release is running again and your data was not touched by the installer. Check: journalctl -u ${SERVICE_NAME} -n 100 --no-pager"
+	fi
+	fatal "upgrade to ${VERSION} failed and the previous binary is not healthy either. It is kept at ${previous}. The database may have been migrated: list restore points with 'sudo ${BIN_PATH} restore-snapshot --list'. For an upgrade that also restores data automatically use: levelrail-cli upgrade --apply"
 }
 
 discover_public_ip() {
@@ -1204,6 +1332,35 @@ write_upgrade_marker() {
 	) 2>/dev/null || warn "could not record who ran this upgrade for the upgrade history"
 }
 
+# do_check is the read-only readiness report: the preflight rows, then the
+# recommended install mode and the exact next command. It changes nothing.
+do_check() {
+	load_settings
+	preflight
+	url="https://raw.githubusercontent.com/${REPO}/main/install.sh"
+	domain_arg=""
+	[ -z "$DOMAIN_HINT" ] || domain_arg=" --domain ${DOMAIN_HINT}"
+	log ""
+	if [ "$COEXIST_ACTIVE" -eq 1 ] || [ "$COEXIST" -eq 1 ]; then
+		log "Recommended mode: behind your existing proxy (ingress ${COEXIST_HTTP_PORT}/${COEXIST_HTTPS_PORT}, dashboard on loopback)."
+		for port in 80 443; do
+			if port_listening "$port" && ! service_active; then log "  port ${port} is held by $(port_holders "$port")"; fi
+		done
+		log "Next step:"
+		log "  curl -fsSL ${url} | sudo sh -s -- --coexist${domain_arg}"
+		[ -z "$DOMAIN_HINT" ] || log "  then: levelrail-cli proxy --domain ${DOMAIN_HINT} --verify"
+	else
+		log "Recommended mode: own ports (80/443 are free, automatic HTTPS)."
+		log "Next step:"
+		if [ -n "$DOMAIN_HINT" ]; then log "  curl -fsSL ${url} | sudo sh -s --${domain_arg}"; else log "  curl -fsSL ${url} | sudo sh"; fi
+	fi
+	if [ "$PREFLIGHT_FAILS" -gt 0 ]; then
+		log ""
+		log "${PREFLIGHT_FAILS} check(s) failed: fix those first."
+		exit 1
+	fi
+}
+
 do_install() {
 	[ -n "$SOCKET_ACTIVATION" ] || SOCKET_ACTIVATION=1
 	load_settings
@@ -1212,6 +1369,7 @@ do_install() {
 	install_binary
 	write_brand
 	ensure_dropin
+	write_restart_policy
 	write_unit
 	[ "$SOCKET_ACTIVATION" != "1" ] || write_socket_units
 	configure_ufw
@@ -1236,8 +1394,11 @@ do_upgrade() {
 	[ "$COEXIST" -eq 0 ] || apply_coexist
 	warn_taken_ports
 	warn_unit_drift
+	pre_upgrade_bin="${BIN_PATH}.pre-upgrade"
+	cp -p "$BIN_PATH" "$pre_upgrade_bin"
 	install_binary
 	ensure_dropin
+	write_restart_policy
 	case "$SOCKET_ACTIVATION" in
 	1)
 		[ "$UNIT_DRIFTED" -eq 0 ] || cp -p "$UNIT_PATH" "${UNIT_PATH}.pre-upgrade"
@@ -1257,7 +1418,10 @@ do_upgrade() {
 	systemctl daemon-reload
 	write_upgrade_marker "install.sh upgrade"
 	systemctl restart "$SERVICE_NAME"
-	wait_healthy
+	log "Waiting for the control plane to come up..."
+	healthy_within || rollback_failed_upgrade "$pre_upgrade_bin"
+	rm -f "$pre_upgrade_bin"
+	log "Control plane is healthy."
 	log "Upgraded to ${VERSION}."
 }
 
@@ -1291,7 +1455,7 @@ do_uninstall() {
 	if [ -f "$UNIT_PATH" ]; then
 		systemctl disable --now "$SERVICE_NAME" >/dev/null 2>&1 || true
 		remove_socket_units
-		rm -f "$UNIT_PATH" "$DROPIN_PATH"
+		rm -f "$UNIT_PATH" "$DROPIN_PATH" "$RESTART_POLICY_PATH"
 		rmdir "$DROPIN_DIR" 2>/dev/null || true
 		systemctl daemon-reload
 	fi
@@ -1311,6 +1475,7 @@ do_uninstall() {
 
 case "$MODE" in
 install) do_install ;;
+check) do_check ;;
 upgrade) do_upgrade ;;
 retain) do_retain ;;
 install-cosign) do_install_cosign ;;

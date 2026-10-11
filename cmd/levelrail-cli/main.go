@@ -160,6 +160,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "upgrade":
 		return runUpgrade(prog, args[1:], stdout, stderr, lookupEnv)
+	case "readiness":
+		return runReadiness(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
 	case "changelog":
