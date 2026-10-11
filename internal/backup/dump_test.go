@@ -146,7 +146,7 @@ func TestContainerDumper_Dump(t *testing.T) {
 			engine:      store.EnginePostgres,
 			containerID: "db-mydb",
 			content:     "postgres-dump-bytes",
-			wantCmd:     []string{"sh", "-c", `exec pg_dump --no-password -U "$POSTGRES_USER" "$POSTGRES_USER"`},
+			wantCmd:     []string{"sh", "-c", `exec pg_dump --no-password --no-owner --no-privileges -U "$POSTGRES_USER" "$POSTGRES_USER"`},
 		},
 		{
 			name:        "MySQL",

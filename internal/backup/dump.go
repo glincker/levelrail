@@ -59,7 +59,10 @@ func (d *ContainerDumper) Dump(ctx context.Context, engine, containerName string
 // (trust-authenticated) connection so no password is needed. Run via
 // "exec" so the shell expands $POSTGRES_USER and then gets replaced by
 // pg_dump itself, not left running as a parent process.
-var postgresDumpCmd = []string{"sh", "-c", `exec pg_dump --no-password -U "$POSTGRES_USER" "$POSTGRES_USER"`}
+//
+// --no-owner/--no-privileges: restore-as-new targets a database whose role has
+// a different name, and OWNER TO/GRANT lines naming the source role abort it.
+var postgresDumpCmd = []string{"sh", "-c", `exec pg_dump --no-password --no-owner --no-privileges -U "$POSTGRES_USER" "$POSTGRES_USER"`}
 
 // mysqlDumpCmd authenticates as root using $MYSQL_ROOT_PASSWORD, mandatory
 // for the official image to start at all. Scoped to $MYSQL_DATABASE

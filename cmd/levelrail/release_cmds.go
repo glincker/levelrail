@@ -337,7 +337,7 @@ func hostDeps(f rollbackFlags, exe, name, relDir, dataDir, live, healthBase stri
 			return info.Name, nil
 		},
 		Stop:        func(ctx context.Context) error { return run(ctx, f.stopCmd, "stop") },
-		Start:       func(ctx context.Context) error { return run(ctx, f.startCmd, "start") },
+		Start:       func(ctx context.Context) error { return run(ctx, f.startCmd, "restart") },
 		WaitHealthy: func(ctx context.Context, t time.Duration) error { return rollback.WaitHealthy(ctx, healthBase, t) },
 		RestoreDB: func(_ context.Context, backup string) (string, error) {
 			if !cpbackup.ValidName(backup) {
