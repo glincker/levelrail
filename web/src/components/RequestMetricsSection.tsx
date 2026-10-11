@@ -1,68 +1,96 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import { MetricChartCard } from './MetricChartCard'
 import { Skeleton } from './ui/skeleton'
 import { useRequestSeries } from '../queries/requests'
 import type { RequestPoint } from '../types/requests'
 import type { ChartMarker, ChartRow } from '../lib/metricChart'
+import { attachPrevious, capRows, MAX_CHART_POINTS } from '../lib/chartSeries'
+import { chartPalette } from '../lib/chartPalette'
 import type { ResolvedTimeRange } from '../lib/timeRange'
 
 // Ingress-derived request charts (rate, 4xx/5xx error rate, latency
-// percentiles). Zero-config: no app changes, measured at the Caddy ingress.
+// percentiles). Zero-config: measured at the Caddy ingress.
 
-const COLORS = {
-  rate: '#0ea5e9',
-  e4xx: '#f59e0b',
-  e5xx: '#ef4444',
-  p95: '#a855f7',
-  p99: '#ef4444',
-}
+type Pick = (p: RequestPoint) => number
 
 function toRows(
   points: RequestPoint[],
-  primary: (p: RequestPoint) => number,
-  secondary?: (p: RequestPoint) => number,
+  previous: RequestPoint[] | undefined,
+  primary: Pick,
+  secondary?: Pick,
+  tertiary?: Pick,
+  previousPick?: Pick,
 ): ChartRow[] {
-  return points.map((p) => ({
+  const rows: ChartRow[] = points.map((p) => ({
     t: Date.parse(p.timestamp),
     primary: primary(p),
     secondary: secondary ? secondary(p) : undefined,
+    tertiary: tertiary ? tertiary(p) : undefined,
   }))
+  const pick = previousPick ?? primary
+  const prev = previous?.map((p) => ({
+    timestamp: p.timestamp,
+    value: pick(p),
+  }))
+  return capRows(attachPrevious(rows, prev), MAX_CHART_POINTS)
 }
 
 export function RequestMetricsSection({
   appName,
   range,
   markers,
+  compare = false,
+  selectedAt,
+  onSelectTime,
+  onMarkerClick,
 }: {
   appName: string
   range: ResolvedTimeRange
   markers: ChartMarker[]
+  compare?: boolean
+  selectedAt?: number
+  onSelectTime?: (t: number) => void
+  onMarkerClick?: (marker: ChartMarker) => void
 }) {
-  const { data, isLoading, error } = useRequestSeries(appName, range)
+  const { t } = useTranslation('observability')
+  const { data, isLoading, error } = useRequestSeries(appName, {
+    from: range.from,
+    to: range.to,
+    maxPoints: MAX_CHART_POINTS,
+    compare,
+  })
   const points = useMemo(() => data?.points ?? [], [data])
+  const previous = data?.previous_points
 
   const rateRows = useMemo(
-    () => toRows(points, (p) => p.rate_per_sec),
-    [points],
+    () => toRows(points, previous, (p) => p.rate_per_sec),
+    [points, previous],
   )
   const errorRows = useMemo(
     () =>
       toRows(
         points,
+        previous,
         (p) => p.error_rate_4xx * 100,
         (p) => p.error_rate_5xx * 100,
+        undefined,
+        (p) => p.error_rate_5xx * 100,
       ),
-    [points],
+    [points, previous],
   )
   const latencyRows = useMemo(
     () =>
       toRows(
         points,
+        previous,
+        (p) => p.p50_ms,
         (p) => p.p95_ms,
         (p) => p.p99_ms,
+        (p) => p.p95_ms,
       ),
-    [points],
+    [points, previous],
   )
 
   if (isLoading) {
@@ -71,7 +99,7 @@ export function RequestMetricsSection({
   if (error) {
     return (
       <p className="mt-4 text-sm text-destructive">
-        Request metrics unavailable: {error.message}
+        {t('requests.unavailable', { message: error.message })}
       </p>
     )
   }
@@ -79,57 +107,62 @@ export function RequestMetricsSection({
     return (
       <div className="mt-4 flex items-start gap-2 rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
         <GlobeIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-        <p>
-          No request traffic in this range. Request rate, error rate and latency
-          appear here once the app receives requests through its domain.
-        </p>
+        <p>{t('requests.empty')}</p>
       </div>
     )
   }
 
   const summary = data?.summary
+  const common = {
+    range,
+    markers,
+    isLoading: false,
+    showPrevious: compare && Boolean(previous?.length),
+    previousLabel: t('compare.previousPeriod'),
+    selectedAt,
+    onSelectTime,
+    onMarkerClick,
+  }
   return (
     <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
       <MetricChartCard
-        title="Request rate"
-        subtitle="Requests per second at the ingress"
+        {...common}
+        title={t('charts.requestRate')}
+        subtitle={t('charts.requestRateHint')}
         unit="rate"
-        primaryLabel="Requests"
-        primaryColor={COLORS.rate}
+        primaryLabel={t('charts.requests')}
+        primaryColor={chartPalette.primary}
         rows={rateRows}
-        range={range}
-        markers={markers}
-        isLoading={false}
       />
       <MetricChartCard
-        title="Error rate"
-        subtitle="Share of requests answered with 4xx and 5xx"
+        {...common}
+        title={t('charts.errorRate')}
+        subtitle={t('charts.errorRateHint')}
         unit="percent"
         primaryLabel="4xx"
-        primaryColor={COLORS.e4xx}
+        primaryColor={chartPalette.warning}
         secondaryLabel="5xx"
-        secondaryColor={COLORS.e5xx}
+        secondaryColor={chartPalette.danger}
         rows={errorRows}
-        range={range}
-        markers={markers}
-        isLoading={false}
+        previousLabel={t('compare.previous5xx')}
       />
       <MetricChartCard
-        title="Latency"
+        {...common}
+        title={t('charts.latency')}
         subtitle={
           summary
-            ? `p95 ${Math.round(summary.p95_ms)} ms over this range`
+            ? t('charts.latencyHint', { p95: Math.round(summary.p95_ms) })
             : undefined
         }
         unit="ms"
-        primaryLabel="p95"
-        primaryColor={COLORS.p95}
-        secondaryLabel="p99"
-        secondaryColor={COLORS.p99}
+        primaryLabel="p50"
+        primaryColor={chartPalette.primary}
+        secondaryLabel="p95"
+        secondaryColor={chartPalette.warning}
+        tertiaryLabel="p99"
+        tertiaryColor={chartPalette.danger}
         rows={latencyRows}
-        range={range}
-        markers={markers}
-        isLoading={false}
+        previousLabel={t('compare.previousP95')}
       />
     </div>
   )

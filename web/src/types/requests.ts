@@ -22,7 +22,9 @@ export interface RequestSummary {
   rate_per_sec: number
   error_rate_4xx: number
   error_rate_5xx: number
+  p50_ms?: number
   p95_ms: number
+  p99_ms?: number
   upstream_errors: number
 }
 
@@ -32,5 +34,8 @@ export interface RequestSeries {
   to: string
   step_seconds: number
   summary: RequestSummary
+  previous_summary?: RequestSummary
   points: RequestPoint[]
+  // Previous equal-length window, already shifted to align with `points`.
+  previous_points?: RequestPoint[]
 }

@@ -1,0 +1,134 @@
+{
+  "chart": {
+    "noData": "No data in this range."
+  },
+  "compare": {
+    "toggle": "Compare to previous period",
+    "previousPeriod": "Previous period",
+    "previous5xx": "5xx, previous period",
+    "previousP95": "p95, previous period"
+  },
+  "charts": {
+    "cpu": "CPU",
+    "memory": "Memory",
+    "network": "Network I/O",
+    "disk": "Disk I/O",
+    "build": "Build duration",
+    "requestRate": "Request rate",
+    "requestRateHint": "Requests per second at the ingress",
+    "requests": "Requests",
+    "errorRate": "Error rate",
+    "errorRateHint": "Share of requests answered with 4xx and 5xx",
+    "latency": "Latency",
+    "latencyHint": "p95 {{p95}} ms over this range"
+  },
+  "series": {
+    "CPU": "CPU",
+    "usage": "Usage",
+    "limit": "Limit",
+    "received": "Received",
+    "sent": "Sent",
+    "read": "Read",
+    "write": "Write",
+    "duration": "Duration"
+  },
+  "markers": {
+    "deploy": "{{status}} deploy: {{image}}, started {{time}}",
+    "restart": "{{count}} container restart(s) at {{time}}"
+  },
+  "deployStatus": {
+    "succeeded": "Succeeded",
+    "failed": "Failed",
+    "running": "Running",
+    "held": "Held (frozen)",
+    "superseded": "Superseded",
+    "queued": "Queued",
+    "canceled": "Canceled"
+  },
+  "deployDetails": {
+    "title": "{{status}} deploy",
+    "image": "Image",
+    "commit": "Commit",
+    "source": "Triggered by",
+    "duration": "Duration",
+    "error": "Error",
+    "openLogs": "Open deploy logs"
+  },
+  "dashboard": {
+    "title": "Metrics",
+    "summary": "As of {{time}}. {{deploys}} deploys in this range. Dashed lines mark deploys (green succeeded, red failed, gray running) and amber lines mark container restarts.",
+    "restarts": "Restarts: {{count}} in this range.",
+    "hint": "Click a chart to investigate that moment. Click a marker for the deploy details."
+  },
+  "range": {
+    "from": "From",
+    "to": "To",
+    "apply": "Apply range"
+  },
+  "requests": {
+    "unavailable": "Request metrics unavailable: {{message}}",
+    "empty": "No request traffic in this range. Request rate, error rate and latency appear here once the app receives requests through its domain."
+  },
+  "investigation": {
+    "title": "Investigation",
+    "heading": "Investigating {{time}}",
+    "window": "Window {{from}} to {{to}}, compared with the window before it.",
+    "viewLogs": "View logs at this time",
+    "clear": "Clear selection",
+    "beforeAfter": "Before and during",
+    "baseline": "Before",
+    "during": "During",
+    "metric": {
+      "rate": "Request rate",
+      "p50": "p50 latency",
+      "p95": "p95 latency",
+      "p99": "p99 latency",
+      "err4": "4xx rate",
+      "err5": "5xx rate"
+    },
+    "noTraffic": "No request traffic in this window.",
+    "topRoutes": "Top routes",
+    "noRoutes": "No routes recorded in this window.",
+    "routesUnavailable": "Per route statistics are not available on this control plane.",
+    "route": "Route",
+    "requests": "Requests",
+    "avg": "Avg",
+    "statusCodes": "Status codes",
+    "whatChanged": "What changed",
+    "noChanges": "Nothing changed around this time.",
+    "likelyCause": "Likely cause"
+  },
+  "logs": {
+    "container": "Container",
+    "allContainers": "All containers",
+    "stream": "Stream",
+    "anyStream": "stdout and stderr",
+    "minLevel": "Minimum level",
+    "anyLevel": "Any level",
+    "jsonFields": "JSON fields",
+    "fieldKey": "field.path",
+    "fieldOp": "Operator",
+    "fieldValue": "value",
+    "addFilter": "Add filter",
+    "removeFilter": "Remove filter {{filter}}",
+    "copyPermalink": "Copy permalink",
+    "copied": "Copied"
+  },
+  "live": {
+    "pause": "Pause live tail",
+    "resume": "Resume ({{count}} new lines)"
+  },
+  "failure": {
+    "title": "Failure context",
+    "crashloopTitle": "This app is crashlooping",
+    "deployFailedTitle": "The latest deploy failed",
+    "crashloopSummary": "{{count}} restarts in the last {{minutes}} minutes. These are the last lines the container wrote.",
+    "deploySummary": "Deploy of {{image}} did not complete. These are the last lines of its output.",
+    "copy": "Copy lines",
+    "openDeployLogs": "Open deploy logs",
+    "openLogs": "Open full logs",
+    "noLines": "No log lines were captured for this failure.",
+    "showing": "Showing the last {{shown}} of {{total}} lines.",
+    "linesLabel": "Last log lines of the failing container"
+  }
+}

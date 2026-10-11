@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { deployAttemptsQueryOptions } from '../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../hooks/useDeployProgress'
+import { FailureContextCard } from '../../../components/FailureContextCard'
 import { OverviewPage } from '../../../components/overview/OverviewPage'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -18,7 +19,12 @@ function OverviewSection() {
   const { name } = Route.useParams()
   const { data: app } = useApp(name)
   const { attempts, conditions } = useDeployProgress(name)
-  return <OverviewPage app={app} conditions={conditions} attempts={attempts} />
+  return (
+    <div className="space-y-6">
+      <FailureContextCard appName={name} />
+      <OverviewPage app={app} conditions={conditions} attempts={attempts} />
+    </div>
+  )
 }
 
 // Mirrors OverviewPage's own section order (hero, setup ring, suggestions,

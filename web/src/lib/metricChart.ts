@@ -23,6 +23,9 @@ export interface ChartRow {
   t: number
   primary?: number
   secondary?: number
+  tertiary?: number
+  /** Same series one period earlier, shifted onto this row's time. */
+  previous?: number
 }
 
 // A single vertical marker line on a chart, e.g. one deploy attempt on
@@ -36,6 +39,8 @@ export interface ChartMarker {
   t: number
   color: string
   tooltip: string
+  /** What the marker stands for; drives the click behaviour. */
+  kind?: 'deploy' | 'restart'
 }
 
 // Deliberately not lib/format.ts's formatBytes: that formatter treats 0

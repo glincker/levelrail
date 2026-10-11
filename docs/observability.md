@@ -97,7 +97,7 @@ The response includes `resource_count`: how many placed services actually contri
 
 ## Request metrics (RED)
 
-Every proxy and static route in the embedded Caddy is wrapped by a small `request_stats` handler (`internal/ingress/request_stats.go`). It times the request and counts it into fixed in-memory counters per route host, so idle cost is near zero and nothing is written to log files. Paths, query strings and client addresses are never read, and cardinality is bounded by the number of configured hosts. The sampler drains the counters every 15 seconds, maps hosts to apps through the ingress route table (domain to app), and writes only non-zero values under the app's `service:<name>` resource id. Platform routes (dashboard, registry, models) are not attributed to an app. Requests rejected by the WAF or rate limiter count as 4xx. Load balancer and proxy failures (502, 503, 504 raised by the reverse proxy) also count under `http_upstream_errors`.
+Every proxy and static route in the embedded Caddy is wrapped by a small `request_stats` handler (`internal/ingress/request_stats.go`). It times the request and counts it into fixed in-memory counters per route host, so idle cost is near zero and nothing is written to log files. Query strings and client addresses are never read. Request paths are reduced to a bounded route template (see Route and status breakdown below), so cardinality stays bounded. The sampler drains the counters every 15 seconds, maps hosts to apps through the ingress route table (domain to app), and writes only non-zero values under the app's `service:<name>` resource id. Platform routes (dashboard, registry, models) are not attributed to an app. Requests rejected by the WAF or rate limiter count as 4xx. Load balancer and proxy failures (502, 503, 504 raised by the reverse proxy) also count under `http_upstream_errors`.
 
 Metrics (per-tick counter deltas; a tick with no traffic writes nothing):
 
@@ -112,6 +112,51 @@ Metrics (per-tick counter deltas; a tick with no traffic writes nothing):
 Percentiles are estimated from the summed histogram buckets (linear interpolation inside a bucket), so they merge correctly across time buckets, rollup tiers and nodes.
 
 Read it with `GET /api/v1/apps/{name}/requests?from=&to=&step=` (rate, 4xx and 5xx error rate, p50, p95, p99, bytes, upstream errors and a summary), `levelrail-cli apps requests <name>` (or `apps metrics <name> --requests`), the `get_app_requests` MCP tool, or the Metrics tab of an app. `GET /api/v1/apps/{name}` also carries a `requests` summary (rate, error rates, p95 over `APP_REQUESTS_SUMMARY_WINDOW`, default 5m) that later features such as auto-rollback and SLO alerts can consume. In Go, use `telemetry.SummarizeRequests(ctx, querier, app, window, now)`.
+
+## Route and status breakdown
+
+To answer "which route made the 3am spike slow", the request handler also counts, per app and minute, requests, 4xx, 5xx and total latency per **route template** and requests per **exact status code**. Only the URL path is read, never the query string or client address. A path is cut to its first segments and any segment that looks like an identifier (digits, hex, UUID, long tokens) becomes `:id`, so `/api/users/42/orders/9f86d081...` is stored as `/api/users/:id/*`. Distinct routes per tick are capped, with the rest folded into `other`.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_REQUEST_ROUTES` | on | Set to `off` to stop recording routes. Exact status codes are still counted |
+| `APP_REQUEST_ROUTE_MAX` | 50 | Distinct routes kept per tick before `other` |
+| `APP_REQUEST_ROUTE_DEPTH` | 3 | Path segments kept in a template |
+
+The breakdown is stored in `telemetry.db` at one minute resolution and pruned with `APP_METRICS_RETENTION_1M`. It is node-local like the rest of the telemetry and merges across nodes through the same query layer.
+
+## Downsampling and period comparison
+
+Every series query bounds its size instead of returning raw 15 second samples for a long range.
+
+- `max_points=N` on `GET /api/v1/apps/{name}/metrics` and `/requests` widens the bucket to the smallest round step (15s up to 24h) that keeps the series within N points. The dashboard and CLI send 600. `APP_METRICS_MAX_POINTS` (default 600, at most 5000) is the largest value the server honours. A 7 day range at 15 second resolution is 40,320 raw samples and comes back as 336 points.
+- Each metric point carries `max`, the largest raw sample in its bucket, so a one minute spike survives averaging into a 30 minute bucket.
+- `compare=previous` adds `previous_points`, the equal-length window before `from`, with timestamps shifted forward so it overlays the current series. `/requests` also returns `previous_summary`.
+- Queries pick raw, 1 minute or 1 hour rollup tiers as described above, so a long range never scans raw rows.
+
+## Investigating a spike
+
+`GET /api/v1/apps/{name}/investigate?from=&to=` returns everything that explains one window in a single response (the window may be at most `APP_INVESTIGATE_MAX_SPAN`, default 24h):
+
+- `summary` and `baseline`: request count, rate, 4xx and 5xx share, p50, p95 and p99 for the window and for the equal-length window before it.
+- `top_routes` and `status_codes`: the ten busiest route templates with share, 5xx share and mean latency, and the exact status code counts.
+- `timeline`: one ascending list of deploys, rollbacks, config, env, secret, domain, scale and load balancer changes (from the same sources as "What changed before an alert", the most recent effective change flagged `likely_cause`), container restarts (a burst collapses into one entry with a count), and resource saturation (CPU or memory held at or above a threshold for several samples). It looks back `APP_INVESTIGATE_LOOKBACK` (default 30m) before the window, because the cause usually precedes the symptom.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_SATURATION_CPU_PERCENT` | 90 | CPU percent that counts as saturated |
+| `APP_SATURATION_MEMORY_PERCENT` | 90 | Memory usage as a percent of its limit that counts as saturated |
+| `APP_SATURATION_MIN_SAMPLES` | 2 | Consecutive samples required, so one blip is ignored |
+| `APP_INVESTIGATE_LOOKBACK` | 30m | How far before the window changes are collected |
+| `APP_INVESTIGATE_MAX_SPAN` | 24h | Widest window accepted |
+
+In the dashboard, click anywhere on a chart on the app's Metrics tab to select that moment. The investigation panel opens with the same data, deploy markers on every chart open the deploy (status, image, commit) on click, and "View logs at this time" opens the Logs tab with the window already set.
+
+## Failure context
+
+`GET /api/v1/apps/{name}/failure-context` answers "why is it down" without opening the log viewer. It reports `crashlooping` when at least `APP_FAILURE_CONTEXT_RESTARTS` (default 3) restarts landed in the last `APP_FAILURE_CONTEXT_WINDOW` (default 15m), `deploy_failed` when the newest deploy attempt failed, and `healthy` otherwise. For a crashloop the response carries the last `APP_FAILURE_CONTEXT_LINES` (default 200) lines of the most recently active container, with the total available. For a failed build it carries the tail of the build output; for any other failed deploy, the app's runtime log tail. The app overview page shows it automatically when the state is not `healthy`, and `levelrail-cli logs failure <app>` prints it.
+
+Notifications carry the same context: a firing crashloop alert attaches the last 200 lines (unchanged), and a failed deploy notification now does too. Chat channels get the last 10 lines (capped at 1200 characters), and the generic webhook payload gets `log_lines` with up to 200 and the `attempt_id`.
 
 ## Rollups and retention
 
@@ -133,7 +178,7 @@ When the database exceeds the size cap, the oldest tenth of the finest tier is d
 ## Dashboard pages
 
 **Per-app and per-database metrics:**
-- `/apps/$name/metrics` - `MetricsDashboard` shows charts for all 7 collected metrics, with deploy attempts overlaid as colored lines (green succeeded, red failed, gray running).
+- `/apps/$name/metrics` - `MetricsDashboard` shows CPU, memory, disk IO, network IO, request rate, error rate, p50/p95/p99 latency and restarts. A range picker (15 minutes to 30 days, or a custom window, kept in the URL so it is a permalink), a "compare to previous period" toggle, and deploy and restart markers on every chart. Series are downsampled server side. Click a deploy marker for its status, image and commit; click the chart to open the investigation panel for that moment.
 - `/databases/$name/metrics` - `DatabaseMetricsDashboard` shows the same charts scoped to a managed database.
 - Node metrics - `NodeMetricsDashboard` shows the sum-across-placed-services view plus real disk/patch readings.
 
@@ -141,7 +186,7 @@ When the database exceeds the size cap, the oldest tenth of the finest tier is d
 - `/apps/$name/overview` - `AppHealthTimeline` is a compact 24h/7d strip answering "what happened to this app, and when". It plots deploy markers (green succeeded, red failed, blue running), container restarts (amber, bucketed so a burst reads as one marker with a count), and shaded error windows (a failed deploy from start to finish, or a crashloop of 3 or more restarts with under 15 minutes between them). Markers are keyboard focusable with aria labels and show details on hover or focus; Enter or click opens the deploy's logs (deploys) or the app's logs (restarts). It reads only existing data (`GET /api/v1/apps/{name}/deploy-attempts` and the `container_restart_count` metric), so there is no new API or CLI surface: the same data is available from `levelrail-cli apps deploys list` and the metrics API. If telemetry is not configured, only deploys are shown.
 
 **Logs:**
-- `/apps/$name/logs` - Two tabs: `Live` (LiveLogViewer, default) and `Search` (LogSearchPanel for historical full-text search). Scoped to the app's running container(s).
+- `/apps/$name/logs` - Two tabs: `Live` (LiveLogViewer, default) and `Search` (LogSearchPanel for historical search). Search filters by text, level, stream, container and structured JSON fields (`key=value`, `key!=value`, `key~text`, `key>n`), takes `from`/`to` from the URL (the investigation panel links here), and "Copy permalink" copies the exact filter and time range. The live tail can be paused without losing lines.
 - Separate from `/apps/$name/deploys/$deployId/logs`, which tails a specific deploy attempt's output.
 - `/databases/$name/logs` - The same live/search pair (LiveDatabaseLogViewer, DatabaseLogSearchPanel) for managed databases.
 - `/databases/$name/slow-queries` - `DatabaseSlowQueriesPanel` shows the slow query log for Postgres/MySQL databases, sortable by duration or timestamp with a minimum-duration filter.
@@ -168,6 +213,8 @@ Log collection resumes where it stopped. When the control plane restarts, or a c
 **Stored search** (`GET /api/v1/apps/{name}/logs`)
 - A request/response query over persisted logs.
 - Filtered by `from`/`to` (RFC3339, default last hour) and optional `q` full-text phrase.
+- Optional `stream` (`stdout` or `stderr`), `container` (container id prefix) and repeatable `field` filters on structured JSON lines: `field=status=500`, `field=route~/pay`, `field=latency>=250`, dotted keys such as `req.user.id` reach nested objects. A line that is not JSON, or lacks the key, matches only `!=`. At most 8 field filters.
+- Each entry carries its `container` id, and the response lists the `containers` that matched (before the container filter) with line counts.
 - Optional `level` (minimum level: trace, debug, info, warn, error, fatal) keeps lines at or above it, using the JSON `level`/`severity` field or a level token near the start of a plain line; lines with no detectable level are dropped when it is set. Optional `limit` keeps only the newest N matches.
 - The response carries `total` (matches before `limit`) and each entry a `level` when one was detected.
 - This is what "why was this app slow at 3am last Tuesday" queries.
@@ -599,14 +646,18 @@ levelrail-cli apps alerts create my-app --name "high CPU" --kind threshold \
 | Method | Path | Ability |
 | --- | --- | --- |
 | `GET` | `/api/v1/apps/{name}/health-score` | `read` |
-| `GET` | `/api/v1/apps/{name}/metrics?metric=...&from=...&to=...&step=...` | `read` |
+| `GET` | `/api/v1/apps/{name}/metrics?metric=...&from=...&to=...&step=...&max_points=...&compare=previous` | `read` |
+| `GET` | `/api/v1/apps/{name}/requests?from=...&to=...&step=...&max_points=...&compare=previous` | `read` |
+| `GET` | `/api/v1/apps/{name}/investigate?from=...&to=...` | `read` |
+| `GET` | `/api/v1/apps/{name}/failure-context` | `read` |
+| `POST` | `/api/v1/prometheus/read` (Prometheus remote read) | `read` |
 | `GET` | `/api/v1/databases/{name}/metrics` | `read` |
 | `GET` | `/api/v1/nodes/{id}/metrics` | `root` |
 | `GET` | `/api/v1/apps/resource-usage` | `read` |
 | `GET` | `/api/v1/apps-metrics` | `read` |
 | `GET` | `/api/v1/nodes/resource-usage` | `root` |
 | `GET` | `/api/v1/nodes/{id}/capacity-forecast` | `root` |
-| `GET` | `/api/v1/apps/{name}/logs?from=...&to=...&q=...` | `read` |
+| `GET` | `/api/v1/apps/{name}/logs?from=...&to=...&q=...&level=...&stream=...&container=...&field=...` | `read` |
 | `GET` | `/api/v1/apps/{name}/logs/stream` (SSE) | `read` |
 | `GET` | `/api/v1/apps/{name}/logs/download` | `read` |
 | `GET` | `/api/v1/databases/{name}/logs` | `read` |
@@ -651,6 +702,12 @@ levelrail-cli nodes capacity-forecast <id>
 
 levelrail-cli apps logs <name> [--since 1h | --from ... --to ...] [--q PHRASE] [--tail N]
 levelrail-cli apps logs <name> --follow
+
+levelrail-cli logs search <app> [--q T] [--level L] [--container ID] [--stream S] [--field k=v]... [--since 1h] [--limit N]
+levelrail-cli logs failure <app>
+levelrail-cli metrics query <app> --metric NAME [--since 1h | --from T --to T] [--max-points N] [--compare]
+levelrail-cli metrics top [--by cpu|memory|network] [--limit N]
+levelrail-cli metrics investigate <app> [--at T --window 10m | --from T --to T]
 
 levelrail-cli databases slow-queries <name> [--since 1h | --from ... --to ...] [--limit N] [--offset N]
 
@@ -716,7 +773,9 @@ levelrail-cli push-subscriptions revoke <id>
 - No download endpoint for database logs (only apps).
 - Slow query log threshold is control-plane-wide (`APP_DATABASE_SLOW_QUERY_THRESHOLD_MS`), not configurable per database.
 - Postgres slow-query parsing only captures the single log line the `duration:` LOG entry itself occupies; a query long enough to wrap, or followed by a `DETAIL`/parameters line, isn't stitched back together.
-- No API endpoint reconstructs exact log lines a firing crashloop alert attached to its notification (payload only; dashboard links to log view instead).
+- The crashloop alert's attached lines are still not stored with the alert; `GET /api/v1/apps/{name}/failure-context` returns the current tail instead.
+- The route breakdown is a bounded template of the URL path (first 3 segments, ids collapsed), not full paths, and it is not recorded for non-ingress traffic.
+- The investigation timeline does not include alert fire and resolve events yet; use `levelrail-cli alerts history`.
 
 **Fixed configurations:**
 - Alert evaluation interval (30s) is fixed, not env-configurable (unlike per-kind thresholds).

@@ -183,14 +183,26 @@ func TestDriver_RequestStats_RealCaddy(t *testing.T) {
 	get("live.test", "/")
 	get("live.test", "/")
 	get("live.test", "/missing")
+	get("live.test", "/orders/12345?token=secret")
 	if code := get("dead.test", "/"); code != http.StatusBadGateway {
 		t.Fatalf("dead backend status = %d, want 502", code)
 	}
 
 	got := stats.DrainByApp()
 	live, dead := got["liveapp"], got["deadapp"]
-	if live.Requests != 3 || live.Status2xx != 2 || live.Status4xx != 1 || live.BytesOut == 0 {
+	if live.Requests != 4 || live.Status2xx != 3 || live.Status4xx != 1 || live.BytesOut == 0 {
 		t.Errorf("live window = %+v", live)
+	}
+	if live.Routes["/"].Requests != 2 || live.Routes["/missing"].Errors4xx != 1 || live.Routes["/orders/:id"].Requests != 1 {
+		t.Errorf("live routes = %+v", live.Routes)
+	}
+	for route := range live.Routes {
+		if strings.Contains(route, "secret") || strings.Contains(route, "12345") {
+			t.Errorf("route %q leaked a query string or id", route)
+		}
+	}
+	if live.Statuses[200] != 3 || live.Statuses[404] != 1 {
+		t.Errorf("live statuses = %+v", live.Statuses)
 	}
 	if dead.Requests != 1 || dead.Status5xx != 1 || dead.UpstreamErrors != 1 {
 		t.Errorf("dead window = %+v", dead)

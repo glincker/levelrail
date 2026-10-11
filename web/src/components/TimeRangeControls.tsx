@@ -20,7 +20,8 @@ export function TimeRangeControls({
   onRefresh,
   children,
 }: {
-  rangeKey: TimeRangeKey
+  /** 'custom' highlights no preset. */
+  rangeKey: TimeRangeKey | 'custom'
   onRangeChange: (key: TimeRangeKey) => void
   onRefresh: () => void
   children?: ReactNode

@@ -26,6 +26,8 @@ export const metricKeys = {
     fromIso: string,
     toIso: string,
     step: string | undefined,
+    maxPoints?: number,
+    compare?: boolean,
   ) =>
     [
       ...metricKeys.all(appName),
@@ -33,6 +35,8 @@ export const metricKeys = {
       fromIso,
       toIso,
       step ?? 'raw',
+      maxPoints ?? 0,
+      compare ?? false,
     ] as const,
 }
 
@@ -41,6 +45,10 @@ export interface MetricRangeParams {
   to: Date
   /** A Go duration string (e.g. "60s"); omitted means raw samples. */
   step?: string
+  /** Server picks the step so at most this many points come back. */
+  maxPoints?: number
+  /** Also return the previous equal-length window as previous_points. */
+  compare?: boolean
 }
 
 export async function fetchMetricSeries(
@@ -55,6 +63,12 @@ export async function fetchMetricSeries(
   })
   if (range.step) {
     params.set('step', range.step)
+  }
+  if (range.maxPoints) {
+    params.set('max_points', String(range.maxPoints))
+  }
+  if (range.compare) {
+    params.set('compare', 'previous')
   }
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/metrics?${params.toString()}`,
@@ -83,6 +97,8 @@ export function metricSeriesQueryOptions(
       range.from.toISOString(),
       range.to.toISOString(),
       range.step,
+      range.maxPoints,
+      range.compare,
     ),
     queryFn: () => fetchMetricSeries(appName, metric, range),
   })

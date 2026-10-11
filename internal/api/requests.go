@@ -22,6 +22,10 @@ type requestsResponse struct {
 	StepSeconds float64                  `json:"step_seconds"`
 	Summary     telemetry.RequestSummary `json:"summary"`
 	Points      []telemetry.RequestPoint `json:"points"`
+	// PreviousPoints and PreviousSummary cover the equal-length window before
+	// From, shifted forward so they overlay Points, when compare=previous.
+	PreviousPoints  []telemetry.RequestPoint  `json:"previous_points,omitempty"`
+	PreviousSummary *telemetry.RequestSummary `json:"previous_summary,omitempty"`
 }
 
 // WithRequestSummaryWindow sets the lookback of the request summary attached
@@ -81,8 +85,18 @@ func (rt *Router) handleQueryRequests(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	maxPoints, err := parseMaxPoints(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	if step <= 0 {
 		step = defaultRequestStep(to.Sub(from))
+		if maxPoints > 0 {
+			step = telemetry.AutoStep(to.Sub(from), maxPoints, telemetry.MinRequestStep)
+		}
+	} else if widened, _ := capStep(step, to.Sub(from), maxPoints); widened > 0 {
+		step = widened
 	}
 
 	points, err := telemetry.QueryRequests(r.Context(), rt.telemetry, name, from, to, step)
@@ -102,9 +116,24 @@ func (rt *Router) handleQueryRequests(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rt.logger.Warn("api: query requests: summary unavailable", slog.String("error", err.Error()), slog.String("name", name))
 	}
-	writeJSON(w, http.StatusOK, requestsResponse{
+	resp := requestsResponse{
 		App: name, From: from, To: to, StepSeconds: step.Seconds(), Summary: summary, Points: points,
-	})
+	}
+	if r.URL.Query().Get("compare") == "previous" {
+		span := to.Sub(from)
+		prev, perr := telemetry.QueryRequests(r.Context(), rt.telemetry, name, from.Add(-span), from, step)
+		if perr != nil && prev == nil {
+			rt.logger.Warn("api: query requests: previous period unavailable", slog.String("error", perr.Error()), slog.String("name", name))
+		}
+		for i := range prev {
+			prev[i].Timestamp = prev[i].Timestamp.Add(span)
+		}
+		resp.PreviousPoints = prev
+		if ps, serr := telemetry.SummarizeRequests(r.Context(), rt.telemetry, name, span, from); serr == nil {
+			resp.PreviousSummary = &ps
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func defaultRequestStep(span time.Duration) time.Duration {

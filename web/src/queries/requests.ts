@@ -13,6 +13,8 @@ export const requestKeys = {
     fromIso: string,
     toIso: string,
     step: string | undefined,
+    maxPoints?: number,
+    compare?: boolean,
   ) =>
     [
       ...appKeys.detail(appName),
@@ -20,6 +22,8 @@ export const requestKeys = {
       fromIso,
       toIso,
       step ?? 'auto',
+      maxPoints ?? 0,
+      compare ?? false,
     ] as const,
 }
 
@@ -27,6 +31,8 @@ export interface RequestRangeParams {
   from: Date
   to: Date
   step?: string
+  maxPoints?: number
+  compare?: boolean
 }
 
 export async function fetchRequestSeries(
@@ -39,6 +45,12 @@ export async function fetchRequestSeries(
   })
   if (range.step) {
     params.set('step', range.step)
+  }
+  if (range.maxPoints) {
+    params.set('max_points', String(range.maxPoints))
+  }
+  if (range.compare) {
+    params.set('compare', 'previous')
   }
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/requests?${params.toString()}`,
@@ -65,6 +77,8 @@ export function requestSeriesQueryOptions(
       range.from.toISOString(),
       range.to.toISOString(),
       range.step,
+      range.maxPoints,
+      range.compare,
     ),
     queryFn: () => fetchRequestSeries(appName, range),
   })

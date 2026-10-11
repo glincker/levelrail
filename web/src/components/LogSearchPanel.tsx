@@ -1,10 +1,21 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { useTranslation } from 'react-i18next'
 import {
+  CheckIcon,
   DownloadSimpleIcon,
+  LinkIcon,
   MagnifyingGlassIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { LogFilterBar } from './LogFilterBar'
+import { Button } from './ui/button'
+import {
+  buildLogQuery,
+  formatFieldFilter,
+  parseFieldFilters,
+} from '../lib/logFilters'
+import type { LogsSearch } from '../lib/observabilitySearch'
 import { logDownloadURL, useLogSearch } from '../queries/logs'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { buttonVariants } from './ui/button'
@@ -64,25 +75,97 @@ function LogSearchSkeleton() {
   )
 }
 
-export function LogSearchPanel({ appName }: { appName: string }) {
-  const [query, setQuery] = useState('')
+// With `onSearchChange` the filters live in the URL (route search params);
+// without it the panel keeps them in local state.
+export function LogSearchPanel({
+  appName,
+  search: searchProp,
+  onSearchChange,
+}: {
+  appName: string
+  search?: LogsSearch
+  onSearchChange?: (next: LogsSearch) => void
+}) {
+  const { t } = useTranslation('observability')
+  const [localSearch, setLocalSearch] = useState<LogsSearch>({})
+  const filters = onSearchChange ? (searchProp ?? {}) : localSearch
+  const update = (patch: Partial<LogsSearch>) => {
+    const next = { ...filters, ...patch }
+    if (onSearchChange) {
+      onSearchChange(next)
+    } else {
+      setLocalSearch(next)
+    }
+  }
+
+  const [query, setQuery] = useState(filters.q ?? '')
   const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS)
-  const [rangeKey, setRangeKey] = useState<TimeRangeKey>(DEFAULT_TIME_RANGE_KEY)
+  const [rangeKey, setRangeKeyState] = useState<TimeRangeKey>(
+    DEFAULT_TIME_RANGE_KEY,
+  )
   const [refreshNonce, setRefreshNonce] = useState(0)
   const [levels, setLevels] = useState<ReadonlySet<LevelBucket>>(new Set())
+  const [copied, setCopied] = useState(false)
+
+  const trimmedQuery = debouncedQuery.trim()
+  useEffect(() => {
+    if (trimmedQuery !== (filters.q ?? '')) {
+      update({ q: trimmedQuery || undefined })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trimmedQuery])
+
+  const fixedFrom = filters.from
+  const fixedTo = filters.to
+  const setRangeKey = (key: TimeRangeKey) => {
+    setRangeKeyState(key)
+    if (fixedFrom || fixedTo) {
+      update({ from: undefined, to: undefined })
+    }
+  }
 
   const range = useMemo(
-    () => resolveTimeRange(rangeKey),
+    () =>
+      fixedFrom && fixedTo
+        ? { from: new Date(fixedFrom), to: new Date(fixedTo) }
+        : resolveTimeRange(rangeKey),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rangeKey, refreshNonce],
+    [rangeKey, refreshNonce, fixedFrom, fixedTo],
   )
-
-  const { data, isLoading, error } = useLogSearch(appName, {
+  const fieldFilters = useMemo(
+    () => parseFieldFilters(filters.field ?? []),
+    [filters.field],
+  )
+  const queryState = {
     from: range.from,
     to: range.to,
-    q: debouncedQuery.trim() || undefined,
+    q: trimmedQuery || undefined,
+    level: filters.level,
+    container: filters.container,
+    stream: filters.stream,
+    fields: fieldFilters,
+  }
+
+  const { data, isLoading, error } = useLogSearch(appName, {
+    ...queryState,
     limit: LOG_SEARCH_LIMIT,
   })
+
+  const copyPermalink = () => {
+    const params = buildLogQuery({
+      ...queryState,
+      from: range.from,
+      to: range.to,
+    })
+    params.set('tab', 'search')
+    const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`
+    void navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      window.setTimeout(() => {
+        setCopied(false)
+      }, 2000)
+    })
+  }
   const loaded = useMemo(() => data?.entries ?? [], [data])
   const counts = useMemo(() => countLevels(loaded), [loaded])
   const entries = useMemo(
@@ -134,17 +217,26 @@ export function LogSearchPanel({ appName }: { appName: string }) {
           }}
         >
           <a
-            href={logDownloadURL(appName, {
-              from: range.from,
-              to: range.to,
-              q: debouncedQuery.trim() || undefined,
-            })}
+            href={logDownloadURL(appName, queryState)}
             download
             className={buttonVariants({ variant: 'outline', size: 'sm' })}
           >
             <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
             Download logs
           </a>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={copyPermalink}
+          >
+            {copied ? (
+              <CheckIcon className="size-3.5" aria-hidden="true" />
+            ) : (
+              <LinkIcon className="size-3.5" aria-hidden="true" />
+            )}
+            {copied ? t('logs.copied') : t('logs.copyPermalink')}
+          </Button>
         </TimeRangeControls>
       </div>
 
@@ -175,6 +267,28 @@ export function LogSearchPanel({ appName }: { appName: string }) {
           </button>
         ) : null}
       </div>
+
+      <LogFilterBar
+        containers={data?.containers ?? []}
+        container={filters.container}
+        stream={filters.stream}
+        level={filters.level}
+        fields={fieldFilters}
+        onContainer={(container) => {
+          update({ container })
+        }}
+        onStream={(stream) => {
+          update({ stream })
+        }}
+        onLevel={(level) => {
+          update({ level })
+        }}
+        onFields={(next) => {
+          update({
+            field: next.length > 0 ? next.map(formatFieldFilter) : undefined,
+          })
+        }}
+      />
 
       <div className="mt-3">
         {isLoading ? (
@@ -249,6 +363,11 @@ export function LogSearchPanel({ appName }: { appName: string }) {
                       >
                         {entry.stream}
                       </span>
+                      {entry.container && (data?.containers.length ?? 0) > 1 ? (
+                        <span className="shrink-0 font-mono text-[0.65rem] text-neutral-500">
+                          {entry.container.slice(0, 8)}
+                        </span>
+                      ) : null}
                       {entry.structured ? (
                         <span className="shrink-0 rounded bg-sky-900/40 px-1 text-[0.65rem] uppercase text-sky-300">
                           json
