@@ -63,7 +63,7 @@ func RestoreSnapshot(current store.DesiredService, snap store.DeployAttemptSnaps
 func RollbackDesired(current store.DesiredService, target store.DeployAttempt, pin *store.RollbackPin) (svc store.DesiredService, ref string, contentSafe bool) {
 	svc = RestoreSnapshot(current, target.Snapshot)
 	ref, contentSafe = RollbackRef(target, pin)
-	if pin != nil && ref == pin.PinRef {
+	if LocalOnlyRef(pin, ref) {
 		svc.PullPolicy = ""
 	}
 	return svc, ref, contentSafe
@@ -81,4 +81,10 @@ func RollbackRef(target store.DeployAttempt, pin *store.RollbackPin) (ref string
 	default:
 		return target.Image, false
 	}
+}
+
+// LocalOnlyRef reports whether ref is a rollback pin tag, which exists in
+// no registry and so must never be pulled.
+func LocalOnlyRef(pin *store.RollbackPin, ref string) bool {
+	return pin != nil && pin.PinRef != "" && ref == pin.PinRef
 }

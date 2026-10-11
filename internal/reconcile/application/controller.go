@@ -781,8 +781,10 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 				return notReady("InspectFailed", err), fmt.Errorf("application/%s: list stale containers: %w", c.serviceName, err)
 			}
 			// With a hold configured the last old container stays as the
-			// held previous release.
-			if len(stale) > 1 || (len(stale) == 1 && c.effectiveHold(c.safetyFor(ctx, desired)) <= 0) {
+			// held previous release. With a drain window nothing old stops
+			// mid-pass: ingress still balances over it until this pass ends.
+			safety := c.safetyFor(ctx, desired)
+			if safety.DrainTimeout <= 0 && (len(stale) > 1 || (len(stale) == 1 && c.effectiveHold(safety) <= 0)) {
 				// Created is often tied at test/fake-clock resolution, so
 				// break ties on name to keep this deterministic rather
 				// than following ListByPrefix's map-iteration order.

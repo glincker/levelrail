@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -71,6 +72,7 @@ type deployWatchDeps struct {
 	registry    *agent.Registry
 	localNodeID string
 	restarts    deploywatch.RestartCounter
+	sampleEvery time.Duration
 	metrics     telemetry.MetricsQuerier
 	nudger      deploy.ReconcileNudger
 	dispatcher  *alerting.DeployDispatcher
@@ -82,7 +84,7 @@ func startDeployWatch(ctx context.Context, g deployGate, d deployWatchDeps) {
 	resolver, _ := d.local.(docker.ImageResolver)
 	w := &deploywatch.Watcher{
 		Store: d.db, Defaults: g.defaults, Restarts: d.restarts, Metrics: d.metrics,
-		Resolver: resolver, Nudger: d.nudger, Logger: d.logger,
+		Resolver: resolver, Nudger: d.nudger, Logger: d.logger, SampleInterval: d.sampleEvery,
 		Inspectors: func(nodeID string) (docker.ExitStateInspector, error) {
 			if nodeID == d.localNodeID {
 				nodeID = ""

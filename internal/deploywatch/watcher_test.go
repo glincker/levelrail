@@ -204,13 +204,75 @@ func TestWatcher_AutoRollbackOffOnlyAlerts(t *testing.T) {
 	}
 }
 
+type fakeLocalImages map[string]string
+
+func (f fakeLocalImages) ResolveImage(context.Context, string, *docker.RegistryAuth, bool) (docker.ResolvedImage, error) {
+	panic("a verified rollback must not go back to the registry")
+}
+
+func (f fakeLocalImages) InspectImageID(_ context.Context, ref string) (string, error) {
+	return f[ref], nil
+}
+
 func TestWatcher_FallsBackToHistoryWithoutPin(t *testing.T) {
-	f := newWatchFixture(t, false)
+	tests := []struct {
+		name      string
+		local     fakeLocalImages
+		wantImage string
+	}{
+		{"tag still holds the recorded content", fakeLocalImages{"app:v1": "sha256:v1"}, "app:v1"},
+		{"tag moved since", fakeLocalImages{"app:v1": "sha256:other"}, "app:v2"},
+		{"no way to check the tag", nil, "app:v2"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := newWatchFixture(t, false)
+			ctx := context.Background()
+			if _, err := f.db.ExecContext(ctx, `UPDATE deploy_attempts SET image_digest = 'sha256:v1' WHERE id = 'dep_v1'`); err != nil {
+				t.Fatal(err)
+			}
+			if tt.local != nil {
+				f.watcher.Resolver = tt.local
+			}
+			f.watcher.Restarts = fakeRestarts(3)
+			f.watcher.Tick(ctx)
+			if svc, _ := f.db.GetDesiredService(ctx, "web"); svc.Image != tt.wantImage {
+				t.Errorf("image = %q, want %q", svc.Image, tt.wantImage)
+			}
+			rolledBack := hasEvent(f.events(t), deploysafety.PhaseRollback, deploysafety.StatusPassed, "")
+			if rolledBack != (tt.wantImage == "app:v1") {
+				t.Errorf("rollback passed = %v, want %v", rolledBack, !rolledBack)
+			}
+		})
+	}
+}
+
+func TestWatcher_NeverChainsRollbacks(t *testing.T) {
+	f := newWatchFixture(t, true)
 	ctx := context.Background()
+	if _, err := f.db.ExecContext(ctx, `UPDATE deploy_attempts SET source = ? WHERE id = 'dep_v2'`, store.DeployAttemptSourceAutoRollback); err != nil {
+		t.Fatal(err)
+	}
 	f.watcher.Restarts = fakeRestarts(3)
 	f.watcher.Tick(ctx)
-	if svc, _ := f.db.GetDesiredService(ctx, "web"); svc.Image != "app:v1" {
-		t.Errorf("image = %q, want the previous succeeded tag", svc.Image)
+	if svc, _ := f.db.GetDesiredService(ctx, "web"); svc.Image != "app:v2" {
+		t.Errorf("image = %q, a tripped rollback must not roll back again", svc.Image)
+	}
+	if !hasEvent(f.events(t), deploysafety.PhaseWatch, deploysafety.StatusFailed, deploysafety.ReasonWatchCrashloop) {
+		t.Errorf("events = %+v, want the trip recorded", f.events(t))
+	}
+	if len(f.notes.msgs) != 1 || !strings.Contains(f.notes.msgs[0], "already an automatic rollback") {
+		t.Errorf("notifications = %v", f.notes.msgs)
+	}
+}
+
+func TestWatcher_SkipsFirstSampleAfterCutover(t *testing.T) {
+	f := newWatchFixture(t, true)
+	f.watcher.Metrics = fakeMetrics{telemetry.MetricHTTPRequests: 100, telemetry.MetricHTTPResponses5xx: 90}
+	f.watcher.SampleInterval = 2 * time.Minute
+	f.watcher.Tick(context.Background())
+	if hasEvent(f.events(t), deploysafety.PhaseWatch, deploysafety.StatusFailed, "") {
+		t.Errorf("events = %+v, the first sample after cutover can hold the previous release's answers", f.events(t))
 	}
 }
 

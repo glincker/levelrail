@@ -1028,7 +1028,7 @@ func run(logger *slog.Logger) error {
 	// default), same reasoning as SetAutoRollback above.
 	alertingEngine.SetSLOBurnAutoRollback(db, engine, alertingDB)
 	startDeployWatch(ctx, gate, deployWatchDeps{db: db, local: client, registry: agentRegistry, localNodeID: meshLocalNodeID(meshCfg),
-		restarts: restartTracker, metrics: alertingFederator, nudger: engine, dispatcher: deployDispatcher, logger: logger})
+		restarts: restartTracker, metrics: alertingFederator, sampleEvery: metricsCollectionInterval, nudger: engine, dispatcher: deployDispatcher, logger: logger})
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))

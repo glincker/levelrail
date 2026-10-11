@@ -50,12 +50,15 @@ func (t *DrainTracker) at(service string) time.Time {
 }
 
 // effectiveHold is how long the previous release outlives a cutover: the
-// configured hold, but never less than the app's drain timeout.
+// configured hold, but never less than the drain timeout or, with
+// auto-rollback on, the post-deploy watch window, so a rollback the watch
+// triggers lands on a release that is still running.
 func (c *Controller) effectiveHold(cfg deploysafety.Effective) time.Duration {
-	if cfg.DrainTimeout > c.previousReleaseHold {
-		return cfg.DrainTimeout
+	hold := max(c.previousReleaseHold, cfg.DrainTimeout)
+	if cfg.AutoRollback {
+		hold = max(hold, cfg.WatchWindow)
 	}
-	return c.previousReleaseHold
+	return hold
 }
 
 // draining reports whether the previous release must keep serving because

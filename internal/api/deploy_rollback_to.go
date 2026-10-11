@@ -27,11 +27,11 @@ func (rt *Router) rollbackPin(ctx context.Context, target store.DeployAttempt) *
 
 // rollbackImageRef returns the image reference that redeploys exactly the
 // content target recorded, or an HTTP status and message when it cannot.
-func (rt *Router) rollbackImageRef(ctx context.Context, target store.DeployAttempt) (ref string, status int, msg string) {
+func (rt *Router) rollbackImageRef(ctx context.Context, target store.DeployAttempt, pin *store.RollbackPin) (ref string, status int, msg string) {
 	if target.Status != store.DeployAttemptStatusSucceeded || target.Image == "" {
 		return "", http.StatusConflict, "only a succeeded deploy can be rolled back to"
 	}
-	if ref, safe := deploy.RollbackRef(target, rt.rollbackPin(ctx, target)); safe {
+	if ref, safe := deploy.RollbackRef(target, pin); safe {
 		return ref, 0, ""
 	}
 	digest := target.ImageDigest
@@ -78,7 +78,8 @@ func (rt *Router) handleRollbackToDeploy(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	ref, status, msg := rt.rollbackImageRef(r.Context(), *target)
+	pin := rt.rollbackPin(r.Context(), *target)
+	ref, status, msg := rt.rollbackImageRef(r.Context(), *target, pin)
 	if status != 0 {
 		writeError(w, status, msg)
 		return
@@ -86,7 +87,11 @@ func (rt *Router) handleRollbackToDeploy(w http.ResponseWriter, r *http.Request)
 	req.Image = ref
 	restored := *existing
 	if r.URL.Query().Get("config") != "false" {
-		restored, _, _ = deploy.RollbackDesired(*existing, *target, rt.rollbackPin(r.Context(), *target))
+		restored = deploy.RestoreSnapshot(*existing, target.Snapshot)
+	}
+	if deploy.LocalOnlyRef(pin, ref) {
+		restored.PullPolicy = ""
+		req.Pull = false
 	}
 	rt.applyDeploy(w, r, restored, req, target.ID)
 }

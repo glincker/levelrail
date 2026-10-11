@@ -50,8 +50,11 @@ type Watcher struct {
 	Resolver   docker.ImageResolver
 	Nudger     deploy.ReconcileNudger
 	Notify     Notifier
-	Logger     *slog.Logger
-	now        func() time.Time
+	// SampleInterval is the request sampler's tick; samples within one tick
+	// of cutover are left out of the 5xx rate.
+	SampleInterval time.Duration
+	Logger         *slog.Logger
+	now            func() time.Time
 }
 
 // Run ticks every interval until ctx is done.
@@ -201,12 +204,15 @@ func (w *Watcher) observe(ctx context.Context, svc *store.DesiredService, since,
 			}
 		}
 	}
-	if w.Metrics != nil {
+	// A request sample covers the interval before its timestamp, so the
+	// first one after cutover can still hold the previous release's answers.
+	from := since.Add(w.SampleInterval)
+	if w.Metrics != nil && now.After(from) {
 		var err error
-		if obs.Requests, err = sumMetric(ctx, w.Metrics, resourceID, telemetry.MetricHTTPRequests, since, now); err != nil {
+		if obs.Requests, err = sumMetric(ctx, w.Metrics, resourceID, telemetry.MetricHTTPRequests, from, now); err != nil {
 			return obs, err
 		}
-		if obs.Errors5xx, err = sumMetric(ctx, w.Metrics, resourceID, telemetry.MetricHTTPResponses5xx, since, now); err != nil {
+		if obs.Errors5xx, err = sumMetric(ctx, w.Metrics, resourceID, telemetry.MetricHTTPResponses5xx, from, now); err != nil {
 			return obs, err
 		}
 	}
@@ -249,6 +255,12 @@ func (w *Watcher) trip(ctx context.Context, svc *store.DesiredService, attempt *
 		w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; automatic rollback is off for this app", reason, message))
 		return
 	}
+	// Never chain rollbacks: a known-good release failing too points at
+	// something outside the app, and walking further back would hide it.
+	if attempt.Source == store.DeployAttemptSourceAutoRollback {
+		w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; this release is already an automatic rollback, leaving it for an operator", reason, message))
+		return
+	}
 	target, pin, err := w.rollbackTarget(ctx, svc, attempt)
 	if err != nil {
 		w.logger().Error("deploywatch: find rollback target failed", slog.String("service", svc.Name), slog.String("error", err.Error()))
@@ -258,10 +270,22 @@ func (w *Watcher) trip(ctx context.Context, svc *store.DesiredService, attempt *
 		w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; no earlier release to roll back to", reason, message))
 		return
 	}
-	restored, ref, _ := deploy.RollbackDesired(*svc, *target, pin)
+	restored, ref, safe := deploy.RollbackDesired(*svc, *target, pin)
+	if !safe && !w.tagStillMatches(ctx, *target) {
+		msg := fmt.Sprintf("deploy %s has no rollback pin or digest and tag %s no longer matches its content", target.ID, target.Image)
+		w.record(ctx, attempt, deploysafety.PhaseRollback, deploysafety.StatusFailed, deploysafety.ReasonNoRollbackTarget, msg)
+		w.notify(ctx, svc.Name, svc.Image, fmt.Sprintf("%s: %s; %s", reason, message, msg))
+		return
+	}
 	trigger := deploy.ImageTrigger{
 		Store: w.Store, Nudger: w.Nudger, Resolver: w.Resolver, Logger: w.logger(),
 		Source: store.DeployAttemptSourceAutoRollback, Reason: deploysafety.ReasonAutoRolledBack,
+	}
+	// Content is already verified locally: a registry lookup could only
+	// swap in a tag that moved upstream since.
+	if !safe || deploy.LocalOnlyRef(pin, ref) {
+		trigger.Resolver = nil
+		restored.PullPolicy = ""
 	}
 	if _, err := trigger.Deploy(ctx, restored, ref); err != nil {
 		w.record(ctx, attempt, deploysafety.PhaseRollback, deploysafety.StatusFailed, reason, "automatic rollback could not start: "+err.Error())
@@ -305,6 +329,17 @@ func (w *Watcher) rollbackTarget(ctx context.Context, svc *store.DesiredService,
 		return &a, nil, nil
 	}
 	return nil, nil, nil
+}
+
+// tagStillMatches reports whether target's bare tag still resolves locally
+// to the content target recorded.
+func (w *Watcher) tagStillMatches(ctx context.Context, target store.DeployAttempt) bool {
+	inspector, ok := w.Resolver.(docker.ImageInspector)
+	if !ok || target.ImageDigest == "" {
+		return false
+	}
+	id, err := inspector.InspectImageID(ctx, target.Image)
+	return err == nil && id == target.ImageDigest
 }
 
 func (w *Watcher) notify(ctx context.Context, app, image, message string) {
