@@ -22,17 +22,17 @@ func runCompose(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, composeUsage(prog))
 		return exitOK
-	case "deploy", "up":
+	case "deploy":
 		return runComposeDeploy(prog, args[1:], stdout, stderr, lookupEnv)
-	case "preview", "validate":
+	case "preview":
 		return runComposePreview(prog, args[1:], stdout, stderr, lookupEnv)
-	case "status", "ps":
+	case "status":
 		return runComposeStatus(prog, args[1:], stdout, stderr, lookupEnv)
-	case "revisions", "history":
+	case "revisions":
 		return runComposeRevisions(prog, args[1:], stdout, stderr, lookupEnv)
 	case "logs":
 		return runComposeLogs(prog, args[1:], stdout, stderr, lookupEnv)
-	case "redeploy", "restart":
+	case "redeploy":
 		return runComposeRedeploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
 		return runComposeRollback(prog, args[1:], stdout, stderr, lookupEnv)
@@ -47,7 +47,7 @@ func runCompose(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 
 func composeUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s compose deploy <app> -f compose.yaml [--profile-name P]   deploy or update a stack (alias: up)
+  %[1]s compose deploy <app> -f compose.yaml [--profile-name P]   deploy or update a stack
   %[1]s compose preview -f compose.yaml                            validate and show what would deploy
   %[1]s compose status <app>                                       per-service status and the stack phase
   %[1]s compose revisions <app>                                    deploy history, newest first
@@ -175,6 +175,15 @@ func printComposePreview(out io.Writer, res apiclient.ComposePreview) {
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", s.Key, s.Image, portOrDash(s.Port), dashJoin(s.Volumes), dashJoin(s.DependsOn), dashJoin(gen), dashJoin(req))
 	}
 	_ = tw.Flush()
+	if len(res.Skipped) > 0 {
+		_, _ = fmt.Fprintf(out, "skipped (profile not enabled): %s\n", strings.Join(res.Skipped, ", "))
+	}
+	if len(res.Profiles) > 0 {
+		_, _ = fmt.Fprintf(out, "profiles in this file: %s (enable with --profile-name)\n", strings.Join(res.Profiles, ", "))
+	}
+	if res.NeedsRoot {
+		_, _ = fmt.Fprintln(out, "note: bind-mounts a host directory, which needs the root ability")
+	}
 	for _, w := range res.Warnings {
 		_, _ = fmt.Fprintf(out, "warning: %s\n", w)
 	}

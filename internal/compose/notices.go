@@ -77,9 +77,12 @@ func (f *File) declaresCustomNetworks() bool {
 	return false
 }
 
+// declaresDependsOn reports a depends_on entry that only waits for start;
+// a file that already uses condition: service_healthy everywhere needs no note.
 func (f *File) declaresDependsOn() bool {
 	for _, name := range sortedServiceNames(f) {
-		if len(f.Services[name].DependsOn) > 0 {
+		svc := f.Services[name]
+		if len(svc.DependsOn) > len(svc.DependsOnHealthy) {
 			return true
 		}
 	}

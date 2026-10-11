@@ -1441,11 +1441,11 @@ levelrail-cli compose redeploy <app> [--service S] [flags]
 levelrail-cli compose rollback <app> [--revision N] [flags]
 levelrail-cli compose down <app> [--volumes] [flags]
 ```
-- `deploy` (alias `up`) deploys or updates a stack and records a numbered revision; `-f -` reads stdin. `--profile-name` enables services behind compose `profiles:`.
-- `preview` (alias `validate`) asks the server to parse and check a file without saving anything, lists each service with its generated and required env vars, and exits with code 2 when the file would be rejected.
-- `status` (alias `ps`) prints the stack phase and each service's ready state with the reconciler's reason.
+- `deploy` deploys or updates a stack and records a numbered revision; `-f -` reads stdin. `--profile-name` enables services behind compose `profiles:`.
+- `preview` asks the server to parse and check a file without saving anything, lists each service with its generated and required env vars, and exits with code 2 when the file would be rejected.
+- `status` prints the stack phase and each service's ready state with the reconciler's reason.
 - `logs` merges recent lines from every service, or hands one service to `apps logs` with `--service`, where `-f` follows it.
-- `redeploy` (alias `restart`) recreates every service's containers, or one service's.
+- `redeploy` recreates every service's containers, or one service's.
 - `rollback` re-applies an earlier compose file (default: the one before the latest) as a new revision.
 - `down` removes every service and its containers; named volumes and generated secrets are kept unless you pass `--volumes`.
 
