@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0-beta.20](https://github.com/glincker/levelrail/compare/v0.2.0-beta.19...v0.2.0-beta.20) (2026-10-11)
+
+
+### Bug Fixes
+
+* dockerguard builds on Windows, and CI cross-compiles the CLI ([#1157](https://github.com/glincker/levelrail/issues/1157)) ([b31c380](https://github.com/glincker/levelrail/commit/b31c38074dbf065d1ec4dc995f435a7d99d2d179))
+
 ## [0.2.0-beta.19](https://github.com/glincker/levelrail/compare/v0.2.0-beta.18...v0.2.0-beta.19) (2026-10-11)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0](https://github.com/glincker/levelrail/compare/kit/v0.1.0...kit/v0.1.0) (2026-10-11)
+
+
+### Bug Fixes
+
+* ignore nested module tags when picking the latest platform release ([#1158](https://github.com/glincker/levelrail/issues/1158)) ([843d71a](https://github.com/glincker/levelrail/commit/843d71a5704abb2c799112faa583effaebf66c1a))
+
 ## 0.1.0 (2026-10-11)
 
 
