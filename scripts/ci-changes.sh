@@ -9,6 +9,7 @@
 #   full        true when the CI pipeline itself changed, so run everything
 #   go          any Go job has work (Build, vet and the test lanes)
 #   go_full     skip import-graph scoping, test ./...
+#   live_smoke  go_full came from pipeline files only: run the live suites in smoke mode
 #   lint        none | changed | all
 #   lint_dirs   package dirs for lint=changed
 #   tools       the separate tools/ module changed
@@ -22,6 +23,7 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 full=false go=false go_full=false lint=none tools=false kit=false
+dep_full=false
 web=none vitest=none installer=false workflows=false
 declare -A lint_dirs=()
 reasons=()
@@ -33,6 +35,7 @@ set_full() {
 
 if [ "${1:-}" = "--full" ]; then
 	set_full "full run requested"
+	dep_full=true
 	files=()
 else
 	base="${1:?usage: ci-changes.sh <base> [head] | --full}"
@@ -42,17 +45,27 @@ fi
 
 for f in "${files[@]}"; do
 	case "$f" in
-	.github/workflows/ci.yml | scripts/ci-*.sh | scripts/affected-go-packages.sh | scripts/go-test-groups.sh | \
-		scripts/check-lane-results.sh | scripts/check-coverage.sh | scripts/check-changed-file-coverage.sh | \
-		scripts/merge-coverprofiles.sh | scripts/check-brand-strings.sh | scripts/check-migration-versions.sh | scripts/check-flaky-tests.sh)
+	.github/workflows/ci.yml | scripts/ci-changes.sh | scripts/ci-lane-*.sh)
 		set_full "CI pipeline changed: $f"
 		;;
+	scripts/ci-*.sh | scripts/affected-go-packages.sh | scripts/go-test-groups.sh | scripts/ci-guards.txt | \
+		scripts/ci-heavy-packages.txt | scripts/check-coverage.sh | scripts/check-changed-file-coverage.sh | \
+		scripts/merge-coverprofiles.sh | scripts/check-lane-results.sh | scripts/check-migration-versions.sh | \
+		scripts/check-flaky-tests.sh | scripts/check-fanin.sh | scripts/fanin-budget.txt)
+		# Go-side tooling only: re-run every Go lane, not web, installer or kit.
+		go=true go_full=true
+		reasons+=("Go pipeline script changed: $f")
+		;;
+	scripts/check-brand-strings.sh)
+		go=true go_full=true kit=true
+		reasons+=("brand check changed: $f")
+		;;
 	go.mod | go.sum)
-		go=true go_full=true lint=all
+		go=true go_full=true lint=all dep_full=true
 		reasons+=("import graph can't scope: $f")
 		;;
 	kit/go.mod | kit/go.sum)
-		go=true go_full=true kit=true
+		go=true go_full=true kit=true dep_full=true
 		reasons+=("import graph can't scope: $f")
 		;;
 	kit/*.md) ;;
@@ -100,6 +113,9 @@ if [ "$full" = false ] && [ "${#files[@]}" -gt 0 ]; then
 	seeds="$(printf '%s\n' "${files[@]}" | scripts/affected-go-packages.sh --stdin --seeds)"
 	if [ "$seeds" = "ALL" ]; then
 		go=true go_full=true
+		# ALL caused only by pipeline files is not a dependency change.
+		dep_seeds="$(printf '%s\n' "${files[@]}" | grep -vE '^(scripts/|\.github/|docs/)' | scripts/affected-go-packages.sh --stdin --seeds || true)"
+		[ "$dep_seeds" = "ALL" ] && dep_full=true
 	elif [ -n "$seeds" ]; then
 		go=true
 	fi
@@ -119,6 +135,7 @@ fi
 
 cat <<EOF
 full=$full
+live_smoke=$([ "$dep_full" = false ] && { [ "$full" = true ] || [ "$go_full" = true ]; } && echo true || echo false)
 go=$go
 go_full=$go_full
 lint=$lint
