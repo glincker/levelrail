@@ -87,6 +87,9 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 		return err
 	}
 	tokenFlag, apiURLFlag, profileFlag, transportFlag, listenFlag := f.token, f.apiURL, f.profile, f.transport, f.listen
+	if f.printConfig != "" {
+		return runPrintConfig(prog, f, lookupEnv)
+	}
 	opts, err := resolveOptions(f.mode, f.toolsets, f.toolProfile, lookupEnv)
 	if err != nil {
 		return err
@@ -179,7 +182,7 @@ const defaultListenAddr = "127.0.0.1:8090"
 // cliFlags holds every parsed command line flag.
 type cliFlags struct {
 	token, apiURL, profile, transport, listen, mode, toolsets, toolProfile string
-	team, project                                                          string
+	team, project, printConfig                                             string
 	allowWrite, outputSchemas                                              bool
 }
 
@@ -195,6 +198,7 @@ func parseAllFlags(prog string, args []string) (f cliFlags, err error) {
 	fs.StringVar(&f.toolProfile, "tool-profile", "", "tool profile: \""+mcptools.ProfileAgentCore+"\" exposes a small allowlist of core agent tools (overrides "+mcptools.EnvToolProfile+")")
 	fs.StringVar(&f.team, "team", "", "narrow every request to one team (overrides "+apiclient.EnvTeam+")")
 	fs.StringVar(&f.project, "project", "", "narrow every request to one project (overrides "+apiclient.EnvProject+")")
+	fs.StringVar(&f.printConfig, "print-config", "", "print a ready MCP client config block for one of: "+strings.Join(configClients, ", ")+", then exit (read-only unless --allow-write or --mode is set)")
 	fs.BoolVar(&f.allowWrite, "allow-write", false, "expose confirm-gated write tools such as extend_preview and run_restore_drill (or set "+mcptools.EnvAllowWrite+"=1); never exposed in read-only mode")
 	fs.BoolVar(&f.outputSchemas, "output-schemas", false, "advertise every tool's outputSchema in tools/list, about 2.4x the listing size (or set "+mcptools.EnvOutputSchemas+"=1)")
 	fs.Usage = func() {

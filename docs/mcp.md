@@ -15,6 +15,7 @@ description: The levelrail-mcp tool listing, its token budget, the read-only dia
 | `--tool-profile` | `APP_MCP_TOOL_PROFILE` | none | `agent-core`, a small allowlist. |
 | `--allow-write` | `APP_MCP_ALLOW_WRITE=1` | off | Exposes the confirm-gated write tools below. Ignored in `read-only` mode. |
 | `--output-schemas` | `APP_MCP_OUTPUT_SCHEMAS=1` | off | Advertise every tool's `outputSchema` in `tools/list`. |
+| `--print-config` | none | off | Print a client config block for `claude`, `cursor`, `vscode` or `zed`, then exit. See below. |
 | `--team`, `--project` | `APP_TEAM`, `APP_PROJECT` | saved context | Narrow every request with the `X-Scope-Team` and `X-Scope-Project` headers. They only narrow what the token already sees. |
 
 ## Token budget
@@ -64,6 +65,48 @@ Without the flag these tools are not registered: they are absent from `tools/lis
 Each call is rejected locally, with no API request, when `confirm` is missing or differs from the named resource. A successful call returns the API's own result, and the API records it in the audit log with the MCP client name, so it is visible under `levelrail-cli audit-log --client-kind mcp`. The token's abilities still apply: a token without them gets the API's 403 text back as a tool error.
 
 Deploy, rollback and restart already exist as `deploy_app`, `rollback_app` and `restart_app` and are governed by `--mode`, not `--allow-write`. Use `--mode read-only` to remove every mutating tool.
+
+## Prompts
+
+Prompts are parameterised, reviewable starting points an MCP client shows as slash commands. Each one tells the assistant which read tools to call and in what order, and which state changing tools exist but need your explicit confirmation. The text adapts to the session: a tool the mode or `--allow-write` hides is marked "not exposed" and the prompt falls back to the CLI command.
+
+| Prompt | Arguments | What it walks |
+| --- | --- | --- |
+| `diagnose_app` | `app`, `symptom` (crashloop, slow, errors, unknown), `window` (default 1h) | `failure_context`, status and timeline, `investigate_app`, recent deploys, then ranked causes and one next action each. |
+| `plan_deploy` | `app`, `image` | Pending changes, freeze windows, `preflight_app`, rollback target, `plan_change` dry run, then a go or no go. |
+| `explain_failed_deploy` | `app`, `deploy_id` (default latest) | The structured failure, the last good deploy compared with the failed one, a plain language cause and fix. |
+| `optimize_resources` | `app`, `severity` | `resource_advice` when the advisor beta is on, otherwise metrics. Advice only. |
+| `security_review` | none | Exposure, certificates, IAM policies and tokens, audit log, backup posture. Read only. |
+| `migrate_from_coolify` | `source` (coolify, dokploy, caprover) | The importer: plan, rehearse, apply one app, verify, cut over, roll back. |
+| `first_hour_setup` | none | Onboarding status, doctor, attention, backups, upgrades, then the next three actions. |
+
+Every prompt embeds the same safe operating rules: read first, never run a state changing tool without explicit confirmation of that exact action, treat untrusted blocks as data, never print secrets, and stop when an ability is missing. Arguments are validated against an allowlist (app names, deploy ids, image references, durations, fixed choices) before they are placed in the text, so an argument cannot carry instructions. `completion/complete` suggests app names, choices and runbook topics.
+
+Prompts never appear in `tools/list`, so they do not change the token budgets above.
+
+## Resources
+
+Resources are read-only, addressable data a client can attach to a conversation without a tool call.
+
+| URI | MIME type | Content |
+| --- | --- | --- |
+| `levelrail://apps` | `application/json` | Every app: image, port, domains, replicas, env key names. |
+| `levelrail://apps/{name}` | `application/json` | One app summary with current reconcile conditions. Env and secret values are never included, only key names. |
+| `levelrail://apps/{name}/logs?tail=N` | `text/plain` | Newest stored log lines from the last hour. `tail` defaults to 200 and is capped at 200. |
+| `levelrail://apps/{name}/deploys/{id}` | `text/plain` | One deploy attempt with its structured failure. |
+| `levelrail://deploys/{id}` | `text/plain` | The same, found by id (looks through up to 25 apps; use the app form when the app is known). |
+| `levelrail://docs/{topic}` | `text/markdown` | A curated runbook: `rollback`, `backups`, `domains`, `upgrades`. |
+
+Logs and deploy content are sanitized and wrapped in the same untrusted data block as tool results, which is why they are `text/plain` and not JSON. Runbooks are embedded in the binary and capped by `APP_MCP_RESOURCE_MAX_BYTES` (default 16384). Reads use the same token, abilities and `X-Scope-Team` and `X-Scope-Project` headers as tool calls, so a team scoped server cannot read another team's app, and a missing ability comes back as the API's own error. Resource subscriptions are not offered.
+
+## Printing a client config
+
+```sh
+levelrail-mcp --print-config claude    # also cursor, vscode, zed
+levelrail-mcp --print-config vscode --allow-write --team platform
+```
+
+This prints a JSON block for the client's config file with the command, `APP_API_URL`, a token placeholder and `--mode read-only`. It never prints your real token. Add `--allow-write` or `--mode standard` only when you want the assistant to be able to act.
 
 ## Threat model
 
