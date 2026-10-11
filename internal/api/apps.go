@@ -135,6 +135,11 @@ type appResource struct {
 	// overrides simple spread scheduling, see that handler's own doc
 	// comment.
 	NodeID string `json:"node_id,omitempty"`
+	// NodeName and NodeIsLocal are response-only display fields resolved
+	// from NodeID: an empty NodeID means this server. NodeName is empty
+	// when NodeID points at a node that no longer exists.
+	NodeName    string `json:"node_name,omitempty"`
+	NodeIsLocal bool   `json:"node_is_local,omitempty"`
 	// AutoPlaced is response-only, set only by handleCreateApp: true when
 	// node_id was omitted from the create request and simple spread
 	// scheduling (autoPlaceNode, scheduling.go) picked a non-local node

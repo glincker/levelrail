@@ -25,6 +25,8 @@ import type { NodeMoveKind, Placement } from '../types/nodeMoves'
 import { MoveToNodeDialog } from './MoveToNodeDialog'
 import { LabelRowsEditor } from './nodes/LabelRowsEditor'
 import { useNodeNames } from './nodes/useNodeNames'
+import { MoveToThisServerButton, PlacementLabel } from './PlacementLabel'
+import { useNodeListOptional } from '../queries/nodes'
 
 // Placement of one app or database: where it runs, which label selector
 // restricts it, which nodes are eligible, and the verified move action.
@@ -32,15 +34,19 @@ export function PlacementCard({
   kind,
   name,
   currentNodeId,
+  currentNodeName,
+  currentNodeIsLocal,
   volumeNames = [],
 }: {
   kind: NodeMoveKind
   name: string
   currentNodeId?: string
+  currentNodeName?: string
+  currentNodeIsLocal?: boolean
   volumeNames?: string[]
 }) {
   const { t } = useTranslation('nodes')
-  const nodeName = useNodeNames()
+  const { data: nodeList } = useNodeListOptional()
   const placement = usePlacement(kind, name)
   const nodeId = placement.data?.node_id ?? currentNodeId ?? ''
 
@@ -50,9 +56,20 @@ export function PlacementCard({
         <CardTitle>{t('placement.title')}</CardTitle>
         <CardDescription>
           {t('placement.currentNode')}:{' '}
-          <span className="font-mono text-foreground">
-            {nodeId ? nodeName(nodeId) : t('placement.unassigned')}
-          </span>
+          <PlacementLabel
+            nodeId={nodeId}
+            nodeName={nodeId === (currentNodeId ?? '') ? currentNodeName : ''}
+            nodeIsLocal={
+              nodeId === (currentNodeId ?? '') ? currentNodeIsLocal : false
+            }
+            nodes={nodeList}
+          />
+          <MoveToThisServerButton
+            kind={kind}
+            name={name}
+            nodeId={nodeId}
+            nodes={nodeList}
+          />
         </CardDescription>
         <CardAction>
           <MoveToNodeDialog

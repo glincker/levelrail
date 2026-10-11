@@ -19,8 +19,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
-import { visibleSettingsSections } from '../lib/settingsNav'
-import { useExperimentalFeatures } from '../hooks/useExperimental'
+import { useTranslation } from 'react-i18next'
+import { filterSettingsNav, useSettingsNav } from '../hooks/useSettingsNav'
 
 const OPEN_GROUPS_STORAGE_KEY = 'settings-sidebar-open-groups'
 
@@ -37,8 +37,8 @@ function readStoredOpenGroups(): Record<string, boolean> | null {
 // hub page (routes/settings/index.tsx) can never drift out of sync.
 export function SettingsScopedSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const experimental = useExperimentalFeatures()
-  const sections = visibleSettingsSections(experimental)
+  const { t } = useTranslation('settings')
+  const sections = useSettingsNav()
   const [query, setQuery] = useState('')
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
@@ -46,9 +46,7 @@ export function SettingsScopedSidebar() {
     if (stored) return stored
     // No stored preference yet: open every group by default so a first
     // visit doesn't require a click per heading just to see what's inside.
-    return Object.fromEntries(
-      sections.map((section) => [section.heading, true]),
-    )
+    return Object.fromEntries(sections.map((section) => [section.id, true]))
   })
 
   useEffect(() => {
@@ -62,26 +60,17 @@ export function SettingsScopedSidebar() {
     }
   }, [openGroups])
 
-  function setGroupOpen(heading: string, open: boolean) {
-    setOpenGroups((prev) => ({ ...prev, [heading]: open }))
+  function setGroupOpen(id: string, open: boolean) {
+    setOpenGroups((prev) => ({ ...prev, [id]: open }))
   }
 
   const trimmedQuery = query.trim().toLowerCase()
   const isSearching = trimmedQuery.length > 0
 
-  const visibleSections = useMemo(() => {
-    if (!isSearching) return sections
-    return sections
-      .map((section) => ({
-        ...section,
-        items: section.items.filter(
-          (item) =>
-            item.title.toLowerCase().includes(trimmedQuery) ||
-            item.description.toLowerCase().includes(trimmedQuery),
-        ),
-      }))
-      .filter((section) => section.items.length > 0)
-  }, [sections, isSearching, trimmedQuery])
+  const visibleSections = useMemo(
+    () => filterSettingsNav(sections, query),
+    [sections, query],
+  )
 
   return (
     <>
@@ -89,9 +78,12 @@ export function SettingsScopedSidebar() {
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton render={<Link to="/" />} tooltip="Back">
+              <SidebarMenuButton
+                render={<Link to="/" />}
+                tooltip={t('nav.back')}
+              >
                 <ArrowLeftIcon />
-                <span>Back</span>
+                <span>{t('nav.back')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -108,8 +100,8 @@ export function SettingsScopedSidebar() {
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search settings"
-              aria-label="Search settings"
+              placeholder={t('nav.search')}
+              aria-label={t('nav.search')}
               className="h-8 pl-7"
             />
           </div>
@@ -120,20 +112,18 @@ export function SettingsScopedSidebar() {
         // While searching, every matching group is forced open and the
         // trigger is disabled so a stray click doesn't collapse a group the
         // user will see restored once they clear the query.
-        const isOpen = isSearching
-          ? true
-          : (openGroups[section.heading] ?? false)
+        const isOpen = isSearching ? true : (openGroups[section.id] ?? false)
 
         return (
-          <SidebarGroup key={section.heading}>
+          <SidebarGroup key={section.id}>
             <Collapsible
               open={isOpen}
               disabled={isSearching}
-              onOpenChange={(open) => setGroupOpen(section.heading, open)}
+              onOpenChange={(open) => setGroupOpen(section.id, open)}
             >
               <CollapsibleTrigger className="group/settings-section">
                 <SidebarGroupLabel className="cursor-pointer justify-between">
-                  <span>{section.heading}</span>
+                  <span>{section.title}</span>
                   <CaretDownIcon
                     className="size-3.5 shrink-0 text-sidebar-foreground/50 transition-transform group-data-panel-open/settings-section:rotate-180"
                     aria-hidden="true"

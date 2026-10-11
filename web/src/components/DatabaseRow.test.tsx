@@ -30,6 +30,7 @@ function makeDb(over: Partial<DatabaseListEntry> = {}): DatabaseListEntry {
     engine: 'postgres',
     version: '16',
     node_id: 'node-a',
+    node_name: 'node-a',
     backup_schedule: '0 3 * * *',
     status: { label: 'Healthy', variant: 'success' },
     ...over,
@@ -53,8 +54,28 @@ describe('DatabaseRow', () => {
     expect(screen.getByText('node-a')).toBeInTheDocument()
   })
 
-  it('says so when backups are not scheduled and the node is unassigned', () => {
-    renderRow(makeDb({ backup_schedule: undefined, node_id: undefined }))
+  it('shows this server and its hostname for a local placement', () => {
+    renderRow(
+      makeDb({ node_id: undefined, node_name: 'box-1', node_is_local: true }),
+    )
+    expect(screen.getByText('This server')).toBeInTheDocument()
+    expect(screen.getByText('box-1')).toBeInTheDocument()
+    expect(screen.queryByText('Unassigned')).not.toBeInTheDocument()
+  })
+
+  it('shows the resolved name for a remote node', () => {
+    renderRow(makeDb({ node_id: 'n2', node_name: 'worker-2' }))
+    expect(screen.getByText('worker-2')).toBeInTheDocument()
+  })
+
+  it('says so when backups are not scheduled and the node is gone', () => {
+    renderRow(
+      makeDb({
+        backup_schedule: undefined,
+        node_id: 'node-gone',
+        node_name: undefined,
+      }),
+    )
     expect(screen.getByText('No schedule')).toBeInTheDocument()
     expect(screen.getByText('Unassigned')).toBeInTheDocument()
   })

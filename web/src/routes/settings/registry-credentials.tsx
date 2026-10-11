@@ -6,6 +6,7 @@ import { RegistryCredentialTable } from '../../components/RegistryCredentialTabl
 import { CreateRegistryCredentialDialog } from '../../components/CreateRegistryCredentialDialog'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageHeader } from '@/components/shell/PageHeader'
+import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Account-level, same reasoning settings/backup-targets.tsx's own doc
 // comment gives: a registry credential isn't scoped to one app, it's
@@ -51,9 +52,7 @@ function RegistryCredentialsPage() {
 function RegistryCredentialsPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">
-        Registry credentials
-      </h1>
+      <SettingsPageTitle id="registry-credentials" />
       <TableSkeleton columnCount={5} />
     </div>
   )

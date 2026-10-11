@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { DialogControl } from './dialogControl'
 import { useTranslation } from 'react-i18next'
 import { ArrowsOutIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -30,9 +31,20 @@ const AUTOMATIC_VALUE = '__auto__'
 // Drain starts a background job: the dialog polls it and lists each move
 // with its phase, so the operator can watch it or close it and come back
 // through the node's Drains card.
-export function DrainNodeDialog({ node }: { node: NodeResource }) {
+export function DrainNodeDialog({
+  node,
+  control,
+}: {
+  node: NodeResource
+  control?: DialogControl
+}) {
   const { t } = useTranslation('nodes')
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = control?.open ?? internalOpen
+  const setOpen = (next: boolean) => {
+    setInternalOpen(next)
+    control?.onOpenChange?.(next)
+  }
   const [targetNodeId, setTargetNodeId] = useState(AUTOMATIC_VALUE)
   const [drainId, setDrainId] = useState<string | null>(null)
   const { data: nodes } = useNodes()
@@ -66,12 +78,14 @@ export function DrainNodeDialog({ node }: { node: NodeResource }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
-        render={<Button type="button" variant="outline" size="sm" />}
-      >
-        <ArrowsOutIcon className="size-3.5" aria-hidden="true" />
-        {t('drain.trigger')}
-      </DialogTrigger>
+      {control?.hideTrigger ? null : (
+        <DialogTrigger
+          render={<Button type="button" variant="outline" size="sm" />}
+        >
+          <ArrowsOutIcon className="size-3.5" aria-hidden="true" />
+          {t('drain.trigger')}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-lg">
         {drainId ? (
           <>

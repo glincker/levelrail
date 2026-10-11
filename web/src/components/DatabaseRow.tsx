@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import type { DatabaseListEntry } from '../types/databaseDetail'
 import { logoIdForImage } from '../lib/imageLogo'
 import { StatusLabel } from './AppRow'
+import { PlacementLabel } from './PlacementLabel'
 import { TemplateLogo } from './TemplateLogo'
 
 // Same anatomy as APP_LIST_GRID: avatar, name with status beneath, then
@@ -97,8 +98,16 @@ export function DatabaseRow({ database }: { database: DatabaseListEntry }) {
         </span>
       </span>
 
-      <span className="hidden min-w-0 truncate font-mono text-xs text-muted-foreground lg:block">
-        {database.node_id || t('list.nodeUnassigned')}
+      <span className="hidden min-w-0 truncate text-xs text-muted-foreground lg:block">
+        {database.external ? (
+          <span className="text-muted-foreground">-</span>
+        ) : (
+          <PlacementLabel
+            nodeId={database.node_id}
+            nodeName={database.node_name}
+            nodeIsLocal={database.node_is_local}
+          />
+        )}
       </span>
 
       <CaretRightIcon

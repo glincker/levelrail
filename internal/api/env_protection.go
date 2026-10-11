@@ -120,6 +120,7 @@ func redactAppEnvFields(res *appResource, svc store.DesiredService, overrides ma
 // appOut is toAppResource plus the app's own sensitivity overrides.
 func (rt *Router) appOut(ctx context.Context, svc store.DesiredService) appResource {
 	res := toAppResourceRaw(svc)
+	rt.placementResolver(ctx).stampApp(&res)
 	rt.redactAppResponse(ctx, &res, svc)
 	return res
 }

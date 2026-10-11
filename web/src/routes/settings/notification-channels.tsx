@@ -7,6 +7,7 @@ import { NotificationChannelTable } from '../../components/NotificationChannelTa
 import { CreateNotificationChannelDialog } from '../../components/CreateNotificationChannelDialog'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { SetupStepHint } from '@/components/getStarted/SetupStepHint'
+import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Account-level, mirroring routes/settings/backup-targets.tsx: connect
 // once here, apps attach a channel by ID instead of retyping a URL.
@@ -51,9 +52,7 @@ function NotificationChannelsPage() {
 function NotificationChannelsPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">
-        Notification channels
-      </h1>
+      <SettingsPageTitle id="notification-channels" />
       <TableSkeleton columnCount={6} />
     </div>
   )

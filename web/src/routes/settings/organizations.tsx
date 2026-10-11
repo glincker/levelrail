@@ -8,6 +8,7 @@ import { OrganizationTable } from '../../components/OrganizationTable'
 import { CreateOrganizationDialog } from '../../components/CreateOrganizationDialog'
 import { TableSkeleton } from '../../components/ui/table-skeleton'
 import { PageHeader } from '../../components/shell/PageHeader'
+import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Account-level, mirroring routes/settings/notification-channels.tsx:
 // an organization groups projects, assigned from a project's own detail
@@ -51,7 +52,7 @@ function OrganizationsPage() {
 function OrganizationsPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">Organizations</h1>
+      <SettingsPageTitle id="organizations" />
       <TableSkeleton columnCount={3} />
     </div>
   )
