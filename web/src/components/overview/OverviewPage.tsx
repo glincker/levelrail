@@ -94,6 +94,7 @@ export function OverviewPage({
         app={app}
         conditions={conditions}
         latestAttempt={latest}
+        attempts={attempts}
         url={url}
         onDeploy={setDeployTab}
       />
