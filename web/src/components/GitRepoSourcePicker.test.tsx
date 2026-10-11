@@ -361,6 +361,42 @@ describe('GitRepoSourcePicker', () => {
     })
   })
 
+  it('selects the default branch as soon as a repo is picked and collapses the grid', async () => {
+    providers = [
+      {
+        provider: 'github',
+        connected: true,
+        can_list_branches: true,
+        can_register_webhook: true,
+        can_auth_clone: true,
+      },
+      disconnected('gitlab'),
+      disconnected('bitbucket'),
+      disconnected('gitea'),
+    ]
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': jsonRoute(providers),
+      'GET /api/v1/github-app/repos': jsonRoute({ repos: [fakeGitHubRepo] }),
+      'GET /api/v1/github-app/repos/acme/app/branches': jsonRoute([
+        { name: fakeGitHubRepo.default_branch, commit_sha: 'abc123' },
+      ]),
+    })
+
+    const { onSelect, container } = renderPicker()
+    await screen.findByLabelText('Repository')
+    await pickOption(container, 'git-picker-github-repo', 'acme/app', () => {
+      expect(onSelect).toHaveBeenCalled()
+    })
+
+    expect(onSelect).toHaveBeenLastCalledWith({
+      provider: 'github',
+      repoUrl: 'https://github.com/acme/app.git',
+      branch: fakeGitHubRepo.default_branch,
+      providerRef: { kind: 'github', owner: 'acme', repo: 'app' },
+    })
+    expect(screen.getByRole('button', { name: 'Change' })).toBeTruthy()
+  })
+
   it('groups GitHub repos by connected account and filters the grid via chips, without hiding another account on a listing error', async () => {
     providers = [
       {
