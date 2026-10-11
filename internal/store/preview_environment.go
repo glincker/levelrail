@@ -87,6 +87,9 @@ type PreviewEnvironment struct {
 	// its base repository; HeadRepo is that head repository's full name.
 	IsFork   bool
 	HeadRepo string
+	// ExtendedUntil is an operator-granted expiry (RFC3339Nano UTC) that
+	// outlives the TTL; empty when never extended.
+	ExtendedUntil string
 }
 
 // SavePreviewEnvironment inserts a new preview environment row.
@@ -240,7 +243,7 @@ func (db *DB) ListStalePreviewEnvironments(ctx context.Context, cutoff time.Time
 	return out, nil
 }
 
-const previewEnvironmentColumns = "id, app_name, pr_number, preview_app_id, environment_id, branch, head_sha, domain, status, status_reason, created_at, updated_at, comment_id, is_fork, head_repo"
+const previewEnvironmentColumns = "id, app_name, pr_number, preview_app_id, environment_id, branch, head_sha, domain, status, status_reason, created_at, updated_at, comment_id, is_fork, head_repo, extended_until"
 
 func scanPreviewEnvironment(scan func(dest ...any) error) (*PreviewEnvironment, error) {
 	var (
@@ -249,7 +252,7 @@ func scanPreviewEnvironment(scan func(dest ...any) error) (*PreviewEnvironment, 
 		statusReason          sql.NullString
 		isFork                int
 	)
-	if err := scan(&p.ID, &p.AppName, &p.PRNumber, &p.PreviewAppID, &environmentID, &p.Branch, &p.HeadSHA, &domain, &p.Status, &statusReason, &p.CreatedAt, &p.UpdatedAt, &p.CommentID, &isFork, &p.HeadRepo); err != nil {
+	if err := scan(&p.ID, &p.AppName, &p.PRNumber, &p.PreviewAppID, &environmentID, &p.Branch, &p.HeadSHA, &domain, &p.Status, &statusReason, &p.CreatedAt, &p.UpdatedAt, &p.CommentID, &isFork, &p.HeadRepo, &p.ExtendedUntil); err != nil {
 		return nil, err
 	}
 	p.EnvironmentID = environmentID.String
@@ -298,6 +301,23 @@ func (db *DB) SetPreviewEnvironmentCommentID(ctx context.Context, id string, com
 	n, err := res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("store: set preview environment %q comment id: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrPreviewEnvironmentNotFound
+	}
+	return nil
+}
+
+// SetPreviewEnvironmentExtendedUntil records an operator-granted expiry for a
+// preview without touching any other column.
+func (db *DB) SetPreviewEnvironmentExtendedUntil(ctx context.Context, id, until string) error {
+	res, err := db.ExecContext(ctx, `UPDATE preview_environments SET extended_until = ? WHERE id = ?`, until, id)
+	if err != nil {
+		return fmt.Errorf("store: set preview environment %q extension: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set preview environment %q extension: rows affected: %w", id, err)
 	}
 	if n == 0 {
 		return ErrPreviewEnvironmentNotFound

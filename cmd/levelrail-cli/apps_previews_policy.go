@@ -11,12 +11,12 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-const forkApprovalWarning = "Approving deploys code from a fork. It runs with this app's environment variables and secrets, so read the change first. Only the current commit deploys; a later push from the fork needs a new approval."
+const forkApprovalWarning = "Approving deploys code from a fork. It runs on this server without this app's environment variables or secrets unless you also pass --share-secrets, so read the change first. Only the current commit deploys; a later push from the fork needs a new approval."
 
 func runAppsPreviewsLimits(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps previews limits", "print the policy as JSON to stdout and nothing else", stderr)
 	onLimit := fs.String("on-limit", "", "when the preview cap is full: evict_oldest or reject")
-	allowForks := fs.Bool("allow-forks", false, "allow previews for pull requests from forks (they receive the app's secrets)")
+	allowForks := fs.Bool("allow-forks", false, "allow previews for pull requests from forks without approval (they still get no environment unless fork secrets are on)")
 	ttlHours := fs.Int("ttl-hours", 0, "hours a preview lives without updates (0 uses the platform default)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsLimitsUsage(prog)) }
 
@@ -83,7 +83,7 @@ func printPreviewPolicy(out io.Writer, appName string, p apiclient.PreviewPolicy
 	_, _ = fmt.Fprintf(tw, "live previews (this app)\t%d of %s\n", p.LiveCount, limitLabel(p.MaxPerApp))
 	_, _ = fmt.Fprintf(tw, "live previews (platform)\t%d of %s\n", p.LiveTotal, limitLabel(p.MaxTotal))
 	_, _ = fmt.Fprintf(tw, "when the limit is full\t%s\n", p.OnLimit)
-	_, _ = fmt.Fprintf(tw, "fork pull requests\t%s\n", map[bool]string{true: "deploy automatically (they receive secrets)", false: "wait for approval"}[p.AllowForkPreviews])
+	_, _ = fmt.Fprintf(tw, "fork pull requests\t%s\n", map[bool]string{true: "deploy automatically", false: "wait for approval"}[p.AllowForkPreviews])
 	_, _ = fmt.Fprintf(tw, "ttl\t%d hours\n", p.EffectiveTTLHours)
 	_ = tw.Flush()
 }
@@ -98,7 +98,7 @@ the control plane. Give any of the policy flags to change the app's policy.
 
 Flags:
   --on-limit string       when the cap is full: evict_oldest (default) or reject
-  --allow-forks           deploy pull requests from forks without approval (they receive the app's secrets)
+  --allow-forks           deploy pull requests from forks without approval (no environment unless fork secrets are on)
   --ttl-hours int         hours a preview lives without updates (0 uses the platform default)
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
@@ -113,6 +113,7 @@ Flags:
 func runAppsPreviewsApprove(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps previews approve", "print the result as JSON to stdout and nothing else", stderr)
 	yes := fs.Bool("yes", false, "confirm that you reviewed the fork's changes and accept the security implication")
+	shareSecrets := fs.Bool("share-secrets", false, "also give this one deploy the app's environment variables and secrets")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsApproveUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -135,7 +136,7 @@ func runAppsPreviewsApprove(prog string, args []string, stdout, stderr io.Writer
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	result, err := client.ApprovePreviewEnvironment(context.Background(), appName, prNumber)
+	result, err := client.ApprovePreviewEnvironmentShared(context.Background(), appName, prNumber, *shareSecrets)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("approve preview for app %q pr #%d: %w", appName, prNumber, err))
 	}
@@ -152,6 +153,7 @@ Deploys a held fork pull request once. %[5]s
 
 Flags:
   --yes                   confirm the above (required)
+  --share-secrets         also give this deploy the app's environment variables and secrets
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

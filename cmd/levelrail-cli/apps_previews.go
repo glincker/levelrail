@@ -27,8 +27,12 @@ func runAppsPreviews(prog string, args []string, stdout, stderr io.Writer, looku
 		return exitOK
 	case "list":
 		return runAppsPreviewsList(prog, args[1:], stdout, stderr, lookupEnv)
-	case "teardown":
+	case "teardown", "delete":
 		return runAppsPreviewsTeardown(prog, args[1:], stdout, stderr, lookupEnv)
+	case "extend":
+		return runAppsPreviewsExtend(prog, args[1:], stdout, stderr, lookupEnv)
+	case "settings":
+		return runAppsPreviewsSettings(prog, args[1:], stdout, stderr, lookupEnv)
 	case "enable":
 		return runAppsPreviewsSetEnabled(prog, args[1:], stdout, stderr, lookupEnv, true)
 	case "disable":
@@ -53,7 +57,9 @@ func appsPreviewsUsage(prog string) string {
   %[1]s apps previews list [app-name] [flags]                list previews for an app, or across every app
   %[1]s apps previews limits [app-name] [flags]              show or change preview caps, fork policy and TTL
   %[1]s apps previews approve <app-name> <pr-number> --yes   deploy a held fork pull request once
-  %[1]s apps previews teardown <app-name> <pr-number> [flags]   tear down one PR's preview right now
+  %[1]s apps previews teardown <app-name> <pr-number> [flags]   tear down one PR's preview right now (alias: delete)
+  %[1]s apps previews extend <app-name> <pr-number> --hours N [flags]   keep one preview past its TTL
+  %[1]s apps previews settings <app-name> [flags]            show or change lifecycle, resource, database and exposure policy
   %[1]s apps previews enable <app-name> [flags]              opt an app into preview environments
   %[1]s apps previews disable <app-name> [flags]             opt an app back out
   %[1]s apps previews pr-status enable <app-name> [flags]    opt into a GitHub PR comment/commit status per preview deploy

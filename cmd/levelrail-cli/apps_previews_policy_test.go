@@ -72,3 +72,44 @@ func TestRun_AppsPreviewsList_AcrossAllApps(t *testing.T) {
 		t.Errorf("path = %q, stdout = %q", gotPath, stdout)
 	}
 }
+
+func TestRun_PreviewsAlias_ExtendSettingsAndDelete(t *testing.T) {
+	var gotMethod, gotPath, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		gotMethod, gotPath, gotBody = r.Method, r.URL.Path, string(b)
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/extend"):
+			_ = json.NewEncoder(w).Encode(apiclient.PreviewEnvironmentResource{PRNumber: 42, ExpiresAt: "2026-10-12T00:00:00Z", Extended: true})
+		case strings.HasSuffix(r.URL.Path, "/preview-policy"):
+			_ = json.NewEncoder(w).Encode(apiclient.PreviewPolicyResource{OnLimit: "evict_oldest", EffectiveMemory: "256Mi", EffectiveCPU: 0.25, DatabaseStrategy: "none", EffectiveIdleSleepMinutes: 30})
+		default:
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"previews", "extend", "web", "42", "--hours", "48", "--api-url", srv.URL})
+	if gotPath != "/api/v1/apps/web/previews/42/extend" || !strings.Contains(gotBody, `"hours":48`) || !strings.Contains(stdout, "2026-10-12") {
+		t.Errorf("extend: path = %s body = %s stdout = %q", gotPath, gotBody, stdout)
+	}
+
+	stdout, _ = runCLIExpectOK(t, []string{"previews", "settings", "web", "--database", "fresh", "--max-previews", "3", "--api-url", srv.URL})
+	if gotMethod != http.MethodPut || !strings.Contains(gotBody, `"database_strategy":"fresh"`) || !strings.Contains(gotBody, `"max_previews":3`) {
+		t.Errorf("settings set: method = %s body = %s", gotMethod, gotBody)
+	}
+	if !strings.Contains(stdout, "256Mi") {
+		t.Errorf("settings stdout = %q, want effective memory", stdout)
+	}
+
+	runCLIExpectOK(t, []string{"previews", "settings", "web", "--api-url", srv.URL})
+	if gotMethod != http.MethodGet {
+		t.Errorf("settings show: method = %s, want GET", gotMethod)
+	}
+
+	runCLIExpectOK(t, []string{"previews", "delete", "web", "42", "--api-url", srv.URL})
+	if gotPath != "/api/v1/apps/web/previews/42/teardown" {
+		t.Errorf("delete: path = %s", gotPath)
+	}
+}

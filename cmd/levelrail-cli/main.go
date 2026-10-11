@@ -80,6 +80,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return exitOK
 	case "apps":
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
+	case "previews":
+		return runAppsPreviews(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy":
 		return runAliasedDeploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
@@ -265,6 +267,7 @@ Usage:
   %[1]s domains list [flags]           list every app's domains in one call
   %[1]s dns zones|records|check|health-checks ...   DNS zones, records, delegation and propagation at Cloudflare or Route53
   %[1]s preview status|enable|disable|capture|prune <app> [flags]   deploy preview screenshots (opt-in per app)
+  %[1]s previews list|delete|extend|settings|approve [flags]   per pull request preview environments
   %[1]s deployments list|summary|watch [flags]   deploys across all apps, filterable, with live stream
   %[1]s environments list|create|update|delete [flags]   instance-wide dev, test, uat, production and custom environments
   %[1]s apps move-env <name> <environment-id> [--confirm]   move an app to another environment

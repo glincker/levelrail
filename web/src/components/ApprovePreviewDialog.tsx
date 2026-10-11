@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ShieldWarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -10,14 +11,15 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/components/ui/toast'
 import { useApprovePreviewEnvironment } from '../queries/previewPolicy'
 import type { PreviewEnvironment } from '../types/previewEnvironment'
 
-// ApprovePreviewDialog deploys a held fork pull request once. The dialog
-// states the security implication in plain words because the fork's code
-// runs with this app's environment variables and secrets.
+// ApprovePreviewDialog deploys a held fork pull request once. A fork gets no
+// environment variables or secrets unless the reviewer opts in here.
 export function ApprovePreviewDialog({
   appName,
   preview,
@@ -25,53 +27,70 @@ export function ApprovePreviewDialog({
   appName: string
   preview: PreviewEnvironment
 }) {
+  const { t } = useTranslation('previews')
   const [open, setOpen] = useState(false)
+  const [shareSecrets, setShareSecrets] = useState(false)
   const approve = useApprovePreviewEnvironment(appName)
 
   function confirm() {
-    approve.mutate(preview.pr_number, {
-      onSuccess: () => {
-        setOpen(false)
-        toast.add({
-          title: `Preview for PR #${preview.pr_number} is deploying.`,
-          type: 'success',
-        })
+    approve.mutate(
+      { prNumber: preview.pr_number, shareSecrets },
+      {
+        onSuccess: () => {
+          setOpen(false)
+          toast.add({
+            title: t('approve.deploying', { number: preview.pr_number }),
+            type: 'success',
+          })
+        },
+        onError: (error) => {
+          toast.add({
+            title: t('approve.error'),
+            description: error.message,
+            type: 'error',
+          })
+        },
       },
-      onError: (error) => {
-        toast.add({
-          title: 'Could not approve preview.',
-          description: error.message,
-          type: 'error',
-        })
-      },
-    })
+    )
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button type="button" size="sm" />}>
-        Approve preview
+        {t('approve.button')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            Approve preview for PR #{preview.pr_number}?
+            {t('approve.title', { number: preview.pr_number })}
           </DialogTitle>
           <DialogDescription>
-            This pull request comes from{' '}
-            {preview.head_repo ? preview.head_repo : 'another repository'}, not
-            from this app&apos;s own repository.
+            {t('approve.fromRepo', {
+              repo: preview.head_repo ?? t('approve.anotherRepo'),
+            })}
           </DialogDescription>
         </DialogHeader>
         <Alert variant="destructive">
           <ShieldWarningIcon aria-hidden="true" />
-          <AlertDescription>
-            Approving runs the fork&apos;s code on your server with this
-            app&apos;s environment variables and secrets, and anyone who can
-            open that page can reach them. Read the changes first. Only this
-            commit deploys; a new push from the fork waits for approval again.
-          </AlertDescription>
+          <AlertDescription>{t('approve.warning')}</AlertDescription>
         </Alert>
+        <div className="flex items-start gap-2">
+          <Checkbox
+            id="approve-share-secrets"
+            checked={shareSecrets}
+            onCheckedChange={(next) => {
+              setShareSecrets(next === true)
+            }}
+          />
+          <div className="space-y-0.5">
+            <Label htmlFor="approve-share-secrets">
+              {t('approve.shareSecrets')}
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {t('approve.shareSecretsHint')}
+            </p>
+          </div>
+        </div>
         <DialogFooter>
           <Button
             type="button"
@@ -80,7 +99,7 @@ export function ApprovePreviewDialog({
               setOpen(false)
             }}
           >
-            Cancel
+            {t('approve.cancel')}
           </Button>
           <Button
             type="button"
@@ -88,7 +107,7 @@ export function ApprovePreviewDialog({
             disabled={approve.isPending}
             onClick={confirm}
           >
-            Approve and deploy
+            {t('approve.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

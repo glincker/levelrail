@@ -26,6 +26,10 @@ type cmdNode struct {
 var cliCommandTree = map[string]*cmdNode{
 	"deploy":   nil,
 	"rollback": nil,
+	"previews": {subs: map[string]*cmdNode{
+		"list": nil, "delete": nil, "teardown": nil, "extend": nil, "settings": nil, "enable": nil, "disable": nil, "sweep": nil, "limits": nil, "approve": nil,
+		"pr-status": {subs: map[string]*cmdNode{"enable": nil, "disable": nil}},
+	}},
 	"apps": {subs: map[string]*cmdNode{
 		"freeze":                  {subs: map[string]*cmdNode{"set": nil, "show": nil, "clear": nil}},
 		"sbom":                    nil,
@@ -91,7 +95,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"set-node":          nil,
 		"clear-node":        nil,
 		"previews": {subs: map[string]*cmdNode{
-			"list": nil, "teardown": nil, "enable": nil, "disable": nil, "sweep": nil, "limits": nil, "approve": nil,
+			"list": nil, "delete": nil, "teardown": nil, "extend": nil, "settings": nil, "enable": nil, "disable": nil, "sweep": nil, "limits": nil, "approve": nil,
 			"pr-status": {subs: map[string]*cmdNode{"enable": nil, "disable": nil}},
 		}},
 		"env":                {subs: map[string]*cmdNode{"import": nil, "export": nil}},

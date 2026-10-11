@@ -2,6 +2,9 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import i18next from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
+import previewsEn from '../locales/en/previews.json'
 import { PreviewPolicyCard } from './PreviewPolicyCard'
 import { ApprovePreviewDialog } from './ApprovePreviewDialog'
 import type {
@@ -23,11 +26,25 @@ function urlOf(input: RequestInfo | URL): string {
   return input.url
 }
 
+const testI18n = i18next.createInstance()
+void testI18n.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  ns: ['previews'],
+  defaultNS: 'previews',
+  resources: { en: { previews: previewsEn } },
+  interpolation: { escapeValue: false },
+})
+
 function renderWithClient(node: React.ReactNode) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
-  render(<QueryClientProvider client={queryClient}>{node}</QueryClientProvider>)
+  render(
+    <I18nextProvider i18n={testI18n}>
+      <QueryClientProvider client={queryClient}>{node}</QueryClientProvider>
+    </I18nextProvider>,
+  )
 }
 
 const gitSource = {
@@ -58,6 +75,20 @@ describe('PreviewPolicyCard', () => {
       live_count: 3,
       max_total: 0,
       live_total: 7,
+      max_previews: 0,
+      memory_limit: '',
+      cpu_limit: 0,
+      effective_memory: '256Mi',
+      effective_cpu: 0.25,
+      idle_sleep_minutes: 0,
+      effective_idle_sleep_minutes: 30,
+      database_strategy: 'none',
+      seed_database: '',
+      allow_fork_secrets: false,
+      gate_basic_auth: false,
+      gate_username: '',
+      gate_password_set: false,
+      allow_indexing: false,
     }
     vi.stubGlobal(
       'fetch',
@@ -175,15 +206,29 @@ describe('ApprovePreviewDialog', () => {
     renderWithClient(<ApprovePreviewDialog appName="web" preview={preview} />)
 
     await user.click(screen.getByRole('button', { name: 'Approve preview' }))
-    expect(
-      await screen.findByText(/environment variables and secrets/),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/runs the fork's code/)).toBeInTheDocument()
     expect(screen.getByText(/mallory\/web/)).toBeInTheDocument()
     expect(posts).toEqual([])
 
     await user.click(screen.getByRole('button', { name: 'Approve and deploy' }))
     await waitFor(() => {
       expect(posts).toEqual([{ confirm: true }])
+    })
+  })
+
+  it('shares secrets only when the reviewer opts in', async () => {
+    const user = userEvent.setup()
+    renderWithClient(<ApprovePreviewDialog appName="web" preview={preview} />)
+
+    await user.click(screen.getByRole('button', { name: 'Approve preview' }))
+    await user.click(
+      await screen.findByRole('checkbox', {
+        name: /environment variables and secrets/,
+      }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Approve and deploy' }))
+    await waitFor(() => {
+      expect(posts).toEqual([{ confirm: true, share_secrets: true }])
     })
   })
 })

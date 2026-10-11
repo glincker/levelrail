@@ -339,6 +339,9 @@ levelrail-cli apps previews enable <app-name> [flags]
 levelrail-cli apps previews disable <app-name> [flags]
 levelrail-cli apps previews approve <app-name> <pr-number> --yes
 levelrail-cli apps previews teardown <app-name> <pr-number> [flags]
+levelrail-cli apps previews extend <app-name> <pr-number> [--hours 24] [flags]
+levelrail-cli apps previews settings <app-name> [flags]
+levelrail-cli previews list|delete|extend|settings|approve ...
 levelrail-cli apps previews pr-status enable <app-name> [flags]
 levelrail-cli apps previews pr-status disable <app-name> [flags]
 levelrail-cli apps previews sweep [flags]
@@ -346,7 +349,7 @@ levelrail-cli apps previews sweep [flags]
 
 - `apps git-source` connects a repo for auto deploy on push; `settings` sets push path filters and forge status reporting; `rotate-secret` mints a fresh webhook secret, shown once.
 - `apps webhook-deliveries` lists recent inbound webhook requests, verified or not. `replay` re-runs a stored delivery's payload and can trigger a real build and deploy.
-- `apps previews` manages preview environments per pull request, see [Deploy previews](deploy-previews.md). `limits` shows or changes preview caps, fork policy and TTL; `approve` deploys a held fork pull request once; `teardown` removes one PR's preview now; `sweep` tears down every stale preview across all apps now; `pr-status` toggles the PR comment and commit status per preview deploy.
+- `apps previews` manages preview environments per pull request, see [Preview environments per pull request](previews.md). `previews` is the same command at the top level. `extend` keeps one preview past its TTL; `settings` shows or changes the lifecycle, resource, database and exposure policy. `limits` shows or changes preview caps, fork policy and TTL; `approve` deploys a held fork pull request once; `teardown` removes one PR's preview now; `sweep` tears down every stale preview across all apps now; `pr-status` toggles the PR comment and commit status per preview deploy.
 
 ### Supply chain
 

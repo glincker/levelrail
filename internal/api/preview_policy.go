@@ -84,7 +84,8 @@ func (rt *Router) admitPreview(ctx context.Context, appName string, existing *st
 	if existing != nil && existing.Occupies() {
 		return "", nil
 	}
-	if rt.previewLimits.MaxPerApp <= 0 && rt.previewLimits.MaxTotal <= 0 {
+	limits := rt.previewLimitsFor(settings)
+	if limits.MaxPerApp <= 0 && limits.MaxTotal <= 0 {
 		return "", nil
 	}
 	all, err := rt.previewEnvironments.ListPreviewEnvironments(ctx)
@@ -95,7 +96,7 @@ func (rt *Router) admitPreview(ctx context.Context, appName string, existing *st
 	if existing != nil {
 		selfID = existing.ID
 	}
-	plan := selectEvictions(all, appName, selfID, rt.previewLimits)
+	plan := selectEvictions(all, appName, selfID, limits)
 	if len(plan) == 0 {
 		return "", nil
 	}
@@ -112,6 +113,16 @@ func (rt *Router) admitPreview(ctx context.Context, appName string, existing *st
 		}
 	}
 	return "", nil
+}
+
+// previewLimitsFor is the platform caps with the app's own per-app cap
+// applied when it set one.
+func (rt *Router) previewLimitsFor(s store.PreviewAppSettings) PreviewLimits {
+	l := rt.previewLimits
+	if s.MaxPreviews > 0 {
+		l.MaxPerApp = s.MaxPreviews
+	}
+	return l
 }
 
 func (rt *Router) previewSettings(ctx context.Context, appName string) store.PreviewAppSettings {
@@ -223,7 +234,8 @@ func (rt *Router) holdForkPreview(ctx context.Context, gs store.GitSource, exist
 	}
 
 	if existing != nil && existing.Status != store.PreviewStatusAwaitingApproval && existing.Status != store.PreviewStatusLimitReached {
-		failed := append(rt.teardownPreviewApp(ctx, existing.PreviewAppID), rt.teardownPreviewEphemeralDatabases(ctx, existing.ID)...)
+		failed := append(rt.removePreviewDNS(ctx, *existing), rt.teardownPreviewApp(ctx, existing.PreviewAppID)...)
+		failed = append(failed, rt.teardownPreviewEphemeralDatabases(ctx, existing.ID)...)
 		failed = append(failed, rt.teardownPreviewDatabaseIsolations(ctx, existing.ID)...)
 		if len(failed) > 0 {
 			rt.logger.Error("api: fork preview hold: remove earlier deployment failed", slog.Any("failed_resources", failed), slog.String("app_name", base.AppName))

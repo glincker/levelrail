@@ -88,6 +88,22 @@ type previewPolicyResource struct {
 	LiveCount         int    `json:"live_count"`
 	MaxTotal          int    `json:"max_total"`
 	LiveTotal         int    `json:"live_total"`
+	// MaxPreviews is the app's own cap override (0 uses the platform cap).
+	MaxPreviews      int     `json:"max_previews"`
+	MemoryLimit      string  `json:"memory_limit"`
+	CPULimit         float64 `json:"cpu_limit"`
+	EffectiveMemory  string  `json:"effective_memory"`
+	EffectiveCPU     float64 `json:"effective_cpu"`
+	IdleSleepMinutes int     `json:"idle_sleep_minutes"`
+	// EffectiveIdleSleepMinutes is what applies after the platform default.
+	EffectiveIdleSleepMinutes int    `json:"effective_idle_sleep_minutes"`
+	DatabaseStrategy          string `json:"database_strategy"`
+	SeedDatabase              string `json:"seed_database"`
+	AllowForkSecrets          bool   `json:"allow_fork_secrets"`
+	GateBasicAuth             bool   `json:"gate_basic_auth"`
+	GateUsername              string `json:"gate_username"`
+	GatePasswordSet           bool   `json:"gate_password_set"`
+	AllowIndexing             bool   `json:"allow_indexing"`
 }
 
 func (rt *Router) previewPolicyFor(ctx context.Context, appName string) (previewPolicyResource, error) {
@@ -97,11 +113,22 @@ func (rt *Router) previewPolicyFor(ctx context.Context, appName string) (preview
 		return previewPolicyResource{}, err
 	}
 	liveTotal, perApp := countLivePreviews(all)
+	limits := rt.previewLimitsFor(s)
+	memory, cpu := previewResourceLimits(s)
+	gateSet := false
+	if rt.secrets != nil {
+		gateSet, _ = rt.secrets.Exists(ctx, previewGateSecretPrefix+appName, previewGateSecretKey)
+	}
 	return previewPolicyResource{
 		OnLimit: s.OnLimit, AllowForkPreviews: s.AllowForkPreviews, TTLHours: s.TTLHours,
 		EffectiveTTLHours: int(rt.previewTTLFor(s) / time.Hour),
-		MaxPerApp:         rt.previewLimits.MaxPerApp, LiveCount: perApp[appName],
-		MaxTotal: rt.previewLimits.MaxTotal, LiveTotal: liveTotal,
+		MaxPerApp:         limits.MaxPerApp, LiveCount: perApp[appName],
+		MaxTotal: limits.MaxTotal, LiveTotal: liveTotal,
+		MaxPreviews: s.MaxPreviews, MemoryLimit: s.MemoryLimit, CPULimit: s.CPULimit,
+		EffectiveMemory: memory, EffectiveCPU: cpu,
+		IdleSleepMinutes: s.IdleSleepMinutes, EffectiveIdleSleepMinutes: previewIdleSleepMinutes(s),
+		DatabaseStrategy: s.DatabaseStrategy, SeedDatabase: s.SeedDatabase, AllowForkSecrets: s.AllowForkSecrets,
+		GateBasicAuth: s.GateBasicAuth, GateUsername: s.GateUsername, GatePasswordSet: gateSet, AllowIndexing: s.AllowIndexing,
 	}, nil
 }
 
@@ -116,9 +143,21 @@ func (rt *Router) handleGetPreviewPolicy(w http.ResponseWriter, r *http.Request)
 }
 
 type setPreviewPolicyRequest struct {
-	OnLimit           *string `json:"on_limit,omitempty"`
-	AllowForkPreviews *bool   `json:"allow_fork_previews,omitempty"`
-	TTLHours          *int    `json:"ttl_hours,omitempty"`
+	OnLimit           *string  `json:"on_limit,omitempty"`
+	AllowForkPreviews *bool    `json:"allow_fork_previews,omitempty"`
+	TTLHours          *int     `json:"ttl_hours,omitempty"`
+	MaxPreviews       *int     `json:"max_previews,omitempty"`
+	MemoryLimit       *string  `json:"memory_limit,omitempty"`
+	CPULimit          *float64 `json:"cpu_limit,omitempty"`
+	IdleSleepMinutes  *int     `json:"idle_sleep_minutes,omitempty"`
+	DatabaseStrategy  *string  `json:"database_strategy,omitempty"`
+	SeedDatabase      *string  `json:"seed_database,omitempty"`
+	AllowForkSecrets  *bool    `json:"allow_fork_secrets,omitempty"`
+	GateBasicAuth     *bool    `json:"gate_basic_auth,omitempty"`
+	GateUsername      *string  `json:"gate_username,omitempty"`
+	// GatePassword is write-only; it is stored encrypted and never returned.
+	GatePassword  *string `json:"gate_password,omitempty"`
+	AllowIndexing *bool   `json:"allow_indexing,omitempty"`
 }
 
 // handleSetPreviewPolicy handles PUT /api/v1/apps/{name}/preview-policy.
@@ -132,8 +171,8 @@ func (rt *Router) handleSetPreviewPolicy(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.OnLimit == nil && req.AllowForkPreviews == nil && req.TTLHours == nil {
-		writeError(w, http.StatusBadRequest, "on_limit, allow_fork_previews or ttl_hours is required")
+	if req == (setPreviewPolicyRequest{}) {
+		writeError(w, http.StatusBadRequest, "at least one policy field is required")
 		return
 	}
 	if _, err := rt.gitSources.GetGitSource(ctx, name); errors.Is(err, store.ErrGitSourceNotFound) {
@@ -162,6 +201,10 @@ func (rt *Router) handleSetPreviewPolicy(w http.ResponseWriter, r *http.Request)
 		}
 		s.TTLHours = *req.TTLHours
 	}
+	if msg := rt.applyPreviewPolicyLifecycleFields(ctx, name, &s, req); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
 	if err := rt.previewEnvironments.SavePreviewAppSettings(ctx, s); err != nil {
 		rt.internalError(w, "api: set preview policy: save", err)
 		return
@@ -179,6 +222,9 @@ func (rt *Router) handleSetPreviewPolicy(w http.ResponseWriter, r *http.Request)
 
 type approvePreviewRequest struct {
 	Confirm bool `json:"confirm"`
+	// ShareSecrets also gives this one deploy the app's environment
+	// variables, secrets and preview overrides; off by default.
+	ShareSecrets bool `json:"share_secrets"`
 }
 
 type approvePreviewResponse struct {
@@ -199,7 +245,7 @@ func (rt *Router) handleApprovePreviewEnvironment(w http.ResponseWriter, r *http
 	}
 	var req approvePreviewRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || !req.Confirm {
-		writeError(w, http.StatusBadRequest, "confirm must be true: approving runs the fork's code with this app's environment variables and secrets")
+		writeError(w, http.StatusBadRequest, "confirm must be true: approving runs the fork's code on this server")
 		return
 	}
 	if rt.builder == nil {
@@ -234,7 +280,11 @@ func (rt *Router) handleApprovePreviewEnvironment(w http.ResponseWriter, r *http
 	rt.previewDeploys.Add(1)
 	go func() { //nolint:gosec // deliberately outlives the request: a build can take minutes, same as the webhook path
 		defer rt.previewDeploys.Done()
-		rt.deployPreviewEnvironment(context.WithoutCancel(ctx), name, *gs, ev, true)
+		dctx := context.WithoutCancel(ctx)
+		if req.ShareSecrets {
+			dctx = withForkSecretsApproved(dctx)
+		}
+		rt.deployPreviewEnvironment(dctx, name, *gs, ev, true)
 	}()
 	writeJSON(w, http.StatusAccepted, approvePreviewResponse{Status: store.PreviewStatusDeploying})
 }

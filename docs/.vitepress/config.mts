@@ -100,6 +100,7 @@ const sidebarGroups = [
           { text: 'Canary deploys', link: '/canary-deploys' },
           { text: 'Deployments page', link: '/deployments-page' },
           { text: 'Deploy previews', link: '/deploy-previews' },
+          { text: 'Pull request previews', link: '/previews' },
           { text: 'Chat deploy approvals', link: '/chat-deploy-approvals' },
           { text: 'Supply chain visibility', link: '/supply-chain' },
           { text: 'Deploy status badge', link: '/deploy-status-badge' },

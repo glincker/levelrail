@@ -5,6 +5,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PreviewEnvironmentsCard } from './PreviewEnvironmentsCard'
 import type { AppDetail } from '../types/appDetail'
 
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
+  return {
+    ...actual,
+    Link: ({
+      children,
+      params,
+    }: {
+      children: React.ReactNode
+      params?: { name: string }
+    }) => <a href={`/apps/${params?.name ?? ''}/logs`}>{children}</a>,
+  }
+})
+
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
   if (input instanceof URL) return input.toString()

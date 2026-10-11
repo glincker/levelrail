@@ -23,6 +23,7 @@ import type signIn from '../locales/en/signIn.json'
 import type traffic from '../locales/en/traffic.json'
 import type dns from '../locales/en/dns.json'
 import type domainPolicies from '../locales/en/domainPolicies.json'
+import type previews from '../locales/en/previews.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -54,6 +55,7 @@ declare module 'i18next' {
       traffic: typeof traffic
       dns: typeof dns
       domainPolicies: typeof domainPolicies
+      previews: typeof previews
     }
   }
 }

@@ -35,6 +35,8 @@ type previewEnvironmentResource struct {
 	// ExpiresAt is when the TTL sweep will remove this preview if it stays
 	// untouched: UpdatedAt plus the app's effective TTL.
 	ExpiresAt string `json:"expires_at,omitempty"`
+	// Extended reports an operator-granted extension past the TTL.
+	Extended bool `json:"extended"`
 	// IsFork marks a pull request from another repository; HeadRepo names it.
 	IsFork   bool   `json:"is_fork"`
 	HeadRepo string `json:"head_repo,omitempty"`
@@ -91,12 +93,12 @@ type previewEphemeralDatabaseResource struct {
 func (rt *Router) toPreviewEnvironmentResource(ctx context.Context, p store.PreviewEnvironment, ttl time.Duration) previewEnvironmentResource {
 	stale := false
 	expiresAt := ""
-	if updatedAt, err := time.Parse(time.RFC3339Nano, p.UpdatedAt); err == nil {
-		stale = time.Since(updatedAt) > ttl
-		expiresAt = updatedAt.Add(ttl).UTC().Format(time.RFC3339)
+	if expires, ok := previewExpiry(p, ttl); ok {
+		stale = time.Now().After(expires)
+		expiresAt = expires.UTC().Format(time.RFC3339)
 	}
 	return previewEnvironmentResource{
-		AppName: p.AppName, ExpiresAt: expiresAt, IsFork: p.IsFork, HeadRepo: p.HeadRepo,
+		AppName: p.AppName, ExpiresAt: expiresAt, Extended: p.ExtendedUntil != "", IsFork: p.IsFork, HeadRepo: p.HeadRepo,
 		PRNumber: p.PRNumber, PreviewAppID: p.PreviewAppID, Branch: p.Branch, HeadSHA: p.HeadSHA,
 		Domain: p.Domain, Status: p.Status, StatusReason: p.StatusReason,
 		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt, Stale: stale,

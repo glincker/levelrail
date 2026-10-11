@@ -1,0 +1,70 @@
+{
+  "title": "Previews",
+  "extend": {
+    "button": "Extend",
+    "label": "Extend preview for pull request {{number}}",
+    "hours": "Extend by {{hours}} hours",
+    "success": "Preview for PR #{{number}} now expires {{when}}.",
+    "error": "Could not extend the preview."
+  },
+  "row": {
+    "extended": "Extended",
+    "logs": "Build logs",
+    "logsLabel": "Open the logs of the preview for pull request {{number}}"
+  },
+  "approve": {
+    "button": "Approve preview",
+    "title": "Approve preview for PR #{{number}}?",
+    "fromRepo": "This pull request comes from {{repo}}, not from this app's own repository.",
+    "anotherRepo": "another repository",
+    "warning": "Approving runs the fork's code on your server. Read the changes first. Only this commit deploys; a new push from the fork waits for approval again.",
+    "shareSecrets": "Also give it this app's environment variables and secrets",
+    "shareSecretsHint": "Off by default. Turn this on only if you trust the author: the code can read and send out every value.",
+    "cancel": "Cancel",
+    "confirm": "Approve and deploy",
+    "deploying": "Preview for PR #{{number}} is deploying.",
+    "error": "Could not approve preview."
+  },
+  "lifecycle": {
+    "title": "Lifecycle, resources and exposure",
+    "description": "How many previews an app keeps, how big they are, what data they can reach, and who can see them.",
+    "unavailable": "Preview settings are not available on this control plane.",
+    "loading": "Loading preview settings",
+    "save": "Save settings",
+    "saved": "Preview settings saved.",
+    "saveError": "Could not save preview settings.",
+    "maxPreviews": "Most live previews for this app",
+    "maxPreviewsHint": "0 uses the platform cap ({{cap}}).",
+    "memory": "Memory per preview",
+    "memoryHint": "Platform default is {{value}}. A preview never gets more than the app itself has.",
+    "cpu": "CPU per preview",
+    "cpuHint": "Platform default is {{value}}. 0 uses it.",
+    "idle": "Sleep after idle minutes",
+    "idleHint": "0 uses the platform default ({{value}} minutes). A sleeping preview wakes on the next request.",
+    "database": {
+      "label": "Database",
+      "hint": "A preview never connects to production data unless you choose shared.",
+      "none": "None: no database credentials reach the preview",
+      "shared": "Shared: use the production database (risky)",
+      "fresh": "Fresh: an empty database of the same engine",
+      "seed": "Seed: a copy of a named database's latest backup",
+      "seedName": "Seed database",
+      "seedHint": "Empty uses the database attached to the app.",
+      "sharedWarning": "Every preview, including unreviewed branches, can read and change production data."
+    },
+    "exposure": {
+      "heading": "Who can see previews",
+      "forkSecrets": "Give fork previews the app's environment and secrets",
+      "forkSecretsHint": "Off by default. A fork preview gets no environment variables at all.",
+      "forkSecretsWarning": "Anyone who can open a pull request from a fork can run code that reads these values.",
+      "indexing": "Let search engines index preview URLs",
+      "indexingHint": "Off by default: previews send X-Robots-Tag noindex and serve a deny-all robots.txt.",
+      "gate": "Require basic auth on previews",
+      "gateHint": "One username and password for every preview of this app.",
+      "gateUsername": "Username",
+      "gatePassword": "Password",
+      "gatePasswordSet": "A password is set. Leave blank to keep it.",
+      "gateNeedsPassword": "Set a username and a password to turn the gate on."
+    }
+  }
+}

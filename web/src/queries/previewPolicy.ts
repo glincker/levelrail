@@ -82,16 +82,25 @@ export function useSetPreviewPolicy(appName: string) {
   })
 }
 
+export interface ApprovePreviewArgs {
+  prNumber: number
+  shareSecrets: boolean
+}
+
 export function useApprovePreviewEnvironment(appName: string) {
   const queryClient = useQueryClient()
-  return useMutation<void, ApiError, number>({
-    mutationFn: async (prNumber) => {
+  return useMutation<void, ApiError, ApprovePreviewArgs>({
+    mutationFn: async ({ prNumber, shareSecrets }) => {
       const res = await fetch(
         `/api/v1/apps/${encodeURIComponent(appName)}/previews/${prNumber}/approve`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ confirm: true }),
+          body: JSON.stringify(
+            shareSecrets
+              ? { confirm: true, share_secrets: true }
+              : { confirm: true },
+          ),
         },
       )
       if (!res.ok) {
