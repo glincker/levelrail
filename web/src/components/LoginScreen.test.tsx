@@ -1,6 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import i18next from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
+import commonEn from '../locales/en/common.json'
+import signInEn from '../locales/en/signIn.json'
 import type { Brand } from '../types/brand'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
@@ -17,6 +21,16 @@ vi.mock('../hooks/useBrand', () => ({ useBrand: vi.fn() }))
 import { useBrand } from '../hooks/useBrand'
 import { LoginScreen } from './LoginScreen'
 import { ThemeProvider } from './ThemeProvider'
+
+const testI18n = i18next.createInstance()
+void testI18n.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  ns: ['common', 'signIn'],
+  defaultNS: 'common',
+  resources: { en: { common: commonEn, signIn: signInEn } },
+  interpolation: { escapeValue: false },
+})
 
 const brand: Brand = {
   Name: 'Test Brand',
@@ -61,9 +75,11 @@ function renderScreen(setup?: string, sessionEnded = false) {
   })
   return render(
     <QueryClientProvider client={client}>
-      <ThemeProvider>
-        <LoginScreen setup={setup} sessionEnded={sessionEnded} />
-      </ThemeProvider>
+      <I18nextProvider i18n={testI18n}>
+        <ThemeProvider>
+          <LoginScreen setup={setup} sessionEnded={sessionEnded} />
+        </ThemeProvider>
+      </I18nextProvider>
     </QueryClientProvider>,
   )
 }
@@ -170,5 +186,27 @@ describe('LoginScreen', () => {
     expect(
       screen.queryByText(/signed out|sessionEnded\.notice/),
     ).not.toBeInTheDocument()
+  })
+
+  it('has one level-1 heading, a brand mark and no legacy amber styling', async () => {
+    mockFetch(false)
+    const { container } = renderScreen()
+    expect(await findTitle('Sign in')).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('heading', { level: 1, name: 'Sign in' }),
+    ).toHaveLength(1)
+    expect(screen.getByText('testbrand')).toBeInTheDocument()
+    expect(container.innerHTML).not.toMatch(/amber|245 158 11|245_158_11/)
+    expect(container.querySelector('[style]')).toBeNull()
+  })
+
+  it('labels the sign-in fields for password managers', async () => {
+    mockFetch(false)
+    renderScreen()
+    expect(await findTitle('Sign in')).toBeInTheDocument()
+    expect(screen.getByLabelText('Username')).toHaveAttribute(
+      'autocomplete',
+      'username webauthn',
+    )
   })
 })

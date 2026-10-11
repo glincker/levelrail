@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { ChartRow } from '../lib/metricChart'
+import { chartSlot } from '../lib/chartPalette'
 import { useModelUsage } from '../queries/modelKeys'
 import type { ModelUsagePoint } from '../types/models'
 import { MetricChartCard } from './MetricChartCard'
@@ -11,9 +12,9 @@ const WINDOWS = [
   { label: '7d', hours: 168 },
 ] as const
 
-const REQUEST_COLOR = '#3b82f6'
-const TOKEN_COLOR = '#10b981'
-const TTFT_COLOR = '#f59e0b'
+const REQUEST_COLOR = chartSlot.requests
+const TOKEN_COLOR = chartSlot.network
+const TTFT_COLOR = chartSlot.latency
 
 function rowsOf(
   series: ModelUsagePoint[],
@@ -97,7 +98,7 @@ export function ModelUsageCard({ modelName }: { modelName: string }) {
             primaryLabel="Requests"
             primaryColor={REQUEST_COLOR}
             secondaryLabel="Errors"
-            secondaryColor="#ef4444"
+            secondaryColor={chartSlot.errors}
             rows={rowsOf(
               series,
               (p) => p.requests,

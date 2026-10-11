@@ -15,18 +15,22 @@
     "verify": "Sign in",
     "verifying": "Checking...",
     "resend": "Send a new code",
-    "where": "Find it in the banner of any dashboard you are signed in to, with {{cli}}, or in your email."
+    "where": "Find it in the banner of any dashboard you are signed in to, with {{cli}}, or in your email.",
+    "expiresIn": "Code expires in {{time}}",
+    "expiredHint": "This code has expired. Send a new code to continue.",
+    "wrongFormat": "Enter the full code from your dashboard or email. Spaces and hyphens are fine."
   },
   "approval": {
     "waitingTitle": "Approve this sign-in",
-    "waitingHint": "Your password was right, but this browser is new. Open the dashboard where you are already signed in, choose Approve and type the number below, or run {{cli}} there.",
+    "waitingHint": "Your password was right, but this browser is new. Open a dashboard where you are already signed in, choose Approve and type this number, or run {{cli}} there.",
     "matchLabel": "Type this number when you approve",
     "reference": "Request {{id}}",
-    "expires": "Waiting until {{time}}.",
     "denied": "The sign-in was denied from another session.",
-    "expired": "Nobody approved the sign-in in time. Sign in again.",
+    "expired": "Nobody approved the sign-in in time. Go back and sign in again to get a new request.",
     "alternative": "No other device at hand? Sign in with a code sent to your email instead.",
-    "back": "Back to sign in"
+    "back": "Back to sign in",
+    "matchAria": "Match number {{number}}",
+    "countdown": "Expires in {{time}}"
   },
   "twoFactor": {
     "codeLabel": "Authenticator code",

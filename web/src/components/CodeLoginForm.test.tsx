@@ -70,7 +70,6 @@ async function sendAndEnter(code: string) {
   fireEvent.click(screen.getByRole('button', { name: 'Send code' }))
   expect(await screen.findByText('Generic message')).toBeInTheDocument()
   fireEvent.change(screen.getByLabelText('Code'), { target: { value: code } })
-  fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 }
 
 beforeEach(() => {
@@ -93,7 +92,41 @@ describe('CodeLoginForm', () => {
       'POST /api/v1/auth/login-code/request',
       'POST /api/v1/auth/login-code/redeem',
     ])
-    expect(calls[1]?.body).toContain('abcd-ef12')
+    expect(calls[1]?.body).toContain('ABCD-EF12')
+  })
+
+  it('normalises a pasted code and shows the expiry in a live region', async () => {
+    const calls = stubFetch({
+      status: 200,
+      body: { username: 'dev@example.com' },
+    })
+    renderForm()
+    fireEvent.click(screen.getByRole('button', { name: 'Send code' }))
+    expect(await screen.findByText('Generic message')).toBeInTheDocument()
+    const status = screen.getByRole('status')
+    expect(status).toHaveAttribute('aria-live', 'polite')
+    expect(status).toHaveTextContent('Code expires in 10:00')
+    const input = screen.getByLabelText('Code')
+    expect(input).toHaveAttribute('autocomplete', 'one-time-code')
+    fireEvent.change(input, { target: { value: ' ab cd-ef 12 ' } })
+    expect(input).toHaveValue('ABCD-EF12')
+    await waitFor(() => expect(navigate).toHaveBeenCalled())
+    expect(calls[1]?.body).toContain('ABCD-EF12')
+  })
+
+  it('does not submit an incomplete code', async () => {
+    const calls = stubFetch({
+      status: 200,
+      body: { username: 'dev@example.com' },
+    })
+    renderForm()
+    fireEvent.click(screen.getByRole('button', { name: 'Send code' }))
+    expect(await screen.findByText('Generic message')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Code'), {
+      target: { value: 'ABC' },
+    })
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeDisabled()
+    expect(calls).toHaveLength(1)
   })
 
   it('shows the server error for a wrong code and does not navigate', async () => {

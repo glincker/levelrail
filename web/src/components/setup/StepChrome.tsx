@@ -46,7 +46,7 @@ const SUB_STEP_ICON: Record<SubStepState, ReactNode> = {
   waiting: (
     <CircleNotchIcon className="size-5 animate-spin text-primary motion-reduce:animate-none" />
   ),
-  ok: <CheckCircleIcon className="size-5 text-green-600 dark:text-green-400" />,
+  ok: <CheckCircleIcon className="size-5 text-tone-success" />,
   error: <WarningCircleIcon className="size-5 text-destructive" />,
 }
 

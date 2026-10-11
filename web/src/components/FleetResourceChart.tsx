@@ -11,6 +11,7 @@ import {
   type ChartRow,
   type ChartUnit,
 } from '../lib/metricChart'
+import { chartSlot, chartTooltipStyle } from '../lib/chartPalette'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 const POLL_INTERVAL_MS = 30_000
@@ -115,14 +116,14 @@ export function FleetResourceChart() {
         <FleetSparkline
           label="Total CPU"
           unit="percent"
-          color="#0ea5e9"
+          color={chartSlot.cpu}
           rows={cpuRows}
           hasData={cpuCount > 0}
         />
         <FleetSparkline
           label="Total memory"
           unit="bytes"
-          color="#a855f7"
+          color={chartSlot.memory}
           rows={memoryRows}
           hasData={memoryCount > 0}
         />
@@ -176,6 +177,7 @@ function FleetSparkline({
               margin={{ top: 4, right: 0, left: 0, bottom: 0 }}
             >
               <Tooltip
+                contentStyle={chartTooltipStyle}
                 labelFormatter={(t) => new Date(Number(t)).toLocaleTimeString()}
                 formatter={(value) => formatMetricValue(unit, Number(value))}
               />
