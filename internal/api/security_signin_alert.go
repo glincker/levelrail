@@ -193,19 +193,27 @@ func (rt *Router) handleDisownSignIn(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: disown sign-in: consume failed", err)
 		return
 	}
+	// The link is spent by now, so every step runs even if an earlier one
+	// failed; the request still reports the failure.
 	out := disownSignInResponse{}
+	var failed error
+	if err := rt.security.FlagUserForReset(ctx, a.UserID, disownReason, now); err != nil {
+		failed = fmt.Errorf("flag account: %w", err)
+	}
 	if a.SessionID != "" && rt.libSessions != nil {
 		revoked, rerr := rt.libSessions.RevokeUserSession(ctx, a.UserID, a.SessionID)
 		if rerr != nil {
-			rt.internalError(w, "api: disown sign-in: revoke session failed", rerr, slog.String("user_id", a.UserID))
-			return
+			failed = fmt.Errorf("revoke session: %w", rerr)
 		}
 		out.SessionRevoked = revoked
 	}
-	if err := rt.security.FlagUserForReset(ctx, a.UserID, disownReason, now); err != nil {
-		rt.internalError(w, "api: disown sign-in: flag account failed", err, slog.String("user_id", a.UserID))
-		return
-	}
+	defer func() {
+		if failed != nil {
+			rt.internalError(w, "api: disown sign-in failed, sign out other sessions from the dashboard", failed, slog.String("user_id", a.UserID))
+			return
+		}
+		writeJSON(w, http.StatusOK, out)
+	}()
 	if err := rt.security.ForgetBrowser(ctx, a.UserID, browserFingerprint(a.Label, a.IP)); err != nil {
 		rt.logger.Warn("api: disown sign-in: forget browser failed", slog.String("user_id", a.UserID), slog.String("error", err.Error()))
 	}
@@ -214,5 +222,4 @@ func (rt *Router) handleDisownSignIn(w http.ResponseWriter, r *http.Request) {
 	rt.auditSignIn(ctx, r, anonymousSignIn(a.UserID), store.AuditActionSignInDisowned, signInAlertAuditPath+a.ID, http.StatusOK)
 	rt.sec.posture.invalidate()
 	rt.sendSecurityNotice("Security: the owner of an account reported a sign-in from " + safeSignInIP(a.IP) + " as not theirs. That session was ended and the account is flagged for a new password.")
-	writeJSON(w, http.StatusOK, out)
 }
