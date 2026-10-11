@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { useDatabase, useDatabaseStatus } from '../../../queries/databases'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
 import { ChangeDatabaseVersionDialog } from '../../../components/ChangeDatabaseVersionDialog'
@@ -11,27 +12,15 @@ import { DatabasePublicAccessCard } from '../../../components/DatabasePublicAcce
 import { useProjectListOptional } from '../../../queries/projects'
 import { ExternalDatabaseOverview } from '../../../components/ExternalDatabaseOverview'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { ConnectionDetailsCard } from '../../../components/databases/ConnectionDetailsCard'
 
-// The first of Databases's two real sections (engine/version/node
-// summary, reconcile status, and this database's own backups; resources.tsx
-// is the other), formerly rendered directly inside
-// routes/databases/$name.tsx before that file became the layout route.
-// Reads database/conditions from the same query cache the parent layout
-// route's loader already primed (queries/databases.ts), no fetch of its
-// own, mirroring routes/apps/$name/overview.tsx.
-//
-// No loader of its own: BackupsSection's target picker used to need one
-// (a useSuspenseQuery call with no ambient <Suspense> boundary above it),
-// which blocked this whole page, including the already-loaded
-// database/conditions data above, on a fetch only the Backups card at the
-// bottom needed. It now reads useBackupTargetsOptional instead (see that
-// component's own doc comment), so this route has nothing left to prime.
+// Reads database and conditions from the cache the layout route primed.
 export const Route = createFileRoute('/databases/$name/overview')({
   component: OverviewSection,
 })
 
 function OverviewSection() {
+  const { t } = useTranslation('databases')
   const { name } = Route.useParams()
   const { data: database } = useDatabase(name)
   const { data: conditions } = useDatabaseStatus(name)
@@ -50,13 +39,13 @@ function OverviewSection() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Overview</CardTitle>
+          <CardTitle>{t('overview.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div>
               <dt className="text-xs text-muted-foreground uppercase">
-                Engine
+                {t('connection.engine')}
               </dt>
               <dd className="mt-1 text-sm font-medium text-foreground capitalize">
                 {database.engine}
@@ -64,7 +53,7 @@ function OverviewSection() {
             </div>
             <div>
               <dt className="text-xs text-muted-foreground uppercase">
-                Version
+                {t('overview.version')}
               </dt>
               <dd className="mt-1 flex items-center gap-2 font-mono text-sm text-foreground">
                 {database.version}
@@ -76,36 +65,26 @@ function OverviewSection() {
             </div>
             <div>
               <dt className="text-xs text-muted-foreground uppercase">
-                Connection
+                {t('overview.node')}
               </dt>
-              <dd className="mt-1">
-                {database.tls_enabled ? (
-                  <Badge variant="success">TLS enabled</Badge>
-                ) : (
-                  <Badge variant="muted">Plaintext</Badge>
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground uppercase">Node</dt>
               <dd className="mt-1 flex items-center gap-2 font-mono text-sm text-foreground">
                 {database.node_id || (
                   <span className="text-muted-foreground italic">
-                    unassigned
+                    {t('list.nodeUnassigned')}
                   </span>
                 )}
               </dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground uppercase">
-                Project
+                {t('overview.project')}
               </dt>
               <dd className="mt-1 flex items-center gap-2 text-sm text-foreground">
                 {database.project_id ? (
                   (projectName ?? database.project_id)
                 ) : (
                   <span className="text-muted-foreground italic">
-                    no project
+                    {t('overview.noProject')}
                   </span>
                 )}
                 <MoveToProjectDialog
@@ -119,6 +98,16 @@ function OverviewSection() {
         </CardContent>
       </Card>
 
+      <ConnectionDetailsCard database={database} />
+
+      <DatabasePublicAccessCard database={database} />
+
+      <div id="backups" className="scroll-mt-20 space-y-6">
+        <BackupsSection database={database} />
+
+        <PointInTimeRestoreSection database={database} />
+      </div>
+
       <PlacementCard
         kind="database"
         name={database.name}
@@ -126,12 +115,6 @@ function OverviewSection() {
       />
 
       <ConditionsPanel conditions={conditions} />
-
-      <DatabasePublicAccessCard database={database} />
-
-      <BackupsSection database={database} />
-
-      <PointInTimeRestoreSection database={database} />
 
       {database.engine === 'postgres' ? (
         <MajorUpgradeCard database={database} />

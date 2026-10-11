@@ -108,7 +108,8 @@
     "confirm": "Delete database",
     "confirmAnyway": "Delete anyway",
     "deleting": "Deleting...",
-    "toast": "Database \"{{name}}\" deleted."
+    "toast": "Database \"{{name}}\" deleted.",
+    "typedHint": "Apps connected to it lose the connection."
   },
   "version": {
     "trigger": "Change",
@@ -164,7 +165,11 @@
     "discardConfirm": "Delete the rollback snapshot? You can no longer roll back this upgrade.",
     "discarded": "Snapshot discarded.",
     "pitrBlocked": "Disable point-in-time restore before upgrading: its base backups cannot be replayed on another major version.",
-    "pgvectorHint": "Use a version like \"17-pgvector\" to move a plain database onto the pgvector image. Moving back to plain Postgres is not supported."
+    "pgvectorHint": "Use a version like \"17-pgvector\" to move a plain database onto the pgvector image. Moving back to plain Postgres is not supported.",
+    "rollbackTitle": "Roll back to {{version}}?",
+    "discardTitle": "Discard rollback snapshot?",
+    "rollbackAction": "Roll back",
+    "discardAction": "Discard snapshot"
   },
   "viewer": {
     "nav": {
@@ -391,5 +396,78 @@
   "createPgvector": {
     "label": "Include pgvector",
     "hint": "Runs the pgvector image so CREATE EXTENSION vector works. The version is stored as {{version}}."
+  },
+  "list": {
+    "title": "Databases",
+    "count_one": "{{count}} database",
+    "count_other": "{{count}} databases",
+    "new": "New database",
+    "colName": "Name",
+    "colEngine": "Engine",
+    "colBackups": "Backups",
+    "colNode": "Node",
+    "backupsOn": "Scheduled",
+    "backupsOff": "No schedule",
+    "nodeUnassigned": "Unassigned",
+    "emptyTitle": "No databases yet",
+    "emptyBody": "Create a managed Postgres, MySQL or Redis database and connect an app to it. Credentials are injected for you.",
+    "errorTitle": "Could not load databases",
+    "errorBody": "The databases list did not load. Check that the control plane is reachable, then try again.",
+    "retry": "Try again"
+  },
+  "detail": {
+    "backupNow": "Back up now",
+    "backupStarting": "Starting backup...",
+    "backupStarted": "Backup of \"{{name}}\" started.",
+    "backupSetup": "Set up backups",
+    "more": "More actions",
+    "restart": "Restart",
+    "restarting": "Restarting...",
+    "restarted": "Restarted \"{{name}}\".",
+    "stop": "Stop",
+    "start": "Start",
+    "restore": "Restore from backup...",
+    "delete": "Delete...",
+    "stopToast": "Stopping \"{{name}}\".",
+    "startToast": "Starting \"{{name}}\".",
+    "backToList": "Back to databases"
+  },
+  "connection": {
+    "title": "Connection details",
+    "description": "How apps and tools reach this database.",
+    "engine": "Engine",
+    "address": "Address",
+    "addressPrivate": "Private network only",
+    "addressPrivateHint": "Apps connected to this database receive the address and credentials automatically. Turn on public access to reach it from your machine.",
+    "tls": "Transport",
+    "tlsOn": "TLS enabled",
+    "tlsOff": "Plaintext",
+    "credentials": "Credentials",
+    "credentialsHint": "Passwords are never shown here. Create a login or a temporary credential on the Access tab.",
+    "openAccess": "Manage access",
+    "copyAddress": "Address"
+  },
+  "conditions": {
+    "title": "Health checks",
+    "empty": "Nothing has been checked yet.",
+    "ok": "OK",
+    "failing": "Failing",
+    "pending": "Pending",
+    "details": "Technical details",
+    "updated": "Updated",
+    "credentialsHelp": "No secrets master key is configured, or this database's credentials failed to generate.",
+    "credentialsLink": "Configure it in Settings, General"
+  },
+  "publicAccess": {
+    "noPasswordWarning": "This database has no password. Enabling public access lets anyone who can reach this host read and write the whole dataset with no authentication.",
+    "noPasswordOpen": "This database has no password. This port is reachable from any network that can reach this host, granting full unauthenticated access.",
+    "openPort": "This port is reachable from any network that can reach this host, not just your own machine. Make sure your firewall trusts that before relying on it in production."
+  },
+  "overview": {
+    "title": "Overview",
+    "version": "Version",
+    "node": "Node",
+    "project": "Project",
+    "noProject": "No project"
   }
 }

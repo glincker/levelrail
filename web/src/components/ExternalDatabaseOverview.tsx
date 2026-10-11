@@ -67,7 +67,7 @@ export function DeleteExternalDatabaseDialog({ name }: { name: string }) {
         }
       }}
     >
-      <DialogTrigger render={<Button variant="destructive" size="sm" />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" />}>
         <TrashIcon className="size-3.5" aria-hidden="true" />
         {t('external.delete.trigger')}
       </DialogTrigger>
