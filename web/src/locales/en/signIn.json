@@ -87,5 +87,10 @@
     "saveFailed": "Could not save the setting",
     "approvalOn": "New-browser approval is on for password sign-in.",
     "approvalOff": "New-browser approval is off on this control plane."
+  },
+  "attribution": {
+    "poweredBy": "Powered by {{name}}",
+    "theAuthLabel": "TheAuth, open-source auth (opens in a new tab)",
+    "studioLabel": "GLINR Studios (opens in a new tab)"
   }
 }

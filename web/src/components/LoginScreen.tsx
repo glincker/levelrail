@@ -27,6 +27,7 @@ import { InsecureConnectionBanner } from './InsecureConnectionBanner'
 import { ThemeToggle } from './ThemeToggle'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
 import { LoginBrandPanel } from './LoginBrandPanel'
+import { LoginAttribution } from './LoginAttribution'
 
 // internal/api/devmode.go's fixed pair; release builds ignore dev mode entirely (ADR 013).
 const DEV_MODE_USERNAME = 'dev'
@@ -268,6 +269,9 @@ export function LoginScreen({
             ) : null}
           </footer>
         )}
+        <div className="mx-auto w-full max-w-sm">
+          <LoginAttribution />
+        </div>
       </div>
 
       <LoginBrandPanel name={brand.Name} />
