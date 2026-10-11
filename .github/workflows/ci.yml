@@ -222,6 +222,17 @@ jobs:
         if: needs.plan.outputs.scope != 'none'
         run: scripts/check-fanin.sh
 
+      # release.yml ships the CLI for these targets; a unix-only call in a
+      # shared package otherwise only fails at tag time.
+      - name: Cross-compile CLI (windows, darwin)
+        if: needs.plan.outputs.scope != 'none'
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          GOOS=windows GOARCH=amd64 go build -o /dev/null ./cmd/levelrail-cli
+          GOOS=windows GOARCH=arm64 go build -o /dev/null ./cmd/levelrail-cli
+          GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/levelrail-cli
+
       # tools/ is its own module, so the package list above never reaches it.
       - name: Release notes generator
         if: needs.changes.outputs.tools == 'true'

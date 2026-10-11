@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -99,8 +98,8 @@ func privateDir(dir string) error {
 	if info.Mode().Perm()&0o077 != 0 {
 		return fmt.Errorf("dockerguard: socket dir %s is %s, want 0700 so only this user can reach the guard", dir, info.Mode().Perm())
 	}
-	if st, ok := info.Sys().(*syscall.Stat_t); ok && int(st.Uid) != os.Geteuid() {
-		return fmt.Errorf("dockerguard: socket dir %s is owned by uid %d, not this process", dir, st.Uid)
+	if uid, other := ownedByOtherUser(info); other {
+		return fmt.Errorf("dockerguard: socket dir %s is owned by uid %d, not this process", dir, uid)
 	}
 	return nil
 }
