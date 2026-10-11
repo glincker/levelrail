@@ -10,10 +10,45 @@ cd "$(git rev-parse --show-toplevel)" || exit 2
 fail=0
 checks=0
 
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+n_cases=0
+
 # run <label> <env-assignment|-> <expect>... -- <path>...
 # Each expect is key=value (exact output line) or has:lane / lacks:lane
 # (lane list) or check:Test (name) / nocheck:Test (name) (required checks).
+# Cases run concurrently (PLAN_TEST_JOBS, default 8); PLAN_TEST_FILTER is a
+# regex on the label to run a subset locally.
 run() {
+	if [ -n "${PLAN_TEST_FILTER:-}" ] && ! [[ "$1" =~ $PLAN_TEST_FILTER ]]; then
+		return
+	fi
+	n_cases=$((n_cases + 1))
+	local idx=$n_cases
+	(
+		# shellcheck disable=SC2030 # per-case subshell; the count is handed back through a file
+		checks=0
+		run_case "$@"
+		echo "$checks" >"$tmp/$idx.checks"
+	) >"$tmp/$idx.out" 2>&1 &
+	while [ "$(jobs -rp | wc -l)" -ge "${PLAN_TEST_JOBS:-8}" ]; do sleep 0.2; done
+}
+
+collect() {
+	local f
+	wait
+	for f in "$tmp"/*.out; do
+		[ -s "$f" ] || continue
+		cat "$f"
+		fail=1
+	done
+	for f in "$tmp"/*.checks; do
+		# shellcheck disable=SC2031
+		[ -f "$f" ] && checks=$((checks + $(cat "$f")))
+	done
+}
+
+run_case() {
 	local label="$1" env_kv="$2"
 	shift 2
 	local expects=()
@@ -79,6 +114,8 @@ run "data-rewriting migration is a full run" - "scope=all" has:api-1 -- internal
 run "pipeline-only full run keeps live suites in smoke mode" CI_LIVE_SMOKE=true "scope=all" "live=smoke" lacks:e2e-fleet -- go.mod
 run "pipeline-only full run with ci:live label is full" "CI_LIVE_SMOKE=true CI_LIVE_LABEL=true" "scope=all" "live=full" has:e2e-fleet -- go.mod
 run "web only has no go lanes" - "scope=none" "has_tests=false" -- web/src/App.tsx
+
+collect
 
 # Whole-tree scanners are selected by any non-test Go change, never by docs.
 expect_pkg() { # label want(yes|no) pkg path...
