@@ -28,6 +28,14 @@ func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return exitOK
 	case "list":
 		return runBackupsList(prog, args[1:], stdout, stderr, lookupEnv)
+	case "health":
+		return runBackupsHealth(prog, args[1:], stdout, stderr, lookupEnv)
+	case "protection":
+		return runBackupsProtection(prog, args[1:], stdout, stderr, lookupEnv)
+	case "drill":
+		return runBackupsDrill(prog, args[1:], stdout, stderr, lookupEnv)
+	case "volumes":
+		return runBackupsVolumes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "list-all":
 		return runBackupsListAll(prog, args[1:], stdout, stderr, lookupEnv)
 	case "trigger":
@@ -60,6 +68,10 @@ func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 func backupsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s backups list <database> [flags]                                    list backup history for a database
+  %[1]s backups health [flags]                                             every resource with last backup and last verified restore
+  %[1]s backups protection [--refresh] [flags]                             bucket object lock and versioning status
+  %[1]s backups drill run|list|show [flags]                                prove a restore works (scratch restore, validate, destroy)
+  %[1]s backups volumes list|policy|restore <app> <volume> [flags]         app volume backups, retention and hooks, restore to a new volume or node
   %[1]s backups list-all [flags]                                           list backup history across every database and app volume
   %[1]s backups trigger <database> --target ID [flags]                 trigger a manual backup
   %[1]s backups delete <database> <backup-id> [flags]                  delete one archived backup on demand (destructive)

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,8 @@ import {
   AnyBackupVerificationBadge,
 } from '../../components/AnyBackupActions'
 import type { BackupHistoryRecord } from '../../types/backupHistory'
+import { BackupHealthPanel } from '../../components/backups/BackupHealthPanel'
+import { BackupDrillHistory } from '../../components/backups/BackupDrillHistory'
 
 // Instance-wide backup visibility: GET /api/v1/backups
 // (internal/api/backups.go's own handleListAllBackups), merging every
@@ -121,6 +124,7 @@ export function shouldPromptForBackupTarget(
 }
 
 function AllBackupsPage() {
+  const { t } = useTranslation('backups')
   const { data: initial } = useSuspenseQuery(allBackupHistoryQueryOptions())
   const [history, setHistory] = useState<BackupHistoryRecord[]>(initial)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -183,6 +187,16 @@ function AllBackupsPage() {
             </>
           }
         />
+      </div>
+
+      <BackupHealthPanel />
+      <BackupDrillHistory />
+
+      <div>
+        <h2 className="text-base font-medium">{t('history.title')}</h2>
+        <p className="text-sm text-muted-foreground">
+          {t('history.description')}
+        </p>
       </div>
 
       {history.length === 0 ? (

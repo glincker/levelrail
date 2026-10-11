@@ -57,6 +57,9 @@ type Runner struct {
 	// backup, which streams straight from its source to its destination
 	// bucket, still has a real local directory worth guarding.
 	WorkDir string
+	// Volume holds the optional sealed-backup behavior: compression,
+	// encryption, hooks, budgets. nil keeps the raw legacy encoding.
+	Volume *VolumeBackupOptions
 	// Now returns the current time. A field, not time.Now called
 	// directly, so tests get deterministic timestamps without a real
 	// clock dependency; production code leaves it nil and RunBackup
@@ -173,6 +176,9 @@ func (r *Runner) RunVolumeBackup(ctx context.Context, historyID, serviceName, vo
 		ext = "db"
 	}
 	objectKey := fmt.Sprintf("volumes/%s/%s/%s.%s", serviceName, volumeName, startedAt.UTC().Format("20060102T150405Z"), ext)
+	if r.Volume != nil && r.Volume.Sealer != nil {
+		objectKey = sealedObjectKey(serviceName, volumeName, startedAt, historyID, ext, r.Volume.Sealer.Codec())
+	}
 
 	if err := r.Store.StartBackupHistory(ctx, store.BackupHistory{
 		ID:           historyID,
@@ -189,10 +195,20 @@ func (r *Runner) RunVolumeBackup(ctx context.Context, historyID, serviceName, vo
 	var size int64
 	var checksum string
 	var runErr error
-	if sqlitePath != "" {
+	var sealed sealedResult
+	switch {
+	case r.Volume != nil && r.Volume.Sealer != nil:
+		size, checksum, sealed, runErr = r.runSealedVolume(ctx, serviceName, volumeName, dockerVolumeName, sqlitePath, targetID, objectKey)
+	case sqlitePath != "":
 		size, checksum, runErr = r.runSqliteSnapshotAndUpload(ctx, dockerVolumeName, sqlitePath, targetID, objectKey)
-	} else {
+	default:
 		size, checksum, runErr = r.runArchiveAndUpload(ctx, dockerVolumeName, targetID, objectKey)
+	}
+
+	if sealed.codec != "" && runErr == nil {
+		if err := r.recordSeal(ctx, historyID, sealed); err != nil {
+			runErr = err
+		}
 	}
 
 	status := store.BackupStatusSucceeded

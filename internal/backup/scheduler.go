@@ -146,7 +146,11 @@ type Scheduler struct {
 	// logical backup of a PITR-enabled database, so point-in-time restore
 	// stays fresh without a second schedule. nil disables it.
 	BaseBackups ScheduledBaseBackupRunner
-	Logger      *slog.Logger
+	// Policies and GFS enable per-volume daily/weekly/monthly retention;
+	// both nil is valid and leaves only the count/age rules.
+	Policies VolumePolicyLookup
+	GFS      GFSStore
+	Logger   *slog.Logger
 	// Now returns the current time, the same testable-clock field
 	// Runner.Now already establishes in runner.go: production code
 	// leaves it nil and Tick falls back to time.Now, tests set it for
@@ -448,6 +452,8 @@ func (s *Scheduler) runScheduledVolume(ctx context.Context, v store.ServiceVolum
 		// own doc comment.
 		s.verifyScheduled(ctx, label, historyID, "")
 	}
+
+	s.pruneGFS(ctx, v)
 
 	if v.BackupRetain > 0 || v.BackupRetainDays > 0 {
 		var olderThan time.Time
