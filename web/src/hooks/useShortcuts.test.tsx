@@ -8,6 +8,9 @@ const experimentalFeatures = vi.fn<() => string[]>(() => [])
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigate,
+  useRouter: () => ({
+    routesByPath: { '/dns': {}, '/domains': {}, '/network/proxy': {} },
+  }),
 }))
 vi.mock('./useExperimental', () => ({
   useExperimentalFeatures: () => experimentalFeatures(),

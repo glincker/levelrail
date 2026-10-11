@@ -66,7 +66,7 @@ const cases: { name: string; steps: Step[] }[] = [
     name: 'unknown second key cancels the chord',
     steps: [
       { input: { key: 'g' }, at: 0, action: null },
-      { input: { key: 'x' }, at: 10, action: null },
+      { input: { key: 'z' }, at: 10, action: null },
       { input: { key: 'a' }, at: 20, action: null },
     ],
   },
@@ -157,6 +157,25 @@ describe('stepChord experimental gate', () => {
     ['a', [], { type: 'go', to: '/apps' }],
   ])('g %s with %j', (key, enabled, want) => {
     expect(chord(key, enabled)).toEqual(want)
+  })
+})
+
+describe('stepChord traffic targets', () => {
+  const chord = (key: string, has: (to: string) => boolean) => {
+    const first = stepChord(INITIAL_CHORD, { ...base, key: 'g' }, 0)
+    return stepChord(first.state, { ...base, key }, 1, [], has).action
+  }
+  it('g r goes to DNS once the route exists', () => {
+    expect(chord('r', () => true)).toEqual({ type: 'go', to: '/dns' })
+  })
+  it('g r does nothing while the DNS route is missing', () => {
+    expect(chord('r', () => false)).toBeNull()
+  })
+  it('g x goes to the proxy page without a route gate', () => {
+    expect(chord('x', () => false)).toEqual({
+      type: 'go',
+      to: '/network/proxy',
+    })
   })
 })
 

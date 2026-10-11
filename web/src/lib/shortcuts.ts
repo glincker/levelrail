@@ -8,12 +8,20 @@ export const LONG_PRESS_MS = 450
 
 export const GO_TARGETS: Record<
   string,
-  { to: string; label: string; feature?: ExperimentalFeature }
+  {
+    to: string
+    label: string
+    feature?: ExperimentalFeature
+    // Skipped until the router has the page (it ships in a later change).
+    requiresRoute?: boolean
+  }
 > = {
   a: { to: '/apps', label: 'Apps' },
   n: { to: '/nodes', label: 'Nodes' },
   s: { to: '/status', label: 'Status' },
   d: { to: '/domains', label: 'Domains' },
+  r: { to: '/dns', label: 'DNS', requiresRoute: true },
+  x: { to: '/network/proxy', label: 'Proxy' },
   b: { to: '/backups', label: 'Backups' },
   l: {
     to: '/loadbalancers',
@@ -72,6 +80,7 @@ export function stepChord(
   input: KeyInput,
   now: number,
   enabled: readonly string[] = [],
+  routeAvailable: (to: string) => boolean = () => true,
 ): { state: ChordState; action: ShortcutAction } {
   if (isShortcutInputSuppressed(input)) {
     return { state: INITIAL_CHORD, action: null }
@@ -79,7 +88,11 @@ export function stepChord(
   const live = state.pending && now - state.startedAt <= CHORD_TIMEOUT_MS
   if (live) {
     const target = GO_TARGETS[input.key]
-    if (target && isFeatureVisible(target.feature, enabled)) {
+    if (
+      target &&
+      isFeatureVisible(target.feature, enabled) &&
+      (!target.requiresRoute || routeAvailable(target.to))
+    ) {
       return { state: INITIAL_CHORD, action: { type: 'go', to: target.to } }
     }
   }

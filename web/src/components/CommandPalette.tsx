@@ -6,7 +6,6 @@ import {
   ArrowClockwiseIcon,
   ClockCounterClockwiseIcon,
   DatabaseIcon,
-  GlobeIcon,
   HardDrivesIcon,
   KeyboardIcon,
   RobotIcon,
@@ -24,7 +23,11 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { fuzzyFilter } from '@/lib/fuzzy'
-import { loadRecentKeys, pushRecentKey } from '@/lib/recentItems'
+import {
+  isRecentEligible,
+  loadRecentKeys,
+  pushRecentKey,
+} from '@/lib/recentItems'
 import { usePaletteAppActions } from '../hooks/usePaletteAppActions'
 import { usePageActions } from '@/lib/pageActions'
 import { appListQueryOptions } from '../queries/apps'
@@ -41,6 +44,7 @@ import {
   type PaletteItem,
 } from './commandPaletteData'
 import { PaletteFooter, ResultRow } from './commandPaletteEntries'
+import { domainFromPath, useTrafficPaletteItems } from './trafficPaletteItems'
 import { chordFor } from './shell/navModel'
 import { filterByFeature, isFeatureVisible } from '../lib/experimental'
 import { useExperimentalFeatures } from '../hooks/useExperimental'
@@ -50,10 +54,12 @@ const MAX_APP_MATCHES = 3
 const MAX_NODE_MATCHES = 5
 const MAX_TEMPLATE_MATCHES = 5
 const MAX_DOMAIN_MATCHES = 5
+const MAX_DNS_RECORD_MATCHES = 5
 const CAPPED_SEARCH_GROUPS: readonly (readonly [string, number])[] = [
   ['Nodes', MAX_NODE_MATCHES],
   ['Templates', MAX_TEMPLATE_MATCHES],
   ['Domains', MAX_DOMAIN_MATCHES],
+  ['DNS records', MAX_DNS_RECORD_MATCHES],
 ]
 const NO_HINT_KEYS = new Set(['action-create-app', 'action-templates'])
 const NEXT_THEME: Record<Theme, Theme> = {
@@ -96,6 +102,9 @@ export function CommandPalette({
   const currentApp = useRouterState({
     select: (st) => /^\/apps\/([^/]+)/.exec(st.location.pathname)?.[1],
   })
+  const currentDomain = useRouterState({
+    select: (st) => domainFromPath(st.location.pathname),
+  })
 
   // Both lists come from the shared query cache: they only refetch when
   // stale on open, never per keystroke (filtering is client-side).
@@ -110,6 +119,11 @@ export function CommandPalette({
     enabled: open,
   })
   const domainsQuery = useQuery({ ...domainsQueryOptions(), enabled: open })
+  const traffic = useTrafficPaletteItems({
+    domains: domainsQuery.data ?? [],
+    query,
+    currentDomain,
+  })
 
   React.useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -214,15 +228,7 @@ export function CommandPalette({
         run: go('/templates/$id', { id: template.id }),
       })
     }
-    for (const domain of domainsQuery.data ?? []) {
-      items.push({
-        key: `domain-${domain.domain}`,
-        label: domain.domain,
-        group: 'Domains',
-        icon: <GlobeIcon />,
-        run: go('/apps/$name/domains', { name: domain.service_name }),
-      })
-    }
+    items.push(...traffic.base)
     return items
   }, [
     navigate,
@@ -232,7 +238,7 @@ export function CommandPalette({
     databasesQuery.data,
     nodesQuery.data,
     templatesQuery.data,
-    domainsQuery.data,
+    traffic.base,
     onShowShortcuts,
     pageActions,
     experimental,
@@ -355,7 +361,13 @@ export function CommandPalette({
         )
       }
       if (appActions.length > 0) byGroup.set('App actions', appActions)
-      for (const item of fuzzyFilter(baseItems, q, (i) => i.label)) {
+      const matched = fuzzyFilter(
+        baseItems,
+        q,
+        (i) => i.label,
+        (i) => i.keywords,
+      )
+      for (const item of [...matched, ...traffic.search]) {
         byGroup.set(item.group, [...(byGroup.get(item.group) ?? []), item])
       }
       for (const [group, max] of CAPPED_SEARCH_GROUPS) {
@@ -378,6 +390,7 @@ export function CommandPalette({
     redeployApp,
     currentApp,
     experimental,
+    traffic.search,
   ])
 
   const results = React.useMemo(() => groups.flatMap((g) => g.items), [groups])
@@ -385,10 +398,7 @@ export function CommandPalette({
   const select = React.useCallback(
     (item: PaletteItem) => {
       const originalKey = item.key.replace(/^recent-/, '')
-      if (
-        !originalKey.startsWith('app-action-') &&
-        !originalKey.startsWith('suggest-')
-      ) {
+      if (isRecentEligible(originalKey)) {
         setRecentKeys(pushRecentKey(originalKey))
       }
       item.run()

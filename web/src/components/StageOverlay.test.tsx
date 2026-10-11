@@ -9,6 +9,9 @@ const navigate = vi.fn()
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigate,
+  useRouter: () => ({
+    routesByPath: { '/dns': {}, '/domains': {}, '/network/proxy': {} },
+  }),
 }))
 vi.mock('@/hooks/useExperimental', () => ({
   useExperimentalFeatures: () => experimentalOn,
@@ -137,7 +140,7 @@ describe('StageOverlay', () => {
     render(<StageOverlay open onOpenChange={vi.fn()} />)
     const group = screen.getByRole('group', { name: 'Go to' })
     expect(group.className).toContain('overflow-x-auto')
-    expect(group.children).toHaveLength(7)
+    expect(group.children).toHaveLength(9)
   })
 
   it('closes on Escape', async () => {

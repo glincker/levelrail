@@ -30,16 +30,29 @@ export function fuzzyScore(query: string, text: string): number | null {
   return score - t.length / 10
 }
 
-/** Filters to matching items and sorts best first; empty query keeps order. */
+// Keyword-only hits rank below label hits so an app name never outranks the
+// domain you typed.
+const KEYWORD_PENALTY = 30
+
+/**
+ * Filters to matching items and sorts best first; empty query keeps order.
+ * `getKeywords` adds a lower-ranked second chance (e.g. a domain's app name).
+ */
 export function fuzzyFilter<T>(
   items: readonly T[],
   query: string,
   getText: (item: T) => string,
+  getKeywords?: (item: T) => string | undefined,
 ): T[] {
   if (!query.trim()) return [...items]
   const scored: Array<{ item: T; score: number; index: number }> = []
   items.forEach((item, index) => {
-    const score = fuzzyScore(query, getText(item))
+    let score = fuzzyScore(query, getText(item))
+    if (score === null) {
+      const keywords = getKeywords?.(item)
+      const hit = keywords ? fuzzyScore(query, keywords) : null
+      score = hit === null ? null : hit - KEYWORD_PENALTY
+    }
     if (score !== null) scored.push({ item, score, index })
   })
   scored.sort((a, b) => b.score - a.score || a.index - b.index)

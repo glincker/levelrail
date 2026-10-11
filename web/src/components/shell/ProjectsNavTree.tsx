@@ -13,7 +13,12 @@ import { useProjectListOptional } from '@/queries/projects'
 import type { AppListEntry } from '@/types/appDetail'
 import type { ProjectResource } from '@/types/projectDetail'
 import { NavChevron, NavCollapsePanel } from './CollapsibleSection'
-import { isGlobalItemActive, resolveOpen, type GlobalNavItem } from './navModel'
+import {
+  isGlobalItemActive,
+  linkTarget,
+  resolveOpen,
+  type GlobalNavItem,
+} from './navModel'
 import { usePersistedToggles } from './usePersistedToggles'
 
 // Separate from GLOBAL_NAV_STORAGE_KEY (GlobalNav.tsx) on purpose: that
@@ -141,7 +146,7 @@ export function ProjectsNavItem({
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        render={<Link to={item.to} />}
+        render={<Link to={linkTarget(item)} />}
         isActive={isGlobalItemActive(pathname, item)}
         tooltip={item.label}
         className={projects.length > 0 ? 'pr-8' : undefined}

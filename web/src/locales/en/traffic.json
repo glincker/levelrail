@@ -1,0 +1,206 @@
+{
+  "status": {
+    "loading": "Loading status",
+    "label": {
+      "live": "Live",
+      "going_live": "Going live",
+      "propagating": "Propagating",
+      "waiting_for_dns": "Waiting for DNS",
+      "handled_by_proxy": "Handled by your proxy",
+      "needs_attention": "Needs attention",
+      "expiring_soon": "Expiring soon",
+      "paused": "Paused",
+      "not_set_up": "Not set up"
+    },
+    "reason": {
+      "runInProgress": "Levelrail is setting this domain up now.",
+      "maintenance": "Maintenance mode is on, visitors see the maintenance page.",
+      "certExpired": "The certificate has expired.",
+      "renewalStalled": "The certificate is not renewing.",
+      "acmeFailure": "The certificate authority could not issue a certificate.",
+      "resolvesElsewhere": "This domain points at a different server.",
+      "routeError": "The route for this domain could not be written.",
+      "externalProxy": "Your own proxy serves this domain, so Levelrail does not check its certificate.",
+      "routeMissing": "No route sends traffic for this domain to an app yet.",
+      "unconfigured": "Nothing is set up for this domain yet.",
+      "noCheck": "This domain has not been checked yet.",
+      "notResolving": "Add the record below at your DNS provider. This page checks again by itself.",
+      "propagating": "The record exists. Some resolvers have not seen it yet, which can take up to a few hours.",
+      "gettingCertificate": "Getting your certificate.",
+      "certExpiring": "The certificate expires soon and is not renewing healthily.",
+      "live": "This domain reaches your app over HTTPS.",
+      "livePrivate": "This domain reaches your app with a private certificate."
+    },
+    "action": {
+      "open_site": "Open site",
+      "view_progress": "View progress",
+      "check_again": "Check again",
+      "show_record": "Show record",
+      "show_proxy_setup": "Show proxy setup",
+      "fix": "Fix it",
+      "renew": "Renew now",
+      "turn_off": "Turn off",
+      "set_up": "Set up"
+    }
+  },
+  "age": {
+    "seconds": "{{count}} s",
+    "minutes": "{{count}} min",
+    "hours": "{{count}} h",
+    "days": "{{count}} d"
+  },
+  "steps": {
+    "state": {
+      "todo": "To do",
+      "active": "In progress",
+      "done": "Done",
+      "failed": "Failed",
+      "skipped": "Skipped"
+    },
+    "position": "Step {{current}} of {{total}}, {{state}}"
+  },
+  "copy": {
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyLabel": "Copy {{label}}",
+    "fallback": "Press Ctrl+C to copy the selected text."
+  },
+  "help": {
+    "why": "Why?",
+    "learnMore": "Learn more"
+  },
+  "confirm": {
+    "intro": "This will:",
+    "cancel": "Cancel",
+    "typeToConfirm": "Type {{name}} to confirm",
+    "kind": {
+      "create": "Create",
+      "update": "Update",
+      "delete": "Remove"
+    }
+  },
+  "diff": {
+    "setting": "Setting",
+    "before": "Before",
+    "after": "After",
+    "changed": "Changed",
+    "showUnchanged_one": "Show {{count}} unchanged",
+    "showUnchanged_other": "Show {{count}} unchanged",
+    "hideUnchanged": "Hide unchanged",
+    "empty": "Nothing changes.",
+    "none": "none"
+  },
+  "resolvers": {
+    "caption": "What each resolver answered",
+    "resolver": "Resolver",
+    "answer": "Answer",
+    "match": "Match",
+    "matches": "Matches",
+    "different": "Different",
+    "noAnswer": "No answer",
+    "lastChecked": "Last checked {{age}} ago",
+    "checkedJustNow": "Checked just now",
+    "recheck": "Check again",
+    "checking": "Checking...",
+    "empty": "No resolver has answered yet."
+  },
+  "cert": {
+    "label": "Certificate",
+    "none": "Issued automatically once DNS points here.",
+    "issuing": "Getting your certificate.",
+    "healthy_one": "Let's Encrypt, expires {{date}} (in {{count}} day). Renews by itself.",
+    "healthy_other": "Let's Encrypt, expires {{date}} (in {{count}} days). Renews by itself.",
+    "expiring_one": "Expires {{date}} (in {{count}} day) and is not renewing healthily.",
+    "expiring_other": "Expires {{date}} (in {{count}} days) and is not renewing healthily.",
+    "expired": "Expired {{date}}.",
+    "stalled": "Renewal stalled.",
+    "internal": "Private certificate, trusted after you enable HTTPS.",
+    "custom_one": "Your own certificate, expires {{date}} (in {{count}} day).",
+    "custom_other": "Your own certificate, expires {{date}} (in {{count}} days).",
+    "customExpired": "Your own certificate, expired {{date}}.",
+    "renew": "Renew now",
+    "useOwn": "Use my own certificate",
+    "replace": "Replace",
+    "acme": {
+      "open_port_80": "Let's Encrypt could not reach port 80 on this server. Open port 80 on this server.",
+      "fix_dns": "Let's Encrypt could not find this domain. Point its DNS at this server.",
+      "wait_rate_limit": "Let's Encrypt paused issuing for this domain. We try again later.",
+      "fix_caa": "A CAA record blocks Let's Encrypt. Add a CAA record that allows letsencrypt.org.",
+      "check_logs": "Let's Encrypt could not issue a certificate. Check the ingress logs."
+    }
+  },
+  "progress": {
+    "title": "Setting up {{domain}}",
+    "done": "{{domain}} is live",
+    "failed": "Setting up {{domain}} did not finish",
+    "elapsed": "Elapsed {{age}}",
+    "updated": "Updated {{age}} ago",
+    "undo": "Undo go live",
+    "openSite": "Open site",
+    "openDoctor": "Open doctor",
+    "retry": "Retry",
+    "dismiss": "Dismiss"
+  },
+  "empty": {
+    "domains": {
+      "title": "Add your first domain",
+      "description": "Point a domain at an app and Levelrail sets up DNS, HTTPS and the route.",
+      "action": "Add domain"
+    },
+    "noApps": {
+      "title": "Deploy an app first",
+      "description": "A domain sends traffic to an app."
+    },
+    "search": {
+      "title": "No domains match \"{{query}}\"",
+      "action": "Clear search"
+    },
+    "zones": {
+      "title": "Add a zone",
+      "description": "Zones let Levelrail create and fix DNS records for you."
+    },
+    "soon": {
+      "title": "Arriving soon",
+      "description": "This page is being built and will show up in a later release."
+    }
+  },
+  "nav": {
+    "traffic": "Traffic",
+    "domains": "Domains",
+    "dns": "DNS",
+    "proxy": "Proxy",
+    "apps": "Apps",
+    "domainsAttention_one": "{{count}} domain needs attention",
+    "domainsAttention_other": "{{count}} domains need attention",
+    "dnsAttention_one": "{{count}} zone not delegated",
+    "dnsAttention_other": "{{count}} zones not delegated",
+    "proxyAttention_one": "{{count}} route with errors",
+    "proxyAttention_other": "{{count}} routes with errors"
+  },
+  "palette": {
+    "addDomain": "Add domain",
+    "verify": "Verify {{domain}}",
+    "doctor": "Open doctor for {{domain}}",
+    "dnsRecordsFor": "DNS records for {{domain}}",
+    "domainSettings": "Domains settings",
+    "checked": "{{domain}} checked: {{result}}",
+    "checkResult": {
+      "connected": "DNS points here",
+      "propagating": "propagating",
+      "not_resolving": "waiting for DNS",
+      "resolves_elsewhere": "points at another server",
+      "unconfigured": "not set up"
+    }
+  },
+  "tab": {
+    "headers": "Headers",
+    "forwarding": "Forwarding",
+    "access": "Access",
+    "cache": "Cache",
+    "ports": "Ports",
+    "redirects": "Redirects",
+    "activity": "Activity",
+    "settings": "Settings",
+    "add": "Add zone"
+  }
+}

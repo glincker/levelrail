@@ -17,6 +17,7 @@ const listApps = vi.fn(() =>
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigate,
+  useRouter: () => ({ routesByPath: {} }),
   useRouterState: ({
     select,
   }: {

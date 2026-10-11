@@ -13,6 +13,7 @@ import { useReducedMotion } from '@/components/kit/useReducedMotion'
 import { useExperimentalFeatures } from '@/hooks/useExperimental'
 import { filterByFeature } from '@/lib/experimental'
 import { BASE_DOCS, GO_TARGETS } from '@/lib/shortcuts'
+import { useRouteAvailable } from '@/lib/routeAvailability'
 import { cn } from '@/lib/utils'
 
 interface Tile {
@@ -56,6 +57,7 @@ export function StageOverlay({
 
   const navigate = useNavigate()
   const experimental = useExperimentalFeatures()
+  const routeAvailable = useRouteAvailable()
   const reducedMotion = useReducedMotion()
   const tileRefs = React.useRef<(HTMLButtonElement | null)[]>([])
   const [activeTile, setActiveTile] = React.useState(0)
@@ -63,15 +65,17 @@ export function StageOverlay({
   const tiles = React.useMemo<Tile[]>(
     () =>
       filterByFeature(
-        Object.entries(GO_TARGETS).map(([key, target]) => ({
-          key,
-          to: target.to,
-          label: target.label,
-          feature: target.feature,
-        })),
+        Object.entries(GO_TARGETS)
+          .filter(([, t]) => !t.requiresRoute || routeAvailable(t.to))
+          .map(([key, target]) => ({
+            key,
+            to: target.to,
+            label: target.label,
+            feature: target.feature,
+          })),
         experimental,
       ),
-    [experimental],
+    [experimental, routeAvailable],
   )
 
   // Reset roving focus to the first tile every time the overlay opens.

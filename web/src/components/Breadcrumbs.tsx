@@ -15,8 +15,8 @@ interface BreadcrumbsProps {
   page?: string
 }
 
-const CRUMB_LINK_CLASS = 'text-muted-foreground hover:text-foreground'
-const CRUMB_CURRENT_CLASS = 'font-medium text-foreground'
+export const CRUMB_LINK_CLASS = 'text-muted-foreground hover:text-foreground'
+export const CRUMB_CURRENT_CLASS = 'font-medium text-foreground'
 
 function Separator() {
   return (
