@@ -201,7 +201,8 @@ type RequestBodyHandler struct {
 
 // HeaderOps is Caddy's headers.HeaderOps.
 type HeaderOps struct {
-	Set map[string][]string `json:"set,omitempty"`
+	Set    map[string][]string `json:"set,omitempty"`
+	Delete []string            `json:"delete,omitempty"`
 }
 
 // ProxyHeaders is reverse_proxy's headers block.

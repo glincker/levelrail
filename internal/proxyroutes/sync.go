@@ -19,9 +19,33 @@ import (
 
 // Route targets.
 const (
-	TargetApp       = "app"
-	TargetDashboard = "dashboard"
+	TargetApp        = "app"
+	TargetDashboard  = "dashboard"
+	TargetStandalone = "standalone"
 )
+
+// StandaloneLister is optional on SyncStore: standalone domains reach the
+// ingress through the managing proxy like app domains do.
+type StandaloneLister interface {
+	ListStandaloneDomains(ctx context.Context) ([]store.StandaloneDomain, error)
+}
+
+// WithStandalone appends standalone domains not already listed, sorted.
+func WithStandalone(targets []Target, domains []store.StandaloneDomain) []Target {
+	seen := make(map[string]bool, len(targets))
+	for _, t := range targets {
+		seen[strings.ToLower(t.Domain)] = true
+	}
+	for _, d := range domains {
+		if d.Domain == "" || seen[strings.ToLower(d.Domain)] {
+			continue
+		}
+		seen[strings.ToLower(d.Domain)] = true
+		targets = append(targets, Target{Domain: d.Domain, Kind: TargetStandalone})
+	}
+	sort.Slice(targets, func(i, j int) bool { return targets[i].Domain < targets[j].Domain })
+	return targets
+}
 
 // Per-domain file states.
 const (
@@ -166,7 +190,15 @@ func (s *Syncer) Plan(ctx context.Context) (Plan, error) {
 		p.DirErr = errors.New("no dynamic configuration directory is set")
 	}
 	path := PathFromSettings(settings.UpstreamHost, s.Unit)
-	for _, t := range Targets(services, sites, ingress.PrimaryDomain) {
+	targets := Targets(services, sites, ingress.PrimaryDomain)
+	if sl, ok := s.Store.(StandaloneLister); ok {
+		extra, err := sl.ListStandaloneDomains(ctx)
+		if err != nil {
+			return Plan{}, fmt.Errorf("proxyroutes: standalone domains: %w", err)
+		}
+		targets = WithStandalone(targets, extra)
+	}
+	for _, t := range targets {
 		p.Items = append(p.Items, s.render(settings, path, t))
 	}
 	return p, nil

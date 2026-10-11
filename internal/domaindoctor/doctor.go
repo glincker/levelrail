@@ -132,6 +132,16 @@ type Facts struct {
 	PortHolders           []PortHolder
 	Cert                  *CertFacts
 	ACMEFailure           *ACMEFailureFacts
+	// Target is set for a standalone domain, replacing the app check.
+	Target *TargetFacts
+}
+
+// TargetFacts is a standalone domain's proxy target and whether this server
+// could connect to it just now.
+type TargetFacts struct {
+	Display   string
+	Reachable bool
+	Detail    string
 }
 
 // Options bound the run.

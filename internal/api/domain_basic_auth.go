@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -73,6 +74,9 @@ func (rt *Router) toDomainBasicAuthResource(ctx context.Context, domain string, 
 // request: the protection itself is domain-wide, keyed by
 // store.DomainBasicAuth.Domain, not by service.
 func (rt *Router) appOwnsDomain(ctx context.Context, appName, domain string) (bool, error) {
+	if appName == standalone.Scope {
+		return rt.standaloneOwns(ctx, domain)
+	}
 	svc, err := rt.apps.GetDesiredService(ctx, appName)
 	if err != nil {
 		return false, err

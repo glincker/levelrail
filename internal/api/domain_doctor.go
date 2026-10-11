@@ -124,7 +124,7 @@ func (rt *Router) doctorFacts(ctx context.Context, svc *store.DesiredService, do
 func (rt *Router) handleDomainDoctor(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	domain := strings.ToLower(strings.TrimSuffix(strings.TrimSpace(r.PathValue("domain")), "."))
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	svc, target, err := rt.doctorSubject(r.Context(), name, domain)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -134,15 +134,17 @@ func (rt *Router) handleDomainDoctor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	held := rt.heldBackDomains(r.Context())
-	if domain == "" || !rt.domainBelongsTo(r.Context(), svc, domain, held) {
+	if domain == "" || (target == nil && !rt.domainBelongsTo(r.Context(), svc, domain, held)) {
 		writeError(w, http.StatusNotFound, "domain not found on this app")
 		return
 	}
+	facts := rt.doctorFacts(r.Context(), svc, domain, held)
+	facts.Target = target
 	probes := domaindoctor.DefaultProbes()
 	if rt.traffic != nil && rt.traffic.doctorProbes != nil {
 		probes = *rt.traffic.doctorProbes
 	}
-	rep := domaindoctor.Run(r.Context(), rt.doctorFacts(r.Context(), svc, domain, held), probes, domaindoctor.Options{
+	rep := domaindoctor.Run(r.Context(), facts, probes, domaindoctor.Options{
 		Timeout:        envDuration(envDomainDoctorTimeout, defaultDomainDoctorTimeout),
 		ProbeTimeout:   envDuration(envDomainDoctorProbeTimeout, defaultDomainDoctorProbe),
 		ExpiryWarnDays: envInt(envTrafficCertExpiryDays, defaultTrafficCertDays),

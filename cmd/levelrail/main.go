@@ -2412,6 +2412,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDeployApprovalTTL(deployApprovalTTL(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithPublicHostSource(publicHostSource()),
+		api.WithStandaloneSafety(standaloneSafety()),
 		api.WithHTTPSEnableLimits(apiRateLimitRPM(logger, "APP_ACME_MAX_ATTEMPTS_PER_HOUR", 0), acmePendingTimeout(logger)),
 		api.WithACMEDefaultDirectory(acmeDefaultDirectory()),
 		api.WithDeployLogQuerier(telemetryDB),

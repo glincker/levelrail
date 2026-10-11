@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
+	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -211,6 +212,9 @@ func (rt *Router) counterpartSteps(ctx context.Context, r *http.Request, res *go
 		zoneRel, zoneKnown = dnsrecords.RelativeName(domain, t.Zone), true
 	}
 	partner, isWWW, ok := counterpartHost(domain, zoneRel, zoneKnown)
+	if ok && app == standalone.Scope {
+		return []goLiveStep{{ID: stepCounterpart, State: stepSkipped, Detail: "standalone domains do not attach " + partner + " automatically; add it as its own standalone domain"}}, domain
+	}
 	if !ok {
 		return []goLiveStep{{ID: stepCounterpart, State: stepSkipped, Detail: "this host is neither an apex domain nor a www host"}}, domain
 	}

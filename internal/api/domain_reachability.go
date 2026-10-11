@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/domaindoctor"
+	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -184,7 +185,7 @@ func (rt *Router) heldBackDomains(ctx context.Context) map[string]bool {
 }
 
 func (rc reachabilityContext) isRunning(app string) bool {
-	if rc.running == nil {
+	if rc.running == nil || app == standalone.Scope {
 		return true
 	}
 	return rc.running[app]
@@ -213,7 +214,11 @@ func (rt *Router) annotateDomainReachability(ctx context.Context, rows []domainR
 	}
 	rc := rt.loadReachability(ctx, nil)
 	for i := range rows {
-		rows[i].ReachableURL, rows[i].ReachableReason = rc.forDomain(rows[i].Domain, rows[i].ServiceName)
+		app := rows[i].ServiceName
+		if rows[i].Kind == domainKindStandalone {
+			app = standalone.Scope
+		}
+		rows[i].ReachableURL, rows[i].ReachableReason = rc.forDomain(rows[i].Domain, app)
 	}
 }
 

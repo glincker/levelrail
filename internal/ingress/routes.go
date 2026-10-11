@@ -76,6 +76,9 @@ type ProxyRoute struct {
 	LB *LBRoute
 	// Policy, if non-nil, adds the domain's traffic controls (policy_*.go).
 	Policy *RoutePolicy
+	// Upstream, if non-nil, shapes a standalone domain's single backend.
+	// Ignored when LB is set.
+	Upstream *UpstreamOptions
 }
 
 // ErrorPage is one status-code-to-body mapping for a domain
@@ -528,6 +531,10 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		// Traffic controls, backend side: cache and path forwarders sit
 		// right before the reverse proxy, behind auth and WAF.
 		handle = r.Policy.wrapBackend(r.Hosts[0], handle)
+		if r.Upstream != nil && (r.LB == nil || len(r.LB.Upstreams) == 0) {
+			// After forwarders so their path rules match the original path.
+			handle = r.Upstream.apply(handle)
+		}
 		if r.BasicAuth != nil {
 			// Prepended, not appended: Caddy runs a route's handlers in
 			// order, so authentication must short-circuit with 401 before
