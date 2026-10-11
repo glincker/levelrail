@@ -101,17 +101,7 @@ export function LoginScreen({
   if (sessionLink) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6 px-4">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <div
-            aria-hidden="true"
-            className="flex size-10 items-center justify-center rounded-lg text-base font-semibold shadow-[0_0_0_4px_rgb(245_158_11_/_0.12)]"
-          >
-            <BrandMarkGlyph />
-          </div>
-          <span className="text-sm font-medium text-foreground">
-            {brandLabel}
-          </span>
-        </div>
+        <AuthBrandMark label={brandLabel} />
         <Card className="w-full max-w-sm shadow-sm">
           <CardContent className="space-y-4 pt-6">
             {consumeSessionLink.isError ? (
@@ -141,59 +131,43 @@ export function LoginScreen({
   }
 
   return (
-    <div className="relative flex min-h-[70vh] flex-col items-center justify-center gap-6 overflow-hidden px-4">
-      {/* Decorative only: a soft amber wash reusing the docs site's own
-          "rail signal" brand accent, scoped to this page, not the
-          app-wide shadcn tokens. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem]"
-        style={{
-          background:
-            'radial-gradient(60% 55% at 50% 0%, rgb(245 158 11 / 0.12), transparent 70%)',
-        }}
-      />
+    <div className="relative flex min-h-[70vh] flex-col items-center justify-center gap-6 px-4 py-10">
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      <div className="flex flex-col items-center gap-2 text-center">
-        <div
-          aria-hidden="true"
-          className="flex size-10 items-center justify-center rounded-lg text-base font-semibold shadow-[0_0_0_4px_rgb(245_158_11_/_0.12)]"
-        >
-          <BrandMarkGlyph />
-        </div>
-        <span className="text-sm font-medium text-foreground">
-          {brandLabel}
-        </span>
-      </div>
+      <AuthBrandMark label={brandLabel} />
       <div className="w-full max-w-sm">
         <InsecureConnectionBanner />
       </div>
       <OAuthErrorBanner />
       {sessionEnded ? (
-        <Alert className="w-full max-w-sm" role="status">
+        <Alert
+          className="w-full max-w-sm border-tone-info-border bg-tone-info-soft text-tone-info"
+          role="status"
+        >
           <SignOutIcon />
           <AlertDescription>{t('sessionEnded.notice')}</AlertDescription>
         </Alert>
       ) : null}
       <Card className="w-full max-w-sm shadow-sm">
         <CardHeader>
-          <CardTitle>
-            {isRegister ? 'Set up the admin account' : 'Sign in'}
+          <CardTitle role="heading" aria-level={1}>
+            {isRegister ? t('login.setupTitle') : t('login.signInTitle')}
           </CardTitle>
           <CardDescription>
-            {isRegister
-              ? 'Create the first account for this instance. Registration is for the first account only.'
-              : 'Enter your credentials to continue.'}
+            {isRegister ? t('login.setupHint') : t('login.signInHint')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {showRegisterTab ? (
             <Tabs value={tab} onValueChange={handleTabChange}>
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="sign-in">Sign in</TabsTrigger>
-                <TabsTrigger value="register">Set up admin account</TabsTrigger>
+                <TabsTrigger value="sign-in">
+                  {t('login.signInTab')}
+                </TabsTrigger>
+                <TabsTrigger value="register">
+                  {t('login.setupTab')}
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="sign-in" className="space-y-3">
                 {signInContent}
@@ -270,6 +244,20 @@ export function LoginScreen({
           </p>
         </div>
       ) : null}
+    </div>
+  )
+}
+
+function AuthBrandMark({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2 text-center">
+      <div
+        aria-hidden="true"
+        className="flex size-11 items-center justify-center rounded-lg border border-border bg-card p-2 text-base font-semibold text-foreground"
+      >
+        <BrandMarkGlyph />
+      </div>
+      <span className="text-sm font-medium text-foreground">{label}</span>
     </div>
   )
 }

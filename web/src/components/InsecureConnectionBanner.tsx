@@ -11,7 +11,7 @@ export function InsecureConnectionBanner() {
     return null
   }
   return (
-    <Alert className="rounded-none border-x-0 border-t-0 border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+    <Alert className="rounded-none border-x-0 border-t-0 border-tone-warning-border bg-tone-warning-soft text-tone-warning">
       <LockOpenIcon />
       <AlertTitle>This connection is not encrypted</AlertTitle>
       <AlertDescription>

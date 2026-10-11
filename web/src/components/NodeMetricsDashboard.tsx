@@ -7,6 +7,7 @@ import { ViewInGrafanaLink } from './ViewInGrafanaLink'
 import { useNodeMetricSeries } from '../queries/nodeMetrics'
 import type { NodeMetricName } from '../types/nodeMetrics'
 import { type ChartUnit, useMergedChartQuery } from '../lib/metricChart'
+import { chartSlot } from '../lib/chartPalette'
 import {
   DEFAULT_TIME_RANGE_KEY,
   resolveTimeRange,
@@ -67,7 +68,7 @@ const NODE_CHART_GROUPS: NodeChartGroupConfig[] = [
   {
     title: 'CPU',
     unit: 'percent',
-    primary: { metric: 'cpu_percent', label: 'CPU', color: '#0ea5e9' },
+    primary: { metric: 'cpu_percent', label: 'CPU', color: chartSlot.cpu },
   },
   {
     title: 'Memory',
@@ -75,7 +76,7 @@ const NODE_CHART_GROUPS: NodeChartGroupConfig[] = [
     primary: {
       metric: 'memory_usage_bytes',
       label: 'Usage',
-      color: '#0ea5e9',
+      color: chartSlot.cpu,
     },
   },
   {
@@ -84,29 +85,41 @@ const NODE_CHART_GROUPS: NodeChartGroupConfig[] = [
     primary: {
       metric: 'network_rx_bytes',
       label: 'Received',
-      color: '#22c55e',
+      color: chartSlot.network,
     },
-    secondary: { metric: 'network_tx_bytes', label: 'Sent', color: '#a855f7' },
+    secondary: {
+      metric: 'network_tx_bytes',
+      label: 'Sent',
+      color: chartSlot.requests,
+    },
   },
   {
     title: 'Disk I/O',
     unit: 'bytes',
-    primary: { metric: 'disk_read_bytes', label: 'Read', color: '#22c55e' },
+    primary: {
+      metric: 'disk_read_bytes',
+      label: 'Read',
+      color: chartSlot.network,
+    },
     secondary: {
       metric: 'disk_write_bytes',
       label: 'Write',
-      color: '#a855f7',
+      color: chartSlot.requests,
     },
   },
   {
     title: 'Disk space',
     unit: 'bytes',
     hostLevelSubtitle: diskPercentSubtitle,
-    primary: { metric: 'disk_used_bytes', label: 'Used', color: '#f97316' },
+    primary: {
+      metric: 'disk_used_bytes',
+      label: 'Used',
+      color: chartSlot.memory,
+    },
     secondary: {
       metric: 'disk_total_bytes',
       label: 'Total',
-      color: '#64748b',
+      color: chartSlot.disk,
     },
   },
   {
@@ -116,12 +129,12 @@ const NODE_CHART_GROUPS: NodeChartGroupConfig[] = [
     primary: {
       metric: 'memory_available_bytes',
       label: 'Available',
-      color: '#f97316',
+      color: chartSlot.memory,
     },
     secondary: {
       metric: 'memory_total_bytes',
       label: 'Total',
-      color: '#64748b',
+      color: chartSlot.disk,
     },
   },
 ]

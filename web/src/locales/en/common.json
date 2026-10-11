@@ -179,5 +179,13 @@
       "label": "Quick navigation (hold L)"
     },
     "newApp": "New app"
+  },
+  "login": {
+    "signInTitle": "Sign in",
+    "signInHint": "Enter your credentials to continue.",
+    "setupTitle": "Set up the admin account",
+    "setupHint": "Create the first account for this instance. Registration is for the first account only.",
+    "signInTab": "Sign in",
+    "setupTab": "Set up admin account"
   }
 }

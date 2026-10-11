@@ -50,9 +50,9 @@ export function FirstAppStatus({
 
   if (phase === 'live') {
     return (
-      <div className="space-y-3 rounded-lg border border-green-600/30 bg-green-50 p-4 dark:bg-green-950/40">
+      <div className="space-y-3 rounded-lg border border-tone-success-border bg-tone-success-soft p-4">
         <p className="flex items-center gap-2 text-base font-semibold text-foreground">
-          <CheckCircleIcon className="size-5 text-green-600 dark:text-green-400" />
+          <CheckCircleIcon className="size-5 text-tone-success" />
           It&apos;s live
         </p>
         <p className="text-sm text-muted-foreground">

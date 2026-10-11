@@ -104,7 +104,7 @@ export function ServerCheckStep({ onContinue, pending }: StepProps) {
           </AlertDescription>
         </Alert>
       ) : (
-        <div className="setup-hero flex flex-col gap-5 rounded-2xl border border-border p-5 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-5 rounded-lg border border-border bg-card p-5 sm:flex-row sm:items-center">
           <ReadinessRing
             score={shown ? readiness.score : null}
             verdict={shown ? readiness.verdict : 'attention'}

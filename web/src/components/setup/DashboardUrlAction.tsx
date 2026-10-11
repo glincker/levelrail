@@ -14,7 +14,7 @@ export function DashboardUrlAction({ httpsUrl }: { httpsUrl: string }) {
   if (data?.dashboard_url === httpsUrl) {
     return (
       <p className="flex items-center gap-1.5 text-xs text-foreground">
-        <LockKeyIcon className="size-4 text-green-600 dark:text-green-400" />
+        <LockKeyIcon className="size-4 text-tone-success" />
         {httpsUrl} is the dashboard URL. Sign-in over plain HTTP is off.
       </p>
     )

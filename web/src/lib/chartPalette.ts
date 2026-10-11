@@ -37,3 +37,13 @@ export function seriesColor(index: number): string {
   const n = chartSeries.length
   return chartSeries[((index % n) + n) % n] ?? chartSeries[0]
 }
+
+// Recharts default tooltips; the custom one in MetricChartCard uses classes.
+export const chartTooltipStyle = {
+  backgroundColor: 'var(--popover)',
+  color: 'var(--popover-foreground)',
+  border: '1px solid var(--border)',
+  borderRadius: 6,
+  fontSize: 12,
+  fontVariantNumeric: 'tabular-nums',
+} as const
