@@ -293,10 +293,15 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 | `slo_burn` | one app | error budget burn rate over the app's ingress request metrics, see [SLO burn-rate alerts](#slo-burn-rate-alerts) | `slo` (target, optional latency limit) |
 | `version_skew` | platform-wide | the running build is behind the latest release on the configured update channel | none required |
 | `log_archive_stale` | platform-wide | a log archive policy's last run failed, or it has not succeeded within a maximum age (see [log archive](/log-archive)) | `for_duration` (reused as the maximum age, default three intervals, at least 2h) |
+| `cert_expiring` | platform-wide, or one hostname | any certificate whose expiry falls within the window | `threshold` (days, default 14), `resource_id` `domain:<name>` to watch one hostname |
+| `cert_renewal_stalled` | platform-wide | a renewal that has not moved the certificate's expiry for the stalled threshold (`APP_CERT_RENEWAL_STALLED_THRESHOLD`, default 6h), or an ACME failure that has persisted that long | none required |
+| `domain_not_resolving` | every domain, or one app's | a domain whose DNS check has found no record for the whole window | `for_duration` (default 30m) |
 
 :::
 
-**Platform-wide rule kinds** (`cert_expiry`, `patch_status`, `node_disk_space`, `node_resource_usage`, `node_offline`, `node_cert_expiring`, `control_plane_backup_stale`, `log_archive_stale`)
+Three more domain kinds are planned and not evaluated yet: `dns_drift` (records differ from the last known state), `zone_not_delegated` (a zone's delegation is not active after a window) and `proxy_route_error` (a proxy route write or reachability check fails). A rule with one of these kinds is rejected today.
+
+**Platform-wide rule kinds** (`cert_expiry`, `cert_expiring`, `cert_renewal_stalled`, `patch_status`, `node_disk_space`, `node_resource_usage`, `node_offline`, `node_cert_expiring`, `control_plane_backup_stale`, `log_archive_stale`)
 
 These are created through an app's `/apps/{name}/alerts` URL, but that URL only decides where the rule appears in that app's list. The rule evaluates every certificate, node, or disk across the entire control plane regardless of which app created it.
 

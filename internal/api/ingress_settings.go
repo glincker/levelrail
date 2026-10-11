@@ -427,6 +427,10 @@ type domainResource struct {
 	// ACMEFailure is the CA's last error for this hostname, so a domain
 	// stuck without a certificate shows why on the list.
 	ACMEFailure *acmeFailureResource `json:"acme_failure,omitempty"`
+	// ReachableURL is the link a visitor can open now; when empty,
+	// ReachableReason says why (stopped, not_resolving, not_routed, held_back).
+	ReachableURL    string `json:"reachable_url,omitempty"`
+	ReachableReason string `json:"reachable_reason,omitempty"`
 }
 
 // handleListDomains handles GET /api/v1/domains: every service_domains
@@ -496,6 +500,7 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	out = append(out, rt.automaticDomains(r, canSee)...)
+	rt.annotateDomainReachability(r.Context(), out)
 	writeJSON(w, http.StatusOK, out)
 }
 

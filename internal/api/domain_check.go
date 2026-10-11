@@ -279,6 +279,7 @@ func queryPublicResolvers(ctx context.Context, host string) []resolverResult {
 // result cache so a manual "Check now" always asks DNS again.
 func (rt *Router) runDomainCheckOpts(ctx context.Context, domain, expectedHost string, inferred, refresh bool) domainCheckResponse {
 	resp := domainCheckResponse{Domain: domain, ExpectedHost: expectedHost, HostInferred: inferred, CheckedAt: time.Now().UTC().Format(time.RFC3339)}
+	defer func() { rt.traffic.recordCheck(domain, resp.Status) }()
 	if expectedHost == "" {
 		resp.Status = domainCheckStatusUnconfigured
 		return resp

@@ -597,7 +597,7 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 61 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+::: details 62 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -671,6 +671,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/domains/{domain}/go-live | AbilityRoot | handleGoLiveRun |
 | POST | /api/v1/apps/{name}/domains/go-live/plan | AbilityWrite | handleGoLivePlan |
 | POST | /api/v1/settings/ingress/apps-base-domain/backfill | AbilityRoot | handleBackfillBaseDomain |
+| POST | /api/v1/apps/{name}/domains/{domain}/doctor | AbilityRead | handleDomainDoctor |
 
 :::
 
@@ -702,6 +703,7 @@ Endpoints for:
 | GET | /api/v1/domains | AbilityRead | handleListDomains |
 | GET | /api/v1/domains/automation/runs | AbilityRead | handleListAutomationRuns |
 | POST | /api/v1/domains/automation/runs/{id}/undo | AbilityRoot | handleUndoAutomationRun |
+| GET | /api/v1/domains/{domain}/activity | AbilityRead | handleDomainActivity |
 
 ## Built-in Container Registry
 
@@ -1070,6 +1072,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/dns/health-checks | AbilityRead | handleListDNSHealthChecks |
 | POST | /api/v1/dns/health-checks | AbilityRoot | handleCreateDNSHealthCheck |
 | DELETE | /api/v1/dns/health-checks/{id} | AbilityRoot | handleDeleteDNSHealthCheck |
+| GET | /api/v1/traffic/summary | AbilityRead | handleTrafficSummary |
 
 ## See also
 

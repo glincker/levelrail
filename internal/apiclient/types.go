@@ -489,6 +489,9 @@ type DomainResource struct {
 	ServiceName string `json:"service_name"`
 	// Automatic marks a generated sslip.io hostname rather than a configured domain.
 	Automatic bool `json:"automatic,omitempty"`
+	// ReachableURL is the link to open; ReachableReason says why it is empty.
+	ReachableURL    string `json:"reachable_url,omitempty"`
+	ReachableReason string `json:"reachable_reason,omitempty"`
 }
 
 // CloudflareDNSResource mirrors internal/api's cloudflareDNSResource
@@ -834,11 +837,12 @@ type EnvironmentDomainSet struct {
 
 // AppEnvironmentDomains mirrors internal/api's appEnvironmentDomainsResource.
 type AppEnvironmentDomains struct {
-	App                 string                 `json:"app"`
-	ActiveEnvironmentID string                 `json:"active_environment_id,omitempty"`
-	DefaultDomains      []string               `json:"default_domains"`
-	RoutedDomains       []string               `json:"routed_domains"`
-	Environments        []EnvironmentDomainSet `json:"environments"`
+	App                 string                        `json:"app"`
+	ActiveEnvironmentID string                        `json:"active_environment_id,omitempty"`
+	DefaultDomains      []string                      `json:"default_domains"`
+	RoutedDomains       []string                      `json:"routed_domains"`
+	Environments        []EnvironmentDomainSet        `json:"environments"`
+	Reachability        map[string]DomainReachability `json:"reachability,omitempty"`
 }
 
 // CloneAppRequest mirrors internal/api's cloneAppRequest
@@ -3215,6 +3219,8 @@ type ListAuditLogOptions struct {
 	Search     string // case-insensitive substring across actor, ability, method, path, remote addr
 	FailedOnly bool   // only entries with status_code >= 400
 	Agent      string // only entries made with a token labeled with this agent name
+	Resource   string // "domain:<name>", "zone:<name>" or "app:<name>"
+	Actions    string // comma separated action prefixes, e.g. "dns_record.,domain."
 }
 
 // PurgeAuditLogResult is POST /api/v1/audit-log/purge's response shape
