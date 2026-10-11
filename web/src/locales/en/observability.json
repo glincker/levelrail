@@ -131,6 +131,9 @@
     "showing": "Showing the last {{shown}} of {{total}} lines.",
     "linesLabel": "Last log lines of the failing container"
   },
+  "budgetThreshold": {
+    "hint": "Fires while any project or team budget (Usage and cost) has reached its warning level, gone over its limit, or is forecast to overrun this month. It notifies again only when a new level is crossed."
+  },
   "alerts": {
     "noChannelWarning": "No notification channel is set, so this rule will fire without notifying anyone. Choose a channel above, or connect one in Settings > Notification channels."
   }

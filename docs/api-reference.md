@@ -1220,6 +1220,12 @@ Routes that do not fit an existing group.
 | POST | /api/v1/resource-advisor/findings/{id}/dismiss | AbilityWrite | handleResourceAdvisorState |
 | POST | /api/v1/resource-advisor/findings/{id}/snooze | AbilityWrite | handleResourceAdvisorState |
 | POST | /api/v1/resource-advisor/findings/{id}/restore | AbilityWrite | handleResourceAdvisorState |
+| GET | /api/v1/usage/report | AbilityRead | handleUsageReport |
+| GET | /api/v1/usage/settings | AbilityRoot | handleGetUsageSettings |
+| PUT | /api/v1/usage/settings | AbilityRoot | handlePutUsageSettings |
+| GET | /api/v1/usage/budgets | AbilityRead | handleListUsageBudgets |
+| PUT | /api/v1/usage/budgets | AbilityWrite | handlePutUsageBudget |
+| DELETE | /api/v1/usage/budgets/{id} | AbilityWrite | handleDeleteUsageBudget |
 
 ## See also
 

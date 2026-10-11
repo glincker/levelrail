@@ -476,6 +476,7 @@ type Router struct {
 	migrationHub                 MigrationHubStore                                     // always set, server migration hub sessions
 	appImports                   AppImportStore                                        // always set, guided app import sessions
 	appImportLive                *appImportState                                       // in-memory source tokens and discoveries
+	usageCost                    usageCostState                                        // cost showback rollup lock and live-day cache, zero value ready
 	hubState                     *hubState                                             // in-memory source passwords and running sessions
 	advisor                      *advisorCache                                         // resource advisor findings, cached for a short TTL
 	externalDatabases            ExternalDatabaseStore                                 // always set, databases connected but not run

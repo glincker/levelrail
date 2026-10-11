@@ -44,6 +44,7 @@ export type AlertRuleKind =
   | 'log_archive_stale'
   | 'slo_burn'
   | 'version_skew'
+  | 'budget_threshold'
 
 export type SloObjective = 'availability' | 'latency'
 

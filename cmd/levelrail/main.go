@@ -1023,6 +1023,8 @@ func run(logger *slog.Logger) error {
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
 	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
+	alertingEngine.SetBudgets(apiRouter)
+	go runUsageRollup(ctx, apiRouter)
 	alertingEngine.SetChanges(changes.New(db, db, db, logger), alertDashboardLink())
 	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))
 	go func() {

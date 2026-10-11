@@ -194,6 +194,7 @@ const sidebarGroups = [
           { text: 'Tags', link: '/tags' },
           { text: 'Command palette', link: '/command-palette' },
           { text: 'Cost estimate', link: '/cost-estimate' },
+          { text: 'Usage and cost', link: '/usage-and-cost' },
           { text: 'Resource advisor (beta)', link: '/resource-advisor' },
           { text: 'Integrations', link: '/integrations' },
           { text: 'Rolling back a release', link: '/rollback' },
