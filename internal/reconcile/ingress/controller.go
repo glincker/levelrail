@@ -660,6 +660,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: get ingress settings: %w", err)
 	}
+	if settings.TLSTerminatedUpstream {
+		ingress.DefaultACMEFailures().ClearAll()
+	}
 	authByDomain, err := c.domainBasicAuthByDomain(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain basic auth: %w", err)

@@ -1,4 +1,5 @@
 import type { CertificateStatus } from '../queries/certificates'
+import type { Domain } from '../queries/domains'
 
 // Shared between DomainRow.tsx (centralized domains list) and
 // DomainEditor.tsx (per-app guided add flow), both render the same
@@ -22,6 +23,41 @@ export function isInternalCert(
     cert.source === 'acme' &&
     /local authority|internal/i.test(cert.issuer ?? '')
   )
+}
+
+// isProxyManagedCert is true when a fronting proxy, not this server, issues
+// and renews the certificate visitors receive.
+export function isProxyManagedCert(
+  cert: Pick<CertificateStatus, 'source' | 'tls_owner' | 'managed_by'>,
+): boolean {
+  return (
+    cert.managed_by === 'proxy' ||
+    cert.source === 'proxy' ||
+    cert.tls_owner === 'proxy'
+  )
+}
+
+// effectiveDomainCert is the certificate a domain row should describe: for a
+// proxy-owned hostname only what the proxy serves, never a stored internal
+// certificate visitors do not receive.
+export function effectiveDomainCert(
+  domain: Pick<Domain, 'domain' | 'tls_owner' | 'proxy_certificate'>,
+  stored?: CertificateStatus,
+): CertificateStatus | undefined {
+  if (domain.tls_owner !== 'proxy') return stored
+  if (stored && isProxyManagedCert(stored)) return stored
+  const served = domain.proxy_certificate
+  if (!served) return undefined
+  return {
+    domain: domain.domain,
+    issuer: served.issuer,
+    not_before: '',
+    not_after: served.not_after,
+    status: served.status,
+    renewal: 'ok',
+    source: 'proxy',
+    tls_owner: 'proxy',
+  }
 }
 
 export const CERT_RENEWAL_STALLED_HINT =

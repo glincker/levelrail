@@ -72,6 +72,9 @@ type certificateStatus struct {
 	// ACMEFailure is the CA's last error for Domain when its most recent
 	// issue or renewal attempt failed.
 	ACMEFailure *acmeFailureResource `json:"acme_failure,omitempty"`
+	// TLSOwner is who terminates TLS for Domain: acme, internal, proxy or
+	// custom. Source is "proxy" when this row is the proxy's own certificate.
+	TLSOwner string `json:"tls_owner"`
 }
 
 // CertObservationSource lists the expiry observations kind=cert_expiry
@@ -127,9 +130,10 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	snap := rt.tlsSnapshot(r.Context())
 	out := make([]certificateStatus, 0, len(infos))
 	for _, info := range infos {
-		if !certVisible(info.Domain, info.SANs, owners, canSee) {
+		if !certVisible(info.Domain, info.SANs, owners, canSee) || snap.Suppressed(info.Domain) {
 			continue
 		}
 		source := "acme"
@@ -147,9 +151,11 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 			Apps:      owners[strings.ToLower(info.Domain)],
 			Source:    source,
 
-			ACMEFailure: acmeFailureFor(info.Domain),
+			ACMEFailure: acmeFailureIn(snap, info.Domain),
+			TLSOwner:    string(snap.Owner(info.Domain)),
 		})
 	}
+	out = append(out, rt.proxyCertificateRows(snap, owners, canSee, time.Now())...)
 	writeJSON(w, http.StatusOK, out)
 }
 

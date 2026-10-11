@@ -108,4 +108,38 @@ describe('DomainRow', () => {
     )
     expect(screen.getByText(/open ports 80 and 443/i)).toBeInTheDocument()
   })
+
+  describe('when a proxy owns TLS', () => {
+    const staleFailure = {
+      error: 'tls: unrecognized name',
+      renewal: false,
+      at: '2026-10-10T00:00:00Z',
+      reason: 'other_proxy',
+      action: 'other_proxy' as const,
+    }
+
+    it('hides the stale ACME failure and shows the proxy certificate', () => {
+      renderRow(
+        makeDomain({
+          tls_owner: 'proxy',
+          acme_failure: staleFailure,
+          proxy_certificate: {
+            issuer: 'R11',
+            not_after: '2027-01-05T00:00:00Z',
+            status: 'healthy',
+          },
+        }),
+      )
+      expect(screen.queryByText(/answers port 80/i)).not.toBeInTheDocument()
+      expect(screen.queryByText('Request failed')).not.toBeInTheDocument()
+      expect(screen.getByText('Healthy')).toBeInTheDocument()
+      expect(screen.getByText(/via your proxy/i)).toBeInTheDocument()
+    })
+
+    it('says the proxy manages it when the certificate is not known yet', () => {
+      renderRow(makeDomain({ tls_owner: 'proxy', acme_failure: staleFailure }))
+      expect(screen.getByText('Managed by your proxy')).toBeInTheDocument()
+      expect(screen.queryByText(/answers port 80/i)).not.toBeInTheDocument()
+    })
+  })
 })

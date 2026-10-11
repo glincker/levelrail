@@ -14,6 +14,7 @@ import type {
   ListeningPorts,
 } from '../queries/domainWizard'
 import { DnsProviderBadge } from './DnsProviderBadge'
+import { ProxyManagedCertNote } from './ProxyManagedCertNote'
 
 export function WizardStep({
   index,
@@ -153,7 +154,11 @@ export function CertificateStepBody({
           </AlertDescription>
         </Alert>
       )}
-      <DnsProviderBadge provider={provider} />
+      {path === 'upstream-proxy' ? (
+        <ProxyManagedCertNote certificate={check?.proxy_certificate} />
+      ) : (
+        <DnsProviderBadge provider={provider} />
+      )}
       {needsDns01 ? (
         <p className="text-foreground">
           {provider === 'none'

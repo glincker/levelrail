@@ -147,8 +147,12 @@ func (rt *Router) certSignals(ctx context.Context, window time.Duration, now tim
 	if err != nil {
 		custom = map[string]bool{}
 	}
+	snap := rt.tlsSnapshot(ctx)
 	out := map[string]certSignal{}
 	for _, info := range infos {
+		if snap.Suppressed(info.Domain) {
+			continue
+		}
 		sig := certSignal{Issuer: info.Issuer, NotAfter: info.NotAfter, Status: info.Status, Renewal: renewal[info.Domain], Source: "acme"}
 		if custom[strings.ToLower(info.Domain)] {
 			sig.Source = "custom"
@@ -157,6 +161,15 @@ func (rt *Router) certSignals(ctx context.Context, window time.Duration, now tim
 			key := strings.ToLower(name)
 			if prev, ok := out[key]; !ok || sig.NotAfter.After(prev.NotAfter) {
 				out[key] = sig
+			}
+		}
+	}
+	for _, host := range snap.ProxyHosts() {
+		if pc, ok := snap.ProxyCert(host); ok {
+			out[host] = certSignal{
+				Issuer: pc.Issuer, NotAfter: pc.NotAfter, Source: certSourceProxy,
+				Status:  alerting.CertExpiryStatus(pc.NotAfter, now, window),
+				Renewal: alerting.CertRenewalOK,
 			}
 		}
 	}
@@ -180,21 +193,18 @@ func (rt *Router) buildTrafficSnapshot(ctx context.Context, now time.Time) (*tra
 			maintenance[strings.ToLower(d)] = true
 		}
 	}
-	upstream := false
-	if s, err := rt.ingressSettings.GetIngressSettings(ctx); err == nil {
-		upstream = s.TLSTerminatedUpstream
-	}
+	tls := rt.tlsSnapshot(ctx)
 	snap := &trafficSnapshot{at: now, windowDays: days}
 	for _, d := range domains {
 		key := strings.ToLower(d.Domain)
-		sig := domainSignals{Maintenance: maintenance[key], Upstream: upstream}
+		sig := domainSignals{Maintenance: maintenance[key], Upstream: tls.ProxyManaged(key)}
 		if o, ok := rt.traffic.lastCheck(key); ok {
 			sig.CheckStatus = o.Status
 		}
 		if c, ok := certs[key]; ok {
 			sig.Cert = &c
 		}
-		if f := acmeFailureFor(key); f != nil {
+		if f := acmeFailureIn(tls, key); f != nil {
 			sig.ACMEAction = f.Action
 		}
 		st := trafficDomainState{Domain: key, App: d.ServiceName, Class: classifyDomain(sig)}

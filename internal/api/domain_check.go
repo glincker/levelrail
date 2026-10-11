@@ -153,6 +153,10 @@ type domainCheckResponse struct {
 	DNSProvider string `json:"dns_provider,omitempty"`
 	// ACMEFailure is the CA's last error for Domain, when one is recorded.
 	ACMEFailure *acmeFailureResource `json:"acme_failure,omitempty"`
+	// TLSOwner is who terminates TLS for Domain; ProxyCertificate is set
+	// when a proxy owns it and its served certificate is known.
+	TLSOwner         string                     `json:"tls_owner,omitempty"`
+	ProxyCertificate *servedCertificateResource `json:"proxy_certificate,omitempty"`
 }
 
 // advertisedHost picks the host DomainEditor should tell an operator to

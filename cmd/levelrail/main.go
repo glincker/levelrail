@@ -74,6 +74,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/tlsowner"
 	"github.com/GLINCKER/levelrail/internal/updatecheck"
 	"github.com/GLINCKER/levelrail/internal/upgradehistory"
 	"github.com/GLINCKER/levelrail/internal/vault"
@@ -992,13 +993,16 @@ func run(logger *slog.Logger) error {
 	// kind=backup_missing rule reads the same schedule and history
 	// internal/backup.Scheduler and GET /api/v1/databases/{name}/backups
 	// already read.
-	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db, db,
+	tlsSuppress := alerting.CertSuppressor(func(c context.Context) func(string) bool {
+		return tlsowner.Load(c, db, db, nil).Suppressed
+	})
+	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, alerting.NewSuppressedCertSource(db, tlsSuppress), db,
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
 		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
-	alertingEngine.SetTrafficSources(db, ingressdriver.DefaultACMEFailures())
+	alertingEngine.SetTrafficSources(db, alerting.NewSuppressedACMESource(ingressdriver.DefaultACMEFailures(), tlsSuppress))
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetChanges(changes.New(db, db, db, logger), alertDashboardLink())
 	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))

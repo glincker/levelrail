@@ -15,6 +15,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { useIngressConnectivity } from '../queries/domainWizard'
 import { DnsProviderBadge } from './DnsProviderBadge'
+import { ProxyManagedCertNote } from './ProxyManagedCertNote'
 
 // Whether ports 80 and 443 answer on this server's address, and which
 // DNS-01 provider is connected: the two facts that decide HTTP-01 vs DNS-01.
@@ -58,8 +59,12 @@ export function IngressConnectivityCard() {
             <p className="text-sm text-foreground">
               {t(guidanceKey[data.guidance])}
             </p>
-            <DnsProviderBadge provider={data.dns_provider} />
-            {data.dns_provider === 'none' ? (
+            {data.tls_upstream ? (
+              <ProxyManagedCertNote />
+            ) : (
+              <DnsProviderBadge provider={data.dns_provider} />
+            )}
+            {data.dns_provider === 'none' && !data.tls_upstream ? (
               <p className="text-xs text-muted-foreground">
                 {t('provider.noneHint')}
               </p>

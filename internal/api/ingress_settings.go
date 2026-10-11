@@ -319,6 +319,9 @@ func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Req
 		return
 	}
 	rt.hstsDBEnabled.Store(settings.HSTSEnabled)
+	if settings.TLSTerminatedUpstream {
+		ingress.DefaultACMEFailures().ClearAll()
+	}
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, rt.toIngressSettingsResource(settings))
 }
@@ -427,6 +430,10 @@ type domainResource struct {
 	// ACMEFailure is the CA's last error for this hostname, so a domain
 	// stuck without a certificate shows why on the list.
 	ACMEFailure *acmeFailureResource `json:"acme_failure,omitempty"`
+	// TLSOwner is who terminates TLS for this hostname: acme, internal,
+	// proxy or custom. ProxyCertificate is what a managing proxy serves.
+	TLSOwner         string                     `json:"tls_owner,omitempty"`
+	ProxyCertificate *servedCertificateResource `json:"proxy_certificate,omitempty"`
 	// ReachableURL is the link a visitor can open now; when empty,
 	// ReachableReason says why (stopped, not_resolving, not_routed, held_back).
 	ReachableURL    string `json:"reachable_url,omitempty"`
@@ -500,6 +507,7 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	out = append(out, rt.automaticDomains(r, canSee)...)
+	rt.annotateDomainTLS(r.Context(), out)
 	rt.annotateDomainReachability(r.Context(), out)
 	writeJSON(w, http.StatusOK, out)
 }

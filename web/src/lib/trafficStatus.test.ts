@@ -221,6 +221,53 @@ describe('deriveDomainStatus', () => {
     expect(got.action).toBe(action)
   })
 
+  it.each([
+    {
+      name: 'stale ACME failure and internal cert are ignored',
+      input: {
+        tlsOwner: 'proxy' as const,
+        check: 'connected' as const,
+        acmeFailure: failure('other_proxy'),
+        cert: cert({ source: 'proxy', issuer: 'R11' }),
+      },
+      status: 'live',
+    },
+    {
+      name: 'DNS resolving to the proxy host still reads live',
+      input: {
+        tlsOwner: 'proxy' as const,
+        check: 'resolves_elsewhere' as const,
+        cert: cert({ source: 'proxy' }),
+      },
+      status: 'live',
+    },
+    {
+      name: 'no certificate seen yet is not "getting a certificate"',
+      input: { tlsOwner: 'proxy' as const, check: 'connected' as const },
+      status: 'live',
+    },
+    {
+      name: 'a proxy certificate close to expiry warns',
+      input: {
+        tlsOwner: 'proxy' as const,
+        check: 'connected' as const,
+        cert: cert({ source: 'proxy', status: 'expiring_soon' }),
+      },
+      status: 'expiring_soon',
+    },
+    {
+      name: 'an expired proxy certificate needs attention',
+      input: {
+        tlsOwner: 'proxy' as const,
+        check: 'connected' as const,
+        cert: cert({ source: 'proxy', status: 'expired' }),
+      },
+      status: 'needs_attention',
+    },
+  ])('proxy-managed: $name', ({ input, status }) => {
+    expect(deriveDomainStatus(input).status).toBe(status)
+  })
+
   it('uses the private reason for an internal CA on a private address', () => {
     const got = deriveDomainStatus({
       check: 'connected',
