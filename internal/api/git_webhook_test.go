@@ -1227,3 +1227,23 @@ func TestHandleGitPushWebhook_IgnoredBranch_StoresNote(t *testing.T) {
 		t.Errorf("delivery error = %q note = %q, want no error and a note naming both refs", deliveries[0].Error, deliveries[0].Note)
 	}
 }
+
+// TestResolveGitSourceDeployToken_FallsBackToGitHubAppToken covers the
+// shared resolver scheduled deploys and preview environments call, not
+// just the push path.
+func TestResolveGitSourceDeployToken_FallsBackToGitHubAppToken(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	appSecrets := newFakeGitHubAppSecrets()
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithGitSourceSecrets(secrets), WithGitHubAppSecrets(appSecrets))
+	rt.githubAppClient = &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
+	seedInstalledGitHubApp(t, db, appSecrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/octocat/web.git","branch":"main"}`)
+
+	got, err := rt.resolveGitSourceDeployToken(context.Background(), "web")
+	if err != nil || got != "ghs_installtoken" {
+		t.Fatalf("resolveGitSourceDeployToken() = %q, %v, want the installation token", got, err)
+	}
+}

@@ -450,15 +450,6 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		rt.logger.Error("api: git push webhook: resolve deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
 		return http.StatusInternalServerError, "internal error"
 	}
-	if token == "" {
-		// No per-app deploy token: fall back to the connected GitHub App's
-		// installation token (same resolution a one-off build uses), so a
-		// private repo connected through the app deploys on push without a
-		// separately stored PAT. Empty when no app is connected or the
-		// repo is not on the app's instance, which is the old anonymous clone.
-		token = rt.tokenForRepo(ctx, name, gs.RepoURL, true)
-	}
-
 	sourceDir, cleanup, err := rt.gitSourceFetch(ctx, gs.RepoURL, checkoutRef, token)
 	if err != nil {
 		rt.logger.Error("api: git push webhook: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("checkout_ref", checkoutRef))
@@ -624,14 +615,23 @@ func (rt *Router) resolveGitSourceDeployToken(ctx context.Context, name string) 
 	if err != nil {
 		return "", fmt.Errorf("check deploy token: %w", err)
 	}
-	if !hasToken {
+	if hasToken {
+		token, err := rt.gitSourceSecrets.Resolve(ctx, secretsKey, gitSourceTokenKey)
+		if err != nil {
+			return "", fmt.Errorf("resolve deploy token: %w", err)
+		}
+		return token, nil
+	}
+	// No per-app deploy token: fall back to the connected GitHub App's
+	// installation token (the same resolution a one-off build uses), so a
+	// private repo connected through the app pushes, schedules and previews
+	// without a separately stored PAT. Empty when no app is connected or
+	// the repo is not on the app's instance, the old anonymous clone.
+	gs, err := rt.gitSources.GetGitSource(ctx, name)
+	if err != nil || gs == nil {
 		return "", nil
 	}
-	token, err := rt.gitSourceSecrets.Resolve(ctx, secretsKey, gitSourceTokenKey)
-	if err != nil {
-		return "", fmt.Errorf("resolve deploy token: %w", err)
-	}
-	return token, nil
+	return rt.tokenForRepo(ctx, name, gs.RepoURL, true), nil
 }
 
 // deployAdditionalServices rebuilds and redeploys each sibling service in
