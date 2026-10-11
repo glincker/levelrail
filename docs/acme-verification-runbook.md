@@ -50,7 +50,7 @@ From the CLI:
 
 ```bash
 levelrail-cli settings ingress set --primary-domain dashboard.example.com \
-  --acme-enabled --acme-email you@example.com
+  --acme-enabled --acme-email you@yourdomain.com
 ```
 
 </Step>

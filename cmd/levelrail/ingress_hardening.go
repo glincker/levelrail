@@ -16,6 +16,9 @@ const (
 	envIngressHoldWindow  = "APP_INGRESS_HOLD_WINDOW"
 	defaultIngressHold    = 10 * time.Minute
 	envIngressHardeningOn = "APP_INGRESS_HARDENING"
+
+	envFallbackCertLifetime     = "APP_INGRESS_FALLBACK_CERT_LIFETIME"
+	defaultFallbackCertLifetime = 6 * time.Hour
 )
 
 // ingressEdge is the edge policy and hold tracker shared by every per-pass
@@ -24,6 +27,8 @@ type ingressEdge struct {
 	hardening *ingressdriver.Hardening
 	holds     *ingressdriver.HoldTracker
 	inherited *ingressdriver.InheritedSockets
+	// fallbackLifetime is how long a locally signed fallback certificate lives.
+	fallbackLifetime time.Duration
 }
 
 // loadIngressEdge reads the APP_INGRESS_* tuning variables. Hardening is on by
@@ -37,7 +42,14 @@ func loadIngressEdge(logger *slog.Logger) (ingressEdge, error) {
 		}
 		window = d
 	}
-	edge := ingressEdge{holds: ingressdriver.NewHoldTracker(window)}
+	edge := ingressEdge{holds: ingressdriver.NewHoldTracker(window), fallbackLifetime: defaultFallbackCertLifetime}
+	if raw := strings.TrimSpace(os.Getenv(envFallbackCertLifetime)); raw != "" {
+		d, err := time.ParseDuration(raw)
+		if err != nil || d < time.Minute {
+			return ingressEdge{}, fmt.Errorf("%s=%q is not a duration of at least 1m", envFallbackCertLifetime, raw)
+		}
+		edge.fallbackLifetime = d
+	}
 	inherited, err := ingressdriver.InheritSockets(os.Getenv, os.Getpid(), os.Getenv(ingressdriver.EnvSocketActivation))
 	if err != nil {
 		return ingressEdge{}, err
@@ -65,6 +77,9 @@ func loadIngressEdge(logger *slog.Logger) (ingressEdge, error) {
 
 func (e ingressEdge) options() []ingressreconcile.Option {
 	opts := []ingressreconcile.Option{ingressreconcile.WithHoldTracker(e.holds)}
+	if e.fallbackLifetime > 0 {
+		opts = append(opts, ingressreconcile.WithFallbackCertLifetime(e.fallbackLifetime))
+	}
 	if e.inherited.Active() {
 		opts = append(opts, ingressreconcile.WithInheritedSockets(e.inherited))
 	}

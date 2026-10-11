@@ -40,6 +40,8 @@ type Config struct {
 	// Storage leaves Caddy's own OS-specific default in place.
 	Storage any  `json:"storage,omitempty"`
 	Apps    Apps `json:"apps"`
+	// Logging taps certificate-issuance errors; see newACMELogTap.
+	Logging *LoggingConfig `json:"logging,omitempty"`
 
 	// ownedPorts are ports bound through inherited sockets, which listenPortsOf
 	// cannot read from an fd address.
@@ -485,6 +487,9 @@ type AutomationPolicy struct {
 // real ACME here; verifying this against a real domain is still needed.
 type InternalIssuer struct {
 	Module string `json:"module"`
+	// Lifetime bounds the certificate it signs, so a fallback certificate
+	// is replaced (and the public issuer retried) soon after it is issued.
+	Lifetime string `json:"lifetime,omitempty"`
 }
 
 // NewInternalIssuer returns the JSON shape for Caddy's internal issuer
@@ -824,23 +829,24 @@ func internalIssuerTLSApp(hosts []string) *TLSApp {
 	}
 }
 
-// acmeIssuerTLSApp builds a TLSApp with a single automation policy
-// scoping Caddy's real ACME issuer to hosts. Mirrors
-// internalIssuerTLSApp's shape exactly, swapping NewInternalIssuer for
-// NewACMEIssuer; unlike the internal issuer path, this never pairs with
-// a PKIApp, real ACME has no local CA for Caddy's pki app to manage
-// trust for.
-func acmeIssuerTLSApp(hosts []string, email, directoryURL string, altHTTPPort int) *TLSApp {
-	return &TLSApp{
-		Automation: &Automation{
-			Policies: []AutomationPolicy{
-				{
-					Subjects: hosts,
-					Issuers:  []any{NewACMEIssuer(email, directoryURL, altHTTPPort)},
-				},
-			},
-		},
+// acmeWithFallbackTLSApp scopes real ACME to every host, wildcards through
+// DNS-01 when a provider is set. Every policy ends in the internal issuer, so
+// a rejected contact, an unreachable challenge or a rate limit leaves the host
+// on a locally signed certificate, never on none.
+func acmeWithFallbackTLSApp(opts RoutesOptions, wildcardHosts, regularHosts []string) *TLSApp {
+	acme := NewACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.HTTPPort)
+	if opts.DNSProvider == nil || len(wildcardHosts) == 0 {
+		hosts := append(append([]string{}, wildcardHosts...), regularHosts...)
+		return &TLSApp{Automation: &Automation{Policies: []AutomationPolicy{
+			{Subjects: hosts, Issuers: withInternalFallback(acme, opts.FallbackCertLifetime)},
+		}}}
 	}
+	dns := NewDNSACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.DNSProvider)
+	policies := []AutomationPolicy{{Subjects: wildcardHosts, Issuers: withInternalFallback(dns, opts.FallbackCertLifetime)}}
+	if len(regularHosts) > 0 {
+		policies = append(policies, AutomationPolicy{Subjects: regularHosts, Issuers: withInternalFallback(acme, opts.FallbackCertLifetime)})
+	}
+	return &TLSApp{Automation: &Automation{Policies: policies}}
 }
 
 // newInternalPKIApp builds a PKIApp for the internal issuer's local CA

@@ -56,12 +56,12 @@ func TestValidateIngressSettingsRequest(t *testing.T) {
 			// validateIngressSettingsRequest's own doc comment for why
 			// it must still be rejected.
 			name:    "acme enabled, display-name email rejected (breaks Caddy's mailto: contact URI)",
-			req:     ingressSettingsResource{ACMEEnabled: true, ACMEEmail: "Ops <ops@example.com>"},
+			req:     ingressSettingsResource{ACMEEnabled: true, ACMEEmail: "Ops <ops@glincker.com>"},
 			wantErr: errACMEEmailInvalid,
 		},
 		{
 			name: "acme enabled, valid email accepted",
-			req:  ingressSettingsResource{ACMEEnabled: true, ACMEEmail: "ops@example.com"},
+			req:  ingressSettingsResource{ACMEEnabled: true, ACMEEmail: "ops@glincker.com"},
 		},
 	}
 
@@ -130,9 +130,9 @@ func TestHandleUpdateIngressSettings_AcceptsValidConfig(t *testing.T) {
 	cookie := loginTestSession(t, rt, db)
 
 	body := `{
-		"primary_domain": "dashboard.example.com",
+		"primary_domain": "dashboard.glincker.com",
 		"acme_enabled": true,
-		"acme_email": "ops@example.com",
+		"acme_email": "ops@glincker.com",
 		"acme_directory_url": "https://acme-staging-v02.api.letsencrypt.org/directory"
 	}`
 	rec := httptest.NewRecorder()
@@ -142,9 +142,9 @@ func TestHandleUpdateIngressSettings_AcceptsValidConfig(t *testing.T) {
 	}
 
 	want := ingressSettingsResource{
-		PrimaryDomain:    "dashboard.example.com",
+		PrimaryDomain:    "dashboard.glincker.com",
 		ACMEEnabled:      true,
-		ACMEEmail:        "ops@example.com",
+		ACMEEmail:        "ops@glincker.com",
 		ACMEDirectoryURL: "https://acme-staging-v02.api.letsencrypt.org/directory",
 
 		FallbackDomainsEnabled: true,
@@ -283,7 +283,7 @@ func TestHandleUpdateIngressSettings_PrimaryDomainConflict(t *testing.T) {
 		{
 			name:          "different domain does not conflict",
 			seedDomain:    "app.example.com",
-			primaryDomain: "dashboard.example.com",
+			primaryDomain: "dashboard.glincker.com",
 			wantConflict:  false,
 		},
 	}
@@ -336,7 +336,7 @@ func TestHandleUpdateIngressSettings_CanDisableAndClear(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
-	enableBody := `{"acme_enabled":true,"acme_email":"ops@example.com","primary_domain":"dashboard.example.com"}`
+	enableBody := `{"acme_enabled":true,"acme_email":"ops@glincker.com","primary_domain":"dashboard.glincker.com"}`
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/ingress", enableBody))
 	if rec.Code != http.StatusOK {
@@ -379,7 +379,7 @@ func TestHandleUpdateIngressSettings_PlainWriteToken_Forbidden(t *testing.T) {
 		t.Fatalf("seed token: %v", err)
 	}
 
-	body := `{"acme_enabled":true,"acme_email":"ops@example.com"}`
+	body := `{"acme_enabled":true,"acme_email":"ops@glincker.com"}`
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/settings/ingress", strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+plaintext)
 	rec := httptest.NewRecorder()
@@ -438,13 +438,13 @@ func TestHandleCheckIngressDomain(t *testing.T) {
 		},
 		{
 			name:          "configured domain resolves",
-			primaryDomain: "dashboard.example.com",
+			primaryDomain: "dashboard.glincker.com",
 			publicHost:    "203.0.113.10",
 			lookup: func(t *testing.T) lookupHostFunc {
 				t.Helper()
 				return func(_ context.Context, host string) ([]string, error) {
-					if host != "dashboard.example.com" {
-						t.Errorf("lookupHost called with %q, want %q", host, "dashboard.example.com")
+					if host != "dashboard.glincker.com" {
+						t.Errorf("lookupHost called with %q, want %q", host, "dashboard.glincker.com")
 					}
 					return []string{"203.0.113.10"}, nil
 				}
@@ -455,7 +455,7 @@ func TestHandleCheckIngressDomain(t *testing.T) {
 		},
 		{
 			name:          "configured domain does not resolve",
-			primaryDomain: "dashboard.example.com",
+			primaryDomain: "dashboard.glincker.com",
 			publicHost:    "203.0.113.10",
 			lookup: func(t *testing.T) lookupHostFunc {
 				t.Helper()
@@ -469,7 +469,7 @@ func TestHandleCheckIngressDomain(t *testing.T) {
 		},
 		{
 			name:          "host inferred when APP_PUBLIC_HOST unset",
-			primaryDomain: "dashboard.example.com",
+			primaryDomain: "dashboard.glincker.com",
 			publicHost:    "",
 			requestHost:   "203.0.113.10:8443",
 			lookup: func(t *testing.T) lookupHostFunc {

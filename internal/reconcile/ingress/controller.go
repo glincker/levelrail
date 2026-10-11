@@ -277,8 +277,10 @@ type Controller struct {
 	listenAddr     string
 	httpListenAddr string
 	httpRedirect   bool
-	adminListen    string
-	storageDir     string
+	// fallbackCertLifetime feeds ingress.RoutesOptions.FallbackCertLifetime.
+	fallbackCertLifetime time.Duration
+	adminListen          string
+	storageDir           string
 
 	hardening *ingress.Hardening
 	inherited *ingress.InheritedSockets
@@ -418,6 +420,12 @@ func WithServerName(name string) Option {
 // listener binds. Defaults to ":443".
 func WithListenAddr(addr string) Option {
 	return func(c *Controller) { c.listenAddr = addr }
+}
+
+// WithFallbackCertLifetime sets how long the locally signed certificate that
+// stands in for a failed public issuance lives before ACME is retried.
+func WithFallbackCertLifetime(d time.Duration) Option {
+	return func(c *Controller) { c.fallbackCertLifetime = d }
 }
 
 // WithHTTPRedirect makes Caddy serve the HTTP port and redirect every
@@ -972,30 +980,31 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 
 	cfg, err := ingress.BuildRoutesConfig(ingress.RoutesOptions{
-		ServerName:        c.serverName,
-		ListenAddr:        c.listenAddr,
-		HTTPPort:          httpPortFromAddr(c.httpListenAddr),
-		HTTPRedirect:      c.httpRedirect && !settings.TLSTerminatedUpstream,
-		PlainHTTP:         settings.TLSTerminatedUpstream,
-		Routes:            routes,
-		StaticRoutes:      staticRoutes,
-		MaintenanceRoutes: maintenanceRoutes,
-		HoldRoutes:        holdRoutes,
-		WakeRoutes:        wakeRoutes,
-		Inherited:         c.inherited,
-		Hardening:         c.hardening,
-		RedirectRoutes:    redirectRoutes,
-		TLS:               true,
-		AdminListen:       c.adminListen,
-		StorageDir:        c.storageDir,
-		CertStorage:       c.certStorage,
-		ACMEEnabled:       settings.EffectiveACMEEnabled(),
-		ACMEEmail:         settings.ACMEEmail,
-		ACMEDirectoryURL:  settings.ACMEDirectoryURL,
-		DNSProvider:       c.resolveDNSProvider(ctx),
-		TLSCertificates:   tlsCertOverrides,
-		RequestStats:      c.requestStats,
-		Streams:           streamRoutes,
+		ServerName:           c.serverName,
+		ListenAddr:           c.listenAddr,
+		HTTPPort:             httpPortFromAddr(c.httpListenAddr),
+		HTTPRedirect:         c.httpRedirect && !settings.TLSTerminatedUpstream,
+		FallbackCertLifetime: fallbackLifetimeString(c.fallbackCertLifetime),
+		PlainHTTP:            settings.TLSTerminatedUpstream,
+		Routes:               routes,
+		StaticRoutes:         staticRoutes,
+		MaintenanceRoutes:    maintenanceRoutes,
+		HoldRoutes:           holdRoutes,
+		WakeRoutes:           wakeRoutes,
+		Inherited:            c.inherited,
+		Hardening:            c.hardening,
+		RedirectRoutes:       redirectRoutes,
+		TLS:                  true,
+		AdminListen:          c.adminListen,
+		StorageDir:           c.storageDir,
+		CertStorage:          c.certStorage,
+		ACMEEnabled:          settings.EffectiveACMEEnabled(),
+		ACMEEmail:            settings.ACMEEmail,
+		ACMEDirectoryURL:     settings.ACMEDirectoryURL,
+		DNSProvider:          c.resolveDNSProvider(ctx),
+		TLSCertificates:      tlsCertOverrides,
+		RequestStats:         c.requestStats,
+		Streams:              streamRoutes,
 	})
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
@@ -1546,4 +1555,11 @@ func notReady(reason string, err error) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
 		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
 	}}}
+}
+
+func fallbackLifetimeString(d time.Duration) string {
+	if d <= 0 {
+		return ""
+	}
+	return d.String()
 }

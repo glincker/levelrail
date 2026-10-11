@@ -101,7 +101,7 @@ func TestHandleEnableHTTPS(t *testing.T) {
 	t.Run("no public ip is a clear conflict", func(t *testing.T) {
 		rt, db := newTestRouter(t)
 		cookie := loginTestSession(t, rt, db)
-		rec := post(rt, cookie, `{"email":"a@example.com"}`)
+		rec := post(rt, cookie, `{"email":"a@glincker.com"}`)
 		if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "APP_PUBLIC_HOST") {
 			t.Fatalf("got %d %s", rec.Code, rec.Body.String())
 		}
@@ -118,7 +118,7 @@ func TestHandleEnableHTTPS(t *testing.T) {
 			return nil, errors.New("closed")
 		}
 		cookie := loginTestSession(t, rt, db)
-		rec := post(rt, cookie, `{"email":"a@example.com","staging":true}`)
+		rec := post(rt, cookie, `{"email":"a@glincker.com","staging":true}`)
 		if rec.Code != http.StatusAccepted {
 			t.Fatalf("got %d %s", rec.Code, rec.Body.String())
 		}
@@ -134,7 +134,7 @@ func TestHandleEnableHTTPS(t *testing.T) {
 			t.Fatalf("preflight = %+v, want %+v", got.Preflight, wantPre)
 		}
 		s, err := db.GetIngressSettings(t.Context())
-		if err != nil || !s.ACMEEnabled || s.ACMEDirectoryURL != ACMEStagingDirectoryURL || s.ACMEEmail != "a@example.com" {
+		if err != nil || !s.ACMEEnabled || s.ACMEDirectoryURL != ACMEStagingDirectoryURL || s.ACMEEmail != "a@glincker.com" {
 			t.Fatalf("settings = %+v, %v", s, err)
 		}
 	})
@@ -147,10 +147,10 @@ func TestHandleEnableHTTPS(t *testing.T) {
 		if rec := post(rt, cookie, `{"email":"nope"}`); rec.Code != http.StatusBadRequest {
 			t.Fatalf("bad email: %d", rec.Code)
 		}
-		if rec := post(rt, cookie, `{"email":"a@example.com"}`); rec.Code != http.StatusAccepted {
+		if rec := post(rt, cookie, `{"email":"a@glincker.com"}`); rec.Code != http.StatusAccepted {
 			t.Fatalf("first: %d %s", rec.Code, rec.Body.String())
 		}
-		if rec := post(rt, cookie, `{"email":"a@example.com"}`); rec.Code != http.StatusTooManyRequests {
+		if rec := post(rt, cookie, `{"email":"a@glincker.com"}`); rec.Code != http.StatusTooManyRequests {
 			t.Fatalf("second: %d", rec.Code)
 		}
 	})
