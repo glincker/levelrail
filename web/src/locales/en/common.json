@@ -204,6 +204,51 @@
       "open": "Connected",
       "closed": "Disconnected"
     },
+    "quick": {
+      "title": "Quick actions",
+      "connectFirst": "Connect the console to see quick actions.",
+      "groups": {
+        "overview": "Overview",
+        "apps": "Apps",
+        "platform": "Platform"
+      },
+      "params": {
+        "app": "App",
+        "node": "Node",
+        "image": "Image to roll back to"
+      },
+      "pick": "Choose...",
+      "willRun": "Will run",
+      "incomplete": "Fill in the fields above",
+      "run": "Run",
+      "review": "Review",
+      "stop": "Stop",
+      "selectedApp": "Selected app",
+      "clearSelected": "Clear selected app",
+      "confirmTitle": "Run this command?",
+      "actions": {
+        "status": { "label": "Status" },
+        "version": { "label": "Version" },
+        "appsList": { "label": "List apps" },
+        "deploysList": { "label": "List deploys" },
+        "nodesList": { "label": "List nodes" },
+        "databasesList": { "label": "List databases" },
+        "appStatus": { "label": "App status" },
+        "appLogs": { "label": "App logs" },
+        "appDeploys": { "label": "App deploys" },
+        "nodeGet": { "label": "Node details" },
+        "appRestart": { "label": "Restart app" },
+        "appRedeploy": { "label": "Redeploy app" },
+        "appRollback": {
+          "label": "Roll back app",
+          "consequence": "The app is pointed back at an older image and its container is replaced."
+        },
+        "systemRestart": {
+          "label": "Restart platform",
+          "consequence": "The control plane restarts and the dashboard is unavailable until it is back."
+        }
+      }
+    },
     "dock": {
       "offTitle": "Console is turned off",
       "offDescription": "The CLI console is a beta feature and is off by default. An administrator can turn it on in Settings, Beta features."
