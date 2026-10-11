@@ -205,7 +205,10 @@ jobs:
           PACKAGES: ${{ needs.plan.outputs.packages }}
         run: |
           read -r -a packages <<<"$PACKAGES"
-          go build "${packages[@]}"
+          # Test-only packages (test/execgate) are selected to run, but go
+          # build rejects a package with no non-test Go files.
+          mapfile -t buildable < <(go list -f '{{if .GoFiles}}{{.ImportPath}}{{end}}' "${packages[@]}")
+          if [ "${#buildable[@]}" -gt 0 ]; then go build "${buildable[@]}"; fi
 
       - name: go vet
         if: needs.plan.outputs.scope != 'none'
