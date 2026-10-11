@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -55,8 +56,15 @@ const (
 	minSampleCount = 20
 	minCoverage    = 6 * time.Hour
 
-	mib             = 1024 * 1024
-	cpuStepNanoCPUs = 50_000_000 // 0.05 core
+	mib      = 1024 * 1024
+	nanoCore = 1_000_000_000
+)
+
+// Suggested limits round up to these steps so an operator never sees
+// "0 cores" or "37 MiB". Above the last step they grow by the step size.
+var (
+	memoryStepsMiB = []int64{64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048}
+	cpuStepsMilli  = []int64{100, 250, 500, 750, 1000, 1500, 2000, 3000, 4000}
 )
 
 // Sample is one raw (timestamp, value) reading, the shape
@@ -88,6 +96,36 @@ type Input struct {
 	CurrentMemoryBytes int64
 	CurrentNanoCPUs    int64
 	OOM                *OOMEvidence
+	// Tuning overrides the default thresholds; a zero field keeps its default.
+	Tuning Tuning
+}
+
+// Tuning holds the thresholds Recommend uses, so callers can source them from env.
+type Tuning struct {
+	MemoryMargin float64
+	CPUMargin    float64
+	RaiseAt      float64
+	LowerAt      float64
+	MinCoverage  time.Duration
+}
+
+func (t Tuning) withDefaults() Tuning {
+	if t.MemoryMargin <= 1 {
+		t.MemoryMargin = memorySafetyMargin
+	}
+	if t.CPUMargin <= 1 {
+		t.CPUMargin = cpuSafetyMargin
+	}
+	if t.RaiseAt <= 0 || t.RaiseAt > 1 {
+		t.RaiseAt = raiseUtilizationThreshold
+	}
+	if t.LowerAt <= 0 || t.LowerAt >= t.RaiseAt {
+		t.LowerAt = lowerUtilizationThreshold
+	}
+	if t.MinCoverage <= 0 {
+		t.MinCoverage = minCoverage
+	}
+	return t
 }
 
 // DimensionRecommendation is one resource dimension's (memory or CPU)
@@ -125,6 +163,7 @@ func Recommend(in Input) Result {
 	if now.IsZero() {
 		now = time.Now()
 	}
+	tun := in.Tuning.withDefaults()
 
 	cpuNanoSamples := make([]Sample, len(in.CPUPercentSamples))
 	for i, s := range in.CPUPercentSamples {
@@ -140,8 +179,9 @@ func Recommend(in Input) Result {
 			currentLimit: in.CurrentMemoryBytes,
 			now:          now,
 			lookback:     in.LookbackWindow,
-			margin:       memorySafetyMargin,
-			round:        roundToMiB,
+			margin:       tun.MemoryMargin,
+			tuning:       tun,
+			round:        RoundMemoryUp,
 			format:       formatMemory,
 			oom:          in.OOM,
 		}),
@@ -151,8 +191,9 @@ func Recommend(in Input) Result {
 			currentLimit: in.CurrentNanoCPUs,
 			now:          now,
 			lookback:     in.LookbackWindow,
-			margin:       cpuSafetyMargin,
-			round:        roundToCPUStep,
+			margin:       tun.CPUMargin,
+			tuning:       tun,
+			round:        RoundCPUUp,
 			format:       formatCPU,
 			oom:          nil, // an OOM kill is a memory signal, not a CPU one
 		}),
@@ -167,6 +208,7 @@ type dimensionParams struct {
 	now          time.Time
 	lookback     time.Duration
 	margin       float64
+	tuning       Tuning
 	round        func(float64) int64
 	format       func(int64) string
 	oom          *OOMEvidence
@@ -189,7 +231,7 @@ func recommendDimension(p dimensionParams) DimensionRecommendation {
 	}
 
 	coverage := dataCoverage(p.samples, p.now)
-	rec.Confidence = confidenceFor(len(p.samples), coverage, p.lookback)
+	rec.Confidence = confidenceFor(len(p.samples), coverage, p.lookback, p.tuning.MinCoverage)
 	rec.DataSufficient = rec.Confidence != ConfidenceLow
 
 	if p.oom != nil {
@@ -219,8 +261,8 @@ func recommendDimension(p dimensionParams) DimensionRecommendation {
 
 	if p.currentLimit <= 0 {
 		rec.Reason = fmt.Sprintf(
-			"No %s limit is currently configured. Based on p95 usage of %s over the observed history, a limit around %s would leave headroom above typical peaks.",
-			p.dimension, p.format(p.round(rec.P95Usage)), p.format(rec.SuggestedLimit),
+			"No %s limit is currently configured. Based on p95 usage of %s over the %s, a limit around %s would leave headroom above typical peaks.",
+			p.dimension, p.format(int64(rec.P95Usage)), HumanWindow(p.lookback), p.format(rec.SuggestedLimit),
 		)
 		return rec
 	}
@@ -228,30 +270,31 @@ func recommendDimension(p dimensionParams) DimensionRecommendation {
 	if !rec.DataSufficient {
 		rec.Reason = fmt.Sprintf(
 			"Only %s of history is available so far (need at least %s); this app hasn't been running long enough for a confident recommendation yet.",
-			coverage.Round(time.Minute), minCoverage,
+			HumanDuration(coverage), HumanDuration(p.tuning.MinCoverage),
 		)
 		return rec
 	}
 
 	utilization := rec.P95Usage / float64(p.currentLimit)
+	window := HumanWindow(p.lookback)
 	switch {
-	case utilization >= raiseUtilizationThreshold:
+	case utilization >= p.tuning.RaiseAt:
 		rec.Action = ActionRaise
 		rec.Reason = fmt.Sprintf(
-			"p95 usage over the lookback window is %s, about %.0f%% of the current %s limit. Consider raising it to roughly %s.",
-			p.format(p.round(rec.P95Usage)), utilization*100, p.dimension, p.format(rec.SuggestedLimit),
+			"p95 usage over the %s is %s, about %.0f%% of the current %s limit. Consider raising it to roughly %s.",
+			window, p.format(int64(rec.P95Usage)), utilization*100, p.dimension, p.format(rec.SuggestedLimit),
 		)
-	case utilization <= lowerUtilizationThreshold:
+	case utilization <= p.tuning.LowerAt && rec.SuggestedLimit < p.currentLimit:
 		rec.Action = ActionLower
 		rec.Reason = fmt.Sprintf(
-			"p95 usage over the lookback window is %s, only about %.0f%% of the current %s limit. Consider lowering it to roughly %s to reclaim capacity.",
-			p.format(p.round(rec.P95Usage)), utilization*100, p.dimension, p.format(rec.SuggestedLimit),
+			"p95 usage over the %s is %s, only about %.0f%% of the current %s limit. Consider lowering it to roughly %s to reclaim capacity.",
+			window, p.format(int64(rec.P95Usage)), utilization*100, p.dimension, p.format(rec.SuggestedLimit),
 		)
 	default:
 		rec.Action = ActionKeep
 		rec.Reason = fmt.Sprintf(
-			"p95 usage over the lookback window is %s, about %.0f%% of the current %s limit. That's a comfortable range; no change suggested.",
-			p.format(p.round(rec.P95Usage)), utilization*100, p.dimension,
+			"p95 usage over the %s is %s, about %.0f%% of the current %s limit. That's a comfortable range; no change suggested.",
+			window, p.format(int64(rec.P95Usage)), utilization*100, p.dimension,
 		)
 	}
 	return rec
@@ -273,9 +316,9 @@ func dataCoverage(samples []Sample, now time.Time) time.Duration {
 	return now.Sub(earliest)
 }
 
-func confidenceFor(sampleCount int, coverage, lookback time.Duration) string {
+func confidenceFor(sampleCount int, coverage, lookback, needCoverage time.Duration) string {
 	switch {
-	case sampleCount < minSampleCount || coverage < minCoverage:
+	case sampleCount < minSampleCount || coverage < needCoverage:
 		return ConfidenceLow
 	case lookback > 0 && coverage < lookback:
 		return ConfidenceMedium
@@ -302,30 +345,83 @@ func percentile(values []float64, p float64) float64 {
 	return sorted[idx]
 }
 
-func roundToMiB(bytes float64) int64 {
+// RoundMemoryUp rounds a byte count up to the next suggested memory step.
+func RoundMemoryUp(bytes float64) int64 {
 	if bytes <= 0 {
 		return 0
 	}
-	return int64(math.Round(bytes/mib)) * mib
+	return roundUpToSteps(bytes/mib, memoryStepsMiB) * mib
 }
 
-func roundToCPUStep(nanoCPUs float64) int64 {
+// RoundCPUUp rounds nano-CPUs up to the next suggested step, never below 0.1 core.
+func RoundCPUUp(nanoCPUs float64) int64 {
 	if nanoCPUs <= 0 {
 		return 0
 	}
-	return int64(math.Round(nanoCPUs/cpuStepNanoCPUs)) * cpuStepNanoCPUs
+	return roundUpToSteps(nanoCPUs/1_000_000, cpuStepsMilli) * 1_000_000
 }
+
+func roundUpToSteps(v float64, steps []int64) int64 {
+	for _, s := range steps {
+		if v <= float64(s) {
+			return s
+		}
+	}
+	last := steps[len(steps)-1]
+	step := last - steps[len(steps)-2]
+	n := int64(math.Ceil((v - float64(last)) / float64(step)))
+	return last + n*step
+}
+
+// HumanWindow renders a lookback as "last 7 days" rather than "168h0m0s".
+func HumanWindow(d time.Duration) string {
+	if d <= 0 {
+		return "observed history"
+	}
+	return "last " + HumanDuration(d)
+}
+
+// HumanDuration renders a duration in whole days, hours or minutes.
+func HumanDuration(d time.Duration) string {
+	unit := func(n int64, one string) string {
+		if n == 1 {
+			return "1 " + one
+		}
+		return fmt.Sprintf("%d %ss", n, one)
+	}
+	switch {
+	case d >= 48*time.Hour:
+		return unit(int64(d/(24*time.Hour)), "day")
+	case d >= 2*time.Hour:
+		return unit(int64(d/time.Hour), "hour")
+	default:
+		return unit(int64(d/time.Minute), "minute")
+	}
+}
+
+// FormatMemory renders bytes as MiB or GiB.
+func FormatMemory(bytes int64) string { return formatMemory(bytes) }
+
+// FormatCPU renders nano-CPUs as cores.
+func FormatCPU(nanoCPUs int64) string { return formatCPU(nanoCPUs) }
 
 func formatMemory(bytes int64) string {
 	if bytes <= 0 {
 		return "0 MiB"
 	}
-	return fmt.Sprintf("%d MiB", bytes/mib)
+	if bytes >= 1024*mib && bytes%(256*mib) == 0 {
+		return strconv.FormatFloat(float64(bytes)/(1024*mib), 'f', -1, 64) + " GiB"
+	}
+	return fmt.Sprintf("%d MiB", (bytes+mib/2)/mib)
 }
 
 func formatCPU(nanoCPUs int64) string {
 	if nanoCPUs <= 0 {
 		return "0 cores"
 	}
-	return fmt.Sprintf("%.2f cores", float64(nanoCPUs)/1_000_000_000)
+	v := float64(nanoCPUs) / nanoCore
+	if v == 1 {
+		return "1 core"
+	}
+	return strconv.FormatFloat(math.Round(v*100)/100, 'f', -1, 64) + " cores"
 }

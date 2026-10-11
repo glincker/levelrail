@@ -43,7 +43,13 @@ type Item struct {
 	Action string            `json:"action"`
 	Link   string            `json:"link"`
 	Params map[string]string `json:"params,omitempty"`
+	// Class separates recommendations from incidents; empty means incident.
+	Class string `json:"class,omitempty"`
 }
+
+// ClassRecommendation marks an item that suggests an improvement rather
+// than reporting something broken.
+const ClassRecommendation = "recommendation"
 
 // Input is everything Build reads; any field may be zero when its
 // endpoint was unavailable.
@@ -87,6 +93,7 @@ const (
 	KindDBEOL               = "db_eol"
 	KindDBUpgradeFailed     = "db_upgrade_failed"
 	KindDockerGuard         = "docker_guard"
+	KindResourceAdvice      = "resource_advice"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

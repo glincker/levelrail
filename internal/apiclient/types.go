@@ -3071,6 +3071,7 @@ type DimensionRecommendationResource struct {
 type ResourceRecommendationResource struct {
 	ServiceName    string                          `json:"service_name"`
 	LookbackWindow string                          `json:"lookback_window"`
+	LookbackLabel  string                          `json:"lookback_label,omitempty"`
 	Memory         DimensionRecommendationResource `json:"memory"`
 	CPU            DimensionRecommendationResource `json:"cpu"`
 	OOMDetectedAt  string                          `json:"oom_detected_at,omitempty"`

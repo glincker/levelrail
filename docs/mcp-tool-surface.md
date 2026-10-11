@@ -27,7 +27,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | iam | 7 | 587 |
 | loadbalancer | 9 | 1347 |
 | logs | 12 | 1663 |
-| metrics | 4 | 626 |
+| metrics | 5 | 759 |
 | models | 15 | 2243 |
 | nodes | 5 | 418 |
 | notifications | 3 | 324 |
@@ -41,7 +41,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 155 |
-| **total** | **184** | **22830** |
+| **total** | **185** | **22963** |
 
 ## agent-core profile
 

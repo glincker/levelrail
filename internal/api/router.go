@@ -464,6 +464,7 @@ type Router struct {
 	appImports                   AppImportStore                                        // always set, guided app import sessions
 	appImportLive                *appImportState                                       // in-memory source tokens and discoveries
 	hubState                     *hubState                                             // in-memory source passwords and running sessions
+	advisor                      *advisorCache                                         // resource advisor findings, cached for a short TTL
 	externalDatabases            ExternalDatabaseStore                                 // always set, databases connected but not run
 	dnsResolver                  datamigrate.Resolver                                  // nil means the real resolver
 	wakeToken                    string                                                // empty disables the wake hook
@@ -717,6 +718,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		appImports:                  s,
 		appImportLive:               newAppImportState(),
 		hubState:                    newHubState(),
+		advisor:                     newAdvisorCache(),
 		externalDatabases:           s,
 		canaries:                    s,
 		dbQueries:                   s,

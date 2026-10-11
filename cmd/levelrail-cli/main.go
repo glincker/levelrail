@@ -199,6 +199,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runSystemPrune(prog, args[1:], stdout, stderr, lookupEnv)
 	case "docker-guard":
 		return runDockerGuard(prog, args[1:], stdout, stderr, lookupEnv)
+	case "advisor":
+		return runAdvisor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned":
 		return runVolumesOrphaned(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned-cleanup":
@@ -333,6 +335,7 @@ Usage:
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
   %[1]s audit-purge [flags]                                   delete audit log entries past the retention window now
   %[1]s attention [flags]                                     everything failing right now: apps, nodes, certificates, doctor checks
+  %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
   %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443

@@ -424,6 +424,9 @@ func run(logger *slog.Logger) error {
 	}()
 	recordUpgradeHistory(ctx, db, obs, logger)
 	importSelfUpgradeJournal(ctx, db, logger)
+	if err := api.LoadBetaFeatures(ctx, db); err != nil {
+		logger.Warn("beta feature switches not loaded", slog.String("error", err.Error()))
+	}
 
 	// instanceID must be resolved before the Docker client is
 	// constructed below, so every container/network/volume this process

@@ -141,6 +141,8 @@ func experimentalFeature(name string, m Meta) (experimental.Feature, bool) {
 		return experimental.CloudflareTunnel, true
 	case name == "list_roles":
 		return experimental.AccessRoles, true
+	case name == resourceAdviceTool:
+		return experimental.ResourceAdvisor, true
 	}
 	return "", false
 }
