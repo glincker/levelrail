@@ -22,6 +22,8 @@ import { useDeployCompose } from '../queries/compose'
 import { useFormDraft } from '../hooks/useFormDraft'
 import { useIsRoot } from '../hooks/useIsRoot'
 import { DraftRestoredNotice } from './DraftRestoredNotice'
+import { ComposePreviewPanel } from './ComposePreviewPanel'
+import { useTranslation } from 'react-i18next'
 
 // Same app-name shape validateAppResource (internal/api/apps.go)
 // ultimately enforces server-side; this is fast client-side feedback
@@ -214,6 +216,7 @@ export function CreateComposeFields({
    *  until the operator is done reading it. */
   onCreated: () => void
 }) {
+  const { t } = useTranslation('compose')
   const deployCompose = useDeployCompose()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [fileError, setFileError] = useState<string | null>(null)
@@ -346,6 +349,21 @@ export function CreateComposeFields({
           ))}
         </ul>
         <DialogFooter>
+          {services[0] ? (
+            <Button
+              type="button"
+              variant="outline"
+              render={
+                <Link
+                  to="/apps/$name/services"
+                  params={{ name: services[0].name }}
+                />
+              }
+              nativeButton={false}
+            >
+              {t('stack.open')}
+            </Button>
+          ) : null}
           <Button type="button" onClick={onCreated}>
             Done
           </Button>
@@ -413,6 +431,8 @@ export function CreateComposeFields({
         <FieldError errors={[formState.errors.compose]} />
         {fileError ? <FieldHint>{fileError}</FieldHint> : null}
       </Field>
+
+      <ComposePreviewPanel composeYaml={watch('compose')} />
 
       <BindMountHelper onInsert={handleInsertLine} />
       <PullPolicyHelper onInsert={handleInsertLine} />

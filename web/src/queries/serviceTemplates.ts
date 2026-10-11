@@ -14,6 +14,7 @@ import {
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { appKeys } from './apps'
 import type { ComposeDeployResponse } from './compose'
+import type { TemplateManifest } from '../types/compose'
 
 export const serviceTemplateKeys = {
   all: ['service-templates'] as const,
@@ -39,12 +40,16 @@ export interface ServiceTemplateListItem {
   // (useDeployServiceTemplateNow below) isn't safe for these, the UI
   // falls back to the pre-filled wizard step instead.
   requires_configuration: boolean
+  icon?: string
+  // A manifest template: POST .../install takes its env prompts and domains.
+  installable?: boolean
 }
 
 // Mirrors serviceTemplateDetail's wire shape: the list item's fields plus
 // the full compose.yaml body.
 export interface ServiceTemplateDetail extends ServiceTemplateListItem {
   compose: string
+  manifest?: TemplateManifest
 }
 
 export async function fetchServiceTemplates(): Promise<
