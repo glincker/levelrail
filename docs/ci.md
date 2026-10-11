@@ -24,6 +24,11 @@ A PR runs only the work its diff can affect:
 - **Workflow files only**: actionlint on the changed workflow files, inside
   the Lint job.
 
+A store migration that only adds tables, indexes or columns no longer runs
+everything: it selects the store and the packages that mention the table.
+Whole-tree scanner tests have no import edge to what they scan, so
+`scripts/ci-guards.txt` lists them and any non-test Go change selects them.
+
 A `main` push runs the same impact-based jobs as a PR (`Build, vet`, `Lint`,
 every `Test (*)` job, `Coverage gate`, `Web (tsc, eslint)`, `install.sh`),
 scoped against `github.event.before` and falling back to `--full` when that
@@ -31,8 +36,14 @@ SHA is missing or unresolvable. The merge queue is gone, so this is the only
 post-merge verification of the merged tree. Docs-only pushes never trigger
 `ci.yml` at all (`paths-ignore` on the `push` trigger: `**/*.md`, `adr/**`,
 `LICENSE`), and an area with no changed files skips as on a PR.
-`nightly.yml` runs the full `-race`, no `-short` sweep once a day regardless:
-the safety net for anything the scoping under-selects.
+`nightly.yml` runs the full no `-short`, shuffled sweep once a day: the safety
+net for anything the scoping under-selects. It diffs against the last
+**green** nightly, so a lane that failed or timed out is retried until it
+passes. `-race` runs every night on the packages that start goroutines or use
+`sync`, `atomic` or channels (`scripts/go-test-groups.sh race`), and on the api
+and docker lanes on Sundays or a manual dispatch. The `rest` packages split on
+`scripts/ci-heavy-packages.txt` so no lane nears its timeout, and the docker
+lane pre-pulls its upstream images with retries.
 
 ## How a change is scoped
 
@@ -44,7 +55,10 @@ Go toolchain) sorts changed files into areas:
 | Changed path | Effect |
 | --- | --- |
 | `.github/workflows/ci.yml`, `scripts/ci-*.sh`, `scripts/affected-go-packages.sh`, `scripts/go-test-groups.sh`, the coverage, lane and migration check scripts | Full run of everything: the pipeline itself changed |
-| `go.mod`, `go.sum`, `internal/store/migrations/*.sql` | Every Go package, full lint (same rule as the pre-push hook) |
+| `go.mod`, `go.sum` | Every Go package, full lint (same rule as the pre-push hook) |
+| `internal/store/migrations/*.sql`, additive only (new table, index or column) | `internal/store` plus the packages whose Go code names the touched table, own tests only |
+| `internal/store/migrations/*.sql` that drops, renames, updates, deletes, creates a view, or adds a trigger on an existing table | Every Go package (it can change behavior anywhere) |
+| Any non-test `*.go` | Also the guard packages in `scripts/ci-guards.txt` (whole-tree scanners such as `test/execgate`, seconds each) |
 | `.golangci.yml` | Full lint, plus the kit lane |
 | `kit/*.go`, `kit/go.mod`, `kit/go.sum` | The kit lane, plus the root packages that import the changed kit package (`kit/go.mod` and `kit/go.sum` run every Go package) |
 | `*.go` | That package, plus its dependents; lint for that package |
@@ -278,6 +292,14 @@ An `NPM_TOKEN` secret, including one set at the organization level, is not used 
 
 ## Caching
 
+Set the repository variable `GOCACHE_BUCKET` (plus `GOCACHE_REGION`,
+`GOCACHE_ENDPOINT` for R2, Tigris or MinIO, and the secrets `GOCACHE_KEY_ID`
+and `GOCACHE_SECRET`) to switch every Go job to a shared remote build and test
+cache through `GOCACHEPROG` ([gobuildcache](https://pkg.go.dev/github.com/richardartoul/gobuildcache)).
+A package whose inputs hash the same is a cache hit, build and test result
+alike, across PRs, nightly and laptops. Unset, the actions/cache path below
+applies. Live Docker lanes should keep `-count=1`.
+
 - Go: `~/.cache/go-build` and `~/go/pkg/mod`, one cache per job kind (build,
   lint, and each test lane group), keyed on the Go version and `go.sum` plus
   `tools/go.sum`. Pushes to `main` save one fresh cache per day, in the job's
@@ -334,6 +356,21 @@ Both scoping scripts run locally against any pair of commits, which is the quick
 scripts/ci-changes.sh <base-sha> <head-sha>
 scripts/ci-go-plan.sh <base-sha> <head-sha>
 ```
+
+## Runners
+
+Every job reads `runs-on` from the `CI_RUNNER` repository variable and falls
+back to `ubuntu-latest`, so trying a faster provider (Blacksmith, Namespace,
+RunsOn) is a variable change, not a workflow edit.
+
+## Blast radius
+
+`scripts/check-fanin.sh` prints how many packages transitively depend on each
+package and fails when one passes its budget in `scripts/fanin-budget.txt`.
+Today `internal/store` reaches ~60 packages through `internal/spec`, so most
+store edits select most of the tree. Lowering those numbers (consumer-side
+interfaces, moving shared types to leaf packages) is the durable fix for
+"one edit runs 1000 tests".
 
 ## Tuning
 
