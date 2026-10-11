@@ -214,14 +214,16 @@ const (
 // container.
 type Controller struct {
 	serviceName     string
+	conditions      ConditionReader
 	store           ServiceStore
 	runtime         docker.Runtime
 	httpClient      *http.Client
 	probeLimits     probe.Limits
 	readyBudget     time.Duration
-	secretResolver  SecretResolver          // nil is valid: a service with no secret-backed env vars never needs one
-	deployRecorder  DeployRecorder          // nil is valid: deploy frequency just isn't recorded
-	meshDNSAddr     string                  // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	secretResolver  SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
+	deployRecorder  DeployRecorder // nil is valid: deploy frequency just isn't recorded
+	meshDNSAddr     string         // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	meshDB          *MeshDatabaseConfig
 	meshZone        string                  // empty is valid: resolveDatabaseField falls back to the database's container name, see WithMeshZone
 	nodeGPU         NodeGPUChecker          // nil is valid: no GPU placement check, see WithNodeGPU
 	storageTargets  StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
@@ -1070,7 +1072,7 @@ func readinessReason(err error, fallback string) string {
 // (next reconcile pass retries); safe to call every pass since
 // NetworkConnect is idempotent.
 func (c *Controller) connectReferencedDatabases(ctx context.Context, desired *store.DesiredService, networkName string) error {
-	if c.meshZone != "" {
+	if c.meshZone != "" && c.meshDB == nil {
 		return nil
 	}
 	names := make(map[string]bool, len(desired.DatabaseEnv)+1)
@@ -1087,6 +1089,9 @@ func (c *Controller) connectReferencedDatabases(ctx context.Context, desired *st
 		}
 		if !allowed {
 			return c.enforceDatabaseScope(ctx, networkName, dbName, why)
+		}
+		if c.crossNodeDatabaseName(ctx, desired.NodeID, dbName) {
+			continue
 		}
 		containerName := database.ContainerName(dbName)
 		state, err := c.runtime.InspectByName(ctx, containerName)
@@ -1154,6 +1159,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	}
 	if c.meshDNSAddr != "" {
 		spec.DNS = []string{c.meshDNSAddr}
+	}
+	if spec.ExtraHosts, err = c.databaseExtraHosts(ctx, desired); err != nil {
+		return fmt.Errorf("database mesh hosts: %w", err)
 	}
 	if err := c.ensureAppNetwork(ctx, desired); err != nil {
 		return err
@@ -1498,7 +1506,7 @@ func (c *Controller) resolveDatabaseEnv(ctx context.Context, desired *store.Desi
 
 	env := make(map[string]string, len(desired.DatabaseEnv)+1)
 	for envVar, ref := range desired.DatabaseEnv {
-		value, err := c.resolveDatabaseField(ctx, ref.Database, ref.Field)
+		value, err := c.resolveDatabaseField(ctx, desired.NodeID, ref.Database, ref.Field)
 		if err != nil {
 			return nil, fmt.Errorf("env var %q: %w", envVar, err)
 		}
@@ -1506,7 +1514,7 @@ func (c *Controller) resolveDatabaseEnv(ctx context.Context, desired *store.Desi
 	}
 
 	if att := desired.DatabaseAttachment; att != nil {
-		value, err := c.resolveDatabaseField(ctx, att.DatabaseName, att.Field)
+		value, err := c.resolveDatabaseField(ctx, desired.NodeID, att.DatabaseName, att.Field)
 		if err != nil {
 			return nil, fmt.Errorf("database attachment (env var %q): %w", att.EnvVar, err)
 		}
@@ -1546,7 +1554,7 @@ func DatabaseHost(dbName, zone string) string {
 // postgresCredentialsFor and its siblings); password comes from the same
 // internal/secrets storage those generators already write to
 // (database.PasswordSecretKey).
-func (c *Controller) resolveDatabaseField(ctx context.Context, dbName, field string) (string, error) {
+func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName, field string) (string, error) {
 	ext, err := c.lookupExternal(ctx, dbName)
 	if err != nil {
 		return "", err
@@ -1567,6 +1575,13 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, dbName, field str
 
 	host := DatabaseHost(dbName, c.meshZone)
 	port, _ := database.ContainerPort(desiredDB.Engine) // ok already confirmed by SupportsField above
+	ep, crossNode, err := c.crossNodeDatabase(ctx, appNodeID, desiredDB)
+	if err != nil {
+		return "", err
+	}
+	if c.meshDB != nil && !crossNode {
+		host = database.ContainerName(dbName)
+	}
 
 	tlsEnabled, err := c.databaseTLSEnabled(ctx, dbName, desiredDB.Engine)
 	if err != nil {
@@ -1576,6 +1591,9 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, dbName, field str
 		if tlsPort, ok := database.TLSContainerPort(desiredDB.Engine); ok {
 			port = tlsPort
 		}
+	}
+	if crossNode {
+		host, port = ep.host, ep.port
 	}
 
 	switch field {

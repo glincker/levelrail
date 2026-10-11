@@ -44,7 +44,8 @@ func (rt *Router) teardownPreviewRecord(ctx context.Context, preview store.Previ
 // teardownPreviewRecordReason is teardownPreviewRecord with the reason shown
 // in the pull request's status comment once the preview is gone.
 func (rt *Router) teardownPreviewRecordReason(ctx context.Context, preview store.PreviewEnvironment, reason string) (int, string) {
-	failed := rt.teardownPreviewApp(ctx, preview.PreviewAppID)
+	failed := rt.removePreviewDNS(ctx, preview)
+	failed = append(failed, rt.teardownPreviewApp(ctx, preview.PreviewAppID)...)
 	failed = append(failed, rt.teardownPreviewEphemeralDatabases(ctx, preview.ID)...)
 	failed = append(failed, rt.teardownPreviewDatabaseIsolations(ctx, preview.ID)...)
 	if len(failed) > 0 {

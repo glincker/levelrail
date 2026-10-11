@@ -2,6 +2,7 @@ const APP_SLUG_DOCS: Record<string, string> = {
   deploys: 'deploying-apps',
   source: 'git-integrations',
   'deploy-settings': 'deploy-safety',
+  previews: 'previews',
   pipelines: 'pipelines',
   domains: 'domains-and-ingress',
   loadbalancer: 'load-balancing',

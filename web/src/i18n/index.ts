@@ -32,6 +32,12 @@ export const NAMESPACES = [
   'traffic',
   'dns',
   'domainPolicies',
+  'observability',
+  'previews',
+  'backups',
+  'gitBuild',
+  'teams',
+  'compose',
 ] as const
 
 void i18n

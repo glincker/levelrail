@@ -56,6 +56,10 @@ type RequestWindow struct {
 	BytesIn        uint64
 	BytesOut       uint64
 	Latency        [LatencyBucketCount]uint64
+	// Routes and Statuses are the bounded per-route and exact-status
+	// breakdown; they are stored in request_breakdown, not as samples.
+	Routes   map[string]RouteStat
+	Statuses map[int]uint64
 }
 
 // Samples renders the window as non-zero metric samples for resourceID.
@@ -93,6 +97,7 @@ func (w *RequestWindow) Add(o RequestWindow) {
 	for i := range w.Latency {
 		w.Latency[i] += o.Latency[i]
 	}
+	w.mergeBreakdown(o)
 }
 
 // RecordRequests writes the per-app windows as samples at time at.
@@ -107,7 +112,7 @@ func (db *DB) RecordRequests(ctx context.Context, byApp map[string]RequestWindow
 	if err := db.WriteSamples(ctx, rows); err != nil {
 		return fmt.Errorf("telemetry: record requests: %w", err)
 	}
-	return nil
+	return db.recordBreakdown(ctx, byApp, at)
 }
 
 // PercentileFromBuckets estimates the q-quantile (0..1) in milliseconds from

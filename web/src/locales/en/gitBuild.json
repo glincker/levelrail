@@ -1,0 +1,76 @@
+{
+  "title": "Build settings",
+  "change": "Change build settings",
+  "cancel": "Cancel",
+  "save": "Save build settings",
+  "saving": "Saving",
+  "saved": "Build settings saved.",
+  "applied": "Build settings updated.",
+  "saveFailed": "Could not save build settings.",
+  "summary": {
+    "buildPack": "Build pack",
+    "dockerfile": "Dockerfile",
+    "baseDirectory": "Base directory",
+    "context": "Build context",
+    "outputDirectory": "Output directory"
+  },
+  "packs": {
+    "railpack": "Auto-detect (Railpack)",
+    "dockerfile": "Dockerfile",
+    "static": "Static site"
+  },
+  "values": {
+    "repoRoot": "Repository root",
+    "defaultDockerfile": "{{path}} (default)",
+    "notUsed": "Not used by auto-detect",
+    "notSet": "Not set"
+  },
+  "resolved": {
+    "railpack": "Auto-detects the framework in {{where}}.",
+    "dockerfile": "Builds {{dockerfile}} with {{where}} as the build context.",
+    "static": "Serves a static site built from {{where}}."
+  },
+  "pathHelp": "Dockerfile paths are relative to the repository root, not to the base directory.",
+  "nudge": {
+    "title": "This looks like a monorepo. Pick a Dockerfile.",
+    "body": "There is no app at the repository root, so auto-detect has nothing to build there and the next deploy will fail. Choose a Dockerfile from the repository.",
+    "action": "Pick a Dockerfile"
+  },
+  "form": {
+    "buildType": "Build pack",
+    "dockerfile": "Dockerfile path",
+    "dockerfileHelp": "Relative to the repository root, for example apps/web/Dockerfile. Leave empty to use Dockerfile in the build context.",
+    "outputDirectory": "Output directory",
+    "outputDirectoryHelp": "The folder to serve, relative to the repository root.",
+    "baseDirectory": "Base directory",
+    "baseDirectoryHelp": "The folder used as the build context. Leave empty for the repository root. Keep the root when the Dockerfile copies files from several packages, for example with turbo prune.",
+    "willBuild": "Will build",
+    "invalidAbsolute": "Use a path relative to the repository root, not an absolute path.",
+    "invalidParent": "The path must stay inside the repository (no ..).",
+    "invalidOutside": "The Dockerfile must be inside the base directory. Paths are relative to the repository root, for example {{example}}."
+  },
+  "detected": {
+    "title": "Detected in this repo",
+    "description": "Dockerfiles and build roots found on branch {{branch}}.",
+    "loading": "Reading the repository file tree",
+    "empty": "No Dockerfiles or build roots were found on this branch.",
+    "error": "Could not read the repository: {{error}}",
+    "retry": "Try again",
+    "apply": "Use this",
+    "recommended": "Recommended",
+    "truncated": "The repository is large, so this list may be incomplete.",
+    "tools": "Workspace tooling found: {{tools}}.",
+    "dockerfileLine": "Dockerfile {{path}}",
+    "contextLine": "Context: {{where}}",
+    "autoDetectLine": "Auto-detect in {{where}}"
+  },
+  "reasons": {
+    "turboPrune": "It runs turbo prune, so keep the build context at the repository root.",
+    "rootCopy": "It copies the whole repository and workspace files, so keep the build context at the repository root.",
+    "appDeployDir": "It sits in the deploy folder of {{app}}, which usually builds from the repository root.",
+    "rootDockerfile": "A Dockerfile at the repository root, built with the whole repository as context.",
+    "nestedDockerfile": "A Dockerfile in {{directory}}, built from that directory.",
+    "appRailpack": "{{directory}} looks like an application, auto-detected from that directory."
+  },
+  "failureLink": "Check build settings"
+}

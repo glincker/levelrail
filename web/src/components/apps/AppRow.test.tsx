@@ -82,13 +82,15 @@ afterEach(() => {
 })
 
 describe('AppRow', () => {
-  it('renders meta chips and traffic numerals, amber over the p95 threshold', async () => {
+  it('renders meta chips and traffic numerals, warning tone over the p95 threshold', async () => {
     stubFetch(batch(['web'], true, 800, 0.002))
     renderRows([makeApp('web')])
     expect(screen.getByText('production')).toBeInTheDocument()
     expect(screen.getByText('web.example.com')).toBeInTheDocument()
+    expect(screen.getByText('Healthy').className).toContain('text-tone-success')
+    expect(screen.getByText('nginx:1.27')).toBeInTheDocument()
     const p95 = await screen.findByText('800 ms')
-    expect(p95.className).toContain('amber')
+    expect(p95.className).toContain('tone-warning')
     expect(screen.getByText('0.2%').className).toContain('muted')
     expect(
       screen.getByRole('img', { name: /Request rate for web/ }),
@@ -98,7 +100,7 @@ describe('AppRow', () => {
   it('turns errors red past the critical threshold', async () => {
     stubFetch(batch(['web'], true, 100, 0.09))
     renderRows([makeApp('web')])
-    expect((await screen.findByText('9.0%')).className).toContain('destructive')
+    expect((await screen.findByText('9.0%')).className).toContain('tone-danger')
   })
 
   it('shows placeholders without traffic', async () => {

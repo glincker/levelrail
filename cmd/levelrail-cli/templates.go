@@ -37,6 +37,8 @@ func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runTemplatesGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy":
 		return runTemplatesDeploy(prog, args[1:], stdout, stderr, lookupEnv)
+	case "install":
+		return runTemplatesInstall(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runTemplatesDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -51,6 +53,7 @@ func templatesUsage(prog string) string {
   %[1]s templates list [--custom] [flags]               browse the curated service catalog, or --custom for your own saved templates
   %[1]s templates get <id> [flags]                       show one entry (built-in or custom), including its full compose.yaml
   %[1]s templates deploy <id> [--name NAME] [flags]     deploy a template's compose.yaml as an app, built-in or custom
+  %[1]s templates install <id> [--name NAME] [--env K=V] [--domain SVC=HOST]   install a manifest template with its settings
   %[1]s templates delete <id> [flags]                    delete a custom template (see "apps save-as-template")
 
 "deploy" defaults the app name to <id>; pass --name to deploy under a

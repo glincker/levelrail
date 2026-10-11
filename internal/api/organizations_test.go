@@ -83,8 +83,8 @@ func TestHandleListOrganizations(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got) != 1 {
-		t.Fatalf("len = %d, want 1", len(got))
+	if len(got) != 2 {
+		t.Fatalf("len = %d, want 2 (the seeded one plus the default team)", len(got))
 	}
 }
 

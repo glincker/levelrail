@@ -66,6 +66,10 @@ System endpoints for:
 | POST | /api/v1/system/proxy-integration/setup | AbilityRoot | handleSetupProxyIntegration |
 | POST | /api/v1/system/proxy-integration/apply | AbilityRoot | handleApplyProxyIntegration |
 | POST | /api/v1/system/proxy-integration/verify | AbilityRoot | handleVerifyProxyIntegration |
+| GET | /api/v1/system/readiness | AbilityRead | handleServerReadiness |
+| GET | /api/v1/updates/self-upgrade/plan | AbilityRead | handleSelfUpgradePlan |
+| GET | /api/v1/updates/self-upgrade/attempts | AbilityRead | handleSelfUpgradeAttempts |
+| POST | /api/v1/updates/self-upgrade | AbilityRoot | handleSelfUpgradeStart |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -203,7 +207,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 148 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 160 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -363,6 +367,18 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/sleep/wake | AbilityDeploy | handleWakeApp |
 | GET | /api/v1/apps/{name}/environment-domains | AbilityRead | handleGetAppEnvironmentDomains |
 | GET | /api/v1/apps/{name}/listening-ports | AbilityRead | handleAppListeningPorts |
+| GET | /api/v1/apps/{name}/compose | AbilityRead | handleGetComposeStack |
+| GET | /api/v1/apps/{name}/compose/revisions | AbilityRead | handleListComposeRevisions |
+| GET | /api/v1/apps/{name}/compose/revisions/{revision} | AbilityRead | handleGetComposeRevision |
+| POST | /api/v1/apps/{name}/compose/rollback | AbilityDeploy | handleRollbackCompose |
+| POST | /api/v1/apps/{name}/compose/redeploy | AbilityDeploy | handleRedeployCompose |
+| POST | /api/v1/service-templates/{id}/install | AbilityDeploy | handleInstallServiceTemplate |
+| DELETE | /api/v1/apps/{name}/compose | AbilityWrite | handleComposeDown |
+| POST | /api/v1/apps/{name}/move | AbilityRoot | handleStartMove |
+| GET | /api/v1/apps/{name}/placement | AbilityRead | handleGetPlacement |
+| PUT | /api/v1/apps/{name}/placement | AbilityRoot | handleSetPlacement |
+| GET | /api/v1/apps/{name}/investigate | AbilityRead | handleInvestigate |
+| GET | /api/v1/apps/{name}/failure-context | AbilityRead | handleFailureContext |
 
 :::
 
@@ -398,6 +414,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/git-source/rotate-webhook-secret | AbilityWriteSensitive | handleRotateGitSourceWebhookSecret |
 | POST | /api/v1/webhooks/slack/interactions | Public | handleSlackInteraction |
 | POST | /api/v1/webhooks/discord/interactions | Public | handleDiscordInteraction |
+| PUT | /api/v1/apps/{name}/git-source/build | AbilityWriteSensitive | handleSetGitSourceBuild |
+| POST | /api/v1/apps/{name}/git-source/detect | AbilityDeploy | handleDetectGitSourceBuild |
+| POST | /api/v1/apps/{name}/previews/{number}/extend | AbilityDeploy | handleExtendPreviewEnvironment |
 
 ## Telemetry
 
@@ -523,6 +542,9 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/upgrades | AbilityRead | handleGetDatabaseUpgrades |
 | PUT | /api/v1/databases/{name}/upgrade-policy | AbilityWriteSensitive | handlePutDatabaseUpgradePolicy |
 | POST | /api/v1/databases/{name}/upgrade-now | AbilityWriteSensitive | handleDatabaseUpgradeNow |
+| POST | /api/v1/databases/{name}/move | AbilityRoot | handleStartMove |
+| GET | /api/v1/databases/{name}/placement | AbilityRead | handleGetPlacement |
+| PUT | /api/v1/databases/{name}/placement | AbilityRoot | handleSetPlacement |
 
 ## Projects / Organizations / Environments
 
@@ -612,6 +634,9 @@ Endpoints for:
 | PUT | /api/v1/nodes/{id}/region | AbilityRoot | handleSetNodeRegion |
 | POST | /api/v1/nodes/ssh-provision | AbilityRoot | handleCreateSSHNodeProvision |
 | POST | /api/v1/nodes/{id}/mesh/rejoin | AbilityRoot | handleRejoinNodeMesh |
+| GET | /api/v1/nodes/{id}/drains | AbilityRoot | handleListNodeDrains |
+| GET | /api/v1/nodes/{id}/labels | AbilityRoot | handleGetNodeLabels |
+| PUT | /api/v1/nodes/{id}/labels | AbilityRoot | handleSetNodeLabels |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -830,6 +855,11 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/restore-as-new | AbilityWriteSensitive | handleCloneRestore |
 | GET | /api/v1/databases/{name}/clone-restores | AbilityRead | handleListCloneRestores |
 | DELETE | /api/v1/databases/{name}/backups/{historyId} | AbilityWriteSensitive | handleDeleteBackup |
+| GET | /api/v1/backups/health | AbilityRead | handleBackupHealth |
+| GET | /api/v1/backups/drills | AbilityRead | handleListBackupDrills |
+| GET | /api/v1/backups/drills/{id} | AbilityRead | handleGetBackupDrill |
+| POST | /api/v1/backups/drills | AbilityWriteSensitive | handleStartBackupDrill |
+| POST | /api/v1/backups/protection/refresh | AbilityWriteSensitive | handleRefreshBackupProtection |
 
 ## App Volume Backups / Restore
 
@@ -854,6 +884,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/volumes/{volume}/clone-restores | AbilityRead | handleListVolumeCloneRestores |
 | DELETE | /api/v1/apps/{name}/volumes/{volume}/backups/{historyId} | AbilityWriteSensitive | handleDeleteVolumeBackup |
 | PUT | /api/v1/apps/{name}/volumes | AbilityWrite | handleSetAppVolumes |
+| GET | /api/v1/apps/{name}/volumes/{volume}/backup-policy | AbilityRead | handleGetVolumeBackupPolicy |
+| PUT | /api/v1/apps/{name}/volumes/{volume}/backup-policy | AbilityWriteSensitive | handleSetVolumeBackupPolicy |
+| POST | /api/v1/apps/{name}/volumes/{volume}/restore-to | AbilityWriteSensitive | handleVolumeRestoreTo |
 
 ## App Storage / Database Attach
 
@@ -1115,6 +1148,35 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/dns/health-checks/{id} | AbilityRoot | handleDeleteDNSHealthCheck |
 | GET | /api/v1/dns/zone | AbilityRead | handleDNSZone |
 | GET | /api/v1/traffic/summary | AbilityRead | handleTrafficSummary |
+| GET | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/plan | AbilityRead | handleAppImportCutoverPlan |
+| GET | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs | AbilityRead | handleListAppImportCutoverRuns |
+| POST | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs | AbilityWriteSensitive | handleStartAppImportCutover |
+| GET | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run} | AbilityRead | handleGetAppImportCutoverRun |
+| POST | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}/rollback | AbilityWriteSensitive | handleRollbackAppImportCutover |
+| POST | /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}/confirm-dns | AbilityWriteSensitive | handleConfirmAppImportCutoverDNS |
+| GET | /api/v1/compose | AbilityRead | handleListComposeStacks |
+| POST | /api/v1/compose/preview | AbilityDeploy | handlePreviewCompose |
+| GET | /api/v1/node-moves | AbilityRoot | handleListNodeMoves |
+| GET | /api/v1/node-moves/{id} | AbilityRoot | handleGetNodeMove |
+| GET | /api/v1/node-drains/{id} | AbilityRoot | handleGetNodeDrain |
+| GET | /api/v1/mesh/connectivity | AbilityRoot | handleMeshConnectivity |
+| GET | /api/v1/teams | AbilityRead | handleListTeams |
+| POST | /api/v1/teams | AbilityRoot | handleCreateTeam |
+| GET | /api/v1/teams/roles | AbilityRead | handleListTeamRoles |
+| GET | /api/v1/teams/{id} | AbilityRead | handleGetTeam |
+| PATCH | /api/v1/teams/{id} | AbilityWrite | handleRenameTeam |
+| DELETE | /api/v1/teams/{id} | AbilityWrite | handleDeleteTeam |
+| GET | /api/v1/teams/{id}/members | AbilityRead | handleListTeamMembers |
+| PUT | /api/v1/teams/{id}/members/{user} | AbilityWrite | handleSetTeamMemberRole |
+| DELETE | /api/v1/teams/{id}/members/{user} | AbilityWrite | handleRemoveTeamMember |
+| DELETE | /api/v1/teams/{id}/members/me | AbilityRead | handleLeaveTeam |
+| POST | /api/v1/teams/{id}/transfer | AbilityWrite | handleTransferTeam |
+| GET | /api/v1/teams/{id}/events | AbilityRead | handleListTeamEvents |
+| GET | /api/v1/teams/{id}/invites | AbilityRead | handleListTeamInvites |
+| POST | /api/v1/teams/{id}/invites | AbilityWrite | handleCreateTeamInvite |
+| DELETE | /api/v1/teams/{id}/invites/{invite} | AbilityWrite | handleRevokeTeamInvite |
+| GET | /api/v1/team-invites/{token} | Session | handlePreviewTeamInvite |
+| POST | /api/v1/team-invites/accept | Public | handleAcceptTeamInvite |
 
 ## See also
 

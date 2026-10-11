@@ -4,6 +4,7 @@ import {
   useDeployAttempts,
 } from '../../../queries/deployAttempts'
 import { MetricsDashboard } from '../../../components/MetricsDashboard'
+import { parseMetricsSearch } from '../../../lib/observabilitySearch'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // Former "metrics" tab, now a real deep-linkable route. MetricsDashboard
@@ -17,15 +18,27 @@ import { Skeleton } from '@/components/ui/skeleton'
 export const Route = createFileRoute('/apps/$name/metrics')({
   loader: ({ context: { queryClient }, params: { name } }) =>
     queryClient.ensureQueryData(deployAttemptsQueryOptions(name)),
+  validateSearch: parseMetricsSearch,
   component: MetricsSection,
   pendingComponent: MetricsSectionSkeleton,
 })
 
 function MetricsSection() {
   const { name } = Route.useParams()
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
   const { data: deployAttempts } = useDeployAttempts(name)
 
-  return <MetricsDashboard appName={name} deployAttempts={deployAttempts} />
+  return (
+    <MetricsDashboard
+      appName={name}
+      deployAttempts={deployAttempts}
+      search={search}
+      onSearchChange={(next) => {
+        void navigate({ search: next, replace: true })
+      }}
+    />
+  )
 }
 
 function ChartTileSkeleton() {

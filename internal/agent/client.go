@@ -467,6 +467,10 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 				go handleRotateMeshKey(ctx, mesh, meshNodeID, req.GetRequestId(), send)
 				continue
 			}
+			if req.GetMeshStatus() != nil {
+				go handleMeshStatus(ctx, mesh, req.GetRequestId(), send)
+				continue
+			}
 			go func() {
 				resp := Execute(ctx, rt, req, emitEvent)
 				send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Response{Response: resp}})

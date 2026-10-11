@@ -39,6 +39,7 @@ jobs:
       full: ${{ steps.detect.outputs.full }}
       go: ${{ steps.detect.outputs.go }}
       go_full: ${{ steps.detect.outputs.go_full }}
+      live_smoke: ${{ steps.detect.outputs.live_smoke }}
       lint: ${{ steps.detect.outputs.lint }}
       lint_dirs: ${{ steps.detect.outputs.lint_dirs }}
       tools: ${{ steps.detect.outputs.tools }}
@@ -155,6 +156,7 @@ jobs:
         id: plan
         env:
           GO_FULL: ${{ needs.changes.outputs.go_full }}
+          CI_LIVE_SMOKE: ${{ needs.changes.outputs.live_smoke }}
           BASE: ${{ needs.changes.outputs.base }}
           CI_LIVE_LABEL: ${{ steps.label.outputs.live_label }}
         run: |

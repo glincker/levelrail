@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ActionMenu } from './ActionMenu'
 import { InfoTip } from './InfoTip'
 import { MetricTile } from './MetricTile'
+import { formatDeltaPercent } from '@/lib/deltaPercent'
 import { Suggestion } from './Suggestion'
 import { SuggestionList } from './SuggestionList'
 import { Timeline } from './Timeline'
@@ -275,5 +276,18 @@ describe('Timeline', () => {
     await userEvent.tab()
     await userEvent.keyboard('{Enter}')
     expect(onClick).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('formatDeltaPercent', () => {
+  it.each([
+    [7.45098039215687, '7.5%'],
+    [256.7518248175182, '257%'],
+    [47.47428712311266, '47%'],
+    [0.04, '0%'],
+    [5000, '>999%'],
+    [-12.4, '12%'],
+  ])('formats %s as %s', (input, want) => {
+    expect(formatDeltaPercent(input)).toBe(want)
   })
 })

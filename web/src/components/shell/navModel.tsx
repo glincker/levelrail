@@ -16,6 +16,7 @@ import {
   GavelIcon,
   GearIcon,
   GitBranchIcon,
+  GitPullRequestIcon,
   GlobeIcon,
   ListBulletsIcon,
   HardDrivesIcon,
@@ -350,6 +351,7 @@ export type AppTo =
   | '/apps/$name/overview'
   | '/apps/$name/deploys'
   | '/apps/$name/source'
+  | '/apps/$name/previews'
   | '/apps/$name/deploy-settings'
   | '/apps/$name/pipelines'
   | '/apps/$name/domains'
@@ -414,6 +416,12 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
         <ClockCounterClockwiseIcon />,
       ),
       item('source', 'Source', '/apps/$name/source', <GitBranchIcon />),
+      item(
+        'previews',
+        'Previews',
+        '/apps/$name/previews',
+        <GitPullRequestIcon />,
+      ),
       item(
         'deploy-settings',
         'Deploy settings',

@@ -6,7 +6,6 @@ import type {
 } from '../types/appDetail'
 import { formatBytes, formatDurationNs, formatNanoCpus } from '../lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { MoveToNodeDialog } from './MoveToNodeDialog'
 import { MoveToProjectDialog } from './MoveToProjectDialog'
 import { MoveToEnvironmentDialog } from './MoveToEnvironmentDialog'
 import { MoveEnvironmentDialog } from './environments/MoveEnvironmentDialog'
@@ -102,13 +101,6 @@ export function AppOverview({ app }: { app: AppDetail }) {
               {app.node_id || (
                 <span className="text-muted-foreground italic">unassigned</span>
               )}
-              <MoveToNodeDialog
-                kind="app"
-                name={app.name}
-                currentNodeId={app.node_id}
-                volumeCount={app.volumes?.length ?? 0}
-                volumeNames={app.volumes?.map((v) => v.name) ?? []}
-              />
             </dd>
           </div>
           {/* Project membership is metadata, the same "shown, not a

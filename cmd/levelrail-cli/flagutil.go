@@ -150,6 +150,7 @@ func bindOutputQueryFlags(fs *flag.FlagSet) (outputFlag, queryFlag *string) {
 // subcommands make.
 func apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag string, lookupEnv func(string) (string, bool)) *Client {
 	profile := resolveProfile(profileFlag, lookupEnv)
+	applyScope(prog, profile, lookupEnv)
 	return NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
 }
 

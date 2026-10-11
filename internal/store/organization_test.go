@@ -53,8 +53,8 @@ func TestListOrganizations_OrderedByCreation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListOrganizations() error = %v", err)
 	}
-	if len(got) != 2 || got[0].ID != "org_a" || got[1].ID != "org_b" {
-		t.Fatalf("ListOrganizations() = %+v, want [org_a, org_b] in creation order", got)
+	if len(got) != 3 || got[0].ID != "org_a" || got[1].ID != "org_b" || got[2].ID != DefaultTeamID {
+		t.Fatalf("ListOrganizations() = %+v, want [org_a, org_b, default team] in creation order", got)
 	}
 }
 

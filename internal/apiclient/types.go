@@ -1523,6 +1523,10 @@ type GitSourceResource struct {
 	Branch      string `json:"branch"`
 	BuildType   string `json:"build_type"`
 	BuildPath   string `json:"build_path,omitempty"`
+	// BaseDirectory is the build context, relative to the repository root.
+	BaseDirectory string `json:"base_directory,omitempty"`
+	// ResolvedBuild states what a deploy builds, in plain terms.
+	ResolvedBuild GitSourceResolvedBuild `json:"resolved_build"`
 	// TriggerMode mirrors store.GitSource.TriggerMode: "push" (default)
 	// or "release", see internal/api's normalizeGitSourceTriggerMode.
 	TriggerMode    string `json:"trigger_mode,omitempty"`
@@ -1563,12 +1567,51 @@ type SetGitDeploySettingsRequest struct {
 // (internal/api/git_sources.go), minus the multi-service Services/
 // AdditionalServices fields (see GitSourceResource's own doc comment).
 type SetGitSourceRequest struct {
-	RepoURL     string `json:"repo_url"`
-	Branch      string `json:"branch,omitempty"`
-	BuildType   string `json:"build_type,omitempty"`
-	BuildPath   string `json:"build_path,omitempty"`
-	Token       string `json:"token,omitempty"`
-	TriggerMode string `json:"trigger_mode,omitempty"`
+	RepoURL   string `json:"repo_url"`
+	Branch    string `json:"branch,omitempty"`
+	BuildType string `json:"build_type,omitempty"`
+	BuildPath string `json:"build_path,omitempty"`
+	// BaseDirectory is the build context, relative to the repository root.
+	BaseDirectory string `json:"base_directory,omitempty"`
+	Token         string `json:"token,omitempty"`
+	TriggerMode   string `json:"trigger_mode,omitempty"`
+}
+
+// GitSourceResolvedBuild mirrors internal/api's gitSourceResolvedBuild.
+type GitSourceResolvedBuild struct {
+	ContextDir     string `json:"context_dir"`
+	DockerfilePath string `json:"dockerfile_path,omitempty"`
+	Summary        string `json:"summary"`
+}
+
+// SetGitSourceBuildRequest mirrors internal/api's setGitSourceBuildRequest.
+type SetGitSourceBuildRequest struct {
+	BuildType     string `json:"build_type"`
+	BuildPath     string `json:"build_path"`
+	BaseDirectory string `json:"base_directory"`
+}
+
+// GitBuildSuggestion mirrors internal/repolayout's Suggestion.
+type GitBuildSuggestion struct {
+	BuildType      string `json:"build_type"`
+	DockerfilePath string `json:"dockerfile_path,omitempty"`
+	BaseDirectory  string `json:"base_directory,omitempty"`
+	Reason         string `json:"reason"`
+	ReasonCode     string `json:"reason_code"`
+	Recommended    bool   `json:"recommended"`
+}
+
+// GitBuildDetection mirrors internal/api's detectGitSourceResponse.
+type GitBuildDetection struct {
+	Branch             string               `json:"branch"`
+	LooksLikeMonorepo  bool                 `json:"looks_like_monorepo"`
+	RootHasApp         bool                 `json:"root_has_app"`
+	Tools              []string             `json:"tools"`
+	Dockerfiles        []string             `json:"dockerfiles"`
+	ComposeFiles       []string             `json:"compose_files"`
+	Suggestions        []GitBuildSuggestion `json:"suggestions"`
+	Truncated          bool                 `json:"truncated"`
+	NeedsBuildSettings bool                 `json:"needs_build_settings"`
 }
 
 // AppScheduleResource mirrors internal/api's appScheduleResource
@@ -2315,6 +2358,7 @@ type PreviewEnvironmentResource struct {
 	UpdatedAt    string `json:"updated_at"`
 	Stale        bool   `json:"stale"`
 	ExpiresAt    string `json:"expires_at,omitempty"`
+	Extended     bool   `json:"extended"`
 	IsFork       bool   `json:"is_fork"`
 	HeadRepo     string `json:"head_repo,omitempty"`
 	// EphemeralDatabases mirrors internal/api's own EphemeralDatabases
@@ -2878,9 +2922,11 @@ type SetNodeWorkloadsRequest struct {
 // appearance, the same "shown once, never recoverable again" shape a
 // created API token uses.
 type CreateNodeJoinTokenResponse struct {
-	Token         string    `json:"token"`
-	ExpiresAt     time.Time `json:"expires_at"`
-	CAFingerprint string    `json:"ca_fingerprint,omitempty"`
+	Token            string        `json:"token"`
+	ExpiresAt        time.Time     `json:"expires_at"`
+	CAFingerprint    string        `json:"ca_fingerprint,omitempty"`
+	ControlPlaneAddr string        `json:"control_plane_addr,omitempty"`
+	JoinCommands     *JoinCommands `json:"join_commands,omitempty"`
 }
 
 // DrainNodeResponse mirrors internal/api's drainNodeResponse. A partial

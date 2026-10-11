@@ -43,6 +43,7 @@ const EXPECTED_APP = [
   'overview',
   'deploys',
   'source',
+  'previews',
   'deploy-settings',
   'pipelines',
   'domains',

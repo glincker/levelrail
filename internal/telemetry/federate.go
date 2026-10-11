@@ -3,6 +3,7 @@ package telemetry
 import (
 	"context"
 	"errors"
+	"math"
 	"sort"
 	"sync"
 	"time"
@@ -184,6 +185,9 @@ type AggregatedPoint struct {
 	// future frontend) can tell a bucket built from one sample from one
 	// built from sixty, without a separate query.
 	Count int
+	// Max is the largest sample in the bucket, so a spike survives
+	// downsampling even though Value is an average.
+	Max float64
 }
 
 // Aggregate buckets samples (assumed already timestamp-ascending, which
@@ -197,13 +201,14 @@ func Aggregate(samples []Sample, from time.Time, step time.Duration) []Aggregate
 	if step <= 0 {
 		out := make([]AggregatedPoint, len(samples))
 		for i, s := range samples {
-			out[i] = AggregatedPoint{Timestamp: s.Timestamp, Value: s.Value, Count: 1}
+			out[i] = AggregatedPoint{Timestamp: s.Timestamp, Value: s.Value, Count: 1, Max: s.Value}
 		}
 		return out
 	}
 
 	type bucket struct {
 		sum   float64
+		max   float64
 		count int
 	}
 	buckets := make(map[int64]*bucket)
@@ -213,11 +218,12 @@ func Aggregate(samples []Sample, from time.Time, step time.Duration) []Aggregate
 		idx := int64(s.Timestamp.Sub(from) / step)
 		b, ok := buckets[idx]
 		if !ok {
-			b = &bucket{}
+			b = &bucket{max: s.Value}
 			buckets[idx] = b
 			order = append(order, idx)
 		}
 		b.sum += s.Value
+		b.max = math.Max(b.max, s.Value)
 		b.count++
 	}
 
@@ -230,6 +236,7 @@ func Aggregate(samples []Sample, from time.Time, step time.Duration) []Aggregate
 			Timestamp: from.Add(time.Duration(idx) * step),
 			Value:     b.sum / float64(b.count),
 			Count:     b.count,
+			Max:       b.max,
 		}
 	}
 	return out

@@ -39,6 +39,7 @@ const PUBLIC_ROUTE_PATHS = [
   '/reset-password',
   '/accept-invite',
   '/sign-in-alert',
+  '/accept-team-invite',
 ]
 
 export const Route = createRootRouteWithContext<RouterContext>()({

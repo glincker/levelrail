@@ -311,6 +311,7 @@ func (rt *Router) requireAbilityForResource(required string, resourceFn func(*ht
 // passes or fails, and it still records a rejection (a 403 from the
 // ability check below) the same as it records any other status.
 func (rt *Router) requireAbilityDecided(required string, decide authzDecision, next http.HandlerFunc) http.HandlerFunc {
+	next = rt.withTeamGate(required, next)
 	return func(w http.ResponseWriter, r *http.Request) {
 		if pinned, ok := rt.currentPinnedSession(r); ok {
 			if !rt.pinnedOriginUsable(r.Context(), pinned) {

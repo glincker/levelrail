@@ -415,3 +415,52 @@ What it guarantees:
 - The receipt is a JSON download with no secret values. The MCP tool `get_app_import_plan` is read-only.
 
 If the token lacks the `read:sensitive` ability, secret values come back empty and the app is flagged so you can set them by hand.
+
+## Guided cutover of one staged app
+
+Once an app is verified, the Cutover step of the import wizard (and `levelrail-cli import cutover`) moves its traffic in one reversible flow. It never writes to the source platform and never touches the source server: it only starts the staged app here and changes the domain's DNS record or proxy route.
+
+```
+levelrail-cli import cutover plan --session ID --app web
+levelrail-cli import cutover run --session ID --app web --dry-run
+levelrail-cli import cutover run --session ID --app web --confirm web
+levelrail-cli import cutover status --session ID --app web
+levelrail-cli import cutover rollback --session ID --app web
+```
+
+### The readiness plan
+
+The plan is computed on the server, and each item is `pass`, `warn` or `block`, with a fix when it is not a pass. A block stops the run.
+
+| Item | Passes when | Blocks or warns when |
+| --- | --- | --- |
+| Staged app | The app was verified here. | It was never built or pulled here (block). |
+| Image | A registry image, a git build, or a host-built image that was moved and matches the source by content. | A host-built image is missing or does not match (block). |
+| Environment | No secret came back empty. | A secret has no value (block). |
+| Database | The database was copied and row counts match the source. | Not moved or row counts differ (block), no row-count check recorded (warn). |
+| Volumes | Every volume is confirmed as copied. | A volume is not confirmed (warn). |
+| Health check | The app defines a readiness path. | None defined, so ready only means running (warn). |
+| Domain | The record can be changed through a connected DNS provider or the managed proxy, or already points here. | Another app holds the domain (block), the record must be set by hand (warn). |
+
+Warnings do not stop a dry run. A switch needs `--accept-warnings` (the checkbox in the dashboard) when any remain.
+
+### What a run does
+
+1. **Dry run.** Starts the app here, waits until it is healthy, then sends a request with the domain's Host header through this node's own ingress listener. It stops the app again and changes no record. Run it as often as you like.
+2. **Switch.** Needs the app name typed as confirmation. It repeats the dry run, then switches each domain by the first method that applies:
+   - **DNS provider.** With Cloudflare or Route 53 connected and a root credential, the record is replaced and the previous value is stored in the run before the write, so a rollback restores it exactly.
+   - **Managed proxy.** With proxy coexistence active, the route is written to the proxy and no DNS record changes.
+   - **Manual.** Otherwise the run pauses and prints the exact record. Set it, then press "I changed it" (or `import cutover confirm-dns`).
+3. **Verify.** The public name is checked with the domain doctor, polling until it passes or `APP_CUTOVER_VERIFY_TIMEOUT` (5 minutes) passes. If it never passes, the run rolls itself back: DNS records are restored and the staged app is stopped.
+
+Rollback is one click (`import cutover rollback`) at any point after the switch. It is safe to repeat after a partial failure. A run interrupted by a restart resumes within `APP_CUTOVER_RESUME_MAX_AGE` (30 minutes), or is rolled back if it is older.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_CUTOVER_HEALTH_TIMEOUT` | `5m` | How long the app may take to become healthy. |
+| `APP_CUTOVER_PROBE_TIMEOUT` | `1m` | How long the ingress probe retries per domain. |
+| `APP_CUTOVER_VERIFY_TIMEOUT` | `5m` | How long post-switch verification may take before rolling back. |
+| `APP_CUTOVER_VERIFY_INTERVAL` | `10s` | Pause between post-switch verification attempts. |
+| `APP_CUTOVER_RESUME_MAX_AGE` | `30m` | Oldest interrupted run that is resumed instead of rolled back. |
+
+A rollback restores the DNS record's value and type, not a Cloudflare proxy (orange cloud) flag the old record carried, so check that setting after rolling back a proxied record.

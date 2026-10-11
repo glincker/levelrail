@@ -47,9 +47,9 @@ const STATUS_ICON: Record<HealthScoreStatus, Icon> = {
 }
 
 const STATUS_ICON_CLASS: Record<HealthScoreStatus, string> = {
-  pass: 'text-green-600 dark:text-green-400',
-  warn: 'text-amber-600 dark:text-amber-400',
-  fail: 'text-destructive',
+  pass: 'text-tone-success',
+  warn: 'text-tone-warning',
+  fail: 'text-tone-danger',
 }
 
 export function AppHealthScorePanel({ appName }: { appName: string }) {

@@ -3,17 +3,29 @@ package application
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// ConditionReader reads another controller's last stored conditions.
+type ConditionReader interface {
+	GetConditions(ctx context.Context, controllerName string) ([]reconcile.Condition, error)
+}
+
+// WithConditionReader enables depends_on condition: service_healthy. Without
+// it a healthy dependency degrades to start order, never to a deadlock.
+func WithConditionReader(r ConditionReader) Option {
+	return func(ctrl *Controller) { ctrl.conditions = r }
+}
+
 // dependencyBlock returns a not-yet-ready result when desired names a
-// dependency whose own containers have not started yet, nil once every
-// dependency has started (real Compose's own default depends_on:
-// semantic, service_started not service_healthy). AppID unset (the
-// brief window between DeploySpec's Deploy call and its own follow-up
-// UpdateServiceApp, multi.go) fails this gate open, not closed.
+// dependency whose own containers have not started yet (or, for one in
+// DependsOnHealthy, whose Ready condition is not True), nil once every
+// dependency is satisfied. AppID unset (the brief window between
+// DeploySpec's Deploy call and its own follow-up UpdateServiceApp,
+// multi.go) fails this gate open, not closed.
 func (c *Controller) dependencyBlock(ctx context.Context, desired *store.DesiredService) *reconcile.Result {
 	if len(desired.DependsOn) == 0 || desired.AppID == "" {
 		return nil
@@ -26,14 +38,41 @@ func (c *Controller) dependencyBlock(ctx context.Context, desired *store.Desired
 			return &res
 		}
 		if !started {
-			res := reconcile.Result{Conditions: []reconcile.Condition{{
-				Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: "WaitingForDependency",
-				Message: fmt.Sprintf("waiting for dependency %q (%s) to start", dep, depName),
-			}}}
+			return waitingFor(dep, depName, "WaitingForDependency", "start")
+		}
+		if !slices.Contains(desired.DependsOnHealthy, dep) || c.conditions == nil {
+			continue
+		}
+		ready, err := c.dependencyReady(ctx, depName)
+		if err != nil {
+			res := notReady("DependencyCheckFailed", fmt.Errorf("check dependency %q health: %w", dep, err))
 			return &res
+		}
+		if !ready {
+			return waitingFor(dep, depName, "WaitingForDependencyHealthy", "pass its readiness check")
 		}
 	}
 	return nil
+}
+
+func waitingFor(dep, depName, reason, what string) *reconcile.Result {
+	return &reconcile.Result{Conditions: []reconcile.Condition{{
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: reason,
+		Message: fmt.Sprintf("waiting for dependency %q (%s) to %s", dep, depName, what),
+	}}}
+}
+
+func (c *Controller) dependencyReady(ctx context.Context, depName string) (bool, error) {
+	conds, err := c.conditions.GetConditions(ctx, ControllerName(depName))
+	if err != nil {
+		return false, fmt.Errorf("read conditions for %s: %w", depName, err)
+	}
+	for _, cond := range conds {
+		if cond.Type == reconcile.ConditionTypeReady {
+			return cond.Status == reconcile.ConditionTrue, nil
+		}
+	}
+	return false, nil
 }
 
 // dependencyStarted reports whether depName has at least one running

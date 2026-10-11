@@ -22,6 +22,8 @@ import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { InfoTip, RelativeTime } from './kit'
 import { ApprovePreviewDialog } from './ApprovePreviewDialog'
+import { ExtendPreviewButton } from './ExtendPreviewButton'
+import { PreviewLogsLink } from './PreviewLogsLink'
 import { useGitSource } from '../queries/gitSources'
 import {
   useSetPreviewEnabled,
@@ -417,6 +419,14 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                       <ApprovePreviewDialog
                         appName={app.name}
                         preview={preview}
+                      />
+                    ) : null}
+                    <PreviewLogsLink previewApp={preview.preview_app_id} />
+                    {preview.status === 'active' ||
+                    preview.status === 'deploying' ? (
+                      <ExtendPreviewButton
+                        appName={app.name}
+                        prNumber={preview.pr_number}
                       />
                     ) : null}
                     <Button

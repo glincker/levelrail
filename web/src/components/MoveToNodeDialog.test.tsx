@@ -1,10 +1,22 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import i18next from 'i18next'
+import { initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import nodesEn from '../locales/en/nodes.json'
 import { MoveToNodeDialog } from './MoveToNodeDialog'
 import type { NodeResource } from '../types/nodeDetail'
-import type { AppVolumeMove } from '../types/appVolumeMove'
+import type { NodeMove } from '../types/nodeMoves'
+
+void i18next.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  ns: ['nodes'],
+  defaultNS: 'nodes',
+  resources: { en: { nodes: nodesEn } },
+  interpolation: { escapeValue: false },
+})
 
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -12,7 +24,7 @@ function requestUrlOf(input: RequestInfo | URL): string {
   return input.url
 }
 
-function fakeJsonResponse(body: unknown, status = 200): Response {
+function jsonResponse(body: unknown, status = 200): Response {
   return {
     ok: status >= 200 && status < 300,
     status,
@@ -20,78 +32,82 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
   } as unknown as Response
 }
 
-// Same route-table stub PromoteAppDialog.test.tsx already establishes:
-// each test states which endpoints it needs and what they return, keyed
-// on method+path. A handler is a function so a test can hand back a
-// different body on a second call (the poll-until-done tests).
 function mockFetchRoutes(
-  routes: Record<string, () => Promise<Response>>,
+  routes: Record<string, () => Response>,
 ): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-    const url = requestUrlOf(input)
     const method = init?.method ?? 'GET'
-    const path = url.split('?')[0]
+    const path = requestUrlOf(input).split('?')[0]
     const handler = routes[`${method} ${path}`]
-    if (handler) return handler()
-    return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
+    if (handler) return Promise.resolve(handler())
+    return Promise.reject(new Error(`unexpected fetch: ${method} ${path}`))
   })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
 
-function jsonRoute(body: unknown, status = 200): () => Promise<Response> {
-  return () => Promise.resolve(fakeJsonResponse(body, status))
-}
-
-const nodeOne: NodeResource = {
-  id: 'node-1',
-  name: 'worker-1',
+const localNode: NodeResource = {
+  id: 'local-1',
+  name: 'primary',
   status: 'online',
   schedulable: true,
   accepts_app_workloads: true,
   accepts_build_workloads: true,
   created_at: '2026-01-01T00:00:00Z',
+  is_local: true,
+}
+
+const workerNode: NodeResource = {
+  ...localNode,
+  id: 'node-1',
+  name: 'worker-1',
   is_local: false,
 }
 
-function renderDialog(volumeCount: number, currentNodeId?: string) {
+function baseMove(over: Partial<NodeMove>): NodeMove {
+  return {
+    id: 'mv_1',
+    kind: 'app',
+    resource: 'web',
+    from_node_id: 'local-1',
+    to_node_id: 'node-1',
+    stateful: false,
+    volumes: [],
+    phase: 'preflight',
+    status: 'running',
+    steps: [],
+    started_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+    ...over,
+  }
+}
+
+function renderDialog(props: { volumeNames?: string[] } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   render(
     <QueryClientProvider client={queryClient}>
-      <MoveToNodeDialog
-        kind="app"
-        name="web"
-        volumeCount={volumeCount}
-        currentNodeId={currentNodeId}
-      />
+      <MoveToNodeDialog kind="app" name="web" {...props} />
     </QueryClientProvider>,
   )
 }
 
-// Disambiguates "Move" the dialog trigger from "Move" the footer submit
-// button: both are on screen at once once the dialog is open, and
-// screen.getByText('Move') alone is ambiguous between them. The submit
-// button is the later one in DOM order (rendered inside the dialog
-// portal, appended after the trigger).
-function clickMoveSubmitButton() {
-  const matches = screen.getAllByText('Move')
-  const submitButton = matches.at(-1)
-  if (!submitButton) throw new Error('no "Move" button found')
-  fireEvent.click(submitButton)
-}
-
-async function openDialogAndPickNode() {
+async function openDialog() {
   fireEvent.click(screen.getByText('Move'))
   await screen.findByText('Move to')
-  fireEvent.click(document.querySelector('#move-target-node') as Element)
-  const user = userEvent.setup()
-  const option = Array.from(
+}
+
+function selectItems(): (string | null)[] {
+  return Array.from(
     document.body.querySelectorAll('[data-slot="select-item"]'),
-  ).find((el) => el.textContent?.includes('worker-1'))
-  if (!option) throw new Error('worker-1 option not found')
-  await user.click(option)
+  ).map((el) => el.textContent)
+}
+
+function submitButton(): Element {
+  const match = screen.getAllByText('Move').at(-1)
+  if (!match) throw new Error('no Move button')
+  return match
 }
 
 describe('MoveToNodeDialog', () => {
@@ -100,157 +116,126 @@ describe('MoveToNodeDialog', () => {
     vi.restoreAllMocks()
   })
 
-  it('does not offer "take its volumes with it" when the app has no volumes', async () => {
-    mockFetchRoutes({ 'GET /api/v1/nodes': jsonRoute([nodeOne]) })
-    renderDialog(0)
-    fireEvent.click(screen.getByText('Move'))
-    await screen.findByText('Move to')
-    expect(screen.queryByText(/Take .* with it/)).not.toBeInTheDocument()
-  })
-
-  it('still offers "move to local" in a two-node fleet where the app is on the only other node', async () => {
-    // nodes list never includes the local control-plane node itself, so
-    // a bare otherNodes.length check undercounts by one in exactly this
-    // case: nodeOne is the only registered node and it's also the app's
-    // current placement, but "this control plane (local)" is still a
-    // real, available move target.
-    mockFetchRoutes({ 'GET /api/v1/nodes': jsonRoute([nodeOne]) })
-    renderDialog(0, 'node-1')
-    fireEvent.click(screen.getByText('Move'))
-    await screen.findByText('Move to')
-    expect(
-      screen.queryByText('No other nodes available to move to.'),
-    ).not.toBeInTheDocument()
-    // The trigger pre-selects the app's current placement (worker-1), not
-    // local, so confirm the local option by opening the listbox rather
-    // than checking the closed trigger's own displayed value.
-    fireEvent.click(document.querySelector('#move-target-node') as Element)
-    expect(
-      Array.from(
-        document.body.querySelectorAll('[data-slot="select-item"]'),
-      ).some((el) => el.textContent?.includes('This control plane (local)')),
-    ).toBe(true)
-  })
-
-  it('offers "take its volumes with it" when the app has named volumes', async () => {
-    mockFetchRoutes({ 'GET /api/v1/nodes': jsonRoute([nodeOne]) })
-    renderDialog(2)
-    fireEvent.click(screen.getByText('Move'))
-    await screen.findByText('Move to')
-    expect(screen.getByText('Take its volumes with it')).toBeInTheDocument()
-  })
-
-  it('shows a warning once the volumes checkbox is checked', async () => {
-    mockFetchRoutes({ 'GET /api/v1/nodes': jsonRoute([nodeOne]) })
-    renderDialog(1)
-    fireEvent.click(screen.getByText('Move'))
-    await screen.findByText('Take its volume with it')
-    fireEvent.click(screen.getByRole('checkbox'))
-    expect(
-      await screen.findByText(/will be stopped for the duration/),
-    ).toBeInTheDocument()
-  })
-
-  it('calls move-with-volumes instead of the plain node PUT when checked, and shows Done once succeeded', async () => {
-    const finishedMove: AppVolumeMove = {
-      id: 'avm_1',
-      service_name: 'web',
-      from_node_id: '',
-      to_node_id: 'node-1',
-      status: 'succeeded',
-      steps: [
-        {
-          name: 'update_placement',
-          status: 'succeeded',
-          started_at: '2026-01-01T00:00:00Z',
-          finished_at: '2026-01-01T00:00:01Z',
-        },
-      ],
-      started_at: '2026-01-01T00:00:00Z',
-      finished_at: '2026-01-01T00:00:01Z',
-    }
-    const fetchMock = mockFetchRoutes({
-      'GET /api/v1/nodes': jsonRoute([nodeOne]),
-      'POST /api/v1/apps/web/move-with-volumes': jsonRoute(finishedMove),
-      // TanStack Query's default refetchOnMount still fires GetAppVolumeMove
-      // once even though the POST response already carries a finished
-      // record: same shape as the "running" case, just already succeeded.
-      'GET /api/v1/apps/web/moves/avm_1': jsonRoute(finishedMove),
+  it('offers automatic placement and the other nodes', async () => {
+    mockFetchRoutes({
+      'GET /api/v1/nodes': () => jsonResponse([localNode, workerNode]),
     })
-    renderDialog(1)
-    await openDialogAndPickNode()
-    fireEvent.click(screen.getByRole('checkbox'))
-    clickMoveSubmitButton()
-
-    await screen.findByText('Done')
+    renderDialog()
+    await openDialog()
     expect(
-      fetchMock.mock.calls.some(
-        ([input, init]) =>
-          requestUrlOf(input as RequestInfo | URL).endsWith(
-            '/api/v1/apps/web/move-with-volumes',
-          ) && (init as RequestInit | undefined)?.method === 'POST',
-      ),
-    ).toBe(true)
-    expect(
-      fetchMock.mock.calls.some(
-        ([, init]) => (init as RequestInit | undefined)?.method === 'PUT',
-      ),
-    ).toBe(false)
+      screen.getAllByText('Automatic (least loaded eligible node)').length,
+    ).toBeGreaterThan(0)
+    fireEvent.click(document.querySelector('#move-target-node') as Element)
+    await waitFor(() => {
+      expect(selectItems().some((text) => text?.includes('worker-1'))).toBe(
+        true,
+      )
+    })
+    expect(selectItems().some((text) => text?.includes('primary'))).toBe(false)
   })
 
-  it('polls GetAppVolumeMove while running and shows the failure inline once it fails', async () => {
-    let pollCalls = 0
+  it('warns about downtime when the app has volumes', async () => {
+    mockFetchRoutes({
+      'GET /api/v1/nodes': () => jsonResponse([localNode, workerNode]),
+    })
+    renderDialog({ volumeNames: ['data'] })
+    await openDialog()
+    expect(
+      await screen.findByText(/is stopped while they are copied/),
+    ).toBeVisible()
+  })
+
+  it('says so when there is no other node', async () => {
+    mockFetchRoutes({ 'GET /api/v1/nodes': () => jsonResponse([localNode]) })
+    renderDialog()
+    fireEvent.click(screen.getByText('Move'))
+    expect(
+      await screen.findByText(/no other nodes to move this to/i),
+    ).toBeVisible()
+  })
+
+  it('starts an automatic move and shows completion', async () => {
     const fetchMock = mockFetchRoutes({
-      'GET /api/v1/nodes': jsonRoute([nodeOne]),
-      'POST /api/v1/apps/web/move-with-volumes': jsonRoute({
-        id: 'avm_1',
-        service_name: 'web',
-        from_node_id: '',
-        to_node_id: 'node-1',
-        status: 'running',
-        steps: [],
-        started_at: '2026-01-01T00:00:00Z',
-      } satisfies AppVolumeMove),
-      'GET /api/v1/apps/web/moves/avm_1': () => {
-        pollCalls += 1
-        const status = pollCalls >= 2 ? 'failed' : 'running'
-        return Promise.resolve(
-          fakeJsonResponse({
-            id: 'avm_1',
-            service_name: 'web',
-            from_node_id: '',
-            to_node_id: 'node-1',
-            status,
-            error:
-              status === 'failed' ? 'docker daemon unreachable' : undefined,
+      'GET /api/v1/nodes': () => jsonResponse([localNode, workerNode]),
+      'POST /api/v1/apps/web/move': () => jsonResponse(baseMove({}), 202),
+      'GET /api/v1/node-moves/mv_1': () =>
+        jsonResponse(
+          baseMove({
+            status: 'succeeded',
+            phase: 'done',
             steps: [
               {
-                name: 'move_volume:app-web-data',
-                status,
-                started_at: '2026-01-01T00:00:00Z',
+                phase: 'verify',
+                outcome: 'ok',
+                at: '2026-01-01T00:00:01Z',
               },
             ],
-            started_at: '2026-01-01T00:00:00Z',
-          } satisfies AppVolumeMove),
-        )
-      },
+          }),
+        ),
     })
-    renderDialog(1)
-    await openDialogAndPickNode()
-    fireEvent.click(screen.getByRole('checkbox'))
-    clickMoveSubmitButton()
+    renderDialog()
+    await openDialog()
+    fireEvent.click(submitButton())
 
-    await waitFor(() => expect(pollCalls).toBeGreaterThanOrEqual(2), {
-      timeout: 5000,
+    expect(await screen.findByText('Move complete')).toBeVisible()
+    expect(screen.getByText('Verifying health')).toBeVisible()
+    expect(screen.getByText('Done')).toBeVisible()
+    const post = fetchMock.mock.calls.find(
+      ([, init]) => (init as RequestInit | undefined)?.method === 'POST',
+    )
+    expect(JSON.parse((post?.[1] as RequestInit).body as string)).toEqual({
+      node_id: '',
     })
-    expect(
-      await screen.findByText('docker daemon unreachable'),
-    ).toBeInTheDocument()
-    // At least two "Close" texts exist once a move has failed: this
-    // dialog's own Cancel-button-turned-Close, and the sr-only label on
-    // DialogContent's built-in X button (dialog.tsx). getAllByText
-    // sidesteps the ambiguity a plain getByText would hit here.
-    expect(screen.getAllByText('Close').length).toBeGreaterThanOrEqual(2)
-    void fetchMock
+  })
+
+  it('sends the chosen node id', async () => {
+    const fetchMock = mockFetchRoutes({
+      'GET /api/v1/nodes': () => jsonResponse([localNode, workerNode]),
+      'POST /api/v1/apps/web/move': () => jsonResponse(baseMove({}), 202),
+      'GET /api/v1/node-moves/mv_1': () => jsonResponse(baseMove({})),
+    })
+    renderDialog()
+    await openDialog()
+    fireEvent.click(document.querySelector('#move-target-node') as Element)
+    await waitFor(() => {
+      expect(selectItems().some((text) => text?.includes('worker-1'))).toBe(
+        true,
+      )
+    })
+    const option = Array.from(
+      document.body.querySelectorAll('[data-slot="select-item"]'),
+    ).find((el) => el.textContent?.includes('worker-1'))
+    if (!option) throw new Error('worker-1 option not found')
+    await userEvent.setup().click(option)
+    fireEvent.click(submitButton())
+
+    await screen.findByText('Moving')
+    const post = fetchMock.mock.calls.find(
+      ([, init]) => (init as RequestInit | undefined)?.method === 'POST',
+    )
+    expect(JSON.parse((post?.[1] as RequestInit).body as string)).toEqual({
+      node_id: 'node-1',
+    })
+  })
+
+  it('shows the error and a retry hint when the move is rolled back', async () => {
+    mockFetchRoutes({
+      'GET /api/v1/nodes': () => jsonResponse([localNode, workerNode]),
+      'POST /api/v1/apps/web/move': () => jsonResponse(baseMove({}), 202),
+      'GET /api/v1/node-moves/mv_1': () =>
+        jsonResponse(
+          baseMove({
+            status: 'rolled_back',
+            phase: 'rollback',
+            error: 'target never became healthy',
+          }),
+        ),
+    })
+    renderDialog()
+    await openDialog()
+    fireEvent.click(submitButton())
+
+    expect(await screen.findByText('target never became healthy')).toBeVisible()
+    expect(screen.getByText(/is still on its original node/)).toBeVisible()
   })
 })

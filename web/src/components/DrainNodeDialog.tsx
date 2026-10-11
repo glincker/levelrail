@@ -1,10 +1,6 @@
 import { useState } from 'react'
-import {
-  ArrowsOutIcon,
-  CheckCircleIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
+import { ArrowsOutIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -16,7 +12,6 @@ import {
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -24,52 +19,50 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useDrainNode, useNodes } from '../queries/nodes'
-import type { DrainNodeResponse, NodeResource } from '../types/nodeDetail'
-import { drainFailures, drainWarnings } from '../lib/drainResult'
+import { useNodes } from '../queries/nodes'
+import { useNodeDrain, useStartNodeDrain } from '../queries/nodeMoves'
+import type { NodeResource } from '../types/nodeDetail'
+import { DrainStatusBadge, NodeDrainProgress } from './nodes/NodeDrainProgress'
 
-// Local-node sentinel value: POST /api/v1/nodes/{id}/drain?target_node_id=
-// treats an empty string as "the local/control-plane node"
-// (handleDrainNode's own doc comment), but Base UI's Select cannot use
-// an empty string as an item value (it reads as "no selection"), so this
-// picks a stand-in that is translated back to '' right before the
-// mutation fires.
-const LOCAL_NODE_VALUE = '__local__'
+// Empty string is not a valid Select item value in Base UI.
+const AUTOMATIC_VALUE = '__auto__'
 
-// Drain action for the node detail route (routes/nodes/$id.tsx): moves
-// every app and database placed on this node to a target node, mirroring
-// DeleteNodeDialog/CordonNodeDialog's confirm-dialog shape but with an
-// extra step, a target-node picker, and a real result screen instead of
-// just closing on success. This is the consequential one of the three
-// node actions (it moves real workloads, not just a flag flip), so the
-// dialog does not auto-close on success: the operator has to read what
-// moved and what didn't (drainNodeResponse's own partial-failure shape,
-// internal/api/nodes.go) and explicitly dismiss it.
+// Drain starts a background job: the dialog polls it and lists each move
+// with its phase, so the operator can watch it or close it and come back
+// through the node's Drains card.
 export function DrainNodeDialog({ node }: { node: NodeResource }) {
+  const { t } = useTranslation('nodes')
   const [open, setOpen] = useState(false)
-  const [targetNodeId, setTargetNodeId] = useState<string>(LOCAL_NODE_VALUE)
-  const [result, setResult] = useState<DrainNodeResponse | null>(null)
+  const [targetNodeId, setTargetNodeId] = useState(AUTOMATIC_VALUE)
+  const [drainId, setDrainId] = useState<string | null>(null)
   const { data: nodes } = useNodes()
-  const drain = useDrainNode()
+  const start = useStartNodeDrain()
+  const drain = useNodeDrain(drainId)
 
   const otherNodes = nodes.filter((n) => n.id !== node.id)
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
-      drain.reset()
-      setResult(null)
-      setTargetNodeId(LOCAL_NODE_VALUE)
+      start.reset()
+      setDrainId(null)
+      setTargetNodeId(AUTOMATIC_VALUE)
     }
   }
 
   function handleDrain() {
-    const resolvedTarget = targetNodeId === LOCAL_NODE_VALUE ? '' : targetNodeId
-    drain.mutate(
-      { id: node.id, targetNodeId: resolvedTarget },
-      { onSuccess: setResult },
+    const target = targetNodeId === AUTOMATIC_VALUE ? '' : targetNodeId
+    start.mutate(
+      { id: node.id, targetNodeId: target },
+      { onSuccess: (d) => setDrainId(d.id) },
     )
   }
+
+  const current = drain.data
+  const targetLabel =
+    targetNodeId === AUTOMATIC_VALUE
+      ? t('drain.automatic')
+      : (otherNodes.find((n) => n.id === targetNodeId)?.name ?? targetNodeId)
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -77,14 +70,35 @@ export function DrainNodeDialog({ node }: { node: NodeResource }) {
         render={<Button type="button" variant="outline" size="sm" />}
       >
         <ArrowsOutIcon className="size-3.5" aria-hidden="true" />
-        Drain
+        {t('drain.trigger')}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        {result ? (
-          <DrainResult
-            result={result}
-            onClose={() => handleOpenChange(false)}
-          />
+      <DialogContent className="sm:max-w-lg">
+        {drainId ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {t('drain.title', { name: node.name })}
+                {current ? <DrainStatusBadge status={current.status} /> : null}
+              </DialogTitle>
+              <DialogDescription>
+                {current?.status === 'running' || !current
+                  ? t('drain.runningHint')
+                  : null}
+              </DialogDescription>
+            </DialogHeader>
+            {drain.isError ? (
+              <Alert variant="destructive">
+                <WarningIcon />
+                <AlertDescription>{drain.error.message}</AlertDescription>
+              </Alert>
+            ) : null}
+            {current ? <NodeDrainProgress drain={current} /> : null}
+            <DialogFooter>
+              <Button type="button" onClick={() => handleOpenChange(false)}>
+                {t('drain.close')}
+              </Button>
+            </DialogFooter>
+          </>
         ) : (
           <>
             <DialogHeader>
@@ -93,15 +107,9 @@ export function DrainNodeDialog({ node }: { node: NodeResource }) {
                   className="size-4 text-amber-600"
                   aria-hidden="true"
                 />
-                Drain &ldquo;{node.name}&rdquo;?
+                {t('drain.title', { name: node.name })}
               </DialogTitle>
-              <DialogDescription>
-                Moves every app and database currently placed on this node to
-                the target below. Desired placement changes immediately, but
-                each moved resource&apos;s container only actually relocates
-                once the reconcile engine&apos;s next pass converges it on the
-                new node.
-              </DialogDescription>
+              <DialogDescription>{t('drain.description')}</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-1.5">
@@ -109,7 +117,7 @@ export function DrainNodeDialog({ node }: { node: NodeResource }) {
                 htmlFor="drain-target-node"
                 className="text-sm font-medium text-foreground"
               >
-                Move workloads to
+                {t('drain.targetLabel')}
               </label>
               <Select
                 value={targetNodeId}
@@ -120,11 +128,11 @@ export function DrainNodeDialog({ node }: { node: NodeResource }) {
                 }}
               >
                 <SelectTrigger id="drain-target-node" className="w-full">
-                  <SelectValue />
+                  <SelectValue>{targetLabel}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={LOCAL_NODE_VALUE}>
-                    This control plane (local)
+                  <SelectItem value={AUTOMATIC_VALUE}>
+                    {t('drain.automatic')}
                   </SelectItem>
                   {otherNodes.map((n) => (
                     <SelectItem
@@ -133,17 +141,17 @@ export function DrainNodeDialog({ node }: { node: NodeResource }) {
                       disabled={!n.schedulable}
                     >
                       {n.name}
-                      {n.schedulable ? '' : ' (cordoned)'}
+                      {n.schedulable ? '' : ` (${t('drain.cordoned')})`}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {drain.isError ? (
+            {start.isError ? (
               <Alert variant="destructive">
                 <WarningIcon />
-                <AlertDescription>{drain.error.message}</AlertDescription>
+                <AlertDescription>{start.error.message}</AlertDescription>
               </Alert>
             ) : null}
 
@@ -151,137 +159,21 @@ export function DrainNodeDialog({ node }: { node: NodeResource }) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  handleOpenChange(false)
-                }}
+                onClick={() => handleOpenChange(false)}
               >
-                Cancel
+                {t('drain.cancel')}
               </Button>
               <Button
                 type="button"
-                disabled={drain.isPending}
+                disabled={start.isPending}
                 onClick={handleDrain}
               >
-                {drain.isPending ? 'Draining...' : 'Drain node'}
+                {start.isPending ? t('drain.starting') : t('drain.start')}
               </Button>
             </DialogFooter>
           </>
         )}
       </DialogContent>
     </Dialog>
-  )
-}
-
-// Renders drainNodeResponse's actual partial-failure shape: what moved,
-// what didn't, and why, instead of collapsing the request to pass/fail.
-// A non-empty Errors list still shows MovedServices/MovedDatabases as
-// genuinely successful, matching the backend's own 207-is-not-a-failure
-// reasoning (internal/api/nodes.go's handleDrainNode doc comment).
-function DrainResult({
-  result,
-  onClose,
-}: {
-  result: DrainNodeResponse
-  onClose: () => void
-}) {
-  const warnings = drainWarnings(result)
-  const hasErrors = (result.errors?.length ?? 0) > 0 || warnings.length > 0
-  const blocked = result.blocked ?? []
-  const failures = drainFailures(result)
-  const movedNothing =
-    result.moved_services.length === 0 && result.moved_databases.length === 0
-
-  return (
-    <>
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-1.5">
-          {hasErrors ? (
-            <Badge variant="warning">Partially drained</Badge>
-          ) : (
-            <Badge variant="success">Drained</Badge>
-          )}
-        </DialogTitle>
-        <DialogDescription>
-          {movedNothing && !hasErrors
-            ? 'Nothing was placed on this node, so there was nothing to move.'
-            : 'This is exactly what moved and what did not.'}
-        </DialogDescription>
-      </DialogHeader>
-
-      <div className="space-y-3">
-        {result.moved_services.length > 0 ? (
-          <ResultList
-            icon={<CheckCircleIcon className="size-4 text-green-600" />}
-            title="Apps moved"
-            items={result.moved_services}
-          />
-        ) : null}
-        {result.moved_databases.length > 0 ? (
-          <ResultList
-            icon={<CheckCircleIcon className="size-4 text-green-600" />}
-            title="Databases moved"
-            items={result.moved_databases}
-          />
-        ) : null}
-        {blocked.length > 0 ? (
-          <ResultList
-            icon={<WarningIcon className="size-4 text-amber-600" />}
-            title="Blocked, left on this node (no GPU node available)"
-            items={blocked.map((b) => `${b.kind} ${b.name}: ${b.reason}`)}
-          />
-        ) : null}
-        {warnings.length > 0 ? (
-          <ResultList
-            icon={<WarningIcon className="size-4 text-amber-600" />}
-            title="Could not verify (drain may be incomplete)"
-            items={warnings}
-          />
-        ) : null}
-        {failures.length > 0 ? (
-          <ResultList
-            icon={<XCircleIcon className="size-4 text-destructive" />}
-            title="Failed to move"
-            items={failures}
-            variant="destructive"
-          />
-        ) : null}
-      </div>
-
-      <DialogFooter>
-        <Button type="button" onClick={onClose}>
-          Close
-        </Button>
-      </DialogFooter>
-    </>
-  )
-}
-
-function ResultList({
-  icon,
-  title,
-  items,
-  variant = 'default',
-}: {
-  icon: React.ReactNode
-  title: string
-  items: string[]
-  variant?: 'default' | 'destructive'
-}) {
-  return (
-    <div>
-      <p className="mb-1 flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {icon}
-        {title}
-      </p>
-      <ul
-        className={`space-y-0.5 text-sm ${variant === 'destructive' ? 'text-destructive' : 'text-foreground'}`}
-      >
-        {items.map((item) => (
-          <li key={item} className="truncate font-mono text-xs">
-            {item}
-          </li>
-        ))}
-      </ul>
-    </div>
   )
 }

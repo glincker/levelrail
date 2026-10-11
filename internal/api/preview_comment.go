@@ -57,6 +57,17 @@ func shortSHA(sha string) string {
 // renderPreviewComment builds the comment body. The hidden marker lets a
 // later call find and edit the same comment.
 func renderPreviewComment(p store.PreviewEnvironment, state, detail string, now time.Time) string {
+	return renderPreviewCommentWith(p, state, detail, now, previewCommentExtras{})
+}
+
+// previewCommentExtras is the optional context a comment links to: the
+// preview's build logs and when it will be cleaned up.
+type previewCommentExtras struct {
+	LogsURL   string
+	ExpiresAt time.Time
+}
+
+func renderPreviewCommentWith(p store.PreviewEnvironment, state, detail string, now time.Time, x previewCommentExtras) string {
 	var sb strings.Builder
 	sb.WriteString(previewCommentMarker(p.PreviewAppID))
 	sb.WriteString("\n### Preview environment: ")
@@ -70,6 +81,12 @@ func renderPreviewComment(p store.PreviewEnvironment, state, detail string, now 
 		fmt.Fprintf(&sb, "\n- **Commit:** `%s`", shortSHA(p.HeadSHA))
 	}
 	fmt.Fprintf(&sb, "\n- **Last updated:** %s", now.UTC().Format("2006-01-02 15:04:05 UTC"))
+	if x.LogsURL != "" && state != previewCommentRemoved {
+		fmt.Fprintf(&sb, "\n- **Build logs:** %s", x.LogsURL)
+	}
+	if !x.ExpiresAt.IsZero() && (state == previewCommentReady || state == previewCommentBuilding) {
+		fmt.Fprintf(&sb, "\n- **Cleanup:** removed when this pull request closes, or after %s without updates", x.ExpiresAt.UTC().Format("2006-01-02 15:04 UTC"))
+	}
 	if detail = shortPreviewDetail(detail); detail != "" {
 		sb.WriteString("\n\n")
 		sb.WriteString(detail)
@@ -85,7 +102,7 @@ func (rt *Router) upsertPreviewComment(ctx context.Context, gs store.GitSource, 
 	if c == nil {
 		return
 	}
-	body := renderPreviewComment(*p, state, detail, time.Now())
+	body := renderPreviewCommentWith(*p, state, detail, time.Now(), rt.previewCommentExtras(ctx, *p))
 	marker := previewCommentMarker(p.PreviewAppID)
 	log := rt.logger.With(slog.String("app_name", p.AppName), slog.Int("pr_number", p.PRNumber), slog.String("preview_id", p.ID))
 
@@ -129,4 +146,15 @@ func (rt *Router) upsertPreviewComment(ctx context.Context, gs store.GitSource, 
 	if err := rt.previewEnvironments.SetPreviewEnvironmentCommentID(ctx, p.ID, id); err != nil {
 		log.Warn("api: remember preview pr comment id failed", slog.String("error", err.Error()))
 	}
+}
+
+func (rt *Router) previewCommentExtras(ctx context.Context, p store.PreviewEnvironment) previewCommentExtras {
+	var x previewCommentExtras
+	if base := strings.TrimRight(rt.dashboardURL(), "/"); base != "" {
+		x.LogsURL = base + "/apps/" + p.PreviewAppID + "/logs"
+	}
+	if expires, ok := previewExpiry(p, rt.previewTTLFor(rt.previewSettings(ctx, p.AppName))); ok {
+		x.ExpiresAt = expires
+	}
+	return x
 }

@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
+import { CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
 import { deployAttemptsQueryOptions } from '../../../../queries/deployAttempts'
 import { autoRollbackQueryOptions } from '../../../../queries/autoRollback'
 import { autoRollbackSLOBurnQueryOptions } from '../../../../queries/autoRollbackSLOBurn'
@@ -16,6 +18,15 @@ import { CanaryCard } from '../../../../components/CanaryCard'
 import { BadgeSettingsCard } from '../../../../components/BadgeSettingsCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
+  DeploySheet,
+  type DeployTab,
+} from '../../../../components/overview/DeploySheet'
 
 // A 9th app-scoped section, matching the 8 existing ones' "own loader,
 // own deep-linkable route" shape (see routes/apps/$name.tsx's own doc
@@ -48,19 +59,46 @@ export const Route = createFileRoute('/apps/$name/deploys/')({
 function DeploysSection() {
   const { name } = Route.useParams()
   const { attempts, conditions } = useDeployProgress(name)
+  const [tab, setTab] = useState<DeployTab | null>(null)
 
   return (
-    <div className="space-y-4">
-      <AutoRollbackCard appName={name} />
-      <AutoRollbackSLOBurnCard appName={name} />
-      <CanaryCard appName={name} />
-      <ImageAutoUpdateCard appName={name} />
-      <AppSleepCard appName={name} />
-      <BadgeSettingsCard appName={name} />
+    <div className="space-y-6">
       <DeployAttemptsList
         appName={name}
         attempts={attempts}
         conditions={conditions}
+        onDeploy={() => {
+          setTab('existing-image')
+        }}
+      />
+      <Collapsible>
+        <CollapsibleTrigger className="group/deploy-settings flex items-center gap-2 text-sm font-medium text-foreground">
+          <CaretRightIcon
+            aria-hidden="true"
+            className="size-4 transition-transform group-data-panel-open/deploy-settings:rotate-90 motion-reduce:transition-none"
+          />
+          Deploy settings
+          <span className="text-xs font-normal text-muted-foreground">
+            Rollback, canary, auto update, sleep, badge
+          </span>
+        </CollapsibleTrigger>
+        <CollapsiblePanel>
+          <div className="space-y-4 pt-4">
+            <AutoRollbackCard appName={name} />
+            <AutoRollbackSLOBurnCard appName={name} />
+            <CanaryCard appName={name} />
+            <ImageAutoUpdateCard appName={name} />
+            <AppSleepCard appName={name} />
+            <BadgeSettingsCard appName={name} />
+          </div>
+        </CollapsiblePanel>
+      </Collapsible>
+      <DeploySheet
+        appName={name}
+        tab={tab}
+        onClose={() => {
+          setTab(null)
+        }}
       />
     </div>
   )

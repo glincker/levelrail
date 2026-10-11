@@ -105,6 +105,12 @@ type Service struct {
 	// rejection reasoning, see validateComposeServices.
 	Secrets []any
 	Configs []any
+	// Profiles gates the service behind compose profiles (ApplyProfiles).
+	Profiles   []string
+	HostAccess HostAccess
+	// DependsOnHealthy lists the DependsOn entries declared with
+	// condition: service_healthy, which wait for readiness, not just start.
+	DependsOnHealthy []string
 }
 
 // PullPolicyAlways is pull_policy: always, the only non-default value
@@ -169,7 +175,12 @@ func Parse(data []byte) (*File, error) {
 		HasSecrets: len(raw.Secrets) > 0,
 		HasConfigs: len(raw.Configs) > 0,
 	}
+	healthy, err := parseDependsOnConditions(data)
+	if err != nil {
+		return nil, err
+	}
 	for name, svc := range raw.Services {
+		svc.DependsOnHealthy = healthy[name]
 		f.Services[name] = Service(svc)
 	}
 	if len(raw.Networks) > 0 {
@@ -215,6 +226,7 @@ func (f *File) validate(allowBuild, allowBindMounts bool) error {
 	errs = append(errs, validateComposeDomainRefs(f)...)
 	errs = append(errs, validateComposeDependsOn(f)...)
 	errs = append(errs, validateUnsupportedTopLevel(f)...)
+	errs = append(errs, validateHostAccess(f)...)
 
 	if len(errs) == 0 {
 		return nil

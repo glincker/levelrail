@@ -32,6 +32,8 @@ type tokenResource struct {
 	RevokedAt  *time.Time `json:"revoked_at,omitempty"`
 	// Agent is set when the token was issued to an AI agent.
 	Agent *agentIdentity `json:"agent,omitempty"`
+	// Scope is set when the token is limited to one team.
+	Scope *tokenScopeResource `json:"scope,omitempty"`
 }
 
 func toTokenResource(t store.APIToken) tokenResource {
@@ -60,6 +62,7 @@ type createTokenRequest struct {
 	ExpiresInDays int `json:"expires_in_days,omitempty"`
 	// Agent optionally labels the token as issued to an AI agent.
 	Agent *agentIdentity `json:"agent,omitempty"`
+	tokenScopeRequest
 }
 
 type createTokenResponse struct {
@@ -136,8 +139,12 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	scope, ok := rt.resolveTokenScope(w, r, req)
+	if !ok {
+		return
+	}
 	ownerID, _ := rt.currentSessionUserID(r)
-	rt.libraryCreateToken(w, r, req, agent, ownerID, expiresAt)
+	rt.libraryCreateToken(w, r, req, agent, ownerID, expiresAt, scope)
 }
 
 // sessionOrRootToken serves read-only token metadata to a session or to a

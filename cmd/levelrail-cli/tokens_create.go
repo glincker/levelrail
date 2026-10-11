@@ -31,6 +31,7 @@ import (
 func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "tokens create", "print the new token resource as JSON to stdout and nothing else", stderr)
 	var name, abilitiesFlag, agentName, agentDescription, presetFlag string
+	var scopeTeam, scopeProject, scopeRole string
 	var expiresInDays int
 	fs.StringVar(&name, "name", "", "name for the new token (required)")
 	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list, e.g. \"read,deploy\" (required; valid: read, read:sensitive, write, write:sensitive, deploy, root, signin:approve)")
@@ -38,6 +39,9 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 0, never expires)")
 	fs.StringVar(&agentName, "agent", "", "label the token as issued to an AI agent with this name; audit entries made with it record the name")
 	fs.StringVar(&agentDescription, "agent-description", "", "optional description of the agent (requires --agent)")
+	fs.StringVar(&scopeTeam, "scope-team", "", "limit the token to this team")
+	fs.StringVar(&scopeProject, "scope-project", "", "limit the token to this project of --scope-team")
+	fs.StringVar(&scopeRole, "scope-role", "", "team role the token acts with, your own or lower (default: your role)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensCreateUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -97,7 +101,7 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	created, err := sessionClient.CreateToken(ctx, createTokenRequest{Name: name, Abilities: abilities, ExpiresInDays: expiresInDays, Agent: agent})
+	created, err := sessionClient.CreateToken(ctx, createTokenRequest{Name: name, Abilities: abilities, ExpiresInDays: expiresInDays, Agent: agent, TeamID: scopeTeam, ProjectID: scopeProject, TeamRole: scopeRole})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create token %q: %w", name, err))
 	}
@@ -138,6 +142,9 @@ Flags:
   --expires-in-days int      token lifetime in days (default: 0, never expires)
   --agent string                label the token as issued to an AI agent; audit entries record the name
   --agent-description string  optional description of the agent (requires --agent)
+  --scope-team string         limit the token to this team
+  --scope-project string      limit the token to one project of --scope-team
+  --scope-role string         team role the token acts with, your own or lower
   --username string          admin username (prompted if omitted)
   --password string          admin password (prompted without echo if omitted)
   --api-url string             control plane base URL (default: %[2]s env var, then %[3]s)

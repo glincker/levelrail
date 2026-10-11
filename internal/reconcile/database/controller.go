@@ -257,6 +257,8 @@ type Controller struct {
 	clickhouseCreds *ClickHouseCredentials
 	tls             *TLSMaterial
 	meshDNSAddr     string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	meshEndpoints   meshEndpointResolver
+	meshPorts       MeshPortLookup
 	// slowQueryThresholdMs is 0 (the default) whenever WithSlowQueryThreshold
 	// isn't set, meaning "use defaultSlowQueryThresholdMs"; see
 	// effectiveSlowQueryThresholdMs.
@@ -612,6 +614,15 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 			return notReady("BindAddressInvalid", err), fmt.Errorf("database/%s: public bind address: %w", c.dbName, err)
 		}
 		spec.Ports = []docker.PortBinding{{ContainerPort: containerPort, HostPort: desired.PublicPort, HostIP: hostIP}}
+	}
+	meshPort := containerPort
+	if tlsMaterial != nil {
+		if p, ok := TLSContainerPort(desired.Engine); ok {
+			meshPort = p
+		}
+	}
+	if b, ok := c.meshBinding(ctx, desired, state, meshPort); ok {
+		spec.Ports = append(spec.Ports, b)
 	}
 	if desired.Resources != nil {
 		spec.Resources = &docker.Resources{

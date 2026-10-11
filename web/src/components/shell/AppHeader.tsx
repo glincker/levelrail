@@ -4,6 +4,7 @@ import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Kbd } from '@/components/kit'
 import { EnvironmentSwitcher } from '../environments/EnvironmentSwitcher'
+import { TeamSwitcher } from '../teams/TeamSwitcher'
 import { HelpMenu } from '../HelpMenu'
 import { ThemeToggle } from '../ThemeToggle'
 import { NotificationCenter } from './NotificationCenter'
@@ -31,6 +32,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
         <Kbd keys={[isMac ? '⌘' : 'Ctrl', 'K']} />
       </Button>
       <div className="ml-auto flex items-center gap-2">
+        <TeamSwitcher />
         <EnvironmentSwitcher />
         <StatusChip />
         <NotificationCenter />

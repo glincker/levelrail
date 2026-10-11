@@ -2,7 +2,7 @@
 // search panel, so both pick from the same vocabulary instead of each
 // inventing its own set of range options.
 
-export type TimeRangeKey = '1h' | '6h' | '24h' | '7d'
+export type TimeRangeKey = '15m' | '1h' | '6h' | '24h' | '7d' | '30d'
 
 export interface TimeRangePreset {
   key: TimeRangeKey
@@ -23,6 +23,7 @@ export interface TimeRangePreset {
 // an array .find()/index access that TypeScript's noUncheckedIndexedAccess
 // would otherwise widen to `TimeRangePreset | undefined`.
 const PRESETS_BY_KEY: Record<TimeRangeKey, TimeRangePreset> = {
+  '15m': { key: '15m', label: 'Last 15 minutes', durationMs: 15 * 60 * 1000 },
   '1h': { key: '1h', label: 'Last hour', durationMs: 60 * 60 * 1000 },
   '6h': {
     key: '6h',
@@ -42,9 +43,15 @@ const PRESETS_BY_KEY: Record<TimeRangeKey, TimeRangePreset> = {
     durationMs: 7 * 24 * 60 * 60 * 1000,
     step: '30m',
   },
+  '30d': {
+    key: '30d',
+    label: 'Last 30 days',
+    durationMs: 30 * 24 * 60 * 60 * 1000,
+    step: '2h',
+  },
 }
 
-const PRESET_ORDER: TimeRangeKey[] = ['1h', '6h', '24h', '7d']
+const PRESET_ORDER: TimeRangeKey[] = ['15m', '1h', '6h', '24h', '7d', '30d']
 
 export const TIME_RANGE_PRESETS: TimeRangePreset[] = PRESET_ORDER.map(
   (key) => PRESETS_BY_KEY[key],

@@ -25,6 +25,10 @@ type User struct {
 	IsFirstUser  bool
 	CreatedAt    time.Time
 	LastLoginAt  *time.Time
+	// TeamID and TeamRole pick the team a new user joins; empty means the
+	// default team with a role matching Abilities.
+	TeamID   string
+	TeamRole string
 }
 
 // ErrUserNotFound is returned by GetUserByID and GetUserByEmail when no
@@ -56,7 +60,7 @@ func (db *DB) CreateUser(ctx context.Context, u User) error {
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`, u.ID, u.Email, u.DisplayName, nullableString(u.PasswordHash), string(abilitiesJSON), isFirst, formatTime(u.CreatedAt), formatTimePtr(u.LastLoginAt))
 	if err == nil {
-		return nil
+		return db.joinInitialTeam(ctx, u)
 	}
 
 	if u.IsFirstUser {

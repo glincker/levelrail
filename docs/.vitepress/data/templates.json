@@ -10629,14 +10629,14 @@
  {
   "id": "onetimesecret",
   "name": "One-Time Secret",
-  "slogan": "Share a password or API key through a link that self-destructs after the first view.",
+  "slogan": "Share a password or API key through a link that self-destructs after the first view, backed by Redis.",
   "category": "Security",
   "docUrl": "https://docs.onetimesecret.com",
   "memoryMiB": 256,
   "needsConfig": false,
   "services": [
    {
-    "name": "onetimesecret",
+    "name": "app",
     "image": "onetimesecret/onetimesecret:v0.26.14",
     "ports": [
      3000
@@ -10648,48 +10648,48 @@
     "image": "redis:7-alpine",
     "ports": [],
     "volumes": [
-     "onetimesecret_redis_data -> /data"
+     "redis -> /data"
     ]
    }
   ],
   "env": [
    {
-    "service": "onetimesecret",
+    "service": "app",
     "key": "AUTH_AUTOVERIFY",
     "kind": "preset"
    },
    {
-    "service": "onetimesecret",
+    "service": "app",
     "key": "AUTH_SIGNUP",
     "kind": "preset"
    },
    {
-    "service": "onetimesecret",
+    "service": "app",
     "key": "COLONEL",
     "kind": "preset"
    },
    {
-    "service": "onetimesecret",
+    "service": "app",
     "key": "HOST",
     "kind": "preset"
    },
    {
-    "service": "onetimesecret",
+    "service": "app",
     "key": "RACK_ENV",
     "kind": "preset"
    },
    {
-    "service": "onetimesecret",
+    "service": "app",
     "key": "REDIS_URL",
     "kind": "preset"
    },
    {
-    "service": "onetimesecret",
+    "service": "app",
     "key": "SECRET",
     "kind": "generated"
    },
    {
-    "service": "onetimesecret",
+    "service": "app",
     "key": "SSL",
     "kind": "preset"
    }
@@ -11107,7 +11107,7 @@
  {
   "id": "pairdrop",
   "name": "PairDrop",
-  "slogan": "A self-hosted AirDrop-style app for sending files and messages between devices on the same network.",
+  "slogan": "An AirDrop-style app for sending files and messages between devices on the same network, from any browser.",
   "category": "Productivity",
   "docUrl": "https://github.com/schlagmichdoch/PairDrop",
   "memoryMiB": 256,
@@ -11131,6 +11131,11 @@
    {
     "service": "pairdrop",
     "key": "PUID",
+    "kind": "preset"
+   },
+   {
+    "service": "pairdrop",
+    "key": "RATE_LIMIT",
     "kind": "preset"
    },
    {
@@ -12754,18 +12759,18 @@
  {
   "id": "redmine",
   "name": "Redmine",
-  "slogan": "A flexible, mature project management and issue-tracking web application.",
+  "slogan": "A mature project management and issue tracker with Gantt charts, wikis and time tracking, backed by Postgres.",
   "category": "Productivity",
-  "docUrl": "https://www.redmine.org/",
+  "docUrl": "https://www.redmine.org/projects/redmine/wiki/Guide",
   "memoryMiB": 512,
   "needsConfig": false,
   "services": [
    {
-    "name": "postgresql",
-    "image": "postgres:17-alpine",
+    "name": "db",
+    "image": "postgres:16-alpine",
     "ports": [],
     "volumes": [
-     "redmine_db_data -> /var/lib/postgresql/data"
+     "pgdata -> /var/lib/postgresql/data"
     ]
    },
    {
@@ -12775,23 +12780,23 @@
      3000
     ],
     "volumes": [
-     "redmine_files -> /usr/src/redmine/files"
+     "files -> /usr/src/redmine/files"
     ]
    }
   ],
   "env": [
    {
-    "service": "postgresql",
+    "service": "db",
     "key": "POSTGRES_DB",
     "kind": "preset"
    },
    {
-    "service": "postgresql",
+    "service": "db",
     "key": "POSTGRES_PASSWORD",
     "kind": "generated"
    },
    {
-    "service": "postgresql",
+    "service": "db",
     "key": "POSTGRES_USER",
     "kind": "preset"
    },
@@ -15397,13 +15402,13 @@
   "needsConfig": false,
   "services": [
    {
-    "name": "uptime-kuma",
+    "name": "kuma",
     "image": "louislam/uptime-kuma:1.23.13",
     "ports": [
      3001
     ],
     "volumes": [
-     "uptime_kuma_data -> /app/data"
+     "data -> /app/data"
     ]
    }
   ],
@@ -16107,7 +16112,7 @@
  {
   "id": "wikijs",
   "name": "Wiki.js",
-  "slogan": "A modern, extensible wiki engine with Markdown, visual editing, and fine-grained page permissions.",
+  "slogan": "A modern wiki with Markdown and visual editing, page permissions and full-text search, backed by Postgres.",
   "category": "Productivity",
   "docUrl": "https://docs.requarks.io",
   "memoryMiB": 512,
@@ -16118,7 +16123,7 @@
     "image": "postgres:16-alpine",
     "ports": [],
     "volumes": [
-     "wikijs_db_data -> /var/lib/postgresql/data"
+     "pgdata -> /var/lib/postgresql/data"
     ]
    },
    {

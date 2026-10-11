@@ -14,7 +14,11 @@ export interface MetricPoint {
 
 export interface MetricSeries {
   metric: string
+  step_seconds?: number
+  downsampled?: boolean
   points: MetricPoint[]
+  // Previous equal-length window, already shifted to align with `points`.
+  previous_points?: MetricPoint[]
 }
 
 // The 9 metrics internal/telemetry actually writes samples for,

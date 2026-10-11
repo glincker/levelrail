@@ -25,6 +25,8 @@ type composeDeployResponse struct {
 	AppID    string                `json:"app_id"`
 	Services []appResource         `json:"services"`
 	Notices  []composeNoticeResult `json:"notices,omitempty"`
+	Revision int                   `json:"revision,omitempty"`
+	Skipped  []string              `json:"skipped_services,omitempty"`
 }
 
 // composeNoticeResult is the wire shape of compose.Notice: a compose
@@ -65,7 +67,8 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, ok := rt.deployComposeBody(w, r, name, body, false)
+	opts := composeDeployOpts{profiles: splitProfiles(r.URL.Query().Get("profiles")), source: store.ComposeRevisionSourceAPI}
+	resp, ok := rt.deployComposeBody(w, r, name, body, opts)
 	if !ok {
 		return
 	}
@@ -85,8 +88,14 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 // (matching writeError/internalError's own w-owns-the-response
 // convention) and returns ok == false; the caller has nothing left to
 // do but return.
-func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name string, body []byte, isTrial bool) (composeDeployResponse, bool) {
+func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name string, body []byte, opts composeDeployOpts) (composeDeployResponse, bool) {
+	isTrial := opts.isTrial
 	file, err := compose.Parse(body)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return composeDeployResponse{}, false
+	}
+	skipped, err := file.ApplyProfiles(opts.profiles)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return composeDeployResponse{}, false
@@ -161,8 +170,9 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		notices = append(notices, composeNoticeResult{Level: string(n.Level), Message: n.Message})
 	}
 
+	revision := rt.recordComposeRevision(r, name, body, opts)
 	rt.nudgeReconciler()
-	return composeDeployResponse{AppID: name, Services: out, Notices: notices}, true
+	return composeDeployResponse{AppID: name, Services: out, Notices: notices, Revision: revision, Skipped: skipped}, true
 }
 
 // composeConfigChanged reports whether next differs from prev in a field that
