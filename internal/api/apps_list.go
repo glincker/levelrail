@@ -112,10 +112,12 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	envNames := rt.environmentNames(r.Context(), svcs)
+	envSettings, envSettingsOK := rt.appOverridesForList(r.Context())
 
 	out := make([]appListResource, 0, len(svcs))
 	for _, s := range svcs {
-		resource := toAppResource(s)
+		resource := toAppResourceRaw(s)
+		redactListedApp(&resource, s, envSettings, envSettingsOK)
 		resource.Tags = tagNamesFromStoreTags(tagsByApp[s.Name])
 		conditions := conditionsByController[applicationControllerName(s.Name)]
 		if cond := rt.crossNodeIngressAppCondition(r.Context(), s); cond != nil {

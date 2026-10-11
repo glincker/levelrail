@@ -16,6 +16,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -58,6 +59,11 @@ type appResource struct {
 	BindAddress string            `json:"bind_address"`
 	Domains     []string          `json:"domains,omitempty"`
 	Env         map[string]string `json:"env,omitempty"`
+	// EnvMeta is response-only per-variable sensitivity. A sensitive value
+	// reads back as envredact.Placeholder, and sending that back keeps it.
+	EnvMeta map[string]envredact.Meta `json:"env_meta,omitempty"`
+	// SecretsWriteOnly is response-only: the owner's per-app reveal lock.
+	SecretsWriteOnly bool `json:"secrets_write_only,omitempty"`
 	// SecretEnv names which env vars are backed by encrypted secret
 	// storage (store.DesiredService.SecretEnv): values live in
 	// internal/secrets, never here. Response-mirrors the store; settable
@@ -264,7 +270,15 @@ type appVaultEnvRef struct {
 	Key  string `json:"key"`
 }
 
+// toAppResource builds the wire resource with sensitive env values masked
+// by automatic classification; rt.appOut also applies per-app overrides.
 func toAppResource(svc store.DesiredService) appResource {
+	res := toAppResourceRaw(svc)
+	redactAppEnvFields(&res, svc, nil)
+	return res
+}
+
+func toAppResourceRaw(svc store.DesiredService) appResource {
 	var databaseEnv map[string]appDatabaseEnvRef
 	if len(svc.DatabaseEnv) > 0 {
 		databaseEnv = make(map[string]appDatabaseEnvRef, len(svc.DatabaseEnv))
@@ -500,6 +514,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if _, err := envredact.Merge(req.Env, nil); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	autoDomain := rt.attachAppsBaseDomain(r.Context(), &req)
 	if len(req.Secrets) > 0 && rt.secrets == nil {
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
@@ -645,6 +663,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		req.AutoDomain = autoDomain
 		req.DNS = rt.dnsForAutoDomain(r.Context(), r, req.Name, autoDomain)
 	}
+	rt.redactAppResponse(r.Context(), &req, desired)
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)
 }
@@ -685,7 +704,7 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	resource := toAppResource(*svc)
+	resource := rt.appOut(r.Context(), *svc)
 	tagNames, err := rt.appTagNames(r.Context(), name)
 	if err != nil {
 		rt.logger.Error("api: get app: load tags failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -821,6 +840,9 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// RestartService/handleTriggerDeploy do; otherwise EnvDirty latches
 	// true the moment Env changes and stays true across an unrelated
 	// save (e.g. a health check edit sent via the same PUT).
+	if !rt.mergeEnvPlaceholders(w, &req, existing) {
+		return
+	}
 	imageChanged := req.Image != existing.Image
 	desired := req.toDesiredService()
 	// Egress isn't in appResource.toDesiredService() (that field's own
@@ -875,6 +897,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		req.ResourcesAppliedLive = rt.applyResourcesLiveToReplicas(r.Context(), *saved)
 		req.EnvDirty = saved.EnvDirty
 	}
+	rt.redactAppResponse(r.Context(), &req, desired)
 	writeJSON(w, http.StatusOK, req)
 }
 
@@ -905,7 +928,7 @@ func (rt *Router) reloadAndWriteApp(w http.ResponseWriter, r *http.Request, name
 		return
 	}
 	rt.nudgeReconciler()
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	writeJSON(w, http.StatusOK, rt.appOut(r.Context(), *svc))
 }
 
 func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {

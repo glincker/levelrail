@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -25,6 +26,25 @@ func TestGetAppEnvListsSecretNamesNotValues(t *testing.T) {
 	var got AppEnvView
 	decodeStructured(t, res, &got)
 	if got.Env["MODE"] != "prod" || strings.Join(got.SecretKeys, ",") != "DB_PASS,TOKEN" {
+		t.Errorf("got %+v", got)
+	}
+}
+
+func TestGetAppEnvReportsMaskedValuesAsSensitiveKeys(t *testing.T) {
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/secrets") {
+			_, _ = w.Write([]byte(`[]`))
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"name": "web", "image": "i", "env": map[string]string{"MODE": "prod", "API_SECRET": apiclient.MaskedEnvValue}})
+	})
+	res, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "get_app_env", Arguments: map[string]any{"name": "web"}})
+	if err != nil || res.IsError {
+		t.Fatalf("call: %v %s", err, toolResultText(res))
+	}
+	var got AppEnvView
+	decodeStructured(t, res, &got)
+	if _, leaked := got.Env["API_SECRET"]; leaked || strings.Join(got.SensitiveKeys, ",") != "API_SECRET" || got.Env["MODE"] != "prod" {
 		t.Errorf("got %+v", got)
 	}
 }

@@ -89,6 +89,11 @@
       "pass": "No old sessions",
       "why": "Long-lived sessions on forgotten browsers are an easy way in."
     },
+    "secret_reveal_allow": {
+      "title": "Secret values can be revealed without confirming",
+      "pass": "Revealing a secret value needs a password or passkey confirmation",
+      "why": "With APP_SECRET_REVEAL=allow, anyone holding read:sensitive or a stolen session can read every secret value. Set it to step_up."
+    },
     "new_device_approval_off": {
       "title": "New browser approval is off",
       "pass": "New browser approval is on",

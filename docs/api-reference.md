@@ -79,7 +79,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 117 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 121 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -195,6 +195,10 @@ Endpoints for:
 | GET | /api/v1/settings/domain-automation | AbilityRead | handleGetDomainAutomation |
 | PUT | /api/v1/settings/domain-automation | AbilityRoot | handleUpdateDomainAutomation |
 | PUT | /api/v1/settings/proxy-integration | AbilityRoot | handleUpdateProxyIntegrationSettings |
+| GET | /api/v1/auth/step-up | Public | handleStepUpOptions |
+| POST | /api/v1/auth/step-up | Public | handleStepUp |
+| POST | /api/v1/auth/step-up/passkey/begin | Public | handleStepUpPasskeyBegin |
+| POST | /api/v1/auth/step-up/passkey/finish | Public | handleStepUpPasskeyFinish |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -213,7 +217,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 165 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 171 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -390,6 +394,12 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/deploy-safety | AbilityDeploy | handlePutDeploySafety |
 | GET | /api/v1/apps/{name}/rollback-targets | AbilityRead | handleListRollbackTargets |
 | GET | /api/v1/apps/{name}/job-runs | AbilityRead | handleListScheduledTaskRuns |
+| POST | /api/v1/apps/{name}/env/reveal | AbilityReadSensitive | handleRevealEnv |
+| POST | /api/v1/apps/{name}/env/export | AbilityReadSensitive | handleExportEnvRevealed |
+| GET | /api/v1/apps/{name}/env/export | AbilityRead | handleExportEnvRedacted |
+| GET | /api/v1/apps/{name}/env/settings | AbilityRead | handleGetEnvSettings |
+| PUT | /api/v1/apps/{name}/env/settings | AbilityWriteSensitive | handlePutEnvSettings |
+| POST | /api/v1/apps/{name}/env/{key}/convert-to-secret | AbilityWriteSensitive | handleConvertEnvToSecret |
 
 :::
 
@@ -429,6 +439,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/git-source/detect | AbilityDeploy | handleDetectGitSourceBuild |
 | POST | /api/v1/apps/{name}/previews/{number}/extend | AbilityDeploy | handleExtendPreviewEnvironment |
 | GET | /api/v1/apps/{name}/git-source/commits | AbilityDeploy | handleListGitSourceCommits |
+| POST | /api/v1/apps/{name}/secrets/{key}/reveal | AbilityReadSensitive | handleRevealSecret |
 
 ## Telemetry
 

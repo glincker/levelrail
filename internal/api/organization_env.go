@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -40,7 +41,7 @@ func (rt *Router) handleGetSharedEnv(w http.ResponseWriter, r *http.Request, sco
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, vars)
+	writeJSON(w, http.StatusOK, redactedEnvMap(vars))
 }
 
 func (rt *Router) handleSetSharedEnv(w http.ResponseWriter, r *http.Request, scope sharedEnvScope) {
@@ -60,13 +61,22 @@ func (rt *Router) handleSetSharedEnv(w http.ResponseWriter, r *http.Request, sco
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	current, err := scope.list(r.Context(), id)
+	if err != nil {
+		rt.internalError(w, "api: set "+scope.label+" env: load current failed", err, slog.String("id", id))
+		return
+	}
+	if vars, err = envredact.Merge(vars, current); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	if err := scope.set(r.Context(), id, vars); err != nil {
 		rt.logger.Error("api: set "+scope.label+" env failed", slog.String("error", err.Error()), slog.String("id", id))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, vars)
+	writeJSON(w, http.StatusOK, redactedEnvMap(vars))
 }
 
 // handleGetOrganizationEnv handles GET /api/v1/organizations/{id}/env.

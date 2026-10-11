@@ -43,6 +43,7 @@ export const NAMESPACES = [
   'deploySafety',
   'jobs',
   'network',
+  'envEditor',
 ] as const
 
 void i18n

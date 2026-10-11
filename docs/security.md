@@ -29,6 +29,8 @@ Each encrypted value is also bound to the slot it was written to: its owner and 
 Rotating the master key re-wraps every DEK without ever exposing plaintext, then binds any legacy values. See [Master key rotation](master-key-rotation.md) for the full procedure and failure modes.
 :::
 
+Sensitive plain variables and secrets are masked on every read surface, and reading one back needs a confirmed, audited step-up. See [Environment variables and secrets](environment-and-secrets.md).
+
 Credentials for backup targets and registry integrations follow the same write-only pattern described in [Backups and storage](backups-and-storage.md#credentials-are-write-only): once saved, the plaintext is never returned by the API again, only a masked placeholder.
 
 ## Sessions and tokens

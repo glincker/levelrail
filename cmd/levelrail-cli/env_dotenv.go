@@ -3,6 +3,8 @@ package main
 import (
 	"sort"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // envFileEntry is one parsed key/value pair from a .env-format file.
@@ -131,6 +133,10 @@ func renderDotenv(env map[string]string, secretKeys []string) string {
 			b.WriteString("# secret, value not exported\n" + k + "=\n")
 			continue
 		}
+		if env[k] == apiclient.MaskedEnvValue {
+			b.WriteString("# sensitive, value masked: export with --reveal to include it\n" + k + "=\n")
+			continue
+		}
 		b.WriteString(k + "=" + quoteDotenvValue(env[k]) + "\n")
 	}
 	return b.String()
@@ -177,6 +183,9 @@ func planEnvImport(current map[string]string, entries []envFileEntry, secretKeys
 		switch {
 		case secrets[k]:
 			plan.Secret = append(plan.Secret, k)
+		case exists && cur == apiclient.MaskedEnvValue && (incoming[k] == "" || incoming[k] == apiclient.MaskedEnvValue):
+			// A masked export reimported must keep the stored value, never blank it.
+			plan.Unchanged = append(plan.Unchanged, k)
 		case !exists:
 			plan.New = append(plan.New, k)
 			plan.Merged[k] = incoming[k]

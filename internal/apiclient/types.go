@@ -69,10 +69,11 @@ type AppResource struct {
 	BindAddress string `json:"bind_address"`
 	// Replicas and Strategy must round-trip: UpdateApp is a full replace, so
 	// dropping them on a GET-then-PUT would reset a scaled app to defaults.
-	Replicas int               `json:"replicas,omitempty"`
-	Strategy string            `json:"strategy,omitempty"`
-	Domains  []string          `json:"domains,omitempty"`
-	Env      map[string]string `json:"env,omitempty"`
+	Replicas int      `json:"replicas,omitempty"`
+	Strategy string   `json:"strategy,omitempty"`
+	Domains  []string `json:"domains,omitempty"`
+	// Env holds MaskedEnvValue for sensitive keys; sending it back keeps the stored value.
+	Env map[string]string `json:"env,omitempty"`
 	// SecretEnv mirrors internal/api's appResource.SecretEnv: names of
 	// env vars backed by encrypted secret storage, values held only in
 	// Secrets below or set later via PUT .../secrets/{key}, never here.
@@ -3883,6 +3884,7 @@ type StaticSiteResource struct {
 // control plane returns (internal/api/respond.go's own apiError).
 type apiErrorBody struct {
 	Error string `json:"error"`
+	Code  string `json:"code,omitempty"`
 }
 
 // APIError is returned by Client methods for a non-2xx HTTP response: a
@@ -3902,6 +3904,9 @@ type APIError struct {
 	// but any future response carrying the header gets the same
 	// treatment for free.
 	RetryAfter time.Duration
+	// Code is the machine-readable reason some refusals carry, such as
+	// step_up_required or step_up_code_required.
+	Code string
 }
 
 func (e *APIError) Error() string {

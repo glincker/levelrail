@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -148,8 +149,8 @@ func (rt *Router) handleCompareDeploys(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, deployCompareResource{
 		ServiceName:         name,
-		From:                fromSide,
-		To:                  toSide,
+		From:                maskDeploySideEnv(fromSide),
+		To:                  maskDeploySideEnv(toSide),
 		Changes:             diffDeployCompareSides(fromSide, toSide),
 		EnvChanges:          diffDeployCompareEnv(fromSide.Env, toSide.Env),
 		UnsnapshottedFields: unsnapshottedDeployFields,
@@ -429,7 +430,9 @@ func diffDeployCompareEnv(from, to []store.DeployAttemptEnvKey) []deployCompareE
 		case !hadFrom && hadTo:
 			out = append(out, deployCompareEnvChange{Key: k, Kind: t.Kind, Status: deployCompareEnvAdded})
 		case f.Kind == store.DeployAttemptEnvKindLiteral && t.Kind == store.DeployAttemptEnvKindLiteral && f.Value != t.Value:
-			out = append(out, deployCompareEnvChange{Key: k, Kind: t.Kind, Status: deployCompareEnvChanged, From: f.Value, To: t.Value})
+			from, _ := envredact.Value(k, f.Value, nil)
+			to, _ := envredact.Value(k, t.Value, nil)
+			out = append(out, deployCompareEnvChange{Key: k, Kind: t.Kind, Status: deployCompareEnvChanged, From: from, To: to})
 		}
 	}
 	return out
@@ -441,4 +444,17 @@ func envKeysByName(keys []store.DeployAttemptEnvKey) map[string]store.DeployAtte
 		out[k.Key] = k
 	}
 	return out
+}
+
+// maskDeploySideEnv masks sensitive literal values in a snapshot side.
+func maskDeploySideEnv(side deployCompareSide) deployCompareSide {
+	env := make([]store.DeployAttemptEnvKey, len(side.Env))
+	for i, e := range side.Env {
+		if e.Kind == store.DeployAttemptEnvKindLiteral {
+			e.Value, _ = envredact.Value(e.Key, e.Value, nil)
+		}
+		env[i] = e
+	}
+	side.Env = env
+	return side
 }

@@ -244,6 +244,7 @@ const sidebarGroups = [
       { text: 'Feature catalog', link: '/feature-catalog' },
       { text: 'CLI reference', link: '/cli-reference' },
       { text: 'Environment variables', link: '/environment-variables' },
+      { text: 'Environment variables and secrets', link: '/environment-and-secrets' },
       { text: 'API reference', link: '/api-reference' },
       { text: 'API explorer', link: '/api-explorer' },
       { text: 'MCP tool surface', link: '/mcp-tool-surface' },

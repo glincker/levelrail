@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -215,7 +216,7 @@ func effectiveEnvResources(eff map[string]effectiveSharedEnvEntry) []environment
 		e := eff[k]
 		out[i] = environmentEnvEntryResource{Key: k, Secret: e.Secret}
 		if !e.Secret {
-			out[i].Value = e.Value
+			out[i].Value, _ = envredact.Value(k, e.Value, nil)
 		}
 	}
 	return out
@@ -251,19 +252,21 @@ func diffEffectiveEnv(a, b map[string]effectiveSharedEnvEntry) []environmentEnvD
 		case inA && !inB:
 			entry := environmentEnvDiffEntry{Key: k, Secret: av.Secret, Status: envDiffOnlyInA}
 			if !av.Secret {
-				entry.A = av.Value
+				entry.A, _ = envredact.Value(k, av.Value, nil)
 			}
 			out = append(out, entry)
 		case !inA && inB:
 			entry := environmentEnvDiffEntry{Key: k, Secret: bv.Secret, Status: envDiffOnlyInB}
 			if !bv.Secret {
-				entry.B = bv.Value
+				entry.B, _ = envredact.Value(k, bv.Value, nil)
 			}
 			out = append(out, entry)
 		case av.Secret || bv.Secret:
 			out = append(out, environmentEnvDiffEntry{Key: k, Secret: true, Status: envDiffMasked})
 		case av.Value != bv.Value:
-			out = append(out, environmentEnvDiffEntry{Key: k, Status: envDiffChanged, A: av.Value, B: bv.Value})
+			shownA, _ := envredact.Value(k, av.Value, nil)
+			shownB, _ := envredact.Value(k, bv.Value, nil)
+			out = append(out, environmentEnvDiffEntry{Key: k, Status: envDiffChanged, A: shownA, B: shownB})
 		}
 	}
 	return out

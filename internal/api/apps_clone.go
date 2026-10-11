@@ -180,5 +180,6 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusCreated, toAppResource(*cloned))
+	rt.copyEnvSettings(r.Context(), name, req.NewName)
+	writeJSON(w, http.StatusCreated, rt.appOut(r.Context(), *cloned))
 }

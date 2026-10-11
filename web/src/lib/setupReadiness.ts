@@ -34,6 +34,7 @@ const CODE_EXACT: Readonly<Record<string, ReadinessCategoryId>> = {
   master_key_rotation: 'security',
   secret_binding: 'security',
   stale_secrets: 'security',
+  secret_reveal_policy: 'security',
   container_hardening: 'security',
   disk_space: 'storage',
   disk_io_latency: 'storage',

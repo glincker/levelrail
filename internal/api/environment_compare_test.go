@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -60,7 +61,7 @@ func envCompareFixture(t *testing.T, db *store.DB, manager *secrets.Manager) {
 		}
 	}
 
-	if err := db.SetProjectEnvVars(ctx, "proj_1", map[string]string{"PROJ_PLAIN": "proj-value", "SHARED_KEY": "proj-shared"}); err != nil {
+	if err := db.SetProjectEnvVars(ctx, "proj_1", map[string]string{"PROJ_PLAIN": "proj-value", "SHARED_FLAG": "proj-shared"}); err != nil {
 		t.Fatalf("set project env vars: %v", err)
 	}
 	if err := db.SetProjectSecretEnvVar(ctx, "proj_1", "PROJ_SECRET"); err != nil {
@@ -72,7 +73,7 @@ func envCompareFixture(t *testing.T, db *store.DB, manager *secrets.Manager) {
 		}
 	}
 
-	if err := db.SetEnvironmentEnvVars(ctx, "env_a", map[string]string{"ENV_PLAIN_A": "a-value", "SHARED_KEY": "a-shared-override"}); err != nil {
+	if err := db.SetEnvironmentEnvVars(ctx, "env_a", map[string]string{"ENV_PLAIN_A": "a-value", "SHARED_FLAG": "a-shared-override", "API_SECRET": "plain-but-sensitive-value"}); err != nil { //nolint:gosec // test fixture
 		t.Fatalf("set env_a env vars: %v", err)
 	}
 	if err := db.SetEnvironmentSecretEnvVar(ctx, "env_a", "ENV_ONLY_SECRET"); err != nil {
@@ -182,18 +183,22 @@ func TestHandleCompareEnvironmentEnv_NeverLeaksSecretValues(t *testing.T) {
 	assertEnvEntry("A", got.A.Env, "ORG_PLAIN", false, "org-value")
 	assertEnvEntry("B", got.B.Env, "ORG_PLAIN", false, "org-value")
 	assertEnvEntry("A", got.A.Env, "PROJ_PLAIN", false, "proj-value")
-	assertEnvEntry("A", got.A.Env, "SHARED_KEY", false, "a-shared-override")
-	assertEnvEntry("B", got.B.Env, "SHARED_KEY", false, "proj-shared")
+	assertEnvEntry("A", got.A.Env, "SHARED_FLAG", false, "a-shared-override")
+	assertEnvEntry("B", got.B.Env, "SHARED_FLAG", false, "proj-shared")
 	assertEnvEntry("A", got.A.Env, "ENV_PLAIN_A", false, "a-value")
 	assertEnvEntry("B", got.B.Env, "ENV_PLAIN_B", false, "b-value")
 	// env_b never marked MIXED secret itself, so its own side shows the
 	// real plain value it declared; only the cross-side diff (checked
 	// below) has to stay conservative about it.
 	assertEnvEntry("B", got.B.Env, "MIXED", false, "mixed-b-plain-value")
+	assertEnvEntry("A", got.A.Env, "API_SECRET", false, envredact.Placeholder)
 
 	diffByKey := make(map[string]environmentEnvDiffEntry, len(got.Diff))
 	for _, d := range got.Diff {
 		diffByKey[d.Key] = d
+	}
+	if d := diffByKey["API_SECRET"]; d.A != envredact.Placeholder {
+		t.Errorf("diff[API_SECRET].A = %q, want the masked placeholder", d.A)
 	}
 
 	for _, plain := range []string{"ORG_PLAIN", "PROJ_PLAIN"} {
@@ -206,7 +211,7 @@ func TestHandleCompareEnvironmentEnv_NeverLeaksSecretValues(t *testing.T) {
 		"ORG_SECRET":      envDiffMasked,
 		"PROJ_SECRET":     envDiffMasked,
 		"MIXED":           envDiffMasked,
-		"SHARED_KEY":      envDiffChanged,
+		"SHARED_FLAG":     envDiffChanged,
 		"ENV_PLAIN_A":     envDiffOnlyInA,
 		"ENV_PLAIN_B":     envDiffOnlyInB,
 		"ENV_ONLY_SECRET": envDiffOnlyInA,
@@ -227,8 +232,8 @@ func TestHandleCompareEnvironmentEnv_NeverLeaksSecretValues(t *testing.T) {
 		}
 	}
 
-	if d := diffByKey["SHARED_KEY"]; d.A != "a-shared-override" || d.B != "proj-shared" {
-		t.Errorf("diff[SHARED_KEY] = %+v, want a=a-shared-override b=proj-shared", d)
+	if d := diffByKey["SHARED_FLAG"]; d.A != "a-shared-override" || d.B != "proj-shared" {
+		t.Errorf("diff[SHARED_FLAG] = %+v, want a=a-shared-override b=proj-shared", d)
 	}
 	if d := diffByKey["ENV_PLAIN_A"]; d.A != "a-value" {
 		t.Errorf("diff[ENV_PLAIN_A].A = %q, want a-value", d.A)

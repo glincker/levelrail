@@ -121,6 +121,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Feature catalog](https://levelrail.com/feature-catalog): every shipped dashboard route, API endpoint, and CLI command, one line each.
 - [CLI reference](https://levelrail.com/cli-reference): every `levelrail-cli` command and flag.
 - [Environment variables](https://levelrail.com/environment-variables): operator-facing `APP_*` settings for builds, schedulers, ingress, backups, doctor, and updates, with defaults.
+- [Environment variables and secrets](https://levelrail.com/environment-and-secrets): how sensitive app values are masked, confirmed reveal and export, reveal policies and the threat model.
 - [API reference](https://levelrail.com/api-reference): the HTTP API the dashboard, CLI, and MCP server all run on.
 - [MCP tool surface](https://levelrail.com/mcp-tool-surface): estimated model context cost of the MCP tool list, by toolset.
 - [Agent tooling audit](https://levelrail.com/agent-tooling-audit): size, overlap, and token budget audit of the levelrail-mcp tool surface.

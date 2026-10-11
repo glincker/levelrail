@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/GLINCKER/levelrail/internal/envredact"
 )
 
 // composePreviewMaxBytes bounds a pasted or uploaded compose file.
@@ -139,6 +140,9 @@ func previewEnv(key, value string, hasDomain bool) composePreviewEnv {
 	}
 	if e.Secret && !e.Generated && !e.Required && value != "" {
 		e.Value = ""
+	}
+	if e.Value != "" && len(compose.FindMagicVars(e.Value)) == 0 {
+		e.Value, _ = envredact.Value(key, e.Value, nil)
 	}
 	return e
 }
