@@ -130,7 +130,7 @@ describe('StageOverlay', () => {
   it('renders as a bottom-anchored strip, not a full-screen panel', () => {
     render(<StageOverlay open onOpenChange={vi.fn()} />)
     const popup = document.querySelector('[data-slot="stage-overlay-popup"]')
-    expect(popup?.className).toContain('bottom-6')
+    expect(popup?.className).toContain('safe-area-inset-bottom')
     expect(popup?.className).toContain('left-1/2')
     expect(popup?.className).not.toContain('inset-4')
     expect(popup?.className).not.toContain('inset-8')
