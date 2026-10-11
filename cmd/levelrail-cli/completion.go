@@ -238,6 +238,10 @@ var cliCommandTree = map[string]*cmdNode{
 	"users":                    {subs: map[string]*cmdNode{"list": nil, "create": nil, "set-abilities": nil, "delete": nil, "roles": nil, "role": {subs: map[string]*cmdNode{"set": nil}}, "grants": {subs: map[string]*cmdNode{"get": nil, "set": nil}}}},
 	"roles":                    {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil}},
 	"invites":                  {subs: map[string]*cmdNode{"create": nil, "list": nil, "revoke": nil}},
+	"teams": {subs: map[string]*cmdNode{"list": nil, "create": nil, "show": nil, "rename": nil, "delete": nil, "use": nil, "roles": nil, "transfer": nil, "events": nil,
+		"members": {subs: map[string]*cmdNode{"list": nil, "set-role": nil, "remove": nil, "leave": nil}},
+		"invites": {subs: map[string]*cmdNode{"list": nil, "create": nil, "revoke": nil, "accept": nil}}}},
+	"members": {subs: map[string]*cmdNode{"list": nil, "set-role": nil, "remove": nil, "leave": nil}},
 	"dns": {subs: map[string]*cmdNode{
 		"zones":         {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil, "nameservers": nil, "verify": nil}},
 		"records":       {subs: map[string]*cmdNode{"list": nil, "add": nil, "update": nil, "delete": nil, "import": nil, "export": nil, "template": nil}},

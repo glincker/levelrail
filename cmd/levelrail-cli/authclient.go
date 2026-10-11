@@ -199,6 +199,9 @@ type createTokenRequest struct {
 	Abilities     []string    `json:"abilities"`
 	ExpiresInDays int         `json:"expires_in_days,omitempty"`
 	Agent         *tokenAgent `json:"agent,omitempty"`
+	TeamID        string      `json:"team_id,omitempty"`
+	ProjectID     string      `json:"project_id,omitempty"`
+	TeamRole      string      `json:"team_role,omitempty"`
 }
 
 // createTokenResponse mirrors internal/api's createTokenResponse: Token

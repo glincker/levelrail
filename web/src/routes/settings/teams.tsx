@@ -1,0 +1,126 @@
+import { useState } from 'react'
+import { createFileRoute } from '@tanstack/react-router'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
+import { UsersThreeIcon } from '@phosphor-icons/react/dist/ssr'
+import { PageHeader } from '@/components/shell/PageHeader'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { EmptyState } from '@/components/ui/empty-state'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { toast } from '@/components/ui/toast'
+import { TeamEventsCard } from '../../components/teams/TeamEventsCard'
+import { TeamInvitesCard } from '../../components/teams/TeamInvitesCard'
+import { TeamMembersCard } from '../../components/teams/TeamMembersCard'
+import { TeamRoleBadge } from '../../components/teams/TeamRoleBadge'
+import { useIsRoot } from '../../hooks/useIsRoot'
+import { teamListQueryOptions, useCreateTeam } from '../../queries/teams'
+
+export const Route = createFileRoute('/settings/teams')({
+  loader: ({ context: { queryClient } }) =>
+    queryClient.ensureQueryData(teamListQueryOptions()),
+  component: TeamsSettingsPage,
+  pendingComponent: () => <TableSkeleton columnCount={4} />,
+})
+
+function CreateTeamForm() {
+  const { t } = useTranslation('teams')
+  const [name, setName] = useState('')
+  const create = useCreateTeam()
+  return (
+    <form
+      className="flex gap-2"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (name.trim() === '') {
+          return
+        }
+        create.mutate(name.trim(), {
+          onSuccess: () => {
+            setName('')
+            toast.add({ title: t('page.created'), type: 'success' })
+          },
+          onError: (err) =>
+            toast.add({
+              title: t('errors.generic', { message: err.message }),
+              type: 'error',
+            }),
+        })
+      }}
+    >
+      <Input
+        aria-label={t('page.createName')}
+        placeholder={t('page.createName')}
+        value={name}
+        onChange={(e) => {
+          setName(e.target.value)
+        }}
+      />
+      <Button type="submit" disabled={create.isPending}>
+        {t('page.createSubmit')}
+      </Button>
+    </form>
+  )
+}
+
+function TeamsSettingsPage() {
+  const { t } = useTranslation('teams')
+  const { data: teams } = useSuspenseQuery(teamListQueryOptions())
+  const root = useIsRoot()
+  const [selected, setSelected] = useState('')
+  const team = teams.find((tm) => tm.id === selected) ?? teams[0]
+  const manager =
+    team !== undefined &&
+    (root ||
+      (!team.default && (team.role === 'owner' || team.role === 'admin')))
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={t('page.title')}
+        description={t('page.description')}
+        actions={root ? <CreateTeamForm /> : undefined}
+      />
+      {team === undefined ? (
+        <EmptyState
+          icon={<UsersThreeIcon className="size-5" />}
+          title={t('page.title')}
+          description={t('page.empty')}
+        />
+      ) : (
+        <>
+          <div
+            className="flex flex-wrap gap-2"
+            role="tablist"
+            aria-label={t('page.pick')}
+          >
+            {teams.map((tm) => (
+              <Button
+                key={tm.id}
+                type="button"
+                role="tab"
+                aria-selected={tm.id === team.id}
+                variant={tm.id === team.id ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  setSelected(tm.id)
+                }}
+              >
+                {tm.default ? t('page.defaultTeam') : tm.name}
+                {tm.role ? <TeamRoleBadge role={tm.role} /> : null}
+              </Button>
+            ))}
+          </div>
+          {team.default && (
+            <p className="text-sm text-muted-foreground">
+              {t('page.defaultHint')}
+            </p>
+          )}
+          <TeamMembersCard team={team} root={root} />
+          {manager && <TeamInvitesCard team={team} root={root} />}
+          {manager && <TeamEventsCard teamId={team.id} />}
+        </>
+      )}
+    </div>
+  )
+}

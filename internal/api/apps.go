@@ -505,6 +505,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
 		return
 	}
+	req.ProjectID = defaultProjectFor(r, req.ProjectID)
 	if err := rt.validateProjectID(r.Context(), req.ProjectID); err != nil {
 		if errors.Is(err, store.ErrProjectNotFound) {
 			writeError(w, http.StatusBadRequest, "unknown project_id")

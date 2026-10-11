@@ -73,6 +73,9 @@ func validateEnvironmentPatch(current store.Environment, req updateEnvironmentRe
 // handleListAllEnvironments handles GET /api/v1/environments.
 func (rt *Router) handleListAllEnvironments(w http.ResponseWriter, r *http.Request) {
 	envs, err := rt.environments.ListAllEnvironments(r.Context())
+	if err == nil {
+		envs, err = rt.filterEnvironments(r, envs)
+	}
 	if err != nil {
 		rt.internalError(w, "api: list all environments failed", err)
 		return
