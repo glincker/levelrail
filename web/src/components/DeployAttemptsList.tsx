@@ -7,7 +7,10 @@ import {
   DotsThreeIcon,
   ProhibitIcon,
   RocketLaunchIcon,
+  GitBranchIcon,
+  GitCommitIcon,
   GitDiffIcon,
+  WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
@@ -20,15 +23,16 @@ import { formatDeployDuration } from '../lib/deployDuration'
 import { computeDeployStages } from '../lib/deployStages'
 import {
   DEPLOY_ATTEMPT_SOURCE_LABEL,
+  DEPLOY_ATTEMPT_STATUS_ICON,
   DEPLOY_ATTEMPT_STATUS_LABEL,
   DEPLOY_ATTEMPT_STATUS_TONE,
 } from '../lib/deployAttemptPresentation'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
 import { CancelDeployDialog } from './CancelDeployDialog'
-import { ActionMenu, InfoTip, StatusPill } from './kit'
-import { DigestChip, RolloutChip } from './DeployDigestChips'
-import { DeployPreviewThumb } from './DeployPreviewThumb'
-import { DeployFailureView } from './DeployFailureView'
+import { ActionMenu, InfoTip, RelativeTime } from './kit'
+import { RolloutChip } from './DeployDigestChips'
+import { cn } from '@/lib/utils'
+import { commitSubject } from '../lib/deploymentPresentation'
 import { unpinnedImage } from '../lib/imageDigest'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -36,6 +40,19 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast, toastAction } from '@/components/ui/toast'
+
+const TONE_TEXT: Record<string, string> = {
+  success: 'text-tone-success',
+  danger: 'text-tone-danger',
+  warning: 'text-tone-warning',
+  info: 'text-tone-info',
+  neutral: 'text-muted-foreground',
+}
+
+function shortTag(image: string): string {
+  const tag = unpinnedImage(image).split(':').pop() ?? image
+  return /^[0-9a-f]{40}$/.test(tag) ? tag.slice(0, 7) : tag
+}
 
 function durationSuffix(attempt: DeployAttempt): string {
   if (attempt.finished_at) {
@@ -178,7 +195,7 @@ export function DeployAttemptsList({
             onAcknowledgedChange={setAckProtected}
           />
         ) : null}
-        <ul className="-mx-4 divide-y divide-border">
+        <ul className="-mx-4 -mb-4 divide-y divide-border border-t border-border">
           {attempts.map((a) => (
             <DeployAttemptRow
               key={a.id}
@@ -286,6 +303,19 @@ function DeployAttemptRow({
   }
 
   const menuItems = [
+    {
+      id: 'compare',
+      label: 'Compare to current',
+      description: 'See what changed against the live release',
+      icon: <GitDiffIcon className="size-4" />,
+      onSelect: () => {
+        void navigate({
+          to: '/apps/$name/deploys/compare',
+          params: { name: appName },
+          search: { from: attempt.id },
+        })
+      },
+    },
     ...(attempt.status === 'succeeded'
       ? [
           {
@@ -319,136 +349,166 @@ function DeployAttemptRow({
       : []),
   ]
 
-  return (
-    <li className="flex items-start gap-3 px-4 py-3 first:pt-0 last:pb-0 max-sm:flex-wrap">
-      <Checkbox
-        className="mt-1"
-        checked={isSelected}
-        onCheckedChange={onToggleSelected}
-        aria-label={`Select ${attempt.image} to compare`}
-      />
-      <span className="mt-0.5 shrink-0">
-        <StatusPill
-          tone={DEPLOY_ATTEMPT_STATUS_TONE[attempt.status]}
-          label={`${DEPLOY_ATTEMPT_STATUS_LABEL[attempt.status]}${stageLabel ? ` (${stageLabel})` : ''}`}
-          live={attempt.status === 'running' || attempt.status === 'queued'}
-        />
-      </span>
+  const title =
+    (attempt.commit_message && commitSubject(attempt.commit_message)) ||
+    shortTag(attempt.image)
+  const StatusIcon = DEPLOY_ATTEMPT_STATUS_ICON[attempt.status]
+  const tone = DEPLOY_ATTEMPT_STATUS_TONE[attempt.status]
+  const live = attempt.rollout_state === 'serving'
+  const detail = {
+    to: '/apps/$name/deploys/$deployId/logs' as const,
+    params: { name: appName, deployId: attempt.id },
+  }
+  const note =
+    attempt.status === 'queued'
+      ? `Position ${attempt.queue_position ?? 1}${attempt.wait_reason ? `, ${attempt.wait_reason}` : ''}`
+      : attempt.status === 'held'
+        ? attempt.wait_reason
+        : attempt.status === 'superseded' && attempt.superseded_by
+          ? `Superseded by ${attempt.superseded_by}`
+          : attempt.status === 'canceled'
+            ? `Canceled${attempt.canceled_by ? ` by ${attempt.canceled_by}` : ''}`
+            : attempt.reason
 
-      {attempt.status === 'succeeded' ? (
-        <DeployPreviewThumb
-          appName={appName}
-          deploymentId={attempt.id}
-          imageUrl={attempt.preview_image_url}
-          commitSha={attempt.commit_sha}
-          canRecapture={isLatestAttempt}
-          hideWhenEmpty
+  return (
+    <li
+      className={cn(
+        'group relative flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-muted/40',
+        isSelected && 'bg-muted/50',
+      )}
+    >
+      <div className="relative mt-0.5 size-5 shrink-0">
+        <span
+          className={cn(
+            'absolute inset-0 flex items-center justify-center transition-opacity',
+            isSelected ? 'opacity-0' : 'group-hover:opacity-0',
+            TONE_TEXT[tone],
+          )}
+        >
+          <StatusIcon
+            weight="fill"
+            className={cn(
+              'size-5',
+              attempt.status === 'running' &&
+                'animate-spin motion-reduce:animate-none',
+            )}
+            aria-label={DEPLOY_ATTEMPT_STATUS_LABEL[attempt.status]}
+          />
+        </span>
+        <Checkbox
+          className={cn(
+            'absolute inset-0 m-auto transition-opacity',
+            isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+          )}
+          checked={isSelected}
+          onCheckedChange={onToggleSelected}
+          aria-label={`Select ${title} to compare`}
         />
-      ) : null}
+      </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <p
-            className="truncate font-mono text-sm font-medium text-foreground"
-            title={attempt.image}
+          <Link
+            {...detail}
+            className="max-w-full truncate text-sm font-medium text-foreground after:absolute after:inset-0 hover:underline"
+            title={attempt.commit_message || attempt.image}
           >
-            {unpinnedImage(attempt.image)}
-          </p>
-          <DigestChip
-            digest={attempt.image_digest}
-            reason={attempt.digest_reason}
-          />
-          <RolloutChip attempt={attempt} />
+            {title}
+          </Link>
+          {live ? (
+            <Badge variant="success" className="shrink-0">
+              Current
+            </Badge>
+          ) : null}
+          {stageLabel ? (
+            <Badge variant="muted" className="shrink-0">
+              {stageLabel}
+            </Badge>
+          ) : null}
+        </div>
+
+        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          {attempt.branch ? (
+            <span className="inline-flex items-center gap-1">
+              <GitBranchIcon className="size-3.5" aria-hidden="true" />
+              <span className="font-mono">{attempt.branch}</span>
+            </span>
+          ) : null}
           {attempt.commit_sha ? (
-            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1 font-mono">
+              <GitCommitIcon className="size-3.5" aria-hidden="true" />
               {attempt.commit_sha.slice(0, 7)}
             </span>
           ) : null}
           {attempt.source ? (
-            <Badge variant="outline" className="shrink-0">
-              {DEPLOY_ATTEMPT_SOURCE_LABEL[attempt.source]}
-            </Badge>
+            <span>{DEPLOY_ATTEMPT_SOURCE_LABEL[attempt.source]}</span>
           ) : null}
-        </div>
-        <p className="mt-0.5 text-xs text-muted-foreground/70">
-          Started {new Date(attempt.started_at).toLocaleString()}
-          {durationSuffix(attempt)}
+          {attempt.author ? <span>{attempt.author}</span> : null}
+          <span title={new Date(attempt.started_at).toLocaleString()}>
+            <RelativeTime at={attempt.started_at} live />
+            {durationSuffix(attempt)}
+          </span>
+          {attempt.rollout_state === 'mismatch' ? (
+            <RolloutChip attempt={attempt} />
+          ) : null}
         </p>
-        {attempt.status === 'queued' ? (
-          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-            Position {attempt.queue_position ?? 1}
-            {attempt.wait_reason ? `, ${attempt.wait_reason}` : ''}
-            <InfoTip label="About the queue">
-              Deploys of one app run one at a time. This one starts on its own
-              when the deploy ahead of it finishes or is canceled.
-            </InfoTip>
+
+        {note ? (
+          <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+            {note}
+            {attempt.status === 'queued' ? (
+              <InfoTip label="About the queue">
+                Deploys of one app run one at a time. This one starts on its own
+                when the deploy ahead of it finishes or is canceled.
+              </InfoTip>
+            ) : null}
           </p>
-        ) : attempt.status === 'held' && attempt.wait_reason ? (
-          <p className="mt-1 text-xs text-muted-foreground">
-            {attempt.wait_reason}
-          </p>
-        ) : attempt.status === 'superseded' && attempt.superseded_by ? (
-          <p className="mt-1 text-xs text-muted-foreground">
-            Superseded by {attempt.superseded_by}
-          </p>
-        ) : attempt.status === 'canceled' ? (
-          <p className="mt-1 text-xs text-muted-foreground">
-            Canceled{attempt.canceled_by ? ` by ${attempt.canceled_by}` : ''}
-          </p>
-        ) : attempt.reason ? (
-          <p className="mt-1 text-xs text-muted-foreground">{attempt.reason}</p>
         ) : null}
-        {attempt.failure ? (
-          <DeployFailureView failure={attempt.failure} />
-        ) : attempt.error ? (
-          <p className="mt-1 text-xs text-destructive">{attempt.error}</p>
+
+        {attempt.failure || attempt.error ? (
+          <div className="mt-2 flex items-start gap-2 rounded-md border border-tone-danger-border bg-tone-danger-soft px-3 py-2 text-sm">
+            <WarningCircleIcon
+              weight="fill"
+              className="mt-0.5 size-4 shrink-0 text-tone-danger"
+              aria-hidden="true"
+            />
+            <div className="min-w-0">
+              <p className="line-clamp-2 font-medium break-words text-tone-danger">
+                {attempt.failure?.cause ?? attempt.error}
+              </p>
+              {attempt.failure?.suggested_fix ? (
+                <p className="mt-0.5 line-clamp-2 text-xs break-words text-muted-foreground">
+                  {attempt.failure.suggested_fix}
+                </p>
+              ) : null}
+            </div>
+          </div>
         ) : null}
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 max-sm:w-full max-sm:justify-end">
+      <div className="relative z-10 flex shrink-0 items-center gap-1.5">
         <Button
           variant="outline"
           size="sm"
           nativeButton={false}
-          render={
-            <Link
-              to="/apps/$name/deploys/$deployId/logs"
-              params={{ name: appName, deployId: attempt.id }}
-            />
-          }
+          className="max-sm:hidden"
+          render={<Link {...detail} />}
         >
           <ScrollIcon className="size-3.5" data-icon="inline-start" />
-          Logs
+          {attempt.status === 'running' ? 'Watch' : 'Logs'}
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          nativeButton={false}
-          render={
-            <Link
-              to="/apps/$name/deploys/compare"
-              params={{ name: appName }}
-              search={{ from: attempt.id }}
-            />
+        <ActionMenu
+          trigger={
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`More actions for ${title}`}
+            >
+              <DotsThreeIcon weight="bold" className="size-4" />
+            </Button>
           }
-        >
-          <GitDiffIcon className="size-3.5" data-icon="inline-start" />
-          Compare to current
-        </Button>
-        {menuItems.length > 0 ? (
-          <ActionMenu
-            trigger={
-              <Button
-                variant="outline"
-                size="sm"
-                aria-label={`More actions for ${attempt.id}`}
-              >
-                <DotsThreeIcon weight="bold" className="size-4" />
-              </Button>
-            }
-            items={menuItems}
-          />
-        ) : null}
+          items={menuItems}
+        />
       </div>
 
       {isCancelable ? (
