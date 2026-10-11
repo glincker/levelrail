@@ -45,6 +45,7 @@ import {
   type GitRepoSourceValue,
 } from './GitRepoSourcePicker'
 import { RotateWebhookSecretDialog } from './RotateWebhookSecretDialog'
+import { GitBuildSettings } from './GitBuildSettings'
 import { ApiError } from '../lib/apiError'
 import type { AppDetail } from '../types/appDetail'
 import type {
@@ -148,6 +149,7 @@ interface FormState {
   branch: string
   buildType: GitSourceBuildType
   buildPath: string
+  baseDirectory: string
   triggerMode: GitSourceTriggerMode
   token: string
   // Set only by a fresh GitRepoSourcePicker pick from a connected
@@ -169,6 +171,7 @@ function emptyForm(): FormState {
     branch: '',
     buildType: 'railpack',
     buildPath: '',
+    baseDirectory: '',
     triggerMode: 'push',
     token: '',
     providerRef: undefined,
@@ -185,6 +188,7 @@ function formFromResource(g: GitSourceResource): FormState {
     branch: g.branch,
     buildType: g.build_type,
     buildPath: g.build_path ?? '',
+    baseDirectory: g.base_directory ?? '',
     triggerMode: g.trigger_mode,
     token: '',
     providerRef: undefined,
@@ -402,6 +406,7 @@ async function connectGitSource(
     branch,
     build_type: form.buildType,
     build_path: buildPath,
+    base_directory: form.baseDirectory.trim() || undefined,
     token: form.token.trim() || undefined,
     additional_services: additionalServices,
     services,
@@ -1259,11 +1264,6 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
               </dd>
               <dt className="text-muted-foreground">Branch</dt>
               <dd className="font-mono">{query.data.branch}</dd>
-              <dt className="text-muted-foreground">Build pack</dt>
-              <dd>
-                {BUILD_PACKS.find((p) => p.value === query.data.build_type)
-                  ?.label ?? query.data.build_type}
-              </dd>
               <dt className="text-muted-foreground">Deploy trigger</dt>
               <dd>
                 {TRIGGER_MODES.find((m) => m.value === query.data.trigger_mode)
@@ -1292,6 +1292,8 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                 </>
               ) : null}
             </dl>
+
+            <GitBuildSettings appName={app.name} source={query.data} />
 
             <Field>
               <FieldLabel htmlFor="git-source-webhook-url-connected">

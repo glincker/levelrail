@@ -475,7 +475,12 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		return status, fmt.Sprintf("services deploy triggered for app %q (%d service(s) failed)\n", appName, failed)
 	}
 
-	svcSpec := specServiceFromDesired(*existing, spec.Build{Type: gs.BuildType, Path: gs.BuildPath})
+	gitBuild, err := gs.SpecBuild()
+	if err != nil {
+		rt.logger.Error("api: git push webhook: invalid build settings", slog.String("error", err.Error()), slog.String("name", name))
+		return http.StatusUnprocessableEntity, "invalid build settings: " + err.Error()
+	}
+	svcSpec := specServiceFromDesired(*existing, gitBuild)
 
 	buildReq := deploy.Request{
 		ServiceName: name,

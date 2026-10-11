@@ -389,6 +389,8 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/git-source/rotate-webhook-secret | AbilityWriteSensitive | handleRotateGitSourceWebhookSecret |
 | POST | /api/v1/webhooks/slack/interactions | Public | handleSlackInteraction |
 | POST | /api/v1/webhooks/discord/interactions | Public | handleDiscordInteraction |
+| PUT | /api/v1/apps/{name}/git-source/build | AbilityWriteSensitive | handleSetGitSourceBuild |
+| POST | /api/v1/apps/{name}/git-source/detect | AbilityDeploy | handleDetectGitSourceBuild |
 
 ## Telemetry
 

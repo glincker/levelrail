@@ -293,7 +293,11 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 		return "", false, fmt.Errorf("load production service %q: %w", appName, err)
 	}
 
-	svcSpec := specServiceFromDesired(*prod, spec.Build{Type: gs.BuildType, Path: gs.BuildPath})
+	gitBuild, err := gs.SpecBuild()
+	if err != nil {
+		return "", false, fmt.Errorf("resolve build settings for %q: %w", appName, err)
+	}
+	svcSpec := specServiceFromDesired(*prod, gitBuild)
 	applyPreviewEnvOverrides(&svcSpec, prod.PreviewEnvOverrides)
 	branchOverrides, err := rt.apps.ListServiceBranchEnvOverrides(ctx, appName)
 	if err != nil {

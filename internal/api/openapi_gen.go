@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 883 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 885 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -811,7 +811,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/git-source", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleDeleteGitSource", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/git-source", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleGetGitSource", Description: "Git source (a deferred follow-up, git_sources.go): persist a repo/branch/build config per app so a git push can auto-deploy it, the multi-app evolution of internal/webhook's own single-app, env-var-configured Config. AbilityWriteSensitive for PUT/DELETE, matching PUT .../secrets/{key} above: connecting a repo accepts an optional live deploy token in the same request body."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/git-source", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetGitSource", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/git-source/build", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetGitSourceBuild", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/git-source/deploy-settings", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetGitDeploySettings", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/detect", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleDetectGitSourceBuild", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/rotate-webhook-secret", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRotateGitSourceWebhookSecret", Description: "Rotate webhook secret (git_sources.go): mints a fresh secret without touching repo_url/branch/build config, the narrow alternative to a full DELETE-then-PUT reconnect. Same AbilityWriteSensitive tier as PUT .../git-source, since it's the identical class of credential write."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/preview-settings", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetPreviewEnabled", Description: "Preview environments per pull request (preview_environments.go/ preview_environments_handlers.go): opt-in per app, off by default. AbilityWriteSensitive for the toggle, matching PUT .../git-source's own tier since it's the same connect-time-adjacent configuration surface; AbilityRead for the list, matching GET .../git-source; AbilityDeploy for the manual teardown, the same lifecycle-action tier POST .../restart and POST .../stop already use."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/previews", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListPreviewEnvironments", Description: ""},

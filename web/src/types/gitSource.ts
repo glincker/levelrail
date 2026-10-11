@@ -19,6 +19,40 @@ export type GitSourceBuildType = 'dockerfile' | 'railpack' | 'static'
 // "release" webhook event with action "published".
 export type GitSourceTriggerMode = 'push' | 'release'
 
+export interface GitSourceResolvedBuild {
+  context_dir: string
+  dockerfile_path?: string
+  summary: string
+}
+
+export interface GitBuildSuggestion {
+  build_type: GitSourceBuildType
+  dockerfile_path?: string
+  base_directory?: string
+  reason: string
+  reason_code: string
+  recommended: boolean
+}
+
+// Mirrors internal/api's detectGitSourceResponse.
+export interface GitBuildDetection {
+  branch: string
+  looks_like_monorepo: boolean
+  root_has_app: boolean
+  tools: string[]
+  dockerfiles: string[]
+  compose_files: string[]
+  suggestions: GitBuildSuggestion[]
+  truncated: boolean
+  needs_build_settings: boolean
+}
+
+export interface SetGitSourceBuildRequest {
+  build_type: GitSourceBuildType
+  build_path: string
+  base_directory: string
+}
+
 export interface GitSourceBuild {
   build_type: GitSourceBuildType
   build_path?: string
@@ -47,7 +81,13 @@ export interface GitSourceResource {
   repo_url: string
   branch: string
   build_type: GitSourceBuildType
+  // build_path is the Dockerfile (or static output directory), relative to
+  // the repository root.
   build_path?: string
+  // base_directory is the build context relative to the repository root;
+  // empty or absent means the root.
+  base_directory?: string
+  resolved_build?: GitSourceResolvedBuild
   // additional_services fans one push out to sibling services under the
   // same app group (apps_group.go), keyed by the sibling's own service
   // name. Mutually exclusive with services, see that field's own doc
@@ -109,6 +149,7 @@ export interface SetGitSourceRequest {
   branch?: string
   build_type?: GitSourceBuildType
   build_path?: string
+  base_directory?: string
   token?: string
   additional_services?: Record<string, GitSourceBuild>
   services?: Record<string, GitSourceService>

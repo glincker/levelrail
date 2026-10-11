@@ -24,7 +24,9 @@ func runAppsGitSource(prog string, args []string, stdout, stderr io.Writer, look
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, appsGitSourceUsage(prog))
 		return exitOK
-	case "get":
+	case "detect":
+		return runAppsGitSourceDetect(prog, args[1:], stdout, stderr, lookupEnv)
+	case "get", "show":
 		return runAppsGitSourceGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "set":
 		return runAppsGitSourceSet(prog, args[1:], stdout, stderr, lookupEnv)
@@ -44,7 +46,10 @@ func runAppsGitSource(prog string, args []string, stdout, stderr io.Writer, look
 func appsGitSourceUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps git-source get <name> [flags]                              show an app's connected repo
+  %[1]s apps git-source show <name> [flags]                             same as get
   %[1]s apps git-source set <name> --repo-url URL [flags]              connect (or edit) a repo for auto-deploy-on-push
+  %[1]s apps git-source set <name> --build-type T --dockerfile P --base-directory D   change only the build settings
+  %[1]s apps git-source detect <name> [--apply] [flags]                 list Dockerfiles and build roots found in the repo
   %[1]s apps git-source settings <name> [flags]                         set push path filters and forge status reporting
   %[1]s apps git-source rotate-secret <name> [flags]                    mint a fresh webhook secret, shown once
   %[1]s apps git-source delete <name> [flags]                           disconnect an app's repo
@@ -79,11 +84,13 @@ func runAppsGitSourceGet(prog string, args []string, stdout, stderr io.Writer, l
 
 func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps git-source set", "print the git source as JSON to stdout and nothing else", stderr)
-	var repoURL, branch, buildType, buildPath, token, triggerMode string
+	var repoURL, branch, buildType, buildPath, token, triggerMode, baseDirectory string
 	fs.StringVar(&repoURL, "repo-url", "", "repo URL to connect (required)")
 	fs.StringVar(&branch, "branch", "", "branch to deploy on push (default: the server's default branch)")
 	fs.StringVar(&buildType, "build-type", "", "dockerfile, railpack, or static (default: dockerfile)")
-	fs.StringVar(&buildPath, "build-path", "", "path within the repo to build from")
+	fs.StringVar(&buildPath, "build-path", "", "Dockerfile path, relative to the repository root")
+	fs.StringVar(&buildPath, "dockerfile", "", "alias for --build-path")
+	fs.StringVar(&baseDirectory, "base-directory", "", "build context directory, relative to the repository root (default: the root)")
 	fs.StringVar(&token, "token-secret", "", "personal access token for a private repo; empty on an update leaves the stored token unchanged")
 	fs.StringVar(&triggerMode, "trigger-mode", "", "push or release (default: push); release deploys only on a tag push or a published github release")
 	fs.Usage = func() {
@@ -95,19 +102,31 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 	if !ok {
 		return exitCode
 	}
+	if repoURL == "" && (buildType != "" || buildPath != "" || baseDirectory != "") {
+		gs, err := setGitSourceBuild(context.Background(), client, name, buildType, buildPath, baseDirectory)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("set git source build for app %q: %w", name, err))
+		}
+		if err := renderResult(stdout, of.Format, of.Query, gs, func() { printGitSourceHuman(stdout, gs) }); err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return exitCodeForError(err)
+		}
+		return exitOK
+	}
 	if repoURL == "" {
-		_, _ = fmt.Fprintf(stderr, "%s: apps git-source set requires --repo-url\n\n", prog)
+		_, _ = fmt.Fprintf(stderr, "%s: apps git-source set requires --repo-url, or build flags to change only the build settings\n\n", prog)
 		fs.Usage()
 		return exitUsage
 	}
 
 	gs, err := client.SetGitSource(context.Background(), name, setGitSourceRequest{
-		RepoURL:     repoURL,
-		Branch:      branch,
-		BuildType:   buildType,
-		BuildPath:   buildPath,
-		Token:       token,
-		TriggerMode: triggerMode,
+		RepoURL:       repoURL,
+		Branch:        branch,
+		BuildType:     buildType,
+		BuildPath:     buildPath,
+		BaseDirectory: baseDirectory,
+		Token:         token,
+		TriggerMode:   triggerMode,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set git source for app %q: %w", name, err))
@@ -186,6 +205,7 @@ func printGitSourceHuman(out io.Writer, gs gitSourceResource) {
 	if gs.BuildPath != "" {
 		_, _ = fmt.Fprintf(out, "build_path:     %s\n", gs.BuildPath)
 	}
+	printResolvedBuild(out, gs)
 	_, _ = fmt.Fprintf(out, "trigger_mode:   %s\n", gs.TriggerMode)
 	_, _ = fmt.Fprintf(out, "has_token:      %t\n", gs.HasToken)
 	_, _ = fmt.Fprintf(out, "webhook_url:    %s\n", gs.WebhookURL)

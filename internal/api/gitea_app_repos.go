@@ -159,7 +159,7 @@ func (rt *Router) handleUseGiteaRepoAsSource(w http.ResponseWriter, r *http.Requ
 	}
 
 	result, err := rt.connectGitSource(ctx, req.AppName, connectGitSourceParams{
-		RepoURL: giteaRepo.CloneURL, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath,
+		RepoURL: giteaRepo.CloneURL, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath, BaseDirectory: req.BaseDirectory,
 		TriggerMode: triggerMode,
 	})
 	if err != nil {

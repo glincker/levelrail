@@ -159,7 +159,7 @@ func (rt *Router) handleUseGitLabProjectAsSource(w http.ResponseWriter, r *http.
 	}
 
 	result, err := rt.connectGitSource(ctx, req.AppName, connectGitSourceParams{
-		RepoURL: project.HTTPURLToRepo, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath,
+		RepoURL: project.HTTPURLToRepo, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath, BaseDirectory: req.BaseDirectory,
 		TriggerMode: triggerMode,
 	})
 	if err != nil {

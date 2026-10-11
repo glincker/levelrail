@@ -159,7 +159,7 @@ func (rt *Router) handleUseBitbucketRepoAsSource(w http.ResponseWriter, r *http.
 	}
 
 	result, err := rt.connectGitSource(ctx, req.AppName, connectGitSourceParams{
-		RepoURL: repo.CloneURL, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath,
+		RepoURL: repo.CloneURL, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath, BaseDirectory: req.BaseDirectory,
 		TriggerMode: triggerMode,
 	})
 	if err != nil {

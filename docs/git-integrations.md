@@ -156,6 +156,60 @@ If webhook registration fails, GitHub still connects the repository and reports 
 
 For an app that already exists, `levelrail-cli apps git-source get|set|delete <name>` manages the git source directly.
 
+## Monorepos and build settings
+
+A git source builds from two settings, and both are relative to the repository root:
+
+- **Base directory** is the Docker build context. Empty means the repository root.
+- **Dockerfile path** is the Dockerfile to build, for example `apps/web/Dockerfile`. It is relative to the repository root, not to the base directory, and it must sit inside the base directory when one is set. Empty uses `Dockerfile` in the build context.
+
+Auto-detect (Railpack) only looks at the base directory, so a monorepo with no app at its root needs one of the two settings above. The Source tab states the resolved result in plain words ("Builds apps/glinr/deploy/Dockerfile with the repository root as the build context"), and the CLI prints the same sentence.
+
+### Finding the right settings
+
+Detection lists Dockerfiles and build roots from the provider's file-tree API without cloning the repository (GitHub, GitLab and Gitea; other hosts use a shallow in-memory clone). It ignores `node_modules`, `vendor`, `dist` and similar folders, and reads `turbo.json`, `pnpm-workspace.yaml`, `nx.json`, `go.work`, Cargo and npm workspaces and compose files to explain what it found.
+
+```bash
+$ levelrail-cli apps git-source detect glinr
+branch:         main
+monorepo:       true
+tooling:        turbo, npm-workspaces
+attention:      this looks like a monorepo and there is no app at the repository root, pick a Dockerfile below
+suggestions:
+ * 1. type=dockerfile dockerfile=apps/glinr/deploy/Dockerfile context=.
+      Dockerfile at apps/glinr/deploy/Dockerfile; it runs turbo prune, so keep the build context at the repository root.
+```
+
+In the dashboard, the Source tab shows the same list under "Detected in this repo", with a one-click "Use this" on each suggestion. When an app uses auto-detect on a repository with no app at its root, the tab shows a "This looks like a monorepo. Pick a Dockerfile." notice, and a failed build links to it.
+
+### The turbo prune pattern
+
+A Dockerfile that runs `turbo prune` needs the whole repository as its context, because the prune step reads the root `turbo.json` and lockfile and then copies only the packages the app needs. Keep the base directory empty and point the Dockerfile path at the app's file:
+
+```bash
+levelrail-cli apps git-source set glinr \
+  --build-type dockerfile \
+  --dockerfile apps/glinr/deploy/Dockerfile
+```
+
+```dockerfile
+FROM node:20-alpine AS pruner
+WORKDIR /repo
+COPY . .
+RUN npx turbo prune glinr --docker
+```
+
+A self-contained app with its own Dockerfile and no workspace dependencies builds from its own folder instead:
+
+```bash
+levelrail-cli apps git-source set api \
+  --build-type dockerfile \
+  --base-directory apps/api \
+  --dockerfile apps/api/Dockerfile
+```
+
+Apply the recommended suggestion straight from the CLI with `levelrail-cli apps git-source detect <name> --apply`. Invalid values (absolute paths, `..`, or a Dockerfile outside the base directory) are rejected with a `400`.
+
 ## How webhooks are processed
 
 Push and pull request webhooks from all four providers follow one path.
@@ -400,6 +454,8 @@ The TTL sweep covers a pull-request-closed delivery that never arrived. A backgr
 | `GET` | `/api/v1/gitea-app/connect`, `/callback` | `root` |
 | `GET` | `/api/v1/gitea-app/repos`, `/repos/{owner}/{repo}/branches` | `read:sensitive` |
 | `POST` | `/api/v1/gitea-app/repos/{owner}/{repo}/use-as-source` | `write:sensitive` |
+| `PUT` | `/api/v1/apps/{name}/git-source/build` | `write:sensitive` |
+| `POST` | `/api/v1/apps/{name}/git-source/detect` | `deploy` |
 | `POST` | `/api/v1/webhooks/github/{name}` | none (signature verified) |
 | `GET` | `/api/v1/apps/{name}/webhook-deliveries` | `read` |
 | `POST` | `/api/v1/apps/{name}/webhook-deliveries/{id}/replay` | `deploy` |

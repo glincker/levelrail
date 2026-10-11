@@ -25,7 +25,12 @@ type GitSource struct {
 	RepoURL     string
 	Branch      string
 	BuildType   string
-	BuildPath   string
+	// BuildPath is the Dockerfile (or static output directory), relative to
+	// the repository root.
+	BuildPath string
+	// BaseDirectory is the build context, relative to the repository root.
+	// Empty means the repository root.
+	BaseDirectory string
 	// AdditionalServices lets one push fan out to sibling services under
 	// the same store.App (apps_group.go): keyed by the sibling
 	// DesiredService's own name, each entry carries just enough to call
@@ -147,19 +152,20 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 		triggerMode = spec.TriggerModePush
 	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, databases_spec, trigger_mode, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, base_directory, additional_services, services_spec, databases_spec, trigger_mode, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (service_name) DO UPDATE SET
 			repo_url = excluded.repo_url,
 			branch = excluded.branch,
 			build_type = excluded.build_type,
 			build_path = excluded.build_path,
+			base_directory = excluded.base_directory,
 			additional_services = excluded.additional_services,
 			services_spec = excluded.services_spec,
 			databases_spec = excluded.databases_spec,
 			trigger_mode = excluded.trigger_mode,
 			updated_at = excluded.updated_at
-	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, additionalJSON, servicesJSON, databasesJSON, triggerMode)
+	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, g.BaseDirectory, additionalJSON, servicesJSON, databasesJSON, triggerMode)
 	if err != nil {
 		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
 	}
@@ -170,7 +176,7 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 // ErrGitSourceNotFound if none is.
 func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at
+		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at
 		FROM service_git_sources WHERE service_name = ?
 	`, serviceName)
 	g, err := scanGitSource(row.Scan)
@@ -281,6 +287,33 @@ func (db *DB) DeleteGitSource(ctx context.Context, serviceName string) error {
 	return nil
 }
 
+// SetGitSourceBuild replaces only a connected source's build settings, so a
+// build-settings edit never rewrites its token, services or trigger mode.
+func (db *DB) SetGitSourceBuild(ctx context.Context, serviceName, buildType, buildPath, baseDirectory string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE service_git_sources SET build_type = ?, build_path = ?, base_directory = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE service_name = ?
+	`, buildType, buildPath, baseDirectory, serviceName)
+	if err != nil {
+		return fmt.Errorf("store: set git source %q build: %w", serviceName, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrGitSourceNotFound
+	}
+	return nil
+}
+
+// SpecBuild is the spec.Build a push or preview deploy of this source runs:
+// the one place BaseDirectory and BuildPath become a context plus a path
+// relative to it.
+func (g GitSource) SpecBuild() (spec.Build, error) {
+	b, err := spec.ResolveGitBuild(g.BuildType, g.BaseDirectory, g.BuildPath)
+	if err != nil {
+		return spec.Build{}, fmt.Errorf("git source %q build settings: %w", g.ServiceName, err)
+	}
+	return b, nil
+}
+
 // SetGitSourcePreviewEnabled toggles a connected git source's preview
 // environments opt-in; returns ErrGitSourceNotFound if no source is
 // connected for serviceName. A separate setter rather than a
@@ -365,7 +398,7 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 		pathsJSON, pathsIgnoreJSON    string
 		createdAt, updatedAt          string
 	)
-	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt); err != nil {
+	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
 	g.PreviewEnabled = previewEnabled != 0
