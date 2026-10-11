@@ -1164,33 +1164,41 @@ func TestHandleGitPushWebhook_ServicesSpec_TakesPriorityOverAdditionalServices(t
 	}
 }
 
-// TestHandleGitPushWebhook_PrivateRepo_FallsBackToGitHubAppToken proves a
-// push to a git source with no stored deploy token still clones with the
-// connected GitHub App's installation token, instead of an anonymous
-// clone that 401s for a private repo.
-func TestHandleGitPushWebhook_PrivateRepo_FallsBackToGitHubAppToken(t *testing.T) {
-	secrets := newFakeGitSourceSecrets()
+// newGitHubAppGitSourceRouter is newConnectedGitSourceRouter plus a
+// connected, installed GitHub App whose fake client mints
+// "ghs_installtoken", for the tests proving a source with no stored deploy
+// token authenticates with the installation token instead.
+func newGitHubAppGitSourceRouter(t *testing.T) (*Router, gitSourceResource) {
+	t.Helper()
 	appSecrets := newFakeGitHubAppSecrets()
 	db := openTestDB(t)
-	rt := NewRouter(discardLogger(), testBrand(), db, WithGitSourceSecrets(secrets), WithGitHubAppSecrets(appSecrets))
+	rt := NewRouter(discardLogger(), testBrand(), db, WithGitSourceSecrets(newFakeGitSourceSecrets()), WithGitHubAppSecrets(appSecrets))
 	rt.githubAppClient = &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
 	seedInstalledGitHubApp(t, db, appSecrets)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
-	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/octocat/web.git","branch":"main","build_type":"dockerfile"}`)
+	return rt, connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/octocat/web.git","branch":"main","build_type":"dockerfile"}`)
+}
 
+// postSignedPush sends a push to ref with the connected source's real
+// webhook secret.
+func postSignedPush(t *testing.T, rt *Router, created gitSourceResource, ref string) *httptest.ResponseRecorder {
+	t.Helper()
+	body := pushBody(ref)
+	return postGitWebhook(t, rt, "X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body), body, nil)
+}
+
+// TestHandleGitPushWebhook_PrivateRepo_FallsBackToGitHubAppToken proves a
+// push to a source with no stored deploy token still clones with the
+// connected GitHub App's installation token, not an anonymous clone that
+// 401s for a private repo.
+func TestHandleGitPushWebhook_PrivateRepo_FallsBackToGitHubAppToken(t *testing.T) {
+	rt, created := newGitHubAppGitSourceRouter(t)
 	var fetchCalls []fakeGitSourceFetchCall
 	rt.gitSourceFetch = newFakeGitSourceFetch(&fetchCalls, t.TempDir(), new(bool), nil)
 	rt.builder = &fakeBuilder{tag: "web:sha1"}
 
-	body := pushBody("refs/heads/main")
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
-	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+	requireStatusOK(t, postSignedPush(t, rt, created, "refs/heads/main"))
 	if len(fetchCalls) != 1 || fetchCalls[0].token != "ghs_installtoken" {
 		t.Fatalf("fetch calls = %+v, want one call with the minted installation token", fetchCalls)
 	}
@@ -1200,31 +1208,20 @@ func TestHandleGitPushWebhook_PrivateRepo_FallsBackToGitHubAppToken(t *testing.T
 // branch the app does not watch is a 200 whose reason is persisted on the
 // delivery row, so the Source page and CLI can say why nothing deployed.
 func TestHandleGitPushWebhook_IgnoredBranch_StoresNote(t *testing.T) {
-	secrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
-	cookie := loginTestSession(t, rt, db)
-	seedApp(t, db, "web")
-	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
+	rt, created := newGitHubAppGitSourceRouter(t)
 	fb := &fakeBuilder{tag: "web:sha1"}
 	rt.builder = fb
 
-	body := pushBody("refs/heads/develop")
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
-	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
-	}
+	requireStatusOK(t, postSignedPush(t, rt, created, "refs/heads/develop"))
 	if fb.calls != 0 {
 		t.Fatalf("builder called %d times, want 0 for an ignored branch", fb.calls)
 	}
-	deliveries, err := db.ListWebhookDeliveries(context.Background(), "web", 10, nil)
+	deliveries, err := rt.webhookDeliveries.(*store.DB).ListWebhookDeliveries(context.Background(), "web", 10, nil)
 	if err != nil || len(deliveries) != 1 {
 		t.Fatalf("ListWebhookDeliveries() = %d rows, err = %v, want 1", len(deliveries), err)
 	}
-	if deliveries[0].Error != "" || !strings.Contains(deliveries[0].Note, "refs/heads/develop") || !strings.Contains(deliveries[0].Note, "refs/heads/main") {
-		t.Errorf("delivery error = %q note = %q, want no error and a note naming both refs", deliveries[0].Error, deliveries[0].Note)
+	if got := deliveries[0]; got.Error != "" || !strings.Contains(got.Note, "refs/heads/develop") || !strings.Contains(got.Note, "refs/heads/main") {
+		t.Errorf("delivery error = %q note = %q, want no error and a note naming both refs", got.Error, got.Note)
 	}
 }
 
@@ -1232,16 +1229,7 @@ func TestHandleGitPushWebhook_IgnoredBranch_StoresNote(t *testing.T) {
 // shared resolver scheduled deploys and preview environments call, not
 // just the push path.
 func TestResolveGitSourceDeployToken_FallsBackToGitHubAppToken(t *testing.T) {
-	secrets := newFakeGitSourceSecrets()
-	appSecrets := newFakeGitHubAppSecrets()
-	db := openTestDB(t)
-	rt := NewRouter(discardLogger(), testBrand(), db, WithGitSourceSecrets(secrets), WithGitHubAppSecrets(appSecrets))
-	rt.githubAppClient = &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
-	seedInstalledGitHubApp(t, db, appSecrets)
-	cookie := loginTestSession(t, rt, db)
-	seedApp(t, db, "web")
-	connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/octocat/web.git","branch":"main"}`)
-
+	rt, _ := newGitHubAppGitSourceRouter(t)
 	got, err := rt.resolveGitSourceDeployToken(context.Background(), "web")
 	if err != nil || got != "ghs_installtoken" {
 		t.Fatalf("resolveGitSourceDeployToken() = %q, %v, want the installation token", got, err)
