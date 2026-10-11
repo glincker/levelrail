@@ -56,7 +56,12 @@ const INFRASTRUCTURE_CODES = [
   'cpu',
 ]
 const INFRASTRUCTURE_CODES_AFTER_PORTS = ['database']
-const SECURITY_CODES = ['firewall', 'master_key_rotation', 'stale_secrets']
+const SECURITY_CODES = [
+  'firewall',
+  'master_key_rotation',
+  'stale_secrets',
+  'legacy_tokens',
+]
 const NETWORK_CODES = [
   'public_ip',
   'acme_reachability',

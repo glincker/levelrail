@@ -50,7 +50,7 @@ func Open(ctx context.Context, path string, opts ...OpenOption) (*DB, error) {
 		return nil, fmt.Errorf("store: ping %s: %w", path, err)
 	}
 
-	if err := db.migrate(ctx, cfg.preMigrate); err != nil {
+	if err := db.migrate(ctx, cfg); err != nil {
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("store: migrate %s: %w", path, err)
 	}
@@ -81,6 +81,7 @@ func dsn(path string) string {
 
 type openConfig struct {
 	preMigrate PreMigrateHook
+	ceiling    int
 }
 
 // OpenOption customizes Open.
@@ -94,4 +95,10 @@ type PreMigrateHook func(ctx context.Context, db *DB, from, to int)
 // database has migrations pending (never for a brand new one).
 func WithPreMigrateHook(h PreMigrateHook) OpenOption {
 	return func(c *openConfig) { c.preMigrate = h }
+}
+
+// WithMigrationCeiling stops migrating after version, so upgrade tests can
+// build the schema an older release shipped. Zero means no ceiling.
+func WithMigrationCeiling(version int) OpenOption {
+	return func(c *openConfig) { c.ceiling = version }
 }

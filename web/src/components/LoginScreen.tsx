@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { FlaskIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  FlaskIcon,
+  SignOutIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { devModeQueryOptions } from '../queries/devMode'
 import { useBrand } from '../hooks/useBrand'
 import {
@@ -45,10 +49,12 @@ export function LoginScreen({
   setup,
   sessionLink,
   resumeApprovalId,
+  sessionEnded = false,
 }: {
   setup?: string
   sessionLink?: string
   resumeApprovalId?: string
+  sessionEnded?: boolean
 }) {
   const brand = useBrand()
   const { t } = useTranslation('common')
@@ -165,6 +171,12 @@ export function LoginScreen({
         <InsecureConnectionBanner />
       </div>
       <OAuthErrorBanner />
+      {sessionEnded ? (
+        <Alert className="w-full max-w-sm" role="status">
+          <SignOutIcon />
+          <AlertDescription>{t('sessionEnded.notice')}</AlertDescription>
+        </Alert>
+      ) : null}
       <Card className="w-full max-w-sm shadow-sm">
         <CardHeader>
           <CardTitle>
