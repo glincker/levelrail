@@ -47,6 +47,8 @@ type GitSourceStore interface {
 	// /api/v1/apps/{name}/git-source/deploy-settings: push path filters
 	// and forge status reporting.
 	SetGitSourceDeploySettings(ctx context.Context, serviceName string, paths, pathsIgnore []string, reportStatus bool) error
+	// SetGitSourceBuild backs PUT /api/v1/apps/{name}/git-source/build.
+	SetGitSourceBuild(ctx context.Context, serviceName, buildType, buildPath, baseDirectory string) error
 }
 
 // GitSourceSecrets is the surface a git source's connect flow and the
@@ -90,11 +92,16 @@ const (
 // token by contrast only ever needs a hash, because it's checked once,
 // at exchange time, not on an ongoing basis.
 type gitSourceResource struct {
-	ServiceName        string                          `json:"service_name"`
-	RepoURL            string                          `json:"repo_url"`
-	Branch             string                          `json:"branch"`
-	BuildType          string                          `json:"build_type"`
-	BuildPath          string                          `json:"build_path,omitempty"`
+	ServiceName string `json:"service_name"`
+	RepoURL     string `json:"repo_url"`
+	Branch      string `json:"branch"`
+	BuildType   string `json:"build_type"`
+	BuildPath   string `json:"build_path,omitempty"`
+	// BaseDirectory is the build context relative to the repository root;
+	// empty means the root. BuildPath is always relative to the repository
+	// root too.
+	BaseDirectory      string                          `json:"base_directory,omitempty"`
+	ResolvedBuild      gitSourceResolvedBuild          `json:"resolved_build"`
 	AdditionalServices map[string]store.GitSourceBuild `json:"additional_services,omitempty"`
 	// Services is an app.yaml-style services: map (store.GitSource.Services's
 	// own doc comment): when set, a push fans out through the same
@@ -163,6 +170,8 @@ func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gi
 		Branch:             g.Branch,
 		BuildType:          g.BuildType,
 		BuildPath:          g.BuildPath,
+		BaseDirectory:      g.BaseDirectory,
+		ResolvedBuild:      resolveGitSourceBuild(g.BuildType, g.BaseDirectory, g.BuildPath),
 		AdditionalServices: g.AdditionalServices,
 		Services:           g.Services,
 		Databases:          g.Databases,
@@ -193,6 +202,9 @@ type setGitSourceRequest struct {
 	// on the next push.
 	BuildType string `json:"build_type,omitempty"`
 	BuildPath string `json:"build_path,omitempty"`
+	// BaseDirectory is the build context relative to the repository root;
+	// empty keeps the repository root. BuildPath stays relative to the root.
+	BaseDirectory string `json:"base_directory,omitempty"`
 	// Token is an optional git hosting personal access token for a
 	// private repo, sent over HTTPS Basic auth as the password
 	// (gitCheckoutWithToken, git_webhook.go). Empty on an update means
@@ -362,11 +374,13 @@ func effectiveGitSourceTriggerMode(triggerMode string) string {
 // (owner/repo, project id, workspace/repoSlug) identify which repo,
 // never this body, so the body shape has never actually differed.
 type useRepoAsSourceRequest struct {
-	AppName     string `json:"app_name"`
-	Branch      string `json:"branch,omitempty"`
-	BuildType   string `json:"build_type,omitempty"`
-	BuildPath   string `json:"build_path,omitempty"`
-	TriggerMode string `json:"trigger_mode,omitempty"`
+	AppName   string `json:"app_name"`
+	Branch    string `json:"branch,omitempty"`
+	BuildType string `json:"build_type,omitempty"`
+	BuildPath string `json:"build_path,omitempty"`
+	// BaseDirectory is the build context, relative to the repository root.
+	BaseDirectory string `json:"base_directory,omitempty"`
+	TriggerMode   string `json:"trigger_mode,omitempty"`
 }
 
 // decodeUseAsSourceRequest is the common preamble every provider's own
@@ -391,6 +405,11 @@ func (rt *Router) decodeUseAsSourceRequest(w http.ResponseWriter, r *http.Reques
 	}
 	if buildType == "railpack" && req.BuildPath != "" {
 		writeError(w, http.StatusBadRequest, "build_path is not meaningful for build_type \"railpack\"")
+		return req, "", "", false
+	}
+	req.BaseDirectory, req.BuildPath, err = validateGitSourceBuildPaths(buildType, req.BaseDirectory, req.BuildPath)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return req, "", "", false
 	}
 	triggerMode, err = normalizeGitSourceTriggerMode(req.TriggerMode)
@@ -546,6 +565,11 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "build_path is not meaningful for build_type \"railpack\"")
 		return
 	}
+	baseDirectory, buildPath, err := validateGitSourceBuildPaths(buildType, req.BaseDirectory, req.BuildPath)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	branch := req.Branch
 	if branch == "" {
 		branch = webhook.DefaultBranch
@@ -570,7 +594,7 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := rt.connectGitSource(r.Context(), name, connectGitSourceParams{
-		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath, Token: req.Token,
+		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: buildPath, BaseDirectory: baseDirectory, Token: req.Token,
 		AdditionalServices: additionalServices, Services: req.Services, Databases: req.Databases,
 		TriggerMode: triggerMode,
 	})
@@ -597,6 +621,8 @@ type connectGitSourceParams struct {
 	Branch    string
 	BuildType string
 	BuildPath string
+	// BaseDirectory is the already-validated build context directory.
+	BaseDirectory string
 	// Token is optional; empty means "leave whatever is currently
 	// stored unchanged" on an update, matching setGitSourceRequest's own
 	// Token field.
@@ -657,7 +683,7 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 		triggerMode = spec.TriggerModePush
 	}
 	if err := rt.gitSources.SaveGitSource(ctx, store.GitSource{
-		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath,
+		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath, BaseDirectory: p.BaseDirectory,
 		AdditionalServices: p.AdditionalServices, Services: p.Services, Databases: p.Databases,
 		TriggerMode: triggerMode,
 	}); err != nil {

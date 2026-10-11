@@ -26,6 +26,7 @@ import type domainPolicies from '../locales/en/domainPolicies.json'
 import type observability from '../locales/en/observability.json'
 import type previews from '../locales/en/previews.json'
 import type backups from '../locales/en/backups.json'
+import type gitBuild from '../locales/en/gitBuild.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -60,6 +61,7 @@ declare module 'i18next' {
       observability: typeof observability
       previews: typeof previews
       backups: typeof backups
+      gitBuild: typeof gitBuild
     }
   }
 }

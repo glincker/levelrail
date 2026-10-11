@@ -1758,6 +1758,24 @@ func (c *Client) SetGitSource(ctx context.Context, name string, req SetGitSource
 	return out, err
 }
 
+// SetGitSourceBuild calls PUT /api/v1/apps/{name}/git-source/build.
+func (c *Client) SetGitSourceBuild(ctx context.Context, name string, req SetGitSourceBuildRequest) (GitSourceResource, error) {
+	var out GitSourceResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/git-source/build", req, &out)
+	return out, err
+}
+
+// DetectGitSourceBuild calls POST /api/v1/apps/{name}/git-source/detect.
+func (c *Client) DetectGitSourceBuild(ctx context.Context, name, branch string) (GitBuildDetection, error) {
+	var out GitBuildDetection
+	body := map[string]string{}
+	if branch != "" {
+		body["branch"] = branch
+	}
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/git-source/detect", body, &out)
+	return out, err
+}
+
 // GetAppSchedule calls GET /api/v1/apps/{name}/schedule.
 func (c *Client) GetAppSchedule(ctx context.Context, name string) (AppScheduleResource, error) {
 	var out AppScheduleResource
