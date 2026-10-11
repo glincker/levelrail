@@ -1,0 +1,122 @@
+{
+  "title": "Upgrades",
+  "description": "Keep this database patched. Every upgrade takes a backup first and can be rolled back.",
+  "loadFailed": "Could not load upgrade information: {{error}}",
+  "unavailableTitle": "Upgrades are not available",
+  "current": {
+    "title": "Current version",
+    "engine": "Engine",
+    "version": "Version",
+    "line": "Release line {{line}}",
+    "floating": "This database follows a floating tag, so the exact version can change on the next restart.",
+    "notComparable": "This version could not be compared with the catalog, so no upgrade targets are offered.",
+    "advisories": "Known security advisories affecting this version",
+    "catalogUpdated": "Catalog updated {{date}}",
+    "blockersTitle": "Upgrades are blocked",
+    "manualReason": "Manual upgrade required"
+  },
+  "support": {
+    "supported": "Supported",
+    "eol_soon": "End of life soon ({{date}})",
+    "eol_soonNoDate": "End of life soon",
+    "eol": "End of life",
+    "unknown": "Support unknown"
+  },
+  "targets": {
+    "title": "Available versions",
+    "description": "Patch and minor upgrades can run from here. Major upgrades change the on-disk format and are guarded.",
+    "empty": "You are on the newest version the catalog knows about.",
+    "columns": {
+      "version": "Version",
+      "kind": "Type",
+      "details": "Details",
+      "actions": "Actions"
+    },
+    "kind": {
+      "patch": "Patch",
+      "minor": "Minor",
+      "major": "Major"
+    },
+    "security": "Security fix",
+    "automatic": "Automatic",
+    "eol": "End of life {{date}}",
+    "upgradeNow": "Upgrade now",
+    "majorHint": "Major upgrades need the guarded major upgrade flow, not this button."
+  },
+  "dialog": {
+    "title": "Upgrade {{name}} to {{version}}",
+    "description": "A backup is taken first. The database restarts and is briefly unavailable.",
+    "confirmLabel": "Type {{name}} to confirm",
+    "cancel": "Cancel",
+    "confirm": "Upgrade",
+    "starting": "Starting",
+    "toast": "Upgrade to {{version}} started",
+    "failedToast": "Could not start the upgrade"
+  },
+  "policy": {
+    "title": "Automatic upgrades",
+    "description": "Choose what is applied on its own, and when.",
+    "inheritedNote": "This database uses the platform default policy.",
+    "override": "Override for this database",
+    "useDefault": "Use platform default",
+    "autoUpgrade": "Apply automatically",
+    "auto": {
+      "off": "Off, upgrade manually",
+      "patch": "Patch releases only",
+      "minor": "Patch and minor releases"
+    },
+    "window": "Maintenance window",
+    "preset": {
+      "daily": "Daily at 03:00",
+      "sundays": "Sundays at 03:00",
+      "custom": "Custom cron"
+    },
+    "cron": "Cron expression",
+    "duration": "Window length (hours)",
+    "timezone": "Timezone",
+    "backupBefore": "Back up before upgrading",
+    "backupBeforeHint": "Always on. An upgrade never starts without a fresh backup.",
+    "verifyAfter": "Verify after upgrading",
+    "verifyAfterHint": "Restore the backup into a scratch container and check it opens.",
+    "revertOnFailure": "Roll back on failure",
+    "revertOnFailureHint": "Return to the previous version automatically if the upgrade fails.",
+    "notify": "Notify these channels",
+    "noChannels": "No notification channels exist yet.",
+    "nextWindow": "Next window",
+    "windowOpen": "A maintenance window is open now",
+    "nextTarget": "Next automatic upgrade",
+    "noNextTarget": "Nothing is queued for automatic upgrade.",
+    "save": "Save policy",
+    "saving": "Saving",
+    "saved": "Upgrade policy saved",
+    "failedToast": "Could not save the policy"
+  },
+  "history": {
+    "title": "Upgrade history",
+    "empty": "No upgrades have run for this database yet.",
+    "active": "Upgrade in progress",
+    "from": "{{from}} to {{to}}",
+    "backup": "Backup {{id}}",
+    "started": "Started {{date}}",
+    "finished": "Finished {{date}}",
+    "source": {
+      "auto": "Automatic",
+      "manual": "Manual"
+    },
+    "state": {
+      "pending": "Pending",
+      "backing_up": "Backing up",
+      "upgrading": "Upgrading",
+      "verifying": "Verifying",
+      "succeeded": "Succeeded",
+      "reverted": "Rolled back",
+      "failed": "Failed"
+    },
+    "revert": {
+      "image": "Rolled back by image",
+      "volume_snapshot": "Rolled back from volume snapshot",
+      "backup_restore": "Rolled back from backup restore"
+    },
+    "reason": "Reason: {{reason}}"
+  }
+}

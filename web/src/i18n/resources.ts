@@ -17,6 +17,7 @@ import type attention from '../locales/en/attention.json'
 import type setup from '../locales/en/setup.json'
 import type updates from '../locales/en/updates.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
+import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
 import type iam from '../locales/en/iam.json'
 import type signIn from '../locales/en/signIn.json'
 
@@ -44,6 +45,7 @@ declare module 'i18next' {
       setup: typeof setup
       updates: typeof updates
       databaseAccess: typeof databaseAccess
+      databaseUpgrades: typeof databaseUpgrades
       iam: typeof iam
       signIn: typeof signIn
     }
