@@ -161,6 +161,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"cache":                {subs: map[string]*cmdNode{"show": nil, "set": nil, "add": nil, "purge": nil, "stats": nil, "clear": nil}},
 		"redirects":            {subs: map[string]*cmdNode{"show": nil, "force-https": nil, "canonical": nil, "alias": nil, "slash": nil, "lowercase": nil, "clear": nil}},
 		"ports":                {subs: map[string]*cmdNode{"show": nil, "restrict": nil, "unrestrict": nil}},
+		"standalone":           {subs: map[string]*cmdNode{"list": nil, "add": nil, "update": nil, "remove": nil}},
 	}},
 	"backups": {subs: map[string]*cmdNode{
 		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "clone-restores": nil, "verify": nil, "verifications": nil,
@@ -246,6 +247,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"api-docs":                 nil,
 	"init":                     nil,
 	"containers":               {subs: map[string]*cmdNode{"list": nil, "stop": nil, "remove": nil, "claim": nil, "orphans": nil, "reap": nil}},
+	"system":                   {subs: map[string]*cmdNode{"address": nil}},
 	"system-prune":             nil,
 	"volumes-orphaned":         nil,
 	"volumes-orphaned-cleanup": nil,

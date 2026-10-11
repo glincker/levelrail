@@ -494,6 +494,9 @@ type DomainResource struct {
 	// ReachableURL is the link to open; ReachableReason says why it is empty.
 	ReachableURL    string `json:"reachable_url,omitempty"`
 	ReachableReason string `json:"reachable_reason,omitempty"`
+	// Kind is app or standalone; Target is where a standalone domain proxies.
+	Kind   string `json:"kind,omitempty"`
+	Target string `json:"target,omitempty"`
 }
 
 // CloudflareDNSResource mirrors internal/api's cloudflareDNSResource
