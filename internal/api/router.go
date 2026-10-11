@@ -454,6 +454,7 @@ type Router struct {
 	migrationHub                 MigrationHubStore                // always set, server migration hub sessions
 	appImports                   AppImportStore                   // always set, guided app import sessions
 	appImportLive                *appImportState                  // in-memory source tokens and discoveries
+	cutover                      cutoverService                   // in-memory cutover workers, zero value is ready
 	hubState                     *hubState                        // in-memory source passwords and running sessions
 	externalDatabases            ExternalDatabaseStore            // always set, databases connected but not run
 	dnsResolver                  datamigrate.Resolver             // nil means the real resolver

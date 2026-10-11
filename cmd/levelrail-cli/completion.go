@@ -264,7 +264,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"migrate":    {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil, "server": nil, "db-copy": nil, "db-status": nil, "volumes": nil, "cutover": nil}},
 	"apply":      nil,
 	"diff":       nil,
-	"import":     {subs: map[string]*cmdNode{"platform": {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}}}},
+	"import":     {subs: map[string]*cmdNode{"platform": {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}}, "cutover": {subs: map[string]*cmdNode{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}}},
 	"completion": {subs: map[string]*cmdNode{"bash": nil, "zsh": nil, "fish": nil}},
 	"settings": {subs: map[string]*cmdNode{
 		"oauth":             {subs: map[string]*cmdNode{"list": nil, "set": nil}},

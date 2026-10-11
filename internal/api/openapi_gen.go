@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 883 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 889 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -686,6 +686,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/images/cancel", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCancelAppImportImages", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/images/status", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportImagesStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/images/transfer", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTransferAppImportImages", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/items/{item}/cutover/plan", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportCutoverPlan", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppImportCutoverRuns", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleStartAppImportCutover", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetAppImportCutoverRun", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}/confirm-dns", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleConfirmAppImportCutoverDNS", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}/rollback", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRollbackAppImportCutover", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/items/{item}/route", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRouteAppImport", Description: ""},
 	{Method: "PUT", Path: "/api/v1/migration/apps/sessions/{id}/items/{item}/volumes/{vol}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleSetAppImportVolume", Description: ""},
 	{Method: "PUT", Path: "/api/v1/migration/apps/sessions/{id}/plan", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handlePutAppImportPlan", Description: ""},
