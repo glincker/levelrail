@@ -131,6 +131,7 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Managing databases', link: '/managing-databases' },
+          { text: 'Database upgrades', link: '/database-upgrades' },
           { text: 'External databases', link: '/external-databases' },
           {
             text: 'Connecting apps to databases',

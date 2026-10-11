@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 814 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 820 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -328,6 +328,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/settings/ai-control/revoke-agent-tokens", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeAgentTokens", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/auth/code-login", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetCodeLoginSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/auth/code-login", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutCodeLoginSettings", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/database-upgrades", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetPlatformUpgradePolicy", Description: "The platform default reaches every database, so writing it is root-only."},
+	{Method: "PUT", Path: "/api/v1/settings/database-upgrades", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutPlatformUpgradePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetGlobalDeployFreeze", Description: "OAuth settings: GET is AbilityRead, PUT is AbilityRoot, matching /api/v1/settings/ingress's own tiers. Global deploy freeze windows apply to every app, so writing them is root-only."},
 	{Method: "PUT", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutGlobalDeployFreeze", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/oauth", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListOAuthSettings", Description: ""},
@@ -371,6 +373,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/database-engines", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseEngines", Description: "Databases CRUD, the database-kind counterpart to apps CRUD above. No PUT (full-replace update) yet: unlike a service's image/port/ domains, none of engine/version/name are meant to change in place once created (an engine or major-version change is a migration, not a config edit), so there is nothing for an update endpoint to legitimately do yet. Read-only, ahead of the CRUD routes below since it's not scoped to any one database: every engine this control plane can create at all, backed by the embedded database_engines.yaml registry rather than a hardcoded list, see handleListDatabaseEngines' own doc comment."},
 	{Method: "GET", Path: "/api/v1/databases", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabases", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleCreateDatabase", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/upgrade-summary", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseUpgradeSummary", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleDeleteDatabase", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabase", Description: "Resource-scoped, same reasoning as the apps routes above."},
 	{Method: "POST", Path: "/api/v1/databases/{name}/access/grants", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleGrantDatabaseAccess", Description: ""},
@@ -418,6 +421,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/status", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseStatus", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/tables/{schema}/{table}/rows", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseTableRows", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/tables/{schema}/{table}/structure", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseTableStructure", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/upgrade-now", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseUpgradeNow", Description: ""},
+	{Method: "PUT", Path: "/api/v1/databases/{name}/upgrade-policy", Ability: "AbilityWriteSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handlePutDatabaseUpgradePolicy", Description: "Policy and upgrade-now restart the database, the same tier as PUT .../version."},
+	{Method: "GET", Path: "/api/v1/databases/{name}/upgrades", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseUpgrades", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/users", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseUsers", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/users", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleCreateDatabaseUser", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/users/{role}", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDeleteDatabaseUser", Description: ""},

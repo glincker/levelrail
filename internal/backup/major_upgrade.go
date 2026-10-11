@@ -494,41 +494,12 @@ func (r *MajorUpgradeRunner) waitSQL(ctx context.Context, container string) erro
 	}
 }
 
-// copyVolume copies every file of src into dst, keeping modes and owners.
 func (r *MajorUpgradeRunner) copyVolume(ctx context.Context, src, dst string) error {
-	suffix, err := randomHelperSuffix()
-	if err != nil {
-		return err
-	}
-	id, err := r.Runtime.Create(ctx, docker.ContainerSpec{
-		Name: "volcopy-" + suffix, Image: volumeHelperImage, Command: []string{"sleep", "86400"},
-		Volumes: []docker.VolumeMount{{Name: src, ContainerPath: snapshotSrcMount, ReadOnly: true}, {Name: dst, ContainerPath: snapshotDstMount}},
-	})
-	if err != nil {
-		return fmt.Errorf("create copy helper: %w", err)
-	}
-	defer func() { _ = r.Runtime.Remove(context.WithoutCancel(ctx), id, true) }()
-	if err := r.Runtime.Start(ctx, id); err != nil {
-		return fmt.Errorf("start copy helper: %w", err)
-	}
-	_, err = execOutput(ctx, r.Runtime, id, []string{"sh", "-c", "cp -a " + snapshotSrcMount + "/. " + snapshotDstMount + "/"})
-	if err != nil {
-		return fmt.Errorf("copy %q to %q: %w", src, dst, err)
-	}
-	return nil
+	return CopyVolume(ctx, r.Runtime, src, dst)
 }
 
 func (r *MajorUpgradeRunner) wipeVolume(ctx context.Context, name string) error {
-	id, err := createVolumeHelper(ctx, r.Runtime, name, "pgwipe", false)
-	if err != nil {
-		return fmt.Errorf("open volume %q: %w", name, err)
-	}
-	defer func() { _ = r.Runtime.Remove(context.WithoutCancel(ctx), id, true) }()
-	cmd := []string{"sh", "-c", "cd " + volumeMountPath + " && rm -rf -- ..?* .[!.]* *"}
-	if _, err := execOutput(ctx, r.Runtime, id, cmd); err != nil {
-		return fmt.Errorf("wipe volume %q: %w", name, err)
-	}
-	return nil
+	return WipeVolume(ctx, r.Runtime, name)
 }
 
 func (r *MajorUpgradeRunner) waitContainerGone(ctx context.Context, name string) error {

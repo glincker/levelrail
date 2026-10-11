@@ -1071,6 +1071,9 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	startDatabaseUpgrades(ctx, logger, db, secretsManager, client, engine.Nudge, backupRunner, backupVerifyRunner, alertingDB, deployDispatcher,
+		func(nodeID string) bool { return nodeID == "" || (meshCfg != nil && nodeID == meshCfg.localNodeID) }, apiRouter)
+
 	imageUpdateScheduler := &imageupdate.Scheduler{Store: db, Checker: apiRouter, Logger: logger}
 	go func() {
 		if err := imageUpdateScheduler.Run(ctx, imageupdate.IntervalFromEnv(logger)); err != nil && !errors.Is(err, context.Canceled) {

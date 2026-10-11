@@ -411,6 +411,7 @@ type Router struct {
 	baseBackupHistory            BaseBackupHistoryStore           // always set, same "core Store interface" shape as backupHistory above
 	baseBackupRunner             BaseBackupRunner                 // nil is valid: POST /api/v1/databases/{name}/base-backups returns 501, same shape as backupRunner above
 	majorUpgrader                MajorUpgrader                    // nil is valid: the major upgrade routes return 501
+	dbUpgrader                   DatabaseUpgrader                 // nil is valid: the database upgrade routes return 501
 	majorUpgrades                MajorUpgradeStore                // always set, same "core Store interface" shape as pitrRestoreHistory
 	pitrRestoreHistory           PITRRestoreHistoryStore          // always set, same "core Store interface" shape as restoreHistory above
 	walShipStatus                WALShipStatusSource              // nil is valid: "pitr status" omits wal_ship
