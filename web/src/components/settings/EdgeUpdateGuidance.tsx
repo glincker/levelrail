@@ -1,0 +1,119 @@
+import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
+import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
+import { Button } from '../ui/button'
+import { toast } from '../ui/toast'
+import {
+  updateSettingsQueryOptions,
+  useSetUpdateSettings,
+  type EdgeGuidance,
+  type UpdateChannel,
+} from '../../queries/updates'
+import { CopyCommand } from './CopyCommand'
+
+// What the edge channel means for this install. Edge is a moving container
+// image, so a container gets the exact pull and recreate commands and a host
+// binary is offered a one-click move to a channel that ships binaries.
+export function EdgeUpdateGuidance({
+  edge,
+  updateAvailable,
+}: {
+  edge: EdgeGuidance
+  updateAvailable: boolean
+}) {
+  const { t } = useTranslation('updates')
+  const settings = useQuery(updateSettingsQueryOptions())
+  const save = useSetUpdateSettings()
+
+  const switchTo = (channel: UpdateChannel) => {
+    save.mutate(
+      {
+        channel,
+        auto_update_enabled: settings.data?.auto_update_enabled ?? true,
+      },
+      {
+        onSuccess: () => {
+          toast.add({
+            title: t('edge.switched', {
+              channel: t(`channels.${channel}.label`),
+            }),
+            type: 'success',
+          })
+        },
+        onError: (error) => {
+          toast.add({ title: error.message, type: 'error' })
+        },
+      },
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">{t('edge.intro')}</p>
+      <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        {edge.commit ? (
+          <span className="font-mono">
+            {t('edge.commit', { commit: edge.commit.slice(0, 7) })}
+          </span>
+        ) : null}
+        {edge.commit_url ? (
+          <a
+            href={edge.commit_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-primary hover:underline"
+          >
+            {t('version.viewCommit')}
+            <ArrowSquareOutIcon className="size-3.5" />
+          </a>
+        ) : null}
+        <span className="font-mono">{edge.image}</span>
+      </p>
+      {edge.installable ? (
+        updateAvailable ? (
+          <div className="space-y-3">
+            {edge.pull_command ? (
+              <CopyCommand label={t('edge.pull')} command={edge.pull_command} />
+            ) : null}
+            {edge.recreate_command ? (
+              <CopyCommand
+                label={t('edge.recreate')}
+                command={edge.recreate_command}
+              />
+            ) : null}
+            {edge.compose_snippet ? (
+              <CopyCommand
+                label={t('edge.compose')}
+                command={edge.compose_snippet}
+              />
+            ) : null}
+          </div>
+        ) : null
+      ) : (
+        <Alert>
+          <AlertTitle>{t('edge.binaryTitle')}</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <span className="block">{t('edge.binaryBody')}</span>
+            <span className="flex flex-wrap gap-2">
+              {(edge.switch_to ?? ['beta', 'stable']).map((c) => (
+                <Button
+                  key={c}
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={save.isPending}
+                  onClick={() => {
+                    switchTo(c)
+                  }}
+                >
+                  {t('edge.switchTo', { channel: t(`channels.${c}.label`) })}
+                </Button>
+              ))}
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
+  )
+}

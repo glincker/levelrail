@@ -27,6 +27,9 @@ var (
 	ErrNeedsAck         = errors.New("upgradesched: breaking changes need acknowledgement")
 	ErrNeedsMajorAck    = errors.New("upgradesched: a major version jump needs acknowledgement")
 	ErrInvalid          = errors.New("upgradesched: invalid request")
+	// ErrEdgeTarget marks a target that is an edge container image: it has
+	// no release binary, so no upgrade can be scheduled for it.
+	ErrEdgeTarget = errors.New("upgradesched: edge builds are container images and cannot be applied by an upgrade")
 )
 
 // Breaking is one breaking change between the running version and a target.
@@ -79,6 +82,9 @@ func (p Plan) NeedAckCount() int {
 type PreflightResult struct {
 	Checks  []upgrade.Check
 	Blocked bool
+	// Edge is set when the target is an edge container image, which is never
+	// installable by an upgrade.
+	Edge bool
 }
 
 // AttemptInfo is the outcome of a self-upgrade run.
@@ -92,7 +98,8 @@ type AttemptInfo struct {
 // The API router implements it, so the scheduler uses the same release
 // lookup, preflight and launcher a person clicking "Upgrade now" does.
 type Host interface {
-	// Latest is the newest release on the configured channel.
+	// Latest is the newest release on the configured channel. It returns the
+	// candidate together with ErrEdgeTarget when that is an edge image.
 	Latest(ctx context.Context) (Candidate, bool, error)
 	// Plan describes target, or returns ErrReleaseNotFound.
 	Plan(ctx context.Context, target string) (Plan, error)
@@ -328,6 +335,10 @@ func (s *Scheduler) maybeFire(ctx context.Context, sc store.UpgradeSchedule) err
 		s.finish(ctx, sc, store.UpgradeScheduleFailed, sc.TargetVersion+" is no longer a release on the configured channel", from...)
 		return nil
 	}
+	if errors.Is(err, ErrEdgeTarget) {
+		s.finish(ctx, sc, store.UpgradeScheduleFailed, sc.TargetVersion+" is an edge container image and cannot be applied by an upgrade", from...)
+		return nil
+	}
 	if err != nil {
 		return s.block(ctx, sc, "could not read the release: "+err.Error(), true)
 	}
@@ -354,6 +365,10 @@ func (s *Scheduler) maybeFire(ctx context.Context, sc store.UpgradeSchedule) err
 	pre, err := s.Host.Preflight(ctx, sc.TargetVersion)
 	if err != nil {
 		return s.block(ctx, sc, "preflight could not run: "+err.Error(), true)
+	}
+	if pre.Edge {
+		s.finish(ctx, sc, store.UpgradeScheduleFailed, sc.TargetVersion+" is an edge container image and cannot be applied by an upgrade", from...)
+		return nil
 	}
 	backedUp := false
 	if pre.Blocked && onlyBackupBlocks(pre.Checks) {

@@ -107,11 +107,17 @@ func (h upgradeHost) Latest(ctx context.Context) (upgradesched.Candidate, bool, 
 	if t, err := time.Parse(time.RFC3339, rel.PublishedAt); err == nil {
 		c.PublishedAt = t
 	}
+	if rel.IsEdge() {
+		return c, true, upgradesched.ErrEdgeTarget
+	}
 	return c, true, nil
 }
 
 func (h upgradeHost) Plan(ctx context.Context, target string) (upgradesched.Plan, error) {
 	rt := h.rt
+	if isEdgeTag(target) {
+		return upgradesched.Plan{}, upgradesched.ErrEdgeTarget
+	}
 	plan, status, msg := rt.buildSelfUpgradePlan(ctx, target)
 	switch status {
 	case http.StatusOK:
@@ -171,6 +177,9 @@ func (rt *Router) releaseOnChannel(ctx context.Context, tag string) (upgrade.His
 
 func (h upgradeHost) Preflight(ctx context.Context, target string) (upgradesched.PreflightResult, error) {
 	rt := h.rt
+	if isEdgeTag(target) {
+		return upgradesched.PreflightResult{Edge: true}, nil
+	}
 	rt.expireReleaseCaches()
 	rel, ok := rt.latestReleaseForCurrentChannel(ctx)
 	if target != "" && (!ok || rel == nil || rel.Tag != target) {
@@ -188,7 +197,7 @@ func (h upgradeHost) Preflight(ctx context.Context, target string) (upgradesched
 		rel, ok = &upgrade.Release{Tag: found.Tag, URL: found.URL, PublishedAt: found.PublishedAt, Body: found.Body, AssetNames: names}, true
 	}
 	res := rt.evaluatePreflight(ctx, rel, ok && rel != nil)
-	return upgradesched.PreflightResult{Checks: res.Checks, Blocked: res.Blocked}, nil
+	return upgradesched.PreflightResult{Checks: res.Checks, Blocked: res.Blocked, Edge: res.ReleaseKind == upgrade.KindEdgeImage}, nil
 }
 
 func (h upgradeHost) BackupNow(ctx context.Context) (string, error) {

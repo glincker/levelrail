@@ -14,6 +14,7 @@ import {
 } from '../ui/select'
 import { Switch } from '../ui/switch'
 import { toast } from '../ui/toast'
+import { updateSettingsQueryOptions } from '../../queries/updates'
 import { useNotificationChannelsOptional } from '../../queries/notificationChannels'
 import {
   policyQueryOptions,
@@ -233,6 +234,14 @@ function PolicyForm({ policy }: { policy: UpgradePolicy }) {
 export function AutomaticUpgrades() {
   const { t } = useTranslation('updates')
   const policy = useQuery(policyQueryOptions())
+  const settings = useQuery(updateSettingsQueryOptions())
+  if (settings.data?.channel === 'edge') {
+    return (
+      <p className="text-sm text-muted-foreground" role="status">
+        {t('auto.edgeUnavailable')}
+      </p>
+    )
+  }
   if (policy.isPending) {
     return <p className="text-sm text-muted-foreground">{t('auto.loading')}</p>
   }

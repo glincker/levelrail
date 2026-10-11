@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runUpgrade implements "upgrade": run the read-only preflight, take a control
@@ -112,7 +114,19 @@ func printUpgradeHuman(out io.Writer, p updatePreflight, backupNote string) {
 		_, _ = fmt.Fprintln(out, "\nUpgrade blocked: fix the failing checks above first.")
 	case !p.UpdateAvailable:
 		_, _ = fmt.Fprintln(out, "\nAlready up to date.")
+	case p.Edge != nil:
+		printEdgeGuidance(out, p.Edge)
 	default:
 		_, _ = fmt.Fprintf(out, "\nUpgrade with:\n  %s\n\nRoll back with:\n  %s\n", p.UpgradeCommand, p.RollbackCommand)
 	}
+}
+
+func printEdgeGuidance(out io.Writer, g *apiclient.EdgeGuidance) {
+	_, _ = fmt.Fprintf(out, "\nThe edge channel follows a container image (%s), not a signed release binary.\n", g.Image)
+	if g.Installable {
+		_, _ = fmt.Fprintf(out, "Pull and recreate the container:\n  %s\n  %s\n", g.PullCommand, g.RecreateCommand)
+		return
+	}
+	_, _ = fmt.Fprintln(out, "This install runs as a host binary, so edge cannot be installed here.")
+	_, _ = fmt.Fprintln(out, "Switch the channel under Settings > Updates, or with `settings updates set --channel beta` (or stable).")
 }

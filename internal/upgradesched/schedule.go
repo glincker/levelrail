@@ -50,6 +50,9 @@ func (s *Scheduler) Schedule(ctx context.Context, req Request) (store.UpgradeSch
 	target := strings.TrimSpace(req.Target)
 	if target == "" {
 		latest, ok, err := s.Host.Latest(ctx)
+		if errors.Is(err, ErrEdgeTarget) {
+			return store.UpgradeSchedule{}, ErrEdgeTarget
+		}
 		if err != nil {
 			return store.UpgradeSchedule{}, fmt.Errorf("upgradesched: look up latest release: %w", err)
 		}
@@ -223,6 +226,10 @@ func (s *Scheduler) considerAuto(ctx context.Context) error {
 		return nil
 	}
 	cand, ok, err := s.Host.Latest(ctx)
+	if errors.Is(err, ErrEdgeTarget) {
+		s.decide(ctx, row, cand.Tag, "held: edge builds are container images, so they are never applied automatically", false)
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("upgradesched: look up latest release: %w", err)
 	}

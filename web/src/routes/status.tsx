@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -15,6 +16,9 @@ import { useRestartApp } from '../queries/apps'
 import { useTriggerDeploy } from '../queries/deploys'
 import type { AttentionItem } from '../lib/attention'
 import { ResolvedLoginControls } from '../components/attention/ResolvedLoginControls'
+import { CopyFailureDetail } from '../components/attention/CopyFailureDetail'
+import { CopyItemControls } from '../components/attention/CopyItemControls'
+import { useSnoozed } from '../components/shell/snoozeStore'
 
 export const Route = createFileRoute('/status')({
   component: StatusPage,
@@ -153,6 +157,15 @@ function ItemActions({ item }: { item: AttentionItem }) {
       />
     )
   }
+  if (target.kind === 'path' && item.copy) {
+    return (
+      <CopyItemControls
+        itemId={item.id}
+        dismissKey={item.copy.dismissKey}
+        to={target.to}
+      />
+    )
+  }
   if (target.kind === 'path') {
     return (
       <Button size="sm" variant="outline" render={<Link to={target.to} />}>
@@ -193,8 +206,12 @@ function severityIcon(severity: AttentionItem['severity']) {
 }
 
 export function StatusPage() {
-  const { items, isLoading } = useAttentionItems()
+  const { items: all, isLoading } = useAttentionItems()
   const { t } = useTranslation('attention')
+  const { isSnoozed } = useSnoozed()
+  const [showSnoozed, setShowSnoozed] = useState(false)
+  const snoozed = all.filter((i) => i.copy && isSnoozed(i.id))
+  const items = showSnoozed ? all : all.filter((i) => !snoozed.includes(i))
 
   return (
     <div className="space-y-4">
@@ -204,6 +221,21 @@ export function StatusPage() {
           Everything that needs attention right now. Refreshes every 30 seconds.
         </p>
       </div>
+
+      {snoozed.length > 0 && !showSnoozed ? (
+        <p className="text-xs text-muted-foreground">
+          {t('copyFailure.snoozedCount', { count: snoozed.length })}{' '}
+          <button
+            type="button"
+            className="text-primary hover:underline"
+            onClick={() => {
+              setShowSnoozed(true)
+            }}
+          >
+            {t('copyFailure.showSnoozed')}
+          </button>
+        </p>
+      ) : null}
 
       {isLoading ? (
         <div
@@ -250,7 +282,12 @@ export function StatusPage() {
                         ? ` (${item.device.requesterIp})`
                         : ''}
                     </p>
-                    {item.action ? (
+                    {item.copy ? (
+                      <CopyFailureDetail
+                        hint={item.copy.hint}
+                        technical={item.copy.technical}
+                      />
+                    ) : item.action ? (
                       <p className="text-xs text-muted-foreground">
                         {item.action}
                       </p>

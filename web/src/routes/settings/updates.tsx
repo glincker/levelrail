@@ -2,12 +2,7 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import {
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  ArrowCircleUpIcon,
-  ArrowClockwiseIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ArrowClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
   CardContent,
@@ -31,11 +26,12 @@ import {
   updateSettingsQueryOptions,
   useSetUpdateSettings,
 } from '../../queries/updates'
-import type { UpdateChannel, UpdateStatus } from '../../queries/updates'
+import type { UpdateChannel } from '../../queries/updates'
 import { UpgradePreflight } from '../../components/settings/UpgradePreflight'
 import { UpgradeAttempts } from '../../components/settings/UpgradeAttempts'
 import { UpgradeNow } from '../../components/settings/UpgradeNow'
 import { AutomaticUpgrades } from '../../components/settings/AutomaticUpgrades'
+import { UpdateStatusRow } from '../../components/settings/UpdateStatusRow'
 import { ServerReadiness } from '../../components/settings/ServerReadiness'
 import { ReleaseHistory } from '../../components/settings/ReleaseHistory'
 import { UpgradeHistory } from '../../components/settings/UpgradeHistory'
@@ -64,12 +60,6 @@ function UpdatesSettingsSkeleton() {
       <SettingsCardSkeleton rows={3} rowVariant="list" />
     </div>
   )
-}
-
-const CHANNEL_LABELS: Record<UpdateChannel, string> = {
-  stable: 'Stable (recommended)',
-  beta: 'Beta (pre-release)',
-  edge: 'Edge (latest main, unstable)',
 }
 
 function UpdatesSettingsPage() {
@@ -104,10 +94,21 @@ function UpdatesSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between py-1.5 text-sm">
-            <span className="text-foreground">Running version</span>
+            <span className="text-foreground">{t('version.running')}</span>
             <span className="font-mono text-muted-foreground">
               {status.current_version}
             </span>
+          </div>
+          <div className="space-y-0.5 py-1.5 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-foreground">{t('channels.active')}</span>
+              <span className="text-muted-foreground">
+                {t(`channels.${settings.channel}.label`)}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t(`channels.${settings.channel}.description`)}
+            </p>
           </div>
           <UpdateStatusRow status={status} />
           <UpgradeNow />
@@ -162,7 +163,9 @@ function UpdatesSettingsPage() {
             }}
           >
             <Field>
-              <FieldLabel htmlFor="update-channel">Channel</FieldLabel>
+              <FieldLabel htmlFor="update-channel">
+                {t('channels.label')}
+              </FieldLabel>
               <Select
                 value={channel}
                 onValueChange={(v) => {
@@ -177,11 +180,14 @@ function UpdatesSettingsPage() {
                 <SelectContent>
                   {(['stable', 'beta', 'edge'] as const).map((c) => (
                     <SelectItem key={c} value={c}>
-                      {CHANNEL_LABELS[c]}
+                      {t(`channels.${c}.label`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <FieldDescription>
+                {t(`channels.${channel}.description`)}
+              </FieldDescription>
             </Field>
             <div className="flex items-center gap-2 text-sm">
               <Switch
@@ -275,45 +281,6 @@ function UpdatesSettingsPage() {
           <PostUpgradeVerify />
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-function UpdateStatusRow({ status }: { status: UpdateStatus }) {
-  if (status.latest_version === null) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No releases published yet.
-      </p>
-    )
-  }
-
-  if (!status.update_available) {
-    return (
-      <div className="inline-flex items-center gap-1.5 text-sm text-green-700 dark:text-green-400">
-        <CheckCircleIcon className="size-4" />
-        You&apos;re on the latest version.
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="inline-flex items-center gap-1.5 text-sm text-foreground">
-        <ArrowCircleUpIcon className="size-4" />A new version is available:{' '}
-        {status.latest_version}
-      </div>
-      {status.release_url && (
-        <a
-          href={status.release_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-        >
-          View release
-          <ArrowSquareOutIcon className="size-3.5" />
-        </a>
-      )}
     </div>
   )
 }

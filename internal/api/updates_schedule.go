@@ -13,6 +13,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/upgradesched"
+	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
 const (
@@ -230,6 +231,8 @@ func (rt *Router) writeUpgradeScheduleError(w http.ResponseWriter, what string, 
 		writeError(w, http.StatusConflict, "the upgrade is already running and cannot be changed")
 	case errors.Is(err, upgradesched.ErrNoWindow):
 		writeError(w, http.StatusConflict, "no maintenance window is configured: set one under automatic upgrades, or pick a time")
+	case errors.Is(err, upgradesched.ErrEdgeTarget):
+		writeError(w, http.StatusConflict, errEdgeNotApplicable)
 	case errors.Is(err, upgradesched.ErrReleaseNotFound):
 		writeError(w, http.StatusNotFound, "that release was not found on the configured channel")
 	case errors.Is(err, upgradesched.ErrNothingScheduled):
@@ -354,6 +357,10 @@ func (rt *Router) handleUpdateUpgradePolicy(w http.ResponseWriter, r *http.Reque
 	}
 	if err := pol.Validate(); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if pol.Active() && rt.currentUpdateChannel(r.Context()) == upgrade.ChannelEdge {
+		writeError(w, http.StatusConflict, "automatic upgrades cannot run on the edge channel: edge builds are container images. Switch the channel to beta or stable first")
 		return
 	}
 	if rt.notificationChannels != nil {

@@ -19,6 +19,7 @@ import { ScheduleUpgradeDialog } from './ScheduleUpgradeDialog'
 import { ScheduledUpgradeBanner } from './ScheduledUpgradeBanner'
 import { UpgradeCheckRow } from './UpgradeCheckRow'
 import { UpgradeConfirmDialog } from './UpgradeConfirmDialog'
+import { EdgeUpdateGuidance } from './EdgeUpdateGuidance'
 import { AttemptRow } from './UpgradeAttempts'
 
 const POLL_MS = 3_000
@@ -39,6 +40,7 @@ function findFinished(
 // UpgradeNow is the primary action on the Version card: blockers with their
 // fixes while the preflight fails, then Upgrade now and Schedule upgrade,
 // then live progress that reloads the page once the new release answers.
+// An edge target is a container image, so it shows pull guidance instead.
 export function UpgradeNow() {
   const { t } = useTranslation('updates')
   const preflight = useQuery(preflightQueryOptions())
@@ -106,6 +108,20 @@ export function UpgradeNow() {
         <p className="text-xs text-muted-foreground">
           {t('upgradeNow.reconnect')}
         </p>
+      </div>
+    )
+  }
+
+  if (pre.edge) {
+    return (
+      <div className="space-y-4">
+        {schedule.data?.active ? (
+          <ScheduledUpgradeBanner
+            schedule={schedule.data.active}
+            serverTimezone={schedule.data.server_timezone ?? 'UTC'}
+          />
+        ) : null}
+        <EdgeUpdateGuidance edge={pre.edge} updateAvailable />
       </div>
     )
   }

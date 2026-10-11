@@ -17,6 +17,7 @@ import (
 type fakeHost struct {
 	mu        sync.Mutex
 	latest    Candidate
+	latestErr error
 	plan      Plan
 	planErr   error
 	preflight []PreflightResult
@@ -31,7 +32,7 @@ type fakeHost struct {
 }
 
 func (h *fakeHost) Latest(context.Context) (Candidate, bool, error) {
-	return h.latest, h.latest.Tag != "", nil
+	return h.latest, h.latest.Tag != "", h.latestErr
 }
 
 func (h *fakeHost) Plan(_ context.Context, target string) (Plan, error) {
