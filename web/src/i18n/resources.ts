@@ -28,6 +28,7 @@ import type previews from '../locales/en/previews.json'
 import type backups from '../locales/en/backups.json'
 import type gitBuild from '../locales/en/gitBuild.json'
 import type teams from '../locales/en/teams.json'
+import type compose from '../locales/en/compose.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -64,6 +65,7 @@ declare module 'i18next' {
       backups: typeof backups
       gitBuild: typeof gitBuild
       teams: typeof teams
+      compose: typeof compose
     }
   }
 }

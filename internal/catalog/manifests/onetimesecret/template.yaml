@@ -1,0 +1,30 @@
+id: onetimesecret
+name: One-Time Secret
+description: Share a password or API key through a link that self-destructs after the first view, backed by Redis.
+icon: lock
+category: Security
+documentation_url: https://docs.onetimesecret.com
+recommended_memory_bytes: 268435456
+env:
+  - key: SECRET
+    label: Encryption secret
+    description: Encrypts stored secrets. Keep it stable, or existing links stop working.
+    generate: hex
+    length: 64
+    secret: true
+  - key: COLONEL_EMAIL
+    label: Admin email
+    description: The account that gets admin rights after it signs up.
+    default: admin@example.com
+  - key: PUBLIC_HOST
+    label: Public host
+    description: Host name used in generated share links, without a scheme.
+    default: localhost:3000
+domains:
+  - service: app
+    port: 3000
+    description: Public address for share links.
+healthcheck:
+  service: app
+  port: 3000
+  path: /

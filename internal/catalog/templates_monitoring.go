@@ -2,26 +2,6 @@ package catalog
 
 var monitoringTemplates = []Template{
 	{
-		ID:                     "uptime-kuma",
-		Name:                   "Uptime Kuma",
-		Slogan:                 "A self-hosted uptime monitor with a clean dashboard for HTTP, TCP, DNS, and ping checks.",
-		Category:               "Monitoring",
-		DocumentationURL:       "https://github.com/louislam/uptime-kuma/wiki",
-		RecommendedMemoryBytes: 268435456, // 256Mi
-		Compose: `services:
-  uptime-kuma:
-    image: louislam/uptime-kuma:1.23.13
-    ports: ["3001:3001"]
-    volumes:
-      - uptime_kuma_data:/app/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3001/"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-`,
-	},
-	{
 		ID:                     "grafana",
 		Name:                   "Grafana",
 		Slogan:                 "Dashboards and exploration for metrics, logs, and traces from any data source.",

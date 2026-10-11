@@ -42,6 +42,10 @@ type rawService struct {
 	Deploy      *Deploy           `yaml:"deploy"`
 	Secrets     []any             `yaml:"secrets"`
 	Configs     []any             `yaml:"configs"`
+	Profiles    []string          `yaml:"profiles"`
+	HostAccess  HostAccess        `yaml:",inline"`
+	// DependsOnHealthy is filled by Parse from depends_on's long form.
+	DependsOnHealthy []string `yaml:"-"`
 }
 
 // Healthcheck is one service's healthcheck: block, Docker Compose's own

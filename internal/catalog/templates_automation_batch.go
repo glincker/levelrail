@@ -432,44 +432,6 @@ var automationBatchTemplates = []Template{
 `,
 	},
 	{
-		ID:                     "onetimesecret",
-		Name:                   "One-Time Secret",
-		Slogan:                 "Share a password or API key through a link that self-destructs after the first view.",
-		Category:               "Security",
-		DocumentationURL:       "https://docs.onetimesecret.com",
-		RecommendedMemoryBytes: 268435456, // 256Mi
-		Compose: `services:
-  onetimesecret:
-    image: onetimesecret/onetimesecret:v0.26.14
-    ports: ["3000:3000"]
-    environment:
-      AUTH_AUTOVERIFY: "true"
-      AUTH_SIGNUP: "true"
-      COLONEL: admin@example.com
-      HOST: ${SERVICE_FQDN_ONETIMESECRET:-localhost}
-      REDIS_URL: redis://redis:6379/0
-      SECRET: $SERVICE_PASSWORD_ONETIMESECRET
-      SSL: "false"
-      RACK_ENV: production
-    depends_on: [redis]
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/ || exit 1"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - onetimesecret_redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-`,
-	},
-	{
 		ID:                     "espocrm",
 		Name:                   "EspoCRM",
 		Slogan:                 "An open-source CRM for managing sales, support, and customer relationships end to end.",

@@ -3812,6 +3812,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithOrganizationEnv(sharedEnvResolver),
 		application.WithEnvironmentEnv(sharedEnvResolver),
 		application.WithAppIntegrations(deps.db),
+		application.WithConditionReader(deps.db),
 		application.WithNetworkPrefix(deps.networkPrefix),
 		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),

@@ -1462,9 +1462,34 @@ levelrail-cli gitea-app use-as-source <owner> <repo> --app-name NAME [flags]
 levelrail-cli templates list [--custom] [flags]
 levelrail-cli templates get <id> [flags]
 levelrail-cli templates deploy <id> [--name NAME] [flags]
+levelrail-cli templates install <id> [--name NAME] [--env KEY=VALUE]... [--domain SERVICE=HOST]... [flags]
 levelrail-cli templates delete <id> [flags]
 ```
 `list` browses the curated service catalog, or `--custom` for your own saved templates. `get` shows one entry including its full compose.yaml. `deploy` deploys a template's compose.yaml as an app, and the app name defaults to the template id; pass `--name` to use another. A custom template works with every verb the same as a built-in one, except `delete`: only a custom template can be deleted (see `apps save-as-template`). See [Templates](templates.md).
+
+`install` is for manifest templates (the ones `get` shows with settings): it fills each `${KEY}` setting from `--env`, a generated secret or its default, puts the listed services behind `--domain` hosts, and deploys the result as a compose app that is not a trial. See [Compose apps](/compose-apps#templates).
+
+## Compose
+
+```
+levelrail-cli compose deploy <app> -f compose.yaml [--profile-name P]... [flags]
+levelrail-cli compose preview -f compose.yaml [--profile-name P]... [flags]
+levelrail-cli compose status <app> [flags]
+levelrail-cli compose revisions <app> [flags]
+levelrail-cli compose logs <app> [--service S] [--since 1h] [--tail N] [-f] [flags]
+levelrail-cli compose redeploy <app> [--service S] [flags]
+levelrail-cli compose rollback <app> [--revision N] [flags]
+levelrail-cli compose down <app> [--volumes] [flags]
+```
+- `deploy` deploys or updates a stack and records a numbered revision; `-f -` reads stdin. `--profile-name` enables services behind compose `profiles:`.
+- `preview` asks the server to parse and check a file without saving anything, lists each service with its generated and required env vars, and exits with code 2 when the file would be rejected.
+- `status` prints the stack phase and each service's ready state with the reconciler's reason.
+- `logs` merges recent lines from every service, or hands one service to `apps logs` with `--service`, where `-f` follows it.
+- `redeploy` recreates every service's containers, or one service's.
+- `rollback` re-applies an earlier compose file (default: the one before the latest) as a new revision.
+- `down` removes every service and its containers; named volumes and generated secrets are kept unless you pass `--volumes`.
+
+See [Compose apps](/compose-apps).
 
 ## Static sites
 

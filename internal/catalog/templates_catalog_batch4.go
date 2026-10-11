@@ -192,30 +192,6 @@ var catalogBatch4Templates = []Template{
 `,
 	},
 	{
-		// LinuxServer tag not independently verified against a live
-		// registry in this environment.
-		ID:                     "pairdrop",
-		Name:                   "PairDrop",
-		Slogan:                 "A self-hosted AirDrop-style app for sending files and messages between devices on the same network.",
-		Category:               "Productivity",
-		DocumentationURL:       "https://github.com/schlagmichdoch/PairDrop",
-		RecommendedMemoryBytes: 268435456, // 256Mi
-		Compose: `services:
-  pairdrop:
-    image: lscr.io/linuxserver/pairdrop:1.11.2
-    ports: ["3000:3000"]
-    environment:
-      PUID: "1000"
-      PGID: "1000"
-      TZ: Etc/UTC
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-`,
-	},
-	{
 		ID:                     "checkmate",
 		Name:                   "Checkmate",
 		Slogan:                 "An open-source uptime and server monitoring app with incident history and status pages.",

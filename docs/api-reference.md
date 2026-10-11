@@ -198,7 +198,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 153 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 160 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -363,6 +363,13 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/move | AbilityRoot | handleStartMove |
 | GET | /api/v1/apps/{name}/placement | AbilityRead | handleGetPlacement |
 | PUT | /api/v1/apps/{name}/placement | AbilityRoot | handleSetPlacement |
+| GET | /api/v1/apps/{name}/compose | AbilityRead | handleGetComposeStack |
+| GET | /api/v1/apps/{name}/compose/revisions | AbilityRead | handleListComposeRevisions |
+| GET | /api/v1/apps/{name}/compose/revisions/{revision} | AbilityRead | handleGetComposeRevision |
+| POST | /api/v1/apps/{name}/compose/rollback | AbilityDeploy | handleRollbackCompose |
+| POST | /api/v1/apps/{name}/compose/redeploy | AbilityDeploy | handleRedeployCompose |
+| POST | /api/v1/service-templates/{id}/install | AbilityDeploy | handleInstallServiceTemplate |
+| DELETE | /api/v1/apps/{name}/compose | AbilityWrite | handleComposeDown |
 
 :::
 
@@ -1159,6 +1166,8 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/teams/{id}/invites/{invite} | AbilityWrite | handleRevokeTeamInvite |
 | GET | /api/v1/team-invites/{token} | Session | handlePreviewTeamInvite |
 | POST | /api/v1/team-invites/accept | Public | handleAcceptTeamInvite |
+| GET | /api/v1/compose | AbilityRead | handleListComposeStacks |
+| POST | /api/v1/compose/preview | AbilityDeploy | handlePreviewCompose |
 
 ## See also
 

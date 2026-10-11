@@ -214,6 +214,7 @@ const (
 // container.
 type Controller struct {
 	serviceName     string
+	conditions      ConditionReader
 	store           ServiceStore
 	runtime         docker.Runtime
 	httpClient      *http.Client

@@ -20,27 +20,27 @@ This is a browsing list, not a how-to. For the API/CLI/UI mechanics (how a templ
 
 <!-- BEGIN GENERATED CATALOG TABLE -->
 
-Generated from `internal/catalog.Templates` (311 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (330 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
-| [AI](#ai) | 27 |
-| [Analytics](#analytics) | 5 |
-| [Applications](#applications) | 17 |
+| [AI](#ai) | 30 |
+| [Analytics](#analytics) | 6 |
+| [Applications](#applications) | 18 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 17 |
 | [Dashboard](#dashboard) | 8 |
 | [Database Tools](#database-tools) | 18 |
-| [Developer Tools](#developer-tools) | 47 |
-| [Finance](#finance) | 8 |
-| [Infrastructure](#infrastructure) | 9 |
+| [Developer Tools](#developer-tools) | 50 |
+| [Finance](#finance) | 9 |
+| [Infrastructure](#infrastructure) | 10 |
 | [IoT](#iot) | 3 |
-| [Media](#media) | 27 |
+| [Media](#media) | 28 |
 | [Monitoring](#monitoring) | 22 |
-| [Productivity](#productivity) | 60 |
+| [Productivity](#productivity) | 66 |
 | [Security](#security) | 17 |
 | [Starter Kits](#starter-kits) | 7 |
-| [Storage](#storage) | 11 |
+| [Storage](#storage) | 13 |
 
 ## AI
 
@@ -57,9 +57,11 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 | [LibreChat](https://www.librechat.ai/docs) | A self-hosted ChatGPT-style interface for many model providers, with agents, search, and multi-user login. | `librechat` |  |
 | [LiteLLM Proxy](https://docs.litellm.ai/docs/simple_proxy) | One OpenAI-format gateway in front of 100+ model providers, with keys, budgets, and spend tracking. | `litellm` |  |
 | [llama.cpp Server](https://github.com/ggml-org/llama.cpp/tree/master/tools/server) | The llama.cpp HTTP server: run quantized GGUF models on plain CPUs with an OpenAI-compatible API. | `llama-cpp` |  |
+| [Lobe Chat](https://lobehub.com/docs/self-hosting/start) | A modern, open-source AI chat framework supporting many model providers. | `lobe-chat` |  |
 | [LocalAI](https://localai.io) | A drop-in OpenAI-compatible API that runs language, image, and speech models on your own hardware. | `localai` |  |
 | [MLflow](https://mlflow.org/docs/latest) | Track experiments, compare runs, and manage models with a self-hosted MLflow tracking server. | `mlflow` |  |
 | [n8n AI Starter Kit](https://docs.n8n.io/advanced-ai) | n8n wired to a local Ollama model and a Qdrant vector store, ready for private AI workflows. | `n8n-ai-starter` |  |
+| [New API](https://docs.newapi.pro/en/getting-started/) | An LLM gateway and AI asset management system that unifies many model providers. | `new-api` |  |
 | [Ollama](https://github.com/ollama/ollama) | A local LLM runtime with an HTTP API. Pull any model yourself once it's running. | `ollama` |  |
 | [Ollama + Open WebUI](https://docs.openwebui.com/) | A local LLM runtime paired with a ChatGPT-style web interface, for running open models on your own hardware. | `ollama-open-webui` |  |
 | [Ollama: DeepSeek-R1 7B](https://ollama.com/library/deepseek-r1) | DeepSeek's R1 distilled 7B reasoning model, served locally through Ollama's HTTP API. | `ollama-deepseek` |  |
@@ -72,12 +74,14 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 | [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki) | A browser interface for generating and editing images with Stable Diffusion checkpoints. | `stable-diffusion-webui` | Requires GPU |
 | [Text Embeddings Inference](https://huggingface.co/docs/text-embeddings-inference) | A lean server that turns text into embeddings with popular open models, on CPU with no extra setup. | `text-embeddings-inference` |  |
 | [Text Generation Inference](https://huggingface.co/docs/text-generation-inference) | Hugging Face's production inference server for transformer language models, with continuous batching and streaming. | `text-generation-inference` | Requires GPU |
+| [Unstructured](https://github.com/Unstructured-IO/unstructured-api) | An API that turns PDFs, Word files, and other documents into clean data for RAG pipelines. | `unstructured` |  |
 | [vLLM](https://docs.vllm.ai) | A fast, high-throughput inference server that exposes an OpenAI-compatible API for open-weight language models. | `vllm` | Requires GPU |
 
 ## Analytics
 
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
+| [EmbyStat](https://github.com/mregni/EmbyStat) | Watch statistics and insight dashboards for your Emby or Jellyfin server. | `embystat` |  |
 | [GoatCounter](https://www.goatcounter.com/help) | A privacy-friendly, open-source web analytics platform that never tracks individual visitors. | `goatcounter` |  |
 | [Matomo](https://matomo.org/faq/how-to-install/install-matomo-with-docker/) | A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership. | `matomo` |  |
 | [Metabase](https://www.metabase.com/docs/latest/) | Ask questions of your data and share dashboards, no SQL required. | `metabase` |  |
@@ -104,6 +108,7 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 | [OrangeHRM](https://docs.orangehrm.com/) | An open-source human resources management suite: PTO, recruitment, performance, and an employee directory. | `orangehrm` |  |
 | [Redlib](https://github.com/redlib-org/redlib) | A private, lightweight front-end for browsing Reddit without tracking or ads. | `redlib` |  |
 | [SearXNG](https://docs.searxng.org) | A privacy-respecting metasearch engine that aggregates results from dozens of search services. | `searxng` |  |
+| [Vvveb CMS](https://docs.vvveb.com) | A CMS for building websites, blogs, and ecommerce stores. | `vvveb` |  |
 | [WordPress](https://wordpress.org/documentation/) | The world's most widely used content management system, self-hosted with its own database. | `wordpress` |  |
 
 ## Automation
@@ -210,9 +215,11 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 | [Jupyter Notebook](https://jupyter.org/documentation) | A web-based notebook environment for interactive Python, data analysis, and visualization. | `jupyter-notebook-python` |  |
 | [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate) | A free and open machine translation API that runs entirely on your own hardware. | `libretranslate` |  |
 | [Mailpit](https://mailpit.axllent.org/docs/) | A local SMTP server and web inbox for catching and inspecting outgoing email during development. | `mailpit` |  |
+| [marimo](https://marimo.io/) | A reactive Python notebook that is reproducible, git-friendly, and shareable as an app. | `marimo` |  |
 | [Meilisearch](https://www.meilisearch.com/docs) | A fast, typo-tolerant search engine API you can drop into any app's search bar. | `meilisearch` |  |
 | [NocoBase](https://docs.nocobase.com/) | An extensible no-code/low-code platform for building internal tools and databases. | `nocobase` |  |
 | [PocketBase](https://pocketbase.io/docs/) | An open-source backend in one file: embedded database, auth, file storage, and realtime API. | `pocketbase` |  |
+| [Proxyscotch](https://github.com/hoppscotch/proxyscotch) | A small CORS proxy that lets Hoppscotch call APIs from the browser. | `proxyscotch` |  |
 | [Semaphore UI](https://docs.semaphoreui.com) | A modern web UI for running Ansible, Terraform, and shell tasks with schedules, history, and access control. | `semaphore` |  |
 | [Shlink](https://shlink.io/documentation/) | A self-hosted URL shortener with a full REST API for creating and tracking short links. | `shlink` |  |
 | [Soketi](https://docs.soketi.app) | A simple, fast, Pusher-protocol-compatible WebSockets server for real-time app features. | `soketi` |  |
@@ -221,6 +228,7 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 | [Strapi](https://docs.strapi.io/) | An open-source headless CMS with a customizable admin panel and a REST/GraphQL content API. | `strapi` |  |
 | [Termix](https://github.com/LukeGus/Termix) | A web-based SSH, RDP, and VNC terminal manager for organizing and connecting to every server from one dashboard. | `termix` |  |
 | [Tolgee](https://tolgee.io/platform) | A localization management platform where developers and translators work in one shared UI. | `tolgee` |  |
+| [TrailBase](https://trailbase.io/) | A fast Rust and SQLite application server with type-safe APIs and auth. | `trailbase` |  |
 | [Typesense](https://typesense.org/docs/guide/install-typesense.html) | A fast, typo-tolerant search engine API built as a lighter alternative to Elasticsearch. | `typesense` |  |
 | [Unleash (Postgres)](https://docs.getunleash.io/) | An open-source feature flag platform with gradual rollouts, A/B testing, and a permission model. | `unleash-postgres` |  |
 | [Verdaccio](https://verdaccio.org/docs/installation) | A lightweight private npm proxy registry with caching and local package publishing. | `verdaccio` |  |
@@ -235,6 +243,7 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 | --- | --- | --- | --- |
 | [Actual Budget](https://actualbudget.org/docs/install/docker/) | A local-first, envelope-style budgeting app with optional multi-device sync. | `actual-budget` |  |
 | [Actual Budget](https://actualbudget.org/docs/install/docker) | A local-first personal finance and budgeting app with multi-device sync you fully own. | `actualbudget` |  |
+| [Budge](https://github.com/linuxserver/budge) | A self-hosted envelope budgeting app for personal finance. | `budge` |  |
 | [Dolibarr](https://wiki.dolibarr.org) | An open-source ERP and CRM for small businesses: invoicing, contacts, stock, and accounting in one app. | `dolibarr` |  |
 | [Firefly III](https://docs.firefly-iii.org) | A self-hosted personal finance manager for tracking budgets, bills, and spending. | `firefly-iii` |  |
 | [Ghostfolio](https://github.com/ghostfolio/ghostfolio) | A privacy-first wealth tracker for stocks, ETFs, and crypto, with portfolio analytics and no ads. | `ghostfolio` |  |
@@ -247,6 +256,7 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [AdGuard Home](https://github.com/AdguardTeam/AdGuardHome/wiki/Docker) | Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard. | `adguard-home` |  |
+| [Cloudflare DDNS](https://github.com/favonia/cloudflare-ddns) | Keeps Cloudflare DNS records pointed at your current public IP address. | `cloudflare-ddns` |  |
 | [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) | A distributed, RESTful search and analytics engine for full-text search and log analytics. | `elasticsearch` |  |
 | [NetBox](https://github.com/netbox-community/netbox-docker) | Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling. | `netbox` |  |
 | [Nginx Proxy Manager](https://nginxproxymanager.com/guide/) | A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates. | `nginx-proxy-manager` |  |
@@ -272,6 +282,7 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 | [Bazarr](https://wiki.bazarr.media) | Companion to Sonarr and Radarr that finds and downloads subtitles for your media library. | `bazarr` |  |
 | [Calibre-Web](https://github.com/janeczku/calibre-web/wiki) | A clean web interface for browsing, reading, and downloading your existing Calibre ebook library. | `calibre-web` |  |
 | [Castopod](https://docs.castopod.org/) | An open-source podcast hosting platform with built-in analytics, a web player, and ActivityPub federation. | `castopod` |  |
+| [Emby](https://emby.media/support/articles/Home.html) | A media server that organizes your movies, shows, and music and streams them to any device. | `emby` |  |
 | [Grimmory](https://github.com/grimmory-tools/grimmory) | Organize, read, annotate, and sync your entire book collection from one place. | `grimmory` |  |
 | [Immich](https://immich.app/docs) | Self-hosted photo and video backup with mobile apps, facial recognition, and timeline search. | `immich` |  |
 | [Jackett](https://github.com/Jackett/Jackett#readme) | A proxy that translates queries from your media apps into torrent tracker searches. | `jackett` |  |
@@ -332,6 +343,7 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 | [Baby Buddy](https://docs.baby-buddy.net/) | Track sleep, feeding, diaper changes, and growth for a baby or toddler, with charts and timers. | `babybuddy` |  |
 | [BookStack](https://www.bookstackapp.com/docs/) | A simple, self-hosted platform for organizing documentation into books, chapters, and pages. | `bookstack` |  |
 | [Cal.com](https://cal.com/docs/self-hosting/installation) | Open-source scheduling infrastructure for booking meetings without the back-and-forth. | `calcom` |  |
+| [ConvertX](https://github.com/C4illin/ConvertX) | A self-hosted online file converter supporting over a thousand formats. | `convertx-app` |  |
 | [Docmost](https://docmost.com/docs) | An open-source, Notion-style collaborative wiki and documentation workspace. | `docmost` |  |
 | [Documenso](https://docs.documenso.com/) | An open-source document signing platform, a self-hosted alternative to DocuSign. | `documenso` |  |
 | [DocuSeal](https://www.docuseal.co/) | A free, open-source document signing tool, a lighter alternative to DocuSign. | `docuseal` |  |
@@ -341,9 +353,11 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 | [Etherpad](https://docs.etherpad.org) | A real-time collaborative editor for documents, with plugins and a clean export story. | `etherpad` |  |
 | [Excalidraw](https://github.com/excalidraw/excalidraw#docker) | A self-hosted virtual whiteboard for sketching diagrams that feel hand-drawn. | `excalidraw` |  |
 | [Fider](https://fider.io) | A feedback platform for collecting and prioritizing user feature requests. | `fider` |  |
+| [Firefox](https://github.com/jlesage/docker-firefox) | A private Firefox browser running on your server and streamed to a web page. | `firefox-browser` |  |
 | [flatnotes](https://github.com/dullage/flatnotes/wiki) | A database-less note-taking app that keeps notes as plain Markdown files. | `flatnotes` |  |
 | [Formbricks](https://formbricks.com/docs/self-hosting/setup/docker) | An open-source survey and experience-management platform you run on your own infrastructure. | `formbricks` |  |
 | [FreshRSS](https://freshrss.github.io/FreshRSS/) | A lightweight, self-hosted RSS aggregator with multi-user support and a mobile-friendly API. | `freshrss` |  |
+| [Gramps Web](https://www.grampsweb.org/install_setup/setup/) | An online genealogy system for researching and sharing family trees. | `gramps-web` |  |
 | [Grist](https://support.getgrist.com) | A modern relational spreadsheet that combines spreadsheet flexibility with database structure. | `grist` |  |
 | [Grocy](https://grocy.info/en/docs) | A self-hosted ERP for your household: groceries, chores, and a shopping list that stays in sync. | `grocy` |  |
 | [HedgeDoc](https://docs.hedgedoc.org) | Real-time collaborative markdown notes you can host yourself. | `hedgedoc` |  |
@@ -365,18 +379,21 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 | [Obsidian LiveSync (CouchDB)](https://github.com/vrtmrz/obsidian-livesync/blob/main/docs/setup_own_server.md) | A self-hosted CouchDB backend for the Obsidian LiveSync plugin, syncing your notes across devices. | `obsidian-livesync` |  |
 | [osTicket](https://docs.osticket.com/en/latest/) | A widely used open-source support ticket system for teams handling customer requests. | `osticket` |  |
 | [Outline](https://docs.getoutline.com) | A fast, structured team wiki and knowledge base with real-time collaborative editing. | `outline` |  |
-| [PairDrop](https://github.com/schlagmichdoch/PairDrop) | A self-hosted AirDrop-style app for sending files and messages between devices on the same network. | `pairdrop` |  |
+| [PairDrop](https://github.com/schlagmichdoch/PairDrop) | An AirDrop-style app for sending files and messages between devices on the same network, from any browser. | `pairdrop` |  |
 | [Paperless-ngx](https://docs.paperless-ngx.com) | Scan, index, and archive your paper documents into a searchable digital library. | `paperless-ngx` |  |
 | [Penpot](https://help.penpot.app) | An open-source design and prototyping platform, a self-hosted alternative to Figma. | `penpot` |  |
 | [Plane](https://docs.plane.so/self-hosting/methods/docker-compose) | An open-source project management tool for tracking issues and cycles, an alternative to Linear and Jira. | `plane` |  |
 | [Planka](https://docs.planka.cloud/docs/installation/docker/) | A Trello-style kanban board for visualizing and tracking work across a team. | `planka` |  |
 | [Rallly](https://support.rallly.co/self-hosting/introduction) | Find a time that works for everyone with polls for scheduling meetings and events. | `rallly` |  |
 | [Readeck](https://readeck.org/en/docs/) | Save the readable content of web pages you want to keep, free of ads and clutter. | `readeck` |  |
-| [Redmine](https://www.redmine.org/) | A flexible, mature project management and issue-tracking web application. | `redmine` |  |
+| [Redmine](https://www.redmine.org/projects/redmine/wiki/Guide) | A mature project management and issue tracker with Gantt charts, wikis and time tracking, backed by Postgres. | `redmine` |  |
+| [Ryot](https://github.com/ignisda/ryot) | A self-hosted tracker for media, fitness, and other parts of life. | `ryot` |  |
 | [Shiori](https://github.com/go-shiori/shiori/tree/master/docs) | A simple bookmark manager with offline archiving, built as a single Go binary. | `shiori` |  |
 | [SilverBullet](https://silverbullet.md) | A programmable, Markdown-based notes app you can extend with your own scripts and queries. | `silverbullet` |  |
 | [SiYuan](https://github.com/siyuan-note/siyuan) | A privacy-first, self-hosted personal knowledge management app with block-based markdown notes. | `siyuan` |  |
 | [Slash](https://github.com/yourselfhosted/slash) | A self-hosted link shortener and bookmark sharing platform with tags and full-text search. | `slash` |  |
+| [Snapdrop](https://github.com/RobinLinus/snapdrop) | Local network file sharing in the browser, inspired by AirDrop. | `snapdrop` |  |
+| [SparkyFitness](https://codewithcj.github.io/SparkyFitness/) | A fitness tracker for nutrition, exercise, and body measurements. | `sparkyfitness` |  |
 | [Stirling PDF](https://docs.stirlingpdf.com) | A self-hosted, all-in-one toolkit for merging, splitting, converting, and editing PDFs. | `stirling-pdf` |  |
 | [Tandoor Recipes](https://docs.tandoor.dev/install/docker/) | A recipe manager and meal planner with shopping lists and shared cookbooks. | `tandoor-recipes` |  |
 | [Teable](https://help.teable.io/) | A spreadsheet-style visual database backed by real PostgreSQL, an Airtable alternative. | `teable` |  |
@@ -386,7 +403,7 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 | [Vert](https://github.com/vert-sh/vert) | A fast file converter for images, video, audio, and documents, processed entirely without a third-party upload. | `vert` |  |
 | [Vikunja](https://vikunja.io/docs/) | An open-source task and project manager for teams that outgrew sticky notes. | `vikunja` |  |
 | [Wallabag](https://doc.wallabag.org) | A read-it-later app that saves web articles in a clean, distraction-free format. | `wallabag` |  |
-| [Wiki.js](https://docs.requarks.io) | A modern, extensible wiki engine with Markdown, visual editing, and fine-grained page permissions. | `wikijs` |  |
+| [Wiki.js](https://docs.requarks.io) | A modern wiki with Markdown and visual editing, page permissions and full-text search, backed by Postgres. | `wikijs` |  |
 
 ## Security
 
@@ -401,7 +418,7 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 | [Keycloak (Postgres)](https://www.keycloak.org/documentation) | Keycloak backed by Postgres instead of its default embedded database, for a real multi-instance setup. | `keycloak-postgres` |  |
 | [lldap](https://github.com/lldap/lldap) | A lightweight LDAP server with a friendly web UI, built for homelab and small-team authentication. | `lldap` |  |
 | [Logto](https://docs.logto.io) | Modern, developer-first customer identity: sign-in experiences, social login, and OIDC without the plumbing. | `logto` |  |
-| [One-Time Secret](https://docs.onetimesecret.com) | Share a password or API key through a link that self-destructs after the first view. | `onetimesecret` |  |
+| [One-Time Secret](https://docs.onetimesecret.com) | Share a password or API key through a link that self-destructs after the first view, backed by Redis. | `onetimesecret` |  |
 | [Passbolt](https://www.passbolt.com/docs) | An open-source password manager built for teams, compatible with the usual browser extensions. | `passbolt` |  |
 | [Pocket ID](https://pocket-id.org/docs/setup/installation) | A simple, secure OIDC provider that authenticates with passkeys instead of passwords. | `pocket-id` |  |
 | [PrivateBin](https://github.com/PrivateBin/PrivateBin/blob/master/doc/README.md) | A minimalist, encrypted pastebin where the server has zero knowledge of what you paste. | `privatebin` |  |
@@ -426,6 +443,8 @@ Generated from `internal/catalog.Templates` (311 entries as of this build). Run 
 
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
+| [Chibisafe](https://chibisafe.app/docs/intro) | A file vault for uploading and sharing files from the cloud. | `chibisafe` |  |
+| [Cloudreve](https://docs.cloudreve.org/) | A self-hosted file management and sharing system with multiple storage backends. | `cloudreve` |  |
 | [copyparty](https://github.com/9001/copyparty) | A portable file server with resumable uploads, a media player, and search, in a single small image. | `copyparty` |  |
 | [Duplicati](https://duplicati.readthedocs.io) | Scheduled, encrypted backups of your files to local storage, network shares, or cloud storage. | `duplicati` |  |
 | [File Browser](https://filebrowser.org) | A simple web UI for browsing, uploading, and sharing files from your own storage. | `filebrowser` |  |

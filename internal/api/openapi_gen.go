@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 936 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 945 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -122,7 +122,13 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/changes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppChanges", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/clone", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCloneApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/clone/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClonePreview", Description: "Clone: duplicates an app's desired state under a new name. AbilityWrite, the same gate POST /api/v1/apps itself uses, since a clone is a creation shaped as \"copy {name}\" rather than \"start from scratch\": handleCloneApp's own doc comment covers what does and doesn't carry over."},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/compose", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleComposeDown", Description: "Same tier as DELETE /apps/{name}; ?volumes=true also needs write-sensitive, checked in the handler."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/compose", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetComposeStack", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/compose", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeployCompose", Description: "Compose ingestion (apps_compose.go): fans a compose.yaml's services: out into one store.App plus its member services. AbilityDeploy, the same tier POST .../deploys uses: this creates and deploys, it's not ordinary config."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/compose/redeploy", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRedeployCompose", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/compose/revisions", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListComposeRevisions", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/compose/revisions/{revision}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetComposeRevision", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/compose/rollback", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRollbackCompose", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/connectable-databases", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListConnectableDatabases", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/connections", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppConnections", Description: "Multi-connection app-to-database (apps_connections.go): the DatabaseEnv-map-backed sibling of PUT/DELETE .../database just above, for an app that connects to more than one managed database. Same AbilityWrite tier and \"config write, not a deploy trigger\" reasoning; GET is AbilityRead like any other app-detail read."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/connections", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateAppConnection", Description: ""},
@@ -244,6 +250,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/service-templates", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListServiceTemplates", Description: "Service template catalog (service_templates.go, ADR 015): read-only, static, served straight from internal/catalog.Templates, no store involved. AbilityRead like every other passive view."},
 	{Method: "GET", Path: "/api/v1/service-templates/{id}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetServiceTemplate", Description: ""},
 	{Method: "POST", Path: "/api/v1/service-templates/{id}/deploy", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeployServiceTemplateNow", Description: "One-click template deploy (handleDeployServiceTemplateNow): not scoped to an existing app (the app doesn't exist until this request creates it), same \"no resource to scope to yet\" shape as POST /api/v1/git/branches and POST /api/v1/build/detect below. AbilityDeploy, matching POST /api/v1/apps/{name}/compose above, since deployComposeBody is the same create-and-deploy core."},
+	{Method: "POST", Path: "/api/v1/service-templates/{id}/install", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleInstallServiceTemplate", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/log-drain", Ability: "AbilityWriteSensitive", Group: "Audit Log / Log Drain", Handler: "handleClearAppLogDrain", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/log-drain", Ability: "AbilityRead", Group: "Audit Log / Log Drain", Handler: "handleGetAppLogDrain", Description: "Log drain (apps_log_drain.go): forwards an app's container logs to an external HTTP or syslog sink, additive to the existing node-local store. AbilityWriteSensitive for write/clear, the same tier as storage above (both configure where data leaves this control plane to); AbilityRead for the GET."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/log-drain", Ability: "AbilityWriteSensitive", Group: "Audit Log / Log Drain", Handler: "handleSetAppLogDrain", Description: ""},
@@ -618,6 +625,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/build-cache/stats", Ability: "AbilityRead", Group: "Other", Handler: "handleBuildCacheStats", Description: ""},
 	{Method: "POST", Path: "/api/v1/build/detect", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDetectFramework", Description: "Framework pre-flight detection (handleDetectFramework's own doc comment): also not scoped to an existing app, same AbilityDeploy boundary as the branch listing above."},
 	{Method: "GET", Path: "/api/v1/changelog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetChangelog", Description: "\"What's new\" dashboard panel: recent entries parsed from the repo's own CHANGELOG.md, AbilityRead like updates above."},
+	{Method: "GET", Path: "/api/v1/compose", Ability: "AbilityRead", Group: "Other", Handler: "handleListComposeStacks", Description: ""},
+	{Method: "POST", Path: "/api/v1/compose/preview", Ability: "AbilityDeploy", Group: "Other", Handler: "handlePreviewCompose", Description: "Parse only, nothing saved; deploy tier so the endpoint is not a free YAML parser for read-only tokens."},
 	{Method: "GET", Path: "/api/v1/deploy-approvals", Ability: "AbilityRead", Group: "Other", Handler: "handleListDeployApprovals", Description: "Deploy approvals (deploy_approvals.go): the real two-person gate behind a protected environment's confirm: true, replacing a same-actor confirm flag. List/get are AbilityRead; approve/reject are AbilityDeploy, the same tier the gated deploy/promote itself needs, plus loadDecidableApproval's own same-actor rejection."},
 	{Method: "GET", Path: "/api/v1/deploy-approvals/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDeployApproval", Description: ""},
 	{Method: "POST", Path: "/api/v1/deploy-approvals/{id}/approve", Ability: "AbilityDeploy", Group: "Other", Handler: "handleApproveDeployApproval", Description: ""},

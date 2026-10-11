@@ -25,6 +25,8 @@ type Template struct {
 	// RequiresGPU marks entries that reserve an NVIDIA GPU through
 	// deploy.resources.reservations.devices in their Compose body.
 	RequiresGPU bool
+	// Manifest is set for entries loaded from manifests/ (env prompts, domains, healthcheck).
+	Manifest *Manifest
 }
 
 // Templates is the full catalog, served by GET /api/v1/service-templates
@@ -68,6 +70,7 @@ var Templates = concat(
 	catalogBatch5Templates,
 	catalogBatch6Templates,
 	contribTemplates,
+	manifestTemplates,
 )
 
 // TemplateByID returns the Templates entry with this ID, or false if
