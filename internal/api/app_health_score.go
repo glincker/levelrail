@@ -231,8 +231,18 @@ func (rt *Router) healthScoreTLS(ctx context.Context, domains []string) (status,
 		}
 	}
 
+	proxyCerts := rt.proxyServedCerts(ctx)
 	var expired, expiring, unmonitored []string
 	for _, d := range domains {
+		if notAfter, served := proxyCerts[strings.ToLower(d)]; served {
+			switch classifyServedCert(notAfter, time.Now(), warningWindow) {
+			case "expired":
+				expired = append(expired, d)
+			case "expiring_soon":
+				expiring = append(expiring, d)
+			}
+			continue
+		}
 		info, ok := byDomain[strings.ToLower(d)]
 		if !ok {
 			unmonitored = append(unmonitored, d)
@@ -411,4 +421,37 @@ func (rt *Router) healthScoreObservability(ctx context.Context, name string) hea
 		cat.Reason = fmt.Sprintf("%d enabled alert rule(s), notifications wired", enabled)
 	}
 	return cat
+}
+
+// proxyServedCerts maps each domain to the notAfter of the trusted
+// certificate a fronting proxy was last seen serving. Levelrail's own
+// certificate store is stale for these domains, so they are judged from
+// what visitors actually get.
+func (rt *Router) proxyServedCerts(ctx context.Context) map[string]time.Time {
+	out := map[string]time.Time{}
+	if rt.proxyIntegration == nil || rt.proxyIntegration.store == nil {
+		return out
+	}
+	rows, err := rt.proxyIntegration.store.ListProxyRouteStatus(ctx)
+	if err != nil {
+		return out
+	}
+	for _, r := range rows {
+		if r.CertTrusted && !r.CertNotAfter.IsZero() {
+			out[strings.ToLower(r.Domain)] = r.CertNotAfter
+		}
+	}
+	return out
+}
+
+func classifyServedCert(notAfter, now time.Time, window time.Duration) string {
+	left := notAfter.Sub(now)
+	switch {
+	case left <= 0:
+		return "expired"
+	case left < window:
+		return "expiring_soon"
+	default:
+		return "healthy"
+	}
 }
