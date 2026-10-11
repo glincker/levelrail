@@ -55,6 +55,11 @@ func TestDeployGate_TimelineAndStage(t *testing.T) {
 	if rec := serve(rt, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/deploys/dep_missing/gate", "")); rec.Code != http.StatusNotFound {
 		t.Errorf("unknown deploy = %d, want 404", rec.Code)
 	}
+	rec = serve(rt, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/deploys/latest/gate", ""))
+	var latest deployGateResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &latest); rec.Code != http.StatusOK || err != nil || latest.DeployID == "" {
+		t.Errorf("GET latest gate = %d %s, want the newest attempt", rec.Code, rec.Body.String())
+	}
 }
 
 func TestDeploySafety_PutValidatesAndResolves(t *testing.T) {

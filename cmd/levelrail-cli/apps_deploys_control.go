@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -60,6 +64,8 @@ func runAppsDeploysRollbackTo(prog string, args []string, stdout, stderr io.Writ
 	fs.BoolVar(&confirm, "confirm", false, "confirm deploying into a protected environment; omit to be prompted interactively if needed")
 	fs.BoolVar(&extra.overrideFreeze, "override-freeze", false, "roll back even though a deploy freeze window is active (requires --override-reason)")
 	fs.StringVar(&extra.overrideReason, "override-reason", "", "why this rollback overrides the freeze, recorded on the deploy")
+	var watch bool
+	fs.BoolVar(&watch, "watch", false, "follow the rollback through the readiness gate until it takes traffic or fails")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysRollbackToUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -88,8 +94,18 @@ func runAppsDeploysRollbackTo(prog string, args []string, stdout, stderr io.Writ
 		})
 	}
 	updated := *result.AppResource
+	if watch {
+		_, _ = fmt.Fprintf(stderr, "app %q now targets image %q; following its readiness gate\n", updated.Name, updated.Image)
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		gate, err := client.GetDeployGate(ctx, name, "latest")
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("follow rollback of app %q: %w", name, err))
+		}
+		return followDeployGate(ctx, client, name, gate, 2*time.Second, jsonOut, stdout, stderr)
+	}
 	return writeScheduledTaskResult(stdout, stderr, of, updated, func() {
-		_, _ = fmt.Fprintf(stderr, "app %q now targets image %q; reconcile is asynchronous, check \"%s apps status %s\"\n", updated.Name, updated.Image, prog, updated.Name)
+		_, _ = fmt.Fprintf(stderr, "app %q now targets image %q; reconcile is asynchronous, follow it with \"%s deploy status %s --watch\"\n", updated.Name, updated.Image, prog, updated.Name)
 		printAppHuman(stdout, updated)
 	})
 }
@@ -98,12 +114,17 @@ func appsDeploysRollbackToUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps deploys rollback-to <name> <deploy-id> [flags]
 
-Redeploys exactly the image a past succeeded deploy ran, pinned by digest, so a
-re-pushed tag cannot change what "rolled back" means. Fails when the image was
-garbage collected or its tag now points at other content. Follows the same
-freeze-window and protected-environment approval rules as "apps deploy".
+Redeploys exactly the image a past succeeded deploy ran, pinned by digest or by
+its rollback pin (a local tag image cleanup never removes), so a re-pushed tag
+cannot change what "rolled back" means. That deploy's env, health checks,
+replicas and resources come back with it; secrets, domains and volumes stay as
+they are now. The rollback goes through the same readiness gate as any deploy.
+Fails when the image was garbage collected or its tag now points at other
+content. Follows the same freeze-window and protected-environment approval
+rules as "apps deploy".
 
 Flags:
+  --watch                    follow the rollback's readiness gate until it takes traffic or fails
   --confirm                  confirm deploying into a protected environment, skipping the interactive prompt
   --override-freeze          roll back even though a deploy freeze window is active (requires --override-reason)
   --override-reason string   why this rollback overrides the freeze, recorded on the deploy

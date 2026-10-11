@@ -140,6 +140,8 @@ type deployGateResource struct {
 	Error       string                       `json:"error,omitempty"`
 	Stage       string                       `json:"stage"`
 	Terminal    bool                         `json:"terminal"`
+	Failed      bool                         `json:"failed"`
+	Superseded  bool                         `json:"superseded"`
 	Events      []gateEventResource          `json:"events"`
 	Settings    deploySafetySettingsResource `json:"settings"`
 	RollbackPin *rollbackTargetResource      `json:"rollback_pin"`
@@ -169,6 +171,11 @@ func (rt *Router) handleGetDeployGate(w http.ResponseWriter, r *http.Request) {
 	if !rt.gateReady(w) {
 		return
 	}
+	if r.PathValue("deployId") == latestDeployID {
+		if !rt.resolveLatestDeployID(w, r) {
+			return
+		}
+	}
 	attempt, ok := rt.lookupAppAttempt(w, r)
 	if !ok {
 		return
@@ -193,11 +200,13 @@ func (rt *Router) handleGetDeployGate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	stage := deploysafety.Stage(events)
+	failed := attempt.Status == store.DeployAttemptStatusFailed || deploysafety.StageFailed(stage)
 	out := deployGateResource{
 		DeployID: attempt.ID, Image: attempt.Image, Status: attempt.Status, Reason: attempt.Reason, Error: attempt.Error,
-		Stage: stage, Terminal: deploysafety.StageTerminal(stage) || (stage == deploysafety.StagePending && attempt.Status == store.DeployAttemptStatusFailed),
+		Stage: stage, Failed: failed, Superseded: rt.attemptSuperseded(ctx, *attempt),
 		Events: make([]gateEventResource, 0, len(events)), Settings: toSafetySettingsResource(effective),
 	}
+	out.Terminal = deploysafety.StageTerminal(stage) || failed || out.Superseded
 	for _, e := range events {
 		out.Events = append(out.Events, gateEventResource{Phase: e.Phase, Status: e.Status, Reason: e.Reason, Message: e.Message, Container: e.Container, At: e.At})
 	}
@@ -205,6 +214,29 @@ func (rt *Router) handleGetDeployGate(w http.ResponseWriter, r *http.Request) {
 		out.RollbackPin = &rollbackTargetResource{DeployID: pin.DeployAttemptID, Image: pin.Image, ImageID: pin.ImageID, PinRef: pin.PinRef, PinnedAt: pin.CreatedAt}
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// attemptSuperseded reports whether a newer deploy of the same app exists,
+// after which nothing more happens to a's timeline.
+func (rt *Router) attemptSuperseded(ctx context.Context, a store.DeployAttempt) bool {
+	attempts, err := rt.deployAttempts.ListDeployAttempts(ctx, a.ServiceName)
+	return err == nil && len(attempts) > 0 && attempts[0].ID != a.ID
+}
+
+// resolveLatestDeployID rewrites the deployId path value to the app's newest
+// attempt; ok false means a response was written.
+func (rt *Router) resolveLatestDeployID(w http.ResponseWriter, r *http.Request) bool {
+	attempts, err := rt.deployAttempts.ListDeployAttempts(r.Context(), r.PathValue("name"))
+	if err != nil {
+		rt.internalError(w, "api: deploy gate: list attempts", err)
+		return false
+	}
+	if len(attempts) == 0 {
+		writeError(w, http.StatusNotFound, "deploy attempt not found")
+		return false
+	}
+	r.SetPathValue("deployId", attempts[0].ID)
+	return true
 }
 
 func (rt *Router) loadAppForGate(w http.ResponseWriter, r *http.Request) (*store.DesiredService, bool) {

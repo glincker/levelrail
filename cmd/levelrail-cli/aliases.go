@@ -8,6 +8,9 @@ import (
 
 // runAliasedDeploy implements "deploy <app> ...", an alias for "apps deploy <app> ...".
 func runAliasedDeploy(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) > 0 && args[0] == "status" {
+		return runAppsDeploysGate(prog, args[1:], stdout, stderr, lookupEnv)
+	}
 	_, _ = fmt.Fprintf(stderr, "alias for 'apps deploy', see '%s apps deploy --help'\n", prog)
 	return runAppsDeploy(prog, args, stdout, stderr, lookupEnv, os.Stdin)
 }

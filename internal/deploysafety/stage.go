@@ -45,6 +45,15 @@ func Stage(events []store.DeployGateEvent) string {
 	return stage
 }
 
+// StageFailed reports whether stage means the release did not hold up.
+func StageFailed(stage string) bool {
+	switch stage {
+	case StageGateFailed, StageWatchFailed, StageRolledBack:
+		return true
+	}
+	return false
+}
+
 // StageTerminal reports whether nothing more will happen to a release in
 // stage without an operator acting.
 func StageTerminal(stage string) bool {
