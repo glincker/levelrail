@@ -14,6 +14,13 @@ export interface LogEntry {
   // Detected level (trace, debug, info, warn, error, fatal), absent when
   // the line carries none.
   level?: string
+  // Container id the line came from, absent on rows that predate it.
+  container?: string
+}
+
+export interface LogContainer {
+  id: string
+  count: number
 }
 
 export interface LogsResponse {
@@ -21,9 +28,12 @@ export interface LogsResponse {
   // Entries that matched the time window and query before `limit` trimmed
   // them to the newest N.
   total?: number
+  // Containers present in the matched window, for the container filter.
+  containers?: LogContainer[]
 }
 
 export interface LogsResult {
   entries: LogEntry[]
   total: number
+  containers: LogContainer[]
 }

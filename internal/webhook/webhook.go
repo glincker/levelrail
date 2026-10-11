@@ -351,7 +351,7 @@ func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (p
 		// Fires only after FinishDeployAttempt persists the terminal status.
 		if h.notifier != nil {
 			h.notifier.Dispatch(finishCtx, resourceIDForService(req.ServiceName), alerting.DeployOutcome{
-				AppName: req.ServiceName, Image: image, Succeeded: deployErr == nil, Error: errMsg,
+				AppName: req.ServiceName, Image: image, Succeeded: deployErr == nil, Error: errMsg, AttemptID: id,
 			})
 		}
 	}

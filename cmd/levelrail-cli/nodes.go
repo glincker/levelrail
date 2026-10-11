@@ -75,6 +75,20 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesTopology(prog, rest, stdout, stderr, lookupEnv)
 	case "traffic":
 		return runNodesTraffic(prog, rest, stdout, stderr, lookupEnv)
+	case "add":
+		return runNodesAdd(prog, rest, stdout, stderr, lookupEnv)
+	case "move":
+		return runNodesMove(prog, rest, stdout, stderr, lookupEnv)
+	case "moves":
+		return runNodesMoves(prog, rest, stdout, stderr, lookupEnv)
+	case "drains":
+		return runNodesDrains(prog, rest, stdout, stderr, lookupEnv)
+	case "labels":
+		return runNodesLabels(prog, rest, stdout, stderr, lookupEnv)
+	case "placement":
+		return runNodesPlacement(prog, rest, stdout, stderr, lookupEnv)
+	case "connectivity":
+		return runNodesConnectivity(prog, rest, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown nodes subcommand %q\n\n", prog, sub)
 		_, _ = fmt.Fprint(stderr, nodesUsage(prog))
@@ -85,12 +99,19 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 func nodesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s nodes list [flags]                                          list every node
+  %[1]s nodes add [--name N] [--mesh] [flags]                        print a one-command join for a new server (single-use token)
   %[1]s nodes get <id> [flags]                                      show one node
   %[1]s nodes delete <id> [flags]                                    delete a node (fails if it still has placements, drain first)
   %[1]s nodes join-token [flags]                                     mint a one-time enrollment token, shown once
   %[1]s nodes cordon <id> [flags]                                    mark a node unschedulable, without evacuating it
   %[1]s nodes uncordon <id> [flags]                                  mark a node schedulable again
-  %[1]s nodes drain <id> [--target ID] [flags]                       move every service and database off a node
+  %[1]s nodes drain <id> [--target ID] [--wait] [flags]              cordon, then move every database and app off a node
+  %[1]s nodes drains <id> [flags]                                    show a node's drains and their moves
+  %[1]s nodes move <app|database> <name> [--to ID] [--wait] [flags]  move one app or database, verified, with rollback
+  %[1]s nodes moves [--kind K] [--resource N] [flags]                list node moves
+  %[1]s nodes labels <id> [key=value ...] [flags]                    show or replace a node's labels
+  %[1]s nodes placement <app|database> <name> [key=value ...]        show or set which node labels a resource requires
+  %[1]s nodes connectivity [flags]                                   WireGuard health of every node pair
   %[1]s nodes workloads <id> --accepts-app --accepts-build [flags]   set a node's accepted workload kinds
   %[1]s nodes health <id> [flags]                                    show a node's current reconcile conditions
   %[1]s nodes patch-status <id> [flags]                              show a node's latest available-OS-updates reading

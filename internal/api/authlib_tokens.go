@@ -58,7 +58,7 @@ func libraryTokenToStore(r authengine.TokenRecord) *store.APIToken {
 
 // libraryCreateToken is handleCreateToken's mint step when tokens run on the
 // library. The platform table gets a matching row for the agent description and system listing.
-func (rt *Router) libraryCreateToken(w http.ResponseWriter, r *http.Request, req createTokenRequest, agent agentIdentity, ownerID string, expiresAt *time.Time) {
+func (rt *Router) libraryCreateToken(w http.ResponseWriter, r *http.Request, req createTokenRequest, agent agentIdentity, ownerID string, expiresAt *time.Time, scope *store.APITokenScope) {
 	legacyID, err := randomTokenID()
 	if err != nil {
 		rt.internalError(w, "api: create token: generate id failed", err)
@@ -83,12 +83,17 @@ func (rt *Router) libraryCreateToken(w http.ResponseWriter, r *http.Request, req
 		rt.internalError(w, "api: create token: mirror save failed", err, slog.String("token_id", legacyID))
 		return
 	}
+	if !rt.saveTokenScope(w, r, legacyID, rec.EngineID, scope) {
+		return
+	}
 	if err := rt.authLib.tokens.LinkToken(r.Context(), legacyID, rec.EngineID); err != nil {
 		rt.internalError(w, "api: create token: link failed", err, slog.String("token_id", legacyID))
 		return
 	}
 	rt.recordAudit(r.Context(), r, AbilityWrite, auditActorSession, ownerID, "", http.StatusCreated)
-	writeJSON(w, http.StatusCreated, createTokenResponse{tokenResource: toTokenResource(legacy), Token: raw})
+	res := toTokenResource(legacy)
+	res.Scope = rt.tokenScopeOf(r.Context(), legacyID)
+	writeJSON(w, http.StatusCreated, createTokenResponse{tokenResource: res, Token: raw})
 }
 
 // libraryListTokens is handleListTokens when tokens run on the library.
@@ -126,7 +131,9 @@ func (rt *Router) libraryListTokens(ctx context.Context, callerID string, admin 
 	slices.SortStableFunc(merged, func(a, b store.APIToken) int { return b.CreatedAt.Compare(a.CreatedAt) })
 	out := make([]tokenResource, 0, len(merged))
 	for _, t := range merged {
-		out = append(out, toTokenResource(t))
+		res := toTokenResource(t)
+		res.Scope = rt.tokenScopeOf(ctx, t.ID)
+		out = append(out, res)
 	}
 	return out, nil
 }

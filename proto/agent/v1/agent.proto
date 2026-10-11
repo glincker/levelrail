@@ -246,6 +246,9 @@ message AgentRequest {
     // placed container, the same way it already polls its own local
     // Docker socket, instead of the agent keeping its own store.
     StatsRequest stats = 22;
+    // MeshStatus asks for the node's own WireGuard view of its peers, for
+    // node-pair connectivity diagnostics.
+    MeshStatusRequest mesh_status = 23;
   }
 }
 
@@ -273,6 +276,7 @@ message AgentResponse {
     ApplyMeshResponse apply_mesh = 11;
     RotateMeshKeyResponse rotate_mesh_key = 12;
     StatsResponse stats = 13;
+    MeshStatusResponse mesh_status = 14;
   }
 }
 
@@ -332,6 +336,14 @@ message ContainerSpec {
   // shm_size_bytes mirrors internal/docker.ContainerSpec.ShmSizeBytes. Zero
   // means Docker's default /dev/shm.
   int64 shm_size_bytes = 12;
+  // extra_hosts mirrors internal/docker.ContainerSpec.ExtraHosts ("name:ip").
+  repeated string extra_hosts = 13;
+  // labels, network and entrypoint mirror the same internal/docker.ContainerSpec
+  // fields; without them a worker's app never joins its app network.
+  map<string, string> labels = 14;
+  string network_name = 15;
+  string network_alias = 16;
+  repeated string entrypoint = 17;
 }
 
 message GPURequest {
@@ -814,6 +826,25 @@ message ApplyMeshResponse {
 // another node's, the same restriction network.LocalSink.RotateKey's own
 // nodeID check already enforces one layer down.
 message RotateMeshKeyRequest {}
+
+message MeshStatusRequest {}
+
+// MeshPeerStatus is one WireGuard peer as the reporting node sees it.
+message MeshPeerStatus {
+  string node_id = 1;
+  string public_key = 2;
+  string endpoint = 3;
+  // last_handshake_unix_ms is 0 when no handshake ever completed.
+  int64 last_handshake_unix_ms = 4;
+  int64 rx_bytes = 5;
+  int64 tx_bytes = 6;
+}
+
+message MeshStatusResponse {
+  // address is the node's mesh prefix, empty when its device is down.
+  string address = 1;
+  repeated MeshPeerStatus peers = 2;
+}
 message RotateMeshKeyResponse {
   string old_public_key = 1;
   string new_public_key = 2;

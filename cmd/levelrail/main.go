@@ -68,6 +68,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/scheduledeploy"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 	"github.com/GLINCKER/levelrail/internal/sharedenv"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -387,6 +388,11 @@ func main() {
 	}
 
 	if err := run(logger); err != nil {
+		var refusal *downgradeRefusal
+		if errors.As(err, &refusal) {
+			fmt.Fprint(os.Stderr, refusal.msg)
+			os.Exit(selfupgrade.ExitDowngradeRefused)
+		}
 		logger.Error("exited with error", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
@@ -404,6 +410,9 @@ func run(logger *slog.Logger) error {
 
 	obs := upgradehistory.Observed{SchemaBefore: -1}
 	db, err := openStoreObserved(ctx, &obs)
+	if errors.Is(err, store.ErrSchemaNewer) {
+		return newDowngradeRefusal(ctx, dataDirFromEnv())
+	}
 	if err != nil {
 		return err
 	}
@@ -413,6 +422,7 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 	recordUpgradeHistory(ctx, db, obs, logger)
+	importSelfUpgradeJournal(ctx, db, logger)
 
 	// instanceID must be resolved before the Docker client is
 	// constructed below, so every container/network/volume this process
@@ -585,7 +595,8 @@ func run(logger *slog.Logger) error {
 			PermitWithoutStream: true,
 		}),
 	)
-	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(), agent.WithGPUSink(db))...)
+	meshEndpoints := newMeshEndpointBook(logger)
+	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(), agent.WithGPUSink(db), agent.WithSessionObserver(meshEndpoints.Observe))...)
 	agentpb.RegisterAgentServiceServer(agentGRPCServer, agentServer)
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
@@ -650,7 +661,7 @@ func run(logger *slog.Logger) error {
 		}
 	}
 
-	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, emailSender, pushSender, logger)
+	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, emailSender, pushSender, logger).WithLogSources(telemetryDB, telemetryDB)
 
 	// backupRunner is constructed once, here in run(), not inside
 	// rootHandler where it used to live: wave-2 roadmap item 6
@@ -690,6 +701,11 @@ func run(logger *slog.Logger) error {
 			Secrets:    secretsManager,
 			Downloader: backup.S3Downloader{},
 		}
+		volumeBackupOpts, err := newVolumeBackupOptions(db, client, agentRegistry, logger)
+		if err != nil {
+			return err
+		}
+		backupRunner.Volume = volumeBackupOpts
 	}
 
 	// scheduledTaskRunner, like backupRunner just above, is constructed
@@ -798,6 +814,9 @@ func run(logger *slog.Logger) error {
 		// that would otherwise run fine without it.
 		logger.Warn("mesh not configured", slog.String("error", err.Error()))
 	}
+	if meshCfg != nil {
+		meshEndpoints.Attach(meshCfg.coordinator, meshCfg.localNodeID)
+	}
 	apiRouter.SetAppTeardownOptions(application.WithNetworkPrefix(b.ShortName), application.WithInstanceID(instanceID))
 	if meshCfg != nil {
 		defer meshCfg.close()
@@ -806,6 +825,8 @@ func run(logger *slog.Logger) error {
 		apiRouter.SetMesh(meshCfg.device, meshCfg.coordinator)
 	}
 	apiRouter.SetMeshPaths(newMeshPathResolver(meshCfg, db))
+	apiRouter.SetMeshPeerStatus(agent.NewGRPCSink(agentRegistry))
+	go apiRouter.RunNodeMoves(ctx)
 	// Resolved once at startup, not per reconcile pass: the bridge
 	// gateway IP a container-reachable mesh DNS address depends on
 	// (containerDNSAddr's own doc comment) does not change while this
@@ -835,6 +856,7 @@ func run(logger *slog.Logger) error {
 	apiRouter.SetDoctorIngressEdge(edge.doctorInfo())
 	proxySyncer := newProxySyncer(b, db, logger)
 	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
+	apiRouter.ResumeCutoverRuns(ctx)
 
 	engine.SetStore(db)
 	engine.SetSource(dynamicSource(dynamicSourceDeps{
@@ -1026,6 +1048,8 @@ func run(logger *slog.Logger) error {
 		// completes, no opt-in toggle: same "just works" default the
 		// manual verify button already gives an operator on demand.
 		scheduler.Verifier = backupVerifyRunner
+		scheduler.Policies, scheduler.GFS = db, db
+		startBackupDrills(ctx, logger, db, newBackupProtection(db, secretsManager, client, backupRunner, logger), alertingEngine)
 		scheduler.BaseBackups = newBaseBackupRunner(db, secretsManager, client, backupRunner, logger)
 		go func() {
 			if err := scheduler.Run(ctx, backupSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
@@ -2314,6 +2338,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithTokenRedeemRateLimit(apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", defaultTokenRedeemRateLimitRPM)),
 		api.WithDataDir(dataDir),
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
+		multiNodeOption(db),
+		api.WithNodeJoinTokenTTL(nodeJoinTokenTTL(logger)),
 		api.WithControlPlaneBackupScheduleDisabled(controlPlaneBackupInterval(logger) == 0),
 		api.WithDockerPinger(client),
 		api.WithImageLister(client),
@@ -2474,6 +2500,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			Downloader:     backup.S3Downloader{},
 			Restorer:       &backup.ContainerRestorer{Runtime: client},
 			VolumeRestorer: &backup.ContainerVolumeRestorer{Runtime: client},
+			Identities:     backupIdentities(backupRunner),
 		}
 		// baseBackupRunner/pitrRunner back point-in-time restore
 		// (internal/api/pitr.go): the physical-backup and PITR-restore
@@ -2543,7 +2570,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 				Downloader:     backup.S3Downloader{},
 				VolumeRestorer: &backup.ContainerVolumeRestorer{Runtime: client},
 				Volumes:        client,
+				Identities:     backupIdentities(backupRunner),
 			}),
+			api.WithBackupProtection(newBackupProtection(db, secretsManager, client, backupRunner, logger), db),
 			// The plain-download counterpart of the restore runner above:
 			// same secretsManager dependency and same backup.S3Downloader,
 			// but hands the object stream straight back to internal/api
@@ -2630,7 +2659,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	} else {
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
-	opts = append(opts, api.WithChangelog(loadChangelog(logger)), api.WithUpgradeHistory(db))
+	opts = append(opts, api.WithChangelog(loadChangelog(logger)), api.WithUpgradeHistory(db), api.WithSelfUpgrade(db, nil))
 
 	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
 	wireModelPreflight(modelSvc, client, b.ShortName, logger)
@@ -3783,6 +3812,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithOrganizationEnv(sharedEnvResolver),
 		application.WithEnvironmentEnv(sharedEnvResolver),
 		application.WithAppIntegrations(deps.db),
+		application.WithConditionReader(deps.db),
 		application.WithNetworkPrefix(deps.networkPrefix),
 		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),
@@ -3803,6 +3833,9 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 	}
 	if deps.meshDNSAddr != "" && deps.meshCfg != nil && deps.meshCfg.resolver != nil {
 		appOpts = append(appOpts, application.WithMeshZone(deps.meshCfg.resolver.Zone()))
+	}
+	if deps.meshCfg != nil && deps.meshCfg.resolver != nil {
+		appOpts = append(appOpts, application.WithMeshDatabases(meshDatabaseConfig(deps)))
 	}
 
 	controllers := make([]reconcile.Controller, 0, len(services))
@@ -3840,6 +3873,9 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 		dbOpts := databaseCredentialOpts(ctx, deps, desired)
 		if deps.meshDNSAddr != "" {
 			dbOpts = append(dbOpts, database.WithMeshDNSAddr(deps.meshDNSAddr))
+		}
+		if deps.meshCfg != nil {
+			dbOpts = append(dbOpts, database.WithMeshEndpoint(newMeshPathResolver(deps.meshCfg, deps.db), deps.db))
 		}
 		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
 	}

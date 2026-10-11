@@ -22,6 +22,7 @@ const markerMaxBytes = 4096
 const (
 	MethodInstallScript = "install.sh"
 	MethodRollback      = "rollback"
+	MethodSelfUpgrade   = "self-upgrade"
 	MethodManual        = "manual"
 	MethodPackage       = "package"
 	MethodCI            = "ci"

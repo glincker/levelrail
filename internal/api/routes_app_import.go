@@ -25,4 +25,14 @@ func (rt *Router) registerAppImportRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}/cutover/verify", rt.requireAbility(AbilityWriteSensitive, rt.handleAppImportCutoverVerify))
 	mux.HandleFunc("POST /api/v1/migration/apps/sessions/{id}/items/{item}/route", rt.requireAbility(AbilityWriteSensitive, rt.handleRouteAppImport))
 	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}/receipt", rt.requireAbility(AbilityRead, rt.handleAppImportReceipt))
+	rt.registerAppImportCutoverRunRoutes(mux)
+}
+
+func (rt *Router) registerAppImportCutoverRunRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/plan", rt.requireAbility(AbilityRead, rt.handleAppImportCutoverPlan))
+	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs", rt.requireAbility(AbilityRead, rt.handleListAppImportCutoverRuns))
+	mux.HandleFunc("POST /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs", rt.requireAbility(AbilityWriteSensitive, rt.handleStartAppImportCutover))
+	mux.HandleFunc("GET /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}", rt.requireAbility(AbilityRead, rt.handleGetAppImportCutoverRun))
+	mux.HandleFunc("POST /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}/rollback", rt.requireAbility(AbilityWriteSensitive, rt.handleRollbackAppImportCutover))
+	mux.HandleFunc("POST /api/v1/migration/apps/sessions/{id}/items/{item}/cutover/runs/{run}/confirm-dns", rt.requireAbility(AbilityWriteSensitive, rt.handleConfirmAppImportCutoverDNS))
 }

@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // defaultPreviewTTL is how long a preview environment can go with no
@@ -54,8 +56,8 @@ func (rt *Router) SweepStalePreviewEnvironments(ctx context.Context) (swept int,
 	var errs []error
 	for _, p := range all {
 		ttl := rt.previewTTLFor(settings[p.AppName])
-		updatedAt, parseErr := time.Parse(time.RFC3339Nano, p.UpdatedAt)
-		if parseErr != nil || now.Sub(updatedAt) <= ttl {
+		expires, ok := previewExpiry(p, ttl)
+		if !ok || !now.After(expires) {
 			continue
 		}
 		status, message := rt.teardownPreviewRecordReason(ctx, p, "This preview expired after "+ttl.String()+" without updates and was removed.")
@@ -107,4 +109,21 @@ func (rt *Router) handleSweepPreviewEnvironments(w http.ResponseWriter, r *http.
 
 type sweepPreviewEnvironmentsResponse struct {
 	Swept int `json:"swept"`
+}
+
+// previewExpiry is when p is removed if nothing touches it: its last update
+// plus the TTL, or a later operator extension. ok is false for a row with an
+// unreadable timestamp, which the sweep leaves alone.
+func previewExpiry(p store.PreviewEnvironment, ttl time.Duration) (time.Time, bool) {
+	updatedAt, err := time.Parse(time.RFC3339Nano, p.UpdatedAt)
+	if err != nil {
+		return time.Time{}, false
+	}
+	expires := updatedAt.Add(ttl)
+	if p.ExtendedUntil != "" {
+		if ext, perr := time.Parse(time.RFC3339Nano, p.ExtendedUntil); perr == nil && ext.After(expires) {
+			expires = ext
+		}
+	}
+	return expires, true
 }

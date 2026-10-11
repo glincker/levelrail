@@ -339,6 +339,9 @@ levelrail-cli apps previews enable <app-name> [flags]
 levelrail-cli apps previews disable <app-name> [flags]
 levelrail-cli apps previews approve <app-name> <pr-number> --yes
 levelrail-cli apps previews teardown <app-name> <pr-number> [flags]
+levelrail-cli apps previews extend <app-name> <pr-number> [--hours 24] [flags]
+levelrail-cli apps previews settings <app-name> [flags]
+levelrail-cli previews list|delete|extend|settings|approve ...
 levelrail-cli apps previews pr-status enable <app-name> [flags]
 levelrail-cli apps previews pr-status disable <app-name> [flags]
 levelrail-cli apps previews sweep [flags]
@@ -346,7 +349,7 @@ levelrail-cli apps previews sweep [flags]
 
 - `apps git-source` connects a repo for auto deploy on push; `settings` sets push path filters and forge status reporting; `rotate-secret` mints a fresh webhook secret, shown once.
 - `apps webhook-deliveries` lists recent inbound webhook requests, verified or not. `replay` re-runs a stored delivery's payload and can trigger a real build and deploy.
-- `apps previews` manages preview environments per pull request, see [Deploy previews](deploy-previews.md). `limits` shows or changes preview caps, fork policy and TTL; `approve` deploys a held fork pull request once; `teardown` removes one PR's preview now; `sweep` tears down every stale preview across all apps now; `pr-status` toggles the PR comment and commit status per preview deploy.
+- `apps previews` manages preview environments per pull request, see [Preview environments per pull request](previews.md). `previews` is the same command at the top level. `extend` keeps one preview past its TTL; `settings` shows or changes the lifecycle, resource, database and exposure policy. `limits` shows or changes preview caps, fork policy and TTL; `approve` deploys a held fork pull request once; `teardown` removes one PR's preview now; `sweep` tears down every stale preview across all apps now; `pr-status` toggles the PR comment and commit status per preview deploy.
 
 ### Supply chain
 
@@ -713,12 +716,24 @@ levelrail-cli backups schedule set <database> --target ID --cron EXPR [flags]
 levelrail-cli backups schedule clear <database> [flags]
 levelrail-cli backups verify <database> --backup ID [flags]
 levelrail-cli backups verifications <database> --backup ID [flags]
+levelrail-cli backups health [flags]
+levelrail-cli backups protection [--refresh] [flags]
+levelrail-cli backups drill run --backup ID [--wait] [flags]
+levelrail-cli backups drill list [--app A --volume V | --database D] [--limit N]
+levelrail-cli backups drill show <drill-id> [flags]
+levelrail-cli backups volumes list <app> <volume> [flags]
+levelrail-cli backups volumes policy get <app> <volume> [flags]
+levelrail-cli backups volumes policy set <app> <volume> [--retain-daily N --retain-weekly N --retain-monthly N --pre-hook CMD --post-hook CMD --pause]
+levelrail-cli backups volumes restore <app> <volume> --backup ID [--new-volume NAME] [--target-app APP] [--node NODE]
 ```
 
 - `list-all` lists backup history across every database and app volume instance wide.
 - `delete` removes one archived backup (destructive). `download` streams a succeeded backup's object to stdout.
 - `restore` restores in place and is destructive; `--confirm` takes the database name. `restore-as-new` restores into a brand new database and is non destructive. `restores` and `clone-restores` list the attempt history of each.
 - `verify` checks a backup is intact without a live restore; `verifications` lists past attempts.
+- `health` shows every backed up resource with its last backup and last verified restore. `protection` shows bucket object lock and versioning.
+- `drill run` restores a backup into a scratch resource, validates and destroys it, and exits non zero when it fails. See [Prove your backups work](prove-your-backups-work.md).
+- `volumes restore` restores into a new volume only, optionally named for another app or on another node.
 
 ## App volume backups
 
@@ -1029,7 +1044,13 @@ levelrail-cli nodes reenroll-token <id> [flags]
 levelrail-cli nodes revoke-cert <id> [flags]
 levelrail-cli nodes cordon <id> [flags]
 levelrail-cli nodes uncordon <id> [flags]
-levelrail-cli nodes drain <id> [--target NODE-ID] [flags]
+levelrail-cli nodes add [--name NAME] [--mesh] [flags]
+levelrail-cli nodes drain <id> [--target NODE-ID] [--wait] [flags]
+levelrail-cli nodes drains <id> [flags]
+levelrail-cli nodes move app|database NAME [--to NODE-ID] [--wait] [flags]
+levelrail-cli nodes labels <id> [key=value ...] [flags]
+levelrail-cli nodes placement app|database NAME [key=value ...] [flags]
+levelrail-cli nodes connectivity [flags]
 levelrail-cli nodes workloads <id> --accepts-app=BOOL --accepts-build=BOOL [flags]
 levelrail-cli nodes health <id> [flags]
 levelrail-cli nodes patch-status <id> [flags]
@@ -1070,7 +1091,23 @@ Shows the control plane's own configured and not configured signals, including w
 levelrail-cli upgrade [--no-backup] [flags]
 ```
 
-Compares the running version with the latest release, runs the preflight checks (release signature, Docker Engine, free disk, backup), takes a control plane backup and prints the command that upgrades. It never upgrades by itself. See [Installing](installing.md#check-first-then-upgrade).
+Compares the running version with the latest release, runs the preflight checks (release signature, Docker Engine, free disk, backup), takes a control plane backup and prints the command that upgrades. It never upgrades by itself unless you pass `--apply`. See [Installing](installing.md#check-first-then-upgrade).
+
+```
+levelrail-cli upgrade --plan [--version TAG]
+levelrail-cli upgrade --apply [--version TAG] [--ack-breaking ID,...] [--no-wait]
+levelrail-cli upgrade --attempts
+```
+
+`--plan` shows the breaking changes between the running version and the target (default: latest on the channel). `--apply` asks the control plane to run the safe self-update on its host: verified download, snapshot, migration dry run, swap, health check and automatic rollback. Breaking changes flagged as needing acknowledgement are refused until you list their ids with `--ack-breaking`. It follows the attempt to its outcome unless `--no-wait`, and exits non-zero when the upgrade was rolled back or failed. `--attempts` lists every attempt with its step timeline. See [Upgrade safely](upgrade-safely.md).
+
+## Readiness
+
+```
+levelrail-cli readiness [--domain example.com] [flags]
+```
+
+Checks whether the server is ready: who holds ports 80 and 443, Docker version and rootless mode, exposed Docker API, disk, memory, firewall and the DNS of the domain. Prints the recommended install mode (own ports or behind your existing proxy) and the exact next step. Exits 1 when a check fails. Before anything is installed use `install.sh --check` instead, see [Installing](installing.md#check-the-server-first).
 
 ## Version
 
@@ -1346,11 +1383,14 @@ levelrail-cli import <repo-url|image> [--deploy] [--name NAME] [--ref REF] [--po
 levelrail-cli import -f compose.yaml|Dockerfile [flags]
 levelrail-cli import --docker-run "docker run -p 80:80 nginx:1" [flags]
 levelrail-cli import platform coolify|dokploy|caprover --url URL [flags]
+levelrail-cli import cutover plan|run|status|rollback|confirm-dns --session ID --app NAME [flags]
 ```
 
 `import` classifies its input (a GitHub, GitLab, Gitea or Bitbucket repo URL, a `docker run` command, an image reference, a docker-compose.yml or a Dockerfile) and prints a deployment plan. Nothing is created unless `--deploy` is given. `--file -` reads from stdin. `--env KEY=VALUE` is repeatable, and a required variable with no value blocks `--deploy`.
 
 `import platform` reads apps, databases and settings from another platform (read only) and creates them here. Use `--dry-run` first. Databases and volumes are created empty; data is not migrated. Re-running skips what was already imported. The source token is read from `APP_IMPORT_SOURCE_TOKEN`, `--token-stdin` or `--token` (which lands in shell history). Other flags: `--only`, `--collision suffix|skip`, `--insecure-tls`, `--allow-private`, `--allow-loopback`. See [migrating from Coolify, Dokploy or CapRover](migrating-from-coolify-dokploy-and-caprover.md).
+
+`import cutover` moves one staged app's traffic in a reversible flow. `plan` prints the readiness checklist, `run --dry-run` exercises everything except the switch, `run --confirm NAME` switches and verifies (rolling back on its own if verification fails), `status` shows the timeline, and `rollback` restores the previous DNS value and stops the staged app. Other flags: `--run ID`, `--accept-warnings`, `--no-wait`, `--wait DURATION`, `--json`. See [guided cutover](migrating-from-coolify-dokploy-and-caprover.md#guided-cutover-of-one-staged-app).
 
 ## Completion
 
@@ -1422,9 +1462,34 @@ levelrail-cli gitea-app use-as-source <owner> <repo> --app-name NAME [flags]
 levelrail-cli templates list [--custom] [flags]
 levelrail-cli templates get <id> [flags]
 levelrail-cli templates deploy <id> [--name NAME] [flags]
+levelrail-cli templates install <id> [--name NAME] [--env KEY=VALUE]... [--domain SERVICE=HOST]... [flags]
 levelrail-cli templates delete <id> [flags]
 ```
 `list` browses the curated service catalog, or `--custom` for your own saved templates. `get` shows one entry including its full compose.yaml. `deploy` deploys a template's compose.yaml as an app, and the app name defaults to the template id; pass `--name` to use another. A custom template works with every verb the same as a built-in one, except `delete`: only a custom template can be deleted (see `apps save-as-template`). See [Templates](templates.md).
+
+`install` is for manifest templates (the ones `get` shows with settings): it fills each `${KEY}` setting from `--env`, a generated secret or its default, puts the listed services behind `--domain` hosts, and deploys the result as a compose app that is not a trial. See [Compose apps](/compose-apps#templates).
+
+## Compose
+
+```
+levelrail-cli compose deploy <app> -f compose.yaml [--profile-name P]... [flags]
+levelrail-cli compose preview -f compose.yaml [--profile-name P]... [flags]
+levelrail-cli compose status <app> [flags]
+levelrail-cli compose revisions <app> [flags]
+levelrail-cli compose logs <app> [--service S] [--since 1h] [--tail N] [-f] [flags]
+levelrail-cli compose redeploy <app> [--service S] [flags]
+levelrail-cli compose rollback <app> [--revision N] [flags]
+levelrail-cli compose down <app> [--volumes] [flags]
+```
+- `deploy` deploys or updates a stack and records a numbered revision; `-f -` reads stdin. `--profile-name` enables services behind compose `profiles:`.
+- `preview` asks the server to parse and check a file without saving anything, lists each service with its generated and required env vars, and exits with code 2 when the file would be rejected.
+- `status` prints the stack phase and each service's ready state with the reconciler's reason.
+- `logs` merges recent lines from every service, or hands one service to `apps logs` with `--service`, where `-f` follows it.
+- `redeploy` recreates every service's containers, or one service's.
+- `rollback` re-applies an earlier compose file (default: the one before the latest) as a new revision.
+- `down` removes every service and its containers; named volumes and generated secrets are kept unless you pass `--volumes`.
+
+See [Compose apps](/compose-apps).
 
 ## Static sites
 

@@ -20,6 +20,8 @@ import { NodeNeverConnectedAlert } from '../../components/NodeNeverConnected'
 import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
 import { NodeCapacityForecastCard } from '../../components/NodeCapacityForecastCard'
 import { NodeGpuCard } from '../../components/NodeGpuCard'
+import { NodeDrainsCard } from '../../components/NodeDrainsCard'
+import { NodeLabelsCard } from '../../components/NodeLabelsCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
@@ -277,6 +279,9 @@ function NodeDetailPage() {
       <NodeGpuCard gpu={node.gpu} />
 
       <NodeMeshCard nodeId={id} nodeName={node.name} />
+
+      <NodeLabelsCard nodeId={id} />
+      <NodeDrainsCard nodeId={id} />
 
       <NodePatchStatusCard nodeId={id} />
       <NodeEventsCard nodeId={id} />

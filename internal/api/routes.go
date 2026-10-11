@@ -38,6 +38,8 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerDNSZoneRoutes(mux)
 	rt.registerTrafficRoutes(mux)
 	rt.registerDatabaseUpgradeRoutes(mux)
+	rt.registerTeamRoutes(mux)
+	rt.registerComposeRoutes(mux)
 
 	var h http.Handler = mux
 	h = experimentalGateMiddleware(h)
@@ -141,6 +143,10 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/updates/rollback-plan", rt.requireAbility(AbilityRoot, rt.handleRollbackPlan))
 	mux.HandleFunc("GET /api/v1/updates/history", rt.requireAbility(AbilityRead, rt.handleUpgradeHistory))
 	mux.HandleFunc("POST /api/v1/updates/history/{id}/ack", rt.requireAbility(AbilityWrite, rt.handleAckUpgrade))
+	mux.HandleFunc("GET /api/v1/system/readiness", rt.requireAbility(AbilityRead, rt.handleServerReadiness))
+	mux.HandleFunc("GET /api/v1/updates/self-upgrade/plan", rt.requireAbility(AbilityRead, rt.handleSelfUpgradePlan))
+	mux.HandleFunc("GET /api/v1/updates/self-upgrade/attempts", rt.requireAbility(AbilityRead, rt.handleSelfUpgradeAttempts))
+	mux.HandleFunc("POST /api/v1/updates/self-upgrade", rt.requireAbility(AbilityRoot, rt.handleSelfUpgradeStart))
 	// Channel/auto-update settings are AbilityRoot on both verbs: see
 	// handleGetUpdateSettings' own doc comment (updates_settings.go).
 	mux.HandleFunc("GET /api/v1/updates/settings", rt.requireAbility(AbilityRoot, rt.handleGetUpdateSettings))
@@ -216,7 +222,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// passkeys above, so requireAuth not requireAbility.
 	mux.HandleFunc("GET /api/v1/settings/push-subscriptions/vapid-public-key", rt.requireAuth(rt.handleGetPushVAPIDPublicKey))
 	mux.HandleFunc("GET /api/v1/settings/push-subscriptions", rt.requireAuth(rt.handleListPushSubscriptions))
-	mux.HandleFunc("POST /api/v1/settings/push-subscriptions", rt.requireAuth(rt.handleCreatePushSubscription))
+	mux.HandleFunc("POST /api/v1/settings/push-subscriptions", rt.requireAuth(rt.instanceMembersOnly(rt.handleCreatePushSubscription)))
 	mux.HandleFunc("DELETE /api/v1/settings/push-subscriptions/{id}", rt.requireAuth(rt.handleDeletePushSubscription))
 
 	// Multi-user: creating another local-password user (see

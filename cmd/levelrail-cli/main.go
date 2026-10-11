@@ -56,6 +56,7 @@ func main() {
 // forking a subprocess.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	args, debug := extractDebugFlag(args)
+	args, scopeFlags = extractScopeFlags(args)
 	if debug {
 		apiclient.SetDebugTrace(stderr)
 	} else {
@@ -80,6 +81,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return exitOK
 	case "apps":
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
+	case "previews":
+		return runAppsPreviews(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy":
 		return runAliasedDeploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
@@ -128,6 +131,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runStorage(prog, args[1:], stdout, stderr, lookupEnv)
 	case "logs":
 		return runLogs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "metrics":
+		return runMetrics(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backup-targets":
 		return runBackupTargets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "registry-credentials":
@@ -160,6 +165,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "upgrade":
 		return runUpgrade(prog, args[1:], stdout, stderr, lookupEnv)
+	case "readiness":
+		return runReadiness(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
 	case "changelog":
@@ -194,6 +201,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runVolumesOrphanedCleanup(prog, args[1:], stdout, stderr, lookupEnv)
 	case "roles":
 		return runRoles(prog, args[1:], stdout, stderr, lookupEnv)
+	case "teams":
+		return runTeams(prog, args[1:], stdout, stderr, lookupEnv)
+	case "members":
+		return runMembers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "users":
 		return runUsers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "invites":
@@ -220,6 +231,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runBitbucketApp(prog, args[1:], stdout, stderr, lookupEnv)
 	case "gitea-app":
 		return runGiteaApp(prog, args[1:], stdout, stderr, lookupEnv)
+	case "compose":
+		return runCompose(prog, args[1:], stdout, stderr, lookupEnv)
 	case "templates":
 		return runTemplates(prog, args[1:], stdout, stderr, lookupEnv)
 	case "static-sites":
@@ -265,6 +278,7 @@ Usage:
   %[1]s domains list [flags]           list every app's domains in one call
   %[1]s dns zones|records|check|health-checks ...   DNS zones, records, delegation and propagation at Cloudflare or Route53
   %[1]s preview status|enable|disable|capture|prune <app> [flags]   deploy preview screenshots (opt-in per app)
+  %[1]s previews list|delete|extend|settings|approve [flags]   per pull request preview environments
   %[1]s deployments list|summary|watch [flags]   deploys across all apps, filterable, with live stream
   %[1]s environments list|create|update|delete [flags]   instance-wide dev, test, uat, production and custom environments
   %[1]s apps move-env <name> <environment-id> [--confirm]   move an app to another environment
@@ -282,6 +296,8 @@ Usage:
   %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations
   %[1]s storage providers|list|add|test|delete [flags]   manage S3-compatible storage destinations (AWS S3, R2, B2, MinIO, Wasabi, custom)
   %[1]s logs archive set|status|remove, logs dump|ls|fetch [flags]   archive node-local logs to a storage destination
+  %[1]s logs search|failure <app> [flags]   search stored logs by text, level, container and JSON fields; show the failing container's last lines
+  %[1]s metrics query|top|investigate [flags]   downsampled series with period comparison, top apps, and the spike investigation view
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s network-shares list|get|create|update|delete|test [flags]    manage NFS/CIFS network share mounts
   %[1]s firewall list|allow|deny|delete [flags]                 manage declarative host firewall rules
@@ -326,6 +342,9 @@ Usage:
   %[1]s users role set <user> <role> [flags]                   assign a stored role to a user
   %[1]s users grants get|set <user> [--environment ID ...]     the environments a guest user can see
   %[1]s invites create|list|revoke [flags]                     invite a teammate by email, list or revoke pending invites
+  %[1]s teams list|create|show|rename|delete|use|roles|transfer|events|members|invites   teams, their members, roles and invitations
+  %[1]s members list|set-role|remove|leave <team> ...          shortcut for "teams members"
+  %[1]s --team ID [--project ID] <command> ...                 narrow any command to one team or project (also APP_TEAM, APP_PROJECT, "teams use")
   %[1]s iam policies create|list|get|update|delete|attach|detach|attachments [flags]   resource-scoped Allow/Deny policies, additive on top of --abilities
   %[1]s iam templates list|apply <id> [--param KEY=VALUE] [--attach-user ID|--attach-token ID]   ready-made policies (read-only, guest-one-environment, deployer-nonprod, ...)
   %[1]s secrets generate-master-key --out PATH   write a new master key file (local, no API call)
@@ -345,7 +364,8 @@ Usage:
   %[1]s gitlab-app status|disconnect|projects|branches|use-as-source [flags]   check/forget a GitLab App connection, browse and use its projects
   %[1]s bitbucket-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a Bitbucket App connection, browse and use its repos
   %[1]s gitea-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a Gitea App connection, browse and use its repos
-  %[1]s templates list|get|deploy [flags]                 browse and deploy from the curated service catalog
+  %[1]s templates list|get|deploy|install [flags]         browse, deploy and install from the curated service catalog
+  %[1]s compose deploy|status|logs|redeploy|rollback|down  run a Docker Compose file as one stack
   %[1]s static-sites list [flags]                          list build.type: static apps
   %[1]s deploy-approvals list|get|approve|reject [flags]   two-person approval gate on a deploy/promote into a protected environment
   %[1]s build detect|branches --repo-url URL [flags]       check what framework a public repo would build as, or list its branches

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -24,6 +26,14 @@ type logEntryResource struct {
 	FieldsJSON json.RawMessage `json:"fields,omitempty"`
 	// Level is the detected log level, empty when the line carries none.
 	Level string `json:"level,omitempty"`
+	// Container is the id of the container that wrote the line.
+	Container string `json:"container,omitempty"`
+}
+
+// logContainer is one container seen in a log query, with its line count.
+type logContainer struct {
+	ID    string `json:"id"`
+	Count int    `json:"count"`
 }
 
 // logsResponse is the log query result. Total counts the entries that
@@ -31,6 +41,9 @@ type logEntryResource struct {
 type logsResponse struct {
 	Entries []logEntryResource `json:"entries"`
 	Total   int                `json:"total"`
+	// Containers lists every container that matched before the container
+	// filter applied, so a viewer can offer the choices.
+	Containers []logContainer `json:"containers"`
 }
 
 // handleQueryLogs handles GET /api/v1/apps/{name}/logs; see
@@ -83,6 +96,18 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 		return
 	}
 
+	fieldFilters, err := telemetry.ParseFieldFilters(r.URL.Query()["field"])
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	stream := r.URL.Query().Get("stream")
+	if stream != "" && stream != "stdout" && stream != "stderr" {
+		writeError(w, http.StatusBadRequest, "stream must be stdout or stderr")
+		return
+	}
+	container := r.URL.Query().Get("container")
+
 	entries, err := rt.telemetry.QueryLogs(r.Context(), resourceID, from, to, query)
 	if err != nil {
 		if len(entries) == 0 {
@@ -97,6 +122,11 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 	}
 
 	entries = filterLogsByLevel(entries, minLevel)
+	entries = filterLogs(entries, stream, fieldFilters)
+	containers := countLogContainers(entries)
+	if container != "" {
+		entries = filterLogsByContainer(entries, container)
+	}
 	total := len(entries)
 	if limit > 0 && len(entries) > limit {
 		entries = entries[len(entries)-limit:]
@@ -106,7 +136,7 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 	for i, e := range entries {
 		out[i] = toLogEntryResource(e)
 	}
-	writeJSON(w, http.StatusOK, logsResponse{Entries: out, Total: total})
+	writeJSON(w, http.StatusOK, logsResponse{Entries: out, Total: total, Containers: containers})
 }
 
 func toLogEntryResource(e telemetry.LogEntry) logEntryResource {
@@ -116,9 +146,55 @@ func toLogEntryResource(e telemetry.LogEntry) logEntryResource {
 		Message:    e.Message,
 		Structured: e.Structured,
 		Level:      classifyLogLevel(e),
+		Container:  e.ContainerID,
 	}
 	if e.Structured && e.FieldsJSON != "" {
 		r.FieldsJSON = json.RawMessage(e.FieldsJSON)
 	}
 	return r
+}
+
+func filterLogs(entries []telemetry.LogEntry, stream string, filters []telemetry.FieldFilter) []telemetry.LogEntry {
+	if stream == "" && len(filters) == 0 {
+		return entries
+	}
+	out := entries[:0:0]
+	for _, e := range entries {
+		if stream != "" && e.Stream != stream {
+			continue
+		}
+		if !telemetry.MatchFieldFilters(e, filters) {
+			continue
+		}
+		out = append(out, e)
+	}
+	return out
+}
+
+func filterLogsByContainer(entries []telemetry.LogEntry, prefix string) []telemetry.LogEntry {
+	out := entries[:0:0]
+	for _, e := range entries {
+		if strings.HasPrefix(e.ContainerID, prefix) {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+func countLogContainers(entries []telemetry.LogEntry) []logContainer {
+	counts := map[string]int{}
+	for _, e := range entries {
+		counts[e.ContainerID]++
+	}
+	out := make([]logContainer, 0, len(counts))
+	for id, n := range counts {
+		out = append(out, logContainer{ID: id, Count: n})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Count != out[j].Count {
+			return out[i].Count > out[j].Count
+		}
+		return out[i].ID < out[j].ID
+	})
+	return out
 }

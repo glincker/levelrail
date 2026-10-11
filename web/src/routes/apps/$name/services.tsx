@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { StackIcon, RocketIcon } from '@phosphor-icons/react/dist/ssr'
-import { appGroupQueryOptions } from '../../../queries/appGroup'
+import { appGroupQueryOptions, useAppGroup } from '../../../queries/appGroup'
 import { AppServicesPanel } from '../../../components/AppServicesPanel'
+import { ComposeStackPanel } from '../../../components/ComposeStackPanel'
 import { DeploySpecForm } from '../../../components/DeploySpecForm'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
@@ -17,9 +18,11 @@ export const Route = createFileRoute('/apps/$name/services')({
 
 function ServicesSection() {
   const { name } = Route.useParams()
+  const { data: group } = useAppGroup(name)
 
   return (
     <div className="space-y-6">
+      <ComposeStackPanel appId={group.app_id} />
       <AppServicesPanel appName={name} />
       <DeploySpecForm appName={name} />
     </div>

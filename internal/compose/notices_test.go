@@ -91,11 +91,11 @@ services:
     image: postgres:16
 `,
 			wants: []Notice{
-				{Level: NoticeLevelNote, Message: "depends_on: is enforced as start order only (a dependency's container must exist and be running before its dependent is created), not as a wait for that dependency's own readiness or health check"},
+				{Level: NoticeLevelNote, Message: "depends_on: is enforced as start order (a dependency's container must be running before its dependent is created); add condition: service_healthy to also wait for the dependency's readiness check"},
 			},
 		},
 		{
-			name: "map-form depends_on with a condition also notes start-order-only",
+			name: "map-form depends_on with service_healthy everywhere needs no note",
 			yaml: `
 services:
   web:
@@ -106,9 +106,7 @@ services:
   db:
     image: postgres:16
 `,
-			wants: []Notice{
-				{Level: NoticeLevelNote, Message: "depends_on: is enforced as start order only (a dependency's container must exist and be running before its dependent is created), not as a wait for that dependency's own readiness or health check"},
-			},
+			wants: nil,
 		},
 	}
 

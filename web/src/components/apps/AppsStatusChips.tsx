@@ -1,5 +1,6 @@
 import { GridFourIcon, RowsIcon } from '@phosphor-icons/react/dist/ssr'
 import { cn } from '@/lib/utils'
+import { TONE } from '@/components/kit/tone'
 import {
   STATUS_BUCKETS,
   type StatusBucket,
@@ -8,10 +9,10 @@ import {
 } from '../../lib/appsListView'
 
 const CHIP: Record<StatusBucket, { label: string; dot: string }> = {
-  running: { label: 'Running', dot: 'bg-emerald-500' },
-  deploying: { label: 'Deploying', dot: 'bg-amber-500' },
-  failing: { label: 'Failing', dot: 'bg-destructive' },
-  stopped: { label: 'Stopped', dot: 'bg-muted-foreground/50' },
+  running: { label: 'Running', dot: TONE.success.solid },
+  deploying: { label: 'Deploying', dot: TONE.warning.solid },
+  failing: { label: 'Failing', dot: TONE.danger.solid },
+  stopped: { label: 'Stopped', dot: TONE.neutral.solid },
 }
 
 export function AppsStatusChips({
@@ -27,7 +28,7 @@ export function AppsStatusChips({
     <div
       role="group"
       aria-label="Filter by status"
-      className="flex flex-wrap items-center gap-2"
+      className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
     >
       {STATUS_BUCKETS.map((bucket) => {
         const chip = CHIP[bucket]
@@ -41,11 +42,11 @@ export function AppsStatusChips({
               onChange(on ? null : bucket)
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors duration-150',
+              'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors duration-150',
               on
-                ? 'border-primary bg-primary/10 text-foreground'
+                ? 'border-ring bg-tone-accent-soft text-foreground'
                 : 'border-border text-muted-foreground hover:bg-muted/60 hover:text-foreground',
-              counts[bucket] === 0 && !on && 'opacity-60',
+              counts[bucket] === 0 && !on && 'text-muted-foreground/70',
             )}
           >
             <span

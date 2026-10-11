@@ -380,6 +380,10 @@ func runReleaseCommand(name string, args []string) bool {
 		err = runUpgradeNote(args, os.Stdout, time.Now())
 	case "rollback":
 		err = runRollback(context.Background(), args, dataDirFromEnv(), os.Stdin, os.Stdout)
+	case "self-upgrade":
+		err = runSelfUpgrade(context.Background(), args, dataDirFromEnv(), os.Stdin, os.Stdout)
+	case "migrate-check":
+		err = runMigrateCheck(context.Background(), args, os.Stdout)
 	default:
 		return false
 	}

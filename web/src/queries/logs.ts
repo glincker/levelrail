@@ -1,17 +1,16 @@
 // Query-key factory and fetcher for GET /api/v1/apps/{name}/logs
-// (internal/api/logs.go): a historical full-text search
-// over already-stored log entries. Distinct from queries/deployLogs.ts,
-// which only builds a URL for the live SSE build-log stream and
-// deliberately isn't a TanStack Query fetcher at all (see that module's
-// own header comment for why a live append-only stream doesn't fit
-// Query's freshness model). This is the opposite case: a real request/
-// response endpoint over stored data, so it's a normal query, same
-// shape as queries/metrics.ts.
+// (internal/api/logs.go): a historical full-text search over already-stored
+// log entries. A normal request/response query, unlike the live SSE tail.
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { LogsResponse, LogsResult } from '../types/logs'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import {
+  buildLogQuery,
+  formatFieldFilter,
+  type FieldFilter,
+} from '../lib/logFilters'
 
 export const logSearchKeys = {
   all: (appName: string) => [...appKeys.detail(appName), 'logs'] as const,
@@ -21,7 +20,22 @@ export const logSearchKeys = {
     toIso: string,
     q: string,
     limit: number,
-  ) => [...logSearchKeys.all(appName), fromIso, toIso, q, limit] as const,
+    level: string,
+    container: string,
+    stream: string,
+    fields: string[],
+  ) =>
+    [
+      ...logSearchKeys.all(appName),
+      fromIso,
+      toIso,
+      q,
+      limit,
+      level,
+      container,
+      stream,
+      fields,
+    ] as const,
 }
 
 export interface LogSearchParams {
@@ -31,22 +45,19 @@ export interface LogSearchParams {
   q?: string
   /** Keep only the newest N matches; the response total still counts all. */
   limit?: number
+  /** Minimum level (trace, debug, info, warn, error, fatal). */
+  level?: string
+  /** Container id prefix. */
+  container?: string
+  stream?: 'stdout' | 'stderr'
+  fields?: readonly FieldFilter[]
 }
 
 export async function fetchLogEntries(
   appName: string,
   params: LogSearchParams,
 ): Promise<LogsResult> {
-  const query = new URLSearchParams({
-    from: params.from.toISOString(),
-    to: params.to.toISOString(),
-  })
-  if (params.q) {
-    query.set('q', params.q)
-  }
-  if (params.limit) {
-    query.set('limit', String(params.limit))
-  }
+  const query = buildLogQuery(params)
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/logs?${query.toString()}`,
   )
@@ -61,7 +72,11 @@ export async function fetchLogEntries(
   }
   const body = (await res.json()) as LogsResponse
   const entries = body.entries ?? []
-  return { entries, total: body.total ?? entries.length }
+  return {
+    entries,
+    total: body.total ?? entries.length,
+    containers: body.containers ?? [],
+  }
 }
 
 export function logSearchQueryOptions(
@@ -75,6 +90,10 @@ export function logSearchQueryOptions(
       params.to.toISOString(),
       params.q ?? '',
       params.limit ?? 0,
+      params.level ?? '',
+      params.container ?? '',
+      params.stream ?? '',
+      (params.fields ?? []).map(formatFieldFilter),
     ),
     queryFn: () => fetchLogEntries(appName, params),
   })
@@ -84,23 +103,12 @@ export function useLogSearch(appName: string, params: LogSearchParams) {
   return useQuery(logSearchQueryOptions(appName, params))
 }
 
-// GET /api/v1/apps/{name}/logs/download (internal/api/logs_download.go),
-// same from/to/q params as fetchLogEntries above but a plain-text
-// attachment, not JSON. Not a TanStack Query fetcher for the same reason
-// backupDownloadURL (queries/backupHistory.ts) isn't: the response is a
-// raw file stream, consumed as a plain browser navigation target (an
-// <a href download>), auth riding along on the same httpOnly session
-// cookie every other same-origin request already relies on.
+// Same filters as fetchLogEntries but a plain-text attachment, consumed as
+// a browser navigation target (<a href download>), not a Query fetcher.
 export function logDownloadURL(
   appName: string,
   params: LogSearchParams,
 ): string {
-  const query = new URLSearchParams({
-    from: params.from.toISOString(),
-    to: params.to.toISOString(),
-  })
-  if (params.q) {
-    query.set('q', params.q)
-  }
+  const query = buildLogQuery({ ...params, limit: undefined })
   return `/api/v1/apps/${encodeURIComponent(appName)}/logs/download?${query.toString()}`
 }

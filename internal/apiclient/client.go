@@ -58,7 +58,7 @@ func NewClient(baseURL, token string, opts ...Option) *Client {
 	c := &Client{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		token:   token,
-		hc:      &http.Client{Timeout: 15 * time.Minute},
+		hc:      &http.Client{Timeout: 15 * time.Minute, Transport: scopeTransport{base: http.DefaultTransport}},
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -1755,6 +1755,24 @@ func (c *Client) GetGitSource(ctx context.Context, name string) (GitSourceResour
 func (c *Client) SetGitSource(ctx context.Context, name string, req SetGitSourceRequest) (GitSourceResource, error) {
 	var out GitSourceResource
 	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/git-source", req, &out)
+	return out, err
+}
+
+// SetGitSourceBuild calls PUT /api/v1/apps/{name}/git-source/build.
+func (c *Client) SetGitSourceBuild(ctx context.Context, name string, req SetGitSourceBuildRequest) (GitSourceResource, error) {
+	var out GitSourceResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/git-source/build", req, &out)
+	return out, err
+}
+
+// DetectGitSourceBuild calls POST /api/v1/apps/{name}/git-source/detect.
+func (c *Client) DetectGitSourceBuild(ctx context.Context, name, branch string) (GitBuildDetection, error) {
+	var out GitBuildDetection
+	body := map[string]string{}
+	if branch != "" {
+		body["branch"] = branch
+	}
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/git-source/detect", body, &out)
 	return out, err
 }
 

@@ -49,6 +49,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/auth/passkey-login/begin":          "passkey sign-in ceremony start, rate limited, same shape as /auth/login",
 	"POST /api/v1/auth/passkey-login/finish":         "passkey sign-in ceremony finish, authenticated by the signed WebAuthn assertion",
 	"POST /api/v1/invites/accept":                    "authenticated by the single-use invite token in the body",
+	"POST /api/v1/team-invites/accept":               "authenticated by the single-use team invite token in the body, rate limited",
 	"GET /api/v1/auth/login-options":                 "login screen asks whether codes are offered at all, nothing per account",
 	"POST /api/v1/auth/login-code/request":           "always the same generic answer and timing, rate limited per IP, account and globally",
 	"POST /api/v1/auth/login-code/redeem":            "authenticated by the browser binding cookie plus the code, attempt capped and rate limited",
@@ -92,6 +93,7 @@ var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/apps/{name}/domains/{domain}/policies/preview": "explains a draft traffic policy, persists nothing",
 	"POST /api/v1/apps/{name}/domains/{domain}/doctor":           "runs read-only diagnostics against this server and public DNS, persists nothing",
 	"POST /api/v1/network-shares/{id}/test":                      "reachability dial only, gated by AbilityRead, persists nothing",
+	"DELETE /api/v1/teams/{id}/members/me":                       "self service: removes only the caller's own team membership",
 	"POST /api/v1/apps/{name}/health/discover":                   "active HTTP probes of a running container, gated by AbilityRead, persists nothing",
 }
 

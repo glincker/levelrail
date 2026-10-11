@@ -37,11 +37,8 @@ type Notice struct {
 //     semantic gap for a file that expressed isolation intent, worth a
 //     warning rather than a silent drop.
 //   - depends_on: (NoticeLevelNote): parses into DependsOn and IS
-//     enforced (a dependent's container is not created until its
-//     dependency has at least one running container), but only as real
-//     Compose's own default start-order semantic (service_started), not
-//     service_healthy: a dependency's own container starting does not
-//     mean its own readiness/health probe has passed yet.
+//     enforced as start order; condition: service_healthy additionally
+//     waits for the dependency's readiness condition.
 func (f *File) Notices() []Notice {
 	var notices []Notice
 	for _, name := range sortedServiceNames(f) {
@@ -62,7 +59,7 @@ func (f *File) Notices() []Notice {
 	if f.declaresDependsOn() {
 		notices = append(notices, Notice{
 			Level:   NoticeLevelNote,
-			Message: "depends_on: is enforced as start order only (a dependency's container must exist and be running before its dependent is created), not as a wait for that dependency's own readiness or health check",
+			Message: "depends_on: is enforced as start order (a dependency's container must be running before its dependent is created); add condition: service_healthy to also wait for the dependency's readiness check",
 		})
 	}
 	return notices
@@ -80,9 +77,12 @@ func (f *File) declaresCustomNetworks() bool {
 	return false
 }
 
+// declaresDependsOn reports a depends_on entry that only waits for start;
+// a file that already uses condition: service_healthy everywhere needs no note.
 func (f *File) declaresDependsOn() bool {
 	for _, name := range sortedServiceNames(f) {
-		if len(f.Services[name].DependsOn) > 0 {
+		svc := f.Services[name]
+		if len(svc.DependsOn) > len(svc.DependsOnHealthy) {
 			return true
 		}
 	}

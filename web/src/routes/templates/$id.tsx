@@ -14,6 +14,7 @@ import { CATEGORY_ICONS } from '../../components/ServiceTemplateGrid'
 import { TemplateLogo } from '../../components/TemplateLogo'
 import { RamFitBadge } from '../../components/RamFitBadge'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
+import { TemplateInstallForm } from '../../components/TemplateInstallForm'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { formatBytes } from '../../lib/format'
 import { routeErrorMessage } from '../../lib/apiError'
@@ -112,8 +113,12 @@ function TemplateDetailRoute() {
         </Alert>
       ) : null}
 
+      {template.manifest ? (
+        <TemplateInstallForm manifest={template.manifest} />
+      ) : null}
+
       <div className="flex flex-col items-end gap-1.5">
-        {template.requires_configuration ? (
+        {template.manifest ? null : template.requires_configuration ? (
           <CreateResourceWizard
             initialSelected="browse-templates"
             initialTemplateId={template.id}

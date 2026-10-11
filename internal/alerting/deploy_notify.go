@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
@@ -201,6 +203,34 @@ type DeployOutcome struct {
 	// Error is store.DeployAttempt.Error: only meaningful, and only ever
 	// non-empty, when !Succeeded.
 	Error string
+	// AttemptID is the deploy attempt, used to read a failed build's output.
+	AttemptID string
+	// LogLines is the tail of the failing build or container output. The
+	// dispatcher fills it for a failed deploy when a log source is set.
+	LogLines []string
+}
+
+// deployLogExcerptLines is how many trailing lines a text channel shows.
+const deployLogExcerptLines = 10
+
+// deployLogExcerptBytes caps the excerpt so chat channel limits hold.
+const deployLogExcerptBytes = 1200
+
+// deployLogLines is how many lines the dispatcher attaches to a failed deploy.
+const deployLogLines = 200
+
+// deployLogLookback bounds the runtime log window used when there is no build log.
+const deployLogLookback = 15 * time.Minute
+
+func deployLogExcerpt(lines []string) string {
+	if len(lines) > deployLogExcerptLines {
+		lines = lines[len(lines)-deployLogExcerptLines:]
+	}
+	out := strings.Join(lines, "\n")
+	if len(out) > deployLogExcerptBytes {
+		out = "..." + out[len(out)-deployLogExcerptBytes:]
+	}
+	return out
 }
 
 // summaryDeployText is the human-readable line every simple channel
@@ -213,6 +243,9 @@ func summaryDeployText(ev DeployOutcome) string {
 	msg := fmt.Sprintf("[DEPLOY FAILED] %s -> %s", ev.AppName, ev.Image)
 	if ev.Error != "" {
 		msg += ": " + ev.Error
+	}
+	if len(ev.LogLines) > 0 {
+		msg += "\nLast log lines:\n" + deployLogExcerpt(ev.LogLines)
 	}
 	return msg
 }
@@ -230,6 +263,9 @@ type deployGenericPayload struct {
 	Image     string `json:"image"`
 	Succeeded bool   `json:"succeeded"`
 	Error     string `json:"error,omitempty"`
+	AttemptID string `json:"attempt_id,omitempty"`
+	// LogLines is the last lines of the failing build or container.
+	LogLines []string `json:"log_lines,omitempty"`
 }
 
 // sendDeployOutcome sends ev to one target, dispatching on t.NotifyKind
@@ -380,6 +416,49 @@ type DeployDispatcher struct {
 	sender     email.Sender
 	pushSender PushSender
 	logger     *slog.Logger
+	runtime    LogsSource
+	buildLogs  DeployLogSource
+}
+
+// DeployLogSource reads a deploy attempt's build output; *telemetry.DB satisfies it.
+type DeployLogSource interface {
+	QueryDeployLog(ctx context.Context, attemptID string) ([]telemetry.DeployLogEntry, error)
+}
+
+// WithLogSources lets the dispatcher attach the tail of the failing build or
+// container output to a failed deploy notification. Either may be nil.
+func (d *DeployDispatcher) WithLogSources(runtime LogsSource, build DeployLogSource) *DeployDispatcher {
+	d.runtime, d.buildLogs = runtime, build
+	return d
+}
+
+func (d *DeployDispatcher) attachLogs(ctx context.Context, resourceID string, ev *DeployOutcome) {
+	if ev.Succeeded || len(ev.LogLines) > 0 {
+		return
+	}
+	var lines []string
+	if ev.AttemptID != "" && d.buildLogs != nil {
+		if entries, err := d.buildLogs.QueryDeployLog(ctx, ev.AttemptID); err == nil {
+			for _, e := range entries {
+				lines = append(lines, e.Message)
+			}
+		}
+	}
+	if len(lines) == 0 && d.runtime != nil {
+		now := time.Now()
+		entries, err := d.runtime.QueryLogs(ctx, resourceID, now.Add(-deployLogLookback), now, "")
+		if err != nil {
+			d.logger.Warn("alerting: deploy notification log lookup failed",
+				slog.String("resource_id", resourceID), slog.String("error", err.Error()))
+		}
+		for _, e := range entries {
+			lines = append(lines, e.Message)
+		}
+	}
+	if len(lines) > deployLogLines {
+		lines = lines[len(lines)-deployLogLines:]
+	}
+	ev.LogLines = lines
 }
 
 // NewDeployDispatcher builds a DeployDispatcher. client and logger
@@ -418,6 +497,7 @@ func NewDeployDispatcher(db *DB, client *http.Client, sender email.Sender, pushS
 // real operation" reasoning Engine.dispatch's own doc comment gives one
 // layer up for alert rules.
 func (d *DeployDispatcher) Dispatch(ctx context.Context, resourceID string, ev DeployOutcome) {
+	d.attachLogs(ctx, resourceID, &ev)
 	targets, err := d.db.ListDeployTargetsForResource(ctx, resourceID)
 	if err != nil {
 		d.logger.Error("alerting: list deploy targets failed",

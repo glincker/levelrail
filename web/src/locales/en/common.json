@@ -13,9 +13,9 @@
     "notFound": "\"{{appName}}\" couldn't be found. It may have been deleted, or belong to a different instance than the one you're signed into.",
     "loadFailed": "Couldn't load health & readiness. {{message}}",
     "status": {
-      "pass": "Pass",
-      "warn": "Warn",
-      "fail": "Fail"
+      "pass": "Ready",
+      "warn": "Review",
+      "fail": "Needs attention"
     }
   },
   "logs": {
@@ -26,12 +26,49 @@
     "invalid": "This sign-in link is invalid or has expired. Request a new one.",
     "backToSignIn": "Back to sign in"
   },
+  "appsList": {
+    "title": "Apps",
+    "count_one": "{{count}} app",
+    "count_other": "{{count}} apps",
+    "count_filtered_one": "{{count}} of {{total}} app",
+    "count_filtered_other": "{{count}} of {{total}} apps",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "newDatabase": "New database",
+    "newApp": "New app",
+    "import": "Import",
+    "connectGit": "Connect Git",
+    "emptyTitle": "No apps yet",
+    "emptyBody": "Deploy from a git repository or a container image, or import apps from another platform.",
+    "noMatchTitle": "No apps match",
+    "noMatchBody": "No app fits the current status and search. Clear the filters to see all {{total}}.",
+    "clearFilters": "Clear filters",
+    "errorBody": "The app list could not be loaded. {{message}}",
+    "retry": "Retry"
+  },
+  "appActions": {
+    "deploy": "Deploy",
+    "restart": "Restart",
+    "restarting": "Restarting...",
+    "more": "More actions",
+    "redeploy": "Redeploy current",
+    "redeploying": "Redeploying...",
+    "start": "Start",
+    "stop": "Stop",
+    "promote": "Promote...",
+    "clone": "Clone...",
+    "delete": "Delete..."
+  },
+  "confirmDialog": {
+    "cancel": "Cancel",
+    "typePrompt": "Type {{value}} to confirm"
+  },
   "deleteApp": {
     "trigger": "Delete",
     "title": "Delete \"{{name}}\"?",
     "description": "This stops and removes the app's containers, then deletes the app. If its node is unreachable the app is still deleted and cleanup retries until it succeeds. This cannot be undone.",
     "cancel": "Cancel",
-    "confirm": "Delete app",
+    "confirm": "Delete {{name}}",
     "deleting": "Deleting...",
     "deleted": "App \"{{name}}\" deleted.",
     "pendingTitle": "App \"{{name}}\" deleted, cleanup pending.",

@@ -123,16 +123,16 @@ func TestTracker_Path_Errors(t *testing.T) {
 	}
 }
 
-// Databases publish only via their own bind address and must never pick up a
-// mesh bind: the database controller may not depend on this package.
-func TestDatabaseControllerNeverImportsMeshPath(t *testing.T) {
+// A database is mesh-bound only through mesh_endpoint.go, which binds just
+// databases with an allocated mesh port (a cross-node consumer exists).
+func TestDatabaseControllerMeshPathConfined(t *testing.T) {
 	dir := filepath.Join("..", "reconcile", "database")
 	files, err := filepath.Glob(filepath.Join(dir, "*.go"))
 	if err != nil || len(files) == 0 {
 		t.Fatalf("glob %s: %v (%d files)", dir, err, len(files))
 	}
 	for _, f := range files {
-		if strings.HasSuffix(f, "_test.go") {
+		if strings.HasSuffix(f, "_test.go") || filepath.Base(f) == "mesh_endpoint.go" {
 			continue
 		}
 		src, err := os.ReadFile(f) //nolint:gosec // f comes from Glob over a fixed repo directory
@@ -145,7 +145,7 @@ func TestDatabaseControllerNeverImportsMeshPath(t *testing.T) {
 		}
 		for _, imp := range parsed.Imports {
 			if strings.HasSuffix(strings.Trim(imp.Path.Value, `"`), "/internal/meshpath") {
-				t.Errorf("%s imports meshpath: a database port must never be mesh-bound", f)
+				t.Errorf("%s imports meshpath: only mesh_endpoint.go may mesh-bind a database", f)
 			}
 		}
 	}

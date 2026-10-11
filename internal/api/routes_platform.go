@@ -30,6 +30,8 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetGitSource))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitSource))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source/deploy-settings", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitDeploySettings))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source/build", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitSourceBuild))
+	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/detect", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDetectGitSourceBuild))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteGitSource))
 	// Rotate webhook secret (git_sources.go): mints a fresh secret without
 	// touching repo_url/branch/build config, the narrow alternative to a
@@ -87,12 +89,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/previews", rt.requireAbility(AbilityRead, rt.handleListAllPreviews))
 	mux.HandleFunc("GET /api/v1/apps/{name}/preview-policy", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetPreviewPolicy))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-policy", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetPreviewPolicy))
+	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/extend", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleExtendPreviewEnvironment))
 	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/approve", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleApprovePreviewEnvironment))
 
 	// Telemetry query: metrics and logs for one app,
 	// fanned out through a Federator (today, exactly one local source).
 	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryMetrics))
 	mux.HandleFunc("GET /api/v1/apps/{name}/requests", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryRequests))
+	mux.HandleFunc("GET /api/v1/apps/{name}/investigate", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleInvestigate))
+	mux.HandleFunc("GET /api/v1/apps/{name}/failure-context", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleFailureContext))
 	mux.HandleFunc("GET /api/v1/apps/{name}/logs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryLogs))
 	// Cross-app resource usage ranking (app_resource_usage.go): a
 	// literal segment, so Go's ServeMux resolves it ahead of the
@@ -450,6 +455,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// Agent certificate lifecycle (node_cert.go, ADR 021).
 	mux.HandleFunc("POST /api/v1/nodes/{id}/reenroll-token", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleCreateNodeReenrollToken))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/revoke-cert", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleRevokeNodeCert))
+	rt.registerMultiNodeRoutes(mux)
 
 	// Certificates (TLS renewal visibility): this project treats
 	// "a cert renewal fails silently at 3am" as its central
@@ -946,6 +952,14 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// to a service's named volume instead of a managed database. See
 	// those handlers' own doc comments for the per-route reasoning this
 	// mirrors.
+	mux.HandleFunc("GET /api/v1/backups/health", rt.requireAbility(AbilityRead, rt.handleBackupHealth))
+	mux.HandleFunc("GET /api/v1/backups/drills", rt.requireAbility(AbilityRead, rt.handleListBackupDrills))
+	mux.HandleFunc("GET /api/v1/backups/drills/{id}", rt.requireAbility(AbilityRead, rt.handleGetBackupDrill))
+	mux.HandleFunc("POST /api/v1/backups/drills", rt.requireAbility(AbilityWriteSensitive, rt.handleStartBackupDrill))
+	mux.HandleFunc("POST /api/v1/backups/protection/refresh", rt.requireAbility(AbilityWriteSensitive, rt.handleRefreshBackupProtection))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backup-policy", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetVolumeBackupPolicy))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes/{volume}/backup-policy", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetVolumeBackupPolicy))
+	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/restore-to", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleVolumeRestoreTo))
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backups", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleTriggerVolumeBackup))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListVolumeBackupHistory))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/download", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleDownloadVolumeBackup))

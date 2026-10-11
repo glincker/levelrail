@@ -468,50 +468,6 @@ var productivityBatchTemplates = []Template{
 `,
 	},
 	{
-		ID:                     "redmine",
-		Name:                   "Redmine",
-		Slogan:                 "A flexible, mature project management and issue-tracking web application.",
-		Category:               "Productivity",
-		DocumentationURL:       "https://www.redmine.org/",
-		RecommendedMemoryBytes: 536870912, // 512Mi
-		Compose: `services:
-  postgresql:
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: redmine
-      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
-      POSTGRES_DB: redmine
-    volumes:
-      - redmine_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U redmine -d redmine"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-  redmine:
-    image: redmine:6-alpine
-    ports: ["3000:3000"]
-    depends_on:
-      postgresql:
-        condition: service_healthy
-    environment:
-      SECRET_KEY_BASE: $SERVICE_PASSWORD_64_SECRETKEYBASE
-      REDMINE_DB_POSTGRES: postgresql
-      REDMINE_DB_PORT: "5432"
-      REDMINE_DB_USERNAME: redmine
-      REDMINE_DB_PASSWORD: $SERVICE_PASSWORD_DB
-      REDMINE_DB_DATABASE: redmine
-    volumes:
-      - redmine_files:/usr/src/redmine/files
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-`,
-	},
-	{
 		ID:                     "moodle",
 		Name:                   "Moodle",
 		Slogan:                 "A widely used, highly customizable learning management system for online courses.",

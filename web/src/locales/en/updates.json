@@ -14,6 +14,8 @@
     "copied": "Copied"
   },
   "preflight": {
+    "cardTitle": "Upgrade preflight",
+    "cardDescription": "Read-only checks before you upgrade.",
     "running": "Running preflight checks...",
     "unavailable": "Preflight checks are unavailable right now.",
     "checksLabel": "Upgrade preflight checks",
@@ -182,6 +184,71 @@
     "agents": {
       "title": "Node agent versions",
       "first": "first report"
+    }
+  },
+
+  "selfUpgrade": {
+    "title": "Upgrade this server",
+    "description": "Downloads the release, checks its checksum and signature, backs up the database, tries the migrations on a copy, swaps the program and restarts. If the new release does not become healthy in time, the previous program and data come back automatically.",
+    "loading": "Preparing the upgrade plan...",
+    "noPlan": "No upgrade plan is available right now. The latest release could not be fetched.",
+    "target": "Upgrade from {{current}} to {{target}}",
+    "notesMissingTitle": "Breaking changes unknown",
+    "notesMissing": "The release notes could not be fetched, so breaking changes cannot be checked from here. Run the host command shown below once you have read them.",
+    "breakingTitle": "Breaking changes between these versions",
+    "noBreaking": "No breaking changes are declared between these versions.",
+    "ackRequired": "Acknowledge to continue",
+    "ackFirst": "Acknowledge every breaking change to enable the upgrade.",
+    "safety": "A snapshot of the database and the current program are kept first. A bad release is rolled back without you doing anything. Data written to the control plane during the health window of a failed upgrade is not kept.",
+    "apply": "Upgrade to {{version}}",
+    "starting": "Starting...",
+    "started": "The upgrade is running on the host. This page reconnects when the control plane restarts.",
+    "hostOnly": "This host cannot run the upgrade from the dashboard: {{reason}}.",
+    "hostCommand": "Run on the server as root",
+    "attemptsTitle": "Upgrade attempts",
+    "noAttempts": "No self-upgrade has run on this server yet.",
+    "by": "by {{who}}",
+    "rolledBackNote": "The previous release {{version}} is running again and its data was restored.",
+    "outcome": {
+      "running": "Running",
+      "succeeded": "Succeeded",
+      "rolled_back": "Rolled back",
+      "refused": "Refused",
+      "failed": "Failed"
+    },
+    "step": {
+      "guard": "Check the request",
+      "download": "Download",
+      "verify_checksum": "Verify checksum",
+      "verify_signature": "Verify signature",
+      "probe_binary": "Probe the new program",
+      "backup": "Back up",
+      "migration_check": "Dry-run migrations",
+      "stop": "Stop",
+      "swap": "Swap program",
+      "start": "Start",
+      "health": "Health check",
+      "rollback": "Roll back"
+    }
+  },
+  "readiness": {
+    "title": "Server readiness",
+    "description": "Who holds ports 80 and 443, Docker version and isolation, exposed Docker API, disk, memory, firewall and DNS, with the install mode this server needs.",
+    "domainLabel": "Domain you will use (optional)",
+    "recheck": "Check again",
+    "checking": "Checking...",
+    "checksLabel": "Server readiness checks",
+    "failed": "The readiness check could not run: {{message}}",
+    "nextStep": "Next step",
+    "status": {
+      "pass": "Ready",
+      "warn": "Look",
+      "fail": "Fix",
+      "info": "Info"
+    },
+    "mode": {
+      "own_ports": "Recommended: install with its own ports 80 and 443",
+      "behind_proxy": "Recommended: install behind your existing proxy"
     }
   }
 }

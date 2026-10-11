@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useDatabase, useDatabaseStatus } from '../../../queries/databases'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
 import { ChangeDatabaseVersionDialog } from '../../../components/ChangeDatabaseVersionDialog'
-import { MoveToNodeDialog } from '../../../components/MoveToNodeDialog'
+import { PlacementCard } from '../../../components/PlacementCard'
 import { MoveToProjectDialog } from '../../../components/MoveToProjectDialog'
 import { BackupsSection } from '../../../components/BackupsSection'
 import { PointInTimeRestoreSection } from '../../../components/PointInTimeRestoreSection'
@@ -94,11 +94,6 @@ function OverviewSection() {
                     unassigned
                   </span>
                 )}
-                <MoveToNodeDialog
-                  kind="database"
-                  name={database.name}
-                  currentNodeId={database.node_id}
-                />
               </dd>
             </div>
             <div>
@@ -123,6 +118,12 @@ function OverviewSection() {
           </dl>
         </CardContent>
       </Card>
+
+      <PlacementCard
+        kind="database"
+        name={database.name}
+        currentNodeId={database.node_id}
+      />
 
       <ConditionsPanel conditions={conditions} />
 

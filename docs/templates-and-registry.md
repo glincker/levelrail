@@ -6,6 +6,8 @@ description: Deploy ready-made services from the built-in template catalog, save
 
 A template is a curated Docker Compose file for a well-known service (n8n, Uptime Kuma, a Postgres-backed app, a local LLM runtime). Deploying one fills in a Compose body for you and sends it through the same endpoint as `levelrail-cli apps deploy-compose`. There is no separate template deploy path, so a template-deployed app behaves like any other Compose app.
 
+Some templates also come with an install manifest: a short list of settings (generated secrets, values with defaults, required values) and the services you can put behind a domain. Their template page shows an **Install** form, and `levelrail-cli templates install <id>` does the same from the CLI. See [Compose apps](/compose-apps#templates).
+
 This page covers how to deploy templates, how `$SERVICE_...` variables work, and how to save your own apps as templates. To see what is in the catalog, read the [template catalog](/template-catalog). The seven multi-service wiring examples are described in [Starter kit templates](/templates).
 
 ## Deploy a template

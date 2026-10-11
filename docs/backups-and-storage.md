@@ -159,11 +159,25 @@ levelrail-cli app-volume-backups restore <app> <volume> --backup ID --confirm AP
 levelrail-cli app-volume-backups restore-as-new <app> <volume> --backup ID
 ```
 
+### Compression, encryption and consistency
+
+New app volume backups are streamed as tar, compressed with zstd and encrypted with age on the control plane before upload, so the bucket only ever holds ciphertext. Each backup records its encoding, so backups from before this feature stay restorable. The key, retention buckets, consistency hooks and size and time budgets are covered in [Prove your backups work](prove-your-backups-work.md).
+
+Database dumps are not re-encoded: they stream straight from the dump command as before.
+
+### Restore to a new volume, app or node
+
+`POST /api/v1/apps/{name}/volumes/{volume}/restore-to` restores a volume backup into a new volume and never writes to an existing one. It takes an optional `target_app` (names the volume for that app so deploying it mounts the data), an optional `node_id`, and an optional `new_volume_name`. On the CLI:
+
+```bash
+levelrail-cli backups volumes restore <app> <volume> --backup ID [--target-app APP] [--node NODE] [--new-volume NAME]
+```
+
 ### Instance-wide backup visibility
 
 `GET /api/v1/backups` (newest first, cursor-paginated with `?limit=&before=`) lists backups across every database and app volume. Each entry carries `resource_kind` (`database` or `volume`) and identity fields (`database_name`, or `service_name` and `volume_name`).
 
-On the dashboard this is the top-level **Backups** page, with download, verify, and delete actions per row. On the CLI it is `levelrail-cli backups list-all [--limit N] [--before RFC3339]`. Triggering and restoring stay on the resource's own page, because they need context (which target, which confirmation flow) that the aggregated view does not have.
+On the dashboard this is the top-level **Backups** page. It opens with backup health grouped by app (last backup, last verified restore, size, next run, bucket protection), then restore drill history, then every attempt with download, verify, and delete actions per row. On the CLI the attempt history is `levelrail-cli backups list-all [--limit N] [--before RFC3339]` and the health view is `levelrail-cli backups health`. Triggering and restoring stay on the resource's own page, because they need context (which target, which confirmation flow) that the aggregated view does not have.
 
 ## Retention
 
@@ -192,7 +206,7 @@ Naming the exact backup ID is the confirmation, so there is no `--confirm` flag.
 
 ## Alert on a missing or failing backup
 
-A `backup_missing` alert rule watches each database's and app volume's backup schedule. It fires when the last successful backup trails the expected interval by more than the rule's `for_duration` (default 6 hours). It reads the same schedule and history rows the scheduler uses, so it catches both a schedule that silently stopped running and repeated failures with no recent success. It notifies through your normal alert channels. See [Observability](observability.md#alert-rules) for the rule table and setup.
+A `restore_drill_failed` rule fires while any resource's latest restore drill is failed. A `backup_missing` alert rule watches each database's and app volume's backup schedule. It fires when the last successful backup trails the expected interval by more than the rule's `for_duration` (default 6 hours). It reads the same schedule and history rows the scheduler uses, so it catches both a schedule that silently stopped running and repeated failures with no recent success. It notifies through your normal alert channels. See [Observability](observability.md#alert-rules) for the rule table and setup.
 
 ## Registry credentials
 
@@ -292,7 +306,7 @@ These ran end to end against a real S3-compatible endpoint (SeaweedFS) and real 
 Limits to know about:
 
 - A backup is a logical dump (`pg_dump`, `mysqldump`, `mongodump`, an RDB snapshot). It is consistent per database but not a physical copy. For Postgres, use point-in-time restore when you need to recover to an exact second.
-- Verification catches a damaged or truncated object. It does not prove the dump restores cleanly. A periodic restore-as-new into a scratch database is the only proof, and it is cheap.
+- Verification catches a damaged or truncated object. It does not prove the dump restores cleanly. Restore drills do: they restore into a scratch resource, validate it and destroy it, automatically once a week by default. See [Prove your backups work](prove-your-backups-work.md).
 - Deleting a database keeps its data volume and your backups. See [Managing databases](managing-databases.md#stop-start-and-delete).
 - The free-space floor protects the control plane's data directory. Nothing watches the Docker host's own disk for a major upgrade's snapshot copy: a copy that runs out of space fails the upgrade before it changes anything.
 - WAL for point-in-time restore is shipped to the backup target only for databases on the control plane's own node.
@@ -328,6 +342,14 @@ Limits to know about:
 | `DELETE` | `/api/v1/databases/{name}/backups/{historyId}` | `write:sensitive` |
 | `PUT` | `/api/v1/databases/{name}/backup-schedule` | `write:sensitive` |
 | `DELETE` | `/api/v1/databases/{name}/backup-schedule` | `write:sensitive` |
+| `GET` | `/api/v1/backups/health` | `read` |
+| `GET` | `/api/v1/backups/drills?service=&volume=&database=&limit=` | `read` |
+| `GET` | `/api/v1/backups/drills/{id}` | `read` |
+| `POST` | `/api/v1/backups/drills` | `write:sensitive` |
+| `POST` | `/api/v1/backups/protection/refresh` | `write:sensitive` |
+| `GET` | `/api/v1/apps/{name}/volumes/{volume}/backup-policy` | `read` |
+| `PUT` | `/api/v1/apps/{name}/volumes/{volume}/backup-policy` | `write:sensitive` |
+| `POST` | `/api/v1/apps/{name}/volumes/{volume}/restore-to` | `write:sensitive` |
 | `POST` | `/api/v1/apps/{name}/volumes/{volume}/backups` | `write:sensitive` |
 | `GET` | `/api/v1/apps/{name}/volumes/{volume}/backups?limit=&before=` | `read` |
 | `DELETE` | `/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}` | `write:sensitive` |
@@ -364,6 +386,14 @@ levelrail-cli backups schedule set <database> --target ID --cron EXPR [--retain 
 levelrail-cli backups schedule clear <database>
 levelrail-cli backups delete <database> <backup-id>
 levelrail-cli backups list-all [--limit N] [--before RFC3339]
+levelrail-cli backups health
+levelrail-cli backups protection [--refresh]
+levelrail-cli backups drill run --backup ID
+levelrail-cli backups drill list [--app A --volume V | --database D]
+levelrail-cli backups drill show <drill-id>
+levelrail-cli backups volumes list <app> <volume>
+levelrail-cli backups volumes policy get|set <app> <volume> [--retain-daily N --retain-weekly N --retain-monthly N --pre-hook CMD --post-hook CMD --pause]
+levelrail-cli backups volumes restore <app> <volume> --backup ID [--target-app APP] [--node NODE] [--new-volume NAME]
 
 levelrail-cli app-volume-backups schedule set <app> <volume> --target ID --cron EXPR [--retain N] [--retain-days N]
 levelrail-cli app-volume-backups schedule clear <app> <volume>

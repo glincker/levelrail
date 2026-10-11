@@ -96,7 +96,7 @@ func loadContribTemplates(fsys fs.FS) ([]Template, error) {
 		}
 		seenID[ct.ID] = name
 
-		out = append(out, Template(ct))
+		out = append(out, Template{ID: ct.ID, Name: ct.Name, Slogan: ct.Slogan, Category: ct.Category, DocumentationURL: ct.DocumentationURL, Compose: ct.Compose, RecommendedMemoryBytes: ct.RecommendedMemoryBytes, RequiresGPU: ct.RequiresGPU})
 	}
 	return out, nil
 }

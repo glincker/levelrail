@@ -90,6 +90,7 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Deploying apps', link: '/deploying-apps' },
+          { text: 'Compose apps', link: '/compose-apps' },
           { text: 'Importing apps', link: '/importing-apps' },
           { text: 'Deploy safety', link: '/deploy-safety' },
           { text: 'Deploy failures', link: '/deploy-failures' },
@@ -100,6 +101,7 @@ const sidebarGroups = [
           { text: 'Canary deploys', link: '/canary-deploys' },
           { text: 'Deployments page', link: '/deployments-page' },
           { text: 'Deploy previews', link: '/deploy-previews' },
+          { text: 'Pull request previews', link: '/previews' },
           { text: 'Chat deploy approvals', link: '/chat-deploy-approvals' },
           { text: 'Supply chain visibility', link: '/supply-chain' },
           { text: 'Deploy status badge', link: '/deploy-status-badge' },
@@ -140,11 +142,13 @@ const sidebarGroups = [
             link: '/connecting-apps-to-databases',
           },
           { text: 'Backups and storage', link: '/backups-and-storage' },
+          { text: 'Prove your backups work', link: '/prove-your-backups-work' },
           { text: 'Object storage', link: '/object-storage' },
           { text: 'Network shares', link: '/network-shares' },
           { text: 'Log archive', link: '/log-archive' },
           { text: 'Control plane backup', link: '/control-plane-backup' },
           { text: 'Disaster recovery', link: '/disaster-recovery' },
+          { text: 'Upgrade safely', link: '/upgrade-safely' },
         ],
       },
       {
@@ -169,6 +173,7 @@ const sidebarGroups = [
           { text: 'Emergency access', link: '/emergency-access' },
           { text: 'Master key rotation', link: '/master-key-rotation' },
           { text: 'Access control', link: '/access-control' },
+          { text: 'Teams and roles', link: '/teams-and-roles' },
           { text: 'Environments', link: '/environments' },
           { text: 'Identity and access', link: '/identity-and-access' },
           {

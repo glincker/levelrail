@@ -84,9 +84,12 @@ func (rt *Router) environmentForResource(ctx context.Context, prefix, name strin
 // resourceScope carries one caller's visibility and the environment of every
 // app and database, loaded once so a list pays at most three queries.
 type resourceScope struct {
-	vis    store.Visibility
-	appEnv map[string]*store.EnvironmentRef
-	dbEnv  map[string]*store.EnvironmentRef
+	vis      store.Visibility
+	appEnv   map[string]*store.EnvironmentRef
+	dbEnv    map[string]*store.EnvironmentRef
+	teams    *teamScope
+	appOwner map[string]*store.ResourceOwner
+	dbOwner  map[string]*store.ResourceOwner
 }
 
 func policiesMentionEnvironments(policies []store.Policy) bool {
@@ -115,8 +118,14 @@ func (rt *Router) newResourceScope(ctx context.Context, principalType, principal
 		return nil, err
 	}
 	s := &resourceScope{vis: vis}
+	if s.teams, err = rt.principalTeamScope(ctx, principalType, principalID); err != nil {
+		return nil, err
+	}
+	if err := rt.loadOwners(ctx, s); err != nil {
+		return nil, err
+	}
 	db := rt.accessDB()
-	if db == nil || (!vis.Restricted && !policiesMentionEnvironments(policies)) {
+	if db == nil || (!vis.Restricted && s.teams == nil && !policiesMentionEnvironments(policies)) {
 		return s, nil
 	}
 	if s.appEnv, err = db.EnvironmentsOfApps(ctx); err != nil {
@@ -129,7 +138,7 @@ func (rt *Router) newResourceScope(ctx context.Context, principalType, principal
 }
 
 // restricted reports whether the scope hides anything from the caller.
-func (s *resourceScope) restricted() bool { return s.vis.Restricted }
+func (s *resourceScope) restricted() bool { return s.vis.Restricted || s.teams != nil }
 
 func (s *resourceScope) lookup(prefix, name string) *store.EnvironmentRef {
 	if prefix == resourcePrefixDatabase {
@@ -141,6 +150,9 @@ func (s *resourceScope) lookup(prefix, name string) *store.EnvironmentRef {
 // visible is false for a resource a restricted caller has no grant for,
 // including every untagged resource.
 func (s *resourceScope) visible(prefix, name string) bool {
+	if s.teams != nil && s.teams.roleFor(s.owner(prefix, name)) == "" {
+		return false
+	}
 	if !s.vis.Restricted {
 		return true
 	}
@@ -148,12 +160,52 @@ func (s *resourceScope) visible(prefix, name string) bool {
 	return ref != nil && s.vis.Allows(ref.ID)
 }
 
-// authorize applies visibility, then the environment aware policy evaluation.
+func (s *resourceScope) owner(prefix, name string) *store.ResourceOwner {
+	if prefix == resourcePrefixDatabase {
+		return s.dbOwner[name]
+	}
+	return s.appOwner[name]
+}
+
+// authorize applies visibility, the team role, then the environment aware
+// policy evaluation.
 func (s *resourceScope) authorize(abilities []string, policies []store.Policy, ability, prefix, name string) bool {
 	if !s.visible(prefix, name) {
 		return false
 	}
-	return authorizeResource(abilities, policies, ability, prefix+name, environmentResources(s.lookup(prefix, name))...)
+	ref := s.lookup(prefix, name)
+	if s.teams != nil {
+		owner := s.owner(prefix, name)
+		role := s.teams.roleFor(owner)
+		if protectedDenied(role, ability, ref) {
+			return false
+		}
+		abilities = capAbilities(abilities, ownerTeam(owner), role)
+	}
+	return authorizeResource(abilities, policies, ability, prefix+name, environmentResources(ref)...)
+}
+
+func ownerTeam(o *store.ResourceOwner) string {
+	if o == nil {
+		return store.DefaultTeamID
+	}
+	return o.TeamID
+}
+
+// loadOwners fills the owner maps once for a team scoped caller.
+func (rt *Router) loadOwners(ctx context.Context, s *resourceScope) error {
+	db := rt.teamDB()
+	if s.teams == nil || db == nil {
+		return nil
+	}
+	var err error
+	if s.appOwner, err = db.OwnersOfApps(ctx); err != nil {
+		return fmt.Errorf("api: scope: app owners: %w", err)
+	}
+	if s.dbOwner, err = db.OwnersOfDatabases(ctx); err != nil {
+		return fmt.Errorf("api: scope: database owners: %w", err)
+	}
+	return nil
 }
 
 // callerScope resolves the request's abilities, policies and scope once.
@@ -169,6 +221,20 @@ func (rt *Router) callerScope(r *http.Request) (abilities []string, policies []s
 	scope, err = rt.newResourceScope(r.Context(), principalType, principalID, policies)
 	if err != nil {
 		return nil, nil, nil, err
+	}
+	if narrowed := narrowTeamScope(r, scope.teams); narrowed != scope.teams {
+		scope.teams = narrowed
+		if err := rt.loadOwners(r.Context(), scope); err != nil {
+			return nil, nil, nil, err
+		}
+		if db := rt.accessDB(); db != nil && scope.appEnv == nil {
+			if scope.appEnv, err = db.EnvironmentsOfApps(r.Context()); err != nil {
+				return nil, nil, nil, fmt.Errorf("api: scope: apps environments: %w", err)
+			}
+			if scope.dbEnv, err = db.EnvironmentsOfDatabases(r.Context()); err != nil {
+				return nil, nil, nil, fmt.Errorf("api: scope: databases environments: %w", err)
+			}
+		}
 	}
 	return abilities, policies, scope, nil
 }
@@ -187,14 +253,32 @@ func (rt *Router) authorizeResourceInEnvironment(ctx context.Context, principalT
 	if err != nil {
 		return false, false, err
 	}
+	teams, err := rt.principalTeamScope(ctx, principalType, principalID)
+	if err != nil {
+		return false, false, err
+	}
 	var ref *store.EnvironmentRef
-	if vis.Restricted || policiesMentionEnvironments(policies) {
+	if vis.Restricted || teams != nil || policiesMentionEnvironments(policies) {
 		if ref, err = rt.environmentForResource(ctx, prefix, name); err != nil {
 			return false, false, fmt.Errorf("api: resource environment: %w", err)
 		}
 	}
 	if vis.Restricted && (ref == nil || !vis.Allows(ref.ID)) {
 		return true, true, nil
+	}
+	if teams != nil {
+		owner, err := rt.ownerForResource(ctx, prefix, name)
+		if err != nil {
+			return false, false, fmt.Errorf("api: resource owner: %w", err)
+		}
+		role := teams.roleFor(owner)
+		if role == "" {
+			return true, true, nil
+		}
+		if protectedDenied(role, ability, ref) {
+			return false, false, nil
+		}
+		abilities = capAbilities(abilities, ownerTeam(owner), role)
 	}
 	return authorizeResource(abilities, policies, ability, resource, environmentResources(ref)...), false, nil
 }

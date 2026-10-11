@@ -121,7 +121,33 @@ func containerSpecToPB(s docker.ContainerSpec) *agentpb.ContainerSpec {
 		Gpu:          gpuToPB(s.GPU),
 		Command:      s.Command,
 		ShmSizeBytes: s.ShmSizeBytes,
+		ExtraHosts:   s.ExtraHosts,
+		Labels:       s.Labels,
+		NetworkName:  networkName(s.Network),
+		NetworkAlias: networkAlias(s.Network),
+		Entrypoint:   s.Entrypoint,
 	}
+}
+
+func networkName(n *docker.NetworkAttachment) string {
+	if n == nil {
+		return ""
+	}
+	return n.Name
+}
+
+func networkAlias(n *docker.NetworkAttachment) string {
+	if n == nil {
+		return ""
+	}
+	return n.Alias
+}
+
+func networkFromPB(name, alias string) *docker.NetworkAttachment {
+	if name == "" {
+		return nil
+	}
+	return &docker.NetworkAttachment{Name: name, Alias: alias}
 }
 
 func gpuToPB(g *docker.GPURequest) *agentpb.GPURequest {
@@ -155,6 +181,10 @@ func containerSpecFromPB(s *agentpb.ContainerSpec) docker.ContainerSpec {
 		GPU:          gpuFromPB(s.Gpu),
 		Command:      s.Command,
 		ShmSizeBytes: s.ShmSizeBytes,
+		ExtraHosts:   s.ExtraHosts,
+		Labels:       s.Labels,
+		Network:      networkFromPB(s.NetworkName, s.NetworkAlias),
+		Entrypoint:   s.Entrypoint,
 	}
 }
 

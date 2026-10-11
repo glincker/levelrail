@@ -1,8 +1,7 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowLeftIcon,
-  CheckIcon,
-  CopyIcon,
   PlusIcon,
   HardDrivesIcon,
   WarningIcon,
@@ -18,35 +17,28 @@ import {
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { useCreateNodeJoinToken } from '../queries/nodes'
 import { useBrand } from '../hooks/useBrand'
 import type { NodeJoinTokenResponse } from '../types/nodeDetail'
+import { CommandBlock } from './nodes/CommandBlock'
 
-// A dialog, not a wizard, for the manual path: this product's own
-// positioning as a lightweight, AI-ready Coolify alternative, and both
-// Coolify's and Dokploy's own "add server" flows (single screen, no
-// multi-step wizard) back that call for "I already have a server". Cloud
-// provisioning (AddNodeWizard.tsx) is the one flow that genuinely needs
-// multiple steps (provider, region/size, name, confirm, progress); this
-// component is also that wizard's own "I already have a server" step,
-// via the exported ManualEnrollFields below. One dialog, two phases:
-// explain + a "Generate join token" button, then (on success) the token
-// plus the exact enrollment command, mirroring CreateTokenDialog's own
-// "mint a secret, show it exactly once" shape.
+const NODE_NAME_PATTERN = /^[a-z][a-z0-9-]*$/
+
+// Add-node dialog for the "I already have a server" path. The cloud
+// wizard (AddNodeWizard.tsx) reuses ManualEnrollFields as its own step.
 export function AddNodeDialog() {
+  const { t } = useTranslation('nodes')
   const [open, setOpen] = useState(false)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" />}>
         <PlusIcon />
-        Add node
+        {t('join.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
-        {/* key={open ? 'open' : 'closed'} forces a remount on close, the
-            same reset handleOpenChange(false) used to do directly: a
-            fresh join token must never survive to the next open. */}
         <ManualEnrollFields
           key={open ? 'open' : 'closed'}
           onDone={() => setOpen(false)}
@@ -56,10 +48,8 @@ export function AddNodeDialog() {
   )
 }
 
-// ManualEnrollFields is AddNodeDialog's own content, extracted so
-// AddNodeWizard's own "I already have a server" step can render the
-// identical join-token flow inside its own Dialog instead of nesting a
-// second one. onBack is present only when rendered as a wizard step.
+// Two phases: a small form (address, optional name, mesh), then the
+// single-use token with the server-built join commands.
 export function ManualEnrollFields({
   onDone,
   onBack,
@@ -67,215 +57,180 @@ export function ManualEnrollFields({
   onDone: () => void
   onBack?: () => void
 }) {
+  const { t } = useTranslation('nodes')
   const brand = useBrand()
   const [created, setCreated] = useState<NodeJoinTokenResponse | null>(null)
-  const [tokenCopied, setTokenCopied] = useState(false)
-  const [commandCopied, setCommandCopied] = useState(false)
-  // Pre-filled once from the browser's own address bar (the honest
-  // client-side default the task scope allows), then editable: the
-  // dashboard's own hostname is usually the right reachable address for
-  // the new node to dial, but not always (NAT, a separate public
-  // address, etc.), and there is no config endpoint that could look
-  // this up authoritatively. defaultAgentAddr (":9443",
-  // cmd/levelrail/main.go) is the control plane's fixed agent gRPC
-  // listener port, never the same port as this HTTP dashboard.
+  const [nodeName, setNodeName] = useState('')
+  const [mesh, setMesh] = useState(false)
+  // The dashboard's own hostname is usually reachable from the new node;
+  // 9443 is the control plane's fixed agent gRPC port.
   const [controlPlaneAddr, setControlPlaneAddr] = useState(
     () => `${window.location.hostname}:9443`,
   )
   const createJoinToken = useCreateNodeJoinToken()
 
-  // brand.BinaryName ("levelrail") names the control plane binary
-  // (brand.yaml's binary_name); the agent binary follows the same
-  // "<binary_name>-agent" convention cmd/levelrail vs cmd/levelrail-agent
-  // already uses. Deriving it here instead of writing "levelrail-agent"
-  // literally keeps this file honoring the project's brand-indirection
-  // rule: no product name string hardcoded anywhere under /web.
-  const agentBinaryName = `${brand.BinaryName}-agent`
-  const enrollCommand = created
-    ? [
-        `APP_CONTROL_PLANE_ADDR=${controlPlaneAddr}`,
-        `APP_JOIN_TOKEN=${created.token}`,
-        created.ca_fingerprint
-          ? `APP_CA_FINGERPRINT=${created.ca_fingerprint}`
-          : null,
-        `./${agentBinaryName}`,
-      ]
-        .filter(Boolean)
-        .join(' ')
-    : ''
+  const trimmedName = nodeName.trim()
+  const nameInvalid = trimmedName !== '' && !NODE_NAME_PATTERN.test(trimmedName)
 
-  function copyToken() {
-    if (!created) {
-      return
-    }
-    void navigator.clipboard.writeText(created.token).then(() => {
-      setTokenCopied(true)
-    })
+  function generate() {
+    const addr = controlPlaneAddr.trim()
+    createJoinToken.mutate(
+      {
+        control_plane_addr: addr || undefined,
+        node_name: trimmedName || undefined,
+        mesh: mesh || undefined,
+      },
+      { onSuccess: setCreated },
+    )
   }
 
-  function copyCommand() {
-    void navigator.clipboard.writeText(enrollCommand).then(() => {
-      setCommandCopied(true)
+  if (created) {
+    const commands = created.join_commands
+    const fallbackCommand = [
+      `APP_CONTROL_PLANE_ADDR=${controlPlaneAddr.trim()}`,
+      `APP_JOIN_TOKEN=${created.token}`,
+      created.ca_fingerprint
+        ? `APP_CA_FINGERPRINT=${created.ca_fingerprint}`
+        : null,
+      `./${brand.BinaryName}-agent`,
+    ]
+      .filter(Boolean)
+      .join(' ')
+    const expires = new Date(created.expires_at).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
     })
+
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle>{t('join.createdTitle')}</DialogTitle>
+          <DialogDescription>{t('join.createdDescription')}</DialogDescription>
+        </DialogHeader>
+
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+          <WarningIcon className="mt-0.5 size-4 shrink-0" />
+          <p className="text-sm">{t('join.singleUse', { time: expires })}</p>
+        </div>
+
+        {commands ? (
+          <>
+            <CommandBlock
+              id="node-join-docker"
+              label={t('join.dockerLabel')}
+              hint={t('join.dockerHint')}
+              value={commands.docker}
+            />
+            <CommandBlock
+              id="node-join-binary"
+              label={t('join.binaryLabel')}
+              hint={t('join.binaryHint')}
+              value={commands.binary}
+            />
+          </>
+        ) : (
+          <CommandBlock
+            id="node-join-fallback"
+            label={t('join.fallbackLabel')}
+            hint={t('join.fallbackHint')}
+            value={fallbackCommand}
+          />
+        )}
+
+        <CommandBlock
+          id="node-join-token"
+          label={t('join.tokenLabel')}
+          value={created.token}
+          hint={t('join.afterRun')}
+        />
+
+        <DialogFooter>
+          <Button type="button" onClick={onDone}>
+            {t('join.done')}
+          </Button>
+        </DialogFooter>
+      </>
+    )
   }
 
   return (
     <>
-      {created ? (
-        <>
-          <DialogHeader>
-            <DialogTitle>Join token created</DialogTitle>
-            <DialogDescription>
-              Run the command below on the new machine to enroll it. The token
-              is a one-time bootstrap credential, not something to save
-              long-term.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-            <WarningIcon className="mt-0.5 size-4 shrink-0" />
-            <p className="text-sm">
-              This token will not be shown again. It expires at{' '}
-              {formatTime(created.expires_at)} (valid for 15 minutes).
-            </p>
-          </div>
-
-          <Field>
-            <FieldLabel htmlFor="node-join-token">Join token</FieldLabel>
-            <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
-              <code
-                id="node-join-token"
-                className="min-w-0 flex-1 overflow-x-auto text-xs break-all"
-              >
-                {created.token}
-              </code>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={copyToken}
-              >
-                {tokenCopied ? <CheckIcon /> : <CopyIcon />}
-                {tokenCopied ? 'Copied' : 'Copy'}
-              </Button>
-            </div>
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="node-control-plane-addr">
-              Control plane address
-            </FieldLabel>
-            <Input
-              id="node-control-plane-addr"
-              value={controlPlaneAddr}
-              onChange={(e) => {
-                setControlPlaneAddr(e.target.value)
-                setCommandCopied(false)
-              }}
-              className="font-mono text-xs"
-            />
-            <FieldDescription>
-              Host and port the new machine can reach this control plane on,
-              port 9443 by default. Pre-filled from this browser&apos;s own
-              address, change it if the new machine reaches this control plane a
-              different way (NAT, a separate public address).
-            </FieldDescription>
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="node-enroll-command">
-              Enrollment command
-            </FieldLabel>
-            <div className="flex items-start gap-2 rounded-lg border border-input bg-muted/50 p-2">
-              <code
-                id="node-enroll-command"
-                className="min-w-0 flex-1 overflow-x-auto text-xs break-all whitespace-pre-wrap"
-              >
-                {enrollCommand}
-              </code>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={copyCommand}
-              >
-                {commandCopied ? <CheckIcon /> : <CopyIcon />}
-                {commandCopied ? 'Copied' : 'Copy'}
-              </Button>
-            </div>
-            <FieldDescription>
-              Run this on the new machine. There is no live status check here:
-              refresh this page once the agent connects to see it appear in the
-              node list.
-            </FieldDescription>
-          </Field>
-
-          <DialogFooter>
-            <Button type="button" onClick={onDone}>
-              Done
-            </Button>
-          </DialogFooter>
-        </>
-      ) : (
-        <>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {onBack ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={onBack}
-                  aria-label="Back"
-                >
-                  <ArrowLeftIcon />
-                </Button>
-              ) : null}
-              <HardDrivesIcon className="size-4 text-muted-foreground" />
-              Add node
-            </DialogTitle>
-            <DialogDescription>
-              Generates a one-time join token, good for 15 minutes. Run the
-              enrollment command it produces on the new machine to connect its
-              agent to this control plane.
-            </DialogDescription>
-          </DialogHeader>
-
-          {createJoinToken.isError ? (
-            <Alert variant="destructive">
-              <WarningIcon />
-              <AlertDescription>
-                {createJoinToken.error.message}
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          <DialogFooter>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          {onBack ? (
             <Button
               type="button"
-              disabled={createJoinToken.isPending}
-              onClick={() => {
-                createJoinToken.mutate(undefined, { onSuccess: setCreated })
-              }}
+              variant="ghost"
+              size="icon-sm"
+              onClick={onBack}
+              aria-label={t('join.back')}
             >
-              {createJoinToken.isPending
-                ? 'Generating...'
-                : 'Generate join token'}
+              <ArrowLeftIcon />
             </Button>
-          </DialogFooter>
-        </>
-      )}
+          ) : null}
+          <HardDrivesIcon className="size-4 text-muted-foreground" />
+          {t('join.title')}
+        </DialogTitle>
+        <DialogDescription>{t('join.description')}</DialogDescription>
+      </DialogHeader>
+
+      <Field>
+        <FieldLabel htmlFor="node-control-plane-addr">
+          {t('join.addrLabel')}
+        </FieldLabel>
+        <Input
+          id="node-control-plane-addr"
+          value={controlPlaneAddr}
+          onChange={(e) => setControlPlaneAddr(e.target.value)}
+          className="font-mono text-xs"
+        />
+        <FieldDescription>{t('join.addrHint')}</FieldDescription>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="node-join-name">{t('join.nameLabel')}</FieldLabel>
+        <Input
+          id="node-join-name"
+          value={nodeName}
+          placeholder={t('join.namePlaceholder')}
+          aria-invalid={nameInvalid}
+          onChange={(e) => setNodeName(e.target.value)}
+          className="font-mono text-xs"
+        />
+        <FieldDescription>
+          {nameInvalid ? t('join.nameInvalid') : t('join.nameHint')}
+        </FieldDescription>
+      </Field>
+
+      <div className="space-y-1">
+        <label className="flex items-center gap-2 text-sm">
+          <Checkbox
+            checked={mesh}
+            onCheckedChange={(checked) => setMesh(checked === true)}
+          />
+          {t('join.meshLabel')}
+        </label>
+        <p className="text-xs text-muted-foreground">{t('join.meshHint')}</p>
+      </div>
+
+      {createJoinToken.isError ? (
+        <Alert variant="destructive">
+          <WarningIcon />
+          <AlertDescription>{createJoinToken.error.message}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      <DialogFooter>
+        <Button
+          type="button"
+          disabled={createJoinToken.isPending || nameInvalid}
+          onClick={generate}
+        >
+          {createJoinToken.isPending
+            ? t('join.generating')
+            : t('join.generate')}
+        </Button>
+      </DialogFooter>
     </>
   )
-}
-
-// "Expires at HH:MM" per the task's own plain-notice option, not a
-// countdown: a countdown implies urgency worth animating for a token
-// whose whole window is a flat 15 minutes, plain wall-clock time reads
-// faster.
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }

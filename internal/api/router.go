@@ -317,6 +317,8 @@ type Router struct {
 	releaseHist *releaseHistorySource
 	// upgradeHistory is nil unless WithUpgradeHistory was applied.
 	upgradeHistory UpgradeHistoryStore
+	// selfUpgrade is nil unless WithSelfUpgrade was applied.
+	selfUpgrade *selfUpgradeConfig
 	// certExpiryWarningWindow overrides alerting.DefaultCertExpiryWarningWindow
 	// for GET /api/v1/certificates's "expiring_soon" threshold, and for a
 	// kind=cert_expiry alert rule's own evaluation (cmd/levelrail/main.go
@@ -468,6 +470,10 @@ type Router struct {
 	githubAppPublicProbe         func(ctx context.Context, apiBase, slug string) *bool // nil: real GitHub probe; tests inject
 	appVisibility                appVisibilityCache
 	githubApp                    GitHubAppStore               // always set, same "core Store interface" shape as backupTargets/certs above: the connection row/its absence is always queryable, no secrets configuration needed just to read status
+	repoLayoutSource             repoLayoutSourceFunc         // nil uses defaultRepoLayoutSource; tests serve a fake tree
+	backupProtection             BackupProtection             // nil is valid: backup health, drill, policy and restore-to routes return 501
+	backupProtectionStore        BackupProtectionStore        // nil is valid, same as backupProtection above
+	cutover                      cutoverService               // in-memory cutover workers, zero value is ready
 	githubAppSecrets             GitHubAppSecrets             // nil is valid: every github-app route that needs it (register/start, callback, installed, repos, branches) returns 501, same shape as backupSecrets above
 	githubAppClient              GitHubAppClient              // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
 	githubAppState               *pendingState                // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see pendingState's own doc comment
@@ -574,6 +580,10 @@ type Router struct {
 	// meshPaths reports whether a remote node is reachable over the mesh,
 	// set via SetMeshPaths. nil reads as "mesh networking is off".
 	meshPaths meshpath.Resolver
+	// multiNode holds node moves, drains, labels and selectors; nil means 501.
+	multiNode *multiNodeState
+	// joinTokenTTL overrides nodeJoinTokenTTL, see WithNodeJoinTokenTTL.
+	joinTokenTTL time.Duration
 	// meshRotator is the same node's *network.Coordinator, narrowed to
 	// MeshKeyRotator. nil is valid, same shape as mesh above; set
 	// together with it by SetMesh.

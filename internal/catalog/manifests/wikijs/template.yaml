@@ -1,0 +1,22 @@
+id: wikijs
+name: Wiki.js
+description: A modern wiki with Markdown and visual editing, page permissions and full-text search, backed by Postgres.
+icon: book
+category: Productivity
+documentation_url: https://docs.requarks.io
+recommended_memory_bytes: 536870912
+env:
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled Postgres database. Generated once and reused on every redeploy.
+    generate: password
+    length: 32
+    secret: true
+domains:
+  - service: wiki
+    port: 3000
+    description: Public address of the wiki.
+healthcheck:
+  service: wiki
+  port: 3000
+  path: /healthz

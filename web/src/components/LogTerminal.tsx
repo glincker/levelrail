@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowDownIcon,
   ArrowsInIcon,
   ArrowsOutIcon,
+  PauseIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { LogLine } from '../hooks/useLogStream'
 import {
@@ -66,6 +68,7 @@ export function LogTerminal({
   // for those simply omit this.
   isFinished?: boolean
 }) {
+  const { t } = useTranslation('observability')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [filter, setFilter] = useState<LogFilter>({
@@ -130,6 +133,14 @@ export function LogTerminal({
     }
   }, [lines.length, isPaused, isFinished, virtualizer])
 
+  // Lines keep arriving while paused; the count at pause time lets the
+  // resume pill say how many are waiting.
+  const [pausedAtCount, setPausedAtCount] = useState(0)
+  const pauseTracked = useCallback(() => {
+    setPausedAtCount(lines.length)
+    pause()
+  }, [lines.length, pause])
+
   const handleScroll = useCallback(() => {
     if (isAutoScrollingRef.current) {
       return
@@ -143,9 +154,9 @@ export function LogTerminal({
     if (atBottom && isPaused) {
       resume()
     } else if (!atBottom && !isPaused) {
-      pause()
+      pauseTracked()
     }
-  }, [isPaused, pause, resume])
+  }, [isPaused, pauseTracked, resume])
 
   const handleResumeClick = useCallback(() => {
     resume()
@@ -161,9 +172,9 @@ export function LogTerminal({
     if (idx < 0) {
       return
     }
-    pause()
+    pauseTracked()
     virtualizer.scrollToIndex(idx, { align: 'center' })
-  }, [lines, pause, virtualizer])
+  }, [lines, pauseTracked, virtualizer])
 
   const handleCopy = useCallback(
     () => navigator.clipboard.writeText(logLinesToText(lines)),
@@ -261,6 +272,17 @@ export function LogTerminal({
         )}
       </button>
 
+      {!isPaused && !isFinished && lines.length > 0 && (
+        <button
+          type="button"
+          onClick={pauseTracked}
+          aria-label={t('live.pause')}
+          className="absolute top-12 right-10 rounded p-2 text-neutral-400 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none hover:bg-neutral-800 hover:text-neutral-100"
+        >
+          <PauseIcon className="size-3.5" aria-hidden="true" />
+        </button>
+      )}
+
       {isPaused && (
         <button
           type="button"
@@ -268,7 +290,9 @@ export function LogTerminal({
           className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-100 shadow-lg focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:outline-none hover:bg-neutral-700"
         >
           <ArrowDownIcon className="size-3.5" aria-hidden="true" />
-          Resume auto-scroll
+          {t('live.resume', {
+            count: Math.max(0, lines.length - pausedAtCount),
+          })}
         </button>
       )}
     </div>

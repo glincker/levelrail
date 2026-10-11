@@ -42,7 +42,7 @@ func (rt *Router) handleUpdatePreflight(w http.ResponseWriter, r *http.Request) 
 		RollbackCommand: "levelrail restore-snapshot --list",
 		CosignCommand:   installScriptCommand("install-cosign"),
 	}
-	release, _, known := rt.latestReleaseForCurrentChannel(r.Context())
+	release, known := rt.latestReleaseForCurrentChannel(r.Context())
 	var assets []string
 	var upgradeTag string
 	if known && release != nil {
@@ -87,18 +87,18 @@ func (rt *Router) latestRelease(ctx context.Context) (*githubRelease, bool) {
 // operator on beta/edge saw the version card report an upgrade available
 // while the preflight card below it said "latest release could not be
 // fetched", because it never looked past the stable release list.
-func (rt *Router) latestReleaseForCurrentChannel(ctx context.Context) (*upgrade.Release, string, bool) {
+func (rt *Router) latestReleaseForCurrentChannel(ctx context.Context) (*upgrade.Release, bool) {
 	channel := rt.currentUpdateChannel(ctx)
 	if channel == upgrade.ChannelStable {
 		release, ok := rt.latestRelease(ctx)
 		if !ok || release == nil {
-			return nil, channel, false
+			return nil, false
 		}
 		names := make([]string, 0, len(release.Assets))
 		for _, a := range release.Assets {
 			names = append(names, a.Name)
 		}
-		return &upgrade.Release{Tag: release.TagName, URL: release.HTMLURL, PublishedAt: release.PublishedAt, Body: release.Body, AssetNames: names}, channel, true
+		return &upgrade.Release{Tag: release.TagName, URL: release.HTMLURL, PublishedAt: release.PublishedAt, Body: release.Body, AssetNames: names}, true
 	}
 
 	release, ok := rt.channelUpdatesCache.Fresh(updatesCacheTTL, channel)
@@ -112,9 +112,9 @@ func (rt *Router) latestReleaseForCurrentChannel(ctx context.Context) (*upgrade.
 		}
 	}
 	if !ok || release == nil {
-		return nil, channel, false
+		return nil, false
 	}
-	return release, channel, true
+	return release, true
 }
 
 func (rt *Router) dockerEngineVersion() func(context.Context) (string, error) {

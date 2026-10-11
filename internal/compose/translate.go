@@ -38,15 +38,16 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 		}
 
 		d := store.DesiredService{
-			Name:       appName + "-" + key,
-			AppID:      appName,
-			Image:      svc.Image,
-			Env:        map[string]string(svc.Environment),
-			Labels:     svc.Labels,
-			Command:    svc.Command,
-			Entrypoint: svc.Entrypoint,
-			PullPolicy: pullPolicy,
-			DependsOn:  []string(svc.DependsOn),
+			Name:             appName + "-" + key,
+			AppID:            appName,
+			Image:            svc.Image,
+			Env:              map[string]string(svc.Environment),
+			Labels:           svc.Labels,
+			Command:          svc.Command,
+			Entrypoint:       svc.Entrypoint,
+			PullPolicy:       pullPolicy,
+			DependsOn:        []string(svc.DependsOn),
+			DependsOnHealthy: svc.DependsOnHealthy,
 		}
 		gpu, err := gpuFromDeploy(svc.Deploy)
 		if err != nil {
