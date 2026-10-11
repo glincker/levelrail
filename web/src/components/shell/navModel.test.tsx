@@ -21,6 +21,7 @@ const EXPECTED_GLOBAL = [
   '/network',
   '/network/proxy',
   '/domains',
+  '/dns',
   '/loadbalancers',
   '/settings/registry',
   '/settings/registry-credentials',

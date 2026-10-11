@@ -201,7 +201,9 @@
       "copy": "Copy domain",
       "copied": "Domain copied",
       "recheck": "Re-check DNS",
-      "automatic": "Automatic"
+      "automatic": "Automatic",
+      "wildcard": "Wildcard",
+      "wildcardHint": "Matches every single label under this domain. Exact domains on other apps still win."
     },
     "flag": {
       "waf": "WAF enabled",

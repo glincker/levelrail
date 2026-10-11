@@ -16,6 +16,7 @@ import {
   GavelIcon,
   GearIcon,
   GitBranchIcon,
+  GlobeHemisphereWestIcon,
   GlobeIcon,
   HardDrivesIcon,
   HeartbeatIcon,
@@ -54,6 +55,7 @@ export type GlobalTo =
   | '/network'
   | '/network/proxy'
   | '/domains'
+  | '/dns'
   | '/loadbalancers'
   | '/models'
   | '/ai-assistant'
@@ -162,6 +164,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: <TrafficSignalIcon />,
       },
       { id: 'domains', label: 'Domains', to: '/domains', icon: <GlobeIcon /> },
+      {
+        id: 'dns',
+        label: 'DNS',
+        to: '/dns',
+        icon: <GlobeHemisphereWestIcon />,
+      },
       {
         id: 'loadbalancers',
         label: 'Load balancers',
