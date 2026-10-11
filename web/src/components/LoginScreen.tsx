@@ -44,9 +44,11 @@ type LoginTab = 'sign-in' | 'register'
 export function LoginScreen({
   setup,
   sessionLink,
+  resumeApprovalId,
 }: {
   setup?: string
   sessionLink?: string
+  resumeApprovalId?: string
 }) {
   const brand = useBrand()
   const { t } = useTranslation('common')
@@ -83,7 +85,11 @@ export function LoginScreen({
   }
 
   const signInContent = (
-    <SignInFlow username={username} onUsernameChange={setUsername} />
+    <SignInFlow
+      username={username}
+      onUsernameChange={setUsername}
+      resumeApprovalId={resumeApprovalId}
+    />
   )
 
   if (sessionLink) {

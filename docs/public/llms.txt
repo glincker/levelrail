@@ -92,6 +92,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Host firewall](https://levelrail.com/host-firewall): manage allow and deny rules for the control plane host's ufw, with a lockout guard.
 - [Master key rotation](https://levelrail.com/master-key-rotation): rotate the envelope-encryption master key used for secrets.
 - [Identity and access](https://levelrail.com/identity-and-access): users, roles, IAM policies, API tokens, and audit logs.
+- [Security center](https://levelrail.com/security-center): security score and checklist, sessions and devices, sign-in approval scope, new sign-in alerts and API token hygiene.
 - [Projects and organizations](https://levelrail.com/projects-and-organizations): grouping apps and databases into projects, organizations, and environments.
 - [Supply chain visibility](https://levelrail.com/supply-chain): a software bill of materials, optional vulnerability scanning, and a release gate.
 - [Managing apps at scale](https://levelrail.com/managing-apps-at-scale): filter, tag, bulk-act on, clone, and promote apps when you run dozens of them.

@@ -27,6 +27,7 @@ const EXPECTED_GLOBAL = [
   '/settings/network-shares',
   '/settings/node-providers',
   '/settings/iam-policies',
+  '/security',
   '/models',
   '/pipelines',
   '/approvals',

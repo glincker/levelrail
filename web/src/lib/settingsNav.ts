@@ -79,6 +79,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         description: 'Sessions and login protection.',
       },
       {
+        to: '/security',
+        icon: ShieldCheckIcon,
+        title: 'Security center',
+        description:
+          'Security score, every session and device, and token policy.',
+      },
+      {
         to: '/settings/tokens',
         icon: KeyIcon,
         title: 'API tokens',

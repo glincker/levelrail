@@ -163,6 +163,7 @@ const sidebarGroups = [
           { text: 'Library auth engine', link: '/auth-engine' },
           { text: 'Host firewall', link: '/host-firewall' },
           { text: 'Exposure audit', link: '/exposure-audit' },
+          { text: 'Security center', link: '/security-center' },
           { text: 'Emergency access', link: '/emergency-access' },
           { text: 'Master key rotation', link: '/master-key-rotation' },
           { text: 'Access control', link: '/access-control' },

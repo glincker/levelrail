@@ -18,7 +18,12 @@ import {
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { setStoredUsername } from '../lib/authStore'
-import { goAfterLogin, type AuthUser } from './auth'
+import {
+  goAfterLogin,
+  isApprovalRequired,
+  type ApprovalRequiredResponse,
+  type AuthUser,
+} from './auth'
 
 export interface PasskeyResource {
   id: string
@@ -204,7 +209,7 @@ export async function beginPasskeyLogin(
 // already-fetched challenge and completes the sign-in.
 export async function finishPasskeyLogin(
   challenge: PasskeyLoginChallenge,
-): Promise<AuthUser> {
+): Promise<AuthUser | ApprovalRequiredResponse> {
   assertPasskeySupport()
   const options = PublicKeyCredential.parseRequestOptionsFromJSON(
     challenge.options,
@@ -228,7 +233,7 @@ export async function finishPasskeyLogin(
       `passkey sign-in failed: ${finishRes.status}`,
     )
   }
-  return (await finishRes.json()) as AuthUser
+  return (await finishRes.json()) as AuthUser | ApprovalRequiredResponse
 }
 
 export function useBeginPasskeyLogin() {
@@ -240,9 +245,17 @@ export function useBeginPasskeyLogin() {
 export function useFinishPasskeyLogin() {
   const navigate = useNavigate()
   const router = useRouter()
-  return useMutation<AuthUser, Error, PasskeyLoginChallenge>({
+  return useMutation<
+    AuthUser | ApprovalRequiredResponse,
+    Error,
+    PasskeyLoginChallenge
+  >({
     mutationFn: finishPasskeyLogin,
+    // A new browser held for approval stays on the sign-in screen to wait.
     onSuccess: (user) => {
+      if (isApprovalRequired(user)) {
+        return
+      }
       setStoredUsername(user.username)
       goAfterLogin(navigate, router)
     },
