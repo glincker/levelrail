@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/clitree"
+	"github.com/GLINCKER/levelrail/internal/hostdiag"
 )
 
 // deniedCommands are command paths that only make sense on an operator's own
@@ -74,6 +75,10 @@ func Check(argv []string) (string, error) {
 	walk := stripScopeFlags(argv)
 	if len(walk) == 0 {
 		return "", reject("empty command")
+	}
+	// Host lines are answered in process and must never reach the CLI binary.
+	if IsHost(argv) || walk[0] == hostdiag.Command {
+		return "", reject("%q is only available as the first word of a line", hostdiag.Command)
 	}
 	node, ok := clitree.Tree[walk[0]]
 	if !ok {
@@ -188,9 +193,17 @@ func Commands() []Command {
 		sort.Strings(c.Subcommands)
 		out = append(out, c)
 	}
+	if hostdiag.Enabled() {
+		subs := hostdiag.Subcommands()
+		sort.Strings(subs)
+		out = append(out, Command{Name: hostdiag.Command, Subcommands: subs})
+	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
 }
+
+// IsHost reports whether a parsed line belongs to the in-process host diagnostics.
+func IsHost(argv []string) bool { return len(argv) > 0 && argv[0] == hostdiag.Command }
 
 func hasAllowedChild(top string) bool {
 	for p := range allowedUnderDenied {

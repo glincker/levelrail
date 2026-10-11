@@ -152,6 +152,38 @@ func TestCommandsHideDenied(t *testing.T) {
 	}
 }
 
+func TestHostNeverReachesCLI(t *testing.T) {
+	for _, argv := range [][]string{{"host", "df"}, {"host"}, {"--team", "t1", "host", "df"}, {"--project=p", "host", "free"}} {
+		if _, err := Check(argv); err == nil || !IsReject(err) {
+			t.Errorf("Check(%q) = %v, want a refusal", argv, err)
+		}
+	}
+	if !IsHost([]string{"host", "df"}) || IsHost([]string{"apps", "host"}) || IsHost(nil) {
+		t.Fatal("IsHost routes the wrong lines")
+	}
+}
+
+func TestCommandsHostToggle(t *testing.T) {
+	find := func() (Command, bool) {
+		for _, c := range Commands() {
+			if c.Name == "host" {
+				return c, true
+			}
+		}
+		return Command{}, false
+	}
+	t.Setenv("APP_CLI_CONSOLE_HOST", "")
+	host, ok := find()
+	want := []string{"df", "free", "help", "load", "os", "service", "uptime"}
+	if !ok || !reflect.DeepEqual(host.Subcommands, want) {
+		t.Fatalf("host = %+v, want %v", host, want)
+	}
+	t.Setenv("APP_CLI_CONSOLE_HOST", "off")
+	if _, ok := find(); ok {
+		t.Fatal("host offered with APP_CLI_CONSOLE_HOST=off")
+	}
+}
+
 func TestRedact(t *testing.T) {
 	tests := []struct {
 		line, path, want string

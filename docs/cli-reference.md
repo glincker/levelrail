@@ -75,6 +75,22 @@ DEBUG: GET http://10.0.0.5:8080/api/v1/apps -> 200 OK (42ms)
 
 Some groups are off by default and hidden from `--help` and shell completion until the shell you run the CLI from sets `APP_EXPERIMENTAL`. This page marks them. The keys are `ai-chat` (`ai`, `settings ai-assistant`), `ai-models` (`models`), `load-balancer` (`lb`), `iac` (`apply`, `diff`, `export`) and `cloudflare-tunnel` (`cloudflare-tunnel`). See [Experimental features](experimental-features.md).
 
+## Web CLI console: host diagnostics
+
+The dashboard's CLI console (experimental key `cli-console`) runs the commands on this page against the control plane. It also answers a small `host` namespace itself, inside the control plane process, without starting the CLI or any other program. It is read only and is not a shell.
+
+| Command | Shows |
+| --- | --- |
+| `host df` | Disk usage of the data directory and `/` |
+| `host free` | Memory total, used, available, and swap |
+| `host uptime` | Time since the server booted |
+| `host load` | 1, 5 and 15 minute load averages and the CPU count |
+| `host os` | OS name (`PRETTY_NAME` from os-release), kernel release and architecture |
+| `host service` | The control plane's version, start time, uptime, goroutines, memory (RSS) and whether a restart supervisor (systemd, Docker) was detected |
+| `host help` | This list |
+
+None of them take arguments: paths, process names, container names and flags are refused. Each line goes through the same step-up, one-command-at-a-time, idle timeout, output cap and audit log (`cli_console.run`) as any other console command. Linux only; other platforms reply "not supported on this platform". Set `APP_CLI_CONSOLE_HOST=off` on the server to turn the namespace off while keeping the rest of the console.
+
 ## Top-level convenience aliases
 
 ```
