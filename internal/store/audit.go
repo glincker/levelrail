@@ -113,7 +113,15 @@ type AuditEntryFilter struct {
 	// Action matches an event name exactly, or every event of a family
 	// when given without a dot ("device_login" matches "device_login.expired").
 	Action string
+	// PathLike keeps rows whose path matches any of these LIKE patterns
+	// (escape literals with AuditLikeLiteral, '%' is the wildcard).
+	PathLike []string
+	// ActionPrefixes keeps rows whose action starts with any of these.
+	ActionPrefixes []string
 }
+
+// AuditLikeLiteral escapes s for use inside an AuditEntryFilter.PathLike pattern.
+func AuditLikeLiteral(s string) string { return auditLikeEscaper.Replace(s) }
 
 // auditLikeEscaper escapes LIKE wildcards so Search is a literal substring.
 var auditLikeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
@@ -167,6 +175,8 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 		conditions = append(conditions, `(action = ? OR action LIKE ? ESCAPE '\')`)
 		args = append(args, filter.Action, auditLikeEscaper.Replace(filter.Action)+".%")
 	}
+	conditions, args = appendAnyLike(conditions, args, "path", filter.PathLike, "")
+	conditions, args = appendAnyLike(conditions, args, "action", escapeAll(filter.ActionPrefixes), "%")
 	if len(conditions) > 0 {
 		query += "WHERE " + strings.Join(conditions, " AND ") + "\n"
 	}
@@ -191,6 +201,30 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 		return nil, fmt.Errorf("store: iterate audit entry rows: %w", err)
 	}
 	return out, nil
+}
+
+// appendAnyLike adds one "(col LIKE p1 OR col LIKE p2 ...)" condition.
+func appendAnyLike(conditions []string, args []any, col string, patterns []string, suffix string) ([]string, []any) {
+	var ors []string
+	for _, p := range patterns {
+		if p == "" {
+			continue
+		}
+		ors = append(ors, col+` LIKE ? ESCAPE '\'`)
+		args = append(args, p+suffix)
+	}
+	if len(ors) > 0 {
+		conditions = append(conditions, "("+strings.Join(ors, " OR ")+")")
+	}
+	return conditions, args
+}
+
+func escapeAll(in []string) []string {
+	out := make([]string, 0, len(in))
+	for _, s := range in {
+		out = append(out, auditLikeEscaper.Replace(s))
+	}
+	return out
 }
 
 // DeleteAuditEntriesOlderThan removes every audit_log row created strictly

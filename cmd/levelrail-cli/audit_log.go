@@ -17,7 +17,9 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "audit-log", "print audit log entries as a JSON array to stdout and nothing else", stderr)
 	var limitFlag int
 	var failedFlag bool
-	var searchFlag, beforeFlag, pathFlag, methodFlag, clientKindFlag, formatFlag, outputFileFlag, agentFlag string
+	var searchFlag, beforeFlag, pathFlag, methodFlag, clientKindFlag, formatFlag, outputFileFlag, agentFlag, resourceFlag, actionsFlag string
+	fs.StringVar(&resourceFlag, "resource", "", `only show entries for one resource: "domain:<name>", "zone:<name>" or "app:<name>"`)
+	fs.StringVar(&actionsFlag, "actions", "", `comma separated action prefixes, e.g. "dns_record.,proxy_route.,domain."`)
 	fs.IntVar(&limitFlag, "limit", 0, "max entries to return (default: server default)")
 	fs.StringVar(&beforeFlag, "before", "", "only show entries created before this RFC3339 timestamp (page backward using the TIME column of a prior run)")
 	fs.StringVar(&pathFlag, "path", "", "only show entries for this exact request path")
@@ -47,7 +49,7 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	opts := listAuditLogOptions{Limit: limitFlag, Before: beforeFlag, Path: pathFlag, Method: methodFlag, ClientKind: clientKindFlag, Search: searchFlag, FailedOnly: failedFlag, Agent: agentFlag}
+	opts := listAuditLogOptions{Limit: limitFlag, Before: beforeFlag, Path: pathFlag, Method: methodFlag, ClientKind: clientKindFlag, Search: searchFlag, FailedOnly: failedFlag, Agent: agentFlag, Resource: resourceFlag, Actions: actionsFlag}
 
 	if formatFlag == "csv" {
 		return runAuditLogExportCSV(context.Background(), client, opts, outputFileFlag, stdout, stderr, of)
@@ -134,6 +136,8 @@ Flags:
   --client-kind string    only show entries from this caller surface: "cli", "dashboard", "mcp", or "api"
   --search string          case-insensitive substring match across actor, ability, method, path and remote address
   --agent string           only show entries made with a token labeled with this agent name
+  --resource string        only show entries for "domain:<name>", "zone:<name>" or "app:<name>"
+  --actions string         comma separated action prefixes, e.g. "dns_record.,proxy_route.,domain."
   --failed                  only show failed requests (status code 400 or higher)
   --format string          "csv" exports entries as CSV instead of the default table/--json/--output output
   --output-file string     write the csv export to this file instead of stdout (requires --format csv)

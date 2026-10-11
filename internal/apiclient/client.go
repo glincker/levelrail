@@ -3547,6 +3547,12 @@ func auditLogQuery(opts ListAuditLogOptions) url.Values {
 	if opts.Agent != "" {
 		q.Set("agent", opts.Agent)
 	}
+	if opts.Resource != "" {
+		q.Set("resource", opts.Resource)
+	}
+	if opts.Actions != "" {
+		q.Set("actions", opts.Actions)
+	}
 	return q
 }
 

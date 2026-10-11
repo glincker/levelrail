@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 814 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 817 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -467,6 +467,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/dns-records", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleListDNSRecords", Description: "DNS records (dns_records.go): list/add/edit/delete the actual A/AAAA/CNAME/TXT/MX/SRV/CAA records in one app-owned domain's best-effort zone, via whichever ACME DNS-01 provider (Cloudflare or Route53) is configured. GET is AbilityRead: a live provider API read plus a DNS lookup, no write. POST/PUT/DELETE are AbilityRoot, the same \"real infrastructure, high blast radius\" tier PUT/DELETE .../tls-cert and .../auth already reserve: this writes directly to a live, externally visible DNS zone."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/domains/{domain}/dns-records", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleCreateDNSRecord", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/dns-records", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateDNSRecord", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/domains/{domain}/doctor", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleDomainDoctor", Description: "Domain doctor: ordered DNS, CAA, port, TLS, HTTP, redirect and HSTS checks with one fix each. Read tier: it only reads and probes, and it connects only when the domain resolves to this server."},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/error-pages", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainErrorPages", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/error-pages", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainErrorPages", Description: "Custom error pages (domain_error_pages.go): replaces Caddy's bare default error text, or whatever the backend itself returned, with the operator's own HTML for a fixed set of status codes (404, 500, 502, 503), enforced on the next ingress reconcile pass. GET is AbilityRead; PUT/DELETE are AbilityDeploy, the same tier PUT/DELETE .../waf already uses."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/error-pages", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainErrorPage", Description: ""},
@@ -701,6 +702,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/tags/{id}/apps", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppsByTag", Description: ""},
 	{Method: "GET", Path: "/api/v1/templates/custom", Ability: "AbilityRead", Group: "Other", Handler: "handleListCustomTemplates", Description: "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app. Deploy reuses the service-templates/{id}/deploy route above, no second deploy path."},
 	{Method: "DELETE", Path: "/api/v1/templates/custom/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteCustomTemplate", Description: ""},
+	{Method: "GET", Path: "/api/v1/traffic/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleTrafficSummary", Description: "Counts for the sidebar attention badge and the domains health strip, from stored state and the last known DNS checks only."},
 	{Method: "GET", Path: "/api/v1/usage/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleUsageSummary", Description: ""},
 	{Method: "GET", Path: "/public/status", Ability: "Public", Group: "Other", Handler: "handlePublicStatusHTML", Description: ""},
 	{Method: "GET", Path: "/public/status.json", Ability: "Public", Group: "Other", Handler: "handlePublicStatusJSON", Description: ""},
@@ -776,6 +778,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/backup-targets/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleUpdateBackupTarget", Description: ""},
 	{Method: "POST", Path: "/api/v1/backup-targets/{id}/test", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleTestBackupTarget", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListDomains", Description: "Domains (centralized cross-app list, web/src/routes/domains): every service_domains row, AbilityRead like GET /api/v1/apps, no new ability tier: this is the same data DomainEditor already exposes per-app, aggregated across every app in one read-only call."},
+	{Method: "GET", Path: "/api/v1/domains/{domain}/activity", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainActivity", Description: "One domain's activity timeline: audit rows plus certificate failures, cursor paginated by ?before. Visible to callers who can see its app."},
 	{Method: "GET", Path: "/api/v1/registry-credentials", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListRegistryCredentials", Description: "Registry credentials (registry_credentials.go): same ability tiers as backup targets just above, same reasoning (POST/PUT/DELETE handle live pull credentials)."},
 	{Method: "POST", Path: "/api/v1/registry-credentials", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateRegistryCredential", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/registry-credentials/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteRegistryCredential", Description: ""},

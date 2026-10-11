@@ -64,6 +64,7 @@ type Engine struct {
 	domainApps     AppDomainSource
 	domainChecker  DomainCheckSource
 	backups        BackupSource
+	traffic        trafficKinds
 	newNotifier    func(Rule) Notifier
 	logger         *slog.Logger
 
@@ -430,6 +431,22 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindCertExpiring, KindCertRenewalStalled, KindDomainNotResolving:
+			var skip bool
+			var notices []string
+			next, notices, skip, err = e.evaluateTrafficKind(ctx, r, now)
+			if skip {
+				continue
+			}
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+			if r.Kind == KindDomainNotResolving {
+				domainHealthNotices = notices
+			} else {
+				certNotices = notices
+			}
 		default:
 			e.logger.Warn("alerting: rule has unknown kind, skipping", slog.String("rule_id", r.ID), slog.String("kind", string(r.Kind)))
 			continue
@@ -535,7 +552,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if r.Kind == KindCrashloop && !resolved {
 		ev.LogLines = e.fetchRecentLogLines(ctx, r.ResourceID)
 	}
-	if r.Kind == KindCertExpiry && !resolved {
+	if (r.Kind == KindCertExpiry || r.Kind == KindCertExpiring || r.Kind == KindCertRenewalStalled) && !resolved {
 		ev.CertNotices = certNotices
 	}
 	if r.Kind == KindPatchStatus && !resolved {
@@ -556,7 +573,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if r.Kind == KindScheduledTaskFailure && !resolved {
 		ev.TaskFailureNotice = taskFailureNotice
 	}
-	if r.Kind == KindDomainHealth && !resolved {
+	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
 	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale) && !resolved {

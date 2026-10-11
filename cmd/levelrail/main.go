@@ -965,6 +965,7 @@ func run(logger *slog.Logger) error {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
+	alertingEngine.SetTrafficSources(db, ingressdriver.DefaultACMEFailures())
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetChanges(changes.New(db, db, db, logger), alertDashboardLink())
 	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))

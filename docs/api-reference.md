@@ -590,7 +590,7 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 57 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+::: details 58 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -660,6 +660,7 @@ Endpoints for:
 | POST | /api/v1/settings/ingress/https | AbilityRoot | handleEnableHTTPS |
 | GET | /api/v1/apps/{name}/domains/{domain}/search-visibility | AbilityRead | handleGetDomainSearchVisibility |
 | PUT | /api/v1/apps/{name}/domains/{domain}/search-visibility | AbilityDeploy | handleSetDomainSearchVisibility |
+| POST | /api/v1/apps/{name}/domains/{domain}/doctor | AbilityRead | handleDomainDoctor |
 
 :::
 
@@ -689,6 +690,7 @@ Endpoints for:
 | GET | /api/v1/registry-credentials/{id}/repositories | AbilityReadSensitive | handleListRegistryCredentialRepositories |
 | GET | /api/v1/registry-credentials/{id}/tags | AbilityReadSensitive | handleListRegistryCredentialTags |
 | GET | /api/v1/domains | AbilityRead | handleListDomains |
+| GET | /api/v1/domains/{domain}/activity | AbilityRead | handleDomainActivity |
 
 ## Built-in Container Registry
 
@@ -1037,6 +1039,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/apps/sessions/{id}/cutover/verify | AbilityWriteSensitive | handleAppImportCutoverVerify |
 | POST | /api/v1/migration/apps/sessions/{id}/items/{item}/route | AbilityWriteSensitive | handleRouteAppImport |
 | GET | /api/v1/migration/apps/sessions/{id}/receipt | AbilityRead | handleAppImportReceipt |
+| GET | /api/v1/traffic/summary | AbilityRead | handleTrafficSummary |
 
 ## See also
 

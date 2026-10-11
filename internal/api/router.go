@@ -266,6 +266,8 @@ type Router struct {
 	// domainChecks rate-limits handleCheckDomain's real DNS lookups per
 	// domain; always non-nil, constructed in NewRouter.
 	domainChecks *domainCheckCache
+	// traffic holds the domain status memo, summary cache and doctor probes.
+	traffic *trafficState
 	// apiRateLimit is the general per-actor request budget requireAbility
 	// enforces (api_rate_limit.go). nil is valid: NewRouter leaves it
 	// unset, so existing tests and any embedder that never opts in see
@@ -655,6 +657,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainSearchVisibility:      s,
 		lookupHost:                  defaultLookupHost,
 		domainChecks:                newDomainCheckCache(),
+		traffic:                     newTrafficState(),
 		backupTargets:               s,
 		registryCredentials:         s,
 		networkShares:               s,

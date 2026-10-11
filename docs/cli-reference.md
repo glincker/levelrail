@@ -636,6 +636,9 @@ Per domain settings take `<app> <domain>`, and the domain must already be one of
 ```
 levelrail-cli domains list [flags]
 levelrail-cli domains check <app> <domain> [flags]
+levelrail-cli domains doctor <app> <domain> [--json]
+levelrail-cli domains summary [--json]
+levelrail-cli domains activity <domain> [--limit N] [--before CURSOR] [--actions PREFIXES] [--json]
 levelrail-cli domains certificates [flags]
 levelrail-cli domains basic-auth get|set|clear <app> <domain> [flags]
 levelrail-cli domains maintenance get|set|clear <app> <domain> [flags]
@@ -1131,7 +1134,7 @@ levelrail-cli audit-log [flags]
 levelrail-cli audit-purge [flags]
 ```
 
-`audit-log` lists every recorded write, deploy and root tier request plus automatic certificate renewals, newest first. Read only requests are not recorded. It needs an admin or root scoped token. Flags: `--limit N`, `--before RFC3339`, `--path`, `--method`, `--client-kind cli|dashboard|mcp|api`, `--agent <name>` (entries made with a token labeled with that agent name), `--search <text>` (case-insensitive substring across actor, ability, method, path and remote address), `--failed` (status 400 or higher), `--format csv` with `--output-file FILE`. `--agent`, `--search` and `--failed` are applied server side and carry into csv exports.
+`audit-log` lists every recorded write, deploy and root tier request plus automatic certificate renewals, newest first. Read only requests are not recorded. It needs an admin or root scoped token. Flags: `--limit N`, `--before RFC3339`, `--path`, `--method`, `--client-kind cli|dashboard|mcp|api`, `--agent <name>` (entries made with a token labeled with that agent name), `--search <text>` (case-insensitive substring across actor, ability, method, path and remote address), `--resource domain:<name>|zone:<name>|app:<name>` (one resource's own trail), `--actions <prefixes>` (comma separated action prefixes such as `dns_record.,proxy_route.,domain.`), `--failed` (status 400 or higher), `--format csv` with `--output-file FILE`. `--agent`, `--search` and `--failed` are applied server side and carry into csv exports.
 
 `audit-purge` deletes every entry older than the retention window (`APP_AUDIT_LOG_RETENTION_DAYS`, default 90 days) right now instead of waiting for the automatic sweep. It needs an admin or root scoped token.
 
