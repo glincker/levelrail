@@ -132,6 +132,53 @@ func TestProxyIntegrationSetup(t *testing.T) {
 	}
 }
 
+func TestProxyIntegrationSetup_WaitsForProxyToLoadRoute(t *testing.T) {
+	tests := []struct {
+		name       string
+		noRouteFor int
+		wantStep   string
+		wantProbes int
+	}{
+		{name: "route appears after a few probes", noRouteFor: 3, wantStep: proxyStepDone, wantProbes: 4},
+		{name: "route never appears is pending, not an error", noRouteFor: 1 << 30, wantStep: proxyStepTodo},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			env := newProxyTestEnv(t)
+			env.rt.proxyIntegration.routeRetryInterval = 5 * time.Millisecond
+			env.rt.proxyIntegration.verifyTimeout = 300 * time.Millisecond
+			good := env.rt.proxyIntegration.probe
+			env.rt.proxyIntegration.probe = func(ctx context.Context, pt proxyroutes.ProbeTarget) proxyroutes.ProbeResult {
+				if env.probes < tc.noRouteFor {
+					env.probes++
+					return proxyroutes.ProbeResult{StatusCode: 404, NoRoute: true, Err: "the proxy has no route for this domain yet"}
+				}
+				return good(ctx, pt)
+			}
+			code, body := env.do(t, http.MethodPost, "/api/v1/system/proxy-integration/setup", `{"confirm":true}`)
+			var res proxySetupResponse
+			if err := json.Unmarshal(body, &res); err != nil || code != http.StatusOK {
+				t.Fatalf("setup: %d %s", code, body)
+			}
+			var verify *proxyStepResource
+			for i := range res.Steps {
+				if res.Steps[i].ID == proxyStepVerify {
+					verify = &res.Steps[i]
+				}
+			}
+			if verify == nil || verify.State != tc.wantStep {
+				t.Fatalf("verify step = %+v, want state %s", verify, tc.wantStep)
+			}
+			if tc.wantStep == proxyStepTodo && !strings.Contains(verify.Detail, proxyroutes.WaitingForRoute) {
+				t.Errorf("detail = %q, want %q", verify.Detail, proxyroutes.WaitingForRoute)
+			}
+			if tc.wantProbes != 0 && env.probes != tc.wantProbes {
+				t.Errorf("probes = %d, want %d", env.probes, tc.wantProbes)
+			}
+		})
+	}
+}
+
 func TestProxyIntegrationSetupConflicts(t *testing.T) {
 	tests := []struct {
 		name     string

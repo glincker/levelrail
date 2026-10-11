@@ -250,6 +250,10 @@ func verifyStep(domains []proxyDomainResource) proxyStepResource {
 		}
 		checked++
 		if !d.Reachable || d.Certificate == nil || !d.Certificate.Valid {
+			if d.LastError == proxyroutes.WaitingForRoute {
+				s.State, s.Detail = proxyStepTodo, d.Domain+": "+d.LastError
+				return s
+			}
 			reason := d.LastError
 			if reason == "" {
 				reason = "no trusted certificate was served"

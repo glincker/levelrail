@@ -118,6 +118,17 @@ describe('CreateAlertRuleDialog', () => {
     expect(screen.getByText('Disk write')).toBeInTheDocument()
   })
 
+  it('warns that a rule with no notify channel notifies nobody', async () => {
+    mockFetchRoutes({
+      'GET /api/v1/notification-channels': jsonRoute([]),
+      'GET /api/v1/apps/demo-app/jobs': jsonRoute([]),
+    })
+    renderDialog()
+    const popup = await openDialog()
+
+    expect(within(popup).getByRole('status')).toBeInTheDocument()
+  })
+
   it('renders the for-duration field as a number+unit DurationInput defaulting to 2 minutes', async () => {
     mockFetchRoutes({
       'GET /api/v1/notification-channels': jsonRoute([]),

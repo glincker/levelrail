@@ -633,6 +633,8 @@ levelrail-cli apps alerts create my-app --name "high CPU" --kind threshold \
   --channel-id <channel-id>
 ```
 
+A rule created without `--channel-id` (and without `--notify-url`) is saved but notifies nobody. The CLI prints a warning, the API returns it in `warnings`, and the dashboard dialog shows a notice.
+
 </Step>
 <Step title="Watch it fire">
 

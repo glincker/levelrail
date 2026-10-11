@@ -50,6 +50,15 @@ type proxySetupResponse struct {
 	Changes []string `json:"changes"`
 }
 
+const defaultProxyRouteRetry = 500 * time.Millisecond
+
+func (deps *proxyIntegrationDeps) routeRetry() time.Duration {
+	if deps.routeRetryInterval > 0 {
+		return deps.routeRetryInterval
+	}
+	return defaultProxyRouteRetry
+}
+
 func (deps *proxyIntegrationDeps) timeout() time.Duration {
 	if deps.verifyTimeout > 0 {
 		return deps.verifyTimeout
@@ -215,8 +224,26 @@ func (rt *Router) verifyProxyRoute(ctx context.Context, deps *proxyIntegrationDe
 	if it.Kind == proxyroutes.TargetDashboard {
 		path = "/healthz"
 	}
-	res := deps.probe(ctx, proxyroutes.ProbeTarget{Domain: it.Domain, Address: addr, Path: path, Timeout: deps.timeout()})
-	if !res.Reachable || res.StatusCode >= http.StatusInternalServerError {
+	target := proxyroutes.ProbeTarget{Domain: it.Domain, Address: addr, Path: path, Timeout: deps.timeout()}
+	res := deps.probe(ctx, target)
+	// The proxy loads a written file asynchronously, so its "no router" 404
+	// right after a write is a wait, not a failure.
+	retry := deps.routeRetry()
+	deadline := time.Now().Add(deps.timeout())
+	for res.NoRoute && time.Now().Add(retry).Before(deadline) {
+		select {
+		case <-ctx.Done():
+		case <-time.After(retry):
+		}
+		if ctx.Err() != nil {
+			break
+		}
+		res = deps.probe(ctx, target)
+	}
+	if res.NoRoute {
+		res.Err = proxyroutes.WaitingForRoute
+	}
+	if !res.NoRoute && (!res.Reachable || res.StatusCode >= http.StatusInternalServerError) {
 		l := deps.syncer.Ingress
 		if it.Kind == proxyroutes.TargetDashboard {
 			l = deps.syncer.Dashboard

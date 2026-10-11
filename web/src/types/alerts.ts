@@ -84,6 +84,8 @@ export interface AlertRule {
   name: string
   kind: AlertRuleKind
   resource_id: string
+  // Response-only, non-blocking problems with the saved rule.
+  warnings?: string[]
 
   // Threshold-kind fields, absent/zero-value for a crashloop rule.
   metric?: string
