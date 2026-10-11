@@ -26,6 +26,11 @@ const (
 	EnvMode = "APP_MCP_MODE"
 	// EnvToolsets names the env var that selects the toolsets.
 	EnvToolsets = "APP_MCP_TOOLSETS"
+	// EnvAllowWrite names the env var that exposes the confirm-gated write tools.
+	EnvAllowWrite = "APP_MCP_ALLOW_WRITE"
+	// EnvOutputSchemas names the env var that keeps outputSchema in tools/list
+	// for levelrail-mcp, which omits it by default.
+	EnvOutputSchemas = "APP_MCP_OUTPUT_SCHEMAS"
 	// EnvToolProfile names the env var that selects the tool profile.
 	EnvToolProfile = "APP_MCP_TOOL_PROFILE"
 
@@ -103,6 +108,11 @@ type Options struct {
 	// Profile, when set, replaces the mode's class filter with an allowlist.
 	// Read-only mode still hides every non-read tool.
 	Profile string
+	// AllowWrite exposes the confirm-gated write tools. Off by default.
+	AllowWrite bool
+	// OmitOutputSchemas drops outputSchema from tools/list. Results still
+	// carry structured content; only the schema advertisement is left out.
+	OmitOutputSchemas bool
 }
 
 // Summary reports what a server exposes.
@@ -137,6 +147,9 @@ func experimentalFeature(name string, m Meta) (experimental.Feature, bool) {
 
 func (o Options) allows(name string, m Meta) bool {
 	if f, gated := experimentalFeature(name, m); gated && !experimental.Enabled(f) {
+		return false
+	}
+	if m.WriteGated() && !o.AllowWrite {
 		return false
 	}
 	if o.Profile == ProfileAgentCore {
@@ -194,7 +207,7 @@ func applyOptions(server *mcp.Server, opts Options) Summary {
 	}
 	sort.Strings(hidden)
 	server.RemoveTools(hidden...)
-	if opts.Profile == ProfileAgentCore {
+	if opts.Profile == ProfileAgentCore || opts.OmitOutputSchemas {
 		server.AddReceivingMiddleware(omitOutputSchemas)
 	}
 	return sum

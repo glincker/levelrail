@@ -40,7 +40,8 @@ func TestParseFlags(t *testing.T) {
 // nesting doesn't stack on top of this assertion logic's own branching.
 func assertParseFlagsCase(t *testing.T, tt parseFlagsTestCase) {
 	t.Helper()
-	token, apiURL, profile, transport, listen, _, _, _, err := parseFlags("levelrail-mcp", tt.args)
+	f, err := parseAllFlags("levelrail-mcp", tt.args)
+	token, apiURL, profile, transport, listen := f.token, f.apiURL, f.profile, f.transport, f.listen
 	if tt.wantErr {
 		if err == nil {
 			t.Fatalf("parseFlags() error = nil, want an error")

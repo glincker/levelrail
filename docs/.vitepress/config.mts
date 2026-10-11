@@ -207,6 +207,7 @@ const sidebarGroups = [
           { text: 'AI models', link: '/ai-models' },
           { text: 'Working with AI agents', link: '/agents' },
           { text: 'AI assistant integration', link: '/ai-assistant' },
+          { text: 'MCP tools and write mode', link: '/mcp' },
           { text: 'In-app AI assistant chat', link: '/ai-assistant-chat' },
           { text: 'AI control', link: '/ai-control' },
         ],
