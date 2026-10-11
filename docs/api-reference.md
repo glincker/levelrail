@@ -417,6 +417,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/git-source/build | AbilityWriteSensitive | handleSetGitSourceBuild |
 | POST | /api/v1/apps/{name}/git-source/detect | AbilityDeploy | handleDetectGitSourceBuild |
 | POST | /api/v1/apps/{name}/previews/{number}/extend | AbilityDeploy | handleExtendPreviewEnvironment |
+| GET | /api/v1/apps/{name}/git-source/commits | AbilityDeploy | handleListGitSourceCommits |
 
 ## Telemetry
 

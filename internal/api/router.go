@@ -473,6 +473,7 @@ type Router struct {
 	security                     SecurityStore                // always set, security center policy, alerts and token hygiene
 	sec                          *securityState               // always set
 	repoLayoutSource             repoLayoutSourceFunc         // nil uses defaultRepoLayoutSource; tests serve a fake tree
+	gitCommits                   *gitCommitsCache             // brief provider-side cache for the deploy sheet's commits list
 	backupProtection             BackupProtection             // nil is valid: backup health, drill, policy and restore-to routes return 501
 	backupProtectionStore        BackupProtectionStore        // nil is valid, same as backupProtection above
 	cutover                      cutoverService               // in-memory cutover workers, zero value is ready
@@ -712,6 +713,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		canaries:                    s,
 		dbQueries:                   s,
 		resolveBranchSHA:            resolveRemoteBranchSHA,
+		gitCommits:                  newGitCommitsCache(),
 		previewEnvironments:         s,
 		githubApp:                   s,
 		security:                    s,

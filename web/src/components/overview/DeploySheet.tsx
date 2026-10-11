@@ -1,4 +1,6 @@
-import { DeployTriggerForm } from '../DeployTriggerForm'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { SmartDeployBody, type DeployMode } from '../deploy/SmartDeployBody'
 import {
   Sheet,
   SheetContent,
@@ -18,11 +20,16 @@ export function DeploySheet({
   tab: DeployTab | null
   onClose: () => void
 }) {
+  const { t } = useTranslation('smartDeploy')
+  const [mode, setMode] = useState<DeployMode>('auto')
   return (
     <Sheet
       open={tab !== null}
       onOpenChange={(open) => {
-        if (!open) onClose()
+        if (!open) {
+          setMode('auto')
+          onClose()
+        }
       }}
     >
       <SheetContent
@@ -30,14 +37,18 @@ export function DeploySheet({
         className="overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-lg"
       >
         <SheetHeader>
-          <SheetTitle>Deploy</SheetTitle>
-          <SheetDescription>
-            Ship an image or build from source.
-          </SheetDescription>
+          <SheetTitle>{t('title')}</SheetTitle>
+          <SheetDescription>{t('description')}</SheetDescription>
         </SheetHeader>
         <div className="p-4 pt-0">
           {tab ? (
-            <DeployTriggerForm key={tab} appName={appName} defaultTab={tab} />
+            <SmartDeployBody
+              appName={appName}
+              tab={tab}
+              mode={mode}
+              onModeChange={setMode}
+              onClose={onClose}
+            />
           ) : null}
         </div>
       </SheetContent>

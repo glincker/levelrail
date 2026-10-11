@@ -210,6 +210,45 @@ levelrail-cli apps git-source set api \
 
 Apply the recommended suggestion straight from the CLI with `levelrail-cli apps git-source detect <name> --apply`. Invalid values (absolute paths, `..`, or a Dockerfile outside the base directory) are rejected with a `400`.
 
+## Deploying by hand
+
+A push deploys on its own, but you can also deploy any commit yourself. The **Deploy** button on an app opens a sheet that adapts to what the app deploys from:
+
+- **Git source connected.** The sheet leads with "Deploy latest commit on `<branch>`": the head commit's SHA, message, author and age, with a one-click **Deploy latest commit** button. Below it are the ten most recent commits (each with its own **Deploy**, and a badge for live, failed or building), a branch switcher, and the build it will run (build pack, Dockerfile path, build directory). A status line says whether what is live is up to date or how many commits behind the head it is. **Redeploy last successful** and **Roll back to previous** appear once the app has history. After you click Deploy the sheet closes and opens the live build log.
+- **Image only.** An image form pre-filled with the current image and your recent tags as one-click chips. The "fresh registry lookup" option lives under **Advanced**.
+- **Nothing connected.** A guided choice between connecting a repository and deploying an image.
+
+Deploying a different branch than the connected one builds that branch once. Push webhooks keep following the connected branch.
+
+### Suggestions
+
+The sheet also lists suggestions computed on the control plane, each with a reason and one click to act. You can dismiss any of them; dismissals are remembered in your browser only.
+
+| Suggestion | Shown when |
+| --- | --- |
+| Commit failed to build | The head commit's latest build failed. Opens its build log. |
+| Webhook rejected | The latest webhook delivery had an invalid signature. |
+| Check the build settings | Detection says the repository looks like a monorepo with no app at the root, or the last build failed on build configuration. |
+| Turn on deploy on push | No webhook delivery has ever reached the app. |
+| Deploys on releases only | The deploy trigger mode is `release`. |
+| Preview every pull request | Webhook events are arriving and previews are off. One click enables them. |
+| Add a health check | The app has no readiness or liveness probe. |
+| Get told when deploys finish | The app has no deploy notification target. |
+
+### From the API and CLI
+
+```bash
+# Newest commits of the connected branch, with deploy status and suggestions
+levelrail-cli apps git-source commits web
+levelrail-cli apps git-source commits web --branch staging --json
+
+# Build and deploy a commit, or the newest commit of the connected branch
+levelrail-cli apps deploy web --commit 3f9c2ab
+levelrail-cli deploy web --latest
+```
+
+`GET /api/v1/apps/{name}/git-source/commits?branch=<name>` needs the `deploy` ability. It reads the commit list through the same provider API client and token as build detection (a stored deploy token first, else the GitHub App installation), caches the answer briefly (`APP_GIT_COMMITS_CACHE_TTL`, default `30s`, `0` disables; `?refresh=1` skips it), and returns at most the ten newest commits. Provider errors map to plain messages: `404` repository or branch not found, `422` access refused, `429` rate limited, `502` provider unreachable. A host without a commit-list API (for example a Bitbucket or plain git remote) returns only the head commit with `degraded: true`.
+
 ## How webhooks are processed
 
 Push and pull request webhooks from all four providers follow one path.
