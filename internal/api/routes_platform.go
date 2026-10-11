@@ -510,6 +510,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/auth", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainBasicAuth))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/auth", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetDomainBasicAuth))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/auth", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleClearDomainBasicAuth))
+	// Auth gate: same tiers as basic auth, it decides who reaches the host.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/auth-gate", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainAuthGate))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/auth-gate", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetDomainAuthGate))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/auth-gate", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleClearDomainAuthGate))
 
 	// Maintenance mode: GET is AbilityRead, matching the auth routes'
 	// own passive-visibility tier. PUT/DELETE are AbilityDeploy, not

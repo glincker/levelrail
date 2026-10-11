@@ -157,9 +157,11 @@ type Route struct {
 // on the {http.error.status_code} placeholder, which no other matcher
 // kind here can express.
 type Matcher struct {
-	Host       []string           `json:"host,omitempty"`
-	Path       []string           `json:"path,omitempty"`
-	Expression *ExpressionMatcher `json:"expression,omitempty"`
+	Host       []string            `json:"host,omitempty"`
+	Path       []string            `json:"path,omitempty"`
+	Expression *ExpressionMatcher  `json:"expression,omitempty"`
+	Not        []Matcher           `json:"not,omitempty"`
+	Vars       map[string][]string `json:"vars,omitempty"`
 }
 
 // ExpressionMatcher mirrors Caddy's http.matchers.expression module: a
@@ -190,6 +192,14 @@ type ReverseProxyHandler struct {
 	Transport        *HTTPTransport `json:"transport,omitempty"`
 	StreamCloseDelay string         `json:"stream_close_delay,omitempty"`
 	Headers          *ProxyHeaders  `json:"headers,omitempty"`
+	Rewrite          *ProxyRewrite  `json:"rewrite,omitempty"`
+}
+
+// ProxyRewrite is reverse_proxy's rewrite block: it changes only the
+// request sent upstream, never the one later handlers see.
+type ProxyRewrite struct {
+	Method string `json:"method,omitempty"`
+	URI    string `json:"uri,omitempty"`
 }
 
 // ResponseMatcher mirrors Caddy's reverse_proxy response matcher: a
@@ -391,6 +401,7 @@ func NewErrorPageResponse(statusCode int, body string) StaticResponseHandler {
 // HeadersHandler mirrors Caddy's headers handler, response side only.
 type HeadersHandler struct {
 	Handler  string          `json:"handler"`
+	Request  *HeaderOps      `json:"request,omitempty"`
 	Response *HeaderResponse `json:"response,omitempty"`
 }
 

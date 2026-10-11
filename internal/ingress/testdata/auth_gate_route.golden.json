@@ -1,0 +1,175 @@
+[
+  {
+    "match": [
+      {
+        "host": [
+          "app.example.com"
+        ]
+      }
+    ],
+    "handle": [
+      {
+        "handler": "rate_limit",
+        "rate_limits": {
+          "app.example.com-sustained": {
+            "key": "{http.request.remote.host}",
+            "max_events": 50,
+            "window": "10s"
+          }
+        }
+      },
+      {
+        "handler": "headers",
+        "request": {
+          "delete": [
+            "X-User",
+            "X-Email",
+            "X-Name"
+          ]
+        }
+      },
+      {
+        "handler": "reverse_proxy",
+        "upstreams": [
+          {
+            "dial": "auth.internal:9091"
+          }
+        ],
+        "handle_response": [
+          {
+            "match": {
+              "status_code": [
+                2
+              ]
+            },
+            "routes": [
+              {
+                "handle": [
+                  {
+                    "handler": "vars"
+                  }
+                ]
+              },
+              {
+                "match": [
+                  {
+                    "not": [
+                      {
+                        "vars": {
+                          "{http.reverse_proxy.header.X-User}": [
+                            ""
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "handle": [
+                  {
+                    "handler": "headers",
+                    "request": {
+                      "set": {
+                        "X-User": [
+                          "{http.reverse_proxy.header.X-User}"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "match": [
+                  {
+                    "not": [
+                      {
+                        "vars": {
+                          "{http.reverse_proxy.header.X-Email}": [
+                            ""
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "handle": [
+                  {
+                    "handler": "headers",
+                    "request": {
+                      "set": {
+                        "X-Email": [
+                          "{http.reverse_proxy.header.X-Email}"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "match": [
+                  {
+                    "not": [
+                      {
+                        "vars": {
+                          "{http.reverse_proxy.header.X-Name}": [
+                            ""
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "handle": [
+                  {
+                    "handler": "headers",
+                    "request": {
+                      "set": {
+                        "X-Name": [
+                          "{http.reverse_proxy.header.X-Name}"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "transport": {
+          "protocol": "http",
+          "tls": {
+            "server_name": "auth.internal"
+          },
+          "dial_timeout": "3s",
+          "response_header_timeout": "3s"
+        },
+        "headers": {
+          "request": {
+            "set": {
+              "Host": [
+                "auth.internal:9091"
+              ],
+              "X-Forwarded-Method": [
+                "{http.request.method}"
+              ],
+              "X-Forwarded-Uri": [
+                "{http.request.uri}"
+              ]
+            }
+          }
+        },
+        "rewrite": {
+          "method": "GET",
+          "uri": "/api/check?rd=1"
+        }
+      },
+      {
+        "handler": "reverse_proxy",
+        "upstreams": [
+          {
+            "dial": "127.0.0.1:9000"
+          }
+        ]
+      }
+    ]
+  }
+]

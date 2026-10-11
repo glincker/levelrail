@@ -451,6 +451,67 @@ GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/waf
 - No separate WAF/rate-limit event log (use Caddy's access log).
 :::
 
+## Auth gate (forward auth)
+
+An auth gate puts your own auth service (Authelia, oauth2-proxy, a small app of your own) in front of a domain. Before a request reaches your app, the ingress sends a `GET` to the auth service with the original request's `Cookie` and `Authorization` headers plus `X-Forwarded-Method`, `X-Forwarded-Uri`, `X-Forwarded-Host`, `X-Forwarded-Proto` and `X-Forwarded-For`. The request body is never sent to the auth service.
+
+- **2xx**: the request goes on to your app, carrying only the response headers you listed in **copy headers**.
+- **Anything else**: the auth service's status, headers (including `Location` and `Set-Cookie`) and body go straight back to the visitor. A `302` to your login page just works.
+- **Auth service down or too slow**: the visitor gets a `502` (unreachable) or `504` (timed out). The request never reaches your app.
+
+The gate is off by default and runs after rate limiting, the WAF and basic auth, and before caching and the proxy to your app.
+
+::: warning Header spoofing
+On every request to a gated domain, the ingress first deletes any copy of each copy header that the visitor sent. Your app only ever sees values that came from the auth service.
+:::
+
+### Worked example
+
+Your auth service answers `GET /check`. For a signed-in visitor it returns `200` with `X-User`, `X-Email` and `X-Name`; otherwise it returns `302` to its login page.
+
+```bash
+levelrail-cli domains auth-gate set my-app app.example.com \
+  --url http://auth:9091 --check-path /check \
+  --copy-header X-User,X-Email,X-Name
+```
+
+A visitor who sends `X-User: admin` themselves gets that header removed before the check, so your app cannot be fooled by it. If the visitor is signed in, the app receives the auth service's `X-User`, `X-Email` and `X-Name`.
+
+### Settings
+
+| Setting | Default | Notes |
+| --- | --- | --- |
+| Auth URL | required | `http` or `https`, a host, no username or password, no query. Internal addresses are allowed. A base path is kept: `https://auth.example.com/api` plus `/check` calls `/api/check`. |
+| Check path | `/` | Absolute path, may carry its own query. |
+| Copy headers | none | Up to 16 header names. `Cookie`, `Authorization`, `Host` and the `X-Forwarded-*` headers cannot be copied. |
+| Timeout | `APP_AUTH_GATE_TIMEOUT` | Per domain override in seconds. The env var takes a Go duration (`3s`) or whole seconds. |
+
+### Configuration
+
+<Tabs :items="['Dashboard', 'CLI', 'API']">
+<Tab value="Dashboard">
+
+Each domain's row in an app's **Domains** tab has an **Add an auth gate** control next to basic auth.
+
+</Tab>
+<Tab value="CLI">
+
+```bash
+levelrail-cli domains auth-gate get|set|clear <app> <domain>
+```
+
+</Tab>
+<Tab value="API">
+
+```text
+GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/auth-gate
+```
+
+Writes need the root ability, like basic auth.
+
+</Tab>
+</Tabs>
+
 ## Domain redirects
 
 For force HTTPS, www and apex presets, aliases and other per-domain controls (headers, path forwarders, country rules, caching), see [Domain traffic controls](domain-traffic-controls.md).

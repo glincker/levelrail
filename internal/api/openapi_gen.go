@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1020 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1023 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -518,6 +518,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/auth", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainBasicAuth", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/auth", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainBasicAuth", Description: "Domain basic auth (domain_basic_auth.go): HTTP Basic Auth protection on one app-owned domain, enforced by Caddy's authentication handler (internal/reconcile/ingress) on the next reconcile pass. GET is AbilityRead, the same passive-visibility tier GET /api/v1/settings/cloudflare-tunnel uses for its own has_token-shaped read. PUT/DELETE are AbilityRoot, matching PUT/ DELETE /api/v1/settings/cloudflare-tunnel: this changes how a live, currently-routed host is secured, the same \"real infrastructure, high blast radius\" class of change Cloudflare Tunnel/DNS and the ACME toggle already reserve AbilityRoot for."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/auth", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainBasicAuth", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/auth-gate", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainAuthGate", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/auth-gate", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainAuthGate", Description: "Auth gate: same tiers as basic auth, it decides who reaches the host."},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/auth-gate", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainAuthGate", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/cache", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleDeleteDomainPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/cache", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainPolicy", Description: "Ingress response cache rules, purge and per-domain stats."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/cache", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainPolicy", Description: ""},

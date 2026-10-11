@@ -62,6 +62,8 @@ type ProxyRoute struct {
 	// reproduces this package's prior behavior exactly: no such handler
 	// at all.
 	WAF *WAFConfig
+	// AuthGate, if non-nil, sends every request to an auth service first.
+	AuthGate *AuthGate
 	// ErrorPages, if non-empty, replaces the response for each listed
 	// status code with the operator's own HTML, covering both a status
 	// the backend itself returns (via ReverseProxyHandler.HandleResponse)
@@ -538,6 +540,14 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if r.Upstream != nil && (r.LB == nil || len(r.LB.Upstreams) == 0) {
 			// After forwarders so their path rules match the original path.
 			handle = r.Upstream.apply(handle)
+		}
+		if r.AuthGate != nil {
+			// After WAF, rate limit and basic auth, before cache and the proxy.
+			gate, err := r.AuthGate.handlers()
+			if err != nil {
+				return nil, fmt.Errorf("ingress: build routes config: route %d auth gate: %w", i, err)
+			}
+			handle = append(gate, handle...)
 		}
 		if r.BasicAuth != nil {
 			// Prepended, not appended: Caddy runs a route's handlers in

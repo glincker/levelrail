@@ -1,4 +1,28 @@
 {
+  "authGate": {
+    "badgeOn": "Auth gate on",
+    "badgeOff": "No auth gate",
+    "setUp": "Add an auth gate",
+    "manage": "Manage",
+    "hide": "Hide",
+    "description": "Every request is checked by your auth service first. A 2xx answer lets it through; anything else (like a redirect to your login page) goes back to the visitor unchanged. Copies of the headers below sent by the visitor are always removed, so they cannot be spoofed.",
+    "enabled": "Gate enabled",
+    "urlLabel": "Auth service URL",
+    "urlHelp": "http or https, no username or password. Internal addresses are fine.",
+    "checkPathLabel": "Check path",
+    "copyHeadersLabel": "Headers to pass to the app",
+    "copyHeadersHelp": "Comma separated, up to 16. Copied from the auth response only when it answers 2xx.",
+    "timeoutLabel": "Timeout in seconds",
+    "timeoutHelp": "Leave blank to use the server default ({{seconds}}s). If the auth service is down or too slow, visitors get an error, never the app.",
+    "save": "Save",
+    "saving": "Saving...",
+    "remove": "Remove auth gate",
+    "removing": "Removing...",
+    "errors": {
+      "urlRequired": "Enter the URL of your auth service.",
+      "timeout": "The timeout must be a whole number of seconds."
+    }
+  },
   "wizard": {
     "open": "Guided setup",
     "close": "Close guide",

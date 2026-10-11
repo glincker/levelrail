@@ -68,6 +68,8 @@ type (
 	setDomainTLSCertRequest          = apiclient.SetDomainTLSCertRequest
 	domainWAFResource                = apiclient.DomainWAFResource
 	setDomainWAFRequest              = apiclient.SetDomainWAFRequest
+	domainAuthGateResource           = apiclient.DomainAuthGateResource
+	setDomainAuthGateRequest         = apiclient.SetDomainAuthGateRequest
 	domainRedirectResource           = apiclient.DomainRedirectResource
 	setDomainRedirectRequest         = apiclient.SetDomainRedirectRequest
 	domainErrorPagesResource         = apiclient.DomainErrorPagesResource

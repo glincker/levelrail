@@ -16,6 +16,7 @@ import type { AppDetail } from '../types/appDetail'
 import { useAppNetwork } from '../queries/appNetwork'
 import { DomainDnsCheck } from './DomainDnsCheck'
 import { DomainBasicAuthControl } from './DomainBasicAuthControl'
+import { DomainAuthGateControl } from './DomainAuthGateControl'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -144,6 +145,7 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
                 <div key={domain} className="space-y-1.5">
                   <DomainDnsCheck appName={app.name} domain={domain} />
                   <DomainBasicAuthControl appName={app.name} domain={domain} />
+                  <DomainAuthGateControl appName={app.name} domain={domain} />
                 </div>
               ))}
             </div>

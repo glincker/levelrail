@@ -17,6 +17,7 @@ import { DomainDnsCheck } from './DomainDnsCheck'
 import { ProxyDomainStatus, ProxyHandledTlsBadge } from './ProxyDomainStatus'
 import { DomainDnsRecordsControl } from './DomainDnsRecordsControl'
 import { DomainBasicAuthControl } from './DomainBasicAuthControl'
+import { DomainAuthGateControl } from './DomainAuthGateControl'
 import { DomainErrorPagesControl } from './DomainErrorPagesControl'
 import { DomainMaintenanceControl } from './DomainMaintenanceControl'
 import { DomainRedirectControl } from './DomainRedirectControl'
@@ -232,6 +233,10 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                                 domain={domain}
                               />
                               <DomainBasicAuthControl
+                                appName={app.name}
+                                domain={domain}
+                              />
+                              <DomainAuthGateControl
                                 appName={app.name}
                                 domain={domain}
                               />

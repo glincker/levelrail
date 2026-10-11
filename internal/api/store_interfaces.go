@@ -556,6 +556,7 @@ type Store interface {
 	DomainMaintenanceStore
 	DomainTLSCertStore
 	DomainWAFStore
+	DomainAuthGateStore
 	DomainRedirectStore
 	DomainErrorPagesStore
 	DomainSearchVisibilityStore

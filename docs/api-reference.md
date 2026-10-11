@@ -664,7 +664,7 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 86 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+::: details 89 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -763,6 +763,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/domains/go-live/plan | AbilityWrite | handleGoLivePlan |
 | POST | /api/v1/settings/ingress/apps-base-domain/backfill | AbilityRoot | handleBackfillBaseDomain |
 | POST | /api/v1/apps/{name}/domains/{domain}/doctor | AbilityRead | handleDomainDoctor |
+| GET | /api/v1/apps/{name}/domains/{domain}/auth-gate | AbilityRead | handleGetDomainAuthGate |
+| PUT | /api/v1/apps/{name}/domains/{domain}/auth-gate | AbilityRoot | handleSetDomainAuthGate |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/auth-gate | AbilityRoot | handleClearDomainAuthGate |
 
 :::
 
