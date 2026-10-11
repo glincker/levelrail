@@ -27,7 +27,17 @@
       "ok": "Pass",
       "warn": "Warning",
       "fail": "Blocked",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "pending": "Waiting"
+    },
+    "waiting": "This release is still being published. Nothing is wrong with your server: re-check in a few minutes.",
+    "recheckAll": "Re-check",
+    "protects": "Protects: {{what}}",
+    "fix": {
+      "backupNow": "Back up now",
+      "backingUp": "Backing up...",
+      "recheck": "Re-check",
+      "rechecking": "Re-checking..."
     }
   },
   "history": {
@@ -186,7 +196,6 @@
       "first": "first report"
     }
   },
-
   "selfUpgrade": {
     "title": "Upgrade this server",
     "description": "Downloads the release, checks its checksum and signature, backs up the database, tries the migrations on a copy, swaps the program and restarts. If the new release does not become healthy in time, the previous program and data come back automatically.",
@@ -250,5 +259,94 @@
       "own_ports": "Recommended: install with its own ports 80 and 443",
       "behind_proxy": "Recommended: install behind your existing proxy"
     }
+  },
+  "channel": {
+    "description": "Which release stream to compare against and, if enabled, check in the background. Checking never applies an update by itself.",
+    "autoCheckHelp": "This only controls whether the control plane periodically checks and shows a notice when a newer release is available. A release is applied only when you start or schedule an upgrade, or when automatic upgrades below are turned on."
+  },
+  "upgradeNow": {
+    "button": "Upgrade to {{version}} now",
+    "fixFirst": "Fix the blocked checks above to enable the upgrade.",
+    "blockedTitle_one": "1 check needs attention before you can upgrade",
+    "blockedTitle_other": "{{count}} checks need attention before you can upgrade",
+    "waitingTitle": "Waiting for the release to finish publishing",
+    "confirmTitle": "Upgrade to {{version}}",
+    "confirmDescription": "This server will go from {{current}} to {{target}}. Your apps keep running.",
+    "willBackup": "A backup of the control plane database is taken and kept before anything changes.",
+    "willRestart": "The control plane restarts once. This page reconnects by itself.",
+    "willRollback": "If the new release is not healthy in time, the previous program and its data come back automatically.",
+    "confirm": "Upgrade now",
+    "progressTitle": "Upgrading to {{version}}",
+    "reconnect": "The control plane restarts during the upgrade. This page keeps checking and reloads once the new release answers.",
+    "done": "Upgraded to {{version}}"
+  },
+  "schedule": {
+    "button": "Schedule upgrade",
+    "dialogTitle": "Schedule the upgrade to {{version}}",
+    "dialogDescription": "The checks run again at the scheduled time. If any fails, nothing is applied, you are alerted, and it retries until the grace period ends.",
+    "whenLabel": "When",
+    "whenAt": "At a specific time",
+    "whenWindow": "In the next maintenance window",
+    "atLabel": "Date and time (server time zone: {{timezone}})",
+    "windowNext": "The next window opens {{time}} ({{timezone}}).",
+    "noWindow": "No maintenance window is configured. Set one under Automatic upgrades, or pick a time.",
+    "majorAck": "I understand this is a major version jump and may not be reversible without a restore.",
+    "firesNote": "Only a root session or token can schedule or cancel. Every change is written to the audit log.",
+    "cancel": "Cancel",
+    "submit": "Schedule upgrade",
+    "reschedule": "Reschedule",
+    "saving": "Saving...",
+    "cancelSchedule": "Cancel schedule",
+    "bannerTitle": "Upgrade to {{version}} scheduled for {{time}} ({{timezone}})",
+    "automatic": "Scheduled by automatic upgrades",
+    "blockedReason": "Not applied yet: {{reason}}. Retrying until {{until}}.",
+    "state": {
+      "pending": "Scheduled",
+      "blocked": "Held",
+      "running": "Running",
+      "applied": "Applied",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "missed": "Missed"
+    }
+  },
+  "auto": {
+    "title": "Automatic upgrades",
+    "description": "Off by default. When on, the control plane schedules new releases into your maintenance window and applies them with the same checks, backup and rollback as a manual upgrade.",
+    "loading": "Loading the automatic upgrade policy...",
+    "unavailable": "The automatic upgrade policy is available to root sessions and tokens.",
+    "modeLabel": "Automatic upgrades",
+    "modeHelp": "Releases with breaking changes that need your acknowledgement, and major version jumps, are never applied automatically.",
+    "mode": {
+      "off": "Off (upgrade only when I start or schedule it)",
+      "patch": "Patch releases only (same minor version)",
+      "any": "Any new release on the configured channel"
+    },
+    "notice": {
+      "off": "Automatic upgrades are off. This control plane upgrades only when you start or schedule an upgrade.",
+      "patch": "Automatic upgrades are on for patch releases. New patch releases are applied inside your maintenance window after the minimum release age.",
+      "any": "Automatic upgrades are on for any new release on the channel. Releases are applied inside your maintenance window after the minimum release age.",
+      "paused": "Automatic upgrades are paused. Nothing is applied automatically until you resume."
+    },
+    "windowLabel": "Maintenance window",
+    "preset": {
+      "nightly": "Every night at 03:00",
+      "weekly": "Sundays at 03:00",
+      "weekdays": "Weekdays at 02:00",
+      "custom": "Custom cron"
+    },
+    "cronLabel": "Cron (start of window)",
+    "durationLabel": "Window length (minutes)",
+    "timezoneLabel": "Time zone",
+    "minAgeLabel": "Minimum release age (days)",
+    "minAgeHelp": "Wait this many days after a release is published, so early regressions are caught by others first.",
+    "notifyLabel": "Notify",
+    "notifyNone": "No notification channels yet. Alerts still go to every enabled channel once you add one.",
+    "notifyHelp": "Where scheduled, held and failed upgrade notices go. With none selected, every enabled channel is used.",
+    "pauseLabel": "Pause automatic upgrades",
+    "nextWindow": "Next window: {{time}} ({{timezone}}).",
+    "decision": "Latest decision for {{version}}: {{decision}}",
+    "save": "Save",
+    "saved": "Automatic upgrade policy saved."
   }
 }

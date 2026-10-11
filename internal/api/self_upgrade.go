@@ -113,6 +113,12 @@ func (c *selfUpgradeConfig) releases(ctx context.Context) ([]upgrade.HistoryRele
 	return list, nil
 }
 
+func (c *selfUpgradeConfig) expire() {
+	c.mu.Lock()
+	c.cachedAt = time.Time{}
+	c.mu.Unlock()
+}
+
 type selfUpgradeBreaking struct {
 	ID          string `json:"id"`
 	Version     string `json:"version"`

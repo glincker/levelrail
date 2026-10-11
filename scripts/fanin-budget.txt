@@ -2,6 +2,7 @@
 # with a reason in the PR; lowering it after a split is the point.
 internal/bindaddr 85
 internal/bindmount 87
+internal/compose 24
 internal/docker 91
 internal/dockerguard 25
 internal/gpu 83

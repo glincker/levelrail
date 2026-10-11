@@ -70,6 +70,12 @@ System endpoints for:
 | GET | /api/v1/updates/self-upgrade/plan | AbilityRead | handleSelfUpgradePlan |
 | GET | /api/v1/updates/self-upgrade/attempts | AbilityRead | handleSelfUpgradeAttempts |
 | POST | /api/v1/updates/self-upgrade | AbilityRoot | handleSelfUpgradeStart |
+| GET | /api/v1/updates/schedule | AbilityRead | handleGetUpgradeSchedule |
+| POST | /api/v1/updates/schedule | AbilityRoot | handleCreateUpgradeSchedule |
+| DELETE | /api/v1/updates/schedule | AbilityRoot | handleCancelUpgradeSchedule |
+| GET | /api/v1/updates/auto | AbilityRoot | handleGetUpgradePolicy |
+| PUT | /api/v1/updates/auto | AbilityRoot | handleUpdateUpgradePolicy |
+| POST | /api/v1/updates/backup-now | AbilityRoot | handleUpgradeBackupNow |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

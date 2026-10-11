@@ -33,7 +33,9 @@ import {
 } from '../../queries/updates'
 import type { UpdateChannel, UpdateStatus } from '../../queries/updates'
 import { UpgradePreflight } from '../../components/settings/UpgradePreflight'
-import { SelfUpgrade } from '../../components/settings/SelfUpgrade'
+import { UpgradeAttempts } from '../../components/settings/UpgradeAttempts'
+import { UpgradeNow } from '../../components/settings/UpgradeNow'
+import { AutomaticUpgrades } from '../../components/settings/AutomaticUpgrades'
 import { ServerReadiness } from '../../components/settings/ServerReadiness'
 import { ReleaseHistory } from '../../components/settings/ReleaseHistory'
 import { UpgradeHistory } from '../../components/settings/UpgradeHistory'
@@ -108,6 +110,7 @@ function UpdatesSettingsPage() {
             </span>
           </div>
           <UpdateStatusRow status={status} />
+          <UpgradeNow />
           <div>
             <Button
               type="button"
@@ -138,10 +141,7 @@ function UpdatesSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Release channel</CardTitle>
-          <CardDescription>
-            Which release stream to compare against and, if enabled, check in
-            the background. This never applies an update by itself.
-          </CardDescription>
+          <CardDescription>{t('channel.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form
@@ -193,11 +193,7 @@ function UpdatesSettingsPage() {
                 Check for updates in the background
               </label>
             </div>
-            <FieldDescription>
-              The control plane never upgrades itself either way; this only
-              controls whether it periodically checks and surfaces a notice when
-              a newer release is available.
-            </FieldDescription>
+            <FieldDescription>{t('channel.autoCheckHelp')}</FieldDescription>
             {setSettings.isError ? (
               <p role="alert" className="text-sm text-destructive">
                 {setSettings.error.message}
@@ -207,6 +203,16 @@ function UpdatesSettingsPage() {
               Save
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('auto.title')}</CardTitle>
+          <CardDescription>{t('auto.description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AutomaticUpgrades />
         </CardContent>
       </Card>
 
@@ -222,11 +228,11 @@ function UpdatesSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('selfUpgrade.title')}</CardTitle>
+          <CardTitle>{t('selfUpgrade.attemptsTitle')}</CardTitle>
           <CardDescription>{t('selfUpgrade.description')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <SelfUpgrade />
+          <UpgradeAttempts />
         </CardContent>
       </Card>
 

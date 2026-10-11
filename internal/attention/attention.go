@@ -87,6 +87,7 @@ const (
 	KindDBEOL               = "db_eol"
 	KindDBUpgradeFailed     = "db_upgrade_failed"
 	KindDockerGuard         = "docker_guard"
+	KindUpgradeBlocked      = "upgrade_blocked"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

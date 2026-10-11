@@ -1,23 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { StatusPill, type Tone } from '@/components/kit'
-import {
-  preflightQueryOptions,
-  type UpgradeCheckStatus,
-} from '../../queries/updates'
+import { preflightQueryOptions } from '../../queries/updates'
+import { useRecheckPreflight } from '../../queries/upgradeSchedule'
+import { Button } from '../ui/button'
 import { CopyCommand } from './CopyCommand'
 import { ReleaseNotes } from './ReleaseNotes'
-
-const STATUS_TONE: Record<UpgradeCheckStatus, Tone> = {
-  ok: 'success',
-  warn: 'warning',
-  fail: 'danger',
-  unknown: 'neutral',
-}
+import { UpgradeCheckRow } from './UpgradeCheckRow'
 
 export function UpgradePreflight() {
   const { t } = useTranslation('updates')
   const { data, isPending, isError } = useQuery(preflightQueryOptions())
+  const recheck = useRecheckPreflight()
   if (isPending) {
     return (
       <p className="text-sm text-muted-foreground">{t('preflight.running')}</p>
@@ -42,34 +35,20 @@ export function UpgradePreflight() {
           </div>
         </div>
       ) : null}
-      <ul className="space-y-2" aria-label={t('preflight.checksLabel')}>
+      <ul className="space-y-3" aria-label={t('preflight.checksLabel')}>
         {data.checks.map((c) => (
-          <li key={c.code} className="flex items-start gap-3 text-sm">
-            <StatusPill
-              tone={STATUS_TONE[c.status]}
-              label={t(`preflight.status.${c.status}`)}
-              size="sm"
-            />
-            <span className="min-w-0 flex-1">
-              <span className="font-medium text-foreground">{c.name}</span>
-              <span className="block text-xs text-muted-foreground">
-                {c.message}
-              </span>
-              {c.code === 'release_verifier' &&
-              c.status === 'warn' &&
-              data.cosign_command ? (
-                <span className="mt-2 block">
-                  <CopyCommand
-                    label={t('preflight.cosignCommand')}
-                    command={data.cosign_command}
-                  />
-                </span>
-              ) : null}
-            </span>
-          </li>
+          <UpgradeCheckRow
+            key={c.code}
+            check={c}
+            cosignCommand={data.cosign_command}
+          />
         ))}
       </ul>
-      {data.blocked ? (
+      {data.waiting ? (
+        <p className="text-sm text-muted-foreground">
+          {t('preflight.waiting')}
+        </p>
+      ) : data.blocked ? (
         <p className="text-sm text-destructive">{t('preflight.blocked')}</p>
       ) : data.update_available ? (
         <div className="space-y-3">
@@ -83,6 +62,17 @@ export function UpgradePreflight() {
           />
         </div>
       ) : null}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={recheck.isPending}
+        onClick={() => recheck.mutate()}
+      >
+        {recheck.isPending
+          ? t('preflight.fix.rechecking')
+          : t('preflight.recheckAll')}
+      </Button>
     </div>
   )
 }

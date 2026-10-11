@@ -25,6 +25,7 @@ const STATUS_TONE: Record<UpgradeCheckStatus, Tone> = {
   warn: 'warning',
   fail: 'danger',
   unknown: 'neutral',
+  pending: 'info',
 }
 
 const STEP_KEYS = {

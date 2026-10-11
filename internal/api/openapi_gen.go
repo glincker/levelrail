@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 962 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 968 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -963,11 +963,17 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/system/volumes/orphaned", Ability: "AbilityRead", Group: "System", Handler: "handleListOrphanedVolumes", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/volumes/orphaned/cleanup", Ability: "AbilityRoot", Group: "System", Handler: "handleCleanupOrphanedVolumes", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates", Ability: "AbilityRead", Group: "System", Handler: "handleGetUpdates", Description: "Updates (Settings > Updates page): running version vs. GitHub's latest published release, AbilityRead like system/status above."},
+	{Method: "GET", Path: "/api/v1/updates/auto", Ability: "AbilityRoot", Group: "System", Handler: "handleGetUpgradePolicy", Description: ""},
+	{Method: "PUT", Path: "/api/v1/updates/auto", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateUpgradePolicy", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/backup-now", Ability: "AbilityRoot", Group: "System", Handler: "handleUpgradeBackupNow", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/history", Ability: "AbilityRead", Group: "System", Handler: "handleUpgradeHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/updates/history/{id}/ack", Ability: "AbilityWrite", Group: "System", Handler: "handleAckUpgrade", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/preflight", Ability: "AbilityRead", Group: "System", Handler: "handleUpdatePreflight", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/releases", Ability: "AbilityRead", Group: "System", Handler: "handleReleaseHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/rollback-plan", Ability: "AbilityRoot", Group: "System", Handler: "handleRollbackPlan", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/updates/schedule", Ability: "AbilityRoot", Group: "System", Handler: "handleCancelUpgradeSchedule", Description: ""},
+	{Method: "GET", Path: "/api/v1/updates/schedule", Ability: "AbilityRead", Group: "System", Handler: "handleGetUpgradeSchedule", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/schedule", Ability: "AbilityRoot", Group: "System", Handler: "handleCreateUpgradeSchedule", Description: ""},
 	{Method: "POST", Path: "/api/v1/updates/self-upgrade", Ability: "AbilityRoot", Group: "System", Handler: "handleSelfUpgradeStart", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/self-upgrade/attempts", Ability: "AbilityRead", Group: "System", Handler: "handleSelfUpgradeAttempts", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/self-upgrade/plan", Ability: "AbilityRead", Group: "System", Handler: "handleSelfUpgradePlan", Description: ""},

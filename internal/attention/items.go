@@ -61,6 +61,7 @@ var kindInfos = map[string]kindInfo{
 	KindDBEOL:               {"%s runs a release past its end of life", "Plan a major upgrade or restore into a supported version", linkDBs, true},
 	KindDBUpgradeFailed:     {"Upgrade of %s did not complete", "Open the database's Upgrades tab and read the reason", linkDBs, true},
 	KindDockerGuard:         {"Docker API guard needs a decision", "Review the would-be denials and switch the guard to enforce", linkSecurity, false},
+	KindUpgradeBlocked:      {"The scheduled upgrade to %s did not run", "Open Updates, fix the blocker and re-check or reschedule", linkUpdates, false},
 }
 
 // newItem builds an item with its stable id, one-line title, next action and

@@ -385,18 +385,18 @@ Both commands talk to the control plane's API (`GET /api/v1/updates` and `GET /a
 
 ### Check first, then upgrade
 
-`levelrail-cli upgrade` (or Settings > Updates in the dashboard) runs read-only preflight checks and never upgrades by itself:
+`levelrail-cli upgrade` (or Settings > Updates in the dashboard) runs read-only preflight checks. Nothing is applied unless you start or schedule an upgrade, or you turned on automatic upgrades (off by default, see [Upgrade safely](upgrade-safely.md#automatic-upgrades)):
 
 - the latest release publishes `checksums.txt` and its cosign signature (the installer verifies both);
 - the Docker Engine version is not on the known-bad list (`kit/upgrade/docker_known_bad.json`, replace it with your own file via `APP_DOCKER_KNOWN_BAD_FILE`);
 - free disk space is above `APP_UPGRADE_MIN_FREE_BYTES` (default 2 GiB);
-- a control plane backup exists and is newer than `APP_UPGRADE_MAX_BACKUP_AGE` (default 26h).
+- a control plane backup exists and is newer than `APP_UPGRADE_MAX_BACKUP_AGE` (default 26h); the dashboard's **Back up now** and `levelrail-cli upgrade backup-now` clear this blocker in one step.
 
 The CLI also takes a fresh control plane backup unless you pass `--no-backup`, then prints the exact command to run. The API is `GET /api/v1/updates/preflight`.
 
 ### Upgrade with automatic rollback
 
-Settings > Updates > **Upgrade this server** and `levelrail-cli upgrade --apply` run the safe self-update. It downloads the release, checks its checksum and cosign signature, snapshots the database, tries the new release's migrations on a copy of that snapshot, swaps the binary, restarts and waits for health. If the new release is not healthy within the time limit (`--timeout`, 90 seconds by default) the previous binary and, when the schema changed, the pre-upgrade database snapshot come back automatically. Every attempt, with its step timeline, is kept and shown on the Updates page.
+Settings > Updates > **Upgrade to vX.Y.Z now** (or **Schedule upgrade**) and `levelrail-cli upgrade --apply` run the safe self-update. It downloads the release, checks its checksum and cosign signature, snapshots the database, tries the new release's migrations on a copy of that snapshot, swaps the binary, restarts and waits for health. If the new release is not healthy within the time limit (`--timeout`, 90 seconds by default) the previous binary and, when the schema changed, the pre-upgrade database snapshot come back automatically. Every attempt, with its step timeline, is kept and shown on the Updates page.
 
 ```bash
 levelrail-cli upgrade --plan                    # breaking changes between here and the latest release
