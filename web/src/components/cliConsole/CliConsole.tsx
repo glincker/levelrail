@@ -25,6 +25,12 @@ import {
   type CliClientMessage,
   type CliCommand,
 } from '../../lib/cliConsoleProtocol'
+import {
+  EMPTY_SANITIZE_STATE,
+  sanitizeTerminalOutput,
+  sanitizeTerminalText,
+  type SanitizeState,
+} from '../../lib/terminalSanitize'
 
 type ConsoleState = 'idle' | 'connecting' | 'open' | 'closed'
 
@@ -70,6 +76,10 @@ export function CliConsole({ className }: { className?: string }) {
   const runningRef = useRef(false)
   const atLineStartRef = useRef(true)
   const cursorRowRef = useRef(0)
+  const sanitizeRef = useRef<Record<'stdout' | 'stderr', SanitizeState>>({
+    stdout: EMPTY_SANITIZE_STATE,
+    stderr: EMPTY_SANITIZE_STATE,
+  })
   const [state, setStateValue] = useState<ConsoleState>('idle')
 
   const setState = useCallback((next: ConsoleState) => {
@@ -92,7 +102,7 @@ export function CliConsole({ className }: { className?: string }) {
   const printLine = useCallback(
     (text: string, color = '') => {
       newline()
-      write(`${color}${text}${color ? RESET : ''}\r\n`)
+      write(`${color}${sanitizeTerminalText(text)}${color ? RESET : ''}\r\n`)
     },
     [newline, write],
   )
@@ -165,13 +175,22 @@ export function CliConsole({ className }: { className?: string }) {
           termRef.current?.focus()
           break
         case 'output': {
-          const text = msg.data.replace(/\r?\n/g, '\r\n')
+          const cleaned = sanitizeTerminalOutput(
+            msg.data,
+            sanitizeRef.current[msg.stream],
+          )
+          sanitizeRef.current[msg.stream] = cleaned.state
+          const text = cleaned.text.replace(/\r?\n/g, '\r\n')
           write(msg.stream === 'stderr' ? `${RED}${text}${RESET}` : text)
           if (text.length > 0) atLineStartRef.current = text.endsWith('\n')
           break
         }
         case 'exit':
           runningRef.current = false
+          sanitizeRef.current = {
+            stdout: EMPTY_SANITIZE_STATE,
+            stderr: EMPTY_SANITIZE_STATE,
+          }
           if (msg.code !== 0) {
             printLine(t('cliConsole.exitCode', { code: msg.code }), DIM)
           }
