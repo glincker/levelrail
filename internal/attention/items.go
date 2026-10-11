@@ -22,6 +22,7 @@ const (
 	linkDBs      = "/databases/"
 	linkSecurity = "/settings/security"
 	linkCenter   = "/security"
+	linkAdvisor  = "/resource-advisor"
 )
 
 type kindInfo struct {
@@ -62,6 +63,7 @@ var kindInfos = map[string]kindInfo{
 	KindDBUpgradeFailed:     {"Upgrade of %s did not complete", "Open the database's Upgrades tab and read the reason", linkDBs, true},
 	KindDockerGuard:         {"Docker API guard needs a decision", "Review the would-be denials and switch the guard to enforce", linkSecurity, false},
 	KindUpgradeBlocked:      {"The scheduled upgrade to %s did not run", "Open Updates, fix the blocker and re-check or reschedule", linkUpdates, false},
+	KindResourceAdvice:      {"Resource advice for %s", "Open the resource advisor and review the suggestion", linkAdvisor, false},
 }
 
 // newItem builds an item with its stable id, one-line title, next action and

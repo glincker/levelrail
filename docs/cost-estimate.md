@@ -4,7 +4,7 @@ description: How Levelrail's "what this would cost elsewhere" app cost estimate 
 
 # Cost estimate
 
-An app's **Resources** tab shows an estimated monthly cost under three illustrative reference pricing profiles, next to the resource limits editor.
+An app's **Resources** tab shows an estimated monthly cost under three illustrative reference pricing profiles, folded under **What this would cost elsewhere** at the bottom of the Optimise panel.
 
 <Tabs :items="['CLI', 'API']">
 <Tab value="CLI">

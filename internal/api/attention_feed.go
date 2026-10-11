@@ -47,6 +47,7 @@ func (rt *Router) handleAttentionFeed(w http.ResponseWriter, r *http.Request) {
 	items = append(items, rt.flaggedAccountItems(r, abilities)...)
 	items = append(items, rt.dockerGuardAttentionItems(r, abilities, now)...)
 	items = append(items, rt.upgradeScheduleAttentionItems(r, abilities)...)
+	items = append(items, rt.resourceAdviceAttentionItems(r)...)
 	writeJSON(w, http.StatusOK, attentionFeedResponse{Items: items})
 }
 

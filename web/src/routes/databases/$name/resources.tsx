@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDatabase } from '../../../queries/databases'
 import { DatabaseResourceLimitsEditor } from '../../../components/DatabaseResourceLimitsEditor'
-import { ResourceRecommendationCard } from '../../../components/ResourceRecommendationCard'
+import { OptimisePanel } from '../../../components/resourceAdvisor/OptimisePanel'
 
 // Second real section for Databases, alongside overview.tsx: mirrors
 // routes/apps/$name/resources.tsx exactly. Reads database data from the
@@ -16,7 +16,7 @@ function ResourcesSection() {
 
   return (
     <div className="space-y-6">
-      <ResourceRecommendationCard databaseName={name} />
+      <OptimisePanel databaseName={name} />
       <DatabaseResourceLimitsEditor database={database} />
     </div>
   )

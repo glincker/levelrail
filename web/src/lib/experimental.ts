@@ -10,6 +10,7 @@ export type ExperimentalFeature =
   | 'cloudflare-tunnel'
   | 'access-roles'
   | 'global-environments'
+  | 'resource-advisor'
 
 export function isFeatureVisible(
   feature: ExperimentalFeature | undefined,

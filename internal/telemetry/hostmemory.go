@@ -19,6 +19,9 @@ import (
 const (
 	MetricMemoryAvailableBytes = "memory_available_bytes"
 	MetricMemoryTotalBytes     = "memory_total_bytes"
+	// MetricSwapUsedBytes is SwapTotal minus SwapFree, written only where
+	// /proc/meminfo exists.
+	MetricSwapUsedBytes = "swap_used_bytes"
 )
 
 // parseMemInfo is the pure part of a /proc/meminfo reading, split out for
@@ -133,10 +136,42 @@ func (c *HostMemoryCollector) CollectOnce(ctx context.Context) error {
 		return fmt.Errorf("collect host memory: %w", err)
 	}
 	now := time.Now()
-	return c.store.WriteSamples(ctx, []Sample{
+	samples := []Sample{
 		{ResourceID: c.resourceID, Metric: MetricMemoryTotalBytes, Timestamp: now, Value: float64(total)},
 		{ResourceID: c.resourceID, Metric: MetricMemoryAvailableBytes, Timestamp: now, Value: float64(available)},
-	})
+	}
+	path := c.memInfoPath
+	if path == "" {
+		path = "/proc/meminfo"
+	}
+	if data, err := os.ReadFile(path); err == nil { //nolint:gosec // fixed /proc path, overridden only by tests
+		if used, ok := parseSwapUsed(data); ok {
+			samples = append(samples, Sample{ResourceID: c.resourceID, Metric: MetricSwapUsedBytes, Timestamp: now, Value: float64(used)})
+		}
+	}
+	return c.store.WriteSamples(ctx, samples)
+}
+
+// parseSwapUsed returns SwapTotal minus SwapFree in bytes, false when either is missing.
+func parseSwapUsed(data []byte) (int64, bool) {
+	var total, free int64
+	var haveTotal, haveFree bool
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	for scanner.Scan() {
+		line := scanner.Text()
+		switch {
+		case strings.HasPrefix(line, "SwapTotal:"):
+			v, err := parseMemInfoLineKB(line)
+			total, haveTotal = v, err == nil
+		case strings.HasPrefix(line, "SwapFree:"):
+			v, err := parseMemInfoLineKB(line)
+			free, haveFree = v, err == nil
+		}
+	}
+	if !haveTotal || !haveFree || free > total {
+		return 0, false
+	}
+	return (total - free) * 1024, true
 }
 
 // Run calls CollectOnce every interval until ctx is done, the same "log

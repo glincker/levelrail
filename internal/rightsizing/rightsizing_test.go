@@ -1,6 +1,7 @@
 package rightsizing
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -233,20 +234,60 @@ func TestPercentile_KnownValues(t *testing.T) {
 	}
 }
 
-func TestRoundToMiB(t *testing.T) {
+func TestRoundUpSteps(t *testing.T) {
 	tests := []struct {
-		in   float64
+		name string
+		got  int64
 		want int64
 	}{
-		{0, 0},
-		{-5, 0},
-		{mib, mib},
-		{mib * 1.4, mib},
-		{mib * 1.6, 2 * mib},
+		{"memory zero", RoundMemoryUp(0), 0},
+		{"memory negative", RoundMemoryUp(-5), 0},
+		{"memory tiny floors at 64 MiB", RoundMemoryUp(mib), 64 * mib},
+		{"memory 65 MiB rounds to 96", RoundMemoryUp(65 * mib), 96 * mib},
+		{"memory exact step kept", RoundMemoryUp(256 * mib), 256 * mib},
+		{"memory above ladder grows by 512 MiB", RoundMemoryUp(2100 * mib), 2560 * mib},
+		{"cpu zero", RoundCPUUp(0), 0},
+		{"cpu 0.01 core floors at 0.1", RoundCPUUp(0.01 * nanoCore), 100_000_000},
+		{"cpu 0.3 core rounds to 0.5", RoundCPUUp(0.3 * nanoCore), 500_000_000},
+		{"cpu 5.2 cores rounds to 6", RoundCPUUp(5.2 * nanoCore), 6 * nanoCore},
 	}
 	for _, tt := range tests {
-		if got := roundToMiB(tt.in); got != tt.want {
-			t.Errorf("roundToMiB(%v) = %d, want %d", tt.in, got, tt.want)
+		if tt.got != tt.want {
+			t.Errorf("%s: got %d, want %d", tt.name, tt.got, tt.want)
 		}
+	}
+}
+
+func TestHumanWindowAndFormat(t *testing.T) {
+	tests := []struct{ got, want string }{
+		{HumanWindow(7 * 24 * time.Hour), "last 7 days"},
+		{HumanWindow(24 * time.Hour), "last 24 hours"},
+		{HumanWindow(0), "observed history"},
+		{HumanDuration(90 * time.Minute), "90 minutes"},
+		{FormatCPU(100_000_000), "0.1 cores"},
+		{FormatCPU(nanoCore), "1 core"},
+		{FormatMemory(96 * mib), "96 MiB"},
+		{FormatMemory(1536 * mib), "1.5 GiB"},
+	}
+	for _, tt := range tests {
+		if tt.got != tt.want {
+			t.Errorf("got %q, want %q", tt.got, tt.want)
+		}
+	}
+}
+
+func TestTinyCPUNeverSuggestsZero(t *testing.T) {
+	now := time.Date(2026, 1, 8, 0, 0, 0, 0, time.UTC)
+	got := Recommend(Input{
+		ServiceName:       "web",
+		Now:               now,
+		LookbackWindow:    7 * 24 * time.Hour,
+		CPUPercentSamples: memSamples(now, 200, func(_ int) float64 { return 1 }, 7*24*time.Hour),
+	})
+	if got.CPU.SuggestedLimit < 100_000_000 {
+		t.Fatalf("SuggestedLimit = %d, want at least 0.1 core", got.CPU.SuggestedLimit)
+	}
+	if strings.Contains(got.CPU.Reason, "168h") || strings.Contains(got.CPU.Reason, " 0 cores") {
+		t.Fatalf("reason not humanised: %q", got.CPU.Reason)
 	}
 }

@@ -44,6 +44,7 @@ export const NAMESPACES = [
   'jobs',
   'network',
   'envEditor',
+  'resourceAdvisor',
 ] as const
 
 void i18n

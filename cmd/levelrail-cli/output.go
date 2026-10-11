@@ -453,7 +453,11 @@ func printDiagnosisHuman(out io.Writer, d diagnosisResource) {
 // two ("app" or "database") since the wire type itself is shared.
 func printResourceRecommendationHuman(out io.Writer, label string, r resourceRecommendationResource) {
 	_, _ = fmt.Fprintf(out, "%s:      %s\n", label, r.ServiceName)
-	_, _ = fmt.Fprintf(out, "lookback: %s\n", r.LookbackWindow)
+	lookback := r.LookbackLabel
+	if lookback == "" {
+		lookback = r.LookbackWindow
+	}
+	_, _ = fmt.Fprintf(out, "lookback: %s\n", lookback)
 	if r.OOMDetectedAt != "" {
 		_, _ = fmt.Fprintf(out, "\nOOM signal: killed on %s\n  %s\n", r.OOMDetectedAt, r.OOMExcerpt)
 	}

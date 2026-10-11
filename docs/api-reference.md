@@ -81,7 +81,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 121 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 123 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -201,6 +201,8 @@ Endpoints for:
 | POST | /api/v1/auth/step-up | Public | handleStepUp |
 | POST | /api/v1/auth/step-up/passkey/begin | Public | handleStepUpPasskeyBegin |
 | POST | /api/v1/auth/step-up/passkey/finish | Public | handleStepUpPasskeyFinish |
+| GET | /api/v1/settings/beta-features | AbilityRead | handleListBetaFeatures |
+| PUT | /api/v1/settings/beta-features/{feature} | AbilityRoot | handleSetBetaFeature |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -1212,6 +1214,12 @@ Routes that do not fit an existing group.
 | POST | /api/v1/export/destinations/{id}/test | AbilityRoot | handleTestExportDestination |
 | GET | /api/v1/mesh/settings | AbilityRead | handleGetMeshSettings |
 | PUT | /api/v1/mesh/settings | AbilityRoot | handleUpdateMeshSettings |
+| GET | /api/v1/resource-advisor/findings | AbilityRead | handleResourceAdvisorFindings |
+| GET | /api/v1/resource-advisor/summary | AbilityRead | handleResourceAdvisorSummary |
+| POST | /api/v1/resource-advisor/findings/{id}/apply | AbilityWrite | handleResourceAdvisorApply |
+| POST | /api/v1/resource-advisor/findings/{id}/dismiss | AbilityWrite | handleResourceAdvisorState |
+| POST | /api/v1/resource-advisor/findings/{id}/snooze | AbilityWrite | handleResourceAdvisorState |
+| POST | /api/v1/resource-advisor/findings/{id}/restore | AbilityWrite | handleResourceAdvisorState |
 
 ## See also
 

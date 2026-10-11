@@ -90,6 +90,7 @@ const (
 	KindDBUpgradeFailed     = "db_upgrade_failed"
 	KindDockerGuard         = "docker_guard"
 	KindUpgradeBlocked      = "upgrade_blocked"
+	KindResourceAdvice      = "resource_advice"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

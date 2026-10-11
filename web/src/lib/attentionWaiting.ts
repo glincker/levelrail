@@ -263,6 +263,16 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
             eol: shortDate(p.eol),
           }),
         }
+      case 'resource_advice':
+        return p.count
+          ? {
+              ...base,
+              title: t('items.resourceAdviceSummaryTitle', {
+                count: Number.parseInt(p.count, 10) || 1,
+              }),
+              detail: t('items.resourceAdviceSummaryDetail'),
+            }
+          : { ...base, title: f.title || f.subject, detail: f.detail }
       case 'db_upgrade_failed':
         return {
           ...base,

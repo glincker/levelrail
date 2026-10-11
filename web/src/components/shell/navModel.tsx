@@ -41,6 +41,7 @@ import {
   EyeIcon,
   TrafficSignalIcon,
   WrenchIcon,
+  LightbulbIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { GO_TARGETS } from '@/lib/shortcuts'
 import { filterByFeature, type ExperimentalFeature } from '@/lib/experimental'
@@ -54,6 +55,7 @@ export type GlobalTo =
   | '/databases'
   | '/backups'
   | '/nodes'
+  | '/resource-advisor'
   | '/network'
   | '/network/proxy'
   | '/domains'
@@ -200,6 +202,13 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
     label: 'Infrastructure',
     items: [
       { id: 'nodes', label: 'Nodes', to: '/nodes', icon: <HardDrivesIcon /> },
+      {
+        id: 'resource-advisor',
+        label: 'Resource advisor',
+        to: '/resource-advisor',
+        icon: <LightbulbIcon />,
+        feature: 'resource-advisor',
+      },
       {
         id: 'network',
         label: 'Network',

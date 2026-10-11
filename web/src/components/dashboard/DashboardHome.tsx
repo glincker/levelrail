@@ -21,6 +21,7 @@ import { QuickStart } from './QuickStart'
 import { ResourcesSection } from './ResourcesSection'
 import { RecommendationsLine } from './RecommendationsLine'
 import { ReservedUsageCard } from './ReservedUsageCard'
+import { ResourceAdvisorTile } from '../resourceAdvisor/ResourceAdvisorTile'
 import { StorageUsageCard } from './StorageUsageCard'
 import { PlatformCapabilities } from './PlatformCapabilities'
 
@@ -110,6 +111,7 @@ export function DashboardHome({
       <ResourcesSection />
       <NeedsAttention />
       <RecentActivity apps={apps} />
+      <ResourceAdvisorTile />
       <Suspense fallback={null}>
         <RecentAlertsCard />
       </Suspense>

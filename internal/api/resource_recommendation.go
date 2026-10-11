@@ -34,6 +34,7 @@ type dimensionRecommendationResource struct {
 type resourceRecommendationResource struct {
 	ServiceName    string                          `json:"service_name"`
 	LookbackWindow string                          `json:"lookback_window"`
+	LookbackLabel  string                          `json:"lookback_label"`
 	Memory         dimensionRecommendationResource `json:"memory"`
 	CPU            dimensionRecommendationResource `json:"cpu"`
 	OOMDetectedAt  string                          `json:"oom_detected_at,omitempty"`
@@ -59,6 +60,7 @@ func toResourceRecommendationResource(res rightsizing.Result) resourceRecommenda
 	out := resourceRecommendationResource{
 		ServiceName:    res.ServiceName,
 		LookbackWindow: res.LookbackWindow.String(),
+		LookbackLabel:  rightsizing.HumanWindow(res.LookbackWindow),
 		Memory:         toDimensionRecommendationResource(res.Memory),
 		CPU:            toDimensionRecommendationResource(res.CPU),
 	}

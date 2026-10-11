@@ -275,6 +275,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 - `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.
 - `apps resource-recommendation` suggests memory and CPU limits from historical usage; `apps cost` estimates what the app's CPU and memory would cost under reference providers (not a real bill).
+- `advisor findings|summary|apply|dismiss|snooze|restore|enable|disable` drives the beta [resource advisor](resource-advisor.md). `advisor apply ID` only previews; add `--yes` to apply.
 - `apps health-score` gives a synthesized pass, warn or fail readiness verdict across deploy health, security, resilience and observability.
 - `apps log-drain` forwards container logs to an external HTTP or syslog sink, in addition to the built-in node-local log store.
 - `apps scheduled-tasks` runs a command inside the app's running container on a cron schedule. The command is a real argv with no shell; put `--` before it when the command takes flags.
