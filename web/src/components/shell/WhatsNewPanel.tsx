@@ -55,7 +55,7 @@ export function WhatsNewPanel() {
           </span>
         ) : null}
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-96">
+      <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
         <PopoverHeader>
           <PopoverTitle>What&apos;s new</PopoverTitle>
         </PopoverHeader>

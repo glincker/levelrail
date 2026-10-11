@@ -416,7 +416,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           <dt className="text-muted-foreground">Size</dt>
           <dd>{size}</dd>
           <dt className="text-muted-foreground">Name</dt>
-          <dd className="font-mono">{name}</dd>
+          <dd className="break-all font-mono">{name}</dd>
           <dt className="text-muted-foreground">Role</dt>
           <dd className="capitalize">{role}</dd>
           {provider === 'aws' ? (

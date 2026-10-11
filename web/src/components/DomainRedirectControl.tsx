@@ -46,7 +46,7 @@ export function DomainRedirectControl({
   if (isLoading) {
     return (
       <div
-        className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 p-3"
+        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/30 p-3"
         aria-hidden="true"
       >
         <Skeleton className="h-5 w-28 rounded-full" />
@@ -71,7 +71,7 @@ export function DomainRedirectControl({
 
   return (
     <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}

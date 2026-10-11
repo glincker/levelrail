@@ -163,7 +163,7 @@ export function DeployAttemptsList({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
         <CardTitle>Deploy history</CardTitle>
         {compareSelectedSearch ? (
           <Button
@@ -377,10 +377,10 @@ function DeployAttemptRow({
         isSelected && 'bg-muted/50',
       )}
     >
-      <div className="relative mt-0.5 size-5 shrink-0">
+      <div className="relative mt-0.5 size-5 shrink-0 pointer-coarse:flex pointer-coarse:size-auto pointer-coarse:items-center pointer-coarse:gap-2">
         <span
           className={cn(
-            'absolute inset-0 flex items-center justify-center transition-opacity',
+            'absolute inset-0 flex items-center justify-center transition-opacity pointer-coarse:static pointer-coarse:opacity-100',
             isSelected ? 'opacity-0' : 'group-hover:opacity-0',
             TONE_TEXT[tone],
           )}
@@ -397,7 +397,7 @@ function DeployAttemptRow({
         </span>
         <Checkbox
           className={cn(
-            'absolute inset-0 m-auto transition-opacity',
+            'absolute inset-0 m-auto transition-opacity pointer-coarse:static pointer-coarse:m-0 pointer-coarse:opacity-100',
             isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
           )}
           checked={isSelected}

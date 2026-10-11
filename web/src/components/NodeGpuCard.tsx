@@ -22,7 +22,7 @@ export function NodeGpuCard({ gpu }: { gpu?: NodeGpuResource }) {
   const runtimeMissing = !gpu.runtime_installed
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between gap-2">
+      <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle className="flex items-center gap-2">
           <CpuIcon className="size-4" aria-hidden="true" />
           GPU

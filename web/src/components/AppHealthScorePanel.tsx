@@ -59,7 +59,7 @@ export function AppHealthScorePanel({ appName }: { appName: string }) {
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between gap-3">
+      <CardHeader className="flex-row flex-wrap items-center justify-between gap-3">
         <CardTitle className="text-sm font-semibold">
           {t('healthScore.title')}
         </CardTitle>

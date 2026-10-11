@@ -100,7 +100,7 @@ function CliAccessPage() {
       </div>
 
       <div className="space-y-3 rounded-lg border border-border p-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <h3 className="text-sm font-medium">
             1. Install levelrail-cli on your computer
           </h3>

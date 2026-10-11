@@ -162,7 +162,7 @@ export function NodeMeshCard({
             <dt className="text-xs text-muted-foreground uppercase">
               Mesh address
             </dt>
-            <dd className="mt-1 font-mono text-sm text-foreground">
+            <dd className="mt-1 break-all font-mono text-sm text-foreground">
               {data.mesh_address || 'Not assigned'}
             </dd>
           </div>

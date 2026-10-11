@@ -206,7 +206,7 @@ function PlacementBody({
           <ul className="space-y-0.5 text-xs">
             {placement.rejected.map((r) => (
               <li key={r.node_id}>
-                <span className="font-mono text-foreground">
+                <span className="break-all font-mono text-foreground">
                   {nodeName(r.node_id)}
                 </span>
                 <span className="text-muted-foreground">: {r.reason}</span>

@@ -138,7 +138,7 @@ export function LoginScreen({
 
   return (
     <div className="grid min-h-dvh bg-background lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-      <div className="relative flex min-w-0 flex-col px-6 py-6 sm:px-10">
+      <div className="relative flex min-w-0 flex-col px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-10">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 top-0 h-72"
@@ -251,7 +251,7 @@ export function LoginScreen({
         {isRegister ? null : (
           <footer className="relative z-10 mx-auto w-full max-w-sm text-xs text-muted-foreground">
             {t('loginHelp.lockedOut')}{' '}
-            <code className="rounded bg-muted px-1 py-0.5 font-mono">
+            <code className="break-all rounded bg-muted px-1 py-0.5 font-mono">
               {brand.BinaryName ? `sudo ${brand.BinaryName} ` : ''}recover-admin
             </code>
             {brand.DocsURL ? (

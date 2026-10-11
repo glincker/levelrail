@@ -83,34 +83,36 @@ export function InvestigationPanel({
             <div>
               <Heading>{t('investigation.beforeAfter')}</Heading>
               {data.summary.has_traffic ? (
-                <table className="w-full text-sm tabular-nums">
-                  <thead>
-                    <tr className="text-xs text-muted-foreground">
-                      <th className="py-1 text-left font-medium" />
-                      <th className="py-1 text-right font-medium">
-                        {t('investigation.baseline')}
-                      </th>
-                      <th className="py-1 text-right font-medium">
-                        {t('investigation.during')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summaryRows(data.summary, data.baseline).map((r) => (
-                      <tr key={r.key} className="border-t border-border">
-                        <td className="py-1">
-                          {t(`investigation.metric.${r.key}`)}
-                        </td>
-                        <td className="py-1 text-right text-muted-foreground">
-                          {r.before}
-                        </td>
-                        <td className="py-1 text-right font-medium">
-                          {r.during}
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm tabular-nums">
+                    <thead>
+                      <tr className="text-xs text-muted-foreground">
+                        <th className="py-1 text-left font-medium" />
+                        <th className="py-1 text-right font-medium">
+                          {t('investigation.baseline')}
+                        </th>
+                        <th className="py-1 text-right font-medium">
+                          {t('investigation.during')}
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {summaryRows(data.summary, data.baseline).map((r) => (
+                        <tr key={r.key} className="border-t border-border">
+                          <td className="py-1">
+                            {t(`investigation.metric.${r.key}`)}
+                          </td>
+                          <td className="py-1 text-right text-muted-foreground">
+                            {r.before}
+                          </td>
+                          <td className="py-1 text-right font-medium">
+                            {r.during}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   {t('investigation.noTraffic')}
@@ -126,41 +128,43 @@ export function InvestigationPanel({
                     : t('investigation.routesUnavailable')}
                 </p>
               ) : (
-                <table className="w-full text-sm tabular-nums">
-                  <thead>
-                    <tr className="text-xs text-muted-foreground">
-                      <th className="py-1 text-left font-medium">
-                        {t('investigation.route')}
-                      </th>
-                      <th className="py-1 text-right font-medium">
-                        {t('investigation.requests')}
-                      </th>
-                      <th className="py-1 text-right font-medium">
-                        {t('investigation.metric.err5')}
-                      </th>
-                      <th className="py-1 text-right font-medium">
-                        {t('investigation.avg')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.top_routes.map((r) => (
-                      <tr key={r.route} className="border-t border-border">
-                        <td
-                          className="max-w-48 truncate py-1 font-mono text-xs"
-                          title={r.route}
-                        >
-                          {r.route}
-                        </td>
-                        <td className="py-1 text-right">{r.requests}</td>
-                        <td className="py-1 text-right">
-                          {pct(r.error_rate_5xx)}
-                        </td>
-                        <td className="py-1 text-right">{ms(r.avg_ms)}</td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm tabular-nums">
+                    <thead>
+                      <tr className="text-xs text-muted-foreground">
+                        <th className="py-1 text-left font-medium">
+                          {t('investigation.route')}
+                        </th>
+                        <th className="py-1 text-right font-medium">
+                          {t('investigation.requests')}
+                        </th>
+                        <th className="py-1 text-right font-medium">
+                          {t('investigation.metric.err5')}
+                        </th>
+                        <th className="py-1 text-right font-medium">
+                          {t('investigation.avg')}
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {data.top_routes.map((r) => (
+                        <tr key={r.route} className="border-t border-border">
+                          <td
+                            className="max-w-48 truncate py-1 font-mono text-xs"
+                            title={r.route}
+                          >
+                            {r.route}
+                          </td>
+                          <td className="py-1 text-right">{r.requests}</td>
+                          <td className="py-1 text-right">
+                            {pct(r.error_rate_5xx)}
+                          </td>
+                          <td className="py-1 text-right">{ms(r.avg_ms)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
             <div>

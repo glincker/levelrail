@@ -254,7 +254,7 @@ function DeployLogsSkeleton() {
   return (
     <div className="flex h-full flex-col gap-4" aria-hidden="true">
       <Skeleton className="h-4 w-56" />
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1.5">
           <Skeleton className="h-6 w-24" />
           <Skeleton className="h-3 w-40" />

@@ -250,7 +250,7 @@ export function GitBuildSourceFields({
                   nothing to redeploy for a pinned image). */}
               <TabsList
                 id="git-app-build-type"
-                className="grid w-full grid-cols-4"
+                className="grid h-auto w-full grid-cols-2 sm:grid-cols-4"
               >
                 <TabsTrigger value="railpack" disabled={disabled}>
                   Auto-detect

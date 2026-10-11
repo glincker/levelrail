@@ -326,7 +326,7 @@ export function DomainDnsRecordsControl({
 
   if (!open) {
     return (
-      <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -358,7 +358,7 @@ export function DomainDnsRecordsControl({
 
   return (
     <div className="space-y-3 rounded-md border border-border bg-muted/30 p-3 text-sm">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 font-medium text-foreground">
           <GlobeIcon className="size-4" aria-hidden="true" />
           DNS records{data?.zone ? ` for ${data.zone.replace(/\.$/, '')}` : ''}

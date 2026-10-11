@@ -137,7 +137,7 @@ export function MetricChartCard({
 
   return (
     <section className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
             <svg

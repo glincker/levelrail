@@ -22,7 +22,7 @@ export function GpuNodeCard({ node }: { node: GpuNode }) {
       className="rounded-lg border border-border bg-card p-4"
       aria-label={`GPU node ${node.name}`}
     >
-      <header className="flex items-start justify-between gap-3">
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <CpuIcon className="size-4 shrink-0" aria-hidden="true" />

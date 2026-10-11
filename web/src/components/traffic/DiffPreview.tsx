@@ -40,48 +40,50 @@ export function DiffPreview({
       {visible.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('diff.empty')}</p>
       ) : (
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="text-xs text-muted-foreground">
-              <th scope="col" className="w-1/3 py-1 pr-3 font-medium">
-                {t('diff.setting')}
-              </th>
-              <th scope="col" className="py-1 pr-3 font-medium">
-                {t('diff.before')}
-              </th>
-              <th scope="col" className="py-1 font-medium">
-                {t('diff.after')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {visible.map((row) => (
-              <tr
-                key={row.key}
-                data-changed={row.changed}
-                className={cn(
-                  'border-t border-border align-top',
-                  row.changed && 'bg-amber-100 dark:bg-amber-900/30',
-                )}
-              >
-                <th scope="row" className="py-1.5 pr-3 font-medium">
-                  {labels?.[row.key] ?? row.key}
-                  {row.changed ? (
-                    <span className="sr-only"> ({t('diff.changed')})</span>
-                  ) : null}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="text-xs text-muted-foreground">
+                <th scope="col" className="w-1/3 py-1 pr-3 font-medium">
+                  {t('diff.setting')}
                 </th>
-                <td className="py-1.5 pr-3 font-mono text-[13px] break-all">
-                  {row.changed ? <span aria-hidden="true">- </span> : null}
-                  {show(row.before, none)}
-                </td>
-                <td className="py-1.5 font-mono text-[13px] break-all">
-                  {row.changed ? <span aria-hidden="true">+ </span> : null}
-                  {show(row.after, none)}
-                </td>
+                <th scope="col" className="py-1 pr-3 font-medium">
+                  {t('diff.before')}
+                </th>
+                <th scope="col" className="py-1 font-medium">
+                  {t('diff.after')}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {visible.map((row) => (
+                <tr
+                  key={row.key}
+                  data-changed={row.changed}
+                  className={cn(
+                    'border-t border-border align-top',
+                    row.changed && 'bg-amber-100 dark:bg-amber-900/30',
+                  )}
+                >
+                  <th scope="row" className="py-1.5 pr-3 font-medium">
+                    {labels?.[row.key] ?? row.key}
+                    {row.changed ? (
+                      <span className="sr-only"> ({t('diff.changed')})</span>
+                    ) : null}
+                  </th>
+                  <td className="py-1.5 pr-3 font-mono text-[13px] break-all">
+                    {row.changed ? <span aria-hidden="true">- </span> : null}
+                    {show(row.before, none)}
+                  </td>
+                  <td className="py-1.5 font-mono text-[13px] break-all">
+                    {row.changed ? <span aria-hidden="true">+ </span> : null}
+                    {show(row.after, none)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       {unchanged > 0 ? (
         <button

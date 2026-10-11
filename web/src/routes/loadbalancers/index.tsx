@@ -16,7 +16,7 @@ export const Route = createFileRoute('/loadbalancers/')({
 function LoadBalancerOverviewSkeleton() {
   return (
     <div className="space-y-4" aria-hidden="true">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-2">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-4 w-80" />

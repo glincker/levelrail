@@ -97,7 +97,7 @@ function NodeDetailPage() {
               <dt className="text-xs text-muted-foreground uppercase">
                 Address
               </dt>
-              <dd className="mt-1 font-mono text-sm text-foreground">
+              <dd className="mt-1 break-all font-mono text-sm text-foreground">
                 {node.address ?? 'Not set'}
               </dd>
             </div>

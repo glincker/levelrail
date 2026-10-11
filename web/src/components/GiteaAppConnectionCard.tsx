@@ -49,7 +49,7 @@ export function GiteaAppConnectionCard() {
         description="Connect a Gitea OAuth2 application for repo browsing and webhook-driven deploys, including self-hosted instances."
       />
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between rounded-lg border border-border px-4 py-3">
           <div className="space-y-1">
             <ConfiguredStatusHeading
               connected={status.connected}

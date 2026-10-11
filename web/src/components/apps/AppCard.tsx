@@ -52,7 +52,7 @@ export function AppCard({
         </span>
       </div>
       <TrafficSpark metrics={metrics} name={app.name} width={220} />
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="flex items-center gap-3">
           <P95Cell metrics={metrics} />
           <ErrorCell metrics={metrics} />

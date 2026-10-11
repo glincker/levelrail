@@ -64,7 +64,7 @@ export function BuildingNowLane({
                       <Progress value={pct} aria-label="Step progress" />
                     )}
                   </button>
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="min-w-0">
                       {d.status === 'queued' && (
                         <DeploymentNote d={d} onOpen={onOpen} />

@@ -82,7 +82,7 @@ function ConnectionRow({
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   return (
-    <div className="flex items-start justify-between gap-4 rounded-lg border border-border p-3">
+    <div className="flex flex-wrap items-start justify-between gap-4 rounded-lg border border-border p-3">
       <div className="flex items-start gap-2">
         <PlugsConnectedIcon
           className="mt-0.5 size-4 shrink-0 text-muted-foreground"
@@ -90,7 +90,7 @@ function ConnectionRow({
         />
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <code className="font-mono text-sm font-medium text-foreground">
+            <code className="break-all font-mono text-sm font-medium text-foreground">
               {connection.env_var}
             </code>
             <Badge variant="muted">System-managed</Badge>
@@ -98,7 +98,7 @@ function ConnectionRow({
           </div>
           <p className="text-sm text-muted-foreground">
             {connection.database_name} ({connection.field}) resolves to{' '}
-            <code className="font-mono">{connection.host}</code>
+            <code className="break-all font-mono">{connection.host}</code>
           </p>
           {connection.cross_node && !connection.mesh_dns ? (
             <p className="text-sm text-destructive">
@@ -117,8 +117,9 @@ function ConnectionRow({
         description={
           <>
             The app stops getting{' '}
-            <code className="font-mono">{connection.env_var}</code> injected at
-            its next container start. The database itself is not affected.
+            <code className="break-all font-mono">{connection.env_var}</code>{' '}
+            injected at its next container start. The database itself is not
+            affected.
           </>
         }
         pending={pending}

@@ -32,7 +32,7 @@ function HistoryRow({
   return (
     <li className="flex flex-col gap-1 border-b border-border py-2 last:border-b-0">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <span className="font-mono">
+        <span className="break-all font-mono">
           {upgrade.from_version} &rarr; {upgrade.to_version}
         </span>
         <span>{t(`majorUpgrade.status.${upgrade.status}`)}</span>

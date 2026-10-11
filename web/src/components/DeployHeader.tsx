@@ -136,7 +136,9 @@ export function DeployHeader({
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
             {branchName ? (
               <Meta icon={<GitBranchIcon className="size-4" />}>
-                <span className="font-mono text-foreground">{branchName}</span>
+                <span className="break-all font-mono text-foreground">
+                  {branchName}
+                </span>
               </Meta>
             ) : null}
             {attempt.commit_sha ? (
@@ -144,7 +146,7 @@ export function DeployHeader({
                 icon={<GitCommitIcon className="size-4" />}
                 title={attempt.commit_sha}
               >
-                <span className="font-mono text-foreground">
+                <span className="break-all font-mono text-foreground">
                   {attempt.commit_sha.slice(0, 7)}
                 </span>
               </Meta>
