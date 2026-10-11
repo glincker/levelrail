@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
 import { EditAlertRuleDialog } from './EditAlertRuleDialog'
+import { LogRuleCondition } from './LogRuleCondition'
 import { DeleteAlertRuleDialog } from './DeleteAlertRuleDialog'
 import { RuleNoiseDialog } from './RuleNoiseDialog'
 import { RecentChanges } from './RecentChanges'
@@ -296,7 +297,11 @@ function RuleRow({
           </Badge>
         </TableCell>
         <TableCell className="max-w-[20rem] truncate font-mono text-xs text-muted-foreground">
-          {formatCondition(rule)}
+          {rule.log_rule ? (
+            <LogRuleCondition rule={rule} />
+          ) : (
+            formatCondition(rule)
+          )}
         </TableCell>
         <TableCell>
           <div className="flex flex-col gap-1">
@@ -337,11 +342,13 @@ function RuleRow({
               ruleName={rule.name}
             />
             <RuleNoiseDialog appName={appName} rule={rule} />
-            <EditAlertRuleDialog
-              appName={appName}
-              rule={rule}
-              volumes={volumes}
-            />
+            {rule.log_rule ? null : (
+              <EditAlertRuleDialog
+                appName={appName}
+                rule={rule}
+                volumes={volumes}
+              />
+            )}
             <DeleteAlertRuleDialog appName={appName} rule={rule} />
           </div>
         </TableCell>

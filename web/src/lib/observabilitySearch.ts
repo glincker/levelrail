@@ -19,7 +19,7 @@ export interface MetricsSearch {
   at?: string
 }
 
-export type LogsTab = 'live' | 'search' | 'archive'
+export type LogsTab = 'live' | 'search' | 'errors' | 'archive'
 
 export interface LogsSearch {
   tab?: LogsTab
@@ -28,12 +28,13 @@ export interface LogsSearch {
   container?: string
   stream?: 'stdout' | 'stderr'
   field?: string[]
+  signature?: string
   from?: string
   to?: string
 }
 
 const PRESET_KEYS = new Set<string>(TIME_RANGE_PRESETS.map((p) => p.key))
-const LOG_TABS = new Set<string>(['live', 'search', 'archive'])
+const LOG_TABS = new Set<string>(['live', 'search', 'errors', 'archive'])
 
 function isoOrUndefined(value: unknown): string | undefined {
   if (typeof value !== 'string' || value === '') {
@@ -99,6 +100,10 @@ export function parseLogsSearch(raw: Record<string, unknown>): LogsSearch {
   )
   if (fields.length > 0) {
     out.field = fields
+  }
+  const signature = stringOrUndefined(raw.signature)
+  if (signature) {
+    out.signature = signature
   }
   const from = isoOrUndefined(raw.from)
   const to = isoOrUndefined(raw.to)

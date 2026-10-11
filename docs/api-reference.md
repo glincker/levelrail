@@ -459,6 +459,7 @@ Endpoints for:
 | GET | /api/v1/apps/resource-usage | AbilityRead | handleAppResourceUsage |
 | GET | /api/v1/apps/{name}/logs/stream | AbilityRead | handleLiveLogStream |
 | GET | /api/v1/apps/{name}/logs/download | AbilityRead | handleDownloadLogs |
+| GET | /api/v1/apps/{name}/logs/signatures | AbilityRead | handleLogSignatures |
 
 ## Alerts / Scheduled Tasks / Feature Flags / Notification Channels
 
@@ -1230,6 +1231,10 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/setup/guide/steps/{id} | AbilityRoot | handleSetSetupGuideStep |
 | PUT | /api/v1/setup/guide/visibility | AbilityRoot | handleSetSetupGuideVisibility |
 | POST | /api/v1/setup/guide/reset | AbilityRoot | handleResetSetupGuide |
+| GET | /api/v1/logs/queries | AbilityRead | handleListSavedLogQueries |
+| POST | /api/v1/logs/queries | AbilityRead | handleCreateSavedLogQuery |
+| PUT | /api/v1/logs/queries/{id} | AbilityRead | handleUpdateSavedLogQuery |
+| DELETE | /api/v1/logs/queries/{id} | AbilityRead | handleDeleteSavedLogQuery |
 
 ## See also
 

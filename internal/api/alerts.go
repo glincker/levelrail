@@ -72,6 +72,9 @@ type ruleResource struct {
 	// KindSLOBurn-only field: the request-based SLO the rule watches.
 	SLO *alerting.SLOConfig `json:"slo,omitempty"`
 
+	// KindLogPattern and KindLogLevelRate only: what the rule matches and how much.
+	LogRule *alerting.LogRuleConfig `json:"log_rule,omitempty"`
+
 	NotifyURL  string `json:"notify_url,omitempty"`
 	NotifyKind string `json:"notify_kind,omitempty"`
 	Enabled    bool   `json:"enabled"`
@@ -123,6 +126,7 @@ func toRuleResource(r alerting.Rule) ruleResource {
 		BackupServiceName:     r.BackupServiceName,
 		BackupVolumeName:      r.BackupVolumeName,
 		SLO:                   r.SLO,
+		LogRule:               r.LogRule,
 		NotifyURL:             r.NotifyURL,
 		NotifyKind:            string(r.NotifyKind),
 		Enabled:               r.Enabled,
@@ -159,11 +163,10 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 	kind := alerting.Kind(a.Kind)
 	switch kind {
 	case alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew,
+		alerting.KindLogPattern, alerting.KindLogLevelRate,
 		alerting.KindCertExpiring, alerting.KindCertRenewalStalled, alerting.KindDomainNotResolving:
 	default:
-		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, or %q",
-			alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew,
-			alerting.KindCertExpiring, alerting.KindCertRenewalStalled, alerting.KindDomainNotResolving)
+		return alerting.Rule{}, fmt.Errorf("kind %q is not a supported rule kind", a.Kind)
 	}
 
 	forDuration, err := parseOptionalDuration(a.ForDuration)
@@ -209,6 +212,7 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		BackupVolumeName:      a.BackupVolumeName,
 		ChannelID:             a.ChannelID,
 		SLO:                   a.SLO,
+		LogRule:               a.LogRule,
 		NotifyURL:             a.NotifyURL,
 		NotifyKind:            alerting.NotifyKind(a.NotifyKind),
 		Enabled:               a.Enabled,
@@ -253,6 +257,13 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		}
 		if err := r.SLO.Validate(); err != nil {
 			return alerting.Rule{}, fmt.Errorf("slo: %w", err)
+		}
+	case alerting.KindLogPattern, alerting.KindLogLevelRate:
+		if r.LogRule == nil {
+			return alerting.Rule{}, fmt.Errorf("log_rule is required for a %s rule", r.Kind)
+		}
+		if err := r.LogRule.Validate(r.Kind, alerting.LogRulePolicyFromEnv()); err != nil {
+			return alerting.Rule{}, fmt.Errorf("log_rule: %w", err)
 		}
 	case alerting.KindBackupMissing:
 		switch r.BackupResourceKind {

@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 // logDownloadMaxLines caps a single download to this many of the most
@@ -14,7 +18,15 @@ import (
 // is a deliberate file export for a support ticket or archive, so a
 // larger but still bounded cap keeps it a real download rather than an
 // unbounded dump of the whole store.
-const logDownloadMaxLines = 5000
+const defaultLogDownloadMaxLines = 5000
+
+// logDownloadMaxLines is the cap in effect, tunable with APP_LOG_EXPORT_MAX_LINES.
+func logDownloadMaxLines() int {
+	if n, err := strconv.Atoi(os.Getenv("APP_LOG_EXPORT_MAX_LINES")); err == nil && n > 0 {
+		return n
+	}
+	return defaultLogDownloadMaxLines
+}
 
 // handleDownloadLogs handles GET /api/v1/apps/{name}/logs/download; see
 // downloadResourceLogs for the shared implementation.
@@ -51,6 +63,16 @@ func (rt *Router) downloadResourceLogs(w http.ResponseWriter, r *http.Request, l
 		return
 	}
 	query := r.URL.Query().Get("q")
+	minLevel, err := parseLevelParam(r.URL.Query().Get("level"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	fieldFilters, err := telemetry.ParseFieldFilters(r.URL.Query()["field"])
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	entries, err := rt.telemetry.QueryLogs(r.Context(), resourceID, from, to, query)
 	if err != nil {
@@ -61,15 +83,24 @@ func (rt *Router) downloadResourceLogs(w http.ResponseWriter, r *http.Request, l
 		}
 		rt.logger.Warn("api: "+opName+": partial result", slog.String("error", err.Error()), slog.String("name", name))
 	}
-	if len(entries) > logDownloadMaxLines {
-		entries = entries[len(entries)-logDownloadMaxLines:]
+	if sig := r.URL.Query().Get("signature"); sig != "" {
+		entries = logsHaveSignature(entries, sig)
+	}
+	entries = filterLogsByLevel(entries, minLevel)
+	entries = filterLogs(entries, r.URL.Query().Get("stream"), fieldFilters)
+	if c := r.URL.Query().Get("container"); c != "" {
+		entries = filterLogsByContainer(entries, c)
+	}
+	if limit := logDownloadMaxLines(); len(entries) > limit {
+		entries = entries[len(entries)-limit:]
+		w.Header().Set("X-Log-Export-Truncated", "true")
 	}
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", logDownloadFilename(noun, name, to)))
 	w.WriteHeader(http.StatusOK)
 	for _, e := range entries {
-		_, _ = fmt.Fprintf(w, "%s %s %s\n", e.Timestamp.UTC().Format(time.RFC3339), e.Stream, e.Message)
+		_, _ = fmt.Fprintf(w, "%s %s %s\n", e.Timestamp.UTC().Format(time.RFC3339), e.Stream, telemetry.RedactLine(e.Message))
 	}
 }
 

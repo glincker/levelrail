@@ -52,6 +52,8 @@ type Change struct {
 	Keys        []string  `json:"keys,omitempty"`
 	Ref         string    `json:"ref,omitempty"`
 	LikelyCause bool      `json:"likely_cause,omitempty"`
+	// NewErrorTypes counts error log signatures first seen after this deploy.
+	NewErrorTypes int `json:"new_error_types,omitempty"`
 
 	// noEffect marks a change that never took effect (failed or held deploy).
 	noEffect bool
@@ -94,11 +96,18 @@ type AuditSource interface {
 	ListAuditEntries(ctx context.Context, limit int, before *time.Time, filter store.AuditEntryFilter) ([]store.AuditEntry, error)
 }
 
+// LogSignatureSource counts error signatures that appeared after a deploy
+// and were absent in the window just before it.
+type LogSignatureSource interface {
+	NewErrorTypes(ctx context.Context, app string, deployedAt, until time.Time) (int, error)
+}
+
 // Aggregator merges the sources. Any source may be nil.
 type Aggregator struct {
 	Events  EventSource
 	Deploys DeploySource
 	Audit   AuditSource
+	Logs    LogSignatureSource
 	Window  time.Duration
 	Max     int
 	Logger  *slog.Logger
@@ -151,7 +160,37 @@ func (a *Aggregator) Collect(ctx context.Context, app string, until time.Time) R
 	all = append(all, a.fromEvents(ctx, logger, app, since, until)...)
 	all = append(all, a.fromDeploys(ctx, logger, app, since, until)...)
 	all = append(all, a.fromAudit(ctx, logger, app, since, until)...)
-	return finish(res, all, limit)
+	res = finish(res, all, limit)
+	a.annotateNewErrors(ctx, logger, &res, app, until)
+	return res
+}
+
+// annotateNewErrors marks the newest deploy that took effect with how many
+// new error types the app has logged since. One bounded log read per call.
+func (a *Aggregator) annotateNewErrors(ctx context.Context, logger *slog.Logger, res *Result, app string, until time.Time) {
+	if a.Logs == nil {
+		return
+	}
+	for i := range res.Changes {
+		c := &res.Changes[i]
+		if (c.Kind != KindDeploy && c.Kind != KindRollback) || c.noEffect {
+			continue
+		}
+		n, err := a.Logs.NewErrorTypes(ctx, app, c.At, until)
+		if err != nil {
+			logger.Warn("changes: new error types failed", slog.String("app", app), slog.String("error", err.Error()))
+			return
+		}
+		c.NewErrorTypes = n
+		if n > 0 {
+			note := fmt.Sprintf("%d new error types since this deploy", n)
+			if c.Detail != "" {
+				note = c.Detail + "; " + note
+			}
+			c.Detail = note
+		}
+		return
+	}
 }
 
 func finish(res Result, all []Change, limit int) Result {

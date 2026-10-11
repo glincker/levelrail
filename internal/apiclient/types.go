@@ -1876,11 +1876,13 @@ type CreateAlertRuleRequest struct {
 	BackupServiceName  string `json:"backup_service_name,omitempty"`
 	BackupVolumeName   string `json:"backup_volume_name,omitempty"`
 	// SLO is kind=slo_burn-only: the request-based SLO the rule watches.
-	SLO        *AlertSLOConfig `json:"slo,omitempty"`
-	ChannelID  string          `json:"channel_id,omitempty"`
-	NotifyURL  string          `json:"notify_url,omitempty"`
-	NotifyKind string          `json:"notify_kind,omitempty"`
-	Enabled    bool            `json:"enabled"`
+	SLO *AlertSLOConfig `json:"slo,omitempty"`
+	// LogRule is kind=log_pattern and log_level_rate only.
+	LogRule    *AlertLogRule `json:"log_rule,omitempty"`
+	ChannelID  string        `json:"channel_id,omitempty"`
+	NotifyURL  string        `json:"notify_url,omitempty"`
+	NotifyKind string        `json:"notify_kind,omitempty"`
+	Enabled    bool          `json:"enabled"`
 
 	Severity            string            `json:"severity,omitempty"`
 	Labels              map[string]string `json:"labels,omitempty"`
@@ -3177,7 +3179,8 @@ type AlertRuleResource struct {
 	BackupServiceName  string `json:"backup_service_name,omitempty"`
 	BackupVolumeName   string `json:"backup_volume_name,omitempty"`
 
-	SLO *AlertSLOConfig `json:"slo,omitempty"`
+	SLO     *AlertSLOConfig `json:"slo,omitempty"`
+	LogRule *AlertLogRule   `json:"log_rule,omitempty"`
 
 	NotifyURL  string `json:"notify_url,omitempty"`
 	NotifyKind string `json:"notify_kind,omitempty"`

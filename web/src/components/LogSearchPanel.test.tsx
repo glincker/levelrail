@@ -97,7 +97,7 @@ describe('LogLevelGutter', () => {
 describe('LogSearchPanel level filter', () => {
   it('shows counts, the total line and filters by level chip', async () => {
     const fetchMock = vi.fn<
-      (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+      (input: string, init?: RequestInit) => Promise<Response>
     >(() =>
       Promise.resolve({
         ok: true,
@@ -117,8 +117,10 @@ describe('LogSearchPanel level filter', () => {
     )
 
     expect(await screen.findByText('Showing 5 of 9')).toBeInTheDocument()
-    const url = fetchMock.mock.calls[0]?.[0]
-    expect(typeof url === 'string' ? url : '').toContain('limit=1000')
+    const searchCall = fetchMock.mock.calls.find((c) =>
+      c[0].includes('/api/v1/apps/web/logs?'),
+    )
+    expect(searchCall?.[0]).toContain('limit=1000')
 
     const errorChip = screen.getByRole('button', { name: /^error/ })
     expect(errorChip).toHaveTextContent('2')
