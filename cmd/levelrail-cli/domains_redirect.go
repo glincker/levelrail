@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // domainsRedirectJSONUsage is every domains redirect subcommand's --json
@@ -41,6 +43,7 @@ func domainsRedirectUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s domains redirect get <app> <domain> [flags]     show a domain's redirect state
   %[1]s domains redirect set <app> <domain> --target URL [flags]   point <domain> at a target URL
+  %[1]s domains redirect set <app> <domain> --preset www-to-apex|apex-to-www   www and apex canonical setup
   %[1]s domains redirect clear <app> <domain> [flags]   remove the redirect
 
 While configured, the embedded Caddy ingress redirects every request for
@@ -84,13 +87,16 @@ func runDomainsRedirectGet(prog string, args []string, stdout, stderr io.Writer,
 
 func runDomainsRedirectSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains redirect set", domainsRedirectJSONUsage, stderr)
-	var targetFlag string
+	var targetFlag, presetFlag string
 	var permanentFlag, temporaryFlag bool
-	fs.StringVar(&targetFlag, "target", "", "absolute target URL to redirect to, e.g. https://example.com (required)")
+	var statusFlag int
+	fs.StringVar(&targetFlag, "target", "", "absolute target URL to redirect to, e.g. https://example.com (required unless --preset)")
+	fs.StringVar(&presetFlag, "preset", "", "www-to-apex or apex-to-www: redirect the www or apex twin of <domain> to the canonical host instead of using --target")
+	fs.IntVar(&statusFlag, "status", 0, "explicit status code: 301, 302, 307 or 308 (307 and 308 keep the request method)")
 	fs.BoolVar(&permanentFlag, "permanent", false, "use a 301 permanent redirect (the default even without this flag)")
 	fs.BoolVar(&temporaryFlag, "temporary", false, "use a 302 temporary redirect instead of the 301 default")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains redirect set <app> <domain> --target URL [flags]\n\nConfigures <domain> to redirect to --target. 301 permanent is the default; pass --temporary for a 302. --permanent and --temporary are mutually exclusive.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains redirect set <app> <domain> --target URL [flags]\n\nConfigures <domain> to redirect to --target. 301 permanent is the default; pass --temporary for a 302 or --status for 307/308. --preset sets up www and apex instead (see domains redirects canonical).\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
@@ -105,6 +111,19 @@ func runDomainsRedirectSet(prog string, args []string, stdout, stderr io.Writer,
 	}
 	appName, domain := rest[0], rest[1]
 
+	if presetFlag != "" {
+		if targetFlag != "" {
+			_, _ = fmt.Fprintf(stderr, "%s: --preset and --target are mutually exclusive\n\n", prog)
+			fs.Usage()
+			return exitUsage
+		}
+		client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+		res, err := client.SetDomainCanonical(context.Background(), appName, domain, apiclient.CanonicalRequest{Preset: presetFlag, StatusCode: statusFlag})
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("apply %s for domain %q: %w", presetFlag, domain, err))
+		}
+		return writeScheduledTaskResult(stdout, stderr, of, res, func() { printRedirectsHuman(stdout, res) })
+	}
 	if targetFlag == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: --target is required\n\n", prog)
 		fs.Usage()
@@ -119,6 +138,14 @@ func runDomainsRedirectSet(prog string, args []string, stdout, stderr io.Writer,
 	statusCode := 301
 	if temporaryFlag {
 		statusCode = 302
+	}
+	if statusFlag != 0 {
+		if permanentFlag || temporaryFlag {
+			_, _ = fmt.Fprintf(stderr, "%s: --status cannot be combined with --permanent or --temporary\n\n", prog)
+			fs.Usage()
+			return exitUsage
+		}
+		statusCode = statusFlag
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)

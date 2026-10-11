@@ -144,6 +144,12 @@ var cliCommandTree = map[string]*cmdNode{
 		"error-pages":       {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"search-visibility": nil,
 		"dns":               {subs: map[string]*cmdNode{"list": nil, "add": nil, "remove": nil}},
+		"headers":           {subs: map[string]*cmdNode{"show": nil, "set": nil, "add": nil, "preset": nil, "clear": nil}},
+		"forwarders":        {subs: map[string]*cmdNode{"show": nil, "set": nil, "add": nil, "remove": nil, "clear": nil}},
+		"geo":               {subs: map[string]*cmdNode{"show": nil, "set": nil, "clear": nil, "lookup": nil}},
+		"cache":             {subs: map[string]*cmdNode{"show": nil, "set": nil, "add": nil, "purge": nil, "stats": nil, "clear": nil}},
+		"redirects":         {subs: map[string]*cmdNode{"show": nil, "force-https": nil, "canonical": nil, "alias": nil, "slash": nil, "lowercase": nil, "clear": nil}},
+		"ports":             {subs: map[string]*cmdNode{"show": nil, "restrict": nil, "unrestrict": nil}},
 	}},
 	"backups": {subs: map[string]*cmdNode{
 		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "clone-restores": nil, "verify": nil, "verifications": nil,
