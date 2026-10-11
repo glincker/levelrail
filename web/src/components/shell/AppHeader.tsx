@@ -53,10 +53,10 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
             <Kbd keys={[isMac ? '⌘' : 'Ctrl', 'K']} />
           </span>
         </Button>
-        <div className="order-last w-full empty:hidden @4xl:order-none @4xl:ml-auto @4xl:w-auto">
+        <div className="order-last w-full empty:hidden @4xl:order-none @4xl:w-auto">
           <EnvironmentSwitcher />
         </div>
-        <div className="ml-auto flex items-center gap-1 @xl:gap-2 @4xl:ml-2">
+        <div className="ml-auto flex items-center gap-1 @xl:gap-2">
           <TeamSwitcher />
           <StatusChip />
           <NotificationCenter />

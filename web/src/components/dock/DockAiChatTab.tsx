@@ -39,6 +39,12 @@ export function DockAiChatTab() {
           icon={<RobotIcon className="size-5" />}
           title={t('dock.ai.experimentalOffTitle')}
           description={t('dock.ai.experimentalOffDescription')}
+          action={
+            <Button size="sm" render={<Link to="/settings/beta-features" />}>
+              <GearIcon />
+              {t('dock.ai.enableInSettings')}
+            </Button>
+          }
           className="flex-1"
         />
       </div>

@@ -194,7 +194,8 @@
       "notConfiguredDescription": "Add a BYOK API key in Settings to start chatting.",
       "configure": "Configure AI Assistant",
       "experimentalOffTitle": "AI chat is turned off",
-      "experimentalOffDescription": "AI chat is an experimental feature. An administrator enables it by setting APP_EXPERIMENTAL=ai-chat on the server and restarting the control plane."
+      "experimentalOffDescription": "AI chat is a beta feature and is off by default. An administrator can turn it on in Settings, Beta features, no server access needed.",
+      "enableInSettings": "Turn on in Settings"
     }
   },
   "login": {
