@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { deployLogsPath } from '../queries/deployments'
 import { DeploymentsPage } from '../components/deployments/DeploymentsPage'
 import {
   parseDeploymentsSearch,
@@ -24,6 +25,9 @@ function DeploymentsRoute() {
       search={parseDeploymentsSearch(search)}
       onViewApproval={() => {
         void goTo({ to: '/approvals' })
+      }}
+      onOpenDetails={(d) => {
+        void goTo(deployLogsPath(d))
       }}
       onSearchChange={(next) => {
         void navigate({ search: next, replace: true })

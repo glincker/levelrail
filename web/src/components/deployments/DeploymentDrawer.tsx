@@ -180,7 +180,13 @@ function DrawerBody({
               </span>
             </Row>
           )}
-          {d.commit_message && <Row label="Message">{d.commit_message}</Row>}
+          {d.commit_message && (
+            <Row label="Message">
+              <span className="block max-h-40 overflow-y-auto text-left whitespace-pre-wrap">
+                {d.commit_message}
+              </span>
+            </Row>
+          )}
           {d.author && <Row label="Author">{d.author}</Row>}
           {d.pr_number !== null && (
             <Row label="Pull request">#{d.pr_number}</Row>
