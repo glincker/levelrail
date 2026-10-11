@@ -74,7 +74,8 @@ export function DomainsTable({
         : sorted.filter(
             (d) =>
               d.domain.toLowerCase().includes(needle) ||
-              d.service_name.toLowerCase().includes(needle),
+              d.service_name.toLowerCase().includes(needle) ||
+              (d.target ?? '').toLowerCase().includes(needle),
           ),
     [sorted, needle],
   )
@@ -93,9 +94,15 @@ export function DomainsTable({
         title={t('page.empty.noAppsTitle')}
         description={t('page.empty.noAppsBody')}
         action={
-          <Button size="sm" render={<Link to="/apps" />} nativeButton={false}>
-            {t('page.empty.noAppsAction')}
-          </Button>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button size="sm" render={<Link to="/apps" />} nativeButton={false}>
+              {t('page.empty.noAppsAction')}
+            </Button>
+            <Button size="sm" variant="outline" onClick={onAdd}>
+              <PlusIcon />
+              {t('standalone.modeProxy')}
+            </Button>
+          </div>
         }
       />
     ) : (

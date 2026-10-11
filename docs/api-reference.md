@@ -76,6 +76,8 @@ System endpoints for:
 | GET | /api/v1/updates/auto | AbilityRoot | handleGetUpgradePolicy |
 | PUT | /api/v1/updates/auto | AbilityRoot | handleUpdateUpgradePolicy |
 | POST | /api/v1/updates/backup-now | AbilityRoot | handleUpgradeBackupNow |
+| GET | /api/v1/system/server-address | AbilityRead | handleGetServerAddress |
+| PUT | /api/v1/system/server-address | AbilityRoot | handleSetServerAddress |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -788,6 +790,12 @@ Endpoints for:
 | GET | /api/v1/domains/automation/runs | AbilityRead | handleListAutomationRuns |
 | POST | /api/v1/domains/automation/runs/{id}/undo | AbilityRoot | handleUndoAutomationRun |
 | GET | /api/v1/domains/{domain}/activity | AbilityRead | handleDomainActivity |
+| GET | /api/v1/domains/standalone | AbilityRead | handleListStandaloneDomains |
+| POST | /api/v1/domains/standalone | AbilityWriteSensitive | handleCreateStandaloneDomain |
+| POST | /api/v1/domains/standalone/validate | AbilityWriteSensitive | handleValidateStandaloneDomain |
+| GET | /api/v1/domains/standalone/candidates | AbilityWriteSensitive | handleStandaloneCandidates |
+| PUT | /api/v1/domains/standalone/{domain} | AbilityWriteSensitive | handleUpdateStandaloneDomain |
+| DELETE | /api/v1/domains/standalone/{domain} | AbilityWriteSensitive | handleDeleteStandaloneDomain |
 
 ## Built-in Container Registry
 

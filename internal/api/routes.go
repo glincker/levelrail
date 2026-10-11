@@ -44,6 +44,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerTeamRoutes(mux)
 	rt.registerComposeRoutes(mux)
 	rt.registerEnvProtectionRoutes(mux)
+	rt.registerStandaloneDomainRoutes(mux)
 
 	var h http.Handler = mux
 	h = experimentalGateMiddleware(h)

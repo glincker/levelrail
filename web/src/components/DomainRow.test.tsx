@@ -94,6 +94,26 @@ describe('DomainRow', () => {
     expect(screen.getByTitle('Basic auth configured')).toBeInTheDocument()
   })
 
+  it('shows an unlinked standalone domain with its target and scoped calls', () => {
+    renderRow(
+      makeDomain({
+        domain: 'tools.example.com',
+        service_name: '',
+        kind: 'standalone',
+        target: 'http://127.0.0.1:3000',
+      }),
+    )
+    expect(screen.getByText('Unlinked')).toBeInTheDocument()
+    expect(screen.getByText('http://127.0.0.1:3000')).toBeInTheDocument()
+    const calls = vi.mocked(fetch).mock.calls.map((c) => c[0] as string)
+    expect(
+      calls.some((u) =>
+        u.includes('/apps/_standalone/domains/tools.example.com/'),
+      ),
+    ).toBe(true)
+    expect(calls.some((u) => u.includes('/apps//domains/'))).toBe(false)
+  })
+
   it('shows the inline certificate failure next to the domain', () => {
     renderRow(
       makeDomain({

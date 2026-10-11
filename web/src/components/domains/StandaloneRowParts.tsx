@@ -1,0 +1,185 @@
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import {
+  ArrowsClockwiseIcon,
+  CheckIcon,
+  CopyIcon,
+  DotsThreeIcon,
+  ListMagnifyingGlassIcon,
+  PencilSimpleIcon,
+  TrashIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { toast } from '@/components/ui/toast'
+import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
+import type { Domain } from '../../queries/domains'
+import {
+  useDeleteStandaloneDomain,
+  useStandaloneDomains,
+} from '../../queries/standaloneDomains'
+import { StandaloneDomainForm } from './StandaloneDomainForm'
+
+// StandaloneTargetCell fills the App column for a domain not linked to an app.
+export function StandaloneTargetCell({ domain }: { domain: Domain }) {
+  const { t } = useTranslation('domains')
+  return (
+    <span
+      className="flex min-w-0 items-center gap-1.5"
+      title={t('standalone.unlinkedHint')}
+    >
+      <Badge variant="outline">{t('standalone.unlinked')}</Badge>
+      <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+        {domain.target}
+      </span>
+    </span>
+  )
+}
+
+export function EditStandaloneDialog({
+  domain,
+  open,
+  onOpenChange,
+}: {
+  domain: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const { t } = useTranslation('domains')
+  const { data } = useStandaloneDomains()
+  const current = data?.find((d) => d.domain === domain)
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t('standalone.editTitle', { domain })}</DialogTitle>
+          <DialogDescription>{t('standalone.description')}</DialogDescription>
+        </DialogHeader>
+        {open && current ? (
+          <StandaloneDomainForm
+            initial={current}
+            onSaved={() => {
+              toast.add({
+                title: t('standalone.updated', { domain }),
+                type: 'success',
+              })
+              onOpenChange(false)
+            }}
+          />
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export function StandaloneRowActions({
+  domain,
+  onShowRecord,
+  onRecheck,
+}: {
+  domain: Domain
+  onShowRecord: () => void
+  onRecheck: () => void
+}) {
+  const { t } = useTranslation('domains')
+  const { copied, copy } = useCopyToClipboard()
+  const [editing, setEditing] = useState(false)
+  const [removing, setRemoving] = useState(false)
+  const remove = useDeleteStandaloneDomain()
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="justify-self-end"
+              aria-label={t('page.row.actions', { domain: domain.domain })}
+            />
+          }
+        >
+          <DotsThreeIcon weight="bold" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem
+            onClick={() => {
+              setEditing(true)
+            }}
+          >
+            <PencilSimpleIcon />
+            {t('standalone.edit')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onShowRecord}>
+            <ListMagnifyingGlassIcon />
+            {t('page.row.dnsRecord')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onRecheck}>
+            <ArrowsClockwiseIcon />
+            {t('page.row.recheck')}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              copy(domain.domain)
+            }}
+          >
+            {copied ? <CheckIcon /> : <CopyIcon />}
+            {copied ? t('page.row.copied') : t('page.row.copy')}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              setRemoving(true)
+            }}
+          >
+            <TrashIcon />
+            {t('standalone.remove')}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <EditStandaloneDialog
+        domain={domain.domain}
+        open={editing}
+        onOpenChange={setEditing}
+      />
+      <ConfirmDialog
+        open={removing}
+        onOpenChange={setRemoving}
+        tone="destructive"
+        title={t('standalone.removeTitle', { domain: domain.domain })}
+        description={t('standalone.removeBody', {
+          target: domain.target ?? '',
+        })}
+        confirmLabel={t('standalone.removeConfirm')}
+        pendingLabel={t('standalone.removing')}
+        pending={remove.isPending}
+        error={remove.error?.message ?? null}
+        onConfirm={() => {
+          remove.mutate(domain.domain, {
+            onSuccess: () => {
+              setRemoving(false)
+              toast.add({
+                title: t('standalone.removed', { domain: domain.domain }),
+                type: 'success',
+              })
+            },
+          })
+        }}
+      />
+    </>
+  )
+}

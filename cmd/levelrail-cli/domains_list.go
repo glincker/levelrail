@@ -46,15 +46,18 @@ func printDomainsTable(out io.Writer, domains []domainResource) {
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "DOMAIN\tSERVICE\tSOURCE\tURL")
 	for _, d := range domains {
-		source := "configured"
+		source, service := "configured", d.ServiceName
 		if d.Automatic {
 			source = "automatic"
+		}
+		if d.Kind == "standalone" {
+			source, service = "standalone", "-> "+d.Target
 		}
 		link := d.ReachableURL
 		if link == "" && d.ReachableReason != "" {
 			link = "(" + d.ReachableReason + ")"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", d.Domain, d.ServiceName, source, link)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", d.Domain, service, source, link)
 	}
 	_ = tw.Flush()
 }

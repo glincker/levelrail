@@ -672,7 +672,13 @@ levelrail-cli domains backfill-base-domain [--confirm] [flags]
 levelrail-cli settings domain-automation get|set [flags]
 levelrail-cli domains cloudflare-dns get|set|clear [flags]
 levelrail-cli domains route53-dns get|set|clear [flags]
+levelrail-cli domains standalone list [flags]
+levelrail-cli domains standalone add <domain> --target TARGET [--confirm] [flags]
+levelrail-cli domains standalone update <domain> [--target TARGET] [flags]
+levelrail-cli domains standalone remove <domain> [flags]
 ```
+
+- `standalone` manages [standalone domains](standalone-domains.md): domains with no app that proxy to `PORT`, `HOST:PORT`, an `http(s)://` URL, `app:NAME[:PORT]` or `container:NAME:PORT`. Options are `--upstream-tls`, `--insecure-skip-verify`, `--tls-server-name`, `--host-header preserve|upstream|NAME`, `--no-websocket`, `--connect-timeout`, `--read-timeout`, `--strip-prefix` and `--description`. Loopback, private, container and control-port targets need `--confirm`. `update` sends only the flags you pass. Per-domain commands take `_standalone` as the app name, for example `domains waf set _standalone tools.example.com`.
 
 - `list` shows every app's domains in one call. `check` runs a real DNS lookup and reports whether the domain reaches this control plane. `certificates` lists every certificate in certmagic storage, healthy or not.
 - `basic-auth set` takes `--username` and `--password`. `maintenance set` serves a fixed maintenance response instead of proxying, without stopping the container. `redirect set --target URL` redirects every request for the domain; maintenance mode takes precedence if both are set.
@@ -1284,6 +1290,16 @@ levelrail-cli containers reap [--dry-run] [flags]
 ```
 
 `list` shows every container on this node, managed or not. `stop`, `remove` and `claim` only act on a container the platform does not already manage (409 otherwise); for a managed app use `apps stop`, `apps start`, `apps restart` or `apps delete`. `claim` adopts an orphaned container into a new app. `orphans` lists leftover containers, volumes and certificates that no app or database accounts for, with where each stands against its grace period. `reap` runs one removal pass now (`--dry-run` reports without removing; exit 1 if anything could not be removed). Details and the `APP_ORPHAN_*` settings are in [Delete and clean up](deploying-apps.md#delete-and-clean-up).
+
+## System address
+
+```
+levelrail-cli system address [--domain NAME] [flags]
+levelrail-cli system address --ipv4 IP [--ipv6 IP]
+levelrail-cli system address --clear
+```
+
+Shows this server's public IPv4 and IPv6, where they came from, and a note when the server is behind NAT or a TLS-terminating proxy. `--domain` adds the exact DNS records to create for that name. `--ipv4` and `--ipv6` set a manual override (root), `--clear` goes back to detection. See [Standalone domains](standalone-domains.md#server-address-and-dns-records).
 
 ## System maintenance
 

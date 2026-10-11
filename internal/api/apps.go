@@ -21,6 +21,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -399,6 +400,9 @@ var validKnownStrategies = map[string]bool{
 func validateAppResource(a appResource) error {
 	if a.Name == "" {
 		return errors.New("name is required")
+	}
+	if a.Name == standalone.Scope {
+		return errors.New("name " + standalone.Scope + " is reserved for standalone domains")
 	}
 	if a.Image == "" {
 		return errors.New("image is required")

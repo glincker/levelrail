@@ -22,6 +22,8 @@ import {
   DomainsTableSkeleton,
 } from '../../components/DomainsTable'
 import { ProxySetupCard } from '../../components/ProxySetupCard'
+import { ServerAddressCard } from '../../components/domains/ServerAddressCard'
+import { serverAddressQueryOptions } from '../../queries/serverAddress'
 import { useProxyIntegration } from '../../queries/proxyIntegration'
 import { proxyCertStatus } from '../../lib/certStatus'
 import { PlatformSettingsSection } from '../../components/PlatformSettingsSection'
@@ -39,6 +41,7 @@ export const Route = createFileRoute('/domains/')({
       queryClient.ensureQueryData(route53DnsSettingsQueryOptions()),
       queryClient.ensureQueryData(appListQueryOptions()),
       queryClient.ensureQueryData(dashboardUrlQueryOptions()),
+      queryClient.prefetchQuery(serverAddressQueryOptions()),
     ]),
   component: DomainsPage,
   pendingComponent: DomainsPending,
@@ -71,7 +74,13 @@ function DomainsPage() {
     return byDomain
   }, [certificates, proxy])
   const claimedBy = useMemo(
-    () => new Map(domains.map((d) => [d.domain, d.service_name])),
+    () =>
+      new Map(
+        domains.map((d) => [
+          d.domain,
+          d.kind === 'standalone' ? (d.target ?? d.domain) : d.service_name,
+        ]),
+      ),
     [domains],
   )
   const appChoices = useMemo(
@@ -100,6 +109,8 @@ function DomainsPage() {
       />
 
       <ProxySetupCard />
+
+      <ServerAddressCard />
 
       <DomainsTable
         domains={domains}

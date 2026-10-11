@@ -600,8 +600,8 @@ func TestHandleListDomains(t *testing.T) {
 		t.Fatalf("decode: %v", err)
 	}
 	want := []domainResource{
-		{Domain: "web.example.com", ServiceName: "web", TLSOwner: "internal", ReachableReason: reachableReasonStopped},
-		{Domain: "www.example.com", ServiceName: "web", TLSOwner: "internal", ReachableReason: reachableReasonStopped},
+		{Domain: "web.example.com", ServiceName: "web", TLSOwner: "internal", ReachableReason: reachableReasonStopped, Kind: domainKindApp},
+		{Domain: "www.example.com", ServiceName: "web", TLSOwner: "internal", ReachableReason: reachableReasonStopped, Kind: domainKindApp},
 	}
 	if len(got) != len(want) {
 		t.Fatalf("GET /domains = %+v, want %+v", got, want)
@@ -657,10 +657,10 @@ func TestHandleListDomains_StatusFlags(t *testing.T) {
 		"configured.example.com": {
 			Domain: "configured.example.com", ServiceName: "web",
 			WAFEnabled: true, HasRedirect: true, MaintenanceEnabled: true, HasBasicAuth: true,
-			TLSOwner: "internal", ReachableReason: reachableReasonStopped,
+			TLSOwner: "internal", ReachableReason: reachableReasonStopped, Kind: domainKindApp,
 		},
 		"plain.example.com": {
-			Domain: "plain.example.com", ServiceName: "web", TLSOwner: "internal", ReachableReason: reachableReasonStopped,
+			Domain: "plain.example.com", ServiceName: "web", TLSOwner: "internal", ReachableReason: reachableReasonStopped, Kind: domainKindApp,
 		},
 	}
 	if len(got) != len(want) {

@@ -438,6 +438,10 @@ type domainResource struct {
 	// ReachableReason says why (stopped, not_resolving, not_routed, held_back).
 	ReachableURL    string `json:"reachable_url,omitempty"`
 	ReachableReason string `json:"reachable_reason,omitempty"`
+	// Kind is app or standalone; a standalone row has no service_name and
+	// Target says where it proxies.
+	Kind   string `json:"kind"`
+	Target string `json:"target,omitempty"`
 }
 
 // handleListDomains handles GET /api/v1/domains: every service_domains
@@ -504,9 +508,13 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 			MaintenanceEnabled: inMaintenance[d.Domain],
 			HasBasicAuth:       hasBasicAuth[d.Domain],
 			ACMEFailure:        acmeFailureFor(d.Domain),
+			Kind:               domainKindApp,
 		})
 	}
 	out = append(out, rt.automaticDomains(r, canSee)...)
+	out = append(out, rt.standaloneDomainRows(r, func(d string) domainResource {
+		return domainResource{WAFEnabled: wafEnabled[d], HasRedirect: hasRedirect[d], MaintenanceEnabled: inMaintenance[d], HasBasicAuth: hasBasicAuth[d], ACMEFailure: acmeFailureFor(d)}
+	})...)
 	rt.annotateDomainTLS(r.Context(), out)
 	rt.annotateDomainReachability(r.Context(), out)
 	writeJSON(w, http.StatusOK, out)
@@ -533,7 +541,7 @@ func (rt *Router) automaticDomains(r *http.Request, canSee func(string) bool) []
 			continue
 		}
 		if d, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
-			out = append(out, domainResource{Domain: d, ServiceName: svc.Name, Automatic: true})
+			out = append(out, domainResource{Domain: d, ServiceName: svc.Name, Automatic: true, Kind: domainKindApp})
 		}
 	}
 	return out

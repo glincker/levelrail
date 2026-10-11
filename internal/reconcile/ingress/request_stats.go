@@ -9,7 +9,7 @@ func (c *Controller) publishRequestHostOwners(claimedHosts map[string]string) {
 	owners := make(map[string]string, len(claimedHosts))
 	for host, owner := range claimedHosts {
 		switch owner {
-		case dashboardRouteOwner, registryRouteOwner, modelRouteOwner:
+		case dashboardRouteOwner, registryRouteOwner, modelRouteOwner, standaloneRouteOwner:
 			continue
 		}
 		owners[host] = owner

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
@@ -7,6 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '../shell/PageHeader'
 import { useDomainPolicies } from '../../queries/domainPolicies'
+import { STANDALONE_SCOPE } from '../../lib/standaloneDomain'
+import { EditStandaloneDialog } from '../domains/StandaloneRowParts'
 import { AccessTab } from './AccessTab'
 import { CacheTab } from './CacheTab'
 import { DangerZoneTab } from './DangerZoneTab'
@@ -30,17 +33,45 @@ export function DomainPolicyPage({
 }) {
   const { t } = useTranslation('domainPolicies')
   const { data, error, isLoading, refetch } = useDomainPolicies(app, domain)
+  const [editing, setEditing] = useState(false)
+  const standalone = app === STANDALONE_SCOPE
 
   const header = (
-    <PageHeader
-      breadcrumb={
-        <Link to="/domains" className="hover:underline">
-          {t('page.breadcrumb')}
-        </Link>
-      }
-      title={<span className="font-mono">{domain}</span>}
-      description={t('page.description', { app })}
-    />
+    <>
+      <PageHeader
+        breadcrumb={
+          <Link to="/domains" className="hover:underline">
+            {t('page.breadcrumb')}
+          </Link>
+        }
+        title={<span className="font-mono">{domain}</span>}
+        description={
+          standalone
+            ? t('page.descriptionStandalone')
+            : t('page.description', { app })
+        }
+        actions={
+          standalone ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setEditing(true)
+              }}
+            >
+              {t('page.editTarget')}
+            </Button>
+          ) : undefined
+        }
+      />
+      {standalone ? (
+        <EditStandaloneDialog
+          domain={domain}
+          open={editing}
+          onOpenChange={setEditing}
+        />
+      ) : null}
+    </>
   )
 
   if (!app) {

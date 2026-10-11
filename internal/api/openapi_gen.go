@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 981 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 989 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -925,6 +925,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/domains", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListDomains", Description: "Domains (centralized cross-app list, web/src/routes/domains): every service_domains row, AbilityRead like GET /api/v1/apps, no new ability tier: this is the same data DomainEditor already exposes per-app, aggregated across every app in one read-only call."},
 	{Method: "GET", Path: "/api/v1/domains/automation/runs", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListAutomationRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/domains/automation/runs/{id}/undo", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleUndoAutomationRun", Description: ""},
+	{Method: "GET", Path: "/api/v1/domains/standalone", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListStandaloneDomains", Description: ""},
+	{Method: "POST", Path: "/api/v1/domains/standalone", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateStandaloneDomain", Description: ""},
+	{Method: "GET", Path: "/api/v1/domains/standalone/candidates", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleStandaloneCandidates", Description: ""},
+	{Method: "POST", Path: "/api/v1/domains/standalone/validate", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleValidateStandaloneDomain", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/domains/standalone/{domain}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteStandaloneDomain", Description: ""},
+	{Method: "PUT", Path: "/api/v1/domains/standalone/{domain}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleUpdateStandaloneDomain", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/{domain}/activity", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainActivity", Description: "One domain's activity timeline: audit rows plus certificate failures, cursor paginated by ?before. Visible to callers who can see its app."},
 	{Method: "GET", Path: "/api/v1/registry-credentials", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListRegistryCredentials", Description: "Registry credentials (registry_credentials.go): same ability tiers as backup targets just above, same reasoning (POST/PUT/DELETE handle live pull credentials)."},
 	{Method: "POST", Path: "/api/v1/registry-credentials", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateRegistryCredential", Description: ""},
@@ -972,6 +978,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/system/reverse-proxy", Ability: "AbilityRead", Group: "System", Handler: "handleReverseProxyGuide", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/secrets/binding", Ability: "AbilityRead", Group: "System", Handler: "handleGetSecretBinding", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/secrets/rebind", Ability: "AbilityRoot", Group: "System", Handler: "handleRebindSecrets", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/server-address", Ability: "AbilityRead", Group: "System", Handler: "handleGetServerAddress", Description: "The address DNS records must point at. Reading is AbilityRead; the manual override changes DNS checks for every domain, so it is root."},
+	{Method: "PUT", Path: "/api/v1/system/server-address", Ability: "AbilityRoot", Group: "System", Handler: "handleSetServerAddress", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/status", Ability: "AbilityRead", Group: "System", Handler: "handleSystemStatus", Description: "System status (General settings page): configured/not-configured signals plus disk usage, AbilityRead like everything else an authenticated operator can passively view."},
 	{Method: "GET", Path: "/api/v1/system/volumes/orphaned", Ability: "AbilityRead", Group: "System", Handler: "handleListOrphanedVolumes", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/volumes/orphaned/cleanup", Ability: "AbilityRoot", Group: "System", Handler: "handleCleanupOrphanedVolumes", Description: ""},

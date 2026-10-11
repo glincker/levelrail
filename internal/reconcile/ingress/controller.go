@@ -866,6 +866,17 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		routes = append(routes, svcRoutes...)
 	}
 
+	standalonePlan, err := c.standaloneRoutes(ctx, services, readyByService, claimedHosts, domainFeatures{
+		auth: authByDomain, maintenance: maintenanceByDomain, redirects: redirectByDomain,
+		waf: wafByDomain, errorPages: errorPagesByDomain, hidden: hiddenByDomain,
+	})
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list standalone domains: %w", err)
+	}
+	routes = append(routes, standalonePlan.routes...)
+	maintenanceRoutes = append(maintenanceRoutes, standalonePlan.maintenance...)
+	redirectRoutes = append(redirectRoutes, standalonePlan.redirects...)
+
 	// Per-domain traffic controls (controller_policies.go), after every
 	// app route exists so forwarders can resolve other apps' dials.
 	if routes, err = c.applyTrafficPolicies(ctx, routes, claimedHosts, settings, tlsCertOverrides); err != nil {
@@ -1030,6 +1041,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		conditions = append(conditions, *cond)
 	}
 	if cond := crossNodeIngressCondition(remoteBlocks); cond != nil {
+		conditions = append(conditions, *cond)
+	}
+	if cond := standalonePlan.condition(); cond != nil {
 		conditions = append(conditions, *cond)
 	}
 	return reconcile.Result{Conditions: conditions}, nil

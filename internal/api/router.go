@@ -74,6 +74,7 @@ package api
 import (
 	"context"
 	"log/slog"
+	"net"
 	"os/exec"
 	"sync"
 	"sync/atomic"
@@ -83,6 +84,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/orphans"
+	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/statuspage"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
@@ -227,6 +229,9 @@ type Router struct {
 	// Host header in that case, see advertisedHost's own doc comment.
 	publicHost              string
 	detectPublicIPs         func(context.Context) []string // nil uses ingress.DetectPublicIPs; tests stub it
+	standaloneSafety        StandaloneSafety               // see WithStandaloneSafety
+	standaloneResolver      standalone.Resolver            // nil uses net.DefaultResolver; tests stub it
+	interfaceAddrs          func() ([]net.Addr, error)     // nil uses net.InterfaceAddrs; tests stub it
 	dashboardListenAddr     string                         // APP_HTTP_ADDR, so the reverse proxy guide can build an upstream
 	proxyIntegration        *proxyIntegrationDeps          // nil: managed proxy routes answer 501, see SetProxyIntegration
 	httpsMu                 sync.Mutex

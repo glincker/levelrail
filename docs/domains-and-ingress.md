@@ -283,6 +283,10 @@ levelrail-cli domains tls-cert get <app> <domain>
 
 The API is `PUT /api/v1/apps/{name}/domains/{domain}/tls-cert`, and the dashboard has a per-domain TLS control.
 
+## Domains without an app
+
+A domain does not have to belong to an app. A [standalone domain](standalone-domains.md) proxies to a port on this server, an address on your network, an external URL, another app's port or a container, and gets every per-domain feature on this page. In the dashboard, **Add domain** offers **Proxy to a port or URL** next to **Route to an app**; from the CLI it is `levelrail-cli domains standalone add <domain> --target 127.0.0.1:3000 --confirm`. The same page explains the **Server address** card, which shows the public IPv4 and IPv6 your DNS records must point at, with a manual override.
+
 ## Add a domain and go live
 
 With a DNS provider connected, adding a domain does the rest: Levelrail creates the DNS record, waits for it to propagate, checks the certificate and confirms the site answers, then gives you one link.

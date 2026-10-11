@@ -115,6 +115,7 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Domains and ingress', link: '/domains-and-ingress' },
+          { text: 'Standalone domains', link: '/standalone-domains' },
           { text: 'DNS zones and records', link: '/dns' },
           { text: 'Domain traffic controls', link: '/domain-traffic-controls' },
           { text: 'Load balancing', link: '/load-balancing' },
