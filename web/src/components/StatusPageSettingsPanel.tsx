@@ -43,8 +43,8 @@ function SettingsForm({ initial }: { initial: StatusPageSettings }) {
         )
       }}
     >
-      <label className="flex items-center gap-3 text-sm font-medium">
-        <Switch checked={enabled} onCheckedChange={setEnabled} />
+      <label className="flex items-center gap-3 text-sm font-medium" htmlFor="sp-enabled">
+        <Switch id="sp-enabled" checked={enabled} onCheckedChange={setEnabled} />
         Publish the status page
       </label>
       <Field>
