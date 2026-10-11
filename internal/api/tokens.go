@@ -95,6 +95,15 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
+	lifetimeMsg, err := rt.tokenLifetimeProblem(r.Context(), req.ExpiresInDays)
+	if err != nil {
+		rt.internalError(w, "api: create token: load security policy failed", err)
+		return
+	}
+	if lifetimeMsg != "" {
+		writeError(w, http.StatusBadRequest, lifetimeMsg)
+		return
+	}
 
 	callerAbilities, err := rt.callerAbilities(r)
 	if err != nil {

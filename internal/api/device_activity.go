@@ -159,6 +159,9 @@ func (rt *Router) RunDeviceLoginExpirySweeper(ctx context.Context) error {
 		if err := rt.SweepSignInExpiry(ctx, time.Now()); err != nil && ctx.Err() == nil {
 			rt.logger.Warn("api: sign-in expiry sweep failed", slog.String("error", err.Error()))
 		}
+		if err := rt.SweepTokenHygiene(ctx, time.Now()); err != nil && ctx.Err() == nil {
+			rt.logger.Warn("api: token hygiene sweep failed", slog.String("error", err.Error()))
+		}
 	}
 	tick()
 	ticker := time.NewTicker(envDuration(envDeviceExpirySweep, defaultDeviceExpirySweep))

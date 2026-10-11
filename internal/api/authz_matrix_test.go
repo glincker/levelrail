@@ -53,6 +53,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/auth/login-code/request":           "always the same generic answer and timing, rate limited per IP, account and globally",
 	"POST /api/v1/auth/login-code/redeem":            "authenticated by the browser binding cookie plus the code, attempt capped and rate limited",
 	"POST /api/v1/auth/login-approval/poll":          "authenticated by the browser binding cookie of a paused password login",
+	"POST /api/v1/auth/sign-in-alert/disown":         "authenticated by the signed single-use link from the owner's new-sign-in email, rate limited per IP",
 	"POST /api/v1/auth/device/start":                 "CLI device login start, rate limited",
 	"POST /api/v1/auth/device/token":                 "CLI device login poll, authenticated by the device code",
 	"GET /api/v1/auth/oauth/providers":               "login screen lists enabled providers",

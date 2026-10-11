@@ -567,6 +567,7 @@ type Store interface {
 	MigrationHubStore
 	AppImportStore
 	LoginCodeStore
+	SecurityStore
 	ExternalDatabaseStore
 	CanaryStore
 	DatabaseQueryStore
