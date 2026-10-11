@@ -42,6 +42,8 @@ Each resource row shows its internal DNS name (with a copy button) and, for an a
 
 The **Mesh networking** card shows whether the mesh is off, on, waiting for a restart, or failed to start, with a readiness checklist and an **Enable mesh** button (administrators only). See [Multi-node](multi-node.md#enabling-the-mesh-on-the-control-plane) for what each check means and the CLI (`levelrail-cli network mesh status|enable|disable`). The API is `GET` and `PUT /api/v1/mesh/settings`.
 
+The Network page also has a **Restart control plane** button (administrators only), used when the mesh is waiting for a restart. The CLI equivalent is `levelrail-cli system restart --wait`, see [CLI reference](cli-reference.md#system-restart).
+
 ## Reading the connections
 
 An app row shows **Connects to <database>** whenever the app has a connection to it, from either the [connections feature](connecting-apps-to-databases.md) or the older single-attachment flow. Both are unioned here, so this view reflects every app-to-database link regardless of which mechanism created it.
