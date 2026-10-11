@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
@@ -6,6 +7,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Kbd } from '@/components/kit'
 import { TeamSwitcher } from '../teams/TeamSwitcher'
 import { EnvironmentSwitcher } from '../environments/EnvironmentSwitcher'
+import { DockToggle } from '../dock/DockToggle'
 import { HelpMenu } from '../HelpMenu'
 import { ThemeToggle } from '../ThemeToggle'
 import { NotificationCenter } from './NotificationCenter'
@@ -21,51 +23,74 @@ const isMac =
 // environment switcher sits on its own row until @4xl.
 export function AppHeader({ onSearch }: { onSearch: () => void }) {
   const { t } = useTranslation()
+  const sentinel = useRef<HTMLDivElement>(null)
+  const [scrolled, setScrolled] = useState(false)
+
+  // Zero-height sentinel at the top of the inset: leaves view once content scrolls under the header.
+  useEffect(() => {
+    const el = sentinel.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry) setScrolled(!entry.isIntersecting)
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
   return (
-    <header
-      aria-label={t('shell.topBar')}
-      className="@container shrink-0 border-b border-border"
-    >
-      <div className="flex min-h-14 flex-wrap items-center gap-x-1 gap-y-2 px-3 py-2 @xl:gap-x-2 @xl:px-4 @4xl:flex-nowrap @4xl:py-0">
-        <SidebarTrigger
-          className="-ml-1"
-          aria-label={t('shell.toggleSidebar')}
-        />
-        <Separator
-          orientation="vertical"
-          className="mr-1 hidden h-4 data-vertical:self-center @xl:mr-2 @xl:block"
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="rounded-full text-muted-foreground max-@xl:w-7 max-@xl:justify-center max-@xl:px-0 @xl:w-44 @xl:justify-start @3xl:w-64"
-          aria-label={t('shell.search.label')}
-          aria-keyshortcuts="Control+K Meta+K"
-          onClick={onSearch}
-        >
-          <MagnifyingGlassIcon />
-          <span className="hidden flex-1 truncate text-left @xl:inline">
-            {t('shell.search.placeholder')}
-          </span>
-          <span className="hidden @3xl:inline-flex">
-            <Kbd keys={[isMac ? '⌘' : 'Ctrl', 'K']} />
-          </span>
-        </Button>
-        <div className="order-last w-full empty:hidden @4xl:order-none @4xl:ml-auto @4xl:w-auto">
-          <EnvironmentSwitcher />
-        </div>
-        <div className="ml-auto flex items-center gap-1 @xl:gap-2 @4xl:ml-2">
-          <TeamSwitcher />
-          <StatusChip />
-          <NotificationCenter />
-          <div className="hidden @md:block">
-            <WhatsNewPanel />
+    <>
+      <div
+        ref={sentinel}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+      />
+      <header
+        aria-label={t('shell.topBar')}
+        data-scrolled={scrolled}
+        className="@container sticky top-0 z-30 shrink-0 border-b border-border bg-background transition-shadow duration-150 data-[scrolled=true]:shadow-header motion-reduce:transition-none"
+      >
+        <div className="flex min-h-14 flex-wrap items-center gap-x-1 gap-y-2 px-3 py-2 @xl:gap-x-2 @xl:px-4 @4xl:flex-nowrap @4xl:py-0">
+          <SidebarTrigger
+            className="-ml-1"
+            aria-label={t('shell.toggleSidebar')}
+          />
+          <Separator
+            orientation="vertical"
+            className="mr-1 hidden h-4 data-vertical:self-center @xl:mr-2 @xl:block"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-full text-muted-foreground max-@xl:w-7 max-@xl:justify-center max-@xl:px-0 @xl:w-44 @xl:justify-start @3xl:w-64"
+            aria-label={t('shell.search.label')}
+            aria-keyshortcuts="Control+K Meta+K"
+            onClick={onSearch}
+          >
+            <MagnifyingGlassIcon />
+            <span className="hidden flex-1 truncate text-left @xl:inline">
+              {t('shell.search.placeholder')}
+            </span>
+            <span className="hidden @3xl:inline-flex">
+              <Kbd keys={[isMac ? '⌘' : 'Ctrl', 'K']} />
+            </span>
+          </Button>
+          <div className="order-last w-full empty:hidden @4xl:order-none @4xl:w-auto">
+            <EnvironmentSwitcher />
           </div>
-          <HelpMenu />
-          <ThemeToggle />
+          <div className="ml-auto flex items-center gap-1 @xl:gap-2">
+            <TeamSwitcher />
+            <StatusChip />
+            <NotificationCenter />
+            <div className="hidden @md:block">
+              <WhatsNewPanel />
+            </div>
+            <DockToggle />
+            <HelpMenu />
+            <ThemeToggle />
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   )
 }

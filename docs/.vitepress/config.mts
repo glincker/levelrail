@@ -296,6 +296,7 @@ const sidebarGroups = [
       { text: 'CI', link: '/ci' },
       { text: 'VPS smoke test', link: '/vps-smoke' },
       { text: 'Internationalization', link: '/i18n' },
+      { text: 'Design tokens', link: '/design-tokens' },
       { text: 'Changelog', link: '/changelog/' },
     ],
   },

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1018 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1020 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -733,9 +733,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/log-archive/policy", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetLogArchivePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/log-archive/runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListLogArchiveRuns", Description: ""},
 	{Method: "GET", Path: "/api/v1/logs/queries", Ability: "AbilityRead", Group: "Other", Handler: "handleListSavedLogQueries", Description: ""},
-	{Method: "POST", Path: "/api/v1/logs/queries", Ability: "AbilityRead", Group: "Other", Handler: "handleCreateSavedLogQuery", Description: ""},
-	{Method: "DELETE", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleDeleteSavedLogQuery", Description: ""},
-	{Method: "PUT", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleUpdateSavedLogQuery", Description: ""},
+	{Method: "POST", Path: "/api/v1/logs/queries", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateSavedLogQuery", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteSavedLogQuery", Description: ""},
+	{Method: "PUT", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleUpdateSavedLogQuery", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
 	{Method: "GET", Path: "/api/v1/mesh/connectivity", Ability: "AbilityRoot", Group: "Other", Handler: "handleMeshConnectivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMeshSettings", Description: ""},
@@ -1003,6 +1003,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/system/proxy-integration/verify", Ability: "AbilityRoot", Group: "System", Handler: "handleVerifyProxyIntegration", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/prune", Ability: "AbilityRoot", Group: "System", Handler: "handleSystemPrune", Description: "POST /system/prune deletes real Docker resources (stopped containers, dangling images, anonymous volumes, unused build cache) fleet-wide, not scoped to one app: AbilityRoot, the same gate handleDrainNode uses for its own fleet-wide, no-undo action, not AbilityWrite (which a narrower, single-app token could hold)."},
 	{Method: "GET", Path: "/api/v1/system/readiness", Ability: "AbilityRead", Group: "System", Handler: "handleServerReadiness", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/restart", Ability: "AbilityRead", Group: "System", Handler: "handleGetSystemRestart", Description: ""},
+	{Method: "POST", Path: "/api/v1/system/restart", Ability: "AbilityRoot", Group: "System", Handler: "handleSystemRestart", Description: "Exiting the process drops every in-flight request and node session, so AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/system/reverse-proxy", Ability: "AbilityRead", Group: "System", Handler: "handleReverseProxyGuide", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/secrets/binding", Ability: "AbilityRead", Group: "System", Handler: "handleGetSecretBinding", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/secrets/rebind", Ability: "AbilityRoot", Group: "System", Handler: "handleRebindSecrets", Description: ""},
