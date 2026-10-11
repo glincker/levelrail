@@ -208,6 +208,7 @@ export function AppsBulkBar({
       <div
         role="region"
         aria-label="Bulk actions"
+        data-dock-avoid=""
         className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-30 flex w-max max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 shadow-lg"
       >
         <span className="text-sm font-medium">{selected.length} selected</span>

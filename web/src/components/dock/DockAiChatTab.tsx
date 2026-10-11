@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { GearIcon, RobotIcon } from '@phosphor-icons/react/dist/ssr'
 import { AiChatPanel } from '../AiChatPanel'
+import { noteDockReply } from './dockStore'
 import { useAiAssistantSettings } from '../../queries/aiAssistantSettings'
 import { useExperimentalFeatures } from '../../hooks/useExperimental'
 import { Button } from '@/components/ui/button'
@@ -12,7 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 function Body() {
   const { t } = useTranslation()
   const { data: settings } = useAiAssistantSettings()
-  if (settings.configured) return <AiChatPanel />
+  if (settings.configured)
+    return <AiChatPanel onAssistantReply={noteDockReply} />
   return (
     <EmptyState
       icon={<RobotIcon className="size-5" />}

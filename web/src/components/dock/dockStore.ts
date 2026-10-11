@@ -1,55 +1,111 @@
 import { useSyncExternalStore } from 'react'
+import {
+  BOTTOM_MIN,
+  SIDE_MIN,
+  type Corner,
+  type DockMode,
+  type DockView,
+  type Rect,
+} from './dockGeometry'
 
-const OPEN_KEY = 'dock.open'
-const HEIGHT_KEY = 'dock.height'
-export const DOCK_MIN_HEIGHT = 200
-export const DOCK_DEFAULT_HEIGHT = 360
+const STORAGE_KEY = 'dock.state.v2'
+const MODES: readonly DockMode[] = ['float', 'bottom', 'side']
+const VIEWS: readonly DockView[] = ['open', 'minimized', 'closed']
+const CORNERS: readonly Corner[] = ['br', 'bl', 'tr', 'tl']
 
-interface DockState {
-  open: boolean
-  height: number
+export interface DockState {
+  view: DockView
+  mode: DockMode
+  maximized: boolean
+  push: boolean
+  tab: string
+  bottom: number
+  side: number
+  corner: Corner
+  floats: Record<string, Rect>
+  unread: boolean
 }
 
-function read(key: string): string | null {
-  try {
-    return window.localStorage.getItem(key)
-  } catch {
-    return null
-  }
+const DEFAULTS: DockState = {
+  view: 'minimized',
+  mode: 'float',
+  maximized: false,
+  push: false,
+  tab: 'ai-chat',
+  bottom: 360,
+  side: 420,
+  corner: 'br',
+  floats: {},
+  unread: false,
 }
 
-function write(key: string, value: string) {
-  try {
-    window.localStorage.setItem(key, value)
-  } catch {
-    // storage unavailable: state stays in memory only
-  }
+function isRect(value: unknown): value is Rect {
+  if (typeof value !== 'object' || value === null) return false
+  const r = value as Record<string, unknown>
+  return ['x', 'y', 'w', 'h'].every(
+    (k) => typeof r[k] === 'number' && Number.isFinite(r[k]),
+  )
 }
 
-export function clampDockHeight(height: number): number {
-  const max =
-    typeof window === 'undefined'
-      ? 800
-      : Math.max(DOCK_MIN_HEIGHT, Math.floor(window.innerHeight * 0.8))
-  return Math.min(max, Math.max(DOCK_MIN_HEIGHT, Math.round(height)))
+function oneOf<T extends string>(
+  list: readonly T[],
+  value: unknown,
+  fallback: T,
+): T {
+  return list.find((x) => x === value) ?? fallback
+}
+
+function num(value: unknown, fallback: number, min: number): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(min, value)
+    : fallback
 }
 
 function load(): DockState {
-  const stored = Number(read(HEIGHT_KEY))
-  return {
-    open: read(OPEN_KEY) === '1',
-    height:
-      Number.isFinite(stored) && stored > 0
-        ? clampDockHeight(stored)
-        : DOCK_DEFAULT_HEIGHT,
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return DEFAULTS
+    const p = JSON.parse(raw) as Record<string, unknown>
+    const floats: Record<string, Rect> = {}
+    if (typeof p.floats === 'object' && p.floats !== null) {
+      for (const [k, v] of Object.entries(p.floats)) {
+        if (isRect(v)) floats[k] = v
+      }
+    }
+    return {
+      view: oneOf(VIEWS, p.view, DEFAULTS.view),
+      mode: oneOf(MODES, p.mode, DEFAULTS.mode),
+      maximized: p.maximized === true,
+      push: p.push === true,
+      tab: typeof p.tab === 'string' ? p.tab : DEFAULTS.tab,
+      bottom: num(p.bottom, DEFAULTS.bottom, BOTTOM_MIN),
+      side: num(p.side, DEFAULTS.side, SIDE_MIN),
+      corner: oneOf(CORNERS, p.corner, DEFAULTS.corner),
+      floats,
+      unread: false,
+    }
+  } catch {
+    return DEFAULTS
+  }
+}
+
+function save(s: DockState) {
+  try {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...s, unread: undefined }),
+    )
+  } catch {
+    // storage unavailable: state stays in memory only
   }
 }
 
 let state: DockState = load()
 const listeners = new Set<() => void>()
 
-function commit(next: DockState) {
-  state = next
+function commit(patch: Partial<DockState>, persist = true) {
+  state = { ...state, ...patch }
+  if (persist) save(state)
   listeners.forEach((l) => l())
 }
 
@@ -60,31 +116,92 @@ function subscribe(listener: () => void) {
   }
 }
 
-export function setDockOpen(open: boolean) {
-  if (open === state.open) return
-  write(OPEN_KEY, open ? '1' : '0')
-  commit({ ...state, open })
+export function getDockState(): DockState {
+  return state
+}
+
+export function useDockState(): DockState {
+  return useSyncExternalStore(subscribe, () => state)
+}
+
+export function setDockView(view: DockView) {
+  if (view === state.view) return
+  commit({ view, unread: view === 'open' ? false : state.unread })
 }
 
 export function toggleDock() {
-  setDockOpen(!state.open)
+  setDockView(state.view === 'open' ? 'closed' : 'open')
 }
 
-export function setDockHeight(height: number, persist = true) {
-  const next = clampDockHeight(height)
-  if (next === state.height) return
-  if (persist) write(HEIGHT_KEY, String(next))
-  commit({ ...state, height: next })
+export function setDockMode(mode: DockMode) {
+  commit({ mode, maximized: false })
 }
 
-export function persistDockHeight() {
-  write(HEIGHT_KEY, String(state.height))
+export function cycleDockMode() {
+  const next = MODES[(MODES.indexOf(state.mode) + 1) % MODES.length] ?? 'float'
+  setDockMode(next)
 }
 
-export function useDockOpen(): boolean {
-  return useSyncExternalStore(subscribe, () => state.open)
+export function toggleDockMaximized() {
+  commit({ maximized: !state.maximized })
 }
 
-export function useDockHeight(): number {
-  return useSyncExternalStore(subscribe, () => state.height)
+export function setDockPush(push: boolean) {
+  commit({ push })
+}
+
+export function setDockTab(tab: string) {
+  commit({
+    tab,
+    unread: tab === 'ai-chat' && state.view === 'open' ? false : state.unread,
+  })
+}
+
+export function setDockBottom(bottom: number) {
+  commit({ bottom: Math.round(bottom), maximized: false })
+}
+
+export function setDockSide(side: number) {
+  commit({ side: Math.round(side), maximized: false })
+}
+
+export function setDockFloat(sizeClass: string, rect: Rect) {
+  commit({
+    floats: {
+      ...state.floats,
+      [sizeClass]: {
+        x: Math.round(rect.x),
+        y: Math.round(rect.y),
+        w: Math.round(rect.w),
+        h: Math.round(rect.h),
+      },
+    },
+    maximized: false,
+  })
+}
+
+export function setDockCorner(corner: Corner) {
+  commit({ corner })
+}
+
+export function resetDockGeometry(sizeClass: string) {
+  const floats = { ...state.floats }
+  delete floats[sizeClass]
+  commit({
+    floats,
+    bottom: DEFAULTS.bottom,
+    side: DEFAULTS.side,
+    corner: DEFAULTS.corner,
+    maximized: false,
+  })
+}
+
+// An assistant reply that lands while the chat is not in front.
+export function noteDockReply() {
+  if (state.view === 'open' && state.tab === 'ai-chat') return
+  if (!state.unread) commit({ unread: true }, false)
+}
+
+export function clearDockUnread() {
+  if (state.unread) commit({ unread: false }, false)
 }
