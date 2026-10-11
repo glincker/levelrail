@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 954 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 962 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -255,6 +255,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/log-drain", Ability: "AbilityRead", Group: "Audit Log / Log Drain", Handler: "handleGetAppLogDrain", Description: "Log drain (apps_log_drain.go): forwards an app's container logs to an external HTTP or syslog sink, additive to the existing node-local store. AbilityWriteSensitive for write/clear, the same tier as storage above (both configure where data leaves this control plane to); AbilityRead for the GET."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/log-drain", Ability: "AbilityWriteSensitive", Group: "Audit Log / Log Drain", Handler: "handleSetAppLogDrain", Description: ""},
 	{Method: "GET", Path: "/api/v1/audit-log", Ability: "AbilityRoot", Group: "Audit Log / Log Drain", Handler: "handleListAuditLog", Description: "Audit log (audit.go): who did what, across every session and API token, docs/comparison.md's own \"no audit log exists anywhere in the codebase\" gap. AbilityRoot, the same tier as the node and GitHub App routes above: this is operational data about every other identity on this control plane, not an ordinary per-app read."},
+	{Method: "GET", Path: "/api/v1/audit-log/export", Ability: "AbilityRoot", Group: "Audit Log / Log Drain", Handler: "handleExportAuditLog", Description: ""},
 	{Method: "POST", Path: "/api/v1/audit-log/purge", Ability: "AbilityRoot", Group: "Audit Log / Log Drain", Handler: "handlePurgeAuditLog", Description: "Manual retention purge (audit_retention.go): runs the same operator-configured retention window PurgeOldAuditEntries' own periodic sweep uses, on demand instead of waiting for its next tick. AbilityRoot, matching the read route above: clearing audit history is at least as sensitive as reading it."},
 	{Method: "GET", Path: "/api/v1/auth/2fa", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: "Two-factor auth (twofactor.go). /2fa/verify is necessarily public (it's step two of login, before a session exists), rate-limited by rt.mfaVerify instead of a session/ability check. Every other route here acts on the caller's own account, so requireAuth (session-only, matching handleChangePassword's own reasoning)."},
 	{Method: "POST", Path: "/api/v1/auth/2fa/confirm", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: ""},
@@ -664,6 +665,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/dns/zones/{zone}/records/import", Ability: "AbilityRoot", Group: "Other", Handler: "handleImportDNSZoneRecords", Description: ""},
 	{Method: "POST", Path: "/api/v1/dns/zones/{zone}/templates/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleApplyDNSTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/export", Ability: "AbilityRead", Group: "Other", Handler: "handleIaCExport", Description: ""},
+	{Method: "GET", Path: "/api/v1/export/destinations", Ability: "AbilityRoot", Group: "Other", Handler: "handleListExportDestinations", Description: ""},
+	{Method: "POST", Path: "/api/v1/export/destinations", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateExportDestination", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/export/destinations/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteExportDestination", Description: ""},
+	{Method: "GET", Path: "/api/v1/export/destinations/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetExportDestination", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/export/destinations/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateExportDestination", Description: ""},
+	{Method: "POST", Path: "/api/v1/export/destinations/{id}/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestExportDestination", Description: ""},
 	{Method: "GET", Path: "/api/v1/external-databases", Ability: "AbilityRead", Group: "Other", Handler: "handleListExternalDatabases", Description: "External databases: connected, never run, by this platform. Anything that dials out or reveals a credential is admin only."},
 	{Method: "POST", Path: "/api/v1/external-databases", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateExternalDatabase", Description: ""},
 	{Method: "POST", Path: "/api/v1/external-databases/adopt", Ability: "AbilityRoot", Group: "Other", Handler: "handleAdoptExternalDatabase", Description: ""},
@@ -825,6 +832,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/templates/custom/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteCustomTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/traffic/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleTrafficSummary", Description: "Counts for the sidebar attention badge and the domains health strip, from stored state and the last known DNS checks only."},
 	{Method: "GET", Path: "/api/v1/usage/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleUsageSummary", Description: ""},
+	{Method: "GET", Path: "/metrics", Ability: "AbilityRead", Group: "Other", Handler: "handleScrapeMetrics", Description: ""},
 	{Method: "GET", Path: "/public/status", Ability: "Public", Group: "Other", Handler: "handlePublicStatusHTML", Description: ""},
 	{Method: "GET", Path: "/public/status.json", Ability: "Public", Group: "Other", Handler: "handlePublicStatusJSON", Description: ""},
 	{Method: "GET", Path: "/public/status.rss", Ability: "Public", Group: "Other", Handler: "handlePublicStatusRSS", Description: ""},

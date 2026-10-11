@@ -915,6 +915,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/log-drain | AbilityRead | handleGetAppLogDrain |
 | PUT | /api/v1/apps/{name}/log-drain | AbilityWriteSensitive | handleSetAppLogDrain |
 | DELETE | /api/v1/apps/{name}/log-drain | AbilityWriteSensitive | handleClearAppLogDrain |
+| GET | /api/v1/audit-log/export | AbilityRoot | handleExportAuditLog |
 
 `GET /api/v1/audit-log` accepts optional query params: `limit`, `before` (RFC3339 cursor), `path`, `method`, `client_kind` (exact match), `q` (case-insensitive substring across actor name, ability, method, path and remote address), `status=failed` (only `status_code >= 400`), and `format=csv`. All filters combine with AND and the CSV export honors them.
 
@@ -1177,6 +1178,13 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/teams/{id}/invites/{invite} | AbilityWrite | handleRevokeTeamInvite |
 | GET | /api/v1/team-invites/{token} | Session | handlePreviewTeamInvite |
 | POST | /api/v1/team-invites/accept | Public | handleAcceptTeamInvite |
+| GET | /metrics | AbilityRead | handleScrapeMetrics |
+| GET | /api/v1/export/destinations | AbilityRoot | handleListExportDestinations |
+| POST | /api/v1/export/destinations | AbilityRoot | handleCreateExportDestination |
+| GET | /api/v1/export/destinations/{id} | AbilityRoot | handleGetExportDestination |
+| PATCH | /api/v1/export/destinations/{id} | AbilityRoot | handleUpdateExportDestination |
+| DELETE | /api/v1/export/destinations/{id} | AbilityRoot | handleDeleteExportDestination |
+| POST | /api/v1/export/destinations/{id}/test | AbilityRoot | handleTestExportDestination |
 
 ## See also
 

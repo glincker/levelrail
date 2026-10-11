@@ -34,6 +34,7 @@ import {
   FileCodeIcon,
   ChartLineIcon,
   IdentificationBadgeIcon,
+  ExportIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { filterByFeature, type ExperimentalFeature } from './experimental'
 
@@ -280,6 +281,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'Vault',
         description:
           'Resolve app secrets live from an external HashiCorp Vault instance.',
+      },
+      {
+        to: '/settings/data-export',
+        icon: ExportIcon,
+        title: 'Data export',
+        description:
+          'Send logs, audit events and metrics to Loki, syslog, a webhook, a bucket or an OTLP collector.',
       },
       {
         to: '/settings/observability',

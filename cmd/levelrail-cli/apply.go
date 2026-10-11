@@ -224,6 +224,12 @@ Flags:
 }
 
 func runExport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) > 0 {
+		switch args[0] {
+		case "destinations", "audit":
+			return runDataExport(prog, args, stdout, stderr, lookupEnv)
+		}
+	}
 	var project, app, outDir *string
 	var includeEnv *bool
 	c, code, ok := parseCLICall(prog, "export", exportUsage(prog), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {

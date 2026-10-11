@@ -146,6 +146,7 @@ const sidebarGroups = [
           { text: 'Object storage', link: '/object-storage' },
           { text: 'Network shares', link: '/network-shares' },
           { text: 'Log archive', link: '/log-archive' },
+          { text: 'Data export', link: '/data-export' },
           { text: 'Control plane backup', link: '/control-plane-backup' },
           { text: 'Disaster recovery', link: '/disaster-recovery' },
           { text: 'Upgrade safely', link: '/upgrade-safely' },
