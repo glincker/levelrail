@@ -133,7 +133,11 @@ func (s *cliConsoleSession) serve(ctx context.Context, cancel context.CancelFunc
 				rctx, rcancel := context.WithCancel(ctx)
 				run = &cliActiveRun{cancel: rcancel, done: make(chan cliRunDone)}
 				runDone = run.done
-				go s.execute(rctx, cancel, argv, path, run.done)
+				if cliconsole.IsHost(argv) {
+					go s.executeHost(rctx, cancel, path, run.done)
+				} else {
+					go s.execute(rctx, cancel, argv, path, run.done)
+				}
 			case cliMsgCancel:
 				idle.Reset(s.cfg.IdleTimeout)
 				if run != nil {
@@ -151,7 +155,11 @@ func (s *cliConsoleSession) serve(ctx context.Context, cancel context.CancelFunc
 func (s *cliConsoleSession) vet(ctx context.Context, cancel context.CancelFunc, line string) ([]string, string, bool) {
 	argv, err := cliconsole.ParseLine(line)
 	path := ""
-	if err == nil {
+	switch {
+	case err != nil:
+	case cliconsole.IsHost(argv):
+		path, err = vetHostLine(argv)
+	default:
 		path, err = cliconsole.Check(argv)
 	}
 	if err != nil {
