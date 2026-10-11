@@ -1,0 +1,9 @@
+# Slowest non-Docker packages, one repo-relative path per line. The nightly
+# splits the rest lane on this list so no single job nears its timeout.
+internal/models
+internal/cpbackup
+internal/supplychain
+internal/mcptools
+internal/ai
+internal/authengine
+internal/objectstore

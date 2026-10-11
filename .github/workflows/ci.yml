@@ -32,7 +32,7 @@ permissions:
 jobs:
   changes:
     name: Detect changed areas
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 5
     outputs:
       base: ${{ steps.detect.outputs.base }}
@@ -92,7 +92,7 @@ jobs:
     name: Plan Go work
     needs: changes
     if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.go == 'true') }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 10
     outputs:
       scope: ${{ steps.plan.outputs.scope }}
@@ -127,6 +127,11 @@ jobs:
       - name: Set up Go (cached)
         uses: ./.github/actions/setup-go-cached
         with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
           cache-prefix: go-build
 
       # A re-run replays the original event payload, so the label is read
@@ -164,7 +169,7 @@ jobs:
     name: Build, vet
     needs: [changes, plan]
     if: ${{ !cancelled() && needs.plan.result != 'skipped' }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 10
     steps:
       - name: Planning passed
@@ -180,6 +185,11 @@ jobs:
         if: needs.plan.outputs.scope != 'none' || needs.changes.outputs.tools == 'true'
         uses: ./.github/actions/setup-go-cached
         with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
           cache-prefix: go-build
           save: ${{ github.event_name == 'push' }}
 
@@ -203,6 +213,10 @@ jobs:
           read -r -a packages <<<"$PACKAGES"
           go vet "${packages[@]}"
 
+      - name: Fan-in budget
+        if: needs.plan.outputs.scope != 'none'
+        run: scripts/check-fanin.sh
+
       # tools/ is its own module, so the package list above never reaches it.
       - name: Release notes generator
         if: needs.changes.outputs.tools == 'true'
@@ -221,7 +235,7 @@ jobs:
     if: >-
       needs.plan.result == 'success'
       && needs.plan.outputs.has_tests == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     # 5 min above the docker/rest lanes' own -timeout=27m (scripts/ci-go-plan.sh):
     # enough slack for checkout/setup/teardown/upload around go test's own budget.
     timeout-minutes: 32
@@ -235,6 +249,11 @@ jobs:
       - name: Set up Go (cached)
         uses: ./.github/actions/setup-go-cached
         with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
           cache-prefix: go-test-${{ matrix.cache }}
           save: ${{ github.event_name == 'push' && matrix.save_cache }}
 
@@ -292,7 +311,7 @@ jobs:
     if: >-
       !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.plan.result != 'success' || contains(needs.plan.outputs.api_checks, 'Test ('))))
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     permissions:
       actions: read
       contents: read
@@ -321,7 +340,7 @@ jobs:
     if: >-
       !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.plan.result != 'success' || contains(needs.plan.outputs.rest_checks, 'Test ('))))
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     permissions:
       actions: read
       contents: read
@@ -353,7 +372,7 @@ jobs:
     if: >-
       needs.plan.result == 'success'
       && needs.plan.outputs.quarantine == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     continue-on-error: true
     timeout-minutes: 15
     steps:
@@ -363,6 +382,11 @@ jobs:
       - name: Set up Go (cached)
         uses: ./.github/actions/setup-go-cached
         with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
           cache-prefix: go-test-all
 
       # Version and checksums locked by tools/go.mod and tools/go.sum.
@@ -382,7 +406,7 @@ jobs:
     if: >-
       !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
       && (needs.plan.result != 'success' || needs.plan.outputs.has_tests == 'true')))
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 5
     env:
       COVERAGE: ${{ needs.plan.outputs.coverage }}
@@ -449,7 +473,7 @@ jobs:
     if: >-
       ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.lint != 'none'
       || needs.changes.outputs.workflows == 'true') }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 10
     env:
       LINT: ${{ needs.changes.outputs.lint }}
@@ -494,6 +518,11 @@ jobs:
         if: env.LINT != 'none'
         uses: ./.github/actions/setup-go-cached
         with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
           cache-prefix: go-lint
           save: ${{ github.event_name == 'push' }}
 
@@ -515,7 +544,7 @@ jobs:
     name: Kit (vet, lint, test)
     needs: changes
     if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.kit == 'true') }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 10
     env:
       BASE: ${{ needs.changes.outputs.base }}
@@ -535,6 +564,11 @@ jobs:
       - name: Set up Go (cached)
         uses: ./.github/actions/setup-go-cached
         with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
           cache-prefix: go-kit
           save: ${{ github.event_name == 'push' }}
 
@@ -565,7 +599,7 @@ jobs:
     name: Web (tsc, eslint)
     needs: changes
     if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.web != 'none') }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 10
     env:
       WEB: ${{ needs.changes.outputs.web }}
@@ -678,7 +712,7 @@ jobs:
     if: >-
       ${{ !cancelled() && needs.changes.result == 'success'
       && needs.changes.outputs.web == 'full' && needs.changes.outputs.vitest == 'full' }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -709,7 +743,7 @@ jobs:
     name: install.sh (${{ matrix.image }})
     needs: changes
     if: needs.changes.outputs.installer == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 25
     strategy:
       fail-fast: false
@@ -722,6 +756,11 @@ jobs:
       - name: Set up Go (cached)
         uses: ./.github/actions/setup-go-cached
         with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
           cache-prefix: go-build
 
       - name: Build control plane binary
@@ -746,7 +785,7 @@ jobs:
     name: CI required
     needs: [changes, plan, build-vet, lint, kit, test-go, test-api, test-rest, coverage-gate, web-check, web-test, install-sh]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 3
     steps:
       - name: Evaluate required jobs
