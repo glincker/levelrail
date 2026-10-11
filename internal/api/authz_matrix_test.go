@@ -90,6 +90,7 @@ var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/iam/policy-templates/{id}/render":              "expands template parameters into a document, persists nothing",
 	"POST /api/v1/apps/{name}/validate-spec":                     "validates submitted app.yaml, persists nothing",
 	"POST /api/v1/apps/{name}/domains/{domain}/policies/preview": "explains a draft traffic policy, persists nothing",
+	"POST /api/v1/apps/{name}/domains/{domain}/doctor":           "runs read-only diagnostics against this server and public DNS, persists nothing",
 	"POST /api/v1/network-shares/{id}/test":                      "reachability dial only, gated by AbilityRead, persists nothing",
 	"POST /api/v1/apps/{name}/health/discover":                   "active HTTP probes of a running container, gated by AbilityRead, persists nothing",
 }
