@@ -1235,6 +1235,12 @@ Routes that do not fit an existing group.
 | POST | /api/v1/logs/queries | AbilityRead | handleCreateSavedLogQuery |
 | PUT | /api/v1/logs/queries/{id} | AbilityRead | handleUpdateSavedLogQuery |
 | DELETE | /api/v1/logs/queries/{id} | AbilityRead | handleDeleteSavedLogQuery |
+| GET | /api/v1/usage/report | AbilityRead | handleUsageReport |
+| GET | /api/v1/usage/settings | AbilityRoot | handleGetUsageSettings |
+| PUT | /api/v1/usage/settings | AbilityRoot | handlePutUsageSettings |
+| GET | /api/v1/usage/budgets | AbilityRead | handleListUsageBudgets |
+| PUT | /api/v1/usage/budgets | AbilityWrite | handlePutUsageBudget |
+| DELETE | /api/v1/usage/budgets/{id} | AbilityWrite | handleDeleteUsageBudget |
 
 ## See also
 

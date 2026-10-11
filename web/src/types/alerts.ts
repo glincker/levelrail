@@ -46,6 +46,7 @@ export type AlertRuleKind =
   | 'version_skew'
   | 'log_pattern'
   | 'log_level_rate'
+  | 'budget_threshold'
 
 // log_pattern and log_level_rate only (internal/alerting.LogRuleConfig).
 export interface LogRuleConfig {

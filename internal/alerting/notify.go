@@ -80,6 +80,9 @@ type Event struct {
 	// channel's latest, from EvaluateVersionSkew. Empty for every other
 	// rule kind and for resolved events.
 	VersionSkewNotice string
+	// BudgetNotices is populated only for a firing budget_threshold event:
+	// one line per budget that crossed a threshold.
+	BudgetNotices []string
 
 	// SLONotice is set only for a firing slo_burn event: which burn-rate tier
 	// tripped and how much error budget is left.
@@ -210,6 +213,7 @@ type genericPayload struct {
 	DomainHealthNotices  []string   `json:"domain_health_notices,omitempty"`
 	BackupMissingNotice  string     `json:"backup_missing_notice,omitempty"`
 	VersionSkewNotice    string     `json:"version_skew_notice,omitempty"`
+	BudgetNotices        []string   `json:"budget_notices,omitempty"`
 	Headline             string     `json:"headline,omitempty"`
 	GroupNotices         []string   `json:"group_notices,omitempty"`
 	GroupCount           int        `json:"group_count,omitempty"`
@@ -234,6 +238,7 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		DomainHealthNotices:  ev.DomainHealthNotices,
 		BackupMissingNotice:  ev.BackupMissingNotice,
 		VersionSkewNotice:    ev.VersionSkewNotice,
+		BudgetNotices:        ev.BudgetNotices,
 		Headline:             ev.Headline,
 		GroupNotices:         ev.GroupNotices,
 		GroupCount:           ev.GroupCount,
@@ -768,6 +773,9 @@ func summaryBody(ev Event) string {
 	}
 	if ev.VersionSkewNotice != "" {
 		fmt.Fprintf(&b, "\nVersion: %s", ev.VersionSkewNotice)
+	}
+	if len(ev.BudgetNotices) > 0 {
+		fmt.Fprintf(&b, "\nBudgets:\n- %s", strings.Join(ev.BudgetNotices, "\n- "))
 	}
 	if ev.SLONotice != "" {
 		fmt.Fprintf(&b, "\n%s", ev.SLONotice)

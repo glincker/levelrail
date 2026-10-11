@@ -70,8 +70,8 @@ func TestSavedLogQueries_AuthzAndValidation(t *testing.T) {
 	}
 	var privRes savedLogQueryResource
 	_ = json.Unmarshal(private.Body.Bytes(), &privRes)
-	if c := logExplorerDo(t, rt, readerCookie, http.MethodDelete, "/api/v1/logs/queries/"+privRes.ID, "").Code; c != http.StatusNotFound {
-		t.Fatalf("delete of someone else's private query = %d, want 404", c)
+	if c := logExplorerDo(t, rt, readerCookie, http.MethodDelete, "/api/v1/logs/queries/"+privRes.ID, "").Code; c != http.StatusForbidden {
+		t.Fatalf("read-only caller deleting someone else's private query = %d, want 403 at the ability gate (no existence oracle)", c)
 	}
 	if c := logExplorerDo(t, rt, readerCookie, http.MethodPost, "/api/v1/logs/queries", `{"name":"share","visibility":"instance","spec":{}}`).Code; c != http.StatusForbidden {
 		t.Fatalf("reader sharing = %d, want 403", c)

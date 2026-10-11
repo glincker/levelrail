@@ -129,6 +129,9 @@ function formatCondition(rule: AlertRule): string {
   if (rule.kind === 'node_cert_expiring') {
     return "any node's agent certificate close to expiry or expired (platform-wide)"
   }
+  if (rule.kind === 'budget_threshold') {
+    return 'any project or team budget at its warning level, over its limit or forecast to overrun'
+  }
   if (rule.kind === 'version_skew') {
     return "running build behind the configured update channel's latest release"
   }
@@ -202,6 +205,9 @@ function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'version_skew') {
     return rule.last_value ? 'update available' : 'up to date'
+  }
+  if (rule.kind === 'budget_threshold') {
+    return `${rule.last_value.toFixed(0)}% of the most used budget`
   }
   if (rule.kind === 'node_resource_usage') {
     // Only the CPU signal is tracked here; memory has no comparable unit

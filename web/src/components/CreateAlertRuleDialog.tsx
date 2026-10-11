@@ -155,6 +155,7 @@ const KIND_OPTIONS: {
     label: 'Version update available',
     Icon: RocketLaunchIcon,
   },
+  { value: 'budget_threshold', label: 'Budget threshold', Icon: GaugeIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -191,6 +192,7 @@ const createAlertRuleSchema = z
       'log_archive_stale',
       'slo_burn',
       'version_skew',
+      'budget_threshold',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -223,7 +225,8 @@ const createAlertRuleSchema = z
       data.kind === 'node_cert_expiring' ||
       data.kind === 'control_plane_backup_stale' ||
       data.kind === 'log_archive_stale' ||
-      data.kind === 'version_skew'
+      data.kind === 'version_skew' ||
+      data.kind === 'budget_threshold'
     ) {
       return
     }
@@ -833,6 +836,10 @@ export function CreateAlertRuleDialog({
               databases={databases}
               volumes={volumes}
             />
+          ) : kind === 'budget_threshold' ? (
+            <p className="text-sm text-muted-foreground">
+              {t('budgetThreshold.hint')}
+            </p>
           ) : kind === 'version_skew' ? (
             <p className="text-sm text-muted-foreground">
               Fires while the running control plane is behind the latest release

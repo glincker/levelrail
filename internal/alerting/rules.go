@@ -62,6 +62,11 @@ const (
 	// is behind the configured update channel's latest release
 	// (update_settings.channel, migrations/0258_update_settings.sql).
 	KindVersionSkew Kind = "version_skew"
+
+	// KindBudgetThreshold is platform-wide: it fires while any project or
+	// team budget is at its warn level, over its limit, or forecast to
+	// overrun (budget_threshold.go).
+	KindBudgetThreshold Kind = "budget_threshold"
 )
 
 // Comparator is how a threshold Rule compares the latest sample value
