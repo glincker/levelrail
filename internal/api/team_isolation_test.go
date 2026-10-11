@@ -201,12 +201,18 @@ func TestTeamAccess_CannotFileIntoAnotherTeam(t *testing.T) {
 		{http.MethodPut, "/api/v1/projects/" + projA + "/organization", `{"org_id":"` + teamB + `"}`},
 		{http.MethodPost, "/api/v1/projects", `{"name":"p","team_id":"` + teamB + `"}`},
 		{http.MethodDelete, "/api/v1/projects/" + projA, ""},
+		{http.MethodDelete, "/api/v1/organizations/" + teamA, ""},
+		{http.MethodDelete, "/api/v1/teams/" + teamA, ""},
 	}
 	for _, tc := range cases {
 		code, body := teamDo(t, f.rt, tc.method, tc.path, tc.body, dev)
 		if code < 400 {
 			t.Errorf("%s %s %s = %d %s, want refused", tc.method, tc.path, tc.body, code, body)
 		}
+	}
+	owner := withCookie(f.cookies[store.TeamRoleOwner])
+	if code, _ := teamDo(t, f.rt, http.MethodDelete, "/api/v1/organizations/"+teamA, "", owner); code != http.StatusConflict {
+		t.Errorf("owner deletes a team holding apps without cascade = %d, want 409", code)
 	}
 	code, body := teamDo(t, f.rt, http.MethodPost, "/api/v1/apps", `{"name":"mine","image":"nginx:1","port":80,"project_id":"`+projA+`"}`, dev)
 	if code != http.StatusCreated {

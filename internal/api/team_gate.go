@@ -133,6 +133,9 @@ func (rt *Router) teamRouteDecision(r *http.Request, scope *teamScope, required 
 		if !hasAbility(capAbilities(abilities, owner.TeamID, role), required) {
 			return http.StatusForbidden, msgTeamRoleTooLow, nil
 		}
+		if p.kind == "team" && r.Method == http.MethodDelete && path == p.prefix && role != store.TeamRoleOwner {
+			return http.StatusForbidden, "only a team owner can delete the team", nil
+		}
 		return 0, "", nil
 	}
 	if scope.instance || tenantRoutes[r.Pattern] {

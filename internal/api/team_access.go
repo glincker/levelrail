@@ -89,10 +89,14 @@ func (rt *Router) mayMoveProjectBetweenTeams(w http.ResponseWriter, r *http.Requ
 	return true
 }
 
-// refuseOrphaningDelete stops a non-cascading delete that would leave a
-// team's apps project-less, which files them under the default team.
+// refuseOrphaningDelete stops a team member's non-cascading delete that would
+// leave a team's apps project-less, which files them under the default team.
+// Instance admins keep the old detach behavior.
 func (rt *Router) refuseOrphaningDelete(w http.ResponseWriter, r *http.Request, kind, id string) bool {
 	if r.URL.Query().Get("cascade") == "true" {
+		return false
+	}
+	if scope, ok := callerTeamScope(r.Context()); !ok || scope == nil {
 		return false
 	}
 	var sc cascadeScope
