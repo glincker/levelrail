@@ -22,6 +22,9 @@ const (
 	// on its own (a release still being published), so it reads as waiting,
 	// not as a failure.
 	StatusPending = "pending"
+	// StatusSkipped marks a check that does not apply to this target. It
+	// never blocks.
+	StatusSkipped = "skipped"
 )
 
 // Fix actions a check can carry. The dashboard renders each as a button, the
@@ -119,6 +122,9 @@ type Inputs struct {
 	// ReleasePublishedAt is when the release went public, zero if unknown.
 	// It separates a release still being published from a broken one.
 	ReleasePublishedAt time.Time
+	// ReleaseKind is Release.Kind of the target; an edge image has no
+	// binaries, so the checksum and signature checks do not apply to it.
+	ReleaseKind string
 	// LookPath finds the signature verifier (cosign) on the host; nil reports unknown.
 	LookPath func(string) (string, error)
 }
@@ -149,6 +155,10 @@ func releaseAssetsCheck(in Inputs) Check {
 	c := Check{
 		Code: "release_signature", Name: "Release checksums and signature",
 		Protects: "Makes sure the binary you install is the one the project published and has not been tampered with.",
+	}
+	if in.ReleaseKind == KindEdgeImage {
+		c.Status, c.Message = StatusSkipped, EdgeNoSignatureNote
+		return c
 	}
 	if !in.ReleaseKnown {
 		c.Status, c.Message = StatusUnknown, "latest release could not be fetched"
@@ -192,8 +202,15 @@ func releaseAssetsCheck(in Inputs) Check {
 // VerifierTool is the program the installer uses to check the release signature.
 const VerifierTool = "cosign"
 
+// EdgeNoSignatureNote explains why release checks are skipped for edge.
+const EdgeNoSignatureNote = "Edge builds are container images, not signed binaries, so there are no checksums to verify."
+
 func verifierCheck(in Inputs) Check {
 	c := Check{Code: "release_verifier", Name: "Signature verification tool", Protects: "Lets the upgrade verify the release signature in addition to its checksum."}
+	if in.ReleaseKind == KindEdgeImage {
+		c.Status, c.Message = StatusSkipped, EdgeNoSignatureNote
+		return c
+	}
 	if in.LookPath == nil {
 		c.Status, c.Message = StatusUnknown, "could not look for "+VerifierTool
 		return c

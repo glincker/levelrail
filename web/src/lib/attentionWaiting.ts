@@ -191,6 +191,12 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
           detail: p.reason
             ? t('items.dataCopyReason', { reason: p.reason })
             : f.detail,
+          copy: {
+            state: p.state === 'failed' ? 'failed' : 'stalled',
+            hint: p.hint,
+            technical: p.technical,
+            dismissKey: f.id,
+          },
         }
       case 'backup_overdue':
         return {

@@ -25,7 +25,7 @@ export function ScheduledUpgradeBanner({
 }: {
   schedule: UpgradeSchedule
   serverTimezone: string
-  onReschedule: () => void
+  onReschedule?: () => void
 }) {
   const { t } = useTranslation('updates')
   const cancel = useCancelSchedule()
@@ -65,14 +65,16 @@ export function ScheduledUpgradeBanner({
       ) : null}
       {cancellable ? (
         <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={onReschedule}
-          >
-            {t('schedule.reschedule')}
-          </Button>
+          {onReschedule ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={onReschedule}
+            >
+              {t('schedule.reschedule')}
+            </Button>
+          ) : null}
           <Button
             type="button"
             size="sm"

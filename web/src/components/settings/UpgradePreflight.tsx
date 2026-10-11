@@ -6,6 +6,7 @@ import { Button } from '../ui/button'
 import { CopyCommand } from './CopyCommand'
 import { ReleaseNotes } from './ReleaseNotes'
 import { UpgradeCheckRow } from './UpgradeCheckRow'
+import { EdgeUpdateGuidance } from './EdgeUpdateGuidance'
 
 export function UpgradePreflight() {
   const { t } = useTranslation('updates')
@@ -50,6 +51,11 @@ export function UpgradePreflight() {
         </p>
       ) : data.blocked ? (
         <p className="text-sm text-destructive">{t('preflight.blocked')}</p>
+      ) : data.edge ? (
+        <EdgeUpdateGuidance
+          edge={data.edge}
+          updateAvailable={data.update_available}
+        />
       ) : data.update_available ? (
         <div className="space-y-3">
           <CopyCommand

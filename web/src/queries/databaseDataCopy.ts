@@ -11,6 +11,12 @@ export interface DataCopyInfo {
   database: string
   status: DataCopyStatus
   reason?: string
+  failure?: {
+    code: string
+    summary: string
+    hint: string
+    technical?: string
+  }
   checked: number
   mismatched: number
   finished_at?: string

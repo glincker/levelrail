@@ -172,6 +172,7 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_PROXY_VERIFY_TIMEOUT` | `8s` | Time limit for each managed proxy route check (TLS handshake and request through the proxy) and for the DNS checks of the proxy setup checklist. Control plane. |
 | `APP_DOCTOR_PUBLIC_IP_ENDPOINT` | `https://api.ipify.org` | URL that returns the caller's public IP as plain text, used by the `public_ip` doctor check and by deploy preflight. Control plane. |
 | `APP_DIAGNOSE_PROBE_TIMEOUT` | `4s` | Time limit for each live probe (container state and container logs) when diagnosing an app. Zero or invalid values use the default. Control plane. |
+| `APP_ATTENTION_COPY_FAILURE_DAYS` | `14` | Days a failed data copy stays in the attention feed before it drops to history. Positive integer. Control plane. |
 | `APP_ATTENTION_DIAGNOSE_LIMIT` | `10` | Maximum number of distinct apps `levelrail-cli attention` asks the control plane to diagnose when it marks items as fixable. Integer, `0` skips diagnosis. CLI. |
 
 ## Updates

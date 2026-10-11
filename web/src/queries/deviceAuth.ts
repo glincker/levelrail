@@ -158,6 +158,7 @@ export function useDismissAttentionItem() {
       void queryClient.invalidateQueries({
         queryKey: deviceAuthKeys.activity(),
       })
+      void queryClient.invalidateQueries({ queryKey: ['attention-feed'] })
     },
   })
 }

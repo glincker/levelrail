@@ -366,3 +366,52 @@ describe('UpgradeNow', () => {
     ).toBeDisabled()
   })
 })
+
+describe('UpgradeNow on the edge channel', () => {
+  const edgePreflight: UpdatePreflight = {
+    ...green,
+    latest_version: 'main-07cd3bf',
+    release_kind: 'edge_image',
+    channel: 'edge',
+    checks: [
+      {
+        code: 'release_signature',
+        name: 'Release checksums and signature',
+        status: 'skipped',
+        message: 'Edge builds are container images, not signed binaries.',
+      },
+    ],
+    edge: {
+      commit: '07cd3bf9a1b2',
+      image: 'ghcr.io/x/y:edge',
+      runs_in_container: true,
+      installable: true,
+      pull_command: 'docker pull ghcr.io/x/y:edge',
+      recreate_command: 'docker compose pull app && docker compose up -d app',
+    },
+  }
+
+  it('hides Upgrade now and Schedule and shows the pull guidance', async () => {
+    setup({ preflight: edgePreflight })
+    expect(
+      await screen.findByText('docker pull ghcr.io/x/y:edge'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Upgrade to .* now/ }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Schedule upgrade' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps a young stable release pending with Re-check, never skipped', async () => {
+    setup({ preflight: publishing })
+    expect(
+      await screen.findByRole('button', { name: 'Re-check' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Not applicable')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Schedule upgrade' }),
+    ).toBeInTheDocument()
+  })
+})

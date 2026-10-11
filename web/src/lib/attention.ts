@@ -47,6 +47,16 @@ export interface AttentionItem {
   action?: string
   // Missing means incident, the safe default for a new source.
   class?: AttentionClass
+  copy?: AttentionCopyMeta
+}
+
+// A data copy item: the failure in plain words, the raw error on request,
+// and the key a dismissal is remembered under (one copy attempt).
+export interface AttentionCopyMeta {
+  state: 'failed' | 'stalled'
+  hint?: string
+  technical?: string
+  dismissKey: string
 }
 
 export function attentionClassOf(item: AttentionItem): AttentionClass {

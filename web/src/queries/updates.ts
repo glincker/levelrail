@@ -11,12 +11,32 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
+// 'edge_image' is the edge channel's pseudo-release: a commit on main
+// shipped as a container image, never a GitHub release.
+export type ReleaseKind = 'release' | 'edge_image'
+
 export interface UpdateStatus {
   current_version: string
   latest_version: string | null
   update_available: boolean
   release_url: string | null
   published_at: string | null
+  release_kind?: ReleaseKind
+  channel?: UpdateChannel
+  image?: string | null
+}
+
+// Mirrors internal/api's edgeGuidance.
+export interface EdgeGuidance {
+  commit?: string
+  commit_url?: string
+  image: string
+  runs_in_container: boolean
+  installable: boolean
+  pull_command?: string
+  recreate_command?: string
+  compose_snippet?: string
+  switch_to?: UpdateChannel[]
 }
 
 export const updatesKeys = {
@@ -42,7 +62,8 @@ export function updatesQueryOptions() {
   })
 }
 
-export type UpgradeCheckStatus = 'ok' | 'warn' | 'fail' | 'unknown' | 'pending'
+export type UpgradeCheckStatus =
+  'ok' | 'warn' | 'fail' | 'unknown' | 'pending' | 'skipped'
 
 export type UpgradeFixAction = 'backup_now' | 'recheck' | 'command'
 
@@ -71,6 +92,9 @@ export interface UpdatePreflight {
   upgrade_command: string
   rollback_command: string
   cosign_command: string
+  release_kind?: ReleaseKind
+  channel?: UpdateChannel
+  edge?: EdgeGuidance
 }
 
 // UpdateChannel mirrors internal/upgrade's Channel constants.

@@ -14,6 +14,7 @@ const CHECK_TONE: Record<UpgradeCheckStatus, Tone> = {
   fail: 'danger',
   unknown: 'neutral',
   pending: 'info',
+  skipped: 'neutral',
 }
 
 export function UpgradeCheckRow({
@@ -26,7 +27,10 @@ export function UpgradeCheckRow({
   const { t } = useTranslation('updates')
   const backup = useBackupNow()
   const recheck = useRecheckPreflight()
-  const open = check.status !== 'ok' && check.status !== 'unknown'
+  const open =
+    check.status !== 'ok' &&
+    check.status !== 'unknown' &&
+    check.status !== 'skipped'
   const fix = check.fix
   const wantsCommand =
     fix?.action === 'command' ||

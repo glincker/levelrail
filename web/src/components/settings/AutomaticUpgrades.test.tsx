@@ -172,3 +172,19 @@ describe('UpgradeAttempts', () => {
     ).toBeInTheDocument()
   })
 })
+
+describe('AutomaticUpgrades on the edge channel', () => {
+  it('explains that edge is never upgraded automatically', async () => {
+    mount(<AutomaticUpgrades />, (url) =>
+      url.endsWith('/updates/settings')
+        ? { channel: 'edge', auto_update_enabled: true }
+        : off,
+    )
+    expect(
+      await screen.findByText(/not available on the edge channel/),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByLabelText('Automatic upgrades'),
+    ).not.toBeInTheDocument()
+  })
+})

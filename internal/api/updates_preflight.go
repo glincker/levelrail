@@ -34,6 +34,12 @@ type updatePreflightResource struct {
 	UpgradeCommand  string `json:"upgrade_command"`
 	RollbackCommand string `json:"rollback_command"`
 	CosignCommand   string `json:"cosign_command"`
+	// ReleaseKind is "release" or "edge_image". Edge carries guidance for
+	// this install instead of a release upgrade command, and is never
+	// applied by Upgrade now, a schedule or the automatic policy.
+	ReleaseKind string        `json:"release_kind"`
+	Channel     string        `json:"channel"`
+	Edge        *edgeGuidance `json:"edge,omitempty"`
 }
 
 // handleUpdatePreflight handles GET /api/v1/updates/preflight: read-only
@@ -56,9 +62,11 @@ func (rt *Router) evaluatePreflight(ctx context.Context, release *upgrade.Releas
 		UpgradeCommand:  upgradeCommand("", false),
 		RollbackCommand: "levelrail restore-snapshot --list",
 		CosignCommand:   installScriptCommand("install-cosign"),
+		ReleaseKind:     upgrade.KindRelease,
+		Channel:         rt.currentUpdateChannel(ctx),
 	}
 	var assets []string
-	var upgradeTag string
+	var upgradeTag, kind string
 	var published time.Time
 	if known && release != nil {
 		tag, url := release.Tag, release.URL
@@ -71,6 +79,9 @@ func (rt *Router) evaluatePreflight(ctx context.Context, release *upgrade.Releas
 		if t, err := time.Parse(time.RFC3339, release.PublishedAt); err == nil {
 			published = t
 		}
+		kind = releaseKind(release)
+		out.ReleaseKind = kind
+		out.Edge = buildEdgeGuidance(release)
 	}
 	out.Checks = upgrade.Run(ctx, upgrade.Inputs{
 		Lookup:             os.LookupEnv,
@@ -81,10 +92,18 @@ func (rt *Router) evaluatePreflight(ctx context.Context, release *upgrade.Releas
 		AssetNames:         assets,
 		ReleaseKnown:       known && release != nil,
 		ReleasePublishedAt: published,
+		ReleaseKind:        kind,
 		LookPath:           exec.LookPath,
 	})
 	verified := checkStatus(out.Checks, "release_verifier") == upgrade.StatusOK
 	out.UpgradeCommand = upgradeCommand(upgradeTag, verified)
+	if out.Edge != nil {
+		out.UpgradeCommand = out.Edge.RecreateCommand
+		if out.Edge.Installable {
+			out.UpgradeCommand = out.Edge.PullCommand + " && " + out.Edge.RecreateCommand
+		}
+		out.RollbackCommand = ""
+	}
 	out.Blocked = upgrade.Blocked(out.Checks)
 	out.Waiting = out.Blocked && onlyRetryableBlockers(out.Checks)
 	return out
