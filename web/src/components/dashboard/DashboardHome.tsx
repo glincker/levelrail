@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { CaretDownIcon, RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import type { AppListEntry } from '../../types/appDetail'
@@ -17,7 +18,8 @@ import { FleetTiles } from './FleetTiles'
 import { NeedsAttention } from './NeedsAttention'
 import { RecentActivity } from './RecentActivity'
 import { QuickStart } from './QuickStart'
-import { FleetDatabases } from './FleetDatabases'
+import { ResourcesSection } from './ResourcesSection'
+import { RecommendationsLine } from './RecommendationsLine'
 import { ReservedUsageCard } from './ReservedUsageCard'
 import { StorageUsageCard } from './StorageUsageCard'
 import { PlatformCapabilities } from './PlatformCapabilities'
@@ -26,10 +28,11 @@ const RecentAlertsCard = lazy(() =>
   import('../RecentAlertsCard').then((m) => ({ default: m.RecentAlertsCard })),
 )
 
-function ResourceUsage({ apps }: { apps: AppListEntry[] }) {
+function UsageDetails({ apps }: { apps: AppListEntry[] }) {
+  const { t } = useTranslation('dashboard')
   const [open, setOpen] = useState(false)
   return (
-    <section aria-label="Resource usage" className="space-y-3">
+    <section aria-label={t('usageDetails.title')} className="space-y-3">
       <button
         type="button"
         aria-expanded={open}
@@ -38,7 +41,7 @@ function ResourceUsage({ apps }: { apps: AppListEntry[] }) {
         }}
         className="flex items-center gap-1.5 text-sm font-semibold text-foreground"
       >
-        Resource usage
+        {t('usageDetails.title')}
         <CaretDownIcon
           aria-hidden="true"
           className={`size-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
@@ -49,6 +52,8 @@ function ResourceUsage({ apps }: { apps: AppListEntry[] }) {
           <FleetUtilizationSummary />
           <FleetResourceChart />
           <TopResourceConsumers apps={apps} />
+          <ReservedUsageCard apps={apps} />
+          <StorageUsageCard />
         </div>
       ) : null}
     </section>
@@ -100,18 +105,17 @@ export function DashboardHome({
 
   return (
     <div className="space-y-8">
-      <StatusHeader firstAppName={apps[0]?.name} showSetup={isRoot} />
+      <StatusHeader />
       <FleetTiles apps={apps} />
+      <ResourcesSection />
       <NeedsAttention />
-      <FleetDatabases />
-      <ReservedUsageCard apps={apps} />
-      <StorageUsageCard />
+      <RecentActivity apps={apps} />
       <Suspense fallback={null}>
         <RecentAlertsCard />
       </Suspense>
-      <RecentActivity apps={apps} />
+      <RecommendationsLine firstAppName={apps[0]?.name} showSetup={isRoot} />
+      <UsageDetails apps={apps} />
       <QuickStart hasApps />
-      <ResourceUsage apps={apps} />
     </div>
   )
 }

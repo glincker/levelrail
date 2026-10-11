@@ -29,6 +29,9 @@ export function useSuggestionRunner(): (spec: ActionSpec) => void {
       case 'route':
         void navigate({ to: spec.to })
         return
+      case 'path':
+        void navigate({ to: spec.to })
+        return
       case 'cleanup':
         void navigate({ to: '/settings/general' })
         return

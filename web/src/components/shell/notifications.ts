@@ -2,15 +2,17 @@ import type { ActivityEvent } from '../../queries/activity'
 import type { FailedDeploy } from '../../queries/failedDeploys'
 import type { DeployApprovalResource } from '../../types/deployApproval'
 import { formatAge } from '../../lib/format'
-import type { AttentionItem } from '../../lib/attention'
+import { attentionClassOf, type AttentionItem } from '../../lib/attention'
 
-export type NotificationGroup = 'deploys' | 'alerts' | 'approvals' | 'system'
+export type NotificationGroup =
+  'deploys' | 'alerts' | 'approvals' | 'system' | 'setup'
 
 export const GROUP_ORDER: NotificationGroup[] = [
   'approvals',
   'deploys',
   'alerts',
   'system',
+  'setup',
 ]
 
 export const GROUP_LABELS: Record<NotificationGroup, string> = {
@@ -18,6 +20,7 @@ export const GROUP_LABELS: Record<NotificationGroup, string> = {
   deploys: 'Deploys',
   alerts: 'Alerts',
   system: 'System',
+  setup: 'Pending setup and hardening',
 }
 
 export interface ShellNotification {
@@ -29,6 +32,8 @@ export interface ShellNotification {
   href: string
   // Set on informational items the operator can clear for themselves.
   dismissKey?: string
+  // Set on setup and hardening items: the id the snooze store keys on.
+  snoozeId?: string
 }
 
 // Deploy failures and approvals already have their own sources above, so
@@ -53,6 +58,14 @@ function hrefForTarget(target: AttentionItem['target']): string {
   }
 }
 
+function groupForAttention(i: AttentionItem): NotificationGroup {
+  if (i.id.startsWith('device')) return 'approvals'
+  if (attentionClassOf(i) === 'recommendation' && i.severity !== 'info') {
+    return 'setup'
+  }
+  return 'system'
+}
+
 export function notificationsFromAttention(
   items: AttentionItem[],
 ): ShellNotification[] {
@@ -60,7 +73,11 @@ export function notificationsFromAttention(
     .filter((i) => !OWN_SOURCE_PREFIXES.some((p) => i.id.startsWith(p)))
     .map((i) => ({
       id: `attention:${i.id}`,
-      group: i.id.startsWith('device') ? 'approvals' : 'system',
+      group: groupForAttention(i),
+      snoozeId:
+        attentionClassOf(i) === 'recommendation' && i.severity !== 'info'
+          ? i.id
+          : undefined,
       dismissKey: i.device?.dismissKey,
       severity: i.severity,
       title: i.title,
@@ -128,7 +145,7 @@ export function unreadCount(
   list: ShellNotification[],
   read: ReadonlySet<string>,
 ): number {
-  return list.filter((n) => !read.has(n.id)).length
+  return list.filter((n) => n.group !== 'setup' && !read.has(n.id)).length
 }
 
 const MAX_READ_IDS = 200

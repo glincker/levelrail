@@ -1,5 +1,11 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
@@ -155,12 +161,147 @@ describe('DashboardHome', () => {
       'system/status': { docker_connected: true },
     })
     renderHome(apps)
-    expect(await screen.findByText('All good')).toBeInTheDocument()
-    expect(screen.getByText('1 / 1')).toBeInTheDocument()
+    expect(await screen.findByText('All systems normal')).toBeInTheDocument()
+    expect(screen.getAllByText('1 / 1')).toHaveLength(2)
     expect(screen.getByText('Add a node')).toBeInTheDocument()
     expect(
       screen.queryByRole('region', { name: 'Needs attention' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('puts setup and hardening advice on one quiet line, not in incidents', async () => {
+    const apps = [makeApp('web', true)]
+    routeFetch({
+      '=/api/v1/apps': apps,
+      '/attention/feed': {
+        items: [
+          {
+            id: 'docker_guard:ready',
+            severity: 'info',
+            kind: 'docker_guard',
+            subject: 'ready',
+            title: 'Docker API guard needs a decision',
+            detail: 'audit mode saw no would-be denials',
+            action: 'Switch to enforce',
+            link: '/settings/security',
+            class: 'recommendation',
+          },
+          {
+            id: 'docker_guard:would-deny',
+            severity: 'warning',
+            kind: 'docker_guard',
+            subject: 'would-deny',
+            title: 'Docker API guard needs a decision',
+            detail: 'audit mode would deny 2 requests',
+            action: 'Review',
+            link: '/settings/security',
+            class: 'recommendation',
+          },
+        ],
+      },
+      '/requests': SERIES,
+      deploy: [],
+      nodes: [],
+      gpus: [],
+      certificates: [
+        {
+          domain: 'internal.example',
+          status: 'expired',
+          renewal: 'stalled',
+          not_before: '2026-01-01T00:00:00Z',
+          not_after: '2026-01-01T12:00:00Z',
+          source: 'acme',
+          tls_owner: 'internal',
+        },
+      ],
+      'system/doctor': {
+        ok: true,
+        checks: [
+          {
+            code: 'control_plane_dr',
+            name: 'Control plane disaster recovery',
+            status: 'warn',
+            message: 'off-box encrypted backups are not enabled',
+            class: 'recommendation',
+          },
+        ],
+      },
+      'system/status': { docker_connected: true },
+    })
+    renderHome(apps)
+    expect(await screen.findByText('All systems normal')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('2 recommendations')).toBeInTheDocument()
+    })
+    expect(
+      screen.queryByRole('region', { name: 'Needs attention' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/Certificate for/)).not.toBeInTheDocument()
+  })
+
+  it('ranks apps and databases together in Resources', async () => {
+    const apps = [makeApp('web', true)]
+    routeFetch({
+      '=/api/v1/apps': apps,
+      '=/api/v1/apps/resource-usage': [
+        { name: 'web', memory_usage_bytes: 200 * 1024 ** 2, cpu_percent: 2 },
+      ],
+      '=/api/v1/usage/summary': {
+        local_cpu_cores: 4,
+        databases: [
+          {
+            name: 'pg-main',
+            memory_usage_bytes: 600 * 1024 ** 2,
+            cpu_percent: 1,
+          },
+        ],
+        volumes: {
+          scope: 'local',
+          total_bytes: 0,
+          unknown_count: 0,
+          items: [],
+        },
+        backups: { total_bytes: 0, count: 0, items: [] },
+      },
+      '=/api/v1/nodes/resource-usage': {
+        nodes: [
+          {
+            node_id: 'local',
+            name: 'host-1',
+            is_local: true,
+            memory_total_bytes: 8 * 1024 ** 3,
+            memory_available_bytes: 4 * 1024 ** 3,
+            disk_total_bytes: 100 * 1024 ** 3,
+            disk_used_bytes: 40 * 1024 ** 3,
+            cpu_percent: 3,
+          },
+        ],
+        fleet: {
+          node_count: 1,
+          nodes_with_memory_capacity: 1,
+          nodes_with_disk_capacity: 1,
+        },
+      },
+      '/requests': SERIES,
+      deploy: [],
+      nodes: [],
+      gpus: [],
+      certificates: [],
+      'system/doctor': { ok: true, checks: [] },
+      'system/status': { docker_connected: true },
+    })
+    renderHome(apps)
+    const region = await screen.findByRole('region', { name: 'Resources' })
+    await waitFor(() => {
+      expect(within(region).getByText('pg-main')).toBeInTheDocument()
+    })
+    const rows = within(region).getAllByRole('link')
+    const names = rows.map((r) => r.textContent ?? '')
+    expect(names.findIndex((n) => n.includes('pg-main'))).toBeLessThan(
+      names.findIndex((n) => n.includes('web')),
+    )
+    expect(within(region).getByText('host-1')).toBeInTheDocument()
+    expect(within(region).getByText('Memory breakdown')).toBeInTheDocument()
   })
 
   it('populated with a failing app surfaces it with one-click actions', async () => {
@@ -182,7 +323,7 @@ describe('DashboardHome', () => {
       screen.getByRole('button', { name: 'Open logs' }),
     ).toBeInTheDocument()
     await waitFor(() => {
-      expect(screen.getByText('1 issue')).toBeInTheDocument()
+      expect(screen.getByText('1 incident')).toBeInTheDocument()
     })
   })
 })
@@ -226,13 +367,13 @@ describe('NeedsAttentionView', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('caps at four items and links to see all', () => {
+  it('caps at five items and links to see all', () => {
     renderView({
       specs: attentionToSuggestions(items, dashboardT),
       loading: false,
       onRun: vi.fn(),
     })
-    expect(screen.getAllByRole('button', { name: 'Restart' })).toHaveLength(4)
+    expect(screen.getAllByRole('button', { name: 'Restart' })).toHaveLength(5)
     expect(screen.getByRole('link', { name: 'See all 6' })).toHaveAttribute(
       'href',
       '/status',
@@ -245,6 +386,6 @@ describe('NeedsAttentionView', () => {
       loading: false,
       onRun: vi.fn(),
     })
-    expect(screen.getAllByRole('button', { name: 'Ask AI' })).toHaveLength(4)
+    expect(screen.getAllByRole('button', { name: 'Ask AI' })).toHaveLength(5)
   })
 })

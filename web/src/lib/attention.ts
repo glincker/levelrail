@@ -11,6 +11,11 @@ import { nodeAgentAttentionItems } from './nodeAgentAttention'
 
 export type AttentionSeverity = 'critical' | 'warning' | 'info'
 
+// An incident is broken or about to break and needs action; a
+// recommendation is setup or hardening advice. Only incidents reach the
+// dashboard and the header chip.
+export type AttentionClass = 'incident' | 'recommendation'
+
 export type AttentionTarget =
   | { kind: 'app'; name: string }
   | { kind: 'deploy'; app: string; image: string; lastGoodImage?: string }
@@ -40,6 +45,12 @@ export interface AttentionItem {
   device?: AttentionDeviceMeta
   // Plain next step from the server feed, shown beside the link.
   action?: string
+  // Missing means incident, the safe default for a new source.
+  class?: AttentionClass
+}
+
+export function attentionClassOf(item: AttentionItem): AttentionClass {
+  return item.class ?? 'incident'
 }
 
 export function buildAttentionItems({
@@ -115,7 +126,7 @@ export function buildAttentionItems({
   }
 
   for (const cert of certs) {
-    if (cert.status === 'healthy') {
+    if (cert.status === 'healthy' || cert.expiry_class !== 'incident') {
       continue
     }
     const expired = cert.status === 'expired'
@@ -138,6 +149,9 @@ export function buildAttentionItems({
         title: check.name,
         detail: check.message,
         target: { kind: 'system' },
+        class:
+          check.class ??
+          (check.status === 'fail' ? 'incident' : 'recommendation'),
       })
     }
   }
@@ -151,6 +165,7 @@ export function buildAttentionItems({
         ? `${updates.latest_version} (running ${updates.current_version})`
         : `running ${updates.current_version}`,
       target: { kind: 'system' },
+      class: 'recommendation',
     })
   }
 

@@ -42,6 +42,7 @@ describe('buildAttentionItems', () => {
           not_before: '',
           not_after: '2026-10-01',
           source: 'acme',
+          expiry_class: 'incident',
         },
         {
           domain: 'b.io',
@@ -49,6 +50,7 @@ describe('buildAttentionItems', () => {
           not_before: '',
           not_after: '2026-09-01',
           source: 'acme',
+          expiry_class: 'incident',
         },
       ],
       doctor: {
@@ -69,6 +71,34 @@ describe('buildAttentionItems', () => {
       'doctor:disk',
     ])
     expect(items.filter((i) => i.severity === 'critical')).toHaveLength(4)
+  })
+
+  it('ignores certificates the server did not class as incidents', () => {
+    const items = buildAttentionItems({
+      certs: [
+        {
+          domain: 'internal.example',
+          status: 'expired',
+          not_before: '',
+          not_after: '2026-09-01',
+          source: 'acme',
+        },
+      ],
+      doctor: {
+        ok: true,
+        checks: [
+          {
+            code: 'control_plane_dr',
+            name: 'Control plane disaster recovery',
+            status: 'warn',
+            message: 'off-box encrypted backups are not enabled',
+            class: 'recommendation',
+          },
+        ],
+      },
+    })
+    expect(items.map((i) => i.id)).toEqual(['doctor:control_plane_dr'])
+    expect(items[0]?.class).toBe('recommendation')
   })
 
   it('flags disk pressure', () => {

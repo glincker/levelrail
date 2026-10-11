@@ -34,8 +34,8 @@ func TestBuildAttentionItems(t *testing.T) {
 			apps:  []apiclient.AppStatusEntry{appEntry("web", "destructive")},
 			nodes: []nodeResource{{Name: "n1", Status: "offline"}, {Name: "n2", Status: "cordoned"}},
 			certs: []apiclient.CertificateResource{
-				{Domain: "a.io", Status: "expiring_soon", NotAfter: notAfter},
-				{Domain: "b.io", Status: "expired", NotAfter: notAfter},
+				{Domain: "a.io", Status: "expiring_soon", NotAfter: notAfter, ExpiryClass: "incident"},
+				{Domain: "b.io", Status: "expired", NotAfter: notAfter, ExpiryClass: "incident"},
 			},
 			doc: systemDoctorResource{Checks: []doctorCheckResource{
 				{Name: "Disk", Status: "warn"},

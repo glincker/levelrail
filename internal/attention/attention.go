@@ -43,6 +43,8 @@ type Item struct {
 	Action string            `json:"action"`
 	Link   string            `json:"link"`
 	Params map[string]string `json:"params,omitempty"`
+	// Class is ClassIncident or ClassRecommendation.
+	Class string `json:"class"`
 }
 
 // Input is everything Build reads; any field may be zero when its
@@ -242,6 +244,9 @@ func Build(in Input) []Item {
 		items = append(items, nodeAgentItems(n)...)
 	}
 	for _, c := range in.Certs {
+		if c.ExpiryClass != ClassIncident {
+			continue
+		}
 		switch c.Status {
 		case "expired":
 			items = append(items, newItem(Critical, "certificate", c.Domain, "expired "+c.NotAfter.Format("2006-01-02")+acmeReason(c)))
@@ -257,7 +262,9 @@ func Build(in Input) []Item {
 		case "fail":
 			items = append(items, newItem(Critical, "doctor", c.Name, c.Message))
 		case "warn":
-			items = append(items, newItem(Warning, "doctor", c.Name, c.Message))
+			it := newItem(Warning, "doctor", c.Name, c.Message)
+			it.Class = DoctorClass(c.Code, c.Status)
+			items = append(items, it)
 		}
 	}
 	if in.Updates.UpdateAvailable {

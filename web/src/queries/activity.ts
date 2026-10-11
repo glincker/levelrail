@@ -98,6 +98,7 @@ function nodeEvents(nodes: NodeResource[]): ActivityEvent[] {
 function certificateEvents(certs: CertificateStatus[]): ActivityEvent[] {
   const events: ActivityEvent[] = []
   for (const cert of certs) {
+    if (cert.expiry_class !== 'incident') continue
     const notAfter = new Date(cert.not_after).toLocaleDateString()
     if (cert.status === 'expired') {
       events.push({

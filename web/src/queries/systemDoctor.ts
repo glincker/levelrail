@@ -21,6 +21,8 @@ export interface DoctorCheck {
   fix?: string
   /** Path relative to this instance's docs root (brand.DocsURL), paired with fix. */
   docs_path?: string
+  /** Set on a check that is not ok: a broken thing or hardening advice. */
+  class?: 'incident' | 'recommendation'
 }
 
 export interface DoctorReport {

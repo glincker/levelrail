@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/attention"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/kit/diskspace"
 )
@@ -67,6 +68,9 @@ type doctorCheckResource struct {
 	// (brand.DocsURL), e.g. "/troubleshooting#clock-skew", surfaced as a
 	// HelpLink alongside Fix. Empty when Fix is empty.
 	DocsPath string `json:"docs_path,omitempty"`
+	// Class is "incident" or "recommendation" for a check that is not ok,
+	// from attention.DoctorClass.
+	Class string `json:"class,omitempty"`
 }
 
 type systemDoctorResponse struct {
@@ -181,6 +185,9 @@ func (rt *Router) runDoctorChecks(ctx context.Context) systemDoctorResponse {
 		for _, c := range group {
 			if c.Status == doctorStatusFail {
 				ok = false
+			}
+			if c.Status == doctorStatusFail || c.Status == doctorStatusWarn {
+				c.Class = attention.DoctorClass(c.Code, c.Status)
 			}
 			checks = append(checks, c)
 		}

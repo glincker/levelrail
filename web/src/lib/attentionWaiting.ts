@@ -76,7 +76,11 @@ export function buildWaitingItems({
   }
 
   for (const c of certs) {
-    if (c.renewal !== 'stalled' || c.status === 'expired') {
+    if (
+      c.renewal !== 'stalled' ||
+      c.status === 'expired' ||
+      c.expiry_class !== 'incident'
+    ) {
       continue
     }
     const date = c.not_after.slice(0, 10)
@@ -161,6 +165,7 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
       id: f.id,
       severity: f.severity,
       action: f.action,
+      class: f.class,
       target: { kind: 'path', to: f.link } as const,
     }
     switch (f.kind) {

@@ -78,6 +78,9 @@ func NewItem(severity, kind, subject, detail string) Item {
 }
 
 func decorate(it *Item) {
+	if it.Class == "" {
+		it.Class = ClassOf(it.Kind, it.Subject)
+	}
 	info, ok := kindInfos[it.Kind]
 	if !ok {
 		return
@@ -102,7 +105,7 @@ func decorate(it *Item) {
 func fromFeed(f apiclient.AttentionFeedItem) Item {
 	it := Item{
 		Severity: f.Severity, Kind: f.Kind, Subject: f.Subject, Detail: f.Detail,
-		ID: f.ID, Title: f.Title, Action: f.Action, Link: f.Link, Params: f.Params,
+		ID: f.ID, Title: f.Title, Action: f.Action, Link: f.Link, Params: f.Params, Class: f.Class,
 	}
 	decorate(&it)
 	return it

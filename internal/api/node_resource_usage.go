@@ -3,6 +3,7 @@ package api
 import (
 	"log/slog"
 	"net/http"
+	"os"
 	"sort"
 	"strings"
 
@@ -27,6 +28,7 @@ var nodeResourceUsagePlacedMetrics = []string{
 // docs-local/agent-metrics-findings-2026-10-04.md.
 var nodeResourceUsageHostMetrics = []string{
 	telemetry.MetricMemoryTotalBytes,
+	telemetry.MetricMemoryAvailableBytes,
 	telemetry.MetricDiskUsedBytes,
 	telemetry.MetricDiskTotalBytes,
 }
@@ -50,8 +52,11 @@ type nodeResourceUsageResource struct {
 	CPUPercent       *float64 `json:"cpu_percent,omitempty"`
 	MemoryUsageBytes *float64 `json:"memory_usage_bytes,omitempty"`
 	MemoryTotalBytes *float64 `json:"memory_total_bytes,omitempty"`
-	DiskUsedBytes    *float64 `json:"disk_used_bytes,omitempty"`
-	DiskTotalBytes   *float64 `json:"disk_total_bytes,omitempty"`
+	// MemoryAvailableBytes is the host's available memory, reclaimable
+	// caches included.
+	MemoryAvailableBytes *float64 `json:"memory_available_bytes,omitempty"`
+	DiskUsedBytes        *float64 `json:"disk_used_bytes,omitempty"`
+	DiskTotalBytes       *float64 `json:"disk_total_bytes,omitempty"`
 }
 
 // fleetResourceUsageRollup sums nodeResourceUsageResource across every
@@ -116,6 +121,8 @@ func (rt *Router) handleFleetResourceUsage(w http.ResponseWriter, r *http.Reques
 			IsLocal: n.ID == rt.localNodeID,
 		}
 	}
+
+	rt.ensureLocalUsageRow(byID)
 
 	services, err := rt.apps.ListDesiredServices(r.Context())
 	if err != nil {
@@ -186,6 +193,8 @@ func (rt *Router) handleFleetResourceUsage(w http.ResponseWriter, r *http.Reques
 			switch metric {
 			case telemetry.MetricMemoryTotalBytes:
 				usage.MemoryTotalBytes = &value
+			case telemetry.MetricMemoryAvailableBytes:
+				usage.MemoryAvailableBytes = &value
 			case telemetry.MetricDiskUsedBytes:
 				usage.DiskUsedBytes = &value
 			case telemetry.MetricDiskTotalBytes:
@@ -276,4 +285,21 @@ func rollupFleetResourceUsage(nodes []nodeResourceUsageResource) fleetResourceUs
 	}
 
 	return roll
+}
+
+// ensureLocalUsageRow adds the control plane's own host when no node row
+// exists for it, which is the normal single-node state, so its capacity and
+// the services placed on it are not dropped from the fleet view.
+func (rt *Router) ensureLocalUsageRow(byID map[string]*nodeResourceUsageResource) {
+	if rt.localNodeID == "" {
+		return
+	}
+	if _, ok := byID[rt.localNodeID]; ok {
+		return
+	}
+	name, err := os.Hostname()
+	if err != nil || name == "" {
+		name = rt.localNodeID
+	}
+	byID[rt.localNodeID] = &nodeResourceUsageResource{NodeID: rt.localNodeID, Name: name, IsLocal: true}
 }

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/attention"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -75,6 +76,10 @@ type certificateStatus struct {
 	// TLSOwner is who terminates TLS for Domain: acme, internal, proxy or
 	// custom. Source is "proxy" when this row is the proxy's own certificate.
 	TLSOwner string `json:"tls_owner"`
+	// ExpiryClass is "incident" only when this certificate's expiry needs
+	// an operator (attention.CertExpiryClass): never for internal-CA,
+	// proxy-owned or unrouted certificates.
+	ExpiryClass string `json:"expiry_class,omitempty"`
 }
 
 // CertObservationSource lists the expiry observations kind=cert_expiry
@@ -131,6 +136,7 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 	}
 
 	snap := rt.tlsSnapshot(r.Context())
+	shortLived := attention.ShortLivedCertLimit()
 	out := make([]certificateStatus, 0, len(infos))
 	for _, info := range infos {
 		if !certVisible(info.Domain, info.SANs, owners, canSee) || snap.Suppressed(info.Domain) {
@@ -140,6 +146,8 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 		if customDomains[strings.ToLower(info.Domain)] {
 			source = "custom"
 		}
+		apps := owners[strings.ToLower(info.Domain)]
+		tlsOwner := string(snap.Owner(info.Domain))
 		out = append(out, certificateStatus{
 			Domain:    info.Domain,
 			SANs:      info.SANs,
@@ -148,11 +156,17 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 			NotAfter:  info.NotAfter,
 			Status:    info.Status,
 			Renewal:   renewal[info.Domain],
-			Apps:      owners[strings.ToLower(info.Domain)],
+			Apps:      apps,
 			Source:    source,
 
 			ACMEFailure: acmeFailureIn(snap, info.Domain),
-			TLSOwner:    string(snap.Owner(info.Domain)),
+			TLSOwner:    tlsOwner,
+			ExpiryClass: attention.CertExpiryClass(attention.CertFacts{
+				Issuer: info.Issuer, Source: source, TLSOwner: tlsOwner,
+				Status: info.Status, Renewal: renewal[info.Domain],
+				NotBefore: info.NotBefore, NotAfter: info.NotAfter,
+				Routed: len(apps) > 0 || strings.EqualFold(info.Domain, rt.publicHost),
+			}, shortLived),
 		})
 	}
 	out = append(out, rt.proxyCertificateRows(snap, owners, canSee, time.Now())...)
