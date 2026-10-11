@@ -47,6 +47,10 @@ export interface Domain {
   // proxy serves, when known.
   tls_owner?: TlsOwner
   proxy_certificate?: ProxyCertificate
+  // kind is standalone for a domain not linked to any app; target is then
+  // where it proxies and service_name is empty.
+  kind?: 'app' | 'standalone'
+  target?: string
 }
 
 export async function fetchDomains(): Promise<Domain[]> {

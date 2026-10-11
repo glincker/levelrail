@@ -2,6 +2,8 @@
   "page": {
     "breadcrumb": "Domains",
     "description": "Traffic controls for this domain of app {{app}}. Changes apply on the next ingress pass.",
+    "descriptionStandalone": "Traffic controls for this standalone domain, which is not linked to any app. Changes apply on the next ingress pass.",
+    "editTarget": "Edit target",
     "loadFailed": "Could not load this domain's traffic controls.",
     "retry": "Try again",
     "missingAppTitle": "Which app owns this domain?",

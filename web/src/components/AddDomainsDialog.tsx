@@ -42,6 +42,8 @@ import type { EditDomainsResult } from '../queries/appEnvironmentDomains'
 import { DomainCheckPanel } from './DomainDnsCheck'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
 import { GoLivePanel } from './GoLivePanel'
+import { ServerAddressLine } from './domains/ServerAddressCard'
+import { StandaloneAddBody } from './domains/StandaloneAddBody'
 
 export interface AddDomainsApp {
   name: string
@@ -353,6 +355,73 @@ function AddDomainsBody({
   )
 }
 
+type AddMode = 'app' | 'proxy'
+
+function ModeSwitch({
+  mode,
+  onMode,
+}: {
+  mode: AddMode
+  onMode: (m: AddMode) => void
+}) {
+  const { t } = useTranslation('domains')
+  return (
+    <div
+      role="radiogroup"
+      aria-label={t('standalone.modeLabel')}
+      className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1"
+    >
+      {(['app', 'proxy'] as const).map((m) => (
+        <Button
+          key={m}
+          type="button"
+          size="sm"
+          role="radio"
+          aria-checked={mode === m}
+          variant={mode === m ? 'outline' : 'ghost'}
+          onClick={() => {
+            onMode(m)
+          }}
+        >
+          {m === 'app' ? t('standalone.modeApp') : t('standalone.modeProxy')}
+        </Button>
+      ))}
+    </div>
+  )
+}
+
+function AddDomainsModes({
+  apps,
+  claimedBy,
+  initialApp,
+  onClose,
+}: {
+  apps: AddDomainsApp[]
+  claimedBy: ReadonlyMap<string, string>
+  initialApp?: string
+  onClose: () => void
+}) {
+  const [mode, setMode] = useState<AddMode>(
+    apps.length === 0 && !initialApp ? 'proxy' : 'app',
+  )
+  return (
+    <>
+      {initialApp ? null : <ModeSwitch mode={mode} onMode={setMode} />}
+      <ServerAddressLine />
+      {mode === 'proxy' ? (
+        <StandaloneAddBody onClose={onClose} />
+      ) : (
+        <AddDomainsBody
+          apps={apps}
+          claimedBy={claimedBy}
+          initialApp={initialApp}
+          onClose={onClose}
+        />
+      )}
+    </>
+  )
+}
+
 export function AddDomainsDialog({
   open,
   onOpenChange,
@@ -368,9 +437,9 @@ export function AddDomainsDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         {open ? (
-          <AddDomainsBody
+          <AddDomainsModes
             apps={apps}
             claimedBy={claimedBy}
             initialApp={initialApp}

@@ -47,8 +47,13 @@ import {
   useSetDomainSearchVisibility,
 } from '../queries/domainSearchVisibility'
 import type { Domain } from '../queries/domains'
+import { domainScope, isStandaloneDomain } from '../lib/standaloneDomain'
 import { DomainDnsRecordDialog } from './DomainDnsRecordDialog'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
+import {
+  StandaloneRowActions,
+  StandaloneTargetCell,
+} from './domains/StandaloneRowParts'
 
 // Shared by the sticky header in DomainsTable and every row, so labels
 // line up with row content.
@@ -131,10 +136,10 @@ function inlineWarning(
 function SearchVisibilityCell({ domain }: { domain: Domain }) {
   const { t } = useTranslation('domains')
   const { data, isLoading } = useDomainSearchVisibility(
-    domain.service_name,
+    domainScope(domain),
     domain.domain,
   )
-  const set = useSetDomainSearchVisibility(domain.service_name, domain.domain)
+  const set = useSetDomainSearchVisibility(domainScope(domain), domain.domain)
   if (isLoading) return <Skeleton className="h-5 w-9" />
   const visible = !(data?.hidden ?? false)
   return (
@@ -296,10 +301,11 @@ export function DomainRow({
   const [recordOpen, setRecordOpen] = useState(false)
   // Plain query, no polling: one row per visible domain must stay cheap.
   const dns = useQuery({
-    ...domainCheckQueryOptions(domain.service_name, domain.domain),
+    ...domainCheckQueryOptions(domainScope(domain), domain.domain),
     staleTime: 60_000,
   })
   const warning = inlineWarning(domain, cert, dns.data, t)
+  const standalone = isStandaloneDomain(domain)
   const flags = FLAGS.filter((flag) => domain[flag.key])
 
   return (
@@ -311,7 +317,7 @@ export function DomainRow({
           <Link
             to="/domains/$domain"
             params={{ domain: domain.domain }}
-            search={{ app: domain.service_name }}
+            search={{ app: domainScope(domain) }}
             className="min-w-0 truncate font-mono text-sm font-medium text-foreground hover:underline"
           >
             {domain.domain}
@@ -358,13 +364,17 @@ export function DomainRow({
         ) : null}
       </div>
 
-      <Link
-        to="/apps/$name"
-        params={{ name: domain.service_name }}
-        className="min-w-0 truncate text-sm text-muted-foreground hover:text-foreground hover:underline"
-      >
-        {domain.service_name}
-      </Link>
+      {standalone ? (
+        <StandaloneTargetCell domain={domain} />
+      ) : (
+        <Link
+          to="/apps/$name"
+          params={{ name: domain.service_name }}
+          className="min-w-0 truncate text-sm text-muted-foreground hover:text-foreground hover:underline"
+        >
+          {domain.service_name}
+        </Link>
+      )}
 
       <DomainDnsStatusBadge status={dns.data?.status} />
 
@@ -374,19 +384,31 @@ export function DomainRow({
 
       <SearchVisibilityCell domain={domain} />
 
-      <RowActions
-        domain={domain}
-        onShowRecord={() => {
-          setRecordOpen(true)
-        }}
-        onRecheck={() => {
-          void dns.refetch()
-        }}
-      />
+      {standalone ? (
+        <StandaloneRowActions
+          domain={domain}
+          onShowRecord={() => {
+            setRecordOpen(true)
+          }}
+          onRecheck={() => {
+            void dns.refetch()
+          }}
+        />
+      ) : (
+        <RowActions
+          domain={domain}
+          onShowRecord={() => {
+            setRecordOpen(true)
+          }}
+          onRecheck={() => {
+            void dns.refetch()
+          }}
+        />
+      )}
 
       {recordOpen ? (
         <DomainDnsRecordDialog
-          appName={domain.service_name}
+          appName={domainScope(domain)}
           domain={domain.domain}
           onClose={() => {
             setRecordOpen(false)
