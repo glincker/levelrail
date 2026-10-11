@@ -132,7 +132,7 @@ export function diffEnv(
   return { added, changed, removed }
 }
 
-function quoteValue(v: string): string {
+export function quoteValue(v: string): string {
   if (v === '' || (v === v.trim() && !/["'#\n\r\\ \t]/.test(v))) return v
   const escaped = v
     .replace(/\\/g, '\\\\')

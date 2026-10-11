@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -29,7 +30,8 @@ type sharedEnvVarResource struct {
 func (rt *Router) sharedEnvVarResources(vars []store.SharedEnvVar) []sharedEnvVarResource {
 	out := make([]sharedEnvVarResource, len(vars))
 	for i, v := range vars {
-		r := sharedEnvVarResource{Key: v.Key, Value: v.Value, Secret: v.Secret}
+		shown, _ := envredact.Value(v.Key, v.Value, nil)
+		r := sharedEnvVarResource{Key: v.Key, Value: shown, Secret: v.Secret}
 		if v.Secret {
 			r.UpdatedAt = v.UpdatedAt.UTC().Format(time.RFC3339)
 			r.Stale = rt.secretIsStale(v.UpdatedAt)

@@ -140,6 +140,7 @@ type Router struct {
 	projects               ProjectStore
 	organizations          OrganizationStore
 	environments           EnvironmentStore
+	envProtect             envProtection
 	secrets                SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	composeSecrets         ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
@@ -812,5 +813,6 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	// re-read on every create() call.
 	rt.sessions = newSessionStore(rt.sessionTTL)
 	rt.attachAuthEngine(s)
+	rt.attachEnvProtection(s)
 	return rt
 }

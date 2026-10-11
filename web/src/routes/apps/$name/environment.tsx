@@ -1,21 +1,19 @@
-import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { CodeIcon, ListIcon } from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
+import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr'
 import { useApp } from '../../../queries/apps'
-import { useSecretKeys } from '../../../queries/secrets'
-import { EnvEditor } from '../../../components/EnvEditor'
-import { EnvDevView } from '../../../components/EnvDevView'
-import { SecretsEditor } from '../../../components/SecretsEditor'
-import { VaultEnvEditor } from '../../../components/VaultEnvEditor'
+import { EnvironmentEditor } from '../../../components/env/EnvironmentEditor'
+import { EnvActivityPanel } from '../../../components/EnvActivityPanel'
 import { PreviewEnvOverridesEditor } from '../../../components/PreviewEnvOverridesEditor'
 import { BranchEnvOverridesEditor } from '../../../components/BranchEnvOverridesEditor'
 import { AppEnvCompareCard } from '../../../components/AppEnvCompareCard'
-import { HelpLink } from '../../../components/HelpLink'
-import { Button } from '@/components/ui/button'
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 
-// Former "environment" tab, now a real deep-linkable route. Reads app
-// data from the query cache the parent layout route's loader already
-// primed.
+// Reads app data from the query cache the parent layout route's loader primed.
 export const Route = createFileRoute('/apps/$name/environment')({
   component: EnvironmentSection,
 })
@@ -23,50 +21,36 @@ export const Route = createFileRoute('/apps/$name/environment')({
 function EnvironmentSection() {
   const { name } = Route.useParams()
   const { data: app } = useApp(name)
-  const secretKeysQuery = useSecretKeys(name)
-  const [view, setView] = useState<'normal' | 'dev'>('normal')
+  const { t } = useTranslation('envEditor')
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end gap-2">
-        <HelpLink
-          path="/deploying-apps#managing-encrypted-secrets"
-          label="Secrets guide"
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setView((v) => (v === 'normal' ? 'dev' : 'normal'))
-          }}
-        >
-          {view === 'normal' ? (
-            <>
-              <CodeIcon />
-              Developer view
-            </>
-          ) : (
-            <>
-              <ListIcon />
-              Normal view
-            </>
-          )}
-        </Button>
-      </div>
-      {view === 'dev' ? (
-        <EnvDevView app={app} secretKeys={secretKeysQuery.data ?? []} />
-      ) : (
-        <EnvEditor app={app} />
-      )}
-      <SecretsEditor appName={app.name} />
-      <VaultEnvEditor appName={app.name} vaultEnv={app.vault_env} />
-      <PreviewEnvOverridesEditor
-        appName={app.name}
-        overrides={app.preview_env_overrides}
-      />
-      <BranchEnvOverridesEditor appName={app.name} />
-      <AppEnvCompareCard app={app} />
+      <EnvironmentEditor app={app} />
+      <EnvActivityPanel appName={app.name} />
+      <Collapsible className="rounded-lg border border-border">
+        <CollapsibleTrigger className="group/advanced flex items-start justify-between gap-3 px-4 py-3">
+          <span className="space-y-0.5">
+            <span className="block text-sm font-medium">
+              {t('advanced.title')}
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              {t('advanced.description')}
+            </span>
+          </span>
+          <CaretDownIcon
+            aria-hidden
+            className="mt-1 size-4 transition-transform group-data-[panel-open]/advanced:rotate-180"
+          />
+        </CollapsibleTrigger>
+        <CollapsiblePanel className="space-y-6 px-4 pb-4">
+          <PreviewEnvOverridesEditor
+            appName={app.name}
+            overrides={app.preview_env_overrides}
+          />
+          <BranchEnvOverridesEditor appName={app.name} />
+          <AppEnvCompareCard app={app} />
+        </CollapsiblePanel>
+      </Collapsible>
     </div>
   )
 }

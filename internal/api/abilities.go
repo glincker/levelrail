@@ -44,7 +44,7 @@ const (
 var validAbilities = []string{AbilityRead, AbilityReadSensitive, AbilityWrite, AbilityWriteSensitive, AbilityDeploy, AbilityRoot}
 
 // validTokenAbilities adds the token-only abilities a user or role never holds.
-var validTokenAbilities = append(slices.Clone(validAbilities), AbilitySignInApprove)
+var validTokenAbilities = append(slices.Clone(validAbilities), AbilitySignInApprove, AbilitySecretsReveal)
 
 // hasSignInApprove reports whether abilities literally carry
 // AbilitySignInApprove, never by way of root or write:sensitive.

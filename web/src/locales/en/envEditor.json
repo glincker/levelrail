@@ -1,0 +1,160 @@
+{
+  "title": "Environment",
+  "description": "Variables your app reads at start. Sensitive values stay masked everywhere; revealing one asks you to confirm it's you and is recorded in the audit log.",
+  "guide": "Secrets guide",
+  "columns": {
+    "key": "Key",
+    "value": "Value",
+    "type": "Type",
+    "scope": "Scope",
+    "actions": "Actions"
+  },
+  "types": {
+    "plain": "Plain",
+    "secret": "Secret",
+    "vault": "Vault"
+  },
+  "scope": {
+    "own": "Own value",
+    "inherited": "From {{tier}}",
+    "overrides": "Overrides {{tier}}",
+    "tiers": {
+      "organization": "organization",
+      "project": "project",
+      "environment": "environment"
+    }
+  },
+  "value": {
+    "masked": "Hidden value",
+    "maskedWithPreview": "Hidden value, starts {{preview}}",
+    "secretStored": "Encrypted, stored",
+    "secretNew": "New value",
+    "empty": "Empty",
+    "vaultPath": "Vault path",
+    "vaultKey": "Field",
+    "hidesIn": "Hides in {{seconds}}s",
+    "replacePlaceholder": "New value",
+    "valuePlaceholder": "Value"
+  },
+  "sensitive": {
+    "badge": "Sensitive",
+    "convertHint": "Looks like a credential stored as plain text"
+  },
+  "actions": {
+    "reveal": "Reveal",
+    "hide": "Hide",
+    "copy": "Copy",
+    "copied": "Copied to clipboard",
+    "replace": "Replace",
+    "cancelReplace": "Keep current",
+    "remove": "Remove",
+    "undoRemove": "Undo remove",
+    "override": "Override",
+    "rowMenu": "Actions for {{key}}",
+    "markSensitive": "Mark as sensitive",
+    "markPlain": "Show value to readers",
+    "useAutomatic": "Use automatic detection",
+    "convert": "Convert to secret"
+  },
+  "toolbar": {
+    "add": "Add variable",
+    "bulk": "Edit as .env",
+    "table": "Edit as table",
+    "import": "Import .env file",
+    "export": "Export",
+    "exportMasked": "Export with values masked",
+    "exportFull": "Export all values (.env)",
+    "exportFullJson": "Export all values (JSON)",
+    "review": "Review changes",
+    "discard": "Discard",
+    "protection": "Protection"
+  },
+  "add": {
+    "keyLabel": "New variable name",
+    "valueLabel": "New variable value",
+    "typeLabel": "Variable type",
+    "suggestSecret": "This name looks sensitive. Store it as a Secret so the value is encrypted at rest.",
+    "add": "Add",
+    "cancel": "Cancel",
+    "duplicate": "{{key}} already exists",
+    "invalidKey": "Use letters, digits and underscores, not starting with a digit",
+    "secretsOff": "Secrets need a master key on the control plane"
+  },
+  "bulk": {
+    "label": "Variables as .env text, one KEY=value per line",
+    "hint": "Masked values (••••••••) keep what is stored. Delete a line to remove a variable. Vault variables are edited in the table.",
+    "apply": "Apply to table"
+  },
+  "review": {
+    "title": "Review changes",
+    "description": "Nothing is saved until you confirm. Sensitive values are never shown here.",
+    "added": "Added",
+    "changed": "Changed",
+    "removed": "Removed",
+    "hiddenValue": "value hidden",
+    "none": "No changes to save.",
+    "save": "Save changes",
+    "saving": "Saving...",
+    "back": "Back to editing"
+  },
+  "saved": "Environment saved.",
+  "redeploy": {
+    "title": "Redeploy needed",
+    "description": "The running container still has the old values. Restart the app to apply them.",
+    "restart": "Restart now",
+    "restarting": "Restarting {{name}}."
+  },
+  "inherited": {
+    "title": "Inherited variables",
+    "description": "Set on the organization, project or environment. Override one to give this app its own value."
+  },
+  "empty": {
+    "title": "No variables yet",
+    "description": "Add a variable or import a .env file. Values that look like credentials are masked automatically."
+  },
+  "stepUp": {
+    "title": "Confirm it's you",
+    "descriptionReveal": "Revealing {{key}} on {{app}} is recorded in the audit log. You won't be asked again for {{minutes}} minutes.",
+    "descriptionExport": "Exporting every value of {{app}} is recorded in the audit log.",
+    "descriptionManage": "Making values visible or unlocking secrets on {{app}} needs a fresh confirmation.",
+    "password": "Password",
+    "code": "Authenticator code",
+    "codeHint": "Your account uses two-factor authentication, so enter the 6 digit code too.",
+    "confirm": "Confirm",
+    "confirming": "Checking...",
+    "passkey": "Use a passkey",
+    "or": "or",
+    "invalid": "That password or code is not correct.",
+    "locked": "Too many attempts. Wait a few minutes and try again.",
+    "noMethods": "This account has no password or passkey to confirm with. Set a password in your account settings first."
+  },
+  "policy": {
+    "disabledTitle": "Secret values are write-only on this server",
+    "disabledBody": "The server runs with APP_SECRET_REVEAL=disabled, so no one can read a stored value back. An administrator can set it to step_up to allow confirmed reveals.",
+    "allowTitle": "Reveal without confirmation is on",
+    "allowBody": "APP_SECRET_REVEAL=allow lets anyone with read:sensitive see values without a password. Use step_up outside a single admin lab.",
+    "writeOnlyTitle": "Secrets are write-only for this app",
+    "writeOnlyBody": "The app owner locked reveals and full exports. You can still replace values.",
+    "writeOnlyToggle": "Secrets are write-only for this app",
+    "writeOnlyToggleHint": "Blocks every reveal and full export of this app's values. Turning it off asks you to confirm it's you.",
+    "invalidTitle": "Reveal policy is not recognized",
+    "invalidBody": "APP_SECRET_REVEAL has an unknown value, so reveals stay off until it is fixed."
+  },
+  "convert": {
+    "title": "Convert {{key}} to a secret?",
+    "description": "The value moves into encrypted storage on the server and is removed from plain variables. It never passes through your browser.",
+    "consequence": "The running app keeps the old variable until you restart or redeploy.",
+    "confirm": "Convert",
+    "pending": "Converting...",
+    "done": "{{key}} is now a secret."
+  },
+  "errors": {
+    "revealDisabled": "Reveal is turned off on this server.",
+    "writeOnly": "This app's secrets are write-only.",
+    "importFailed": "Could not read that file."
+  },
+  "advanced": {
+    "title": "Preview, branch and environment comparison",
+    "description": "Values used only by preview deployments and per-branch builds, plus a comparison with other environments."
+  }
+}

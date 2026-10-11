@@ -97,6 +97,7 @@ type postureInput struct {
 	OutdatedAgents    []string
 	AgentsKnown       bool
 	Anomalies         []loginAnomaly
+	SecretRevealAllow bool
 }
 
 func pass(id, sev string) postureItem {
@@ -197,6 +198,7 @@ func evaluatePosture(in postureInput) []postureItem {
 		}),
 		sessionsRule(in),
 		boolRule("new_device_approval_off", postureHigh, &in.NewDeviceApproval, false, &postureFix{Kind: postureFixLink, Link: securityPage, CLI: envNewDeviceApproval + "=true"}),
+		boolRule("secret_reveal_allow", postureHigh, &in.SecretRevealAllow, true, &postureFix{Kind: postureFixLink, Link: securityPage, CLI: envSecretReveal + "=" + revealPolicyStepUp}),
 		approvalScopeRule(in),
 		boolRule("code_login_admins", postureMedium, in.CodeLoginAdmins, true, actionFix("disable_code_login_admins", nil, securityPage)),
 		exposureRule(in, false),

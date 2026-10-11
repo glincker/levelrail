@@ -306,7 +306,8 @@ levelrail-cli apps build-cache remove <name>|--global
 
 ```
 levelrail-cli apps env import <name> --file .env [--dry-run] [--keep-existing] [--apply] [flags]
-levelrail-cli apps env export <name> [--out FILE] [flags]
+levelrail-cli apps env export <name> [--out FILE] [--reveal] [--format dotenv|json] [flags]
+levelrail-cli apps env get <name> <KEY> [--reveal] [flags]
 levelrail-cli apps env diff <app-a> <app-b> [flags]
 levelrail-cli apps secrets list <name> [flags]
 levelrail-cli apps secrets set <name> <key> <value> [--apply] [flags]
@@ -324,7 +325,7 @@ levelrail-cli apps branch-env clear <name> <id> [flags]
 
 - `apps env import` merges a .env file into an app's plain env vars and prints which keys are new, changed or unchanged. Keys that are already secrets are skipped. It reports how many changes are pending, or restarts the app right away with `--apply`.
 - `apps env diff` compares two apps' env vars, for example staging against production. Secret values are never read: secrets are compared by key only, and the dashboard has the same comparison on an app's Environment page.
-- `apps env export` writes plain env vars as .env text; secret keys are written empty with a comment, never with a value.
+- `apps env export` writes env vars as .env text; sensitive and secret keys are written empty with a comment unless `--reveal` is given. `apps env get` prints one variable, masked when sensitive. `--reveal` asks for your password (and authenticator code) at the prompt, never from flags or the environment, and needs a token with `read:sensitive` and `secrets:reveal` plus `APP_SECRET_REVEAL_TOKENS=on` on the server. See [Environment variables and secrets](environment-and-secrets.md).
 - `apps secrets set` sets or rotates one secret's encrypted value and declares the key as secret backed so it is injected; `--apply` restarts the app now. With `--env-file` it bulk imports every key in a .env format file as its own secret. Values are never returned: `list` shows key names and locked state only. `lock` toggles a secret's overwrite guard.
 - `apps vault-env` declares an env var resolved live from the configured external Vault (see [Vault](#vault)); only the reference is stored.
 - `apps preview-env` and `apps branch-env` override an env var for previews only. A branch override applies when the preview's own branch matches PATTERN (an exact name or a glob such as `release/*`); `--secret` stores it envelope encrypted. Neither affects the app's own running deploy.

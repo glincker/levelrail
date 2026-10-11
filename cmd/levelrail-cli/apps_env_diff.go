@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"sort"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 type envDiffEntry struct {
@@ -132,7 +134,15 @@ func runAppsEnvDiff(prog string, args []string, stdout, stderr io.Writer, lookup
 			return nil, nil, fmt.Errorf("get app %q: %w", name, err)
 		}
 		keys, err := appSecretKeys(ctx, client, name, app.SecretEnv)
-		return app.Env, keys, err
+		env := map[string]string{}
+		for k, v := range app.Env {
+			if v == apiclient.MaskedEnvValue {
+				keys = append(keys, k)
+				continue
+			}
+			env[k] = v
+		}
+		return env, keys, err
 	}
 	envA, secA, err := load(nameA)
 	if err != nil {

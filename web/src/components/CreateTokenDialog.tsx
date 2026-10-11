@@ -30,7 +30,7 @@ import { InfoTip } from './kit'
 import { CreateFlowShell } from './CreateFlowKit'
 import { TOKEN_STEPS } from './tokenCreateSteps'
 import { useCreateToken } from '../queries/tokens'
-import { SIGN_IN_APPROVE } from '../types/token'
+import { SECRETS_REVEAL, SIGN_IN_APPROVE } from '../types/token'
 import type { CreateTokenResponse, TokenAbility } from '../types/token'
 
 // 'never' sends no expires_in_days at all, matching the Go side's omitempty.
@@ -60,10 +60,15 @@ function createTokenSchema(t: TFunction<'settings'>) {
         ]),
       ),
       signInApprove: z.boolean(),
+      secretsReveal: z.boolean(),
     })
     .refine((v) => v.abilities.length > 0 || v.signInApprove, {
       message: t('tokens.create.abilityRequired'),
       path: ['abilities'],
+    })
+    .refine((v) => !v.secretsReveal || v.abilities.includes('read:sensitive'), {
+      message: t('tokens.create.secretsRevealNeedsSensitive'),
+      path: ['secretsReveal'],
     })
     .refine((v) => !(v.signInApprove && v.abilities.includes('root')), {
       message: t('tokens.create.rootExclusive'),
@@ -111,6 +116,7 @@ export function CreateTokenDialog() {
       agentName: '',
       abilities: [],
       signInApprove: false,
+      secretsReveal: false,
     },
   })
 
@@ -118,9 +124,11 @@ export function CreateTokenDialog() {
     const days = EXPIRATION_OPTIONS.find(
       (option) => option.value === values.expiration,
     )?.days
-    const abilities: TokenAbility[] = values.signInApprove
-      ? [...values.abilities, SIGN_IN_APPROVE]
-      : values.abilities
+    const abilities: TokenAbility[] = [
+      ...values.abilities,
+      ...(values.signInApprove ? [SIGN_IN_APPROVE] : []),
+      ...(values.secretsReveal ? [SECRETS_REVEAL] : []),
+    ]
     createToken.mutate(
       {
         name: values.name.trim(),
@@ -273,6 +281,34 @@ export function CreateTokenDialog() {
                     </Field>
                   </FieldLabel>
                   <FieldError errors={[formState.errors.signInApprove]} />
+                </Field>
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="secretsReveal"
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel>
+                    <Field orientation="horizontal">
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked === true)
+                        }}
+                      />
+                      <FieldContent>
+                        <FieldTitle>
+                          {t('tokens.create.secretsReveal')}
+                        </FieldTitle>
+                        <FieldDescription className="text-xs">
+                          {t('tokens.create.secretsRevealHint')}
+                        </FieldDescription>
+                      </FieldContent>
+                    </Field>
+                  </FieldLabel>
+                  <FieldError errors={[formState.errors.secretsReveal]} />
                 </Field>
               )}
             />

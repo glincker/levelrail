@@ -84,6 +84,7 @@ func TestEvaluatePosture_EachRuleFails(t *testing.T) {
 		{"token_unused", postureStatusFail, func(in *postureInput) { in.Tokens[0].LastUsedAt = &old; in.Tokens[0].CreatedAt = old }},
 		{"sessions_old", postureStatusFail, func(in *postureInput) { in.Sessions[0].CreatedAt = old }},
 		{"new_device_approval_off", postureStatusFail, func(in *postureInput) { in.NewDeviceApproval = false }},
+		{"secret_reveal_allow", postureStatusFail, func(in *postureInput) { in.SecretRevealAllow = true }},
 		{"approval_password_only", postureStatusFail, func(in *postureInput) { in.Policy.ApprovalScope = approvalScopePasswordOnly }},
 		{"code_login_admins", postureStatusFail, func(in *postureInput) { in.CodeLoginAdmins = &yes }},
 		{"public_exposure", postureStatusFail, func(in *postureInput) { in.Exposure.Attention = 2 }},

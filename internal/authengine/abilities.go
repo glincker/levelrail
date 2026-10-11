@@ -17,6 +17,8 @@ const (
 	// AbilitySignInApprove is token-only: every user holds it for their own
 	// account, but no device login or library mint may request it.
 	AbilitySignInApprove = "signin:approve"
+	// AbilitySecretsReveal is token-only and never implied by root.
+	AbilitySecretsReveal = "secrets:reveal"
 )
 
 // legacyToLibrary maps each legacy ability to its library ability. All but
@@ -30,6 +32,7 @@ var legacyToLibrary = map[string]string{
 	AbilityDeploy:         "deploy",
 	AbilityRoot:           theauth.AbilityRoot,
 	AbilitySignInApprove:  AbilitySignInApprove,
+	AbilitySecretsReveal:  AbilitySecretsReveal,
 }
 
 // EngineAbilities lists the caller-defined abilities the library may mint (root is implicit).
