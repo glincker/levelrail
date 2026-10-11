@@ -235,10 +235,13 @@ func (c *Client) InspectExitState(ctx context.Context, name string) (*ExitState,
 	if resp.State == nil {
 		return nil, nil
 	}
+	started, _ := time.Parse(time.RFC3339Nano, resp.State.StartedAt)
 	return &ExitState{
-		Running:   resp.State.Running,
-		OOMKilled: resp.State.OOMKilled,
-		ExitCode:  resp.State.ExitCode,
+		Running:      resp.State.Running,
+		OOMKilled:    resp.State.OOMKilled,
+		ExitCode:     resp.State.ExitCode,
+		RestartCount: resp.RestartCount,
+		StartedAt:    started,
 	}, nil
 }
 

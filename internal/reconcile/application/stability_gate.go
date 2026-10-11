@@ -1,0 +1,195 @@
+package application
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
+	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/probe"
+)
+
+// GateRecorder persists a release's gate timeline and the reason it failed.
+// *store.DB satisfies it.
+type GateRecorder interface {
+	RecordGateEvent(ctx context.Context, e store.DeployGateEvent) error
+	MarkRolloutFailureReason(ctx context.Context, serviceName, image, reason string) error
+}
+
+// DeploySafetySource returns an app's gate overrides. *store.DB satisfies it.
+type DeploySafetySource interface {
+	GetDeploySafetySettings(ctx context.Context, serviceName string) (store.DeploySafetySettings, error)
+}
+
+// WithStabilityGate holds a new container back from traffic until it passes
+// N readiness checks in a row and a stable window with no restart or OOM kill.
+func WithStabilityGate(defaults deploysafety.Effective, src DeploySafetySource) Option {
+	return func(ctrl *Controller) {
+		d := defaults
+		ctrl.gateDefaults = &d
+		ctrl.gateSource = src
+	}
+}
+
+// WithGateRecorder records gate timeline events. nil records nothing.
+func WithGateRecorder(r GateRecorder) Option {
+	return func(ctrl *Controller) { ctrl.gateRecorder = r }
+}
+
+// WithGateTick overrides how often the stability gate re-checks a
+// container; tests use it to avoid real multi-second waits.
+func WithGateTick(d time.Duration) Option {
+	return func(ctrl *Controller) { ctrl.gateTick = d }
+}
+
+const defaultGateTick = time.Second
+
+// gateError is a stability gate failure with its shared reason constant.
+type gateError struct {
+	reason, message string
+}
+
+func (e *gateError) Error() string { return e.message }
+
+// safetyFor resolves desired's effective gate settings; with no gate
+// configured it is a single readiness pass and no window.
+func (c *Controller) safetyFor(ctx context.Context, desired *store.DesiredService) deploysafety.Effective {
+	if c.gateDefaults == nil {
+		return deploysafety.Effective{SuccessThreshold: 1}
+	}
+	if c.gateSource == nil {
+		return *c.gateDefaults
+	}
+	overrides, err := c.gateSource.GetDeploySafetySettings(ctx, desired.Name)
+	if err != nil {
+		return *c.gateDefaults
+	}
+	return deploysafety.Resolve(*c.gateDefaults, overrides)
+}
+
+func (c *Controller) recordGate(ctx context.Context, desired *store.DesiredService, container, phase, status, reason, message string) {
+	if c.gateRecorder == nil {
+		return
+	}
+	// Best effort: the timeline annotates a deploy, it never decides one.
+	_ = c.gateRecorder.RecordGateEvent(ctx, store.DeployGateEvent{
+		ServiceName: c.serviceName, Image: desired.Image, Phase: phase, Status: status,
+		Reason: reason, Message: message, Container: container, At: time.Now(),
+	})
+}
+
+func (c *Controller) markGateFailure(ctx context.Context, desired *store.DesiredService, reason string) {
+	if c.gateRecorder == nil || reason == "" {
+		return
+	}
+	_ = c.gateRecorder.MarkRolloutFailureReason(ctx, c.serviceName, desired.Image, reason)
+}
+
+// stabilityGate runs after the first readiness pass. A failed container is
+// stopped, so the next pass restarts it under the crash backoff.
+func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService) error {
+	cfg := c.safetyFor(ctx, desired)
+	if cfg.SuccessThreshold <= 1 && cfg.StableWindow <= 0 {
+		return nil
+	}
+	inspector, _ := c.runtime.(docker.ExitStateInspector)
+	readiness := readinessProbeFor(desired)
+	var (
+		target   probe.Target
+		probeCfg probe.Config
+		passes   = cfg.SuccessThreshold
+	)
+	if readiness != nil {
+		t, err := probeTarget(state, *readiness)
+		if err != nil {
+			return &gateError{reason: deploysafety.ReasonExitedDuringWindow, message: fmt.Sprintf("stability gate: %v", err)}
+		}
+		target, probeCfg, passes = t, readiness.ProbeConfig(), 1
+	}
+
+	start := time.Now()
+	baseline := docker.ExitState{Running: true}
+	if inspector != nil {
+		if es, err := inspector.InspectExitState(ctx, state.Name); err == nil && es != nil {
+			baseline = *es
+		}
+	}
+	startedAt := baseline.StartedAt
+	if startedAt.IsZero() {
+		startedAt = start
+	}
+	deadline := start.Add(c.effectiveReadyBudget(desired) + cfg.StableWindow)
+	tick := c.gateTick
+	if tick <= 0 {
+		tick = defaultGateTick
+	}
+	c.recordGate(ctx, desired, state.Name, deploysafety.PhaseStability, deploysafety.StatusStarted, "",
+		fmt.Sprintf("waiting for %d consecutive readiness passes and %s running without a restart", cfg.SuccessThreshold, cfg.StableWindow))
+
+	for {
+		obs := deploysafety.GateObservation{
+			Running: true, BaselineRestartCount: baseline.RestartCount, BaselineStartedAt: baseline.StartedAt,
+			RestartCount: baseline.RestartCount, StartedAt: baseline.StartedAt,
+		}
+		if inspector != nil {
+			es, err := inspector.InspectExitState(ctx, state.Name)
+			switch {
+			case err != nil:
+			case es == nil:
+				obs.Running = false
+			default:
+				obs.Running, obs.OOMKilled, obs.ExitCode = es.Running, es.OOMKilled, es.ExitCode
+				obs.RestartCount, obs.StartedAt = es.RestartCount, es.StartedAt
+			}
+		} else if cs, err := c.runtime.InspectByName(ctx, state.Name); err == nil {
+			obs.Running = cs != nil && cs.Running
+		}
+		if obs.Running && readiness != nil {
+			if err := c.prober().Check(ctx, target, probeCfg); err != nil {
+				passes = 0
+			} else {
+				passes++
+			}
+		}
+		now := time.Now()
+		obs.ConsecutivePasses = passes
+		obs.SinceStart = now.Sub(startedAt)
+		obs.BudgetExhausted = !now.Before(deadline)
+
+		verdict, reason := deploysafety.EvaluateGate(obs, cfg)
+		switch verdict {
+		case deploysafety.VerdictPass:
+			c.recordGate(ctx, desired, state.Name, deploysafety.PhaseStability, deploysafety.StatusPassed, "",
+				fmt.Sprintf("%d consecutive readiness passes, running %s without a restart", passes, obs.SinceStart.Round(time.Second)))
+			return nil
+		case deploysafety.VerdictFail:
+			msg := gateFailureMessage(state.Name, reason, obs, cfg)
+			c.recordGate(ctx, desired, state.Name, deploysafety.PhaseStability, deploysafety.StatusFailed, reason, msg)
+			if obs.Running {
+				_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)
+			}
+			return &gateError{reason: reason, message: msg}
+		}
+
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("stability gate for %s: %w", state.Name, ctx.Err())
+		case <-time.After(tick):
+		}
+	}
+}
+
+func gateFailureMessage(name, reason string, obs deploysafety.GateObservation, cfg deploysafety.Effective) string {
+	switch reason {
+	case deploysafety.ReasonOOMKilledDuringWindow:
+		return fmt.Sprintf("container %s was OOM-killed %s after starting, inside its %s stable window", name, obs.SinceStart.Round(time.Second), cfg.StableWindow)
+	case deploysafety.ReasonExitedDuringWindow:
+		return fmt.Sprintf("container %s exited (code %d) %s after starting, inside its %s stable window", name, obs.ExitCode, obs.SinceStart.Round(time.Second), cfg.StableWindow)
+	case deploysafety.ReasonRestartedDuringWindow:
+		return fmt.Sprintf("container %s restarted inside its %s stable window", name, cfg.StableWindow)
+	default:
+		return fmt.Sprintf("container %s did not reach %d consecutive readiness passes within its budget (last streak %d)", name, cfg.SuccessThreshold, obs.ConsecutivePasses)
+	}
+}

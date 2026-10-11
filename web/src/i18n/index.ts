@@ -40,6 +40,7 @@ export const NAMESPACES = [
   'compose',
   'smartDeploy',
   'dataExport',
+  'deploySafety',
 ] as const
 
 void i18n

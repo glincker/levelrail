@@ -861,7 +861,9 @@ func run(logger *slog.Logger) error {
 	apiRouter.ResumeCutoverRuns(ctx)
 
 	engine.SetStore(db)
+	gate := newDeployGate(logger, db, client, b.ShortName, meshLocalNodeID(meshCfg))
 	engine.SetSource(dynamicSource(dynamicSourceDeps{
+		deployGate:                   gate,
 		orphanReaper:                 orphanReaper,
 		ingressEdge:                  edge,
 		db:                           db,
@@ -1030,6 +1032,8 @@ func run(logger *slog.Logger) error {
 	// per app (store.DesiredService.AutoRollbackOnSLOBurn, off by
 	// default), same reasoning as SetAutoRollback above.
 	alertingEngine.SetSLOBurnAutoRollback(db, engine, alertingDB)
+	startDeployWatch(ctx, gate, deployWatchDeps{db: db, local: client, registry: agentRegistry, localNodeID: meshLocalNodeID(meshCfg),
+		restarts: restartTracker, metrics: alertingFederator, sampleEvery: metricsCollectionInterval, nudger: engine, dispatcher: deployDispatcher, logger: logger})
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
@@ -2315,6 +2319,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 	opts := []api.Option{
 		api.WithReconcileNudger(engine),
+		api.WithDeployGate(db, deployGateDefaults()),
 		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
 		api.WithRequestSummaryWindow(requestSummaryWindow()),
@@ -3584,6 +3589,7 @@ func resolvedPublicHost() (host, source string) {
 // field here is fixed for the process lifetime, only the store contents
 // dynamicSource reads change between reconcile passes.
 type dynamicSourceDeps struct {
+	deployGate         deployGate
 	previewNotifier    previewNotifier
 	db                 *store.DB
 	runtime            docker.Runtime
@@ -3831,6 +3837,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
 		application.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
 	}
+	appOpts = append(appOpts, deps.deployGate.appOptions(deps.db)...)
 	if deps.secretsManager != nil {
 		appOpts = append(appOpts, application.WithSecretResolver(deps.secretsManager))
 	}
