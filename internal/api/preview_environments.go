@@ -30,6 +30,7 @@ type PreviewEnvironmentStore interface {
 	ListStalePreviewEnvironments(ctx context.Context, cutoff time.Time) ([]store.PreviewEnvironment, error)
 	ListPreviewEnvironments(ctx context.Context) ([]store.PreviewEnvironment, error)
 	SetPreviewEnvironmentCommentID(ctx context.Context, id string, commentID int64) error
+	SetPreviewEnvironmentExtendedUntil(ctx context.Context, id, until string) error
 	GetPreviewAppSettings(ctx context.Context, appName string) (store.PreviewAppSettings, error)
 	ListPreviewAppSettings(ctx context.Context) (map[string]store.PreviewAppSettings, error)
 	SavePreviewAppSettings(ctx context.Context, s store.PreviewAppSettings) error
@@ -148,7 +149,11 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 	defer cleanup()
 
 	wantDomain := rt.previewDomain(ctx, appName, ev.Number)
-	vars := previewEnvVars{PRNumber: ev.Number, Branch: ev.HeadRef}
+	policy := rt.previewSettings(ctx, appName)
+	if forkSecretsApproved(ctx) {
+		policy.AllowForkSecrets = true
+	}
+	vars := previewEnvVars{PRNumber: ev.Number, Branch: ev.HeadRef, Fork: ev.IsFork(), Policy: policy}
 
 	var (
 		usedDomain     string
@@ -189,7 +194,10 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 		return http.StatusOK, "ignored: a newer fork push revoked this approval\n"
 	}
 
-	preview.Status, preview.Domain, preview.StatusReason = store.PreviewStatusActive, usedDomain, ""
+	notes := rt.finishPreviewExposure(ctx, appName, previewName, usedDomain, policy)
+	notes = append(notes, rt.applyPreviewDatabaseStrategy(ctx, preview, appName, previewName, gs, policy)...)
+
+	preview.Status, preview.Domain, preview.StatusReason = store.PreviewStatusActive, usedDomain, strings.Join(notes, "; ")
 	statusCode := http.StatusOK
 	if domainConflict {
 		preview.StatusReason = fmt.Sprintf("domain %q was already in use, preview deployed without a domain", wantDomain)
@@ -228,6 +236,10 @@ func (rt *Router) finishPreviewFailed(ctx context.Context, gs store.GitSource, p
 type previewEnvVars struct {
 	PRNumber int
 	Branch   string
+	// Fork marks a pull request from another repository.
+	Fork bool
+	// Policy is the app's preview policy at deploy time.
+	Policy store.PreviewAppSettings
 }
 
 // injectPreviewEnv sets PREVIEW_PR_NUMBER and PREVIEW_BRANCH, plus
@@ -294,13 +306,20 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 	}
 
 	svcSpec := specServiceFromDesired(*prod, spec.Build{Type: gs.BuildType, Path: gs.BuildPath})
-	applyPreviewEnvOverrides(&svcSpec, prod.PreviewEnvOverrides)
-	branchOverrides, err := rt.apps.ListServiceBranchEnvOverrides(ctx, appName)
-	if err != nil {
-		return "", false, fmt.Errorf("load branch env overrides for %q: %w", appName, err)
+	attachmentVar := ""
+	if prod.DatabaseAttachment != nil {
+		attachmentVar = prod.DatabaseAttachment.EnvVar
 	}
-	if err := applyBranchEnvOverrides(ctx, &svcSpec, appName, vars.Branch, branchOverrides, rt.secrets); err != nil {
-		return "", false, fmt.Errorf("apply branch env overrides for %q: %w", appName, err)
+	applyPreviewPolicy(&svcSpec, vars, attachmentVar)
+	if previewInheritsEnv(vars.Fork, vars.Policy) {
+		applyPreviewEnvOverrides(&svcSpec, prod.PreviewEnvOverrides)
+		branchOverrides, err := rt.apps.ListServiceBranchEnvOverrides(ctx, appName)
+		if err != nil {
+			return "", false, fmt.Errorf("load branch env overrides for %q: %w", appName, err)
+		}
+		if err := applyBranchEnvOverrides(ctx, &svcSpec, appName, vars.Branch, branchOverrides, rt.secrets); err != nil {
+			return "", false, fmt.Errorf("apply branch env overrides for %q: %w", appName, err)
+		}
 	}
 	svcSpec.Domains = domainSlice(wantDomain)
 	svcSpec.Env = injectPreviewEnv(svcSpec.Env, vars, rt.previewURLFor(ctx, wantDomain))
@@ -346,6 +365,7 @@ func (rt *Router) deployPreviewMulti(ctx context.Context, previewName string, gs
 		if len(svc.Domains) > 0 {
 			domain = svc.Domains[0]
 		}
+		applyPreviewPolicy(&svc, vars, "")
 		svc.Env = injectPreviewEnv(svc.Env, vars, rt.previewURLFor(ctx, domain))
 		services[k] = svc
 	}
@@ -409,23 +429,10 @@ func previewServicesSpec(services map[string]spec.Service, domain string) (map[s
 	return out, primaryKey
 }
 
-// previewDomain returns the subdomain a preview should request:
-// "pr-<number>.<appName>.<primary domain>" when a control-plane-wide
-// primary domain is configured (ingress_settings.primary_domain, the
-// same base-domain concept SetPrimaryDomainPrompt already reuses for
-// every git provider's connect flow), or "" otherwise, meaning the
-// preview is reachable by host:port only, the same fallback every other
-// domain-less app already has.
+// previewDomain is the host a preview requests, "" when no base or primary
+// domain is configured (reachable by host:port only).
 func (rt *Router) previewDomain(ctx context.Context, appName string, prNumber int) string {
-	settings, err := rt.ingressSettings.GetIngressSettings(ctx)
-	if err != nil {
-		rt.logger.Error("api: preview domain: load ingress settings failed", slog.String("error", err.Error()))
-		return ""
-	}
-	if settings.PrimaryDomain == "" {
-		return ""
-	}
-	return fmt.Sprintf("pr-%d.%s.%s", prNumber, appName, settings.PrimaryDomain)
+	return rt.previewHost(ctx, appName, prNumber)
 }
 
 // ensurePreviewEnvironmentTier returns appName's dedicated preview

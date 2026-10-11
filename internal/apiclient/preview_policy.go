@@ -30,6 +30,21 @@ type PreviewPolicyResource struct {
 	LiveCount         int    `json:"live_count"`
 	MaxTotal          int    `json:"max_total"`
 	LiveTotal         int    `json:"live_total"`
+
+	MaxPreviews               int     `json:"max_previews"`
+	MemoryLimit               string  `json:"memory_limit"`
+	CPULimit                  float64 `json:"cpu_limit"`
+	EffectiveMemory           string  `json:"effective_memory"`
+	EffectiveCPU              float64 `json:"effective_cpu"`
+	IdleSleepMinutes          int     `json:"idle_sleep_minutes"`
+	EffectiveIdleSleepMinutes int     `json:"effective_idle_sleep_minutes"`
+	DatabaseStrategy          string  `json:"database_strategy"`
+	SeedDatabase              string  `json:"seed_database"`
+	AllowForkSecrets          bool    `json:"allow_fork_secrets"`
+	GateBasicAuth             bool    `json:"gate_basic_auth"`
+	GateUsername              string  `json:"gate_username"`
+	GatePasswordSet           bool    `json:"gate_password_set"`
+	AllowIndexing             bool    `json:"allow_indexing"`
 }
 
 // SetPreviewPolicyRequest is PUT .../preview-policy's body; nil fields are left unchanged.
@@ -37,10 +52,27 @@ type SetPreviewPolicyRequest struct {
 	OnLimit           *string `json:"on_limit,omitempty"`
 	AllowForkPreviews *bool   `json:"allow_fork_previews,omitempty"`
 	TTLHours          *int    `json:"ttl_hours,omitempty"`
+
+	MaxPreviews      *int     `json:"max_previews,omitempty"`
+	MemoryLimit      *string  `json:"memory_limit,omitempty"`
+	CPULimit         *float64 `json:"cpu_limit,omitempty"`
+	IdleSleepMinutes *int     `json:"idle_sleep_minutes,omitempty"`
+	DatabaseStrategy *string  `json:"database_strategy,omitempty"`
+	SeedDatabase     *string  `json:"seed_database,omitempty"`
+	AllowForkSecrets *bool    `json:"allow_fork_secrets,omitempty"`
+	GateBasicAuth    *bool    `json:"gate_basic_auth,omitempty"`
+	GateUsername     *string  `json:"gate_username,omitempty"`
+	GatePassword     *string  `json:"gate_password,omitempty"`
+	AllowIndexing    *bool    `json:"allow_indexing,omitempty"`
 }
 
 type approvePreviewRequest struct {
-	Confirm bool `json:"confirm"`
+	Confirm      bool `json:"confirm"`
+	ShareSecrets bool `json:"share_secrets"`
+}
+
+type extendPreviewRequest struct {
+	Hours int `json:"hours"`
 }
 
 // ApprovePreviewResult is POST .../approve's body.
@@ -73,8 +105,22 @@ func (c *Client) SetPreviewPolicy(ctx context.Context, appName string, req SetPr
 // ApprovePreviewEnvironment calls POST /api/v1/apps/{name}/previews/{number}/approve
 // with the confirmation the server requires.
 func (c *Client) ApprovePreviewEnvironment(ctx context.Context, appName string, prNumber int) (ApprovePreviewResult, error) {
+	return c.ApprovePreviewEnvironmentShared(ctx, appName, prNumber, false)
+}
+
+// ApprovePreviewEnvironmentShared is ApprovePreviewEnvironment that can also
+// give this one deploy the app's environment variables and secrets.
+func (c *Client) ApprovePreviewEnvironmentShared(ctx context.Context, appName string, prNumber int, shareSecrets bool) (ApprovePreviewResult, error) {
 	var out ApprovePreviewResult
 	path := fmt.Sprintf("/api/v1/apps/%s/previews/%d/approve", PathEscape(appName), prNumber)
-	err := c.do(ctx, http.MethodPost, path, approvePreviewRequest{Confirm: true}, &out)
+	err := c.do(ctx, http.MethodPost, path, approvePreviewRequest{Confirm: true, ShareSecrets: shareSecrets}, &out)
+	return out, err
+}
+
+// ExtendPreviewEnvironment calls POST /api/v1/apps/{name}/previews/{number}/extend.
+func (c *Client) ExtendPreviewEnvironment(ctx context.Context, appName string, prNumber, hours int) (PreviewEnvironmentResource, error) {
+	var out PreviewEnvironmentResource
+	path := fmt.Sprintf("/api/v1/apps/%s/previews/%d/extend", PathEscape(appName), prNumber)
+	err := c.do(ctx, http.MethodPost, path, extendPreviewRequest{Hours: hours}, &out)
 	return out, err
 }

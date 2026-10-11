@@ -32,6 +32,7 @@ export const NAMESPACES = [
   'dns',
   'domainPolicies',
   'observability',
+  'previews',
 ] as const
 
 void i18n

@@ -40,6 +40,7 @@ const APP_SECTION_LABELS: Record<string, string> = {
   services: 'Services',
   environment: 'Environment',
   source: 'Source',
+  previews: 'Previews',
   'deploy-settings': 'Deploy settings',
   health: 'Health',
   resources: 'Resources',

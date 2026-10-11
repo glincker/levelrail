@@ -2315,6 +2315,7 @@ type PreviewEnvironmentResource struct {
 	UpdatedAt    string `json:"updated_at"`
 	Stale        bool   `json:"stale"`
 	ExpiresAt    string `json:"expires_at,omitempty"`
+	Extended     bool   `json:"extended"`
 	IsFork       bool   `json:"is_fork"`
 	HeadRepo     string `json:"head_repo,omitempty"`
 	// EphemeralDatabases mirrors internal/api's own EphemeralDatabases

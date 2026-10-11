@@ -21,6 +21,7 @@ export interface PreviewEnvironment {
   updated_at: string
   stale: boolean
   expires_at?: string
+  extended?: boolean
   is_fork: boolean
   head_repo?: string
   ephemeral_databases?: PreviewEphemeralDatabase[]
@@ -78,10 +79,37 @@ export interface PreviewPolicy {
   live_count: number
   max_total: number
   live_total: number
+  max_previews: number
+  memory_limit: string
+  cpu_limit: number
+  effective_memory: string
+  effective_cpu: number
+  idle_sleep_minutes: number
+  effective_idle_sleep_minutes: number
+  database_strategy: PreviewDatabaseStrategy
+  seed_database: string
+  allow_fork_secrets: boolean
+  gate_basic_auth: boolean
+  gate_username: string
+  gate_password_set: boolean
+  allow_indexing: boolean
 }
+
+export type PreviewDatabaseStrategy = 'none' | 'shared' | 'fresh' | 'seed'
 
 export interface PreviewPolicyUpdate {
   on_limit?: PreviewOnLimit
   allow_fork_previews?: boolean
   ttl_hours?: number
+  max_previews?: number
+  memory_limit?: string
+  cpu_limit?: number
+  idle_sleep_minutes?: number
+  database_strategy?: PreviewDatabaseStrategy
+  seed_database?: string
+  allow_fork_secrets?: boolean
+  gate_basic_auth?: boolean
+  gate_username?: string
+  gate_password?: string
+  allow_indexing?: boolean
 }

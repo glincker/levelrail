@@ -65,6 +65,7 @@ Four main types, plus two Levelrail-specific categories:
 
 | Doc | Covers |
 | --- | --- |
+| [previews.md](previews.md) | Preview environments per pull request: domain and DNS, resources, idle sleep, database strategy, TTL and cap, fork policy, basic auth gate |
 | [deploy-previews.md](deploy-previews.md) | Opt-in thumbnails of each deploy, captured by a short-lived browser container: cost, privacy, retention and every `APP_PREVIEW_*` setting |
 | [supply-chain.md](supply-chain.md) | SBOM per Dockerfile build, an optional vulnerability scan in a short-lived container and a release gate: cost, coverage, retention and every `APP_BUILD_ATTEST` and `APP_SCAN_*` setting |
 
