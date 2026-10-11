@@ -180,6 +180,24 @@
     },
     "newApp": "New app"
   },
+  "dock": {
+    "region": "Assistant dock",
+    "toggle": "Toggle assistant dock",
+    "toggleHint": "Assistant dock (Ctrl+J)",
+    "close": "Close dock",
+    "resize": "Resize dock",
+    "tabs": {
+      "aiChat": "AI chat"
+    },
+    "ai": {
+      "notConfiguredTitle": "No AI provider configured",
+      "notConfiguredDescription": "Add a BYOK API key in Settings to start chatting.",
+      "configure": "Configure AI Assistant",
+      "experimentalOffTitle": "AI chat is turned off",
+      "experimentalOffDescription": "AI chat is a beta feature and is off by default. An administrator can turn it on in Settings, Beta features, no server access needed.",
+      "enableInSettings": "Turn on in Settings"
+    }
+  },
   "login": {
     "signInTitle": "Sign in",
     "signInHint": "Enter your credentials to continue.",
@@ -187,5 +205,19 @@
     "setupHint": "Create the first account for this instance. Registration is for the first account only.",
     "signInTab": "Sign in",
     "setupTab": "Set up admin account"
+  },
+  "controlPlaneRestart": {
+    "action": "Restart control plane",
+    "title": "Restart the control plane?",
+    "description": "The dashboard and API go offline for a few seconds while the process restarts. Running apps and databases keep running.",
+    "consequence1": "Open deploys and log streams are interrupted and resume afterwards.",
+    "consequence2": "Connected nodes reconnect on their own.",
+    "unsupported": "Automatic restart is unavailable here: nothing would relaunch the process.",
+    "stopping": "Restarting: the control plane is shutting down...",
+    "waiting": "Restarting: waiting for the control plane to come back...",
+    "back": "The control plane is back online.",
+    "timeout": "The control plane has not come back after two minutes. Check the service on the server.",
+    "keepWaiting": "Keep waiting",
+    "dismiss": "Dismiss"
   }
 }

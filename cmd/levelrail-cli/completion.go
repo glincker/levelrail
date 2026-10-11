@@ -253,7 +253,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"api-docs":                 nil,
 	"init":                     nil,
 	"containers":               {subs: map[string]*cmdNode{"list": nil, "stop": nil, "remove": nil, "claim": nil, "orphans": nil, "reap": nil}},
-	"system":                   {subs: map[string]*cmdNode{"address": nil}},
+	"system":                   {subs: map[string]*cmdNode{"address": nil, "restart": {subs: map[string]*cmdNode{"status": nil}}}},
 	"system-prune":             nil,
 	"volumes-orphaned":         nil,
 	"volumes-orphaned-cleanup": nil,

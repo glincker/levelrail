@@ -175,6 +175,7 @@ type Router struct {
 	meshZone               string        // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness              ReadinessProbes
 	meshSettings           meshSettingsState        // see mesh_settings.go
+	restart                restartState             // see system_restart.go
 	dockerGuard            DockerGuardController    // nil is valid: the docker guard routes report it as not configured
 	dockerPinger           DockerPinger             // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
 	images                 ImageLister              // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above

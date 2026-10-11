@@ -51307,7 +51307,7 @@
         "x-required-ability": "read"
       },
       "post": {
-        "description": "Requires the `read` ability.",
+        "description": "Requires the `write` ability.",
         "operationId": "handleCreateSavedLogQuery",
         "requestBody": {
           "content": {
@@ -51373,7 +51373,7 @@
         "security": [
           {
             "bearerAuth": [
-              "read"
+              "write"
             ]
           }
         ],
@@ -51381,12 +51381,12 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "read"
+        "x-required-ability": "write"
       }
     },
     "/api/v1/logs/queries/{id}": {
       "delete": {
-        "description": "Requires the `read` ability.",
+        "description": "Requires the `write` ability.",
         "operationId": "handleDeleteSavedLogQuery",
         "parameters": [
           {
@@ -51451,7 +51451,7 @@
         "security": [
           {
             "bearerAuth": [
-              "read"
+              "write"
             ]
           }
         ],
@@ -51459,10 +51459,10 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "read"
+        "x-required-ability": "write"
       },
       "put": {
-        "description": "Requires the `read` ability.",
+        "description": "Requires the `write` ability.",
         "operationId": "handleUpdateSavedLogQuery",
         "parameters": [
           {
@@ -51538,7 +51538,7 @@
         "security": [
           {
             "bearerAuth": [
-              "read"
+              "write"
             ]
           }
         ],
@@ -51546,7 +51546,7 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "read"
+        "x-required-ability": "write"
       }
     },
     "/api/v1/mesh": {
@@ -74654,6 +74654,151 @@
           "System"
         ],
         "x-required-ability": "read"
+      }
+    },
+    "/api/v1/system/restart": {
+      "get": {
+        "description": "Requires the `read` ability.",
+        "operationId": "handleGetSystemRestart",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "Get System Restart",
+        "tags": [
+          "System"
+        ],
+        "x-required-ability": "read"
+      },
+      "post": {
+        "description": "Exiting the process drops every in-flight request and node session, so AbilityRoot.\n\nRequires the `root` ability.",
+        "operationId": "handleSystemRestart",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Exiting the process drops every in-flight request and node session, so AbilityRoot.",
+        "tags": [
+          "System"
+        ],
+        "x-required-ability": "root"
       }
     },
     "/api/v1/system/reverse-proxy": {
