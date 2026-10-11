@@ -20,6 +20,7 @@ import { MAIN_CONTENT_ID, SkipLink } from '../components/shell/SkipLink'
 import { DeviceLoginBanner } from '../components/attention/DeviceLoginBanner'
 import { SignInRequestsBanner } from '../components/attention/SignInRequestsBanner'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
+import { RestartBanner } from '../components/RestartBanner'
 import { Toaster } from '../components/ui/toast'
 
 // Router context carries the QueryClient so every route loader can call
@@ -122,6 +123,7 @@ function AppShell() {
       <SidebarInset>
         <AppHeader onSearch={() => setCommandPaletteOpen(true)} />
         <ShellBanner />
+        <RestartBanner />
         <DeviceLoginBanner />
         <SignInRequestsBanner />
         <main

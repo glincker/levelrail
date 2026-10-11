@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -396,6 +397,10 @@ func main() {
 		if errors.As(err, &refusal) {
 			fmt.Fprint(os.Stderr, refusal.msg)
 			os.Exit(selfupgrade.ExitDowngradeRefused)
+		}
+		if errors.Is(err, errRestartRequested) {
+			logger.Info("exiting for restart", slog.Int("code", exitRestart))
+			os.Exit(exitRestart)
 		}
 		logger.Error("exited with error", slog.String("error", err.Error()))
 		os.Exit(1)
@@ -784,7 +789,12 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	var restartRequested atomic.Bool
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver, pushVAPIDPublicKey)
+	apiRouter.SetRestarter(api.Restarter{
+		Supervised: restartSupervised(os.LookupEnv, fileExists),
+		Trigger:    func() { restartRequested.Store(true); stop() },
+	})
 	configureNodeCerts(apiRouter, agentServer)
 	apiRouter.SetDockerGuard(guard.Controller)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
@@ -1253,6 +1263,9 @@ func run(logger *slog.Logger) error {
 	}
 
 	if errors.Is(engineErr, context.Canceled) {
+		if restartRequested.Load() {
+			return errRestartRequested
+		}
 		return nil // Ctrl+C / SIGTERM is a clean shutdown, not a failure
 	}
 	return engineErr

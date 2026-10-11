@@ -78,6 +78,8 @@ System endpoints for:
 | POST | /api/v1/updates/backup-now | AbilityRoot | handleUpgradeBackupNow |
 | GET | /api/v1/system/server-address | AbilityRead | handleGetServerAddress |
 | PUT | /api/v1/system/server-address | AbilityRoot | handleSetServerAddress |
+| GET | /api/v1/system/restart | AbilityRead | handleGetSystemRestart |
+| POST | /api/v1/system/restart | AbilityRoot | handleSystemRestart |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -1232,9 +1234,9 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/setup/guide/visibility | AbilityRoot | handleSetSetupGuideVisibility |
 | POST | /api/v1/setup/guide/reset | AbilityRoot | handleResetSetupGuide |
 | GET | /api/v1/logs/queries | AbilityRead | handleListSavedLogQueries |
-| POST | /api/v1/logs/queries | AbilityRead | handleCreateSavedLogQuery |
-| PUT | /api/v1/logs/queries/{id} | AbilityRead | handleUpdateSavedLogQuery |
-| DELETE | /api/v1/logs/queries/{id} | AbilityRead | handleDeleteSavedLogQuery |
+| POST | /api/v1/logs/queries | AbilityWrite | handleCreateSavedLogQuery |
+| PUT | /api/v1/logs/queries/{id} | AbilityWrite | handleUpdateSavedLogQuery |
+| DELETE | /api/v1/logs/queries/{id} | AbilityWrite | handleDeleteSavedLogQuery |
 | GET | /api/v1/usage/report | AbilityRead | handleUsageReport |
 | GET | /api/v1/usage/settings | AbilityRoot | handleGetUsageSettings |
 | PUT | /api/v1/usage/settings | AbilityRoot | handlePutUsageSettings |
