@@ -52,7 +52,7 @@ function mockFetch(needsSetup: boolean) {
 }
 
 function findTitle(text: string) {
-  return screen.findByText(text, { selector: '[data-slot="card-title"]' })
+  return screen.findByRole('heading', { level: 1, name: text })
 }
 
 function renderScreen(setup?: string, sessionEnded = false) {
@@ -170,5 +170,13 @@ describe('LoginScreen', () => {
     expect(
       screen.queryByText(/signed out|sessionEnded\.notice/),
     ).not.toBeInTheDocument()
+  })
+
+  it('shows the brand panel beside the form', async () => {
+    renderScreen()
+    await findTitle('Sign in')
+    expect(
+      screen.getByRole('complementary', { name: /^About / }),
+    ).toBeInTheDocument()
   })
 })

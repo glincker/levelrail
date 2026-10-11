@@ -15,13 +15,7 @@ import {
   useLogin,
 } from '../queries/auth'
 import { getLastUsername } from '../lib/authStore'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from './ui/card'
+import { Card, CardContent } from './ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Button } from './ui/button'
 import { Alert, AlertDescription } from './ui/alert'
@@ -32,6 +26,7 @@ import { SignInFlow } from './SignInFlow'
 import { InsecureConnectionBanner } from './InsecureConnectionBanner'
 import { ThemeToggle } from './ThemeToggle'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
+import { LoginBrandPanel } from './LoginBrandPanel'
 
 // internal/api/devmode.go's fixed pair; release builds ignore dev mode entirely (ADR 013).
 const DEV_MODE_USERNAME = 'dev'
@@ -141,135 +136,141 @@ export function LoginScreen({
   }
 
   return (
-    <div className="relative flex min-h-[70vh] flex-col items-center justify-center gap-6 overflow-hidden px-4">
-      {/* Decorative only: a soft amber wash reusing the docs site's own
-          "rail signal" brand accent, scoped to this page, not the
-          app-wide shadcn tokens. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem]"
-        style={{
-          background:
-            'radial-gradient(60% 55% at 50% 0%, rgb(245 158 11 / 0.12), transparent 70%)',
-        }}
-      />
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-      <div className="flex flex-col items-center gap-2 text-center">
+    <div className="grid min-h-dvh bg-background lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+      <div className="relative flex min-w-0 flex-col px-6 py-6 sm:px-10">
         <div
           aria-hidden="true"
-          className="flex size-10 items-center justify-center rounded-lg text-base font-semibold shadow-[0_0_0_4px_rgb(245_158_11_/_0.12)]"
-        >
-          <BrandMarkGlyph />
-        </div>
-        <span className="text-sm font-medium text-foreground">
-          {brandLabel}
-        </span>
-      </div>
-      <div className="w-full max-w-sm">
-        <InsecureConnectionBanner />
-      </div>
-      <OAuthErrorBanner />
-      {sessionEnded ? (
-        <Alert className="w-full max-w-sm" role="status">
-          <SignOutIcon />
-          <AlertDescription>{t('sessionEnded.notice')}</AlertDescription>
-        </Alert>
-      ) : null}
-      <Card className="w-full max-w-sm shadow-sm">
-        <CardHeader>
-          <CardTitle>
-            {isRegister ? 'Set up the admin account' : 'Sign in'}
-          </CardTitle>
-          <CardDescription>
-            {isRegister
-              ? 'Create the first account for this instance. Registration is for the first account only.'
-              : 'Enter your credentials to continue.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {showRegisterTab ? (
-            <Tabs value={tab} onValueChange={handleTabChange}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="sign-in">Sign in</TabsTrigger>
-                <TabsTrigger value="register">Set up admin account</TabsTrigger>
-              </TabsList>
-              <TabsContent value="sign-in" className="space-y-3">
-                {signInContent}
-              </TabsContent>
-              <TabsContent value="register">
-                <RegisterForm
-                  onSwitchToSignIn={() => setTab('sign-in')}
-                  initialSetupToken={setup ?? ''}
-                />
-              </TabsContent>
-            </Tabs>
-          ) : (
-            <div className="space-y-3">{signInContent}</div>
-          )}
-          <OAuthButtons />
-        </CardContent>
-      </Card>
-      {isRegister ? null : (
-        <p className="max-w-sm text-center text-xs text-muted-foreground">
-          {t('loginHelp.lockedOut')}{' '}
-          <code className="rounded bg-muted px-1 py-0.5 font-mono">
-            {brand.BinaryName ? `sudo ${brand.BinaryName} ` : ''}recover-admin
-          </code>
-          {brand.DocsURL ? (
-            <>
-              {' '}
-              <a
-                href={`${brand.DocsURL}/emergency-access`}
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                {t('loginHelp.emergencyDocs')}
-              </a>
-            </>
+          className="pointer-events-none absolute inset-x-0 top-0 h-72"
+          style={{
+            background:
+              'radial-gradient(60% 70% at 50% 0%, rgb(245 158 11 / 0.10), transparent 70%)',
+          }}
+        />
+        <header className="relative z-10 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span
+              aria-hidden="true"
+              className="flex size-8 items-center justify-center rounded-lg"
+            >
+              <BrandMarkGlyph />
+            </span>
+            <span className="text-sm font-medium text-foreground">
+              {brandLabel}
+            </span>
+          </div>
+          <ThemeToggle />
+        </header>
+
+        <main className="relative z-10 mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-5 py-10">
+          <InsecureConnectionBanner />
+          <OAuthErrorBanner />
+          {sessionEnded ? (
+            <Alert role="status">
+              <SignOutIcon />
+              <AlertDescription>{t('sessionEnded.notice')}</AlertDescription>
+            </Alert>
           ) : null}
-        </p>
-      )}
-      {devMode.data?.enabled ? (
-        <div className="w-full max-w-sm space-y-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="w-full"
-            disabled={quickLogin.isPending}
-            onClick={() => {
-              quickLogin.mutate({
-                username: DEV_MODE_USERNAME,
-                password: DEV_MODE_PASSWORD,
-              })
-            }}
-          >
-            <FlaskIcon />
-            {quickLogin.isPending
-              ? 'Signing in...'
-              : `Quick dev login (${DEV_MODE_USERNAME}/${DEV_MODE_PASSWORD})`}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="w-full text-muted-foreground"
-            onClick={() => {
-              setUsername(DEV_MODE_USERNAME)
-            }}
-          >
-            Fill username only (test the sign-in flow above)
-          </Button>
-          <p className="text-center text-xs text-muted-foreground">
-            To test the passkey branch: register one for {DEV_MODE_USERNAME} in
-            Settings, then use Chrome DevTools &rsaquo; More tools &rsaquo;
-            WebAuthn to add a virtual authenticator.
-          </p>
-        </div>
-      ) : null}
+
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              {isRegister ? 'Set up the admin account' : 'Sign in'}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {isRegister
+                ? 'Create the first account for this instance. Registration is for the first account only.'
+                : 'Enter your credentials to continue.'}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {showRegisterTab ? (
+              <Tabs value={tab} onValueChange={handleTabChange}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="sign-in">Sign in</TabsTrigger>
+                  <TabsTrigger value="register">
+                    Set up admin account
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="sign-in" className="space-y-3 pt-2">
+                  {signInContent}
+                </TabsContent>
+                <TabsContent value="register" className="pt-2">
+                  <RegisterForm
+                    onSwitchToSignIn={() => setTab('sign-in')}
+                    initialSetupToken={setup ?? ''}
+                  />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <div className="space-y-3">{signInContent}</div>
+            )}
+            <OAuthButtons />
+          </div>
+
+          {devMode.data?.enabled ? (
+            <div className="space-y-2 rounded-lg border border-dashed border-border p-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                disabled={quickLogin.isPending}
+                onClick={() => {
+                  quickLogin.mutate({
+                    username: DEV_MODE_USERNAME,
+                    password: DEV_MODE_PASSWORD,
+                  })
+                }}
+              >
+                <FlaskIcon />
+                {quickLogin.isPending
+                  ? 'Signing in...'
+                  : `Quick dev login (${DEV_MODE_USERNAME}/${DEV_MODE_PASSWORD})`}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full text-muted-foreground"
+                onClick={() => {
+                  setUsername(DEV_MODE_USERNAME)
+                }}
+              >
+                Fill username only (test the sign-in flow above)
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                To test the passkey branch: register one for {DEV_MODE_USERNAME}{' '}
+                in Settings, then use Chrome DevTools &rsaquo; More tools
+                &rsaquo; WebAuthn to add a virtual authenticator.
+              </p>
+            </div>
+          ) : null}
+        </main>
+
+        {isRegister ? null : (
+          <footer className="relative z-10 mx-auto w-full max-w-sm text-xs text-muted-foreground">
+            {t('loginHelp.lockedOut')}{' '}
+            <code className="rounded bg-muted px-1 py-0.5 font-mono">
+              {brand.BinaryName ? `sudo ${brand.BinaryName} ` : ''}recover-admin
+            </code>
+            {brand.DocsURL ? (
+              <>
+                {' '}
+                <a
+                  href={`${brand.DocsURL}/emergency-access`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline"
+                >
+                  {t('loginHelp.emergencyDocs')}
+                </a>
+              </>
+            ) : null}
+          </footer>
+        )}
+      </div>
+
+      <LoginBrandPanel name={brand.Name} />
     </div>
   )
 }
