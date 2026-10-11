@@ -62,7 +62,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 103 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 112 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -164,6 +164,15 @@ Endpoints for:
 | DELETE | /api/v1/auth/trusted-devices/{id} | Public | handleRevokeTrustedDevice |
 | GET | /api/v1/settings/auth/code-login | AbilityRead | handleGetCodeLoginSettings |
 | PUT | /api/v1/settings/auth/code-login | AbilityRoot | handlePutCodeLoginSettings |
+| POST | /api/v1/auth/sign-in-alert/disown | Public | handleDisownSignIn |
+| GET | /api/v1/security/posture | AbilityRead | handleSecurityPosture |
+| GET | /api/v1/security/policy | AbilityRead | handleGetSecurityPolicy |
+| PUT | /api/v1/security/policy | AbilityRoot | handlePutSecurityPolicy |
+| GET | /api/v1/security/sessions | Public | handleListSecuritySessions |
+| DELETE | /api/v1/security/sessions/{id} | Public | handleRevokeSecuritySession |
+| POST | /api/v1/security/sessions/revoke-others | Public | handleRevokeOtherSecuritySessions |
+| GET | /api/v1/security/account | Public | handleGetAccountSecurity |
+| PUT | /api/v1/security/account | Public | handlePutAccountSecurity |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

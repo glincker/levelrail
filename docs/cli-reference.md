@@ -954,6 +954,21 @@ levelrail-cli firewall allow --port 5432 --source-cidr 10.0.0.0/8 --label "postg
 levelrail-cli firewall list
 ```
 
+## Security center
+
+The security score, sessions and devices, and the platform security policy. See [Security center](security-center.md).
+
+```
+levelrail-cli security posture [flags]
+levelrail-cli security sessions list [--user ID] [flags]
+levelrail-cli security sessions revoke <id> [--user ID] [flags]
+levelrail-cli security sessions revoke-others [--user ID] [flags]
+levelrail-cli security policy get [flags]
+levelrail-cli security policy set [--approval-scope password_only|all_methods] [--max-token-lifetime-days N] [--warn-unused-days N] [--disable-unused-days N] [flags]
+```
+
+`posture` prints the score for anyone with `read`; the item list needs root. The `sessions` commands act on your own account; `--user` names another account and needs root. A token used for them must belong to a user and hold `write:sensitive` or `signin:approve`. `policy set` needs root and changes only the flags you pass.
+
 ## Feature flags
 
 ```
