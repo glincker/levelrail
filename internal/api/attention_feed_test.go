@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/attention"
+	"github.com/GLINCKER/levelrail/internal/datamigrate"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -113,29 +114,63 @@ func TestAttentionFeed_ItemShape(t *testing.T) {
 	}
 }
 
-func TestDataCopyItem(t *testing.T) {
+func TestDataCopyAttentionItem(t *testing.T) {
 	now := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
+	window := 14 * 24 * time.Hour
+	failedAt := now.Add(-time.Hour)
+	raw := `dump of the source failed: docker: exec [sh -c export PGHOST="$SRC_HOST" exec pg_dump] in abc: exited 1: pg_dump: error: connection to server at "72.61.8.70", port 5432 failed: timeout expired`
 	tests := []struct {
-		name string
-		imp  store.DatabaseDataImport
-		want bool
-		kind string
+		name        string
+		imp         store.DatabaseDataImport
+		lastRestore time.Time
+		want        bool
+		state       string
 	}{
-		{"failed", store.DatabaseDataImport{Status: store.DataImportFailed, Reason: "auth failed"}, true, "failed"},
-		{"verified", store.DatabaseDataImport{Status: store.DataImportVerified}, false, ""},
-		{"copying fresh", store.DatabaseDataImport{Status: store.DataImportCopying, StartedAt: now.Add(-time.Minute)}, false, ""},
-		{"copying stalled", store.DatabaseDataImport{Status: store.DataImportCopying, StartedAt: now.Add(-48 * time.Hour)}, true, "stalled"},
+		{"latest attempt failed", store.DatabaseDataImport{Status: store.DataImportFailed, Reason: raw, StartedAt: failedAt.Add(-time.Minute), FinishedAt: failedAt}, time.Time{}, true, "failed"},
+		{"failed then restored", store.DatabaseDataImport{Status: store.DataImportFailed, Reason: raw, StartedAt: failedAt.Add(-time.Minute), FinishedAt: failedAt}, failedAt.Add(time.Minute), false, ""},
+		{"restore older than failure", store.DatabaseDataImport{Status: store.DataImportFailed, Reason: raw, StartedAt: failedAt.Add(-time.Minute), FinishedAt: failedAt}, failedAt.Add(-time.Hour), true, "failed"},
+		{"failed then verified", store.DatabaseDataImport{Status: store.DataImportVerified, StartedAt: failedAt}, time.Time{}, false, ""},
+		{"old failure", store.DatabaseDataImport{Status: store.DataImportFailed, Reason: raw, StartedAt: now.Add(-20 * 24 * time.Hour), FinishedAt: now.Add(-20 * 24 * time.Hour)}, time.Time{}, false, ""},
+		{"retry in progress", store.DatabaseDataImport{Status: store.DataImportCopying, StartedAt: now.Add(-time.Minute)}, time.Time{}, false, ""},
+		{"copying stalled", store.DatabaseDataImport{Status: store.DataImportCopying, StartedAt: now.Add(-48 * time.Hour)}, time.Time{}, true, "stalled"},
+		{"failed without times", store.DatabaseDataImport{Status: store.DataImportFailed, Reason: "auth failed"}, time.Time{}, true, "failed"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			it, ok := dataCopyItem("main", tt.imp, now)
+			it, ok := dataCopyAttentionItem("main", tt.imp, now, window, tt.lastRestore)
 			if ok != tt.want {
 				t.Fatalf("ok = %v, want %v", ok, tt.want)
 			}
-			if ok && (it.Params["state"] != tt.kind || it.Kind != attention.KindDataCopy || it.Link != "/databases/main") {
+			if ok && (it.Params["state"] != tt.state || it.Kind != attention.KindDataCopy || it.Link != "/databases/main") {
 				t.Errorf("item = %+v", it)
 			}
 		})
+	}
+}
+
+func TestDataCopyAttentionItem_HumanisedAndRedacted(t *testing.T) {
+	now := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
+	imp := store.DatabaseDataImport{
+		Status: store.DataImportFailed, StartedAt: now.Add(-time.Hour), FinishedAt: now.Add(-time.Hour),
+		Reason: `dump failed: exec [sh -c export SRC_PASSWORD=hunter2 exec pg_dump]: connection to server at "72.61.8.70", port 5432 failed: timeout expired`,
+	}
+	it, ok := dataCopyAttentionItem("geokit", imp, now, 14*24*time.Hour, time.Time{})
+	if !ok {
+		t.Fatal("want item")
+	}
+	if strings.Contains(it.Detail, "exec [sh") || !strings.Contains(it.Detail, "72.61.8.70:5432") {
+		t.Errorf("detail not humanised: %q", it.Detail)
+	}
+	for k, v := range it.Params {
+		if strings.Contains(v, "hunter2") {
+			t.Errorf("param %s leaks the password: %q", k, v)
+		}
+	}
+	if it.Params["technical"] == "" || it.Params["code"] != datamigrate.FailureTimeout {
+		t.Errorf("params = %+v", it.Params)
+	}
+	if !strings.HasPrefix(it.ID, "data_copy:geokit:") {
+		t.Errorf("id = %q", it.ID)
 	}
 }
 

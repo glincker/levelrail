@@ -132,7 +132,7 @@ export function DomainStep({ onContinue, onSkip, pending }: StepProps) {
           <Input
             id="setup-acme-email"
             type="email"
-            placeholder="you@example.com"
+            placeholder="you@yourdomain.com"
             value={emailValue}
             onChange={(e) => setEmailInput(e.target.value)}
             required

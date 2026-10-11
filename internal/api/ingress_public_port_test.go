@@ -23,7 +23,7 @@ func TestHandleUpdateIngressSettings_PublicHTTPSPort(t *testing.T) {
 		}
 	}
 
-	rec := put(`{"public_https_port": 443, "tls_terminated_upstream": true, "acme_enabled": true, "acme_email": "ops@example.com"}`)
+	rec := put(`{"public_https_port": 443, "tls_terminated_upstream": true, "acme_enabled": true, "acme_email": "ops@glincker.com"}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}

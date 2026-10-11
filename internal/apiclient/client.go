@@ -128,7 +128,9 @@ func decodeResponse(resp *http.Response, out any) error {
 		return fmt.Errorf("read response body: %w", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
+		var coded apiErrorBody
+		_ = json.Unmarshal(data, &coded)
+		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header), Code: coded.Code}
 	}
 	if out != nil && len(data) > 0 {
 		if err := json.Unmarshal(data, out); err != nil {

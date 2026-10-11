@@ -74,6 +74,7 @@ package api
 import (
 	"context"
 	"log/slog"
+	"net"
 	"os/exec"
 	"sync"
 	"sync/atomic"
@@ -83,6 +84,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
 	"github.com/GLINCKER/levelrail/internal/orphans"
+	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/statuspage"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
@@ -104,6 +106,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/upgradesched"
 	"github.com/GLINCKER/levelrail/kit/dockerhub"
 	"github.com/GLINCKER/levelrail/kit/firewall"
 	"github.com/GLINCKER/levelrail/kit/upgrade"
@@ -140,6 +143,7 @@ type Router struct {
 	projects               ProjectStore
 	organizations          OrganizationStore
 	environments           EnvironmentStore
+	envProtect             envProtection
 	secrets                SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	composeSecrets         ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
@@ -170,6 +174,7 @@ type Router struct {
 	localNodeID            string        // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
 	meshZone               string        // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness              ReadinessProbes
+	meshSettings           meshSettingsState        // see mesh_settings.go
 	dockerGuard            DockerGuardController    // nil is valid: the docker guard routes report it as not configured
 	dockerPinger           DockerPinger             // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
 	images                 ImageLister              // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
@@ -224,6 +229,9 @@ type Router struct {
 	// Host header in that case, see advertisedHost's own doc comment.
 	publicHost              string
 	detectPublicIPs         func(context.Context) []string // nil uses ingress.DetectPublicIPs; tests stub it
+	standaloneSafety        StandaloneSafety               // see WithStandaloneSafety
+	standaloneResolver      standalone.Resolver            // nil uses net.DefaultResolver; tests stub it
+	interfaceAddrs          func() ([]net.Addr, error)     // nil uses net.InterfaceAddrs; tests stub it
 	dashboardListenAddr     string                         // APP_HTTP_ADDR, so the reverse proxy guide can build an upstream
 	proxyIntegration        *proxyIntegrationDeps          // nil: managed proxy routes answer 501, see SetProxyIntegration
 	httpsMu                 sync.Mutex
@@ -325,6 +333,11 @@ type Router struct {
 	upgradeHistory UpgradeHistoryStore
 	// selfUpgrade is nil unless WithSelfUpgrade was applied.
 	selfUpgrade *selfUpgradeConfig
+	// upgradeSchedule is nil unless WithUpgradeScheduling was applied;
+	// upgradeSched is the scheduler UpgradeScheduler builds from it once.
+	upgradeSchedule  *upgradeScheduleConfig
+	upgradeSchedOnce sync.Once
+	upgradeSched     *upgradesched.Scheduler
 	// certExpiryWarningWindow overrides alerting.DefaultCertExpiryWarningWindow
 	// for GET /api/v1/certificates's "expiring_soon" threshold, and for a
 	// kind=cert_expiry alert rule's own evaluation (cmd/levelrail/main.go
@@ -464,6 +477,7 @@ type Router struct {
 	appImports                   AppImportStore                                        // always set, guided app import sessions
 	appImportLive                *appImportState                                       // in-memory source tokens and discoveries
 	hubState                     *hubState                                             // in-memory source passwords and running sessions
+	advisor                      *advisorCache                                         // resource advisor findings, cached for a short TTL
 	externalDatabases            ExternalDatabaseStore                                 // always set, databases connected but not run
 	dnsResolver                  datamigrate.Resolver                                  // nil means the real resolver
 	wakeToken                    string                                                // empty disables the wake hook
@@ -717,6 +731,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		appImports:                  s,
 		appImportLive:               newAppImportState(),
 		hubState:                    newHubState(),
+		advisor:                     newAdvisorCache(),
 		externalDatabases:           s,
 		canaries:                    s,
 		dbQueries:                   s,
@@ -812,5 +827,6 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	// re-read on every create() call.
 	rt.sessions = newSessionStore(rt.sessionTTL)
 	rt.attachAuthEngine(s)
+	rt.attachEnvProtection(s)
 	return rt
 }

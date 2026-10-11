@@ -38,7 +38,7 @@
     "test": {
       "title": "Send a test email",
       "description": "Sends one real email through the saved backend above, the same path alert notifications and password resets use.",
-      "placeholder": "you@example.com",
+      "placeholder": "you@yourdomain.com",
       "send": "Send test email",
       "sending": "Sending...",
       "success": "Test email sent to {{to}}."
@@ -221,7 +221,10 @@
       "signInApprove": "Approve my sign-ins",
       "signInApproveHint": "Lets this token show your sign-in codes and approve new browsers from the CLI. Root does not include it and a device login never grants it. It must expire within 30 days and is revoked when you change or reset your password or sign out your other sessions.",
       "signInApproveExpiry": "A token that approves sign-ins must expire within 30 days",
-      "signInApproveAgent": "A token that approves sign-ins cannot be issued to an agent"
+      "signInApproveAgent": "A token that approves sign-ins cannot be issued to an agent",
+      "secretsReveal": "Reveal secret values",
+      "secretsRevealHint": "Lets this token read a secret value, but only when the server allows token reveal (APP_SECRET_REVEAL_TOKENS=on) and the request carries your password. Every reveal is audited. Root does not include it.",
+      "secretsRevealNeedsSensitive": "Revealing secrets also needs read:sensitive"
     }
   },
   "hostFirewall": {

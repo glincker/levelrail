@@ -44,7 +44,7 @@ func (d *Directory) UserAbilities(ctx context.Context, u *theauth.User) ([]strin
 	if err != nil || !ok {
 		return nil, err
 	}
-	return MapAbilities(append(legacy, AbilitySignInApprove))
+	return MapAbilities(append(legacy, AbilitySignInApprove, AbilitySecretsReveal))
 }
 
 // IsAdmin reports whether the user holds root.

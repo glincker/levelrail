@@ -70,10 +70,18 @@ System endpoints for:
 | GET | /api/v1/updates/self-upgrade/plan | AbilityRead | handleSelfUpgradePlan |
 | GET | /api/v1/updates/self-upgrade/attempts | AbilityRead | handleSelfUpgradeAttempts |
 | POST | /api/v1/updates/self-upgrade | AbilityRoot | handleSelfUpgradeStart |
+| GET | /api/v1/updates/schedule | AbilityRead | handleGetUpgradeSchedule |
+| POST | /api/v1/updates/schedule | AbilityRoot | handleCreateUpgradeSchedule |
+| DELETE | /api/v1/updates/schedule | AbilityRoot | handleCancelUpgradeSchedule |
+| GET | /api/v1/updates/auto | AbilityRoot | handleGetUpgradePolicy |
+| PUT | /api/v1/updates/auto | AbilityRoot | handleUpdateUpgradePolicy |
+| POST | /api/v1/updates/backup-now | AbilityRoot | handleUpgradeBackupNow |
+| GET | /api/v1/system/server-address | AbilityRead | handleGetServerAddress |
+| PUT | /api/v1/system/server-address | AbilityRoot | handleSetServerAddress |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 117 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 123 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -189,6 +197,12 @@ Endpoints for:
 | GET | /api/v1/settings/domain-automation | AbilityRead | handleGetDomainAutomation |
 | PUT | /api/v1/settings/domain-automation | AbilityRoot | handleUpdateDomainAutomation |
 | PUT | /api/v1/settings/proxy-integration | AbilityRoot | handleUpdateProxyIntegrationSettings |
+| GET | /api/v1/auth/step-up | Public | handleStepUpOptions |
+| POST | /api/v1/auth/step-up | Public | handleStepUp |
+| POST | /api/v1/auth/step-up/passkey/begin | Public | handleStepUpPasskeyBegin |
+| POST | /api/v1/auth/step-up/passkey/finish | Public | handleStepUpPasskeyFinish |
+| GET | /api/v1/settings/beta-features | AbilityRead | handleListBetaFeatures |
+| PUT | /api/v1/settings/beta-features/{feature} | AbilityRoot | handleSetBetaFeature |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -207,7 +221,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 165 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 171 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -384,6 +398,12 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/deploy-safety | AbilityDeploy | handlePutDeploySafety |
 | GET | /api/v1/apps/{name}/rollback-targets | AbilityRead | handleListRollbackTargets |
 | GET | /api/v1/apps/{name}/job-runs | AbilityRead | handleListScheduledTaskRuns |
+| POST | /api/v1/apps/{name}/env/reveal | AbilityReadSensitive | handleRevealEnv |
+| POST | /api/v1/apps/{name}/env/export | AbilityReadSensitive | handleExportEnvRevealed |
+| GET | /api/v1/apps/{name}/env/export | AbilityRead | handleExportEnvRedacted |
+| GET | /api/v1/apps/{name}/env/settings | AbilityRead | handleGetEnvSettings |
+| PUT | /api/v1/apps/{name}/env/settings | AbilityWriteSensitive | handlePutEnvSettings |
+| POST | /api/v1/apps/{name}/env/{key}/convert-to-secret | AbilityWriteSensitive | handleConvertEnvToSecret |
 
 :::
 
@@ -423,6 +443,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/git-source/detect | AbilityDeploy | handleDetectGitSourceBuild |
 | POST | /api/v1/apps/{name}/previews/{number}/extend | AbilityDeploy | handleExtendPreviewEnvironment |
 | GET | /api/v1/apps/{name}/git-source/commits | AbilityDeploy | handleListGitSourceCommits |
+| POST | /api/v1/apps/{name}/secrets/{key}/reveal | AbilityReadSensitive | handleRevealSecret |
 
 ## Telemetry
 
@@ -771,6 +792,12 @@ Endpoints for:
 | GET | /api/v1/domains/automation/runs | AbilityRead | handleListAutomationRuns |
 | POST | /api/v1/domains/automation/runs/{id}/undo | AbilityRoot | handleUndoAutomationRun |
 | GET | /api/v1/domains/{domain}/activity | AbilityRead | handleDomainActivity |
+| GET | /api/v1/domains/standalone | AbilityRead | handleListStandaloneDomains |
+| POST | /api/v1/domains/standalone | AbilityWriteSensitive | handleCreateStandaloneDomain |
+| POST | /api/v1/domains/standalone/validate | AbilityWriteSensitive | handleValidateStandaloneDomain |
+| GET | /api/v1/domains/standalone/candidates | AbilityWriteSensitive | handleStandaloneCandidates |
+| PUT | /api/v1/domains/standalone/{domain} | AbilityWriteSensitive | handleUpdateStandaloneDomain |
+| DELETE | /api/v1/domains/standalone/{domain} | AbilityWriteSensitive | handleDeleteStandaloneDomain |
 
 ## Built-in Container Registry
 
@@ -1185,6 +1212,14 @@ Routes that do not fit an existing group.
 | PATCH | /api/v1/export/destinations/{id} | AbilityRoot | handleUpdateExportDestination |
 | DELETE | /api/v1/export/destinations/{id} | AbilityRoot | handleDeleteExportDestination |
 | POST | /api/v1/export/destinations/{id}/test | AbilityRoot | handleTestExportDestination |
+| GET | /api/v1/mesh/settings | AbilityRead | handleGetMeshSettings |
+| PUT | /api/v1/mesh/settings | AbilityRoot | handleUpdateMeshSettings |
+| GET | /api/v1/resource-advisor/findings | AbilityRead | handleResourceAdvisorFindings |
+| GET | /api/v1/resource-advisor/summary | AbilityRead | handleResourceAdvisorSummary |
+| POST | /api/v1/resource-advisor/findings/{id}/apply | AbilityWrite | handleResourceAdvisorApply |
+| POST | /api/v1/resource-advisor/findings/{id}/dismiss | AbilityWrite | handleResourceAdvisorState |
+| POST | /api/v1/resource-advisor/findings/{id}/snooze | AbilityWrite | handleResourceAdvisorState |
+| POST | /api/v1/resource-advisor/findings/{id}/restore | AbilityWrite | handleResourceAdvisorState |
 
 ## See also
 

@@ -20,53 +20,117 @@ type engineVersioner interface {
 }
 
 type updatePreflightResource struct {
-	CurrentVersion  string          `json:"current_version"`
-	LatestVersion   *string         `json:"latest_version"`
-	UpdateAvailable bool            `json:"update_available"`
-	ReleaseURL      *string         `json:"release_url"`
-	ReleaseNotes    string          `json:"release_notes"`
-	Checks          []upgrade.Check `json:"checks"`
-	Blocked         bool            `json:"blocked"`
-	UpgradeCommand  string          `json:"upgrade_command"`
-	RollbackCommand string          `json:"rollback_command"`
-	CosignCommand   string          `json:"cosign_command"`
+	CurrentVersion     string          `json:"current_version"`
+	LatestVersion      *string         `json:"latest_version"`
+	UpdateAvailable    bool            `json:"update_available"`
+	ReleaseURL         *string         `json:"release_url"`
+	ReleaseNotes       string          `json:"release_notes"`
+	ReleasePublishedAt string          `json:"release_published_at,omitempty"`
+	Checks             []upgrade.Check `json:"checks"`
+	Blocked            bool            `json:"blocked"`
+	// Waiting is set when every blocker is retryable and expected to clear on
+	// its own, such as a release that is still being published.
+	Waiting         bool   `json:"waiting"`
+	UpgradeCommand  string `json:"upgrade_command"`
+	RollbackCommand string `json:"rollback_command"`
+	CosignCommand   string `json:"cosign_command"`
+	// ReleaseKind is "release" or "edge_image". Edge carries guidance for
+	// this install instead of a release upgrade command, and is never
+	// applied by Upgrade now, a schedule or the automatic policy.
+	ReleaseKind string        `json:"release_kind"`
+	Channel     string        `json:"channel"`
+	Edge        *edgeGuidance `json:"edge,omitempty"`
 }
 
 // handleUpdatePreflight handles GET /api/v1/updates/preflight: read-only
 // checks that gate a self-upgrade, plus the command an operator runs. It never
-// changes anything and never upgrades.
+// changes anything and never upgrades. refresh=1 bypasses the release cache,
+// which is what a Re-check button asks for.
 func (rt *Router) handleUpdatePreflight(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Query().Get("refresh") == "1" {
+		rt.expireReleaseCaches()
+	}
+	release, known := rt.latestReleaseForCurrentChannel(r.Context())
+	writeJSON(w, http.StatusOK, rt.evaluatePreflight(r.Context(), release, known && release != nil))
+}
+
+// evaluatePreflight runs the checks against release. The dashboard, the CLI
+// and the upgrade scheduler all go through here so they agree on what blocks.
+func (rt *Router) evaluatePreflight(ctx context.Context, release *upgrade.Release, known bool) updatePreflightResource {
 	out := updatePreflightResource{
 		CurrentVersion:  version.Version,
 		UpgradeCommand:  upgradeCommand("", false),
 		RollbackCommand: "levelrail restore-snapshot --list",
 		CosignCommand:   installScriptCommand("install-cosign"),
+		ReleaseKind:     upgrade.KindRelease,
+		Channel:         rt.currentUpdateChannel(ctx),
 	}
-	release, known := rt.latestReleaseForCurrentChannel(r.Context())
 	var assets []string
-	var upgradeTag string
+	var upgradeTag, kind string
+	var published time.Time
 	if known && release != nil {
 		tag, url := release.Tag, release.URL
 		out.LatestVersion, out.ReleaseURL = &tag, &url
 		out.UpdateAvailable = upgrade.UpdateAvailable(version.Version, release)
 		out.ReleaseNotes = truncateRunes(cleanReleaseNotes(release.Body), releaseNotesMaxRunes)
+		out.ReleasePublishedAt = release.PublishedAt
 		upgradeTag = tag
 		assets = release.AssetNames
+		if t, err := time.Parse(time.RFC3339, release.PublishedAt); err == nil {
+			published = t
+		}
+		kind = releaseKind(release)
+		out.ReleaseKind = kind
+		out.Edge = buildEdgeGuidance(release)
 	}
-	out.Checks = upgrade.Run(r.Context(), upgrade.Inputs{
-		Lookup:        os.LookupEnv,
-		DockerVersion: rt.dockerEngineVersion(),
-		FreeBytes:     rt.dataDirFreeBytes(),
-		NewestBackup:  rt.newestCPBackup(),
-		Now:           time.Now(),
-		AssetNames:    assets,
-		ReleaseKnown:  known && release != nil,
-		LookPath:      exec.LookPath,
+	out.Checks = upgrade.Run(ctx, upgrade.Inputs{
+		Lookup:             os.LookupEnv,
+		DockerVersion:      rt.dockerEngineVersion(),
+		FreeBytes:          rt.dataDirFreeBytes(),
+		NewestBackup:       rt.newestCPBackup(),
+		Now:                time.Now(),
+		AssetNames:         assets,
+		ReleaseKnown:       known && release != nil,
+		ReleasePublishedAt: published,
+		ReleaseKind:        kind,
+		LookPath:           exec.LookPath,
 	})
 	verified := checkStatus(out.Checks, "release_verifier") == upgrade.StatusOK
 	out.UpgradeCommand = upgradeCommand(upgradeTag, verified)
+	if out.Edge != nil {
+		out.UpgradeCommand = out.Edge.RecreateCommand
+		if out.Edge.Installable {
+			out.UpgradeCommand = out.Edge.PullCommand + " && " + out.Edge.RecreateCommand
+		}
+		out.RollbackCommand = ""
+	}
 	out.Blocked = upgrade.Blocked(out.Checks)
-	writeJSON(w, http.StatusOK, out)
+	out.Waiting = out.Blocked && onlyRetryableBlockers(out.Checks)
+	return out
+}
+
+func onlyRetryableBlockers(checks []upgrade.Check) bool {
+	found := false
+	for _, c := range checks {
+		if c.Status != upgrade.StatusFail && c.Status != upgrade.StatusPending {
+			continue
+		}
+		found = true
+		if !c.Retryable {
+			return false
+		}
+	}
+	return found
+}
+
+// expireReleaseCaches makes the next release lookup go to GitHub while
+// keeping the last result as a fallback if that lookup fails.
+func (rt *Router) expireReleaseCaches() {
+	rt.updatesCache.expire()
+	rt.channelUpdatesCache.Expire()
+	if rt.selfUpgrade != nil {
+		rt.selfUpgrade.expire()
+	}
 }
 
 func (rt *Router) latestRelease(ctx context.Context) (*githubRelease, bool) {

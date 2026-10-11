@@ -26,6 +26,9 @@
     "invalid": "This sign-in link is invalid or has expired. Request a new one.",
     "backToSignIn": "Back to sign in"
   },
+  "sessionEnded": {
+    "notice": "You were signed out because your session ended, for example after an upgrade or restart. Sign in again to continue. API tokens are not affected."
+  },
   "appsList": {
     "title": "Apps",
     "count_one": "{{count}} app",

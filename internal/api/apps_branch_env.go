@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -25,11 +26,12 @@ type branchEnvOverrideResource struct {
 func branchEnvOverrideResources(overrides []store.ServiceBranchEnvOverride) []branchEnvOverrideResource {
 	out := make([]branchEnvOverrideResource, len(overrides))
 	for i, o := range overrides {
+		shown, _ := envredact.Value(o.Key, o.Value, nil)
 		out[i] = branchEnvOverrideResource{
 			ID:            o.ID,
 			BranchPattern: o.BranchPattern,
 			Key:           o.Key,
-			Value:         o.Value,
+			Value:         shown,
 			Secret:        o.Secret,
 			UpdatedAt:     o.UpdatedAt.UTC().Format(time.RFC3339),
 		}

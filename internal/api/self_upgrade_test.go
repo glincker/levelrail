@@ -96,8 +96,8 @@ func TestSelfUpgradeStart(t *testing.T) {
 		wantLaunc int
 	}{
 		{"missing acknowledgement", true, nil, `{"target":"v1.2.0","ack":["ports"]}`, http.StatusConflict, 0},
-		{"all acknowledged", true, nil, `{"target":"v1.2.0","ack":["ports","` + headingID("v1.1.0", "env var renamed") + `"]}`, http.StatusAccepted, 1},
-		{"host cannot launch", false, nil, `{"target":"v1.1.0","ack":["` + headingID("v1.1.0", "env var renamed") + `"]}`, http.StatusConflict, 0},
+		{"all acknowledged", true, nil, `{"target":"v1.2.0","ack":["ports","` + headingID() + `"]}`, http.StatusAccepted, 1},
+		{"host cannot launch", false, nil, `{"target":"v1.1.0","ack":["` + headingID() + `"]}`, http.StatusConflict, 0},
 		{"notes unavailable refuses", true, errors.New("offline"), `{"target":"v1.2.0"}`, http.StatusBadGateway, 0},
 		{"bad json", true, nil, `{`, http.StatusBadRequest, 0},
 	}
@@ -121,8 +121,9 @@ func TestSelfUpgradeStart(t *testing.T) {
 	}
 }
 
-func headingID(tag, summary string) string {
-	for _, b := range selfupgrade.ParseBreaking(tag, "## Breaking changes\n- "+summary+"\n") {
+func headingID() string {
+	const summary = "env var renamed"
+	for _, b := range selfupgrade.ParseBreaking("v1.1.0", "## Breaking changes\n- "+summary+"\n") {
 		return b.ID
 	}
 	return ""

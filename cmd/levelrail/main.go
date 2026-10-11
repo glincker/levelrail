@@ -332,6 +332,9 @@ const (
 )
 
 func main() {
+	if code, handled := bootArgsExit(os.Args[1:], os.Args[0], os.Stdout, os.Stderr); handled {
+		os.Exit(code)
+	}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	if len(os.Args) > 1 && runReleaseCommand(os.Args[1], os.Args[2:]) {
@@ -424,6 +427,9 @@ func run(logger *slog.Logger) error {
 	}()
 	recordUpgradeHistory(ctx, db, obs, logger)
 	importSelfUpgradeJournal(ctx, db, logger)
+	if err := api.LoadBetaFeatures(ctx, db); err != nil {
+		logger.Warn("beta feature switches not loaded", slog.String("error", err.Error()))
+	}
 
 	// instanceID must be resolved before the Docker client is
 	// constructed below, so every container/network/volume this process
@@ -819,6 +825,7 @@ func run(logger *slog.Logger) error {
 		// (APP_MESH_ENABLED=1) should not take down a control plane
 		// that would otherwise run fine without it.
 		logger.Warn("mesh not configured", slog.String("error", err.Error()))
+		apiRouter.SetMeshStartError(err)
 	}
 	if meshCfg != nil {
 		meshEndpoints.Attach(meshCfg.coordinator, meshCfg.localNodeID)
@@ -1140,6 +1147,7 @@ func run(logger *slog.Logger) error {
 	// tick, the configured release channel (store.UpdateSettings,
 	// migrations/0258_update_settings.sql) for a newer release, only
 	// when an operator has opted into auto_update_enabled.
+	startUpgradeScheduler(ctx, logger, apiRouter)
 	updateCheckScheduler := updatecheck.NewScheduler(db, logger, b.RepoSlug())
 	go func() {
 		if err := updateCheckScheduler.Run(ctx, updateCheckInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
@@ -2340,6 +2348,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDeployNotifyTargets(alertingDB),
 		api.WithDeployNotifier(deployDispatcher),
 		api.WithNotificationChannels(alertingDB),
+		upgradeSchedulingOption(db, deployDispatcher),
 		api.WithNotificationChannelTester(deployDispatcher),
 		api.WithNotificationDeliveries(alertingDB),
 		api.WithApprovalChatNotifier(deployDispatcher),
@@ -2412,6 +2421,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDeployApprovalTTL(deployApprovalTTL(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithPublicHostSource(publicHostSource()),
+		api.WithStandaloneSafety(standaloneSafety()),
 		api.WithHTTPSEnableLimits(apiRateLimitRPM(logger, "APP_ACME_MAX_ATTEMPTS_PER_HOUR", 0), acmePendingTimeout(logger)),
 		api.WithACMEDefaultDirectory(acmeDefaultDirectory()),
 		api.WithDeployLogQuerier(telemetryDB),
@@ -2691,6 +2701,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		modelGateway.SetWakeHook(engine.Nudge)
 	}
 	opts = append(opts, api.WithModels(modelSvc))
+	opts = append(opts, api.WithMeshSettings(db))
 	if client != nil {
 		opts = append(opts, api.WithGPUHostDiagnoser(func(ctx context.Context) gpu.HostDiagnosis {
 			return gpu.DiagnoseHost(ctx, gpu.ExecRunner{}, client, nil)
@@ -2719,6 +2730,8 @@ func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler
 	mux := http.NewServeMux()
 	mux.Handle("/healthz", apiHandler)
 	mux.Handle("/readyz", apiHandler)
+	mux.Handle("/metrics", apiHandler)
+	mux.Handle("/.well-known/jwks.json", apiHandler)
 	mux.Handle("/api/", apiHandler)
 	mux.Handle("/public/", apiHandler)
 	if webhookHandler != nil {

@@ -25,6 +25,9 @@ func experimentalFeatureFor(args []string) (experimental.Feature, bool) {
 	if len(args) == 0 {
 		return "", false
 	}
+	if args[0] == "export" && len(args) > 1 && (args[1] == "destinations" || args[1] == "audit") {
+		return "", false
+	}
 	if f, ok := experimentalCommands[args[0]]; ok {
 		return f, true
 	}

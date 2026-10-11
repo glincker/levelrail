@@ -77,6 +77,9 @@
     "dbEolDetail": "{{engine}} {{version}} reached end of life on {{eol}}.",
     "dbUpgradeFailedTitle": "Upgrade of {{name}} failed",
     "dbUpgradeFailedDetail": "{{reason}}",
+    "resourceAdviceSummaryTitle_one": "{{count}} resource suggestion",
+    "resourceAdviceSummaryTitle_other": "{{count}} resource suggestions",
+    "resourceAdviceSummaryDetail": "Right-size limits, sleep idle apps or tune databases. Nothing changes until you apply one.",
     "invitesTitle": "Invitations are waiting",
     "invitesDetail": "{{pending}} waiting to be accepted, {{expired}} expired without being accepted.",
     "loginCodeTitle_one": "Sign-in code requested from {{ip}}",
@@ -99,5 +102,26 @@
     "notifyDeviceLoginHint": "Sends a link only, never the code. Turn on a dashboard URL so the link can open this page.",
     "notifyDeviceLoginExpired": "Notify when a CLI login expires",
     "notifyDeviceLoginExpiredHint": "Sends a link only, never the code, when a login request runs out of time unapproved."
+  },
+  "setup": {
+    "title_one": "Pending setup and hardening ({{count}})",
+    "title_other": "Pending setup and hardening ({{count}})",
+    "snooze": "Snooze for a day",
+    "dismiss": "Dismiss",
+    "snoozedCount_one": "{{count}} snoozed",
+    "snoozedCount_other": "{{count}} snoozed",
+    "restore": "Restore"
+  },
+  "copyFailure": {
+    "technical": "Technical details",
+    "technicalHelp": "The raw error with passwords removed. Share it when asking for help.",
+    "snooze": "Snooze for a day",
+    "snoozed": "Snoozed for a day.",
+    "dismiss": "Dismiss",
+    "dismissed": "Dismissed. A new failed attempt will show again.",
+    "openDatabase": "Open the database",
+    "snoozedCount_one": "{{count}} snoozed item hidden",
+    "snoozedCount_other": "{{count}} snoozed items hidden",
+    "showSnoozed": "Show"
   }
 }

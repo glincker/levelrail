@@ -275,6 +275,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 - `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.
 - `apps resource-recommendation` suggests memory and CPU limits from historical usage; `apps cost` estimates what the app's CPU and memory would cost under reference providers (not a real bill).
+- `advisor findings|summary|apply|dismiss|snooze|restore|enable|disable` drives the beta [resource advisor](resource-advisor.md). `advisor apply ID` only previews; add `--yes` to apply.
 - `apps health-score` gives a synthesized pass, warn or fail readiness verdict across deploy health, security, resilience and observability.
 - `apps log-drain` forwards container logs to an external HTTP or syslog sink, in addition to the built-in node-local log store.
 - `apps scheduled-tasks` runs a command inside the app's running container on a cron schedule. The command is a real argv with no shell; put `--` before it when the command takes flags.
@@ -306,7 +307,8 @@ levelrail-cli apps build-cache remove <name>|--global
 
 ```
 levelrail-cli apps env import <name> --file .env [--dry-run] [--keep-existing] [--apply] [flags]
-levelrail-cli apps env export <name> [--out FILE] [flags]
+levelrail-cli apps env export <name> [--out FILE] [--reveal] [--format dotenv|json] [flags]
+levelrail-cli apps env get <name> <KEY> [--reveal] [flags]
 levelrail-cli apps env diff <app-a> <app-b> [flags]
 levelrail-cli apps secrets list <name> [flags]
 levelrail-cli apps secrets set <name> <key> <value> [--apply] [flags]
@@ -324,7 +326,7 @@ levelrail-cli apps branch-env clear <name> <id> [flags]
 
 - `apps env import` merges a .env file into an app's plain env vars and prints which keys are new, changed or unchanged. Keys that are already secrets are skipped. It reports how many changes are pending, or restarts the app right away with `--apply`.
 - `apps env diff` compares two apps' env vars, for example staging against production. Secret values are never read: secrets are compared by key only, and the dashboard has the same comparison on an app's Environment page.
-- `apps env export` writes plain env vars as .env text; secret keys are written empty with a comment, never with a value.
+- `apps env export` writes env vars as .env text; sensitive and secret keys are written empty with a comment unless `--reveal` is given. `apps env get` prints one variable, masked when sensitive. `--reveal` asks for your password (and authenticator code) at the prompt, never from flags or the environment, and needs a token with `read:sensitive` and `secrets:reveal` plus `APP_SECRET_REVEAL_TOKENS=on` on the server. See [Environment variables and secrets](environment-and-secrets.md).
 - `apps secrets set` sets or rotates one secret's encrypted value and declares the key as secret backed so it is injected; `--apply` restarts the app now. With `--env-file` it bulk imports every key in a .env format file as its own secret. Values are never returned: `list` shows key names and locked state only. `lock` toggles a secret's overwrite guard.
 - `apps vault-env` declares an env var resolved live from the configured external Vault (see [Vault](#vault)); only the reference is stored.
 - `apps preview-env` and `apps branch-env` override an env var for previews only. A branch override applies when the preview's own branch matches PATTERN (an exact name or a glob such as `release/*`); `--secret` stores it envelope encrypted. Neither affects the app's own running deploy.
@@ -671,7 +673,13 @@ levelrail-cli domains backfill-base-domain [--confirm] [flags]
 levelrail-cli settings domain-automation get|set [flags]
 levelrail-cli domains cloudflare-dns get|set|clear [flags]
 levelrail-cli domains route53-dns get|set|clear [flags]
+levelrail-cli domains standalone list [flags]
+levelrail-cli domains standalone add <domain> --target TARGET [--confirm] [flags]
+levelrail-cli domains standalone update <domain> [--target TARGET] [flags]
+levelrail-cli domains standalone remove <domain> [flags]
 ```
+
+- `standalone` manages [standalone domains](standalone-domains.md): domains with no app that proxy to `PORT`, `HOST:PORT`, an `http(s)://` URL, `app:NAME[:PORT]` or `container:NAME:PORT`. Options are `--upstream-tls`, `--insecure-skip-verify`, `--tls-server-name`, `--host-header preserve|upstream|NAME`, `--no-websocket`, `--connect-timeout`, `--read-timeout`, `--strip-prefix` and `--description`. Loopback, private, container and control-port targets need `--confirm`. `update` sends only the flags you pass. Per-domain commands take `_standalone` as the app name, for example `domains waf set _standalone tools.example.com`.
 
 - `list` shows every app's domains in one call. `check` runs a real DNS lookup and reports whether the domain reaches this control plane. `certificates` lists every certificate in certmagic storage, healthy or not.
 - `basic-auth set` takes `--username` and `--password`. `maintenance set` serves a fixed maintenance response instead of proxying, without stopping the container. `redirect set --target URL` redirects every request for the domain; maintenance mode takes precedence if both are set.
@@ -1127,7 +1135,15 @@ Compares the running version with the latest release, runs the preflight checks 
 levelrail-cli upgrade --plan [--version TAG]
 levelrail-cli upgrade --apply [--version TAG] [--ack-breaking ID,...] [--no-wait]
 levelrail-cli upgrade --attempts
+levelrail-cli upgrade backup-now
+levelrail-cli upgrade schedule (--at TIME | --window) [--version TAG] [--timezone TZ] [--ack-breaking ID,...] [--ack-major] [--replace]
+levelrail-cli upgrade schedule show
+levelrail-cli upgrade schedule cancel
+levelrail-cli upgrade auto get
+levelrail-cli upgrade auto set [--mode off|patch|any] [--window-cron EXPR] [--window-duration 2h] [--timezone TZ] [--min-age-days N] [--notify ID,...] [--pause | --resume]
 ```
+
+`backup-now` takes a control plane backup and re-runs the preflight. `schedule` queues the upgrade for a time or the next maintenance window; the preflight re-runs at that time and nothing is applied if it fails. `auto` reads and sets the automatic upgrade policy, which is off by default; `set` changes only the flags you pass. All of these need a root token. See [Upgrade safely](upgrade-safely.md).
 
 `--plan` shows the breaking changes between the running version and the target (default: latest on the channel). `--apply` asks the control plane to run the safe self-update on its host: verified download, snapshot, migration dry run, swap, health check and automatic rollback. Breaking changes flagged as needing acknowledgement are refused until you list their ids with `--ack-breaking`. It follows the attempt to its outcome unless `--no-wait`, and exits non-zero when the upgrade was rolled back or failed. `--attempts` lists every attempt with its step timeline. See [Upgrade safely](upgrade-safely.md).
 
@@ -1275,6 +1291,16 @@ levelrail-cli containers reap [--dry-run] [flags]
 ```
 
 `list` shows every container on this node, managed or not. `stop`, `remove` and `claim` only act on a container the platform does not already manage (409 otherwise); for a managed app use `apps stop`, `apps start`, `apps restart` or `apps delete`. `claim` adopts an orphaned container into a new app. `orphans` lists leftover containers, volumes and certificates that no app or database accounts for, with where each stands against its grace period. `reap` runs one removal pass now (`--dry-run` reports without removing; exit 1 if anything could not be removed). Details and the `APP_ORPHAN_*` settings are in [Delete and clean up](deploying-apps.md#delete-and-clean-up).
+
+## System address
+
+```
+levelrail-cli system address [--domain NAME] [flags]
+levelrail-cli system address --ipv4 IP [--ipv6 IP]
+levelrail-cli system address --clear
+```
+
+Shows this server's public IPv4 and IPv6, where they came from, and a note when the server is behind NAT or a TLS-terminating proxy. `--domain` adds the exact DNS records to create for that name. `--ipv4` and `--ipv6` set a manual override (root), `--clear` goes back to detection. See [Standalone domains](standalone-domains.md#server-address-and-dns-records).
 
 ## System maintenance
 

@@ -9,6 +9,7 @@ import {
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { CopyFailureDetail } from '@/components/attention/CopyFailureDetail'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { formatSize } from '../../../lib/format'
@@ -116,7 +117,17 @@ function CopyBlock({ copy }: { copy: DataCopyInfo }) {
           {t(`viewer.states.copy.${copy.status}`)}
         </span>
       </p>
-      {copy.reason ? (
+      {copy.failure ? (
+        <>
+          <p className="text-xs text-muted-foreground">
+            {copy.failure.summary}
+          </p>
+          <CopyFailureDetail
+            hint={copy.failure.hint}
+            technical={copy.failure.technical}
+          />
+        </>
+      ) : copy.reason ? (
         <p className="text-xs text-muted-foreground">{copy.reason}</p>
       ) : null}
       <p className="text-xs text-muted-foreground">

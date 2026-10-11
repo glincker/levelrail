@@ -5,6 +5,7 @@ import type dashboard from '../locales/en/dashboard.json'
 import type auditLog from '../locales/en/auditLog.json'
 import type streams from '../locales/en/streams.json'
 import type networkProxy from '../locales/en/networkProxy.json'
+import type network from '../locales/en/network.json'
 import type databases from '../locales/en/databases.json'
 import type https from '../locales/en/https.json'
 import type nodes from '../locales/en/nodes.json'
@@ -34,6 +35,8 @@ import type smartDeploy from '../locales/en/smartDeploy.json'
 import type dataExport from '../locales/en/dataExport.json'
 import type deploySafety from '../locales/en/deploySafety.json'
 import type jobs from '../locales/en/jobs.json'
+import type envEditor from '../locales/en/envEditor.json'
+import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -47,6 +50,7 @@ declare module 'i18next' {
       auditLog: typeof auditLog
       streams: typeof streams
       networkProxy: typeof networkProxy
+      network: typeof network
       databases: typeof databases
       https: typeof https
       nodes: typeof nodes
@@ -76,6 +80,8 @@ declare module 'i18next' {
       dataExport: typeof dataExport
       deploySafety: typeof deploySafety
       jobs: typeof jobs
+      envEditor: typeof envEditor
+      resourceAdvisor: typeof resourceAdvisor
     }
   }
 }

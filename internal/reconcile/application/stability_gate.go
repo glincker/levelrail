@@ -95,7 +95,7 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 		return nil
 	}
 	inspector, _ := c.runtime.(docker.ExitStateInspector)
-	readiness := readinessProbeFor(desired)
+	readiness := c.deployReadinessProbeFor(desired)
 	var (
 		target   probe.Target
 		probeCfg probe.Config
@@ -178,6 +178,19 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 			return fmt.Errorf("stability gate for %s: %w", state.Name, ctx.Err())
 		case <-time.After(tick):
 		}
+	}
+}
+
+// noteImplicitReadiness puts a timeline note on a release that has no
+// explicit readiness probe, so the weaker check is visible, not silent.
+func (c *Controller) noteImplicitReadiness(ctx context.Context, container string, desired *store.DesiredService, readiness *store.ServiceProbe) {
+	switch {
+	case readiness == nil:
+		c.recordGate(ctx, desired, container, deploysafety.PhaseReadiness, deploysafety.StatusInfo, "",
+			"no port or probe: readiness is only container running; add a port or a health check")
+	case readiness.TCP:
+		c.recordGate(ctx, desired, container, deploysafety.PhaseReadiness, deploysafety.StatusInfo, "",
+			fmt.Sprintf("no readiness probe configured: waiting for a TCP connection on port %d; add a health check for a stronger gate", desired.Port))
 	}
 }
 

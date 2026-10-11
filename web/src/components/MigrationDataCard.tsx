@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { CopyFailureDetail } from '@/components/attention/CopyFailureDetail'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -181,7 +182,17 @@ function CopyRow({ db }: { db: DatabaseCopy }) {
           </Button>
         ) : null}
       </div>
-      {db.reason ? <p className="mt-2 text-destructive">{db.reason}</p> : null}
+      {db.failure ? (
+        <div className="mt-2 space-y-1">
+          <p className="text-destructive">{db.failure.summary}</p>
+          <CopyFailureDetail
+            hint={db.failure.hint}
+            technical={db.failure.technical}
+          />
+        </div>
+      ) : db.reason ? (
+        <p className="mt-2 text-destructive">{db.reason}</p>
+      ) : null}
       {bad.map((x) => (
         <p key={x.name} className="mt-1 font-mono text-xs">
           {t('data.differs', {

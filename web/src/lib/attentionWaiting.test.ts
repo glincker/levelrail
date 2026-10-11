@@ -45,6 +45,7 @@ describe('buildWaitingItems', () => {
           domain: 'a.example',
           status: 'healthy',
           renewal: 'stalled',
+          expiry_class: 'incident',
           not_before: '',
           not_after: '2026-11-01T00:00:00Z',
           source: 'acme',

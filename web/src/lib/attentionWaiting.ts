@@ -76,7 +76,11 @@ export function buildWaitingItems({
   }
 
   for (const c of certs) {
-    if (c.renewal !== 'stalled' || c.status === 'expired') {
+    if (
+      c.renewal !== 'stalled' ||
+      c.status === 'expired' ||
+      c.expiry_class !== 'incident'
+    ) {
       continue
     }
     const date = c.not_after.slice(0, 10)
@@ -161,6 +165,7 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
       id: f.id,
       severity: f.severity,
       action: f.action,
+      class: f.class,
       target: { kind: 'path', to: f.link } as const,
     }
     switch (f.kind) {
@@ -186,6 +191,12 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
           detail: p.reason
             ? t('items.dataCopyReason', { reason: p.reason })
             : f.detail,
+          copy: {
+            state: p.state === 'failed' ? 'failed' : 'stalled',
+            hint: p.hint,
+            technical: p.technical,
+            dismissKey: f.id,
+          },
         }
       case 'backup_overdue':
         return {
@@ -258,6 +269,16 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
             eol: shortDate(p.eol),
           }),
         }
+      case 'resource_advice':
+        return p.count
+          ? {
+              ...base,
+              title: t('items.resourceAdviceSummaryTitle', {
+                count: Number.parseInt(p.count, 10) || 1,
+              }),
+              detail: t('items.resourceAdviceSummaryDetail'),
+            }
+          : { ...base, title: f.title || f.subject, detail: f.detail }
       case 'db_upgrade_failed':
         return {
           ...base,

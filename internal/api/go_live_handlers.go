@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/libdns/libdns"
 )
@@ -36,7 +37,7 @@ func (rt *Router) automationRuns() automationRunStore {
 
 func (rt *Router) loadGoLiveApp(w http.ResponseWriter, r *http.Request) (string, bool) {
 	name := r.PathValue("name")
-	if _, err := rt.apps.GetDesiredService(r.Context(), name); err != nil {
+	if err := rt.domainScopeExists(r.Context(), name); err != nil {
 		if errors.Is(err, store.ErrServiceNotFound) {
 			writeError(w, http.StatusNotFound, "app not found")
 			return "", false
@@ -112,6 +113,10 @@ func (rt *Router) handleGoLiveRun(w http.ResponseWriter, r *http.Request) {
 	owns, err := rt.appOwnsDomain(r.Context(), name, domain)
 	if err != nil {
 		rt.internalError(w, "api: go-live: ownership check failed", err)
+		return
+	}
+	if !owns && name == standalone.Scope {
+		writeError(w, http.StatusNotFound, "add the standalone domain first, then run go-live for it")
 		return
 	}
 	if !owns {

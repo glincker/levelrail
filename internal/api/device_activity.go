@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/attention"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -293,6 +294,10 @@ func (rt *Router) handleAttentionDismiss(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	parts := strings.Split(req.ItemKey, deviceLoginItemKeySep)
+	if len(parts) > 0 && parts[0] == attention.KindDataCopy {
+		rt.dismissDataCopyItem(w, r, userID, req.ItemKey)
+		return
+	}
 	if len(parts) != deviceLoginItemKeyParts || parts[0] != store.AuditActionFamilyDeviceLogin {
 		writeError(w, http.StatusBadRequest, "item_key is not a dismissible item")
 		return

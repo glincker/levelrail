@@ -116,3 +116,21 @@ func TestComposeMux_WebhookHandlerConfigured_ReceivesPost(t *testing.T) {
 		t.Error("POST /webhook did not reach webhookHandler")
 	}
 }
+
+func TestComposeMux_RootAPIPathsReachAPIHandler(t *testing.T) {
+	for _, path := range []string{"/metrics", "/.well-known/jwks.json"} {
+		t.Run(path, func(t *testing.T) {
+			var got string
+			apiHandler := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+				got = r.URL.Path
+			})
+			webHandler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+				t.Errorf("%s fell through to the SPA fallback", path)
+			})
+			composeMux(apiHandler, nil, webHandler).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, path, nil))
+			if got != path {
+				t.Errorf("apiHandler saw %q, want %q", got, path)
+			}
+		})
+	}
+}

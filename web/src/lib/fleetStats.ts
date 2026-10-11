@@ -28,6 +28,35 @@ export function summarizeTraffic(rows: AppMetricsSummary[]): FleetTraffic {
   }
 }
 
+// The window apps-metrics aggregates over (batchMetricsWindow on the server).
+export const TRAFFIC_WINDOW_SECONDS = 3600
+
+export type ErrorReading =
+  { kind: 'no-traffic' } | { kind: 'value'; pct: number }
+
+// An error percentage only means something once enough requests landed.
+export function errorReading(
+  t: FleetTraffic,
+  minRequests: number,
+): ErrorReading {
+  const requests = t.ratePerSec * TRAFFIC_WINDOW_SECONDS
+  if (requests < minRequests || t.reporting === 0) return { kind: 'no-traffic' }
+  return { kind: 'value', pct: t.errorPct }
+}
+
+// The control plane's own node counts even when it has no node row, which
+// is the normal single-node state.
+export function nodeCounts(nodes: { is_local: boolean; status: string }[]): {
+  online: number
+  total: number
+} {
+  const hasLocal = nodes.some((n) => n.is_local)
+  const online = nodes.filter((n) => n.status === 'online').length
+  return hasLocal
+    ? { online, total: nodes.length }
+    : { online: online + 1, total: nodes.length + 1 }
+}
+
 export interface ActivityEntry {
   id: string
   app: string

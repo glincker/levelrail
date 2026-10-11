@@ -24,7 +24,11 @@ export const ABILITIES: Ability[] = [
 // browsers. Root does not imply it and no user or role ever holds it.
 export const SIGN_IN_APPROVE = 'signin:approve' as const
 
-export type TokenAbility = Ability | typeof SIGN_IN_APPROVE
+// Token-only: lets a token reveal secret values with the owner's password.
+export const SECRETS_REVEAL = 'secrets:reveal' as const
+
+export type TokenAbility =
+  Ability | typeof SIGN_IN_APPROVE | typeof SECRETS_REVEAL
 
 // Shared badge coloring for an ability chip: TokenTable (a token's own
 // Abilities) and UserTable (a user's own Abilities) both render the same
@@ -45,7 +49,11 @@ export const ABILITY_BADGE_VARIANT: Record<
 export const TOKEN_ABILITY_BADGE_VARIANT: Record<
   TokenAbility,
   'default' | 'outline' | 'destructive' | 'muted'
-> = { ...ABILITY_BADGE_VARIANT, [SIGN_IN_APPROVE]: 'outline' }
+> = {
+  ...ABILITY_BADGE_VARIANT,
+  [SIGN_IN_APPROVE]: 'outline',
+  [SECRETS_REVEAL]: 'destructive',
+}
 
 // Ability picker copy, one line each: a small, legible permission
 // surface, not a permission matrix. Shared by

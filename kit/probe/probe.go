@@ -31,8 +31,10 @@ type Config struct {
 	FollowRedirects *bool
 	ExpectedStatus  string
 	Exec            []string
-	Interval        time.Duration
-	Timeout         time.Duration
+	// TCP makes it a connect probe against the target address, no HTTP.
+	TCP      bool
+	Interval time.Duration
+	Timeout  time.Duration
 }
 
 // IsExec reports whether c is an exec probe.
@@ -42,6 +44,12 @@ func (c Config) followRedirects() bool { return c.FollowRedirects == nil || *c.F
 
 // Validate checks c for contradictory or malformed settings.
 func (c Config) Validate() error {
+	if c.TCP {
+		if c.IsExec() || c.Path != "" {
+			return errors.New("a tcp probe cannot also set path or exec")
+		}
+		return nil
+	}
 	if c.IsExec() {
 		return c.validateExec()
 	}
@@ -240,6 +248,9 @@ func (p *Prober) attempt(ctx context.Context, t Target, cfg Config) error {
 	timeout := cfg.Timeout
 	if timeout <= 0 {
 		timeout = p.limits.DefaultTimeout
+	}
+	if cfg.TCP {
+		return p.tcpAttempt(ctx, t.Addr, timeout)
 	}
 	if cfg.IsExec() {
 		return p.execAttempt(ctx, t.ContainerID, cfg.Exec, timeout)

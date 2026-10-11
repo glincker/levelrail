@@ -92,6 +92,7 @@ Four main types, plus two Levelrail-specific categories:
 | [observability.md](observability.md) | Node-local metrics and log storage, federated queries, and the alert engine |
 | [deployments-page.md](deployments-page.md) | The cross-app Deployments page: live feed, filters, details drawer, actions and keyboard shortcuts |
 | [cost-estimate.md](cost-estimate.md) | The per-app "what this would cost elsewhere" estimate: the formula, reference providers, and how to correct the rates for your own region |
+| [resource-advisor.md](resource-advisor.md) | The beta resource advisor: limit, idle, growth, disk and database tuning suggestions, how each rule works, thresholds and limits |
 
 #### Multi-Node Setup
 

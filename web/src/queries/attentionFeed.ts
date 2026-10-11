@@ -14,6 +14,7 @@ export interface AttentionFeedItem {
   action: string
   link: string
   params?: Record<string, string>
+  class?: 'incident' | 'recommendation'
 }
 
 export const attentionFeedKeys = {

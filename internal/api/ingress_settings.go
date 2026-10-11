@@ -177,6 +177,8 @@ func (rt *Router) firstAdminAddress(ctx context.Context) string {
 var (
 	errACMEEmailRequired = errors.New("acme_email is required when acme_enabled is true")
 	errACMEEmailInvalid  = errors.New("acme_email is not a valid email address")
+	// errACMEDomainReserved is returned when the primary domain is one no public CA signs.
+	errACMEDomainReserved = errors.New("primary_domain cannot get a public certificate (IP addresses, single labels, example.com, .test, .invalid, .localhost, .local and .internal are rejected by Let's Encrypt); use a real domain or leave real ACME off")
 )
 
 // validateIngressSettingsRequest enforces the one real business rule
@@ -214,9 +216,14 @@ func validateIngressSettingsRequest(req ingressSettingsResource) error {
 	if email == "" {
 		return errACMEEmailRequired
 	}
-	addr, err := mail.ParseAddress(email)
-	if err != nil || addr.Address != email {
+	if err := ingress.ValidateACMEContact(email); err != nil {
+		if errors.Is(err, ingress.ErrACMEContactReserved) {
+			return err
+		}
 		return errACMEEmailInvalid
+	}
+	if d := strings.TrimSpace(req.PrimaryDomain); d != "" && !ingress.ACMEIssuable(d) {
+		return errACMEDomainReserved
 	}
 	return nil
 }
@@ -438,6 +445,10 @@ type domainResource struct {
 	// ReachableReason says why (stopped, not_resolving, not_routed, held_back).
 	ReachableURL    string `json:"reachable_url,omitempty"`
 	ReachableReason string `json:"reachable_reason,omitempty"`
+	// Kind is app or standalone; a standalone row has no service_name and
+	// Target says where it proxies.
+	Kind   string `json:"kind"`
+	Target string `json:"target,omitempty"`
 }
 
 // handleListDomains handles GET /api/v1/domains: every service_domains
@@ -504,9 +515,13 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 			MaintenanceEnabled: inMaintenance[d.Domain],
 			HasBasicAuth:       hasBasicAuth[d.Domain],
 			ACMEFailure:        acmeFailureFor(d.Domain),
+			Kind:               domainKindApp,
 		})
 	}
 	out = append(out, rt.automaticDomains(r, canSee)...)
+	out = append(out, rt.standaloneDomainRows(r, func(d string) domainResource {
+		return domainResource{WAFEnabled: wafEnabled[d], HasRedirect: hasRedirect[d], MaintenanceEnabled: inMaintenance[d], HasBasicAuth: hasBasicAuth[d], ACMEFailure: acmeFailureFor(d)}
+	})...)
 	rt.annotateDomainTLS(r.Context(), out)
 	rt.annotateDomainReachability(r.Context(), out)
 	writeJSON(w, http.StatusOK, out)
@@ -533,7 +548,7 @@ func (rt *Router) automaticDomains(r *http.Request, canSee func(string) bool) []
 			continue
 		}
 		if d, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
-			out = append(out, domainResource{Domain: d, ServiceName: svc.Name, Automatic: true})
+			out = append(out, domainResource{Domain: d, ServiceName: svc.Name, Automatic: true, Kind: domainKindApp})
 		}
 	}
 	return out

@@ -4,12 +4,17 @@ import (
 	"context"
 	"fmt"
 	"io"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runUpgrade implements "upgrade": run the read-only preflight, take a control
 // plane backup, and print the command that performs the upgrade. It never
 // upgrades by itself.
 func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if code, handled := runUpgradeSubcommand(prog, args, stdout, stderr, lookupEnv); handled {
+		return code
+	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "upgrade", "print the preflight as JSON to stdout and nothing else", stderr)
 	noBackup := fs.Bool("no-backup", false, "skip the automatic control plane backup")
 	list := fs.Bool("list", false, "list the last 5 releases with a schema compatibility verdict")
@@ -24,7 +29,7 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	attempts := fs.Bool("attempts", false, "list recorded self-upgrade attempts with their step timelines")
 	noWatch := fs.Bool("no-wait", false, "with --apply: return once the upgrade has started instead of following it")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade [flags]\n\nChecks the running version against the latest release, runs the preflight\n(release signature, Docker Engine, free disk, backup), takes a control plane\nbackup, and prints the command that upgrades. It never upgrades by itself.\n\n--history shows every recorded upgrade and --ack <id> acknowledges one;\n--plan shows breaking changes and --apply upgrades with automatic rollback;\n--attempts lists self-upgrade runs; --list shows recent releases; --rollback-plan <version> previews returning to\none. Rolling back is applied on the host with `sudo <control plane binary> rollback`.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade [flags]\n\nChecks the running version against the latest release, runs the preflight\n(release signature, Docker Engine, free disk, backup), takes a control plane\nbackup, and prints the command that upgrades. It never upgrades by itself.\n\n--history shows every recorded upgrade and --ack <id> acknowledges one;\n--plan shows breaking changes and --apply upgrades with automatic rollback;\n--attempts lists self-upgrade runs; --list shows recent releases; --rollback-plan <version> previews returning to\none. Subcommands: schedule (--at TIME | --window, show, cancel), auto (get, set) and backup-now. Rolling back is applied on the host with `sudo <control plane binary> rollback`.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -86,6 +91,15 @@ func printUpgradeHuman(out io.Writer, p updatePreflight, backupNote string) {
 	}
 	for _, c := range p.Checks {
 		_, _ = fmt.Fprintf(out, "[%s] %s: %s\n", c.Status, c.Name, c.Message)
+		if c.Status == "ok" || c.Status == "unknown" {
+			continue
+		}
+		if c.Hint != "" {
+			_, _ = fmt.Fprintf(out, "      %s\n", c.Hint)
+		}
+		if c.Fix != nil && c.Fix.Action == "backup_now" {
+			_, _ = fmt.Fprintln(out, "      fix: run the upgrade backup-now subcommand")
+		}
 	}
 	_, _ = fmt.Fprintf(out, "control plane backup: %s\n", backupNote)
 	for _, c := range p.Checks {
@@ -94,11 +108,25 @@ func printUpgradeHuman(out io.Writer, p updatePreflight, backupNote string) {
 		}
 	}
 	switch {
+	case p.Waiting:
+		_, _ = fmt.Fprintln(out, "\nNot ready yet: the release is still being published. Re-check in a few minutes.")
 	case p.Blocked:
 		_, _ = fmt.Fprintln(out, "\nUpgrade blocked: fix the failing checks above first.")
 	case !p.UpdateAvailable:
 		_, _ = fmt.Fprintln(out, "\nAlready up to date.")
+	case p.Edge != nil:
+		printEdgeGuidance(out, p.Edge)
 	default:
 		_, _ = fmt.Fprintf(out, "\nUpgrade with:\n  %s\n\nRoll back with:\n  %s\n", p.UpgradeCommand, p.RollbackCommand)
 	}
+}
+
+func printEdgeGuidance(out io.Writer, g *apiclient.EdgeGuidance) {
+	_, _ = fmt.Fprintf(out, "\nThe edge channel follows a container image (%s), not a signed release binary.\n", g.Image)
+	if g.Installable {
+		_, _ = fmt.Fprintf(out, "Pull and recreate the container:\n  %s\n  %s\n", g.PullCommand, g.RecreateCommand)
+		return
+	}
+	_, _ = fmt.Fprintln(out, "This install runs as a host binary, so edge cannot be installed here.")
+	_, _ = fmt.Fprintln(out, "Switch the channel under Settings > Updates, or with `settings updates set --channel beta` (or stable).")
 }

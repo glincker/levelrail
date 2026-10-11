@@ -115,6 +115,7 @@ const sidebarGroups = [
         collapsed: true,
         items: [
           { text: 'Domains and ingress', link: '/domains-and-ingress' },
+          { text: 'Standalone domains', link: '/standalone-domains' },
           { text: 'DNS zones and records', link: '/dns' },
           { text: 'Domain traffic controls', link: '/domain-traffic-controls' },
           { text: 'Load balancing', link: '/load-balancing' },
@@ -193,6 +194,7 @@ const sidebarGroups = [
           { text: 'Tags', link: '/tags' },
           { text: 'Command palette', link: '/command-palette' },
           { text: 'Cost estimate', link: '/cost-estimate' },
+          { text: 'Resource advisor (beta)', link: '/resource-advisor' },
           { text: 'Integrations', link: '/integrations' },
           { text: 'Rolling back a release', link: '/rollback' },
           { text: 'Resilience', link: '/resilience' },
@@ -244,6 +246,7 @@ const sidebarGroups = [
       { text: 'Feature catalog', link: '/feature-catalog' },
       { text: 'CLI reference', link: '/cli-reference' },
       { text: 'Environment variables', link: '/environment-variables' },
+      { text: 'Environment variables and secrets', link: '/environment-and-secrets' },
       { text: 'API reference', link: '/api-reference' },
       { text: 'API explorer', link: '/api-explorer' },
       { text: 'MCP tool surface', link: '/mcp-tool-surface' },

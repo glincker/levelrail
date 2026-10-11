@@ -30,6 +30,20 @@ func readinessProbeFor(desired *store.DesiredService) *store.ServiceProbe {
 	return runnableProbe(desired.Health.Readiness, desired.Port)
 }
 
+// deployReadinessProbeFor is readinessProbeFor plus an implicit TCP connect
+// to the declared port, so a release that never listens cannot be cut over.
+// Deploy-time only, and only with the deploy-safety gate wired: re-checking
+// already-running replicas keeps the explicit probe.
+func (c *Controller) deployReadinessProbeFor(desired *store.DesiredService) *store.ServiceProbe {
+	if p := readinessProbeFor(desired); p != nil {
+		return p
+	}
+	if c.gateDefaults != nil && desired.Port > 0 {
+		return &store.ServiceProbe{TCP: true}
+	}
+	return nil
+}
+
 func livenessProbeFor(desired *store.DesiredService) *store.ServiceProbe {
 	if desired.Health == nil {
 		return nil

@@ -9,7 +9,7 @@ import {
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import './index.css'
 import { isUnauthorized } from './lib/apiError'
-import { clearStoredUsername } from './lib/authStore'
+import { clearStoredUsername, getStoredUsername } from './lib/authStore'
 import {
   attachConnectionClient,
   reportError,
@@ -34,7 +34,7 @@ import { routeTree } from './routeTree.gen'
 // error, a self-referential mismatch between the router's type before
 // and after the Register augmentation resolves). A plain function
 // reference sidesteps the whole issue.
-let navigateToLogin: (() => void) | null = null
+let navigateToLogin: ((signedOut: boolean) => void) | null = null
 
 // Global 401 handling: every fetcher under src/queries/*.ts now throws an
 // ApiError with a real status code (lib/apiError.ts) instead of a plain
@@ -46,8 +46,10 @@ let navigateToLogin: (() => void) | null = null
 function handleQueryError(error: unknown): void {
   reportError(error)
   if (isUnauthorized(error)) {
+    // A 401 while we believed we were signed in means the session ended server side (expiry, restart, upgrade).
+    const hadSession = getStoredUsername() !== null
     clearStoredUsername()
-    navigateToLogin?.()
+    navigateToLogin?.(hadSession)
   }
 }
 
@@ -74,7 +76,7 @@ const router = createRouter({
   defaultErrorComponent: RouteErrorFallback,
   defaultPendingComponent: PageSpinner,
 })
-navigateToLogin = () => {
+navigateToLogin = (signedOut) => {
   // A failed login/register submission is itself a 401/... mutation that
   // flows through this same shared mutationCache, so this can fire while
   // already sitting on /login (LoginForm renders its own error message
@@ -88,7 +90,10 @@ navigateToLogin = () => {
   )
   void router.navigate({
     to: '/login',
-    search: here && here !== '/' ? { redirect: here } : {},
+    search: {
+      ...(here && here !== '/' ? { redirect: here } : {}),
+      ...(signedOut ? { signed_out: 'session' } : {}),
+    },
   })
 }
 

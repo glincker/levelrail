@@ -319,7 +319,7 @@ Set them on the **Resources** tab, in `app.yaml`, or with `PUT /api/v1/apps/{nam
 
 ![Levelrail app resources tab](assets/screenshots/app-resources.png)
 
-`GET /api/v1/apps/{name}/resource-recommendation` is a read-only, deterministic suggestion (`internal/rightsizing`, no LLM, never applied automatically). It looks at memory and CPU samples over a lookback window (7 days by default), computes p95 and p99 against the current limit, and checks recent logs for OOM-kill signatures. The result has a sample count, a `data_sufficient` and `confidence` pair, and a suggested limit with a plain-English reason. See it above the limits editor, or run `levelrail-cli apps resource-recommendation NAME`.
+`GET /api/v1/apps/{name}/resource-recommendation` is a read-only, deterministic suggestion (`internal/rightsizing`, no LLM, never applied automatically). It looks at memory and CPU samples over a lookback window (7 days by default), computes p95 and p99 against the current limit, and checks recent logs for OOM-kill signatures. The result has a sample count, a `data_sufficient` and `confidence` pair, and a suggested limit with a plain-English reason. See it in the Optimise panel on the Resources tab, or run `levelrail-cli apps resource-recommendation NAME`. With the [resource advisor](resource-advisor.md) beta on, the same suggestion arrives as an advisor finding you can apply after a preview.
 
 ### Outbound network allowlist
 

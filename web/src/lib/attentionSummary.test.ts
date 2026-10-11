@@ -32,6 +32,25 @@ describe('summarizeAttention', () => {
     expect(s.count).toBe(count)
   })
 
+  it('keeps recommendations out of the count and level', () => {
+    const s = summarizeAttention(
+      [
+        { ...item('dr', 'warning'), class: 'recommendation' },
+        { ...item('guard', 'warning'), class: 'recommendation' },
+        item('deploy', 'critical'),
+      ],
+      none,
+    )
+    expect(s.count).toBe(1)
+    expect(s.recommendations.map((i) => i.id)).toEqual(['dr', 'guard'])
+    const calm = summarizeAttention(
+      [{ ...item('dr', 'warning'), class: 'recommendation' }],
+      none,
+    )
+    expect(calm.level).toBe('ok')
+    expect(calm.count).toBe(0)
+  })
+
   it('moves snoozed items out of the count and level', () => {
     const s = summarizeAttention(
       [item('a', 'critical'), item('b', 'warning')],

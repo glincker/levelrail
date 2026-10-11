@@ -22,6 +22,8 @@ func runAppsEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runAppsEnvImport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "export":
 		return runAppsEnvExport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "get":
+		return runAppsEnvGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diff":
 		return runAppsEnvDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -34,12 +36,15 @@ func runAppsEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 func appsEnvUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps env import <name> --file .env [--dry-run] [--keep-existing] [flags]   merge a .env file into an app's plain env vars
-  %[1]s apps env export <name> [--out FILE] [flags]                               write an app's env vars as .env text
+  %[1]s apps env export <name> [--out FILE] [--reveal] [--format dotenv|json]      write an app's env vars as .env text
+  %[1]s apps env get <name> <KEY> [--reveal] [flags]                              print one variable
   %[1]s apps env diff <app-a> <app-b> [flags]                                     compare two apps' env vars (secrets by key only)
 
-Export never includes secret values: secret keys are written empty with a
-comment. Import never writes secrets either: a key that is already a secret
-is skipped, use "%[1]s apps secrets set" for those.
+Sensitive and secret values are masked unless --reveal is given. --reveal
+asks for your password (and authenticator code) at the prompt, needs a token
+with read:sensitive and secrets:reveal, and is audited. Import never writes
+secrets: a key that is already a secret is skipped, use "%[1]s apps secrets
+set" for those, and a masked value in the file keeps the stored one.
 
 Run "%[1]s apps env <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -191,10 +196,13 @@ func buildTimeEnvKeys(groups ...[]string) []string {
 
 func runAppsEnvExport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps env export", "unused for this subcommand", stderr)
-	var out string
+	var out, format string
+	var reveal bool
 	fs.StringVar(&out, "out", "", "write to this file instead of stdout")
+	fs.BoolVar(&reveal, "reveal", false, "include sensitive and secret values; asks for your password (and authenticator code) interactively")
+	fs.StringVar(&format, "format", "dotenv", "dotenv or json (json needs --reveal)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps env export <name> [--out FILE] [flags]\n\nWrites an app's env vars as .env text. Secret keys are written empty\nwith a comment, their values are never exported.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps env export <name> [--out FILE] [--reveal] [--format dotenv|json] [flags]\n\nWrites an app's env vars as .env text. Without --reveal, sensitive and\nsecret keys are written empty with a comment.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, _, _, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -208,15 +216,26 @@ func runAppsEnvExport(prog string, args []string, stdout, stderr io.Writer, look
 
 	ctx := context.Background()
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	app, err := client.GetApp(ctx, name)
-	if err != nil {
-		return reportError(stdout, stderr, false, fmt.Errorf("get app %q: %w", name, err))
+	var text string
+	if reveal {
+		var err error
+		if text, err = exportRevealed(ctx, client, name, format, stderr); err != nil {
+			return reportError(stdout, stderr, false, err)
+		}
+	} else {
+		if format != "dotenv" {
+			return reportError(stdout, stderr, false, newValidationError("--format %s needs --reveal; the masked export is dotenv only", format))
+		}
+		app, err := client.GetApp(ctx, name)
+		if err != nil {
+			return reportError(stdout, stderr, false, fmt.Errorf("get app %q: %w", name, err))
+		}
+		secretKeys, err := appSecretKeys(ctx, client, name, app.SecretEnv)
+		if err != nil {
+			return reportError(stdout, stderr, false, err)
+		}
+		text = renderDotenv(app.Env, secretKeys)
 	}
-	secretKeys, err := appSecretKeys(ctx, client, name, app.SecretEnv)
-	if err != nil {
-		return reportError(stdout, stderr, false, err)
-	}
-	text := renderDotenv(app.Env, secretKeys)
 
 	if out == "" {
 		_, _ = io.WriteString(stdout, text)

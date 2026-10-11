@@ -13,6 +13,7 @@ const KNOWN = new Set<string>([
   'token_unused',
   'sessions_old',
   'new_device_approval_off',
+  'secret_reveal_allow',
   'approval_password_only',
   'code_login_admins',
   'public_exposure',

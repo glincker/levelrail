@@ -453,7 +453,11 @@ func printDiagnosisHuman(out io.Writer, d diagnosisResource) {
 // two ("app" or "database") since the wire type itself is shared.
 func printResourceRecommendationHuman(out io.Writer, label string, r resourceRecommendationResource) {
 	_, _ = fmt.Fprintf(out, "%s:      %s\n", label, r.ServiceName)
-	_, _ = fmt.Fprintf(out, "lookback: %s\n", r.LookbackWindow)
+	lookback := r.LookbackLabel
+	if lookback == "" {
+		lookback = r.LookbackWindow
+	}
+	_, _ = fmt.Fprintf(out, "lookback: %s\n", lookback)
 	if r.OOMDetectedAt != "" {
 		_, _ = fmt.Fprintf(out, "\nOOM signal: killed on %s\n  %s\n", r.OOMDetectedAt, r.OOMExcerpt)
 	}
@@ -806,7 +810,14 @@ func printUpdatesHuman(out io.Writer, u updatesResource) {
 	if u.UpdateAvailable {
 		_, _ = fmt.Fprintln(out, "update available:   yes")
 		if u.ReleaseURL != nil {
-			_, _ = fmt.Fprintf(out, "release url:          %s\n", *u.ReleaseURL)
+			label := "release url:          %s\n"
+			if u.ReleaseKind == "edge_image" {
+				label = "commit url:           %s\n"
+			}
+			_, _ = fmt.Fprintf(out, label, *u.ReleaseURL)
+		}
+		if u.Image != nil {
+			_, _ = fmt.Fprintf(out, "container image:      %s\n", *u.Image)
 		}
 	} else {
 		_, _ = fmt.Fprintln(out, "update available:   no, up to date")

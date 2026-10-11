@@ -26,7 +26,7 @@ func TestCatalogProductivityBatch_Live_Deploys(t *testing.T) {
 		deployCatalogTemplateLive(t, env.Runtime, "triliumnext", "levelrail-test-e2e-cat-trilium", []string{"triliumnext"})
 	})
 	t.Run("redmine", func(t *testing.T) {
-		deployCatalogTemplateLive(t, env.Runtime, "redmine", "levelrail-test-e2e-cat-redmine", []string{"postgresql", "redmine"})
+		deployCatalogTemplateLive(t, env.Runtime, "redmine", "levelrail-test-e2e-cat-redmine", []string{"db", "redmine"})
 	})
 	t.Run("docuseal", func(t *testing.T) {
 		deployCatalogTemplateLive(t, env.Runtime, "docuseal", "levelrail-test-e2e-cat-docuseal", []string{"postgresql", "docuseal"})

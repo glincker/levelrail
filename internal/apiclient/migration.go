@@ -26,21 +26,31 @@ type DataCopyTable struct {
 	OK     bool   `json:"ok"`
 }
 
+// DataCopyFailure is a failed copy in plain words, with the redacted raw
+// error under Technical.
+type DataCopyFailure struct {
+	Code      string `json:"code"`
+	Summary   string `json:"summary"`
+	Hint      string `json:"hint"`
+	Technical string `json:"technical,omitempty"`
+}
+
 // DataCopyStatus is one database's copy state.
 type DataCopyStatus struct {
-	Database       string          `json:"database"`
-	Engine         string          `json:"engine"`
-	Status         string          `json:"status"`
-	Reason         string          `json:"reason,omitempty"`
-	NextAction     string          `json:"next_action,omitempty"`
-	SourceHost     string          `json:"source_host,omitempty"`
-	SourcePort     int             `json:"source_port,omitempty"`
-	SourceDatabase string          `json:"source_database,omitempty"`
-	Checked        int             `json:"checked"`
-	Mismatched     int             `json:"mismatched"`
-	Tables         []DataCopyTable `json:"tables,omitempty"`
-	StartedAt      string          `json:"started_at,omitempty"`
-	FinishedAt     string          `json:"finished_at,omitempty"`
+	Database       string           `json:"database"`
+	Engine         string           `json:"engine"`
+	Status         string           `json:"status"`
+	Reason         string           `json:"reason,omitempty"`
+	Failure        *DataCopyFailure `json:"failure,omitempty"`
+	NextAction     string           `json:"next_action,omitempty"`
+	SourceHost     string           `json:"source_host,omitempty"`
+	SourcePort     int              `json:"source_port,omitempty"`
+	SourceDatabase string           `json:"source_database,omitempty"`
+	Checked        int              `json:"checked"`
+	Mismatched     int              `json:"mismatched"`
+	Tables         []DataCopyTable  `json:"tables,omitempty"`
+	StartedAt      string           `json:"started_at,omitempty"`
+	FinishedAt     string           `json:"finished_at,omitempty"`
 }
 
 // CutoverCheck is one named check with what to do about it.

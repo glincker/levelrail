@@ -21,6 +21,12 @@ levelrail-cli proxy setup --confirm   # apply
 levelrail-cli proxy status            # per-domain state, certificate, checklist
 ```
 
+Traefik loads a written file a moment after it appears. `setup --confirm` and
+`proxy verify` therefore wait (up to `APP_PROXY_VERIFY_TIMEOUT`, default `8s`)
+for the router to show up, and a route that is still not loaded is reported as
+the pending step "waiting for the proxy to load the route", not as an error.
+Run `proxy verify` again once Traefik has reloaded.
+
 Setup, in order:
 
 1. **Detect.** Reads the container publishing host port 80 or 443 through the

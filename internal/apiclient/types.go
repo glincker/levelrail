@@ -69,10 +69,11 @@ type AppResource struct {
 	BindAddress string `json:"bind_address"`
 	// Replicas and Strategy must round-trip: UpdateApp is a full replace, so
 	// dropping them on a GET-then-PUT would reset a scaled app to defaults.
-	Replicas int               `json:"replicas,omitempty"`
-	Strategy string            `json:"strategy,omitempty"`
-	Domains  []string          `json:"domains,omitempty"`
-	Env      map[string]string `json:"env,omitempty"`
+	Replicas int      `json:"replicas,omitempty"`
+	Strategy string   `json:"strategy,omitempty"`
+	Domains  []string `json:"domains,omitempty"`
+	// Env holds MaskedEnvValue for sensitive keys; sending it back keeps the stored value.
+	Env map[string]string `json:"env,omitempty"`
 	// SecretEnv mirrors internal/api's appResource.SecretEnv: names of
 	// env vars backed by encrypted secret storage, values held only in
 	// Secrets below or set later via PUT .../secrets/{key}, never here.
@@ -494,6 +495,9 @@ type DomainResource struct {
 	// ReachableURL is the link to open; ReachableReason says why it is empty.
 	ReachableURL    string `json:"reachable_url,omitempty"`
 	ReachableReason string `json:"reachable_reason,omitempty"`
+	// Kind is app or standalone; Target is where a standalone domain proxies.
+	Kind   string `json:"kind,omitempty"`
+	Target string `json:"target,omitempty"`
 }
 
 // CloudflareDNSResource mirrors internal/api's cloudflareDNSResource
@@ -2758,6 +2762,8 @@ type DoctorCheckResource struct {
 	Message  string `json:"message"`
 	Fix      string `json:"fix,omitempty"`
 	DocsPath string `json:"docs_path,omitempty"`
+	// Class is "incident" or "recommendation" for a check that is not ok.
+	Class string `json:"class,omitempty"`
 }
 
 // SystemDoctorResource mirrors internal/api's systemDoctorResponse
@@ -2907,6 +2913,9 @@ type UpdatesResource struct {
 	UpdateAvailable bool    `json:"update_available"`
 	ReleaseURL      *string `json:"release_url"`
 	PublishedAt     *string `json:"published_at"`
+	ReleaseKind     string  `json:"release_kind,omitempty"`
+	Channel         string  `json:"channel,omitempty"`
+	Image           *string `json:"image,omitempty"`
 }
 
 // ChangelogEntryResource mirrors internal/api's changelogEntryResource:
@@ -3071,6 +3080,7 @@ type DimensionRecommendationResource struct {
 type ResourceRecommendationResource struct {
 	ServiceName    string                          `json:"service_name"`
 	LookbackWindow string                          `json:"lookback_window"`
+	LookbackLabel  string                          `json:"lookback_label,omitempty"`
 	Memory         DimensionRecommendationResource `json:"memory"`
 	CPU            DimensionRecommendationResource `json:"cpu"`
 	OOMDetectedAt  string                          `json:"oom_detected_at,omitempty"`
@@ -3172,6 +3182,9 @@ type AlertRuleResource struct {
 	NotifyURL  string `json:"notify_url,omitempty"`
 	NotifyKind string `json:"notify_kind,omitempty"`
 	Enabled    bool   `json:"enabled"`
+
+	// Warnings are response-only, non-blocking problems with the saved rule.
+	Warnings []string `json:"warnings,omitempty"`
 
 	Severity            string            `json:"severity,omitempty"`
 	Labels              map[string]string `json:"labels,omitempty"`
@@ -3449,6 +3462,9 @@ type CertificateResource struct {
 	TLSOwner string `json:"tls_owner,omitempty"`
 	// ACMEFailure is the CA's last error for this domain, when it has one.
 	ACMEFailure *ACMEFailure `json:"acme_failure,omitempty"`
+	// ExpiryClass is "incident" when this certificate's expiry needs an
+	// operator, empty otherwise.
+	ExpiryClass string `json:"expiry_class,omitempty"`
 }
 
 // RenewCertificateResource mirrors internal/api's
@@ -3878,6 +3894,7 @@ type StaticSiteResource struct {
 // control plane returns (internal/api/respond.go's own apiError).
 type apiErrorBody struct {
 	Error string `json:"error"`
+	Code  string `json:"code,omitempty"`
 }
 
 // APIError is returned by Client methods for a non-2xx HTTP response: a
@@ -3897,6 +3914,9 @@ type APIError struct {
 	// but any future response carrying the header gets the same
 	// treatment for free.
 	RetryAfter time.Duration
+	// Code is the machine-readable reason some refusals carry, such as
+	// step_up_required or step_up_code_required.
+	Code string
 }
 
 func (e *APIError) Error() string {

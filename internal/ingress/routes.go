@@ -76,6 +76,9 @@ type ProxyRoute struct {
 	LB *LBRoute
 	// Policy, if non-nil, adds the domain's traffic controls (policy_*.go).
 	Policy *RoutePolicy
+	// Upstream, if non-nil, shapes a standalone domain's single backend.
+	// Ignored when LB is set.
+	Upstream *UpstreamOptions
 }
 
 // ErrorPage is one status-code-to-body mapping for a domain
@@ -331,6 +334,10 @@ type RoutesOptions struct {
 	// redirect every routed host to https. Off keeps the port unbound
 	// outside ACME challenges (non-root dev runs cannot bind port 80).
 	HTTPRedirect bool
+	// FallbackCertLifetime is how long the internal fallback certificate
+	// served while public ACME issuance fails lives, so the public CA is
+	// retried on that cadence. Empty keeps Caddy's default (12h).
+	FallbackCertLifetime string
 	// PlainHTTP serves the same routes over unencrypted HTTP on HTTPPort,
 	// for a proxy in front that terminates TLS and dials this port.
 	PlainHTTP bool
@@ -528,6 +535,10 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		// Traffic controls, backend side: cache and path forwarders sit
 		// right before the reverse proxy, behind auth and WAF.
 		handle = r.Policy.wrapBackend(r.Hosts[0], handle)
+		if r.Upstream != nil && (r.LB == nil || len(r.LB.Upstreams) == 0) {
+			// After forwarders so their path rules match the original path.
+			handle = r.Upstream.apply(handle)
+		}
 		if r.BasicAuth != nil {
 			// Prepended, not appended: Caddy runs a route's handlers in
 			// order, so authentication must short-circuit with 401 before
@@ -710,25 +721,11 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		}
 		wildcardHosts, regularHosts := splitWildcardHosts(allHosts)
 		switch {
-		case opts.ACMEEnabled && opts.DNSProvider != nil && len(wildcardHosts) > 0:
-			policies := []AutomationPolicy{{
-				Subjects: wildcardHosts,
-				Issuers:  []any{NewDNSACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.DNSProvider)},
-			}}
-			if len(regularHosts) > 0 {
-				policies = append(policies, AutomationPolicy{
-					Subjects: regularHosts,
-					Issuers:  []any{NewACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.HTTPPort)},
-				})
-			}
-			// Real ACME has no local CA for a pki app to manage trust
-			// for, unlike the internal issuer branch below: cfg.Apps.PKI
-			// is deliberately left nil here.
-			cfg.Apps.TLS = &TLSApp{Automation: &Automation{Policies: policies}}
-			cfg.Apps.Events = newACMEEventsApp()
 		case opts.ACMEEnabled:
-			cfg.Apps.TLS = acmeIssuerTLSApp(allHosts, opts.ACMEEmail, opts.ACMEDirectoryURL, opts.HTTPPort)
+			cfg.Apps.TLS = acmeWithFallbackTLSApp(opts, wildcardHosts, regularHosts)
+			cfg.Apps.PKI = newInternalPKIApp()
 			cfg.Apps.Events = newACMEEventsApp()
+			cfg.Logging = newACMELogTap()
 		default:
 			cfg.Apps.TLS = internalIssuerTLSApp(allHosts)
 			cfg.Apps.PKI = newInternalPKIApp()

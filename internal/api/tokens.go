@@ -122,6 +122,13 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 			}
 			continue
 		}
+		if a == AbilitySecretsReveal {
+			if !rt.signedInUserSession(r) || !hasAbility(callerAbilities, AbilityReadSensitive) {
+				writeError(w, http.StatusForbidden, AbilitySecretsReveal+" can only be granted from a signed-in session that holds "+AbilityReadSensitive)
+				return
+			}
+			continue
+		}
 		if !hasAbility(callerAbilities, a) {
 			writeError(w, http.StatusForbidden, fmt.Sprintf("cannot mint a token with abilities you don't hold yourself: %s", a))
 			return

@@ -68,6 +68,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Docker](https://levelrail.com/docker): how Levelrail talks to the Docker Engine API directly.
 - [Command palette](https://levelrail.com/command-palette): keyboard-first navigation and quick app actions in the dashboard.
 - [Domains and ingress](https://levelrail.com/domains-and-ingress): custom domains, TLS, maintenance mode, redirects, WAF, and the embedded Caddy ingress.
+- [Standalone domains](https://levelrail.com/standalone-domains): proxy a domain to a port, address, URL, app port or container without an app, plus the server address for DNS records.
 - [DNS zones and records](https://levelrail.com/dns): zones and records at Cloudflare or Route53, name server delegation, propagation checks, and wildcard subdomains.
 - [Domain traffic controls](https://levelrail.com/domain-traffic-controls): per-domain header rules, path forwarders, country rules, response caching, redirects and raw ports.
 - [Load balancing](https://levelrail.com/load-balancing): balance traffic across an app's replicas with health checks, retries, and sticky sessions.
@@ -121,6 +122,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Feature catalog](https://levelrail.com/feature-catalog): every shipped dashboard route, API endpoint, and CLI command, one line each.
 - [CLI reference](https://levelrail.com/cli-reference): every `levelrail-cli` command and flag.
 - [Environment variables](https://levelrail.com/environment-variables): operator-facing `APP_*` settings for builds, schedulers, ingress, backups, doctor, and updates, with defaults.
+- [Environment variables and secrets](https://levelrail.com/environment-and-secrets): how sensitive app values are masked, confirmed reveal and export, reveal policies and the threat model.
 - [API reference](https://levelrail.com/api-reference): the HTTP API the dashboard, CLI, and MCP server all run on.
 - [MCP tool surface](https://levelrail.com/mcp-tool-surface): estimated model context cost of the MCP tool list, by toolset.
 - [Agent tooling audit](https://levelrail.com/agent-tooling-audit): size, overlap, and token budget audit of the levelrail-mcp tool surface.
@@ -162,6 +164,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Roadmap](https://levelrail.com/roadmap): phased build plan and current status.
 - [Feature status](https://levelrail.com/feature-status): per-feature maturity labels with the evidence behind each one.
 - [Experimental features](https://levelrail.com/experimental-features): features hidden at launch and the switch that turns them on.
+- [Resource advisor](https://levelrail.com/resource-advisor): beta limit, idle, growth, disk and database tuning suggestions, every rule and threshold, and what it cannot know.
 - [Performance](https://levelrail.com/performance): measured idle footprint of the control plane at 0, 100, and 500 apps.
 - [CI](https://levelrail.com/ci): how pull request checks are chosen and which ones branch protection relies on.
 - [Changelog](https://levelrail.com/changelog/): every Levelrail release with highlights, fixes, and upgrade notes.

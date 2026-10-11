@@ -121,3 +121,38 @@ describe('contextual help', () => {
     expect(helpDocForPath(path)).toBe(doc)
   })
 })
+
+describe('recommendations', () => {
+  const advice = buildNotifications({
+    attention: [
+      {
+        id: 'doctor:control_plane_dr',
+        severity: 'warning',
+        title: 'Control plane disaster recovery',
+        detail: 'off-box encrypted backups are not enabled',
+        target: { kind: 'system' },
+        class: 'recommendation',
+      },
+      {
+        id: 'backup_overdue:pg',
+        severity: 'warning',
+        title: 'Backup of pg is overdue',
+        detail: '',
+        target: { kind: 'path', to: '/databases/pg' },
+        class: 'incident',
+      },
+    ],
+  })
+
+  it('files setup and hardening advice under its own group', () => {
+    const groups = groupNotifications(advice)
+    expect(groups.map((g) => g.group)).toEqual(['system', 'setup'])
+    expect(advice.find((n) => n.group === 'setup')?.snoozeId).toBe(
+      'doctor:control_plane_dr',
+    )
+  })
+
+  it('does not count pending setup as unread', () => {
+    expect(unreadCount(advice, new Set())).toBe(1)
+  })
+})

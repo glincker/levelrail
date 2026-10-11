@@ -58,3 +58,14 @@ func TestExperimentalCommandsGated(t *testing.T) {
 		})
 	}
 }
+
+func TestDataExportCommandsNotGatedByIaC(t *testing.T) {
+	defer experimental.Set(experimental.All()...)
+	experimental.Set()
+	for _, args := range [][]string{{"export", "destinations", "list"}, {"export", "audit"}} {
+		var stderr bytes.Buffer
+		if rejectDisabledExperimental("prog", args, &stderr) {
+			t.Errorf("%v rejected while iac is off: %q", args, stderr.String())
+		}
+	}
+}

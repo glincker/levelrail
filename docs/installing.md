@@ -82,7 +82,7 @@ Open one of the printed `http://<ip>:8080/login?setup=<token>` links from the in
 sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
 ```
 
-The dashboard shows a "connection is not encrypted" banner until you enable HTTPS. The quickest way needs no DNS: open the Domains page and click **Enable HTTPS** (or run `levelrail-cli settings ingress https enable --email you@example.com`), which issues a real Let's Encrypt certificate for `<dashed-ip>.sslip.io` (see [Domains and ingress](domains-and-ingress.md#zero-dns-setup-sslip-io-hostnames-and-one-click-https)). Using your own domain works too: set a primary domain plus ACME on the same page. Either way the result is an `https://` **dashboard URL**. After that, sign-in over plain HTTP is refused. To recover if the https URL breaks, add `APP_ALLOW_INSECURE_LOGIN=true` with `sudo systemctl edit levelrail` (`[Service]` then `Environment=APP_ALLOW_INSECURE_LOGIN=true`) and restart.
+The dashboard shows a "connection is not encrypted" banner until you enable HTTPS. The quickest way needs no DNS: open the Domains page and click **Enable HTTPS** (or run `levelrail-cli settings ingress https enable --email you@yourdomain.com`), which issues a real Let's Encrypt certificate for `<dashed-ip>.sslip.io` (see [Domains and ingress](domains-and-ingress.md#zero-dns-setup-sslip-io-hostnames-and-one-click-https)). Using your own domain works too: set a primary domain plus ACME on the same page. Either way the result is an `https://` **dashboard URL**. After that, sign-in over plain HTTP is refused. To recover if the https URL breaks, add `APP_ALLOW_INSECURE_LOGIN=true` with `sudo systemctl edit levelrail` (`[Service]` then `Environment=APP_ALLOW_INSECURE_LOGIN=true`) and restart.
 
 **Pick a dashboard-only subdomain, not an app's own domain.** Use something like `console.example.com` or `panel.example.com` for the primary domain, the same convention CapRover uses for its own panel (`captain.<domain>`). Reusing a domain an app already serves breaks whichever one loses the conflict, silently, with no warning. See [Domains and ingress](domains-and-ingress.md#the-dashboard-s-own-domain) for why this matters.
 
@@ -385,18 +385,18 @@ Both commands talk to the control plane's API (`GET /api/v1/updates` and `GET /a
 
 ### Check first, then upgrade
 
-`levelrail-cli upgrade` (or Settings > Updates in the dashboard) runs read-only preflight checks and never upgrades by itself:
+`levelrail-cli upgrade` (or Settings > Updates in the dashboard) runs read-only preflight checks. Nothing is applied unless you start or schedule an upgrade, or you turned on automatic upgrades (off by default, see [Upgrade safely](upgrade-safely.md#automatic-upgrades)):
 
 - the latest release publishes `checksums.txt` and its cosign signature (the installer verifies both);
 - the Docker Engine version is not on the known-bad list (`kit/upgrade/docker_known_bad.json`, replace it with your own file via `APP_DOCKER_KNOWN_BAD_FILE`);
 - free disk space is above `APP_UPGRADE_MIN_FREE_BYTES` (default 2 GiB);
-- a control plane backup exists and is newer than `APP_UPGRADE_MAX_BACKUP_AGE` (default 26h).
+- a control plane backup exists and is newer than `APP_UPGRADE_MAX_BACKUP_AGE` (default 26h); the dashboard's **Back up now** and `levelrail-cli upgrade backup-now` clear this blocker in one step.
 
 The CLI also takes a fresh control plane backup unless you pass `--no-backup`, then prints the exact command to run. The API is `GET /api/v1/updates/preflight`.
 
 ### Upgrade with automatic rollback
 
-Settings > Updates > **Upgrade this server** and `levelrail-cli upgrade --apply` run the safe self-update. It downloads the release, checks its checksum and cosign signature, snapshots the database, tries the new release's migrations on a copy of that snapshot, swaps the binary, restarts and waits for health. If the new release is not healthy within the time limit (`--timeout`, 90 seconds by default) the previous binary and, when the schema changed, the pre-upgrade database snapshot come back automatically. Every attempt, with its step timeline, is kept and shown on the Updates page.
+Settings > Updates > **Upgrade to vX.Y.Z now** (or **Schedule upgrade**) and `levelrail-cli upgrade --apply` run the safe self-update. It downloads the release, checks its checksum and cosign signature, snapshots the database, tries the new release's migrations on a copy of that snapshot, swaps the binary, restarts and waits for health. If the new release is not healthy within the time limit (`--timeout`, 90 seconds by default) the previous binary and, when the schema changed, the pre-upgrade database snapshot come back automatically. Every attempt, with its step timeline, is kept and shown on the Updates page.
 
 ```bash
 levelrail-cli upgrade --plan                    # breaking changes between here and the latest release

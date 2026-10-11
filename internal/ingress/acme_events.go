@@ -114,7 +114,10 @@ func (acmeEventsModule) Handle(_ context.Context, ev caddy.Event) error {
 			At:         ev.Timestamp(),
 		})
 	case "cert_obtained":
-		defaultACMEFailures.Clear(id)
+		// A fallback certificate says the public CA failed, not that it recovered.
+		if issuer, _ := ev.Data["issuer"].(string); issuer != fallbackKeyInternal {
+			defaultACMEFailures.Clear(id)
+		}
 	}
 	return nil
 }

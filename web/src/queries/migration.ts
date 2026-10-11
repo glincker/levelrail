@@ -15,11 +15,21 @@ export interface CopyTable {
   ok: boolean
 }
 
+// Mirrors datamigrate.FailureInfo: a copy failure in plain words, with the
+// redacted raw error under technical (shown only on request).
+export interface CopyFailure {
+  code: string
+  summary: string
+  hint: string
+  technical?: string
+}
+
 export interface DatabaseCopy {
   database: string
   engine: string
   status: CopyStatus
   reason?: string
+  failure?: CopyFailure
   next_action?: string
   source_host?: string
   source_port?: number

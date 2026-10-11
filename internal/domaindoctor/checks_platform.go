@@ -28,6 +28,16 @@ const (
 func (rn *run) checkApp(context.Context) Check {
 	c := Check{ID: IDAppRunning, Title: "App is running and ready", Tier: TierTraffic}
 	a := rn.facts.AppState
+	if t := rn.facts.Target; t != nil {
+		c.Title = "Proxy target " + t.Display + " is reachable"
+		c.State, c.Detail = StatePass, t.Detail
+		if !t.Reachable {
+			c.State = StateFail
+			c.Title = "This server cannot reach " + t.Display
+			c.Fix = &Fix{Summary: "Start the service behind the target, or edit the standalone domain to point at the right port or address."}
+		}
+		return c
+	}
 	switch {
 	case rn.facts.App == "":
 		c.State, c.Detail = StateSkipped, "no app serves this domain"

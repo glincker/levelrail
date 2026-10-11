@@ -37,6 +37,8 @@ func featureForPath(p string) (experimental.Feature, bool) {
 		return experimental.CloudflareTunnel, true
 	case p == "/api/v1/environments", databaseEnvironmentPath.MatchString(p):
 		return experimental.GlobalEnvironments, true
+	case strings.HasPrefix(p, "/api/v1/resource-advisor/"):
+		return experimental.ResourceAdvisor, true
 	}
 	return "", false
 }

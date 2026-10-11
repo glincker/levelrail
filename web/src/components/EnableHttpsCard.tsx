@@ -88,7 +88,7 @@ function EnableForm({
           id="enable-https-email"
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder="you@yourdomain.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required

@@ -12,6 +12,7 @@ export type ActionSpec =
   | { kind: 'node'; id: string }
   | { kind: 'domains' }
   | { kind: 'route'; to: '/settings/cli-access' | '/approvals' }
+  | { kind: 'path'; to: string }
   | { kind: 'system' }
   | { kind: 'cleanup' }
   | { kind: 'ask-ai'; message: string }
@@ -101,7 +102,13 @@ function actionsFor(
           ),
         ]
       case 'path':
-        return []
+        return [
+          act(
+            item.action ?? t('needsAttention.review'),
+            { kind: 'path', to: target.to },
+            true,
+          ),
+        ]
       case 'system':
         return item.id === 'disk'
           ? [act('Clean up Docker', { kind: 'cleanup' }, true)]
@@ -125,9 +132,7 @@ export function attentionToSuggestions(
   items: AttentionItem[],
   t: DashboardT,
 ): SuggestionSpec[] {
-  const actionable = items.filter(
-    (i) => i.severity !== 'info' && i.target.kind !== 'path',
-  )
+  const actionable = items.filter((i) => i.severity !== 'info')
   return actionable.map((item) => ({
     id: item.id,
     tone: item.severity === 'critical' ? 'danger' : 'warning',

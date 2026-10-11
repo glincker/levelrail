@@ -1,4 +1,5 @@
 import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
+import { OptimiseHint } from './resourceAdvisor/ResourceAdvisorTile'
 import type {
   AppDetail,
   DeployStrategy,
@@ -59,6 +60,7 @@ export function AppOverview({ app }: { app: AppDetail }) {
           <SquaresFourIcon className="size-4" />
           Overview
         </CardTitle>
+        <OptimiseHint kind="app" name={app.name} />
       </CardHeader>
       <CardContent>
         <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">

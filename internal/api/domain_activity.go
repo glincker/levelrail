@@ -101,7 +101,7 @@ type activityPage struct {
 var activitySubjects = map[string]string{
 	"redirect": "Redirect", "maintenance": "Maintenance mode", "waf": "WAF", "auth": "Basic auth",
 	"tls-cert": "Custom certificate", "error-pages": "Error pages", "search-visibility": "Search engine visibility",
-	"dns-records": "DNS record", "renew": "Certificate renewal", "domains": "Domains",
+	"dns-records": "DNS record", "renew": "Certificate renewal", "domains": "Domains", "target": "Proxy target",
 }
 
 func activityKindFor(e store.AuditEntry) string {

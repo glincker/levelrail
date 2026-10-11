@@ -261,3 +261,26 @@ func TestStatusForExpiry(t *testing.T) {
 		})
 	}
 }
+
+func TestHandleListCertificates_InternalOwnerNeverRaisesExpiryClass(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	now := time.Now()
+	seedCert(t, db, "stale.example.com", now.Add(-12*time.Hour), now.Add(-time.Minute))
+	seedCert(t, db, "soon.example.com", now.Add(-12*time.Hour), now.Add(3*time.Hour))
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/certificates", ""))
+	var got []certificateStatus
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("got %d certificates, want 2", len(got))
+	}
+	for _, c := range got {
+		if c.ExpiryClass != "" {
+			t.Errorf("%s: expiry_class = %q, want empty for an internal-CA certificate", c.Domain, c.ExpiryClass)
+		}
+	}
+}

@@ -130,5 +130,8 @@
     "noLines": "No log lines were captured for this failure.",
     "showing": "Showing the last {{shown}} of {{total}} lines.",
     "linesLabel": "Last log lines of the failing container"
+  },
+  "alerts": {
+    "noChannelWarning": "No notification channel is set, so this rule will fire without notifying anyone. Choose a channel above, or connect one in Settings > Notification channels."
   }
 }

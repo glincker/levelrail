@@ -16,6 +16,7 @@ export interface NodeResourceUsage {
   // control plane itself: undefined here means "no collector for this
   // node," not "empty disk."
   memory_total_bytes?: number
+  memory_available_bytes?: number
   disk_used_bytes?: number
   disk_total_bytes?: number
 }

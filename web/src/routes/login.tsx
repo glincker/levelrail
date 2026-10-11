@@ -9,6 +9,7 @@ interface LoginSearch {
   redirect?: string
   session_link?: string
   approval?: string
+  signed_out?: 'session'
 }
 
 // Plain function rather than zod so validateSearch stays out of the eagerly loaded bundle.
@@ -23,6 +24,9 @@ function validateLoginSearch(search: Record<string, unknown>): LoginSearch {
       : {}),
     ...(typeof approval === 'string' && /^la_[\w-]{1,64}$/.test(approval)
       ? { approval }
+      : {}),
+    ...(search.signed_out === 'session'
+      ? { signed_out: 'session' as const }
       : {}),
   }
 }
@@ -41,12 +45,18 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
-  const { setup, session_link: sessionLink, approval } = Route.useSearch()
+  const {
+    setup,
+    session_link: sessionLink,
+    approval,
+    signed_out: signedOut,
+  } = Route.useSearch()
   return (
     <LoginScreen
       setup={setup}
       sessionLink={sessionLink}
       resumeApprovalId={approval}
+      sessionEnded={signedOut === 'session'}
     />
   )
 }

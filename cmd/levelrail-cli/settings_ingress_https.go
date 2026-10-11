@@ -75,7 +75,7 @@ func printHTTPSStatusHuman(out io.Writer, s httpsStatusResource) {
 		_, _ = fmt.Fprintf(out, "domain:     %s\n", s.Domain)
 	}
 	if s.State == "off" && s.SuggestedDomain != "" {
-		_, _ = fmt.Fprintf(out, "suggested:  %s (run: settings ingress https enable --email you@example.com)\n", s.SuggestedDomain)
+		_, _ = fmt.Fprintf(out, "suggested:  %s (run: settings ingress https enable --email you@yourdomain.com)\n", s.SuggestedDomain)
 	}
 	if s.State == "issued" {
 		_, _ = fmt.Fprintf(out, "issuer:     %s\n", s.Issuer)

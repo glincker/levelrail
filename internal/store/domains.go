@@ -30,5 +30,12 @@ func domainOwner(ctx context.Context, tx *sql.Tx, domain string) (owner string, 
 		return "", false, fmt.Errorf("check static_site_domains for %q: %w", domain, err)
 	}
 
+	var held string
+	if err := tx.QueryRowContext(ctx, `SELECT domain FROM standalone_domains WHERE domain = ?`, domain).Scan(&held); err == nil {
+		return StandaloneDomainOwner, true, nil
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return "", false, fmt.Errorf("check standalone_domains for %q: %w", domain, err)
+	}
+
 	return "", false, nil
 }

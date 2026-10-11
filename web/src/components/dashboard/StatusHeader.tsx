@@ -10,7 +10,6 @@ import type { AttentionLevel } from '../../lib/attentionSummary'
 import { CreateResourceWizard } from '../CreateResourceWizard'
 import { PageHeader } from '../shell/PageHeader'
 import { useAttentionSummary } from '../shell/useAttentionSummary'
-import { SetupChip } from './SetupChip'
 
 const LEVEL_TONE: Record<AttentionLevel, Tone> = {
   ok: 'success',
@@ -18,17 +17,12 @@ const LEVEL_TONE: Record<AttentionLevel, Tone> = {
   critical: 'danger',
 }
 
-export function StatusHeader({
-  firstAppName,
-  showSetup,
-}: {
-  firstAppName: string | undefined
-  showSetup: boolean
-}) {
+export function StatusHeader() {
   const { t } = useTranslation()
+  const { t: td } = useTranslation('dashboard')
   const { level, count, isLoading } = useAttentionSummary()
   const label =
-    level === 'ok' ? t('shell.status.ok') : t('shell.status.issues', { count })
+    level === 'ok' ? td('status.ok') : td('status.incidents', { count })
   const Icon = level === 'ok' ? CheckCircleIcon : WarningCircleIcon
   return (
     <PageHeader
@@ -47,7 +41,6 @@ export function StatusHeader({
               }
             />
           )}
-          {showSetup ? <SetupChip firstAppName={firstAppName} /> : null}
         </>
       }
       actions={

@@ -33,6 +33,7 @@ type dataImportResource struct {
 	Engine         string                   `json:"engine"`
 	Status         string                   `json:"status"`
 	Reason         string                   `json:"reason,omitempty"`
+	Failure        *datamigrate.FailureInfo `json:"failure,omitempty"`
 	NextAction     string                   `json:"next_action,omitempty"`
 	SourceHost     string                   `json:"source_host,omitempty"`
 	SourcePort     int                      `json:"source_port,omitempty"`
@@ -63,7 +64,11 @@ func toDataImportResource(db store.DesiredDatabase, row store.DatabaseDataImport
 	if !found {
 		return res
 	}
-	res.Status, res.Reason = row.Status, row.Reason
+	res.Status, res.Reason = row.Status, datamigrate.Redact(row.Reason)
+	if row.Status == store.DataImportFailed {
+		info := datamigrate.Humanize(row.Reason, row.SourceHost, row.SourcePort)
+		res.Failure = &info
+	}
 	res.SourceHost, res.SourcePort, res.SourceDatabase = row.SourceHost, row.SourcePort, row.SourceDB
 	res.Checked, res.Mismatched = row.Checked, row.Mismatched
 	if row.Detail != "" {

@@ -82,7 +82,7 @@ func TestLibraryModeBearerAuthentication(t *testing.T) {
 		want  int
 	}{
 		{"ownerless system token", system, http.StatusOK},
-		{"owned token the library never saw", late, http.StatusUnauthorized},
+		{"owned pre-library token imports on first use", late, http.StatusOK},
 		{"unknown secret", "nope", http.StatusUnauthorized},
 	}
 	for _, tc := range tests {

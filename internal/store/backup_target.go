@@ -140,6 +140,17 @@ func (db *DB) UpdateBackupTarget(ctx context.Context, id, name, provider, endpoi
 // cascading a delete a user didn't ask for; the caller surfaces that as
 // a real error, not a bug to work around here.
 func (db *DB) DeleteBackupTarget(ctx context.Context, id string) error {
+	// A failed backup produced no artifact, so its row must not pin the
+	// target. Rows still referenced elsewhere stay and keep blocking.
+	if _, err := db.ExecContext(ctx, `
+		DELETE FROM backup_history
+		WHERE target_id = ? AND status = ?
+		  AND NOT EXISTS (SELECT 1 FROM restore_history r WHERE r.backup_history_id = backup_history.id)
+		  AND NOT EXISTS (SELECT 1 FROM backup_verification v WHERE v.backup_history_id = backup_history.id)
+		  AND NOT EXISTS (SELECT 1 FROM volume_clone_restores c WHERE c.backup_history_id = backup_history.id)`,
+		id, BackupStatusFailed); err != nil {
+		return fmt.Errorf("store: prune failed backup history for target %q: %w", id, err)
+	}
 	res, err := db.ExecContext(ctx, `DELETE FROM backup_targets WHERE id = ?`, id)
 	if err != nil {
 		return fmt.Errorf("store: delete backup target %q: %w", id, err)

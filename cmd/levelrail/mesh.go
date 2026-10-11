@@ -56,10 +56,19 @@ const (
 	defaultLocalNodeName = "local"
 )
 
-// meshEnabled reads APP_MESH_ENABLED, the same "unset or anything but 1
-// means off" shape devmode_debug.go's own APP_DEV_MODE check uses.
-func meshEnabled() bool {
-	return os.Getenv("APP_MESH_ENABLED") == "1"
+// meshEnabled resolves whether the mesh should start: APP_MESH_ENABLED pins
+// it, else the setting saved from the dashboard or CLI, else off.
+func meshEnabled(ctx context.Context, db *store.DB, logger *slog.Logger) bool {
+	var saved store.MeshSetting
+	if db != nil {
+		s, err := db.GetMeshSetting(ctx)
+		if err != nil {
+			logger.Warn("mesh setting unreadable, treating as off", slog.String("error", err.Error()))
+		}
+		saved = s
+	}
+	on, _ := network.ResolveEnabled(os.LookupEnv, saved.Enabled, saved.Set)
+	return on
 }
 
 // meshDNSAddr reads APP_MESH_DNS_ADDR, defaulting to a high, unprivileged
@@ -306,7 +315,7 @@ type meshSetup struct {
 // DNS port, or a broken local-node bootstrap are configuration problems
 // worth failing loudly on rather than starting in a half-wired state.
 func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string, agentRegistry *agent.Registry, logger *slog.Logger) (*meshSetup, error) {
-	if !meshEnabled() {
+	if !meshEnabled(ctx, db, logger) {
 		return nil, nil
 	}
 

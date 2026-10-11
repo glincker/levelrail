@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   BellIcon,
+  BellSlashIcon,
   CheckCircleIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -29,6 +31,7 @@ import {
   type ShellNotification,
 } from './notifications'
 import { setReadIds, useReadIds } from './readStore'
+import { snoozeNow, unsnoozeNow, useSnoozed } from './snoozeStore'
 
 const SEVERITY_DOT: Record<ShellNotification['severity'], string> = {
   critical: 'bg-destructive',
@@ -48,12 +51,18 @@ export function NotificationCenter() {
   const dismiss = useDismissAttentionItem()
   const { t } = useTranslation('attention', { useSuspense: false })
   const { ids, set } = useReadIds()
-  const list = buildNotifications({
+  const { isSnoozed } = useSnoozed()
+  const [showSnoozed, setShowSnoozed] = useState(false)
+  const full = buildNotifications({
     failedDeploys: failed.data,
     approvals: approvals.data,
     activity: activity.events,
     attention: attention.items,
   })
+  const snoozedSetup = full.filter((n) => n.snoozeId && isSnoozed(n.snoozeId))
+  const list = showSnoozed
+    ? full
+    : full.filter((n) => !n.snoozeId || !isSnoozed(n.snoozeId))
   const unread = unreadCount(list, set)
   const groups = groupNotifications(list)
 
@@ -98,6 +107,20 @@ export function NotificationCenter() {
             Mark all read
           </Button>
         </PopoverHeader>
+        {snoozedSetup.length > 0 ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="self-start"
+            aria-pressed={showSnoozed}
+            onClick={() => {
+              setShowSnoozed((v) => !v)
+            }}
+          >
+            {t('setup.snoozedCount', { count: snoozedSetup.length })}
+          </Button>
+        ) : null}
         {groups.length === 0 ? (
           <div className="flex flex-col items-center gap-1.5 px-2 py-6 text-center">
             <CheckCircleIcon
@@ -113,7 +136,9 @@ export function NotificationCenter() {
             {groups.map((g) => (
               <section key={g.group} aria-label={g.label}>
                 <h3 className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                  {g.label}
+                  {g.group === 'setup'
+                    ? t('setup.title', { count: g.items.length })
+                    : g.label}
                 </h3>
                 <ul>
                   {g.items.map((n) => (
@@ -150,6 +175,12 @@ export function NotificationCenter() {
                           </span>
                         </span>
                       </Link>
+                      {n.snoozeId ? (
+                        <SetupActions
+                          id={n.snoozeId}
+                          snoozed={isSnoozed(n.snoozeId)}
+                        />
+                      ) : null}
                       {n.dismissKey ? (
                         <Button
                           type="button"
@@ -175,5 +206,51 @@ export function NotificationCenter() {
         )}
       </PopoverContent>
     </Popover>
+  )
+}
+
+function SetupActions({ id, snoozed }: { id: string; snoozed: boolean }) {
+  const { t } = useTranslation('attention', { useSuspense: false })
+  if (snoozed) {
+    return (
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        onClick={() => {
+          unsnoozeNow(id)
+        }}
+      >
+        {t('setup.restore')}
+      </Button>
+    )
+  }
+  return (
+    <>
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="ghost"
+        aria-label={t('setup.snooze')}
+        title={t('setup.snooze')}
+        onClick={() => {
+          snoozeNow(id, '1d')
+        }}
+      >
+        <BellSlashIcon />
+      </Button>
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="ghost"
+        aria-label={t('setup.dismiss')}
+        title={t('setup.dismiss')}
+        onClick={() => {
+          snoozeNow(id, 'forever')
+        }}
+      >
+        <XIcon />
+      </Button>
+    </>
   )
 }

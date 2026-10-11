@@ -327,7 +327,9 @@ func (rt *Router) purgeOnIssuerChange(ctx context.Context, prev, next store.Ingr
 	if rt.certs == nil || !next.EffectiveACMEEnabled() {
 		return
 	}
-	if prev.EffectiveACMEEnabled() && prev.ACMEDirectoryURL == next.ACMEDirectoryURL {
+	// A changed contact also purges: a failed issuance left a fallback
+	// certificate that would otherwise sit until it renews.
+	if prev.EffectiveACMEEnabled() && prev.ACMEDirectoryURL == next.ACMEDirectoryURL && prev.ACMEEmail == next.ACMEEmail {
 		return
 	}
 	n, err := ingress.PurgeCertsFromOtherIssuers(ctx, rt.certs, next.ACMEDirectoryURL)

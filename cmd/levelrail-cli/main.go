@@ -195,10 +195,16 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAPIDocs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "containers":
 		return runContainers(prog, args[1:], stdout, stderr, lookupEnv)
+	case "system":
+		return runSystem(prog, args[1:], stdout, stderr, lookupEnv)
 	case "system-prune":
 		return runSystemPrune(prog, args[1:], stdout, stderr, lookupEnv)
+	case "network":
+		return runNetwork(prog, args[1:], stdout, stderr, lookupEnv)
 	case "docker-guard":
 		return runDockerGuard(prog, args[1:], stdout, stderr, lookupEnv)
+	case "advisor":
+		return runAdvisor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned":
 		return runVolumesOrphaned(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned-cleanup":
@@ -329,10 +335,12 @@ Usage:
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
   %[1]s changelog [--limit N] [flags]                         recent release notes from the control plane's own CHANGELOG.md
   %[1]s ai-control status|set|revoke-agents [flags]           what agents and AI may do: off, observe, operate, admin
+  %[1]s network mesh status|enable|disable [flags]            the WireGuard mesh between nodes
   %[1]s docker-guard status|set [flags]                       the Docker API allowlist proxy: off, audit, enforce
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
   %[1]s audit-purge [flags]                                   delete audit log entries past the retention window now
   %[1]s attention [flags]                                     everything failing right now: apps, nodes, certificates, doctor checks
+  %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
   %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
@@ -340,6 +348,7 @@ Usage:
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database
+  %[1]s system address [--domain NAME] [flags]              show this server's public IPs and the DNS records to create
   %[1]s system-prune [flags]                                remove stopped containers, dangling images, and unused volumes/build cache, fleet-wide
   %[1]s volumes-orphaned [flags]                              list this instance's named volumes no app or database references any more
   %[1]s volumes-orphaned-cleanup --names name1,name2 [flags]   remove exactly the named orphaned volumes, after re-confirming each is still orphaned

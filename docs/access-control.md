@@ -34,6 +34,7 @@ Every user and every API token carries abilities. A role is a named set of them.
 | `deploy` | Trigger a deploy |
 | `root` | Everything. Exclusive: it cannot be combined with other abilities |
 | `signin:approve` | Tokens only: show your own sign-in codes and approve new browsers. Root does not include it, and only a signed-in session can mint it |
+| `secrets:reveal` | Tokens only: reveal secret values together with `read:sensitive`, the owner's password at request time, and `APP_SECRET_REVEAL_TOKENS=on`. Root does not include it, and only a signed-in session holding `read:sensitive` can mint it. See [Environment variables and secrets](environment-and-secrets.md#api-tokens) |
 
 See [Identity and access](identity-and-access.md) for how abilities, sessions and tokens work.
 

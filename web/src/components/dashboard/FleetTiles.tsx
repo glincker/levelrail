@@ -12,10 +12,13 @@ import {
 import { MetricTile } from '@/components/kit'
 import type { AppListEntry } from '../../types/appDetail'
 import { countBuckets } from '../../lib/appsListView'
-import { errorTone } from '../../lib/fleetThresholds'
+import { useTranslation } from 'react-i18next'
+import { ERROR_RATE_MIN_REQUESTS, errorTone } from '../../lib/fleetThresholds'
 import {
   deploysPerHour,
+  errorReading,
   flattenAttempts,
+  nodeCounts,
   pickSampleApps,
   summarizeTraffic,
 } from '../../lib/fleetStats'
@@ -29,6 +32,7 @@ export const SAMPLE_APP_CAP = 8
 
 export function FleetTiles({ apps }: { apps: AppListEntry[] }) {
   const navigate = useNavigate()
+  const { t: tr } = useTranslation('dashboard')
   const now = useMinuteNow()
   const names = useMemo(() => pickSampleApps(apps, SAMPLE_APP_CAP), [apps])
   const traffic = useAppsMetrics()
@@ -43,25 +47,25 @@ export function FleetTiles({ apps }: { apps: AppListEntry[] }) {
   const buckets = countBuckets(apps)
   const t = summarizeTraffic(traffic.data ?? [])
   const d = deploysPerHour(flattenAttempts(deploys.byApp), now)
-  const nodeList = nodes.data ?? []
-  const online = nodeList.filter((n) => n.status === 'online').length
+  const nodeTotals = nodeCounts(nodes.data ?? [])
+  const errors = errorReading(t, ERROR_RATE_MIN_REQUESTS)
   const gpuCount = (gpus.data ?? []).reduce(
     (sum, g) => sum + (g.present ? g.gpu_count : 0),
     0,
   )
-  const sampled = 'Last hour, all apps.'
+  const sampled = tr('tiles.lastHour')
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-3">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
       <MetricTile
-        label="Apps running"
+        label={tr('tiles.appsRunning')}
         icon={<PackageIcon className="size-3.5" />}
         value={`${buckets.running} / ${apps.length}`}
         tone={buckets.failing > 0 ? 'danger' : 'success'}
         onClick={() => void navigate({ to: '/apps' })}
       />
       <MetricTile
-        label="Requests"
+        label={tr('tiles.requests')}
         icon={<PulseIcon className="size-3.5" />}
         value={Number(t.ratePerSec.toFixed(1))}
         unit="req/s"
@@ -71,30 +75,33 @@ export function FleetTiles({ apps }: { apps: AppListEntry[] }) {
         loading={traffic.isPending}
       />
       <MetricTile
-        label="Error rate"
+        label={tr('tiles.errorRate')}
         icon={<WarningIcon className="size-3.5" />}
-        value={Number(t.errorPct.toFixed(2))}
-        unit="%"
-        tone={errorTone(t.errorPct)}
+        value={
+          errors.kind === 'value'
+            ? Number(errors.pct.toFixed(2))
+            : tr('tiles.noTraffic')
+        }
+        unit={errors.kind === 'value' ? '%' : undefined}
+        tone={errors.kind === 'value' ? errorTone(errors.pct) : 'neutral'}
         loading={traffic.isPending}
       />
       <MetricTile
-        label="Deploys 24h"
+        label={tr('tiles.deploys24h')}
         icon={<RocketLaunchIcon className="size-3.5" />}
         value={d.total}
         series={d.buckets}
         tone="info"
         loading={deploys.isPending}
       />
-      {nodes.data ? (
-        <MetricTile
-          label="Nodes online"
-          icon={<HardDrivesIcon className="size-3.5" />}
-          value={`${online} / ${nodeList.length}`}
-          tone={online < nodeList.length ? 'warning' : 'success'}
-          onClick={() => void navigate({ to: '/nodes' })}
-        />
-      ) : null}
+      <MetricTile
+        label={tr('tiles.nodesOnline')}
+        icon={<HardDrivesIcon className="size-3.5" />}
+        value={`${nodeTotals.online} / ${nodeTotals.total}`}
+        tone={nodeTotals.online < nodeTotals.total ? 'warning' : 'success'}
+        loading={nodes.isPending}
+        onClick={() => void navigate({ to: '/nodes' })}
+      />
       {gpuCount > 0 ? (
         <MetricTile
           label="GPUs"

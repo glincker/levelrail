@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Controller,
@@ -408,6 +409,7 @@ export function CreateAlertRuleDialog({
   const createRule = useCreateAlertRule(appName)
   const channelsQuery = useNotificationChannelsOptional()
   const channels = channelsQuery.data ?? []
+  const { t } = useTranslation('observability')
   const scheduledTasksQuery = useScheduledTasks(appName)
   const scheduledTasks = scheduledTasksQuery.data ?? []
   const databasesQuery = useDatabases()
@@ -418,6 +420,7 @@ export function CreateAlertRuleDialog({
       defaultValues: DEFAULT_VALUES,
     })
   const kind = watch('kind')
+  const selectedChannelId = watch('channelId')
   const backupResourceKind = watch('backupResourceKind')
   const sloObjective = watch('sloObjective')
   const sloTarget = watch('sloTarget')
@@ -908,6 +911,14 @@ export function CreateAlertRuleDialog({
                 </FieldDescription>
               </>
             )}
+            {!selectedChannelId ? (
+              <p
+                role="status"
+                className="text-sm text-amber-700 dark:text-amber-400"
+              >
+                {t('alerts.noChannelWarning')}
+              </p>
+            ) : null}
           </Field>
 
           <Field orientation="horizontal">

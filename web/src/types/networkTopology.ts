@@ -26,6 +26,7 @@ export interface NetworkTopologyApp {
   domains?: string[]
   dns_name?: string
   mesh_address?: string
+  port?: number
 }
 
 export interface NetworkTopologyDatabase {
@@ -47,6 +48,26 @@ export interface NetworkTopologyConnection {
   env_var?: string
 }
 
+export type NetworkTopologyGroupKind = 'local' | 'node' | 'unplaced'
+
+// One card on the page, grouped by the API (internal/api's
+// networkTopologyGroup): this server, an enrolled node, or unplaced.
+export interface NetworkTopologyGroup {
+  key: string
+  kind: NetworkTopologyGroupKind
+  node_id?: string
+  name: string
+  hostname?: string
+  address?: string
+  region?: string
+  status?: string
+  schedulable: boolean
+  mesh_address?: string
+  stale_node_ids?: string[]
+  apps: NetworkTopologyApp[]
+  databases: NetworkTopologyDatabase[]
+}
+
 export interface NetworkTopologyResponse {
   zone: string
   mesh_enabled: boolean
@@ -55,4 +76,5 @@ export interface NetworkTopologyResponse {
   databases: NetworkTopologyDatabase[]
   load_balancers: NetworkTopologyLoadBalancer[]
   connections: NetworkTopologyConnection[]
+  groups: NetworkTopologyGroup[]
 }

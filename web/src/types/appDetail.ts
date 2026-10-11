@@ -6,6 +6,8 @@
 // backend contract, not a public SDK, and a remapping layer would just
 // be one more place for the two shapes to silently drift apart.
 
+import type { EnvVarMeta } from '../lib/envRows'
+
 export interface ServiceResources {
   memory_bytes?: number
   nano_cpus?: number
@@ -96,6 +98,9 @@ export interface AppDetail {
   bind_address: string
   domains?: string[]
   env?: Record<string, string>
+  /** Per-variable sensitivity; a sensitive value in env reads back masked. */
+  env_meta?: Record<string, EnvVarMeta>
+  secrets_write_only?: boolean
   /** Names of env vars backed by encrypted secret storage (values never returned). */
   secret_env?: string[]
   resources?: ServiceResources | null

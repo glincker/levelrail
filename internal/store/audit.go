@@ -80,6 +80,14 @@ func (db *DB) SaveAuditEntry(ctx context.Context, e AuditEntry) error {
 	return insertAuditEntry(ctx, db, e)
 }
 
+// SaveAuditEntryTx is SaveAuditEntry inside the caller's transaction.
+func SaveAuditEntryTx(ctx context.Context, tx *sql.Tx, e AuditEntry) error {
+	return insertAuditEntry(ctx, tx, e)
+}
+
+// AuditActionLegacyTokenMigrated marks a pre-library API token imported into the auth library on upgrade.
+const AuditActionLegacyTokenMigrated = "api_token.legacy_migrated"
+
 type auditExecer interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 }

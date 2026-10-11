@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import {
+  FlaskIcon,
   UserIcon,
   ShieldIcon,
   ShieldCheckIcon,
@@ -388,6 +389,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: ArrowCircleUpIcon,
         title: 'Updates',
         description: 'Current version and available releases.',
+      },
+      {
+        to: '/settings/beta-features',
+        icon: FlaskIcon,
+        title: 'Beta features',
+        description: 'Switch on features that work but are still being tuned.',
       },
       {
         to: '/settings/audit-log',

@@ -14,7 +14,7 @@ Some states block on a person and used to be visible only if you went looking. T
 | CLI login expired or denied | A login nobody approved in time, or that was denied | Start over from the terminal, or dismiss |
 | Deploy approval pending | A deploy into a protected environment | Open Approvals |
 | API token expiring or expired | A token with an expiry inside the window | Create a replacement and revoke the old one |
-| Data copy failed or stalled | A live data copy into a managed database | Open the database and retry |
+| Data copy failed or stalled | The latest live data copy into a managed database | Read the plain-language cause, fix it and retry |
 | Backup overdue | A scheduled backup later than its schedule allows | Open the database and run a backup |
 | Invitations waiting | Pending or expired, unaccepted invitations | Open Users and resend or revoke |
 | Certificate renewal stalled | A certificate that should have renewed by now, with the CA's last error | Open Domains, read the CA error |
@@ -101,6 +101,24 @@ You can also toggle both when editing a channel in the dashboard. A notice conta
 | `APP_DEVICE_HISTORY_RETENTION` | `720h` | How long resolved requests are kept |
 | `APP_ATTENTION_TOKEN_WINDOW` | `168h` | How far ahead token expiry is flagged, and how long after |
 | `APP_ATTENTION_BACKUP_GRACE` | `6h` | Slack past a backup's expected interval before it is overdue |
+| `APP_ATTENTION_SHORT_LIVED_CERT` | `168h` | Certificates valid for no longer than this are auto-renewed internal issuance and never raise an expiry item |
+| `APP_ATTENTION_COPY_FAILURE_DAYS` | `14` | Days a failed data copy stays an incident before it moves to history |
+
+## Incidents and recommendations
+
+Every item has one of two classes, decided on the server. An incident is broken or about to break and needs action: failed deploys, crashloops, a real certificate that expired or whose renewal stalled, disk pressure, overdue backups, offline nodes, active sign-in threats. Only incidents appear in the dashboard's Needs attention list and in the header count.
+
+A recommendation is setup or hardening advice: control plane disaster recovery is off, the Docker API guard could move from audit to enforce, a new release is available, an agent is out of date, a database release is past end of life. These wait in the notification centre under Pending setup and hardening, where each can be snoozed for a day or dismissed. The dashboard shows them as a single line with a count.
+
+Certificate expiry only becomes an incident for a certificate that is routed to an app or site, is not issued by the internal CA, and whose TLS is not terminated by a proxy. An auto-renewing ACME certificate counts only once it expired or its renewal stalled; an uploaded certificate counts from the start of the warning window.
+
+## Failed data copies
+
+A failed copy is an incident only while it is the latest attempt for that database. It drops off by itself when a restore into that database succeeded after it, when a newer attempt is running or has been verified, or when it is older than `APP_ATTENTION_COPY_FAILURE_DAYS`.
+
+The item states the cause in one sentence with a fix hint, for example "The source database did not answer on 72.61.8.70:5432 in time. Check that it is reachable from this server (firewall, allowed IPs) and retry." Covered shapes: connection timeout, connection refused, host name not found, authentication failed, database does not exist, SSL required or refused, permission denied, out of disk space, target database not running, and a verification mismatch. The raw error is under **Technical details** in the dashboard and behind `--verbose` in `levelrail-cli migrate db-status`. It is never the default view, and passwords and connection strings are redacted before it leaves the server.
+
+Each failed attempt can be snoozed for a day (remembered in this browser) or dismissed (remembered for your account). Both apply to that attempt only: a new failed attempt shows again.
 
 ## Security notes
 

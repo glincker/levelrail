@@ -107,6 +107,9 @@ func (rt *Router) postureExposure(ctx context.Context) *postureExposure {
 
 func (rt *Router) collectPosture(ctx context.Context, now time.Time) postureInput {
 	in := postureInput{Now: now, NewDeviceApproval: rt.newDeviceApproval, Anomalies: rt.sec.failures.recent(now)}
+	if policy, valid := revealPolicy(); valid && policy == revealPolicyAllow {
+		in.SecretRevealAllow = true
+	}
 	in.Policy, _, _ = rt.effectiveSecurityPolicy(ctx)
 	maxAge, _ := envDays(envSessionMaxAgeDays, defaultSessionMaxAge)
 	in.SessionMaxAge = time.Duration(maxAge) * hygieneDay

@@ -126,6 +126,8 @@ func TestRun_BackupTargetsCreate_MissingRequiredFlags(t *testing.T) {
 		{name: "missing bucket", args: []string{"--name", "n", "--provider", "aws", "--access-key-id", "a", "--secret-access-key", "s"}, want: "--bucket is required"},
 		{name: "missing access key id", args: []string{"--name", "n", "--provider", "aws", "--bucket", "b", "--secret-access-key", "s"}, want: "--access-key-id is required"},
 		{name: "missing secret access key", args: []string{"--name", "n", "--provider", "aws", "--bucket", "b", "--access-key-id", "a"}, want: "--secret-access-key is required"},
+		{name: "custom missing region", args: []string{"--name", "n", "--provider", "custom", "--endpoint", "https://s3.example.invalid", "--bucket", "b", "--access-key-id", "a", "--secret-access-key", "s"}, want: "--region is required for the custom provider"},
+		{name: "custom missing endpoint", args: []string{"--name", "n", "--provider", "custom", "--region", "r", "--bucket", "b", "--access-key-id", "a", "--secret-access-key", "s"}, want: "--endpoint is required for the custom provider"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
