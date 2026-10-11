@@ -98,6 +98,10 @@ type AppResource struct {
 	// override (omitted entirely lets the server auto-place via simple
 	// spread scheduling instead, see AutoPlaced below).
 	NodeID string `json:"node_id,omitempty"`
+	// NodeName and NodeIsLocal are response-only display fields: an empty
+	// NodeID means this server, and NodeName is empty for a vanished node.
+	NodeName    string `json:"node_name,omitempty"`
+	NodeIsLocal bool   `json:"node_is_local,omitempty"`
 	// AutoPlaced mirrors internal/api's appResource.AutoPlaced:
 	// response-only, true when create left node_id unset and the server
 	// picked a non-local node for it via simple spread scheduling.
@@ -1297,6 +1301,9 @@ type DatabaseResource struct {
 	Engine  string `json:"engine"`
 	Version string `json:"version"`
 	NodeID  string `json:"node_id,omitempty"`
+	// NodeName and NodeIsLocal: see AppResource.
+	NodeName    string `json:"node_name,omitempty"`
+	NodeIsLocal bool   `json:"node_is_local,omitempty"`
 	// AutoPlaced mirrors internal/api's databaseResource.AutoPlaced: see
 	// AppResource's identically-named field doc comment.
 	AutoPlaced bool `json:"auto_placed,omitempty"`

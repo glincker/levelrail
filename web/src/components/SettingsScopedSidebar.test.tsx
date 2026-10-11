@@ -3,6 +3,9 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import i18next from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
+import settingsEn from '../locales/en/settings.json'
 import { SettingsScopedSidebar } from './SettingsScopedSidebar'
 import { SidebarProvider } from './ui/sidebar'
 
@@ -31,16 +34,28 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   }
 })
 
+const testI18n = i18next.createInstance()
+void testI18n.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  ns: ['settings'],
+  defaultNS: 'settings',
+  resources: { en: { settings: settingsEn } },
+  interpolation: { escapeValue: false },
+})
+
 function renderSidebar() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   render(
-    <QueryClientProvider client={queryClient}>
-      <SidebarProvider>
-        <SettingsScopedSidebar />
-      </SidebarProvider>
-    </QueryClientProvider>,
+    <I18nextProvider i18n={testI18n}>
+      <QueryClientProvider client={queryClient}>
+        <SidebarProvider>
+          <SettingsScopedSidebar />
+        </SidebarProvider>
+      </QueryClientProvider>
+    </I18nextProvider>,
   )
 }
 
@@ -68,9 +83,7 @@ describe('SettingsScopedSidebar', () => {
   it('renders every group open by default when there is no stored preference', () => {
     renderSidebar()
 
-    // "Account" is both the group heading and an item title, so assert
-    // via "Security" (an Account-only item) to avoid that ambiguity.
-    expect(screen.getByText('Security')).toBeInTheDocument()
+    expect(screen.getByText('Security center')).toBeInTheDocument()
     expect(screen.getByText('Users')).toBeInTheDocument()
     expect(screen.getByText('Vault')).toBeInTheDocument()
     expect(screen.getByText('Audit log')).toBeInTheDocument()
@@ -82,10 +95,10 @@ describe('SettingsScopedSidebar', () => {
 
     expect(screen.getByText('Users')).toBeInTheDocument()
 
-    await user.click(screen.getByText('Team'))
+    await user.click(screen.getByText('Security and access'))
     expect(screen.queryByText('Users')).not.toBeInTheDocument()
 
-    await user.click(screen.getByText('Team'))
+    await user.click(screen.getByText('Security and access'))
     expect(screen.getByText('Users')).toBeInTheDocument()
   })
 
@@ -95,21 +108,22 @@ describe('SettingsScopedSidebar', () => {
     sessionStorage.setItem(
       'settings-sidebar-open-groups',
       JSON.stringify({
-        Account: true,
-        Team: false,
-        'Git providers': true,
-        'Notifications & status': true,
-        'Storage & backups': true,
-        'Registries & nodes': true,
-        'Platform extras': true,
-        Platform: true,
+        general: true,
+        security: false,
+        domains: true,
+        backups: true,
+        notifications: true,
+        integrations: true,
+        beta: true,
+        updates: true,
+        advanced: true,
       }),
     )
 
     renderSidebar()
 
     expect(screen.queryByText('Users')).not.toBeInTheDocument()
-    expect(screen.getByText('Security')).toBeInTheDocument()
+    expect(screen.getByText('Firewall')).toBeInTheDocument()
   })
 
   it('filters items by search, expanding only matching groups', async () => {
@@ -118,19 +132,19 @@ describe('SettingsScopedSidebar', () => {
 
     // All groups are open by default, so both are already visible.
     expect(screen.getByText('Vault')).toBeInTheDocument()
-    expect(screen.getByText('Security')).toBeInTheDocument()
+    expect(screen.getByText('Firewall')).toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Search settings'), 'vault')
 
     expect(screen.getByText('Vault')).toBeInTheDocument()
-    expect(screen.getByText('Platform extras')).toBeInTheDocument()
-    expect(screen.queryByText('Security')).not.toBeInTheDocument()
-    expect(screen.queryByText('Team')).not.toBeInTheDocument()
+    expect(screen.getByText('Security and access')).toBeInTheDocument()
+    expect(screen.queryByText('Firewall')).not.toBeInTheDocument()
+    expect(screen.queryByText('Domains and TLS')).not.toBeInTheDocument()
 
     await user.clear(screen.getByLabelText('Search settings'))
 
     expect(screen.getByText('Vault')).toBeInTheDocument()
-    expect(screen.getByText('Security')).toBeInTheDocument()
+    expect(screen.getByText('Firewall')).toBeInTheDocument()
   })
 
   it('matches on item description text too', async () => {

@@ -1,23 +1,21 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import { nodeListQueryOptions, useNodes } from '../../queries/nodes'
 import { useFleetResourceUsage } from '../../queries/fleetResourceUsage'
+import { useAppListOptional } from '../../queries/apps'
+import { useDatabases } from '../../queries/databases'
 import { NODE_LIST_GRID, NodeRow, RowSkeleton } from '../../components/NodeRow'
 import { AddNodeWizard } from '../../components/AddNodeWizard'
 import { BuildStrainSuggestion } from '../../components/BuildStrainSuggestion'
 import { EmptyState } from '../../components/ui/empty-state'
 import { PageHeader } from '../../components/shell/PageHeader'
+import { countResourcesByNode } from '../../lib/nodeResourceCounts'
 
-// Typed loader primes the Query cache, the component only reads that
-// cache via useNodes() (suspense), mirroring routes/databases/index.tsx
-// exactly. The list is virtualized unconditionally, per this project's
-// standing rule that every list over 50 items is virtualized, even
-// though nodes are a 1-10 machine list for this product's own target
-// audience and GET /api/v1/nodes returns everything in one response
-// with no server-side pagination: a follow-the-rule exercise here, not
-// something that will ever visibly matter at this scale.
+// The loader primes the cache and the list is virtualized unconditionally,
+// per the standing rule for lists, even though nodes are a 1-10 machine list.
 export const Route = createFileRoute('/nodes/')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(nodeListQueryOptions()),
@@ -25,41 +23,44 @@ export const Route = createFileRoute('/nodes/')({
   pendingComponent: NodeListPending,
 })
 
-// Column labels for the sticky header, matching NodeRow's NODE_LIST_GRID
-// exactly (icon column and trailing action column stay blank) so the
-// header never drifts out of alignment with row content.
+// Column labels match NODE_LIST_GRID so the header never drifts from the rows.
 function ListHeader() {
+  const { t } = useTranslation('nodes')
   return (
     <div
-      className={`${NODE_LIST_GRID} sticky top-0 z-10 border-b border-border bg-card px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
+      className={`${NODE_LIST_GRID} sticky top-0 z-10 hidden border-b border-border bg-card px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase lg:grid`}
     >
       <span aria-hidden="true" />
-      <span>Name</span>
-      <span>Status</span>
-      <span>Address</span>
-      <span>CPU</span>
-      <span>Memory</span>
-      <span>Disk</span>
-      <span>Last seen</span>
+      <span>{t('list.name')}</span>
+      <span>{t('list.address')}</span>
+      <span>{t('list.usage')}</span>
+      <span>{t('list.resources')}</span>
+      <span>{t('list.agent')}</span>
+      <span>{t('list.lastSeen')}</span>
       <span aria-hidden="true" />
     </div>
   )
 }
 
 function NodeListPage() {
+  const { t } = useTranslation('nodes')
   const { data: nodes } = useNodes()
-  // Plain (non-suspense) query: a 501 (telemetry not configured) is a
-  // real, common state, and the node list itself must render either way
-  // (see useFleetResourceUsage's own doc comment); usageByNodeId is then
-  // just empty and every row's utilization cells fall back to "-".
+  // Plain query: a 501 (telemetry not configured) is a real state, and the
+  // list must render either way with the usage cells falling back to "-".
   const { data: usage } = useFleetResourceUsage()
+  const { data: apps } = useAppListOptional()
+  const { data: databases } = useDatabases()
   const usageByNodeId = new Map((usage?.nodes ?? []).map((n) => [n.node_id, n]))
+  const counts =
+    apps && databases
+      ? countResourcesByNode(nodes, apps, databases)
+      : new Map<string, number>()
   const parentRef = useRef<HTMLDivElement>(null)
 
   const virtualizer = useVirtualizer({
     count: nodes.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 60,
+    estimateSize: () => 64,
     overscan: 8,
   })
 
@@ -67,14 +68,15 @@ function NodeListPage() {
     <div>
       <div className="mb-4">
         <PageHeader
-          title="Nodes"
+          title={t('list.title')}
+          description={t('list.description')}
           helpPath="/multi-node"
-          helpLabel="Multi-node guide"
+          helpLabel={t('list.help')}
           actions={
             <>
               {nodes.length > 0 ? (
                 <span className="text-sm text-muted-foreground">
-                  {nodes.length} {nodes.length === 1 ? 'node' : 'nodes'}
+                  {t('list.count', { count: nodes.length })}
                 </span>
               ) : null}
               <AddNodeWizard />
@@ -86,8 +88,8 @@ function NodeListPage() {
       {nodes.length === 0 ? (
         <EmptyState
           icon={<HardDrivesIcon className="size-5" />}
-          title="Running on this single control plane node"
-          description="Join another machine as a node to scale out: spread apps and databases across more than one server, isolate builds from production workloads, or add capacity without resizing this box."
+          title={t('list.emptyTitle')}
+          description={t('list.emptyDescription')}
           action={<AddNodeWizard />}
         />
       ) : (
@@ -97,10 +99,8 @@ function NodeListPage() {
         >
           <ListHeader />
           <div
-            style={{
-              height: virtualizer.getTotalSize(),
-              position: 'relative',
-            }}
+            className="relative"
+            style={{ height: virtualizer.getTotalSize() }}
           >
             {virtualizer.getVirtualItems().map((virtualRow) => {
               const node = nodes[virtualRow.index]
@@ -112,15 +112,14 @@ function NodeListPage() {
                   key={virtualRow.key}
                   data-index={virtualRow.index}
                   ref={virtualizer.measureElement}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
+                  className="absolute top-0 left-0 w-full"
+                  style={{ transform: `translateY(${virtualRow.start}px)` }}
                 >
-                  <NodeRow node={node} usage={usageByNodeId.get(node.id)} />
+                  <NodeRow
+                    node={node}
+                    usage={usageByNodeId.get(node.id)}
+                    resourceCount={counts.get(node.id)}
+                  />
                 </div>
               )
             })}
@@ -131,14 +130,12 @@ function NodeListPage() {
   )
 }
 
-// Route-level fallback for the loader's pending phase (slow network,
-// cold cache): a static stack of RowSkeleton rows under the same header
-// and container chrome as the real list, mirroring DatabaseListPending.
 function NodeListPending() {
+  const { t } = useTranslation('nodes')
   return (
     <div>
       <div className="mb-4">
-        <PageHeader title="Nodes" />
+        <PageHeader title={t('list.title')} />
       </div>
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <ListHeader />

@@ -408,7 +408,6 @@
     "colNode": "Node",
     "backupsOn": "Scheduled",
     "backupsOff": "No schedule",
-    "nodeUnassigned": "Unassigned",
     "emptyTitle": "No databases yet",
     "emptyBody": "Create a managed Postgres, MySQL or Redis database and connect an app to it. Credentials are injected for you.",
     "errorTitle": "Could not load databases",

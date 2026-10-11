@@ -59,6 +59,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Settings-level, not tied to one app: a firewall rule is host-wide, the
 // same "account/platform scope, not routes/apps/" reasoning
@@ -190,7 +191,7 @@ function ActionBadge({ action }: { action: FirewallRuleAction }) {
 function FirewallPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">Firewall</h1>
+      <SettingsPageTitle id="firewall" />
       <TableSkeleton columnCount={7} />
     </div>
   )

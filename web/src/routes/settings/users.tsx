@@ -15,6 +15,7 @@ import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { hasAbility } from '../../types/token'
 import type { CreateInviteResponse } from '../../queries/invites'
+import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // AbilityRead-gated (GET /api/v1/users): who has access to this control
 // plane. Abilities are now per-user (internal/api/users.go's own doc
@@ -118,7 +119,7 @@ function UsersSettingsPage() {
 function UsersSettingsPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">Users</h1>
+      <SettingsPageTitle id="users" />
       <TableSkeleton columnCount={6} />
     </div>
   )

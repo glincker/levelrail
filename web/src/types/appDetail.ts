@@ -129,6 +129,8 @@ export interface AppDetail {
   // exception: an explicit node_id there overrides simple spread
   // scheduling, see CreateAppRequest's own doc comment (queries/apps.ts).
   node_id?: string
+  node_name?: string
+  node_is_local?: boolean
   // auto_placed carries `omitempty` on the Go side and is response-only,
   // set only by POST /api/v1/apps: true when the create request omitted
   // node_id and simple spread scheduling picked a non-local node for it.

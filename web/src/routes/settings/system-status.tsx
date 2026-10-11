@@ -28,6 +28,7 @@ import {
 } from '../../queries/systemDoctor'
 import type { DoctorCheck } from '../../queries/systemDoctor'
 import { DoctorCheckRow } from '@/components/DoctorCheckRow'
+import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Web half of "levelrail-cli doctor": that command already runs
 // /api/v1/system/doctor's full preflight bundle (Docker reachability,
@@ -273,7 +274,7 @@ function SystemStatusPage() {
 function SystemStatusPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">System status</h1>
+      <SettingsPageTitle id="system-status" />
       <ListSkeleton rows={5} />
     </div>
   )

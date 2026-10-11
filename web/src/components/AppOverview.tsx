@@ -14,6 +14,7 @@ import { useGlobalEnvironments } from '../queries/globalEnvironments'
 import { useExperimentalFeatures } from '../hooks/useExperimental'
 import { isFeatureVisible } from '../lib/experimental'
 import { useProjectListOptional } from '../queries/projects'
+import { MoveToThisServerButton, PlacementLabel } from './PlacementLabel'
 import { useEnvironmentListOptional } from '../queries/environments'
 
 // Display labels for internal/spec's three strategy constants.
@@ -91,18 +92,23 @@ export function AppOverview({ app }: { app: AppDetail }) {
             </dd>
           </div>
           <Field label="Replicas" value={String(app.replicas)} />
-          {/* Same fallback convention routes/databases/$name.tsx uses for
-              the equivalent field: an italic "unassigned" placeholder
-              rather than blank space, so an app with no explicit
-              placement reads as a deliberate state, not missing data. */}
           <div>
             <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Node
             </dt>
-            <dd className="mt-0.5 flex items-center gap-2 font-mono text-sm text-foreground">
-              {app.node_id || (
-                <span className="text-muted-foreground italic">unassigned</span>
-              )}
+            <dd className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-foreground">
+              <PlacementLabel
+                nodeId={app.node_id}
+                nodeName={app.node_name}
+                nodeIsLocal={app.node_is_local}
+              />
+              <MoveToThisServerButton
+                kind="app"
+                name={app.name}
+                nodeId={app.node_id}
+                nodeName={app.node_name}
+                nodeIsLocal={app.node_is_local}
+              />
             </dd>
           </div>
           {/* Project membership is metadata, the same "shown, not a

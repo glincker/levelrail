@@ -325,6 +325,8 @@ There is no dedicated "workloads on this node" list. These show it indirectly:
 
 - **Network page and `levelrail-cli nodes topology`:** every node with the apps and databases placed on it. See [Network topology](network-topology.md).
 - **App and database detail pages:** a Placement card shows the current node, the selector, eligible nodes and the move action.
+- **Placement names:** an app or database with no explicit node runs on this server, so it shows "This server" plus the hostname rather than a blank. API responses carry `node_name` and `node_is_local` beside `node_id`. "Unassigned" appears only when the stored node no longer exists, with a "Move to this server" action.
+- **Nodes page:** one row per node with status, usage bars, resource count, agent version and last seen, and a menu for cordon, drain and delete (delete asks you to type the node name).
 - **Node metrics:** `resource_count` is how many placed services contributed a sample in the queried range, a rough occupancy signal.
 - **Drain and delete:** both enumerate everything on the node server-side, which is why deleting a node with placements fails instead of orphaning them.
 

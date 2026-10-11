@@ -114,9 +114,11 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	envNames := rt.environmentNames(r.Context(), svcs)
 	envSettings, envSettingsOK := rt.appOverridesForList(r.Context())
 
+	placement := rt.placementResolver(r.Context())
 	out := make([]appListResource, 0, len(svcs))
 	for _, s := range svcs {
 		resource := toAppResourceRaw(s)
+		placement.stampApp(&resource)
 		redactListedApp(&resource, s, envSettings, envSettingsOK)
 		resource.Tags = tagNamesFromStoreTags(tagsByApp[s.Name])
 		conditions := conditionsByController[applicationControllerName(s.Name)]

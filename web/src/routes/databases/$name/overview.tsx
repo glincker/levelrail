@@ -4,6 +4,10 @@ import { useDatabase, useDatabaseStatus } from '../../../queries/databases'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
 import { ChangeDatabaseVersionDialog } from '../../../components/ChangeDatabaseVersionDialog'
 import { PlacementCard } from '../../../components/PlacementCard'
+import {
+  MoveToThisServerButton,
+  PlacementLabel,
+} from '../../../components/PlacementLabel'
 import { MoveToProjectDialog } from '../../../components/MoveToProjectDialog'
 import { BackupsSection } from '../../../components/BackupsSection'
 import { PointInTimeRestoreSection } from '../../../components/PointInTimeRestoreSection'
@@ -70,11 +74,18 @@ function OverviewSection() {
                 {t('overview.node')}
               </dt>
               <dd className="mt-1 flex items-center gap-2 font-mono text-sm text-foreground">
-                {database.node_id || (
-                  <span className="text-muted-foreground italic">
-                    {t('list.nodeUnassigned')}
-                  </span>
-                )}
+                <PlacementLabel
+                  nodeId={database.node_id}
+                  nodeName={database.node_name}
+                  nodeIsLocal={database.node_is_local}
+                />
+                <MoveToThisServerButton
+                  kind="database"
+                  name={database.name}
+                  nodeId={database.node_id}
+                  nodeName={database.node_name}
+                  nodeIsLocal={database.node_is_local}
+                />
               </dd>
             </div>
             <div>
@@ -114,6 +125,8 @@ function OverviewSection() {
         kind="database"
         name={database.name}
         currentNodeId={database.node_id}
+        currentNodeName={database.node_name}
+        currentNodeIsLocal={database.node_is_local}
       />
 
       <ConditionsPanel conditions={conditions} />

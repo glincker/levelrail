@@ -25,6 +25,8 @@ export interface DatabaseResource {
   engine: string
   version: string
   node_id?: string
+  node_name?: string
+  node_is_local?: boolean
   // auto_placed carries `omitempty` on the Go side and is response-only,
   // set only by POST /api/v1/databases: true when the create request
   // omitted node_id and simple spread scheduling picked a non-local node

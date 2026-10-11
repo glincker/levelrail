@@ -24,15 +24,19 @@ function UsageBar({ value }: { value: number }) {
   return <Progress value={Math.min(value, 100)} />
 }
 
-// CPUPercent is the sum of every placed container's own cpu_percent, not
-// a read against total core count (see NodeResourceUsage's own doc
-// comment): no bar here, since there is no known 100%-of-capacity
-// denominator to draw one against, only the raw number.
+// CPUPercent sums every placed container's cpu_percent, not a read against
+// core count, so the bar is a plain proportion capped at 100.
 export function NodeCPUCell({ usage }: { usage?: NodeResourceUsage }) {
+  if (usage?.cpu_percent === undefined) {
+    return <span className="text-xs text-muted-foreground">-</span>
+  }
   return (
-    <span className="truncate text-xs text-muted-foreground tabular-nums">
-      {formatPercent(usage?.cpu_percent)}
-    </span>
+    <div className="min-w-0 space-y-1">
+      <span className="block truncate text-xs text-muted-foreground tabular-nums">
+        CPU {formatPercent(usage.cpu_percent)}
+      </span>
+      <UsageBar value={usage.cpu_percent} />
+    </div>
   )
 }
 

@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
+import { PlacementLabel } from './PlacementLabel'
 
 // The Overview page's redesigned top section: a hero (name, status,
 // domain, image, node) plus a setup checklist, combined into one panel
@@ -161,13 +162,11 @@ export function AppOverviewHero({
             ) : null}
           </HeroField>
           <HeroField label="Node">
-            <span className="font-mono">
-              {app.node_id || (
-                <span className="text-muted-foreground italic">
-                  local control plane
-                </span>
-              )}
-            </span>
+            <PlacementLabel
+              nodeId={app.node_id}
+              nodeName={app.node_name}
+              nodeIsLocal={app.node_is_local}
+            />
           </HeroField>
         </div>
 
@@ -182,8 +181,8 @@ export function AppOverviewHero({
               label="Node assigned"
               detail={
                 app.node_id
-                  ? `Running on ${app.node_id}.`
-                  : 'No node explicitly assigned; running on the local control plane by default.'
+                  ? `Running on ${app.node_name || app.node_id}.`
+                  : 'No node explicitly assigned; running on this server by default.'
               }
               appName={app.name}
             />

@@ -140,8 +140,8 @@
   "placement": {
     "title": "Placement",
     "currentNode": "Current node",
-    "unassigned": "unassigned",
-    "controlPlane": "control plane",
+    "unassigned": "Unassigned",
+    "controlPlane": "This server",
     "selectorTitle": "Node selector",
     "selectorHint": "Only nodes with all of these labels are eligible. Changing the selector never moves anything by itself.",
     "selectorEmpty": "No selector: any schedulable node is eligible.",
@@ -158,7 +158,12 @@
     "loadFailed": "Could not load the placement.",
     "retry": "Try again",
     "duplicate": "Each key can be used once.",
-    "incomplete": "Fill in both a key and a value, or remove the empty row."
+    "incomplete": "Fill in both a key and a value, or remove the empty row.",
+    "thisServer": "This server",
+    "unknownHint": "This placement points at node {{id}}, which no longer exists.",
+    "moveHere": "Move to this server",
+    "movedHere": "Now placed on this server.",
+    "moveFailed": "Could not move it to this server."
   },
   "connectivity": {
     "title": "Node connectivity",
@@ -187,5 +192,62 @@
       "no_peer": "no peer configured",
       "unknown": "unknown"
     }
+  },
+  "list": {
+    "title": "Nodes",
+    "description": "Servers this control plane places apps and databases on.",
+    "help": "Multi-node guide",
+    "count_one": "{{count}} node",
+    "count_other": "{{count}} nodes",
+    "name": "Name",
+    "address": "Address",
+    "usage": "Usage",
+    "resources": "Resources",
+    "agent": "Agent",
+    "lastSeen": "Last seen",
+    "never": "Never",
+    "addressNotSet": "Not set",
+    "agentUnknown": "Unknown",
+    "resourceCount_one": "{{count}} resource",
+    "resourceCount_other": "{{count}} resources",
+    "emptyTitle": "This server is your only node",
+    "emptyDescription": "Everything runs on the machine hosting the control plane. Add a server to spread apps and databases across machines, keep builds off production, or add capacity without resizing this one."
+  },
+  "status": {
+    "pending": "Pending",
+    "online": "Online",
+    "offline": "Offline",
+    "cordoned": "Cordoned"
+  },
+  "row": {
+    "thisServer": "This server",
+    "buildOnly": "Builds only",
+    "gpuFree": "GPU {{free}}/{{total}} free",
+    "outdated": "Agent outdated",
+    "outdatedHint": "Minimum supported agent version is {{min}}",
+    "actions": "Actions for {{name}}"
+  },
+  "cordon": {
+    "trigger": "Cordon",
+    "title": "Cordon \"{{name}}\"?",
+    "description": "This node stops accepting new app and database placements immediately. Everything already running on it keeps running. Use drain to move existing workloads off.",
+    "confirm": "Cordon node",
+    "saving": "Saving...",
+    "done": "Node \"{{name}}\" cordoned."
+  },
+  "uncordon": {
+    "trigger": "Uncordon",
+    "title": "Uncordon \"{{name}}\"?",
+    "description": "This node starts accepting new app and database placements again. Nothing is moved back onto it automatically.",
+    "confirm": "Uncordon node",
+    "done": "Node \"{{name}}\" uncordoned."
+  },
+  "delete": {
+    "trigger": "Delete",
+    "title": "Delete \"{{name}}\"?",
+    "description": "This removes the node from the registry only. It does not drain the node or stop its agent: if the agent is still running it stays connected and its workloads keep running.",
+    "confirm": "Delete node",
+    "deleting": "Deleting...",
+    "deleted": "Node \"{{name}}\" deleted."
   }
 }
