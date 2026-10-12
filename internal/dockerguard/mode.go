@@ -24,8 +24,9 @@ const (
 	ModeEnforce Mode = "enforce"
 )
 
-// DefaultMode is enforce. APP_DOCKER_GUARD=audit and =off are the overrides.
-const DefaultMode = ModeEnforce
+// DefaultMode is audit so an upgrade cannot break a running deploy; the attention
+// feed offers enforce after a clean week. APP_DOCKER_GUARD sets it explicitly.
+const DefaultMode = ModeAudit
 
 // Environment variables the guard reads.
 const (

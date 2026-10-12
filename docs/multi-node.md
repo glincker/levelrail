@@ -680,7 +680,7 @@ When a certificate is two thirds of the way through its lifetime (`APP_AGENT_CER
 An agent stopped mid-renewal settles it on its next start: it keeps whichever identity the control plane accepts.
 
 <Note>
-Nodes enrolled before agents generated their own keys keep working, and their first renewal moves them to an agent-generated key. Older agents still enroll against a newer control plane and get a server-generated key. Set `APP_AGENT_REQUIRE_CSR=true` on the control plane to refuse that once every agent is upgraded.
+Nodes enrolled before agents generated their own keys keep working, and their first renewal moves them to an agent-generated key. Older agents still enroll against a newer control plane and get a server-generated key. The control plane now refuses that by default. Set `APP_AGENT_REQUIRE_CSR=false` on the control plane to accept legacy agents until they are upgraded.
 </Note>
 
 ### Re-enrolling a node

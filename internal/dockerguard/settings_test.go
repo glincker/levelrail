@@ -25,7 +25,7 @@ func TestResolve(t *testing.T) {
 		wantSource string
 		wantErr    bool
 	}{
-		{name: "default is enforce", wantMode: ModeEnforce, wantSource: SourceDefault},
+		{name: "default is audit", wantMode: ModeAudit, wantSource: SourceDefault},
 		{name: "audit is an explicit override", env: map[string]string{EnvMode: "audit"}, wantMode: ModeAudit, wantSource: SourceEnv},
 		{name: "settings used", settings: Settings{Mode: ModeEnforce}, wantMode: ModeEnforce, wantSource: SourceSettings},
 		{name: "env wins over settings", env: map[string]string{EnvMode: "off"}, settings: Settings{Mode: ModeEnforce}, wantMode: ModeOff, wantSource: SourceEnv},
