@@ -16,6 +16,8 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // @glinui/ui ships extensionless ESM imports that Node cannot load; Vite must transform it.
+    server: { deps: { inline: ['@glinui/ui'] } },
     setupFiles: ['./src/test/setup.ts'],
     // Running every test file in its own worker (vitest's default)
     // spins up a fresh jsdom environment per file; under a resource-

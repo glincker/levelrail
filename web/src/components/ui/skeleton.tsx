@@ -1,10 +1,39 @@
+import type { ComponentProps } from 'react'
+import { Skeleton as GlinSkeleton } from '@glinui/ui'
 import { cn } from '@/lib/utils'
 
-function Skeleton({ className, ...props }: React.ComponentProps<'div'>) {
+export type SkeletonVariant =
+  'glinr' | 'solid' | 'plain' | 'soft' | 'outline' | 'ghost'
+
+// @glinui/ui 0.1.1 ships default|glass|liquid|matte|outline|ghost; the docs'
+// glinr|solid|plain|soft names are not published yet, so map onto what exists.
+const PUBLISHED = {
+  glinr: 'matte',
+  solid: 'default',
+  plain: 'default',
+  soft: 'ghost',
+  outline: 'outline',
+  ghost: 'ghost',
+} as const
+
+type SkeletonProps = ComponentProps<'div'> & {
+  variant?: SkeletonVariant
+  decorative?: boolean
+}
+
+function Skeleton({
+  className,
+  variant = 'glinr',
+  decorative = false,
+  ...props
+}: SkeletonProps) {
   return (
-    <div
+    <GlinSkeleton
       data-slot="skeleton"
-      className={cn('animate-pulse rounded-md bg-muted', className)}
+      variant={PUBLISHED[variant]}
+      size={null}
+      decorative={decorative}
+      className={cn('rounded-md', className)}
       {...props}
     />
   )

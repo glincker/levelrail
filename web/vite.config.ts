@@ -19,6 +19,12 @@ export default defineConfig({
     // that check.
     manifest: process.env.BUNDLE_MANIFEST === 'true',
     rolldownOptions: {
+      // @glinui/ui omits "sideEffects": false, so its barrel would otherwise pull every Radix package.
+      treeshake: {
+        moduleSideEffects: [
+          { test: /node_modules[\\/]@glinui[\\/]ui[\\/]/, sideEffects: false },
+        ],
+      },
       output: {
         // $initial-tagged groups merge only the first-paint graph; lazy-only
         // modules keep splitting per route. Per-module chunks cost one round trip each.
