@@ -7,6 +7,7 @@ package bindmount
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -40,6 +41,26 @@ var ForbiddenPaths = []string{
 	"/var/lib/kubelet",
 	"/var/lib/levelrail-data",
 	"/var/lib/levelrail-agent-data",
+	"/bin",
+	"/sbin",
+	"/lib",
+	"/lib64",
+	"/usr/bin",
+	"/usr/sbin",
+	"/usr/lib",
+	"/usr/local/bin",
+	"/usr/local/sbin",
+	"/var/spool/cron",
+}
+
+// forbiddenPaths is ForbiddenPaths plus the data directory this process was
+// actually configured with, since the default path is only one possibility.
+func forbiddenPaths() []string {
+	out := ForbiddenPaths
+	if d := strings.TrimSpace(os.Getenv("APP_DATA_DIR")); d != "" && filepath.IsAbs(d) {
+		out = append(append([]string(nil), out...), filepath.Clean(d))
+	}
+	return out
 }
 
 // ValidateHostPath rejects a relative path and every path ForbiddenPaths
@@ -50,7 +71,7 @@ func ValidateHostPath(hostPath string) error {
 		return fmt.Errorf("bind-mount host path %q must be an absolute path", hostPath)
 	}
 	clean := filepath.Clean(hostPath)
-	for _, forbidden := range ForbiddenPaths {
+	for _, forbidden := range forbiddenPaths() {
 		if clean == forbidden || strings.HasPrefix(clean, forbidden+"/") {
 			return fmt.Errorf("bind-mount host path %q is not allowed: %q is a protected system path", hostPath, forbidden)
 		}

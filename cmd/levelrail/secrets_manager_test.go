@@ -160,3 +160,42 @@ func TestLoadSecretsManager_ReturnsFilePathWhenFileSourced(t *testing.T) {
 		t.Errorf("masterKeyFilePath = %q, want %q", masterKeyFilePath, want)
 	}
 }
+
+func TestLoadOrGenerateMasterKey_FileEnvOutsideDataDir(t *testing.T) {
+	dataDir := t.TempDir()
+	keyPath := filepath.Join(t.TempDir(), "keys", "master.key")
+	t.Setenv(envMasterKeyFile, keyPath)
+
+	mk, gotPath, err := loadOrGenerateMasterKey(dataDir)
+	if err != nil {
+		t.Fatalf("loadOrGenerateMasterKey() error = %v", err)
+	}
+	if gotPath != keyPath {
+		t.Fatalf("keyPath = %q, want %q", gotPath, keyPath)
+	}
+	if _, err := os.Stat(filepath.Join(dataDir, masterKeyFilename)); !os.IsNotExist(err) {
+		t.Fatalf("key was also written into the data dir: %v", err)
+	}
+	again, _, err := loadOrGenerateMasterKey(dataDir)
+	if err != nil || again.String() != mk.String() {
+		t.Fatalf("second load = %v, %v; want the same key", again, err)
+	}
+}
+
+func TestLoadOrGenerateMasterKey_FileEnvRejectsLoosePermissions(t *testing.T) {
+	keyPath := filepath.Join(t.TempDir(), "master.key")
+	if err := os.WriteFile(keyPath, []byte("x"), 0o644); err != nil { //nolint:gosec // the test needs a loose mode
+		t.Fatal(err)
+	}
+	t.Setenv(envMasterKeyFile, keyPath)
+	if _, _, err := loadOrGenerateMasterKey(t.TempDir()); err == nil {
+		t.Fatal("0644 key file accepted, want an error naming the permissions")
+	}
+}
+
+func TestLoadOrGenerateMasterKey_FileEnvMustBeAbsolute(t *testing.T) {
+	t.Setenv(envMasterKeyFile, "relative/master.key")
+	if _, _, err := loadOrGenerateMasterKey(t.TempDir()); err == nil {
+		t.Fatal("relative path accepted, want an error")
+	}
+}

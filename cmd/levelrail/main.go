@@ -1463,6 +1463,10 @@ const (
 	// when APP_MASTER_KEY isn't set, same data directory as the agent CA
 	// above.
 	masterKeyFilename = "master.key"
+
+	// envMasterKeyFile points at a key file outside the data directory, so a
+	// copy of the data directory alone cannot decrypt stored secrets.
+	envMasterKeyFile = "APP_MASTER_KEY_FILE"
 )
 
 // loadOrGenerateAgentCA loads a previously persisted CA from dataDir, or
@@ -1953,6 +1957,18 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 		return nil, "", fmt.Errorf("create data dir for master key: %w", err)
 	}
 	keyPath = filepath.Join(dataDir, masterKeyFilename)
+	if custom := strings.TrimSpace(os.Getenv(envMasterKeyFile)); custom != "" {
+		if !filepath.IsAbs(custom) {
+			return nil, "", fmt.Errorf("%s must be an absolute path, got %q", envMasterKeyFile, custom)
+		}
+		keyPath = custom
+		if err := os.MkdirAll(filepath.Dir(keyPath), 0o700); err != nil { //nolint:gosec // operator-set absolute path from startup config
+			return nil, "", fmt.Errorf("create directory for %s: %w", envMasterKeyFile, err)
+		}
+		if st, err := os.Stat(keyPath); err == nil && st.Mode().Perm()&0o077 != 0 { //nolint:gosec // operator-set absolute path from startup config
+			return nil, "", fmt.Errorf("%s %s has mode %o, want 0600: run chmod 600 on it", envMasterKeyFile, keyPath, st.Mode().Perm())
+		}
+	}
 
 	serialized, readErr := os.ReadFile(keyPath) //nolint:gosec // operator-controlled data directory path, not user input
 	switch {

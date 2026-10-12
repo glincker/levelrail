@@ -18,7 +18,8 @@ While a rotation is in progress, all other secret reads and writes are blocked u
 
 However, this is not a fully unattended operation due to one constraint: the control plane loads its master key at startup and never reloads it. A successful rotation immediately updates the running process's key, so it serves correctly right away. What happens on the next restart depends on where that key came from:
 
-**File-sourced** (default, no `APP_MASTER_KEY` set):
+**File-sourced** (default, no `APP_MASTER_KEY` set). The file is `<data dir>/master.key`, or the path in `APP_MASTER_KEY_FILE` if you set it. Point `APP_MASTER_KEY_FILE` at an absolute path outside the data directory (for example `/etc/levelrail/master.key`, mode `0600`) so a copy of the data directory alone cannot decrypt your secrets. A file with group or world permissions is refused at startup.
+
 Rotation automatically rewrites the file at `<data dir>/master.key` with the new key (atomically, so a crash never leaves a truncated file). On restart, the process picks up the new key with no further action.
 
 **Env-sourced** (`APP_MASTER_KEY` set):
