@@ -69,7 +69,14 @@ Dark mode uses a darker translucent shadow plus a 1px top highlight (`--glinr-hi
 - Space: `--glinr-space-1,2,3,4,6,8,12,16` on a 4px rhythm; `--glinr-page-gap` aliases `space-6`.
 - Radius: `sm 6px`, `md 8px`, `lg 10px` (the legacy `--glinr-radius`), `xl 14px`.
 - Motion: `--glinr-motion-fast` 120ms, `base` 200ms, `slow` 320ms, `--glinr-motion-ease`. Honour `prefers-reduced-motion`.
-- Content: `--glinr-content-narrow` 40rem, `--glinr-content-max` 72rem, `--glinr-content-max-wide` 88rem.
+- Content: `--glinr-content-narrow` 40rem, `--glinr-content-max` 96rem, `--glinr-content-max-wide` 120rem.
+
+## Layout
+
+- The shell column fills the space beside the sidebar up to `--glinr-content-max` and centers with `mx-auto` only once the viewport is wider. Padding is symmetric: 16px below `md`, `--glinr-page-pad-x` (24px) from `md` up. Pages never anchor left or center themselves.
+- `PageTemplate` `width`: `default` caps at 96rem, `wide` at 120rem (dense tables, dashboards), `full` has no cap.
+- Right rail: pass `aside` (and `asideLabel`) to `PageTemplate`. The page column is a container (`@container/page`). At `@min-[80rem]` of that container (xl, 1280px of content area) the body is a two column grid, `minmax(0,1fr)` main plus a fixed `--glinr-aside-width` (20rem) rail, gap 24px, rail sticky at `--glinr-aside-top` inside the scrolling main. Below that the rail renders after the main content in normal flow. Without `aside` the page is a single full width column.
+- `FormSection` caps its fields column at `max-w-2xl` so inputs never stretch across a wide column.
 
 ## Adding a token
 
