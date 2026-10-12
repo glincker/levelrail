@@ -280,6 +280,7 @@
               "architecture",
               "security",
               "threat-model",
+              "security-advisories",
               "docker-access",
               "security-alert-verdicts",
               "comparison",

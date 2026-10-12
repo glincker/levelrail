@@ -27,10 +27,19 @@ md.use({
       ) {
         return inner
       }
-      return `<a href="${token.href}" target="_blank" rel="noreferrer noopener" class="text-primary underline underline-offset-2 hover:no-underline">${inner}</a>`
+      return `<a href="${escapeAttr(token.href)}" target="_blank" rel="noreferrer noopener" class="text-primary underline underline-offset-2 hover:no-underline">${inner}</a>`
     },
   },
 })
+
+function escapeAttr(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
 
 export function renderChatMarkdown(markdown: string): string {
   return md.parse(markdown, { async: false })

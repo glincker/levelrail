@@ -3,6 +3,9 @@ package api
 import (
 	"net"
 	"net/http"
+	"net/netip"
+	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -119,19 +122,60 @@ func loginLimiterKey(r *http.Request, username string) string {
 	return clientIP(r) + "|" + username
 }
 
-// clientIP extracts the request's IP, stripping the port from
-// RemoteAddr. Deliberately does not consult X-Forwarded-For: trusting
-// that header safely requires knowing how many proxy hops are in front
-// and stripping anything past the trusted one, since it's otherwise
-// trivially spoofable to defeat this exact limiter. Caddy sits in
-// front of every real deployment's app ingress, but the
-// control plane's own admin listener isn't behind it yet; wiring a
-// specific trusted-hop count is a follow-up for when that topology
-// exists, not a default to guess at now.
+// clientIP is the request's real client address. X-Forwarded-For is only
+// read when the TCP peer is loopback or a configured trusted proxy, and the
+// right-most untrusted hop wins so a client-supplied prefix cannot spoof it.
 func clientIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		host = r.RemoteAddr
+	}
+	trusted := trustedProxyPrefixes()
+	if !isTrustedPeer(host, trusted) {
+		return host
+	}
+	hops := strings.Split(strings.Join(r.Header.Values("X-Forwarded-For"), ","), ",")
+	for i := len(hops) - 1; i >= 0; i-- {
+		addr, err := netip.ParseAddr(strings.TrimSpace(hops[i]))
+		if err != nil {
+			return host
+		}
+		if !isTrustedPeer(addr.String(), trusted) {
+			return addr.String()
+		}
 	}
 	return host
+}
+
+func isTrustedPeer(host string, trusted []netip.Prefix) bool {
+	addr, err := netip.ParseAddr(host)
+	if err != nil {
+		return false
+	}
+	addr = addr.Unmap()
+	if addr.IsLoopback() {
+		return true
+	}
+	for _, p := range trusted {
+		if p.Contains(addr) {
+			return true
+		}
+	}
+	return false
+}
+
+func trustedProxyPrefixes() []netip.Prefix {
+	var out []netip.Prefix
+	for _, e := range strings.Split(os.Getenv(envTrustedProxies), ",") {
+		e = strings.TrimSpace(e)
+		if e == "" {
+			continue
+		}
+		if p, err := netip.ParsePrefix(e); err == nil {
+			out = append(out, p)
+		} else if a, err := netip.ParseAddr(e); err == nil {
+			out = append(out, netip.PrefixFrom(a, a.BitLen()))
+		}
+	}
+	return out
 }

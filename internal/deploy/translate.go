@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -171,6 +172,26 @@ func parseFromRef(from string) (dbName, field string, err error) {
 		return "", "", fmt.Errorf("from %q must be \"<database>.<field>\"", from)
 	}
 	return dbName, field, nil
+}
+
+// DatabaseRefs lists the distinct database names the services' { from: ... }
+// env vars point at, so a caller can authorize each before accepting a spec.
+func DatabaseRefs(services map[string]spec.Service) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, svc := range services {
+		for _, v := range svc.Env {
+			if v.From == "" {
+				continue
+			}
+			if name, _, err := parseFromRef(v.From); err == nil && !seen[name] {
+				seen[name] = true
+				out = append(out, name)
+			}
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 // databaseEnvRefs parses every { from: ... } env var into
