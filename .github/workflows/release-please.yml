@@ -35,6 +35,15 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+      # release-please has no make_latest option, so a kit/ module release would
+      # take GitHub's Latest badge and shadow the platform release.
+      - name: Keep kit releases off the Latest badge
+        if: ${{ steps.release.outputs['kit--release_created'] == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          KIT_TAG: ${{ steps.release.outputs['kit--tag_name'] }}
+        run: gh release edit "$KIT_TAG" --repo "${{ github.repository }}" --latest=false
+
       # Off unless the AUTO_RELEASE repo variable is "true". The PR then
       # merges itself once CI passes, which tags and publishes the release.
       # Every merge to main updates the PR, so this releases on every

@@ -900,11 +900,25 @@ func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name string, s
 	if err := renderResult(stdout, of.Format, of.Query, final, func() {
 		_, _ = fmt.Fprintf(stderr, "app %q created\n", final.Name)
 		printAppHuman(stdout, final)
+		printSelfSignedNote(ctx, client, stdout, final.FallbackURL)
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
 	return exitOK
+}
+
+// printSelfSignedNote says the automatic https URL is self-signed while
+// HTTPS is not enabled. A failed status lookup prints nothing.
+func printSelfSignedNote(ctx context.Context, client *Client, out io.Writer, autoURL string) {
+	if !strings.HasPrefix(autoURL, "https://") {
+		return
+	}
+	status, err := client.GetHTTPSStatus(ctx)
+	if err != nil || status.State == "issued" {
+		return
+	}
+	_, _ = fmt.Fprintln(out, "note:     the auto url uses a self-signed certificate until HTTPS is enabled; plain http gets a 308 redirect to it")
 }
 
 // parseCreateFlags parses "apps create"'s flags, including the common

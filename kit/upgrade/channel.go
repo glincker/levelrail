@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -130,35 +131,46 @@ func githubGet(ctx context.Context, url string, out any) (status int, err error)
 	return resp.StatusCode, nil
 }
 
-// FetchLatestStable fetches GitHub's /releases/latest: the newest
-// non-prerelease, non-draft release. With no stable release it falls back
-// to the newest pre-release (install.sh's rule). nil, nil means nothing
-// has been published at all.
+// releasesListURL is the releases listing both channels read. /releases/latest
+// is avoided on purpose: nested module releases (kit/v0.2.0) can hold the
+// Latest badge and carry no binaries.
+func releasesListURL(repo string) string {
+	return "https://api.github.com/repos/" + repo + "/releases?per_page=30"
+}
+
+// FetchLatestStable returns the highest-semver non-prerelease, non-draft
+// platform release. With no stable release it falls back to the highest
+// prerelease (install.sh's rule). nil, nil means nothing has been published.
 func FetchLatestStable(ctx context.Context, repo string) (*Release, error) {
-	var rr rawRelease
-	status, err := githubGet(ctx, "https://api.github.com/repos/"+repo+"/releases/latest", &rr)
+	var rrs []rawRelease
+	status, err := githubGet(ctx, releasesListURL(repo), &rrs)
 	if err != nil {
 		return nil, err
 	}
-	if status == http.StatusNotFound || !IsProductTag(rr.TagName) {
-		return FetchLatestBeta(ctx, repo)
+	if status == http.StatusNotFound {
+		return nil, nil
 	}
-	return rr.toRelease(), nil
+	if rel := pickLatestStable(rrs); rel != nil {
+		return rel, nil
+	}
+	return pickLatestPrerelease(rrs), nil
 }
+
+var productTagPattern = regexp.MustCompile(`^v[0-9]`)
 
 // IsProductTag reports whether tag names a platform release (v1.2.3 or
 // v0.2.0-beta.19). Nested Go module releases such as kit/v0.1.0 share the
 // repository's releases list but are not installable versions.
 func IsProductTag(tag string) bool {
-	return strings.HasPrefix(tag, "v") && !strings.Contains(tag, "/")
+	return productTagPattern.MatchString(tag) && !strings.Contains(tag, "/")
 }
 
-// FetchLatestBeta fetches the newest prerelease from GitHub's releases
-// list, skipping drafts. nil, nil means no prerelease has ever been
+// FetchLatestBeta returns the highest-semver prerelease from GitHub's
+// releases list, skipping drafts. nil, nil means no prerelease has ever been
 // published.
 func FetchLatestBeta(ctx context.Context, repo string) (*Release, error) {
 	var rrs []rawRelease
-	status, err := githubGet(ctx, "https://api.github.com/repos/"+repo+"/releases?per_page=20", &rrs)
+	status, err := githubGet(ctx, releasesListURL(repo), &rrs)
 	if err != nil {
 		return nil, err
 	}
@@ -168,31 +180,40 @@ func FetchLatestBeta(ctx context.Context, repo string) (*Release, error) {
 	return pickLatestPrerelease(rrs), nil
 }
 
-// pickLatestPrerelease returns the prerelease, non-draft entry in rrs
-// with the newest published_at. GitHub's /releases list is ordered by
-// internal release id, not publish time: observed live, v0.2.0-beta.9
-// listed ahead of the actually-newer v0.2.0-beta.14, so taking the first
-// match silently reported a nine-release-old "latest".
+// pickLatestPrerelease returns the highest-semver prerelease, non-draft
+// platform release. GitHub's list order is by internal id, not version.
 func pickLatestPrerelease(rrs []rawRelease) *Release {
-	var latest *rawRelease
-	var latestAt time.Time
+	return pickHighest(rrs, true)
+}
+
+// pickLatestStable returns the highest-semver non-prerelease, non-draft
+// platform release.
+func pickLatestStable(rrs []rawRelease) *Release {
+	return pickHighest(rrs, false)
+}
+
+func pickHighest(rrs []rawRelease, prerelease bool) *Release {
+	var best *rawRelease
 	for i := range rrs {
-		rr := rrs[i]
-		if !rr.Prerelease || rr.Draft || !IsProductTag(rr.TagName) {
+		rr := &rrs[i]
+		if rr.Prerelease != prerelease || rr.Draft || !IsProductTag(rr.TagName) {
 			continue
 		}
-		at, err := time.Parse(time.RFC3339, rr.PublishedAt)
-		if err != nil {
+		if _, ok := semver.Compare(rr.TagName, rr.TagName); !ok {
 			continue
 		}
-		if latest == nil || at.After(latestAt) {
-			latest, latestAt = &rr, at
+		if best == nil {
+			best = rr
+			continue
+		}
+		if c, _ := semver.Compare(rr.TagName, best.TagName); c > 0 {
+			best = rr
 		}
 	}
-	if latest == nil {
+	if best == nil {
 		return nil
 	}
-	return latest.toRelease()
+	return best.toRelease()
 }
 
 type commitResource struct {

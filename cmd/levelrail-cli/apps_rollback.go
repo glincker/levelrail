@@ -22,26 +22,49 @@ func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, looku
 }
 
 // checkRollbackTarget rejects image when it shares the app's image repo but
-// is not one of its locally present tags. A different repo, or an empty or
-// unreadable tag list (a remote node, a registry image), is let through.
-func checkRollbackTarget(ctx context.Context, client *Client, prog, name, image string) error {
+// is neither a locally present tag nor a tag from the app's deploy history.
+// A history tag is resolved to its recorded digest so the request names the
+// exact image. A different repo, or an empty or unreadable tag list (a
+// remote node, a registry image), is let through unchanged.
+func checkRollbackTarget(ctx context.Context, client *Client, prog, name, image string) (string, error) {
 	images, err := client.ListAppImages(ctx, name)
 	if err != nil || len(images) == 0 {
-		return nil
+		return image, nil
 	}
 	want := unpinnedImage(image)
 	if imageRepoOf(want) != imageRepoOf(unpinnedImage(images[0].Tag)) {
-		return nil
+		return image, nil
 	}
 	known := make([]string, 0, len(images))
 	for _, img := range images {
 		if unpinnedImage(img.Tag) == want {
-			return nil
+			return image, nil
 		}
 		known = append(known, img.Tag)
 	}
-	return newValidationError("image %q is not a locally built tag of app %q, and rolling back to it would stop the app; known tags: %s. Roll back by deploy id with \"%s apps deploys rollback-to %s <deploy-id>\", or use \"%s apps deploy\" for a registry image",
-		image, name, strings.Join(known, ", "), prog, name, prog)
+	attempts, _ := client.ListDeployAttempts(ctx, name)
+	var newest *deployAttemptResource
+	for i := range attempts {
+		a := &attempts[i]
+		if a.ID == "" || a.Image == "" {
+			continue
+		}
+		if unpinnedImage(a.Image) == want {
+			if a.ImageDigest != "" && !strings.Contains(image, "@") {
+				return imageRepoOf(want) + "@" + a.ImageDigest, nil
+			}
+			return image, nil
+		}
+		if newest == nil || a.StartedAt.After(newest.StartedAt) {
+			newest = a
+		}
+	}
+	deployID := "<deploy-id>"
+	if newest != nil {
+		deployID = newest.ID
+	}
+	return "", newValidationError("image %q is not a locally built tag of app %q and is not in its deploy history, and rolling back to it would stop the app; known tags: %s. Roll back by deploy id with \"%s apps deploys rollback-to %s %s\", or use \"%s apps deploy\" for a registry image",
+		image, name, strings.Join(known, ", "), prog, name, deployID, prog)
 }
 
 // imageRepoOf strips the tag from an unpinned image reference, leaving a

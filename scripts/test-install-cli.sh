@@ -23,7 +23,7 @@ docker cp "$binary" "$name:/root/levelrail-cli"
 
 echo "== install"
 in_ct 'LEVELRAIL_BINARY_FILE=/root/levelrail-cli sh /root/install-cli.sh'
-in_ct 'test -x /root/.local/bin/levelrail-cli' || { echo "binary not installed where expected"; exit 1; }
+in_ct 'test -x /usr/local/bin/levelrail-cli' || { echo "binary not installed where expected"; exit 1; }
 
 echo "== re-run is idempotent"
 in_ct 'LEVELRAIL_BINARY_FILE=/root/levelrail-cli sh /root/install-cli.sh'

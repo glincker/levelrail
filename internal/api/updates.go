@@ -2,9 +2,7 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -14,11 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
-// githubLatestReleaseURL is the public, unauthenticated GitHub Releases
-// endpoint for this project's own repo.
 const githubRepo = "glincker/levelrail"
-
-const githubLatestReleaseURL = "https://api.github.com/repos/" + githubRepo + "/releases/latest"
 
 // updatesCacheTTL bounds how often handleGetUpdates hits GitHub's API,
 // so a busy Settings > Updates page can't risk rate limiting.
@@ -38,59 +32,30 @@ type githubRelease struct {
 	} `json:"assets"`
 }
 
-// latestPrereleaseFallback covers a project with no stable release yet:
-// report the newest pre-release instead of "none published".
-func latestPrereleaseFallback(ctx context.Context) (*githubRelease, error) {
-	pre, err := upgrade.FetchLatestBeta(ctx, githubRepo)
-	if err != nil {
-		return nil, fmt.Errorf("api: github pre-release fallback: %w", err)
-	}
-	if pre == nil {
-		return nil, nil
-	}
-	rel := &githubRelease{TagName: pre.Tag, HTMLURL: pre.URL, PublishedAt: pre.PublishedAt, Body: pre.Body}
-	for _, n := range pre.AssetNames {
-		rel.Assets = append(rel.Assets, struct {
-			Name string `json:"name"`
-		}{Name: n})
-	}
-	return rel, nil
-}
-
 // fetchLatestReleaseFunc matches defaultFetchLatestRelease's signature;
 // overridable per-Router the same way lookupHost/fetch already are, so
 // tests never perform a real outbound call. A nil *githubRelease with a
 // nil error means "checked, no release published yet" (GitHub 404).
 type fetchLatestReleaseFunc func(ctx context.Context) (*githubRelease, error)
 
-func defaultFetchLatestRelease(ctx context.Context) (*githubRelease, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, githubLatestReleaseURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("api: build github releases request: %w", err)
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
+// fetchStableRelease is swapped in tests; production resolves through kit/upgrade.
+var fetchStableRelease = upgrade.FetchLatestStable
 
-	resp, err := updatesHTTPClient.Do(req)
+func defaultFetchLatestRelease(ctx context.Context) (*githubRelease, error) {
+	rel, err := fetchStableRelease(ctx, githubRepo)
 	if err != nil {
 		return nil, fmt.Errorf("api: fetch github releases: %w", err)
 	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return latestPrereleaseFallback(ctx)
+	if rel == nil {
+		return nil, nil
 	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
-		return nil, fmt.Errorf("api: github releases: unexpected status %d: %s", resp.StatusCode, string(body))
+	out := &githubRelease{TagName: rel.Tag, HTMLURL: rel.URL, PublishedAt: rel.PublishedAt, Body: rel.Body}
+	for _, n := range rel.AssetNames {
+		out.Assets = append(out.Assets, struct {
+			Name string `json:"name"`
+		}{Name: n})
 	}
-
-	var release githubRelease
-	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		return nil, fmt.Errorf("api: decode github release: %w", err)
-	}
-	return &release, nil
+	return out, nil
 }
 
 // updatesCache holds the last successful GitHub Releases lookup, so a

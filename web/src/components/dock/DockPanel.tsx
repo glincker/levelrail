@@ -26,7 +26,7 @@ const SHEET_DISMISS_PX = 80
 const LAYOUT_CLASS: Record<DockLayout, string> = {
   float: 'top-0 left-0 rounded-xl',
   bottom: 'inset-x-0 bottom-0 rounded-t-xl border-b-0',
-  side: 'top-14 right-0 bottom-0 rounded-l-xl border-r-0',
+  side: 'top-[calc(3.5rem+1px)] right-0 bottom-0 rounded-l-xl border-r-0',
   sheet:
     'inset-x-0 bottom-0 h-[85dvh] rounded-t-2xl border-b-0 pb-[env(safe-area-inset-bottom)]',
 }
