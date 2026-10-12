@@ -693,5 +693,48 @@
       "description": "Connect a Bitbucket Cloud OAuth consumer for repository browsing and webhook-driven deploys.",
       "banner": "Once the consumer is authorized, its repositories are available to pick from when you create an app."
     }
+  },
+  "securityPage": {
+    "eyebrow": "Account",
+    "title": "Security",
+    "description": "Sessions, two-factor authentication, passkeys, and login protection for this account.",
+    "help": "Security guide",
+    "status": {
+      "protected": "Second factor on",
+      "open": "Password only"
+    },
+    "banner": {
+      "title": "Sign-in relies on a password alone",
+      "body": "Turn on two-factor authentication or register a passkey so a leaked password cannot open this dashboard on its own."
+    }
+  },
+  "generalPage": {
+    "eyebrow": "Platform",
+    "title": "General",
+    "description": "What this instance is running on, how much disk it has left, and which core features are configured.",
+    "help": "Troubleshooting guide",
+    "status": {
+      "healthy": "Healthy",
+      "attention": "Needs attention"
+    },
+    "banner": {
+      "docker": "Docker is not reachable",
+      "dockerBody": "The control plane cannot talk to the Docker engine, so nothing can be deployed or reconciled until it comes back.",
+      "secrets": "Secrets encryption is not configured",
+      "secretsBody": "Environment secrets cannot be stored until a master key is set for this instance."
+    }
+  },
+  "emailPage": {
+    "eyebrow": "Notifications",
+    "title": "Email",
+    "description": "The backend that sends alert notifications and password-reset links.",
+    "help": "Email notifications guide",
+    "status": {
+      "none": "Not configured"
+    },
+    "banner": {
+      "title": "No email backend is configured",
+      "body": "Alert emails and password-reset links will not be sent until you pick SMTP, Amazon SES, or Resend below."
+    }
   }
 }
