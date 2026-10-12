@@ -393,7 +393,7 @@ levelrail-cli apps webhook-deliveries replay storefront whd_8e11...
 Replay runs the same processing against the stored payload and headers once you have fixed the problem, so it can trigger a real build and deploy. It does not re-verify the original signature (you are already authenticated with the `deploy` ability) and does not write a second delivery row, since the replay is in the audit log.
 </Warning>
 
-Rows are kept for 30 days by default (`APP_WEBHOOK_DELIVERY_RETENTION_DAYS`) and swept every hour (`APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL`). This is debugging data, not a compliance trail.
+Rows are kept for 30 days by default (`APP_WEBHOOK_DELIVERY_RETENTION_DAYS`) and swept every hour (`APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL`). Deliveries that fail signature verification are capped separately: only the newest 20 per app are kept (`APP_WEBHOOK_FAILED_DELIVERY_KEEP`) and each stores at most 2048 body bytes (`APP_WEBHOOK_FAILED_BODY_BYTES`). This is debugging data, not a compliance trail.
 
 ### Rotate the webhook secret
 

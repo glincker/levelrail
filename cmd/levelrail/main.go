@@ -2453,6 +2453,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithInviteTTL(inviteTTL(logger)),
 		api.WithAuditLogRetention(auditLogRetention(logger)),
 		api.WithWebhookDeliveryRetention(webhookDeliveryRetention(logger)),
+		api.WithWebhookFailedDeliveryLimits(
+			positiveIntEnv(logger, "APP_WEBHOOK_FAILED_DELIVERY_KEEP"),
+			positiveIntEnv(logger, "APP_WEBHOOK_FAILED_BODY_BYTES"),
+		),
 		api.WithDeployApprovalTTL(deployApprovalTTL(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithPublicHostSource(publicHostSource()),
@@ -3302,6 +3306,21 @@ func webhookDeliveryRetention(logger *slog.Logger) time.Duration {
 		return 0
 	}
 	return time.Duration(days) * 24 * time.Hour
+}
+
+// positiveIntEnv returns the env var as a positive int, or 0 (the api
+// package's signal to use its own default) when unset or invalid.
+func positiveIntEnv(logger *slog.Logger, name string) int {
+	raw := os.Getenv(name)
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n <= 0 {
+		logger.Warn("invalid "+name+", using the default", slog.String("value", raw))
+		return 0
+	}
+	return n
 }
 
 // webhookDeliverySweepInterval reads APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL

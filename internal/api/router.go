@@ -389,6 +389,10 @@ type Router struct {
 	// survives before PurgeOldWebhookDeliveries removes it. 0 means "use
 	// the default", set via WithWebhookDeliveryRetention.
 	webhookDeliveryRetention time.Duration
+	// webhookFailedKeep and webhookFailedBodyBytes bound stored unsigned
+	// deliveries (WithWebhookFailedDeliveryLimits); 0 means the defaults.
+	webhookFailedKeep      int
+	webhookFailedBodyBytes int
 	// secretRotationWarnAge overrides defaultSecretRotationWarnAge
 	// (secret_rotation.go): how old a secret's last-set value can get
 	// before GET /apps/{name}/secrets, GET .../env/all, and the doctor's

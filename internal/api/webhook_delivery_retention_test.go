@@ -22,6 +22,10 @@ func (m *mockWebhookDeliveryStore) DeleteWebhookDeliveriesOlderThan(_ context.Co
 	return m.returnedDeleted, m.returnedError
 }
 
+func (m *mockWebhookDeliveryStore) PruneFailedWebhookDeliveries(_ context.Context, _ string, _ int) (int64, error) {
+	return 0, nil
+}
+
 func (m *mockWebhookDeliveryStore) SaveWebhookDelivery(_ context.Context, _ store.WebhookDelivery) error {
 	return nil
 }
