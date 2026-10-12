@@ -1,4 +1,6 @@
+import { useMemo } from 'react'
 import { useBrand } from '../hooks/useBrand'
+import { sanitizeSvg } from '../lib/sanitizeSvg'
 
 // Shared by every brand avatar chip (sidebar, login, forgot/reset
 // password, accept invite): the real mark when brand.yaml provides one,
@@ -11,11 +13,12 @@ export function BrandMarkGlyph({
   svgWrapperClassName?: string
 }) {
   const brand = useBrand()
-  if (brand.LogoSVG) {
+  const logoSvg = useMemo(() => sanitizeSvg(brand.LogoSVG), [brand.LogoSVG])
+  if (logoSvg) {
     return (
       <span
         className={svgWrapperClassName}
-        dangerouslySetInnerHTML={{ __html: brand.LogoSVG }}
+        dangerouslySetInnerHTML={{ __html: logoSvg }}
       />
     )
   }
