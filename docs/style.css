@@ -161,9 +161,3 @@ html:not(.dark) #table-of-contents a[data-active="true"] { color: #107292; }
 /* ---------- Table cell padding ---------- */
 #content-area table th, #content-area table td { padding: 0.75rem 1rem; vertical-align: top; }
 #content-area table td:first-child { font-weight: 500; }
-
-/* ---------- Custom (Phosphor) icons ---------- */
-/* Mintlify renders file icons as plain <img>, so currentColor resolves to black. Tone them per theme. */
-#sidebar img[src^="/assets/icons/"], #navbar img[src^="/assets/icons/"], #content-area img[src^="/assets/icons/"] { opacity: 0.7; }
-html.dark #sidebar img[src^="/assets/icons/"], html.dark #navbar img[src^="/assets/icons/"], html.dark #content-area img[src^="/assets/icons/"] { filter: invert(1); }
-#navbar .nav-tabs-item[data-active="true"] img[src^="/assets/icons/"], #sidebar a[aria-current="page"] img[src^="/assets/icons/"] { opacity: 1; }
