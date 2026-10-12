@@ -2,7 +2,9 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import './styles/glinui-tokens.css';
+@import './styles/glinr-fonts.css';
 @import './styles/glinr-tokens.css';
+@import './styles/glinr-theme.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -267,10 +269,6 @@ body {
   --color-tone-accent-solid: var(--tone-accent-solid);
   --shadow-raised: var(--elev-1);
   --shadow-floating: var(--elev-2);
-  --shadow-header: var(--glinr-elev-header);
-  --shadow-card: var(--glinr-elev-card);
-  --shadow-popover: var(--glinr-elev-popover);
-  --shadow-dialog: var(--glinr-elev-dialog);
 }
 
 @keyframes kit-shimmer {
