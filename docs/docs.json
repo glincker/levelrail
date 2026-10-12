@@ -41,10 +41,17 @@
     "links": [
       {
         "label": "Website",
+        "icon": "globe",
         "href": "https://levelrail.com"
       },
       {
+        "label": "Changelog",
+        "icon": "clock-rotate-left",
+        "href": "/changelog"
+      },
+      {
         "label": "GitHub",
+        "icon": "github",
         "href": "https://github.com/glincker/levelrail"
       }
     ],
