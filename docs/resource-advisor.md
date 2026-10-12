@@ -1,5 +1,6 @@
 ---
 title: "Resource advisor (beta)"
+tag: "Beta"
 description: The beta resource advisor that suggests memory and CPU limits, flags idle apps, memory growth and disk pressure, and sizes Postgres, Redis and MySQL settings from local telemetry, with every rule and threshold explained.
 ---
 

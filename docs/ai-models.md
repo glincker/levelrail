@@ -1,5 +1,6 @@
 ---
 title: "AI models"
+tag: "Experimental"
 description: Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes as a first-class resource, with an OpenAI-compatible endpoint protected by an API key.
 ---
 

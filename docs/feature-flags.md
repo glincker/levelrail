@@ -1,5 +1,6 @@
 ---
 title: "Feature flags"
+tag: "Beta"
 description: Toggle behavior in a running app without a redeploy, with per-app flags, percentage rollouts and a simple evaluate endpoint.
 ---
 

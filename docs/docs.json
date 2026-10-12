@@ -68,7 +68,8 @@
               "what-you-need",
               "installing",
               "getting-started"
-            ]
+            ],
+            "icon": "/assets/icons/download-simple.svg"
           },
           {
             "group": "Add to your setup",
@@ -83,7 +84,8 @@
               "multi-node-quickstart",
               "tutorials/self-host-vaultwarden",
               "troubleshooting"
-            ]
+            ],
+            "icon": "/assets/icons/plus-circle.svg"
           },
           {
             "group": "Guides",
@@ -92,15 +94,11 @@
               "guides/coolify-vs-levelrail",
               "guides/self-host-postgres-with-backups",
               "guides/zero-downtime-deploys-without-kubernetes"
-            ]
-          },
-          {
-            "group": "Index",
-            "pages": [
-              "all-pages"
-            ]
+            ],
+            "icon": "/assets/icons/compass.svg"
           }
-        ]
+        ],
+        "icon": "/assets/icons/rocket-launch.svg"
       },
       {
         "tab": "How-to guides",
@@ -137,7 +135,8 @@
               "deploy-status-badge",
               "screenshots",
               "docker"
-            ]
+            ],
+            "icon": "/assets/icons/cloud-arrow-up.svg"
           },
           {
             "group": "Networking and multi-node",
@@ -146,7 +145,6 @@
               "standalone-domains",
               "dns",
               "domain-traffic-controls",
-              "load-balancing",
               "acme-verification-runbook",
               "multi-node",
               "multi-node-quickstart",
@@ -155,7 +153,8 @@
               "network-topology",
               "service-topology-graph",
               "build-node-routing"
-            ]
+            ],
+            "icon": "/assets/icons/globe-hemisphere-west.svg"
           },
           {
             "group": "Databases and storage",
@@ -168,13 +167,13 @@
               "prove-your-backups-work",
               "object-storage",
               "network-shares",
-              "log-archive",
               "log-explorer",
               "data-export",
               "control-plane-backup",
               "disaster-recovery",
               "upgrade-safely"
-            ]
+            ],
+            "icon": "/assets/icons/database.svg"
           },
           {
             "group": "CI/CD and automation",
@@ -182,14 +181,13 @@
               "github-actions",
               "pipelines",
               "pipelines-oidc",
-              "platform-as-code",
               "git-integrations"
-            ]
+            ],
+            "icon": "/assets/icons/git-branch.svg"
           },
           {
             "group": "Security and access",
             "pages": [
-              "feature-flags",
               "auth-engine",
               "host-firewall",
               "exposure-audit",
@@ -201,7 +199,8 @@
               "environments",
               "identity-and-access",
               "projects-and-organizations"
-            ]
+            ],
+            "icon": "/assets/icons/shield-check.svg"
           },
           {
             "group": "Scale and operations",
@@ -211,7 +210,6 @@
               "command-palette",
               "cost-estimate",
               "usage-and-cost",
-              "resource-advisor",
               "integrations",
               "cloud-integrations",
               "rollback",
@@ -220,19 +218,16 @@
               "observability",
               "status-page",
               "whats-new-panel"
-            ]
+            ],
+            "icon": "/assets/icons/chart-line-up.svg"
           },
           {
             "group": "AI and agents",
             "pages": [
-              "ai-models",
               "agents",
-              "ai-assistant",
-              "mcp",
-              "mcp-recipes",
-              "ai-assistant-chat",
               "ai-control"
-            ]
+            ],
+            "icon": "/assets/icons/sparkle.svg"
           },
           {
             "group": "Templates and catalog",
@@ -240,7 +235,8 @@
               "templates-and-registry",
               "template-catalog",
               "templates"
-            ]
+            ],
+            "icon": "/assets/icons/squares-four.svg"
           },
           {
             "group": "Migrating from other platforms",
@@ -248,9 +244,27 @@
               "migrating-from-coolify-dokploy-and-caprover",
               "migrating-from-vercel",
               "migrating-from-cloud-run"
-            ]
+            ],
+            "icon": "/assets/icons/arrows-left-right.svg"
+          },
+          {
+            "group": "Beta and experimental",
+            "pages": [
+              "ai-assistant",
+              "mcp",
+              "mcp-recipes",
+              "ai-assistant-chat",
+              "ai-models",
+              "load-balancing",
+              "platform-as-code",
+              "resource-advisor",
+              "feature-flags",
+              "log-archive"
+            ],
+            "icon": "/assets/icons/flask.svg"
           }
-        ]
+        ],
+        "icon": "/assets/icons/book-open.svg"
       },
       {
         "tab": "Reference",
@@ -270,9 +284,11 @@
               "mcp-tool-surface",
               "agent-tooling-audit",
               "kit"
-            ]
+            ],
+            "icon": "/assets/icons/code.svg"
           }
-        ]
+        ],
+        "icon": "/assets/icons/code.svg"
       },
       {
         "tab": "Concepts",
@@ -288,10 +304,10 @@
               "comparison",
               "use-cases",
               "white-labeling",
-              "brand",
               "glinr-bot",
               "behind-an-existing-proxy"
-            ]
+            ],
+            "icon": "/assets/icons/lightbulb.svg"
           },
           {
             "group": "Design proposals",
@@ -299,7 +315,8 @@
               "design/git-provider-integrations"
             ]
           }
-        ]
+        ],
+        "icon": "/assets/icons/lightbulb.svg"
       },
       {
         "tab": "Self-host gallery",
@@ -728,21 +745,36 @@
         ]
       },
       {
-        "tab": "Project",
+        "tab": "Appendix",
         "groups": [
           {
-            "group": "Status",
+            "group": "Status and roadmap",
             "pages": [
               "roadmap",
               "feature-status",
               "experimental-features",
               "performance",
+              "changelog"
+            ],
+            "icon": "/assets/icons/chart-line-up.svg"
+          },
+          {
+            "group": "Engineering notes",
+            "pages": [
               "ci",
               "vps-smoke",
               "i18n",
               "design-tokens",
-              "changelog"
-            ]
+              "brand"
+            ],
+            "icon": "/assets/icons/gear-six.svg"
+          },
+          {
+            "group": "Browse",
+            "pages": [
+              "all-pages"
+            ],
+            "icon": "/assets/icons/list-bullets.svg"
           },
           {
             "group": "Legal",
@@ -751,9 +783,11 @@
               "privacy-policy",
               "cookies",
               "license-and-notices"
-            ]
+            ],
+            "icon": "/assets/icons/scales.svg"
           }
-        ]
+        ],
+        "icon": "/assets/icons/books.svg"
       }
     ]
   },

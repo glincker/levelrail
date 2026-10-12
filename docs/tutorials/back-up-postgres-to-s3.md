@@ -4,6 +4,8 @@ sidebarTitle: "Back up to S3"
 description: Send Postgres backups to S3, R2, or any S3-compatible bucket on a schedule, verify them, and prove the restore works on your own server.
 ---
 
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/postgresql.svg" alt="PostgreSQL" title="PostgreSQL" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/aws-amazon-simple-storage-service.svg" alt="Amazon S3" title="Amazon S3" width="24" height="24" /></span></div>
+
 A backup you have never restored is a guess. In this tutorial you will connect an S3-compatible bucket, take a backup of a real Postgres database, schedule the next ones, delete data on purpose, and bring it back two ways: over the original database and into a brand-new copy.
 
 ## Before you start

@@ -1,5 +1,6 @@
 ---
 title: "Experimental features"
+tag: "Experimental"
 description: Features hidden at launch, the APP_EXPERIMENTAL switch that turns them on, and what each surface does while a feature is off.
 ---
 

@@ -1,5 +1,6 @@
 ---
 title: "In-app AI assistant chat"
+tag: "Experimental"
 description: The in-app AI assistant chat, how to enable it behind the ai-chat experimental flag, and the read-and-suggest confirmation gate that bounds what it can do.
 ---
 

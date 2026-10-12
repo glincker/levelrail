@@ -1,5 +1,6 @@
 ---
 title: "Platform as code"
+tag: "Experimental"
 description: Describe projects, environments, apps, domains, databases and more as YAML files, review the plan, and apply it from the CLI, the dashboard, MCP or CI.
 ---
 

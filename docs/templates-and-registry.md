@@ -1,5 +1,6 @@
 ---
 title: "Service template catalog"
+tag: "Beta"
 description: Deploy ready-made services from the built-in template catalog, save your own apps as templates, and see how templates, Compose and static sites relate.
 ---
 

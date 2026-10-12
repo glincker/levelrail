@@ -4,6 +4,8 @@ sidebarTitle: "Install on a server"
 description: Requirements, then every supported way to get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
 ---
 
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/ubuntu.svg" alt="Ubuntu" title="Ubuntu" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/debian.svg" alt="Debian" title="Debian" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/docker.svg" alt="Docker" title="Docker" width="24" height="24" /></span></div>
+
 ## What this covers
 
 How to get the Levelrail control plane (`levelrail`) running on a Linux host, confirm it works, and upgrade or remove it later. The node agent is `levelrail-agent`, and `levelrail-cli` is the client. All three are static Go binaries.

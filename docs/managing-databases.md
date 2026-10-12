@@ -3,6 +3,8 @@ title: "Managing databases"
 description: Create and manage databases with backups, point-in-time restore, and lifecycle management.
 ---
 
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/postgresql.svg" alt="PostgreSQL" title="PostgreSQL" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/mysql.svg" alt="MySQL" title="MySQL" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/mariadb.svg" alt="MariaDB" title="MariaDB" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/mongodb.svg" alt="MongoDB" title="MongoDB" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/redis.svg" alt="Redis" title="Redis" width="24" height="24" /></span></div>
+
 ## What this covers
 
 Create a Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, or ClickHouse database from the dashboard, the CLI, or the API. Levelrail runs it, generates its credentials, and can back it up on a schedule. A database is managed like an app, minus the build step and domain routing. It has its own data volume that survives redeploys and its own lifecycle (stop, start, upgrade, restore).

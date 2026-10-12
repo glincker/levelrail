@@ -3,6 +3,8 @@ title: "Node provisioning"
 description: Create a server at Hetzner, DigitalOcean, AWS, Azure or GCP and enroll it as a node, with the credential each provider needs, how status polling works, cost, and known gaps.
 ---
 
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/hetzner.svg" alt="Hetzner" title="Hetzner" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/digitalocean.svg" alt="DigitalOcean" title="DigitalOcean" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/linode.svg" alt="Linode" title="Linode" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/vultr.svg" alt="Vultr" title="Vultr" width="24" height="24" /></span></div>
+
 [Multi-node](/multi-node) covers enrolling a machine you already have. This page covers the step before that: having Levelrail create the machine at a cloud provider. For the short command sequence, see the [multi-cloud provisioning quickstart](/multi-cloud-provisioning).
 
 Provisioning drives the same join-token enrollment that multi-node uses. The control plane mints a token, hands it to the new VM's first-boot script, and the agent enrolls the way it always does.

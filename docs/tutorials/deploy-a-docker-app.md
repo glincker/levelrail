@@ -4,6 +4,8 @@ sidebarTitle: "Deploy your first app"
 description: Deploy a Docker image to your own Linux server with Levelrail, attach a custom domain, ship a second version, and roll back in one command. About 10 minutes.
 ---
 
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/docker.svg" alt="Docker" title="Docker" width="24" height="24" /></span></div>
+
 By the end of this tutorial you will have a Docker image running on your own server, reachable on a domain you control, with a second version deployed and a one-command rollback to the first. It takes about ten minutes and needs no Dockerfile or build step.
 
 ## Before you start

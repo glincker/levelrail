@@ -3,6 +3,8 @@ title: "Migrating from Coolify, Dokploy, or CapRover"
 description: Import apps, databases, env vars, domains and volumes from Coolify, Dokploy or CapRover with a dry run first, then apply
 ---
 
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/coolify.svg" alt="Coolify" title="Coolify" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/dokploy.svg" alt="Dokploy" title="Dokploy" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/caprover.svg" alt="CapRover" title="CapRover" width="24" height="24" /></span></div>
+
 The platform importer reads a live Coolify, Dokploy or CapRover instance through its own HTTP API and creates the matching apps and databases here. It is read-only against the source: it never stops, changes or deletes anything there, and a test asserts it issues nothing but GET requests (CapRover's one login POST aside).
 
 A migration of live apps is four steps, and the source keeps serving traffic through the first three:

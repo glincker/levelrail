@@ -4,6 +4,8 @@ sidebarTitle: "Add a domain and HTTPS"
 description: Automatic TLS, domain routing, WAF, rate limiting, and redirects, all embedded in the control plane, with no separate proxy to manage.
 ---
 
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/caddy.svg" alt="Caddy" title="Caddy" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/letsencrypt.svg" alt="Let's Encrypt" title="Let's Encrypt" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/cloudflare.svg" alt="Cloudflare" title="Cloudflare" width="24" height="24" /></span></div>
+
 Levelrail has nothing to install for ingress. The control plane embeds [Caddy](https://caddyserver.com/) as a Go library (`internal/ingress`) and drives it through its admin API, not a hand-written Caddyfile. Config comes from the app specs the reconciler already knows about, so there is no `caddy` binary, no separate proxy container, and no way for ingress config to drift from desired state. The reasoning is in [ADR 005](https://github.com/glincker/levelrail/blob/main/adr/005-caddy-embedded-ingress.md) and the [comparison](/comparison).
 
 ## What this covers

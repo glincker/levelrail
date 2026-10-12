@@ -1,5 +1,6 @@
 ---
 title: "Load balancing across replicas"
+tag: "Experimental"
 description: Balance traffic across an app's replicas with health checks, retries, sticky sessions, weights, graceful cutovers, live upstream status, and Terraform, CDK, CloudFormation or Caddy export.
 ---
 

@@ -1,5 +1,6 @@
 ---
 title: "MCP recipes"
+tag: "Beta"
 description: Five real conversations with an AI assistant connected to the MCP server, showing what you ask, which prompts and tools run, and what comes back.
 ---
 

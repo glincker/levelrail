@@ -4,6 +4,8 @@ sidebarTitle: "Add a database"
 description: Create a managed Postgres database on your own server, connect an app with one command, and confirm the connection string reaches the container.
 ---
 
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/postgresql.svg" alt="PostgreSQL" title="PostgreSQL" width="24" height="24" /></span></div>
+
 By the end of this tutorial you will have a Postgres database running next to your app, a connection string injected into the app as an environment variable, and a check that the app actually sees it. No password handling, no copy and paste of credentials.
 
 ## Before you start

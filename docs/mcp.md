@@ -1,5 +1,6 @@
 ---
 title: "MCP tools, token budget and write mode"
+tag: "Beta"
 description: The levelrail-mcp tool listing, its token budget, the read-only diagnostic tools, the confirm-gated write tools behind --allow-write, and the prompt injection threat model.
 ---
 

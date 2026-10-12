@@ -3,6 +3,8 @@ title: "Git integrations"
 description: Connect GitHub, GitLab, Bitbucket or Gitea for automatic git-triggered deploys, per-pull-request preview environments, and webhook history with replay.
 ---
 
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/github.svg" alt="GitHub" title="GitHub" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/gitlab.svg" alt="GitLab" title="GitLab" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/bitbucket.svg" alt="Bitbucket" title="Bitbucket" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/gitea.svg" alt="Gitea" title="Gitea" width="24" height="24" /></span></div>
+
 Connect a git provider once for the whole control plane, then point any number of apps at repositories it can see. A push, a tag, or a pull request on the repository then deploys the app, builds a preview, or both.
 
 **What this covers:** connecting a provider, using a repository as an app's source, deploy triggers and path filters, deploying a commit by hand, monorepo build settings, webhook handling and replay, and per-pull-request previews.

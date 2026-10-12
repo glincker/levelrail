@@ -1,5 +1,6 @@
 ---
 title: "Log archive"
+tag: "Beta"
 description: Ship container logs to storage as compressed NDJSON on a schedule.
 ---
 

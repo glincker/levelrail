@@ -72,7 +72,6 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Standalone domains](/standalone-domains): Proxy a domain to a port on this server, an address on your network, an external URL, another app's port or a container, with no app needed, and find the server address your DNS records must point at.
 - [DNS zones and records](/dns): Manage DNS zones and records at Cloudflare or Route53, move a domain's name servers, verify delegation and propagation, and serve wildcard subdomains.
 - [Domain traffic controls](/domain-traffic-controls): Per-domain traffic controls in the embedded ingress, covering header rules, path forwarders, country rules, response caching, redirects and raw ports, from the dashboard, CLI or API.
-- [Load balancing across replicas](/load-balancing): Balance traffic across an app's replicas with health checks, retries, sticky sessions, weights, graceful cutovers, live upstream status, and Terraform, CDK, CloudFormation or Caddy export.
 - [Verifying real ACME issuance against a live domain](/acme-verification-runbook): Verify real ACME certificate issuance against a live public domain with Let's Encrypt or another RFC 8555 CA, including what to check, common failures, and a recorded run.
 - [Multi-node: adding and managing nodes](/multi-node): Enroll additional nodes, manage placement and health, migrate apps with their volumes, and configure the WireGuard mesh.
 - [Multi-node quickstart](/multi-node-quickstart): The short path to a second server, what has been verified on real infrastructure, and what to check before relying on the WireGuard mesh across hosts.
@@ -92,7 +91,6 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Prove your backups work](/prove-your-backups-work): Run restore drills to verify backups work before you need them.
 - [Object storage](/object-storage): Connect S3-compatible buckets for log archive, build cache, and backups.
 - [Network shares](/network-shares): Register and test network shares (NFS and CIFS) with the control plane.
-- [Log archive](/log-archive): Ship container logs to storage as compressed NDJSON on a schedule.
 - [Log explorer](/log-explorer): Search logs, save queries, group errors into signatures, and create alert rules.
 - [Data export](/data-export): Send logs, the audit log and metrics to Loki, syslog, a webhook, a bucket, Prometheus or an OTLP collector, with bounded buffers and no effect on deploys.
 - [Control plane backup and restore](/control-plane-backup): Back up and restore the control plane's database with automatic snapshots and offline restore.
@@ -104,12 +102,10 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Deploying from GitHub Actions](/github-actions): Deploy a prebuilt image from a GitHub Actions workflow with the bundled composite action, no Go toolchain needed.
 - [Pipelines](/pipelines): Define CI/CD pipelines as YAML with triggers, jobs, matrix builds, approvals, and deploys, and run them on your own nodes.
 - [Pipelines: OIDC federation](/pipelines-oidc): Mint short-lived OIDC tokens for pipeline jobs, and wire AWS, GCP, or Vault to trust them without a long-lived credential.
-- [Platform as code](/platform-as-code): Describe projects, environments, apps, domains, databases and more as YAML files, review the plan, and apply it from the CLI, the dashboard, MCP or CI.
 - [Git integrations](/git-integrations): Connect GitHub, GitLab, Bitbucket or Gitea for automatic git-triggered deploys, per-pull-request preview environments, and webhook history with replay.
 
 ### Security and access
 
-- [Feature flags](/feature-flags): Toggle behavior in a running app without a redeploy, with per-app flags, percentage rollouts and a simple evaluate endpoint.
 - [Sign-in engine](/auth-engine): How sign-in, API tokens, two-factor, passkeys and OAuth are served, and the settings that tune them.
 - [Host firewall](/host-firewall): Manage allow and deny rules for the control plane host's ufw firewall from the dashboard, CLI or API, with a lockout guard against blocking essential ports.
 - [Exposure audit](/exposure-audit): Find which published container ports are reachable from the internet, why ufw does not cover them, and how to restrict one with a reversible DOCKER-USER allow-list.
@@ -129,7 +125,6 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Command palette](/command-palette): Keyboard-first command palette and shortcuts for navigating the dashboard and running quick app actions.
 - [Cost estimate](/cost-estimate): How Levelrail's "what this would cost elsewhere" app cost estimate is calculated, its assumptions, and the env vars that let you correct the reference rates for your own region.
 - [Usage and cost](/usage-and-cost): Cost showback per app, project, environment and team, how your own prices and server bills are allocated by measured usage, monthly budgets with alerts, CSV export, and the limits of the numbers.
-- [Resource advisor (beta)](/resource-advisor): The beta resource advisor that suggests memory and CPU limits, flags idle apps, memory growth and disk pressure, and sizes Postgres, Redis and MySQL settings from local telemetry, with every rule and threshold explained.
 - [Integrations](/integrations): Attach curated third-party tools (PostHog, Sentry, Datadog, and more) to an app, injecting their env vars automatically at deploy time.
 - [Cloud integrations](/cloud-integrations): What works today with AWS, Google Cloud, Cloudflare, DigitalOcean and Hetzner (nodes, DNS, backups, registries, events), and what is planned but not built.
 - [Rolling back the control plane](/rollback): How to roll the control plane back to a previous release: what the dashboard shows and what you run on the server.
@@ -141,12 +136,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 ### AI and agents
 
-- [AI models](/ai-models): Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes as a first-class resource, with an OpenAI-compatible endpoint protected by an API key.
 - [Working with AI agents](/agents): Connect an AI coding agent to your instance, scope its token, and give it the instructions it needs to deploy safely.
-- [AI assistant integration: levelrail-mcp](/ai-assistant): Run levelrail-mcp over stdio for a locally spawning client or over the network for a remotely hosted MCP-compatible AI assistant, and how to scope the API token it uses.
-- [MCP tools, token budget and write mode](/mcp): The levelrail-mcp tool listing, its token budget, the read-only diagnostic tools, the confirm-gated write tools behind --allow-write, and the prompt injection threat model.
-- [MCP recipes](/mcp-recipes): Five real conversations with an AI assistant connected to the MCP server, showing what you ask, which prompts and tools run, and what comes back.
-- [In-app AI assistant chat](/ai-assistant-chat): The in-app AI assistant chat, how to enable it behind the ai-chat experimental flag, and the read-and-suggest confirmation gate that bounds what it can do.
 - [AI control](/ai-control): Decide what AI agents and agent tokens may do on your instance, from off to admin, enforced on the server for every request.
 
 ### Templates and catalog
@@ -160,6 +150,19 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover): Import apps, databases, env vars, domains and volumes from Coolify, Dokploy or CapRover with a dry run first, then apply
 - [Migrating a Next.js app from Vercel](/migrating-from-vercel): A practical runbook for moving a Vercel-hosted Next.js app to Levelrail, with an inventory, a concept mapping table, a DNS cutover and rollback plan, the gaps that have no equivalent, and a shadow-run checklist.
 - [Migrating a service from Cloud Run](/migrating-from-cloud-run): A practical runbook for moving a Google Cloud Run service to Levelrail, with a concept mapping table, deploying the same container image from a registry, secrets, Cloud SQL, domains, scheduled jobs, and an honest list of what you give up.
+
+### Beta and experimental
+
+- [AI assistant integration: levelrail-mcp](/ai-assistant): Run levelrail-mcp over stdio for a locally spawning client or over the network for a remotely hosted MCP-compatible AI assistant, and how to scope the API token it uses.
+- [MCP tools, token budget and write mode](/mcp): The levelrail-mcp tool listing, its token budget, the read-only diagnostic tools, the confirm-gated write tools behind --allow-write, and the prompt injection threat model.
+- [MCP recipes](/mcp-recipes): Five real conversations with an AI assistant connected to the MCP server, showing what you ask, which prompts and tools run, and what comes back.
+- [In-app AI assistant chat](/ai-assistant-chat): The in-app AI assistant chat, how to enable it behind the ai-chat experimental flag, and the read-and-suggest confirmation gate that bounds what it can do.
+- [AI models](/ai-models): Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes as a first-class resource, with an OpenAI-compatible endpoint protected by an API key.
+- [Load balancing across replicas](/load-balancing): Balance traffic across an app's replicas with health checks, retries, sticky sessions, weights, graceful cutovers, live upstream status, and Terraform, CDK, CloudFormation or Caddy export.
+- [Platform as code](/platform-as-code): Describe projects, environments, apps, domains, databases and more as YAML files, review the plan, and apply it from the CLI, the dashboard, MCP or CI.
+- [Resource advisor (beta)](/resource-advisor): The beta resource advisor that suggests memory and CPU limits, flags idle apps, memory growth and disk pressure, and sizes Postgres, Redis and MySQL settings from local telemetry, with every rule and threshold explained.
+- [Feature flags](/feature-flags): Toggle behavior in a running app without a redeploy, with per-app flags, percentage rollouts and a simple evaluate endpoint.
+- [Log archive](/log-archive): Ship container logs to storage as compressed NDJSON on a schedule.
 
 ## Reference
 
@@ -190,7 +193,6 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [vs Coolify, Dokploy, CapRover, Dokku, and Kamal](/comparison): An honest comparison of Levelrail with Coolify, Dokploy, CapRover, Dokku, and Kamal: architecture, what each is good at, and what Levelrail ships without a paywall.
 - [Who Levelrail is for](/use-cases): Three real audiences for Levelrail (solo developers, small agencies, teams migrating off Coolify, Dokploy, Heroku, or Vercel), what each is likely trying to do, which shipped features actually fit, and where the project is not there yet.
 - [White-labeling](/white-labeling): How the brand layer works, which names and prefixes it drives (dashboard, agent unit, firewall rule tag, mesh interface, update repository), the brand.yaml fields and APP_BRAND_* overrides, and what a fork must still change by hand.
-- [Brand kit](/brand): Logos, colors and ready-made social images for Levelrail, free to use when you write about it, share it or link to it.
 - [glinr-bot](/glinr-bot): How the repo's GitHub App bot evaluates pull requests against a policy file, comments its reasoning and, in enforce mode, approves and arms auto-merge.
 - [Run behind an existing proxy](/behind-an-existing-proxy): Serve apps and the dashboard through the proxy that already owns ports 80 and 443: one step managed routes for Traefik (Coolify included), or generated configuration for nginx and Caddy.
 
@@ -198,19 +200,23 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 - [Git provider integrations: shared abstraction, GHE, Bitbucket, connect-flow UX](/design/git-provider-integrations): Design for unified post-auth git provider abstraction supporting GitHub, GitLab, Bitbucket, and GitHub Enterprise Server
 
-## Project
+## Appendix
 
-### Status
+### Status and roadmap
 
 - [Roadmap](/roadmap): What Levelrail has shipped by area, what is still open, and what is out of scope. There is no stable release yet.
 - [Feature status](/feature-status): Per-feature maturity labels (stable, beta, hide-behind-flag) with the test, e2e, docs and real-infrastructure evidence behind each one.
 - [Experimental features](/experimental-features): Features hidden at launch, the APP_EXPERIMENTAL switch that turns them on, and what each surface does while a feature is off.
 - [Performance](/performance): Measured idle footprint of the control plane at 0, 100, and 500 apps, and how to reproduce it.
+- [Changelog](/changelog): Every Levelrail release with highlights, fixes and upgrade notes.
+
+### Engineering notes
+
 - [CI](/ci): How the GitHub Actions checks on a pull request are chosen, what they cost, and which ones branch protection relies on.
 - [VPS smoke test](/vps-smoke): scripts/vps-smoke.sh checks a real install end to end on a VPS you already have, without creating or deleting cloud resources.
 - [Internationalization (i18n)](/i18n): How the dashboard's i18n works for contributors: where strings live, how to add one to a component, and how TypeScript catches a mistyped key.
 - [GLINR design tokens](/design-tokens): The single source of truth for color, space, radius, elevation, type and motion in the Levelrail dashboard, and how to add or change a token.
-- [Changelog](/changelog): Every Levelrail release with highlights, fixes and upgrade notes.
+- [Brand kit](/brand): Logos, colors and ready-made social images for Levelrail, free to use when you write about it, share it or link to it.
 
 ### Legal
 

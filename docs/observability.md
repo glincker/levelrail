@@ -3,6 +3,8 @@ title: "Observability: metrics, logs, and alerts"
 description: Node-local metrics, logs, and alerts with federated queries, no central ingestion.
 ---
 
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/grafana.svg" alt="Grafana" title="Grafana" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/prometheus.svg" alt="Prometheus" title="Prometheus" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/slack.svg" alt="Slack" title="Slack" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/discord.svg" alt="Discord" title="Discord" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/telegram.svg" alt="Telegram" title="Telegram" width="24" height="24" /></span></div>
+
 Every app gets CPU, memory, network, disk IO and request metrics automatically, full-text log search with live tail, and alert rules that route to email, Slack, Discord, or a webhook. Metrics and logs stay on each node's local store, and the control plane queries them on demand, so there is no separate observability stack to install.
 
 ## What this covers
