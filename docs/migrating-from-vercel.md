@@ -1,13 +1,15 @@
 ---
 title: "Migrating a Next.js app from Vercel"
-description: A practical runbook for moving a Vercel-hosted Next.js app to Levelrail, with an inventory, a concept mapping table, a DNS cutover and rollback plan, the gaps that have no equivalent, and a shadow-run checklist.
+description: "A runbook for moving a Vercel-hosted Next.js app to Levelrail: inventory, concept mapping, build setup, DNS cutover and rollback plan."
 ---
 
 This is a runbook for moving one Vercel-hosted Next.js app onto a Levelrail instance you run yourself. It maps only to features that exist in this repository today. Where something is unverified or has no equivalent, it says so.
 
-::: warning
+<Warning>
+
 Levelrail has no stable release yet (see [feature status](/feature-status)), and real public ACME has one recorded live run but no renewal or wildcard verification yet (see the [ACME verification runbook](/acme-verification-runbook)). Run the new deployment in parallel with Vercel, and keep Vercel as the rollback path until the shadow run in section 6 is clean.
-:::
+
+</Warning>
 
 Unlike the platform importer in [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover), there is no importer for Vercel. Everything below is manual. Record every surprise you hit in `FRICTION.md` at the repo root.
 

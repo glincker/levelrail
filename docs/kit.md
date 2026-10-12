@@ -1,6 +1,6 @@
 ---
 title: "Shared Go kit"
-description: The shared Go kit, a nested standard-library-only module of small infrastructure packages (SSRF-safe HTTP, cron parsing, health probes, log parsing, firewall sync and more) that Levelrail itself uses, and how to import it.
+description: "The shared Go kit: small standard-library-only packages for SSRF-safe HTTP, cron parsing, health probes and log parsing that you can reuse."
 ---
 
 `kit` is a Go module that lives in this repository under `./kit`. It holds the small, self-contained building blocks that the control plane and node agent share, packaged so other Go programs can import them too. Every package uses the Go standard library only, and the module has no third-party requirements.

@@ -1,6 +1,6 @@
 ---
 title: "Standalone domains"
-description: Proxy a domain to a port on this server, an address on your network, an external URL, another app's port or a container, with no app needed, and find the server address your DNS records must point at.
+description: "Proxy a domain to a port, an address on your network, an external URL or a container, with no app needed."
 ---
 
 A standalone domain is a hostname that is not linked to any app. The embedded ingress terminates TLS for it and proxies every request to a target you choose:

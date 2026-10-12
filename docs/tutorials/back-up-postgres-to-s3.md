@@ -131,9 +131,13 @@ levelrail-cli backups clone-restores main-db
 
 Wait for the status to read `succeeded`, then query `main-db-copy`. The live database was never touched.
 
-::: tip Older releases
+<Tip>
+
+**Older releases**
+
 Up to `v0.2.0-beta.15`, a restore into a new database could fail with `database "..." does not exist` because it started before the new Postgres had finished initializing. It is fixed in later releases. On an older one, delete the copy with `levelrail-cli databases delete main-db-copy` and run the restore again.
-:::
+
+</Tip>
 
 </Step>
 </Steps>

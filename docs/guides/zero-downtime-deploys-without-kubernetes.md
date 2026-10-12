@@ -1,6 +1,6 @@
 ---
 title: Zero-downtime deploys without Kubernetes
-description: "How to ship containers to your own servers with no downtime and a fast rollback, using readiness probes, digest-pinned images, and freeze windows. No Kubernetes."
+description: "Ship containers to your own servers with no downtime and a fast rollback, using readiness probes, pinned images and freeze windows."
 ---
 
 # Zero-downtime deploys without Kubernetes

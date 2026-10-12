@@ -51,9 +51,11 @@ If `DOCKER_GID` is unset, the compose file falls back to `999`, the common defau
 
 The image ships a Docker `HEALTHCHECK` (`levelrail healthcheck --ready`, a GET against its own [`/readyz`](/troubleshooting#readiness-readyz)), so `docker ps` and `docker compose ps` show a real health status without extra compose config. Distroless has no shell or `curl`/`wget`, which is why this is a dedicated subcommand on the binary itself rather than a shell one-liner.
 
-::: warning
+<Warning>
+
 Granting access to `/var/run/docker.sock` allows this container to control every other container on the host, including starting privileged ones. This is the same trust level that `install.sh`'s systemd install already uses, because that's what's required to manage containers on your behalf (see [Architecture](/architecture)). Only run this image on a host you already trust with that level of access.
-:::
+
+</Warning>
 
 ## Node agent
 

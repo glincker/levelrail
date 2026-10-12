@@ -1,6 +1,6 @@
 ---
 title: "Resilience: what survives a control plane crash"
-description: What actually survives when the control plane process crashes, what does not, and why, measured with a real SIGKILL against a real control plane, not assumed from the architecture.
+description: "What survives when the control plane process crashes and what does not, measured with a real SIGKILL against a real control plane."
 ---
 
 This page answers one question precisely: if the `levelrail` process dies outright (a panic, an OOM kill, `kill -9`, the host rebooting the process), what happens to your running apps, and what happens to node agents?
@@ -9,9 +9,11 @@ The answer has two halves, because the control plane is one process that owns tw
 
 Everything below was measured against a real control plane binary, real Docker containers, a real node agent process, and a real `SIGKILL`.
 
-::: details For contributors: the tests behind this page
+<Accordion title="For contributors: the tests behind this page">
+
 `test/e2e/reconcile/break_glass_control_plane_death_test.go` and `test/e2e/reconcile/break_glass_agent_reconnect_test.go`. Run them yourself with `go test -run TestBreakGlass -v ./test/e2e/...` (needs a local Docker daemon).
-:::
+
+</Accordion>
 
 ## The crash-and-recovery timeline
 

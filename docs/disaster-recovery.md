@@ -180,7 +180,8 @@ The command checks, in order: the manifest, the ciphertext SHA-256 and size agai
 
 Every step above, and the failure cases (an interrupted restore, a tampered backup, a wrong key, a newer schema, a mismatched install), is exercised by a test that runs in CI against an in-memory S3 server and generated keys.
 
-::: details For contributors: which test covers which step
+<Accordion title="For contributors: which test covers which step">
+
 | Step | Command | Covered by |
 | --- | --- | --- |
 | Make a key pair | `control-plane-backups keys generate` | `TestCLI_ControlPlaneDR_KeysGenerateAndEscrowRoundTrip` |
@@ -193,7 +194,8 @@ Every step above, and the failure cases (an interrupted restore, a tampered back
 | Crash safety | interrupted restore | `TestRestore_CrashBetweenTempWriteAndRenameKeepsOldDatabase` |
 | Tampering and wrong key | bit flip, other identity | `TestRestore_TamperAndWrongIdentity`, `TestRestore_TamperWithMatchingManifestStillFailsDecrypt` |
 | Newer schema, other install | refusal | `TestRestore_NewerSchemaRefused`, `TestRestore_InstallIDGuard` |
-:::
+
+</Accordion>
 
 ## Runbook: the control plane machine is gone
 

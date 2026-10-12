@@ -1,6 +1,6 @@
 ---
 title: "AI assistant integration: levelrail-mcp"
-description: Run levelrail-mcp over stdio for a locally spawning client or over the network for a remotely hosted MCP-compatible AI assistant, and how to scope the API token it uses.
+description: "Run levelrail-mcp over stdio for a local AI client or over the network for a remotely hosted MCP-compatible assistant."
 ---
 
 `levelrail-mcp` is an MCP (Model Context Protocol) server that exposes the control plane's REST API (`/api/v1`) as MCP tools. It is a thin client like `levelrail-cli`: it authenticates with an API token and calls the same routes the CLI and dashboard do. It has no special internal access, and a token with fewer abilities than a tool needs gets the same 403 the REST API would return.

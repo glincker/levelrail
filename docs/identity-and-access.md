@@ -5,12 +5,14 @@ description: Authentication, authorization, roles, IAM policies, and audit loggi
 
 Create a teammate with a curated role, scope a CI token down to one app, turn on two-factor auth, or review who changed what: this page covers who can sign in, what they can do once they're in, and a record of what they actually did.
 
-::: details For contributors: where this lives in the source
+<Accordion title="For contributors: where this lives in the source">
+
 - Backend: `internal/api/{auth,users,roles,abilities,iam,iam_handlers,invites,tokens,twofactor,oauth,oauth_settings,device_auth,audit,audit_retention}.go`
 - CLI: `cmd/levelrail-cli/{users,iam,invites,tokens,auth}*.go`
 - Dashboard: `web/src/routes/settings/{users,iam-policies,security,tokens,oauth,cli-access,audit-log}.tsx`
 - OAuth sign-in decision logic: `completeOAuthSignin` in `internal/api/oauth.go`
-:::
+
+</Accordion>
 ## Why two permission models instead of one
 
 Most self-hosted platforms pick one of two shapes and live with the downside.
@@ -133,9 +135,13 @@ Without those env vars and with no user yet, the control plane generates a one-t
 
 `POST /api/v1/auth/register` is gated at the database layer to succeed exactly once (a unique constraint, not an application check). A race between concurrent first-registration attempts cannot create two "first" admins. Either path grants `AbilityRoot` because no one else exists yet.
 
-::: tip Development only
+<Tip>
+
+**Development only**
+
 `APP_DEV_MODE=1` seeds a fixed `dev`/`dev` admin for local development. Never use this in a real deployment.
-:::
+
+</Tip>
 
 **Subsequent users**
 
@@ -375,18 +381,18 @@ Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automati
 
 Do this once, before anyone can sign in.
 
-::: code-group
-```bash [Environment]
+<CodeGroup>
+```bash Environment
 export APP_ADMIN_USERNAME=admin@example.com
 export APP_ADMIN_PASSWORD='a-real-password'
 # restart the control plane
 ```
-```bash [Verify with curl]
+```bash Verify with curl
 curl -s -c cookies.txt -X POST https://your-control-plane/api/v1/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"username":"admin@example.com","password":"a-real-password"}'
 ```
-:::
+</CodeGroup>
 
 </Step>
 <Step title="Create a teammate with a curated role">
@@ -406,20 +412,20 @@ levelrail-cli users create --email ops@example.com --password 'temporary-pw' --r
 
 Use an IAM policy, which is tighter than any flat role can express.
 
-::: code-group
-```bash [Create token]
+<CodeGroup>
+```bash Create token
 levelrail-cli tokens create --name "ci-checkout" --abilities deploy
 # → token tok_xyz, plaintext shown once
 ```
-```bash [Create policy]
+```bash Create policy
 levelrail-cli iam policies create --name "checkout-only" \
   --document '{"Statement":[{"Effect":"Allow","Action":["deploy"],"Resource":["app:checkout"]}]}'
 # → policy pol_abc
 ```
-```bash [Attach policy to token]
+```bash Attach policy to token
 levelrail-cli iam policies attach pol_abc --principal-type token --principal-id tok_xyz
 ```
-:::
+</CodeGroup>
 
 That token can now deploy `checkout` even without a global `deploy` ability. To block a resource a broader role would otherwise allow, write an `Effect: "Deny"` statement instead.
 
@@ -428,16 +434,16 @@ That token can now deploy `checkout` even without a global `deploy` ability. To 
 
 Run this as the signed-in account.
 
-::: code-group
-```bash [Setup]
+<CodeGroup>
+```bash Setup
 levelrail-cli auth 2fa setup
 # → secret + otpauth:// provisioning URI, scan it into an authenticator app
 ```
-```bash [Confirm with TOTP code]
+```bash Confirm with TOTP code
 levelrail-cli auth 2fa enable --code 123456
 # → 10 recovery codes, shown once, store them somewhere safe
 ```
-:::
+</CodeGroup>
 
 </Step>
 <Step title="Invite a teammate by email">
@@ -640,7 +646,8 @@ levelrail-cli audit-log [--limit N] [--before TIME] [--path PATH] [--method METH
 levelrail-cli audit-purge
 ```
 
-::: details Known limits
+<Accordion title="Known limits">
+
 
 - **No per-team or per-project access boundary**
   IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. There is no organization- or project-level grouping in the permission model. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.
@@ -651,7 +658,7 @@ levelrail-cli audit-purge
 - **No policy dry-run or simulation**
   A newly attached Deny statement takes effect on the very next request. The only way to check its effect is to make that request and see what happens.
 
-:::
+</Accordion>
 
 ## Next steps
 

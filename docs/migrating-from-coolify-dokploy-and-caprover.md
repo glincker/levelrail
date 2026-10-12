@@ -18,9 +18,11 @@ You can run it three ways, all backed by the same two API routes:
 - CLI: `levelrail-cli import platform coolify|dokploy|caprover --url URL`.
 - API: `POST /api/v1/imports/platform/discover` and `/apply` (ability `write:sensitive`, source token in the request body only).
 
-::: tip
+<Tip>
+
 Always start with a dry run. `--dry-run` (or the dashboard's Discover step) reads the source and shows exactly what would be created, per item, without creating anything.
-:::
+
+</Tip>
 
 ## Quick start
 

@@ -1,8 +1,7 @@
 ---
+title: "Database viewer"
 description: Browse schemas and table data, run read-only SQL, and inspect Redis keys for a managed database from the dashboard or the CLI.
 ---
-
-# Database viewer
 
 Look inside a managed database without opening a port or handing out its
 password. The dashboard's Explorer and SQL Console tabs, the CLI, and the API

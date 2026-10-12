@@ -1,6 +1,6 @@
 ---
 title: "Database upgrades"
-description: Keep managed databases patched. See available versions with security and end-of-life status, schedule automatic patch and minor upgrades in a maintenance window, and let failed upgrades revert themselves.
+description: "Keep managed databases patched: see available versions with security and end-of-life status, then upgrade with a snapshot to roll back to."
 ---
 
 Levelrail tells you which managed databases are behind, which ones miss security fixes, and which run a release past its end of life. It can apply patch and minor releases for you inside a maintenance window. Every upgrade, automatic or started by hand, takes a fresh backup first, checks it, and reverts on its own when the new version does not come up healthy.

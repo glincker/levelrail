@@ -1,6 +1,6 @@
 ---
 title: "Load balancing across replicas"
-description: Balance traffic across an app's replicas with health checks, retries, sticky sessions, weights, graceful cutovers, live upstream status, and Terraform, CDK, CloudFormation or Caddy export.
+description: "Balance traffic across an app's replicas with health checks, retries, sticky sessions, weights, graceful cutovers and live upstream status."
 ---
 
 Set `replicas: 3` and the control plane starts three containers. Any app with more than one replica is balanced across all of them by default: round robin, a replica that fails a request is skipped for 30s, and a failed request is retried on another replica. Set `APP_INGRESS_IMPLICIT_LB=false` to send traffic to the first replica only. To tune the pool (health checks, sticky sessions, weights), use the app's Load balancer tab, the CLI, or `app.yaml`; an explicit configuration replaces the default. Balancing uses the same embedded Caddy that terminates TLS for your domains, so there is no extra container to run.

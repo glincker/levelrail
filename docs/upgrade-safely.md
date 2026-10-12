@@ -1,6 +1,6 @@
 ---
 title: "Upgrade safely"
-description: "Runbook for upgrading the control plane: checks and their fixes, upgrade now, scheduled and automatic upgrades, automatic rollback, interrupted upgrades and the downgrade guard."
+description: "A runbook for upgrading the control plane: pre-checks and their fixes, upgrade now, scheduled upgrades and automatic rollback."
 ---
 
 This is the runbook for moving a running server to a newer release. The self-update verifies the release, snapshots your data, tries the migrations on a copy, and puts the old binary and data back by itself when the new release does not become healthy.

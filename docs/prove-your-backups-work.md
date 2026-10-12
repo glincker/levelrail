@@ -1,6 +1,6 @@
 ---
 title: "Prove your backups work"
-description: Prove a backup restores before you need it. Run restore drills, read backup health per app, restore a volume into a new app or node, and respond when a drill fails.
+description: "Prove a backup restores before you need it: run restore drills, read backup health per app and restore a volume into a new app."
 ---
 
 A backup file is not a backup until a restore of it has worked. Levelrail separates the two: **last backup** says an object was uploaded, **last verified restore** says a copy of it was restored into a scratch resource and checked. This guide shows how to get the second number green and what to do when it is not.
@@ -86,9 +86,11 @@ For databases, the same Backups row links to the database page, where **Restore 
 
 New volume backups are compressed with zstd and encrypted with [age](https://age-encryption.org) on the control plane before upload, so the bucket never sees plaintext. The key is generated on first use and written to `backup-encryption.key` in `APP_DATA_DIR` (override the path with `APP_BACKUP_ENCRYPTION_KEY_FILE`).
 
-::: warning
+<Warning>
+
 Copy that file somewhere that is not this server. Lose it and encrypted backups cannot be restored, including after a disaster that destroys the control plane.
-:::
+
+</Warning>
 
 Set `APP_BACKUP_ENCRYPTION=off` to keep compression but skip encryption. Older backups taken before this feature stay readable; each backup records how it was encoded.
 

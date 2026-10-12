@@ -1,6 +1,6 @@
 ---
 title: "Deploy safety"
-description: What stands between a deploy being triggered and that exact content serving, a readiness gate with a stable window, a drain, pinned rollback targets, a post-deploy watch with automatic rollback, digest-truthful deploys, a stale-deploy guard and freeze windows.
+description: "What stands between a deploy trigger and serving traffic: a readiness gate, a stable window, a drain and pinned rollback targets."
 ---
 
 Several guarantees sit between "a deploy was triggered" and "that exact

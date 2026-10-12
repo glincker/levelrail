@@ -1,8 +1,7 @@
 ---
+title: "Database access and network"
 description: Manage database users, issue short-lived credentials, see who can reach a database, and control its network exposure, scope and TLS from the dashboard, CLI or API.
 ---
-
-# Database access and network
 
 Two tabs on every database give you the controls you would expect from a managed
 database service: **Access** (who can log in, and who can manage it) and

@@ -3,11 +3,23 @@ title: "Security overview"
 description: How Levelrail handles secrets, sessions, TLS, and access control, and where to find the detailed page for each.
 ---
 
-This page is a map, not a duplicate. Each topic below has its own detailed page; this one explains how the pieces fit together and links out.
+Levelrail keeps your secrets encrypted, signs every request in with a session or a scoped token, and never reaches into your servers over SSH after setup. This page explains how those pieces fit together and links to the detailed page for each. It is a map, not a duplicate.
+
+## Five things to do on a new install
+
+1. **Serve the dashboard over HTTPS and set the dashboard URL.** Once an `https://` URL is set, sign-in over plain HTTP is refused. See [Domains and ingress](/domains-and-ingress).
+2. **Give people the narrowest ability that works.** Most humans need `write` and `deploy`; keep `root` for a few. Give CI and AI tokens one ability, and attach a Deny for production apps. See [Identity and access](/identity-and-access).
+3. **Turn on two-factor sign-in** for every account that holds `root`.
+4. **Pin the control plane on every agent** by setting `APP_CA_FINGERPRINT`, so enrollment cannot be intercepted. See [Multi-node](/multi-node).
+5. **Back up the master key separately from the data directory**, and keep it out of the same snapshot. See [Master key rotation](/master-key-rotation) and [Control plane backup](/control-plane-backup).
+
+The [Security center](/security-center) in the dashboard checks most of these from your instance's real state.
+
+For what Levelrail defends against and where it does not yet, read the [threat model](/threat-model). Fixed issues are listed on the [security advisories](/security-advisories) page.
 
 ```mermaid
 flowchart TD
-  MK["Master key<br/>(in memory only, never written to disk)"]
+  MK["Master key<br/>(loaded into memory at start,<br/>stored in master.key or APP_MASTER_KEY)"]
   MK -->|wraps| D1["App A's DEK"]
   MK -->|wraps| D2["App B's DEK"]
   MK -->|wraps| D3["Backup target's DEK"]
@@ -20,13 +32,19 @@ flowchart TD
 
 ## Secrets: envelope encryption
 
-Every owner of secrets (an app, a backup target, the email settings, and so on) gets its own random data encryption key (DEK), and each of its values (an app env var marked `secret: true`, email credentials, API tokens) is encrypted under that DEK with AES-256-GCM. Every DEK is wrapped under one master key held in memory by the control plane, never written to disk in plaintext.
+Every owner of secrets (an app, a backup target, the email settings, and so on) gets its own random data encryption key (DEK), and each of its values (an app env var marked `secret: true`, email credentials, API tokens) is encrypted under that DEK with AES-256-GCM. Every DEK is wrapped under one master key. The control plane loads that key into memory at startup. By default the key is generated on first start and stored in `<data dir>/master.key` (mode `0600`); set `APP_MASTER_KEY` to supply it from your own secret manager instead. It is never included in a control plane backup snapshot.
+
+<Warning>
+Anyone who can read your whole data directory (a disk image, a host-level backup, a cloud snapshot) can read `master.key` next to the database and decrypt every secret. Keep that key file out of host backups and snapshots, or run with `APP_MASTER_KEY` set from a secret store.
+</Warning>
 
 Each encrypted value is also bound to the slot it was written to: its owner and key name are sealed inside the ciphertext and checked on every read. Someone with write access to the database cannot copy one app's `DATABASE_URL` ciphertext into another app's `API_KEY` row and have it decrypt there; the read fails closed instead. Values written before this existed are "legacy" and should be bound once with `levelrail-cli secrets rebind`, see [Binding secrets to their slot](/master-key-rotation#binding-secrets-to-their-slot).
 
-::: tip
+<Tip>
+
 Rotating the master key re-wraps every DEK without ever exposing plaintext, then binds any legacy values. See [Master key rotation](/master-key-rotation) for the full procedure and failure modes.
-:::
+
+</Tip>
 
 Sensitive plain variables and secrets are masked on every read surface, and reading one back needs a confirmed, audited step-up. See [Environment variables and secrets](/environment-and-secrets).
 
