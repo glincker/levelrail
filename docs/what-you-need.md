@@ -1,5 +1,6 @@
 ---
 title: "What you need before you start"
+icon: "/assets/icons/clipboard-text.svg"
 sidebarTitle: "What you need"
 description: "A plain-language checklist for installing Levelrail: a Linux server, a few ports, and optionally a domain. No Kubernetes, no prior DevOps experience."
 ---

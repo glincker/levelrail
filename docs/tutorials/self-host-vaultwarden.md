@@ -1,5 +1,6 @@
 ---
 title: "Self-host Vaultwarden on your own server"
+icon: "/assets/icons/lock-key.svg"
 sidebarTitle: "Example: self-host Vaultwarden"
 description: Self-host Vaultwarden, a Bitwarden-compatible password manager, with one Levelrail command, then add a domain and back up its data.
 ---

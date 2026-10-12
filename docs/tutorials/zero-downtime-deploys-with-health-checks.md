@@ -1,5 +1,6 @@
 ---
 title: "Zero-downtime deploys with health checks"
+icon: "/assets/icons/arrows-clockwise.svg"
 sidebarTitle: "Zero-downtime deploys"
 description: Add a readiness health check so a bad release fails before it takes over, read the structured failure, then fix it or roll back.
 ---

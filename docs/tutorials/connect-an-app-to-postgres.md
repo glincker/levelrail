@@ -1,5 +1,6 @@
 ---
 title: "Connect an app to a managed Postgres database"
+icon: "/assets/icons/database.svg"
 sidebarTitle: "Add a database"
 description: Create a managed Postgres database on your own server, connect an app with one command, and confirm the connection string reaches the container.
 ---

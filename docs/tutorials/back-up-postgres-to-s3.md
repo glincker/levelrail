@@ -1,5 +1,6 @@
 ---
 title: "Back up Postgres to S3 and test the restore"
+icon: "/assets/icons/cloud-arrow-up.svg"
 sidebarTitle: "Back up to S3"
 description: Send Postgres backups to S3, R2, or any S3-compatible bucket on a schedule, verify them, and prove the restore works on your own server.
 ---

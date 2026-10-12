@@ -11,7 +11,7 @@
   "background": {
     "color": {
       "light": "#ffffff",
-      "dark": "#04141a"
+      "dark": "#050709"
     }
   },
   "favicon": "/public/favicon.svg",
@@ -40,7 +40,18 @@
   "navbar": {
     "links": [
       {
+        "label": "Website",
+        "icon": "globe",
+        "href": "https://levelrail.com"
+      },
+      {
+        "label": "Changelog",
+        "icon": "clock-rotate-left",
+        "href": "/changelog"
+      },
+      {
         "label": "GitHub",
+        "icon": "github",
         "href": "https://github.com/glincker/levelrail"
       }
     ],
@@ -53,7 +64,8 @@
   "footer": {
     "socials": {
       "github": "https://github.com/glincker/levelrail",
-      "x": "https://x.com/thegdsks"
+      "x": "https://x.com/thegdsks",
+      "website": "https://levelrail.com"
     }
   },
   "navigation": {
@@ -309,6 +321,7 @@
           {
             "group": "Explanation",
             "pages": [
+              "product-tour",
               "architecture",
               "security",
               "threat-model",
@@ -852,5 +865,67 @@
   },
   "metadata": {
     "timestamp": true
-  }
+  },
+  "seo": {
+    "metatags": {
+      "og:site_name": "Levelrail Docs",
+      "og:type": "website",
+      "og:image": "https://docs.levelrail.com/assets/og-docs.png",
+      "og:image:width": "1200",
+      "og:image:height": "630",
+      "twitter:card": "summary_large_image",
+      "twitter:image": "https://docs.levelrail.com/assets/og-docs.png",
+      "twitter:site": "@thegdsks",
+      "keywords": "self-hosted PaaS, Coolify alternative, Docker deployment platform, self-hosted deploys, Levelrail"
+    },
+    "canonical": "https://docs.levelrail.com",
+    "indexing": "navigable"
+  },
+  "search": {
+    "prompt": "Search docs, CLI, API, guides"
+  },
+  "errors": {
+    "404": {
+      "redirect": false,
+      "title": "Page not found",
+      "description": "This page moved or never existed. Try the [quickstart](/getting-started), the [all pages index](/all-pages) or search above."
+    }
+  },
+  "redirects": [
+    {
+      "source": "/license",
+      "destination": "/license-and-notices",
+      "permanent": true
+    },
+    {
+      "source": "/README",
+      "destination": "/all-pages",
+      "permanent": true
+    },
+    {
+      "source": "/changelog/:slug",
+      "destination": "/changelog",
+      "permanent": true
+    },
+    {
+      "source": "/tutorials",
+      "destination": "/getting-started",
+      "permanent": false
+    },
+    {
+      "source": "/guides",
+      "destination": "/guides/index",
+      "permanent": false
+    },
+    {
+      "source": "/announcements",
+      "destination": "/announcements/index",
+      "permanent": false
+    },
+    {
+      "source": "/self-host",
+      "destination": "/self-host/index",
+      "permanent": false
+    }
+  ]
 }
