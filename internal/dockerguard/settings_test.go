@@ -25,7 +25,8 @@ func TestResolve(t *testing.T) {
 		wantSource string
 		wantErr    bool
 	}{
-		{name: "default is audit", wantMode: ModeAudit, wantSource: SourceDefault},
+		{name: "default is enforce", wantMode: ModeEnforce, wantSource: SourceDefault},
+		{name: "audit is an explicit override", env: map[string]string{EnvMode: "audit"}, wantMode: ModeAudit, wantSource: SourceEnv},
 		{name: "settings used", settings: Settings{Mode: ModeEnforce}, wantMode: ModeEnforce, wantSource: SourceSettings},
 		{name: "env wins over settings", env: map[string]string{EnvMode: "off"}, settings: Settings{Mode: ModeEnforce}, wantMode: ModeOff, wantSource: SourceEnv},
 		{name: "env case insensitive", env: map[string]string{EnvMode: " ENFORCE "}, wantMode: ModeEnforce, wantSource: SourceEnv},
@@ -97,10 +98,12 @@ func TestBootModes(t *testing.T) {
 		wantRunning bool
 	}{
 		{name: "off starts nothing", env: map[string]string{EnvMode: "off"}},
-		{name: "audit starts the guard", env: map[string]string{}, wantRunning: true},
+		{name: "default starts the guard", env: map[string]string{}, wantRunning: true},
+		{name: "audit override starts the guard", env: map[string]string{EnvMode: "audit"}, wantRunning: true},
 		{name: "enforce starts the guard", env: map[string]string{EnvMode: "enforce"}, wantRunning: true},
 		{name: "enforce with tcp upstream refuses to boot", env: map[string]string{EnvMode: "enforce", "DOCKER_HOST": "tcp://10.0.0.1:2375"}, wantErr: true},
-		{name: "audit with tcp upstream falls back", env: map[string]string{"DOCKER_HOST": "tcp://10.0.0.1:2375"}},
+		{name: "default with tcp upstream falls back", env: map[string]string{"DOCKER_HOST": "tcp://10.0.0.1:2375"}},
+		{name: "audit with tcp upstream falls back", env: map[string]string{EnvMode: "audit", "DOCKER_HOST": "tcp://10.0.0.1:2375"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

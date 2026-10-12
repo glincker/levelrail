@@ -92,8 +92,9 @@ func WithRenewGrace(d time.Duration) Option {
 	}
 }
 
-// WithRequireCSR refuses enrollments from agents that do not send a CSR,
-// closing the legacy path where the control plane generates the key.
+// WithRequireCSR sets whether enrollments without a CSR are refused. The
+// default is true; false re-opens the legacy path where the control plane
+// generates the agent's key.
 func WithRequireCSR(require bool) Option {
 	return func(s *Server) { s.requireCSR = require }
 }
@@ -111,7 +112,7 @@ func NewServer(ca *CA, st EnrollStore, registry *Registry, logger *slog.Logger, 
 	s := &Server{
 		ca: ca, store: st, registry: registry, logger: logger,
 		certValidity: DefaultClientCertValidity, renewGrace: DefaultCertRenewGrace,
-		now: time.Now, sessions: map[string]*liveSession{},
+		now: time.Now, sessions: map[string]*liveSession{}, requireCSR: true,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -131,7 +132,7 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		return nil, status.Error(codes.InvalidArgument, "node_name must be 1-63 characters of letters, digits, dot, underscore or hyphen")
 	}
 	if len(req.GetCsrDer()) == 0 && s.requireCSR {
-		return nil, status.Error(codes.FailedPrecondition, "this control plane requires agents to generate their own key: upgrade the agent")
+		return nil, status.Error(codes.FailedPrecondition, "this control plane requires agents to generate their own key: upgrade the agent, or set APP_AGENT_REQUIRE_CSR=false on the control plane to accept old agents")
 	}
 
 	if _, err := s.redeemToken(ctx, req.GetJoinToken(), store.NodeJoinTokenPurposeEnroll); err != nil {

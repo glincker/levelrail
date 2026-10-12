@@ -24,8 +24,8 @@ const (
 	ModeEnforce Mode = "enforce"
 )
 
-// DefaultMode is audit so a fresh install observes before it blocks.
-const DefaultMode = ModeAudit
+// DefaultMode is enforce. APP_DOCKER_GUARD=audit and =off are the overrides.
+const DefaultMode = ModeEnforce
 
 // Environment variables the guard reads.
 const (
