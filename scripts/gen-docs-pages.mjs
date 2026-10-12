@@ -210,6 +210,7 @@ const cfg = JSON.parse(fs.readFileSync('docs/docs.json', 'utf8'))
 const tabs = cfg.navigation.tabs.filter((t) => t.tab !== 'Self-host gallery')
 tabs.splice(tabs.length - 1, 0, {
   tab: 'Self-host gallery',
+  icon: '/assets/icons/squares-four.svg',
   groups: [
     { group: 'Gallery', pages: ['self-host/index'] },
     ...cats.map((c) => ({ group: c, pages: byCat.get(c).map((t) => `self-host/${t.id}`) })),

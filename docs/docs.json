@@ -365,6 +365,7 @@
       },
       {
         "tab": "Self-host gallery",
+        "icon": "/assets/icons/squares-four.svg",
         "groups": [
           {
             "group": "Gallery",
