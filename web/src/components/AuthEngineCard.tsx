@@ -13,7 +13,7 @@ import { useAuthEngineStatus } from '../queries/authEngine'
 function Feature({ label, on }: { label: string; on: boolean }) {
   const { t } = useTranslation('settings')
   return (
-    <div className="flex items-center justify-between rounded-lg border border-input p-3">
+    <div className="flex items-center justify-between gap-3 py-2">
       <dt className="text-sm">{label}</dt>
       <dd>
         <Badge variant={on ? 'default' : 'outline'}>
@@ -42,7 +42,7 @@ export function AuthEngineCard() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <dl className="divide-y divide-border">
           <Feature label={t('authEngine.totp')} on={status.totp} />
           <Feature label={t('authEngine.passkeys')} on={status.passkeys} />
           <Feature label={t('authEngine.oauth')} on={status.oauth} />

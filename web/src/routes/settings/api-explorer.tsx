@@ -4,7 +4,8 @@ import { CodeIcon } from '@phosphor-icons/react/dist/ssr'
 import { openAPISpecQueryOptions, useOpenAPISpec } from '@/queries/openapi'
 import type { OpenAPIRoute } from '@/queries/openapi'
 import { ApiExplorerRoute } from '@/components/settings/ApiExplorerRoute'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { ListSkeleton } from '@/components/ui/list-skeleton'
@@ -40,6 +41,7 @@ export function matchesFilter(route: OpenAPIRoute, filter: string): boolean {
 }
 
 function ApiExplorerPage() {
+  const { t } = useTranslation('settings')
   const { data } = useOpenAPISpec()
   const [filter, setFilter] = useState('')
 
@@ -53,29 +55,26 @@ function ApiExplorerPage() {
   )
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <CodeIcon className="size-4" />
-        </div>
-        <PageHeader
-          title="API explorer"
-          description="Browse and try every registered HTTP route on this instance, using your current session. Requests fire for real, same as hitting the endpoint with curl."
+    <PageTemplate
+      icon={<CodeIcon />}
+      title={t('apiExplorerPage.title')}
+      description={t('apiExplorerPage.description')}
+    >
+      <div className="space-y-4">
+        <Input
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder={t('apiExplorerPage.filterPlaceholder')}
+          aria-label={t('apiExplorerPage.filterLabel')}
         />
+        <p className="text-sm text-muted-foreground">
+          {t('apiExplorerPage.summary', {
+            count: data.count,
+            examples: data.exampleCount,
+            percent: coveragePct,
+          })}
+        </p>
       </div>
-
-      <Input
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-        placeholder="Filter by path, method, ability, or description…"
-        aria-label="Filter routes"
-      />
-
-      <p className="text-sm text-muted-foreground">
-        {data.count} routes, {data.exampleCount} with a worked example (
-        {coveragePct}%). A route with no description just means its registration
-        has no doc comment above it yet, not that it's unsupported.
-      </p>
 
       <div className="space-y-6">
         {[...filteredGroups.entries()].map(([group, routes]) => (
@@ -84,11 +83,11 @@ function ApiExplorerPage() {
               <CardTitle className="flex items-center justify-between">
                 <span>{group}</span>
                 <span className="text-xs font-normal text-muted-foreground">
-                  {routes.length} route{routes.length === 1 ? '' : 's'}
+                  {t('apiExplorerPage.routeCount', { count: routes.length })}
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="divide-y divide-border">
               {routes.map((route) => (
                 <ApiExplorerRoute
                   key={`${route.method} ${route.path}`}
@@ -100,19 +99,19 @@ function ApiExplorerPage() {
         ))}
         {filteredGroups.size === 0 && (
           <p className="text-sm text-muted-foreground">
-            No routes match “{filter}”.
+            {t('apiExplorerPage.noMatch', { filter })}
           </p>
         )}
       </div>
-    </div>
+    </PageTemplate>
   )
 }
 
 function ApiExplorerPending() {
+  const { t } = useTranslation('settings')
   return (
-    <div className="space-y-6">
-      <PageHeader title="API explorer" />
+    <PageTemplate title={t('apiExplorerPage.title')} icon={<CodeIcon />}>
       <ListSkeleton rows={8} />
-    </div>
+    </PageTemplate>
   )
 }

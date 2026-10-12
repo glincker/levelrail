@@ -18,13 +18,8 @@ import {
 } from '../queries/emailSettings'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Banner } from '@/components/ui/banner'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Field,
   FieldDescription,
@@ -34,7 +29,6 @@ import {
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
-import { HelpLink } from '@/components/HelpLink'
 import { cn } from '@/lib/utils'
 
 // Brand mark per backend, lazy-loaded via the same templateLogos.ts
@@ -248,27 +242,14 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-2">
-              <EnvelopeIcon className="size-4" />
-              {t('email.title')}
-            </span>
-            <HelpLink
-              path="/email-notifications"
-              label={t('email.helpLabel')}
-            />
-          </CardTitle>
-          <CardDescription>{t('email.description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <form
             onSubmit={(e) => {
               void onSubmit(e)
             }}
-            className="space-y-5"
+            className="space-y-4"
           >
             <Field>
               <FieldLabel htmlFor="email-backend">
@@ -315,7 +296,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
               name="backend"
               render={({ field }) =>
                 field.value === 'smtp' ? (
-                  <FieldGroup className="gap-4 rounded-md border border-border p-3">
+                  <FieldGroup className="gap-4">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                       <BackendIcon logoId={BACKEND_LOGO_ID.smtp} />
                       {t('email.smtp.label')}
@@ -407,7 +388,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                     </Field>
                   </FieldGroup>
                 ) : field.value === 'ses' ? (
-                  <FieldGroup className="gap-4 rounded-md border border-border p-3">
+                  <FieldGroup className="gap-4">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                       <BackendIcon logoId={BACKEND_LOGO_ID.ses} />
                       {t('email.ses.label')}
@@ -465,7 +446,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                     </Field>
                   </FieldGroup>
                 ) : field.value === 'resend' ? (
-                  <FieldGroup className="gap-4 rounded-md border border-border p-3">
+                  <FieldGroup className="gap-4">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                       <BackendIcon logoId={BACKEND_LOGO_ID.resend} />
                       {t('email.resend.label')}
@@ -524,7 +505,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
           </form>
 
           {settings.backend ? (
-            <FieldGroup className="mt-5 gap-2 rounded-md border border-border p-3">
+            <FieldGroup className="gap-2 border-t border-border pt-4">
               <FieldLabel htmlFor="test-email-to">
                 {t('email.test.title')}
               </FieldLabel>
@@ -556,28 +537,24 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
         </CardContent>
       </Card>
 
-      <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
+      <p className="flex items-center gap-2 text-xs text-muted-foreground">
         <SparkleIcon className="size-4 shrink-0" aria-hidden="true" />
         <span>{t('email.comingSoon')}</span>
-      </div>
+      </p>
 
-      <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-2 text-sm">
-          <WebhooksLogoIcon
-            className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <span className="text-muted-foreground">
-            {t('email.channelsCta')}
-          </span>
-        </div>
-        <Link
-          to="/settings/notification-channels"
-          className={buttonVariants({ variant: 'outline', size: 'sm' })}
-        >
-          {t('email.channelsLink')}
-        </Link>
-      </div>
+      <Banner
+        variant="info"
+        icon={<WebhooksLogoIcon />}
+        title={t('email.channelsCta')}
+        action={
+          <Link
+            to="/settings/notification-channels"
+            className={buttonVariants({ variant: 'outline', size: 'sm' })}
+          >
+            {t('email.channelsLink')}
+          </Link>
+        }
+      />
     </div>
   )
 }

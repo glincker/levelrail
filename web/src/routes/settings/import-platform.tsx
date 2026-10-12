@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { ArrowsLeftRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { useTranslation } from 'react-i18next'
 import { AppImportWizard } from '../../components/AppImportWizard'
 import { PlatformImportCard } from '../../components/PlatformImportCard'
@@ -13,19 +14,22 @@ export const Route = createFileRoute('/settings/import-platform')({
 
 function ImportPlatformPage() {
   const { t } = useTranslation('migration')
+  const { t: ts } = useTranslation('settings')
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Import from another platform"
-        description="Bring apps and databases over from Coolify, Dokploy or CapRover. Databases and volumes start empty, and re-running skips what was already imported."
-      />
-      <AppImportWizard />
-      <PlatformImportCard />
-      <div className="space-y-1 pt-2">
-        <h2 className="text-base font-semibold">{t('title')}</h2>
-        <p className="text-sm text-muted-foreground">{t('description')}</p>
+    <PageTemplate
+      icon={<ArrowsLeftRightIcon />}
+      title={ts('importPlatformPage.title')}
+      description={ts('importPlatformPage.description')}
+    >
+      <div className="space-y-6">
+        <AppImportWizard />
+        <PlatformImportCard />
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold">{t('title')}</h2>
+          <p className="text-sm text-muted-foreground">{t('description')}</p>
+        </div>
+        <MigrationHub />
       </div>
-      <MigrationHub />
-    </div>
+    </PageTemplate>
   )
 }

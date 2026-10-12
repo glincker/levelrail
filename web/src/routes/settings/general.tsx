@@ -116,7 +116,7 @@ function GeneralSettingsPage() {
   return (
     <GeneralPageShell>
       <div className="space-y-(--glinr-page-gap)">
-        <Card className="rounded-[var(--glinui-radius-lg)]">
+        <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -136,7 +136,7 @@ function GeneralSettingsPage() {
               everything it manages runs on your own infrastructure.
             </p>
             {(brand.SupportURL || brand.SupportEmail || brand.DocsURL) && (
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div className="flex flex-wrap gap-2">
                 {brand.SupportURL ? (
                   <Button
                     variant="outline"
