@@ -1,5 +1,6 @@
 ---
 title: "Troubleshooting"
+sidebarTitle: "Troubleshooting"
 description: Fixes for the most common problems when deploying, logging in, or running Levelrail.
 ---
 
@@ -16,7 +17,7 @@ levelrail-cli apps logs NAME --follow
 levelrail-cli doctor                 # preflight checks for Docker, disk, ports, and the database
 ```
 
-Every reconcile pass writes a status condition with a reason, so `apps status` usually names the problem directly. The dashboard shows the same data on the app's Overview page and on the Status page (`/status`, with a badge in the sidebar). `attention` and the Status page list failing apps, offline nodes, expired or expiring certificates, and doctor warnings or failures, critical first. The CLI exits 1 when any item is critical. A node listed as offline has a connection history: `levelrail-cli nodes events <id>`.
+Every reconcile pass writes a status condition with a reason, so `apps status` usually names the problem directly. The dashboard shows the same data on the app's Overview page and on the [Status page](/status-page) (`/status`, with a badge in the sidebar). `attention` and the Status page list failing apps, offline nodes, expired or expiring certificates, and doctor warnings or failures, critical first. The CLI exits 1 when any item is critical. A node listed as offline has a connection history: `levelrail-cli nodes events <id>`.
 
 ## Apps and deploys
 
@@ -47,7 +48,7 @@ A crashlooping container gets its last 200 log lines surfaced automatically in t
 </Step>
 <Step title="Stop it from recurring">
 
-If this keeps happening on every deploy of a given app, consider turning on "Auto-rollback on crashloop" (Deploys tab, off by default) so the next crashloop redeploys the previous known-good image automatically instead of retrying the same bad one. See [Observability](/observability).
+If this keeps happening on every deploy of a given app, turn on "Auto-rollback on crashloop" (Deploys tab, off by default) so the next crashloop redeploys the previous known-good image automatically instead of retrying the same bad one. See [Observability](/observability).
 
 </Step>
 <Step title="Still stuck?">
@@ -62,7 +63,7 @@ If this keeps happening on every deploy of a given app, consider turning on "Aut
 
 <Accordion title="An app shows CrashLoopBackOff" id="an-app-shows-crashloopbackoff">
 
-The container keeps exiting. Levelrail restarts it immediately once, then waits 5s, 10s, 20s and so on up to 2 minutes between restarts instead of restarting on every exit, so the host and the control plane stay calm. Read the cause first: `levelrail-cli apps logs <name> --tail 50`, and `levelrail-cli apps status <name>` for the countdown to the next restart. Fix the image or its configuration and redeploy; a new deploy starts with a fresh delay. If you need the old restart-immediately behavior, set `APP_RESTART_BACKOFF_BASE=0`. A `crashloop` alert rule sends the last 200 log lines with its notification. See [observability](/observability#alert-rules).
+The container keeps exiting. Levelrail restarts it immediately once, then waits 5s, 10s, 20s and so on up to 2 minutes between restarts instead of restarting on every exit, so a bad container does not hammer the host. Read the cause first: `levelrail-cli apps logs <name> --tail 50`, and `levelrail-cli apps status <name>` for the countdown to the next restart. Fix the image or its configuration and redeploy; a new deploy starts with a fresh delay. If you need the old restart-immediately behavior, set `APP_RESTART_BACKOFF_BASE=0`. A `crashloop` alert rule sends the last 200 log lines with its notification. See [observability](/observability#alert-rules).
 
 </Accordion>
 
@@ -118,7 +119,7 @@ On a fresh install the login page asks for a **setup token**. Print it with `sud
 
 <Accordion title="TLS certificate won't issue" id="tls-certificate-won-t-issue">
 
-This has its own dedicated runbook: [ACME verification runbook](/acme-verification-runbook). Start there; it covers DNS propagation, rate limits, and staging-vs-production ACME directories.
+There is a dedicated runbook: [ACME verification runbook](/acme-verification-runbook). Start there; it covers DNS propagation, rate limits, and staging-vs-production ACME directories.
 
 To see whether renewal is failing, run `levelrail-cli domains certificates`. The `RENEWAL` column is `ok` or `stalled`, and the same value is the `renewal` field of `GET /api/v1/certificates`. The dashboard shows a "Renewal stalled" badge on the domain row and in the domain editor. A certificate is `stalled` when it has already expired, or when it has been `expiring_soon` with an unchanged expiry for longer than `APP_CERT_RENEWAL_STALLED_THRESHOLD` (default 6h, Go duration syntax). The second case needs a `cert_expiry` alert rule, since the rule's evaluations record how long the expiry has been stuck.
 
@@ -141,7 +142,7 @@ Create an A (or AAAA for IPv6) record pointing the domain at your server's publi
 
 <Accordion title="Ports 80/443 are open on the server but blocked by a firewall" id="ports-80-443-are-open-on-the-server-but-blocked-by-a-firewal">
 
-`install.sh`'s own reachability self-test, and doctor's `external_reachability_80`/`external_reachability_443` checks, both warn rather than fail here, since a host firewall looks the same from outside as a closed port. Open both ports:
+`install.sh`'s own reachability self-test, and doctor's `external_reachability_80`/`external_reachability_443` checks, both warn rather than fail here, since a [host firewall](/host-firewall) looks the same from outside as a closed port. Open both ports:
 
 <Tabs>
 <Tab title="Ubuntu/Debian (ufw)">
@@ -213,7 +214,7 @@ The node agent dials **out** to the control plane, so check the *agent's* outbou
 
 ### External reachability could not be verified
 
-The `external_reachability_80`/`external_reachability_443` checks dial this host's own public IP from itself. Many routers and cloud NAT setups don't support "hairpin" loopback (a LAN host reaching its own public address), so a failed dial here does **not** mean the port is actually unreachable from the internet, only that this particular self-test couldn't confirm it. Verify from an actual external vantage point instead: [canyouseeme.org](https://canyouseeme.org/), or `curl` from a different network. If it's genuinely closed, check your router's or cloud provider's port forwarding/security group rules for ports 80 and 443.
+The `external_reachability_80`/`external_reachability_443` checks dial this host's own public IP from itself. Many routers and cloud NAT setups don't support "hairpin" loopback (a LAN host reaching its own public address), so a failed dial here does not mean the port is actually unreachable from the internet, only that this particular self-test couldn't confirm it. Verify from an actual external vantage point instead: [canyouseeme.org](https://canyouseeme.org/), or `curl` from a different network. If it's genuinely closed, check your router's or cloud provider's port forwarding/security group rules for ports 80 and 443.
 
 ### Below the recommended minimum RAM or CPU
 

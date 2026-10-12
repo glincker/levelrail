@@ -1,15 +1,16 @@
 ---
 title: "AI models"
+tag: "Experimental"
 description: Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes as a first-class resource, with an OpenAI-compatible endpoint protected by an API key.
 ---
 
-A model is a first-class resource: an inference engine running as a container on a GPU node, a persistent volume holding the downloaded weights, and an OpenAI-compatible endpoint protected by an API key. It is available from the dashboard (**AI models**), the CLI (`levelrail-cli models`), the REST API (`/api/v1/models`) and the MCP server.
+A model is a first-class resource: an inference engine running as a container on a GPU node, a persistent volume holding the downloaded weights, and an OpenAI-compatible endpoint protected by an API key. You can manage it from the dashboard (**AI models**), the CLI (`levelrail-cli models`), the REST API (`/api/v1/models`) and the MCP server.
 
 Version 1 supports NVIDIA GPUs on Linux nodes (Ubuntu is the documented path). AMD, Intel and Apple GPUs are not supported.
 
 ## GPU nodes
 
-Every node reports its NVIDIA GPUs to the control plane: driver version, per-GPU VRAM total and used, utilization, and whether Docker has the `nvidia` container runtime registered. Detection runs `nvidia-smi` on the host and asks the Docker Engine API for its runtimes. The control plane detects its own host every minute (`APP_GPU_COLLECT_INTERVAL`), agents report on connect and every minute after.
+Every node reports its NVIDIA GPUs to the control plane: driver version, per-GPU VRAM total and used, utilization, and whether Docker has the `nvidia` container runtime registered. Detection runs `nvidia-smi` on the host and asks the Docker Engine API for its runtimes. The control plane checks its own host every minute (`APP_GPU_COLLECT_INTERVAL`). Agents report when they connect and every minute after.
 
 The **AI models** page shows a card per GPU node with VRAM used and total. `levelrail-cli models gpus` prints the same data.
 
@@ -24,13 +25,13 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 ```
 
-When a node has a GPU but Docker has no `nvidia` runtime, the dashboard card shows "nvidia runtime missing" with this fix, `levelrail-cli doctor` and the Status page raise a warning, and models placed there stay in the `GPURuntimeMissing` state until it is fixed. Run `levelrail-cli models restart <name>` afterwards.
+When a node has a GPU but Docker has no `nvidia` runtime, the dashboard card shows "nvidia runtime missing" with this fix, `levelrail-cli doctor` and the [Status page](/status-page) raise a warning, and models placed there stay in the `GPURuntimeMissing` state until it is fixed. Run `levelrail-cli models restart <name>` afterwards.
 
 If the agent runs inside a container, `nvidia-smi` must be reachable from it, or run the agent directly on the host.
 
 ## GPU attach: CDI and legacy
 
-Containers get GPUs one of two ways. Levelrail prefers **CDI** (the Container Device Interface) when the Docker daemon on the node lists NVIDIA CDI devices (`nvidia.com/gpu=0`, `nvidia.com/gpu=all`), and otherwise uses the **legacy** `nvidia` runtime with a device request. The choice is made per container at create time on the node that runs it, so mixed fleets work. A node with CDI devices needs no `nvidia` runtime registered and is treated as usable.
+Containers get GPUs one of two ways. Levelrail prefers CDI (the Container Device Interface) when the Docker daemon on the node lists NVIDIA CDI devices (`nvidia.com/gpu=0`, `nvidia.com/gpu=all`), and otherwise uses the legacy `nvidia` runtime with a device request. The choice is made per container at create time on the node that runs it, so mixed fleets work. A node with CDI devices needs no `nvidia` runtime registered and is treated as usable.
 
 To use CDI, generate a spec on the node and make sure Docker discovers it (Docker 28.3 or newer does by default; older Docker needs `{"features": {"cdi": true}}` in `/etc/docker/daemon.json`):
 
@@ -87,7 +88,7 @@ The check queries the public Hub API (through the same outbound guard as webhook
 
 In the dashboard the same panel appears under the model field of the deploy dialog and updates as you type. Picking a quantization there fills in the `:quant` suffix.
 
-**Fit figures are estimates.** A quantization is judged against the node's free VRAM as its file size plus a flat overhead for the KV cache and buffers. Real usage depends on context length, batch size, engine and driver. Fit is shown only when the node has reported its GPU, and disk only when it has reported its disk; otherwise the answer is "unknown", never a guess. System RAM is not considered.
+Fit figures are estimates. A quantization is judged against the node's free VRAM as its file size plus a flat overhead for the KV cache and buffers. Real usage depends on context length, batch size, engine and driver. Fit is shown only when the node has reported its GPU, and disk only when it has reported its disk; otherwise the answer is "unknown", never a guess. System RAM is not considered.
 
 The token you supply is used for that one request. It is not stored or logged, and it is never part of a cache key.
 
@@ -110,20 +111,20 @@ The API is `POST /api/v1/models/preflight` (`repo`, optional `engine`, `quant`, 
 
 Before you deploy, and on the model page, Levelrail estimates whether a model fits in each GPU node's free VRAM and rates every node: `fits`, `tight`, `wont_fit` or `unknown`. The pill has an info tip with the arithmetic, for example `weights 4.7 GiB + KV 1.2 GiB + overhead 0.8 GiB = 6.7 GiB of 8.0 GiB free`.
 
-**This is an estimate, not a guarantee.** The pieces:
+This is an estimate, not a guarantee. It is built from these pieces:
 
-- **Weights.** Exact when the Hugging Face file sizes are known (pass `weights_bytes` from a preflight), otherwise estimated from the parameter count in the model name (`8b`, `8x7b`) and the quantization (a tag suffix such as `q4_K_M`, a `:quant` suffix, or vLLM's `--quantization`). A name with no size, such as `mistral`, is `unknown`, never guessed. Ollama and llama.cpp default to about 4.85 bits per weight, vLLM to 16 (bf16).
-- **KV cache.** Approximated from the parameter count and the context length. With no context length set, `APP_MODEL_FIT_DEFAULT_CONTEXT` tokens (default 8192) are assumed and the tip says so.
-- **Overhead.** A flat `APP_MODEL_FIT_GPU_OVERHEAD_MIB` per GPU (default 512), plus `APP_MODEL_FIT_VLLM_EXTRA_MIB` (default 1024) for vLLM.
-- **Free VRAM.** From the node's GPU report (refreshed every minute). VRAM estimated for other models placed on the node that are not loaded yet is subtracted, so two deploys in the same minute do not both see the same free memory. On the model page, a loaded model's own VRAM is added back.
-- **Verdict.** `fits` when the total is at most `APP_MODEL_FIT_PERCENT` of free VRAM (default 90), `tight` up to 100%, otherwise `wont_fit`. vLLM also needs each GPU to have `APP_MODEL_VLLM_GPU_UTILIZATION` (default 0.9) of its memory free, because it pre-allocates that much.
+- Weights: Exact when the Hugging Face file sizes are known (pass `weights_bytes` from a preflight), otherwise estimated from the parameter count in the model name (`8b`, `8x7b`) and the quantization (a tag suffix such as `q4_K_M`, a `:quant` suffix, or vLLM's `--quantization`). A name with no size, such as `mistral`, is `unknown`, never guessed. Ollama and llama.cpp default to about 4.85 bits per weight, vLLM to 16 (bf16).
+- KV cache: Approximated from the parameter count and the context length. With no context length set, `APP_MODEL_FIT_DEFAULT_CONTEXT` tokens (default 8192) are assumed and the tip says so.
+- Overhead: A flat `APP_MODEL_FIT_GPU_OVERHEAD_MIB` per GPU (default 512), plus `APP_MODEL_FIT_VLLM_EXTRA_MIB` (default 1024) for vLLM.
+- Free VRAM: From the node's GPU report (refreshed every minute). VRAM estimated for other models placed on the node that are not loaded yet is subtracted, so two deploys in the same minute do not both see the same free memory. On the model page, a loaded model's own VRAM is added back.
+- Verdict: `fits` when the total is at most `APP_MODEL_FIT_PERCENT` of free VRAM (default 90), `tight` up to 100%, otherwise `wont_fit`. vLLM also needs each GPU to have `APP_MODEL_VLLM_GPU_UTILIZATION` (default 0.9) of its memory free, because it pre-allocates that much.
 
 Nodes are ranked best first, with non-schedulable nodes last. The check is advisory: it never blocks a deploy. `APP_MODEL_FIT_KV_KIB_PER_TOKEN` overrides the KV heuristic if your model family differs.
 
-- **Dashboard.** The deploy dialog shows a verdict per node and highlights the selected one. The model page Overview shows the same for the deployed model, with its current node marked.
-- **CLI.** `levelrail-cli models fit --engine ollama --model llama3.1:8b --context 8192`, or `levelrail-cli models fit --name chat` for a deployed model.
-- **API.** `POST /api/v1/models/fit` and `GET /api/v1/models/{name}/fit` (read ability).
-- **MCP.** `check_model_fit` (read-only).
+- Dashboard: The deploy dialog shows a verdict per node and highlights the selected one. The model page Overview shows the same for the deployed model, with its current node marked.
+- CLI: `levelrail-cli models fit --engine ollama --model llama3.1:8b --context 8192`, or `levelrail-cli models fit --name chat` for a deployed model.
+- API: `POST /api/v1/models/fit` and `GET /api/v1/models/{name}/fit` (read ability).
+- MCP: `check_model_fit` (read-only).
 
 No GPU was involved in testing this; the numbers come from the GPU facts nodes report and have not been compared against real engine memory use.
 
@@ -167,10 +168,10 @@ The downloaded weights live in a persistent Docker volume, so a restart or redep
 
 Each model has its own page at `/models/<name>` (click its name in the list). Tabs:
 
-- **Overview.** Status, engine, node, GPU, context length, quantization, the endpoint URL with a copy button, and a ready-made `curl` example.
-- **Keys.** The named keys with their limits, expiry and rotation (see Virtual keys below).
-- **Usage.** Requests, tokens, errors and first-byte latency per key.
-- **Logs.** The engine's live log tail.
+- Overview: Status, engine, node, GPU, context length, quantization, the endpoint URL with a copy button, and a ready-made `curl` example.
+- Keys: the named keys with their limits, expiry and rotation (see Virtual keys below).
+- Usage: Requests, tokens, errors and first-byte latency per key.
+- Logs: The engine's live log tail.
 
 The tab is kept in the URL (`?tab=keys`), so a link opens straight to it. From the CLI, `levelrail-cli models get <name>` prints the same overview facts.
 
@@ -191,15 +192,15 @@ Rates (tokens per second, prefix hit rate, time to first token) are computed bet
 
 The health pill warns when the KV cache is at or above `APP_MODEL_KV_WARN_PERCENT` (default 90), when more than `APP_MODEL_QUEUE_WARN` requests are queued (default 4), or when an Ollama model runs partly on CPU.
 
-- **CLI.** `levelrail-cli models metrics <name> --since 6h`.
-- **API.** `GET /api/v1/models/{name}/engine-metrics?since=1h` (read ability).
-- **MCP.** `get_model_engine_metrics` (read-only).
+- CLI: `levelrail-cli models metrics <name> --since 6h`.
+- API: `GET /api/v1/models/{name}/engine-metrics?since=1h` (read ability).
+- MCP: `get_model_engine_metrics` (read-only).
 
 The scrape is done by the control plane, not by a node agent, so a remote node's engine must be reachable over the mesh (the same requirement as serving it). Numbers depend on the engine version's metric names; vLLM's older `gpu_cache_usage_perc` and current `kv_cache_usage_perc` are both read.
 
 ## On-demand residency
 
-By default a model is always loaded. On a shared GPU you can make it **on demand**: after an idle period the engine container is stopped, freeing its VRAM, and the first request starts it again.
+By default a model is always loaded. On a shared GPU you can make it on demand: after an idle period the engine container is stopped, freeing its VRAM, and the first request starts it again.
 
 ```sh
 levelrail-cli models deploy --name chat --engine ollama --model llama3.1:8b --residency on_demand --idle-ttl 20m
@@ -210,12 +211,12 @@ levelrail-cli models sleep chat     # stop now
 
 How it behaves:
 
-- **Idle.** Every authenticated gateway request marks the model used (a long streaming response keeps refreshing it). When nothing has used it for the idle TTL, the reconciler stops the container and the status reason becomes `Idle`. The TTL is per model (`--idle-ttl`), defaulting to `APP_MODEL_IDLE_TTL` (15m). It cannot be set below `APP_MODEL_MIN_IDLE_TTL` (1m), so a busy model is never judged idle between activity writes (`APP_MODEL_ACTIVITY_TOUCH_INTERVAL`, default 10s).
-- **Wake.** The first authenticated request to an idle model asks the reconciler to start it and is held while the engine loads, for at most `APP_MODEL_WAKE_WAIT` (default 90s). If the engine is not serving by then, or the wait is 0, the client gets `503` with `Retry-After` (`APP_MODEL_WAKE_RETRY_AFTER`, default 15s) and error code `model_waking`; the wake keeps going, so a retry usually succeeds. Unauthenticated or invalid requests never wake a model.
-- **Ollama.** Ollama's own keep-alive is set to forever so weights stay in VRAM; unloading it means stopping the container, which is what on-demand does.
-- **GPU contention.** If a wake would fit an empty GPU set but other workloads hold too much VRAM (per the fit estimate above), the model reports `WaitingForGPU` and starts when memory frees. A model too large for the GPUs is not held back, since waiting would not help. The GPU snapshot refreshes every minute, so this can lag.
-- **State.** The reconciler owns the asleep, waking and awake states. Stop and start are idempotent: a stop that succeeded but failed to record is repaired on the next pass, and a request that lands while the reconciler is deciding to stop wins (the row is re-read right before stopping).
-- **Dashboard.** The model page Overview has a Residency card (mode, idle minutes, Wake now, Sleep now) and the deploy dialog has a Residency field. **API.** `PUT /api/v1/models/{name}/residency`, `POST /api/v1/models/{name}/wake`, `POST /api/v1/models/{name}/sleep` (write ability); the model resource carries `residency`, `idle_ttl_seconds`, `effective_idle_ttl_seconds`, `residency_state` and `last_active_at`. **MCP.** `get_model` returns the same fields and `deploy_model` accepts `residency` and `idle_ttl_seconds`.
+- Idle: Every authenticated gateway request marks the model used (a long streaming response keeps refreshing it). When nothing has used it for the idle TTL, the reconciler stops the container and the status reason becomes `Idle`. The TTL is per model (`--idle-ttl`), defaulting to `APP_MODEL_IDLE_TTL` (15m). It cannot be set below `APP_MODEL_MIN_IDLE_TTL` (1m), so a busy model is never judged idle between activity writes (`APP_MODEL_ACTIVITY_TOUCH_INTERVAL`, default 10s).
+- Wake: The first authenticated request to an idle model asks the reconciler to start it and is held while the engine loads, for at most `APP_MODEL_WAKE_WAIT` (default 90s). If the engine is not serving by then, or the wait is 0, the client gets `503` with `Retry-After` (`APP_MODEL_WAKE_RETRY_AFTER`, default 15s) and error code `model_waking`; the wake keeps going, so a retry usually succeeds. Unauthenticated or invalid requests never wake a model.
+- Ollama: Ollama's own keep-alive is set to forever so weights stay in VRAM; unloading it means stopping the container, which is what on-demand does.
+- GPU contention: If a wake would fit an empty GPU set but other workloads hold too much VRAM (per the fit estimate above), the model reports `WaitingForGPU` and starts when memory frees. A model too large for the GPUs is not held back, since waiting would not help. The GPU snapshot refreshes every minute, so this can lag.
+- State: The reconciler owns the asleep, waking and awake states. Stop and start are idempotent: a stop that succeeded but failed to record is repaired on the next pass, and a request that lands while the reconciler is deciding to stop wins (the row is re-read right before stopping).
+- Dashboard: the model page Overview has a Residency card (mode, idle minutes, Wake now, Sleep now) and the deploy dialog has a Residency field. API: `PUT /api/v1/models/{name}/residency`, `POST /api/v1/models/{name}/wake`, `POST /api/v1/models/{name}/sleep` (write ability); the model resource carries `residency`, `idle_ttl_seconds`, `effective_idle_ttl_seconds`, `residency_state` and `last_active_at`. MCP: `get_model` returns the same fields and `deploy_model` accepts `residency` and `idle_ttl_seconds`.
 
 Swap groups (several models sharing one GPU, only one loaded at a time) are not built; give each model on a shared GPU an idle TTL instead. Cold start includes the engine's load time (minutes for a large vLLM model), so on-demand suits models used in bursts, not latency-critical ones. No GPU was involved in testing this; the engine start, stop and wake paths are covered with fakes.
 
@@ -281,9 +282,9 @@ levelrail-cli models usage chat --since 168h
 In the dashboard, the gauge button on a model row opens the keys panel (create, rotate, revoke, last used, limits) and the usage card (requests, tokens, errors and time to first byte over time, plus a per key table).
 
 - Only the SHA-256 of a key is stored. The key is shown once, with its first 8 characters kept as a prefix for identification. `last used` is updated on each flush interval.
-- **Rotation** issues a replacement with the same name, limits and expiry. The old key keeps working for a grace window (`--grace`, default `APP_MODEL_KEY_ROTATION_GRACE`, `1h`; at most `APP_MODEL_KEY_MAX_GRACE`, `168h`; `0` retires it at once), then stops. **Revoking** stops a key immediately.
-- **Limits** are per key. `rpm` and max parallel are enforced at the gateway: a request over either gets `429` with `Retry-After` and the same generic OpenAI-style error, so the response never says which limit tripped. `tpm` and `tpd` (tokens per day, rolling 24 hours) are soft: tokens are counted from responses after they finish, so the request that crosses the limit still completes and later ones get `429` until the window rolls over. An unknown, revoked or expired key always gets `401`.
-- **Allow lists**: `allow_paths` are exact gateway paths (a trailing `/` allows everything below it) and must be routes the engine's allowlist already serves, so a key can never reach an engine admin route. `allow_models` are compared with the `model` field of the request body; a request without one is refused when the list is set.
+- Rotation issues a replacement with the same name, limits and expiry. The old key keeps working for a grace window (`--grace`, default `APP_MODEL_KEY_ROTATION_GRACE`, `1h`; at most `APP_MODEL_KEY_MAX_GRACE`, `168h`; `0` retires it at once), then stops. Revoking stops a key immediately.
+- Limits are per key. `rpm` and max parallel are enforced at the gateway: a request over either gets `429` with `Retry-After` and the same generic OpenAI-style error, so the response never says which limit tripped. `tpm` and `tpd` (tokens per day, rolling 24 hours) are soft: tokens are counted from responses after they finish, so the request that crosses the limit still completes and later ones get `429` until the window rolls over. An unknown, revoked or expired key always gets `401`.
+- Allow lists: `allow_paths` are exact gateway paths (a trailing `/` allows everything below it) and must be routes the engine's allowlist already serves, so a key can never reach an engine admin route. `allow_models` are compared with the `model` field of the request body; a request without one is refused when the list is set.
 - Each key records who created it (`created_by`). The MCP server can list keys (`list_model_keys`) and revoke one (`revoke_model_key`).
 - At most `APP_MODEL_MAX_KEYS` (`50`) live keys per model.
 
@@ -324,18 +325,18 @@ A workload fits a node when the node reports a GPU, Docker has the nvidia runtim
 
 Where the ledger is consulted:
 
-- **Create.** A new GPU app without `node_id` is auto-placed on the least loaded node that fits (the local host is the fallback), or refused with `409` and a per-node reason. An explicit `node_id` is checked the same way once the node has reported.
-- **Move.** `PUT /api/v1/apps/{name}/node` rejects a target that lacks the runtime or the free GPUs.
-- **Drain.** Each GPU app is placed on a node that fits, and GPUs it takes are reserved for the apps after it in the same drain. An app no node can host stays put and is reported under `blocked` (dashboard drain dialog, `levelrail-cli nodes drain`, API). Models are never moved, so they are always listed as blocked.
+- Create: A new GPU app without `node_id` is auto-placed on the least loaded node that fits (the local host is the fallback), or refused with `409` and a per-node reason. An explicit `node_id` is checked the same way once the node has reported.
+- Move: `PUT /api/v1/apps/{name}/node` rejects a target that lacks the runtime or the free GPUs.
+- Drain: Each GPU app is placed on a node that fits, and GPUs it takes are reserved for the apps after it in the same drain. An app no node can host stays put and is reported under `blocked` (dashboard drain dialog, `levelrail-cli nodes drain`, API). Models are never moved, so they are always listed as blocked.
 
 Docker does not isolate GPUs by count: two containers can share a device, so the ledger is scheduling accounting, not enforcement. A running app is never stopped because the ledger says the node is oversubscribed.
 
 ### Seeing reservations
 
-- **API.** `GET /api/v1/gpus` adds `reserved_gpus`, `free_gpus` and `reservations` (`app:<name>`, `model:<name>`) per node. `GET /api/v1/nodes` and `GET /api/v1/nodes/{id}` carry a `gpu` summary.
-- **CLI.** `levelrail-cli nodes list` has a GPU column (`free/total`), `levelrail-cli nodes get` prints a GPU block, `levelrail-cli models gpus` has a RESERVED column.
-- **Dashboard.** The AI models page GPU cards and the node detail GPU card show reserved vs total GPUs and VRAM used vs total; the node list shows a `GPU free/total` badge.
-- **MCP.** `list_gpu_nodes` returns the same fields.
+- API: `GET /api/v1/gpus` adds `reserved_gpus`, `free_gpus` and `reservations` (`app:<name>`, `model:<name>`) per node. `GET /api/v1/nodes` and `GET /api/v1/nodes/{id}` carry a `gpu` summary.
+- CLI: `levelrail-cli nodes list` has a GPU column (`free/total`), `levelrail-cli nodes get` prints a GPU block, `levelrail-cli models gpus` has a RESERVED column.
+- Dashboard: The AI models page GPU cards and the node detail GPU card show reserved vs total GPUs and VRAM used vs total; the node list shows a `GPU free/total` badge.
+- MCP: `list_gpu_nodes` returns the same fields.
 
 ### Attention and doctor
 

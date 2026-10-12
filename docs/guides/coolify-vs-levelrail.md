@@ -3,8 +3,6 @@ title: Coolify vs Levelrail for self-hosters
 description: "A fair Coolify vs Levelrail comparison for self-hosters: how each manages servers, what each does well, what Levelrail lacks, and how to choose between them."
 ---
 
-# Coolify vs Levelrail for self-hosters
-
 Coolify and Levelrail both turn your own Linux servers into a place where you push code and get a running app with TLS. They get there differently, and each has real strengths. This guide is for deciding between them. The author works on Levelrail, so statements about Coolify stay inside what its public documentation says, and anything we have not checked is marked.
 
 Levelrail has no stable release yet and is the younger project. This guide compares design, not maturity.
@@ -36,7 +34,7 @@ Levelrail has no stable release yet and is the younger project. This guide compa
 ## What Levelrail does not do yet
 
 - No SAML or SCIM. OAuth and OIDC sign-in work.
-- A smaller template catalog than Coolify.
+- A smaller [template catalog](/templates-and-registry) than Coolify.
 - Public ACME certificate issuance has had less field testing than the rest of the ingress.
 - No Windows or non-Linux nodes, and no Kubernetes compatibility layer. Those are deliberate non-goals.
 

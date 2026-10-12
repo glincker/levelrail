@@ -5,7 +5,7 @@ description: Design for unified post-auth git provider abstraction supporting Gi
 
 **Status:** Proposed. Feeds implementation for Bitbucket support, GitHub Enterprise Server, and connect-flow preview.
 
-**Context:** GitHub App and GitLab OAuth integrations are both shipped and independently typed. Bitbucket is next, and GitHub needs self-hosted (GHES) support. This is the "rule of three" moment to answer the abstraction question intentionally rather than by default.
+**Context:** GitHub App and GitLab OAuth integrations are both shipped and independently typed. Bitbucket is next, and GitHub needs self-hosted (GHES) support. Three providers is the point to decide the abstraction question on purpose rather than by default.
 
 ## 1. Shared Go abstraction: split the answer, do not unify the handshake
 
@@ -15,11 +15,11 @@ description: Design for unified post-auth git provider abstraction supporting Gi
 
 The convergence point already exists downstream of auth, not at it. `internal/api/git_sources.go`'s `connectGitSource` is the single place a repository becomes a deploy source. `handleUseGitLabProjectAsSource` already funnels into it, producing the same `store.GitSource` row and webhook receiver as hand-typed sources.
 
-Bitbucket gets that for free without any new interface. An interface spanning connect through webhook creation would re-abstract a path already converged, merely to unify the part that genuinely is not.
+Bitbucket gets that for free without any new interface. An interface spanning connect through webhook creation would re-abstract a path that already converges, just to unify the part that does not.
 
 ### What actually differs between the handshakes
 
-These are structural differences, not cosmetic. Hiding them in an interface would be dishonest:
+These are structural differences, not cosmetic ones. An interface would hide them:
 
 - **App creation:** GitHub creates the App programmatically (browser POSTs manifest to `settings/apps/new`, GitHub returns one-time code). GitLab and Bitbucket require manual registration. Operator pastes `client_id`/`client_secret`.
 
@@ -40,7 +40,6 @@ Everything after a token exists: list repos, list branches, create a push webhoo
 `ID string` is the cost: GitHub takes `owner, repo`, GitLab takes `int64`, each adapter parses its own format. That is acceptable because alternatives (`any` ID, three-armed union) violate the no-`any`-in-exported-signatures rule.
 
 <Accordion title="gitprovider.Source interface definition">
-
 
 ```go
 // Package gitprovider holds the provider-agnostic surface that only
@@ -227,7 +226,7 @@ Third branch in `verifyGitPushWebhookAuth` for `X-Hub-Signature`.
 
 **Out of scope for first slice**
 
-Bitbucket Server / Data Center, app passwords as alternative credential, workspace-restriction UI, pull-request preview environments, auto-populating clone deploy token from OAuth token.
+Bitbucket Server / Data Center, app passwords as alternative credential, workspace-restriction UI, pull-request [preview environments](/previews), auto-populating clone deploy token from OAuth token.
 
 ## 4. Manifest preview and confirm step
 
@@ -347,6 +346,6 @@ This is a design note, not an ADR. Two decisions here are ADR-shaped and should 
 
 ## See also
 
-- [Git integrations user guide](../git-integrations.md) - operator documentation for connecting providers
-- [Identity and access guide](../identity-and-access.md) - user management and permissions context
-- [ADR 010: Extend own auth](https://github.com/glincker/levelrail/blob/main/adr/010-extend-own-auth-not-theauth-go.md) - why Levelrail uses its own auth system
+- [Git integrations user guide](/git-integrations): operator documentation for connecting providers
+- [Identity and access guide](/identity-and-access): user management and permissions context
+- [ADR 010: Extend own auth](https://github.com/glincker/levelrail/blob/main/adr/010-extend-own-auth-not-theauth-go.md): why Levelrail uses its own auth system

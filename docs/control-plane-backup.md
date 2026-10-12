@@ -1,6 +1,7 @@
 ---
 title: "Control plane backup and restore"
-description: "Back up and restore the control plane's own database: automatic snapshots, manual snapshots, pre-upgrade safety copies, and the offline restore command."
+sidebarTitle: "Control plane backup"
+description: "Back up and restore the control plane's database with automatic snapshots and offline restore."
 ---
 
 The control plane keeps everything it knows (apps, domains, tokens, users, encrypted secrets, deploy history) in one SQLite database. A control plane backup is a consistent snapshot of that file, taken while the server keeps running.
@@ -33,19 +34,15 @@ Snapshots here stay on the same disk as the database; see [disaster recovery](/d
 | | **Alert rules, notification channels, silences, maintenance windows and alert history**, which live in a separate `alerting.db` |
 
 <Warning>
-
 **Alerting configuration is not in a backup yet**
 
 `alerting.db` sits next to `levelrail.db` in the data directory and holds every alert rule, notification channel (with its webhook URL or key), silence and maintenance window. Neither the local snapshots nor the off-box encrypted backup include it, so a restore on a new machine comes back with apps and users but no alerts. Until that is fixed, copy it yourself on a schedule, for example `sqlite3 <data dir>/alerting.db ".backup '/safe/place/alerting.db'"` (safe while the control plane runs), and put it back, with the control plane stopped, after a restore. The file holds channel credentials in plain text, so treat the copy like `master.key`.
-
 </Warning>
 
 <Warning>
-
 **The master key is never in a backup**
 
 Secrets in the database are encrypted with the master key. A restore without the same master key leaves those secrets unreadable. Keep a separate copy of the master key (a password manager or offline vault), and store it apart from the backups. Whoever holds both can read your secrets.
-
 </Warning>
 
 Backups do contain token hashes and encrypted secrets, so every backup route requires a root-scoped token and files are written with mode `0600`.
@@ -67,7 +64,7 @@ Manual snapshots (created from the CLI or API) and pre-upgrade snapshots are nev
 
 ### Doctor check
 
-`levelrail-cli doctor` and the dashboard Status page include a `control_plane_backup` check. It warns when the newest snapshot is older than 3 days (the fix is `levelrail-cli control-plane-backups create`), is ok when a recent one exists, and reports unknown when scheduled snapshots are disabled with `APP_CONTROL_PLANE_BACKUP_INTERVAL=0`. It never fails. See [troubleshooting](/troubleshooting#control-plane-backup-is-stale).
+`levelrail-cli doctor` and the dashboard [Status page](/status-page) include a `control_plane_backup` check. It warns when the newest snapshot is older than 3 days (the fix is `levelrail-cli control-plane-backups create`), is ok when a recent one exists, and reports unknown when scheduled snapshots are disabled with `APP_CONTROL_PLANE_BACKUP_INTERVAL=0`. It never fails. See [troubleshooting](/troubleshooting#control-plane-backup-is-stale).
 
 ### Stale backup alert
 

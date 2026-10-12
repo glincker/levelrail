@@ -1,17 +1,15 @@
 ---
 title: "Migrating a service from Cloud Run"
-description: "A runbook for moving a Google Cloud Run service to Levelrail, with a concept mapping table, image deploy, DNS cutover and rollback plan."
+description: A practical runbook for moving a Google Cloud Run service to Levelrail, with a concept mapping table, deploying the same container image from a registry, secrets, Cloud SQL, domains, scheduled jobs, and an honest list of what you give up.
 ---
 
 This is a runbook for moving one Cloud Run service onto a Levelrail instance you run yourself. It maps only to features that exist in this repository today. Where something is unverified or has no equivalent, it says so.
 
 <Warning>
-
 Levelrail has no stable release yet (see [feature status](/feature-status)). You operate the server it runs on: OS updates, disk, backups and the Docker daemon are yours. Run the new deployment in parallel with Cloud Run, and keep Cloud Run as the rollback path until the shadow run in section 7 is clean.
-
 </Warning>
 
-There is no importer for Cloud Run. Everything below is manual. The good news is that a Cloud Run service is already a container image listening on a port, which is the unit Levelrail deploys, so most services move without a rebuild. Whether the move saves money is a separate question, covered in [Cloud Run alternative](/cloud-run-alternative).
+There is no importer for Cloud Run. Everything below is manual. A Cloud Run service is already a container image listening on a port, which is the unit Levelrail deploys, so most services move without a rebuild. Whether the move saves money is a separate question, covered in [Cloud Run alternative](/cloud-run-alternative).
 
 ## 1. Inventory what Cloud Run holds
 
@@ -36,7 +34,7 @@ Collect this before touching Levelrail. Much of it lives in the Google Cloud con
 | Cloud Run | Levelrail equivalent | Notes |
 | --- | --- | --- |
 | Service | An app with one service | See [Deploying apps](/deploying-apps). |
-| Container image from a registry | `apps create --image`, or `image:` in `app.yaml` | A private registry uses a registry credential, section 3. |
+| Container image from a registry | `apps create --image`, or `image:` in `app.yaml` | Private registries use a registry credential, see section 3. |
 | Revision | A deploy | Each deploy is recorded with its image, status and reason. `apps deploys list <app>` shows them. |
 | Traffic to a previous revision, or revert | `apps deploys rollback-to <app> <deploy-id>`, or `apps rollback <app> --image <tag>` | Prior images are pinned so garbage collection cannot remove a rollback target. |
 | Gradual traffic split between revisions | Canary deploys, see [Canary deploys](/canary-deploys) | Check that page for the exact split behavior before relying on it. |
@@ -142,17 +140,17 @@ levelrail-cli apps deploys rollback-to web <deploy-id> --watch
 
 ## 4. Env vars, secrets, health checks
 
-1. **Plain env.** Copy the non-secret entries from the exported service YAML into a `.env` file, then `apps env import <app> --file prod.env --dry-run`, then again without `--dry-run`.
-2. **Secrets.** Read each value from Secret Manager and set it as a Levelrail secret:
+1. Plain env. Copy the non-secret entries from the exported service YAML into a `.env` file, then `apps env import <app> --file prod.env --dry-run`, then again without `--dry-run`.
+2. Secrets. Read each value from Secret Manager and set it as a Levelrail secret:
 
    ```bash
    levelrail-cli apps secrets set web DATABASE_URL "$(gcloud secrets versions access latest --secret=DATABASE_URL)"
    ```
 
    For many keys write a `secrets.env` file and use `apps secrets set web --env-file secrets.env`. Delete the file afterwards. There is no live link to Secret Manager: rotating a secret in Google does not change it here.
-3. **Apply.** `apps apply web` restarts the app so saved env and secrets reach the running container.
-4. **Secret files.** Cloud Run can mount a secret as a file. Levelrail injects secrets as env vars. If your code reads a file path, either change it to read the env var or write the file from the env var in your entrypoint.
-5. **Health.** A Cloud Run startup probe becomes a readiness probe, and a liveness probe stays a liveness probe:
+3. Apply. `apps apply web` restarts the app so saved env and secrets reach the running container.
+4. Secret files. Cloud Run can mount a secret as a file. Levelrail injects secrets as env vars. If your code reads a file path, either change it to read the env var or write the file from the env var in your entrypoint.
+5. Health. A Cloud Run startup probe becomes a readiness probe, and a liveness probe stays a liveness probe:
 
    ```bash
    levelrail-cli apps health set web --probe readiness --path /healthz --interval 5s
@@ -165,14 +163,14 @@ levelrail-cli apps deploys rollback-to web <deploy-id> --watch
 
 A managed database on Levelrail is a container on your node with its own volume, credentials and scheduled backups. It is not a hosted service with a replica in another zone. Read [Managing databases](/managing-databases) before you commit.
 
-1. **Create the database** with a matching major version:
+1. Create the database with a matching major version:
 
    ```bash
    levelrail-cli databases create --name main --engine postgres --version 16
    levelrail-cli databases status main
    ```
 
-2. **Dump from Cloud SQL.** Use the Cloud SQL Auth Proxy or an authorized network, then:
+2. Dump from Cloud SQL. Use the Cloud SQL Auth Proxy or an authorized network, then:
 
    ```bash
    pg_dump --format=custom --no-owner --no-acl \
@@ -181,7 +179,7 @@ A managed database on Levelrail is a container on your node with its own volume,
    ```
 
    Alternatively use `gcloud sql export sql INSTANCE gs://BUCKET/appdb.sql --database=appdb` and download the file.
-3. **Restore into the new database.** Publish the database port temporarily, then restore with `pg_restore` using the database's own credentials:
+3. Restore into the new database. Publish the database port temporarily, then restore with `pg_restore` using the database's own credentials:
 
    ```bash
    levelrail-cli databases public-access set main --port 5433
@@ -190,14 +188,14 @@ A managed database on Levelrail is a container on your node with its own volume,
    ```
 
    The credentials are the ones Levelrail generated for the database (see the Overview tab and `levelrail-cli databases get main`). A temporary login from `databases access temp` with `--preset read_write` cannot change the schema, so it is not enough for a first restore. Clear public access when you are done.
-4. **Connect the app** to the database instead of pasting a URL:
+4. Connect the app to the database instead of pasting a URL:
 
    ```bash
    levelrail-cli apps connect web main --env-var DATABASE_URL
    ```
 
-5. **Rehearse the cutover.** A dump is a point in time. For a live database, plan a short write freeze: stop writes on Cloud Run, take a final dump, restore, switch. Time the restore before the real day.
-6. **Backups.** Configure a backup target and a schedule, then run a restore into a new database to prove it works. See [Backup targets](/backups-and-storage).
+5. Rehearse the cutover. A dump is a point in time. For a live database, plan a short write freeze: stop writes on Cloud Run, take a final dump, restore, switch. Time the restore before the real day.
+6. Backups. Configure a backup target and a schedule, then run a restore into a new database to prove it works. See [Backup targets](/backups-and-storage).
 
 Cloud SQL's automatic failover, read replicas and point-in-time recovery are not replicated by default here. Point-in-time restore exists for Postgres, see [Managing databases](/managing-databases).
 

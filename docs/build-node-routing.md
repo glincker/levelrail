@@ -53,7 +53,7 @@ levelrail-cli nodes workloads <primary-node-id> --accepts-app=true --accepts-bui
 </Step>
 </Steps>
 
-A node created with `nodes provision --role build` or `nodes ssh-provision --role build` is set up as a build node when it enrolls. See [Node provisioning](/node-provisioning).
+A node provisioned with `nodes provision --role build` or `nodes ssh-provision --role build` is set up as a build node when it enrolls. See [Node provisioning](/node-provisioning).
 
 ## The Nodes page suggestion
 

@@ -3,7 +3,7 @@ title: "Tags"
 description: Label apps with tags such as team:payments, then filter the dashboard, CLI and API by them.
 ---
 
-Tags are labels you attach to apps to organize them by team, component, lifecycle stage, or anything else. An app can carry several tags. Tags are organizational only: they do not change how an app runs, restrict access, or gate a deploy.
+Tags are labels you attach to apps so you can group them by team, component, lifecycle stage, or whatever you like. An app can carry several. Tags only organize: they do not change how an app runs, restrict access, or gate a deploy.
 
 ## Rules
 
@@ -84,7 +84,7 @@ If two requests race to create the same tag name, the one that loses attaches th
 
 ## Filter by tag
 
-In the dashboard, every row on the Apps page (`/apps`) shows its tag chips. Click a chip to filter the list to apps with that tag; the filter bar shows the active filter and a clear button.
+In the dashboard, every row on the Apps page (`/apps`) shows its tag chips. Click a chip to filter the list to apps with that tag. The filter bar shows the active filter and a clear button.
 
 `GET /api/v1/apps` accepts these query parameters:
 

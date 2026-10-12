@@ -36,7 +36,7 @@ func TestRenderSections(t *testing.T) {
 		"sha256sum --ignore-missing -c checksums.txt", "cosign verify ghcr.io/o/acme@sha256:abc",
 		`^https://github\.com/o/acme/\.github/workflows/release\.yml@refs/(heads/main|tags/v.+)$`,
 		"@bob made their first contribution", "Thanks to @alice, @bob.",
-		"compare/v1.2.0-beta.2...v1.2.0-beta.3", "https://docs.example.com/changelog/v1-2-0-beta-3", endMarker,
+		"compare/v1.2.0-beta.2...v1.2.0-beta.3", "https://docs.example.com/changelog", endMarker,
 	}
 	pos := 0
 	for _, s := range wantInOrder {

@@ -3,9 +3,9 @@ title: "Integrations"
 description: Attach curated third-party tools (PostHog, Sentry, Datadog, and more) to an app, injecting their env vars automatically at deploy time.
 ---
 
-An integration is a curated third-party tool you can attach to an app from a small catalog. Attaching one stores the field values it needs (an API key, a DSN) through the same envelope encryption every app secret uses, and injects the tool's env vars into the app's container at its next build or deploy.
+An integration is a third-party tool you can attach to an app from a small curated catalog. When you attach one, Levelrail stores the values it needs (an API key, a DSN) with the same envelope encryption every app secret uses. It then injects the tool's env vars into the app's container at the next build or deploy.
 
-This is env-var injection only: there is no webhook or OAuth wiring with the vendor. If a tool needs more than an env var to work, it is not in this catalog.
+This is env-var injection only. There is no webhook or OAuth wiring with the vendor, so a tool that needs more than an env var is not in this catalog.
 
 ## Attaching an integration
 
@@ -31,7 +31,7 @@ Optional fields that you leave out take the default listed in the catalog below.
 
 ## Precedence
 
-Integration env vars are injected as a default, the same tier as a project/organization/environment shared env var: if the app's own `app.yaml` or dashboard env already declares the same variable name, the app's own value always wins. Detaching an integration removes its env vars cleanly at the app's next deploy.
+Integration env vars are injected as a default, the same tier as a project, organization or environment shared env var. If the app's own `app.yaml` or dashboard env already declares the same variable name, the app's own value wins. Detaching an integration removes its env vars at the app's next deploy.
 
 ## Catalog
 

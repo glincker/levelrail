@@ -79,3 +79,17 @@ func TestRun_DeployLink_Errors(t *testing.T) {
 		})
 	}
 }
+
+func TestLauncherBase(t *testing.T) {
+	cases := map[string]string{
+		"https://docs.levelrail.com/":  "https://levelrail.com",
+		"https://levelrail.com":        "https://levelrail.com",
+		"https://help.example.com/x/":  "https://help.example.com/x",
+		"https://docs.example.com/app": "https://example.com/app",
+	}
+	for in, want := range cases {
+		if got := launcherBase(in); got != want {
+			t.Errorf("launcherBase(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

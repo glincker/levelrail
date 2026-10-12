@@ -3,11 +3,10 @@ title: Roadmap
 description: What Levelrail has shipped by area, what is still open, and what is out of scope. There is no stable release yet.
 ---
 
-# Roadmap
-
 There is no stable release yet (latest: 0.2.0-beta.18). "Shipped" on this page means built and merged, not proven in production. For per-feature maturity and the evidence behind each label, see [feature status](/feature-status). Release-by-release detail is in the [changelog](/changelog). The decisions behind the build order are in the [ADRs](https://github.com/glincker/levelrail/tree/main/adr).
 
-The build did not follow the original phase plan in order: parts of multi-node shipped while some single-node items (real public ACME renewal, a Linux idle-footprint measurement) are still open. This page describes what is true today, not a schedule.
+The build did not follow the original phase plan in order. Parts of multi-node shipped while some single-node items (real public ACME renewal, a Linux idle-footprint measurement) are still open. This page describes what is true today, not a schedule.
+
 ## Phase status
 
 ```mermaid
@@ -28,16 +27,16 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 - App spec (`app.yaml` or `deploy.yaml`) parsing with an embedded JSON Schema. See the [app spec reference](/app-spec-reference).
 - Docker Engine API wrapper, with no `docker` CLI shelling.
 - Application reconciler with readiness probes gating every cutover and liveness probes on each pass. A container that OOM-kills or exits during the readiness wait fails immediately (`OOMKilledDuringReadiness`, `ExitedDuringReadiness`) instead of retrying a dead address.
-- BuildKit builds with live build-log streaming over SSE. Railpack auto-detection, static sites (`build.type: static`), and dedicated build nodes with a registry-backed cache (a built-in registry can be enabled in Settings).
+- BuildKit builds with live build-log streaming over SSE. Railpack auto-detection, static sites (`build.type: static`), and dedicated [build nodes](/build-node-routing) with a registry-backed cache (a built-in registry can be enabled in Settings).
 - Docker Compose as a deploy target for a supported subset of `compose.yaml`, and multi-service apps (`deploy-spec`) with per-service builds and deploys.
 - Deploy strategies: rolling, recreate, blue-green. Rollback to retained images, deploy history, deploy comparison, and deterministic build-failure diagnosis.
 - Pre and post-deploy hooks. A failing pre-deploy hook blocks cutover and keeps the old container serving.
 - Git providers: GitHub (App flow, including GitHub Enterprise Server), GitLab, Bitbucket Cloud and Gitea, with HMAC-verified webhooks and webhook delivery history with replay. See [git integrations](/git-integrations).
-- Preview environments per pull request (opt-in), with optional ephemeral databases and PR status comments. See [deploy previews](/deploy-previews).
+- [Preview environments](/previews) per pull request (opt-in), with optional ephemeral databases and PR status comments. See [deploy previews](/deploy-previews).
 - Embedded Caddy ingress: automatic TLS (internal issuer by default, public ACME toggleable), zero-config `sslip.io` hostnames, per-domain bring-your-own certificates. See [domains and ingress](/domains-and-ingress).
 - Envelope-encrypted secrets with master-key rotation. See [security](/security).
 - Container exec and an interactive terminal (dashboard or `apps exec --interactive`), gated to root-level tokens.
-- Service template catalog: 311 entries (see [template catalog](/template-catalog)), reversing the original non-goal in [ADR 015](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md).
+- [Service template](/templates-and-registry) catalog: 311 entries (see [template catalog](/template-catalog)), reversing the original non-goal in [ADR 015](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md).
 
 ### Data
 
@@ -51,7 +50,7 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 - Node-local metrics (15s resolution) and log store with full-text and JSON search, federated across nodes, and a Prometheus remote-read endpoint. Deploy markers appear on metric charts.
 - Crashloop detection with the last 200 log lines surfaced in the UI.
 - Alerting over 14 rule kinds and 18 notification channel kinds, with retries for transient failures and delivery history.
-- Attention list, status page, capacity forecast, right-sizing suggestions and certificate renewal visibility. See [observability](/observability).
+- Attention list, [status page](/status-page), capacity forecast, right-sizing suggestions and certificate renewal visibility. See [observability](/observability).
 
 ### Multi-node
 
@@ -79,27 +78,27 @@ The join flow is verified across two real Docker daemons, but not across a real 
 
 These exist and are tested, but are gated or carry a beta label. See [feature status](/feature-status) and [experimental features](/experimental-features).
 
-- In-app AI chat, AI models on GPU nodes, load balancer, platform as code, Cloudflare Tunnel (all behind `APP_EXPERIMENTAL`).
-- Pipelines, feature flags, deploy freeze, supply chain scanning, log archive, scheduled deploys, deploy cost estimate.
+- In-app AI chat, AI models on GPU nodes, [load balancer](/load-balancing), [platform as code](/platform-as-code), Cloudflare Tunnel (all behind `APP_EXPERIMENTAL`).
+- Pipelines, feature flags, deploy freeze, supply chain scanning, [log archive](/log-archive), [scheduled deploys](/scheduled-deploys), deploy cost estimate.
 
 ## Open work
 
-- **Real public ACME.** One live run against Let's Encrypt on a public VPS is recorded in the [runbook](/acme-verification-runbook). Renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA are not yet exercised live.
-- **Multi-node on real hosts.** The WireGuard mesh and cross-host remote transport are unverified outside fakes and local Docker daemons.
-- **Idle footprint on Linux.** Measured only on an Apple M4 Max dev build so far. See [performance](/performance).
-- **Template coverage.** A sample of the 311 templates is deployed by e2e tests, not the whole catalog.
-- **Other database engines.** PITR is Postgres only, and TLS by default is Postgres and Redis only.
-- **Stable release.** None yet. Upgrade and downgrade testing across versions with real data is part of Phase 5.
+- Real public ACME: one live run against Let's Encrypt on a public VPS is recorded in the [runbook](/acme-verification-runbook). Renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA are not yet exercised live.
+- Multi-node on real hosts: the WireGuard mesh and cross-host remote transport are unverified outside fakes and local Docker daemons.
+- Idle footprint on Linux: measured only on an Apple M4 Max dev build so far. See [performance](/performance).
+- Template coverage: a sample of the 311 templates is deployed by e2e tests, not the whole catalog.
+- Other database engines: PITR is Postgres only, and TLS by default is Postgres and Redis only.
+- Stable release: none yet. Upgrade and downgrade testing across versions with real data is part of Phase 5.
 
 ## Out of scope
 
-- **Container runtime:** Docker Engine API only.
-- **Scheduler:** no bin-packing, affinity rules or autoscaling.
-- **Service mesh:** WireGuard plus DNS only.
-- **Windows or non-Linux nodes.**
-- **Managed cloud offering:** not before the self-hosted version has real users.
-- **AI in the reconciliation path:** AI is a read-and-suggest layer on top of the API.
-- **Kubernetes compatibility:** no CRDs, no custom orchestration standard.
+- Container runtime: Docker Engine API only.
+- Scheduler: no bin-packing, affinity rules or autoscaling.
+- Service mesh: WireGuard plus DNS only.
+- Windows or non-Linux nodes.
+- Managed cloud offering: not before the self-hosted version has real users.
+- AI in the reconciliation path: AI is a read-and-suggest layer on top of the API.
+- Kubernetes compatibility: no CRDs, no custom orchestration standard.
 
 ## See also
 

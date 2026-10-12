@@ -1,6 +1,7 @@
 ---
 title: "Preview environments per pull request"
-description: "Per-pull-request preview environments on your own servers, with their own domain, safe defaults for data and secrets, a TTL and a cap."
+sidebarTitle: "Preview environments"
+description: Per pull request preview environments on your own servers, with their own domain and DNS record, safe defaults for data and secrets, a TTL and cap, idle sleep, and a PR comment that links back.
 ---
 
 Open a pull request and Levelrail builds its head commit, deploys it as `<app>-pr-<n>` on its own domain, and posts one comment on the pull request with the URL. Push again and the same preview updates. Close or merge the pull request and everything the preview created is removed, including its DNS record.
@@ -45,10 +46,10 @@ The name matching for `none` is a heuristic. If a credential has an unusual name
 
 ## Lifecycle
 
-- **Cap.** Each app keeps at most the platform cap of live previews (`APP_PREVIEW_ENV_MAX_PER_APP`), or its own number under Previews. At the cap the oldest preview is evicted, or the new pull request is skipped, depending on the app's policy.
-- **TTL.** A preview with no new pushes for the TTL (default 7 days, `APP_PREVIEW_TTL`, per app in hours) is removed even if the close event never arrived. **Extend** adds time to one preview from the Previews page or `levelrail-cli previews extend <app> <pr> --hours 48`.
-- **Cleanup.** Teardown removes the preview's services, its databases, and the DNS record Levelrail created. If any step fails the row stays, marked failed with the reason, and the next teardown or sweep retries only what is left. Images and volumes are reclaimed by the normal image and orphaned volume cleanup, since the preview app no longer exists.
-- **State.** Each preview has a status (`deploying`, `active`, `failed`, `awaiting_approval`, `limit_reached`) and a reason, shown in the list and the pull request comment.
+- Each app keeps at most the platform cap of live previews (`APP_PREVIEW_ENV_MAX_PER_APP`), or its own number under Previews. At the cap the oldest preview is evicted, or the new pull request is skipped, depending on the app's policy.
+- A preview with no new pushes for the TTL (default 7 days, `APP_PREVIEW_TTL`, per app in hours) is removed even if the close event never arrived. **Extend** adds time to one preview from the Previews page or `levelrail-cli previews extend <app> <pr> --hours 48`.
+- Teardown removes the preview's services, its databases, and the DNS record Levelrail created. If any step fails the row stays, marked failed with the reason, and the next teardown or sweep retries only what is left. Images and volumes are reclaimed by the normal image and orphaned volume cleanup, since the preview app no longer exists.
+- Each preview has a status (`deploying`, `active`, `failed`, `awaiting_approval`, `limit_reached`) and a reason, shown in the list and the pull request comment.
 
 ## Feedback on the pull request
 

@@ -1,9 +1,10 @@
 ---
 title: "Feature flags"
+tag: "Beta"
 description: Toggle behavior in a running app without a redeploy, with per-app flags, percentage rollouts and a simple evaluate endpoint.
 ---
 
-Feature flags let you change behavior in a running app with no redeploy or restart. You create a flag, your app asks the control plane whether it is on, and you flip it from the dashboard or CLI whenever you like.
+A feature flag lets you change behavior in a running app with no redeploy or restart. You create a flag, your app asks the control plane whether it is on, and you flip it from the dashboard or CLI when you want.
 
 ## Why not an env var
 
@@ -11,9 +12,9 @@ Env vars are fixed when a container is created, so changing one needs a redeploy
 
 ## How flags behave
 
-- **Scope.** A flag belongs to one app, and the dashboard and CLI manage it per app. Its `key`, the string your app looks up, is unique across the whole control plane, not just within the app. The evaluate endpoint is flat (`/api/v1/flags/evaluate/{key}`, no app in the path) because API tokens are not scoped to an app.
-- **Kill switch.** `enabled: false` turns the flag off for every caller.
-- **Rollout.** When `enabled` is true, `rollout_percentage` (0 to 100) decides which callers get it. Callers are bucketed by a consistent hash (FNV-1a) of the `identifier` query parameter, so the same identifier always lands on the same side of a partial rollout. Pass a stable per-user or per-device value. Callers that send no identifier all share one outcome.
+- Scope: a flag belongs to one app, and the dashboard and CLI manage it per app. Its `key`, the string your app looks up, is unique across the whole control plane, not just within the app. The evaluate endpoint is flat (`/api/v1/flags/evaluate/{key}`, no app in the path) because API tokens are not scoped to an app.
+- Kill switch: `enabled: false` turns the flag off for every caller.
+- Rollout: when `enabled` is true, `rollout_percentage` (0 to 100) decides which callers get it. Callers are bucketed by a consistent hash (FNV-1a) of the `identifier` query parameter, so the same identifier always lands on the same side of a partial rollout. Pass a stable per-user or per-device value. Callers that send no identifier all share one outcome.
 
 ## Set up a flag
 
@@ -91,8 +92,7 @@ The evaluate response is only `key` and `enabled`, because apps may call it on e
 
 ## Not supported
 
-- **Targeting rules.** Rollout is a flat percentage by identifier. There is no targeting by user attribute such as plan.
-- **Flag history.** Create, update and delete show up in the generic audit log (`GET /api/v1/audit-log`), with no flag-specific history view.
+Rollout is a flat percentage by identifier, so you cannot target by user attribute such as plan. There is also no flag-specific history view: create, update and delete show up in the generic audit log (`GET /api/v1/audit-log`).
 
 ## Next steps
 

@@ -1,13 +1,12 @@
 ---
-title: "Rolling back a release"
+title: "Rolling back the control plane"
 description: "How to roll the control plane back to a previous release: what the dashboard shows and what you run on the server."
 ---
 
 Settings > Updates lists the last five releases for a channel (stable, beta, or
-both) with a compatibility verdict against your database. Picking one shows
-exactly what a rollback would do. Nothing is applied from the dashboard: the
-control plane never replaces its own binary, so you run the rollback on the
-server.
+both), each with a compatibility verdict against your database. Pick one to see
+exactly what a rollback would do. The dashboard never applies it: the control
+plane does not replace its own binary, so you run the rollback on the server.
 
 ## What the verdict means
 
@@ -27,7 +26,7 @@ levelrail-cli upgrade --rollback-plan v0.2.0-beta.14 --json
 
 ## Applying on the server
 
-Releases your host kept (the last three it ran) roll back instantly and offline:
+Releases your host kept (the last three it ran) roll back immediately, with no network needed:
 
 ```sh
 sudo levelrail rollback --to v0.2.0-beta.14 --dry-run   # print the plan only
@@ -43,9 +42,9 @@ curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh 
 ```
 
 The rollback takes a fresh backup, stops the service, swaps the binary, starts
-it and waits for health and readiness. If the target does not become healthy
-within `--timeout` (default 90s) the previous release is put back automatically
-and the command reports that. Every attempt is written to the audit log.
+it and waits for health and readiness. If the target is not healthy within
+`--timeout` (default 90s), the previous release is put back automatically and
+the command tells you so. Every attempt is written to the audit log.
 
 ### When a restore is required
 
@@ -56,7 +55,7 @@ sudo levelrail rollback --to v0.1.0 \
 ```
 
 The plan lists each local backup with its time and schema. Everything written
-after the chosen backup is lost; the database you have now is kept beside it as
+after the chosen backup is lost. Your current database is kept beside it as
 `levelrail.db.before-rollback-<time>`. Without a service manager, pass
 `--stop-cmd` and `--start-cmd`.
 

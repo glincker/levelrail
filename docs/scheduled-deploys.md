@@ -3,14 +3,14 @@ title: "Scheduled deploys"
 description: Redeploy the latest commit on a branch on a recurring cron schedule, with freeze-window and restart-safe catch-up semantics.
 ---
 
-A per-app cron schedule that redeploys the latest commit on a branch
-automatically, for apps that want a recurring refresh (a nightly rebuild
-against a base image, a staging environment that tracks `main` once a
-day) without a git push or a manual trigger.
+A scheduled deploy redeploys the latest commit on a branch on a cron
+schedule, with no git push or manual trigger. Use it for a nightly rebuild
+against a fresh base image, or a staging environment that tracks `main`
+once a day.
 
-Requires a connected git source (`PUT /api/v1/apps/{name}/git-source`):
-a schedule redeploys through the same path a webhook push does, so there
-must be a repo to redeploy from.
+You need a connected git source (`PUT /api/v1/apps/{name}/git-source`).
+A schedule redeploys through the same path a webhook push does, so there
+has to be a repo to redeploy from.
 
 ## Configure
 
@@ -57,7 +57,7 @@ list`), distinct from `git push`, `manual`, `api`, `rollback` and
 ### Freeze windows
 
 A schedule due while a [deploy freeze window](/deploy-safety#freeze-windows)
-is active is **skipped, not forced**: no deploy is triggered, and the
+is active is skipped, not forced: no deploy is triggered, and the
 skip is recorded in the schedule's history with the freeze's reason and
 end time. It is not queued to run once the freeze lifts; it simply waits
 for its next natural occurrence, the same way a schedule due outside any
@@ -66,16 +66,15 @@ freeze always has.
 ### Restart and catch-up semantics
 
 Each schedule persists its own next-fire time in the database, not only
-in the control plane process's memory. This matters for two cases:
+in the control plane process's memory. Two cases follow from that:
 
-- **A schedule seen for the first time** (just created, or just
+- A schedule seen for the first time (just created, or just
   re-enabled) is armed to its next occurrence and does not fire
   immediately. This matches Levelrail's other cron-driven features
   (scheduled tasks, scheduled backups).
-- **The control plane restarts.** Because the next-fire time is
-  persisted, a schedule that was due, or that missed one or more
-  occurrences entirely while the process was down, still fires **at most
-  once** the next time it is checked, for the most recent due
+- When the control plane restarts, a schedule that was due, or that
+  missed one or more occurrences while the process was down, still fires
+  at most once the next time it is checked, for the most recent due
   occurrence, never once per missed occurrence. It then resumes its
   normal cadence. This is a deliberate difference from scheduled tasks
   and scheduled backups, whose position lives only in memory and is

@@ -1,15 +1,19 @@
 ---
 title: "Backup targets, registry credentials, and app volume backups"
-description: "Set up S3-compatible backup targets, schedule database and volume backups, set retention, and keep credentials write-only."
+sidebarTitle: "Backups and storage"
+description: Configure backup targets, registry credentials, and automated backup schedules with retention policies.
 ---
+
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/aws-amazon-simple-storage-service.svg" alt="Amazon S3" title="Amazon S3" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/minio.svg" alt="MinIO" title="MinIO" width="24" height="24" /></span></div>
 
 This guide covers three related resources:
 
-1. **Backup targets**: S3-compatible buckets where database and app volume backups are stored.
-2. **Registry credentials**: authentication for pulling private images from external registries.
-3. **Built-in registry**: Levelrail's own `registry:2` container for pushing and caching images locally.
+1. Backup targets: S3-compatible buckets where database and app volume backups are stored.
+2. Registry credentials: authentication for pulling private images from external registries.
+3. The built-in registry: Levelrail's own `registry:2` container for pushing and caching images locally.
 
 All three share one pattern: an external system that needs a working credential, which you test on demand instead of finding out it is broken mid-deploy or mid-backup. For the database side of backups (restore, point-in-time recovery, verification), see [Managing databases](/managing-databases). For backing up the control plane itself, see [Control plane backup](/control-plane-backup) and [Disaster recovery](/disaster-recovery).
+
 ## Backup lifecycle at a glance
 
 ```mermaid
@@ -121,9 +125,7 @@ CLI: `levelrail-cli registry-credentials test <id>`. Dashboard: the **Test conne
 </Tabs>
 
 <Tip>
-
-Finding a stale credential here means fixing it now, not discovering it from a failed 3am backup or a failed deploy mid-pull.
-
+Better to find a stale credential here than from a failed 3am backup or a deploy that dies mid-pull.
 </Tip>
 
 ## Database and app volume backups
@@ -195,7 +197,7 @@ Each resource is in exactly one state:
 | Backups failing | Every attempt failed, or the last drill failed | Back up now |
 | Not protected | No schedule or no target. A backup taken by hand does not count | Protect |
 
-A resource counts as protected only when it is scheduled and has a successful backup. Preview environments and canaries are marked **Scratch** and left out of the totals.
+A resource counts as protected only when it is scheduled and has a successful backup. [Preview environments](/previews) and canaries are marked **Scratch** and left out of the totals.
 
 **Protect everything** (`POST /api/v1/backups/protect-all`) schedules every unprotected resource in one step. You pick a destination (or connect one inline from a provider preset: Cloudflare R2, Backblaze B2, Wasabi, AWS S3, MinIO, or local disk), a schedule, and how many backups to keep. The dialog previews the plan first, and nothing changes until you apply. Scratch resources are off unless you opt in. The same flow on the CLI:
 
@@ -208,9 +210,7 @@ levelrail-cli backups protect-all --target ID --apply [--schedule "0 3 * * *"] [
 The default schedule and retention come from `APP_BACKUP_DEFAULT_SCHEDULE` (default `0 3 * * *`), `APP_BACKUP_DEFAULT_RETAIN` (default 7) and `APP_BACKUP_DEFAULT_RETAIN_DAYS` (default 30). They are suggestions: a database without a schedule shows them on its own Backups card once a destination exists, and applies them only when you click. The dashboard also shows a recommendation when resources are not backed up.
 
 <Warning>
-
 The **Local disk** preset points at an S3 server on this machine. Backups stored on the machine they protect are lost with it. It is fine to try things out and wrong for anything you care about.
-
 </Warning>
 
 #### The encryption key
@@ -239,15 +239,13 @@ Coverage, protect-all and orphaned data are instance wide. Members of non-defaul
 
 Retention has two independent dimensions, both optional:
 
-- **`retain` (count):** keep the newest N successful backups by `started_at`.
-- **`retain_days` (age):** keep only backups less than N days old.
+- `retain` (count): keep the newest N successful backups by `started_at`.
+- `retain_days` (age): keep only backups less than N days old.
 
 They combine, so a backup is deleted when either rule would remove it. With `retain: 7` and `retain_days: 30`, you keep at most the 7 newest backups, and never anything older than 30 days. `0` disables a dimension, and `0` for both disables pruning.
 
 <Warning>
-
-Only succeeded backups are ever pruned. Running and failed attempts are kept regardless of age or count, since a failed attempt's logs have diagnostic value.
-
+Only succeeded backups are ever pruned. Running and failed attempts are kept regardless of age or count, since you may need a failed attempt's logs.
 </Warning>
 
 Pruning runs after every scheduled backup that succeeds, not after manual ones. A pruning failure is logged and does not fail the backup, which is already durably recorded. The dashboard's schedule form defaults a new database's "keep last N backups" to 7 and "delete backups older than (days)" to 0 (no age limit).
