@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/glincker/levelrail/compare/v0.2.1...v0.2.2) (2026-10-12)
+
+
+### Bug Fixes
+
+* add the frontmatter description the docs build requires to design tokens ([#1180](https://github.com/glincker/levelrail/issues/1180)) ([46fa0ee](https://github.com/glincker/levelrail/commit/46fa0eeec8544902cd193dc706a123c27f51cea2))
+
 ## [0.2.1](https://github.com/glincker/levelrail/compare/v0.2.0...v0.2.1) (2026-10-12)
 
 
