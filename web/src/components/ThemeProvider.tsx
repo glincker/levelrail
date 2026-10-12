@@ -28,12 +28,11 @@ function getStoredTheme(): Theme {
     const stored = window.localStorage.getItem(STORAGE_KEY)
     return stored === 'light' || stored === 'dark' || stored === 'system'
       ? stored
-      : 'system'
+      : 'dark'
   } catch {
     // localStorage can throw in private-browsing/storage-restricted
-    // contexts (same defensive pattern as lib/authStore.ts). Falling
-    // back to 'system' is always a safe default.
-    return 'system'
+    // contexts (same defensive pattern as lib/authStore.ts).
+    return 'dark'
   }
 }
 

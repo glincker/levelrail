@@ -8,8 +8,8 @@
       and before first paint, so a dark-preferring visitor never sees a
       light-mode flash while React boots. Mirrors the key and resolution
       rules in src/components/ThemeProvider.tsx exactly: 'levelrail-theme'
-      in localStorage wins when present ('light' or 'dark'), otherwise
-      falls back to the OS preference via matchMedia. ThemeProvider reads
+      in localStorage wins when present ('light', 'dark' or 'system'),
+      otherwise the default is dark, not the OS preference. ThemeProvider reads
       the class this script already applied as its initial state instead
       of re-deciding and potentially fighting it.
 
