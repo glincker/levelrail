@@ -1,12 +1,9 @@
-import { UserIcon } from '@phosphor-icons/react/dist/ssr'
-import {
-  ResponsiveTable,
-  type ResponsiveColumn,
-} from '@/components/ui/responsive-table'
 import { useTranslation } from 'react-i18next'
+import { UserIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { EmptyState } from './ui/empty-state'
+import { ResponsiveTable, type ResponsiveColumn } from './ui/responsive-table'
 import { RemoveUserDialog } from './RemoveUserDialog'
 import { EditUserAbilitiesDialog } from './EditUserAbilitiesDialog'
 import { UserRoleDialog } from './access/UserRoleDialog'
@@ -16,18 +13,6 @@ import { isFeatureVisible } from '../lib/experimental'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { ABILITY_BADGE_VARIANT } from '../types/token'
 import type { UserResource } from '../queries/users'
-
-function formatDate(iso: string | undefined, fallback: string): string {
-  return iso ? new Date(iso).toLocaleString() : fallback
-}
-
-function authMethods(user: UserResource): string {
-  const methods = [...user.providers]
-  if (user.has_password) {
-    methods.push('password')
-  }
-  return methods.length > 0 ? methods.join(', ') : 'none'
-}
 
 export function UserTable({ users }: { users: UserResource[] }) {
   const { t } = useTranslation('settings')
@@ -44,28 +29,38 @@ export function UserTable({ users }: { users: UserResource[] }) {
     return (
       <EmptyState
         icon={<UserIcon className="size-5" />}
-        title="No users found"
-        description="Invite a teammate or create a user from the actions above."
+        title={t('usersPage.empty.title')}
+        description={t('usersPage.empty.body')}
       />
     )
+  }
+
+  function authMethods(user: UserResource): string {
+    const methods = [...user.providers]
+    if (user.has_password) {
+      methods.push(t('usersPage.table.password'))
+    }
+    return methods.length > 0
+      ? methods.join(', ')
+      : t('usersPage.table.noMethod')
   }
 
   const columns: ResponsiveColumn<UserResource>[] = [
     {
       id: 'email',
       primary: true,
-      header: 'Email',
+      header: t('usersPage.table.email'),
       cell: (user) => (
         <span className="font-medium break-all text-foreground">
           {user.email}
           {user.is_first_user ? (
             <Badge variant="outline" className="ml-2">
-              First user
+              {t('usersPage.table.firstUser')}
             </Badge>
           ) : null}
           {ownEmail !== null && ownEmail === user.email ? (
             <Badge variant="muted" className="ml-2">
-              You
+              {t('usersPage.table.you')}
             </Badge>
           ) : null}
         </span>
@@ -73,19 +68,19 @@ export function UserTable({ users }: { users: UserResource[] }) {
     },
     {
       id: 'displayName',
-      header: 'Display name',
+      header: t('usersPage.table.displayName'),
       priority: 3,
       cell: (user) => user.display_name,
     },
     {
       id: 'signsInWith',
-      header: 'Signs in with',
+      header: t('usersPage.table.signsInWith'),
       priority: 3,
       cell: (user) => authMethods(user),
     },
     {
       id: 'role',
-      header: 'Role',
+      header: t('usersPage.table.role'),
       priority: 2,
       cell: (user) =>
         user.role ? (
@@ -93,12 +88,12 @@ export function UserTable({ users }: { users: UserResource[] }) {
             {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
           </Badge>
         ) : (
-          <Badge variant="muted">Custom</Badge>
+          <Badge variant="muted">{t('usersPage.table.custom')}</Badge>
         ),
     },
     {
       id: 'abilities',
-      header: 'Abilities',
+      header: t('usersPage.table.abilities'),
       priority: 2,
       cell: (user) => (
         <div className="flex flex-wrap gap-1">
@@ -112,9 +107,12 @@ export function UserTable({ users }: { users: UserResource[] }) {
     },
     {
       id: 'lastLogin',
-      header: 'Last login',
+      header: t('usersPage.table.lastLogin'),
       priority: 3,
-      cell: (user) => formatDate(user.last_login_at, 'Never'),
+      cell: (user) =>
+        user.last_login_at
+          ? new Date(user.last_login_at).toLocaleString()
+          : t('usersPage.table.never'),
     },
   ]
 
@@ -123,7 +121,7 @@ export function UserTable({ users }: { users: UserResource[] }) {
       rows={users}
       columns={columns}
       getRowId={(user) => user.id}
-      ariaLabel={t('tables.users')}
+      ariaLabel={t('usersPage.table.label')}
       renderActions={(user) => {
         const isSelf = ownEmail !== null && ownEmail === user.email
         return (
@@ -133,9 +131,9 @@ export function UserTable({ users }: { users: UserResource[] }) {
                 variant="outline"
                 size="sm"
                 disabled
-                title="You cannot edit your own abilities"
+                title={t('usersPage.table.selfEditHint')}
               >
-                Edit abilities
+                {t('usersPage.table.editAbilities')}
               </Button>
             ) : (
               <>

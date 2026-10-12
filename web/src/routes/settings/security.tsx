@@ -53,7 +53,7 @@ import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '@/components/settings/SettingsSkeletons'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { SecurityPageShell } from '../../components/settings/SecurityPageShell'
 
 // Loader-primed the same way routes/settings/tokens.tsx primes
 // tokenListQueryOptions: the component below only ever reads that warm
@@ -98,65 +98,62 @@ function SecuritySettingsPage() {
   const { data: session } = useSession()
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Security"
-        description="Sessions and login protection."
-      />
+    <SecurityPageShell>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Current session</CardTitle>
+            <CardDescription>
+              The account and session this browser is signed in with.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-1.5 text-sm">
+            <p>
+              <span className="text-muted-foreground">Signed in as </span>
+              <span className="font-medium text-foreground">
+                {session.username}
+              </span>
+            </p>
+            <p>
+              <span className="text-muted-foreground">Signed in until </span>
+              <span className="font-medium text-foreground">
+                {formatDate(session.expires_at)}
+              </span>
+            </p>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Current session</CardTitle>
-          <CardDescription>
-            The account and session this browser is signed in with.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-1.5 text-sm">
-          <p>
-            <span className="text-muted-foreground">Signed in as </span>
-            <span className="font-medium text-foreground">
-              {session.username}
-            </span>
-          </p>
-          <p>
-            <span className="text-muted-foreground">Signed in until </span>
-            <span className="font-medium text-foreground">
-              {formatDate(session.expires_at)}
-            </span>
-          </p>
-        </CardContent>
-      </Card>
+        <OtherSessionsCard />
 
-      <OtherSessionsCard />
+        <SignInSecurityCards />
 
-      <SignInSecurityCards />
+        <TwoFactorCard />
 
-      <TwoFactorCard />
+        <PasskeysCard />
 
-      <PasskeysCard />
+        <AuthEngineCard />
 
-      <AuthEngineCard />
+        <DockerGuardCard />
 
-      <DockerGuardCard />
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ShieldCheckIcon className="size-4 text-muted-foreground" />
-            Login protection
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Failed sign-in attempts are rate limited per IP address and
-            username, with each additional failure making the next allowed
-            attempt wait longer than the last. A handful of mistyped passwords
-            will never lock you out, but repeated automated guessing gets slower
-            with every try.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldCheckIcon className="size-4 text-muted-foreground" />
+              Login protection
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Failed sign-in attempts are rate limited per IP address and
+              username, with each additional failure making the next allowed
+              attempt wait longer than the last. A handful of mistyped passwords
+              will never lock you out, but repeated automated guessing gets
+              slower with every try.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </SecurityPageShell>
   )
 }
 

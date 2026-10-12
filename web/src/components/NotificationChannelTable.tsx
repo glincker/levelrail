@@ -1,16 +1,16 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   PaperPlaneTiltIcon,
   WebhooksLogoIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
-import { useTranslation } from 'react-i18next'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
 import { BrandTile } from './BrandLogoBadge'
 import { DeleteNotificationChannelDialog } from './DeleteNotificationChannelDialog'
@@ -39,6 +39,7 @@ function maskNotifyUrl(url: string): string {
 }
 
 function TestButton({ channel }: { channel: NotificationChannel }) {
+  const { t } = useTranslation('settings')
   const testChannel = useTestExistingNotificationChannel()
   return (
     <Button
@@ -49,11 +50,14 @@ function TestButton({ channel }: { channel: NotificationChannel }) {
       onClick={() => {
         testChannel.mutate(channel.id, {
           onSuccess: () => {
-            toast.add({ title: 'Test notification sent.', type: 'success' })
+            toast.add({
+              title: t('channelsPage.table.testOk'),
+              type: 'success',
+            })
           },
           onError: (error) => {
             toast.add({
-              title: 'Test notification failed.',
+              title: t('channelsPage.table.testFailed'),
               description: error.message,
               type: 'error',
             })
@@ -62,7 +66,9 @@ function TestButton({ channel }: { channel: NotificationChannel }) {
       }}
     >
       <PaperPlaneTiltIcon className="size-3.5" aria-hidden="true" />
-      {testChannel.isPending ? 'Sending...' : 'Test'}
+      {testChannel.isPending
+        ? t('channelsPage.table.sending')
+        : t('channelsPage.table.test')}
     </Button>
   )
 }
@@ -80,8 +86,8 @@ export function NotificationChannelTable({
       <EmptyState
         className="py-12"
         icon={<WebhooksLogoIcon className="size-5" />}
-        title="No notification channels connected"
-        description="Connect Slack, Discord, Telegram, a generic webhook, or email once here, then attach it from any app instead of retyping a URL."
+        title={t('channelsPage.empty.title')}
+        description={t('channelsPage.empty.body')}
         action={action}
       />
     )
@@ -91,14 +97,14 @@ export function NotificationChannelTable({
     {
       id: 'name',
       primary: true,
-      header: 'Name',
+      header: t('channelsPage.table.name'),
       cell: (channel) => (
         <span className="font-medium text-foreground">{channel.name}</span>
       ),
     },
     {
       id: 'type',
-      header: 'Type',
+      header: t('channelsPage.table.type'),
       priority: 2,
       cell: (channel) => {
         const brandIcon = CHANNEL_KIND_BRAND_ICON[channel.kind]
@@ -116,7 +122,7 @@ export function NotificationChannelTable({
     },
     {
       id: 'destination',
-      header: 'Destination',
+      header: t('channelsPage.table.destination'),
       priority: 3,
       cell: (channel) => (
         <span
@@ -129,17 +135,17 @@ export function NotificationChannelTable({
     },
     {
       id: 'status',
-      header: 'Status',
+      header: t('channelsPage.table.status'),
       cell: (channel) =>
         channel.enabled ? (
-          <Badge variant="success">Enabled</Badge>
+          <Badge variant="success">{t('channelsPage.table.enabled')}</Badge>
         ) : (
-          <Badge variant="muted">Disabled</Badge>
+          <Badge variant="muted">{t('channelsPage.table.disabled')}</Badge>
         ),
     },
     {
       id: 'connected',
-      header: 'Connected',
+      header: t('channelsPage.table.connected'),
       priority: 3,
       cell: (channel) => (
         <span className="text-muted-foreground">
@@ -154,7 +160,7 @@ export function NotificationChannelTable({
       rows={channels}
       columns={columns}
       getRowId={(channel) => channel.id}
-      ariaLabel={t('tables.notificationChannels')}
+      ariaLabel={t('channelsPage.table.label')}
       renderActions={(channel) => (
         <div className="flex flex-wrap items-center justify-end gap-2">
           <TestButton channel={channel} />

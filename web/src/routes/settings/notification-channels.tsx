@@ -1,7 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { WebhooksLogoIcon } from '@phosphor-icons/react/dist/ssr'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
+import { Badge } from '@/components/ui/badge'
+import { Banner } from '@/components/ui/banner'
 import { notificationChannelListQueryOptions } from '../../queries/notificationChannels'
 import { NotificationChannelTable } from '../../components/NotificationChannelTable'
 import { CreateNotificationChannelDialog } from '../../components/CreateNotificationChannelDialog'
@@ -19,41 +22,61 @@ export const Route = createFileRoute('/settings/notification-channels')({
 })
 
 function NotificationChannelsPage() {
+  const { t } = useTranslation('settings')
   const { data: channels } = useSuspenseQuery(
     notificationChannelListQueryOptions(),
   )
+  const enabled = channels.filter((c) => c.enabled).length
+  const disabled = channels.length - enabled
+
+  let banner = null
+  if (channels.length === 0) {
+    banner = (
+      <Banner variant="warning" title={t('channelsPage.banner.none')}>
+        {t('channelsPage.banner.noneBody')}
+      </Banner>
+    )
+  } else if (enabled === 0) {
+    banner = (
+      <Banner variant="warning" title={t('channelsPage.banner.allOff')}>
+        {t('channelsPage.banner.allOffBody', { count: disabled })}
+      </Banner>
+    )
+  }
 
   return (
-    <div className="space-y-6">
+    <PageTemplate
+      icon={<WebhooksLogoIcon />}
+      eyebrow={t('channelsPage.eyebrow')}
+      title={t('channelsPage.title')}
+      description={t('channelsPage.description')}
+      helpPath="/email-notifications"
+      helpLabel={t('channelsPage.help')}
+      status={
+        <Badge variant={enabled > 0 ? 'success' : 'muted'}>
+          {t('channelsPage.enabledCount', { count: enabled })}
+        </Badge>
+      }
+      actions={<CreateNotificationChannelDialog />}
+      banners={banner}
+    >
       <SetupStepHint step="notifications" />
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <WebhooksLogoIcon className="size-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <PageHeader
-            title="Notification channels"
-            description="Connect Slack, Discord, Telegram, a generic webhook, or email once, then attach it from any app's deploy notifications."
-            actions={<CreateNotificationChannelDialog />}
-          />
-        </div>
-      </div>
       <NotificationChannelTable
         channels={channels}
         action={<CreateNotificationChannelDialog />}
       />
-    </div>
+    </PageTemplate>
   )
 }
 
 // Route-level fallback for the loader's pending phase, matching
-// NotificationChannelTable's own 6-column shape so the skeleton doesn't
+// NotificationChannelTable's own 5-column shape so the skeleton doesn't
 // jump when real rows swap in.
 function NotificationChannelsPending() {
   return (
     <div className="space-y-6">
       <SettingsPageTitle id="notification-channels" />
-      <TableSkeleton columnCount={6} />
+      <TableSkeleton columnCount={5} />
     </div>
   )
 }
