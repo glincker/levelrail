@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/glincker/levelrail/compare/kit/v0.2.0...kit/v0.2.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* updates channel resolution, Edge dead end and Cloud Run guides for launch ([#1175](https://github.com/glincker/levelrail/issues/1175)) ([8d9f783](https://github.com/glincker/levelrail/commit/8d9f7839eaeca17ec5c7e67228c754c0f4d8d340))
+
 ## [0.2.0](https://github.com/glincker/levelrail/compare/kit/v0.1.0...kit/v0.2.0) (2026-10-12)
 
 
