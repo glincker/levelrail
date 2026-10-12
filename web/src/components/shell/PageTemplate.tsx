@@ -34,6 +34,10 @@ export interface PageTemplateProps {
   /** Page-level banners, rendered between the hero and the content. */
   banners?: ReactNode
   width?: PageTemplateWidth
+  /** Right rail, 20rem and sticky from xl (1280px of the content area), after the main content below it. */
+  aside?: ReactNode
+  /** Accessible name of the aside landmark. */
+  asideLabel?: string
   /** `page` (20px) by default; `greeting` (28px) is for the dashboard greeting only. */
   titleSize?: 'page' | 'greeting'
   className?: string
@@ -55,6 +59,8 @@ export function PageTemplate({
   tabs,
   banners,
   width = 'default',
+  aside,
+  asideLabel,
   titleSize = 'page',
   className,
   children,
@@ -87,7 +93,7 @@ export function PageTemplate({
     <div
       data-page-width={width}
       className={cn(
-        'flex w-full flex-col gap-(--glinr-page-gap)',
+        '@container/page mx-auto flex w-full min-w-0 flex-col gap-(--glinr-page-gap)',
         WIDTH[width],
         className,
       )}
@@ -143,7 +149,28 @@ export function PageTemplate({
         {tabs ? <div className="border-b border-border">{tabs}</div> : null}
       </header>
       {banners ? <div className="space-y-2">{banners}</div> : null}
-      {children}
+      {aside ? (
+        <div
+          data-page-body=""
+          className="grid grid-cols-1 items-start gap-(--glinr-space-6) @min-[80rem]/page:grid-cols-[minmax(0,1fr)_var(--glinr-aside-width)]"
+        >
+          <div
+            data-page-main=""
+            className="flex min-w-0 flex-col gap-(--glinr-page-gap)"
+          >
+            {children}
+          </div>
+          <aside
+            data-page-aside=""
+            aria-label={asideLabel}
+            className="flex min-w-0 flex-col gap-(--glinr-page-gap) @min-[80rem]/page:sticky @min-[80rem]/page:top-(--glinr-aside-top)"
+          >
+            {aside}
+          </aside>
+        </div>
+      ) : (
+        children
+      )}
     </div>
   )
 }
