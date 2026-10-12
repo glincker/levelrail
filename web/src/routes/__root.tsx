@@ -133,7 +133,7 @@ function AppShell() {
           tabIndex={-1}
           className="mr-[var(--dock-push-r,0px)] mb-[var(--dock-push-b,0px)] flex-1 overflow-y-auto p-4 outline-none md:p-6"
         >
-          <div className="mx-auto w-full max-w-6xl">
+          <div className="mx-auto w-full min-w-0 max-w-6xl">
             <div className="mb-4 empty:hidden"></div>
             <Outlet />
           </div>
