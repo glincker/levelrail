@@ -181,7 +181,7 @@ export function ResponsiveTable<T>(props: ResponsiveTableProps<T>) {
     }
     scrollRef.current
       ?.querySelector(`[data-row-id="${CSS.escape(focusRowId)}"]`)
-      ?.scrollIntoView({ block: 'nearest' })
+      ?.scrollIntoView?.({ block: 'nearest' })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusRowId])
 
@@ -274,6 +274,7 @@ export function ResponsiveTable<T>(props: ResponsiveTableProps<T>) {
     <div ref={scrollRef} className={scrollClass}>
       <Table
         aria-label={ariaLabel}
+        aria-rowcount={virtual ? rows.length + 1 : undefined}
         containerClassName="overflow-visible"
         className={cn(
           'bg-card',
