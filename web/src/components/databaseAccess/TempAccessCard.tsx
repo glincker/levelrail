@@ -11,13 +11,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
 import type { DatabaseCredential, TempPreset } from '../../types/databaseAccess'
 import {
@@ -98,6 +94,37 @@ export function TempAccessCard({
   }
 
   const items = data?.items ?? []
+  const columns: ResponsiveColumn<(typeof items)[number]>[] = [
+    {
+      id: 'role',
+      header: t('temp.columns.role'),
+      primary: true,
+      cell: (row) => <span className="font-mono text-xs">{row.role}</span>,
+    },
+    {
+      id: 'access',
+      header: t('temp.columns.access'),
+      priority: 2,
+      cell: (row) => (
+        <span className="text-xs">{t(`users.preset.${row.preset}`)}</span>
+      ),
+    },
+    {
+      id: 'by',
+      header: t('temp.columns.by'),
+      priority: 3,
+      cell: (row) => <span className="text-xs">{row.created_by}</span>,
+    },
+    {
+      id: 'expires',
+      header: t('temp.columns.expires'),
+      cell: (row) => (
+        <span className="text-xs">
+          {timeLeft(row.expires_at, t('temp.expiredWaiting'))}
+        </span>
+      ),
+    },
+  ]
 
   return (
     <Card>
@@ -157,51 +184,30 @@ export function TempAccessCard({
               {t('temp.emptyActive')}
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('temp.columns.role')}</TableHead>
-                  <TableHead>{t('temp.columns.access')}</TableHead>
-                  <TableHead>{t('temp.columns.by')}</TableHead>
-                  <TableHead>{t('temp.columns.expires')}</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="font-mono text-xs">
-                      {row.role}
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {t(`users.preset.${row.preset}`)}
-                    </TableCell>
-                    <TableCell className="text-xs">{row.created_by}</TableCell>
-                    <TableCell className="text-xs">
-                      {timeLeft(row.expires_at, t('temp.expiredWaiting'))}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={revoke.isPending}
-                        onClick={() =>
-                          revoke.mutate(row.id, {
-                            onSuccess: () =>
-                              toast.add({
-                                title: t('temp.revokedToast'),
-                                type: 'success',
-                              }),
-                          })
-                        }
-                      >
-                        {t('temp.revoke')}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <ResponsiveTable
+              rows={items}
+              columns={columns}
+              getRowId={(row) => row.id}
+              ariaLabel={t('temp.tableLabel')}
+              renderActions={(row) => (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={revoke.isPending}
+                  onClick={() =>
+                    revoke.mutate(row.id, {
+                      onSuccess: () =>
+                        toast.add({
+                          title: t('temp.revokedToast'),
+                          type: 'success',
+                        }),
+                    })
+                  }
+                >
+                  {t('temp.revoke')}
+                </Button>
+              )}
+            />
           )}
         </div>
       </CardContent>
