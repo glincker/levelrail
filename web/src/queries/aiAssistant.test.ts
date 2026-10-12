@@ -46,8 +46,12 @@ describe('streamAiSseResponse', () => {
       {
         type: 'tool_result',
         confirmationId: '',
+        toolUseId: 'call_1',
+        toolName: 'rollback_deploy',
         result: 'ok',
         isError: false,
+        actingAs: undefined,
+        abilities: undefined,
       },
       { type: 'done' },
     ])
