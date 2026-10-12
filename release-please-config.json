@@ -49,8 +49,9 @@
   ],
   "packages": {
     ".": {
-      "exclude-paths": ["kit"],
-      "release-as": "0.2.0"
+      "exclude-paths": [
+        "kit"
+      ]
     },
     "kit": {
       "release-type": "go",
