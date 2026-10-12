@@ -56,6 +56,7 @@ export function DashboardHero({
   return (
     <PageTemplate
       width="wide"
+      titleSize="3xl"
       eyebrow={brand.Name}
       title={greeting}
       description={td(`hero.sentence.${sentence.key}`, {
