@@ -363,12 +363,24 @@
   "nav": {
     "areas": {
       "general": {
-        "title": "General",
-        "description": "Profile, setup and everyday tools."
+        "title": "Workspace",
+        "description": "Profile, organizations, environments and setup."
+      },
+      "access": {
+        "title": "People and access",
+        "description": "Who can sign in and what they can do."
       },
       "security": {
-        "title": "Security and access",
-        "description": "Who can sign in and what they can do."
+        "title": "Security",
+        "description": "Secrets vault, host firewall and posture."
+      },
+      "developer": {
+        "title": "Developer",
+        "description": "CLI and API access."
+      },
+      "ai": {
+        "title": "AI and agents",
+        "description": "Agent connections, AI control and the assistant."
       },
       "domains": {
         "title": "Domains and TLS",
@@ -383,8 +395,8 @@
         "description": "Alert channels, email and the status page."
       },
       "integrations": {
-        "title": "Integrations",
-        "description": "Git providers, registries and cloud providers."
+        "title": "Git and registries",
+        "description": "Git provider apps and container registries."
       },
       "beta": {
         "title": "Beta features",
@@ -395,8 +407,8 @@
         "description": "Current version and available releases."
       },
       "advanced": {
-        "title": "Advanced",
-        "description": "Host, containers and low-level platform controls."
+        "title": "System",
+        "description": "Providers, containers, observability and low-level controls."
       }
     },
     "items": {

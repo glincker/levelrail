@@ -421,6 +421,55 @@ body {
   }
 }
 
+/* Brand glow (dark mode): a soft, smooth blue-led wash behind the top of every page,
+   hosted on <main> (class brand-glow) so it scrolls with the content like a page hero.
+   Sits behind the content and ignores the pointer. */
+.dark {
+  --glow-blue: var(--brand-accent-dark);
+  --glow-teal: oklch(0.75 0.14 175);
+  --glow-indigo: oklch(0.62 0.2 275);
+}
+
+.dark .brand-glow {
+  position: relative;
+  isolation: isolate;
+}
+
+.dark .brand-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: clamp(14rem, 22vw, 20rem);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  background:
+    radial-gradient(
+      54% 92% at 50% 0%,
+      color-mix(in oklch, var(--glow-blue) 30%, transparent),
+      transparent 75%
+    ),
+    radial-gradient(
+      38% 78% at 10% 0%,
+      color-mix(in oklch, var(--glow-teal) 13%, transparent),
+      transparent 75%
+    ),
+    radial-gradient(
+      36% 70% at 92% 0%,
+      color-mix(in oklch, var(--glow-indigo) 17%, transparent),
+      transparent 75%
+    );
+}
+
+/* The brand pill gets a smooth blue corner light. */
+.dark [data-sidebar='header'] [data-slot='sidebar-menu-button'] {
+  background-image: radial-gradient(
+    120% 160% at 0% 0%,
+    color-mix(in oklch, var(--glow-blue) 22%, transparent),
+    transparent 70%
+  );
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

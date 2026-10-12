@@ -5,6 +5,7 @@ import {
   GLOBAL_NAV_GROUPS,
   activeAppSection,
   allGlobalItems,
+  defaultGroupOpen,
   isGlobalItemActive,
   resolveOpen,
 } from './navModel'
@@ -79,15 +80,34 @@ describe('global nav model', () => {
     expect(GLOBAL_NAV_GROUPS.length).toBeLessThanOrEqual(8)
   })
 
-  it('groups Domains, DNS, Proxy and Load balancers under Traffic', () => {
-    const traffic = GLOBAL_NAV_GROUPS.find((g) => g.id === 'traffic')
-    expect(traffic?.label).toBe('Traffic')
-    expect(traffic?.items.map((i) => i.label)).toEqual([
+  it('groups Domains, DNS, Proxy, Load balancers and Topology under Networking', () => {
+    const net = GLOBAL_NAV_GROUPS.find((g) => g.id === 'traffic')
+    expect(net?.label).toBe('Networking')
+    expect(net?.items.map((i) => i.label)).toEqual([
       'Domains',
       'DNS',
       'Proxy',
       'Load balancers',
+      'Topology',
     ])
+  })
+
+  it('keeps every group at six items or fewer', () => {
+    for (const g of GLOBAL_NAV_GROUPS) {
+      expect(g.items.length, g.id).toBeLessThanOrEqual(6)
+    }
+  })
+
+  it('opens everyday groups and the active group by default, nothing else', () => {
+    const find = (id: string) => {
+      const g = GLOBAL_NAV_GROUPS.find((x) => x.id === id)
+      if (!g) throw new Error(id)
+      return g
+    }
+    expect(defaultGroupOpen(find('apps'), '/nodes')).toBe(true)
+    expect(defaultGroupOpen(find('infrastructure'), '/')).toBe(false)
+    expect(defaultGroupOpen(find('infrastructure'), '/nodes')).toBe(true)
+    expect(defaultGroupOpen(find('automation'), '/')).toBe(false)
   })
 
   it('hides route-gated items until the router has the route', () => {

@@ -53,6 +53,7 @@ export function CollapsibleSection({
   open,
   onOpenChange,
   header,
+  hint,
   children,
   className,
 }: {
@@ -60,6 +61,8 @@ export function CollapsibleSection({
   open: boolean
   onOpenChange: (open: boolean) => void
   header: React.ReactNode
+  // Shown beside the header only while the group is collapsed.
+  hint?: React.ReactNode
   children: React.ReactNode
   className?: string
 }) {
@@ -74,6 +77,7 @@ export function CollapsibleSection({
         className="flex h-7 w-full items-center gap-1 rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-hidden transition-colors hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring"
       >
         <span className="flex-1 text-left">{header}</span>
+        {open ? null : hint}
         <NavChevron open={open} />
       </button>
       <NavCollapsePanel id={panelId} open={open}>

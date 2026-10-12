@@ -55,15 +55,18 @@ describe('settings hub', () => {
       screen.getByRole('heading', { level: 1, name: 'Settings' }),
     ).toBeInTheDocument()
     for (const area of [
-      'General',
-      'Security and access',
+      'Workspace',
+      'People and access',
+      'Security',
+      'Developer',
+      'AI and agents',
       'Domains and TLS',
       'Backups and storage',
       'Notifications',
-      'Integrations',
+      'Git and registries',
       'Beta features',
       'Updates',
-      'Advanced',
+      'System',
     ]) {
       expect(
         screen.getByRole('heading', { level: 2, name: area }),

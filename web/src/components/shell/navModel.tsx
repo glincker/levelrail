@@ -146,6 +146,18 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/projects',
         icon: <FolderIcon />,
       },
+      {
+        id: 'registry',
+        label: 'Container registry',
+        to: '/settings/registry',
+        icon: <PackageIcon />,
+      },
+      {
+        id: 'registry-credentials',
+        label: 'Credentials',
+        to: '/settings/registry-credentials',
+        icon: <KeyIcon />,
+      },
     ],
   },
   {
@@ -164,11 +176,17 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/backups',
         icon: <CloudArrowUpIcon />,
       },
+      {
+        id: 'network-shares',
+        label: 'Network shares',
+        to: '/settings/network-shares',
+        icon: <FolderOpenIcon />,
+      },
     ],
   },
   {
     id: 'traffic',
-    label: 'Traffic',
+    label: 'Networking',
     items: [
       {
         id: 'domains',
@@ -199,13 +217,25 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: <ArrowsSplitIcon />,
         feature: 'load-balancer',
       },
+      {
+        id: 'network',
+        label: 'Topology',
+        to: '/network',
+        icon: <ShareNetworkIcon />,
+      },
     ],
   },
   {
     id: 'infrastructure',
-    label: 'Infrastructure',
+    label: 'Fleet',
     items: [
       { id: 'nodes', label: 'Nodes', to: '/nodes', icon: <HardDrivesIcon /> },
+      {
+        id: 'node-providers',
+        label: 'Cloud providers',
+        to: '/settings/node-providers',
+        icon: <CloudIcon />,
+      },
       {
         id: 'resource-advisor',
         label: 'Resource advisor',
@@ -218,67 +248,6 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Usage and cost',
         to: '/usage',
         icon: <CoinsIcon />,
-      },
-      {
-        id: 'network',
-        label: 'Network',
-        to: '/network',
-        icon: <ShareNetworkIcon />,
-      },
-      {
-        id: 'registry',
-        label: 'Container registry',
-        to: '/settings/registry',
-        icon: <PackageIcon />,
-      },
-      {
-        id: 'registry-credentials',
-        label: 'Registry credentials',
-        to: '/settings/registry-credentials',
-        icon: <KeyIcon />,
-      },
-      {
-        id: 'network-shares',
-        label: 'Network shares',
-        to: '/settings/network-shares',
-        icon: <FolderOpenIcon />,
-      },
-      {
-        id: 'node-providers',
-        label: 'Cloud node providers',
-        to: '/settings/node-providers',
-        icon: <CloudIcon />,
-      },
-    ],
-  },
-  {
-    id: 'access',
-    label: 'Access control',
-    items: [
-      {
-        id: 'iam-policies',
-        label: 'IAM policies',
-        to: '/settings/iam-policies',
-        icon: <ShieldCheckIcon />,
-      },
-      {
-        id: 'security',
-        label: 'Security center',
-        to: '/security',
-        icon: <ShieldWarningIcon />,
-      },
-    ],
-  },
-  {
-    id: 'ai',
-    label: 'AI',
-    items: [
-      {
-        id: 'models',
-        label: 'AI models',
-        to: '/models',
-        icon: <CpuIcon />,
-        feature: 'ai-models',
       },
     ],
   },
@@ -300,6 +269,37 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         badge: 'approvals',
       },
       { id: 'alerts', label: 'Alerts', to: '/alerts', icon: <BellIcon /> },
+    ],
+  },
+  {
+    id: 'access',
+    label: 'Security',
+    items: [
+      {
+        id: 'security',
+        label: 'Security center',
+        to: '/security',
+        icon: <ShieldWarningIcon />,
+      },
+      {
+        id: 'iam-policies',
+        label: 'IAM policies',
+        to: '/settings/iam-policies',
+        icon: <ShieldCheckIcon />,
+      },
+    ],
+  },
+  {
+    id: 'ai',
+    label: 'AI',
+    items: [
+      {
+        id: 'models',
+        label: 'AI models',
+        to: '/models',
+        icon: <CpuIcon />,
+        feature: 'ai-models',
+      },
     ],
   },
 ]
@@ -550,6 +550,19 @@ export function activeAppSection(
 
 export function isSingleSection(section: AppNavSection): boolean {
   return section.items.length === 1
+}
+
+// Groups open on first visit, before the user has toggled anything: the two
+// everyday ones and the group holding the current page. Navigation never
+// closes a group; GlobalNav only ever opens the active one (see its effect).
+const ALWAYS_OPEN_GROUPS: ReadonlySet<string> = new Set(['home', 'apps'])
+
+export function defaultGroupOpen(
+  group: GlobalNavGroup,
+  pathname: string,
+): boolean {
+  if (ALWAYS_OPEN_GROUPS.has(group.id)) return true
+  return group.items.some((i) => isGlobalItemActive(pathname, i))
 }
 
 export function resolveOpen(
