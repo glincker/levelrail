@@ -27,7 +27,7 @@ export function ProxyDetectedFacts({ detected }: { detected: DetectedProxy }) {
   const { t } = useTranslation('domains')
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-foreground">
+      <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
         {t('proxySetup.facts.title')}
       </h3>
       <dl className="divide-y divide-border rounded-md border border-border px-3">

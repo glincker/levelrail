@@ -30,7 +30,7 @@ export function ReservedBreakdown({
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-medium">
+          <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
             {t('fleet.reserved.breakdown')}
           </h3>
           <div
@@ -102,7 +102,7 @@ export function ReservedBreakdown({
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-sm font-medium">
+        <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
           {t('fleet.reserved.topReservers')}
         </h3>
         {top.length === 0 ? (

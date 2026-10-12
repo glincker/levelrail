@@ -30,7 +30,7 @@ function FailureBody({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+          <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             <WarningOctagonIcon
               className="size-4 text-tone-danger"
               aria-hidden="true"

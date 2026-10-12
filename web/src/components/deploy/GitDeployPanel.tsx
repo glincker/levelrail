@@ -168,7 +168,7 @@ export function GitDeployPanel({
       {data ? (
         <>
           <section className="space-y-3 rounded-xl border border-border bg-card p-4">
-            <h3 className="text-sm font-semibold">
+            <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
               {t('git.headTitle', { branch: data.branch })}
             </h3>
             {data.head ? (
@@ -241,7 +241,9 @@ export function GitDeployPanel({
 
           {data.commits.length > 1 ? (
             <section className="space-y-1">
-              <h3 className="text-sm font-medium">{t('git.recent')}</h3>
+              <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+                {t('git.recent')}
+              </h3>
               <ul className="divide-y divide-border">
                 {data.commits.slice(1).map((c) => (
                   <CommitRow

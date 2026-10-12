@@ -61,7 +61,9 @@ export function WarningCard({
           <Icon className="size-5" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium text-foreground">{title}</h3>
+          <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
+            {title}
+          </h3>
           <p className="mt-0.5 break-words text-sm text-muted-foreground">
             {base ? t(`${base}.why`, vars) : first.message}
           </p>

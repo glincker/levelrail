@@ -46,7 +46,7 @@ export function AgentConnectCard({
   return (
     <section className="space-y-4 rounded-lg border border-border p-4">
       <div>
-        <h2 className="flex items-center gap-1 text-sm font-semibold text-foreground">
+        <h2 className="flex items-center gap-1 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
           Connect an AI agent
           <InfoTip label="About connecting an agent">
             Save this as .mcp.json in your project, or run init in the project

@@ -1,3 +1,4 @@
+import { Display } from '@/components/ui/typography'
 import { useTranslation } from 'react-i18next'
 import { TrendDownIcon, TrendUpIcon } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent } from '@/components/ui/card'
@@ -15,11 +16,11 @@ function Stat({
 }) {
   return (
     <Card>
-      <CardContent className="space-y-1 pt-6">
+      <CardContent className="space-y-1">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tabular-nums text-foreground">
+        <Display as="p" size="page" className="tabular-nums">
           {value}
-        </p>
+        </Display>
         {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
       </CardContent>
     </Card>
@@ -67,7 +68,7 @@ export function UsageMovers({ report }: { report: UsageReport }) {
   const money = (v: number) => formatMoney(Math.abs(v), report.currency)
   return (
     <section className="space-y-2">
-      <h2 className="text-sm font-medium text-foreground">
+      <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
         {t('movers.title')}
       </h2>
       {report.movers.length === 0 ? (

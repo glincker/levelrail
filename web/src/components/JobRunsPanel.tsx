@@ -231,7 +231,7 @@ export function JobRunsPanel({ appName }: { appName: string }) {
     <section className="rounded-lg border border-border p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+          <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             <ClockCounterClockwiseIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"

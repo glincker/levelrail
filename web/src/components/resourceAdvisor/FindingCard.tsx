@@ -138,7 +138,9 @@ export function FindingCard({ finding: f }: { finding: AdvisorFinding }) {
     >
       <header className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 space-y-1">
-          <h3 className="text-sm font-medium text-foreground">{title}</h3>
+          <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
+            {title}
+          </h3>
           <p className="text-sm text-muted-foreground">{f.why}</p>
         </div>
         <Badge variant={SEVERITY_BADGE[f.severity]}>

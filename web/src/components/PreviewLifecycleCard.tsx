@@ -297,7 +297,7 @@ function LifecycleForm({
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-medium text-foreground">
+        <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
           {t('lifecycle.exposure.heading')}
         </h3>
         <SwitchRow

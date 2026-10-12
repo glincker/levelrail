@@ -150,7 +150,7 @@ export function ServerCheckStep({ onContinue, pending }: StepProps) {
 
       {shown && readiness.blocking.length > 0 ? (
         <section className="space-y-2">
-          <h3 className="text-sm font-medium text-foreground">
+          <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             {t('warnings.blockingHeading')}
           </h3>
           {blockingGroups.map((g) => (
@@ -161,7 +161,7 @@ export function ServerCheckStep({ onContinue, pending }: StepProps) {
 
       {shown && readiness.warnings.length > 0 ? (
         <section className="space-y-2">
-          <h3 className="text-sm font-medium text-foreground">
+          <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             {t('warnings.heading')}
           </h3>
           {visibleWarnings.map((g) => (

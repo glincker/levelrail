@@ -28,7 +28,7 @@ export function QuickStart() {
   const { t } = useTranslation('dashboard')
   return (
     <section aria-label={t('quickStart.title')} className="space-y-3">
-      <h2 className="text-sm font-semibold text-foreground">
+      <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
         {t('quickStart.title')}
       </h2>
       <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">

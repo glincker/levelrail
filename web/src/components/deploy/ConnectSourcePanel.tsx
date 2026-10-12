@@ -35,7 +35,7 @@ export function ConnectSourcePanel({
     <div className="space-y-5">
       <section className="space-y-3">
         <div>
-          <h3 className="flex items-center gap-2 text-sm font-semibold">
+          <h3 className="flex items-center gap-2 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
             <GitBranchIcon className="size-4" aria-hidden="true" />
             {t('connect.repoTitle')}
           </h3>
@@ -65,7 +65,7 @@ export function ConnectSourcePanel({
         </Button>
       </section>
       <section className="space-y-2 border-t border-border pt-4">
-        <h3 className="flex items-center gap-2 text-sm font-semibold">
+        <h3 className="flex items-center gap-2 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
           <CubeIcon className="size-4" aria-hidden="true" />
           {t('connect.orImage')}
         </h3>

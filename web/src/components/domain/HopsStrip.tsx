@@ -16,7 +16,9 @@ export function HopsStrip({ samples }: { samples: PreviewHops[] }) {
   const { t } = useTranslation('domainPolicies')
   return (
     <section aria-label={t('redirects.howTitle')} className="space-y-2">
-      <h3 className="text-sm font-semibold">{t('redirects.howTitle')}</h3>
+      <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+        {t('redirects.howTitle')}
+      </h3>
       <ul className="space-y-2">
         {samples.map((s) => (
           <li

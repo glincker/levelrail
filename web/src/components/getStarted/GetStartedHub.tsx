@@ -171,7 +171,7 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
 
       {next ? (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-foreground">
+          <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             {t('summary.nextUp')}
           </h2>
           <ul className="space-y-2">{card(next, true)}</ul>

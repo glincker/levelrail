@@ -172,7 +172,7 @@ export function BackupScheduleFormView({
     <div className="space-y-3 rounded-lg border border-border p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+          <h3 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             <ClockIcon className="size-4" aria-hidden="true" />
             Scheduled backups
           </h3>
