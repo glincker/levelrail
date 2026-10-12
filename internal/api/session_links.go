@@ -3,6 +3,7 @@ package api
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -134,8 +135,16 @@ func (rt *Router) sessionLinkURL(r *http.Request, token string) string {
 // the complexity, matching errInvalidOrExpiredResetToken's own reasoning.
 var errInvalidOrExpiredSessionLink = errors.New("invalid or expired session link")
 
-// handleConsumeSessionLink handles GET
-// /api/v1/auth/session-links/{token}/consume: unauthenticated by
+// handleConsumeSessionLinkGET answers the retired GET form, which put the
+// bearer-equivalent token in the URL path.
+func (rt *Router) handleConsumeSessionLinkGET(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Allow", http.MethodPost)
+	writeError(w, http.StatusMethodNotAllowed, "session links are redeemed with POST /api/v1/auth/session-links/consume and the token in the JSON body")
+}
+
+// handleConsumeSessionLink handles POST
+// /api/v1/auth/session-links/consume (token in the JSON body, never a URL
+// path, so it stays out of access logs): unauthenticated by
 // necessity, gated by possession of the token itself, the same shape
 // handleResetPassword uses. A user-minted link establishes an ordinary
 // session for that user; a token-minted link establishes a pinned
@@ -145,11 +154,14 @@ func (rt *Router) handleConsumeSessionLink(w http.ResponseWriter, r *http.Reques
 	if !rt.allowTokenRedeem(w, r, "session-link-consume") {
 		return
 	}
-	token := r.PathValue("token")
-	if token == "" {
+	var body struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&body); err != nil || body.Token == "" {
 		writeError(w, http.StatusBadRequest, errInvalidOrExpiredSessionLink.Error())
 		return
 	}
+	token := body.Token
 
 	rec, err := rt.sessionLinkTokens.GetSessionLinkTokenByHash(r.Context(), hashToken(token))
 	if errors.Is(err, store.ErrSessionLinkTokenNotFound) {

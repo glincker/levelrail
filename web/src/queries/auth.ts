@@ -153,17 +153,19 @@ export async function register(
   return (await res.json()) as AuthUser
 }
 
-// consumeSessionLink calls GET
-// /api/v1/auth/session-links/{token}/consume (internal/api/session_links.go's
+// consumeSessionLink calls POST
+// /api/v1/auth/session-links/consume (internal/api/session_links.go's
 // handleConsumeSessionLink): a single-use, ~2-minute-TTL token minted by
 // POST /api/v1/auth/session-links, exchanged here for a real session the
 // same way login() does, no password involved. Same response shape as
 // login/register, so LoginScreen reuses setStoredUsername/goAfterLogin
 // on success.
 export async function consumeSessionLink(token: string): Promise<AuthUser> {
-  const res = await fetch(
-    `/api/v1/auth/session-links/${encodeURIComponent(token)}/consume`,
-  )
+  const res = await fetch('/api/v1/auth/session-links/consume', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  })
   if (!res.ok) {
     await throwAuthError(res, `session link consume failed: ${res.status}`)
   }

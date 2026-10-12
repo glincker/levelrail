@@ -379,7 +379,7 @@ curl -s -X POST https://your-control-plane/api/v1/auth/session-links \
 { "token": "st_...", "url": "https://your-control-plane/login?session_link=st_..." }
 ```
 
-Open the `url` in a browser. `/login?session_link=<token>` consumes the token on page load (`GET /api/v1/auth/session-links/{token}/consume`, public, gated by possession of the token) and establishes a session, the same way a normal login does.
+Open the `url` in a browser. `/login?session_link=<token>` consumes the token on page load (`POST /api/v1/auth/session-links/consume` with the token in the JSON body, public, gated by possession of the token; the old `GET .../{token}/consume` form answers 405) and establishes a session, the same way a normal login does.
 
 </Tab>
 </Tabs>
@@ -623,7 +623,7 @@ Custom role and environment grant routes are documented in [Access control](/acc
 | Method | Path | Ability |
 | --- | --- | --- |
 | `POST` | `/api/v1/auth/session-links` | `root` |
-| `GET` | `/api/v1/auth/session-links/{token}/consume` | public (token required) |
+| `POST` | `/api/v1/auth/session-links/consume` | public (token required) |
 
 </Accordion>
 <Accordion title="Invites">
