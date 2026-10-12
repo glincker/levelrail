@@ -3,8 +3,6 @@ title: Self-host Postgres with verified backups
 description: "Run managed Postgres on your own server and back it up to S3-compatible storage on a schedule, with a restore you have actually tested."
 ---
 
-# Self-host Postgres with verified backups
-
 A backup you have never restored is a hope. This guide creates a Postgres database on your own server, schedules backups to an S3-compatible bucket, and rehearses a restore without touching live data. It assumes a running instance and a configured `levelrail-cli`; see [getting started](/getting-started).
 
 ## 1. Create the database

@@ -50,4 +50,4 @@ levelrail-cli templates deploy node-postgres-starter --name my-app
 
 ## Caveats
 
-Each template's Compose body is checked structurally in the test suite (parse, validation, expansion into services, dependency cycles, healthcheck presence). They are reference wiring, not production-ready apps: the `web`, `api` and `worker` services run a minimal server built from their base image's own runtime (Node's `http` module, Python's `http.server`) so that nothing needs installing at start. Replace them with your own image.
+Each template's Compose body is checked structurally in the test suite (parse, validation, expansion into services, dependency cycles, health check presence). Templates are reference wiring, not production-ready apps: the `web`, `api` and `worker` services run a minimal server built from their base image's own runtime (Node's `http` module, Python's `http.server`) so that nothing needs installing at start. Replace them with your own image.

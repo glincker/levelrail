@@ -1,9 +1,10 @@
 ---
 title: "MCP tools, token budget and write mode"
-description: "The levelrail-mcp tool list, its token budget, the read-only diagnostic tools and the confirm-gated write tools behind --allow-write."
+tag: "Beta"
+description: The levelrail-mcp tool listing, its token budget, the read-only diagnostic tools, the confirm-gated write tools behind --allow-write, and the prompt injection threat model.
 ---
 
-`levelrail-mcp` is a read-and-suggest layer over the HTTP API. It never sits in the reconcile path. Reads are always available; mutations are explicit, confirmable and ability-gated. For transports and token scoping see [AI assistant integration](/ai-assistant). Per-toolset counts are in [MCP tool surface](/mcp-tool-surface).
+`levelrail-mcp` is a read-and-suggest layer over the HTTP API. It never sits in the reconcile path. Reads are always available. Mutations are explicit, confirmable and gated by ability. For transports and token scoping see [AI assistant integration](/ai-assistant). Per-toolset counts are in [MCP tool surface](/mcp-tool-surface).
 
 ## Flags and environment
 
@@ -50,7 +51,7 @@ All are `read` class and available in every mode. Tools marked untrusted return 
 | `list_teams` | Teams the token can see, honouring the configured scope. | no |
 | `list_team_members` | Members and roles of one team. | no |
 
-Preview environments are listed by the existing `list_preview_environments`.
+[Preview environments](/previews) are listed by the existing `list_preview_environments`.
 
 ## Write tools (`--allow-write`)
 

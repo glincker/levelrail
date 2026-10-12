@@ -3,10 +3,11 @@ title: "Environment variables"
 description: Reference for operator-facing APP_ environment variables not covered on feature pages, with defaults, units, and which component reads each one.
 ---
 
-This page lists the operator-facing `APP_*` environment variables that are not already explained on a feature page. Each row was checked against the code that reads it, and each default is the fallback in that code. Variables that a feature page already documents (for example the `APP_INGRESS_*` hardening limits in [Domains and ingress](/domains-and-ingress#edge-limits-client-ips-and-failover) or the `APP_PIPELINE_*` settings in [Pipelines](/pipelines)) stay on those pages. Branding variables (`APP_BRAND_*`) are covered in [White-labeling](/white-labeling).
+This page lists the `APP_*` environment variables you may want to set that no feature page already explains. Each row was checked against the code that reads it, and each default is the fallback in that code. Variables a feature page documents (for example the `APP_INGRESS_*` hardening limits in [Domains and ingress](/domains-and-ingress#edge-limits-client-ips-and-failover) or the `APP_PIPELINE_*` settings in [Pipelines](/pipelines)) stay on those pages. Branding variables (`APP_BRAND_*`) are in [White-labeling](/white-labeling).
+
 ## How to set these
 
-Every variable on this page is read by a process at startup, so a change takes effect after a restart.
+Each process reads these variables once at startup, so a change only takes effect after a restart.
 
 - **Installed with `install.sh`:** the control plane runs as the `levelrail` systemd service. The unit file sets only `APP_DATA_DIR`, `APP_HTTP_ADDR`, `APP_INGRESS_HTTP_ADDR` and `APP_INGRESS_HTTPS_ADDR` itself, with plain `Environment=` lines and no `EnvironmentFile=`. Add your own with a drop-in, which survives upgrades:
 
@@ -35,7 +36,7 @@ Duration values use Go duration syntax such as `30s`, `5m`, `1h30m`. Most variab
 
 ## Builds and build cache
 
-The control plane builds images with BuildKit. By default each build starts from whatever cache BuildKit already holds. These variables add a shared cache. See [Build node routing](/build-node-routing) for dedicated build nodes.
+The control plane builds images with BuildKit. By default each build starts from whatever cache BuildKit already holds. These variables add a shared cache on top of that. See [Build node routing](/build-node-routing) for dedicated build nodes.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -45,7 +46,7 @@ The control plane builds images with BuildKit. By default each build starts from
 
 ## Git webhook (single repository mode)
 
-These variables turn on the control plane's own `POST /webhook` receiver for one repository. They are separate from the per-app webhooks and GitHub App flow in [Git integrations](/git-integrations). The three required variables must all be set. If any is missing, the control plane still starts and logs a `webhook not configured` warning, and only this receiver is unavailable.
+These variables turn on the control plane's own `POST /webhook` receiver for a single repository. They are separate from the per-app webhooks and GitHub App flow in [Git integrations](/git-integrations). The three required variables must all be set. If any is missing, the control plane still starts and logs a `webhook not configured` warning, and only this receiver is unavailable.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -76,7 +77,7 @@ The pipeline engine's own tuning variables are listed in [Pipelines](/pipelines)
 
 ## Scheduling and background intervals
 
-Each of these is how often a background loop wakes to check for work. Standard five-field cron has one-minute granularity, so the one-minute defaults are the shortest useful value for the two cron-driven schedulers.
+Each of these sets how often a background loop wakes to check for work. Five-field cron only goes down to one minute, so the one-minute defaults are as short as the two cron-driven schedulers can usefully go.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |

@@ -3,7 +3,7 @@ title: "Sign-in engine"
 description: How sign-in, API tokens, two-factor, passkeys and OAuth are served, and the settings that tune them.
 ---
 
-Sign-in, sessions, API tokens, device login, two-factor codes, passkeys and OAuth sign-in all run on one auth library embedded in the control plane. There is nothing to enable or migrate on a new install. The first account is created from the setup token, and it lands directly in the library.
+Sign-in, sessions, API tokens, device login, two-factor codes, passkeys and OAuth all run on one auth library built into the control plane. On a new install there is nothing to enable or migrate. The first account is created from the setup token and goes straight into the library.
 
 Check what is available with `levelrail-cli auth-engine status` (root only) or on Settings > Security. It reports the library version and whether two-factor, passkeys and OAuth are available.
 
@@ -50,7 +50,7 @@ All optional.
 
 ## Upgrading from a release before the auth library
 
-The auth library replaced the built-in sign-in in a release that is a breaking change for existing installs, because the platform had no production users when it landed. After upgrading from `v0.2.0-beta.18` or earlier:
+The auth library replaced the old built-in sign-in, and that change breaks existing installs (the platform had no production users when it landed). After upgrading from `v0.2.0-beta.18` or earlier:
 
 - Everyone is signed out. Sign in again with your existing username and password: accounts and password hashes carry over.
 - API tokens created before the upgrade stop working (they answer 401). Create new ones in **Settings, CLI Access**, or run `levelrail-cli auth login --device`, and update CI secrets.

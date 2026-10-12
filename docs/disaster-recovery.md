@@ -181,7 +181,6 @@ The command checks, in order: the manifest, the ciphertext SHA-256 and size agai
 Every step above, and the failure cases (an interrupted restore, a tampered backup, a wrong key, a newer schema, a mismatched install), is exercised by a test that runs in CI against an in-memory S3 server and generated keys.
 
 <Accordion title="For contributors: which test covers which step">
-
 | Step | Command | Covered by |
 | --- | --- | --- |
 | Make a key pair | `control-plane-backups keys generate` | `TestCLI_ControlPlaneDR_KeysGenerateAndEscrowRoundTrip` |
@@ -194,7 +193,6 @@ Every step above, and the failure cases (an interrupted restore, a tampered back
 | Crash safety | interrupted restore | `TestRestore_CrashBetweenTempWriteAndRenameKeepsOldDatabase` |
 | Tampering and wrong key | bit flip, other identity | `TestRestore_TamperAndWrongIdentity`, `TestRestore_TamperWithMatchingManifestStillFailsDecrypt` |
 | Newer schema, other install | refusal | `TestRestore_NewerSchemaRefused`, `TestRestore_InstallIDGuard` |
-
 </Accordion>
 
 ## Runbook: the control plane machine is gone
@@ -273,7 +271,7 @@ Things this runbook cannot do, because they are not in the backup:
   from those backups (`backups restore-as-new`) after the control plane is up.
 - Without the escrow bundle or `APP_MASTER_KEY`, no stored secret can be read.
 - Without the agent CA files the restored control plane makes a new CA and every
-  node agent must be re-enrolled with a new join token.
+  node agent must be re-enrolled with a new [join token](/multi-node).
 
 ### Local snapshots
 

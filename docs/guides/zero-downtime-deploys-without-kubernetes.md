@@ -3,8 +3,6 @@ title: Zero-downtime deploys without Kubernetes
 description: "Ship containers to your own servers with no downtime and a fast rollback, using readiness probes, pinned images and freeze windows."
 ---
 
-# Zero-downtime deploys without Kubernetes
-
 You do not need a cluster scheduler to deploy without dropping requests. You need three things: a check that the new version is ready before it gets traffic, the old version still available if it is not, and a way to know the running content is the content you shipped. This guide shows how Levelrail does each on plain Docker.
 
 ## 1. Gate traffic on readiness

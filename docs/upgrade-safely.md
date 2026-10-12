@@ -1,14 +1,14 @@
 ---
 title: "Upgrade safely"
-description: "A runbook for upgrading the control plane: pre-checks and their fixes, upgrade now, scheduled upgrades and automatic rollback."
+description: "Upgrade the control plane safely with pre-flight checks and automatic rollback."
 ---
 
 This is the runbook for moving a running server to a newer release. The self-update verifies the release, snapshots your data, tries the migrations on a copy, and puts the old binary and data back by itself when the new release does not become healthy.
 
 ## Before you start
 
-1. Open Settings > Updates, or run `levelrail-cli upgrade --plan`. Read the **breaking changes** between your version and the target. Ones that need acknowledgement block the upgrade until you tick them (dashboard) or pass their ids with `--ack-breaking`.
-2. Check the preflight card or `levelrail-cli upgrade`: release signature published, Docker Engine not on the known-bad list, free disk (`APP_UPGRADE_MIN_FREE_BYTES`, 2 GiB default), a recent control plane backup.
+1. Open Settings > Updates, or run `levelrail-cli upgrade --plan`. Read the breaking changes between your version and the target. Ones that need acknowledgement block the upgrade until you tick them (dashboard) or pass their ids with `--ack-breaking`.
+2. Check the preflight card or `levelrail-cli upgrade`: release signature published, Docker Engine not on the known-bad list, free disk (`APP_UPGRADE_MIN_FREE_BYTES`, 2 GiB default), a recent [control plane backup](/control-plane-backup).
 3. Make sure the master key is backed up somewhere safe. A snapshot never contains it.
 
 ## Fix a blocked check
@@ -18,7 +18,7 @@ Every check that blocks an upgrade says what it protects and carries its own fix
 | Check | What it protects | Fix |
 | --- | --- | --- |
 | Recent control plane backup | A restore point for a failed migration. Blocks when the newest backup is older than `APP_UPGRADE_MAX_BACKUP_AGE` (26h default, shown in the message) or none exists. | **Back up now** takes a control plane backup, waits, and re-evaluates the check. CLI: `levelrail-cli upgrade backup-now`. |
-| Release checksums and signature | That the binary is the one the project published. | A release younger than `APP_UPGRADE_RELEASE_SETTLE` (1h default) that is missing `checksums.txt` or its signature is **still being published**: it shows as Waiting, not as a failure, and **Re-check** clears it once the assets land. An older release missing them is a hard block until a fixed release ships. |
+| Release checksums and signature | That the binary is the one the project published. | A release younger than `APP_UPGRADE_RELEASE_SETTLE` (1h default) that is missing `checksums.txt` or its signature is still being published: it shows as Waiting, not as a failure, and **Re-check** clears it once the assets land. An older release missing them is a hard block until a fixed release ships. |
 | Docker Engine version | Not restarting your apps on an engine release with a known bug. | Update Docker on the host, then **Re-check**. |
 | Free disk space | Room for the new binary and a snapshot. | Free space, then **Re-check**. |
 | Signature verification tool | Verifying the signature as well as the checksum. | Optional: install `cosign` with the command shown. |
@@ -61,7 +61,7 @@ What the scheduler does at the scheduled time, from persisted state, so a contro
 
 1. Checks again that the target is still a release on the configured channel and that no new breaking change appeared since you scheduled it.
 2. Re-runs the preflight. If only the backup blocks, it takes one and re-checks.
-3. If any check still fails it **does not apply**. It records why, raises an attention item and an alert on your notification channels, and retries every `APP_UPGRADE_RETRY_INTERVAL` (2m) until the grace period (`APP_UPGRADE_SCHEDULE_GRACE`, 2h; for a window, the window's end). After that the schedule is marked missed and you are alerted once.
+3. If any check still fails it does not apply. It records why, raises an attention item and an alert on your notification channels, and retries every `APP_UPGRADE_RETRY_INTERVAL` (2m) until the grace period (`APP_UPGRADE_SCHEDULE_GRACE`, 2h; for a window, the window's end). After that the schedule is marked missed and you are alerted once.
 4. If they pass it takes a fresh backup, marks the schedule running, and starts the same engine as Upgrade now. The attempt is recorded with initiator `schedule:<id>`; the schedule becomes applied, or failed when the engine rolled back.
 
 The schedule is marked running before the engine starts, so a crash in between is reported as "did not start" and is never applied twice. A cancel racing a fire resolves to exactly one winner.
@@ -84,7 +84,7 @@ levelrail-cli upgrade auto set --pause        # keep the policy, apply nothing
 | `patch` | A newer release of the running minor version (v0.5.0 to v0.5.2). |
 | `any` | Any newer release on the configured channel, except a major version jump. |
 
-Only releases that need nobody to read them are applied. A release is held, and the reason is shown on the page and sent to your channels, when it has a breaking change that needs acknowledgement, when its notes cannot be fetched, when it is a new major version, or when it is younger than the minimum release age. A release whose automatic attempt failed is not retried automatically. Each qualifying release becomes a normal schedule in the next window, so it goes through the same fire-time checks, backup and rollback as everything above, and pausing or switching off cancels a pending automatic schedule.
+Automatic upgrades apply only releases that need no human to read the notes first. A release is held, and the reason is shown on the page and sent to your channels, when it has a breaking change that needs acknowledgement, when its notes cannot be fetched, when it is a new major version, or when it is younger than the minimum release age. A release whose automatic attempt failed is not retried automatically. Each qualifying release becomes a normal schedule in the next window, so it goes through the same fire-time checks, backup and rollback as everything above, and pausing or switching off cancels a pending automatic schedule.
 
 ## Threat model
 
@@ -130,11 +130,11 @@ If the rollback itself fails, the attempt is `failed` and the message names the 
 | Revoked or expired API tokens | Stay unusable, never revived |
 | Browser sessions | Ended: sign in again |
 
-**API tokens from before the built-in auth library** (releases up to 0.2.0-beta.18) are imported on the first start of the new release, keeping their stored hash, so nothing has to be re-issued. Any token the start-up import missed is imported the first time it is used. Abilities are copied one to one and never widened; a token whose owner no longer holds an ability loses it, as for any token. Tokens that are revoked, expired, belong to a deleted user or carry an unknown ability are skipped. Each import writes an audit log entry (`api_token.legacy_migrated`) that names the token id, never the secret.
+API tokens from before the built-in auth library (releases up to 0.2.0-beta.18) are imported on the first start of the new release, keeping their stored hash, so nothing has to be re-issued. Any token the start-up import missed is imported the first time it is used. Abilities are copied one to one and never widened; a token whose owner no longer holds an ability loses it, as for any token. Tokens that are revoked, expired, belong to a deleted user or carry an unknown ability are skipped. Each import writes an audit log entry (`api_token.legacy_migrated`) that names the token id, never the secret.
 
 The journal shows `legacy tokens migrated migrated=N skipped=M` after the first start, and `levelrail-cli doctor` (or Settings > System status) has a **Pre-upgrade API tokens** check with the same counts. It warns if any owned token is still waiting to be imported.
 
-**Browser sessions** before 0.2.0-beta.19 lived only in the control plane's memory, so there is nothing to carry over (a restart of those releases signed everyone out too). After the upgrade, an open dashboard goes to the sign-in page with a note that the session ended. Sign in again; your password, passkeys and second factors still work.
+Browser sessions before 0.2.0-beta.19 lived only in the control plane's memory, so there is nothing to carry over (a restart of those releases signed everyone out too). After the upgrade, an open dashboard goes to the sign-in page with a note that the session ended. Sign in again; your password, passkeys and second factors still work.
 
 ## The upgrade was interrupted
 
@@ -180,22 +180,31 @@ Edge is not a GitHub release. It has no binaries, no `checksums.txt` and no sign
 
 What edge means for your install:
 
-- **Control plane runs as a container.** The preflight card shows the exact image (`ghcr.io/<owner>/<name>:edge`) with the `docker pull` command and the compose pull and recreate command. `levelrail-cli upgrade` prints the same.
-- **Control plane runs as a host binary under systemd.** Edge is not installable that way. The card offers one-click buttons to move the channel to Beta or Stable (`levelrail-cli settings updates set --channel beta` does the same).
+- If the control plane runs as a container, the preflight card shows the exact image (`ghcr.io/<owner>/<name>:edge`) with the `docker pull` command and the compose pull and recreate command. `levelrail-cli upgrade` prints the same.
+- If it runs as a host binary under systemd, edge is not installable that way. The card offers one-click buttons to move the channel to Beta or Stable (`levelrail-cli settings updates set --channel beta` does the same).
 
 Self-upgrade (`--apply`, and the dashboard Upgrade button) only ever applies a release tag, so it refuses a `main-<sha>` target. The same holds for the rest of this page on the edge channel:
 
-- **Upgrade now and Schedule upgrade are hidden.** The Version card shows the pull guidance instead. A schedule request for an edge target is refused with a 409 that says edge builds are container images.
-- **Automatic upgrades cannot be turned on.** The policy is refused while the channel is edge, and a policy that was already on records "held: edge builds are container images" instead of scheduling anything.
-- **A schedule created earlier is re-checked at fire time.** If its target turns out to be an edge image it is marked failed and nothing is applied.
-- **Waiting is not skipping.** A stable or beta release that is still being published shows as Waiting with a Re-check button. Only edge reports checks as Not applicable.
+- Upgrade now and Schedule upgrade are hidden. The Version card shows the pull guidance instead. A schedule request for an edge target is refused with a 409 that says edge builds are container images.
+- Automatic upgrades cannot be turned on. The policy is refused while the channel is edge, and a policy that was already on records "held: edge builds are container images" instead of scheduling anything.
+- A schedule created earlier is re-checked at fire time. If its target turns out to be an edge image it is marked failed and nothing is applied.
+- A stable or beta release that is still being published shows as Waiting with a Re-check button. Only edge reports checks as Not applicable.
 
 ## Mirrors and air-gapped hosts
 
 `LEVELRAIL_RELEASE_BASE_URL` points the download at an https mirror laid out like GitHub release downloads (`<base>/<tag>/<asset>`). `LEVELRAIL_INSECURE_MIRROR=1` allows plain http for a local test mirror. Use `--skip-notes-check` when GitHub's API is unreachable.
 
-## See also
+## Next steps
 
-- [Installing](/installing) for first install, `install.sh --check` and the installer's own `upgrade`
-- [Upgrade history](/upgrade-history) for the record of every version that ran
-- [Disaster recovery](/disaster-recovery) for restoring from backups
+<CardGroup cols={2}>
+<Card title="Installing" href="/installing">
+
+First install and the installer's own upgrade.
+
+</Card>
+<Card title="Disaster recovery" href="/disaster-recovery">
+
+Restore from backups after a failed upgrade.
+
+</Card>
+</CardGroup>

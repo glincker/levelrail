@@ -11,17 +11,18 @@
   "background": {
     "color": {
       "light": "#ffffff",
-      "dark": "#04141a"
+      "dark": "#050709"
     }
   },
   "favicon": "/public/favicon.svg",
   "logo": {
-    "light": "/assets/brand/png/wordmark-for-light.png",
-    "dark": "/assets/brand/png/wordmark-for-dark.png",
+    "light": "/assets/brand/wordmark-light.svg",
+    "dark": "/assets/brand/wordmark-dark.svg",
     "href": "https://levelrail.com"
   },
   "appearance": {
-    "default": "system"
+    "default": "dark",
+    "strict": false
   },
   "styling": {
     "codeblocks": "dark"
@@ -39,7 +40,18 @@
   "navbar": {
     "links": [
       {
+        "label": "Website",
+        "icon": "globe",
+        "href": "https://levelrail.com"
+      },
+      {
+        "label": "Changelog",
+        "icon": "clock-rotate-left",
+        "href": "/changelog"
+      },
+      {
         "label": "GitHub",
+        "icon": "github",
         "href": "https://github.com/glincker/levelrail"
       }
     ],
@@ -52,7 +64,8 @@
   "footer": {
     "socials": {
       "github": "https://github.com/glincker/levelrail",
-      "x": "https://x.com/thegdsks"
+      "x": "https://x.com/thegdsks",
+      "website": "https://levelrail.com"
     }
   },
   "navigation": {
@@ -61,25 +74,30 @@
         "tab": "Get started",
         "groups": [
           {
-            "group": "Start here",
+            "group": "Install and deploy",
             "pages": [
               "index",
-              "getting-started",
-              "installing"
-            ]
+              "what-you-need",
+              "installing",
+              "getting-started"
+            ],
+            "icon": "/assets/icons/download-simple.svg"
           },
           {
-            "group": "Tutorials",
+            "group": "Add to your setup",
             "pages": [
-              "tutorials/index",
-              "tutorials/deploy-a-docker-app",
-              "tutorials/zero-downtime-deploys-with-health-checks",
-              "tutorials/deploy-from-github-actions",
+              "domains-and-ingress",
               "tutorials/connect-an-app-to-postgres",
+              "tutorials/deploy-from-github-actions",
+              "environment-and-secrets",
               "tutorials/back-up-postgres-to-s3",
+              "tutorials/zero-downtime-deploys-with-health-checks",
+              "tutorials/debug-an-app-with-logs-and-metrics",
+              "multi-node-quickstart",
               "tutorials/self-host-vaultwarden",
-              "tutorials/debug-an-app-with-logs-and-metrics"
-            ]
+              "troubleshooting"
+            ],
+            "icon": "/assets/icons/plus-circle.svg"
           },
           {
             "group": "Guides",
@@ -88,16 +106,19 @@
               "guides/coolify-vs-levelrail",
               "guides/self-host-postgres-with-backups",
               "guides/zero-downtime-deploys-without-kubernetes"
-            ]
+            ],
+            "icon": "/assets/icons/compass.svg"
           },
           {
             "group": "Announcements",
+            "icon": "/assets/icons/list-bullets.svg",
             "pages": [
               "announcements/index",
               "announcements/self-host-template-gallery-and-guides"
             ]
           }
-        ]
+        ],
+        "icon": "/assets/icons/rocket-launch.svg"
       },
       {
         "tab": "How-to guides",
@@ -136,7 +157,8 @@
               "docker",
               "zero-downtime-deploys",
               "preview-environments"
-            ]
+            ],
+            "icon": "/assets/icons/cloud-arrow-up.svg"
           },
           {
             "group": "Networking and multi-node",
@@ -145,7 +167,6 @@
               "standalone-domains",
               "dns",
               "domain-traffic-controls",
-              "load-balancing",
               "acme-verification-runbook",
               "multi-node",
               "multi-node-quickstart",
@@ -154,7 +175,8 @@
               "network-topology",
               "service-topology-graph",
               "build-node-routing"
-            ]
+            ],
+            "icon": "/assets/icons/globe-hemisphere-west.svg"
           },
           {
             "group": "Databases and storage",
@@ -167,7 +189,6 @@
               "prove-your-backups-work",
               "object-storage",
               "network-shares",
-              "log-archive",
               "log-explorer",
               "data-export",
               "control-plane-backup",
@@ -176,7 +197,8 @@
               "database-access",
               "database-explorer",
               "database-viewer"
-            ]
+            ],
+            "icon": "/assets/icons/database.svg"
           },
           {
             "group": "CI/CD and automation",
@@ -184,14 +206,13 @@
               "github-actions",
               "pipelines",
               "pipelines-oidc",
-              "platform-as-code",
               "git-integrations"
-            ]
+            ],
+            "icon": "/assets/icons/git-branch.svg"
           },
           {
             "group": "Security and access",
             "pages": [
-              "feature-flags",
               "auth-engine",
               "host-firewall",
               "exposure-audit",
@@ -203,7 +224,8 @@
               "environments",
               "identity-and-access",
               "projects-and-organizations"
-            ]
+            ],
+            "icon": "/assets/icons/shield-check.svg"
           },
           {
             "group": "Scale and operations",
@@ -213,7 +235,6 @@
               "command-palette",
               "cost-estimate",
               "usage-and-cost",
-              "resource-advisor",
               "integrations",
               "cloud-integrations",
               "rollback",
@@ -222,19 +243,16 @@
               "observability",
               "status-page",
               "whats-new-panel"
-            ]
+            ],
+            "icon": "/assets/icons/chart-line-up.svg"
           },
           {
             "group": "AI and agents",
             "pages": [
-              "ai-models",
               "agents",
-              "ai-assistant",
-              "mcp",
-              "mcp-recipes",
-              "ai-assistant-chat",
               "ai-control"
-            ]
+            ],
+            "icon": "/assets/icons/sparkle.svg"
           },
           {
             "group": "Templates and catalog",
@@ -242,7 +260,8 @@
               "templates-and-registry",
               "template-catalog",
               "templates"
-            ]
+            ],
+            "icon": "/assets/icons/squares-four.svg"
           },
           {
             "group": "Migrating from other platforms",
@@ -250,9 +269,27 @@
               "migrating-from-coolify-dokploy-and-caprover",
               "migrating-from-vercel",
               "migrating-from-cloud-run"
-            ]
+            ],
+            "icon": "/assets/icons/arrows-left-right.svg"
+          },
+          {
+            "group": "Beta and experimental",
+            "pages": [
+              "ai-assistant",
+              "mcp",
+              "mcp-recipes",
+              "ai-assistant-chat",
+              "ai-models",
+              "load-balancing",
+              "platform-as-code",
+              "resource-advisor",
+              "feature-flags",
+              "log-archive"
+            ],
+            "icon": "/assets/icons/flask.svg"
           }
-        ]
+        ],
+        "icon": "/assets/icons/book-open.svg"
       },
       {
         "tab": "Reference",
@@ -272,9 +309,11 @@
               "mcp-tool-surface",
               "agent-tooling-audit",
               "kit"
-            ]
+            ],
+            "icon": "/assets/icons/code.svg"
           }
-        ]
+        ],
+        "icon": "/assets/icons/code.svg"
       },
       {
         "tab": "Concepts",
@@ -282,22 +321,24 @@
           {
             "group": "Explanation",
             "pages": [
+              "product-tour",
               "architecture",
               "security",
               "threat-model",
-              "security-advisories",
               "docker-access",
               "security-alert-verdicts",
               "comparison",
               "use-cases",
               "white-labeling",
-              "brand",
               "glinr-bot",
-              "behind-an-existing-proxy"
-            ]
+              "behind-an-existing-proxy",
+              "security-advisories"
+            ],
+            "icon": "/assets/icons/lightbulb.svg"
           },
           {
             "group": "Compare and choose",
+            "icon": "/assets/icons/scales.svg",
             "pages": [
               "self-hosted-paas",
               "coolify-alternative",
@@ -319,10 +360,12 @@
               "iam-design"
             ]
           }
-        ]
+        ],
+        "icon": "/assets/icons/lightbulb.svg"
       },
       {
         "tab": "Self-host gallery",
+        "icon": "/assets/icons/squares-four.svg",
         "groups": [
           {
             "group": "Gallery",
@@ -748,34 +791,41 @@
         ]
       },
       {
-        "tab": "Project",
+        "tab": "Appendix",
         "groups": [
           {
-            "group": "Status",
+            "group": "Status and roadmap",
             "pages": [
               "roadmap",
               "feature-status",
               "experimental-features",
               "performance",
+              "changelog",
+              "upgrade-history"
+            ],
+            "icon": "/assets/icons/chart-line-up.svg"
+          },
+          {
+            "group": "Engineering notes",
+            "pages": [
               "ci",
               "vps-smoke",
               "i18n",
               "design-tokens",
-              "changelog",
-              "upgrade-history"
-            ]
+              "brand"
+            ],
+            "icon": "/assets/icons/gear-six.svg"
           },
           {
-            "group": "Legal",
+            "group": "Browse",
             "pages": [
-              "terms",
-              "privacy-policy",
-              "cookies",
-              "license-and-notices"
-            ]
+              "all-pages"
+            ],
+            "icon": "/assets/icons/list-bullets.svg"
           },
           {
             "group": "About",
+            "icon": "/assets/icons/books.svg",
             "pages": [
               "about",
               "pricing",
@@ -786,15 +836,97 @@
               "contact",
               "privacy"
             ]
+          },
+          {
+            "group": "Legal",
+            "pages": [
+              "terms",
+              "privacy-policy",
+              "cookies",
+              "license-and-notices"
+            ],
+            "icon": "/assets/icons/scales.svg"
           }
-        ]
+        ],
+        "icon": "/assets/icons/books.svg"
       }
     ]
   },
+  "fonts": {
+    "heading": {
+      "family": "Geist",
+      "weight": 500
+    },
+    "body": {
+      "family": "Geist"
+    }
+  },
+  "interaction": {
+    "drilldown": true
+  },
+  "metadata": {
+    "timestamp": true
+  },
+  "seo": {
+    "metatags": {
+      "og:site_name": "Levelrail Docs",
+      "og:type": "website",
+      "og:image": "https://docs.levelrail.com/assets/og-docs.png",
+      "og:image:width": "1200",
+      "og:image:height": "630",
+      "twitter:card": "summary_large_image",
+      "twitter:image": "https://docs.levelrail.com/assets/og-docs.png",
+      "twitter:site": "@thegdsks",
+      "keywords": "self-hosted PaaS, Coolify alternative, Docker deployment platform, self-hosted deploys, Levelrail"
+    },
+    "canonical": "https://docs.levelrail.com",
+    "indexing": "navigable"
+  },
+  "search": {
+    "prompt": "Search docs, CLI, API, guides"
+  },
+  "errors": {
+    "404": {
+      "redirect": false,
+      "title": "Page not found",
+      "description": "This page moved or never existed. Try the [quickstart](/getting-started), the [all pages index](/all-pages) or search above."
+    }
+  },
   "redirects": [
     {
-      "source": "/contribute",
-      "destination": "/get-involved"
+      "source": "/license",
+      "destination": "/license-and-notices",
+      "permanent": true
+    },
+    {
+      "source": "/README",
+      "destination": "/all-pages",
+      "permanent": true
+    },
+    {
+      "source": "/changelog/:slug",
+      "destination": "/changelog",
+      "permanent": true
+    },
+    {
+      "source": "/tutorials",
+      "destination": "/getting-started",
+      "permanent": false
+    },
+    {
+      "source": "/guides",
+      "destination": "/guides/index",
+      "permanent": false
+    },
+    {
+      "source": "/announcements",
+      "destination": "/announcements/index",
+      "permanent": false
+    },
+    {
+      "source": "/self-host",
+      "destination": "/self-host/index",
+      "permanent": false
     }
   ]
 }

@@ -1,9 +1,9 @@
 ---
 title: "Attention center"
-description: "See everything that waits on an operator in one dashboard list: CLI login approvals, expired logins, deploy approvals and expiring tokens."
+description: How the dashboard surfaces things that wait on an operator, including CLI login approvals, expired logins, deploy approvals, expiring tokens, failed data copies, overdue backups and stalled certificate renewals.
 ---
 
-Some states block on a person and used to be visible only if you went looking. The attention center puts them in one place: the banner and bell in the dashboard header, the Status page, `levelrail-cli attention`, and the MCP `get_attention` tool.
+Some states block on a person and used to be visible only if you went looking. The attention center puts them in one place: the banner and bell in the dashboard header, the [Status page](/status-page), `levelrail-cli attention`, and the MCP `get_attention` tool.
 
 ## What shows up
 
@@ -107,7 +107,7 @@ You can also toggle both when editing a channel in the dashboard. A notice conta
 
 Every item has one of two classes, decided on the server. An incident is broken or about to break and needs action: failed deploys, crashloops, a real certificate that expired or whose renewal stalled, disk pressure, overdue backups, offline nodes, active sign-in threats. Only incidents appear in the dashboard's Needs attention list and in the header count.
 
-A recommendation is setup or hardening advice: control plane disaster recovery is off, the Docker API guard could move from audit to enforce, a new release is available, an agent is out of date, a database release is past end of life. These wait in the notification centre under Pending setup and hardening, where each can be snoozed for a day or dismissed. The dashboard shows them as a single line with a count.
+A recommendation is setup or hardening advice: control plane [disaster recovery](/disaster-recovery) is off, the Docker [API guard](/docker-access) could move from audit to enforce, a new release is available, an agent is out of date, a database release is past end of life. These wait in the notification centre under Pending setup and hardening, where each can be snoozed for a day or dismissed. The dashboard shows them as a single line with a count.
 
 Certificate expiry only becomes an incident for a certificate that is routed to an app or site, is not issued by the internal CA, and whose TLS is not terminated by a proxy. An auto-renewing ACME certificate counts only once it expired or its renewal stalled; an uploaded certificate counts from the start of the warning window.
 

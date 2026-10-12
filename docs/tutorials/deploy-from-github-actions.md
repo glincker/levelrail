@@ -1,7 +1,11 @@
 ---
 title: "Deploy to your own server from GitHub Actions"
+icon: "/assets/icons/git-branch.svg"
+sidebarTitle: "Deploy on every git push"
 description: Build an image in GitHub Actions and deploy it to your own server with Levelrail on every push, failing the pipeline if the rollout fails. About 15 minutes.
 ---
+
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/github.svg" alt="GitHub" title="GitHub" width="24" height="24" /></span></div>
 
 By the end of this tutorial every push to `main` builds your image, deploys it to your own server, and turns the workflow red if the rollout fails. Levelrail's deploy action does the last step; you keep your existing build step.
 
@@ -20,7 +24,7 @@ CI should not hold your admin credentials. Mint a token that can read and deploy
 levelrail-cli tokens create --name github-actions --preset deployer --expires-in-days 90
 ```
 
-The command asks for your admin username and password, because a token can only be created from a live session. The token prints once and cannot be shown again. `deployer` means the `read` and `deploy` abilities. See [Identity and access](../identity-and-access.md) for the full list.
+The command asks for your admin username and password, because a token can only be created from a live session. The token prints once and cannot be shown again. `deployer` means the `read` and `deploy` abilities. See [Identity and access](/identity-and-access) for the full list.
 
 </Step>
 <Step title="Store the URL and token as secrets">
@@ -35,7 +39,7 @@ The second command prompts for the value, so the token never lands in your shell
 </Step>
 <Step title="Let the server pull your image">
 
-If the image is public, skip this. For a private `ghcr.io` package, give Levelrail pull credentials once. See [Registry credentials](../backups-and-storage.md#registry-credentials), and test them with `levelrail-cli registry-credentials test <id>` before the first deploy.
+If the image is public, skip this. For a private `ghcr.io` package, give Levelrail pull credentials once. See [Registry credentials](/backups-and-storage#registry-credentials), and test them with `levelrail-cli registry-credentials test <id>` before the first deploy.
 
 </Step>
 <Step title="Add the workflow">
@@ -111,10 +115,10 @@ The action's `status` output is `succeeded`, `failed`, or `skipped`.
 
 ## Not on GitHub?
 
-The action is a thin wrapper over two commands, so any CI works. Install the CLI with the [install script](../installing.md#installing-just-the-cli), export `APP_API_URL` and `APP_API_TOKEN`, then run `levelrail-cli apps deploy my-app --image "$IMAGE"` and `levelrail-cli apps wait my-app`. Both exit non-zero on failure.
+The action is a thin wrapper over two commands, so any CI works. Install the CLI with the [install script](/installing#installing-just-the-cli), export `APP_API_URL` and `APP_API_TOKEN`, then run `levelrail-cli apps deploy my-app --image "$IMAGE"` and `levelrail-cli apps wait my-app`. Both exit non-zero on failure.
 
 ## Where to go next
 
-- [Deploying from GitHub Actions](../github-actions.md): the full action reference.
+- [Deploying from GitHub Actions](/github-actions): the full action reference.
 - [Zero-downtime deploys with health checks](/tutorials/zero-downtime-deploys-with-health-checks): make a bad release fail the job before it replaces a good one.
-- [Pipelines](../pipelines.md): run builds and tests on your own nodes instead of GitHub's.
+- [Pipelines](/pipelines): run builds and tests on your own nodes instead of GitHub's.

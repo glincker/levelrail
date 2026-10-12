@@ -8,7 +8,6 @@ The PNG files in `docs/assets/screenshots/` are captured from a real, running co
 Screenshots are produced by `scripts/screenshots/capture.sh`, a manual maintainer tool (not a CI job). Deploying real containers and accumulating metrics takes a couple of minutes, too slow for every PR. Re-run it by hand whenever the dashboard changes significantly and existing screenshots look stale.
 
 <Accordion title="Prerequisites">
-
 - Docker, running locally (`docker info` should succeed)
 - Go and Node.js/npm (to build the control plane, CLI, and frontend)
 - Python 3 with Playwright installed, and [shot-scraper](https://shot-scraper.datasette.io/):
@@ -16,7 +15,6 @@ Screenshots are produced by `scripts/screenshots/capture.sh`, a manual maintaine
   pip install playwright shot-scraper
   playwright install chromium
   ```
-
 </Accordion>
 
 ## Running it
@@ -25,7 +23,7 @@ Screenshots are produced by `scripts/screenshots/capture.sh`, a manual maintaine
 scripts/screenshots/capture.sh
 ```
 
-The script performs a complete pipeline from building binaries through capturing screenshots:
+The script runs the whole pipeline, from building binaries to capturing screenshots:
 
 ```mermaid
 flowchart LR
@@ -40,13 +38,12 @@ flowchart LR
 ```
 
 <Accordion title="Full pipeline details">
-
 1. Build fresh binaries into a scratch directory
 2. Start a control plane against a separate scratch data directory
 3. Deploy two real apps from public images, plus a real managed Postgres database
 4. Trigger real redeploys to build deploy history
 5. Send real HTTP traffic to the apps
-6. Set an example secret, a domain, and a load balancer so the environment, domains, and load balancer pages aren't empty
+6. Set an example secret, a domain, and a [load balancer](/load-balancing) so the environment, domains, and load balancer pages aren't empty
 7. Wait about 75 seconds for metrics to accumulate at 15-second resolution
 8. Log in through the real `/login` form
 9. Capture screenshots with `shot-scraper`
@@ -54,11 +51,9 @@ flowchart LR
 It cleans up after itself on exit (including on failure): the deployed apps and database are deleted, the control plane process is stopped, and the scratch directory is removed. It's safe to re-run any time; each run picks a free local port rather than assuming one is available, and overwrites the configured PNGs in place.
 
 Set `KEEP_SCRATCH=1` to leave the scratch directory (binaries, data dir, server log, session state) in place after a run, useful for debugging a failed capture.
-
 </Accordion>
 
 <Accordion title="Why not dev-mode's fixed tokens?">
-
 
 The control plane binary builds with `-tags embedweb` to serve the real built frontend (same as a user would run). This also compiles out the `APP_DEV_MODE` bypass, so dev-mode's fixed tokens aren't available.
 
@@ -70,7 +65,6 @@ Instead, the script:
 4. Approves the login through the browser
 
 All credentials are freshly created for each run and never leave the scratch data directory.
-
 </Accordion>
 
 ## Files
@@ -84,9 +78,7 @@ All credentials are freshly created for each run and never leave the scratch dat
 Some screens do not exist on a single node: the multi-node topology view, cross-node ingress routing, a second node's own health. `capture.sh` does not cover them. Capture these by hand from a real multi-node cluster you control, with a logged-in browser session, and save the PNGs to `docs/assets/screenshots/` with a `multi-node-` prefix so their source is obvious. Embed them in [Multi-node](/multi-node) or [Network topology](/network-topology).
 
 <Warning>
-
 Never commit a credential, a session token, or a `.env` file from this process. Only the resulting PNGs and doc edits are safe to commit.
-
 </Warning>
 
 If you lose access to the admin account on a cluster you own, `sudo APP_DATA_DIR=<data dir> levelrail recover-admin` resets or creates the first admin directly against the local database (add `-username` and `-password` to pin either, otherwise both are generated). It changes a live credential, so rotate or remove it once you are done.

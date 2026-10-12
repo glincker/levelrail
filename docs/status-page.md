@@ -3,7 +3,7 @@ title: "Public status page"
 description: An opt-in public status page with operator-chosen components, 90 day uptime bars, incidents, maintenance announcements and an RSS feed.
 ---
 
-The control plane can serve a read-only status page for your users. It is off until you turn it on, it lists only the components you choose under a public name you choose, and it never shows anything else.
+The control plane can serve a read-only status page for your users. It is off until you turn it on. It lists only the components you choose, under public names you choose, and nothing else.
 
 ## What it shows
 
@@ -13,11 +13,11 @@ The control plane can serve a read-only status page for your users. It is off un
 - Scheduled and in-progress maintenance, and recently completed maintenance (14 days).
 - Links to an RSS feed and a JSON version of the same data.
 
-The page is server-rendered HTML with no JavaScript, works in light and dark mode, and is readable with a keyboard and screen reader (status is always written as text as well as color, and each uptime bar has a text label).
+The page is server-rendered HTML with no JavaScript. It works in light and dark mode and is usable with a keyboard and a screen reader: status is always written as text as well as color, and each uptime bar has a text label.
 
 ## What it never shows
 
-The public view is a fixed whitelist: page title and description, component public names, statuses, uptime numbers, and the incident and maintenance text you write. Component targets (app names, hostnames, health check URLs), error messages, IDs of internal resources, node names and metrics are never included. A privacy test fails the build if a field is added to the public payload without being reviewed.
+The public view is a fixed whitelist: page title and description, component public names, statuses, uptime numbers, and the incident and maintenance text you write. It never includes component targets (app names, hostnames, health check URLs), error messages, IDs of internal resources, node names or metrics. A privacy test fails the build if someone adds a field to the public payload without review.
 
 Incident and maintenance text is escaped. Only paragraphs, line breaks, `- ` lists, `**bold**`, `` `code` `` and `http(s)` links are formatted; raw HTML is shown as text.
 
@@ -44,7 +44,7 @@ levelrail-cli status-page preview
 </Tab>
 </Tabs>
 
-The page is then available at `/public/status` on the control plane host, with `/public/status.json` and `/public/status.rss` next to it.
+The page is then served at `/public/status` on the control plane host, with `/public/status.json` and `/public/status.rss` next to it.
 
 ### Component kinds
 
@@ -76,11 +76,11 @@ Set a custom domain (`status-page set --domain status.example.com`) to serve the
 
 ## Operating it
 
-- **Rate limited and cacheable.** Public reads are limited per client IP (`APP_STATUS_PAGE_RATE_LIMIT_RPM`, default `120`), the built view is cached (`APP_STATUS_PAGE_CACHE_TTL`, default `30s`), and responses carry `Cache-Control` and an `ETag`, so a CDN or browser can revalidate cheaply. Page responses carry a restrictive Content-Security-Policy (`default-src 'none'`, inline styles only).
-- **No authentication on the public routes.** They are on the public allowlist, with a reason, in the authorization matrix test. Management routes under `/api/v1/status-page` need the `read` or `write` ability and are checked against the `status-page` resource, so an IAM policy can grant or deny them.
-- **Sampling** only runs while the page is enabled. `APP_STATUS_PAGE_CHECK_TIMEOUT` (default `8s`) bounds each probe.
-- **Other environment variables:** `APP_STATUS_PAGE_SAMPLE_INTERVAL`, `APP_STATUS_PAGE_CACHE_TTL`, `APP_STATUS_PAGE_CHECK_TIMEOUT`, `APP_STATUS_PAGE_RATE_LIMIT_RPM`.
-- **Client IP for rate limiting** is the TCP peer address; `X-Forwarded-For` is not trusted. Behind a reverse proxy all visitors share the proxy's budget, so raise the limit or cache at the proxy.
+- Public reads are rate limited per client IP (`APP_STATUS_PAGE_RATE_LIMIT_RPM`, default `120`), and the built view is cached (`APP_STATUS_PAGE_CACHE_TTL`, default `30s`). Responses carry `Cache-Control` and an `ETag`, so a CDN or browser can revalidate cheaply. Page responses also carry a restrictive Content-Security-Policy (`default-src 'none'`, inline styles only).
+- The public routes need no authentication. They are on the public allowlist, with a reason, in the authorization matrix test. Management routes under `/api/v1/status-page` need the `read` or `write` ability and are checked against the `status-page` resource, so an IAM policy can grant or deny them.
+- Sampling runs only while the page is enabled. `APP_STATUS_PAGE_CHECK_TIMEOUT` (default `8s`) caps each probe.
+- The environment variables are `APP_STATUS_PAGE_SAMPLE_INTERVAL`, `APP_STATUS_PAGE_CACHE_TTL`, `APP_STATUS_PAGE_CHECK_TIMEOUT` and `APP_STATUS_PAGE_RATE_LIMIT_RPM`.
+- Rate limiting uses the TCP peer address, and `X-Forwarded-For` is not trusted. Behind a reverse proxy, all visitors share the proxy's budget, so raise the limit or cache at the proxy.
 
 ## API
 
@@ -96,7 +96,7 @@ Set a custom domain (`status-page set --domain status.example.com`) to serve the
 | `POST` | `/api/v1/status-page/incidents/{id}/updates` | `write` |
 | `DELETE` | `/api/v1/status-page/incidents/{id}` | `write` |
 
-The `get_status_page` and `list_status_incidents` MCP tools are read only. Publishing incidents is deliberately not exposed to MCP, since it posts public text.
+The `get_status_page` and `list_status_incidents` MCP tools are read only. Publishing incidents is deliberately not exposed to MCP, because it posts public text.
 
 ## Limits
 

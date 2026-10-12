@@ -1,7 +1,9 @@
 ---
 title: "Node provisioning"
-description: "Create a server at Hetzner, DigitalOcean, AWS, Azure or GCP and enroll it as a node, with the credential each provider needs."
+description: Create a server at Hetzner, DigitalOcean, AWS, Azure or GCP and enroll it as a node, with the credential each provider needs, how status polling works, cost, and known gaps.
 ---
+
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/hetzner.svg" alt="Hetzner" title="Hetzner" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/digitalocean.svg" alt="DigitalOcean" title="DigitalOcean" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/linode.svg" alt="Linode" title="Linode" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/vultr.svg" alt="Vultr" title="Vultr" width="24" height="24" /></span></div>
 
 [Multi-node](/multi-node) covers enrolling a machine you already have. This page covers the step before that: having Levelrail create the machine at a cloud provider. For the short command sequence, see the [multi-cloud provisioning quickstart](/multi-cloud-provisioning).
 
@@ -53,10 +55,10 @@ A personal access token with **read and write** scope.
 
 EC2 has no single bearer token, so `set-credential --provider aws` takes one of two shapes:
 
-- **Access key and secret.** `--provider-token` is the access key id and `--secret-access-key` the secret. Optional: `--session-token` for temporary credentials, `--region` for the default region (default `us-east-1`), and `--role-arn` to assume an IAM role through STS before every call. With a role set, the stored key needs only `sts:AssumeRole` on that role.
-- **The control plane's own AWS identity.** `--use-ambient-credentials` resolves credentials from the environment, shared config or an EC2 instance profile. It is useful only when the control plane itself runs on AWS. Combine it with `--role-arn` to narrow permissions through STS.
+- Access key and secret: `--provider-token` is the access key id and `--secret-access-key` the secret. Optional: `--session-token` for temporary credentials, `--region` for the default region (default `us-east-1`), and `--role-arn` to assume an IAM role through STS before every call. With a role set, the stored key needs only `sts:AssumeRole` on that role.
+- The control plane's own AWS identity: `--use-ambient-credentials` resolves credentials from the environment, shared config or an EC2 instance profile. It only makes sense when the control plane itself runs on AWS. Combine it with `--role-arn` to narrow permissions through STS.
 
-Full OIDC federation (`AssumeRoleWithWebIdentity`) is not supported, because it would require the control plane to be its own OIDC token issuer.
+Full [OIDC federation](/pipelines-oidc) (`AssumeRoleWithWebIdentity`) is not supported, because it would require the control plane to be its own OIDC token issuer.
 
 The target region needs a **default VPC**, which every account created since December 2013 has unless it was deleted. There is no option yet to name a specific VPC or subnet.
 
@@ -147,11 +149,9 @@ GCP has no workload identity federation mode. Google's `external_account` creden
 A name already used by an enrolled node, or by another provision that has not failed, is rejected with `409`. The name is how step 3 matches a node to its provision.
 
 <Tip>
-
 **Why there is no installing stage**
 
 The status vocabulary includes `installing`, but nothing emits it: the control plane cannot see inside the VM while cloud-init runs. Everything between "booted" and "dialed home" reports as `enrolling`. If a provision sits there for a long time, read `/var/log/cloud-init-output.log` from the provider's console. `APP_NODE_PROVISION_TIMEOUT` (default 20 minutes) marks it `failed` on its own.
-
 </Tip>
 
 ### The agent runs from an image

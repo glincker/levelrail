@@ -3,12 +3,13 @@ title: "AI control"
 description: Decide what AI agents and agent tokens may do on your instance, from off to admin, enforced on the server for every request.
 ---
 
-AI control is a switch in Settings that decides what agents may do on this instance. It is enforced on the control plane for every request, so it does not depend on the agent, the MCP client or the token's own abilities. The page is always visible, because it is the guardrail.
+AI control is a switch in Settings that decides what agents may do on this instance. The control plane enforces it on every request, so it does not depend on the agent, the MCP client or the token's own abilities. The page is always visible because it is the guardrail.
+
 ## What counts as an agent
 
-An agent is an API token that has an **agent name**, or the built-in assistant token (agent name `ai-assistant`). Agent tokens can only be created by a signed-in person, never by another token.
+An agent is an API token that has an agent name, or the built-in assistant token (agent name `ai-assistant`). Agent tokens can only be created by a signed-in person, never by another token.
 
-AI control does **not** govern:
+AI control does not govern:
 
 - people signed in with a session,
 - API tokens that have no agent name (they are limited only by their abilities and IAM policies).
@@ -76,7 +77,7 @@ The AI control page also links to the audit log filtered by agent.
 
 ## MCP
 
-The MCP server reads the mode each time a client asks for its tool list, and hides what the mode would refuse, **but only when its own token is an agent**: `off` shows only `ai_control_status`, `observe` shows read tools, `operate` and `admin` show everything. A token with no agent name is not governed by this switch, so its tool list is never trimmed. This only tidies the list. The control plane enforces the mode whatever the client does.
+The MCP server reads the mode each time a client asks for its tool list, and hides what the mode would refuse, but only when its own token is an agent: `off` shows only `ai_control_status`, `observe` shows read tools, `operate` and `admin` show everything. A token with no agent name is not governed by this switch, so its tool list is never trimmed. This only tidies the list. The control plane enforces the mode whatever the client does.
 
 ## Error messages
 

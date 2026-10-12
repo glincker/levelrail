@@ -3,7 +3,16 @@ title: "Git integrations"
 description: Connect GitHub, GitLab, Bitbucket or Gitea for automatic git-triggered deploys, per-pull-request preview environments, and webhook history with replay.
 ---
 
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/github.svg" alt="GitHub" title="GitHub" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/gitlab.svg" alt="GitLab" title="GitLab" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/bitbucket.svg" alt="Bitbucket" title="Bitbucket" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/gitea.svg" alt="Gitea" title="Gitea" width="24" height="24" /></span></div>
+
 Connect a git provider once for the whole control plane, then point any number of apps at repositories it can see. A push, a tag, or a pull request on the repository then deploys the app, builds a preview, or both.
+
+This page covers connecting a provider, using a repository as an app's source, deploy triggers and path filters, deploying a commit by hand, monorepo build settings, webhook handling and replay, and per-pull-request previews.
+
+<Tip>
+Fastest path: connect the provider in the dashboard ([Connect a provider](#connect-a-provider)), then run `levelrail-cli github-app use-as-source <owner> <repo> --app-name my-app`. Pushes to the default branch deploy from then on.
+</Tip>
+
 ## Provider connections and git sources
 
 Two records are involved, and keeping them separate is deliberate.
@@ -22,7 +31,7 @@ So you connect GitHub once, wire ten apps to ten different repositories, and nev
 | **Bitbucket** | OAuth consumer you register | Long-lived | Bitbucket Cloud only |
 | **Gitea** | OAuth2 Application you register | Long-lived, refreshed | Almost always, via `instance_url` |
 
-All four support webhooks, preview environments, and PR comments and commit statuses. GitHub's manifest flow creates the App on GitHub's side for you. GitLab, Bitbucket, and Gitea need you to create the application in their own settings first and paste its credentials in.
+All four support webhooks, [preview environments](/previews), and PR comments and commit statuses. GitHub's manifest flow creates the App on GitHub's side for you. GitLab, Bitbucket, and Gitea need you to create the application in their own settings first and paste its credentials in.
 
 `GET /api/v1/git-providers` (and `levelrail-cli git-providers`) answers "what can I do with each provider?" in one call: whether it is connected, can list branches, can register a webhook, and can authenticate a clone. The dashboard's repository picker uses it.
 
@@ -30,33 +39,41 @@ All four support webhooks, preview environments, and PR comments and commit stat
 
 Connecting is done in the dashboard on purpose. Each flow ends in a real browser redirect to github.com, your GitLab instance, or bitbucket.org, which a script or the CLI cannot drive. `github-app`, `gitlab-app`, `bitbucket-app` and `gitea-app` with no subcommand only print usage.
 
+<Note>
 All four need a master key configured on the control plane, the same one that encrypts every secret. Routes that need it return `501` without one. GitHub's manifest flow also needs a primary domain set in ingress settings first, because GitHub needs a reachable callback URL. Without one you get a `409` that says so.
+</Note>
 
 <Tabs>
 <Tab title="GitHub">
 
 Open the GitHub App settings page (`/settings/github-app`).
 
-**Manifest flow (recommended).** The dashboard previews the App's name, permissions, and webhook URL, lets you choose who owns the App, then redirects your browser to github.com to create the App. The credentials come back automatically.
-
-Choose the owner before you continue:
+<Steps>
+<Step title="Choose the owner">
+The dashboard previews the App's name, permissions, and webhook URL and lets you choose who owns the App.
 
 | Owner | Where GitHub creates the App | Query parameter |
 | --- | --- | --- |
 | **My personal account** (default) | `github.com/settings/apps/new` | none |
 | **An organization** | `github.com/organizations/<login>/settings/apps/new` | `owner=<login>` |
 
-"Allow other accounts and organizations to install it" makes the App public (`public=true`). Leave it off for a private App, which GitHub only lets the owning account or organization install. A private App owned by your personal account therefore never offers an organization on the install page. To deploy from an organization, either own the App from that organization or make the App public.
+"Allow other accounts and organizations to install it" makes the App public (`public=true`). Leave it off for a private App, which GitHub only lets the owning account or organization install.
+</Step>
+<Step title="Create the App on GitHub">
+The dashboard redirects your browser to github.com, and the credentials come back automatically. `levelrail-cli github-app register-url --owner <org> [--public]` prints the registration link for the same choice. Open it in a browser signed in to the dashboard.
+</Step>
+<Step title="Install it">
+Levelrail sends you to `/apps/<slug>/installations/new`, GitHub's account chooser. Pick the account or organization and the repositories to grant. You need to be an owner of the organization, or its owners must approve the install request. Use "Add organization" in the connected accounts list to install the same App on another account later.
+</Step>
+</Steps>
+
+<Warning>
+A private App owned by your personal account never offers an organization on the install page. To deploy from an organization, either own the App from that organization or make the App public. Levelrail asks GitHub whether the App is public; when it is private, the dashboard and `github-app installations add` say so and link to the App's Advanced settings, where "Make public" allows installs on any account.
+</Warning>
 
 GitHub Enterprise Server works the same way: set `instance_url` and the form posts to `<instance_url>/organizations/<login>/settings/apps/new`. `owner` must be a GitHub organization login (letters, digits and hyphens, up to 39 characters); anything else is a `400`.
 
-After GitHub creates the App, Levelrail sends you to `/apps/<slug>/installations/new`, GitHub's account chooser, so you pick the account or organization there. You need to be an owner of the organization, or its owners must approve the install request.
-
-`levelrail-cli github-app register-url --owner <org> [--public]` prints the registration link for the same choice. Open it in a browser signed in to the dashboard.
-
-**Installing on an organization.** Create the App with the organization as owner (or make it public), then on GitHub's account chooser pick the organization and the repositories to grant. Use "Add organization" in the connected accounts list to install the same App on another account later. Levelrail asks GitHub whether the App is public; when it is private, the dashboard and `github-app installations add` say so and link to the App's Advanced settings, where "Make public" allows installs on any account.
-
-**Manual.** If the control plane has no publicly reachable primary domain yet, create the App at `github.com/settings/apps` yourself and connect it with `PUT /api/v1/github-app/manual`, giving the app ID, client ID, client secret, webhook secret, and the private key PEM.
+If the control plane has no publicly reachable primary domain yet, create the App at `github.com/settings/apps` yourself and connect it with `PUT /api/v1/github-app/manual`, giving the app ID, client ID, client secret, webhook secret, and the private key PEM.
 
 </Tab>
 <Tab title="GitLab">
@@ -82,7 +99,7 @@ Register an OAuth2 application in Gitea, then paste its `instance_url`, `client_
 </Tab>
 </Tabs>
 
-**Disconnecting.** `DELETE /api/v1/github-app` (or `/gitlab-app`, `/bitbucket-app`, `/gitea-app`) removes the connection and its secrets from the control plane only. It does not revoke the token or delete the App on the provider's side. Remove it there yourself, for example from `github.com/settings/apps`.
+To disconnect, call `DELETE /api/v1/github-app` (or `/gitlab-app`, `/bitbucket-app`, `/gitea-app`) removes the connection and its secrets from the control plane only. It does not revoke the token or delete the App on the provider's side. Remove it there yourself, for example from `github.com/settings/apps`.
 
 ## Use a repository as an app's source
 
@@ -131,12 +148,12 @@ levelrail-cli gitea-app use-as-source <owner> <repo> --app-name my-app
 
 `use-as-source` takes the same optional settings as `PUT /api/v1/apps/{name}/git-source`:
 
-- `--branch`: defaults to the repository's default branch.
-- `--build-type`: `dockerfile`, `railpack`, or `static` (default `dockerfile`).
-- `--build-path`: path to the build file inside the repository.
-- `--trigger-mode`: `push` (default) or `release`, see [Deploy triggers](#deploy-triggers-push-or-release).
-
-For example:
+| Flag | Meaning |
+| --- | --- |
+| `--branch` | Defaults to the repository's default branch. |
+| `--build-type` | `dockerfile`, `railpack`, or `static` (default `dockerfile`). |
+| `--build-path` | Path to the build file inside the repository. |
+| `--trigger-mode` | `push` (default) or `release`, see [Deploy triggers](#deploy-triggers-push-or-release). |
 
 ```bash
 $ levelrail-cli github-app use-as-source acme storefront --app-name storefront --branch main
@@ -151,138 +168,6 @@ webhook_registered:  true
 If webhook registration fails, GitHub still connects the repository and reports `webhook_registered: false` with a `webhook_error` (typically an installation that predates the `repository_hooks:write` permission). GitLab, Bitbucket, and Gitea fail the whole request with a `502` instead.
 
 For an app that already exists, `levelrail-cli apps git-source get|set|delete <name>` manages the git source directly.
-
-## Monorepos and build settings
-
-A git source builds from two settings, and both are relative to the repository root:
-
-- **Base directory** is the Docker build context. Empty means the repository root.
-- **Dockerfile path** is the Dockerfile to build, for example `apps/web/Dockerfile`. It is relative to the repository root, not to the base directory, and it must sit inside the base directory when one is set. Empty uses `Dockerfile` in the build context.
-
-Auto-detect (Railpack) only looks at the base directory, so a monorepo with no app at its root needs one of the two settings above. The Source tab states the resolved result in plain words ("Builds apps/glinr/deploy/Dockerfile with the repository root as the build context"), and the CLI prints the same sentence.
-
-### Finding the right settings
-
-Detection lists Dockerfiles and build roots from the provider's file-tree API without cloning the repository (GitHub, GitLab and Gitea; other hosts use a shallow in-memory clone). It ignores `node_modules`, `vendor`, `dist` and similar folders, and reads `turbo.json`, `pnpm-workspace.yaml`, `nx.json`, `go.work`, Cargo and npm workspaces and compose files to explain what it found.
-
-```bash
-$ levelrail-cli apps git-source detect glinr
-branch:         main
-monorepo:       true
-tooling:        turbo, npm-workspaces
-attention:      this looks like a monorepo and there is no app at the repository root, pick a Dockerfile below
-suggestions:
- * 1. type=dockerfile dockerfile=apps/glinr/deploy/Dockerfile context=.
-      Dockerfile at apps/glinr/deploy/Dockerfile; it runs turbo prune, so keep the build context at the repository root.
-```
-
-In the dashboard, the Source tab shows the same list under "Detected in this repo", with a one-click "Use this" on each suggestion. When an app uses auto-detect on a repository with no app at its root, the tab shows a "This looks like a monorepo. Pick a Dockerfile." notice, and a failed build links to it.
-
-### The turbo prune pattern
-
-A Dockerfile that runs `turbo prune` needs the whole repository as its context, because the prune step reads the root `turbo.json` and lockfile and then copies only the packages the app needs. Keep the base directory empty and point the Dockerfile path at the app's file:
-
-```bash
-levelrail-cli apps git-source set glinr \
-  --build-type dockerfile \
-  --dockerfile apps/glinr/deploy/Dockerfile
-```
-
-```dockerfile
-FROM node:20-alpine AS pruner
-WORKDIR /repo
-COPY . .
-RUN npx turbo prune glinr --docker
-```
-
-A self-contained app with its own Dockerfile and no workspace dependencies builds from its own folder instead:
-
-```bash
-levelrail-cli apps git-source set api \
-  --build-type dockerfile \
-  --base-directory apps/api \
-  --dockerfile apps/api/Dockerfile
-```
-
-Apply the recommended suggestion straight from the CLI with `levelrail-cli apps git-source detect <name> --apply`. Invalid values (absolute paths, `..`, or a Dockerfile outside the base directory) are rejected with a `400`.
-
-## Deploying by hand
-
-A push deploys on its own, but you can also deploy any commit yourself. The **Deploy** button on an app opens a sheet that adapts to what the app deploys from:
-
-- **Git source connected.** The sheet leads with "Deploy latest commit on `<branch>`": the head commit's SHA, message, author and age, with a one-click **Deploy latest commit** button. Below it are the ten most recent commits (each with its own **Deploy**, and a badge for live, failed or building), a branch switcher, and the build it will run (build pack, Dockerfile path, build directory). A status line says whether what is live is up to date or how many commits behind the head it is. **Redeploy last successful** and **Roll back to previous** appear once the app has history. After you click Deploy the sheet closes and opens the live build log.
-- **Image only.** An image form pre-filled with the current image and your recent tags as one-click chips. The "fresh registry lookup" option lives under **Advanced**.
-- **Nothing connected.** A guided choice between connecting a repository and deploying an image.
-
-Deploying a different branch than the connected one builds that branch once. Push webhooks keep following the connected branch.
-
-### Suggestions
-
-The sheet also lists suggestions computed on the control plane, each with a reason and one click to act. You can dismiss any of them; dismissals are remembered in your browser only.
-
-| Suggestion | Shown when |
-| --- | --- |
-| Commit failed to build | The head commit's latest build failed. Opens its build log. |
-| Webhook rejected | The latest webhook delivery had an invalid signature. |
-| Check the build settings | Detection says the repository looks like a monorepo with no app at the root, or the last build failed on build configuration. |
-| Turn on deploy on push | No webhook delivery has ever reached the app. |
-| Deploys on releases only | The deploy trigger mode is `release`. |
-| Preview every pull request | Webhook events are arriving and previews are off. One click enables them. |
-| Add a health check | The app has no readiness or liveness probe. |
-| Get told when deploys finish | The app has no deploy notification target. |
-
-### From the API and CLI
-
-```bash
-# Newest commits of the connected branch, with deploy status and suggestions
-levelrail-cli apps git-source commits web
-levelrail-cli apps git-source commits web --branch staging --json
-
-# Build and deploy a commit, or the newest commit of the connected branch
-levelrail-cli apps deploy web --commit 3f9c2ab
-levelrail-cli deploy web --latest
-```
-
-`GET /api/v1/apps/{name}/git-source/commits?branch=<name>` needs the `deploy` ability. It reads the commit list through the same provider API client and token as build detection (a stored deploy token first, else the GitHub App installation), caches the answer briefly (`APP_GIT_COMMITS_CACHE_TTL`, default `30s`, `0` disables; `?refresh=1` skips it), and returns at most the ten newest commits. Provider errors map to plain messages: `404` repository or branch not found, `422` access refused, `429` rate limited, `502` provider unreachable. A host without a commit-list API (for example a Bitbucket or plain git remote) returns only the head commit with `degraded: true`.
-
-## How webhooks are processed
-
-Push and pull request webhooks from all four providers follow one path.
-
-```mermaid
-flowchart LR
-    A["Git Provider Push/PR Event"] -->|HTTP POST| B["Webhook Endpoint"]
-    B -->|Extract signature header| C{"Signature Valid?"}
-    C -->|No| D["Record: failed"]
-    C -->|Yes| E{"Ref Matches<br/>Trigger Mode?"}
-    E -->|No| F["Record: unmatched"]
-    E -->|Yes| G{"Push or PR?"}
-    G -->|Push| H["Trigger Build<br/>& Deploy"]
-    G -->|PR Opened/Sync| I["Deploy Preview<br/>Environment"]
-    G -->|PR Closed| J["Teardown<br/>Preview"]
-    H -->|Recorded| K["Delivery History"]
-    I -->|Recorded| K
-    J -->|Recorded| K
-    D -->|Recorded| K
-    F -->|Recorded| K
-```
-
-Every webhook creates a delivery history entry, whether it succeeds, fails, or does not match, so you can see and replay failed deliveries.
-
-**One endpoint for every provider.** All four providers post to `POST /api/v1/webhooks/github/{name}`. The path says `github` for backward compatibility with webhooks configured before the other providers existed. The provider is detected from headers (`X-GitHub-Event`, `X-Gitlab-Event`, `X-Event-Key`, `X-Gitea-Event-Type`), not the URL.
-
-**Authentication.** The route takes no session or token, because providers cannot send one. The per-app webhook secret, generated when the git source was connected, is checked against the request instead.
-
-| Provider | Signature check |
-| --- | --- |
-| GitHub | HMAC-SHA256 in `X-Hub-Signature-256`, format `sha256=<hex>` |
-| Bitbucket | HMAC-SHA256 in `X-Hub-Signature`, format `sha256=<hex>` |
-| GitLab | The secret sent verbatim in `X-Gitlab-Token`, compared in constant time |
-| Gitea | HMAC-SHA256 in `X-Hub-Signature-256`, the GitHub-compatible header Gitea also sends |
-
-**Rate limiting.** Each request is limited per client IP and app name before any lookup or write happens, so a client that never produces a valid signature is rejected cheaply. The budget is `APP_WEBHOOK_RATE_LIMIT_RPM` requests per minute (default `60`), refilled continuously so a burst of back-to-back pushes does not trip it. A request over budget gets `429` with `Retry-After`. Set it to `0` to disable the limit.
-
-**Event routing.** A push whose ref does not match the git source's trigger mode is accepted (`200`) and ignored. Pull request events are routed separately: `opened` and `synchronize` deploy or redeploy a preview (when previews are enabled), and `closed` tears it down whether or not the pull request merged.
 
 ## Deploy triggers: push or release
 
@@ -325,16 +210,175 @@ The file list comes from the push payload. When the payload has none (Bitbucket,
 
 With `report_status` on (the default), the control plane reports to the provider:
 
-- **Pipeline runs:** a commit status per run, linking to the run page. See [Pipelines](/pipelines#reporting-status-to-the-git-provider).
-- **GitHub deploys:** a Deployments API entry for each push deploy (environment `production`) and each pull request preview (environment `preview`), moving through `in_progress` to `success` or `failure`. A newer successful deploy marks earlier ones in the same environment `inactive`, a partially failed multi-service deploy is `failure`, a superseded deploy is `inactive`, and closing a pull request marks its preview deployment `inactive`. A deployment the provider refuses to create is kept as an `error` row with the reason.
+- Pipeline runs get a commit status per run, linking to the run page. See [Pipelines](/pipelines#reporting-status-to-the-git-provider).
+- GitHub deploys get a Deployments API entry for each push deploy (environment `production`) and each pull request preview (environment `preview`), moving through `in_progress` to `success` or `failure`. A newer successful deploy marks earlier ones in the same environment `inactive`, a partially failed multi-service deploy is `failure`, a superseded deploy is `inactive`, and closing a pull request marks its preview deployment `inactive`. A deployment the provider refuses to create is kept as an `error` row with the reason.
 
 GitHub Apps registered recently request `statuses: write` and `deployments: write`. An App registered earlier needs those permissions added and accepted in GitHub, otherwise posts fail with a warning and nothing else changes. A failed post never fails a deploy or run.
 
 Turn reporting off for one app with `levelrail-cli apps git-source settings my-app --report-status=false`, or for the whole server with `APP_GIT_STATUS_ENABLED=false`. GitHub `merge_group` events route to pipelines with a `merge_group` trigger; subscribe the repository webhook to the "Merge groups" event.
 
+## Deploying by hand
+
+A push deploys on its own, but you can also deploy any commit yourself. The **Deploy** button on an app opens a sheet that adapts to what the app deploys from.
+
+<Tabs>
+<Tab title="Dashboard">
+
+**Git source connected.** The sheet leads with "Deploy latest commit on `<branch>`": the head commit's SHA, message, author and age, with a one-click **Deploy latest commit** button.
+
+- Below it are the ten most recent commits, each with its own **Deploy** and a badge for live, failed or building.
+- A branch switcher and the build it will run (build pack, Dockerfile path, build directory) follow.
+- A status line says whether what is live is up to date or how many commits behind the head it is.
+- **Redeploy last successful** and **Roll back to previous** appear once the app has history.
+- After you click Deploy the sheet closes and opens the live build log.
+
+**Image only.** An image form pre-filled with the current image and your recent tags as one-click chips. The "fresh registry lookup" option lives under **Advanced**.
+
+**Nothing connected.** A guided choice between connecting a repository and deploying an image.
+
+</Tab>
+<Tab title="CLI">
+
+```bash
+# Newest commits of the connected branch, with deploy status and suggestions
+levelrail-cli apps git-source commits web
+levelrail-cli apps git-source commits web --branch staging --json
+
+# Build and deploy a commit, or the newest commit of the connected branch
+levelrail-cli apps deploy web --commit 3f9c2ab
+levelrail-cli deploy web --latest
+```
+
+</Tab>
+<Tab title="API">
+
+`GET /api/v1/apps/{name}/git-source/commits?branch=<name>` needs the `deploy` ability. It reads the commit list through the same provider API client and token as build detection (a stored deploy token first, else the GitHub App installation) and returns at most the ten newest commits.
+
+| Behavior | Detail |
+| --- | --- |
+| Cache | `APP_GIT_COMMITS_CACHE_TTL`, default `30s`, `0` disables. `?refresh=1` skips it. |
+| `404` | Repository or branch not found. |
+| `422` | Access refused. |
+| `429` | Rate limited. |
+| `502` | Provider unreachable. |
+| `degraded: true` | A host without a commit-list API (for example a Bitbucket or plain git remote) returns only the head commit. |
+
+</Tab>
+</Tabs>
+
+Deploying a different branch than the connected one builds that branch once. Push webhooks keep following the connected branch.
+
+### Suggestions
+
+The sheet also lists suggestions computed on the control plane, each with a reason and one click to act. You can dismiss any of them; dismissals are remembered in your browser only.
+
+| Suggestion | Shown when |
+| --- | --- |
+| Commit failed to build | The head commit's latest build failed. Opens its build log. |
+| Webhook rejected | The latest webhook delivery had an invalid signature. |
+| Check the build settings | Detection says the repository looks like a monorepo with no app at the root, or the last build failed on build configuration. |
+| Turn on deploy on push | No webhook delivery has ever reached the app. |
+| Deploys on releases only | The deploy trigger mode is `release`. |
+| Preview every pull request | Webhook events are arriving and previews are off. One click enables them. |
+| Add a health check | The app has no readiness or liveness probe. |
+| Get told when deploys finish | The app has no deploy notification target. |
+
+## Monorepos and build settings
+
+A git source builds from two settings, and both are relative to the repository root:
+
+- **Base directory** is the Docker build context. Empty means the repository root.
+- **Dockerfile path** is the Dockerfile to build, for example `apps/web/Dockerfile`. It is relative to the repository root, not to the base directory, and it must sit inside the base directory when one is set. Empty uses `Dockerfile` in the build context.
+
+Auto-detect (Railpack) only looks at the base directory, so a monorepo with no app at its root needs one of the two settings above. The Source tab states the resolved result in plain words ("Builds apps/glinr/deploy/Dockerfile with the repository root as the build context"), and the CLI prints the same sentence.
+
+### Finding the right settings
+
+Detection lists Dockerfiles and build roots from the provider's file-tree API without cloning the repository (GitHub, GitLab and Gitea; other hosts use a shallow in-memory clone). It ignores `node_modules`, `vendor`, `dist` and similar folders, and reads `turbo.json`, `pnpm-workspace.yaml`, `nx.json`, `go.work`, Cargo and npm workspaces and compose files to explain what it found.
+
+```bash
+$ levelrail-cli apps git-source detect glinr
+branch:         main
+monorepo:       true
+tooling:        turbo, npm-workspaces
+attention:      this looks like a monorepo and there is no app at the repository root, pick a Dockerfile below
+suggestions:
+ * 1. type=dockerfile dockerfile=apps/glinr/deploy/Dockerfile context=.
+      Dockerfile at apps/glinr/deploy/Dockerfile; it runs turbo prune, so keep the build context at the repository root.
+```
+
+In the dashboard, the Source tab shows the same list under "Detected in this repo", with a one-click "Use this" on each suggestion. When an app uses auto-detect on a repository with no app at its root, the tab shows a "This looks like a monorepo. Pick a Dockerfile." notice, and a failed build links to it.
+
+Apply the recommended suggestion straight from the CLI with `levelrail-cli apps git-source detect <name> --apply`. Invalid values (absolute paths, `..`, or a Dockerfile outside the base directory) are rejected with a `400`.
+
+### The turbo prune pattern
+
+A Dockerfile that runs `turbo prune` needs the whole repository as its context, because the prune step reads the root `turbo.json` and lockfile and then copies only the packages the app needs. Keep the base directory empty and point the Dockerfile path at the app's file:
+
+```bash
+levelrail-cli apps git-source set glinr \
+  --build-type dockerfile \
+  --dockerfile apps/glinr/deploy/Dockerfile
+```
+
+```dockerfile
+FROM node:20-alpine AS pruner
+WORKDIR /repo
+COPY . .
+RUN npx turbo prune glinr --docker
+```
+
+A self-contained app with its own Dockerfile and no workspace dependencies builds from its own folder instead:
+
+```bash
+levelrail-cli apps git-source set api \
+  --build-type dockerfile \
+  --base-directory apps/api \
+  --dockerfile apps/api/Dockerfile
+```
+
+## How webhooks are processed
+
+Push and pull request webhooks from all four providers follow one path.
+
+```mermaid
+flowchart LR
+    A["Git Provider Push/PR Event"] -->|HTTP POST| B["Webhook Endpoint"]
+    B -->|Extract signature header| C{"Signature Valid?"}
+    C -->|No| D["Record: failed"]
+    C -->|Yes| E{"Ref Matches<br/>Trigger Mode?"}
+    E -->|No| F["Record: unmatched"]
+    E -->|Yes| G{"Push or PR?"}
+    G -->|Push| H["Trigger Build<br/>& Deploy"]
+    G -->|PR Opened/Sync| I["Deploy Preview<br/>Environment"]
+    G -->|PR Closed| J["Teardown<br/>Preview"]
+    H -->|Recorded| K["Delivery History"]
+    I -->|Recorded| K
+    J -->|Recorded| K
+    D -->|Recorded| K
+    F -->|Recorded| K
+```
+
+Every webhook creates a delivery history entry, whether it succeeds, fails, or does not match, so you can see and replay failed deliveries.
+
+All four providers post to `POST /api/v1/webhooks/github/{name}`. The path says `github` for backward compatibility with webhooks configured before the other providers existed. The provider is detected from headers (`X-GitHub-Event`, `X-Gitlab-Event`, `X-Event-Key`, `X-Gitea-Event-Type`), not the URL.
+
+The route takes no session or token, because providers cannot send one. The per-app webhook secret, generated when the git source was connected, is checked against the request instead.
+
+| Provider | Signature check |
+| --- | --- |
+| GitHub | HMAC-SHA256 in `X-Hub-Signature-256`, format `sha256=<hex>` |
+| Bitbucket | HMAC-SHA256 in `X-Hub-Signature`, format `sha256=<hex>` |
+| GitLab | The secret sent verbatim in `X-Gitlab-Token`, compared in constant time |
+| Gitea | HMAC-SHA256 in `X-Hub-Signature-256`, the GitHub-compatible header Gitea also sends |
+
+Each request is limited per client IP and app name before any lookup or write happens, so a client that never produces a valid signature is rejected cheaply. The budget is `APP_WEBHOOK_RATE_LIMIT_RPM` requests per minute (default `60`), refilled continuously so a burst of back-to-back pushes does not trip it. A request over budget gets `429` with `Retry-After`. Set it to `0` to disable the limit.
+
+A push whose ref does not match the git source's trigger mode is accepted (`200`) and ignored. Pull request events are routed separately: `opened` and `synchronize` deploy or redeploy a preview (when previews are enabled), and `closed` tears it down whether or not the pull request merged.
+
 ## Webhook deliveries
 
-Every inbound request is recorded, signature valid or not, matched or not. Bad signatures, unconnected sources, and deploy failures all show up. The app's **Source** tab (`/apps/{name}/source`) has a "Recent webhook deliveries" panel.
+Every inbound request is recorded, signature valid or not, matched or not. Bad signatures, unconnected sources, and [deploy failures](/deploy-failures) all show up. The app's **Source** tab (`/apps/{name}/source`) has a "Recent webhook deliveries" panel.
 
 ```bash
 levelrail-cli apps webhook-deliveries list storefront
@@ -345,7 +389,9 @@ whd_8e11...           github    push         false      true     401     2026-09
 levelrail-cli apps webhook-deliveries replay storefront whd_8e11...
 ```
 
-Replay runs the same processing against the stored payload and headers once you have fixed the problem. It can trigger a real build and deploy. It does not re-verify the original signature (you are already authenticated with the `deploy` ability) and does not write a second delivery row, since the replay is in the audit log.
+<Warning>
+Replay runs the same processing against the stored payload and headers once you have fixed the problem, so it can trigger a real build and deploy. It does not re-verify the original signature (you are already authenticated with the `deploy` ability) and does not write a second delivery row, since the replay is in the audit log.
+</Warning>
 
 Rows are kept for 30 days by default (`APP_WEBHOOK_DELIVERY_RETENTION_DAYS`) and swept every hour (`APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL`). This is debugging data, not a compliance trail.
 
@@ -372,7 +418,10 @@ A single app with a persisted multi-service `services:` map fans a preview out t
 levelrail-cli apps previews enable storefront
 levelrail-cli apps previews disable storefront
 levelrail-cli apps previews list storefront
+levelrail-cli apps previews extend storefront 42 --hours 48
 ```
+
+`apps previews list` shows one row per preview with its pull request number, preview app, branch, status, domain, last update, expiry, whether it is stale, and any ephemeral or isolated databases. `extend` adds hours to one preview's expiry (default 24).
 
 </Tab>
 <Tab title="Dashboard">
@@ -381,8 +430,6 @@ Use the **Enabled** toggle on the app's Source tab, next to the git source card.
 
 </Tab>
 </Tabs>
-
-`apps previews list` shows one row per preview with its pull request number, preview app, branch, status, domain, last update, expiry, whether it is stale, and any ephemeral or isolated databases.
 
 ### Domains
 
@@ -414,7 +461,7 @@ levelrail-cli apps preview-env clear storefront DATABASE_URL
 
 In the dashboard this is the **Preview env overrides** card on the app's Environment tab. Overrides apply the next time a preview is created or updated, never touch the parent app's running deploy, and survive parent redeploys. They apply to single-service previews only.
 
-**Branch-scoped overrides** apply only when the preview's head branch matches a pattern, either an exact name or a glob such as `release/*` (`*` matches any run of characters except `/`, so `release/*` matches `release/1.0` but not `release/1.0/hotfix`). Resolution order is branch-scoped override, then the unscoped preview override, then the app's own env.
+Branch-scoped overrides apply only when the preview's head branch matches a pattern, either an exact name or a glob such as `release/*` (`*` matches any run of characters except `/`, so `release/*` matches `release/1.0` but not `release/1.0/hotfix`). Resolution order is branch-scoped override, then the unscoped preview override, then the app's own env.
 
 ```bash
 levelrail-cli apps branch-env set storefront DATABASE_URL --branch "release/*" --value postgres://release-only/db
@@ -431,16 +478,18 @@ A preview that declares `ephemeralInPreviews` databases in `app.yaml` gets its o
 
 ### Limits, forks, and approval
 
-**Concurrency caps.** The control plane caps live previews per app (`APP_PREVIEW_ENV_MAX_PER_APP`, default 10) and across the platform (`APP_PREVIEW_ENV_MAX_TOTAL`, default 50). `0` turns a cap off. When a new pull request would exceed a cap, the app's policy decides:
+The control plane caps live previews per app (`APP_PREVIEW_ENV_MAX_PER_APP`, default 10) and across the platform (`APP_PREVIEW_ENV_MAX_TOTAL`, default 50). `0` turns a cap off. When a new pull request would exceed a cap, the app's policy decides:
 
 - `evict_oldest` (default): the oldest live preview is removed to make room, and its pull request comment says why.
 - `reject`: the new pull request is not deployed. Its row shows `limit_reached` with the reason, and the next push retries once a slot frees up.
 
 A push to a preview that is already live never counts as a new preview, and pull requests waiting for approval hold no slot.
 
-**Fork pull requests.** A pull request whose head repository differs from the target repository gets no preview and never receives the app's environment variables or secrets, unless you opt in per app (`allow_fork_previews`, default off). A payload that names no repository is treated as a fork. The preview shows `awaiting_approval` and the pull request comment explains how to approve. Approving deploys that commit once, and a later push from the fork waits for approval again.
+A pull request whose head repository differs from the target repository gets no preview unless you opt in per app (`allow_fork_previews`, default off). A payload that names no repository is treated as a fork. The preview shows `awaiting_approval` and the pull request comment explains how to approve. Approving deploys that commit once, and a later push from the fork waits for approval again. A fork preview also never receives the app's environment variables or secrets unless the separate `allow_fork_secrets` policy is on (`--fork-secrets` on `apps previews settings`).
 
-Approving is a security decision: the fork's code runs on your server with the app's environment variables and secrets. The dashboard asks you to confirm, and the CLI requires `--yes`.
+<Warning>
+Approving is a security decision: the fork's code runs on your server, and with fork secrets on it runs with the app's environment variables and secrets. The dashboard asks you to confirm, and the CLI requires `--yes`.
+</Warning>
 
 Set the per-app policy on the Source tab under **Preview limits and safety**, or from the CLI:
 
@@ -452,11 +501,11 @@ levelrail-cli apps previews list                        # previews across every 
 levelrail-cli apps previews approve storefront 42 --yes
 ```
 
-`--ttl-hours` overrides the platform TTL for one app, and `0` restores the default.
+`--ttl-hours` overrides the platform TTL for one app, and `0` restores the default. `apps previews settings <name>` sets the same policy plus `--fork-secrets`, `--max-previews`, `--memory`, `--cpu`, `--idle-sleep-minutes`, `--database`, `--seed-database` and `--gate`.
 
 ### Cleanup
 
-A preview is removed when its pull request closes or merges, when it expires, when it is evicted, or manually. At startup the control plane also repairs what a crash can leave behind: previews stuck in `deploying` longer than `APP_PREVIEW_STUCK_AFTER` (default 30 minutes) are marked failed, and preview services that no preview owns are removed with their containers.
+A preview is removed when its pull request closes or merges, when it expires, when it is evicted, or manually.
 
 ```bash
 levelrail-cli apps previews teardown storefront 42
@@ -465,7 +514,13 @@ levelrail-cli apps previews sweep
 
 `teardown` uses the same path as the automatic pull-request-closed webhook, so use it for stuck builds or after a partial teardown. The dashboard has a **Tear down** button on each preview row.
 
+<Accordion title="Automatic repair and the TTL sweep">
+
+At startup the control plane repairs what a crash can leave behind: previews stuck in `deploying` longer than `APP_PREVIEW_STUCK_AFTER` (default 30 minutes) are marked failed, and preview services that no preview owns are removed with their containers.
+
 The TTL sweep covers a pull-request-closed delivery that never arrived. A background loop tears down any preview whose last update is older than `APP_PREVIEW_TTL` (default 7 days, or the app's own `--ttl-hours`). `sweep`, or the **Sweep stale previews** button that appears once a preview is stale, runs it immediately. `GET /api/v1/apps/{name}/previews` returns a `stale` field showing what the next sweep would remove.
+
+</Accordion>
 
 ## API reference
 
@@ -497,6 +552,7 @@ The TTL sweep covers a pull-request-closed delivery that never arrived. A backgr
 | `PUT` | `/api/v1/apps/{name}/preview-settings` | `write:sensitive` |
 | `GET` | `/api/v1/apps/{name}/previews`, `/api/v1/previews` | `read` |
 | `POST` | `/api/v1/apps/{name}/previews/{number}/teardown` | `deploy` |
+| `POST` | `/api/v1/apps/{name}/previews/{number}/extend` | `deploy` |
 | `POST` | `/api/v1/previews/sweep` | `deploy` |
 | `GET`, `PUT` | `/api/v1/apps/{name}/preview-policy` | `read`, `write:sensitive` |
 | `POST` | `/api/v1/apps/{name}/previews/{number}/approve` | `write:sensitive` |

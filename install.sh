@@ -137,7 +137,7 @@ PUBLIC_HOST_PINNED=0
 [ -z "$PUBLIC_HOST" ] || PUBLIC_HOST_PINNED=1
 DROPIN_DIR="/etc/systemd/system/${SERVICE_NAME}.service.d"
 DROPIN_PATH="${DROPIN_DIR}/10-install.conf"
-PROXY_DOCS_URL="https://levelrail.com/behind-an-existing-proxy"
+PROXY_DOCS_URL="https://docs.levelrail.com/behind-an-existing-proxy"
 # The dashboard is plain HTTP until the operator configures a domain with TLS.
 DASHBOARD_SCHEME="http"
 HTTPS_ONLY="=https"
