@@ -67,11 +67,11 @@ export function InvitesTable({
   const { t } = useTranslation('settings')
   if (invites.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
-        <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <EnvelopeIcon className="size-5" />
+      <div className="flex items-center gap-3 py-4">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <EnvelopeIcon className="size-4" />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <p className="text-sm font-medium text-foreground">
             No pending invites
           </p>

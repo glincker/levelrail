@@ -170,7 +170,7 @@ export function TeamInvitesCard({
           </Button>
         </form>
         {link !== '' && (
-          <div className="flex items-center gap-2 rounded-md border border-border p-2">
+          <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2">
             <code className="flex-1 truncate text-xs">{link}</code>
             <Button
               type="button"

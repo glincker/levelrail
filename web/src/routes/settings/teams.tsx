@@ -105,6 +105,7 @@ function TeamsSettingsPage() {
           icon={<UsersThreeIcon className="size-5" />}
           title={t('page.title')}
           description={t('page.empty')}
+          className="border-0 bg-transparent py-6"
         />
       ) : (
         <>
