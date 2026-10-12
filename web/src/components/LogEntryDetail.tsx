@@ -88,7 +88,9 @@ export function LogEntryDetail({
       aria-label={t('explorer.entryDetail')}
     >
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">{t('explorer.entryDetail')}</h3>
+        <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+          {t('explorer.entryDetail')}
+        </h3>
         <div className="flex gap-1">
           <Button
             type="button"

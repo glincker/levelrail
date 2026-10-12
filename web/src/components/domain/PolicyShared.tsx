@@ -188,7 +188,9 @@ export function PreviewPanel({
       aria-label={t('preview.title')}
       className="space-y-2 rounded-md border border-border p-3"
     >
-      <h3 className="text-sm font-medium">{t('preview.title')}</h3>
+      <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+        {t('preview.title')}
+      </h3>
       <p className="text-xs text-muted-foreground">{t('preview.help')}</p>
       {loading && !steps ? (
         <p className="text-xs text-muted-foreground">{t('preview.loading')}</p>
@@ -231,7 +233,9 @@ export function Section({
   return (
     <section className="space-y-3 rounded-lg border border-border bg-card p-4">
       <div>
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+          {title}
+        </h3>
         {description ? (
           <p className="text-xs text-muted-foreground">{description}</p>
         ) : null}

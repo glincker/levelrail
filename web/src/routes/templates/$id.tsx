@@ -13,7 +13,7 @@ import { TemplateLogoTile } from '../../components/TemplateLogoTile'
 import { RamFitBadge } from '../../components/RamFitBadge'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { TemplateInstallForm } from '../../components/TemplateInstallForm'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { formatBytes } from '../../lib/format'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -60,12 +60,11 @@ function TemplateDetailRoute() {
 
       <div className="flex items-start gap-4 rounded-lg border border-border bg-card p-4">
         <TemplateLogoTile id={template.id} name={template.name} size="lg" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <PageHeader
-            title={template.name}
-            status={<Badge variant="outline">{template.category}</Badge>}
-            description={template.slogan}
-          />
+        <PageTemplate
+          title={template.name}
+          status={<Badge variant="outline">{template.category}</Badge>}
+          description={template.slogan}
+        >
           {template.documentation_url ? (
             <a
               href={template.documentation_url}
@@ -93,7 +92,7 @@ function TemplateDetailRoute() {
               <Badge variant="muted">Needs NVIDIA GPU</Badge>
             )}
           </div>
-        </div>
+        </PageTemplate>
       </div>
 
       {deployTemplateNow.isError ? (

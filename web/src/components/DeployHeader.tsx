@@ -1,3 +1,4 @@
+import { Display } from '@/components/ui/typography'
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
@@ -123,9 +124,9 @@ export function DeployHeader({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="max-w-full truncate text-xl font-semibold text-foreground sm:text-2xl">
+            <Display as="h1" size="page" className="max-w-full truncate">
               {title}
-            </h1>
+            </Display>
             <StatusPill
               tone={DEPLOY_ATTEMPT_STATUS_TONE[attempt.status]}
               label={DEPLOY_ATTEMPT_STATUS_LABEL[attempt.status]}

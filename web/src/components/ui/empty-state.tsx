@@ -43,17 +43,20 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center',
+        'flex flex-col items-center gap-2 rounded-lg border border-border bg-card px-4 py-5 text-center',
         className,
       )}
     >
       {illustration ? (
-        <span className="text-muted-foreground/70" aria-hidden="true">
+        <span
+          className="text-muted-foreground/70 [&_svg]:max-h-12 [&_svg]:w-auto"
+          aria-hidden="true"
+        >
           <Illustration name={illustration} />
         </span>
       ) : (
         <span
-          className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground"
+          className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground"
           aria-hidden="true"
         >
           {icon}

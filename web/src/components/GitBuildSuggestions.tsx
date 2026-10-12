@@ -67,7 +67,9 @@ export function GitBuildSuggestions({
       className="space-y-2 rounded-lg border border-input bg-muted/30 p-3"
     >
       <div>
-        <h4 className="text-sm font-medium">{t('detected.title')}</h4>
+        <h4 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+          {t('detected.title')}
+        </h4>
         <p className="text-xs text-muted-foreground">
           {t('detected.description', { branch })}
         </p>

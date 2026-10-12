@@ -20,7 +20,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 
 interface EnvironmentCompareSearch {
   a?: string
@@ -71,17 +71,15 @@ function EnvironmentComparePage() {
   const { data: environments } = useEnvironments(id)
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        breadcrumb={<Breadcrumbs projectId={id} />}
-        title={
-          <span className="flex items-center gap-2">
-            <ArrowsLeftRightIcon className="size-4 text-muted-foreground" />
-            Compare environments
-          </span>
-        }
-      />
-
+    <PageTemplate
+      breadcrumb={<Breadcrumbs projectId={id} />}
+      title={
+        <span className="flex items-center gap-2">
+          <ArrowsLeftRightIcon className="size-4 text-muted-foreground" />
+          Compare environments
+        </span>
+      }
+    >
       <Card>
         <CardHeader>
           <CardTitle>Pick two environments</CardTitle>
@@ -121,7 +119,7 @@ function EnvironmentComparePage() {
       ) : (
         <EnvironmentCompareLoaded projectId={id} a={a} b={b} />
       )}
-    </div>
+    </PageTemplate>
   )
 }
 

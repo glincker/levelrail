@@ -83,7 +83,7 @@ export function CloneRestoreHistoryTable({
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-medium text-foreground">
+      <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
         Restored as new database
       </h3>
       <ResponsiveTable

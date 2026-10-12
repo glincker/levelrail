@@ -84,9 +84,7 @@ function NodeDetailPage() {
   const setWorkloads = useSetNodeWorkloads()
 
   return (
-    <div className="space-y-6">
-      <NodeDetailHeader node={node} />
-
+    <NodeDetailHeader node={node}>
       <Card>
         <CardHeader>
           <CardTitle>Overview</CardTitle>
@@ -235,7 +233,7 @@ function NodeDetailPage() {
       <NodeMetricsDashboard nodeId={id} />
 
       <ConditionsPanel conditions={conditions} />
-    </div>
+    </NodeDetailHeader>
   )
 }
 

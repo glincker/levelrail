@@ -83,11 +83,11 @@ export function PreviewEnvOverridesEditor({
       </CardHeader>
       <CardContent>
         {entries.length > 0 ? (
-          <ul className="mb-4 space-y-1 rounded-md border border-border p-2">
+          <ul className="mb-4 divide-y divide-border">
             {entries.map(([key, value]) => (
               <li
                 key={key}
-                className="flex items-center justify-between gap-2 rounded px-2 py-1 text-sm"
+                className="flex items-center justify-between gap-2 py-2 text-sm first:pt-0 last:pb-0"
               >
                 <span className="font-mono">
                   {key}

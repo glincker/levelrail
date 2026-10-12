@@ -1,3 +1,4 @@
+import { Display } from '@/components/ui/typography'
 import { useEffect, useState } from 'react'
 import {
   CheckCircleIcon,
@@ -377,9 +378,9 @@ export function LoginBrandPanel({ name }: { name: string }) {
                   />
                   {slide.eyebrow}
                 </p>
-                <h2 className="max-w-lg text-4xl leading-[1.08] font-light tracking-[-0.03em] text-balance text-white xl:text-5xl">
+                <Display as="h2" size="page" className="max-w-lg text-white">
                   {slide.headline}
-                </h2>
+                </Display>
               </div>
               <ul className="max-w-md space-y-3">
                 {slide.points.map((point) => (

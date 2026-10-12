@@ -161,7 +161,9 @@ export function DeployLinkForm({ prefill }: { prefill: DeployLinkPrefill }) {
 
       {prefill.env.length > 0 ? (
         <div className="space-y-3">
-          <h2 className="text-sm font-medium">{t('deployLink.envTitle')}</h2>
+          <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+            {t('deployLink.envTitle')}
+          </h2>
           <p className="text-sm text-muted-foreground">
             {t('deployLink.envHint')}
           </p>

@@ -156,7 +156,7 @@ export function LogSignaturesPanel({
     <section className="rounded-lg border border-border p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-foreground">
+          <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             {t('explorer.title')}
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">

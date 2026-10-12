@@ -95,7 +95,7 @@ export function DomainStep({ onContinue, onSkip, pending }: StepProps) {
           {t('wizard.sslipReady')}
         </p>
       ) : null}
-      <h3 className="pt-2 text-sm font-semibold">
+      <h3 className="pt-2 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
         {t('wizard.ownDomainTitle')}
       </h3>
       <p className="max-w-prose text-sm text-muted-foreground">

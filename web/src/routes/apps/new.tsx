@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { NewAppWizard } from '../../components/newapp/NewAppWizard'
 import {
   DeployLinkForm,
@@ -24,15 +24,13 @@ function NewAppPage() {
 
   if (prefill.active && prefill.image !== undefined) {
     return (
-      <div className="space-y-6">
-        <PageHeader title={t('title')} description={t('description')} />
+      <PageTemplate title={t('title')} description={t('description')}>
         <DeployLinkForm prefill={prefill} />
-      </div>
+      </PageTemplate>
     )
   }
   return (
-    <div className="space-y-6">
-      <PageHeader title={t('title')} description={t('description')} />
+    <PageTemplate title={t('title')} description={t('description')}>
       {prefill.active ? (
         <div className="mx-auto w-full max-w-3xl space-y-3">
           <DeployLinkNotice prefill={prefill} />
@@ -42,6 +40,6 @@ function NewAppPage() {
         </div>
       ) : null}
       <NewAppWizard />
-    </div>
+    </PageTemplate>
   )
 }

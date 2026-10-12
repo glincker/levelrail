@@ -27,7 +27,7 @@ export function WizardStep({
 }) {
   return (
     <section className="space-y-2 rounded-md border border-border p-3">
-      <h4 className="flex items-center gap-2 text-sm font-medium text-foreground">
+      <h4 className="flex items-center gap-2 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
         <span
           className="flex size-5 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground"
           aria-hidden="true"

@@ -86,7 +86,7 @@ import type { DatabaseResource } from '../types/databaseDetail'
 // master-key gap.
 export function NoTargetsConfigured() {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-6 py-8 text-center">
+    <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-4 text-center">
       <CloudArrowUpIcon
         className="size-5 text-muted-foreground"
         aria-hidden="true"

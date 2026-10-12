@@ -46,7 +46,9 @@ export function ReservedResourceColumn({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-medium">{label}</h3>
+        <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+          {label}
+        </h3>
         <span
           className={cn(
             'rounded-full px-2 py-0.5 text-xs font-medium',

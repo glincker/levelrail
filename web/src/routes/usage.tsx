@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { CoinsIcon, DownloadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -44,34 +44,33 @@ function UsagePage() {
   const data = report.data
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t('title')}
-        description={t('description')}
-        helpPath="/usage-and-cost"
-        helpLabel={t('title')}
-        actions={
-          <>
-            {canPrice ? (
-              <Button variant="outline" onClick={() => setPricesOpen(true)}>
-                {t('settings.open')}
-              </Button>
-            ) : null}
-            <Button
-              variant="outline"
-              render={
-                <a
-                  href={`/api/v1/usage/report?period=${period}&format=csv`}
-                  download
-                />
-              }
-            >
-              <DownloadSimpleIcon />
-              {t('export.csv')}
+    <PageTemplate
+      title={t('title')}
+      description={t('description')}
+      helpPath="/usage-and-cost"
+      helpLabel={t('title')}
+      actions={
+        <>
+          {canPrice ? (
+            <Button variant="outline" onClick={() => setPricesOpen(true)}>
+              {t('settings.open')}
             </Button>
-          </>
-        }
-      />
+          ) : null}
+          <Button
+            variant="outline"
+            render={
+              <a
+                href={`/api/v1/usage/report?period=${period}&format=csv`}
+                download
+              />
+            }
+          >
+            <DownloadSimpleIcon />
+            {t('export.csv')}
+          </Button>
+        </>
+      }
+    >
       <div
         className="flex flex-wrap gap-1"
         role="group"
@@ -140,6 +139,6 @@ function UsagePage() {
           data={settings.data}
         />
       ) : null}
-    </div>
+    </PageTemplate>
   )
 }

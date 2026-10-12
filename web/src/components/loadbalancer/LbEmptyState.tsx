@@ -68,7 +68,9 @@ export function LbEmptyState({
       />
       <Diagram replicas={replicas} />
       <div>
-        <h2 className="mb-2 text-sm font-medium">Or start from a preset</h2>
+        <h2 className="mb-2 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+          Or start from a preset
+        </h2>
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {LB_PRESETS.map((p) => (
             <li key={p.id}>

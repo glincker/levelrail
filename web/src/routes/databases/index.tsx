@@ -12,7 +12,7 @@ import { ConnectDatabaseDialog } from '../../components/ConnectDatabaseDialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '../../components/ui/button'
 import { EmptyState } from '../../components/ui/empty-state'
-import { PageHeader } from '../../components/shell/PageHeader'
+import { PageTemplate } from '../../components/shell/PageTemplate'
 
 // Loader primes the cache; the component reads it via useSuspenseQuery.
 // Virtualized unconditionally: GET /api/v1/databases returns everything.
@@ -60,21 +60,20 @@ function DatabaseListPage() {
   useEnvironmentScope()
   const { data: databases } = useSuspenseQuery(databaseListQueryOptions())
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title={t('list.title')}
-        description={
-          databases.length > 0
-            ? t('list.count', { count: databases.length })
-            : undefined
-        }
-        actions={
-          <>
-            <ConnectDatabaseDialog />
-            <NewDatabaseButton />
-          </>
-        }
-      />
+    <PageTemplate
+      title={t('list.title')}
+      description={
+        databases.length > 0
+          ? t('list.count', { count: databases.length })
+          : undefined
+      }
+      actions={
+        <>
+          <ConnectDatabaseDialog />
+          <NewDatabaseButton />
+        </>
+      }
+    >
       {databases.length === 0 ? (
         <EmptyState
           icon={<DatabaseIcon className="size-5" />}
@@ -85,30 +84,28 @@ function DatabaseListPage() {
       ) : (
         <DatabasesTable databases={databases} />
       )}
-    </div>
+    </PageTemplate>
   )
 }
 
 function DatabaseListPending() {
   const { t } = useTranslation('databases')
   return (
-    <div className="space-y-4">
-      <PageHeader title={t('list.title')} />
+    <PageTemplate title={t('list.title')}>
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <ListHeader />
         {Array.from({ length: 6 }, (_, i) => (
           <RowSkeleton key={i} />
         ))}
       </div>
-    </div>
+    </PageTemplate>
   )
 }
 
 function DatabaseListError({ error }: { error: unknown }) {
   const { t } = useTranslation('databases')
   return (
-    <div className="space-y-4">
-      <PageHeader title={t('list.title')} />
+    <PageTemplate title={t('list.title')}>
       <Alert variant="destructive">
         <AlertDescription className="space-y-2">
           <p className="font-medium">{t('list.errorTitle')}</p>
@@ -126,6 +123,6 @@ function DatabaseListError({ error }: { error: unknown }) {
           </Button>
         </AlertDescription>
       </Alert>
-    </div>
+    </PageTemplate>
   )
 }

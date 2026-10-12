@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 
 // Layout route: primes the database and status queries once so the section
 // routes and sidebar read the same cache.
@@ -37,24 +37,22 @@ function DatabaseDetailLayout() {
   const status = summarizeDatabaseStatus(conditions)
 
   return (
-    <div className="space-y-6">
-      <div>
+    <PageTemplate
+      title={database.name}
+      breadcrumb={
         <Breadcrumbs projectId={database.project_id} page={database.name} />
-      </div>
-      <PageHeader
-        title={database.name}
-        status={<Badge variant={status.variant}>{status.label}</Badge>}
-        actions={
-          database.external ? (
-            <DeleteExternalDatabaseDialog name={database.name} />
-          ) : (
-            <DatabaseActionBar database={database} />
-          )
-        }
-      />
-
+      }
+      status={<Badge variant={status.variant}>{status.label}</Badge>}
+      actions={
+        database.external ? (
+          <DeleteExternalDatabaseDialog name={database.name} />
+        ) : (
+          <DatabaseActionBar database={database} />
+        )
+      }
+    >
       <Outlet />
-    </div>
+    </PageTemplate>
   )
 }
 

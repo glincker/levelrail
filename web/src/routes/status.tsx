@@ -9,6 +9,7 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { PageTemplate } from '../components/shell/PageTemplate'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
 import { useAttentionItems } from '../queries/attention'
@@ -214,14 +215,10 @@ export function StatusPage() {
   const items = showSnoozed ? all : all.filter((i) => !snoozed.includes(i))
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">Status</h1>
-        <p className="text-sm text-muted-foreground">
-          Everything that needs attention right now. Refreshes every 30 seconds.
-        </p>
-      </div>
-
+    <PageTemplate
+      title="Status"
+      description="Everything that needs attention right now. Refreshes every 30 seconds."
+    >
       {snoozed.length > 0 && !showSnoozed ? (
         <p className="text-xs text-muted-foreground">
           {t('copyFailure.snoozedCount', { count: snoozed.length })}{' '}
@@ -300,6 +297,6 @@ export function StatusPage() {
           })}
         </ul>
       )}
-    </div>
+    </PageTemplate>
   )
 }

@@ -84,7 +84,7 @@ export function DoneStep({
       </div>
 
       <section className="space-y-2">
-        <h4 className="text-sm font-medium text-foreground">
+        <h4 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
           {t('done.summaryHeading')}
         </h4>
         <ul className="divide-y divide-border rounded-xl border border-border">
@@ -134,14 +134,14 @@ export function DoneStep({
       </section>
 
       <section className="space-y-1.5">
-        <h4 className="text-sm font-medium text-foreground">
+        <h4 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
           {t('done.dashboardUrl')}
         </h4>
         <CopyValue value={address} label={t('done.dashboardUrl')} />
       </section>
 
       <section className="space-y-2">
-        <h4 className="text-sm font-medium text-foreground">
+        <h4 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
           {t('done.nextHeading')}
         </h4>
         <div className="grid gap-2 sm:grid-cols-3">
@@ -180,7 +180,7 @@ export function DoneStep({
           <PackageIcon className="size-5" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-medium text-foreground">
+          <h4 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             {t('done.importTitle')}
           </h4>
           <p className="text-xs text-muted-foreground">

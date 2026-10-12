@@ -209,7 +209,9 @@ export function MajorUpgradeCard({ database }: { database: DatabaseResource }) {
             {start.error.message}
           </p>
         ) : null}
-        <h3 className="text-sm font-medium">{t('majorUpgrade.history')}</h3>
+        <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+          {t('majorUpgrade.history')}
+        </h3>
         {history.data && history.data.length > 0 ? (
           <ul className="text-sm">
             {history.data.map((u) => (

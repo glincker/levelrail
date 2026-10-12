@@ -1,3 +1,4 @@
+import { Display } from '@/components/ui/typography'
 import { Link } from '@tanstack/react-router'
 import { StatusPill } from '@/components/kit'
 import type { AppDetail } from '../../types/appDetail'
@@ -50,13 +51,13 @@ export function OverviewHero({
   return (
     <section
       aria-label="App summary"
-      className="flex flex-col gap-4 rounded-[var(--glinui-radius-lg)] border border-border bg-card p-4 sm:p-6 lg:flex-row lg:items-start lg:justify-between"
+      className="flex flex-col gap-4 rounded-[var(--glinui-radius-lg)] border border-border bg-card p-4 lg:flex-row lg:items-start lg:justify-between"
     >
       <div className="min-w-0 space-y-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 className="truncate text-2xl font-semibold text-foreground">
+          <Display as="h1" size="page" className="truncate">
             {app.name}
-          </h1>
+          </Display>
           <StatusPill
             tone={status.tone}
             label={status.label}

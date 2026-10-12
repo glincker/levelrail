@@ -1,3 +1,4 @@
+import { Display } from '@/components/ui/typography'
 import { createFileRoute } from '@tanstack/react-router'
 import { AlertRulesPanel } from '../../../components/AlertRulesPanel'
 import { AlertHistoryTable } from '../../../components/AlertHistoryTable'
@@ -30,11 +31,11 @@ function AlertsSection() {
     <div className="flex flex-col gap-4">
       <AlertRulesPanel appName={name} volumes={app?.volumes} />
       <DeployNotifyTargetsPanel appName={name} />
-      <section className="rounded-lg border border-border p-4">
-        <h2 className="mb-1 text-sm font-semibold text-foreground">
+      <section className="space-y-3">
+        <Display as="h2" size="section">
           Alert history
-        </h2>
-        <p className="mb-3 text-xs text-muted-foreground">
+        </Display>
+        <p className="text-xs text-muted-foreground">
           Every firing and resolution for this app, and whether its notification
           was sent, silenced, grouped, inhibited or failed.
         </p>

@@ -336,7 +336,7 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
                 className="border-t border-border"
               >
                 <div className="px-3 pt-3">
-                  <h3 className="text-sm font-medium">
+                  <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
                     {t('inherited.title')}
                   </h3>
                   <p className="text-xs text-muted-foreground">

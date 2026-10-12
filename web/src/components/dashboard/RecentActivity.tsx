@@ -94,7 +94,7 @@ export function RecentActivity({ apps }: { apps: AppListEntry[] }) {
       aria-label={t('deploys.title')}
       className="space-y-3 rounded-lg border border-border bg-card p-4 sm:p-5"
     >
-      <h2 className="text-sm font-semibold text-foreground">
+      <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
         {t('deploys.title')}
       </h2>
       {isPending ? (

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -11,7 +11,7 @@ import { StatusPill } from '@/components/kit/StatusPill'
 import type { Tone } from '@/components/kit/tone'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import type { NodeResource, NodeStatus } from '../../types/nodeDetail'
 import { CordonNodeDialog } from '../CordonNodeDialog'
 import { DeleteNodeDialog } from '../DeleteNodeDialog'
@@ -26,13 +26,19 @@ const STATUS_TONE: Record<NodeStatus, Tone> = {
 
 // Same action bar shape as the app page: the common actions inline, Delete
 // behind the overflow menu so it never carries the weight of Drain.
-export function NodeDetailHeader({ node }: { node: NodeResource }) {
+export function NodeDetailHeader({
+  node,
+  children,
+}: {
+  node: NodeResource
+  children?: ReactNode
+}) {
   const { t } = useTranslation('nodes')
   const navigate = useNavigate()
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   return (
-    <PageHeader
+    <PageTemplate
       breadcrumb={
         <Link
           to="/nodes"
@@ -97,6 +103,8 @@ export function NodeDetailHeader({ node }: { node: NodeResource }) {
           />
         </>
       }
-    />
+    >
+      {children}
+    </PageTemplate>
   )
 }

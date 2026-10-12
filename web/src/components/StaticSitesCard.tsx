@@ -22,13 +22,15 @@ export function StaticSitesCard() {
   }
 
   return (
-    <div className="mt-6 rounded-lg border border-border bg-card">
+    <div className="rounded-lg border border-border bg-card">
       <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
         <LayoutIcon
           className="size-4 text-muted-foreground"
           aria-hidden="true"
         />
-        <h2 className="text-sm font-medium text-foreground">Static sites</h2>
+        <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
+          Static sites
+        </h2>
         <span className="text-xs text-muted-foreground">
           {sites.length} {sites.length === 1 ? 'site' : 'sites'}
         </span>

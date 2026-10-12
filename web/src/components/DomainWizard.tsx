@@ -87,7 +87,7 @@ export function DomainWizard({ app }: { app: AppDetail }) {
   return (
     <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
       <div>
-        <h3 className="text-sm font-semibold text-foreground">
+        <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
           {t('wizard.title')}
         </h3>
         <p className="text-xs text-muted-foreground">

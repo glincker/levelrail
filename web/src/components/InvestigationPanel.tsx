@@ -46,7 +46,7 @@ export function InvestigationPanel({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+          <h3 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             <MagnifyingGlassIcon className="size-4" aria-hidden="true" />
             {t('investigation.heading', { time: at.toLocaleString() })}
           </h3>

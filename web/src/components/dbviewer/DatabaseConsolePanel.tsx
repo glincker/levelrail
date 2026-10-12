@@ -17,7 +17,7 @@ export function DatabaseConsolePanel({
 
   return (
     <div className="space-y-4">
-      <h1 className="flex items-center gap-2 text-lg font-semibold">
+      <h1 className="flex items-center gap-2 text-(length:--glinr-type-size-page) leading-(--glinr-type-leading-page) font-(weight:--glinr-type-heading-weight)">
         {t('viewer.console.title')}
         <BetaBadge />
       </h1>

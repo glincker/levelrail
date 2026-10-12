@@ -104,7 +104,7 @@ export function TrafficTiles({
   }
   if (!data.hasTraffic) {
     return (
-      <div className="col-span-full rounded-xl border border-dashed border-border">
+      <div className="col-span-full">
         <EmptyState
           icon={<PulseIcon />}
           illustration="chart"
