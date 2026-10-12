@@ -18,7 +18,7 @@ import {
 import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
 import {
   ConfiguredStatusHeading,
-  ConnectionCardHeader,
+  ConnectionActions,
   DisconnectConnectionDialog,
   FormDialogFooter,
   mutationToastCallbacks,
@@ -44,43 +44,25 @@ export function BitbucketAppConnectionCard() {
 
   return (
     <Card>
-      <ConnectionCardHeader
-        icon={GitBranchIcon}
-        title="Bitbucket App"
-        description="Connect a Bitbucket Cloud OAuth consumer for repository browsing and webhook-driven deploys."
-      />
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between rounded-lg border border-border px-4 py-3">
-          <div className="space-y-1">
-            <ConfiguredStatusHeading
-              connected={status.connected}
-              authorized={status.authorized}
-            />
-            {status.connected && !status.authorized && status.base_url ? (
-              <p className="text-sm text-muted-foreground">
-                The OAuth consumer is configured but hasn&apos;t been authorized
-                yet. Click Connect to finish.
-              </p>
-            ) : null}
-            {status.connected && !status.authorized && !status.base_url ? (
-              <SetPrimaryDomainPrompt />
-            ) : null}
-          </div>
-
+        <div className="space-y-1">
+          <ConfiguredStatusHeading
+            connected={status.connected}
+            authorized={status.authorized}
+          />
+          {status.connected && !status.authorized && status.base_url ? (
+            <p className="text-sm text-muted-foreground">
+              The OAuth consumer is configured but hasn&apos;t been authorized
+              yet. Click Connect to finish.
+            </p>
+          ) : null}
+        </div>
+        {status.connected && !status.authorized && !status.base_url ? (
+          <SetPrimaryDomainPrompt />
+        ) : null}
+        <ConnectionActions>
           {status.connected ? (
-            <div className="flex shrink-0 items-center gap-2">
-              {!status.authorized && status.base_url ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => {
-                    window.location.href = '/api/v1/bitbucket-app/connect'
-                  }}
-                >
-                  <GitBranchIcon className="size-4" />
-                  Connect
-                </Button>
-              ) : null}
+            <>
               <DisconnectConnectionDialog
                 open={confirmOpen}
                 onOpenChange={setConfirmOpen}
@@ -105,7 +87,19 @@ export function BitbucketAppConnectionCard() {
                   )
                 }}
               />
-            </div>
+              {!status.authorized && status.base_url ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    window.location.href = '/api/v1/bitbucket-app/connect'
+                  }}
+                >
+                  <GitBranchIcon className="size-4" />
+                  Connect
+                </Button>
+              ) : null}
+            </>
           ) : (
             <Button
               type="button"
@@ -116,7 +110,7 @@ export function BitbucketAppConnectionCard() {
               Configure
             </Button>
           )}
-        </div>
+        </ConnectionActions>
       </CardContent>
       <ConfigureDialog
         open={configureOpen}

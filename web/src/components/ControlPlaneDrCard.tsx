@@ -1,8 +1,4 @@
-import {
-  PlayIcon,
-  ShieldCheckIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { PlayIcon, ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
   CardContent,
@@ -10,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { formatAge } from '../lib/format'
@@ -98,20 +95,11 @@ export function ControlPlaneDrCard() {
       </CardHeader>
       <CardContent className="space-y-5">
         {status.warnings.length > 0 ? (
-          <ul className="space-y-1.5" aria-label="Warnings">
+          <div className="space-y-2" aria-label="Warnings">
             {status.warnings.map((w) => (
-              <li
-                key={w.code}
-                className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-2.5 text-sm text-foreground"
-              >
-                <WarningIcon
-                  className="mt-0.5 size-4 shrink-0 text-amber-600"
-                  aria-hidden="true"
-                />
-                <span>{w.message}</span>
-              </li>
+              <Banner key={w.code} variant="warning" title={w.message} />
             ))}
-          </ul>
+          </div>
         ) : null}
 
         <ControlPlaneDrChecklistView checklist={status.checklist} />

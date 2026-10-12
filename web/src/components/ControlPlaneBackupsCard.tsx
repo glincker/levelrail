@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -219,17 +220,14 @@ export function ControlPlaneBackupsCard() {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div
-          role="note"
-          className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground"
+        <Banner
+          variant="info"
+          icon={<KeyIcon />}
+          title="The master key is not included in a backup"
         >
-          <KeyIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <span>
-            The master key is not included in a backup. Secrets in the snapshot
-            are encrypted with it, so a restore without the same master key
-            leaves them unreadable. Store the key separately.
-          </span>
-        </div>
+          Secrets in the snapshot are encrypted with it, so a restore without
+          the same master key leaves them unreadable. Store the key separately.
+        </Banner>
         {backups.length === 0 ? (
           <p className="py-2 text-sm text-muted-foreground">
             No backups yet. Use &ldquo;Back up now&rdquo; to take the first one.

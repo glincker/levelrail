@@ -183,6 +183,9 @@ export function PlatformImportCard() {
 
   return (
     <Card>
+      <CardHeader>
+        <CardTitle>Connect the source platform</CardTitle>
+      </CardHeader>
       <CardContent>
         <form onSubmit={onDiscover} className="space-y-4">
           <p className="text-sm text-muted-foreground">

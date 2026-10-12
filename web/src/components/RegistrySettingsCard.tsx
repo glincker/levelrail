@@ -6,7 +6,6 @@ import {
   CheckCircleIcon,
   WarningCircleIcon,
   MinusCircleIcon,
-  WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import type { VariantProps } from 'class-variance-authority'
@@ -17,6 +16,7 @@ import {
 } from '../queries/registry'
 import type { badgeVariants } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/ui/status-badge'
+import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -181,12 +181,10 @@ export function RegistrySettingsCard({
 
           {revealedPassword ? (
             <div className="space-y-2">
-              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-                <WarningIcon className="mt-0.5 size-4 shrink-0" />
-                <p className="text-sm">
-                  Copy this password now. It will not be shown again.
-                </p>
-              </div>
+              <Banner
+                variant="warning"
+                title="Copy this password now. It will not be shown again."
+              />
               <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
                 <code className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
                   {revealedPassword}

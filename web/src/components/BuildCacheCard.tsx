@@ -57,7 +57,7 @@ function CacheUsage({ appName }: { appName: string }) {
   const [confirming, setConfirming] = useState(false)
 
   return (
-    <div className="space-y-3 rounded-lg border p-4">
+    <div className="space-y-4">
       {stats.isPending ? (
         <p className="text-sm text-muted-foreground">Checking the bucket...</p>
       ) : stats.isError ? (

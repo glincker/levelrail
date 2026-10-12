@@ -9,7 +9,7 @@ import {
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
-import { Display, Eyebrow, Lede } from '@/components/ui/typography'
+import { Display, Eyebrow } from '@/components/ui/typography'
 import { TONE, type Tone } from '@/components/kit/tone'
 import { dismissBanner, isBannerDismissed } from '@/lib/bannerDismissal'
 import { cn } from '@/lib/utils'
@@ -77,17 +77,28 @@ export function Banner({
     >
       <span
         aria-hidden="true"
-        className={cn('mt-0.5 shrink-0 [&_svg]:size-5', tone.text)}
+        className={cn(
+          'flex h-5 shrink-0 items-center [&_svg]:size-5',
+          tone.text,
+        )}
       >
         {icon ?? v.icon}
       </span>
       <div className="min-w-0 flex-1 space-y-0.5">
         {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-        <Display as="h3" size="banner">
-          {title}
-        </Display>
         {children ? (
-          <Lede className="text-foreground/80">{children}</Lede>
+          <Display as="h3" size="banner">
+            {title}
+          </Display>
+        ) : (
+          <p className="text-sm leading-5 font-normal text-foreground">
+            {title}
+          </p>
+        )}
+        {children ? (
+          <div className="max-w-prose text-sm text-pretty text-foreground/80">
+            {children}
+          </div>
         ) : null}
       </div>
       {action ? <div className="shrink-0 self-center">{action}</div> : null}
@@ -96,6 +107,7 @@ export function Banner({
           type="button"
           variant="ghost"
           size="icon-sm"
+          className="-my-1 shrink-0"
           aria-label={t('foundation.banner.dismiss')}
           onClick={() => {
             if (dismissId) dismissBanner(dismissId)
