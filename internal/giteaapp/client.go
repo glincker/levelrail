@@ -32,7 +32,7 @@ type Client struct {
 // NewClient returns a Client with a bounded per-request timeout, the
 // same reasoning internal/githubapp.NewClient's own doc comment gives.
 func NewClient() *Client {
-	return &Client{HTTP: &http.Client{Timeout: 20 * time.Second}}
+	return &Client{HTTP: gitprovider.NewGuardedClient()}
 }
 
 // apiError is giteaapp's own name for the shared gitprovider.APIError,
