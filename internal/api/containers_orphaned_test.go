@@ -298,6 +298,31 @@ func TestHandleListContainers_ManagedField(t *testing.T) {
 	}
 }
 
+func TestHandleListContainers_NonRootSeesOnlyManaged(t *testing.T) {
+	managedName := managedContainerName()
+	lister := &fakeContainerLister{containers: []docker.ContainerState{
+		{Name: managedName, Labels: map[string]string{spec.InstanceLabelKey: "inst_a"}},
+		{Name: "unrelated-nginx"},
+		{Name: "web-stale01", Labels: map[string]string{spec.InstanceLabelKey: "inst_a"}},
+	}}
+	rt, db := newTestRouterWithContainerLister(t, lister)
+	seedWebAppForTest(t, db)
+	reader := storeUserWithAbilitiesForTest(t, db, "containers-read@example.com", []string{AbilityRead})
+	cookie := sessionCookieForTest(t, rt, reader.ID)
+
+	rec := listContainers(t, rt, cookie)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var got []containerResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 1 || got[0].Name != managedName {
+		t.Fatalf("non-root saw %+v, want only %s", got, managedName)
+	}
+}
+
 func TestDeriveAppNameFromContainer(t *testing.T) {
 	cases := []struct {
 		in, want string

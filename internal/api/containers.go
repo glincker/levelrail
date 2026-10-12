@@ -50,7 +50,9 @@ func toContainerResource(c docker.ContainerState, managed bool) containerResourc
 	return containerResource{Name: c.Name, Image: c.Image, Running: c.Running, Ports: ports, Managed: managed}
 }
 
-// handleListContainers handles GET /api/v1/system/containers. 501 if no
+// handleListContainers handles GET /api/v1/system/containers. Callers
+// without root see managed containers only, so unmanaged host containers
+// are not enumerated to a read principal. 501 if no
 // ContainerLister is configured, the same "not configured" shape every
 // other optional-dependency route in this package uses (see
 // ImageLister's own doc comment).
@@ -77,12 +79,17 @@ func (rt *Router) handleListContainers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isRoot := rt.callerHasAbility(r, AbilityRoot)
 	out := make([]containerResource, 0, len(containers))
 	for _, c := range containers {
 		if containerHidden(c.Name, hidden) {
 			continue
 		}
-		out = append(out, toContainerResource(c, orphans.IsManaged(c, desired, "")))
+		managed := orphans.IsManaged(c, desired, "")
+		if !managed && !isRoot {
+			continue
+		}
+		out = append(out, toContainerResource(c, managed))
 	}
 	writeJSON(w, http.StatusOK, out)
 }

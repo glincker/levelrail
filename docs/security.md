@@ -215,7 +215,7 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 - No secret scanning of an app's own source repository.
 - Notification destinations (webhook URLs, Telegram bot tokens, PagerDuty and Opsgenie keys) are stored as plain text in `alerting.db`, not envelope encrypted. Treat that file as sensitive.
 - Sessions live in memory, so every control plane restart (including an upgrade) signs everyone out. API tokens are unaffected.
-- `GET /api/v1/system/containers` lists every container on the Docker host, including ones Levelrail does not manage, to any caller with `read`.
+- `GET /api/v1/system/containers` lists containers Levelrail does not manage only to `root` callers. Other callers with `read` see managed containers only.
 - Container hardening is on by default but has no per-app override yet, and read-only root filesystems stay opt-in.
 - Rootless Docker and Podman detection and hardening adjustment ([above](#rootless-and-podman)) exist but are not verified against a real installation; bind-mount ownership and cgroup resource limits beyond `PidsLimit` are known gaps.
 
