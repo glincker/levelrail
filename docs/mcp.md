@@ -14,6 +14,7 @@ description: The levelrail-mcp tool listing, its token budget, the read-only dia
 | `--toolsets` | `APP_MCP_TOOLSETS` | all | Comma separated tool groups to expose. |
 | `--tool-profile` | `APP_MCP_TOOL_PROFILE` | none | `agent-core`, a small allowlist. |
 | `--allow-write` | `APP_MCP_ALLOW_WRITE=1` | off | Exposes the confirm-gated write tools below. Ignored in `read-only` mode. |
+| `--readonly` | `APP_MCP_READONLY=1` | off | Asks the API which abilities the token holds and refuses to start if it has `write`, `write:sensitive`, `deploy` or `root`; also forces `read-only` mode. Recommended default for AI clients. |
 | `--output-schemas` | `APP_MCP_OUTPUT_SCHEMAS=1` | off | Advertise every tool's `outputSchema` in `tools/list`. |
 | `--print-config` | none | off | Print a client config block for `claude`, `cursor`, `vscode` or `zed`, then exit. See below. |
 | `--team`, `--project` | `APP_TEAM`, `APP_PROJECT` | saved context | Narrow every request with the `X-Scope-Team` and `X-Scope-Project` headers. They only narrow what the token already sees. |

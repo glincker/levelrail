@@ -50,13 +50,35 @@ function applyAiSseEvent(
       tool_calls: [...(target.tool_calls ?? []), event.toolCall],
     }
   } else {
+    const outcome = {
+      result: event.result,
+      is_error: event.isError,
+      acting_as: event.actingAs,
+      abilities: event.abilities,
+    }
+    const calls = target.tool_calls ?? []
+    const matched =
+      event.confirmationId !== '' &&
+      calls.some((call) => call.confirmation_id === event.confirmationId)
+    // An auto-run read-only call has no proposal to match, so it gets its own row.
     updated = {
       ...target,
-      tool_calls: (target.tool_calls ?? []).map((call) =>
-        call.confirmation_id === event.confirmationId
-          ? { ...call, result: event.result, is_error: event.isError }
-          : call,
-      ),
+      tool_calls: matched
+        ? calls.map((call) =>
+            call.confirmation_id === event.confirmationId
+              ? { ...call, ...outcome }
+              : call,
+          )
+        : [
+            ...calls,
+            {
+              confirmation_id: event.toolUseId,
+              tool_name: event.toolName,
+              arguments: {},
+              read_only: true,
+              ...outcome,
+            },
+          ],
     }
   }
 

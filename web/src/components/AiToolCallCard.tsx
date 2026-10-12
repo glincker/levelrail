@@ -4,6 +4,7 @@ import {
   ShieldWarningIcon,
   XCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
 import type { AiToolCall } from '../types/aiAssistant'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,9 +16,12 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 
-function summarizeArguments(args: Record<string, unknown>): string {
+function summarizeArguments(
+  args: Record<string, unknown>,
+  emptyLabel: string,
+): string {
   const entries = Object.entries(args)
-  if (entries.length === 0) return 'No arguments.'
+  if (entries.length === 0) return emptyLabel
   return entries
     .map(([key, value]) => {
       const rendered = typeof value === 'string' ? value : JSON.stringify(value)
@@ -41,7 +45,24 @@ function summarizeResult(result: unknown): string {
 // confirm step: a read-only tool the assistant already auto-executed, or
 // a mutating one the operator already approved/rejected. Deliberately
 // lighter weight than the confirmation Card below, no action to take.
+function AiToolCallActor({ toolCall }: Readonly<{ toolCall: AiToolCall }>) {
+  const { t } = useTranslation('aiAssistant')
+  if (!toolCall.acting_as) return null
+  const abilities = toolCall.abilities ?? []
+  return (
+    <span className="pl-6 text-xs text-muted-foreground">
+      {abilities.length > 0
+        ? t('toolCall.actingAsWithAbility', {
+            user: toolCall.acting_as,
+            abilities: abilities.join(', '),
+          })
+        : t('toolCall.actingAs', { user: toolCall.acting_as })}
+    </span>
+  )
+}
+
 function AiToolCallNote({ toolCall }: Readonly<{ toolCall: AiToolCall }>) {
+  const { t } = useTranslation('aiAssistant')
   const hasResult = toolCall.result !== undefined
 
   if (toolCall.resolution === 'rejected') {
@@ -49,7 +70,7 @@ function AiToolCallNote({ toolCall }: Readonly<{ toolCall: AiToolCall }>) {
       <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
         <XCircleIcon className="size-4 shrink-0 text-destructive" />
         <span>
-          Rejected{' '}
+          {t('toolCall.rejected')}{' '}
           <span className="font-medium text-foreground">
             {toolCall.tool_name}
           </span>
@@ -63,7 +84,9 @@ function AiToolCallNote({ toolCall }: Readonly<{ toolCall: AiToolCall }>) {
   ) : (
     <CheckCircleIcon className="size-4 shrink-0 text-green-600 dark:text-green-400" />
   )
-  const verb = toolCall.read_only ? 'Checked' : 'Approved'
+  const verb = toolCall.read_only
+    ? t('toolCall.checked')
+    : t('toolCall.approved')
 
   return (
     <div className="flex flex-col gap-1 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
@@ -87,6 +110,7 @@ function AiToolCallNote({ toolCall }: Readonly<{ toolCall: AiToolCall }>) {
           {summarizeResult(toolCall.result)}
         </span>
       ) : null}
+      <AiToolCallActor toolCall={toolCall} />
     </div>
   )
 }
@@ -108,6 +132,7 @@ export function AiToolCallCard({
   onReject: () => void
   disabled?: boolean
 }>) {
+  const { t } = useTranslation('aiAssistant')
   const needsConfirmation = !toolCall.read_only && !toolCall.resolution
 
   if (!needsConfirmation) {
@@ -120,10 +145,10 @@ export function AiToolCallCard({
         <CardTitle className="flex items-center gap-2 text-sm">
           <ShieldWarningIcon className="size-4 text-amber-600 dark:text-amber-400" />
           {toolCall.tool_name}
-          <Badge variant="warning">Confirmation required</Badge>
+          <Badge variant="warning">{t('toolCall.confirmationRequired')}</Badge>
         </CardTitle>
         <CardDescription>
-          {summarizeArguments(toolCall.arguments)}
+          {summarizeArguments(toolCall.arguments, t('toolCall.noArguments'))}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -134,7 +159,7 @@ export function AiToolCallCard({
             disabled={disabled}
             onClick={onApprove}
           >
-            Approve
+            {t('toolCall.approve')}
           </Button>
           <Button
             type="button"
@@ -143,7 +168,7 @@ export function AiToolCallCard({
             disabled={disabled}
             onClick={onReject}
           >
-            Reject
+            {t('toolCall.reject')}
           </Button>
         </div>
       </CardContent>

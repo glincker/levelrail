@@ -120,6 +120,7 @@ type Engine struct {
 	store        Store
 	secrets      SecretsResolver
 	tools        ToolExecutor
+	factory      ToolFactory
 	provider     ProviderFactory
 	systemPrompt string
 }
@@ -165,6 +166,12 @@ func (e *Engine) IsConfigured(ctx context.Context) (bool, error) {
 // it happens; the caller sends the final "done" SSE event once this
 // returns, success or error.
 func (e *Engine) RunTurn(ctx context.Context, sessionID, userContent string, sink Sink) error {
+	tools, release, err := e.turnTools(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	rows, err := e.store.ListAIChatMessages(ctx, sessionID)
 	if err != nil {
 		return fmt.Errorf("ai: run turn: load history: %w", err)
@@ -193,7 +200,7 @@ func (e *Engine) RunTurn(ctx context.Context, sessionID, userContent string, sin
 		return fmt.Errorf("ai: run turn: save user message: %w", err)
 	}
 
-	return e.continueTurn(ctx, sessionID, settings.Model, llm, sink)
+	return e.continueTurn(ctx, tools, sessionID, settings.Model, llm, sink)
 }
 
 // ResolveConfirmation executes (approve=true) or rejects (approve=false)
@@ -201,6 +208,12 @@ func (e *Engine) RunTurn(ctx context.Context, sessionID, userContent string, sin
 // call from that same assistant turn has been resolved, continues the
 // turn using the result(s), streamed to sink the same way RunTurn does.
 func (e *Engine) ResolveConfirmation(ctx context.Context, sessionID, confirmationID string, approve bool, sink Sink) error {
+	tools, release, err := e.turnTools(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	conf, err := e.store.GetAIChatConfirmation(ctx, confirmationID)
 	if err != nil {
 		return fmt.Errorf("ai: resolve confirmation: %w", err)
@@ -212,15 +225,15 @@ func (e *Engine) ResolveConfirmation(ctx context.Context, sessionID, confirmatio
 		return ErrConfirmationAlreadyResolved
 	}
 
-	status, resultRaw, isError := e.executeConfirmation(ctx, conf, approve)
+	status, resultRaw, isError, attr := e.executeConfirmation(ctx, tools, conf, approve)
 	now := time.Now().UTC()
 	if err := e.store.ResolveAIChatConfirmation(ctx, confirmationID, status, resultRaw, now); err != nil {
 		return fmt.Errorf("ai: resolve confirmation: %w", err)
 	}
-	if err := e.applyConfirmationResult(ctx, conf, status, resultRaw, isError); err != nil {
+	if err := e.applyConfirmationResult(ctx, conf, status, resultRaw, isError, attr); err != nil {
 		return err
 	}
-	sink.ToolResult(conf.ToolUseID, conf.ToolName, resultRaw, isError)
+	emitToolResult(sink, conf.ToolUseID, conf.ToolName, resultRaw, isError, attr)
 
 	pending, err := e.store.ListPendingAIChatConfirmations(ctx, conf.MessageID)
 	if err != nil {
@@ -238,25 +251,30 @@ func (e *Engine) ResolveConfirmation(ctx context.Context, sessionID, confirmatio
 	if err != nil {
 		return fmt.Errorf("ai: resolve confirmation: %w", err)
 	}
-	return e.continueTurn(ctx, sessionID, settings.Model, llm, sink)
+	return e.continueTurn(ctx, tools, sessionID, settings.Model, llm, sink)
 }
 
-func (e *Engine) executeConfirmation(ctx context.Context, conf store.AIChatConfirmation, approve bool) (status string, result json.RawMessage, isError bool) {
+func (e *Engine) executeConfirmation(ctx context.Context, tools ToolExecutor, conf store.AIChatConfirmation, approve bool) (status string, result json.RawMessage, isError bool, attr ToolAttribution) {
+	attr = ToolAttribution{ConfirmationID: conf.ID}
 	if !approve {
-		return store.AIChatConfirmationRejected, toJSONRawMessage("User declined to run this action."), true
+		return store.AIChatConfirmationRejected, toJSONRawMessage("User declined to run this action."), true, attr
 	}
-	traits := e.traitsByName(ctx)[conf.ToolName]
-	text, callIsError, err := e.tools.Call(ctx, conf.ToolName, conf.ToolInput)
+	cred := turnCredentialFrom(ctx)
+	attr.ActingAs = cred.ActingAs
+	traits := traitsByName(ctx, tools)[conf.ToolName]
+	cred.drain()
+	text, callIsError, err := tools.Call(ctx, conf.ToolName, conf.ToolInput)
+	attr.Abilities = cred.drain()
 	if err != nil {
-		return store.AIChatConfirmationApproved, toJSONRawMessage(guardResult(conf.ToolName, traits, err.Error())), true
+		return store.AIChatConfirmationApproved, toJSONRawMessage(guardResult(conf.ToolName, traits, err.Error())), true, attr
 	}
-	return store.AIChatConfirmationApproved, toJSONRawMessage(guardResult(conf.ToolName, traits, text)), callIsError
+	return store.AIChatConfirmationApproved, toJSONRawMessage(guardResult(conf.ToolName, traits, text)), callIsError, attr
 }
 
 // applyConfirmationResult writes the resolved outcome back onto the
 // assistant message's ToolCalls entry in place, so a later turn's
 // history reconstruction (buildProviderMessages) sees it.
-func (e *Engine) applyConfirmationResult(ctx context.Context, conf store.AIChatConfirmation, status string, result json.RawMessage, isError bool) error {
+func (e *Engine) applyConfirmationResult(ctx context.Context, conf store.AIChatConfirmation, status string, result json.RawMessage, isError bool, attr ToolAttribution) error {
 	msg, err := e.store.GetAIChatMessage(ctx, conf.MessageID)
 	if err != nil {
 		return fmt.Errorf("ai: apply confirmation result: %w", err)
@@ -266,6 +284,8 @@ func (e *Engine) applyConfirmationResult(ctx context.Context, conf store.AIChatC
 			msg.ToolCalls[i].Status = status
 			msg.ToolCalls[i].Result = result
 			msg.ToolCalls[i].IsError = isError
+			msg.ToolCalls[i].ActingAs = attr.ActingAs
+			msg.ToolCalls[i].Abilities = attr.Abilities
 		}
 	}
 	if err := e.store.UpdateAIChatMessageToolCalls(ctx, conf.MessageID, msg.ToolCalls); err != nil {
@@ -293,19 +313,19 @@ func (e *Engine) resolveSettings(ctx context.Context) (store.AIAssistantSettings
 // call it requests, pauses every mutating one for confirmation, and
 // loops back for another model call only when a full round of read-only
 // calls resolved with nothing left pending.
-func (e *Engine) continueTurn(ctx context.Context, sessionID, model string, llm Provider, sink Sink) error {
+func (e *Engine) continueTurn(ctx context.Context, tools ToolExecutor, sessionID, model string, llm Provider, sink Sink) error {
 	for {
 		rows, err := e.store.ListAIChatMessages(ctx, sessionID)
 		if err != nil {
 			return fmt.Errorf("ai: continue turn: load history: %w", err)
 		}
-		tools, err := e.tools.ListTools(ctx)
+		specs, err := tools.ListTools(ctx)
 		if err != nil {
 			return fmt.Errorf("ai: continue turn: list tools: %w", err)
 		}
 
 		turn, err := llm.Complete(ctx, ChatRequest{
-			System: e.systemPrompt, Messages: buildProviderMessages(rows), Tools: tools, Model: model,
+			System: e.systemPrompt, Messages: buildProviderMessages(rows), Tools: specs, Model: model,
 		}, sink.TextDelta)
 		if err != nil {
 			return fmt.Errorf("ai: continue turn: %w", err)
@@ -337,7 +357,7 @@ func (e *Engine) continueTurn(ctx context.Context, sessionID, model string, llm 
 			return fmt.Errorf("ai: continue turn: save assistant message: %w", err)
 		}
 
-		toolCalls, anyPending, err := e.dispatchToolCalls(ctx, sessionID, msgID, now, turn.ToolCalls, traitsOf(tools), conversationTainted(rows, traitsOf(tools)), sink)
+		toolCalls, anyPending, err := e.dispatchToolCalls(ctx, tools, sessionID, msgID, now, turn.ToolCalls, traitsOf(specs), conversationTainted(rows, traitsOf(specs)), sink)
 		if err != nil {
 			return err
 		}
@@ -356,7 +376,8 @@ func (e *Engine) continueTurn(ctx context.Context, sessionID, model string, llm 
 // dispatchToolCalls classifies and (for read-only calls) executes every
 // tool call a single model turn proposed. Mutating calls are recorded as
 // pending confirmations and never executed here.
-func (e *Engine) dispatchToolCalls(ctx context.Context, sessionID, messageID string, now time.Time, calls []ToolUseCall, traits map[string]ToolTraits, tainted bool, sink Sink) (records []store.AIChatToolCall, anyPending bool, err error) {
+func (e *Engine) dispatchToolCalls(ctx context.Context, tools ToolExecutor, sessionID, messageID string, now time.Time, calls []ToolUseCall, traits map[string]ToolTraits, tainted bool, sink Sink) (records []store.AIChatToolCall, anyPending bool, err error) {
+	cred := turnCredentialFrom(ctx)
 	records = make([]store.AIChatToolCall, 0, len(calls))
 	for _, call := range calls {
 		callTraits := traits[call.Name]
@@ -364,7 +385,9 @@ func (e *Engine) dispatchToolCalls(ctx context.Context, sessionID, messageID str
 		record := store.AIChatToolCall{ID: call.ID, Name: call.Name, Arguments: call.Input, ReadOnly: callTraits.ReadOnly}
 
 		if autoRun {
-			text, isError, callErr := e.tools.Call(ctx, call.Name, call.Input)
+			cred.drain()
+			text, isError, callErr := tools.Call(ctx, call.Name, call.Input)
+			record.ActingAs, record.Abilities = cred.ActingAs, cred.drain()
 			if callErr != nil {
 				text, isError = callErr.Error(), true
 			}
@@ -373,7 +396,7 @@ func (e *Engine) dispatchToolCalls(ctx context.Context, sessionID, messageID str
 			record.Status = "auto_executed"
 			record.Result = toJSONRawMessage(text)
 			record.IsError = isError
-			sink.ToolResult(call.ID, call.Name, record.Result, isError)
+			emitToolResult(sink, call.ID, call.Name, record.Result, isError, ToolAttribution{ActingAs: record.ActingAs, Abilities: record.Abilities})
 			records = append(records, record)
 			continue
 		}
@@ -406,8 +429,8 @@ func traitsOf(tools []ToolSpec) map[string]ToolTraits {
 	return out
 }
 
-func (e *Engine) traitsByName(ctx context.Context) map[string]ToolTraits {
-	tools, err := e.tools.ListTools(ctx)
+func traitsByName(ctx context.Context, executor ToolExecutor) map[string]ToolTraits {
+	tools, err := executor.ListTools(ctx)
 	if err != nil {
 		return nil
 	}

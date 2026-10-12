@@ -608,6 +608,7 @@ type Router struct {
 	aiControlCache               aiControlCache           // short lived per process copy of the AI control row, invalidated on PUT
 	aiChat                       AIChatStore              // always set, same "core Store interface" shape as backupTargets above
 	aiEngine                     AIEngine                 // nil is valid: every /api/v1/ai/... session route returns 501, same shape as builder above
+	aiTurns                      aiTurnRegistry           // live per-turn assistant tokens, keyed by token id
 
 	roles RoleStore
 	// mesh is this node's live network.Mesh handle (GET /api/v1/mesh's

@@ -2709,13 +2709,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			api.WithPITRRestoreRunner(pitrRunner),
 			api.WithMajorUpgrader(newMajorUpgradeRunner(db, client, engine.Nudge, logger)),
 		)
-		// The AI assistant's own tool-calling engine, distinct from the
-		// BYOK key above: it needs a self-call API token to reach this
-		// instance's own REST API (see setupAIAssistantEngine's doc
-		// comment). Skipped, not fatal, if the dial address can't be
-		// determined or minting fails, matching every other optional
-		// feature in this block's own resilience posture: an operator
-		// loses the AI assistant, not the whole control plane.
+		// Optional: without a dial address or on setup failure the
+		// operator loses the assistant, not the control plane.
 		if dial := dashboardDialAddr(httpAddr()); dial != "" {
 			engine, err := setupAIAssistantEngine(context.Background(), db, secretsManager, dial, b.Name, logger)
 			if err != nil {

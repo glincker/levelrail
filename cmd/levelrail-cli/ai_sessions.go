@@ -109,7 +109,7 @@ func printAISessionHuman(out io.Writer, s apiclient.AIChatSessionResource) {
 	for _, m := range s.Messages {
 		_, _ = fmt.Fprintf(out, "\n[%s] %s\n", m.Role, m.Content)
 		for _, tc := range m.ToolCalls {
-			_, _ = fmt.Fprintf(out, "  tool: %s status=%s\n", tc.Name, tc.Status)
+			_, _ = fmt.Fprintf(out, "  tool: %s status=%s%s\n", tc.Name, tc.Status, aiToolActor(tc.ActingAs, tc.Abilities))
 		}
 	}
 }

@@ -39,7 +39,7 @@ func newTestSession(ctx context.Context, t *testing.T, db *store.DB) string {
 	if err != nil {
 		t.Fatalf("NewAIChatSessionID() error = %v", err)
 	}
-	if _, err := db.CreateAIChatSession(ctx, sessionID, time.Now()); err != nil {
+	if _, err := db.CreateAIChatSession(ctx, sessionID, "user:test", time.Now()); err != nil {
 		t.Fatalf("CreateAIChatSession() error = %v", err)
 	}
 	return sessionID

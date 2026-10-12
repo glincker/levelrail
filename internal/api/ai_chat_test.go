@@ -64,7 +64,12 @@ func mustCreateAIChatSession(ctx context.Context, t *testing.T, db *store.DB) st
 	if err != nil {
 		t.Fatalf("NewAIChatSessionID() error = %v", err)
 	}
-	if _, err := db.CreateAIChatSession(ctx, sessionID, time.Now()); err != nil {
+	bootstrapTestAdmin(t, db)
+	admin, err := db.GetUserByEmail(ctx, testAdminUsername)
+	if err != nil {
+		t.Fatalf("GetUserByEmail() error = %v", err)
+	}
+	if _, err := db.CreateAIChatSession(ctx, sessionID, store.PrincipalTypeUser+":"+admin.ID, time.Now()); err != nil {
 		t.Fatalf("CreateAIChatSession() error = %v", err)
 	}
 	return sessionID
