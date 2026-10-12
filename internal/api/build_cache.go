@@ -128,7 +128,7 @@ func (rt *Router) handleSetBuildCache(w http.ResponseWriter, r *http.Request) {
 	if _, ok := rt.loadStorageTarget(w, r, req.TargetID); !ok {
 		return
 	}
-	if !rt.appExistsOrEmpty(w, r, req.AppName) {
+	if !rt.authorizeAppOrEmpty(w, r, req.AppName) {
 		return
 	}
 	s := store.BuildCacheSetting{
@@ -156,7 +156,11 @@ func (rt *Router) handleDeleteBuildCache(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
-	err := d.BuildCacheSettings.DeleteBuildCacheSetting(r.Context(), r.URL.Query().Get("app"))
+	app := r.URL.Query().Get("app")
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusNotFound, "build cache setting not found"), appRef(app)) {
+		return
+	}
+	err := d.BuildCacheSettings.DeleteBuildCacheSetting(r.Context(), app)
 	if errors.Is(err, store.ErrBuildCacheSettingNotFound) {
 		writeError(w, http.StatusNotFound, "build cache setting not found")
 		return
@@ -179,6 +183,9 @@ func (rt *Router) handleBuildCacheStats(w http.ResponseWriter, r *http.Request) 
 	app := r.URL.Query().Get("app")
 	if app == "" {
 		writeError(w, http.StatusBadRequest, "app is required")
+		return
+	}
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "app not found"), appRef(app)) {
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), buildCacheOpTimeout)
@@ -206,7 +213,7 @@ func (rt *Router) handleClearBuildCache(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "app_name is required")
 		return
 	}
-	if !rt.appExistsOrEmpty(w, r, req.AppName) {
+	if !rt.authorizeAppOrEmpty(w, r, req.AppName) {
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), buildCacheOpTimeout)

@@ -114,6 +114,9 @@ func (rt *Router) handleEnvironmentClonePreview(w http.ResponseWriter, r *http.R
 	newName := strings.TrimSpace(r.URL.Query().Get("new_environment_name"))
 
 	source, err := rt.appsInEnvironment(r.Context(), env)
+	if err == nil {
+		source, err = rt.authorizeReadableServices(r, source)
+	}
 	if err != nil {
 		rt.internalError(w, "api: preview environment clone: list apps failed", err, slog.String("id", id))
 		return
@@ -261,9 +264,21 @@ func (rt *Router) handleEnvironmentClone(w http.ResponseWriter, r *http.Request)
 	}
 
 	source, err := rt.appsInEnvironment(r.Context(), env)
+	if err == nil {
+		source, err = rt.authorizeReadableServices(r, source)
+	}
 	if err != nil {
 		rt.internalError(w, "api: clone environment: list apps failed", err, slog.String("id", id))
 		return
+	}
+	if req.CopySecretValues {
+		names := make([]string, 0, len(source))
+		for _, svc := range source {
+			names = append(names, svc.Name)
+		}
+		if !rt.authorizeRefs(w, r, AbilityReadSensitive, notFoundAs(http.StatusForbidden, "copy_secret_values needs read:sensitive on every app in the environment"), appRefs(names)...) {
+			return
+		}
 	}
 	if len(source) == 0 {
 		writeError(w, http.StatusBadRequest, "no apps tagged with environment "+id+" found in its project; nothing to clone")

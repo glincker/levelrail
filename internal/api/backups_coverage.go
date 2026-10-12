@@ -349,11 +349,26 @@ func (rt *Router) handleProtectAll(w http.ResponseWriter, r *http.Request) {
 		o.Scratch = false
 		only[o] = true
 	}
+	allowed, err := rt.authorizeRefPredicate(r, AbilityWriteSensitive)
+	if err != nil {
+		rt.internalError(w, "api: protect all: authorize", err)
+		return
+	}
 	for _, c := range rows {
 		if c.State != backup.CoverageUnprotected {
 			continue
 		}
 		item := protectPlanItem{Kind: c.Kind, AppName: c.AppName, Name: c.Name}
+		ref := appRef(c.AppName)
+		if c.Kind == store.BackupResourceKindDatabase {
+			ref = databaseRef(c.Name)
+		}
+		if ok, err := allowed(ref); err != nil {
+			rt.internalError(w, "api: protect all: authorize", err)
+			return
+		} else if !ok {
+			continue
+		}
 		if len(only) > 0 {
 			if !only[item] {
 				continue

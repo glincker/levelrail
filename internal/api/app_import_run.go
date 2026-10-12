@@ -99,6 +99,13 @@ func (rt *Router) handleStageAppImport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	stripBindMounts(rt, r, calc.plan)
+	var connectDBs []string
+	for _, dbs := range calc.connect {
+		connectDBs = append(connectDBs, dbs...)
+	}
+	if !rt.authorizeDatabaseRefs(w, r, connectDBs...) {
+		return
+	}
 	for _, a := range calc.plan.Apps {
 		if len(a.Secrets) > 0 && rt.secrets == nil {
 			writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")

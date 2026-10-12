@@ -45,6 +45,9 @@ func (rt *Router) moveToEnvironment(w http.ResponseWriter, r *http.Request, m en
 		return
 	}
 	var target, source store.Environment
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, "unknown environment_id"), environmentRef(m.targetID)) {
+		return
+	}
 	if m.targetID != "" {
 		e, err := rt.environments.GetEnvironment(ctx, m.targetID)
 		if errors.Is(err, store.ErrEnvironmentNotFound) {

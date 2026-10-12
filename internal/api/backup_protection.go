@@ -212,8 +212,23 @@ func (rt *Router) handleListBackupDrills(w http.ResponseWriter, r *http.Request)
 		rt.internalError(w, "api: list backup drills failed", err)
 		return
 	}
+	allowed, err := rt.authorizeRefPredicate(r, AbilityRead)
+	if err != nil {
+		rt.internalError(w, "api: list backup drills: authorize", err)
+		return
+	}
 	out := make([]drillResource, 0, len(drills))
 	for _, d := range drills {
+		ref := appRef(d.ServiceName)
+		if d.DatabaseName != "" {
+			ref = databaseRef(d.DatabaseName)
+		}
+		if ok, err := allowed(ref); err != nil {
+			rt.internalError(w, "api: list backup drills: authorize", err)
+			return
+		} else if !ok {
+			continue
+		}
 		out = append(out, toDrillResource(d))
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -443,6 +458,12 @@ func (rt *Router) handleVolumeRestoreTo(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, "unknown target_app"), appRef(strings.TrimSpace(req.TargetApp))) {
+		return
+	}
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadGateway, "the chosen node is not currently reachable"), nodeRef(req.NodeID)) {
+		return
+	}
 	nodeID := req.NodeID
 	if nodeID == "" {
 		src, err := rt.apps.GetDesiredService(r.Context(), svcName)

@@ -189,6 +189,9 @@ func (rt *Router) handleCreateExportDestination(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadRequest, ""), appRefs(req.Apps)...) {
+		return
+	}
 	enabled := true
 	if req.Enabled != nil {
 		enabled = *req.Enabled
@@ -212,6 +215,9 @@ func (rt *Router) handleUpdateExportDestination(w http.ResponseWriter, r *http.R
 	var req updateExportDestinationRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Apps != nil && !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadRequest, ""), appRefs(*req.Apps)...) {
 		return
 	}
 	p := dataexport.Patch{

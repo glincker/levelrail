@@ -132,6 +132,9 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, errCloneEnvironmentMsg), environmentRef(req.EnvironmentID)) {
+		return
+	}
 	if err := rt.validateCloneEnvironment(r.Context(), *source, req.EnvironmentID); err != nil {
 		var bad errCloneRequest
 		if errors.As(err, &bad) {

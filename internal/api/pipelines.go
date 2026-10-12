@@ -337,8 +337,12 @@ func (rt *Router) decodePipelineSave(w http.ResponseWriter, r *http.Request) (pi
 		rt.writePipelineIssues(w, issues)
 		return req, nil, false
 	}
-	if targets := pipeline.TargetApps(def, r.PathValue("name")); len(targets) > 0 && !rt.callerHasAbility(r, AbilityRoot) {
+	targets := pipeline.TargetApps(def, r.PathValue("name"))
+	if len(targets) > 0 && !rt.callerHasAbility(r, AbilityRoot) {
 		writeError(w, http.StatusForbidden, fmt.Sprintf("steps that act on other apps (%v) require the root ability to save", targets))
+		return req, nil, false
+	}
+	if !rt.authorizeRefs(w, r, AbilityDeploy, notFoundAs(http.StatusBadRequest, ""), appRefs(targets)...) {
 		return req, nil, false
 	}
 	return req, def, true

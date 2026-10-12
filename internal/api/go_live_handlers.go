@@ -236,8 +236,16 @@ func (rt *Router) handleListAutomationRuns(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: list automation runs", err)
 		return
 	}
+	canSeeApp, err := rt.appVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: list automation runs: visibility", err)
+		return
+	}
 	out := make([]automationRunResource, 0, len(runs))
 	for _, run := range runs {
+		if run.AppName != "" && !canSeeApp(run.AppName) {
+			continue
+		}
 		out = append(out, toAutomationRunResource(run))
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -264,6 +272,9 @@ func (rt *Router) handleUndoAutomationRun(w http.ResponseWriter, r *http.Request
 	}
 	if err != nil {
 		rt.internalError(w, "api: get automation run", err)
+		return
+	}
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusNotFound, "run not found"), appRef(run.AppName)) {
 		return
 	}
 	if run.UndoneAt != nil {

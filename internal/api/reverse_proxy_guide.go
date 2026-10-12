@@ -99,6 +99,9 @@ func (rt *Router) handleReverseProxyGuide(w http.ResponseWriter, r *http.Request
 	domain := strings.TrimSpace(q.Get("domain"))
 	target := proxycoexist.Target{Domain: domain, ListenAddr: rt.dashboardListenAddr, Name: rt.brand.BinaryName + "-dashboard", EnvVar: "APP_HTTP_ADDR"}
 	if app := strings.TrimSpace(q.Get("app")); app != "" {
+		if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "app "+app+" not found"), appRef(app)) {
+			return
+		}
 		t, status, msg := rt.appGuideTarget(r.Context(), app, domain)
 		if status != 0 {
 			writeError(w, status, msg)

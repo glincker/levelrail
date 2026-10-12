@@ -505,7 +505,7 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if targetSpecified {
-		if err := rt.validatePlacementTarget(r.Context(), targetNodeID); err != nil {
+		if err := rt.authorizePlacementTarget(r, targetNodeID); err != nil {
 			switch {
 			case errors.Is(err, store.ErrNodeNotFound):
 				writeError(w, http.StatusBadRequest, "unknown target_node_id")

@@ -200,7 +200,7 @@ A policy document uses AWS IAM's shape, hand-typed or generated:
 | Field | Values |
 | --- | --- |
 | `Action` | Ability strings or `*` |
-| `Resource` | `app:<name>`, `database:<name>`, or `*`. A trailing `*` matches as a prefix (`app:*` matches every app). |
+| `Resource` | `app:<name>`, `database:<name>`, `node:<id>`, `environment:<id>`, `environment-kind:<kind>`, or `*`. A trailing `*` matches as a prefix (`app:*` matches every app). |
 
 **Evaluation order** (`authorizeResource`, `internal/api/iam.go`)
 
@@ -224,6 +224,8 @@ flowchart TD
 **Attachment.** A policy attaches to a `user` or a `token` (`principal_type`), by that principal's id. A malformed stored document can never grant or deny anything; it is treated as if it doesn't mention the pair being checked.
 
 **Lists.** A Deny policy on `app:<name>` hides that app from `GET /api/v1/apps`, `apps-summary`, `apps-metrics`, deployments, certificates (including the auto-generated `sslip.io` hostname), `GET /api/v1/network/topology` (apps and databases) and the container names in `GET /api/v1/system/containers`, and returns `403` on every `/apps/{name}/...` route.
+
+**References in a request body or query.** The same check applies to a resource a request names outside its path: a database attached by name, a target environment or node, a promotion target, a compose or deploy-spec service name that already belongs to another app, a git source's additional services, a pipeline step that deploys another app, a standalone domain pointing at an app, or an `?app=` filter. A refused reference answers exactly like an unknown one, so the response never confirms that a hidden resource exists. Server-computed fan-outs (environment clone, protect-all, cutover reports, restore drills) skip resources the caller cannot see instead of failing. `internal/api/body_ref_authz_guard_test.go` fails the build when a handler reads such a field without one of these checks.
 
 **Test before you trust.** `iam simulate` answers "can this principal do this on this resource" with the real evaluator, `iam effective` shows everything a principal can do grouped by ability, `iam analyze` runs static checks over every policy, and `iam templates` creates ready-made policies. A newly attached Deny takes effect on the very next request.
 

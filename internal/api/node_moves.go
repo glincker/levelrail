@@ -85,6 +85,9 @@ func (rt *Router) handleStartMove(kind string) http.HandlerFunc {
 			rt.internalError(w, "api: start move: load failed", err, slog.String("name", name))
 			return
 		}
+		if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, "unknown node_id"), nodeRef(req.NodeID)) {
+			return
+		}
 		target := req.NodeID
 		if target == "" {
 			target, err = rt.spreadTarget(r.Context(), kind, name, from)
