@@ -630,6 +630,16 @@
     "description": "Let people sign in with Google, GitHub, Microsoft, or a self-hosted identity provider instead of a password. Every signed-in account has identical access, there are no roles yet.",
     "connectedCount_one": "{{count}} provider connected",
     "connectedCount_other": "{{count}} providers connected",
+    "rail": {
+      "label": "Sign-in summary",
+      "summary": "Providers",
+      "connected": "Connected",
+      "connectedOf": "{{connected}} of {{total}}",
+      "callbacks": "Callback URLs",
+      "copyFor": "Copy the {{provider}} callback URL",
+      "docs": "Docs",
+      "docsLink": "Identity and access guide"
+    },
     "banner": {
       "title": "Register the callback URL with each provider first",
       "body": "Every provider asks for a redirect (callback) URL when you create its OAuth app. Copy the URL shown in its row exactly, including the scheme, or sign-in fails with a redirect mismatch."
@@ -708,9 +718,66 @@
       "title": "Bitbucket App",
       "description": "Connect a Bitbucket Cloud OAuth consumer for repository browsing and webhook-driven deploys.",
       "banner": "Once the consumer is authorized, its repositories are available to pick from when you create an app."
+    },
+    "rail": {
+      "label": "Connection summary",
+      "connection": "Connection",
+      "status": "Status",
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "account": "Account",
+      "accounts": "Connected accounts",
+      "instance": "Instance",
+      "accessTitle": "What it can access",
+      "docs": "Docs",
+      "docsLink": "Git integrations guide",
+      "access": {
+        "github": [
+          "Repositories the App is installed on",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ],
+        "gitlab": [
+          "Projects your authorized account can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ],
+        "gitea": [
+          "Repositories your authorized account can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ],
+        "bitbucket": [
+          "Repositories your authorized account can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ]
+      }
     }
   },
   "securityPage": {
+    "session": {
+      "title": "Current session",
+      "description": "The account and session this browser is signed in with.",
+      "account": "Signed in as",
+      "accountHelp": "The account every action here is attributed to.",
+      "until": "Signed in until",
+      "untilHelp": "After this time you are asked to sign in again."
+    },
+    "rail": {
+      "label": "Sign-in protection summary",
+      "protection": "Sign-in protection",
+      "twoFactor": "Two-factor authentication",
+      "on": "On",
+      "off": "Off",
+      "passkeys": "Passkeys registered",
+      "signedIn": "Signed in as",
+      "until": "Session expires",
+      "jump": "On this page",
+      "sessionsLink": "Sessions",
+      "twoFactorLink": "Two-factor authentication",
+      "passkeysLink": "Passkeys"
+    },
     "eyebrow": "Account",
     "title": "Security",
     "description": "Sessions, two-factor authentication, passkeys, and login protection for this account.",
@@ -725,6 +792,20 @@
     }
   },
   "generalPage": {
+    "rail": {
+      "label": "Instance summary",
+      "instance": "Instance",
+      "url": "Instance URL",
+      "version": "Version",
+      "health": "Health",
+      "docker": "Docker daemon",
+      "connected": "Connected",
+      "disconnected": "Not connected",
+      "secrets": "Secrets",
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "docs": "Docs"
+    },
     "eyebrow": "Platform",
     "title": "General",
     "description": "What this instance is running on, how much disk it has left, and which core features are configured.",
@@ -747,6 +828,20 @@
     }
   },
   "emailPage": {
+    "rail": {
+      "label": "Email summary",
+      "delivery": "Delivery",
+      "backend": "Backend",
+      "from": "Sender address",
+      "usedFor": "Used for",
+      "usedForBody": "Alert notifications and password-reset links.",
+      "docs": "Docs",
+      "backends": {
+        "smtp": "SMTP",
+        "ses": "Amazon SES",
+        "resend": "Resend"
+      }
+    },
     "eyebrow": "Notifications",
     "title": "Email",
     "description": "The backend that sends alert notifications and password-reset links.",
@@ -833,6 +928,21 @@
     }
   },
   "backupTargetsPage": {
+    "rail": {
+      "label": "Backup targets summary",
+      "targets": "Targets",
+      "count": "Connected targets",
+      "providers": "Providers",
+      "provider": {
+        "aws": "AWS S3",
+        "r2": "Cloudflare R2",
+        "custom": "S3-compatible"
+      },
+      "status": "Backup status",
+      "statusBody": "Runs, coverage and restore drills live on the Backups page.",
+      "statusLink": "Open Backups",
+      "docs": "Docs"
+    },
     "eyebrow": "Storage",
     "title": "Backup targets",
     "description": "S3-compatible buckets connected as backup destinations for managed databases. AWS S3, Cloudflare R2, or any other S3-compatible endpoint.",
@@ -943,6 +1053,14 @@
     "copied": "Copied",
     "waitingCount_one": "{{count}} login waiting",
     "waitingCount_other": "{{count}} logins waiting",
+    "rail": {
+      "label": "CLI summary",
+      "status": "Status",
+      "pending": "Logins waiting",
+      "apiUrl": "API URL",
+      "ci": "CI and scripts",
+      "docs": "Docs"
+    },
     "ciHint": "Running from CI or a script instead of a person at a keyboard? Use an API token, nothing to approve by hand.",
     "ciLink": "Create an API token",
     "banner": {
@@ -1035,6 +1153,12 @@
     "description": "Declarative host firewall rules, reconciled onto this node's firewall (ufw)."
   },
   "gitConnection": {
+    "fields": {
+      "status": "Connection",
+      "statusHelp": "Whether this control plane can use the App right now.",
+      "instance": "Instance URL",
+      "instanceHelp": "The server this connection talks to."
+    },
     "notConnected": "Not connected",
     "primaryDomain": {
       "title": "Set a primary domain first",

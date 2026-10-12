@@ -78,6 +78,9 @@
     "revokeFailed": "Could not revoke the browser"
   },
   "settings": {
+    "approvalTitle": "New device approval",
+    "approvalStateOn": "On",
+    "approvalStateOff": "Off",
     "title": "Sign in with a code",
     "description": "Let people sign in with a one-time code instead of a password. Two-factor authentication is still required where it is on.",
     "admins": "Admin accounts",
