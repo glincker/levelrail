@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { BrandTile } from '../BrandLogoBadge'
+import { GitProviderRail } from './GitProviderRail'
 
 export type GitProvider = 'github' | 'gitlab' | 'gitea' | 'bitbucket'
 
@@ -55,6 +56,8 @@ export function GitProviderPage({
       eyebrow={t('gitProviders.eyebrow')}
       title={copy.title}
       description={copy.description}
+      aside={<GitProviderRail provider={provider} />}
+      asideLabel={t('gitProviders.rail.label')}
       banners={
         <Banner
           variant="info"

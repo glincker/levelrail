@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
 import { Skeleton } from '@/components/ui/skeleton'
+import { SettingRow, SettingRows } from '@/components/ui/setting-row'
 import { RelativeTime } from '@/components/kit'
 import { useIngressSettings } from '../queries/domains'
 import {
@@ -54,28 +55,40 @@ export function GitHubAppConnectionCard() {
   return (
     <Card>
       <CardContent className="space-y-4">
-        <div className="space-y-1">
-          {status.connected ? (
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <CheckCircleIcon className="size-4 text-green-600 dark:text-green-400" />
-              Connected
-              <InstallationBadge status={status} />
+        <SettingRows>
+          <SettingRow
+            title={t('gitConnection.fields.status')}
+            description={t('gitConnection.fields.statusHelp')}
+          >
+            <div className="space-y-1">
+              {status.connected ? (
+                <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+                  <CheckCircleIcon className="size-4 text-green-600 dark:text-green-400" />
+                  Connected
+                  <InstallationBadge status={status} />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <XCircleIcon className="size-4" />
+                  {t('gitConnection.notConnected')}
+                </div>
+              )}
+              {status.connected ? (
+                <InstallationStatusMessage status={status} />
+              ) : null}
             </div>
-          ) : (
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <XCircleIcon className="size-4" />
-              {t('gitConnection.notConnected')}
-            </div>
-          )}
-          {status.connected ? (
-            <p className="font-mono text-sm text-muted-foreground">
-              {status.instance_url}
-            </p>
+          </SettingRow>
+          {status.connected && status.instance_url ? (
+            <SettingRow
+              title={t('gitConnection.fields.instance')}
+              description={t('gitConnection.fields.instanceHelp')}
+            >
+              <p className="font-mono text-sm break-all text-muted-foreground">
+                {status.instance_url}
+              </p>
+            </SettingRow>
           ) : null}
-          {status.connected ? (
-            <InstallationStatusMessage status={status} />
-          ) : null}
-        </div>
+        </SettingRows>
         {!status.connected && !hasPrimaryDomain ? (
           <SetPrimaryDomainPrompt />
         ) : null}
