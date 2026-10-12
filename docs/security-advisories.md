@@ -24,6 +24,13 @@ For how to report something, see [SECURITY.md](https://github.com/glincker/level
 | [LRSA-2026-0003](#lrsa-2026-0003) | Medium | Unauthenticated endpoints accepted unbounded request bodies | before 0.9 | next release | internal audit |
 | [LRSA-2026-0004](#lrsa-2026-0004) | Medium | Assistant replies could inject HTML attributes through link targets | before 0.9 | next release | internal audit |
 | [LRSA-2026-0005](#lrsa-2026-0005) | Low | Client-supplied request IDs were echoed and logged without bounds | before 0.9 | next release | internal audit |
+| [LRSA-2026-0006](#lrsa-2026-0006) | High | Resource names in request bodies bypassed per-app, per-environment and per-node authorization | before 0.9 | next release | internal audit |
+| [LRSA-2026-0007](#lrsa-2026-0007) | Medium | The dashboard assistant ran every tool with a permanent root token, and chat sessions had no owner | before 0.9 | next release | internal audit |
+| [LRSA-2026-0008](#lrsa-2026-0008) | Low | Notification channel credentials were stored in plaintext | before 0.9 | next release | internal audit |
+| [LRSA-2026-0009](#lrsa-2026-0009) | Low | Session-link tokens traveled in a GET URL path | before 0.9 | next release | internal audit |
+| [LRSA-2026-0010](#lrsa-2026-0010) | Low | The OAuth redirect URI was derived from the Host header | before 0.9 | next release | internal audit |
+| [LRSA-2026-0011](#lrsa-2026-0011) | Low | Infrastructure-as-code export could include secret-looking plain values | before 0.9 | next release | internal audit |
+| [LRSA-2026-0012](#lrsa-2026-0012) | Low | Failed-signature webhook deliveries were stored without a cap | before 0.9 | next release | internal audit |
 
 ### LRSA-2026-0001
 
@@ -68,6 +75,68 @@ The dashboard renders the assistant's markdown replies. Link targets were placed
 An inbound `X-Request-Id` of any length was returned in the response and written to logs, which allowed log bloat and confusing correlation.
 
 **Fix.** Only `[A-Za-z0-9_.-]` up to 128 characters is accepted. Anything else is replaced with a generated ID.
+
+### LRSA-2026-0006
+
+**Resource names in request bodies bypassed per-app, per-environment and per-node authorization.** High.
+
+Routes that act on a resource named in the URL were authorized against that resource. Several routes instead took a resource name from the request body, a spec or a query string and only authorized the caller for the app in the URL. A caller with write access to one app could overwrite another team's service by name through a compose or spec deploy, point a git source at other apps so every push deployed into them, promote into an app they were denied, move workloads into another team's environment, or copy apps they were denied with environment clone.
+
+**Fix.** One reference authorization helper now checks app, database, environment and node references with the same engine as path routes (IAM Deny, environment visibility, team ownership). A refused reference answers exactly like a missing one. A guard test fails when a handler decodes a resource-shaped field without authorizing it.
+
+**Action for operators.** Upgrade. If you run several teams on one instance, review recent audit log entries for deploys and environment changes made by tokens with narrow IAM scopes.
+
+### LRSA-2026-0007
+
+**The dashboard assistant ran every tool with a permanent root token, and chat sessions had no owner.** Medium.
+
+The assistant executed tool calls through one persistent token with the `root` ability, whoever was chatting. Text the assistant read from logs or commit messages could therefore drive actions with more authority than the person asking. Chat sessions were not tied to a user, so another root principal could read or continue them.
+
+**Fix.** Each message and each approval now runs with a short-lived token owned by the person who sent it, carrying only their abilities and IAM policies, and revoked when the turn ends. Audit entries record who the action was for. Chat sessions belong to their creator; anyone else gets a not-found response. Sessions created before the upgrade have no owner and are no longer visible.
+
+### LRSA-2026-0008
+
+**Notification channel credentials were stored in plaintext.** Low.
+
+Webhook URLs with embedded tokens, bot tokens and interactive signing secrets sat in plaintext in `alerting.db`, so a copy of that file disclosed them.
+
+**Fix.** Channel credentials are envelope-encrypted with the master key and bound to their channel. API responses return a masked value for everyone. A startup migration encrypts existing rows and verifies by decrypting before clearing the plaintext.
+
+### LRSA-2026-0009
+
+**Session-link tokens traveled in a GET URL path.** Low.
+
+A session link carried its token in the path, so it could appear in proxy and access logs and browser history before it was used.
+
+**Fix.** The token is now redeemed with a POST body. The old GET returns `405` with a pointer to the new method.
+
+### LRSA-2026-0010
+
+**The OAuth redirect URI was derived from the Host header.** Low.
+
+The redirect URI for provider sign-in came from the request's `Host` header and an unauthenticated `X-Forwarded-Proto`. Identity providers only honor registered redirect URIs, which limited the impact to misconfigured providers.
+
+**Fix.** The redirect URI is built from the configured dashboard URL. Without one, forwarding headers are trusted only from loopback or `APP_INGRESS_TRUSTED_PROXIES`, and other callers get a clear `400`.
+
+### LRSA-2026-0011
+
+**Infrastructure-as-code export could include secret-looking plain values.** Low.
+
+The export used a narrower secret heuristic than the rest of the product and defaulted to including environment values, so a plain variable that looked like a credential could be written into a shareable file by a caller with only `read`.
+
+**Fix.** Export uses the same classifier as the environment read surface, and values are included only for callers holding `read:sensitive`.
+
+### LRSA-2026-0012
+
+**Failed-signature webhook deliveries were stored without a cap.** Low.
+
+Deliveries rejected for a bad signature were stored in full with no per-app limit, so unauthenticated traffic could grow the database.
+
+**Fix.** Unsigned deliveries are still recorded for debugging, capped to the newest 20 per app name, with bodies truncated to 2 KiB (both configurable).
+
+### Hardening changes (no advisory)
+
+These shipped alongside the fixes and are listed for completeness: agents must generate their own keys by default (`APP_AGENT_REQUIRE_CSR`), the dashboard listens on loopback by default when fronted by HTTPS outside a container, the container list shows only managed containers to non-root callers, brand SVG is sanitized, bind mounts refuse executable directories and a custom data directory, `APP_MASTER_KEY_FILE` lets you keep the master key outside the data directory, and the Go toolchain and `golang.org/x/net` moved to releases that fix 13 reachable advisories.
 
 ## Disclosure policy
 
