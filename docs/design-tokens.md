@@ -1,3 +1,8 @@
+---
+title: GLINR design tokens
+description: The single source of truth for color, space, radius, elevation, type and motion in the Levelrail dashboard, and how to add or change a token.
+---
+
 # GLINR design tokens
 
 The GLINR design tokens are the single source of truth for color, space, radius, elevation, type, motion and content widths in the dashboard. The source is `web/src/styles/tokens/glinr.tokens.json`; everything else is generated from it.
