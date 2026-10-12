@@ -21,7 +21,7 @@ func TestDomainAuthGate_RoundTrip(t *testing.T) {
 
 	want := DomainAuthGate{
 		Domain: "app.example.com", Enabled: true, AuthURL: "http://auth:9091", CheckPath: "/check",
-		CopyHeaders: []string{"X-User", "X-Email"}, TimeoutSeconds: 4,
+		CopyHeaders: []string{"X-User", "X-Email"}, TimeoutSeconds: 4, Provider: GateProviderExternal,
 	}
 	if err := db.SetDomainAuthGate(ctx, want); err != nil {
 		t.Fatalf("SetDomainAuthGate() error = %v", err)

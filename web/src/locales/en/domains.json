@@ -21,6 +21,63 @@
     "errors": {
       "urlRequired": "Enter the URL of your auth service.",
       "timeout": "The timeout must be a whole number of seconds."
+    },
+    "providerLabel": "Who checks visitors",
+    "providerExternal": "My auth service",
+    "providerBuiltin": "{{name}} sign-in",
+    "builtinHelp": "Visitors sign in with their {{name}} account (including passkeys and two-factor) and only the people below get through. The app receives X-User, X-Email and X-Name.",
+    "builtinUnavailable": "Set the platform primary domain first: visitors are sent to the dashboard to sign in.",
+    "allowLabel": "Allowed people",
+    "allowHelp": "Users by email, teams by name, or roles by name.",
+    "allowEmpty": "Nobody can get in until you add at least one user, team or role.",
+    "allowKindLabel": "Rule type",
+    "allowKind": {
+      "user": "User",
+      "team": "Team",
+      "role": "Role"
+    },
+    "allowPlaceholder": {
+      "user": "person@example.com",
+      "team": "Team name",
+      "role": "Role name"
+    },
+    "allowAdd": "Add",
+    "allowRemove": "Remove {{label}}",
+    "liveSessions_one": "{{count}} visitor signed in",
+    "liveSessions_other": "{{count}} visitors signed in",
+    "revokeSessions": "Sign out all visitors",
+    "revoking": "Signing out...",
+    "revoked": "Signed out {{count}} visitors.",
+    "extraHeadersLabel": "Extra headers to pass to the app",
+    "accessLog": {
+      "title": "Access log",
+      "show": "Show access log",
+      "hide": "Hide access log",
+      "rangeLabel": "Time range",
+      "range": {
+        "1h": "Last hour",
+        "24h": "Last 24 hours",
+        "7d": "Last 7 days"
+      },
+      "empty": "No sign-in activity in this time range.",
+      "loadError": "Could not load the access log.",
+      "anonymous": "Not signed in",
+      "columns": {
+        "time": "Time",
+        "user": "User",
+        "decision": "Decision",
+        "reason": "Reason",
+        "ip": "IP",
+        "count": "Requests"
+      },
+      "decision": {
+        "allowed": "Allowed",
+        "denied": "Denied",
+        "login_redirect": "Sent to sign in",
+        "token_issued": "Sign-in link issued",
+        "token_exchange": "Signed in",
+        "session_revoked": "Session ended"
+      }
     }
   },
   "wizard": {

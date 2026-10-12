@@ -12,9 +12,11 @@ import (
 // DomainAuthGate is one row of domain_auth_gate (migrations/0510): a
 // forward-auth check run by the ingress before a domain's backend. The auth
 // URL is not secret. TimeoutSeconds 0 means the APP_AUTH_GATE_TIMEOUT default.
+// Provider is GateProviderExternal or GateProviderBuiltin (migrations/0530).
 type DomainAuthGate struct {
 	Domain         string
 	Enabled        bool
+	Provider       string
 	AuthURL        string
 	CheckPath      string
 	CopyHeaders    []string
@@ -22,13 +24,19 @@ type DomainAuthGate struct {
 	UpdatedAt      time.Time
 }
 
-const domainAuthGateColumns = `domain, enabled, auth_url, check_path, copy_headers, timeout_seconds, updated_at`
+// Auth gate providers: an operator-run auth service, or this installation's own sign-in.
+const (
+	GateProviderExternal = "external"
+	GateProviderBuiltin  = "builtin"
+)
+
+const domainAuthGateColumns = `domain, enabled, auth_url, check_path, copy_headers, timeout_seconds, updated_at, provider`
 
 func scanDomainAuthGate(row rowScanner) (DomainAuthGate, error) {
 	var g DomainAuthGate
 	var enabled int
 	var headers, updated string
-	if err := row.Scan(&g.Domain, &enabled, &g.AuthURL, &g.CheckPath, &headers, &g.TimeoutSeconds, &updated); err != nil {
+	if err := row.Scan(&g.Domain, &enabled, &g.AuthURL, &g.CheckPath, &headers, &g.TimeoutSeconds, &updated, &g.Provider); err != nil {
 		return DomainAuthGate{}, err
 	}
 	g.Enabled = enabled != 0
@@ -68,12 +76,17 @@ func (db *DB) SetDomainAuthGate(ctx context.Context, g DomainAuthGate) error {
 	if g.Enabled {
 		enabled = 1
 	}
+	provider := g.Provider
+	if provider == "" {
+		provider = GateProviderExternal
+	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO domain_auth_gate (`+domainAuthGateColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO domain_auth_gate (`+domainAuthGateColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (domain) DO UPDATE SET
 			enabled = excluded.enabled, auth_url = excluded.auth_url, check_path = excluded.check_path,
-			copy_headers = excluded.copy_headers, timeout_seconds = excluded.timeout_seconds, updated_at = excluded.updated_at
-	`, g.Domain, enabled, g.AuthURL, g.CheckPath, string(encoded), g.TimeoutSeconds, time.Now().UTC().Format(time.RFC3339Nano))
+			copy_headers = excluded.copy_headers, timeout_seconds = excluded.timeout_seconds, updated_at = excluded.updated_at,
+			provider = excluded.provider
+	`, g.Domain, enabled, g.AuthURL, g.CheckPath, string(encoded), g.TimeoutSeconds, time.Now().UTC().Format(time.RFC3339Nano), provider)
 	if err != nil {
 		return fmt.Errorf("store: set domain auth gate: %w", err)
 	}

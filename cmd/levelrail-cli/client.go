@@ -70,6 +70,9 @@ type (
 	setDomainWAFRequest              = apiclient.SetDomainWAFRequest
 	domainAuthGateResource           = apiclient.DomainAuthGateResource
 	setDomainAuthGateRequest         = apiclient.SetDomainAuthGateRequest
+	authGateRule                     = apiclient.AuthGateRule
+	authGateEventsResponse           = apiclient.AuthGateEventsResponse
+	apiAuthGateEvent                 = apiclient.AuthGateEvent
 	domainRedirectResource           = apiclient.DomainRedirectResource
 	setDomainRedirectRequest         = apiclient.SetDomainRedirectRequest
 	domainErrorPagesResource         = apiclient.DomainErrorPagesResource

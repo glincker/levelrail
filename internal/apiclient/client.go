@@ -1268,6 +1268,25 @@ func (c *Client) ClearDomainAuthGate(ctx context.Context, name, domain string) (
 	return out, err
 }
 
+// ListAuthGateEvents calls GET .../auth-gate/events. since is a duration
+// such as "24h" or "7d"; empty uses the server default.
+func (c *Client) ListAuthGateEvents(ctx context.Context, name, domain, since string) (AuthGateEventsResponse, error) {
+	var out AuthGateEventsResponse
+	path := domainAuthGatePath(name, domain) + "/events"
+	if since != "" {
+		path += "?" + url.Values{"since": {since}}.Encode()
+	}
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// RevokeAuthGateSessions calls DELETE .../auth-gate/sessions.
+func (c *Client) RevokeAuthGateSessions(ctx context.Context, name, domain string) (AuthGateSessionsRevoked, error) {
+	var out AuthGateSessionsRevoked
+	err := c.do(ctx, http.MethodDelete, domainAuthGatePath(name, domain)+"/sessions", nil, &out)
+	return out, err
+}
+
 // dnsRecordsPath builds /api/v1/apps/{name}/domains/{domain}/dns-records,
 // shared by all four DNS record methods below, mirroring domainWAFPath's
 // identical shape for a different per-domain resource.

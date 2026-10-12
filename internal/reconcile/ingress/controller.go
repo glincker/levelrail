@@ -295,6 +295,10 @@ type Controller struct {
 	// existing deployment has no such route today.
 	dashboardDial string
 
+	// gateSecret authenticates built-in auth gate subrequests to the
+	// dashboard's check endpoint; empty leaves built-in gated hosts unrouted.
+	gateSecret string
+
 	// registryDial is the built-in registry container's loopback dial
 	// address (see WithRegistryDial), reverse-proxied to whenever
 	// store.RegistrySettings.Enabled and .Host are both set. Empty means
@@ -511,6 +515,12 @@ func WithAuditRecorder(ar ingress.AuditRecorder) Option {
 // erroring when its prerequisite wiring is absent.
 func WithDashboardDial(dial string) Option {
 	return func(c *Controller) { c.dashboardDial = dial }
+}
+
+// WithGateSecret sets the shared secret built-in auth gates present to the
+// dashboard's gate check endpoint.
+func WithGateSecret(secret string) Option {
+	return func(c *Controller) { c.gateSecret = secret }
 }
 
 // WithRegistryDial enables routing the built-in container registry
