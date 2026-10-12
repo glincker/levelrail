@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
+import { BrandTile } from './BrandLogoBadge'
+import { registryBrandForHost } from '../lib/providerBrands'
 import { BrowseRegistryCredentialDialog } from './BrowseRegistryCredentialDialog'
 import { DeleteRegistryCredentialDialog } from './DeleteRegistryCredentialDialog'
 import { useTestRegistryCredential } from '../queries/registryCredentials'
@@ -130,7 +132,14 @@ export function RegistryCredentialTable({
                 {cred.name}
               </TableCell>
               <TableCell className="font-mono text-muted-foreground">
-                {cred.registry_host}
+                <span className="inline-flex items-center gap-2">
+                  <BrandTile
+                    name={registryBrandForHost(cred.registry_host)}
+                    label={cred.registry_host}
+                    size="xs"
+                  />
+                  {cred.registry_host}
+                </span>
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {cred.username}

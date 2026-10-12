@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
-import { BrandIcon } from './BrandIcon'
+import { BrandTile } from './BrandLogoBadge'
 import { DeleteNotificationChannelDialog } from './DeleteNotificationChannelDialog'
 import { EditNotificationChannelDialog } from './EditNotificationChannelDialog'
 import { NotificationDeliveryHistoryDialog } from './NotificationDeliveryHistoryDialog'
@@ -112,9 +112,11 @@ export function NotificationChannelTable({
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="gap-1.5">
-                    {brandIcon ? (
-                      <BrandIcon name={brandIcon} className="size-3.5" />
-                    ) : null}
+                    <BrandTile
+                      name={brandIcon ?? ''}
+                      label={CHANNEL_KIND_LABEL[channel.kind]}
+                      size="xs"
+                    />
                     {CHANNEL_KIND_LABEL[channel.kind]}
                   </Badge>
                 </TableCell>

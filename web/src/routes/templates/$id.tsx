@@ -2,7 +2,6 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   ArrowLeftIcon,
   ArrowSquareOutIcon,
-  PackageIcon,
   RocketLaunchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -10,8 +9,7 @@ import {
   useServiceTemplate,
 } from '../../queries/serviceTemplates'
 import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
-import { CATEGORY_ICONS } from '../../components/ServiceTemplateGrid'
-import { TemplateLogo } from '../../components/TemplateLogo'
+import { TemplateLogoTile } from '../../components/TemplateLogoTile'
 import { RamFitBadge } from '../../components/RamFitBadge'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { TemplateInstallForm } from '../../components/TemplateInstallForm'
@@ -48,7 +46,6 @@ function TemplateDetailRoute() {
     return <TemplateDetailSkeleton />
   }
 
-  const CategoryIcon = CATEGORY_ICONS[template.category] ?? PackageIcon
   const deploying = deployTemplateNow.pendingId === template.id
 
   return (
@@ -62,13 +59,7 @@ function TemplateDetailRoute() {
       </Link>
 
       <div className="flex items-start gap-4 rounded-lg border border-border bg-card p-4">
-        <TemplateLogo
-          id={template.id}
-          className="size-12 shrink-0"
-          fallback={
-            <CategoryIcon className="size-12 shrink-0 text-muted-foreground" />
-          }
-        />
+        <TemplateLogoTile id={template.id} name={template.name} size="lg" />
         <div className="min-w-0 flex-1 space-y-2">
           <PageHeader
             title={template.name}
