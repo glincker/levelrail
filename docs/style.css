@@ -9,8 +9,8 @@
   --lr-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --lr-r: 12px;
   /* Surfaces, ring, sheen and shadow (dark values, light overrides below). */
-  --lr-face: #07222b;
-  --lr-face-2: #0a2d39;
+  --lr-face: #0c1114;
+  --lr-face-2: #12191d;
   --lr-text: #cfcfd3;
   --lr-link: #58b1ce;
   --lr-line: rgba(255, 255, 255, 0.08);
@@ -35,16 +35,16 @@ html:not(.dark) {
 }
 
 /* ---------- Canvas and grain glow ---------- */
-html.dark body { background-color: #04141a; }
+html.dark body { background-color: #050709; }
 body { position: relative; font-feature-settings: "cv11", "ss03"; -webkit-font-smoothing: antialiased; }
 /* The glow sits behind everything (z-index -1 under an isolated body). Two layers: a soft wash and the same
    wash masked by thresholded noise so it dissolves into dots, a soft rail-colored wash. */
 body::before, body::after {
   content: ""; position: absolute; inset: 0 0 auto 0; height: 440px; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(54% 92% at 50% 0%, rgba(88, 177, 206, 0.5), transparent 72%),
-    radial-gradient(38% 78% at 10% 0%, rgba(16, 114, 146, 0.42), transparent 72%),
-    radial-gradient(36% 70% at 92% 0%, rgba(47, 179, 220, 0.34), transparent 72%);
+    radial-gradient(54% 92% at 50% 0%, rgba(47, 179, 220, 0.42), transparent 72%),
+    radial-gradient(38% 78% at 10% 0%, rgba(31, 200, 176, 0.3), transparent 72%),
+    radial-gradient(36% 70% at 92% 0%, rgba(108, 125, 255, 0.3), transparent 72%);
 }
 body::before { opacity: calc(0.4 * var(--lr-glow-op)); }
 body::after {
@@ -79,7 +79,7 @@ code, pre, kbd, samp { font-family: var(--lr-mono) !important; /* Mintlify sets 
 html.dark #content-area :not(pre) > code { color: #e4e4e7; }
 .code-block {
   border-radius: var(--lr-r); border: 1px solid transparent; box-shadow: var(--lr-shadow);
-  background: var(--lr-sheen) padding-box, linear-gradient(#031a22, #031a22) padding-box, var(--lr-ring) border-box;
+  background: var(--lr-sheen) padding-box, linear-gradient(#070b0d, #070b0d) padding-box, var(--lr-ring) border-box;
 }
 .code-block-background, .code-block > div { border-radius: var(--lr-r); background-color: transparent; }
 .code-block [data-component-part="code-block-root"], .code-block pre { background: transparent; }
