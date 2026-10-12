@@ -3,7 +3,7 @@ title: "Threat model"
 description: Trust boundaries, assets, attackers, the mitigations that exist today with file references, known gaps, and how to report a vulnerability.
 ---
 
-This page covers what Levelrail defends, against whom, and where it doesn't yet. It's for operators deciding how much to trust an install and for contributors deciding where a change needs extra care. For the user-facing configuration side, see the [Security overview](/security).
+This page describes what Levelrail defends, against whom, and where it does not yet. It is written for operators deciding how much to trust an install and for contributors deciding where a change needs extra care. For the user-facing configuration side, see the [Security overview](/security).
 
 Levelrail is pre-1.0. Anything marked "planned" is not shipped.
 
@@ -43,23 +43,23 @@ flowchart TD
 
 ## Assets
 
-- Secrets: app env values, backup and registry credentials, OAuth and email settings. Held as envelope-encrypted ciphertext, decrypted only at container create time.
-- The master key: wraps every data key. Losing it is unrecoverable, leaking it exposes every secret in a stolen database.
-- Session cookies and API tokens: full authority of their principal until expiry or revocation.
-- Agent client certificates and the agent CA: whoever holds a valid agent certificate can speak as that node.
-- Container access: exec and terminal give a shell with the container's injected secrets.
-- The Docker socket: root-equivalent on the node.
-- Backups and control plane snapshots: they contain data and ciphertext in bulk.
+- **Secrets**: app env values, backup and registry credentials, OAuth and email settings. Held as envelope-encrypted ciphertext, decrypted only at container create time.
+- **The master key**: wraps every data key. Losing it is unrecoverable, leaking it exposes every secret in a stolen database.
+- **Session cookies and API tokens**: full authority of their principal until expiry or revocation.
+- **Agent client certificates and the agent CA**: whoever holds a valid agent certificate can speak as that node.
+- **Container access**: exec and terminal give a shell with the container's injected secrets.
+- **The Docker socket**: root-equivalent on the node.
+- **Backups and control plane snapshots**: contain data and ciphertext in bulk.
 
 ## Attackers considered
 
-1. Anonymous network attacker reaching the dashboard or webhook URLs.
-2. Malicious web page visiting while an operator is signed in (CSRF, cross-site WebSocket).
-3. Low-privilege insider: a token or user with `read`, or one denied on a specific app, trying to reach more.
-4. Attacker who controls repository content: branch names, PR titles, fork pull requests, `app.yaml`, pipeline files.
-5. Attacker who controls an app container, trying to reach the node, other containers or the control plane.
-6. Network attacker between agent and control plane.
-7. Supply chain: a tampered release binary or image.
+1. **Anonymous network attacker** reaching the dashboard or webhook URLs.
+2. **Malicious web page** visiting while an operator is signed in (CSRF, cross-site WebSocket).
+3. **Low-privilege insider**: a token or user with `read`, or one denied on a specific app, trying to reach more.
+4. **Attacker who controls repository content**: branch names, PR titles, fork pull requests, `app.yaml`, pipeline files.
+5. **Attacker who controls an app container**: trying to reach the node, other containers or the control plane.
+6. **Network attacker between agent and control plane.**
+7. **Supply chain**: a tampered release binary or image.
 
 Not considered: a fully compromised control plane host (it holds the master key in memory and the Docker socket), or a malicious operator with `root`.
 
@@ -77,7 +77,7 @@ Not considered: a fully compromised control plane host (it holds the master key 
 
 - Every route is wrapped in `requireAbility`, `requireAbilityForResource` or `requireAuth` (`internal/api/auth.go`). Ability tiers are `read`, `read:sensitive`, `write`, `write:sensitive`, `deploy` and `root`.
 - `requireAbilityForResource` adds IAM Allow and Deny policies scoped to `app:<name>`, `database:<name>` and `model:<name>`. An explicit Deny wins over any ability. `internal/api/iam.go`.
-- Route-level tests lock this down. `internal/api/authz_matrix_test.go` walks every registered route and asserts that anonymous requests get 401 unless the route is on a reasoned public allowlist, that a read-only token cannot reach any mutating route, and that a per-resource Deny returns 403 on every app, database and model route for both sessions and tokens. `internal/api/routes_app_guard_test.go` fails if a resource route uses the plain ability guard. A new route that skips these gates fails the build.
+- **Route-level tests lock this down.** `internal/api/authz_matrix_test.go` walks every registered route and asserts that anonymous requests get 401 unless the route is on a reasoned public allowlist, that a read-only token cannot reach any mutating route, and that a per-resource Deny returns 403 on every app, database and model route for both sessions and tokens. `internal/api/routes_app_guard_test.go` fails if a resource route uses the plain ability guard. A new route that skips these gates fails the build.
 - Exec and terminal require `root` and a second per-app opt-out. `internal/api/exec.go`, `internal/api/terminal.go`.
 
 ### Streaming endpoints
@@ -123,12 +123,13 @@ Not considered: a fully compromised control plane host (it holds the master key 
 
 ## Known gaps
 
-Status says whether a gap is open, accepted, or by design.
+Stated plainly. Status says whether a gap is open, accepted, or by design.
 
 | Gap | Impact | Status |
 | --- | --- | --- |
 | Container hardening has no per-app override and read-only root filesystems are opt-in | An image that needs more than the minimal capability set must be granted it host-wide | Default is now `enforce`: all capabilities dropped except a small documented set, `no-new-privileges` and a PID limit. `APP_CONTAINER_HARDENING_CAP_ADD` widens it, `warn` opts out. Per-app policy is future work |
 | Release signing is only as good as its last verification | A broken signing step would go unnoticed until a release | Release workflow signs `checksums.txt` with cosign and attests provenance; `install.sh` verifies the signature when cosign is present, and `APP_INSTALL_VERIFY=require` refuses unsigned releases. The `v0.2.0-beta.18` signature was verified with cosign against the documented identity on 2026-10-06 |
+| The master key is stored in `<data dir>/master.key` beside the database unless `APP_MASTER_KEY` is set | A copy of the whole data directory (disk image, host backup, cloud snapshot) decrypts every secret | Open: keep the file out of host backups, or set `APP_MASTER_KEY_FILE` to a path outside the data directory, or supply it with `APP_MASTER_KEY`. The default location is unchanged |
 | Only apps, databases and models have per-resource IAM. Nodes, projects, domains, registries and settings are ability-gated only | You cannot Deny one node or project to a token that has the ability | Open |
 | Git fetches of a private-address Git server are refused by default | A LAN Gitea or GitLab needs `APP_GIT_ALLOW_PRIVATE_NETWORKS=true`, which relaxes only git fetches | Fixed: git fetches use `kit/netguard` with their own opt-in. The older shared `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS` still works for git |
 | Bind-mount path checks are lexical | A host symlink inside an allowed directory that points at a protected path is followed by Docker | Open: only operators with root on the host can create such a link |
