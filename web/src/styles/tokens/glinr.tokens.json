@@ -272,14 +272,14 @@
     },
     "hero-tile": {
       "$value": "2.5rem",
-      "$description": "Brand tile edge in a page hero (compact default).",
+      "$description": "Brand tile edge in a page hero. One value for every density.",
       "$extensions": {
         "glinr": { "name": "hero-tile-size", "stability": "stable" }
       }
     },
     "hero-tile-comfortable": {
-      "$value": "3rem",
-      "$description": "Hero tile edge when data-density is comfortable.",
+      "$value": "2.5rem",
+      "$description": "Kept for compatibility, equals hero-tile so the hero never changes size with density.",
       "$extensions": {
         "glinr": { "name": "hero-tile-size-comfortable", "stability": "stable" }
       }
@@ -450,7 +450,7 @@
     "display-weight": {
       "$value": "300",
       "$type": "fontWeight",
-      "$description": "Display role weight, light on purpose.",
+      "$description": "Light weight, only for numerals and display sizes of 28px or more.",
       "$extensions": {
         "glinr": { "name": "display-weight", "stability": "stable" }
       }
@@ -460,6 +460,63 @@
       "$type": "fontWeight",
       "$description": "Weight for controls and table headers.",
       "$extensions": { "glinr": { "stability": "experimental" } }
+    },
+    "heading-weight": {
+      "$value": "600",
+      "$type": "fontWeight",
+      "$description": "Page, section and banner title weight.",
+      "$extensions": { "glinr": { "stability": "stable" } }
+    },
+    "greeting-weight": {
+      "$value": "500",
+      "$type": "fontWeight",
+      "$description": "Dashboard greeting, sign-in and setup heading weight.",
+      "$extensions": { "glinr": { "stability": "stable" } }
+    },
+    "size-banner": {
+      "$value": "0.875rem",
+      "$description": "Banner title.",
+      "$extensions": { "glinr": { "stability": "stable" } }
+    },
+    "leading-banner": {
+      "$value": "1.25rem",
+      "$description": "Banner title line height.",
+      "$extensions": { "glinr": { "stability": "stable" } }
+    },
+    "size-section": {
+      "$value": "0.9375rem",
+      "$description": "Card and section title.",
+      "$extensions": { "glinr": { "stability": "stable" } }
+    },
+    "leading-section": {
+      "$value": "1.375rem",
+      "$description": "Card and section title line height.",
+      "$extensions": { "glinr": { "stability": "stable" } }
+    },
+    "size-page": {
+      "$value": "1.25rem",
+      "$description": "Page title.",
+      "$extensions": { "glinr": { "stability": "stable" } }
+    },
+    "leading-page": {
+      "$value": "1.75rem",
+      "$description": "Page title line height.",
+      "$extensions": { "glinr": { "stability": "stable" } }
+    },
+    "size-greeting": {
+      "$value": "1.75rem",
+      "$description": "Dashboard greeting, sign-in and setup headings.",
+      "$extensions": { "glinr": { "stability": "stable" } }
+    },
+    "leading-greeting": {
+      "$value": "2.25rem",
+      "$description": "Greeting line height.",
+      "$extensions": { "glinr": { "stability": "stable" } }
+    },
+    "size-eyebrow": {
+      "$value": "0.6875rem",
+      "$description": "Eyebrow mono label.",
+      "$extensions": { "glinr": { "stability": "stable" } }
     },
     "size-xs": {
       "$value": "0.75rem",

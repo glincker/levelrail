@@ -171,7 +171,7 @@ export function LoginScreen({
                 ? t('foundation.signIn.eyebrowSetup')
                 : t('foundation.signIn.eyebrowSignIn')}
             </Eyebrow>
-            <Display as="h1" size="3xl">
+            <Display as="h1" size="greeting">
               {isRegister
                 ? t('foundation.signIn.titleSetup')
                 : t('foundation.signIn.titleSignIn')}

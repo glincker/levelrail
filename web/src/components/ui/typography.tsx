@@ -3,17 +3,20 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const displayVariants = cva(
-  'font-[family-name:var(--glinr-font-display)] font-[var(--glinr-display-weight)] leading-tight tracking-tight text-balance text-foreground',
+  'font-(family-name:--glinr-font-display) tracking-tight text-balance text-foreground',
   {
     variants: {
       size: {
-        lg: 'text-lg',
-        '2xl': 'text-2xl',
-        '3xl': 'text-2xl sm:text-3xl',
-        '4xl': 'text-3xl sm:text-4xl',
+        banner:
+          'text-(length:--glinr-type-size-banner) leading-(--glinr-type-leading-banner) font-(weight:--glinr-type-heading-weight)',
+        section:
+          'text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)',
+        page: 'text-(length:--glinr-type-size-page) leading-(--glinr-type-leading-page) font-(weight:--glinr-type-heading-weight)',
+        greeting:
+          'text-(length:--glinr-type-size-greeting) leading-(--glinr-type-leading-greeting) font-(weight:--glinr-type-greeting-weight)',
       },
     },
-    defaultVariants: { size: '2xl' },
+    defaultVariants: { size: 'page' },
   },
 )
 
@@ -25,7 +28,7 @@ export interface DisplayProps
   children: ReactNode
 }
 
-/** Display is the light, tight heading style shared by page heroes, banners and form sections. */
+/** Display is the heading role (Geist, tight tracking) shared by page titles, banner and section titles, and the greeting. */
 export function Display({
   as = 'h2',
   size,
@@ -49,7 +52,7 @@ export function Eyebrow({
   return (
     <p
       className={cn(
-        'flex items-center gap-2 font-[family-name:var(--glinr-font-eyebrow)] text-xs tracking-widest text-muted-foreground uppercase',
+        'flex items-center gap-2 font-(family-name:--glinr-font-eyebrow) text-(length:--glinr-type-size-eyebrow) leading-4 tracking-widest text-muted-foreground uppercase',
         className,
       )}
     >
