@@ -39,7 +39,7 @@
   --glinr-banner-pad-comfortable: var(--glinr-space-4);
   --glinr-tile-size: 2.5rem;
   --glinr-hero-tile-size: 2.5rem;
-  --glinr-hero-tile-size-comfortable: 3rem;
+  --glinr-hero-tile-size-comfortable: 2.5rem;
   --glinr-content-narrow: 40rem;
   --glinr-content-max: 72rem;
   --glinr-content-max-wide: 88rem;
@@ -56,6 +56,17 @@
   --glinr-font-eyebrow: 'Geist Mono Variable', ui-monospace, Consolas, monospace;
   --glinr-display-weight: 300;
   --glinr-type-label-weight: 500;
+  --glinr-type-heading-weight: 600;
+  --glinr-type-greeting-weight: 500;
+  --glinr-type-size-banner: 0.875rem;
+  --glinr-type-leading-banner: 1.25rem;
+  --glinr-type-size-section: 0.9375rem;
+  --glinr-type-leading-section: 1.375rem;
+  --glinr-type-size-page: 1.25rem;
+  --glinr-type-leading-page: 1.75rem;
+  --glinr-type-size-greeting: 1.75rem;
+  --glinr-type-leading-greeting: 2.25rem;
+  --glinr-type-size-eyebrow: 0.6875rem;
   --glinr-type-size-xs: 0.75rem;
   --glinr-type-size-sm: 0.875rem;
   --glinr-type-size-base: 1rem;

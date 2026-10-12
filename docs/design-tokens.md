@@ -31,13 +31,25 @@ A vitest test (`web/scripts/build-tokens.test.mjs`) fails if the committed CSS d
 
 ## Type roles
 
-| Role    | Family token                                 | Notes                                                                           |
-| ------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| Display | `--glinr-font-display` (Geist Variable)      | Weight `--glinr-display-weight` (300), tight leading and tracking, `<Display>`. |
-| Eyebrow | `--glinr-font-eyebrow` (Geist Mono Variable) | Uppercase, 12px, `--glinr-type-tracking-eyebrow`, `<Eyebrow>`.                  |
-| Lede    | `--glinr-font-body`                          | `--glinr-type-size-lg`, muted foreground.                                       |
-| Numbers | `--glinr-font-eyebrow` or body               | Apply `--glinr-type-numeric-features` so digits align in tables and meters.     |
-| Body    | `--glinr-font-body`                          | System stack, never a webfont.                                                  |
+One heading family (Display, Geist Variable) and one body family (system stack). Weight 300 is reserved for numerals and display sizes of 28px or more (the ReadinessRing percentage, big metric numbers, the sign-in showcase). Headings never use 300 below 28px.
+
+| Role                                          | Size / line | Weight | Family       | Token and component                                                                            |
+| --------------------------------------------- | ----------- | ------ | ------------ | ---------------------------------------------------------------------------------------------- |
+| Greeting (dashboard, sign-in, setup headings) | 28 / 36     | 500    | Display      | `--glinr-type-size-greeting`, `<Display size="greeting">`, `PageTemplate titleSize="greeting"` |
+| Page title                                    | 20 / 28     | 600    | Display      | `--glinr-type-size-page`, `<Display size="page">`, tight tracking                              |
+| Section and card title                        | 15 / 22     | 600    | Display      | `--glinr-type-size-section`, `<Display size="section">`, `CardTitle`, `FormSection`            |
+| Banner title                                  | 14 / 20     | 600    | Display      | `--glinr-type-size-banner`, `<Display size="banner">`, `Banner`                                |
+| Body                                          | 14 / 20     | 400    | Body         | `text-sm`                                                                                      |
+| Secondary                                     | 13          | 400    | Body         | `text-[13px]`, muted foreground                                                                |
+| Caption                                       | 12          | 400    | Body         | `text-xs`                                                                                      |
+| Eyebrow                                       | 11          | 400    | Mono         | `--glinr-font-eyebrow`, `--glinr-type-size-eyebrow`, uppercase, tracking-widest, `<Eyebrow>`   |
+| Numbers                                       | inherits    | 300+   | Mono or body | Apply `--glinr-type-numeric-features` so digits align in tables and meters.                    |
+
+Weights come from `--glinr-type-heading-weight` (600), `--glinr-type-greeting-weight` (500) and `--glinr-display-weight` (300, numerals and display only).
+
+## Page hero
+
+`PageTemplate` renders the hero as one row: tile (`--glinr-hero-tile-size`, 40px at every density), 12px gap, text block, spacer, actions. The eyebrow sits 4px above the title; the title and status badge share a baseline. With a one line description the tile and text block are vertically centered to each other. When the description wraps the tile top-aligns with the title (below the eyebrow) and the actions align to the title row. Pages with a brand mark pass `<BrandTile size="lg">` as `logo`; they never build their own header markup.
 
 Fonts are the `@fontsource-variable/geist` and `@fontsource-variable/geist-mono` packages, latin subset, `font-display: swap`, with the system stack as fallback.
 
@@ -67,6 +79,8 @@ Dark mode uses a darker translucent shadow plus a 1px top highlight (`--glinr-hi
 4. Use it as `var(--glinr-...)` or the Tailwind utility. Do not hardcode hex or px in a component when a token exists.
 
 ## Changelog
+
+2026-10-12, type scale and hero fix. Page titles 24 to 20px, banner and section titles 18 and 16 to 14 and 15px, all weight 600 in the Display family (previously 300 Geist next to 500 system-ui). Greeting 24/30 to 28px weight 500. Eyebrow 12 to 11px. `--glinr-hero-tile-size-comfortable` now equals `--glinr-hero-tile-size` (2.5rem) so the hero tile no longer changes size with density. New tokens: `type-heading-weight`, `type-greeting-weight`, `type-size-banner|section|page|greeting|eyebrow`, `type-leading-banner|section|page|greeting`.
 
 2026-10-12, token source introduced. Value changes to existing variables:
 
