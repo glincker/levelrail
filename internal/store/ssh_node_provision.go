@@ -41,9 +41,12 @@ type SSHNodeProvision struct {
 	// each update rather than appended in SQL: the provisioning goroutine
 	// is the sole writer for a given row's lifetime, so there is no
 	// concurrent-append race to guard against.
-	Log       string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Log string
+	// HostKeyFingerprint is the SHA256 host key the install was pinned to,
+	// empty when the operator explicitly skipped host key verification.
+	HostKeyFingerprint string
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 // ErrSSHNodeProvisionNotFound is returned by GetSSHNodeProvision when id
@@ -55,9 +58,9 @@ var ErrSSHNodeProvisionNotFound = errors.New("store: ssh node provision not foun
 // INSERT" pattern NodeProvision uses.
 func (db *DB) SaveSSHNodeProvision(ctx context.Context, p SSHNodeProvision) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO ssh_node_provisions (id, name, role, status, detected_os, detected_arch, node_id, failure_reason, log, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, p.ID, p.Name, p.Role, p.Status, p.DetectedOS, p.DetectedArch, p.NodeID, p.FailureReason, p.Log, formatTime(p.CreatedAt), formatTime(p.UpdatedAt))
+		INSERT INTO ssh_node_provisions (id, name, role, status, detected_os, detected_arch, node_id, failure_reason, log, host_key_fingerprint, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, p.ID, p.Name, p.Role, p.Status, p.DetectedOS, p.DetectedArch, p.NodeID, p.FailureReason, p.Log, p.HostKeyFingerprint, formatTime(p.CreatedAt), formatTime(p.UpdatedAt))
 	if err != nil {
 		return fmt.Errorf("store: save ssh node provision %q: %w", p.ID, err)
 	}
@@ -68,7 +71,7 @@ func (db *DB) SaveSSHNodeProvision(ctx context.Context, p SSHNodeProvision) erro
 // ErrSSHNodeProvisionNotFound.
 func (db *DB) GetSSHNodeProvision(ctx context.Context, id string) (SSHNodeProvision, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, name, role, status, detected_os, detected_arch, node_id, failure_reason, log, created_at, updated_at
+		SELECT id, name, role, status, detected_os, detected_arch, node_id, failure_reason, log, host_key_fingerprint, created_at, updated_at
 		FROM ssh_node_provisions WHERE id = ?
 	`, id)
 	p, err := scanSSHNodeProvision(row.Scan)
@@ -84,7 +87,7 @@ func (db *DB) GetSSHNodeProvision(ctx context.Context, id string) (SSHNodeProvis
 // ListSSHNodeProvisions returns every SSH node provision, newest first.
 func (db *DB) ListSSHNodeProvisions(ctx context.Context) ([]SSHNodeProvision, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, name, role, status, detected_os, detected_arch, node_id, failure_reason, log, created_at, updated_at
+		SELECT id, name, role, status, detected_os, detected_arch, node_id, failure_reason, log, host_key_fingerprint, created_at, updated_at
 		FROM ssh_node_provisions ORDER BY created_at DESC
 	`)
 	if err != nil {
@@ -130,7 +133,7 @@ func scanSSHNodeProvision(scan func(dest ...any) error) (SSHNodeProvision, error
 		createdAt, updatedAt string
 	)
 	if err := scan(&p.ID, &p.Name, &p.Role, &p.Status, &p.DetectedOS, &p.DetectedArch,
-		&p.NodeID, &p.FailureReason, &p.Log, &createdAt, &updatedAt); err != nil {
+		&p.NodeID, &p.FailureReason, &p.Log, &p.HostKeyFingerprint, &createdAt, &updatedAt); err != nil {
 		return SSHNodeProvision{}, err
 	}
 	var err error

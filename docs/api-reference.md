@@ -663,6 +663,7 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/drains | AbilityRoot | handleListNodeDrains |
 | GET | /api/v1/nodes/{id}/labels | AbilityRoot | handleGetNodeLabels |
 | PUT | /api/v1/nodes/{id}/labels | AbilityRoot | handleSetNodeLabels |
+| POST | /api/v1/nodes/ssh-provision/preflight | AbilityRoot | handleSSHProvisionPreflight |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
