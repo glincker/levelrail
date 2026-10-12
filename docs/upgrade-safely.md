@@ -22,6 +22,7 @@ Every check that blocks an upgrade says what it protects and carries its own fix
 | Docker Engine version | Not restarting your apps on an engine release with a known bug. | Update Docker on the host, then **Re-check**. |
 | Free disk space | Room for the new binary and a snapshot. | Free space, then **Re-check**. |
 | Signature verification tool | Verifying the signature as well as the checksum. | Optional: install `cosign` with the command shown. |
+| Release signature pin | That a release with its signature stripped is not accepted, once this host has verified a signed one. | Not pinned yet: a warning, install `cosign` and upgrade once. Pinned: blocks when `cosign` is missing or the release publishes no signature. See [Signature pin](#signature-pin). |
 
 Database backups of your own databases are not part of this gate: the upgrade replaces the control plane program and its database, not your data volumes.
 
@@ -97,7 +98,7 @@ Scheduling and the policy are root-only (a root session or a root-ability token)
 | guard | Rejects an older or identical target and any unacknowledged breaking change | Refused, nothing changed |
 | download | Fetches the binary, `checksums.txt` and the signature bundle over HTTPS (size capped) | Nothing changed |
 | verify checksum | SHA-256 of the binary against `checksums.txt` | Refused, nothing changed |
-| verify signature | cosign keyless check of `checksums.txt` (`--verify auto` skips when cosign or the bundle is missing, `require` fails closed, `off` skips) | Refused, nothing changed |
+| verify signature | cosign keyless check of `checksums.txt` (`--verify auto` skips when cosign or the bundle is missing until this host is [pinned](#signature-pin), then fails closed; `require` fails closed, `off` skips) | Refused, nothing changed |
 | probe | Runs the new binary's `version --json` in an isolated scratch directory and checks the version and that its schema is not older than your database | Refused, nothing changed |
 | backup | Snapshots the database (`VACUUM INTO`, integrity checked) and keeps a copy of the running binary | Nothing changed |
 | migration dry run | Applies the new release's migrations to a copy of the snapshot with the new binary | Nothing changed, the old version keeps running |
@@ -157,6 +158,19 @@ sudo levelrail self-upgrade --recover
 ```
 
 Recovery closes an attempt that never stopped the service as failed (nothing to undo), rolls back one that stopped or swapped the binary, and confirms one whose health check had already passed.
+
+## Signature pin
+
+The first verified release signature writes `<data dir>/release-signature.pin`. After that every upgrade, from the dashboard, `levelrail-cli upgrade --apply`, `sudo levelrail self-upgrade` or `install.sh upgrade`, requires a valid signature: a missing bundle (an unsigned or pre-signing release, including a downgrade to one) or a missing `cosign` is refused with the reason and the way out. A bad signature is always refused, pinned or not.
+
+`levelrail-cli doctor` (check `signature_pin`) and Settings > Updates warn while the host is not pinned. Fix it by installing cosign and upgrading once.
+
+To get past a pinned refusal on purpose, both of these are logged:
+
+```bash
+sudo levelrail self-upgrade --to v1.2.3 --verify off   # this run only, the pin stays
+sudo levelrail self-upgrade --unpin-signature          # forget the pin
+```
 
 ## A binary older than the database
 

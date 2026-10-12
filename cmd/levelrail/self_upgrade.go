@@ -46,7 +46,7 @@ var initiatorPattern = regexp.MustCompile(`^[A-Za-z0-9._@:-]{1,64}$`)
 type selfUpgradeFlags struct {
 	to, ack, verify, initiator, repo, baseURL string
 	latest, dryRun, asJSON, yes, recoverRun   bool
-	skipNotes                                 bool
+	skipNotes, unpin                          bool
 	stopCmd, startCmd, healthURL              string
 	timeout                                   time.Duration
 }
@@ -65,7 +65,10 @@ come back automatically. Run it on the host as root.
   --dry-run            print the plan and breaking changes, change nothing
   --yes                skip the typed confirmation
   --json               machine-readable plan or result
-  --verify MODE        auto (default), require or off, for the release signature
+  --verify MODE        auto (default), require or off, for the release signature.
+                       Once a signature has been verified on this host, auto
+                       refuses unsigned releases; off overrides that, logged
+  --unpin-signature    forget that this host verified a signed release
   --timeout DURATION   how long the new release may take to become healthy
   --recover            finish or undo an upgrade that was interrupted
   --skip-notes-check   continue when release notes cannot be fetched
@@ -78,6 +81,9 @@ func runSelfUpgrade(ctx context.Context, args []string, dataDir string, stdin io
 	f, err := parseSelfUpgradeFlags(args, stdout)
 	if err != nil {
 		return err
+	}
+	if f.unpin {
+		return unpinSignature(dataDir, stdout)
 	}
 	exe, err := executablePath()
 	if err != nil {
@@ -136,11 +142,11 @@ func runSelfUpgrade(ctx context.Context, args []string, dataDir string, stdin io
 	}
 	deps.Fetch = selfupgrade.Fetcher{BaseURL: base, AllowHTTP: os.Getenv(envInsecureMirror) == "1"}.Fetch
 	deps.Asset = fmt.Sprintf("%s-linux-%s", name, runtime.GOARCH)
-	deps.VerifySig = selfupgrade.Signer{
-		Mode:           f.verify,
-		IdentityRegexp: "(?i)https://github.com/" + regexp.QuoteMeta(repo) + `/\.github/workflows/release\.yml@.*`,
-		Issuer:         cosignOIDCIssuer,
-	}.Verify
+	notice := stdout
+	if f.asJSON {
+		notice = io.Discard
+	}
+	deps.VerifySig = selfUpgradeSigner(f.verify, repo, dataDir, target, logger, notice).Verify
 	deps.WorkDir = filepath.Join(dataDir, selfUpgradeWorkDir)
 
 	if err := retainRunning(exe, name); err != nil {
@@ -156,6 +162,49 @@ func runSelfUpgrade(ctx context.Context, args []string, dataDir string, stdin io
 	}
 	printAttempt(stdout, attempt, f.asJSON)
 	return applyErr
+}
+
+// selfUpgradeSigner pins the host on its first verified signature, after
+// which auto mode refuses unsigned releases (LR-UPD-001).
+func selfUpgradeSigner(mode, repo, dataDir, target string, logger *slog.Logger, out io.Writer) selfupgrade.Signer {
+	_, pinned, err := selfupgrade.ReadPin(dataDir)
+	if err != nil {
+		logger.Warn("signature pin unreadable, treating this host as pinned", slog.String("error", err.Error()))
+	}
+	if pinned && mode == selfupgrade.VerifyOff {
+		logger.Warn("release signature check disabled by --verify off although this host is pinned to signed releases", slog.String("target", target))
+		_, _ = fmt.Fprintln(out, "WARNING: signature check disabled (--verify off) although this host is pinned to signed releases.")
+	}
+	return selfupgrade.Signer{
+		Mode:           mode,
+		IdentityRegexp: "(?i)https://github.com/" + regexp.QuoteMeta(repo) + `/\.github/workflows/release\.yml@.*`,
+		Issuer:         cosignOIDCIssuer,
+		Pinned:         pinned,
+		OnVerified: func() {
+			if pinned {
+				return
+			}
+			if werr := selfupgrade.WritePin(dataDir, selfupgrade.Pin{Version: target}); werr != nil {
+				logger.Warn("could not record the signature pin", slog.String("error", werr.Error()))
+				return
+			}
+			logger.Info("release signature verified, this host now only accepts signed releases", slog.String("version", target))
+		},
+	}
+}
+
+func unpinSignature(dataDir string, out io.Writer) error {
+	removed, err := selfupgrade.RemovePin(dataDir)
+	if err != nil {
+		return err
+	}
+	if !removed {
+		_, _ = fmt.Fprintln(out, "no signature pin on this host")
+		return nil
+	}
+	slog.New(slog.NewTextHandler(os.Stderr, nil)).Warn("signature pin removed: unsigned releases are accepted again until the next verified signature", slog.String("initiator", hostActor()))
+	_, _ = fmt.Fprintln(out, "signature pin removed. The next upgrade with a verified signature pins this host again.")
+	return nil
 }
 
 type selfUpgradePlan struct {
@@ -231,11 +280,12 @@ func parseSelfUpgradeFlags(args []string, stdout io.Writer) (selfUpgradeFlags, e
 	fs.BoolVar(&f.yes, "yes", false, "")
 	fs.BoolVar(&f.recoverRun, "recover", false, "")
 	fs.BoolVar(&f.skipNotes, "skip-notes-check", false, "")
+	fs.BoolVar(&f.unpin, "unpin-signature", false, "")
 	fs.StringVar(&f.stopCmd, "stop-cmd", "", "")
 	fs.StringVar(&f.startCmd, "start-cmd", "", "")
 	fs.StringVar(&f.healthURL, "health-url", "", "")
 	fs.DurationVar(&f.timeout, "timeout", selfupgrade.DefaultHealthTimeout, "")
-	if err := fs.Parse(args); err != nil || (!f.recoverRun && f.to == "" && !f.latest) {
+	if err := fs.Parse(args); err != nil || (!f.recoverRun && !f.unpin && f.to == "" && !f.latest) {
 		_, _ = fmt.Fprint(stdout, selfUpgradeUsage)
 		return f, errors.New("invalid flags")
 	}

@@ -25,6 +25,8 @@ export interface SelfUpgradePlan {
   cannot_apply_reason?: string
   command: string
   steps: string[]
+  signature_pinned?: boolean
+  signature_pinned_version?: string
   edge?: EdgeGuidance
 }
 

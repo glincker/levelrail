@@ -135,6 +135,10 @@ type selfUpgradePlanResource struct {
 	CannotApplyWhy string                `json:"cannot_apply_reason,omitempty"`
 	Command        string                `json:"command"`
 	Steps          []string              `json:"steps"`
+	// SignaturePinned is false until a release signature has been verified
+	// on this host; until then upgrades accept checksum-only releases.
+	SignaturePinned        bool   `json:"signature_pinned"`
+	SignaturePinnedVersion string `json:"signature_pinned_version,omitempty"`
 	// Edge is set when the channel's target is the edge container image,
 	// which this self-upgrade does not apply.
 	Edge *edgeGuidance `json:"edge,omitempty"`
@@ -174,6 +178,10 @@ func (rt *Router) buildSelfUpgradePlan(ctx context.Context, target string) (self
 		}
 	}
 	plan.CanApply, plan.CannotApplyWhy = rt.selfUpgrade.canLaunch()
+	if rt.dataDir != "" {
+		pin, pinned, _ := selfupgrade.ReadPin(rt.dataDir)
+		plan.SignaturePinned, plan.SignaturePinnedVersion = pinned, pin.Version
+	}
 	if len(plan.Breaking) > 0 {
 		ids := make([]string, 0, len(plan.Breaking))
 		for _, b := range plan.Breaking {
