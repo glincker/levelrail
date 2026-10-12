@@ -57,9 +57,10 @@ export function DeviceAuthRequestTable({
   if (requests.length === 0) {
     return (
       <EmptyState
-        icon={<TerminalWindowIcon className="size-5" />}
-        title="No pending CLI logins"
-        description="Run levelrail-cli auth login --device in a terminal and the code will show up here."
+        compact
+        icon={<TerminalWindowIcon className="size-4" />}
+        title={t('deviceLogin.emptyTitle')}
+        description={t('deviceLogin.emptyBody')}
       />
     )
   }

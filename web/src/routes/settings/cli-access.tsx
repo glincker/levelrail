@@ -11,6 +11,7 @@ import {
   useDeviceAuthRequests,
 } from '../../queries/deviceAuth'
 import { DeviceAuthRequestTable } from '../../components/DeviceAuthRequestTable'
+import { HelpLink } from '../../components/HelpLink'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
@@ -97,8 +98,9 @@ function CliAccessPage() {
       eyebrow={t('cliAccessPage.eyebrow')}
       title={t('cliAccessPage.title')}
       description={t('cliAccessPage.description')}
-      helpPath="/cli-reference"
-      helpLabel={t('cliAccessPage.help')}
+      actions={
+        <HelpLink path="/cli-reference" label={t('cliAccessPage.help')} />
+      }
       status={
         <Badge variant={requests.length > 0 ? 'warning' : 'muted'}>
           {t('cliAccessPage.waitingCount', { count: requests.length })}
@@ -117,6 +119,7 @@ function CliAccessPage() {
     >
       <div>
         <FormSection
+          step={1}
           title={t('cliAccessPage.steps.install.title')}
           description={t('cliAccessPage.steps.install.body')}
         >
@@ -126,12 +129,14 @@ function CliAccessPage() {
           </p>
         </FormSection>
         <FormSection
+          step={2}
           title={t('cliAccessPage.steps.point.title')}
           description={t('cliAccessPage.steps.point.body')}
         >
           <CopyCommand command={`export APP_API_URL=${apiUrl}`} />
         </FormSection>
         <FormSection
+          step={3}
           title={t('cliAccessPage.steps.login.title')}
           description={t('cliAccessPage.steps.login.body')}
         >
