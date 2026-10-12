@@ -38,7 +38,9 @@
     "copied": "Command copied",
     "dismiss": "Dismiss",
     "dismissed": "Dismissed. The audit log keeps the record.",
-    "viewAudit": "View audit entries"
+    "viewAudit": "View audit entries",
+    "emptyTitle": "No pending CLI logins",
+    "emptyBody": "Run levelrail-cli auth login --device in a terminal and the code shows up here."
   },
   "panel": {
     "title": "Needs attention",
