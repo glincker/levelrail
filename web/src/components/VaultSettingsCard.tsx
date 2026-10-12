@@ -1,14 +1,7 @@
 import { useState, type FormEvent } from 'react'
-import { VaultIcon } from '@phosphor-icons/react/dist/ssr'
 import type { VaultSettings } from '../queries/vault'
 import { useDisconnectVault, useUpdateVaultSettings } from '../queries/vault'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -96,20 +89,8 @@ export function VaultSettingsCard({ settings }: { settings: VaultSettings }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <VaultIcon className="size-4" />
-          HashiCorp Vault
-        </CardTitle>
-        <CardDescription>
-          Resolve an app.yaml env var&apos;s value live from an external
-          HashiCorp Vault instance ({'{'} vault: {'{'} path, key {'}'} {'}'}),
-          as an alternative to this platform&apos;s own envelope-encrypted
-          secret storage.
-        </CardDescription>
-      </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <SettingsEnabledRow
             description="Resolve vault-backed app.yaml env vars at container-create time."
             checked={enabled}

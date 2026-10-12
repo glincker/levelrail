@@ -60,7 +60,7 @@ export function RemoteReadConnectionCard({
           add it as a Prometheus data source.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <Field>
           <FieldLabel htmlFor="remote-read-url">Remote read URL</FieldLabel>
           <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
@@ -166,7 +166,7 @@ export function ObservabilitySettingsCard({
           // showing its generic "enter a URL" tooltip instead of this
           // form's own, more specific error message.
           noValidate
-          className="space-y-5"
+          className="space-y-4"
         >
           <Field>
             <FieldLabel htmlFor="external-dashboard-url">

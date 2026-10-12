@@ -164,7 +164,7 @@ function ProviderForm({ provider }: { provider: NodeProviderResource }) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <FieldGroup className="gap-3">
+          <FieldGroup className="gap-4">
             {!isAWS ? (
               <Field>
                 <FieldLabel

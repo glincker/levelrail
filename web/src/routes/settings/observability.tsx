@@ -11,7 +11,9 @@ import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '../../components/settings/SettingsSkeletons'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { useTranslation } from 'react-i18next'
+import { ChartLineIcon } from '@phosphor-icons/react/dist/ssr'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 
 export const Route = createFileRoute('/settings/observability')({
   loader: ({ context: { queryClient } }) =>
@@ -31,17 +33,17 @@ function ObservabilitySettingsSkeleton() {
 }
 
 function ObservabilitySettingsPage() {
+  const { t } = useTranslation('settings')
   const { data: settings } = useObservabilitySettings()
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Observability"
-        description="Connect your own Grafana to this control plane's metrics."
-      />
-
+    <PageTemplate
+      icon={<ChartLineIcon />}
+      title={t('observabilityPage.title')}
+      description={t('observabilityPage.description')}
+    >
       <RemoteReadConnectionCard settings={settings} />
       <ObservabilitySettingsCard settings={settings} />
-    </div>
+    </PageTemplate>
   )
 }

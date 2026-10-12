@@ -7,7 +7,7 @@ import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '../../components/settings/SettingsSkeletons'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 
 export const Route = createFileRoute('/settings/ai-control')({
   loader: ({ context: { queryClient } }) =>
@@ -30,17 +30,12 @@ function AiControlPage() {
   const { data: settings } = useAiControl()
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <ShieldCheckIcon className="size-4" />
-        </div>
-        <PageHeader
-          title={t('aiControl.title')}
-          description={t('aiControl.navDescription')}
-        />
-      </div>
+    <PageTemplate
+      icon={<ShieldCheckIcon />}
+      title={t('aiControl.title')}
+      description={t('aiControl.description')}
+    >
       <AiControlCard key={settings.updated_at} settings={settings} />
-    </div>
+    </PageTemplate>
   )
 }

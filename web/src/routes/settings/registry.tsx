@@ -1,23 +1,23 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
+import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   registrySettingsQueryOptions,
   useRegistrySettings,
 } from '../../queries/registry'
-import { RegistrySettingsCard } from '../../components/RegistrySettingsCard'
-import { PageHeader } from '../../components/shell/PageHeader'
+import {
+  RegistrySettingsCard,
+  RegistryStatusBadge,
+} from '../../components/RegistrySettingsCard'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '../../components/settings/SettingsSkeletons'
 
-// Instance-level, not scoped to one app: lives under routes/settings/
-// next to cloudflare-tunnel.tsx, the same reasoning that file's own
-// header comment gives for its placement. Covers only what internal/api's
-// registry routes actually do: enabling/disabling the built-in registry
-// container and viewing its status (see the backend package doc comment,
-// internal/reconcile/registry). Distinct from
-// routes/settings/registry-credentials.tsx, which manages credentials to
-// an external registry an operator already runs elsewhere.
+// Instance-level: the built-in registry container's enable/disable and
+// status. Distinct from registry-credentials.tsx, which stores credentials
+// for an external registry.
 export const Route = createFileRoute('/settings/registry')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(registrySettingsQueryOptions()),
@@ -35,16 +35,17 @@ function RegistrySettingsSkeleton() {
 }
 
 function RegistrySettingsPage() {
+  const { t } = useTranslation('settings')
   const { data: settings } = useRegistrySettings()
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Container registry"
-        description="Levelrail's own built-in image registry for multi-node build caching and image distribution."
-      />
-
+    <PageTemplate
+      icon={<HardDrivesIcon />}
+      title={t('builtInRegistryPage.title')}
+      description={t('builtInRegistryPage.description')}
+      status={<RegistryStatusBadge status={settings.status} />}
+    >
       <RegistrySettingsCard settings={settings} />
-    </div>
+    </PageTemplate>
   )
 }
