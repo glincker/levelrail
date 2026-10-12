@@ -84,7 +84,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 123 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+<Accordion title="123 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration">
 
 Endpoints for:
 - Authentication and session management
@@ -220,11 +220,11 @@ Endpoints for:
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
 
-:::
+</Accordion>
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 171 endpoints for app management, deployment, lifecycle control, and diagnostics
+<Accordion title="171 endpoints for app management, deployment, lifecycle control, and diagnostics">
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -408,7 +408,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/env/settings | AbilityWriteSensitive | handlePutEnvSettings |
 | POST | /api/v1/apps/{name}/env/{key}/convert-to-secret | AbilityWriteSensitive | handleConvertEnvToSecret |
 
-:::
+</Accordion>
 
 `PUT /api/v1/apps/{name}/health` replaces only the app's health config (the body is a `ServiceHealth`: `readiness`, `liveness`, `ready_timeout`), leaving every other field alone; an empty body clears it. Probe fields and validation match [the app spec](/app-spec-reference#probe), with durations in nanoseconds.
 
@@ -666,7 +666,7 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 91 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+<Accordion title="91 endpoints for TLS, domains, ingress control, and DNS/Vault integrations">
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -771,7 +771,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/domains/{domain}/auth-gate/events | AbilityReadSensitive | handleListAuthGateEvents |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/auth-gate/sessions | AbilityRoot | handleRevokeAuthGateSessions |
 
-:::
+</Accordion>
 
 ## Static Sites / Backup Targets / Registry Credentials
 

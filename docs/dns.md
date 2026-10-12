@@ -94,7 +94,7 @@ A resolver that returns a subset of the assigned servers counts as a match: a re
 
 ## Records
 
-The zone page lists record sets: all values of one name and type together. Search matches names, values and set identifiers; the type filter narrows to one type. Lists longer than 50 sets are virtualized.
+The zone page lists record sets: all values of one name and type together. Search matches names, values and set identifiers. The type filter narrows results to one type. Lists longer than 50 sets are virtualized.
 
 Supported types are A, AAAA, CNAME, TXT, MX, CAA, SRV and NS (for delegating a subdomain; apex NS and SOA are provider managed and read only). Each type has its own fields in the record dialog, and every value is checked twice: in the browser for instant feedback and on the server, which parses each value with `miekg/dns` before anything reaches the provider.
 

@@ -100,7 +100,7 @@ Deleting removes only the saved template. The source app and apps already deploy
 </Step>
 </Steps>
 
-A custom template never contains a secret value. Secret, database-derived and Vault env entries carry only a key name or reference, and each one becomes a `${SERVICE_SECRET_<key>}` placeholder. `SECRET` is not a generated kind, so such a template always has `requires_configuration` set and must be deployed through the Compose editor, where you supply the real values.
+A custom template never contains a secret value. Secret, database-derived, and Vault env entries carry only a key name or reference, and each one becomes a `${SERVICE_SECRET_<key>}` placeholder. `SECRET` is not a generated kind, so such a template always has `requires_configuration` set and must be deployed through the Compose editor, where you supply the real values.
 
 The saved Compose body does not capture everything about the app:
 

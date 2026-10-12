@@ -5,9 +5,9 @@ description: A practical runbook for moving a Google Cloud Run service to Levelr
 
 This is a runbook for moving one Cloud Run service onto a Levelrail instance you run yourself. It maps only to features that exist in this repository today. Where something is unverified or has no equivalent, it says so.
 
-::: warning
+<Warning>
 Levelrail has no stable release yet (see [feature status](/feature-status)). You operate the server it runs on: OS updates, disk, backups and the Docker daemon are yours. Run the new deployment in parallel with Cloud Run, and keep Cloud Run as the rollback path until the shadow run in section 7 is clean.
-:::
+</Warning>
 
 There is no importer for Cloud Run. Everything below is manual. The good news is that a Cloud Run service is already a container image listening on a port, which is the unit Levelrail deploys, so most services move without a rebuild. Whether the move saves money is a separate question, covered in [Cloud Run alternative](/cloud-run-alternative).
 
@@ -34,7 +34,7 @@ Collect this before touching Levelrail. Much of it lives in the Google Cloud con
 | Cloud Run | Levelrail equivalent | Notes |
 | --- | --- | --- |
 | Service | An app with one service | See [Deploying apps](/deploying-apps). |
-| Container image from a registry | `apps create --image`, or `image:` in `app.yaml` | A private registry uses a registry credential, section 3. |
+| Container image from a registry | `apps create --image`, or `image:` in `app.yaml` | Private registries use a registry credential, see section 3. |
 | Revision | A deploy | Each deploy is recorded with its image, status and reason. `apps deploys list <app>` shows them. |
 | Traffic to a previous revision, or revert | `apps deploys rollback-to <app> <deploy-id>`, or `apps rollback <app> --image <tag>` | Prior images are pinned so garbage collection cannot remove a rollback target. |
 | Gradual traffic split between revisions | Canary deploys, see [Canary deploys](/canary-deploys) | Check that page for the exact split behavior before relying on it. |

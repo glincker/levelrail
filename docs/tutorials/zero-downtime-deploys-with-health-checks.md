@@ -7,7 +7,7 @@ A deploy that starts a container is not a deploy that works. In this tutorial yo
 
 ## Before you start
 
-- A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
+- A running Levelrail instance and the CLI logged in to it ([installing](/installing)).
 - An app that is already running. This tutorial reuses `hello` from [Deploy a Docker app](/tutorials/deploy-a-docker-app), which serves the stock `nginx` page.
 
 <Steps>

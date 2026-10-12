@@ -45,7 +45,7 @@ The Network page also has a **Restart control plane** button (administrators onl
 
 ## Reading the connections
 
-An app row shows **Connects to \<database>** whenever the app has a connection to it, from either the [connections feature](/connecting-apps-to-databases) or the older single-attachment flow. Both are unioned here, so this view reflects every app-to-database link regardless of which mechanism created it.
+An app row shows **Connects to `<database>`** whenever the app has a connection to it, from either the [connections feature](/connecting-apps-to-databases) or the older single-attachment flow. Both are combined here, so this view reflects every app-to-database link regardless of which mechanism created it.
 
 When the mesh is on, an app or database with no mesh address shows a "No mesh address" warning: it exists in the desired state but the mesh reconciler hasn't given it an address yet, so any cross-node connection to or from it will not resolve until that changes. A remote app also needs a healthy mesh path before the control plane's ingress can serve its domains: see [Routing to apps on remote nodes](/multi-node#routing-to-apps-on-remote-nodes).
 

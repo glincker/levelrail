@@ -1,6 +1,6 @@
 ---
 title: "Object storage"
-description: Connect an S3-compatible bucket (AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, or any custom endpoint) for log archive, build cache, and database and volume backups.
+description: Connect S3-compatible buckets for log archive, build cache, and backups.
 ---
 
 A storage destination is an S3-compatible bucket the control plane can write to. Log archive and the remote build cache use it, and database and volume backups use the same destinations: a destination is a backup target with a few extra options, so anything you connect shows up in both **Settings, Storage destinations** and **Settings, Backup targets**.

@@ -1,5 +1,6 @@
 ---
 title: "Chat-interactive deploy approvals"
+sidebarTitle: "Chat approvals"
 description: Approve or deny a protected-environment deploy directly from the Slack or Discord notification, without opening the dashboard.
 ---
 
@@ -74,9 +75,11 @@ Discord sends a verification ping when you save and refuses the URL if the ping 
 - A click decides the approval through the same code path as the dashboard's buttons: the same not-pending check, the same rule that the requester cannot approve their own request, and the same freeze gate. It cannot apply a change the dashboard would not allow.
 - A forged or replayed request cannot approve anything. Every incoming request is signature-verified against the channel's own secret first, and an already-decided approval cannot be decided again (a second click or a retried delivery is told it is no longer pending).
 
-::: warning Identity scope
+<Warning>
+**Identity scope**
+
 Levelrail has no link between a Slack or Discord user and a Levelrail account. A verified click is authorized at the channel level: anyone who can click the button in that Slack channel or Discord server can decide the approval. The clicking user's name is recorded on the decision for visibility, but it does not authorize it. Treat the channel or server you point this at as the trust boundary.
-:::
+</Warning>
 
 ## Endpoints
 

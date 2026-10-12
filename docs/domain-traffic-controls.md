@@ -78,12 +78,12 @@ Maintenance mode and a whole-domain redirect still take precedence over everythi
 
 ## Headers
 
-Rules apply in the order you list them. Each rule has a side (`request` or `response`), an operation (`set`, `add` or `remove`), a name and, except for `remove`, a value.
+Rules are evaluated in order. Each rule has a side (`request` or `response`), an operation (`set`, `add` or `remove`), a name, and (except for `remove`) a value.
 
 - Request rules change what the app receives.
-- Response rules apply after the app answered, so they win over the app's own value. A later rule wins over an earlier one, and any rule wins over a preset.
+- Response rules apply after the app answers, so they override the app's own value. A later rule overrides an earlier one, and any rule overrides a preset.
 - Header names must be valid RFC 9110 tokens. Values cannot contain line breaks or control characters, and are capped by `APP_DOMAIN_POLICY_MAX_HEADER_VALUE_LEN`. Operator text is never expanded as a Caddy placeholder, so a value like `{env.SECRET}` is sent literally.
-- These names are managed by the ingress and refused: `Host`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Keep-Alive`, `Upgrade`, `TE`, `Trailer`, `Proxy-Connection`, `Forwarded`, `X-Real-IP`, `Proxy-Authorization` and every `X-Forwarded-*` header. `X-Forwarded-Prefix` has its own option, `forwarded_prefix`. `X-Cache` and `Cache-Status` are reserved for the cache.
+- These names are reserved by the ingress and refused: `Host`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Keep-Alive`, `Upgrade`, `TE`, `Trailer`, `Proxy-Connection`, `Forwarded`, `X-Real-IP`, `Proxy-Authorization` and every `X-Forwarded-*` header. `X-Forwarded-Prefix` has its own option, `forwarded_prefix`. `X-Cache` and `Cache-Status` are reserved for the cache.
 
 ### Presets
 

@@ -1,5 +1,5 @@
 ---
-title: "Rolling back a release"
+title: "Rolling back the control plane"
 description: "How to roll the control plane back to a previous release: what the dashboard shows and what you run on the server."
 ---
 

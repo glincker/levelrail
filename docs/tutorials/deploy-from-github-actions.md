@@ -20,7 +20,7 @@ CI should not hold your admin credentials. Mint a token that can read and deploy
 levelrail-cli tokens create --name github-actions --preset deployer --expires-in-days 90
 ```
 
-The command asks for your admin username and password, because a token can only be created from a live session. The token prints once and cannot be shown again. `deployer` means the `read` and `deploy` abilities. See [Identity and access](../identity-and-access.md) for the full list.
+The command asks for your admin username and password, because a token can only be created from a live session. The token prints once and cannot be shown again. `deployer` means the `read` and `deploy` abilities. See [Identity and access](/identity-and-access) for the full list.
 
 </Step>
 <Step title="Store the URL and token as secrets">
@@ -35,7 +35,7 @@ The second command prompts for the value, so the token never lands in your shell
 </Step>
 <Step title="Let the server pull your image">
 
-If the image is public, skip this. For a private `ghcr.io` package, give Levelrail pull credentials once. See [Registry credentials](../backups-and-storage.md#registry-credentials), and test them with `levelrail-cli registry-credentials test <id>` before the first deploy.
+If the image is public, skip this. For a private `ghcr.io` package, give Levelrail pull credentials once. See [Registry credentials](/backups-and-storage#registry-credentials), and test them with `levelrail-cli registry-credentials test <id>` before the first deploy.
 
 </Step>
 <Step title="Add the workflow">

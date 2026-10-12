@@ -3,8 +3,6 @@ title: Brand kit
 description: "Logos, colors and ready-made social images for Levelrail, free to use when you write about it, share it or link to it."
 ---
 
-# Brand kit
-
 Everything here is free to use when you write about Levelrail, post it, or link to it. Right-click an image to save it, or use the file links.
 
 ## Logo

@@ -5,11 +5,11 @@ description: A practical runbook for moving a Vercel-hosted Next.js app to Level
 
 This is a runbook for moving one Vercel-hosted Next.js app onto a Levelrail instance you run yourself. It maps only to features that exist in this repository today. Where something is unverified or has no equivalent, it says so.
 
-::: warning
+<Warning>
 Levelrail has no stable release yet (see [feature status](/feature-status)), and real public ACME has one recorded live run but no renewal or wildcard verification yet (see the [ACME verification runbook](/acme-verification-runbook)). Run the new deployment in parallel with Vercel, and keep Vercel as the rollback path until the shadow run in section 6 is clean.
-:::
+</Warning>
 
-Unlike the platform importer in [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover), there is no importer for Vercel. Everything below is manual. Record every surprise you hit in `FRICTION.md` at the repo root.
+Unlike the platform importer in [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover), there is no importer for Vercel. Everything below is manual. Record every issue you hit in `FRICTION.md` at the repo root.
 
 ## 1. Inventory what Vercel holds
 
@@ -70,7 +70,7 @@ Server-only variables are set as normal app env or secrets and read when the con
 ## 3. Procedure
 
 1. **Connect the git provider** in the dashboard, then confirm it from the CLI with `git-providers`.
-2. **Create the app** from git, as in [Deploying apps, git-repo build](/deploying-apps#from-a-git-repository), or commit an `app.yaml`:
+2. **Create the app** from git, as in [Deploying apps](/deploying-apps#from-a-git-repository), or commit an `app.yaml`:
 
    ```yaml
    version: 1

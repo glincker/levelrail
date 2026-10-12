@@ -1,6 +1,6 @@
 ---
 title: "Log explorer"
-description: Save and share log searches, group similar errors into signatures, spot new error types after a deploy and alert on log patterns, from the dashboard, the CLI or the API.
+description: Search logs, save queries, group errors into signatures, and create alert rules.
 ---
 
 Logs are stored on the node that runs the container and searched from the control plane. The log explorer makes those searches reusable and turns them into alerts, without shipping logs anywhere.
@@ -86,3 +86,18 @@ The Search tab virtualizes the list, colours by level and has a Wrap toggle. Cli
 - Saved queries respect app visibility: a query scoped to an app you cannot see is never listed, and only the owner (or a root user) can change or delete a shared one.
 - Samples in alerts, signature reports and downloads mask `password=`, `token=`, `api_key=`, bearer tokens, URL passwords and common key shapes. The live viewer shows lines as stored.
 - Rule and signature reads are capped by the variables above, so a noisy app cannot make a rule slow the control plane.
+
+## Next steps
+
+<CardGroup cols={2}>
+<Card title="Observability" href="/observability">
+
+Metrics, dashboards, and alert rules.
+
+</Card>
+<Card title="Log archive" href="/log-archive">
+
+Ship logs to storage for long-term retention.
+
+</Card>
+</CardGroup>

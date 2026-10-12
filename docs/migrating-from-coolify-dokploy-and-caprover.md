@@ -8,9 +8,9 @@ The platform importer reads a live Coolify, Dokploy or CapRover instance through
 A migration of live apps is four steps, and the source keeps serving traffic through the first three:
 
 1. [Import](#quick-start) the apps and databases (empty).
-2. [Copy the data](#step-2-copy-database-data) in and let it verify row counts.
-3. [Copy volumes](#step-3-copy-volumes), then run the app here in parallel with the source.
-4. [Check the cutover](#step-4-cutover) and switch DNS one domain at a time.
+2. Copy the data in and verify row counts.
+3. Copy volumes, then run the app here in parallel with the source.
+4. Check the cutover and switch DNS one domain at a time.
 
 You can run it three ways, all backed by the same two API routes:
 
@@ -18,9 +18,9 @@ You can run it three ways, all backed by the same two API routes:
 - CLI: `levelrail-cli import platform coolify|dokploy|caprover --url URL`.
 - API: `POST /api/v1/imports/platform/discover` and `/apply` (ability `write:sensitive`, source token in the request body only).
 
-::: tip
+<Tip>
 Always start with a dry run. `--dry-run` (or the dashboard's Discover step) reads the source and shows exactly what would be created, per item, without creating anything.
-:::
+</Tip>
 
 ## Quick start
 

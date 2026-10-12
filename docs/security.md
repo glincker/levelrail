@@ -24,9 +24,9 @@ Every owner of secrets (an app, a backup target, the email settings, and so on) 
 
 Each encrypted value is also bound to the slot it was written to: its owner and key name are sealed inside the ciphertext and checked on every read. Someone with write access to the database cannot copy one app's `DATABASE_URL` ciphertext into another app's `API_KEY` row and have it decrypt there; the read fails closed instead. Values written before this existed are "legacy" and should be bound once with `levelrail-cli secrets rebind`, see [Binding secrets to their slot](/master-key-rotation#binding-secrets-to-their-slot).
 
-::: tip
+<Tip>
 Rotating the master key re-wraps every DEK without ever exposing plaintext, then binds any legacy values. See [Master key rotation](/master-key-rotation) for the full procedure and failure modes.
-:::
+</Tip>
 
 Sensitive plain variables and secrets are masked on every read surface, and reading one back needs a confirmed, audited step-up. See [Environment variables and secrets](/environment-and-secrets).
 

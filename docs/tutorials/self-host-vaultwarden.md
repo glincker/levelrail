@@ -7,7 +7,7 @@ Vaultwarden is a lightweight server that works with the official Bitwarden apps 
 
 ## Before you start
 
-- A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
+- A running Levelrail instance and the CLI logged in to it ([installing](/installing)).
 - A domain you can point at the server. Bitwarden clients require HTTPS, so a plain `host:port` address is only good for a first check.
 
 <Steps>

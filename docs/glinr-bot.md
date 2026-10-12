@@ -3,8 +3,6 @@ title: glinr-bot
 description: "How the repo's GitHub App bot evaluates pull requests against a policy file, comments its reasoning and, in enforce mode, approves and arms auto-merge."
 ---
 
-# glinr-bot
-
 A GitHub App that reads a policy file, checks each pull request against it, and
 says why. In shadow mode it only comments. In enforce mode it can also approve
 and arm auto-merge, and GitHub still waits for the required checks.

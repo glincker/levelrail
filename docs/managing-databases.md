@@ -1,6 +1,6 @@
 ---
 title: "Managing databases"
-description: Create, secure, upgrade, back up, and restore managed databases (Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, ClickHouse), including point-in-time restore for Postgres.
+description: Create and manage databases with backups, point-in-time restore, and lifecycle management.
 ---
 
 Create a Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, or ClickHouse database from the dashboard, the CLI, or the API, and Levelrail runs it, generates its credentials, and can back it up on a schedule. A database is managed like an app, minus the build step and the domain routing it does not need. It has its own data volume that survives redeploys and its own lifecycle (stop, start, upgrade, restore).
@@ -130,9 +130,9 @@ Both engines have an "encrypt without verifying" mode in their standard connecti
 
 The other engines connect in plaintext inside the Docker network.
 
-::: details Certificate details
+<Accordion title="Certificate details">
 The certificate is self-signed ECDSA P-256 and valid for ten years. It is never presented to a party that verifies its issuer, so rotation is a deliberate operator action, not forced by expiry. It is ECDSA rather than ed25519 because libpq's SCRAM channel binding fails on an ed25519 certificate, which broke `psql`, psycopg2, and other libpq clients using the default `sslmode=require` URL. Databases created by an earlier release get a new certificate and are recreated once, automatically, the next time the reconciler sees them.
-:::
+</Accordion>
 
 ## Resource limits
 
@@ -187,9 +187,11 @@ Use the **Public access** card on the database's Overview tab. The port field is
 
 Clearing public access reverts to internal-only, and the reconciler replaces the container without the host port binding on its next pass.
 
-::: warning Redis, KeyDB, and Dragonfly have no password
+<Warning>
+**Redis, KeyDB, and Dragonfly have no password**
+
 These engines run passwordless, so publishing the port gives unauthenticated read and write access to the whole dataset. The dashboard gates the toggle behind an "I understand this database has no password" checkbox for them. Postgres, MySQL, MongoDB, MariaDB, and ClickHouse get generated passwords and a plain, non-blocking warning.
-:::
+</Warning>
 
 ## Change the version
 
@@ -341,9 +343,9 @@ If the control plane is down when a scheduled backup should fire, that run is mi
 levelrail-cli backups restore <database> --backup <backup-history-id> [--confirm <database-name>]
 ```
 
-::: warning
+<Warning>
 `POST /api/v1/databases/{name}/restore` is the most destructive endpoint in the API. It overwrites the target database's live data in place, with no undo short of restoring from a different backup. It needs the `root` ability.
-:::
+</Warning>
 
 Both the CLI and the dashboard require the database's exact name to confirm. In the CLI, pass `--confirm <name>` to skip the prompt: a script without both `--confirm` and a terminal is refused. The dashboard's restore dialog keeps its button disabled until the text matches. Only a succeeded backup can be the source, and the server returns `409` for a running or failed attempt.
 
@@ -414,9 +416,11 @@ Deleting removes the stored object and its history row and does not touch the sc
 
 Every restore above is snapshot-based: it returns the database to the moment a specific backup (a logical dump) was taken. Point-in-time restore can put a Postgres database back to any exact timestamp, down to the second.
 
-::: warning Recoverable only from when you enable it, forward
+<Warning>
+**Recoverable only from when you enable it, forward**
+
 Point-in-time restore is never retroactive. The moment you run `pitr enable`, Postgres starts continuously archiving its write-ahead log (WAL), and only timestamps from then on can be recovered this way. Anything earlier is recoverable only through an ordinary backup, if one exists. Enable it as early as you reasonably can.
-:::
+</Warning>
 
 <Steps>
 <Step title="Enable continuous WAL archiving">
@@ -555,11 +559,11 @@ The database Overview page has a **Slow Queries** tab with a time-range picker (
 </Tab>
 </Tabs>
 
-::: details No slow queries in the results?
+<Accordion title="No slow queries in the results?">
 - **Postgres:** the statement must have exceeded the threshold. Faster queries never appear, however wide the window.
 - **MySQL:** the slow log file exists only after at least one slow statement has run. A new or never-slow database returns an empty result.
 - **Either:** if the container is stopped or crashed, nothing new is logged.
-:::
+</Accordion>
 
 ## Reference
 

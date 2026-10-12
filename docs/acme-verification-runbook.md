@@ -3,7 +3,7 @@ title: "Verifying real ACME issuance against a live domain"
 description: Verify real ACME certificate issuance against a live public domain with Let's Encrypt or another RFC 8555 CA, including what to check, common failures, and a recorded run.
 ---
 
-The ACME issuer, settings toggle and form validation are covered by automated tests: config-shape unit tests in `internal/ingress/acme_test.go` and an end-to-end test against a local CA in `internal/ingress/acme_live_test.go`. Those tests cannot prove issuance against a real public CA with real DNS and real reachability on ports 80 and 443. This runbook is that check.
+ACME issuer configuration, settings toggles, and form validation are covered by automated tests: config-shape unit tests in `internal/ingress/acme_test.go` and end-to-end tests against a local CA in `internal/ingress/acme_live_test.go`. Those tests cannot prove issuance against a real public CA with real DNS and real reachability on ports 80 and 443. This runbook is that verification.
 
 A first run is recorded [at the bottom of this page](#recorded-run-2026-10-05), so you do not need to repeat it before trusting the feature. Repeating it on your own host is the fastest way to confirm your firewall is right. For a version that needs no DNS, use the **Enable HTTPS** card described in [Domains and ingress](/domains-and-ingress#zero-dns-setup-sslip-io-hostnames-and-one-click-https).
 ## Prerequisites
@@ -64,7 +64,7 @@ Saving does not issue immediately. Ingress reconciles continuously, and any rout
 - **Renewal.** Nothing to configure. Caddy renews well before expiry (about 30 days out for a 90-day certificate). To see it work without waiting, look in the logs for `renewing certificate` or `certificate obtained successfully` before the current `not_after`.
 - **Logs.** `journalctl -u levelrail -n 200 --no-pager`, or your container's logs. Look for `"logger":"tls.obtain"` and `"logger":"http.acme_client"`.
 
-::: details Expected log sequence for a successful issuance
+<Accordion title="Expected log sequence for a successful issuance">
 ```text
 "acquiring lock" -> "obtaining certificate" -> "registering account" (first
 time only) -> "trying to solve challenge","challenge_type":"http-01" ->
@@ -74,7 +74,7 @@ time only) -> "trying to solve challenge","challenge_type":"http-01" ->
 ```
 
 An error between "trying to solve challenge" and "authorization finalized" is almost always one of the DNS or port 80 failures below, not an issuer bug.
-:::
+</Accordion>
 
 ## Common failures
 

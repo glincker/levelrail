@@ -4,6 +4,7 @@ description: How the brand layer works, which names and prefixes it drives (dash
 ---
 
 The product name is never hardcoded in the Go or web source. Every user-visible identity string comes from one `Brand` struct in `internal/brand`, loaded at startup from a `brand.yaml` file and optionally overridden by environment variables. This page explains what that layer controls so you can run a renamed fork, or just understand why the platform names things the way it does.
+
 ## How the brand is loaded
 
 1. The control plane reads `brand.yaml` from the path in `APP_BRAND_FILE`, or `./brand.yaml` relative to its working directory when that is unset. The installer's systemd unit runs in the data directory, so the copy `install.sh` writes there is the one that is read.

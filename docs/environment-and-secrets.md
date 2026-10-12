@@ -1,6 +1,6 @@
 ---
 title: "Environment variables and secrets"
-description: How app environment variables and secrets are masked on every read surface, how a confirmed reveal works, the reveal policies, and what this protects against.
+description: Masking, reveal policies, and protection for app environment variables and secrets.
 ---
 
 An app's Environment tab is one editor for every variable the app reads at start: plain values, encrypted secrets, and Vault references. Values that look like credentials are masked everywhere they are read, and reading one back needs a fresh confirmation that is written to the audit log.

@@ -1,6 +1,6 @@
 ---
 title: "Upgrade safely"
-description: "Runbook for upgrading the control plane: checks and their fixes, upgrade now, scheduled and automatic upgrades, automatic rollback, interrupted upgrades and the downgrade guard."
+description: "Upgrade the control plane safely with pre-flight checks and automatic rollback."
 ---
 
 This is the runbook for moving a running server to a newer release. The self-update verifies the release, snapshots your data, tries the migrations on a copy, and puts the old binary and data back by itself when the new release does not become healthy.
@@ -194,8 +194,17 @@ Self-upgrade (`--apply`, and the dashboard Upgrade button) only ever applies a r
 
 `LEVELRAIL_RELEASE_BASE_URL` points the download at an https mirror laid out like GitHub release downloads (`<base>/<tag>/<asset>`). `LEVELRAIL_INSECURE_MIRROR=1` allows plain http for a local test mirror. Use `--skip-notes-check` when GitHub's API is unreachable.
 
-## See also
+## Next steps
 
-- [Installing](/installing) for first install, `install.sh --check` and the installer's own `upgrade`
-- [Upgrade history](/upgrade-history) for the record of every version that ran
-- [Disaster recovery](/disaster-recovery) for restoring from backups
+<CardGroup cols={2}>
+<Card title="Installing" href="/installing">
+
+First install and the installer's own upgrade.
+
+</Card>
+<Card title="Disaster recovery" href="/disaster-recovery">
+
+Restore from backups after a failed upgrade.
+
+</Card>
+</CardGroup>

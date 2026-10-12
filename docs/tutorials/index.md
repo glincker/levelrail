@@ -5,7 +5,7 @@ description: Step-by-step tutorials for self-hosting with Levelrail, from Docker
 
 Each tutorial is a complete walkthrough you can finish in 10 to 15 minutes on your own server. The commands and sample output come from a real instance, so IDs, timestamps, and digests will differ on yours. If something does not match what you see, [open an issue](https://github.com/glincker/levelrail/issues).
 
-New here? Install Levelrail with [Getting started](../getting-started.md) first, then pick any tutorial below. They build on each other lightly, but each one stands alone.
+New here? Install Levelrail with [Getting started](/getting-started) first, then pick any tutorial below. They build on each other lightly, but each one stands alone.
 
 ## Deploy and ship
 
@@ -68,4 +68,4 @@ Search logs, follow them live, read CPU and memory, and start from the health sc
 
 ## Looking for something else?
 
-The how-to guides cover one task each in more depth, and the [CLI reference](../cli-reference.md) lists every command. To compare Levelrail with other self-hosted platforms, see the [comparison](../comparison.md).
+The how-to guides cover one task each in more depth, and the [CLI reference](/cli-reference) lists every command. To compare Levelrail with other self-hosted platforms, see the [comparison](/comparison).

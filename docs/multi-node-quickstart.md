@@ -50,7 +50,7 @@ That run did not cover:
 
 ## If the control plane dies
 
-A container placed on a remote node keeps running and serving, because the agent owns it through its own Docker connection. The agent takes no destructive action on disconnect and retries with exponential backoff until the control plane returns; that node's services are skipped for reconcile passes until then. [Resilience](/resilience) has the measured numbers, and the [short version](/resilience-summary) has the summary.
+A container placed on a remote node keeps running and serving, because the agent owns it through its own Docker connection. The agent takes no destructive action on disconnect and retries with exponential backoff until the control plane returns. That node's services are skipped for reconcile passes until then. [Resilience](/resilience) has the measured numbers, and [Resilience summary](/resilience-summary) has the overview.
 
 ## Next steps
 

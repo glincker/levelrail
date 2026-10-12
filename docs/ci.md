@@ -4,6 +4,7 @@ description: How the GitHub Actions checks on a pull request are chosen, what th
 ---
 
 How the GitHub Actions checks on a pull request are chosen and which ones gate a merge. This page is for contributors to Levelrail itself.
+
 ## The short version
 
 A PR runs only the work its diff can affect:

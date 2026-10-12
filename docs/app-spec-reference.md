@@ -270,7 +270,7 @@ var resolves its value from exactly one source.
 
 ### `VaultRef` (external secrets integration)
 
-::: details VaultRef field reference
+<Accordion title="VaultRef field reference">
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `path` | string | yes | none | The secret's path in Vault's KV v2 engine, for example `myapp/config`. Resolved against the mount path configured under Settings > Vault (default `secret`). |
@@ -284,7 +284,7 @@ env:
 The value is read fresh from Vault immediately before the container is created and is never persisted by Levelrail.
 
 If Vault is unreachable, not configured, or the secret/field doesn't exist, the deploy fails loudly rather than starting the container with the variable empty.
-:::
+</Accordion>
 
 ### `Database` (an entry under `databases`)
 
@@ -319,7 +319,7 @@ Every published port (a service's `port`/`host_port`, and a managed database's p
 
 ## Validation
 
-::: details Validation rules and implementation
+<Accordion title="Validation rules and implementation">
 `spec.Parse` (`internal/spec/spec.go`) runs two layers. Both must pass before a caller sees a `Spec`.
 
 ### Layer 1: Structural shape
@@ -401,7 +401,7 @@ Checked by `ValidateLabels` (`internal/spec/labels.go`):
 ### Additional guard: strict YAML parsing
 
 `spec.Parse` also runs `yamlUnmarshalStrict` (YAML decode with `KnownFields(true)`) as an independent guard against struct tags and JSON Schema drifting apart. An unknown key becomes a decode error during development rather than a silently dropped field in production.
-:::
+</Accordion>
 
 ## Next steps
 

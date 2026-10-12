@@ -1,6 +1,6 @@
 ---
 title: "Log archive"
-description: Ship node-local container logs to a connected storage destination as gzip-compressed NDJSON, on a schedule or on demand, and retrieve them by CLI or API.
+description: Ship container logs to storage as compressed NDJSON on a schedule.
 ---
 
 Container logs are stored node-local (see [observability](/observability)) with a bounded retention window. Log archive ships them to a [storage destination](/object-storage) as gzip-compressed NDJSON, on a schedule you set per app or once for every app, so logs outlive the node-local store without needing a third-party log shipper.

@@ -1,6 +1,7 @@
 ---
 title: "Backup targets, registry credentials, and app volume backups"
-description: Configure backup targets and registry credentials for S3-compatible storage, schedule and prune database and app volume backups, and enable the built-in container registry.
+sidebarTitle: "Backups and storage"
+description: Configure backup targets, registry credentials, and automated backup schedules with retention policies.
 ---
 
 This guide covers three related resources:
@@ -120,9 +121,9 @@ CLI: `levelrail-cli registry-credentials test <id>`. Dashboard: the **Test conne
 </Tab>
 </Tabs>
 
-::: tip
+<Tip>
 Finding a stale credential here means fixing it now, not discovering it from a failed 3am backup or a failed deploy mid-pull.
-:::
+</Tip>
 
 ## Database and app volume backups
 
@@ -205,9 +206,9 @@ levelrail-cli backups protect-all --target ID --apply [--schedule "0 3 * * *"] [
 
 The default schedule and retention come from `APP_BACKUP_DEFAULT_SCHEDULE` (default `0 3 * * *`), `APP_BACKUP_DEFAULT_RETAIN` (default 7) and `APP_BACKUP_DEFAULT_RETAIN_DAYS` (default 30). They are suggestions: a database without a schedule shows them on its own Backups card once a destination exists, and applies them only when you click. The dashboard also shows a recommendation when resources are not backed up.
 
-::: warning
+<Warning>
 The **Local disk** preset points at an S3 server on this machine. Backups stored on the machine they protect are lost with it. It is fine to try things out and wrong for anything you care about.
-:::
+</Warning>
 
 #### The encryption key
 
@@ -240,9 +241,9 @@ Retention has two independent dimensions, both optional:
 
 They combine, so a backup is deleted when either rule would remove it. With `retain: 7` and `retain_days: 30`, you keep at most the 7 newest backups, and never anything older than 30 days. `0` disables a dimension, and `0` for both disables pruning.
 
-::: warning
+<Warning>
 Only succeeded backups are ever pruned. Running and failed attempts are kept regardless of age or count, since a failed attempt's logs have diagnostic value.
-:::
+</Warning>
 
 Pruning runs after every scheduled backup that succeeds, not after manual ones. A pruning failure is logged and does not fail the backup, which is already durably recorded. The dashboard's schedule form defaults a new database's "keep last N backups" to 7 and "delete backups older than (days)" to 0 (no age limit).
 

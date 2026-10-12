@@ -154,8 +154,17 @@ levelrail-cli export audit [--from T] [--to T] [--format ndjson|csv]
 
 `--header` and `--hmac-key` values end up in your shell history. Prefer a script that reads them from a secret store.
 
-## Related
+## Next steps
 
-- [Observability](/observability) for node-local metrics and the remote read endpoint
-- [Log archive](/log-archive) for scheduled, compressed log archives in a bucket
-- [Environment variables](/environment-variables#data-export) for every `APP_EXPORT_*` setting
+<CardGroup cols={2}>
+<Card title="Observability" href="/observability">
+
+Node-local metrics and the remote read endpoint.
+
+</Card>
+<Card title="Log archive" href="/log-archive">
+
+Scheduled, compressed log archives in a bucket.
+
+</Card>
+</CardGroup>

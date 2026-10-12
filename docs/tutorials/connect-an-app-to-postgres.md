@@ -7,7 +7,7 @@ By the end of this tutorial you will have a Postgres database running next to yo
 
 ## Before you start
 
-- A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
+- A running Levelrail instance and the CLI logged in to it ([installing](/installing)).
 - An app to connect. This tutorial reuses the `hello` app from [Deploy a Docker app](/tutorials/deploy-a-docker-app). Any app works.
 
 <Steps>

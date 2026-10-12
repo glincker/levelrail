@@ -149,11 +149,7 @@ Setting the primary domain to a domain an app already owns is rejected with a `4
 
 ## Hide a domain from search engines
 
-Consoles, staging sites and internal tools should not show up in search
-results. Per domain, **Hide from search engines** (domain editor), `levelrail-cli
-domains search-visibility \<app> \<domain> --hide`, or
-`PUT /api/v1/apps/{name}/domains/{domain}/search-visibility` with
-`{"hidden": true}` makes the ingress:
+Consoles, staging sites and internal tools should not show up in search results. Per domain, **Hide from search engines** (domain editor), `levelrail-cli domains search-visibility <app> <domain> --hide`, or `PUT /api/v1/apps/{name}/domains/{domain}/search-visibility` with `{"hidden": true}` makes the ingress:
 
 - send `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet` on every
   response, overriding the app's own value;
@@ -258,9 +254,11 @@ The tradeoff: browsers and HTTP clients show a trust warning until you accept th
 
 A Caddy ACME issuer is built and wired end-to-end. Enable it with the **Issue real ACME certificates** toggle on the Domains page, or with `levelrail-cli settings ingress set --acme-enabled --acme-email you@yourdomain.com`. The API is `GET/PUT /api/v1/settings/ingress`. An account email is required, and a directory URL is optional.
 
-::: tip Verified against a live domain
+<Tip>
+**Verified against a live domain**
+
 Real Let's Encrypt issuance, HTTP to HTTPS redirect and trusted-chain handshakes were run on a public VPS (`<dashed-ip>.sslip.io`, ports 80 and 443 open). The recorded run, including what failed before it worked, is in [docs/acme-verification-runbook.md](/acme-verification-runbook#recorded-run-2026-10-05).
-:::
+</Tip>
 
 ### HSTS (HTTP Strict Transport Security)
 
@@ -268,9 +266,9 @@ Turn on **Enable HSTS** on the Domains page (or `levelrail-cli settings ingress 
 
 Setting the `APP_ENABLE_HSTS=true` environment variable still works the same way it always has, for anyone who already relies on it. The two are additive: HSTS is sent if either the dashboard toggle or the environment variable is on, so upgrading never turns HSTS off for a deployment that already had it on.
 
-::: warning
+<Warning>
 HSTS tells browsers to refuse plain HTTP and refuse certificate warnings on this host for 180 days. Enabling it before ACME is working (while still on self-signed certificates) can lock you out of your own dashboard. Only enable it once real, browser-trusted certificates are issuing.
-:::
+</Warning>
 
 ### Bring your own certificate
 
@@ -401,9 +399,9 @@ Both WAF and rate limiting are Caddy modules registered at build time, not separ
 | `detect` | Logs OWASP CRS matches but never rejects | Yes, new domains | Monitor for false positives first |
 | `block` | Actually rejects requests matching CRS rules | No | Deploy after validating detect logs |
 
-::: warning
+<Warning>
 The OWASP CRS can produce false positives against normal app traffic. This platform's core design principle is avoiding silent failures. Enable WAF in `detect` mode first, watch logs for a while, then switch to `block` once you're confident it isn't flagging legitimate traffic. There is no auto-promote from detect to block; you flip it yourself.
-:::
+</Warning>
 
 ### Rate limiting parameters
 
@@ -441,11 +439,11 @@ GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/waf
 </Tab>
 </Tabs>
 
-::: details Not included in v1
+<Accordion title="Not included in v1">
 - No UI for custom CRS exclusion or override rules.
 - No per-path or per-route rate-limit scoping (whole-domain only).
 - No separate WAF/rate-limit event log (use Caddy's access log).
-:::
+</Accordion>
 
 ## Auth gate (forward auth)
 
@@ -457,9 +455,11 @@ An auth gate puts your own auth service (Authelia, oauth2-proxy, a small app of 
 
 The gate is off by default and runs after rate limiting, the WAF and basic auth, and before caching and the proxy to your app.
 
-::: warning Header spoofing
+<Warning>
+**Header spoofing**
+
 On every request to a gated domain, the ingress first deletes any copy of each copy header that the visitor sent. Your app only ever sees values that came from the auth service.
-:::
+</Warning>
 
 ### Worked example
 
@@ -678,12 +678,7 @@ APP_INGRESS_CLIENT_IP_HEADERS=CF-Connecting-IP   # optional, defaults to X-Forwa
 
 ### Running behind a TLS proxy
 
-If the proxy is Traefik (Coolify's included), `levelrail-cli proxy setup` turns
-this mode on and writes one route per domain into Traefik's watched directory,
-kept in step with every domain you add or remove. See
-[Run behind an existing proxy](/behind-an-existing-proxy#one-step-setup-traefik-including-coolify).
-The domain check then says the proxy handles certificates instead of asking
-for ports 80 and 443 on this server.
+If the proxy is Traefik (Coolify's included), `levelrail-cli proxy setup` turns this mode on and writes one route per domain into Traefik's watched directory, kept in step with every domain you add or remove. See [Run behind an existing proxy](/behind-an-existing-proxy#one-step-setup-traefik-including-coolify). The domain check then says the proxy handles certificates instead of asking for ports 80 and 443 on this server.
 
 If Traefik, nginx or Caddy owns 80 and 443 and forwards to this ingress, set the **Public HTTPS port** (`public_https_port`, usually `443`) so generated links omit the ingress listen port, and turn on `tls_terminated_upstream` when the proxy also holds the certificates so this instance never runs ACME. Details and a Traefik example: [Run behind an existing proxy](/behind-an-existing-proxy#several-instances-behind-one-proxy). An ACME failure notice for non-standard ingress ports does not apply in this mode, because the proxy handles HTTPS.
 

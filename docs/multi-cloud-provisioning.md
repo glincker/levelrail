@@ -17,9 +17,11 @@ description: Pick a cloud provider and add a provisioned node in three commands,
 
 GCP has no federation mode. The reason, and the three AWS credential modes, are in [node provisioning](/node-provisioning#provider-credentials).
 
-::: warning Servers are not deleted for you
-Every provider bills by the hour while the server exists. `levelrail-cli nodes delete` removes the node record, not the VM, so delete the server at the provider too. See [cost expectations](/node-provisioning#cost).
-:::
+<Warning>
+**Servers are not deleted for you**
+
+Every provider bills by the hour while the server exists. `levelrail-cli nodes delete` removes the node record, not the VM, so delete the server at the provider too. See [Node provisioning](/node-provisioning) for cost and known gaps.
+</Warning>
 
 ## Add a node
 

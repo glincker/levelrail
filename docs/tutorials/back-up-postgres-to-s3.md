@@ -7,7 +7,7 @@ A backup you have never restored is a guess. In this tutorial you will connect a
 
 ## Before you start
 
-- A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
+- A running Levelrail instance and the CLI logged in to it ([installing](/installing)).
 - A Postgres database. Create `main-db` as in [Connect an app to Postgres](/tutorials/connect-an-app-to-postgres), or use your own.
 - A bucket and an access key pair with read and write access. AWS S3, Cloudflare R2, Backblaze B2, and MinIO all work.
 
@@ -131,9 +131,11 @@ levelrail-cli backups clone-restores main-db
 
 Wait for the status to read `succeeded`, then query `main-db-copy`. The live database was never touched.
 
-::: tip Older releases
+<Tip>
+**Older releases**
+
 Up to `v0.2.0-beta.15`, a restore into a new database could fail with `database "..." does not exist` because it started before the new Postgres had finished initializing. It is fixed in later releases. On an older one, delete the copy with `levelrail-cli databases delete main-db-copy` and run the restore again.
-:::
+</Tip>
 
 </Step>
 </Steps>

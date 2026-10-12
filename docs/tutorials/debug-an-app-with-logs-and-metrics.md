@@ -7,7 +7,7 @@ Most self-hosted platforms tell you to install Grafana and a log stack before yo
 
 ## Before you start
 
-- A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
+- A running Levelrail instance and the CLI logged in to it ([installing](/installing)).
 - An app that has been running for a few minutes. Any app from the earlier tutorials works.
 
 <Steps>

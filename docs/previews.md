@@ -1,5 +1,6 @@
 ---
 title: "Preview environments per pull request"
+sidebarTitle: "Preview environments"
 description: Per pull request preview environments on your own servers, with their own domain and DNS record, safe defaults for data and secrets, a TTL and cap, idle sleep, and a PR comment that links back.
 ---
 

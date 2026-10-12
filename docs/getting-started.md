@@ -33,9 +33,9 @@ The script checks the host, installs Docker if it is missing, downloads the newe
 
 Use the port from your own output. If 8080 was taken, the installer picked the next free one.
 
-::: tip
+<Tip>
 Pin a release with `LEVELRAIL_VERSION=v0.2.0-beta.14`, or run it as a container instead. Both are covered in [Installing](/installing).
-:::
+</Tip>
 
 ## Sign in and run the setup wizard
 
@@ -108,9 +108,9 @@ Every field, including resources, environment, replicas, and deploy strategy, is
 </Tab>
 </Tabs>
 
-::: details Prefer a guided prompt?
+<Accordion title="Prefer a guided prompt?">
 `levelrail-cli apps create --interactive` asks for the name, source, port, domain, health path, and limits, then either writes `app.yaml` or creates the app. `databases create --interactive` does the same for a managed database.
-:::
+</Accordion>
 
 ### Check on it
 

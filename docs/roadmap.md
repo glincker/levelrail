@@ -3,11 +3,10 @@ title: Roadmap
 description: What Levelrail has shipped by area, what is still open, and what is out of scope. There is no stable release yet.
 ---
 
-# Roadmap
-
 There is no stable release yet (latest: 0.2.0-beta.18). "Shipped" on this page means built and merged, not proven in production. For per-feature maturity and the evidence behind each label, see [feature status](/feature-status). Release-by-release detail is in the [changelog](/changelog). The decisions behind the build order are in the [ADRs](https://github.com/glincker/levelrail/tree/main/adr).
 
 The build did not follow the original phase plan in order: parts of multi-node shipped while some single-node items (real public ACME renewal, a Linux idle-footprint measurement) are still open. This page describes what is true today, not a schedule.
+
 ## Phase status
 
 ```mermaid

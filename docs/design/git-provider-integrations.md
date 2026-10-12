@@ -39,7 +39,7 @@ Everything after a token exists: list repos, list branches, create a push webhoo
 
 `ID string` is the cost: GitHub takes `owner, repo`, GitLab takes `int64`, each adapter parses its own format. That is acceptable because alternatives (`any` ID, three-armed union) violate the no-`any`-in-exported-signatures rule.
 
-::: details gitprovider.Source interface definition
+<Accordion title="gitprovider.Source interface definition">
 
 ```go
 // Package gitprovider holds the provider-agnostic surface that only
@@ -98,7 +98,7 @@ type Source interface {
 }
 ```
 
-:::
+</Accordion>
 
 **The interface only pays for itself if the HTTP surface unifies.** Collapse repo-facing routes:
 

@@ -3,7 +3,7 @@ title: "Project topology graph"
 description: Read a project's topology diagram, what each node and edge represents, and exactly which stored field each edge is derived from.
 ---
 
-The **Topology** page (`/projects/$id/topology`, linked from a project's own detail page) draws a project's apps, databases, and shared volumes as a diagram, with a line for every real relationship between them. It's read-only and needs no configuration: every fact on the page already exists in the project's own desired state, just arranged as a graph instead of a list.
+The **Topology** page (`/projects/$id/topology`, linked from a project's own detail page) draws a project's apps, databases, and shared volumes as a diagram, with lines representing every relationship between them. It is read-only and requires no configuration: every fact on the page already exists in the project's desired state, just arranged as a graph instead of a list.
 
 [Network topology](/network-topology) groups everything on the mesh by node and draws only app-to-database connections. This page is scoped to one project, groups by resource kind, and draws every edge kind the project's configuration carries: database bindings, service dependencies, shared volumes, and egress allow-rules.
 
