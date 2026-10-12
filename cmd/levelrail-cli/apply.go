@@ -220,6 +220,7 @@ Flags:
   --app A                      only this app and its load balancer, pipelines and alert rules
   -o DIR|-                     directory to write one file per document, or - for stdout (default -)
   --include-env-values=false   write every plain env value as a ${{ env.NAME }} placeholder
+                               (always the case without the read:sensitive ability)
 %[2]s`, prog, commonFlagsHelp)
 }
 

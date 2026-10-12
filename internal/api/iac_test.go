@@ -233,3 +233,31 @@ func TestUpdateAppKeepsFieldsThePutBodyCannotExpress(t *testing.T) {
 		t.Fatalf("PUT dropped stored settings: %+v", got)
 	}
 }
+
+func TestIaCExportEnvValuesNeedReadSensitive(t *testing.T) {
+	rt, db := newTestRouter(t)
+	root := loginTestSession(t, rt, db)
+	if code := iacCall(t, rt, authedRequest(t, root, http.MethodPost, "/api/v1/apply", iacRequestBody(t, iacTestDocs, nil)), nil); code != http.StatusOK {
+		t.Fatalf("apply status = %d", code)
+	}
+	readOnly := storeUserWithAbilitiesForTest(t, db, "iac-read@example.com", []string{AbilityRead})
+	cookie := sessionCookieForTest(t, rt, readOnly.ID)
+
+	for _, path := range []string{"/api/v1/export?project=shop", "/api/v1/export?project=shop&include_env_values=true"} {
+		var out iac.ExportResult
+		if code := iacCall(t, rt, authedRequest(t, cookie, http.MethodGet, path, ""), &out); code != http.StatusOK {
+			t.Fatalf("%s status = %d", path, code)
+		}
+		if j := out.Join(); strings.Contains(j, "LOG_LEVEL: info") || !strings.Contains(j, "${{ env.LOG_LEVEL }}") {
+			t.Fatalf("%s leaked env values to a read-only caller:\n%s", path, j)
+		}
+	}
+
+	var out iac.ExportResult
+	if code := iacCall(t, rt, authedRequest(t, root, http.MethodGet, "/api/v1/export?project=shop", ""), &out); code != http.StatusOK {
+		t.Fatalf("root export status = %d", code)
+	}
+	if !strings.Contains(out.Join(), "LOG_LEVEL: info") {
+		t.Fatalf("root export lost env values:\n%s", out.Join())
+	}
+}

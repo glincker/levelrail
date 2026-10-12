@@ -1080,7 +1080,7 @@ Drift between the files and live state; exits 2 when they differ.
 ```
 levelrail-cli export [--project P] [--app A] [-o dir|-] [--include-env-values=false] [flags]
 ```
-Writes live state as stable resource files, never containing secret values. Secret looking values become <span v-pre>`${{ env.NAME }}`</span> placeholders; supply them at apply time with `--var`, `--var-file` or `--allow-env`.
+Writes live state as stable resource files, never containing secret values. Secret looking values become <span v-pre>`${{ env.NAME }}`</span> placeholders; supply them at apply time with `--var`, `--var-file` or `--allow-env`. Callers without `read:sensitive` always get placeholders for every env value.
 
 ## Nodes
 
