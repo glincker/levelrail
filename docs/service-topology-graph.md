@@ -3,7 +3,7 @@ title: "Project topology graph"
 description: Read a project's topology diagram, what each node and edge represents, and exactly which stored field each edge is derived from.
 ---
 
-The **Topology** page (`/projects/$id/topology`, linked from a project's own detail page) draws a project's apps, databases, and shared volumes as a diagram, with a line for every real relationship between them. It's read-only and needs no configuration: every fact on the page already exists in the project's own desired state, just arranged as a graph instead of a list.
+The **Topology** page (`/projects/$id/topology`, linked from a project's own detail page) draws a project's apps, databases, and shared volumes as a diagram, with lines representing every relationship between them. It is read-only and requires no configuration: every fact on the page already exists in the project's desired state, just arranged as a graph instead of a list.
 
 [Network topology](/network-topology) groups everything on the mesh by node and draws only app-to-database connections. This page is scoped to one project, groups by resource kind, and draws every edge kind the project's configuration carries: database bindings, service dependencies, shared volumes, and egress allow-rules.
 
@@ -22,7 +22,7 @@ Every edge is derived from one specific field on the project's apps and database
 | Volume attachment | A named Docker volume an app mounts (`PUT /apps/{name}/volumes`, or `app.yaml`'s `volumes:` block). Two apps that happen to mount the same volume name render as one shared volume box, not two | `web` mounts `app-web-uploads` |
 | Egress allow-rule | An entry in an app's [egress policy](/api-reference) allowlist, but only when that entry's host matches a domain another app in the same project actually owns. An allow-listed third-party host (the common case, e.g. `api.stripe.com`) has nothing to point at in this project and is left off the diagram rather than drawn as a guess | `web` is allowed to reach `admin` over its `admin.example.com` domain |
 
-Network shares (`/api/v1/network-shares`) are left off this diagram: nothing in a project's stored configuration links a share to an app, so an edge would be a guess.
+[Network shares](/network-shares) (`/api/v1/network-shares`) are left off this diagram: nothing in a project's stored configuration links a share to an app, so an edge would be a guess.
 
 ## CLI and API
 

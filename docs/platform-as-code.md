@@ -1,5 +1,6 @@
 ---
 title: "Platform as code"
+tag: "Experimental"
 description: Describe projects, environments, apps, domains, databases and more as YAML files, review the plan, and apply it from the CLI, the dashboard, MCP or CI.
 ---
 
@@ -8,12 +9,11 @@ Write the state you want as YAML, run `levelrail-cli apply`, and the control pla
 Everything goes through the ordinary REST API with your own token. If a policy denies you an app, that one item is reported as denied and nothing else is touched by it. There is no separate write path.
 
 <Warning>
-
 **Experimental**
 
 Platform as code is off by default. Set `APP_EXPERIMENTAL=iac` on the control plane, and in the shell where you run the CLI or the MCP server, to enable `apply`, `diff` and `export`. See [Experimental features](/experimental-features).
-
 </Warning>
+
 ## Quick start
 
 ```bash
@@ -248,7 +248,7 @@ Every document is checked against the schema and the semantic rules. If any docu
 </Step>
 <Step title="Plan">
 
-Live state is read through the API with your permissions, and a plan is computed: create, update (with a field level diff), delete (only with `--prune`) or no change. Env values are never shown, only `(hidden)`. Items are ordered by dependency: project, environment, tag, database, app, domain, load balancer, pipeline, alert rule.
+Live state is read through the API with your permissions, and a plan is computed: create, update (with a field level diff), delete (only with `--prune`) or no change. Env values are never shown, only `(hidden)`. Items are ordered by dependency: project, environment, tag, database, app, domain, [load balancer](/load-balancing), pipeline, alert rule.
 
 </Step>
 <Step title="Apply">
@@ -258,7 +258,7 @@ Each item is executed through the existing endpoint. Apply is safe to repeat and
 </Step>
 </Steps>
 
-Semantics worth knowing:
+A few rules to know:
 
 - Validation and planning are all or nothing. Execution is per item: by default the first failure stops the run and later items are reported as skipped. With `--continue-on-error` the rest proceed.
 - A plan that contains an error item (a missing project, a read you are not permitted to make) applies nothing unless `--continue-on-error` is set.

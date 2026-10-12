@@ -124,7 +124,7 @@ func runDeployLink(prog string, args []string, stdout, stderr io.Writer, lookupE
 	var launcherURL *url.URL
 	if launcher == "" {
 		if docs, ok := lookupEnv(envBrandDocsURL); ok && docs != "" {
-			launcher = strings.TrimRight(docs, "/") + "/deploy.html"
+			launcher = launcherBase(docs) + "/deploy.html"
 		}
 	}
 	if launcher != "" {
@@ -184,4 +184,10 @@ never part of a link, only the names to ask for.
 
 Flags:
 `, prog)
+}
+
+// launcherBase drops a leading "docs." host label: deploy.html is served from the site apex, not the docs subdomain.
+func launcherBase(docs string) string {
+	docs = strings.TrimRight(docs, "/")
+	return strings.Replace(docs, "://docs.", "://", 1)
 }

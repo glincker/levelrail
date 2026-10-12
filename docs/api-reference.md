@@ -86,7 +86,6 @@ System endpoints for:
 
 <Accordion title="123 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration">
 
-
 Endpoints for:
 - Authentication and session management
 - Two-factor authentication setup and verification
@@ -226,7 +225,6 @@ Endpoints for:
 ## Apps CRUD / Lifecycle / Deploy
 
 <Accordion title="171 endpoints for app management, deployment, lifecycle control, and diagnostics">
-
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -420,7 +418,7 @@ Endpoints for:
 - Encrypted secrets management and locking
 - Git repository connections and configuration
 - Webhook delivery history and replay
-- Preview environment configuration and lifecycle
+- [Preview environment](/previews) configuration and lifecycle
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -471,7 +469,7 @@ Endpoints for:
 Endpoints for:
 - Alert rule creation and management
 - Scheduled task configuration and execution
-- Feature flag configuration and evaluation
+- [Feature flag](/feature-flags) configuration and evaluation
 - Notification channel management and delivery tracking
 
 | Method | Path | Ability | Handler |
@@ -669,7 +667,6 @@ Endpoints for:
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
 <Accordion title="91 endpoints for TLS, domains, ingress control, and DNS/Vault integrations">
-
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -934,7 +931,7 @@ Endpoints for:
 ## App Storage / Database Attach
 
 Endpoints for:
-- Object storage bucket attachment and configuration
+- [Object storage](/object-storage) bucket attachment and configuration
 - Database connectivity for applications
 
 | Method | Path | Ability | Handler |

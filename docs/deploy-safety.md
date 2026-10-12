@@ -1,14 +1,15 @@
 ---
 title: "Deploy safety"
-description: "What stands between a deploy trigger and serving traffic: a readiness gate, a stable window, a drain and pinned rollback targets."
+description: What stands between a deploy being triggered and that exact content serving, a readiness gate with a stable window, a drain, pinned rollback targets, a post-deploy watch with automatic rollback, digest-truthful deploys, a stale-deploy guard and freeze windows.
 ---
 
-Several guarantees sit between "a deploy was triggered" and "that exact
-content is serving": a readiness gate that a release must hold for a
-stable window, a drain of the previous release, pinned rollback targets,
-a post-deploy watch that rolls a bad release back, digest-truthful
-deploys, a stale-deploy guard, deploy freeze windows, and a short hold of
-the previous release after a cutover.
+Between "a deploy was triggered" and "that exact content is serving",
+Levelrail runs a series of checks. A release has to pass a readiness gate
+and hold it for a stable window. The previous release drains. Rollback
+targets are pinned, and a post-deploy watch rolls a bad release back. On
+top of that there are digest checks, a stale-deploy guard, freeze windows,
+and a short hold of the previous release after cutover. The diagram shows
+the order.
 
 ```mermaid
 flowchart TD

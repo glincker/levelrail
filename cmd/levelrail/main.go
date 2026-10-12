@@ -1247,6 +1247,7 @@ func run(logger *slog.Logger) error {
 	serveErrs := make(chan error, 1)
 	go func() {
 		logger.Info("http api listening", slog.String("addr", httpServer.Addr))
+		exposedHTTPAddrWarning.warn(logger, httpServer.Addr, runningInContainer())
 		err := httpServer.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serveErrs <- err
@@ -2825,11 +2826,7 @@ func appScheduleSchedulerInterval(logger *slog.Logger) time.Duration {
 }
 
 func httpAddr() string {
-	addr := os.Getenv("APP_HTTP_ADDR")
-	if addr == "" {
-		addr = defaultHTTPAddr
-	}
-	return addr
+	return resolveHTTPAddr(os.Getenv, runningInContainer())
 }
 
 // ingressHTTPSAddr reads APP_INGRESS_HTTPS_ADDR, defaulting to

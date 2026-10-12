@@ -3,15 +3,13 @@ title: GLINR design tokens
 description: The single source of truth for color, space, radius, elevation, type and motion in the Levelrail dashboard, and how to add or change a token.
 ---
 
-# GLINR design tokens
+The GLINR design tokens are the single source of truth for color, space, radius, elevation, type, motion and content widths in the dashboard. The source is `web/src/styles/tokens/glinr.tokens.json`, and everything else is generated from it.
 
-The GLINR design tokens are the single source of truth for color, space, radius, elevation, type, motion and content widths in the dashboard. The source is `web/src/styles/tokens/glinr.tokens.json`; everything else is generated from it.
-
-The source is intentionally framework-neutral (a DTCG-like JSON shape, no CSS or Tailwind specifics), so other GLINCKER products can reuse the same file and generate their own output.
+The source is framework-neutral on purpose (a DTCG-like JSON shape, no CSS or Tailwind specifics), so other GLINCKER products can reuse the same file and generate their own output.
 
 ## Page structure
 
-Rules every dashboard page follows. Tokens say what a value is; these say where things go.
+Every dashboard page follows these rules. Tokens say what a value is. These say where things go.
 
 1. The `PageTemplate` hero is the only title and description on a page. The first card never repeats either. Provider connection cards render no header of their own under the hero.
 2. Cards are single level. No bordered boxes inside a `Card`, except a semantic callout, which must be `ui/banner.tsx`. Lists inside a card use `divide-y`, not a box per row.
@@ -119,8 +117,8 @@ New tokens (additive, none applied to existing components yet): `color-border-st
 - Motion: the shimmer is `motion-reduce:hidden`. The `skeleton-shimmer` keyframes are not shipped by the package, so `src/index.css` defines them.
 - Tailwind does not scan `node_modules`, so `src/index.css` lists the Skeleton classes with `@source inline(...)`. A file-path `@source` doubled the compiled stylesheet.
 - Bundle: `@glinui/ui` has no `"sideEffects": false`, so its barrel pulls every Radix package. `vite.config.ts` marks the package side-effect free for the production build, which keeps the main chunks flat (vendor +2 KB). Vitest inlines the package because its ESM uses extensionless imports Node cannot load.
-- Not installed: `@glinui/cli` is unpublished on npm (404), so the docs' `dlx @glinui/cli add skeleton` fails. This is an issue to fix on the glinui side; use the package route until then.
+- Not installed: `@glinui/cli` is unpublished on npm (404), so the docs' `dlx @glinui/cli add skeleton` fails. That needs fixing on the glinui side. Use the package route until then.
 
 ### Token overlap
 
-`@glinui/tokens/theme.css` is deliberately not imported: the mapped Skeleton variants need none of its variables. It redefines names we already own: `--color-background`, `--color-foreground`, `--color-border`, `--color-accent`, `--color-accent-foreground`, `--radius-sm|md|lg|xl|2xl` (different values, e.g. `--radius-lg: 1rem` against our `var(--radius)`), `--motion-fast`, `--motion-slow`. Importing it plain would change those values app wide. If the glass or liquid variants are adopted, import it as `@import '@glinui/tokens/theme.css' layer(glinui-tokens)` with `@layer glinui-tokens;` declared before `@import 'tailwindcss'`, and re-check the overlap above.
+`@glinui/tokens/theme.css` is not imported, on purpose: the mapped Skeleton variants need none of its variables. It redefines names we already own: `--color-background`, `--color-foreground`, `--color-border`, `--color-accent`, `--color-accent-foreground`, `--radius-sm|md|lg|xl|2xl` (different values, e.g. `--radius-lg: 1rem` against our `var(--radius)`), `--motion-fast`, `--motion-slow`. Importing it plain would change those values app wide. If the glass or liquid variants are adopted, import it as `@import '@glinui/tokens/theme.css' layer(glinui-tokens)` with `@layer glinui-tokens;` declared before `@import 'tailwindcss'`, and re-check the overlap above.

@@ -121,9 +121,11 @@ func TestDoctorCheckDockerGuard(t *testing.T) {
 		decisions  []bool
 		wantStatus string
 		wantSubstr string
+		wantFix    string
 	}{
+		{name: "default enforce could not start", status: &dockerguard.Status{Mode: dockerguard.ModeEnforce, Source: dockerguard.SourceDefault, Effective: dockerguard.ModeOff, StartError: "not a unix socket"}, wantStatus: doctorStatusWarn, wantSubstr: "could not start", wantFix: "APP_DOCKER_GUARD"},
 		{name: "not configured", wantStatus: doctorStatusUnknown, wantSubstr: "no docker guard"},
-		{name: "enforce", status: &dockerguard.Status{Mode: dockerguard.ModeEnforce, Effective: dockerguard.ModeEnforce, Running: true}, decisions: []bool{true}, wantStatus: doctorStatusOK, wantSubstr: "1 request(s) denied"},
+		{name: "enforce", status: &dockerguard.Status{Mode: dockerguard.ModeEnforce, Effective: dockerguard.ModeEnforce, Running: true}, decisions: []bool{true}, wantStatus: doctorStatusOK, wantSubstr: "1 request(s) denied", wantFix: "APP_DOCKER_GUARD=audit"},
 		{name: "audit with would deny", status: &dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}, decisions: []bool{false, false}, wantStatus: doctorStatusWarn, wantSubstr: "2 request(s) would have been denied"},
 		{name: "audit clean", status: &dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}, wantStatus: doctorStatusWarn, wantSubstr: "enforce is likely safe"},
 		{name: "off", status: &dockerguard.Status{Mode: dockerguard.ModeOff, Effective: dockerguard.ModeOff}, wantStatus: doctorStatusWarn, wantSubstr: "privileged containers"},
@@ -142,6 +144,9 @@ func TestDoctorCheckDockerGuard(t *testing.T) {
 			got := rt.doctorCheckDockerGuard(context.Background())
 			if got.Code != "docker_guard" || got.Status != tt.wantStatus || !strings.Contains(got.Message, tt.wantSubstr) {
 				t.Fatalf("check = %+v", got)
+			}
+			if !strings.Contains(got.Fix, tt.wantFix) {
+				t.Fatalf("fix = %q, want it to mention %q", got.Fix, tt.wantFix)
 			}
 		})
 	}

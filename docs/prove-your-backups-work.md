@@ -1,11 +1,12 @@
 ---
 title: "Prove your backups work"
-description: "Prove a backup restores before you need it: run restore drills, read backup health per app and restore a volume into a new app."
+description: Run restore drills to verify backups work before you need them.
 ---
 
-A backup file is not a backup until a restore of it has worked. Levelrail separates the two: **last backup** says an object was uploaded, **last verified restore** says a copy of it was restored into a scratch resource and checked. This guide shows how to get the second number green and what to do when it is not.
+A backup file is not a backup until a restore of it has worked. Levelrail separates the two: "last backup" says an object was uploaded, and "last verified restore" says a copy of it was restored into a scratch resource and checked. This guide shows how to get the second one green and what to do when it is not.
 
 For targets, schedules and retention basics, see [Backups and storage](/backups-and-storage).
+
 ## What a drill does
 
 A restore drill takes a stored backup and:
@@ -87,9 +88,7 @@ For databases, the same Backups row links to the database page, where **Restore 
 New volume backups are compressed with zstd and encrypted with [age](https://age-encryption.org) on the control plane before upload, so the bucket never sees plaintext. The key is generated on first use and written to `backup-encryption.key` in `APP_DATA_DIR` (override the path with `APP_BACKUP_ENCRYPTION_KEY_FILE`).
 
 <Warning>
-
 Copy that file somewhere that is not this server. Lose it and encrypted backups cannot be restored, including after a disaster that destroys the control plane.
-
 </Warning>
 
 Set `APP_BACKUP_ENCRYPTION=off` to keep compression but skip encryption. Older backups taken before this feature stay readable; each backup records how it was encoded.
@@ -98,9 +97,9 @@ Set `APP_BACKUP_ENCRYPTION=off` to keep compression but skip encryption. Older b
 
 A running database's files are only consistent if it is quiet. Per volume you can set, from the **Policy** button or `levelrail-cli backups volumes policy set`:
 
-- **Command before backup**: runs inside the app's container. A non-zero exit fails the backup, so an inconsistent volume is never archived.
-- **Command after backup**: runs afterwards, even if the backup failed.
-- **Pause the app**: freezes the container while the archive streams. It resumes when the upload ends.
+- Command before backup: runs inside the app's container. A non-zero exit fails the backup, so an inconsistent volume is never archived.
+- Command after backup: runs afterwards, even if the backup failed.
+- Pause the app: freezes the container while the archive streams. It resumes when the upload ends.
 
 ## Retention
 
@@ -151,3 +150,18 @@ These ran against real Docker volumes and a real S3 compatible server (SeaweedFS
 | Postgres dump drilled into a scratch Postgres | Restores, two tables counted; a modified dump fails |
 
 Limits: drills for engines other than Postgres, MySQL and MariaDB check the object, not a replay. Object lock and versioning detection depends on the provider answering those API calls; a provider that does not shows as Open.
+
+## Next steps
+
+<CardGroup cols={2}>
+<Card title="Backups and storage" href="/backups-and-storage">
+
+Configure backup targets and retention policies.
+
+</Card>
+<Card title="Managing databases" href="/managing-databases">
+
+Database backups, restore-as-new, and point-in-time recovery.
+
+</Card>
+</CardGroup>

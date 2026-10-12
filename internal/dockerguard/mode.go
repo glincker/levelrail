@@ -24,7 +24,8 @@ const (
 	ModeEnforce Mode = "enforce"
 )
 
-// DefaultMode is audit so a fresh install observes before it blocks.
+// DefaultMode is audit so an upgrade cannot break a running deploy; the attention
+// feed offers enforce after a clean week. APP_DOCKER_GUARD sets it explicitly.
 const DefaultMode = ModeAudit
 
 // Environment variables the guard reads.

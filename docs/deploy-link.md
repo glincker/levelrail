@@ -1,6 +1,6 @@
 ---
 title: "Deploy links and badge"
-description: "Add a Deploy with button to your README so visitors enter their own server once and land on a create-app form with your image and port."
+description: Put a "Deploy with" button in your README. A visitor enters their own server once and lands on its create-app form with your image, port, env variable names and health path prefilled, never submitted automatically.
 ---
 
 A deploy link lets a project author add a button to a README. A visitor who clicks it picks their own server (remembered in their browser) and lands on that server's create-app form with the details filled in. Nothing is created until the visitor reviews the form and presses Deploy.
@@ -23,7 +23,7 @@ https://<server>/apps/new?deploy=1&image=<ref>&name=<n>&port=<p>&env=KEY1,KEY2&h
 
 Rules the form enforces:
 
-- Env **values are never accepted** from a link, only the names. The visitor types each value, and it is stored as a secret.
+- Env values are never accepted from a link, only the names. The visitor types each value, and it is stored as a secret.
 - A parameter that fails validation is ignored, and a banner names every ignored parameter. Unknown parameters are ignored the same way.
 - The form shows "Prefilled from a link: review before deploying" and names the source host when `source` is valid.
 - If the link has no valid `image`, the regular new app wizard opens with the banner above it.

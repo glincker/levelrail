@@ -1,15 +1,28 @@
 ---
 title: "Deploying and managing apps"
-description: "The life of an app on Levelrail: create it, deploy it, watch the rollout, roll back and change configuration safely."
+sidebarTitle: "Deploying apps"
+description: Create, deploy, roll back, configure, promote, and operate an app on Levelrail, from the dashboard, CLI, or API.
 ---
 
-An app is a container (or a set of them) that Levelrail keeps running for you. You describe it once, from the dashboard, the CLI, or an `app.yaml` in your repo. Levelrail builds it if needed, starts it, waits until it is actually healthy, switches traffic to it, and keeps every previous image available so you can go back.
+## What this covers
 
-This page follows an app through its life: [create it](#create-an-app), [deploy and watch it](#deploy-and-watch-a-rollout), [roll it back](#roll-back), [change its configuration](#change-configuration), [promote it](#promote-between-environments), and [operate it](#operate-a-running-app). The [API and CLI quick reference](#api-and-cli-quick-reference) is at the end.
+An app is a container (or a set of them) that Levelrail keeps running for you. You describe it once, from the dashboard, the CLI, or an `app.yaml` in your repo. Levelrail builds it if needed, starts it, waits until it is healthy, switches traffic to it, and keeps every previous image so you can go back. This page follows an app from creation through deploys, rollbacks, configuration, promotion, and day to day operation.
 
 ![Levelrail app overview page with health status, setup checklist, and recent activity](assets/screenshots/app-overview-page.png)
 
+### Common tasks
+
+| I need to | Do this | Details |
+| --- | --- | --- |
+| Ship a new image | `levelrail-cli apps deploy NAME --image IMAGE` | [Deploy and watch a rollout](#deploy-and-watch-a-rollout) |
+| Undo a bad deploy | `levelrail-cli apps deploys rollback-to NAME DEPLOY_ID` | [Roll back](#roll-back) |
+| Restart without a new image | `levelrail-cli apps restart NAME` | [Lifecycle actions](#lifecycle-actions) |
+| Apply env or secret changes | `levelrail-cli apps apply NAME` | [Pending changes](#pending-changes) |
+| Find out why a deploy failed | `levelrail-cli apps diagnose NAME` | [When a deploy fails](#when-a-deploy-fails) |
+| Run a command in the container | `levelrail-cli apps exec NAME -- CMD` | [One-off commands and the terminal](#one-off-commands-and-the-terminal) |
+
 Domains and TLS, managed databases, and git provider setup have their own pages: [Domains and ingress](/domains-and-ingress), [Managing databases](/managing-databases), and [Git integrations](/git-integrations).
+
 ## The model in one minute
 
 - **An app is desired state.** It is a record: an image, a port, and the settings around them. Saving it changes the record. A level-triggered reconciler then converges the running containers to match. Nothing is edge-triggered, so a missed event never leaves an app out of sync.
@@ -17,17 +30,15 @@ Domains and TLS, managed databases, and git provider setup have their own pages:
 - **Traffic only moves once the new container is ready.** The readiness probe has to pass before the old container is drained. If it never passes, the old container keeps serving and the deploy fails with a reason.
 
 <Accordion title="For contributors: where this lives in the source">
-
 - Backend: `internal/api/apps.go`, `apps_multi.go`, `apps_compose.go`, `deploys.go`, `promote.go`, `exec.go`, `resources_live_apply.go`, `scheduled_tasks.go`
 - CLI: `cmd/levelrail-cli/apps*.go`
 - Dashboard: `web/src/routes/apps/$name/*.tsx`
 - An app is one or more `store.DesiredService` rows under one `store.App`. Redeploy goes through `setDesiredImage`, restart through `RestartService`, stop and start through `UpdateServiceSuspended`.
-
 </Accordion>
 
 ## Create an app
 
-There are four ways to create one. All four end in one or more `DesiredService` rows, and all four accept inline secret values (`--secret KEY=VALUE` on the CLI) that are encrypted as part of the same call. A `{ secret: true }` variable declared in the spec needs no follow-up call.
+There are four ways to create one. All four accept inline secret values (`--secret KEY=VALUE` on the CLI) that are encrypted as part of the same call, so a `{ secret: true }` variable declared in the spec needs no follow-up call.
 
 The dashboard's **New** wizard offers an existing image, a git repository, and Docker Compose as step-one cards, plus templates. The multi-service `app.yaml` route starts from an existing app's **Services** tab.
 
@@ -62,8 +73,13 @@ levelrail-cli init
 
 Over the API this is `POST /api/v1/apps` with a `:pending` placeholder image, then `POST /api/v1/apps/{name}/builds`, which replaces the placeholder with the real tag when the build succeeds. `levelrail-cli apps builds trigger` does the second step.
 
-- **One build per app at a time.** A second `POST .../builds` while one runs returns `409 Conflict` ("a deploy for this app is already running"). If the control plane restarts mid-build, the orphaned attempt is marked failed on the next startup, so it never blocks new builds.
-- **Disk preflight.** Before BuildKit starts, the control plane checks free space on the build context directory (and the local cache directory when one is configured). Below the floor, the build fails fast with "N bytes free, need at least M bytes". The floor is 1 GiB by default, set with `APP_MIN_BUILD_DISK_MB`. A path that cannot be read counts as unknown, not as a failure.
+<Note>
+**One build per app at a time.** A second `POST .../builds` while one runs returns `409 Conflict` ("a deploy for this app is already running"). If the control plane restarts mid-build, the orphaned attempt is marked failed on the next startup, so it never blocks new builds.
+</Note>
+
+<Note>
+**Disk preflight.** Before BuildKit starts, the control plane checks free space on the build context directory (and the local cache directory when one is configured). Below the floor, the build fails fast with "N bytes free, need at least M bytes". The floor is 1 GiB by default, set in MiB with `APP_MIN_BUILD_DISK_MB`. A path that cannot be read counts as unknown, not as a failure.
+</Note>
 
 #### Railpack and framework detection
 
@@ -78,6 +94,8 @@ When `build.type` is `railpack` (no Dockerfile), Railpack detects the framework 
 
 Anything else Railpack can detect (Ruby, PHP, Rust, Deno, .NET, and so on) is rejected with a clear error rather than attempted. A Django app needs nothing beyond what `django-admin startproject` generates plus a `requirements.txt` that lists Django and a production server such as gunicorn. Railpack runs `python manage.py migrate` on start and serves with gunicorn bound to `$PORT`, never the Django dev server.
 
+<Accordion title="How framework detection works without building">
+
 The **Deploy from git** wizard checks what would be detected before you pick a build type, without building anything:
 
 ```bash
@@ -88,6 +106,8 @@ POST /api/v1/build/detect
 The control plane makes a shallow single-branch clone (depth 1) into a temporary directory, with a 20 second timeout and a checkout size cap. It runs Railpack's provider detection, which only reads files such as `package.json`, `go.mod`, or `pom.xml`, then discards the checkout. No repository code is executed. A repository that matches none of the providers above, or cannot be cloned, answers `{"detected": false}` rather than an error, and the wizard falls back to its manual build-type tabs. `levelrail-cli build detect --repo-url URL` runs the same check.
 
 The detected name is stored on the deploy attempt (`detected_framework`). It appears on the deploy detail page, in a `FRAMEWORK` column of `levelrail-cli apps deploys list`, and in `--output json`. `apps create` on the git path and `apps builds trigger` run the same detection first.
+
+</Accordion>
 
 ### From a Docker Compose file
 
@@ -100,7 +120,7 @@ levelrail-cli apps deploy-compose NAME --file compose.yaml # POST /api/v1/apps/{
 
 In the dashboard, use the **Docker Compose** card. A multi-service app lists every sibling service, with its `depends_on`, on the **Services** panel.
 
-How Compose is translated:
+<Accordion title="How Compose is translated, and what fails validation">
 
 - **Magic variables.** `SERVICE_<KIND>_<KEY>` variables that need generated secrets are resolved and stored automatically. A compose file that bind-mounts a host directory needs the `root` ability on top of `deploy`.
 - **Ports and volumes** accept the short form (`"8080:80"`, `web-data:/data`) and the long mapping form, so an upstream `docker-compose.yml` usually pastes in unchanged. Port ranges, UDP, and `tmpfs` or `npipe` mounts have no equivalent and are rejected.
@@ -112,6 +132,8 @@ Validation fails, naming exactly what to remove, for:
 
 - `deploy:` subkeys other than `replicas` and `resources.reservations.devices` (GPU reservations). The rest of the Swarm-specific `deploy:` surface (`mode`, `placement`, `restart_policy`, `update_config`, and so on) has no meaning outside a Swarm cluster.
 - Top-level `secrets:` and `configs:`, and a service's own `secrets:` or `configs:` references. Move the value into the app's env vars or Levelrail secrets.
+
+</Accordion>
 
 ### From a multi-service app.yaml
 
@@ -125,14 +147,28 @@ Every field of the spec is in the [app.yaml reference](/app-spec-reference).
 
 ## Deploy and watch a rollout
 
-Trigger a deploy from the dashboard's pinned **Trigger a deploy** form, from the CLI, or from a git push when auto-deploy is on:
+<Tabs>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli apps deploy NAME --image IMAGE
 levelrail-cli apps wait NAME      # block until the attempt converges, exit code says how it went
 ```
 
-`apps wait` exits 5 when the deploy failed and 6 when it timed out, which makes it a CI gate. See the [CLI reference](/cli-reference#scripting-json-and-exit-codes) for every exit code.
+</Tab>
+<Tab title="Dashboard">
+
+Use the pinned **Trigger a deploy** form on the app. A git push also deploys when auto-deploy is on, see [Git integrations](/git-integrations).
+
+</Tab>
+<Tab title="API">
+
+`POST /api/v1/apps/{name}/deploys` with the target image tag. It returns immediately, and the reconciler does the rollout.
+
+</Tab>
+</Tabs>
+
+`apps wait` exits 5 when the deploy failed and 6 when it timed out, which makes it a CI gate. See the [CLI reference](/cli-reference#scripting---json-and-exit-codes) for every exit code.
 
 ### What a rollout does
 
@@ -184,12 +220,16 @@ The cause is a heuristic match against a fixed rule table, not a diagnosis. It n
 
 ![Levelrail deploy history view with one-click rollback](assets/screenshots/deploy-history.png)
 
+<Accordion title="Filters, derived fields, summary and stream">
+
 `GET /api/v1/deployments` lists deploy attempts across every app the caller can read, newest first. It is cursor paginated (`limit` defaults to 50, maximum 200, pass `next_cursor` back as `cursor`). An IAM Deny on `app:web` hides web's deployments from the list, the summary, and the stream. The dashboard page is described in [Deployments page](/deployments-page).
 
 - **Filters:** `status` (queued, held, awaiting_approval, building, ready, failed, canceled, rolled_back, superseded; comma separated or repeated), `app`, `branch`, `trigger` (git push, manual, rollback, api, preview, schedule, pipeline), `environment` (name or ID), `since` and `until` (RFC3339 or a duration such as `24h`, `7d`), `q` (commit message, SHA prefix, app name), `live=true` (only the release currently serving each app), and `pr` (previews of one pull request).
 - **How fields are derived:** `rolled_back` is a succeeded deploy that a later rollback replaced (`rolled_back_by`). A rollback carries `rollback_of`, the attempt whose image it re-deployed. `held` is a deploy parked by a freeze window. `canceled` is a failed attempt whose error is a canceled context. `image_ref` pins the tag to a digest only when the digest is registry verified, and `digest_reason` says why when it is not. Commit message, author, and branch are recorded for git push deploys only. `steps` and the failing step are known only while an attempt runs, because step history is not persisted.
 - **Summary:** `GET /api/v1/deployments/summary?window=24h` returns counts by status (window up to 30 days), `in_progress`, `needs_attention` (held plus digest mismatch), `failure_rate_24h`, median and p95 `duration`, and `per_day` for 14 days.
 - **Stream:** `GET /api/v1/deployments/stream` is server-sent events of `{type: created|step|finished, step?, deployment}`. Only deploys that run through the build recorder emit events. A plain image redeploy appears in the list but not on the stream.
+
+</Accordion>
 
 From the CLI:
 
@@ -205,7 +245,13 @@ The MCP tools `list_deployments` and `deployments_summary` are read-only.
 
 ## Roll back
 
-Roll back from the dashboard's deploy history (one-click **Rollback** per row), or from the CLI:
+<Tabs>
+<Tab title="Dashboard">
+
+Open the deploy history and press **Rollback** on the row you want, one click per row.
+
+</Tab>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli apps deploys list NAME
@@ -213,7 +259,15 @@ levelrail-cli apps deploys rollback-to NAME DEPLOY_ID          # exact image of 
 levelrail-cli apps rollback NAME --image IMAGE:OLDER_TAG       # or name the tag yourself
 ```
 
-`rollback-to` is `POST /api/v1/apps/{name}/deploys/{deployId}/rollback`, described in [Deploy safety](/deploy-safety#queue-cancel-and-rollback-to-a-release). Prior images are pinned, so garbage collection cannot remove a rollback target.
+</Tab>
+<Tab title="API">
+
+`POST /api/v1/apps/{name}/deploys/{deployId}/rollback`, described in [Deploy safety](/deploy-safety#queue-cancel-and-rollback-to-a-release).
+
+</Tab>
+</Tabs>
+
+Prior images are pinned, so garbage collection cannot remove a rollback target. See also [Rollback](/rollback).
 
 Two related options:
 
@@ -224,13 +278,21 @@ Two related options:
 
 ### Save semantics
 
-`PUT /api/v1/apps/{name}` is a full replace, not a patch. It overwrites every field with what the request body carries, the same as applying an `app.yaml`. A save keeps the stored settings a body cannot express: volumes, bind mounts, entrypoint, database env, registry credential, pull policy, and the pinned image ID. `secret_env` and `vault_env` change only when the body carries them. Omit them to keep the stored set, send `[]` to clear. Secret values are never accepted here (a body with `secrets` is rejected). Use `PUT /api/v1/apps/{name}/secrets/{key}`.
+<Warning>
+`PUT /api/v1/apps/{name}` is a full replace, not a patch. It overwrites every field with what the request body carries, the same as applying an `app.yaml`.
+</Warning>
+
+A save keeps the stored settings a body cannot express: volumes, bind mounts, entrypoint, database env, registry credential, pull policy, and the pinned image ID. `secret_env` and `vault_env` change only when the body carries them. Omit them to keep the stored set, send `[]` to clear. Secret values are never accepted here (a body with `secrets` is rejected). Use `PUT /api/v1/apps/{name}/secrets/{key}`.
 
 Fields with their own endpoints cannot be moved by an ordinary edit: `node_id`, `project_id`, `environment_id`, `storage_target_id`, `suspended`, `database_attachment`, and `log_drain`. An edit can never silently move an app between nodes or projects.
 
 ### Pending changes
 
-Changing env vars or secrets does not touch the running container. Levelrail records what each container was created with (short hashes of env and secret values, plus port, command, entrypoint, and labels) and flags the difference until a restart lands. The dashboard shows an amber **Environment changes pending restart** banner on the Overview page with a one-click restart.
+<Note>
+Changing env vars or secrets does not touch the running container until it restarts.
+</Note>
+
+Levelrail records what each container was created with (short hashes of env and secret values, plus port, command, entrypoint, and labels) and flags the difference until a restart lands. The dashboard shows an amber **Environment changes pending restart** banner on the Overview page with a one-click restart.
 
 `GET /api/v1/apps/{name}/pending-changes` returns `{ pending, changes: [{ kind: env | secret | config, keys, since }], apply_action }`, with key names only and never values. Rotating a secret counts as a pending `secret` change. Resources and health checks apply live and are not listed. `POST /api/v1/apps/{name}/apply-pending` restarts the app and returns 202. For a container created before this tracking existed, only the `env_dirty` flag is known.
 
@@ -319,7 +381,7 @@ Set them on the **Resources** tab, in `app.yaml`, or with `PUT /api/v1/apps/{nam
 
 `GET /api/v1/apps/{name}/resource-recommendation` is a read-only, deterministic suggestion (`internal/rightsizing`, no LLM, never applied automatically). It looks at memory and CPU samples over a lookback window (7 days by default), computes p95 and p99 against the current limit, and checks recent logs for OOM-kill signatures. The result has a sample count, a `data_sufficient` and `confidence` pair, and a suggested limit with a plain-English reason. See it in the Optimise panel on the Resources tab, or run `levelrail-cli apps resource-recommendation NAME`. With the [resource advisor](/resource-advisor) beta on, the same suggestion arrives as an advisor finding you can apply after a preview.
 
-### Outbound network allowlist
+### Outbound network (egress) allowlist
 
 By default an app has unrestricted outbound access. Opting a service into an allowlist restricts its container to the declared `host:port` pairs. A reconciled sidecar enforces it and re-resolves each host on an interval instead of pinning an IP at deploy time.
 
@@ -479,9 +541,7 @@ In the dashboard, each row of the Apps list has an actions menu with Restart, St
 - **Permission:** the `root` ability, not `deploy`. Exec can be switched off per app (it is on by default) with `levelrail-cli apps exec-access disable NAME`, and a disabled app answers 403.
 
 <Warning>
-
 Secrets are injected as plaintext env vars when the container is created, so `env` inside a shell reads them back. Exec sits at the same trust tier as node management, not deploy.
-
 </Warning>
 
 ```bash
@@ -521,9 +581,11 @@ Deleting something never relies on a single best-effort call. Every path that re
 
 ### Projects, environments and organizations
 
-By default deleting a project, environment or organization only removes the label: its apps and databases keep running, detached. To tear everything inside down too, pass `cascade=true`:
+<Warning>
+By default deleting a project, environment or organization only removes the label: its apps and databases keep running, detached. To tear everything inside down too, pass `cascade=true`.
+</Warning>
 
-```
+```bash
 levelrail-cli apps projects delete --cascade PROJECT_ID
 levelrail-cli apps environments delete --cascade ENV_ID
 levelrail-cli apps organizations delete --cascade ORG_ID
@@ -543,7 +605,7 @@ A reaper compares what exists on every node with desired state and removes what 
 
 A resource is removed only after it has stayed orphaned for the grace period, counted from the first pass that saw it. Each removal writes an audit log entry (`REAP`, actor `orphan-reaper`). A pass removes at most `APP_ORPHAN_MAX_REMOVALS` resources, and removes nothing at all while no app or database exists, so an empty database read cannot wipe a node.
 
-```
+```bash
 levelrail-cli containers orphans             # what is left over and where it stands against the grace period
 levelrail-cli containers reap --dry-run      # what a pass would remove right now
 levelrail-cli containers reap                # one pass now
@@ -633,8 +695,13 @@ levelrail-cli deploy-approvals list | get | approve | reject
 
 ## See also
 
-- [Git integrations](/git-integrations): trigger deploys from git push and pull requests
-- [Domains and ingress](/domains-and-ingress): custom domains and HTTPS certificates
-- [Managing databases](/managing-databases): attach Postgres, MySQL, Redis, and others
-- [app.yaml reference](/app-spec-reference): every field of the deployment spec
-- [Deploy safety](/deploy-safety) and [Deploy failures](/deploy-failures): what protects a rollout and how failures are explained
+<CardGroup cols={2}>
+  <Card title="Rollback" href="/rollback">One-click and automatic rollback in depth.</Card>
+  <Card title="Deploy safety" href="/deploy-safety">Freeze windows, stale deploys, and what protects a rollout.</Card>
+  <Card title="Deploy failures" href="/deploy-failures">How failures are structured and explained.</Card>
+  <Card title="app.yaml reference" href="/app-spec-reference">Every field of the deployment spec.</Card>
+  <Card title="Git integrations" href="/git-integrations">Trigger deploys from git push and pull requests.</Card>
+  <Card title="Domains and ingress" href="/domains-and-ingress">Custom domains and HTTPS certificates.</Card>
+  <Card title="Managing databases" href="/managing-databases">Attach Postgres, MySQL, Redis, and others.</Card>
+  <Card title="CLI reference" href="/cli-reference">Every command, flag, and exit code.</Card>
+</CardGroup>

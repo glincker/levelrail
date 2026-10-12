@@ -1,5 +1,7 @@
 ---
 title: "Debug an app with built-in logs and metrics"
+icon: "/assets/icons/chart-line-up.svg"
+sidebarTitle: "See logs and metrics"
 description: Find out why an app is failing or slow with Levelrail's built-in log search and metrics, with no Grafana or Loki to install.
 ---
 
@@ -7,7 +9,7 @@ Most self-hosted platforms tell you to install Grafana and a log stack before yo
 
 ## Before you start
 
-- A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
+- A running Levelrail instance and the CLI logged in to it ([installing](/installing)).
 - An app that has been running for a few minutes. Any app from the earlier tutorials works.
 
 <Steps>
@@ -66,7 +68,7 @@ The flags you will use most:
 | `--tail 50` | Only the last N entries. |
 | `--json` | Machine-readable output for scripts. |
 
-![The log viewer with full-text search and a live tail](../assets/screenshots/logs.png)
+![The log viewer with full-text search and a live tail](/assets/screenshots/logs.png)
 
 The dashboard's log viewer reads the same store, with search and live tail.
 
@@ -95,7 +97,7 @@ TIMESTAMP             VALUE                 COUNT
 
 Metrics are sampled every 15 seconds and aggregated into the bucket size you set with `--step`. Leave `--step` off to get the raw samples.
 
-![An app's overview with live metrics and deploy markers](../assets/screenshots/app-overview.png)
+![An app's overview with live metrics and deploy markers](/assets/screenshots/app-overview.png)
 
 On the dashboard the same data becomes charts with deploy markers drawn on them. That is the quickest way to answer "which deploy made it slow": the line changes where the marker is.
 
@@ -126,10 +128,10 @@ levelrail-cli apps deploys rollback-to hello <deploy-id>
 
 ## Add an alert so you hear about it first
 
-The health score above flagged `Observability: fail` because no alert rules exist. Alerts can go to Slack, Discord, email, Telegram, PagerDuty, ntfy, and other channels. Start with [Observability](../observability.md) and [Email notifications](../email-notifications.md).
+The health score above flagged `Observability: fail` because no alert rules exist. Alerts can go to Slack, Discord, email, Telegram, PagerDuty, ntfy, and other channels. Start with [Observability](/observability) and [Email notifications](/email-notifications).
 
 ## Where to go next
 
-- [Observability](../observability.md): how the node-local stores work and how retention is set.
-- [Log archive](../log-archive.md): keep logs in object storage beyond the local window.
+- [Observability](/observability): how the node-local stores work and how retention is set.
+- [Log archive](/log-archive): keep logs in [object storage](/object-storage) beyond the local window.
 - [Zero-downtime deploys with health checks](/tutorials/zero-downtime-deploys-with-health-checks): catch the problem before it ships.

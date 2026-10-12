@@ -3,8 +3,6 @@ title: Brand kit
 description: "Logos, colors and ready-made social images for Levelrail, free to use when you write about it, share it or link to it."
 ---
 
-# Brand kit
-
 Everything here is free to use when you write about Levelrail, post it, or link to it. Right-click an image to save it, or use the file links.
 
 ## Logo
@@ -31,7 +29,7 @@ Keep clear space around the mark of at least a quarter of its width. Do not reco
 
 ## Social images
 
-Link preview cards are exactly 1200x630, the size every platform expects. The platform banners below are rendered at 2x so they stay sharp on high density screens, and the sizes listed are the logical size.
+Link preview cards are 1200x630, the size most platforms expect. The platform banners below are rendered at 2x so they stay sharp on high density screens. The sizes listed are the logical size.
 
 ### Headlines
 

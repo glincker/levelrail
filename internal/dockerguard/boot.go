@@ -76,7 +76,14 @@ func Boot(ctx context.Context, cfg BootConfig) (Booted, error) {
 	}
 	server, err := start(ctx, cfg, lookup, logger, mode, runtime, grants)
 	if err != nil && mode == ModeEnforce {
-		return Booted{}, fmt.Errorf("docker guard is in enforce mode but could not start: %w", err)
+		// An unset mode must not brick an upgrade on a daemon that cannot be guarded.
+		if source != SourceDefault {
+			return Booted{}, fmt.Errorf("docker guard is in enforce mode but could not start: %w", err)
+		}
+		logger.Warn("dockerguard: default enforce could not start, Docker clients use the daemon socket directly; set "+EnvMode+"=audit to silence this",
+			slog.String("error", err.Error()))
+		out.Controller = NewController(settingsPath, lookup, nil, runtime.Host, err)
+		return out, nil
 	}
 	out.Controller = NewController(settingsPath, lookup, server, runtime.Host, err)
 	if err != nil {

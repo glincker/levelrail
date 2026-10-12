@@ -1,6 +1,6 @@
 ---
 title: "Teams and roles"
-description: "Teams own projects, environments, apps and databases. Four roles, invitations and team-scoped API tokens, explained."
+description: Teams own projects, environments, apps and databases. Four roles (owner, admin, developer, viewer), invitations, team scoped API tokens, protected environments and the dashboard and CLI switchers.
 ---
 
 A team owns projects. Each project owns its environments, and every app and database filed under a project belongs to that project's team. Two teams on one instance cannot see or change each other's apps, databases, domains, secrets, logs, deploys, tokens or team audit trail.
@@ -13,13 +13,13 @@ A team owns projects. Each project owns its environments, and every app and data
 | Environment | one project (shared Dev, Test, UAT and Production environments belong to the instance) |
 | App, database | one project, so one team |
 
-An app or database with no project belongs to the **default team**. Upgrading an existing install creates the default team, files every existing project under it, and adds every existing user to it, so nothing changes until you create a second team.
+An app or database with no project belongs to the default team. Upgrading an existing install creates the default team, files every existing project under it, and adds every existing user to it, so nothing changes until you create a second team.
 
 The default team is the instance itself. Its members keep instance wide pages (nodes, settings, templates) under their own abilities, exactly as before. Instance admins (users with the `root` ability) see every team.
 
 ## Roles
 
-There are four roles. Each maps onto the same abilities API tokens and IAM policies use, so one engine decides every request.
+There are four roles. Each maps onto the same abilities that API tokens and IAM policies use, so one engine decides every request.
 
 | Role | Can |
 | --- | --- |
@@ -44,10 +44,10 @@ Someone who is signed in joins with their account. Anyone else creates an accoun
 
 ## Dashboard
 
-- **Settings, Teams** lists your teams, members, roles, invitations and the team audit trail.
+- Settings, Teams lists your teams, members, roles, invitations and the team audit trail.
 - The header switcher narrows every list to one team and, optionally, one project. It only ever narrows: you never see more than your roles allow.
 - Your role in the selected team shows as a badge next to the switcher.
-- A page you cannot open shows why, with a link to Teams and back to the dashboard.
+- A page you cannot open tells you why and links to Teams and back to the dashboard.
 
 ## CLI
 

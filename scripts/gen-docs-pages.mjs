@@ -117,15 +117,106 @@ fs.writeFileSync(
   `---\ntitle: "Changelog"\ndescription: Every Levelrail release with highlights, fixes and upgrade notes.\n---\n\n${updates.join('\n\n')}\n`,
 )
 
+// "All pages" index: every nav page with its description, so no page is an orphan
+// and crawlers get one hub that links the whole docs set.
+{
+  const cfgNav = JSON.parse(fs.readFileSync('docs/docs.json', 'utf8'))
+  const flat = (items) => items.flatMap((i) => (typeof i === 'string' ? [i] : flat(i.pages)))
+  const meta = (slug) => {
+    for (const ext of ['md', 'mdx']) {
+      const f = `docs/${slug}.${ext}`
+      if (!fs.existsSync(f)) continue
+      const fm = fs.readFileSync(f, 'utf8').match(/^---\n([\s\S]*?)\n---/)?.[1] ?? ''
+      const get = (k) => fm.match(new RegExp(`^${k}:\\s*"?(.*?)"?\\s*$`, 'm'))?.[1]
+      return { title: get('title') ?? slug, description: get('description') ?? '' }
+    }
+    return null
+  }
+  const sections = []
+  for (const tab of cfgNav.navigation.tabs) {
+    if (tab.tab === 'Self-host gallery') continue
+    sections.push(`## ${tab.tab}\n`)
+    for (const g of tab.groups) {
+      const rows = flat(g.pages)
+        .filter((s) => s !== 'all-pages')
+        .map((s) => [s, meta(s)])
+        .filter(([, m]) => m)
+        .map(([s, m]) => `- [${esc(m.title)}](/${s})${m.description ? `: ${esc(m.description)}` : ''}`)
+      if (rows.length) sections.push(`### ${g.group}\n\n${rows.join('\n')}\n`)
+    }
+  }
+  fs.writeFileSync(
+    'docs/all-pages.mdx',
+    `---\ntitle: "All pages"\ndescription: Every Levelrail documentation page with a one-line summary, grouped by section.\n---\n\nThe complete index of the Levelrail docs. For a self-hosted app gallery, see the [template gallery](/self-host/index).\n\n${sections.join('\n')}`,
+  )
+}
+
+// Product tour: every dashboard screenshot with a title, grouped by area.
+{
+  const shots = [
+    ['Overview', [
+      ['dashboard-home', 'Dashboard home', 'Health, needs-attention items and recent activity in one place.', '/attention-center'],
+      ['setup-wizard', 'Setup wizard', 'The guided first-run checklist for domain, git and backups.', '/getting-started'],
+      ['cli-access', 'CLI access', 'Mint a token and copy the install command for the CLI.', '/cli-reference'],
+    ]],
+    ['Apps and deploys', [
+      ['apps-list', 'Apps', 'Every app with its status, replicas and last deploy.', '/deploying-apps'],
+      ['app-overview-page', 'App overview', 'One app: status, domains, resources and quick actions.', '/deploying-apps'],
+      ['app-source', 'App source', 'Connect a repository or image and pick how it builds.', '/git-integrations'],
+      ['app-environment', 'Environment and secrets', 'Variables and encrypted secrets per app.', '/environment-and-secrets'],
+      ['app-deploy-settings', 'Deploy settings', 'Strategy, health checks, schedules and approvals.', '/deploy-safety'],
+      ['app-resources', 'Resources', 'CPU and memory limits with live usage.', '/resource-advisor'],
+      ['deploy-history', 'Deploy history', 'Every deploy with its status, commit and one-click rollback.', '/deployments-page'],
+      ['deployments-all', 'All deployments', 'Deploys across every app in one list.', '/deployments-page'],
+      ['pipelines', 'Pipelines', 'Build, test and deploy steps that run on your own nodes.', '/pipelines'],
+    ]],
+    ['Observe', [
+      ['app-overview', 'Metrics', 'CPU, memory, requests and deploy markers on the same chart.', '/observability'],
+      ['logs', 'Logs', 'Full-text search and a live tail over the node-local log store.', '/observability'],
+    ]],
+    ['Data', [
+      ['databases-list', 'Databases', 'Managed Postgres, MySQL, Redis and more.', '/managing-databases'],
+      ['database-overview', 'Database overview', 'Connection details, backups and version for one database.', '/managing-databases'],
+      ['backups', 'Backups', 'Backup targets, schedules and restore points.', '/backups-and-storage'],
+      ['templates-catalog', 'Template catalog', 'One-click services from the curated catalog.', '/templates-and-registry'],
+    ]],
+    ['Network and nodes', [
+      ['domains-list', 'Domains', 'Domains, certificates and the platform ingress settings.', '/domains-and-ingress'],
+      ['load-balancer', 'Load balancer', 'Upstreams and drain behaviour across replicas.', '/load-balancing'],
+      ['network-topology', 'Network topology', 'How nodes, apps and databases connect.', '/network-topology'],
+      ['nodes', 'Nodes', 'Enrolled servers with health, workload kinds and drain controls.', '/multi-node'],
+      ['node-providers', 'Cloud node providers', 'Connect a cloud account to create servers from the dashboard.', '/node-provisioning'],
+      ['status-page-settings', 'Public status page', 'Choose which components to publish and how.', '/status-page'],
+    ]],
+  ]
+  const body = shots
+    .map(([area, items]) =>
+      `## ${area}\n\n${items
+        .map(
+          ([file, title, desc, link]) =>
+            `### ${title}\n\n${desc} Read more in [the guide](${link}).\n\n<Frame caption=${q(title)}>\n  <img src="/assets/screenshots/${file}.png" alt=${q(title)} />\n</Frame>\n`,
+        )
+        .join('\n')}`,
+    )
+    .join('\n')
+  fs.writeFileSync(
+    'docs/product-tour.mdx',
+    `---\ntitle: "Product tour"\nsidebarTitle: "Product tour"\ndescription: "A look at the Levelrail dashboard: apps, deploys, logs, databases, domains and nodes, each with a short explanation."\n---\n\nThe screenshots below come from a real running control plane, not mockups. Each one links to the page that explains it.\n\n${body}`,
+  )
+}
+
 // Keep docs.json's gallery tab in sync.
 const cfg = JSON.parse(fs.readFileSync('docs/docs.json', 'utf8'))
 const tabs = cfg.navigation.tabs.filter((t) => t.tab !== 'Self-host gallery')
 tabs.splice(tabs.length - 1, 0, {
   tab: 'Self-host gallery',
+  icon: '/assets/icons/squares-four.svg',
   groups: [
     { group: 'Gallery', pages: ['self-host/index'] },
     ...cats.map((c) => ({ group: c, pages: byCat.get(c).map((t) => `self-host/${t.id}`) })),
   ],
 })
+const expl = tabs.find((x) => x.tab === 'Concepts')?.groups.find((g) => g.group === 'Explanation')
+if (expl && !expl.pages.includes('product-tour')) expl.pages.unshift('product-tour')
 cfg.navigation.tabs = tabs
 fs.writeFileSync('docs/docs.json', JSON.stringify(cfg, null, 2) + '\n')
