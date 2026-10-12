@@ -1,3 +1,8 @@
+---
+title: GLINR design tokens
+description: The single source of truth for color, space, radius, elevation, type and motion in the Levelrail dashboard, and how to add or change a token.
+---
+
 # Design tokens
 
 The dashboard theme lives in `web/src/styles/glinr-tokens.css`, labelled "GLINR CSS tokens". Every variable is namespaced `--glinr-*` and defined for light and dark.
