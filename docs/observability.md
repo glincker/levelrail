@@ -693,13 +693,13 @@ Both return a "not configured" error if the control plane has no master key set.
 ### Destination checks and visibility
 
 <Warning>
-`notify_url` often is the credential (a Slack webhook URL, a Telegram bot token, a PagerDuty routing key). These values are stored as plain text in `alerting.db`, not envelope encrypted, so protect that file like `master.key`.
+`notify_url` often is the credential (a Slack webhook URL, a Telegram bot token, a PagerDuty routing key). A channel's credential (and its interactive approval signing secret) is envelope encrypted under the master key and decrypted only when a message is actually sent; `alerting.db` holds just a masked placeholder. See [Notification channel secrets](/security#notification-channel-secrets).
 </Warning>
 
 - **Save-time checks.** Creating or editing a channel whose `notify_url` is not an absolute `http` or `https` URL, or points at loopback, a private range, link-local or `localhost`, is refused with a `400` that names the cause. Every send goes through the same SSRF guard and would be rejected anyway.
 - **Private networks.** A self-hosted target on a private network (a Mattermost, a Gotify, an internal webhook receiver) needs `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` in the control plane's environment, set before the channel is created.
 - **Hostnames** are checked by resolving them when you save. One that does not resolve yet is accepted, and the guard still applies on every send. `email`, `pagerduty`, `opsgenie`, `resend` and `webpush` hold an address or key rather than a URL, so they are not checked this way.
-- **Who sees the destination.** A caller without `read:sensitive` (the `viewer` role, or a plain `read` token) gets `https://host/(hidden)` or `(hidden)` instead of the value when listing channels, an app's deploy notification targets, an app's alert rules and an app's log drain. `email` addresses stay visible. `operator` and `admin` see the full value. Saving a channel with the hidden placeholder keeps the stored value.
+- **Who sees the destination.** A caller without `read:sensitive` (the `viewer` role, or a plain `read` token) gets `https://host/(hidden)` or `(hidden)` instead of the value when listing channels, an app's deploy notification targets, an app's alert rules and an app's log drain. `email` addresses stay visible. For an encrypted channel every caller, `operator` and `admin` included, sees only the placeholder. Saving a channel with the hidden placeholder keeps the stored value, and the test button sends through it. A deploy target or alert rule that carries its own `notify_url` instead of a `channel_id` is not encrypted, so attach a channel instead.
 
 ### Browser push (`webpush`)
 

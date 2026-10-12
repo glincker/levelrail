@@ -36,7 +36,7 @@ Snapshots here stay on the same disk as the database; see [disaster recovery](/d
 <Warning>
 **Alerting configuration is not in a backup yet**
 
-`alerting.db` sits next to `levelrail.db` in the data directory and holds every alert rule, notification channel (with its webhook URL or key), silence and maintenance window. Neither the local snapshots nor the off-box encrypted backup include it, so a restore on a new machine comes back with apps and users but no alerts. Until that is fixed, copy it yourself on a schedule, for example `sqlite3 <data dir>/alerting.db ".backup '/safe/place/alerting.db'"` (safe while the control plane runs), and put it back, with the control plane stopped, after a restore. The file holds channel credentials in plain text, so treat the copy like `master.key`.
+`alerting.db` sits next to `levelrail.db` in the data directory and holds every alert rule, notification channel (with its webhook URL or key), silence and maintenance window. Neither the local snapshots nor the off-box encrypted backup include it, so a restore on a new machine comes back with apps and users but no alerts. Until that is fixed, copy it yourself on a schedule, for example `sqlite3 <data dir>/alerting.db ".backup '/safe/place/alerting.db'"` (safe while the control plane runs), and put it back, with the control plane stopped, after a restore. Channel credentials are not in that file: they are envelope encrypted inside `levelrail.db`, which the backups do include, so restore both files together with the same master key. A channel created after the `levelrail.db` snapshot you restore comes back with no credential and fails to send; edit it and enter the URL or key again.
 </Warning>
 
 <Warning>

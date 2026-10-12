@@ -48,7 +48,7 @@ type captureSender struct {
 	texts []string
 }
 
-func (c *captureSender) SendNotice(_ context.Context, _ alerting.NotifyKind, _, text string) error {
+func (c *captureSender) SendNotice(_ context.Context, _ alerting.NotificationChannel, text string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.texts = append(c.texts, text)

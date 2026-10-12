@@ -77,6 +77,21 @@ func interactiveChannelsOf(channels []alerting.NotificationChannel, kind alertin
 	return out
 }
 
+// revealInteractiveChannels decrypts each candidate's signing secret for
+// this verification only; a channel whose secret cannot be opened is skipped.
+func (rt *Router) revealInteractiveChannels(ctx context.Context, channels []alerting.NotificationChannel) []alerting.NotificationChannel {
+	out := make([]alerting.NotificationChannel, 0, len(channels))
+	for _, c := range channels {
+		revealed, err := rt.notificationChannels.RevealNotificationChannel(ctx, c)
+		if err != nil {
+			rt.logger.Error("api: chat interaction: reveal channel secret failed", slog.String("channel_id", c.ID), slog.String("error", err.Error()))
+			continue
+		}
+		out = append(out, revealed)
+	}
+	return out
+}
+
 // verifySlackSignature checks sigHeader (X-Slack-Signature) against an
 // HMAC-SHA256 of "v0:<timestamp>:<body>" keyed by secret
 // (api.slack.com/authentication/verifying-requests-from-slack), the
@@ -193,7 +208,7 @@ func (rt *Router) handleSlackInteraction(w http.ResponseWriter, r *http.Request)
 		rt.internalError(w, "api: slack interaction: list notification channels failed", err)
 		return
 	}
-	candidates := interactiveChannelsOf(channels, alerting.NotifySlack)
+	candidates := rt.revealInteractiveChannels(r.Context(), interactiveChannelsOf(channels, alerting.NotifySlack))
 	channel, ok := verifySlackChannelSignature(candidates, r.Header.Get("X-Slack-Request-Timestamp"), string(body), r.Header.Get("X-Slack-Signature"))
 	if !ok {
 		rt.logger.Warn("api: slack interaction: signature verification failed", slog.String("remote_addr", r.RemoteAddr))
@@ -294,7 +309,7 @@ func (rt *Router) handleDiscordInteraction(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: discord interaction: list notification channels failed", err)
 		return
 	}
-	candidates := interactiveChannelsOf(channels, alerting.NotifyDiscord)
+	candidates := rt.revealInteractiveChannels(r.Context(), interactiveChannelsOf(channels, alerting.NotifyDiscord))
 	channel, ok := verifyDiscordChannelSignature(candidates, r.Header.Get("X-Signature-Timestamp"), body, r.Header.Get("X-Signature-Ed25519"))
 	if !ok {
 		rt.logger.Warn("api: discord interaction: signature verification failed", slog.String("remote_addr", r.RemoteAddr))

@@ -50,6 +50,12 @@ Sensitive plain variables and secrets are masked on every read surface, and read
 
 Credentials for backup targets and registry integrations follow the same write-only pattern described in [Backups and storage](/backups-and-storage#credentials-are-write-only): once saved, the plaintext is never returned by the API again, only a masked placeholder.
 
+### Notification channel secrets
+
+A notification channel's credential (its webhook URL, Telegram bot token, PagerDuty routing key, Opsgenie or Resend key, and a Slack signing secret or Discord public key for interactive approvals) is envelope encrypted like any other secret, under the channel's own slot. `alerting.db` keeps only a masked placeholder such as `https://hooks.slack.com/(hidden)`, and the API returns that placeholder to every caller, `admin` included. The value is decrypted only at the moment a notification, test message or approval request is sent, or an interactive button click is verified. An `email` channel's recipient address is not a credential and stays readable.
+
+Channels saved by an older release are encrypted in place on the first start with a master key: each value is written as ciphertext, decrypted again to verify it, and only then is the plaintext column cleared. The step is idempotent and safe to interrupt; anything it could not finish is retried on the next start. Without a master key, channels keep working with plaintext credentials and `levelrail-cli doctor` warns with a `notification_channel_secrets` check until one is configured.
+
 ## Sessions and tokens
 
 - **Session cookies** are `HttpOnly`, `SameSite=Lax`, and `Secure` whenever the request arrived over HTTPS (directly or through the embedded Caddy ingress). Once an `https://` dashboard URL is set, sign-in over plain HTTP is refused (`APP_ALLOW_INSECURE_LOGIN=true` is the recovery escape hatch).
@@ -213,7 +219,6 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 
 - No SSO/SAML or SCIM. Sign-in is local password, passkey, or OAuth (Google, GitHub, Microsoft, generic OIDC).
 - No secret scanning of an app's own source repository.
-- Notification destinations (webhook URLs, Telegram bot tokens, PagerDuty and Opsgenie keys) are stored as plain text in `alerting.db`, not envelope encrypted. Treat that file as sensitive.
 - Sessions live in memory, so every control plane restart (including an upgrade) signs everyone out. API tokens are unaffected.
 - `GET /api/v1/system/containers` lists containers Levelrail does not manage only to `root` callers. Other callers with `read` see managed containers only.
 - Container hardening is on by default but has no per-app override yet, and read-only root filesystems stay opt-in.

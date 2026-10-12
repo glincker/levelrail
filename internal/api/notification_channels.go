@@ -30,6 +30,7 @@ type NotificationChannels interface {
 	GetNotificationChannel(ctx context.Context, id string) (*alerting.NotificationChannel, error)
 	ListNotificationChannels(ctx context.Context) ([]alerting.NotificationChannel, error)
 	DeleteNotificationChannel(ctx context.Context, id string) error
+	RevealNotificationChannel(ctx context.Context, c alerting.NotificationChannel) (alerting.NotificationChannel, error)
 }
 
 // NotificationChannelTester is the surface the test-send routes need: a
@@ -37,6 +38,7 @@ type NotificationChannels interface {
 // *alerting.DeployDispatcher satisfies this structurally.
 type NotificationChannelTester interface {
 	SendTest(ctx context.Context, kind alerting.NotifyKind, notifyURL string) error
+	SendChannelTest(ctx context.Context, c alerting.NotificationChannel) error
 }
 
 // NotificationDeliveryStore is the surface the delivery-history route and
@@ -77,6 +79,14 @@ func toNotificationChannelResource(c alerting.NotificationChannel) notificationC
 		NotifyDeviceLoginExpired: c.NotifyDeviceLoginExpired,
 		CreatedAt:                c.CreatedAt, UpdatedAt: c.UpdatedAt,
 	}
+}
+
+// notificationChannelResourceFor applies the caller's redaction. A sealed
+// channel only ever holds its masked target here, never the plaintext.
+func (rt *Router) notificationChannelResourceFor(r *http.Request, c alerting.NotificationChannel) notificationChannelResource {
+	res := toNotificationChannelResource(c)
+	res.NotifyURL = rt.notifyTargetFor(r, c.Kind, c.NotifyURL)
+	return res
 }
 
 // createNotificationChannelRequest is POST /api/v1/notification-channels'
@@ -213,9 +223,7 @@ func (rt *Router) handleListNotificationChannels(w http.ResponseWriter, r *http.
 	}
 	out := make([]notificationChannelResource, 0, len(channels))
 	for _, c := range channels {
-		res := toNotificationChannelResource(c)
-		res.NotifyURL = rt.notifyTargetFor(r, c.Kind, c.NotifyURL)
-		out = append(out, res)
+		out = append(out, rt.notificationChannelResourceFor(r, c))
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -255,7 +263,12 @@ func (rt *Router) handleCreateNotificationChannel(w http.ResponseWriter, r *http
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, toNotificationChannelResource(channel))
+	saved, err := rt.notificationChannels.GetNotificationChannel(r.Context(), id)
+	if err != nil {
+		rt.internalError(w, "api: create notification channel: reload after save failed", err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, rt.notificationChannelResourceFor(r, *saved))
 }
 
 // handleUpdateNotificationChannel handles PUT
@@ -314,7 +327,7 @@ func (rt *Router) handleUpdateNotificationChannel(w http.ResponseWriter, r *http
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toNotificationChannelResource(*updated))
+	writeJSON(w, http.StatusOK, rt.notificationChannelResourceFor(r, *updated))
 }
 
 // handleDeleteNotificationChannel handles DELETE
@@ -408,7 +421,7 @@ func (rt *Router) handleTestExistingNotificationChannel(w http.ResponseWriter, r
 
 	ctx, cancel := context.WithTimeout(r.Context(), notificationChannelTestTimeout)
 	defer cancel()
-	sendErr := rt.notificationChannelTester.SendTest(ctx, channel.Kind, channel.NotifyURL)
+	sendErr := rt.notificationChannelTester.SendChannelTest(ctx, *channel)
 	rt.recordNotificationDelivery(r.Context(), id, "test", sendErr)
 	if sendErr != nil {
 		writeError(w, http.StatusBadGateway, fmt.Sprintf("test notification failed: %s", sendErr.Error()))
