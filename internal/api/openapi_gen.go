@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1025 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1030 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -783,6 +783,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/migration/hub/sessions/{id}/selection", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handlePutHubSelection", Description: ""},
 	{Method: "PUT", Path: "/api/v1/migration/hub/sessions/{id}/step", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handlePutHubStep", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/volumes", Ability: "AbilityRead", Group: "Other", Handler: "handleVolumeGuide", Description: ""},
+	{Method: "GET", Path: "/api/v1/mobile/devices", Ability: "AbilityRead", Group: "Other", Handler: "handleListMobileDevices", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/mobile/devices/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleRevokeMobileDevice", Description: "Read tier so a device owner (or the phone itself) can revoke; root or owner is checked inside."},
+	{Method: "GET", Path: "/api/v1/mobile/overview", Ability: "AbilityRead", Group: "Other", Handler: "handleMobileOverview", Description: ""},
+	{Method: "POST", Path: "/api/v1/mobile/pair", Ability: "Public", Group: "Other", Handler: "handleMobilePair", Description: "Unauthenticated by design: the one-time code is the credential, rate limited."},
+	{Method: "POST", Path: "/api/v1/mobile/pairing-codes", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateMobilePairing", Description: "Minting a pairing code hands out a credential, so root plus a fresh step-up."},
 	{Method: "GET", Path: "/api/v1/model-cache", Ability: "AbilityRead", Group: "Other", Handler: "handleListModelCache", Description: ""},
 	{Method: "POST", Path: "/api/v1/model-cache/prune", Ability: "AbilityRoot", Group: "Other", Handler: "handlePruneModelCache", Description: ""},
 	{Method: "GET", Path: "/api/v1/network-shares", Ability: "AbilityRead", Group: "Other", Handler: "handleListNetworkShares", Description: "Network shares (network_shares.go): an NFS/CIFS export mountable as a Docker local-driver volume. Same ability tiers as registry credentials just above: POST/PUT/DELETE handle a live CIFS password, test is a read-only reachability dial."},

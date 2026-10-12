@@ -120,6 +120,7 @@ var Tree = map[string]*Node{
 	}}}},
 	"profile": {Subs: map[string]*Node{"list": nil}},
 	"tokens":  {Subs: map[string]*Node{"create": nil, "list": nil, "revoke": nil}},
+	"mobile":  {Subs: map[string]*Node{"pair": nil, "devices": {Subs: map[string]*Node{"list": nil, "revoke": nil}}}},
 	"domains": {Subs: map[string]*Node{
 		"list":                 nil,
 		"cloudflare-dns":       {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},

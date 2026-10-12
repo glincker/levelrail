@@ -62,5 +62,5 @@ type devModeResponse struct {
 // this package's own devModeUsername/devModePassword constants, not a
 // secret this endpoint could leak.
 func (rt *Router) handleDevMode(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, devModeResponse{Enabled: devModeEnabled(), Experimental: experimental.EnabledList()})
+	writeJSON(w, http.StatusOK, devModeResponse{Enabled: devModeEnabled(), Experimental: enabledFeatures()})
 }

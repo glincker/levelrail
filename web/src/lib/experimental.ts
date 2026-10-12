@@ -12,6 +12,7 @@ export type ExperimentalFeature =
   | 'global-environments'
   | 'resource-advisor'
   | 'cli-console'
+  | 'mobile-api'
 
 export function isFeatureVisible(
   feature: ExperimentalFeature | undefined,

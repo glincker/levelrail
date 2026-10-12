@@ -410,6 +410,10 @@
         "title": "API tokens",
         "description": "Scoped, revocable credentials for the CLI, CI, and MCP."
       },
+      "mobile-devices": {
+        "title": "Mobile devices",
+        "description": "Pair a phone with a QR code and revoke paired phones."
+      },
       "agents": {
         "title": "Agents",
         "description": "Connect an AI agent over MCP and manage its tokens."
@@ -582,5 +586,32 @@
     "title": "Settings",
     "description": "Account, team, and platform configuration.",
     "jumpTo": "Jump to an area"
+  },
+  "mobileDevices": {
+    "title": "Mobile devices",
+    "description": "Phones paired with this server. Each one holds its own expiring token that can read status and restart, deploy or roll back apps. It can never act as root, reveal secrets or approve sign-ins.",
+    "pair": "Pair a device",
+    "pairFailed": "Could not create a pairing code",
+    "pairingTitle": "Pairing code",
+    "pairingHint": "Enter this code in the mobile app, or open the link on the phone. It works once and expires at {{time}}.",
+    "codeLabel": "Code",
+    "linkLabel": "Pairing link",
+    "serverLabel": "Server address",
+    "copy": "Copy",
+    "copied": "Copied",
+    "done": "Done",
+    "emptyTitle": "No paired phones",
+    "emptyDescription": "Pair a device to check status and restart, deploy or roll back apps from your phone.",
+    "colName": "Name",
+    "colPlatform": "Platform",
+    "colCreated": "Paired",
+    "colLastSeen": "Last seen",
+    "colExpires": "Expires",
+    "never": "Never",
+    "expired": "Expired",
+    "revoke": "Revoke",
+    "revokeTitle": "Revoke {{name}}?",
+    "revokeDescription": "The phone loses access at once and has to be paired again.",
+    "revoked": "{{name}} revoked"
   }
 }
