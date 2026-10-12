@@ -76,3 +76,17 @@ Dark mode uses a darker translucent shadow plus a 1px top highlight (`--glinr-hi
 - `--shadow-header|card|popover|dialog`: same values, now emitted from `glinr-theme.css` instead of `index.css`.
 
 New tokens (additive, none applied to existing components yet): `color-border-strong`, `color-grid-line`, `color-fg`, `color-fg-muted`, `color-fg-subtle`, `color-accent`, `color-showcase-muted`, `color-showcase-rule`, `space-*`, `radius-sm|md|xl`, `content-narrow`, `type-*` scale, leading, tracking, weight and numeric features, `font-body`, `motion-*`.
+
+## GLIN UI
+
+`@glinui/ui` and `@glinui/tokens` (0.1.1, MIT) are installed in `web/`. Only `Skeleton` is used so far, through `web/src/components/ui/skeleton.tsx`, the single adapter. Every existing skeleton (`ListSkeleton`, `TableSkeleton`, settings skeletons) goes through it, so the look changes in one place.
+
+- Variants: the adapter accepts `glinr` (default), `solid`, `plain`, `soft`, `outline`, `ghost`, the names on the docs page. Version 0.1.1 publishes `default | glass | liquid | matte | outline | ghost`, so `glinr` maps to `matte`, `solid` and `plain` to `default`, `soft` to `ghost`. Drop the map once the docs names ship.
+- Motion: the shimmer is `motion-reduce:hidden`. The `skeleton-shimmer` keyframes are not shipped by the package, so `src/index.css` defines them.
+- Tailwind does not scan `node_modules`, so `src/index.css` lists the Skeleton classes with `@source inline(...)`. A file-path `@source` doubled the compiled stylesheet.
+- Bundle: `@glinui/ui` has no `"sideEffects": false`, so its barrel pulls every Radix package. `vite.config.ts` marks the package side-effect free for the production build, which keeps the main chunks flat (vendor +2 KB). Vitest inlines the package because its ESM uses extensionless imports Node cannot load.
+- Not installed: `@glinui/cli` is unpublished on npm (404), so the docs' `dlx @glinui/cli add skeleton` fails. This is an issue to fix on the glinui side; use the package route until then.
+
+### Token overlap
+
+`@glinui/tokens/theme.css` is deliberately not imported: the mapped Skeleton variants need none of its variables. It redefines names we already own: `--color-background`, `--color-foreground`, `--color-border`, `--color-accent`, `--color-accent-foreground`, `--radius-sm|md|lg|xl|2xl` (different values, e.g. `--radius-lg: 1rem` against our `var(--radius)`), `--motion-fast`, `--motion-slow`. Importing it plain would change those values app wide. If the glass or liquid variants are adopted, import it as `@import '@glinui/tokens/theme.css' layer(glinui-tokens)` with `@layer glinui-tokens;` declared before `@import 'tailwindcss'`, and re-check the overlap above.
