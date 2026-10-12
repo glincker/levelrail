@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { IdentificationBadgeIcon } from '@phosphor-icons/react/dist/ssr'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { RoleFormDialog } from '../../components/access/RoleFormDialog'
@@ -30,27 +30,18 @@ function RolesSettingsPage() {
   const isRoot = useIsRoot()
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <IdentificationBadgeIcon className="size-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <PageHeader
-            title={t('roles.title')}
-            description={t('roles.description')}
-            actions={
-              isRoot ? (
-                <RoleFormDialog
-                  trigger={<Button>{t('roles.create')}</Button>}
-                />
-              ) : undefined
-            }
-          />
-        </div>
-      </div>
+    <PageTemplate
+      icon={<IdentificationBadgeIcon />}
+      title={t('roles.title')}
+      description={t('roles.description')}
+      actions={
+        isRoot ? (
+          <RoleFormDialog trigger={<Button>{t('roles.create')}</Button>} />
+        ) : undefined
+      }
+    >
       <RolesTable roles={roles} canManage={isRoot} />
-    </div>
+    </PageTemplate>
   )
 }
 

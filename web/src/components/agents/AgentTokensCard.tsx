@@ -2,6 +2,14 @@ import { useTranslation } from 'react-i18next'
 import { RobotIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
   ResponsiveTable,
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
@@ -75,40 +83,40 @@ export function AgentTokensCard({ tokens }: { tokens: TokenResource[] }) {
   const { t } = useTranslation('common')
   const agentTokens = tokens.filter((tok) => tok.agent)
   return (
-    <section className="space-y-3 rounded-lg border border-border p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">
-            Agent tokens
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Tokens labeled as issued to an AI agent. Every change made with one
-            is recorded under the agent&apos;s name in the audit log.
-          </p>
-        </div>
-        <CreateAgentTokenDialog />
-      </div>
-
-      {agentTokens.length === 0 ? (
-        <EmptyState
-          icon={<RobotIcon />}
-          title="No agent tokens yet"
-          description="Create one with a preset scope, then give it to your agent through the connect snippet above."
-        />
-      ) : (
-        <ResponsiveTable
-          rows={agentTokens}
-          columns={COLUMNS}
-          getRowId={(token) => token.id}
-          ariaLabel={t('tableLabels.agentTokens')}
-          getRowProps={(token) => ({
-            className: token.revoked_at ? 'opacity-60' : undefined,
-          })}
-          renderActions={(token) =>
-            token.revoked_at ? null : <RevokeTokenDialog token={token} />
-          }
-        />
-      )}
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle>Agent tokens</CardTitle>
+        <CardDescription>
+          Tokens labeled as issued to an AI agent. Every change made with one is
+          recorded under the agent&apos;s name in the audit log.
+        </CardDescription>
+        <CardAction>
+          <CreateAgentTokenDialog />
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        {agentTokens.length === 0 ? (
+          <EmptyState
+            className="gap-2 border-0 bg-transparent py-4"
+            icon={<RobotIcon />}
+            title="No agent tokens yet"
+            description="Create one with a preset scope, then give it to your agent through the connect snippet above."
+          />
+        ) : (
+          <ResponsiveTable
+            rows={agentTokens}
+            columns={COLUMNS}
+            getRowId={(token) => token.id}
+            ariaLabel={t('tableLabels.agentTokens')}
+            getRowProps={(token) => ({
+              className: token.revoked_at ? 'opacity-60' : undefined,
+            })}
+            renderActions={(token) =>
+              token.revoked_at ? null : <RevokeTokenDialog token={token} />
+            }
+          />
+        )}
+      </CardContent>
+    </Card>
   )
 }

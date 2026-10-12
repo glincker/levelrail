@@ -82,7 +82,7 @@ export function BackupTargetTable({
   if (targets.length === 0) {
     return (
       <EmptyState
-        className="py-12"
+        className="gap-2 border-0 bg-transparent py-4"
         icon={<CloudArrowUpIcon className="size-5" />}
         title={t('backupTargetsPage.empty.title')}
         description={t('backupTargetsPage.empty.body')}

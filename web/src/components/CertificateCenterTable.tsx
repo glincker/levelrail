@@ -108,7 +108,7 @@ export function CertificateCenterTable({
   if (rows.length === 0) {
     return (
       <EmptyState
-        className="py-12"
+        className="gap-2 border-0 bg-transparent py-4"
         icon={<ShieldCheckIcon className="size-5" />}
         title={t('certificatesPage.empty.title')}
         description={t('certificatesPage.empty.body')}

@@ -116,7 +116,7 @@ export function NetworkShareTable({
   if (shares.length === 0) {
     return (
       <EmptyState
-        className="py-12"
+        className="gap-2 border-0 bg-transparent py-4"
         icon={<HardDrivesIcon className="size-5" />}
         title="No network shares"
         description="Add an NFS export or a CIFS/SMB share to mount as a Docker volume source, using Docker's own local-driver network passthrough."

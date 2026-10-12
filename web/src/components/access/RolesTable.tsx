@@ -24,6 +24,7 @@ export function RolesTable({
   if (roles.length === 0) {
     return (
       <EmptyState
+        className="gap-2 border-0 bg-transparent py-4"
         icon={<IdentificationBadgeIcon className="size-5" />}
         title={t('roles.empty.title')}
         description={t('roles.empty.description')}

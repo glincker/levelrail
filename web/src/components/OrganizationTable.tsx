@@ -31,7 +31,7 @@ export function OrganizationTable({
   if (organizations.length === 0) {
     return (
       <EmptyState
-        className="py-12"
+        className="gap-2 border-0 bg-transparent py-4"
         icon={<BuildingsIcon className="size-5" />}
         title="No organizations yet"
         description="Group related projects under an organization. A project with no organization is just as valid."
