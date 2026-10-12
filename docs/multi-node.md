@@ -154,7 +154,7 @@ Steps 1 and 2 above can be automated: instead of minting a token and running the
 <Tabs :items="['Dashboard', 'CLI']">
 <Tab value="Dashboard">
 
-Nodes page, **Add node**, then **Connect over SSH**.
+Nodes page, **Add node**, then **Connect over SSH**. After the host and port, the **Verify server** step shows the server's host key fingerprints; confirm one before the credential fields appear.
 
 </Tab>
 <Tab value="CLI">
@@ -167,12 +167,14 @@ levelrail-cli nodes ssh-provision \
 
 Use `--password` instead of `--key-file` for password auth (prompted without echo), `--port` for a non-default SSH port, and `--role build` for a build node.
 
+The command first prints the server's host key fingerprints and asks you to confirm before it reads any credential. Pass `--host-key-fingerprint SHA256:...` to pin it non-interactively (for scripts), or `--insecure-skip-host-key-check` to skip verification entirely (warned and audited).
+
 </Tab>
 </Tabs>
 
-`POST /api/v1/nodes/ssh-provision` accepts a host, port (default 22), username, and either a private key (optionally passphrase-protected) or a password. It mints a join token the same way, then works in the background:
+`POST /api/v1/nodes/ssh-provision` accepts a host, port (default 22), username, either a private key (optionally passphrase-protected) or a password, and the server's host key fingerprint. It mints a join token the same way, then works in the background:
 
-1. Connects over SSH and detects the OS, kernel architecture, and whether Docker and systemd are already present. Only Linux with systemd is supported (the same requirement `install.sh` has); an unsupported host fails here with a clear reason before anything is changed.
+1. Verifies the server's host key against the pinned fingerprint, then connects over SSH and detects the OS, kernel architecture, and whether Docker and systemd are already present. Only Linux with systemd is supported (the same requirement `install.sh` has); an unsupported host fails here with a clear reason before anything is changed.
 2. Installs Docker via `get.docker.com` if it's missing.
 3. Writes the agent's environment file and a systemd unit, then enables and starts it, the same steps cloud-init runs on a freshly created VM (see [Node provisioning](node-provisioning.md)), executed over the SSH session instead.
 4. Confirms the service actually stays active, surfacing the last `journalctl` lines as the failure reason if it doesn't.
@@ -181,9 +183,15 @@ The SSH credential (key or password) is held only in memory for this one call an
 
 Poll progress with `GET /api/v1/ssh-node-provisions/{id}` (CLI: `nodes ssh-provisions show <id>`), which also carries the accumulated install log and the detected OS/architecture. Status moves through `connecting` -> `detecting` -> `installing` -> `enrolling` -> `ready`, or `failed` with a reason. The dashboard wizard's SSH step shows the same stages plus a live log tail.
 
-::: warning No host key verification
-There is no `known_hosts` store or trust-on-first-use pinning yet: the client accepts whatever host key the target presents. Use this only against a machine you control, over a network path you trust enough to type a password or paste a key into.
-:::
+### Host key verification
+
+Credentials only go to a server whose host key the operator has seen (trust on first use with explicit confirmation):
+
+1. `POST /api/v1/nodes/ssh-provision/preflight` with `{"host": "...", "port": 22}` connects and reads the server's host keys without authenticating: the handshake is aborted right after key exchange, so no username, password, or key is ever sent. It returns each key's type and SHA256 fingerprint (`host_keys: [{"type": "ssh-ed25519", "fingerprint": "SHA256:..."}]`), the same format `ssh-keygen -l` prints.
+2. Compare it with the server itself: `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` (or your provider's console output).
+3. Send the confirmed value back as `host_key_fingerprint` on `POST /api/v1/nodes/ssh-provision`. The install refuses to authenticate to a server presenting any other key, failing with a reason that names both the expected and observed fingerprints. A fingerprint you already know (pinned out of band) works the same way without calling the preflight.
+
+The request is rejected with `400` when it carries neither a fingerprint nor `insecure_skip_host_key_check: true`. That explicit opt out restores the old accept-any-key behavior, returns a warning in the response's `warnings`, and writes an extra `node_ssh_provision.host_key_skipped` audit entry. The pinned fingerprint is stored with the provision (`host_key_fingerprint`, `host_key_verified` on `GET /api/v1/ssh-node-provisions/{id}`). Both routes need the `root` ability and are audited.
 
 ## Node health and heartbeat
 
@@ -678,6 +686,7 @@ This does not move databases or app streams onto the mesh, and auto-placement st
 | `GET` | `/api/v1/node-provisions` | `root` |
 | `GET` | `/api/v1/node-provisions/{id}` | `root` |
 | `POST` | `/api/v1/nodes/ssh-provision` | `root` |
+| `POST` | `/api/v1/nodes/ssh-provision/preflight` | `root` |
 | `GET` | `/api/v1/ssh-node-provisions` | `root` |
 | `GET` | `/api/v1/ssh-node-provisions/{id}` | `root` |
 | `GET` | `/api/v1/nodes/{id}/health` | `root` |
@@ -722,7 +731,7 @@ levelrail-cli nodes list [flags]
 levelrail-cli nodes get <id> [flags]
 levelrail-cli nodes delete <id> [flags]
 levelrail-cli nodes join-token [flags]
-levelrail-cli nodes ssh-provision --host ADDR --user NAME (--key-file PATH | --password) --name NAME [flags]
+levelrail-cli nodes ssh-provision --host ADDR --user NAME (--key-file PATH | --password) --name NAME [--host-key-fingerprint SHA256:... | --insecure-skip-host-key-check] [flags]
 levelrail-cli nodes ssh-provisions list|show <id> [flags]
 levelrail-cli nodes providers list|set-credential [flags]
 levelrail-cli nodes provision --provider NAME --region ID --size ID --name NAME [flags]

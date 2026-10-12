@@ -1121,7 +1121,7 @@ levelrail-cli nodes traffic [flags]
 levelrail-cli nodes providers list|set-credential [flags]
 levelrail-cli nodes provision --provider P --region R --size S --name NAME [flags]
 levelrail-cli nodes provisions list|show <id> [flags]
-levelrail-cli nodes ssh-provision --host HOST --user USER (--key-file FILE | --password PASS) --name NAME [flags]
+levelrail-cli nodes ssh-provision --host HOST --user USER (--key-file FILE | --password PASS) --name NAME [--host-key-fingerprint SHA256:... | --insecure-skip-host-key-check] [flags]
 levelrail-cli nodes ssh-provisions list|show <id> [flags]
 ```
 
