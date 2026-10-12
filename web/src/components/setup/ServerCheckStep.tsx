@@ -16,6 +16,7 @@ import {
   parseCapacity,
 } from '../../lib/setupReadiness'
 import { StepFooter } from './StepChrome'
+import { Display } from '@/components/ui/typography'
 import { Eyebrow } from './Eyebrow'
 import { ReadinessRing } from './ReadinessRing'
 import { CategoryRow } from './CategoryRow'
@@ -112,9 +113,9 @@ export function ServerCheckStep({ onContinue, pending }: StepProps) {
           />
           <div className="min-w-0 flex-1 space-y-1" aria-live="polite">
             <Eyebrow>{t('server.scoreLabel')}</Eyebrow>
-            <h3 className="text-2xl font-light tracking-tight text-foreground sm:text-3xl">
+            <Display as="h3" size="greeting">
               {headline}
-            </h3>
+            </Display>
             <p className="text-sm text-muted-foreground">{note}</p>
           </div>
           <Button

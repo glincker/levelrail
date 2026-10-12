@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { dashboardUrlQueryOptions } from '../../queries/dashboardUrl'
 import { SETUP_STEPS } from '../../lib/setupWizard'
 import type { SetupStepId, SetupStepMap } from '../../lib/setupWizard'
+import { Display } from '@/components/ui/typography'
 import { Eyebrow } from './Eyebrow'
 import { CopyValue } from './StepChrome'
 
@@ -74,11 +75,11 @@ export function DoneStep({
     <div className="space-y-6">
       <div className="space-y-1">
         <Eyebrow>{t('done.eyebrow')}</Eyebrow>
-        <h3 className="text-2xl font-light tracking-tight text-foreground">
+        <Display as="h3" size="greeting">
           {skipped === 0
             ? t('done.title')
             : t('done.titleSkipped', { count: skipped })}
-        </h3>
+        </Display>
         <p className="text-sm text-muted-foreground">{t('done.subtitle')}</p>
       </div>
 

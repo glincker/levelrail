@@ -39,7 +39,7 @@ const TILE_SIZE: Record<BrandTileSize, { box: string; mark: string }> = {
   xs: { box: 'size-5 rounded', mark: 'size-3.5' },
   sm: { box: 'size-8 rounded-md', mark: 'size-5' },
   md: { box: 'size-(--glinr-tile-size) rounded-lg', mark: 'size-6' },
-  lg: { box: 'size-(--glinr-hero-tile-size) rounded-xl', mark: 'size-7' },
+  lg: { box: 'size-(--glinr-hero-tile-size) rounded-lg', mark: 'size-7' },
 }
 
 export interface BrandTileProps {

@@ -1,7 +1,9 @@
-import type { ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { HelpLink } from '../HelpLink'
 import { Display, Eyebrow, Lede } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'
+
+const DESCRIPTION_LINE_PX = 24
 
 export type PageTemplateWidth = 'default' | 'wide' | 'full'
 
@@ -32,8 +34,8 @@ export interface PageTemplateProps {
   /** Page-level banners, rendered between the hero and the content. */
   banners?: ReactNode
   width?: PageTemplateWidth
-  /** 2xl by default; 3xl is for the dashboard greeting only. */
-  titleSize?: '2xl' | '3xl'
+  /** `page` (20px) by default; `greeting` (28px) is for the dashboard greeting only. */
+  titleSize?: 'page' | 'greeting'
   className?: string
   children?: ReactNode
 }
@@ -53,10 +55,23 @@ export function PageTemplate({
   tabs,
   banners,
   width = 'default',
-  titleSize = '2xl',
+  titleSize = 'page',
   className,
   children,
 }: PageTemplateProps) {
+  const descRef = useRef<HTMLDivElement>(null)
+  const [wrapped, setWrapped] = useState(false)
+  useLayoutEffect(() => {
+    const el = descRef.current
+    if (!el) return
+    const measure = () => setWrapped(el.offsetHeight > DESCRIPTION_LINE_PX)
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [description])
+
   const tile =
     logo ??
     (icon ? (
@@ -79,11 +94,25 @@ export function PageTemplate({
     >
       <header className="space-y-3">
         {breadcrumb ? <div>{breadcrumb}</div> : null}
-        <div className="flex flex-wrap items-start gap-3">
-          {tile}
+        <div
+          data-slot="page-hero"
+          data-wrapped={wrapped}
+          className={cn(
+            'flex flex-wrap gap-3',
+            wrapped ? 'items-start' : 'items-center',
+          )}
+        >
+          {tile ? (
+            <div
+              data-slot="page-hero-tile"
+              className={cn('shrink-0', wrapped && eyebrow && 'mt-5')}
+            >
+              {tile}
+            </div>
+          ) : null}
           <div className="min-w-0 flex-1 basis-64 space-y-1">
             {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <Display as="h1" size={titleSize} className="min-w-0 break-words">
                 {title}
               </Display>
@@ -92,10 +121,21 @@ export function PageTemplate({
                 <HelpLink path={helpPath} label={helpLabel} />
               ) : null}
             </div>
-            {description ? <Lede>{description}</Lede> : null}
+            {description ? (
+              <div ref={descRef}>
+                <Lede>{description}</Lede>
+              </div>
+            ) : null}
           </div>
           {actions ? (
-            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <div
+              data-slot="page-hero-actions"
+              className={cn(
+                'flex min-h-7 flex-wrap items-center gap-2 sm:ml-auto',
+                wrapped && 'self-start',
+                wrapped && eyebrow && 'mt-5',
+              )}
+            >
               {actions}
             </div>
           ) : null}

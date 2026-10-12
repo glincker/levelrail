@@ -8,6 +8,7 @@ import { useBrand } from '../../hooks/useBrand'
 import { BrandMarkGlyph } from '../BrandMarkGlyph'
 import { SETUP_STEPS } from '../../lib/setupWizard'
 import type { SetupStepId } from '../../lib/setupWizard'
+import { Display } from '@/components/ui/typography'
 import { Eyebrow } from './Eyebrow'
 import { SaveIndicator } from './SaveIndicator'
 
@@ -42,13 +43,13 @@ export function SetupShell({
     <div className="mx-auto max-w-5xl space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-card p-2 text-base font-bold text-foreground">
+          <span className="flex size-(--glinr-hero-tile-size) shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-card p-2 text-base font-bold text-foreground">
             <BrandMarkGlyph svgWrapperClassName="flex size-full items-center justify-center [&_svg]:size-full" />
           </span>
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold tracking-tight text-foreground">
+            <Display as="h1" size="page" className="truncate">
               {t('shell.title', { name: brand.Name })}
-            </h1>
+            </Display>
             <p className="text-sm text-muted-foreground">
               {t('shell.subtitle')}
             </p>
@@ -113,12 +114,9 @@ export function SetupShell({
                 total: SETUP_STEPS.length,
               })}
             </Eyebrow>
-            <h2
-              id="setup-step-title"
-              className="text-2xl font-light tracking-tight text-foreground"
-            >
+            <Display as="h2" size="greeting" id="setup-step-title">
               {t(`steps.${current}.title`)}
-            </h2>
+            </Display>
           </div>
           <div key={current} className="kit-enter">
             {children}

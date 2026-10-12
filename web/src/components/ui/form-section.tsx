@@ -36,7 +36,7 @@ export function FormSection({
     >
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <Display as="h2" size="lg">
+          <Display as="h2" size="section">
             {title}
           </Display>
           {badge}

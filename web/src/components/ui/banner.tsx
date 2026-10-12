@@ -83,7 +83,7 @@ export function Banner({
       </span>
       <div className="min-w-0 flex-1 space-y-0.5">
         {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-        <Display as="h3" size="lg">
+        <Display as="h3" size="banner">
           {title}
         </Display>
         {children ? (
