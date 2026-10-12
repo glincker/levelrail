@@ -61,7 +61,7 @@ export function OrphanReaperCard() {
         {report.findings.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('orphans.empty')}</p>
         ) : (
-          <ul className="divide-y divide-border rounded-lg border border-border">
+          <ul className="divide-y divide-border">
             {shown.map((f) => (
               <li
                 key={`${f.kind}:${f.node_id}:${f.name}`}

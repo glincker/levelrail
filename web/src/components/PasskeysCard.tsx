@@ -57,7 +57,7 @@ export function PasskeysCard() {
       </CardHeader>
       <CardContent className="space-y-3">
         {passkeys.length > 0 ? (
-          <ul className="divide-y divide-border rounded-lg border border-border">
+          <ul className="divide-y divide-border">
             {passkeys.map((p) => (
               <li
                 key={p.id}

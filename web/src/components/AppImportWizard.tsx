@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
@@ -56,15 +57,14 @@ function Stepper({
 function SafeToSkip() {
   const { t } = useTranslation('migration')
   return (
-    <div className="rounded-md border bg-muted/30 p-3 text-sm">
-      <p className="font-medium">{t('appImport.safe.title')}</p>
-      <ul className="mt-1 list-disc space-y-0.5 pl-5 text-muted-foreground">
+    <Banner variant="info" title={t('appImport.safe.title')}>
+      <ul className="list-disc space-y-0.5 pl-5">
         <li>{t('appImport.safe.readOnly')}</li>
         <li>{t('appImport.safe.staged')}</li>
         <li>{t('appImport.safe.volumes')}</li>
         <li>{t('appImport.safe.dns')}</li>
       </ul>
-    </div>
+    </Banner>
   )
 }
 

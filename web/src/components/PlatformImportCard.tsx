@@ -190,7 +190,7 @@ export function PlatformImportCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Import from another platform</CardTitle>
+        <CardTitle>Connect the source platform</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={onDiscover} className="space-y-4">
