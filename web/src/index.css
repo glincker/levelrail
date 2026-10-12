@@ -430,3 +430,12 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Density: compact is the :root default in glinr-tokens.css; comfortable swaps in the paired tokens. */
+[data-density='comfortable'] {
+  --glinr-hero-tile-size: var(--glinr-hero-tile-size-comfortable);
+  --glinr-page-gap: var(--glinr-page-gap-comfortable);
+  --glinr-card-pad: var(--glinr-card-pad-comfortable);
+  --glinr-section-pad: var(--glinr-section-pad-comfortable);
+  --glinr-banner-pad: var(--glinr-banner-pad-comfortable);
+}

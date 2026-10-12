@@ -181,6 +181,11 @@
       "$description": "16px, the base gap.",
       "$extensions": { "glinr": { "stability": "experimental" } }
     },
+    "5": {
+      "$value": "1.25rem",
+      "$description": "20px, compact page gap.",
+      "$extensions": { "glinr": { "stability": "experimental" } }
+    },
     "6": {
       "$value": "1.5rem",
       "$description": "24px, page gap.",
@@ -202,9 +207,60 @@
       "$extensions": { "glinr": { "stability": "experimental" } }
     },
     "page-gap": {
+      "$value": "{space.5}",
+      "$description": "Vertical gap between page sections (compact default).",
+      "$extensions": {
+        "glinr": { "name": "page-gap", "stability": "stable" }
+      }
+    },
+    "page-gap-comfortable": {
       "$value": "{space.6}",
-      "$description": "Vertical gap between page sections.",
-      "$extensions": { "glinr": { "name": "page-gap", "stability": "stable" } }
+      "$description": "Page gap when data-density is comfortable.",
+      "$extensions": {
+        "glinr": { "name": "page-gap-comfortable", "stability": "stable" }
+      }
+    },
+    "card-pad": {
+      "$value": "{space.4}",
+      "$description": "Card and panel padding (compact default).",
+      "$extensions": {
+        "glinr": { "name": "card-pad", "stability": "stable" }
+      }
+    },
+    "card-pad-comfortable": {
+      "$value": "{space.6}",
+      "$description": "Card padding when data-density is comfortable.",
+      "$extensions": {
+        "glinr": { "name": "card-pad-comfortable", "stability": "stable" }
+      }
+    },
+    "section-pad": {
+      "$value": "{space.4}",
+      "$description": "Vertical padding of a form section (compact default).",
+      "$extensions": {
+        "glinr": { "name": "section-pad", "stability": "stable" }
+      }
+    },
+    "section-pad-comfortable": {
+      "$value": "{space.6}",
+      "$description": "Form section padding when data-density is comfortable.",
+      "$extensions": {
+        "glinr": { "name": "section-pad-comfortable", "stability": "stable" }
+      }
+    },
+    "banner-pad": {
+      "$value": "{space.3}",
+      "$description": "Banner padding (compact default).",
+      "$extensions": {
+        "glinr": { "name": "banner-pad", "stability": "stable" }
+      }
+    },
+    "banner-pad-comfortable": {
+      "$value": "{space.4}",
+      "$description": "Banner padding when data-density is comfortable.",
+      "$extensions": {
+        "glinr": { "name": "banner-pad-comfortable", "stability": "stable" }
+      }
     }
   },
   "size": {
@@ -215,10 +271,17 @@
       "$extensions": { "glinr": { "name": "tile-size", "stability": "stable" } }
     },
     "hero-tile": {
-      "$value": "3rem",
-      "$description": "Brand tile edge in a page hero.",
+      "$value": "2.5rem",
+      "$description": "Brand tile edge in a page hero (compact default).",
       "$extensions": {
         "glinr": { "name": "hero-tile-size", "stability": "stable" }
+      }
+    },
+    "hero-tile-comfortable": {
+      "$value": "3rem",
+      "$description": "Hero tile edge when data-density is comfortable.",
+      "$extensions": {
+        "glinr": { "name": "hero-tile-size-comfortable", "stability": "stable" }
       }
     }
   },

@@ -36,6 +36,7 @@ import {
 import { DockerDiskUsageCard } from '@/components/settings/DockerDiskUsageCard'
 import { CertificatesCard } from '@/components/settings/CertificatesCard'
 import { MasterKeyCard } from '@/components/settings/MasterKeyCard'
+import { DensityCard } from '@/components/settings/DensityCard'
 
 // Platform info comes from the already-warm /api/v1/brand cache via
 // useBrand() (primed by routes/__root.tsx's loader). Build version lives
@@ -114,7 +115,7 @@ function GeneralSettingsPage() {
 
   return (
     <GeneralPageShell>
-      <div className="space-y-6">
+      <div className="space-y-(--glinr-page-gap)">
         <Card className="rounded-[var(--glinui-radius-lg)]">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -220,6 +221,8 @@ function GeneralSettingsPage() {
             ) : null}
           </CardContent>
         </Card>
+
+        <DensityCard />
 
         <DiskUsageCard status={status} />
 

@@ -632,7 +632,7 @@
     "connectedCount_other": "{{count}} providers connected",
     "banner": {
       "title": "Register the callback URL with each provider first",
-      "body": "Every provider asks for a redirect (callback) URL when you create its OAuth app. Copy the URL shown on its card exactly, including the scheme, or sign-in fails with a redirect mismatch."
+      "body": "Every provider asks for a redirect (callback) URL when you create its OAuth app. Copy the URL shown in its row exactly, including the scheme, or sign-in fails with a redirect mismatch."
     },
     "providers": {
       "google": "Google",
@@ -651,6 +651,12 @@
     "callbackCopyFailed": "Could not copy. Select the URL and copy it by hand.",
     "callbackLabel": "Callback URL",
     "copyCallback": "Copy callback URL",
+    "copyCallbackFor": "Copy {{provider}} callback URL",
+    "configure": "Configure",
+    "sheet": {
+      "title": "Configure {{provider}}",
+      "description": "Credentials and who may sign in with this provider."
+    },
     "clientId": "Client ID",
     "credentials": {
       "title": "Credentials",
@@ -723,6 +729,12 @@
     "title": "General",
     "description": "What this instance is running on, how much disk it has left, and which core features are configured.",
     "help": "Troubleshooting guide",
+    "density": {
+      "title": "Interface density",
+      "description": "Compact fits more on screen. Comfortable adds spacing. Stored in this browser only.",
+      "compact": "Compact",
+      "comfortable": "Comfortable"
+    },
     "status": {
       "healthy": "Healthy",
       "attention": "Needs attention"

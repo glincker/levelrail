@@ -69,7 +69,7 @@ export function Banner({
       role={v.role}
       data-variant={variant}
       className={cn(
-        'flex items-start gap-3 rounded-lg border p-4',
+        'flex items-start gap-3 rounded-lg border p-(--glinr-banner-pad)',
         tone.border,
         tone.soft,
         className,
@@ -81,7 +81,7 @@ export function Banner({
       >
         {icon ?? v.icon}
       </span>
-      <div className="min-w-0 flex-1 space-y-1">
+      <div className="min-w-0 flex-1 space-y-0.5">
         {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
         <Display as="h3" size="lg">
           {title}

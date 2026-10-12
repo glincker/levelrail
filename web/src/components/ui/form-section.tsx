@@ -30,11 +30,11 @@ export function FormSection({
   return (
     <section
       className={cn(
-        'grid gap-x-10 gap-y-4 border-t border-border py-6 first:border-t-0 first:pt-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]',
+        'grid gap-x-8 gap-y-3 border-t border-border py-(--glinr-section-pad) first:border-t-0 first:pt-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]',
         className,
       )}
     >
-      <div className="space-y-2">
+      <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <Display as="h2" size="lg">
             {title}
@@ -44,7 +44,7 @@ export function FormSection({
         {description ? <Lede>{description}</Lede> : null}
         {hint ? <div className="text-sm">{hint}</div> : null}
       </div>
-      <div className="min-w-0 space-y-4">
+      <div className="min-w-0 space-y-3">
         {children}
         {error ? (
           <p role="alert" className="text-sm text-tone-danger">
