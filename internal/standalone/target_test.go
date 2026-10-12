@@ -78,6 +78,15 @@ func (f fakeResolver) LookupNetIP(_ context.Context, _, host string) ([]netip.Ad
 	return nil, errors.New("no such host")
 }
 
+func TestAssessRejectsOutOfRangePort(t *testing.T) {
+	for _, port := range []int{0, -1, 65536, 1<<16 + 3000} {
+		_, err := Assess(context.Background(), Target{Kind: KindPort, Host: "127.0.0.1", Port: port}, Env{})
+		if !errors.Is(err, ErrInvalidTarget) {
+			t.Errorf("port %d: err = %v, want ErrInvalidTarget", port, err)
+		}
+	}
+}
+
 func TestAssess(t *testing.T) {
 	env := Env{
 		Resolver: fakeResolver{

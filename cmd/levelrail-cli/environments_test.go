@@ -17,7 +17,7 @@ import (
 func enableGlobalEnvironments(t *testing.T) {
 	t.Helper()
 	experimental.Set(experimental.GlobalEnvironments)
-	t.Cleanup(experimental.Reset)
+	restoreAllExperimental(t)
 }
 
 func TestRun_EnvironmentsList(t *testing.T) {
@@ -160,7 +160,7 @@ func TestRun_AppsAndDatabasesListEnvironmentFilter(t *testing.T) {
 }
 
 func TestEnvironmentsCommandsGatedByFlag(t *testing.T) {
-	t.Cleanup(experimental.Reset)
+	restoreAllExperimental(t)
 	experimental.Set()
 	for _, args := range [][]string{{"environments", "list"}, {"apps", "move-env", "a", "b"}, {"databases", "move-env", "a", "b"}} {
 		var out, errb bytes.Buffer

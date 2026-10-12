@@ -16,6 +16,13 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+// restoreAllExperimental puts back TestMain's all-on baseline; experimental.Reset
+// would drop to the empty environment and gate every later test.
+func restoreAllExperimental(t *testing.T) {
+	t.Helper()
+	t.Cleanup(func() { experimental.Set(experimental.All()...) })
+}
+
 func TestExperimentalCommandsGated(t *testing.T) {
 	tests := []struct {
 		args    []string
