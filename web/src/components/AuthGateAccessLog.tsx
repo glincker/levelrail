@@ -164,7 +164,9 @@ export function AuthGateAccessLog({
       ) : (
         <div
           role="table"
+          aria-label={t('authGate.accessLog.title')}
           aria-rowcount={events.length + 1}
+          tabIndex={0}
           className="overflow-x-auto rounded-md border border-border"
         >
           <div className="min-w-[44rem]">

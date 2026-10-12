@@ -14,18 +14,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
 import {
   teamInvitesQueryOptions,
   useCreateTeamInvite,
   useRevokeTeamInvite,
+  type TeamInviteResource,
   type TeamResource,
   type TeamRole,
 } from '../../queries/teams'
@@ -64,6 +61,34 @@ export function TeamInvitesCard({
       title: t('errors.generic', { message: e.message }),
       type: 'error',
     })
+
+  const columns: ResponsiveColumn<TeamInviteResource>[] = [
+    {
+      id: 'email',
+      header: t('invites.email'),
+      primary: true,
+      cell: (inv) => (
+        <span className="font-mono text-xs break-all">
+          {inv.email || t('invites.link')}
+        </span>
+      ),
+    },
+    {
+      id: 'role',
+      header: t('invites.role'),
+      priority: 2,
+      cell: (inv) => t(`roles.${inv.role}`),
+    },
+    {
+      id: 'status',
+      header: t('invites.statusHeader'),
+      cell: (inv) => (
+        <span className="text-xs text-muted-foreground">
+          {t(`invites.status.${inv.status}`)}
+        </span>
+      ),
+    },
+  ]
 
   return (
     <Card>
@@ -167,49 +192,33 @@ export function TeamInvitesCard({
         {invites.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('invites.empty')}</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('invites.email')}</TableHead>
-                <TableHead>{t('invites.role')}</TableHead>
-                <TableHead>{t('members.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invites.map((inv) => (
-                <TableRow key={inv.id}>
-                  <TableCell className="font-mono text-xs">
-                    {inv.email || t('invites.link')}
-                  </TableCell>
-                  <TableCell>{t(`roles.${inv.role}`)}</TableCell>
-                  <TableCell className="space-x-2">
-                    <span className="text-xs text-muted-foreground">
-                      {t(`invites.status.${inv.status}`)}
-                    </span>
-                    {inv.status === 'pending' && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          revoke.mutate(inv.id, {
-                            onSuccess: () =>
-                              toast.add({
-                                title: t('invites.revoked'),
-                                type: 'success',
-                              }),
-                            onError: fail,
-                          })
-                        }}
-                      >
-                        {t('invites.revoke')}
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <ResponsiveTable
+            rows={invites}
+            columns={columns}
+            getRowId={(inv) => inv.id}
+            ariaLabel={t('invites.tableLabel')}
+            renderActions={(inv) =>
+              inv.status === 'pending' ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    revoke.mutate(inv.id, {
+                      onSuccess: () =>
+                        toast.add({
+                          title: t('invites.revoked'),
+                          type: 'success',
+                        }),
+                      onError: fail,
+                    })
+                  }}
+                >
+                  {t('invites.revoke')}
+                </Button>
+              ) : null
+            }
+          />
         )}
       </CardContent>
     </Card>

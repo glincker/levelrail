@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowsClockwiseIcon,
   ProhibitIcon,
@@ -6,13 +7,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
 import { InfoTip, RelativeTime, StatusPill, type Tone } from '@/components/kit'
 import {
@@ -47,6 +44,64 @@ function modelsLabel(k: ModelKey): string {
   return k.allow_models.length > 0 ? k.allow_models.join(', ') : 'all'
 }
 
+const COLUMNS: ResponsiveColumn<ModelKey>[] = [
+  {
+    id: 'name',
+    header: 'Name',
+    primary: true,
+    cell: (k) => (
+      <div className="text-xs">
+        <div className="font-medium">{k.name}</div>
+        <code className="font-mono text-muted-foreground">{k.key_prefix}</code>
+        {k.created_by ? (
+          <div className="text-muted-foreground">by {k.created_by}</div>
+        ) : null}
+      </div>
+    ),
+  },
+  {
+    id: 'status',
+    header: 'Status',
+    cell: (k) => (
+      <StatusPill tone={STATUS_TONE[k.status]} label={k.status} size="sm" />
+    ),
+  },
+  {
+    id: 'models',
+    header: 'Models',
+    priority: 2,
+    cell: (k) => (
+      <span className="block truncate text-xs">{modelsLabel(k)}</span>
+    ),
+  },
+  {
+    id: 'limits',
+    header: 'Limits',
+    priority: 2,
+    cell: (k) => <span className="text-xs">{limitLabel(k)}</span>,
+  },
+  {
+    id: 'lastUsed',
+    header: 'Last used',
+    priority: 3,
+    cell: (k) => (
+      <span className="text-xs">
+        {k.last_used_at ? <RelativeTime at={k.last_used_at} /> : 'never'}
+      </span>
+    ),
+  },
+  {
+    id: 'expires',
+    header: 'Expires',
+    priority: 3,
+    cell: (k) => (
+      <span className="text-xs">
+        {k.expires_at ? <RelativeTime at={k.expires_at} /> : 'never'}
+      </span>
+    ),
+  },
+]
+
 interface PendingAction {
   action: KeyAction
   key: ModelKey
@@ -59,6 +114,7 @@ export function ModelKeysPanel({
   modelName: string
   baseUrl?: string
 }) {
+  const { t } = useTranslation('common')
   const keys = useModelKeys(modelName)
   const revoke = useRevokeModelKey(modelName)
   const rotate = useRotateModelKey(modelName)
@@ -112,94 +168,45 @@ export function ModelKeysPanel({
       ) : keys.error ? (
         <p className="text-sm text-destructive">{keys.error.message}</p>
       ) : (
-        <Table className="text-xs">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Models</TableHead>
-              <TableHead>Limits</TableHead>
-              <TableHead>Last used</TableHead>
-              <TableHead>Expires</TableHead>
-              <TableHead>
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {keys.data.map((k) => {
-              const inactive = k.status === 'revoked' || k.status === 'expired'
-              return (
-                <TableRow key={k.id}>
-                  <TableCell>
-                    <div className="font-medium">{k.name}</div>
-                    <code className="font-mono text-muted-foreground">
-                      {k.key_prefix}
-                    </code>
-                    {k.created_by ? (
-                      <div className="text-muted-foreground">
-                        by {k.created_by}
-                      </div>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>
-                    <StatusPill
-                      tone={STATUS_TONE[k.status]}
-                      label={k.status}
-                      size="sm"
-                    />
-                  </TableCell>
-                  <TableCell className="max-w-32 truncate">
-                    {modelsLabel(k)}
-                  </TableCell>
-                  <TableCell>{limitLabel(k)}</TableCell>
-                  <TableCell>
-                    {k.last_used_at ? (
-                      <RelativeTime at={k.last_used_at} />
-                    ) : (
-                      'never'
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {k.expires_at ? (
-                      <RelativeTime at={k.expires_at} />
-                    ) : (
-                      'never'
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right whitespace-nowrap">
-                    {inactive || k.status === 'rotating' ? null : (
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Rotate key ${k.name}`}
-                        title="Rotate, old key keeps working for the grace window"
-                        onClick={() => {
-                          setConfirm({ action: 'rotate', key: k })
-                        }}
-                      >
-                        <ArrowsClockwiseIcon aria-hidden="true" />
-                      </Button>
-                    )}
-                    {k.status === 'revoked' ? null : (
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Revoke key ${k.name}`}
-                        title="Revoke now"
-                        onClick={() => {
-                          setConfirm({ action: 'revoke', key: k })
-                        }}
-                      >
-                        <ProhibitIcon aria-hidden="true" />
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
+        <ResponsiveTable
+          rows={keys.data}
+          columns={COLUMNS}
+          getRowId={(k) => k.id}
+          ariaLabel={t('tableLabels.modelKeys')}
+          renderActions={(k) => {
+            const inactive = k.status === 'revoked' || k.status === 'expired'
+            return (
+              <span className="flex items-center whitespace-nowrap">
+                {inactive || k.status === 'rotating' ? null : (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Rotate key ${k.name}`}
+                    title="Rotate, old key keeps working for the grace window"
+                    onClick={() => {
+                      setConfirm({ action: 'rotate', key: k })
+                    }}
+                  >
+                    <ArrowsClockwiseIcon aria-hidden="true" />
+                  </Button>
+                )}
+                {k.status === 'revoked' ? null : (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Revoke key ${k.name}`}
+                    title="Revoke now"
+                    onClick={() => {
+                      setConfirm({ action: 'revoke', key: k })
+                    }}
+                  >
+                    <ProhibitIcon aria-hidden="true" />
+                  </Button>
+                )}
+              </span>
+            )
+          }}
+        />
       )}
       {confirm ? (
         <ModelKeyConfirmDialog

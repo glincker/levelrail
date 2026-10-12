@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DomainRow } from './DomainRow'
+import { DomainsTable } from './DomainsTable'
 import domainsEn from '../locales/en/domains.json'
 import type { Domain } from '../queries/domains'
 
@@ -60,13 +60,18 @@ function renderRow(domain: Domain) {
   render(
     <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={queryClient}>
-        <DomainRow domain={domain} />
+        <DomainsTable
+          domains={[domain]}
+          certByDomain={new Map()}
+          appCount={1}
+          onAdd={() => undefined}
+        />
       </QueryClientProvider>
     </I18nextProvider>,
   )
 }
 
-describe('DomainRow', () => {
+describe('DomainsTable rows', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
   })

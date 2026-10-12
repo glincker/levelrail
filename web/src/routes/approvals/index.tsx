@@ -1,15 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { GavelIcon } from '@phosphor-icons/react/dist/ssr'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Badge } from '@/components/ui/badge'
@@ -30,7 +27,10 @@ import {
   useDeployApprovals,
   useRejectDeployApproval,
 } from '../../queries/deployApprovals'
-import type { DeployApprovalStatus } from '../../types/deployApproval'
+import type {
+  DeployApprovalResource,
+  DeployApprovalStatus,
+} from '../../types/deployApproval'
 import { ApiError } from '../../lib/apiError'
 
 // Cross-app operational queue for the two-person approval gate on a
@@ -76,7 +76,67 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()
 }
 
+const COLUMNS: ResponsiveColumn<DeployApprovalResource>[] = [
+  {
+    id: 'service',
+    header: 'Service',
+    primary: true,
+    cell: (a) => (
+      <span>
+        <Link
+          to="/apps/$name/overview"
+          params={{ name: a.service_name }}
+          className="text-foreground underline-offset-2 hover:underline"
+        >
+          {a.service_name}
+        </Link>
+        {a.source_service_name ? (
+          <span className="ml-1 text-xs text-muted-foreground">
+            from {a.source_service_name}
+          </span>
+        ) : null}
+      </span>
+    ),
+  },
+  {
+    id: 'action',
+    header: 'Action',
+    priority: 2,
+    cell: (a) => <span className="capitalize">{a.action}</span>,
+  },
+  {
+    id: 'image',
+    header: 'Image',
+    priority: 2,
+    cell: (a) => <span className="font-mono text-xs break-all">{a.image}</span>,
+  },
+  {
+    id: 'status',
+    header: 'Status',
+    cell: (a) => (
+      <Badge variant={statusBadgeVariant(a.status)}>{a.status}</Badge>
+    ),
+  },
+  {
+    id: 'requestedBy',
+    header: 'Requested by',
+    priority: 3,
+    cell: (a) => a.requested_by_name,
+  },
+  {
+    id: 'created',
+    header: 'Created',
+    priority: 3,
+    cell: (a) => (
+      <span className="text-sm text-muted-foreground">
+        {formatDate(a.created_at)}
+      </span>
+    ),
+  },
+]
+
 function DeployApprovalsPage() {
+  const { t } = useTranslation('common')
   useEnvironmentScope()
   const [status, setStatus] = useState('pending')
   const { data: approvals } = useDeployApprovals(status)
@@ -174,81 +234,39 @@ function DeployApprovalsPage() {
           />
         )
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Service</TableHead>
-              <TableHead>Action</TableHead>
-              <TableHead>Image</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Requested by</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {approvals.map((a) => (
-              <TableRow key={a.id}>
-                <TableCell>
-                  <Link
-                    to="/apps/$name/overview"
-                    params={{ name: a.service_name }}
-                    className="text-foreground underline-offset-2 hover:underline"
-                  >
-                    {a.service_name}
-                  </Link>
-                  {a.source_service_name ? (
-                    <span className="ml-1 text-xs text-muted-foreground">
-                      from {a.source_service_name}
-                    </span>
-                  ) : null}
-                </TableCell>
-                <TableCell className="capitalize">{a.action}</TableCell>
-                <TableCell className="font-mono text-xs">{a.image}</TableCell>
-                <TableCell>
-                  <Badge variant={statusBadgeVariant(a.status)}>
-                    {a.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>{a.requested_by_name}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {formatDate(a.created_at)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {a.status === 'pending' ? (
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={actingID === a.id}
-                        onClick={() => handleReject(a.id)}
-                      >
-                        Reject
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={actingID === a.id}
-                        onClick={() =>
-                          handleApprove(a.id, a.image, a.service_name)
-                        }
-                      >
-                        Approve
-                      </Button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">
-                      {a.decided_at
-                        ? `by ${a.approved_by_name ?? 'unknown'}`
-                        : ''}
-                    </span>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ResponsiveTable
+          rows={approvals}
+          columns={COLUMNS}
+          getRowId={(a) => a.id}
+          ariaLabel={t('tableLabels.approvals')}
+          renderActions={(a) =>
+            a.status === 'pending' ? (
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={actingID === a.id}
+                  onClick={() => handleReject(a.id)}
+                >
+                  Reject
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={actingID === a.id}
+                  onClick={() => handleApprove(a.id, a.image, a.service_name)}
+                >
+                  Approve
+                </Button>
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                {a.decided_at ? `by ${a.approved_by_name ?? 'unknown'}` : ''}
+              </span>
+            )
+          }
+        />
       )}
 
       {approve.isError || reject.isError ? (
