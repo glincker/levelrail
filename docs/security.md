@@ -175,7 +175,7 @@ Stored certificates from other CAs are purged only when the configured CA change
 </Accordion>
 <Accordion title="Bind mounts">
 
-In addition to `/etc`, `/root` and the Docker socket, `/run`, `/dev`, the control plane and agent data directories, and any parent directory that would contain a protected path (`/var`, `/var/lib`) are refused. Paths are checked lexically: a symlink on the host that points into a protected path is not followed, so do not create such symlinks inside a directory you let apps mount.
+In addition to `/etc`, `/root` and the Docker socket, `/run`, `/dev`, the directories that hold executables (`/bin`, `/sbin`, `/lib`, `/usr/bin`, `/usr/local/bin` and similar), `/var/spool/cron`, the control plane and agent data directories (including a custom `APP_DATA_DIR`), and any parent directory that would contain a protected path (`/var`, `/var/lib`) are refused. Paths are checked lexically: a symlink on the host that points into a protected path is not followed, so do not create such symlinks inside a directory you let apps mount.
 
 </Accordion>
 <Accordion title="Registry port">
