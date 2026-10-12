@@ -373,6 +373,7 @@
     "latestEdge": "A newer edge build is available: {{version}}",
     "upToDate": "You're on the latest version.",
     "upToDateEdge": "You're on the latest edge build.",
+    "edgeHostBinary": "Edge is a container image channel. This control plane runs as a host binary, so it cannot follow edge.",
     "none": "No releases published yet.",
     "viewRelease": "View release",
     "viewCommit": "View commit",
@@ -386,7 +387,7 @@
     "recreate": "Recreate the container",
     "compose": "Or pin it in your compose file",
     "binaryTitle": "Edge cannot be installed on this host",
-    "binaryBody": "This control plane runs as a host binary, so edge builds are not installable here. Switch to a channel that ships binaries.",
+    "binaryBody": "Edge builds cannot be installed on a host binary. Switch to a channel that ships signed binaries.",
     "switchTo": "Switch to {{channel}}",
     "switched": "Channel switched to {{channel}}.",
     "commit": "Commit {{commit}}"

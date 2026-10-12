@@ -1,14 +1,28 @@
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowCircleUpIcon,
   ArrowSquareOutIcon,
   CheckCircleIcon,
+  InfoIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import type { UpdateStatus } from '../../queries/updates'
+import { preflightQueryOptions, type UpdateStatus } from '../../queries/updates'
 
 export function UpdateStatusRow({ status }: { status: UpdateStatus }) {
   const { t } = useTranslation('updates')
+  const preflight = useQuery(preflightQueryOptions())
   const edge = status.release_kind === 'edge_image'
+  const hostBinaryEdge = edge && preflight.data?.edge?.installable === false
+
+  if (hostBinaryEdge) {
+    return (
+      <div className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+        <InfoIcon className="size-4" />
+        {t('version.edgeHostBinary')}
+      </div>
+    )
+  }
+
   if (status.latest_version === null) {
     return <p className="text-sm text-muted-foreground">{t('version.none')}</p>
   }
@@ -30,19 +44,14 @@ export function UpdateStatusRow({ status }: { status: UpdateStatus }) {
           version: status.latest_version,
         })}
       </div>
-      {edge && status.image ? (
-        <p className="font-mono text-xs text-muted-foreground">
-          {t('version.image', { image: status.image })}
-        </p>
-      ) : null}
-      {status.release_url && (
+      {!edge && status.release_url && (
         <a
           href={status.release_url}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
         >
-          {edge ? t('version.viewCommit') : t('version.viewRelease')}
+          {t('version.viewRelease')}
           <ArrowSquareOutIcon className="size-3.5" />
         </a>
       )}

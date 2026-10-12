@@ -228,7 +228,7 @@ function UpdatesSettingsPage() {
           <CardDescription>{t('preflight.cardDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <UpgradePreflight />
+          <UpgradePreflight hideEdgeGuidance />
         </CardContent>
       </Card>
 

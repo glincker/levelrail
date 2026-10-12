@@ -92,7 +92,8 @@ export function UpgradeNow() {
     )
   }
   const pre = preflight.data
-  if (!pre || !pre.update_available) return null
+  const hostBinaryEdge = pre?.edge?.installable === false
+  if (!pre || (!pre.update_available && !hostBinaryEdge)) return null
 
   if (active) {
     return (
@@ -121,7 +122,10 @@ export function UpgradeNow() {
             serverTimezone={schedule.data.server_timezone ?? 'UTC'}
           />
         ) : null}
-        <EdgeUpdateGuidance edge={pre.edge} updateAvailable />
+        <EdgeUpdateGuidance
+          edge={pre.edge}
+          updateAvailable={pre.update_available}
+        />
       </div>
     )
   }
