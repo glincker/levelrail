@@ -11,7 +11,7 @@
   "background": {
     "color": {
       "light": "#ffffff",
-      "dark": "#050709"
+      "dark": "#000000"
     }
   },
   "favicon": "/public/favicon.svg",

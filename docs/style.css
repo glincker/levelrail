@@ -9,8 +9,8 @@
   --lr-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --lr-r: 12px;
   /* Surfaces, ring, sheen and shadow (dark values, light overrides below). */
-  --lr-face: #0c1114;
-  --lr-face-2: #12191d;
+  --lr-face: #0e0f11;
+  --lr-face-2: #141617;
   --lr-text: #cfcfd3;
   --lr-link: #58b1ce;
   --lr-line: rgba(255, 255, 255, 0.08);
@@ -35,7 +35,7 @@ html:not(.dark) {
 }
 
 /* ---------- Canvas and grain glow ---------- */
-html.dark body { background-color: #050709; }
+html.dark body { background-color: #000; }
 body { position: relative; font-feature-settings: "cv11", "ss03"; -webkit-font-smoothing: antialiased; }
 /* The glow sits behind everything (z-index -1 under an isolated body). Two layers: a soft wash and the same
    wash masked by thresholded noise so it dissolves into dots, a soft rail-colored wash. */
@@ -79,7 +79,7 @@ code, pre, kbd, samp { font-family: var(--lr-mono) !important; /* Mintlify sets 
 html.dark #content-area :not(pre) > code { color: #e4e4e7; }
 .code-block {
   border-radius: var(--lr-r); border: 1px solid transparent; box-shadow: var(--lr-shadow);
-  background: var(--lr-sheen) padding-box, linear-gradient(#070b0d, #070b0d) padding-box, var(--lr-ring) border-box;
+  background: var(--lr-sheen) padding-box, linear-gradient(#08090a, #08090a) padding-box, var(--lr-ring) border-box;
 }
 .code-block-background, .code-block > div { border-radius: var(--lr-r); background-color: transparent; }
 .code-block [data-component-part="code-block-root"], .code-block pre { background: transparent; }
