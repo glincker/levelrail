@@ -22,11 +22,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
-import { BrandLogoBadge } from './BrandLogoBadge'
-import {
-  logoIdForStoragePreset,
-  STORAGE_PRESET_LABEL,
-} from '../lib/storageProviders'
+import { BrandTile } from './BrandLogoBadge'
+import { STORAGE_PRESET_LABEL } from '../lib/storageProviders'
+import { storagePresetBrand } from '../lib/providerBrands'
 import {
   useDeleteStorageDestination,
   useTestStorageDestination,
@@ -171,9 +169,10 @@ export function StorageDestinationTable({
       priority: 2,
       cell: (d) => (
         <Badge variant="outline" className="gap-1.5">
-          <BrandLogoBadge
-            logoId={logoIdForStoragePreset(d.preset)}
-            className="size-4 p-px"
+          <BrandTile
+            name={storagePresetBrand(d.preset)}
+            label={STORAGE_PRESET_LABEL[d.preset]}
+            size="xs"
           />
           {STORAGE_PRESET_LABEL[d.preset]}
         </Badge>

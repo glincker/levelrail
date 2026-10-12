@@ -1,23 +1,11 @@
-import { useState } from 'react'
-import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useTranslation } from 'react-i18next'
+import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { toast } from '@/components/ui/toast'
 import { useDeleteFeatureFlag } from '../queries/featureFlags'
 import type { FeatureFlag } from '../types/featureFlags'
 
-// One flag's delete action, mirroring DeleteScheduledTaskDialog's own
-// shape: destructive and irreversible, so this is a confirm dialog, not
-// a bare one-click button.
 export function DeleteFeatureFlagDialog({
   appName,
   flag,
@@ -25,67 +13,58 @@ export function DeleteFeatureFlagDialog({
   appName: string
   flag: FeatureFlag
 }) {
-  const [open, setOpen] = useState(false)
+  const { t } = useTranslation('common')
   const deleteFlag = useDeleteFeatureFlag(appName)
 
-  function handleOpenChange(next: boolean) {
-    setOpen(next)
-    if (!next) {
-      deleteFlag.reset()
-    }
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-        <TrashIcon className="size-3.5" aria-hidden="true" />
-        Delete
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
-            Delete this feature flag?
-          </DialogTitle>
-          <DialogDescription>
-            &ldquo;{flag.key}&rdquo; stops resolving immediately: any app still
-            calling the evaluate endpoint for it starts getting a 404. This
-            cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        {deleteFlag.isError ? (
-          <Alert variant="destructive">
-            <WarningIcon />
-            <AlertDescription>{deleteFlag.error.message}</AlertDescription>
-          </Alert>
-        ) : null}
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              handleOpenChange(false)
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            disabled={deleteFlag.isPending}
-            onClick={() => {
-              deleteFlag.mutate(flag.id, {
-                onSuccess: () => {
-                  setOpen(false)
-                  toast.add({ title: 'Feature flag deleted.', type: 'success' })
-                },
-              })
-            }}
-          >
-            {deleteFlag.isPending ? 'Deleting...' : 'Delete flag'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ConfirmAction
+      trigger={(openDialog) => (
+        <Button variant="destructive" size="sm" onClick={openDialog}>
+          <TrashIcon className="size-3.5" aria-hidden="true" />
+          {t('confirmAction.featureFlag.trigger', { defaultValue: 'Delete' })}
+        </Button>
+      )}
+      title={t('confirmAction.featureFlag.title', {
+        defaultValue: 'Delete "{{name}}"?',
+        name: flag.key,
+      })}
+      consequences={[
+        t('confirmAction.featureFlag.consequence0', {
+          defaultValue: 'The flag stops resolving immediately.',
+        }),
+        t('confirmAction.featureFlag.consequence1', {
+          defaultValue:
+            'Any app still calling the evaluate endpoint for it starts getting a 404.',
+        }),
+        t('confirmAction.featureFlag.consequence2', {
+          defaultValue: 'This cannot be undone.',
+        }),
+      ]}
+      confirmLabel={t('confirmAction.featureFlag.confirm', {
+        defaultValue: 'Delete flag',
+      })}
+      pendingLabel={t('confirmAction.featureFlag.pending', {
+        defaultValue: 'Deleting...',
+      })}
+      pending={deleteFlag.isPending}
+      error={deleteFlag.isError ? deleteFlag.error.message : null}
+      onOpenChange={(next) => {
+        if (!next) deleteFlag.reset()
+      }}
+      onConfirm={(close) => {
+        deleteFlag.mutate(flag.id, {
+          onSuccess: () => {
+            close()
+            toast.add({
+              title: t('confirmAction.featureFlag.success', {
+                defaultValue: 'Feature flag deleted.',
+                name: flag.key,
+              }),
+              type: 'success',
+            })
+          },
+        })
+      }}
+    />
   )
 }

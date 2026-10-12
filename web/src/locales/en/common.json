@@ -249,18 +249,42 @@
       "clearSelected": "Clear selected app",
       "confirmTitle": "Run this command?",
       "actions": {
-        "status": { "label": "Status" },
-        "version": { "label": "Version" },
-        "appsList": { "label": "List apps" },
-        "deploysList": { "label": "List deploys" },
-        "nodesList": { "label": "List nodes" },
-        "databasesList": { "label": "List databases" },
-        "appStatus": { "label": "App status" },
-        "appLogs": { "label": "App logs" },
-        "appDeploys": { "label": "App deploys" },
-        "nodeGet": { "label": "Node details" },
-        "appRestart": { "label": "Restart app" },
-        "appRedeploy": { "label": "Redeploy app" },
+        "status": {
+          "label": "Status"
+        },
+        "version": {
+          "label": "Version"
+        },
+        "appsList": {
+          "label": "List apps"
+        },
+        "deploysList": {
+          "label": "List deploys"
+        },
+        "nodesList": {
+          "label": "List nodes"
+        },
+        "databasesList": {
+          "label": "List databases"
+        },
+        "appStatus": {
+          "label": "App status"
+        },
+        "appLogs": {
+          "label": "App logs"
+        },
+        "appDeploys": {
+          "label": "App deploys"
+        },
+        "nodeGet": {
+          "label": "Node details"
+        },
+        "appRestart": {
+          "label": "Restart app"
+        },
+        "appRedeploy": {
+          "label": "Redeploy app"
+        },
         "appRollback": {
           "label": "Roll back app",
           "consequence": "The app is pointed back at an older image and its container is replaced."
@@ -365,6 +389,77 @@
       "actions": "Actions",
       "select": "Select",
       "rowActions": "Actions for {{name}}"
+    }
+  },
+  "confirmAction": {
+    "token": {
+      "trigger": "Revoke",
+      "title": "Revoke \"{{name}}\"?",
+      "consequence0": "Anything using this token loses access immediately.",
+      "consequence1": "This cannot be undone.",
+      "abilities": "Abilities: {{abilities}}",
+      "confirm": "Revoke token",
+      "pending": "Revoking...",
+      "success": "Token \"{{name}}\" revoked."
+    },
+    "alertRule": {
+      "trigger": "Delete",
+      "title": "Delete \"{{name}}\"?",
+      "confirm": "Delete rule",
+      "pending": "Deleting...",
+      "success": "Alert rule \"{{name}}\" deleted.",
+      "consequence0": "The rule stops evaluating and notifying immediately.",
+      "consequence1": "This cannot be undone."
+    },
+    "backupTarget": {
+      "trigger": "Delete",
+      "title": "Delete \"{{name}}\"?",
+      "confirm": "Delete",
+      "pending": "Deleting...",
+      "success": "Backup target \"{{name}}\" deleted.",
+      "consequence0": "The connection to this bucket is removed.",
+      "consequence1": "Nothing already backed up there is deleted.",
+      "consequence2": "This cannot be undone.",
+      "error": "Could not delete \"{{name}}\"."
+    },
+    "networkShare": {
+      "trigger": "Delete",
+      "title": "Delete \"{{name}}\"?",
+      "confirm": "Delete",
+      "pending": "Deleting...",
+      "success": "Network share \"{{name}}\" deleted.",
+      "consequence0": "Any app volume still mounting this share fails to start on its next deploy.",
+      "consequence1": "This cannot be undone.",
+      "error": "Could not delete \"{{name}}\"."
+    },
+    "registryCredential": {
+      "trigger": "Delete",
+      "title": "Delete \"{{name}}\"?",
+      "confirm": "Delete",
+      "pending": "Deleting...",
+      "success": "Registry credential \"{{name}}\" deleted.",
+      "consequence0": "Any service referencing this credential fails to pull a private image on its next deploy.",
+      "consequence1": "This cannot be undone.",
+      "error": "Could not delete \"{{name}}\"."
+    },
+    "model": {
+      "trigger": "Delete",
+      "title": "Delete \"{{name}}\"?",
+      "confirm": "Delete",
+      "pending": "Deleting...",
+      "success": "Model \"{{name}}\" deleted.",
+      "consequence0": "The engine container is removed and the API key stops working.",
+      "consequence1": "Downloaded weights are kept, so deploying the same model again does not download them twice."
+    },
+    "featureFlag": {
+      "trigger": "Delete",
+      "title": "Delete \"{{name}}\"?",
+      "confirm": "Delete flag",
+      "pending": "Deleting...",
+      "success": "Feature flag deleted.",
+      "consequence0": "The flag stops resolving immediately.",
+      "consequence1": "Any app still calling the evaluate endpoint for it starts getting a 404.",
+      "consequence2": "This cannot be undone."
     }
   }
 }

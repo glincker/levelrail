@@ -32,8 +32,8 @@ import { toast } from '@/components/ui/toast'
 import { ApiError } from '../lib/apiError'
 import { useCreateBackupTarget } from '../queries/backupTargets'
 import { PROVIDER_LABEL } from './backupTargetProvider'
-import { BrandLogoBadge } from './BrandLogoBadge'
-import { logoIdForBackupTarget } from '../lib/brandLogos'
+import { BrandTile } from './BrandLogoBadge'
+import { backupTargetBrand } from '../lib/providerBrands'
 import type { BackupProvider } from '../types/backupTarget'
 
 // Mirrors validateCreateBackupTargetRequest (internal/api/
@@ -244,9 +244,10 @@ export function CreateBackupTargetDialog() {
                           (provider) => (
                             <SelectItem key={provider} value={provider}>
                               <span className="flex items-center gap-2">
-                                <BrandLogoBadge
-                                  logoId={logoIdForBackupTarget(provider)}
-                                  className="size-5 p-0.5"
+                                <BrandTile
+                                  name={backupTargetBrand(provider)}
+                                  label={PROVIDER_LABEL[provider]}
+                                  size="xs"
                                 />
                                 {PROVIDER_LABEL[provider]}
                               </span>
@@ -286,12 +287,13 @@ export function CreateBackupTargetDialog() {
                   <FieldLabel htmlFor="backup-target-endpoint">
                     <span className="flex items-center gap-2">
                       Endpoint
-                      <BrandLogoBadge
-                        logoId={logoIdForBackupTarget(
+                      <BrandTile
+                        name={backupTargetBrand(
                           watchedProvider,
                           watch('endpoint'),
                         )}
-                        className="size-5 p-0.5"
+                        label={PROVIDER_LABEL[watchedProvider]}
+                        size="xs"
                       />
                     </span>
                   </FieldLabel>

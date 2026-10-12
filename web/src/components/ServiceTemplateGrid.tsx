@@ -12,7 +12,6 @@ import {
   HardDrivesIcon,
   LightningIcon,
   MagnifyingGlassIcon,
-  PackageIcon,
   PlayCircleIcon,
   RocketLaunchIcon,
   ShieldCheckIcon,
@@ -23,7 +22,7 @@ import {
   WifiHighIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
-import { TemplateLogo } from './TemplateLogo'
+import { TemplateLogoTile } from './TemplateLogoTile'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -88,7 +87,6 @@ function TemplateCard({
   onDeployNow: (template: ServiceTemplateListItem) => void
   deploying: boolean
 }) {
-  const CategoryIcon = CATEGORY_ICONS[template.category] ?? PackageIcon
   return (
     <div className="flex flex-col items-start gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted">
       <Link
@@ -96,11 +94,7 @@ function TemplateCard({
         params={{ id: template.id }}
         className="flex w-full items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <TemplateLogo
-          id={template.id}
-          className="size-6"
-          fallback={<CategoryIcon className="size-6 text-muted-foreground" />}
-        />
+        <TemplateLogoTile id={template.id} name={template.name} />
         <span className="truncate text-sm font-medium text-foreground hover:underline">
           {template.name}
         </span>

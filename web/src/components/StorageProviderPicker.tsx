@@ -1,9 +1,6 @@
-import { CloudIcon } from '@phosphor-icons/react/dist/ssr'
-import { BrandLogoBadge } from './BrandLogoBadge'
-import {
-  logoIdForStoragePreset,
-  STORAGE_PRESET_LABEL,
-} from '../lib/storageProviders'
+import { BrandTile } from './BrandLogoBadge'
+import { STORAGE_PRESET_LABEL } from '../lib/storageProviders'
+import { storagePresetBrand } from '../lib/providerBrands'
 import type { StorageProvider, StoragePreset } from '../types/storage'
 
 // Radio-style grid of provider presets, each with its brand mark.
@@ -39,15 +36,10 @@ export function StorageProviderPicker({
                 : 'border-border text-muted-foreground hover:bg-muted'
             }`}
           >
-            <BrandLogoBadge
-              logoId={logoIdForStoragePreset(p.id)}
-              className="size-6 p-0.5"
-              fallback={
-                <CloudIcon
-                  className="size-5 text-muted-foreground"
-                  aria-hidden="true"
-                />
-              }
+            <BrandTile
+              name={storagePresetBrand(p.id)}
+              label={STORAGE_PRESET_LABEL[p.id] || p.label}
+              size="sm"
             />
             <span className="font-medium">
               {STORAGE_PRESET_LABEL[p.id] || p.label}

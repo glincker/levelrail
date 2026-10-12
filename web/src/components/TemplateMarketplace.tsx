@@ -6,13 +6,12 @@ import {
   PackageIcon,
   RocketLaunchIcon,
   SquaresFourIcon,
-  UserIcon,
   WarningIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import { CATEGORY_ICONS } from './ServiceTemplateGrid'
-import { TemplateLogo } from './TemplateLogo'
+import { TemplateLogoTile } from './TemplateLogoTile'
 import { DeleteCustomTemplateDialog } from './DeleteCustomTemplateDialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -241,9 +240,6 @@ function MarketplaceCard({
   deploying: boolean
   isCustom: boolean
 }) {
-  const CategoryIcon = isCustom
-    ? UserIcon
-    : (CATEGORY_ICONS[template.category] ?? PackageIcon)
   return (
     <div className="flex h-full flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:shadow-sm">
       <div className="flex items-start gap-3">
@@ -252,18 +248,7 @@ function MarketplaceCard({
           params={{ id: template.id }}
           className="flex min-w-0 flex-1 items-start gap-3 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <TemplateLogo
-            id={template.id}
-            className="size-10 shrink-0 rounded-md"
-            fallback={
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
-                <CategoryIcon
-                  className="size-5 text-muted-foreground"
-                  aria-hidden="true"
-                />
-              </span>
-            }
-          />
+          <TemplateLogoTile id={template.id} name={template.name} />
           <div className="min-w-0 flex-1 pt-0.5">
             <p className="line-clamp-1 text-sm font-semibold text-foreground hover:underline">
               {template.name}

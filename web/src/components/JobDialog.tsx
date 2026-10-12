@@ -8,14 +8,14 @@ import {
   PlusCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -226,8 +226,8 @@ export function JobDialog({
   )
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
+    <Sheet open={open} onOpenChange={handleOpenChange}>
+      <SheetTrigger
         render={
           isEdit ? (
             <Button variant="outline" size="sm" disabled={specManaged}>
@@ -242,18 +242,18 @@ export function JobDialog({
           )
         }
       />
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
+      <SheetContent className="overflow-y-auto sm:max-w-lg">
+        <SheetHeader>
+          <SheetTitle>
             {isEdit ? t('dialog.editTitle') : t('dialog.createTitle')}
-          </DialogTitle>
-          <DialogDescription>{t('description')}</DialogDescription>
-        </DialogHeader>
+          </SheetTitle>
+          <SheetDescription>{t('description')}</SheetDescription>
+        </SheetHeader>
         <form
           onSubmit={(e) => {
             void onSubmit(e)
           }}
-          className="space-y-4"
+          className="space-y-4 px-4 pb-4"
         >
           <Field>
             <FieldLabel htmlFor="job-name">{t('dialog.name')}</FieldLabel>
@@ -470,7 +470,7 @@ export function JobDialog({
             <p className="text-sm text-destructive">{mutation.error.message}</p>
           ) : null}
 
-          <DialogFooter>
+          <SheetFooter>
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending
                 ? isEdit
@@ -480,9 +480,9 @@ export function JobDialog({
                   ? t('dialog.save')
                   : t('dialog.create')}
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }

@@ -27,7 +27,7 @@ import { Input } from '@/components/ui/input'
 import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
-import { BrandIcon } from './BrandIcon'
+import { BrandTile } from './BrandLogoBadge'
 import { BrowserPushField } from './BrowserPushField'
 import {
   CHANNEL_KIND_BRAND_ICON,
@@ -439,7 +439,11 @@ export function CreateNotificationChannelDialog() {
                         )}
                       >
                         {brandIcon ? (
-                          <BrandIcon name={brandIcon} className="size-5" />
+                          <BrandTile
+                            name={brandIcon}
+                            label={CHANNEL_KIND_LABEL[option]}
+                            size="sm"
+                          />
                         ) : option === 'email' ? (
                           <EnvelopeSimpleIcon
                             className="size-5"

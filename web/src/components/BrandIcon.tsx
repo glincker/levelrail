@@ -35,6 +35,26 @@ import RocketdotchatLogo from '@thesvg/react/rocketdotchat'
 import SlackLogo from '@thesvg/react/slack'
 import TelegramLogo from '@thesvg/react/telegram'
 import WebexLogo from '@thesvg/react/webex'
+import AwsLogo from '@thesvg/react/aws'
+import DigitaloceanLogo from '@thesvg/react/digitalocean'
+import HetznerLogo from '@thesvg/react/hetzner'
+import LinodeLogo from '@thesvg/react/linode'
+import AkamaiLogo from '@thesvg/react/akamai'
+import AzureLogo from '@thesvg/react/microsoft-azure'
+import GoogleCloudLogo from '@thesvg/react/google-cloud'
+import OracleLogo from '@thesvg/react/oracle'
+import BackblazeLogo from '@thesvg/react/backblaze'
+import MinioLogo from '@thesvg/react/minio'
+import HarborLogo from '@thesvg/react/harbor'
+import JfrogLogo from '@thesvg/react/jfrog'
+import Route53Logo from '@thesvg/react/aws-amazon-route-53'
+import S3Logo from '@thesvg/react/aws-amazon-simple-storage-service'
+import EcrLogo from '@thesvg/react/aws-amazon-elastic-container-registry'
+import ArtifactRegistryLogo from '@thesvg/react/gcp-artifact-registry'
+import GandiLogo from '@thesvg/react/gandi'
+import GodaddyLogo from '@thesvg/react/godaddy'
+import NamecheapLogo from '@thesvg/react/namecheap'
+import MailgunLogo from '@thesvg/react/mailgun'
 
 // Brand/service marks sourced from @thesvg/react, each imported from its
 // own subpath for bundle size. Distinct from @phosphor-icons (ADR 014):
@@ -76,6 +96,26 @@ export type BrandIconName =
   | 'auth0'
   | 'authentik'
   | 'cloudflare'
+  | 'aws'
+  | 'digitalocean'
+  | 'hetzner'
+  | 'linode'
+  | 'akamai'
+  | 'azure'
+  | 'google-cloud'
+  | 'oracle'
+  | 'backblaze'
+  | 'minio'
+  | 'harbor'
+  | 'jfrog'
+  | 'route53'
+  | 's3'
+  | 'ecr'
+  | 'google-artifact-registry'
+  | 'gandi'
+  | 'godaddy'
+  | 'namecheap'
+  | 'mailgun'
 
 const BRAND_ICONS: Record<
   BrandIconName,
@@ -117,6 +157,26 @@ const BRAND_ICONS: Record<
   auth0: Auth0Logo,
   authentik: AuthentikLogo,
   cloudflare: CloudflareLogo,
+  aws: AwsLogo,
+  digitalocean: DigitaloceanLogo,
+  hetzner: HetznerLogo,
+  linode: LinodeLogo,
+  akamai: AkamaiLogo,
+  azure: AzureLogo,
+  'google-cloud': GoogleCloudLogo,
+  oracle: OracleLogo,
+  backblaze: BackblazeLogo,
+  minio: MinioLogo,
+  harbor: HarborLogo,
+  jfrog: JfrogLogo,
+  route53: Route53Logo,
+  s3: S3Logo,
+  ecr: EcrLogo,
+  'google-artifact-registry': ArtifactRegistryLogo,
+  gandi: GandiLogo,
+  godaddy: GodaddyLogo,
+  namecheap: NamecheapLogo,
+  mailgun: MailgunLogo,
 }
 
 // All names in BRAND_ICONS, for callers that need to enumerate the
@@ -160,6 +220,26 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'auth0',
   'authentik',
   'cloudflare',
+  'aws',
+  'digitalocean',
+  'hetzner',
+  'linode',
+  'akamai',
+  'azure',
+  'google-cloud',
+  'oracle',
+  'backblaze',
+  'minio',
+  'harbor',
+  'jfrog',
+  'route53',
+  's3',
+  'ecr',
+  'google-artifact-registry',
+  'gandi',
+  'godaddy',
+  'namecheap',
+  'mailgun',
 ]
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>
@@ -171,6 +251,17 @@ const MONO_ICONS: Partial<Record<BrandIconName, SvgComponent>> = {
   google: (p) => <GoogleLogo variant="mono" {...p} />,
   gitea: (p) => <GiteaLogo variant="mono" {...p} />,
   go: (p) => <GoLogo variant="mono" {...p} />,
+  cloudflare: (p) => <CloudflareLogo variant="mono" {...p} />,
+  docker: (p) => <DockerLogo variant="mono" {...p} />,
+  aws: (p) => <AwsLogo variant="mono" {...p} />,
+  digitalocean: (p) => <DigitaloceanLogo variant="mono" {...p} />,
+  hetzner: (p) => <HetznerLogo variant="mono" {...p} />,
+  akamai: (p) => <AkamaiLogo variant="mono" {...p} />,
+  'google-cloud': (p) => <GoogleCloudLogo variant="mono" {...p} />,
+  backblaze: (p) => <BackblazeLogo variant="mono" {...p} />,
+  minio: (p) => <MinioLogo variant="mono" {...p} />,
+  harbor: (p) => <HarborLogo variant="mono" {...p} />,
+  jfrog: (p) => <JfrogLogo variant="mono" {...p} />,
 }
 
 const NAME_SET: ReadonlySet<string> = new Set(BRAND_ICON_NAMES)
