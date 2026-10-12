@@ -157,3 +157,4 @@ Decommission Vercel only after this passes and you have decided what to do about
 - [app.yaml reference](app-spec-reference.md)
 - [Feature status](feature-status.md)
 - [Vercel alternative](vercel-alternative.md)
+- [Migrating from Cloud Run](migrating-from-cloud-run.md)

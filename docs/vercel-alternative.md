@@ -143,7 +143,17 @@
     "cta": {
       "heading": "Own your deploy pipeline",
       "sub": "Run a side project on it first. Open source, so you can read how every step works."
-    }
+    },
+    "related": [
+      {
+        "text": "Migrating from Vercel",
+        "link": "/migrating-from-vercel"
+      },
+      {
+        "text": "Cloud Run alternative",
+        "link": "/cloud-run-alternative"
+      }
+    ]
   }
 }
 ---
