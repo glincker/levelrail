@@ -56,60 +56,62 @@ export function FleetTiles({ apps }: { apps: AppListEntry[] }) {
   const sampled = tr('tiles.lastHour')
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-      <MetricTile
-        label={tr('tiles.appsRunning')}
-        icon={<PackageIcon className="size-3.5" />}
-        value={`${buckets.running} / ${apps.length}`}
-        tone={buckets.failing > 0 ? 'danger' : 'success'}
-        onClick={() => void navigate({ to: '/apps' })}
-      />
-      <MetricTile
-        label={tr('tiles.requests')}
-        icon={<PulseIcon className="size-3.5" />}
-        value={Number(t.ratePerSec.toFixed(1))}
-        unit="req/s"
-        series={t.series}
-        tone="accent"
-        info={<span className="sr-only">{sampled}</span>}
-        loading={traffic.isPending}
-      />
-      <MetricTile
-        label={tr('tiles.errorRate')}
-        icon={<WarningIcon className="size-3.5" />}
-        value={
-          errors.kind === 'value'
-            ? Number(errors.pct.toFixed(2))
-            : tr('tiles.noTraffic')
-        }
-        unit={errors.kind === 'value' ? '%' : undefined}
-        tone={errors.kind === 'value' ? errorTone(errors.pct) : 'neutral'}
-        loading={traffic.isPending}
-      />
-      <MetricTile
-        label={tr('tiles.deploys24h')}
-        icon={<RocketLaunchIcon className="size-3.5" />}
-        value={d.total}
-        series={d.buckets}
-        tone="info"
-        loading={deploys.isPending}
-      />
-      <MetricTile
-        label={tr('tiles.nodesOnline')}
-        icon={<HardDrivesIcon className="size-3.5" />}
-        value={`${nodeTotals.online} / ${nodeTotals.total}`}
-        tone={nodeTotals.online < nodeTotals.total ? 'warning' : 'success'}
-        loading={nodes.isPending}
-        onClick={() => void navigate({ to: '/nodes' })}
-      />
-      {gpuCount > 0 ? (
+    <div className="@container">
+      <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-3 @5xl:grid-cols-5">
         <MetricTile
-          label="GPUs"
-          icon={<CpuIcon className="size-3.5" />}
-          value={gpuCount}
-          tone="accent"
+          label={tr('tiles.appsRunning')}
+          icon={<PackageIcon className="size-3.5" />}
+          value={`${buckets.running} / ${apps.length}`}
+          tone={buckets.failing > 0 ? 'danger' : 'success'}
+          onClick={() => void navigate({ to: '/apps' })}
         />
-      ) : null}
+        <MetricTile
+          label={tr('tiles.requests')}
+          icon={<PulseIcon className="size-3.5" />}
+          value={Number(t.ratePerSec.toFixed(1))}
+          unit="req/s"
+          series={t.series}
+          tone="accent"
+          info={<span className="sr-only">{sampled}</span>}
+          loading={traffic.isPending}
+        />
+        <MetricTile
+          label={tr('tiles.errorRate')}
+          icon={<WarningIcon className="size-3.5" />}
+          value={
+            errors.kind === 'value'
+              ? Number(errors.pct.toFixed(2))
+              : tr('tiles.noTraffic')
+          }
+          unit={errors.kind === 'value' ? '%' : undefined}
+          tone={errors.kind === 'value' ? errorTone(errors.pct) : 'neutral'}
+          loading={traffic.isPending}
+        />
+        <MetricTile
+          label={tr('tiles.deploys24h')}
+          icon={<RocketLaunchIcon className="size-3.5" />}
+          value={d.total}
+          series={d.buckets}
+          tone="info"
+          loading={deploys.isPending}
+        />
+        <MetricTile
+          label={tr('tiles.nodesOnline')}
+          icon={<HardDrivesIcon className="size-3.5" />}
+          value={`${nodeTotals.online} / ${nodeTotals.total}`}
+          tone={nodeTotals.online < nodeTotals.total ? 'warning' : 'success'}
+          loading={nodes.isPending}
+          onClick={() => void navigate({ to: '/nodes' })}
+        />
+        {gpuCount > 0 ? (
+          <MetricTile
+            label="GPUs"
+            icon={<CpuIcon className="size-3.5" />}
+            value={gpuCount}
+            tone="accent"
+          />
+        ) : null}
+      </div>
     </div>
   )
 }

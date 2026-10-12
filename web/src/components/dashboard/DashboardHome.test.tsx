@@ -11,13 +11,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { DashboardHome } from './DashboardHome'
-import { NeedsAttentionView } from './NeedsAttention'
+import { NextStepsView } from './NextSteps'
+import type { NextStep } from '../../lib/dashboardHome'
 import type { AppListEntry } from '../../types/appDetail'
-import type { AttentionItem } from '../../lib/attention'
-import {
-  attentionToSuggestions,
-  type ActionSpec,
-} from '../../lib/fleetSuggestions'
 import commonEn from '../../locales/en/common.json'
 import dashboardEn from '../../locales/en/dashboard.json'
 
@@ -33,7 +29,6 @@ void testI18n.use(initReactI18next).init({
   resources: { en: { dashboard: dashboardEn, common: commonEn } },
   interpolation: { escapeValue: false },
 })
-const dashboardT = testI18n.getFixedT('en', 'dashboard')
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()
@@ -163,10 +158,13 @@ describe('DashboardHome', () => {
     renderHome(apps)
     expect(await screen.findByText('All systems normal')).toBeInTheDocument()
     expect(screen.getAllByText('1 / 1')).toHaveLength(2)
-    expect(screen.getByText('Add a node')).toBeInTheDocument()
     expect(
-      screen.queryByRole('region', { name: 'Needs attention' }),
-    ).not.toBeInTheDocument()
+      screen.getByRole('region', { name: 'Recommended next steps' }),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByText(/Nothing needs you\. 1 of 1 apps/),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Your app is healthy')).toBeInTheDocument()
   })
 
   it('puts setup and hardening advice on one quiet line, not in incidents', async () => {
@@ -233,9 +231,6 @@ describe('DashboardHome', () => {
     await waitFor(() => {
       expect(screen.getByText('2 recommendations')).toBeInTheDocument()
     })
-    expect(
-      screen.queryByRole('region', { name: 'Needs attention' }),
-    ).not.toBeInTheDocument()
     expect(screen.queryByText(/Certificate for/)).not.toBeInTheDocument()
   })
 
@@ -320,72 +315,70 @@ describe('DashboardHome', () => {
     expect(await screen.findByText('web is failing')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Restart' })).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Open logs' }),
-    ).toBeInTheDocument()
+      screen.queryByRole('button', { name: 'Open logs' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('1 thing needs attention')).toBeInTheDocument()
     await waitFor(() => {
       expect(screen.getByText('1 incident')).toBeInTheDocument()
     })
   })
 })
 
-describe('NeedsAttentionView', () => {
-  const items: AttentionItem[] = Array.from({ length: 6 }, (_, i) => ({
-    id: `app:a${i}`,
-    severity: 'critical',
-    title: `a${i}`,
-    detail: 'Attention needed',
-    target: { kind: 'app', name: `a${i}` },
-  }))
+describe('NextStepsView', () => {
+  const steps: NextStep[] = [
+    {
+      id: 'app:web',
+      source: 'attention',
+      tone: 'danger',
+      title: 'web is failing',
+      detail: 'Attention needed',
+      actionLabel: 'Restart',
+      spec: { kind: 'restart', app: 'web' },
+    },
+    {
+      id: 'setup:tls',
+      source: 'setup',
+      stepId: 'tls',
+      inProgress: false,
+      href: '/settings/certificates',
+    },
+  ]
+  const quiet = { running: 3, total: 4, deploys: 2 }
 
   function renderView(props: {
-    specs: ReturnType<typeof attentionToSuggestions>
-    loading: boolean
-    onRun: (spec: ActionSpec) => void
+    steps: NextStep[]
+    loading?: boolean
+    percent?: number
+    onRun?: (s: NextStep) => void
   }) {
     return render(
       <I18nextProvider i18n={testI18n}>
-        <NeedsAttentionView {...props} />
+        <NextStepsView
+          steps={props.steps}
+          loading={props.loading ?? false}
+          percent={props.percent}
+          quiet={quiet}
+          onRun={props.onRun ?? vi.fn()}
+        />
       </I18nextProvider>,
     )
   }
 
-  it('renders a skeleton while loading', () => {
-    const { container } = renderView({
-      specs: [],
-      loading: true,
-      onRun: vi.fn(),
-    })
-    expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull()
+  it('gives every step one action and reports which one ran', () => {
+    const onRun = vi.fn()
+    renderView({ steps, onRun, percent: 40 })
+    expect(screen.getAllByRole('button')).toHaveLength(2)
+    expect(screen.getByText('Setup 40% ready')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Restart' }))
+    expect(onRun).toHaveBeenCalledWith(steps[0])
   })
 
-  it('renders nothing when there is nothing to fix', () => {
-    const { container } = renderView({
-      specs: [],
-      loading: false,
-      onRun: vi.fn(),
-    })
-    expect(container).toBeEmptyDOMElement()
-  })
-
-  it('caps at five items and links to see all', () => {
-    renderView({
-      specs: attentionToSuggestions(items, dashboardT),
-      loading: false,
-      onRun: vi.fn(),
-    })
-    expect(screen.getAllByRole('button', { name: 'Restart' })).toHaveLength(5)
-    expect(screen.getByRole('link', { name: 'See all 6' })).toHaveAttribute(
-      'href',
-      '/status',
-    )
-  })
-
-  it('shows an Ask AI action alongside the canned fix for every item', () => {
-    renderView({
-      specs: attentionToSuggestions(items, dashboardT),
-      loading: false,
-      onRun: vi.fn(),
-    })
-    expect(screen.getAllByRole('button', { name: 'Ask AI' })).toHaveLength(5)
+  it('celebrates quietly with real numbers when nothing is left', () => {
+    renderView({ steps: [] })
+    expect(
+      screen.getByText(
+        'Nothing needs you. 3 of 4 apps running, 2 deploys in the last 24 hours.',
+      ),
+    ).toBeInTheDocument()
   })
 })
