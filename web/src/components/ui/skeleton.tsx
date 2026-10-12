@@ -7,8 +7,9 @@ export type SkeletonVariant =
 
 // @glinui/ui 0.1.1 ships default|glass|liquid|matte|outline|ghost; the docs'
 // glinr|solid|plain|soft names are not published yet, so map onto what exists.
+// Not matte: its dark gradient (rgb 40,42,48) tints blue and adds a border.
 const PUBLISHED = {
-  glinr: 'matte',
+  glinr: 'default',
   solid: 'default',
   plain: 'default',
   soft: 'ghost',
