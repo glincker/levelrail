@@ -9,6 +9,19 @@ The GLINR design tokens are the single source of truth for color, space, radius,
 
 The source is intentionally framework-neutral (a DTCG-like JSON shape, no CSS or Tailwind specifics), so other GLINCKER products can reuse the same file and generate their own output.
 
+## Page structure
+
+Rules every dashboard page follows. Tokens say what a value is; these say where things go.
+
+1. The `PageTemplate` hero is the only title and description on a page. The first card never repeats either. Provider connection cards render no header of their own under the hero.
+2. Cards are single level. No bordered boxes inside a `Card`, except a semantic callout, which must be `ui/banner.tsx`. Lists inside a card use `divide-y`, not a box per row.
+3. Vertical rhythm inside a card is `space-y-4` between blocks and 24px (`space-y-6`) between sections.
+4. Action rows sit 16px below the content they act on (`border-t pt-4`, see `ConnectionActions`) and are aligned the same way on every page, primary action last.
+5. Empty states are compact: `EmptyState compact` (icon, one line, one muted line, no dashed outline, about 96px) inside a page section. The full dashed state is for a whole empty page.
+6. A callout never contains the primary form field. The banner explains; the labelled field and its Save button sit below it as their own block.
+
+Help links live in the hero `actions` slot, not beside the title badge. A `Banner` with only a title renders it as 14px regular body text; 14px 600 is for banners that also have a description.
+
 ## Files
 
 | File                                      | Role                                                              |
