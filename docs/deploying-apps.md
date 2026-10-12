@@ -1,6 +1,6 @@
 ---
 title: "Deploying and managing apps"
-description: The life of an app on Levelrail, from creating it and deploying it to watching a rollout, rolling back, changing configuration, promoting between environments, and operating it day to day.
+description: "The life of an app on Levelrail: create it, deploy it, watch the rollout, roll back and change configuration safely."
 ---
 
 An app is a container (or a set of them) that Levelrail keeps running for you. You describe it once, from the dashboard, the CLI, or an `app.yaml` in your repo. Levelrail builds it if needed, starts it, waits until it is actually healthy, switches traffic to it, and keeps every previous image available so you can go back.
@@ -16,12 +16,14 @@ Domains and TLS, managed databases, and git provider setup have their own pages:
 - **One mutation changes the image.** `POST /api/v1/apps/{name}/deploys` points the app at a tag and returns immediately. A rollback is the same call with an older tag. `apps rollback`, the dashboard rollback button, and automatic rollback on a crashloop all use it, so there is no second code path that can drift.
 - **Traffic only moves once the new container is ready.** The readiness probe has to pass before the old container is drained. If it never passes, the old container keeps serving and the deploy fails with a reason.
 
-::: details For contributors: where this lives in the source
+<Accordion title="For contributors: where this lives in the source">
+
 - Backend: `internal/api/apps.go`, `apps_multi.go`, `apps_compose.go`, `deploys.go`, `promote.go`, `exec.go`, `resources_live_apply.go`, `scheduled_tasks.go`
 - CLI: `cmd/levelrail-cli/apps*.go`
 - Dashboard: `web/src/routes/apps/$name/*.tsx`
 - An app is one or more `store.DesiredService` rows under one `store.App`. Redeploy goes through `setDesiredImage`, restart through `RestartService`, stop and start through `UpdateServiceSuspended`.
-:::
+
+</Accordion>
 
 ## Create an app
 
@@ -476,9 +478,11 @@ In the dashboard, each row of the Apps list has an actions menu with Restart, St
 - **Output:** `stdout`, `stderr`, and `exit_code`, capped at 1 MiB (`truncated: true` past that). A nonzero exit code still returns HTTP 200, because the exec worked and the command failed.
 - **Permission:** the `root` ability, not `deploy`. Exec can be switched off per app (it is on by default) with `levelrail-cli apps exec-access disable NAME`, and a disabled app answers 403.
 
-::: warning
+<Warning>
+
 Secrets are injected as plaintext env vars when the container is created, so `env` inside a shell reads them back. Exec sits at the same trust tier as node management, not deploy.
-:::
+
+</Warning>
 
 ```bash
 levelrail-cli apps exec NAME -- ls -la /app          # exits with the command's real exit code

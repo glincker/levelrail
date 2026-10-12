@@ -1,6 +1,6 @@
 ---
 title: "Domain traffic controls"
-description: Per-domain traffic controls in the embedded ingress, covering header rules, path forwarders, country rules, response caching, redirects and raw ports, from the dashboard, CLI or API.
+description: "Per-domain controls in the embedded ingress: header rules, path forwarders, country rules, response caching, redirects and raw ports."
 ---
 
 Every domain an app owns has its own set of traffic controls, enforced by the embedded Caddy ingress before a request reaches the container:

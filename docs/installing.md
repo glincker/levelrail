@@ -86,7 +86,8 @@ To skip the setup token and create the admin non-interactively, set `APP_ADMIN_U
 
 AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel are hidden until you opt in with `APP_EXPERIMENTAL`, see [experimental features](/experimental-features).
 
-::: details Optional environment variables
+<Accordion title="Optional environment variables">
+
 
 | Variable | Default | What it does |
 | --- | --- | --- |
@@ -110,31 +111,31 @@ AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel ar
 | `APP_PUBLIC_HOST` | unset | Written to the systemd drop-in so the control plane knows its public address |
 | `LEVELRAIL_DOMAIN` | unset | Same as `--domain`: only used to print the exact `levelrail-cli proxy` command |
 
-:::
+</Accordion>
 
 Common scenarios:
 
-::: code-group
-```bash [Pin a specific release]
+<CodeGroup>
+```bash Pin a specific release
 curl -fsSL https://levelrail.com/install.sh \
   | sudo LEVELRAIL_VERSION=v0.2.0-beta.5 sh
 ```
 
-```bash [Custom data directory]
+```bash Custom data directory
 curl -fsSL https://levelrail.com/install.sh \
   | sudo LEVELRAIL_DATA_DIR=/data/levelrail sh
 ```
 
-```bash [Configure UFW automatically]
+```bash Configure UFW automatically
 curl -fsSL https://levelrail.com/install.sh \
   | sudo LEVELRAIL_CONFIGURE_UFW=1 sh
 ```
 
-```bash [Ignore a failed preflight check]
+```bash Ignore a failed preflight check
 curl -fsSL https://levelrail.com/install.sh \
   | sudo sh -s -- --force
 ```
-:::
+</CodeGroup>
 
 ### Check the server first
 
@@ -241,11 +242,15 @@ Both are published for `linux/amd64` and `linux/arm64`, multi-arch, under three 
 
 `:latest` and `:vX.Y` only ever move on a stable tag; `:beta` moves on every prerelease tag. `:edge` only moves when someone manually triggers a build against `main`, not on every push, so it stays still between those. Pin an exact `:vX.Y.Z` tag for anything you care about staying still regardless.
 
-::: warning No stable release yet
+<Warning>
+
+**No stable release yet**
+
 No non-prerelease tag has shipped as of this writing, so `:latest` currently
 points at an old beta build, not the newest one. **Use `:beta` until the
 first stable release ships**, then switch to `:latest`.
-:::
+
+</Warning>
 
 ### Verifying image signatures
 
@@ -268,9 +273,11 @@ docker buildx imagetools inspect ghcr.io/glincker/levelrail:beta --format '{{ js
 docker buildx imagetools inspect ghcr.io/glincker/levelrail:beta --format '{{ json .Provenance }}'
 ```
 
-::: tip
+<Tip>
+
 `install.sh` remains the recommended path for a real single-node deployment since it also provisions Docker and a systemd unit for you. The Docker image is for operators who want Levelrail to fit into an existing container-only setup.
-:::
+
+</Tip>
 
 ## Option 3: build from source
 
@@ -480,9 +487,11 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh -s uninstall
 curl -fsSL https://levelrail.com/install.sh | sudo sh -s uninstall --purge
 ```
 
-::: warning
+<Warning>
+
 `--purge` deletes all app and deploy state, and the master key every stored secret is encrypted with.
-:::
+
+</Warning>
 
 This does not touch Docker itself or any containers, images, or volumes Levelrail created for your deployed apps. Remove those separately if needed.
 

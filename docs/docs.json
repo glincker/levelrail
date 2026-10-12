@@ -133,7 +133,9 @@
               "supply-chain",
               "deploy-status-badge",
               "screenshots",
-              "docker"
+              "docker",
+              "zero-downtime-deploys",
+              "preview-environments"
             ]
           },
           {
@@ -170,7 +172,10 @@
               "data-export",
               "control-plane-backup",
               "disaster-recovery",
-              "upgrade-safely"
+              "upgrade-safely",
+              "database-access",
+              "database-explorer",
+              "database-viewer"
             ]
           },
           {
@@ -292,9 +297,26 @@
             ]
           },
           {
+            "group": "Compare and choose",
+            "pages": [
+              "self-hosted-paas",
+              "coolify-alternative",
+              "dokploy-alternative",
+              "caprover-alternative",
+              "dokku-alternative",
+              "kamal-alternative",
+              "heroku-alternative",
+              "railway-alternative",
+              "vercel-alternative",
+              "cloud-run-alternative",
+              "self-host-nextjs"
+            ]
+          },
+          {
             "group": "Design proposals",
             "pages": [
-              "design/git-provider-integrations"
+              "design/git-provider-integrations",
+              "iam-design"
             ]
           }
         ]
@@ -739,7 +761,8 @@
               "vps-smoke",
               "i18n",
               "design-tokens",
-              "changelog"
+              "changelog",
+              "upgrade-history"
             ]
           },
           {
@@ -750,9 +773,28 @@
               "cookies",
               "license-and-notices"
             ]
+          },
+          {
+            "group": "About",
+            "pages": [
+              "about",
+              "pricing",
+              "demo",
+              "case-studies",
+              "get-involved",
+              "developers",
+              "contact",
+              "privacy"
+            ]
           }
         ]
       }
     ]
-  }
+  },
+  "redirects": [
+    {
+      "source": "/contribute",
+      "destination": "/get-involved"
+    }
+  ]
 }

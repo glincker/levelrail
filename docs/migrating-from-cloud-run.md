@@ -1,13 +1,15 @@
 ---
 title: "Migrating a service from Cloud Run"
-description: A practical runbook for moving a Google Cloud Run service to Levelrail, with a concept mapping table, deploying the same container image from a registry, secrets, Cloud SQL, domains, scheduled jobs, and an honest list of what you give up.
+description: "A runbook for moving a Google Cloud Run service to Levelrail, with a concept mapping table, image deploy, DNS cutover and rollback plan."
 ---
 
 This is a runbook for moving one Cloud Run service onto a Levelrail instance you run yourself. It maps only to features that exist in this repository today. Where something is unverified or has no equivalent, it says so.
 
-::: warning
+<Warning>
+
 Levelrail has no stable release yet (see [feature status](/feature-status)). You operate the server it runs on: OS updates, disk, backups and the Docker daemon are yours. Run the new deployment in parallel with Cloud Run, and keep Cloud Run as the rollback path until the shadow run in section 7 is clean.
-:::
+
+</Warning>
 
 There is no importer for Cloud Run. Everything below is manual. The good news is that a Cloud Run service is already a container image listening on a port, which is the unit Levelrail deploys, so most services move without a rebuild. Whether the move saves money is a separate question, covered in [Cloud Run alternative](/cloud-run-alternative).
 

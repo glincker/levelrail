@@ -1,6 +1,6 @@
 ---
 title: "Cost estimate"
-description: How Levelrail's "what this would cost elsewhere" app cost estimate is calculated, its assumptions, and the env vars that let you correct the reference rates for your own region.
+description: "How Levelrail estimates what an app would cost on other platforms, which assumptions it makes, and how to read the number."
 ---
 
 An app's **Resources** tab shows an estimated monthly cost under three illustrative reference pricing profiles, folded under **What this would cost elsewhere** at the bottom of the Optimise panel.

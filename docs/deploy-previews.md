@@ -1,6 +1,6 @@
 ---
 title: "Deploy previews"
-description: Thumbnails of each deploy in three tiers, from free (page metadata, no browser) to a real screenshot from a short-lived browser container. What each tier costs, what it can leak, how it is cleaned up and every APP_PREVIEW_* setting.
+description: "Deploy thumbnails in three tiers, from free page metadata to a real screenshot taken in a short-lived browser container."
 ---
 
 When a deploy goes live, the control plane can save a small thumbnail of the running app and show it in the app's deploy history. There are three modes per app, and the default costs about nothing.

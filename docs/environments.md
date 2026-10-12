@@ -1,6 +1,6 @@
 ---
 title: "Environments"
-description: Instance-wide environments (development, test, UAT, production and custom), the dashboard environment switcher, and moving apps and databases between them with approval for protected ones.
+description: "Create instance-wide environments such as development, UAT and production, switch between them in the dashboard and protect production."
 ---
 
 An environment labels where an app or database runs: development, test, UAT, production, or one you define. Environments are instance-wide, so the same four are available to every project. Tagging resources with an environment lets you filter the dashboard, protect production, and write access rules per environment.

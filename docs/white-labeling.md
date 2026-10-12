@@ -1,6 +1,6 @@
 ---
 title: "White-labeling"
-description: How the brand layer works, which names and prefixes it drives (dashboard, agent unit, firewall rule tag, mesh interface, update repository), the brand.yaml fields and APP_BRAND_* overrides, and what a fork must still change by hand.
+description: "How the brand layer works and which names it drives, from the dashboard and agent unit to firewall tags and mesh interface."
 ---
 
 The product name is never hardcoded in the Go or web source. Every user-visible identity string comes from one `Brand` struct in `internal/brand`, loaded at startup from a `brand.yaml` file and optionally overridden by environment variables. This page explains what that layer controls so you can run a renamed fork, or just understand why the platform names things the way it does.

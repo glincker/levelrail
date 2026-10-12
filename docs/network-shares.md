@@ -1,13 +1,17 @@
 ---
 title: "Network shares"
-description: Register NFS and CIFS (SMB) network shares with the control plane, test that the host is reachable, and what is and is not wired up today for mounting a share into an app.
+description: "Register NFS and CIFS (SMB) network shares with the control plane, test that the host can reach them and mount them into apps."
 ---
 
 A network share is a saved record of an NFS export or a CIFS (SMB) share on your network, such as a NAS. You register it once, with the host, remote path and credentials, and test that the host answers. The record is stored by the control plane, and a CIFS password is stored encrypted with the master key, never returned by the API.
 
-::: warning Registration only, for now
+<Warning>
+
+**Registration only, for now**
+
 Today a network share is a managed record plus a reachability test. Nothing in the control plane yet creates a Docker volume from a share or mounts one into an app. The translation to Docker's built-in `local` driver NFS and CIFS options exists in `internal/docker`, but no code path calls it. The dashboard page text describes attaching a share as an app volume source; treat that as the intended direction, not a shipped capability. To use a share in an app today, mount it on the node yourself and bind-mount the path with a [`hostPath` volume](/app-spec-reference).
-:::
+
+</Warning>
 
 ## Add a share
 

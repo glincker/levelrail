@@ -1,6 +1,6 @@
 ---
 title: "Node provisioning"
-description: Create a server at Hetzner, DigitalOcean, AWS, Azure or GCP and enroll it as a node, with the credential each provider needs, how status polling works, cost, and known gaps.
+description: "Create a server at Hetzner, DigitalOcean, AWS, Azure or GCP and enroll it as a node, with the credential each provider needs."
 ---
 
 [Multi-node](/multi-node) covers enrolling a machine you already have. This page covers the step before that: having Levelrail create the machine at a cloud provider. For the short command sequence, see the [multi-cloud provisioning quickstart](/multi-cloud-provisioning).
@@ -146,9 +146,13 @@ GCP has no workload identity federation mode. Google's `external_account` creden
 
 A name already used by an enrolled node, or by another provision that has not failed, is rejected with `409`. The name is how step 3 matches a node to its provision.
 
-::: tip Why there is no installing stage
+<Tip>
+
+**Why there is no installing stage**
+
 The status vocabulary includes `installing`, but nothing emits it: the control plane cannot see inside the VM while cloud-init runs. Everything between "booted" and "dialed home" reports as `enrolling`. If a provision sits there for a long time, read `/var/log/cloud-init-output.log` from the provider's console. `APP_NODE_PROVISION_TIMEOUT` (default 20 minutes) marks it `failed` on its own.
-:::
+
+</Tip>
 
 ### The agent runs from an image
 

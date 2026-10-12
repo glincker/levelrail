@@ -1,6 +1,6 @@
 ---
 title: "Security center"
-description: The security center scores your instance from its real state, lists what to fix first with a one-click fix or a link, manages every session and device, and sets sign-in approval and API token policy.
+description: "The security center scores your instance from its real state, lists what to fix first with a one-click fix and manages sessions and devices."
 ---
 
 The security center is one page, **Security center** in the sidebar (`/security`), that answers three questions: how exposed is this instance right now, what should I fix first, and who is signed in. It reads the control plane's own state (accounts, tokens, sessions, settings, certificates, the exposure audit) and never calls anything outside your servers.

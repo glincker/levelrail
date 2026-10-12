@@ -1,6 +1,6 @@
 ---
 title: "Deployments page"
-description: The cross-app Deployments page shows every deploy in one live list, with filters kept in the URL, a details drawer, redeploy and rollback actions, and keyboard shortcuts.
+description: "The Deployments page lists every deploy across apps in one live view, with URL filters, a details drawer, redeploy and rollback actions."
 ---
 
 The Deployments page (`/deployments`) lists every deploy across every app you can read, newest first. It updates live, so a deploy that starts or finishes appears without a refresh.

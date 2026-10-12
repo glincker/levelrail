@@ -5,22 +5,26 @@ description: Node-local metrics, logs, and alerts with federated queries, no cen
 
 This platform keeps metrics and logs on each node's local store, with a federated query layer and alert engine on top. Every app gets CPU, memory, and request metrics automatically, full-text log search with live tail, and alert rules you can route to email, Slack, Discord, or a webhook, with no separate observability stack to install.
 
-::: details For contributors: where this lives in the source
+<Accordion title="For contributors: where this lives in the source">
+
 - `internal/telemetry` - storage and query
 - `internal/alerting` - rule evaluation and notification
 - `internal/api/metrics.go`, `node_metrics.go`, `database_metrics.go` - metrics handlers
 - `logs.go`, `live_logs.go`, `logs_download.go` - log handlers
 - `app_resource_usage.go`, `alerts.go`, `notification_channels.go` - supporting handlers
-:::
+
+</Accordion>
 ## Why node-local, not a central store
 
 Every other platform in this category (and every hosted observability vendor) centralizes: ship every metric and log line to one place, index it there, query it there. That creates write amplification for every container on every node, plus a central index that keeps growing whether or not anyone queries it.
 
 This platform keeps metrics and logs where they are collected: each node's own SQLite-backed store (the same `modernc.org/sqlite` used elsewhere in the control plane). The control plane queries agents on demand instead of ingesting continuously.
 
-::: tip
+<Tip>
+
 Right now there is exactly one node (control plane and agent share a process, see `internal/agent`'s in-memory transport), so "federated query" fans out to a single source. Nothing changes for you when a second node appears: the same queries and dashboards keep working, just against more sources.
-:::
+
+</Tip>
 
 
 ## How it actually works
@@ -318,7 +322,8 @@ There are fifteen rule kinds, all stored in one table (`alert_rules`). The evalu
 
 Each rule tracks its own pending/firing state and notifies only on transitions (firing or resolved), never on every tick a rule stays in the same state. This prevents channels from being trained to ignore repeated alerts.
 
-::: details Rule kinds and their configuration
+<Accordion title="Rule kinds and their configuration">
+
 
 | Kind | Scope | What it watches | Key fields |
 | --- | --- | --- | --- |
@@ -342,7 +347,7 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 | `cert_renewal_stalled` | platform-wide | a renewal that has not moved the certificate's expiry for the stalled threshold (`APP_CERT_RENEWAL_STALLED_THRESHOLD`, default 6h), or an ACME failure that has persisted that long | none required |
 | `domain_not_resolving` | every domain, or one app's | a domain whose DNS check has found no record for the whole window | `for_duration` (default 30m) |
 
-:::
+</Accordion>
 
 Three more domain kinds are planned and not evaluated yet: `dns_drift` (records differ from the last known state), `zone_not_delegated` (a zone's delegation is not active after a window) and `proxy_route_error` (a proxy route write or reachability check fails). A rule with one of these kinds is rejected today.
 
@@ -582,15 +587,15 @@ Dashboard: the **Health & readiness** panel on an app's Overview tab (`AppHealth
 <Steps>
 <Step title="Query one app's CPU over the last hour, bucketed into 5-minute averages">
 
-::: code-group
-```bash [curl]
+<CodeGroup>
+```bash curl
 curl -s -H "Authorization: Bearer $TOKEN" \
   "https://your-control-plane/api/v1/apps/my-app/metrics?metric=cpu_percent&step=5m"
 ```
-```bash [CLI]
+```bash CLI
 levelrail-cli apps metrics my-app --metric cpu_percent --since 1h --step 5m
 ```
-:::
+</CodeGroup>
 
 Response:
 
@@ -604,15 +609,15 @@ Response:
 </Step>
 <Step title="Search that app's logs for an error in the last day">
 
-::: code-group
-```bash [curl]
+<CodeGroup>
+```bash curl
 curl -s -H "Authorization: Bearer $TOKEN" \
   "https://your-control-plane/api/v1/apps/my-app/logs?from=2026-09-11T00:00:00Z&q=panic"
 ```
-```bash [CLI]
+```bash CLI
 levelrail-cli apps logs my-app --since 24h --q panic
 ```
-:::
+</CodeGroup>
 
 </Step>
 <Step title="Connect a Slack channel and test it">

@@ -7,9 +7,13 @@ Write the state you want as YAML, run `levelrail-cli apply`, and the control pla
 
 Everything goes through the ordinary REST API with your own token. If a policy denies you an app, that one item is reported as denied and nothing else is touched by it. There is no separate write path.
 
-::: warning Experimental
+<Warning>
+
+**Experimental**
+
 Platform as code is off by default. Set `APP_EXPERIMENTAL=iac` on the control plane, and in the shell where you run the CLI or the MCP server, to enable `apply`, `diff` and `export`. See [Experimental features](/experimental-features).
-:::
+
+</Warning>
 ## Quick start
 
 ```bash

@@ -1,6 +1,6 @@
 ---
 title: "Log explorer"
-description: Save and share log searches, group similar errors into signatures, spot new error types after a deploy and alert on log patterns, from the dashboard, the CLI or the API.
+description: "Save and share log searches, group similar errors into signatures, spot new error types after a deploy and alert on log patterns."
 ---
 
 Logs are stored on the node that runs the container and searched from the control plane. The log explorer makes those searches reusable and turns them into alerts, without shipping logs anywhere.

@@ -6,7 +6,10 @@ description: Enroll additional nodes, manage placement and health, migrate apps 
 Everything on this page is optional. A fresh install runs entirely on the control plane's own local node, and nothing here has to be touched to make it work.
 
 A second node is something you add when one box runs out of room, when you want to isolate builds from production containers, or when you want a dedicated database host. The platform never makes you think about it on day one.
-::: tip Ingress listens on the control-plane node and reaches workers over the mesh
+<Tip>
+
+**Ingress listens on the control-plane node and reaches workers over the mesh**
+
 The embedded Caddy ingress ([Domains and ingress](/domains-and-ingress)) runs in the control plane's own process. A worker node has **no public listener**: nothing is bound to 80/443 there. When the WireGuard mesh is up, the ingress reaches an app on a worker through that node's mesh address, so its domains and its `<app>.<ip>.sslip.io` hostname work with normal TLS. See [Routing to apps on remote nodes](#routing-to-apps-on-remote-nodes).
 
 If the mesh path is down (mesh off, node not joined, no recent handshake), the app is **not** routed: a browser gets a TLS handshake failure while the app reports healthy. Levelrail reports this as the `NoMeshIngressPath` condition on the app, in `levelrail-cli doctor` (`cross_node_ingress`), in preflight and on the Traffic page, each with the reason and a fix:
@@ -15,7 +18,8 @@ If the mesh path is down (mesh off, node not joined, no recent handshake), the a
 levelrail-cli nodes mesh                        # see which peer has no handshake
 levelrail-cli apps set-node <name> <the control plane's own node id>   # or move it back
 ```
-:::
+
+</Tip>
 
 ## Why a second node is optional, not assumed
 
@@ -31,9 +35,13 @@ This shows up in three ways:
 
 Enrollment exchanges a one-time join token for a client certificate. The agent dials out to the control plane, and the control plane never initiates a connection. For a cloud server created for you, see [Node provisioning](/node-provisioning). To have the control plane set up a machine over SSH, see [Enrolling over SSH](#enrolling-over-ssh-instead-of-by-hand).
 
-::: warning Set the advertise host first
+<Warning>
+
+**Set the advertise host first**
+
 Before enrolling a real (non-local) node, set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP the remote agent will use in `APP_CONTROL_PLANE_ADDR`. It defaults to `127.0.0.1`, which only matches a single-machine test. With a mismatch, enrollment still succeeds (the first certificate exchange pins the CA fingerprint, not the hostname) and the node appears in `nodes list`, but its persistent session then fails TLS hostname verification on every attempt and the node stays `pending` forever.
-:::
+
+</Warning>
 
 ```mermaid
 graph LR
@@ -519,9 +527,11 @@ Example: If step 2 fails on the second of three volumes, the row shows:
 - `move_volume:app-<name>-uploads: failed`
 - (nothing past that)
 
-::: warning
+<Warning>
+
 This is not atomic. If any step fails, the app is left suspended (stopped). `node_id` never changes until all volumes have copied. Retrying is safe: archiving is read-only, restoring is a full overwrite. No automatic rollback of already-copied volumes; operators clean up unreferenced volumes by hand if needed.
-:::
+
+</Warning>
 
 ### Special cases
 

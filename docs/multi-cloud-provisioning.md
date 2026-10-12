@@ -1,6 +1,6 @@
 ---
 title: "Multi-cloud provisioning quickstart"
-description: Pick a cloud provider and add a provisioned node in three commands, with the credential each provider needs. Auth modes, cost and known gaps are on the node provisioning page.
+description: "Pick a cloud provider and add a provisioned node in three commands, with the credential each provider needs."
 ---
 
 [Node provisioning](/node-provisioning) explains how cloud provisioning works: the join-token flow it drives, the cloud-init script, status polling and the known gaps per provider. This page is the short version: which providers are supported, what credential each needs, and the fastest path to a running node.
@@ -17,9 +17,13 @@ description: Pick a cloud provider and add a provisioned node in three commands,
 
 GCP has no federation mode. The reason, and the three AWS credential modes, are in [node provisioning](/node-provisioning#provider-credentials).
 
-::: warning Servers are not deleted for you
+<Warning>
+
+**Servers are not deleted for you**
+
 Every provider bills by the hour while the server exists. `levelrail-cli nodes delete` removes the node record, not the VM, so delete the server at the provider too. See [cost expectations](/node-provisioning#cost).
-:::
+
+</Warning>
 
 ## Add a node
 

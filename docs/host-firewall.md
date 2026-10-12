@@ -1,6 +1,6 @@
 ---
 title: "Host firewall"
-description: Manage allow and deny rules for the control plane host's ufw firewall from the dashboard, CLI or API, how the reconciler applies them, and the lockout guard that refuses a rule on a port the platform needs.
+description: "Manage allow and deny rules for the host's ufw firewall from the dashboard, CLI or API, and see how the reconciler applies them."
 ---
 
 Levelrail can manage a set of allow and deny rules for the **control plane host's own `ufw` firewall**. You declare rules as records (a port, a protocol, an optional source, an action), and a reconciler converges `ufw` to match them. It is the same declarative model as the rest of the platform: edit the record, and the host follows.
