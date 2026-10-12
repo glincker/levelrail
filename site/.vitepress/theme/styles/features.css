@@ -1,0 +1,228 @@
+/* Home page feature grid (.VPHome .VPFeature) and its "proof" micro-chips
+   (code snippets, stat values, status dots) used inside feature details. */
+
+.VPHome .VPFeatures .container {
+  max-width: 1152px;
+}
+
+.VPHome .VPFeatures .items {
+  display: grid !important;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin: 0 !important;
+}
+
+.VPHome .VPFeatures .items .item {
+  width: auto !important;
+  padding: 0 !important;
+}
+
+@media (min-width: 640px) {
+  .VPHome .VPFeatures .items {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (min-width: 960px) {
+  .VPHome .VPFeatures .items {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .VPHome .VPFeatures .items .item:nth-child(1),
+  .VPHome .VPFeatures .items .item:nth-child(2) {
+    grid-column: span 3;
+  }
+
+  .VPHome .VPFeatures .items .item:nth-child(3),
+  .VPHome .VPFeatures .items .item:nth-child(4),
+  .VPHome .VPFeatures .items .item:nth-child(5) {
+    grid-column: span 2;
+  }
+
+  .VPHome .VPFeatures .items .item:nth-child(6),
+  .VPHome .VPFeatures .items .item:nth-child(7) {
+    grid-column: span 3;
+  }
+}
+
+/* Double-bezel card, hero rank only: the two top-row cards keep a brand
+   wash on top of the base border so they read as the headline claims.
+   mastra.ai's component language (subtle border on every surface, not
+   just on hover) replaces the old flat/borderless base cards, which read
+   as bland on a light background. Rank in the grid still comes from
+   bezel + size for the top row; the border itself is no longer the
+   differentiator. */
+.VPHome .VPFeature {
+  border: 1px solid var(--glinui-glass-border-strong);
+  border-radius: 20px;
+  transition: border-color 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.VPHome .VPFeatures .items .item:nth-child(1) .VPFeature,
+.VPHome .VPFeatures .items .item:nth-child(2) .VPFeature {
+  border-color: var(--vp-c-divider);
+  background: linear-gradient(180deg, var(--vp-c-brand-soft) 0%, transparent 65%);
+}
+
+.VPHome .VPFeature .box {
+  height: 100%;
+  padding: 26px 24px;
+  border-radius: 16px;
+  background: var(--vp-c-bg-alt);
+  box-shadow: none;
+}
+
+.VPHome .VPFeatures .items .item:nth-child(1) .VPFeature .box,
+.VPHome .VPFeatures .items .item:nth-child(2) .VPFeature .box {
+  padding: 28px 26px;
+  background: var(--vp-c-bg-soft);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.VPHome .VPFeature .title {
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.VPHome .VPFeatures .items .item:nth-child(1) .VPFeature .title,
+.VPHome .VPFeatures .items .item:nth-child(2) .VPFeature .title {
+  font-size: 19px;
+}
+
+.VPHome .VPFeature .details {
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.VPHome .VPFeature:hover {
+  border-color: var(--vp-c-brand-1);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px -12px rgba(16, 114, 146, 0.35);
+}
+
+/* Multi-node mesh glyph: a drawn graph, not an icon-in-a-rounded-box, so it
+   reads as a specific diagram rather than a generic feature icon. */
+.VPHome .VPFeatures .items .item:nth-child(4) .icon {
+  width: 64px;
+  height: 36px;
+  margin-bottom: 18px;
+  border-radius: 0;
+  background: none;
+  color: var(--vp-c-brand-1);
+}
+
+/* Feature proof: one concrete, specific detail per card (chips, a stat
+   readout, a policy or tool-call fragment, status dots) instead of a
+   generic icon standing in for the claim. */
+.feature-proof {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.feature-proof--chips-wrap {
+  row-gap: 7px;
+}
+
+.feature-chip {
+  padding: 3px 9px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 999px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-2);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.feature-chip--mono {
+  font-family: var(--vp-font-family-mono);
+  text-transform: lowercase;
+}
+
+.feature-proof--stat {
+  gap: 10px;
+  align-items: baseline;
+}
+
+.feature-stat-value {
+  font-family: var(--vp-font-family-mono);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--vp-c-brand-1);
+  line-height: 1;
+}
+
+.feature-stat-label {
+  font-size: 12px;
+  color: var(--vp-c-text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.feature-proof--status {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.feature-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-family: var(--vp-font-family-mono);
+  color: var(--vp-c-text-2);
+}
+
+.feature-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.feature-dot--bad {
+  background: #f87171;
+}
+
+.feature-dot--warn {
+  /* Explicit amber, not var(--vp-c-brand-1): that token used to be amber
+     under the old theme (so it doubled as "warning" for free), but it's
+     petrol-blue now and blue doesn't read as a warning signal. */
+  background: #f59e0b;
+}
+
+.feature-dot--off {
+  background: var(--vp-c-text-3);
+}
+
+.feature-code-line {
+  display: inline-block;
+  max-width: 100%;
+  padding: 5px 10px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-brand-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+/* Mid-page parallax: continues the hero's accent glow past the feature grid
+   and into the quickstart/screenshot sections. Both layers share one
+   background-attachment: fixed image, so as the page scrolls the two
+   sections read as windows onto the same fixed backdrop, the classic
+   fixed-attachment parallax trick, no scroll listener needed.
+   Light mode gets only the petrol radial glow -- the dark-to-near-black
+   fade below was unscoped to .dark and was tinting the whole quickstart
+   section a murky grey on a light background; it only makes sense once
+   the page is actually dark. */

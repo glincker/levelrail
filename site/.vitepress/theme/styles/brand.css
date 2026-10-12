@@ -1,0 +1,124 @@
+/* Brand + VitePress token mapping: --vp-c-brand-*, fonts, --vp-nav-height.
+   Raw glinui-* values live in tokens.css; this maps them onto VitePress's
+   own --vp-* variable contract. Loaded first. */
+
+/**
+ * "Glinui v1" theme: unified petrol-blue brand (brand.yaml's primary_color
+ * #107292 family) replacing the earlier amber "Rail signal" identity, so
+ * /docs and /web (and eventually glinr-frontend/thegdsks via the future
+ * glinui package) share one accent instead of three disconnected ones.
+ * Surface/glass recipe and raw token values live in ./tokens.css; this
+ * file maps them onto VitePress's own --vp-* variable contract.
+ */
+@import './tokens.css';
+
+:root {
+  /* Default theme's own --vp-nav-height (64px) drives its internal hero/
+     content top-spacing. CustomTopNav used to be built at exactly 64px
+     so that default spacing cleared it "for free"; now that it's a
+     floating pill (top:16px + height:56px = 72px of clearance needed),
+     this is overridden to match instead of hand-patching every place
+     that reads the default. .VPContent.has-sidebar's own padding-top is
+     still set explicitly further down (it has an !important override
+     already, for the fixed custom-sidebar case specifically). */
+  --vp-nav-height: 72px;
+
+  --vp-font-family-base: var(--glinui-font-sans);
+  --vp-font-family-display: var(--glinui-font-display);
+  --vp-font-family-mono: var(--glinui-font-mono);
+
+  --vp-c-brand-1: var(--glinui-accent);
+  --vp-c-brand-2: var(--glinui-accent-strong);
+  --vp-c-brand-3: var(--glinui-accent-soft-text);
+  --vp-c-brand-soft: var(--glinui-accent-active-bg);
+
+  --vp-c-bg-alt: #f6f7f8;
+  --vp-c-bg-soft: #eef0f2;
+
+  --vp-button-brand-bg: var(--vp-c-brand-1);
+  --vp-button-brand-hover-bg: var(--vp-c-brand-2);
+  --vp-button-brand-active-bg: var(--vp-c-brand-2);
+  --vp-button-brand-text: #fff;
+
+  /* Metallic headline gradient: a charcoal-to-mid-grey sheen in light mode,
+     flipped to white-to-mid-grey in .dark below. Kept as tokens so
+     .text-metallic shares one recipe instead of hardcoding a gradient. */
+  --metallic-grad-from: #3f3f46;
+  --metallic-grad-to: #82828c;
+
+  /* Hero-only tokens, deliberately NOT re-defined in .dark below: the
+     WebGL field (HeroField.vue) always renders its night palette now
+     regardless of the site's light/dark toggle (a light-mode sky was
+     tried and read as decorative, not an infra tool), so hero text/scrim
+     colors must stay fixed to dark-appropriate values too, independent of
+     --vp-c-text-1/--vp-c-bg which do still flip with the toggle. */
+  --hero-metallic-grad-from: #ffffff;
+  --hero-metallic-grad-to: #8b8b94;
+  --hero-text: #f5f5f5;
+  --hero-text-muted: #a1a1a6;
+  --hero-scrim-bg: #000000;
+  --hero-accent: #2fb3dc;
+  --hero-accent-soft: #7fd1ea;
+
+  /* Same "stays dark regardless of the toggle" rule as --hero-* above,
+     for CustomTopNav's .custom-nav--on-hero state specifically (the nav
+     unscrolled on the home page, floating over the hero). Matches
+     tokens.css's .dark block's nav/glass values exactly -- kept as its
+     own named set rather than reused directly, since --glinui-nav-bg
+     etc. DO flip with the toggle and must stay toggle-aware everywhere
+     else they're used. */
+  --hero-nav-bg: rgba(20, 20, 22, 0.4);
+  --hero-nav-border: rgba(255, 255, 255, 0.1);
+  --hero-nav-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  --hero-nav-blur: blur(40px) saturate(200%);
+  --hero-nav-link: #a1a1a6;
+  --hero-nav-link-hover-bg: rgba(255, 255, 255, 0.08);
+  --hero-nav-search-fill: rgba(20, 20, 22, 0.9);
+  --hero-nav-search-fill-hover: rgba(30, 30, 32, 0.95);
+  /* Petrol-tinted, not plain white: a bright white edge on the unscrolled
+     (on-hero) pill read as a stray harsh outline rather than a designed
+     glass stroke -- ties to the accent line already on the nav's own top
+     edge instead. */
+  --hero-nav-search-border: rgba(47, 179, 220, 0.38);
+  --hero-nav-search-border-hover: rgba(47, 179, 220, 0.55);
+}
+
+.dark {
+  --vp-c-bg: #000000;
+  --vp-c-bg-alt: #0c0c0d;
+  --vp-c-bg-elv: #161b24;
+  --vp-c-bg-soft: #131720;
+
+  --vp-c-text-1: #f5f5f5;
+  --vp-c-text-2: #a1a1a6;
+  --vp-c-text-3: #71717a;
+
+  --vp-c-divider: #23262e;
+  --vp-c-border: #262a33;
+  --vp-c-gutter: #23262e;
+
+  --vp-c-brand-1: var(--glinui-accent);
+  --vp-c-brand-2: var(--glinui-accent-strong);
+  --vp-c-brand-3: var(--glinui-accent-soft-text);
+  --vp-c-brand-soft: var(--glinui-accent-active-bg);
+
+  --vp-button-brand-bg: var(--vp-c-brand-1);
+  --vp-button-brand-hover-bg: var(--vp-c-brand-2);
+  --vp-button-brand-active-bg: var(--vp-c-brand-2);
+  --vp-button-brand-text: #0b0e14;
+
+  --vp-code-block-bg: #0c0c0d;
+
+  --metallic-grad-from: #ffffff;
+  --metallic-grad-to: #8b8b94;
+}
+
+/* Home page redesign (index.md only). Everything below the brand tokens
+   above is scoped to .VPHome so the rest of the docs site (Diátaxis
+   content pages) is untouched. */
+
+/* Note: default theme markup puts both classes on one span
+   (class="name clip"), not nested, so this must be a compound selector
+   (no space) or the rule never matches and the name silently falls back
+   to VitePress's own flat --vp-c-brand-1 text color. */

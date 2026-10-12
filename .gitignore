@@ -61,3 +61,7 @@ test-results/
 # AI tool scratch notes must never be committed
 .agents/
 skills-lock.json
+
+# marketing site (VitePress)
+site/.vitepress/dist/
+site/.vitepress/cache/

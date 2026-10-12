@@ -1,0 +1,29 @@
+:root {
+  --reveal-dist: 16px;
+  --reveal-dur: 500ms;
+  --reveal-ease: cubic-bezier(0.22, 0.7, 0.2, 1);
+  --reveal-step: 70ms;
+  --rule-dur: 700ms;
+  --count-dur: 900ms;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, var(--reveal-dist), 0);
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    transform var(--reveal-dur) var(--reveal-ease);
+  transition-delay: calc(var(--reveal-i, 0) * var(--reveal-step));
+}
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce), print {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
